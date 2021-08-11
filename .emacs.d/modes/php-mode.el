@@ -458,7 +458,7 @@ PHP does not have an C-like \"enum\" keyword."
   php (append (c-lang-const c-class-decl-kwds) '("function")))
 
 (c-lang-defconst c-modifier-kwds
-  php '("abstract" "const" "final" "static" "case"))
+  php '("abstract" "const" "final" "static" "case" "readonly"))
 
 (c-lang-defconst c-protection-kwds
   "Access protection label keywords in classes."
@@ -960,7 +960,7 @@ this ^ lineup"
        (0 (ignore (php--syntax-propertize-quotes-in-comment (match-beginning 0)))))))
 
   (defmacro php-build-propertize-function ()
-    `(syntax-propertize-rules ,@php-syntax-propertize-rules))
+    `(byte-compile (syntax-propertize-rules ,@php-syntax-propertize-rules)))
 
   (defalias 'php-syntax-propertize-function (php-build-propertize-function)))
 

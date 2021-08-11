@@ -82,6 +82,7 @@
 ;;; Code:
 
 (eval-when-compile (require 'cl))
+(require 'cl-seq)
 (require 'soap-client)
 (require 'request)
 (require 'json)
@@ -229,6 +230,11 @@ Example: (list '('t \"descriptive-predicate-label\" (lambda (x) x)))"
   :group 'org-jira)
 
 
+(defcustom jiralib-update-issue-fields-exclude-list nil
+  "A list of symbols to check for exclusion on updates based on matching key.
+Key names should be one of components, description, assignee, reporter, summary, issuetype."
+  :type 'list
+  :group 'org-jira)
 
 (defun jiralib-load-wsdl ()
   "Load the JIRA WSDL descriptor."
@@ -253,7 +259,9 @@ After a successful login, store the authentication token in
                                                        (url-host (url-generic-parse-url jiralib-url))
                                                      jiralib-host)
                                              ;; secrets.el wouldn’t accept a number.
-                                             :port (number-to-string (url-port (url-generic-parse-url jiralib-url)))
+                                             :port (list (number-to-string (url-port (url-generic-parse-url jiralib-url)))
+							 (url-port (url-generic-parse-url jiralib-url))
+							 (url-type (url-generic-parse-url jiralib-url)))
                                              :require '(:user :secret)
                                              :create t)))
            user secret)
@@ -567,14 +575,21 @@ emacs-lisp"
   "Return jira rest api for issue KEY."
   (concat "rest/api/2/issue/" key))
 
+(defun jiralib-filter-fields-by-exclude-list (exclude-list fields)
+  (cl-remove-if
+   (lambda (el) (cl-member (car el) exclude-list)) fields))
+
 (defun jiralib-update-issue (key fields &optional callback)
   "Update the issue with id KEY with the values in FIELDS, invoking CALLBACK."
-  (jiralib-call
-   "updateIssue"
-   callback
-   key (if jiralib-use-restapi
-           fields
-         (jiralib-make-remote-field-values fields))))
+  (let ((filtered-fields (jiralib-filter-fields-by-exclude-list
+                          jiralib-update-issue-fields-exclude-list
+                          fields)))
+    (jiralib-call
+     "updateIssue"
+     callback
+     key (if jiralib-use-restapi
+             filtered-fields
+           (jiralib-make-remote-field-values filtered-fields)))))
 
 (defvar jiralib-status-codes-cache nil)
 
@@ -1113,13 +1128,13 @@ Auxiliary Notes:
                  (boundp 'unwrap-worklog-records-fn)
                  (functionp unwrap-worklog-records-fn))
                 unwrap-worklog-records-fn
-              (lambda (x) (coerce x 'list))))
+              (lambda (x) (cl-coerce x 'list))))
       (setq rewrap-worklog-records-fn
             (if (and
                  (boundp 'rewrap-worklog-records-fn)
                  (functionp rewrap-worklog-records-fn))
                 rewrap-worklog-records-fn
-              (lambda (x) (remove 'nil (coerce x 'vector)))))
+              (lambda (x) (remove 'nil (cl-coerce x 'vector)))))
       (setq predicate-fn-lst
             (if (and (boundp 'predicate-fn-lst)
                      (not (null predicate-fn-lst))

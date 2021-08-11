@@ -140,16 +140,6 @@ remapped given the currently active keymaps."
   :group 'which-key
   :type 'boolean)
 
-(defvar which-key-key-replacement-alist nil)
-(make-obsolete-variable 'which-key-key-replacement-alist
-                        'which-key-replacement-alist "2016-11-21")
-(defvar which-key-description-replacement-alist nil)
-(make-obsolete-variable 'which-key-description-replacement-alist
-                        'which-key-replacement-alist "2016-11-21")
-(defvar which-key-key-based-description-replacement-alist nil)
-(make-obsolete-variable 'which-key-key-based-description-replacement-alist
-                        'which-key-replacement-alist "2016-11-21")
-
 (defcustom which-key-replacement-alist
   (delq nil
         `(((nil . "which-key-show-next-page-no-cycle") . (nil . "wk next pg"))
@@ -194,19 +184,6 @@ non-nil value."
                                 (choice regexp (const nil)))
                 :value-type (cons (choice string (const nil))
                                   (choice string (const nil)))))
-
-(when (bound-and-true-p which-key-key-replacement-alist)
-  (mapc
-   (lambda (repl)
-     (push (cons (cons (car repl) nil) (cons (cdr repl) nil))
-           which-key-replacement-alist))
-   which-key-key-replacement-alist))
-(when (bound-and-true-p which-key-description-replacement-alist)
-  (mapc
-   (lambda (repl)
-     (push (cons (cons nil (car repl)) (cons nil (cdr repl)))
-           which-key-replacement-alist))
-   which-key-description-replacement-alist))
 
 (defcustom which-key-allow-multiple-replacements nil
   "Allow a key binding to match and be modified by multiple
@@ -666,9 +643,6 @@ update.")
                   "select-window" "switch-frame" "-state"
                   "which-key"))))
 
-(make-obsolete-variable 'which-key-prefix-name-alist nil "2016-10-05")
-(make-obsolete-variable 'which-key-prefix-title-alist nil "2016-10-05")
-
 (defvar which-key--pages-obj nil)
 (cl-defstruct which-key--pages
   pages
@@ -856,11 +830,7 @@ function, but it's included here in case someone cannot set that
 variable early enough in their configuration, if they are using a
 starter kit for example."
   (when (string-equal which-key-separator " → ")
-    (setq which-key-separator " : "))
-  (setq which-key-key-replacement-alist
-        (delete '("left" . "←") which-key-key-replacement-alist))
-  (setq which-key-key-replacement-alist
-        (delete '("right" . "→") which-key-key-replacement-alist)))
+    (setq which-key-separator " : ")))
 
 ;;; Default configuration functions for use by users.
 
@@ -1007,22 +977,6 @@ addition KEY-SEQUENCE REPLACEMENT pairs) to apply."
       (push (cons mode title-mode-alist) which-key--prefix-title-alist))))
 (put 'which-key-add-major-mode-key-based-replacements
      'lisp-indent-function 'defun)
-
-(defalias 'which-key-add-prefix-title 'which-key-add-key-based-replacements)
-(make-obsolete 'which-key-add-prefix-title
-               'which-key-add-key-based-replacements
-               "2016-10-05")
-
-(defalias 'which-key-declare-prefixes 'which-key-add-key-based-replacements)
-(make-obsolete 'which-key-declare-prefixes
-               'which-key-add-key-based-replacements
-               "2016-10-05")
-
-(defalias 'which-key-declare-prefixes-for-mode
-  'which-key-add-major-mode-key-based-replacements)
-(make-obsolete 'which-key-declare-prefixes-for-mode
-               'which-key-add-major-mode-key-based-replacements
-               "2016-10-05")
 
 (defun which-key-define-key-recursively (map key def &optional at-root)
   "Recursively bind KEY in MAP to DEF on every level of MAP except the first.
@@ -1789,8 +1743,8 @@ Requires `which-key-compute-remaps' to be non-nil"
                     (binding
                      (cons key-desc
                            (cond
-                            ((keymapp def) "prefix")
                             ((symbolp def) (which-key--compute-binding def))
+                            ((keymapp def) "prefix")
                             ((eq 'lambda (car-safe def)) "lambda")
                             ((eq 'closure (car-safe def)) "closure")
                             ((stringp def) def)

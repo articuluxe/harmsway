@@ -104,12 +104,12 @@
         (apply #'concat (nreverse chunks)))
     string))
 
-(defun embark-consult--location-transform (target)
-  "Remove the unicode suffix character from a `consult-location' TARGET."
-  (cons 'consult-location (embark-consult--strip target)))
+(defun embark-consult--target-strip (type target)
+  "Remove the unicode suffix character from a TARGET of TYPE."
+  (cons type (embark-consult--strip target)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
-      #'embark-consult--location-transform)
+      #'embark-consult--target-strip)
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
@@ -201,7 +201,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 
 ;;; Support for consult-multi
 
-(defun embark-consult--multi-transform (target)
+(defun embark-consult--multi-transform (_type target)
   "Refine `consult-multi' TARGET to its real type.
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
@@ -214,12 +214,8 @@ actual type."
 
 ;;; Support for consult-isearch
 
-(defun embark-consult--isearch-transform (target)
-  "Remove the unicode suffix character from a `consult-isearch' TARGET."
-  (cons 'consult-isearch (embark-consult--strip target)))
-
 (setf (alist-get 'consult-isearch embark-transformer-alist)
-      #'embark-consult--isearch-transform)
+      #'embark-consult--target-strip)
 
 ;;; Support for consult-register
 
@@ -241,37 +237,43 @@ actual type."
 
 (embark-define-keymap embark-consult-non-async-search-map
   "Keymap for Consult non-async search commands"
+  :parent nil
   ("o" consult-outline)
   ("i" consult-imenu)
-  ("p" consult-project-imenu)
-  ("l" consult-line))
+  ("I" consult-imenu-multi)
+  ("l" consult-line)
+  ("L" consult-line-multi))
 
 (embark-define-keymap embark-consult-async-search-map
   "Keymap for Consult async search commands"
+  :parent nil
   ("g" consult-grep)
   ("r" consult-ripgrep)
   ("G" consult-git-grep)
   ("f" consult-find)
-  ("L" consult-locate))
+  ("F" consult-locate))
 
 (defvar embark-consult-search-map
   (keymap-canonicalize
    (make-composed-keymap embark-consult-non-async-search-map
                          embark-consult-async-search-map))
-  "Keymap for Consult async search commands.")
+  "Keymap for all Consult search commands.")
 
-(define-key embark-become-match-map "C" embark-consult-non-async-search-map)
+(fset 'embark-consult-non-async-search-map embark-consult-non-async-search-map)
+(define-key embark-become-match-map "C" 'embark-consult-non-async-search-map)
 
-(add-to-list 'embark-become-keymaps 'embark-consult-async-search-map)
+(cl-pushnew 'embark-consult-async-search-map embark-become-keymaps)
 
-(define-key embark-general-map "C" embark-consult-search-map)
+(fset 'embark-consult-search-map embark-consult-search-map)
+(define-key embark-general-map "C" 'embark-consult-search-map)
 
-(dolist (bind (cdr embark-consult-search-map))
-  (add-to-list 'embark-allow-edit-commands (cdr bind)))
+(map-keymap
+ (lambda (_key cmd) (cl-pushnew cmd embark-allow-edit-commands))
+ embark-consult-search-map)
 
-(defun embark-consult-unique-match ()
+(defun embark-consult--unique-match (&rest _)
   "If there is a unique matching candidate, accept it.
-This is intended to be used in `embark-setup-overrides' for some
+This is intended to be used in `embark-setup-action-hooks' for some
 actions that are on `embark-allow-edit-commands'."
   ;; I couldn't quickly get this to work for ivy, so just skip ivy
   (unless (eq mwheel-scroll-up-function 'ivy-next-line)
@@ -282,12 +284,12 @@ actions that are on `embark-allow-edit-commands'."
         (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
 
 (dolist (cmd '(consult-outline consult-imenu consult-project-imenu))
-  (cl-pushnew #'embark-consult-unique-match
-              (alist-get cmd embark-setup-overrides)))
+  (cl-pushnew #'embark-consult--unique-match
+              (alist-get cmd embark-setup-action-hooks)))
 
-(defun embark-consult-accept-tofu ()
+(defun embark-consult--accept-tofu (&rest _)
   "Accept input if it already has the unicode suffix.
-This is intended to be used in `embark-setup-overrides' for the
+This is intended to be used in `embark-setup-action-hooks' for the
 `consult-line' and `consult-outline' actions."
   (let* ((input (minibuffer-contents))
          (len (length input)))
@@ -298,12 +300,12 @@ This is intended to be used in `embark-setup-overrides' for the
       (add-hook 'post-command-hook #'exit-minibuffer nil t))))
 
 (dolist (cmd '(consult-line consult-outline))
-  (cl-pushnew #'embark-consult-accept-tofu
-              (alist-get cmd embark-setup-overrides)))
+  (cl-pushnew #'embark-consult--accept-tofu
+              (alist-get cmd embark-setup-action-hooks)))
 
-(defun embark-consult-add-async-separator ()
+(defun embark-consult--add-async-separator (&rest _)
   "Add Consult's async separator at the beginning.
-This is intended to be used in `embark-setup-hook' for any action
+This is intended to be used in `embark-setup-action-hooks' for any action
 that is a Consult async command."
   (let* ((style (alist-get consult-async-split-style
                            consult-async-split-styles-alist))
@@ -318,9 +320,11 @@ that is a Consult async command."
       (goto-char (point-max))
       (insert separator)))))
 
-(dolist (bind (cdr embark-consult-async-search-map))
-  (cl-pushnew #'embark-consult-add-async-separator
-              (alist-get (cdr bind) embark-setup-overrides)))
+(map-keymap
+ (lambda (_key cmd)
+   (cl-pushnew #'embark-consult--add-async-separator
+               (alist-get cmd embark-setup-action-hooks)))
+ embark-consult-async-search-map)
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here

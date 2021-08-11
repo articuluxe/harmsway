@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/bufler.el
 ;; Package-Version: 0.3-pre
-;; Package-Requires: ((emacs "26.3") (dash "2.18") (f "0.17") (pretty-hydra "0.2.2") (magit-section "0.1"))
+;; Package-Requires: ((emacs "26.3") (dash "2.18") (f "0.17") (pretty-hydra "0.2.2") (magit-section "0.1") (map "2.1"))
 ;; Keywords: convenience
 
 ;;; License:
@@ -531,6 +531,7 @@ NAME, okay, `checkdoc'?"
   "Return buffers grouped by GROUPS.
 If PATH, return only buffers from the group at PATH.  If
 FILTER-FNS, remove buffers that match any of them."
+  ;; TODO: Probably would be clearer to call it IGNORE-FNS or REJECT-FNS rather than FILTER-FNS.
   (cl-labels ((grouped-buffers
                () (bufler-group-tree groups
                     (if filter-fns
@@ -1068,9 +1069,8 @@ NAME, okay, `checkdoc'?"
     "*indirect*"))
 
 (bufler-defauto-group special
-  (if (bufler--buffer-special-p buffer)
-      "*special*"
-    "non-special buffers"))
+  (when (bufler--buffer-special-p buffer)
+    "*special*"))
 
 (bufler-defauto-group project
   (when-let* ((project (with-current-buffer buffer
@@ -1143,6 +1143,7 @@ See documentation for details."
                  (auto-project () `(bufler-group 'auto-project))
                  (auto-parent-project () `(bufler-group 'auto-parent-project))
                  (auto-projectile () `(bufler-group 'auto-projectile))
+                 (auto-special () `(bufler-group 'auto-special))
                  (auto-tramp () `(bufler-group 'auto-tramp))
                  (auto-workspace () `(bufler-group 'auto-workspace)))
      (list ,@groups)))
@@ -1163,14 +1164,16 @@ See documentation for details."
                (mode-match "*Help*" (rx bos "help-"))
                (mode-match "*Info*" (rx bos "info-"))))
     (group
-     ;; Subgroup collecting all special buffers (i.e. ones that are not file-backed), except
-     ;; certain ones like Dired, Forge, or Magit Status buffers (which are allowed to fall
-     ;; through to other groups, so they end up grouped with their project buffers).
+     ;; Subgroup collecting all special buffers (i.e. ones that are not file-backed),
+     ;; except certain ones like Dired, Forge, or Magit buffers (which are allowed to
+     ;; fall through to other groups, so they end up grouped with their project buffers).
      (group-not "*Special"
                 (group-or "*Special*"
-                          (mode-match "Magit" (rx bos "magit-status"))
+                          (mode-match "Magit" (rx bos "magit-"))
                           (mode-match "Forge" (rx bos "forge-"))
                           (mode-match "Dired" (rx bos "dired"))
+                          (mode-match "grep" (rx bos "grep-"))
+                          (mode-match "compilation" (rx bos "compilation-"))
                           (auto-file)))
      (group
       ;; Subgroup collecting these "special special" buffers
@@ -1203,11 +1206,26 @@ See documentation for details."
      (auto-mode))
     (group
      ;; Subgroup collecting buffers in a projectile project.
-     (auto-projectile))
+     (auto-projectile)
+     (group-not "special"
+                ;; This subgroup collects special buffers so they are
+                ;; easily distinguished from file buffers.
+                (group-or "Non-file-backed and neither Dired nor Magit"
+                          (mode-match "Magit Status" (rx bos "magit-status"))
+                          (mode-match "Dired" (rx bos "dired-"))
+                          (auto-file))))
     (group
      ;; Subgroup collecting buffers in a version-control project,
-     ;; grouping them by directory.
-     (auto-project))
+     ;; grouping them by directory (using the parent project keeps,
+     ;; e.g. git worktrees with their parent repos).
+     (auto-parent-project)
+     (group-not "special"
+                ;; This subgroup collects special buffers so they are
+                ;; easily distinguished from file buffers.
+                (group-or "Non-file-backed and neither Dired nor Magit"
+                          (mode-match "Magit Status" (rx bos "magit-status"))
+                          (mode-match "Dired" (rx bos "dired-"))
+                          (auto-file))))
     ;; Group remaining buffers by directory, then major mode.
     (auto-directory)
     (auto-mode))

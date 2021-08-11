@@ -99,26 +99,46 @@
   "Compute server-choosing function for `eglot-server-programs'.
 Each element of ALTERNATIVES is a string PROGRAM or a list of
 strings (PROGRAM ARGS...) where program names an LSP server
-program to start with ARGS.  Returns a function of one
-argument."
+program to start with ARGS.  Returns a function of one argument.
+When invoked, that function will return a list (ABSPATH ARGS),
+where ABSPATH is the absolute path of the PROGRAM that was
+chosen (interactively or automatically)."
   (lambda (&optional interactive)
+    ;; JT@2021-06-13: This function is way more complicated than it
+    ;; could be because it accounts for the fact that
+    ;; `eglot--executable-find' may take much longer to execute on
+    ;; remote files.
     (let* ((listified (cl-loop for a in alternatives
                                collect (if (listp a) a (list a))))
-           (available (cl-remove-if-not (lambda (a) (eglot--executable-find a t))
-                                        listified :key #'car)))
-      (cond ((and interactive (cdr available))
-             (let ((chosen (completing-read
-                            "[eglot] More than one server executable available:"
-                            (mapcar #'car available)
-                            nil t nil nil (car (car available)))))
-               (assoc chosen available #'equal)))
-            ((car available))
+           (err (lambda ()
+                  (error "None of '%s' are valid executables"
+                         (mapconcat #'identity alternatives ", ")))))
+      (cond (interactive
+             (let* ((augmented (mapcar (lambda (a)
+                                         (let ((found (eglot--executable-find
+                                                       (car a) t)))
+                                           (and found
+                                                (cons (car a) (cons found (cdr a))))))
+                                       listified))
+                    (available (remove nil augmented)))
+               (cond ((cdr available)
+                      (cdr (assoc
+                            (completing-read
+                             "[eglot] More than one server executable available:"
+                             (mapcar #'car available)
+                             nil t nil nil (car (car available)))
+                            available #'equal)))
+                     ((cdr (car available)))
+                     (t (funcall err)))))
             (t
-             (car listified))))))
+             (cl-loop for (p . args) in listified
+                      for probe = (eglot--executable-find p t)
+                      when probe return (cons probe args)
+                      finally (funcall err)))))))
 
 (defvar eglot-server-programs `((rust-mode . (eglot-rls "rls"))
                                 (python-mode
-                                 . ,(eglot-alternatives '("pyls" "pylsp")))
+                                 . ,(eglot-alternatives '("pylsp" "pyls")))
                                 ((js-mode typescript-mode)
                                  . ("typescript-language-server" "--stdio"))
                                 (sh-mode . ("bash-language-server" "start"))
@@ -316,6 +336,7 @@ let the buffer grow forever."
       (Hover (:contents) (:range))
       (InitializeResult (:capabilities) (:serverInfo))
       (Location (:uri :range))
+      (LocationLink (:targetUri :targetRange :targetSelectionRange) (:originSelectionRange))
       (LogMessageParams (:type :message))
       (MarkupContent (:kind :value))
       (ParameterInformation (:label) (:documentation))
@@ -619,10 +640,14 @@ treated as in `eglot-dbind'."
                                          (:labelOffsetSupport t)
                                          :activeParameterSupport t))
              :references         `(:dynamicRegistration :json-false)
-             :definition         `(:dynamicRegistration :json-false)
-             :declaration        `(:dynamicRegistration :json-false)
-             :implementation     `(:dynamicRegistration :json-false)
-             :typeDefinition     `(:dynamicRegistration :json-false)
+             :definition         (list :dynamicRegistration :json-false
+                                       :linkSupport t)
+             :declaration        (list :dynamicRegistration :json-false
+                                       :linkSupport t)
+             :implementation     (list :dynamicRegistration :json-false
+                                       :linkSupport t)
+             :typeDefinition     (list :dynamicRegistration :json-false
+                                       :linkSupport t)
              :documentSymbol     (list
                                   :dynamicRegistration :json-false
                                   :hierarchicalDocumentSymbolSupport t
@@ -833,7 +858,9 @@ be guessed."
                      ((null guess)
                       (format "[eglot] Sorry, couldn't guess for `%s'!\n%s"
                               managed-mode base-prompt))
-                     ((and program (not (eglot--executable-find program t)))
+                     ((and program
+                           (not (file-name-absolute-p program))
+                           (not (eglot--executable-find program t)))
                       (concat (format "[eglot] I guess you want to run `%s'"
                                       program-guess)
                               (format ", but I can't find `%s' in PATH!" program)
@@ -2164,9 +2191,15 @@ Try to visit the target file for a richer summary line."
           method (append (eglot--TextDocumentPositionParams) extra-params))))
     (eglot--collecting-xrefs (collect)
       (mapc
-       (eglot--lambda ((Location) uri range)
-         (collect (eglot--xref-make-match (symbol-name (symbol-at-point))
-                                          uri range)))
+       (lambda (loc-or-loc-link)
+         (let ((sym-name (symbol-name (symbol-at-point))))
+           (eglot--dcase loc-or-loc-link
+             (((LocationLink) targetUri targetSelectionRange)
+              (collect (eglot--xref-make-match sym-name
+                                               targetUri targetSelectionRange)))
+             (((Location) uri range)
+              (collect (eglot--xref-make-match sym-name
+                                               uri range))))))
        (if (vectorp response) response (and response (list response)))))))
 
 (cl-defun eglot--lsp-xref-helper (method &key extra-params capability )

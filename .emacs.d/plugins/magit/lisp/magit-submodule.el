@@ -91,7 +91,7 @@ which case you should use an appropriat HEADER, set WIDTH to 1,
 and set `:pad-right' to 0.  \"+\" is substituted for numbers higher
 than 9."
   :package-version '(magit . "2.8.0")
-  :group 'magit-repolist-mode
+  :group 'magit-repolist
   :type `(repeat (list :tag "Column"
                        (string   :tag "Header Label")
                        (integer  :tag "Column Width")
@@ -102,6 +102,18 @@ than 9."
                                                (const :pad-right)
                                                (symbol))
                                        (sexp   :tag "Value"))))))
+
+(defcustom magit-submodule-list-sort-key '("Path" . nil)
+  "Initial sort key for buffer created by `magit-list-submodules'.
+If nil, no additional sorting is performed.  Otherwise, this
+should be a cons cell (NAME . FLIP).  NAME is a string matching
+one of the column names in `magit-submodule-list-columns'.  FLIP,
+if non-nil, means to invert the resulting sort."
+  :package-version '(magit . "3.2.0")
+  :group 'magit-repolist
+  :type '(choice (const nil)
+                 (cons (string :tag "Column name")
+                       (boolean :tag "Flip order"))))
 
 (defcustom magit-submodule-remove-trash-gitdirs nil
   "Whether `magit-submodule-remove' offers to trash module gitdirs.
@@ -590,15 +602,7 @@ These sections can be expanded to show the respective commits."
 (defun magit-list-submodules ()
   "Display a list of the current repository's submodules."
   (interactive)
-  (message "Listing submodules...")
-  (magit-display-buffer
-   (or (magit-get-mode-buffer 'magit-submodule-list-mode)
-       (magit-with-toplevel
-         (magit-generate-new-buffer 'magit-submodule-list-mode))))
-  (magit-submodule-list-mode)
-  (magit-submodule-list-refresh)
-  (tabulated-list-print)
-  (message "Listing submodules...done"))
+  (magit-submodule-list-setup magit-submodule-list-columns))
 
 (defvar magit-submodule-list-mode-map
   (let ((map (make-sparse-keymap)))
@@ -609,22 +613,35 @@ These sections can be expanded to show the respective commits."
 (define-derived-mode magit-submodule-list-mode tabulated-list-mode "Modules"
   "Major mode for browsing a list of Git submodules."
   :group 'magit-repolist-mode
-  (setq-local x-stretch-cursor  nil)
-  (setq tabulated-list-padding  0)
-  (setq tabulated-list-sort-key (cons "Path" nil))
-  (setq tabulated-list-format
-        (vconcat (mapcar (pcase-lambda (`(,title ,width ,_fn ,props))
-                           (nconc (list title width t)
-                                  (-flatten props)))
-                         magit-submodule-list-columns)))
-  (tabulated-list-init-header)
+  (setq-local x-stretch-cursor nil)
+  (setq tabulated-list-padding 0)
   (add-hook 'tabulated-list-revert-hook 'magit-submodule-list-refresh nil t)
   (setq imenu-prev-index-position-function
         #'magit-imenu--submodule-prev-index-position-function)
   (setq imenu-extract-index-name-function
         #'magit-imenu--submodule-extract-index-name-function))
 
+(defun magit-submodule-list-setup (columns)
+  (magit-display-buffer
+   (or (magit-get-mode-buffer 'magit-submodule-list-mode)
+       (magit-with-toplevel
+         (magit-generate-new-buffer 'magit-submodule-list-mode))))
+  (magit-submodule-list-mode)
+  (setq-local magit-repolist-columns columns)
+  (magit-submodule-list-refresh))
+
 (defun magit-submodule-list-refresh ()
+  (unless tabulated-list-sort-key
+    (setq tabulated-list-sort-key
+          (pcase-let ((`(,column . ,flip) magit-submodule-list-sort-key))
+            (cons (or (car (assoc column magit-submodule-list-columns))
+                      (caar magit-submodule-list-columns))
+                  flip))))
+  (setq tabulated-list-format
+        (vconcat (mapcar (pcase-lambda (`(,title ,width ,_fn ,props))
+                           (nconc (list title width t)
+                                  (-flatten props)))
+                         magit-repolist-columns)))
   (setq tabulated-list-entries
         (-keep (lambda (module)
                  (let ((default-directory
@@ -638,8 +655,12 @@ These sections can be expanded to show the respective commits."
                                                            (:width ,width)
                                                            ,@props))
                                              ""))
-                                       magit-submodule-list-columns))))))
-               (magit-list-module-paths))))
+                                       magit-repolist-columns))))))
+               (magit-list-module-paths)))
+  (message "Listing submodules...")
+  (tabulated-list-init-header)
+  (tabulated-list-print)
+  (message "Listing submodules...done"))
 
 (defun magit-modulelist-column-path (spec)
   "Insert the relative path of the submodule."

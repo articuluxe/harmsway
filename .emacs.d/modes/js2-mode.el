@@ -657,7 +657,9 @@ which doesn't seem particularly useful, but Rhino permits it."
 (defvar js2-EXPON 175)
 (defvar js2-NULLISH-COALESCING 176) ; nullish coalescing (obj.value ?? obj.defaultValue ?? 0))
 
-(defconst js2-num-tokens (1+ js2-NULLISH-COALESCING))
+(defvar js2-PRIVATE_NAME 177)      ; this.#bar();
+
+(defconst js2-num-tokens (1+ js2-PRIVATE_NAME))
 
 (defconst js2-debug-print-trees nil)
 
@@ -5898,6 +5900,7 @@ the token is flagged as such."
 During operation, creates an instance of `js2-token' struct, sets
 its relevant fields and puts it into `js2-ti-tokens'."
   (let (identifier-start
+        identifier-private
         is-unicode-escape-start c
         contains-escape escape-val str result base
         look-for-slash continue tt legacy-octal
@@ -5943,7 +5946,10 @@ its relevant fields and puts it into `js2-ti-tokens'."
              (js2-unget-char)
              (setq c ?\\)))
           (t
-           (when (setq identifier-start (js2-identifier-start-p c))
+           (when (setq identifier-start (or (js2-identifier-start-p c)
+                                            (and
+                                             (eq c ?#)
+                                             (setq identifier-private t))))
              (setq js2-ts-string-buffer nil)
              (js2-add-to-string c))))
          (when identifier-start
@@ -6003,7 +6009,11 @@ its relevant fields and puts it into `js2-ti-tokens'."
                (throw 'return (js2-tt-code result))))
            ;; If we want to intern these as Rhino does, just use (intern str)
            (setf (js2-token-string token) str)
-           (throw 'return js2-NAME))    ; end identifier/kwd check
+           (throw 'return
+                  (if identifier-private
+                      js2-PRIVATE_NAME
+                    js2-NAME)
+                  ))    ; end identifier/kwd check
          ;; is it a number?
          (when (or (js2-digit-p c)
                    (and (eq c ?.) (js2-digit-p (js2-peek-char))))
@@ -8021,7 +8031,7 @@ string is NAME.  Returns nil and keeps current token otherwise."
   "Consume token and return t if next token is a valid property name.
 If `js2-language-version' is >= 180, a keyword or reserved word
 is considered valid name as well."
-  (if (eq js2-NAME (js2-get-prop-name-token))
+  (if (memq (js2-get-prop-name-token) `(,js2-NAME ,js2-PRIVATE_NAME))
       t
     (js2-unget-token)
     nil))
@@ -10514,7 +10524,7 @@ Last token parsed must be `js2-RB'."
             tt (js2-get-prop-name-token))
       (cond
        ;; handles: name, ns::name, ns::*, ns::[expr]
-       ((= tt js2-NAME)
+       ((or (= tt js2-NAME) (= tt js2-PRIVATE_NAME))
         (setq ref (js2-parse-property-name -1 nil member-type-flags)))
        ;; handles: *, *::name, *::*, *::[expr]
        ((= tt js2-MUL)
@@ -11061,8 +11071,8 @@ expression)."
         (when (and (>= js2-language-version 200)
                    (= js2-NAME tt)
                    (member prop '("get" "set" "async"))
-                   (member (js2-peek-token 'KEYWORD_IS_NAME)
-                           (list js2-NAME js2-STRING js2-NUMBER js2-LB)))
+                   (memq (js2-peek-token 'KEYWORD_IS_NAME)
+                         `(,js2-NAME ,js2-PRIVATE_NAME ,js2-STRING ,js2-NUMBER ,js2-LB)))
           (setq previous-token (js2-current-token)
                 tt (js2-get-prop-name-token))))
       (cond
@@ -11073,7 +11083,7 @@ expression)."
         (setq after-comma nil
               elem (js2-make-unary nil js2-TRIPLEDOT 'js2-parse-assign-expr)))
        ;; Found a key/value property (of any sort)
-       ((member tt (list js2-NAME js2-STRING js2-NUMBER js2-LB))
+       ((memq tt `(,js2-NAME ,js2-PRIVATE_NAME ,js2-STRING ,js2-NUMBER ,js2-LB))
         (setq after-comma nil
               elem (js2-parse-named-prop tt previous-token class-p))
         (if (and (null elem)
@@ -11137,7 +11147,7 @@ expression)."
 (defun js2-parse-named-prop (tt previous-token &optional class-p)
   "Parse a name, string, or getter/setter object property.
 When `js2-is-in-destructuring' is t, forms like {a, b, c} will be permitted."
-  (let ((key (js2-parse-prop-name tt))
+  (let ((key (js2-parse-prop-name tt class-p))
         (prop (and previous-token (js2-token-string previous-token)))
         (property-type (when previous-token
                              (if (= (js2-token-type previous-token) js2-MUL)
@@ -11189,7 +11199,7 @@ When `js2-is-in-destructuring' is t, forms like {a, b, c} will be permitted."
   (when (js2-match-token js2-ASSIGN)
     (js2-make-binary js2-ASSIGN name 'js2-parse-assign-expr t)))
 
-(defun js2-parse-prop-name (tt)
+(defun js2-parse-prop-name (tt allow-private)
   (cond
    ;; Literal string keys: {'foo': 'bar'}
    ((= tt js2-STRING)
@@ -11207,6 +11217,9 @@ When `js2-is-in-destructuring' is t, forms like {a, b, c} will be permitted."
    ;; Unquoted names: {foo: 12}
    ((= tt js2-NAME)
     (js2-create-name-node))
+   ((and allow-private
+         (= tt js2-PRIVATE_NAME))
+    (js2-create-name-node))
    ;; Anything else is an error
    (t (js2-report-error "msg.bad.prop"))))
 
@@ -11222,9 +11235,9 @@ string or expression."
      ((and (>= js2-language-version 200)
            (if class-p
                (and (setq tt (js2-peek-token-or-eol))
-                    (member tt (list js2-EOL js2-RC js2-SEMI)))
+                    (memq tt `(,js2-EOL ,js2-RC ,js2-SEMI)))
              (and (setq tt (js2-peek-token))
-                  (member tt (list js2-COMMA js2-RC))
+                  (memq tt `(,js2-COMMA ,js2-RC))
                   (js2-name-node-p prop))))
       (setq result (make-js2-object-prop-node
                     :pos pos
@@ -11296,7 +11309,7 @@ And, if CHECK-ACTIVATION-P is non-nil, use the value of TOKEN."
   (let* ((beg (js2-current-token-beg))
          (tt (js2-current-token-type))
          (s (or string
-                (if (= js2-NAME tt)
+                (if (or (= js2-NAME tt) (= js2-PRIVATE_NAME tt))
                     (js2-current-token-string)
                   (js2-tt-name tt))))
          name)
@@ -12937,7 +12950,7 @@ it marks the next defun after the ones already marked."
   (cl-assert (js2-object-node-p node))
   ;; Only support name-node and nodes for the time being
   (cl-loop for elem in (js2-object-node-elems node)
-           for left = (js2-object-prop-node-left elem)
+           for left = (js2-infix-node-left elem)
            if (or (and (js2-name-node-p left)
                        (equal (js2-name-node-name name-node)
                               (js2-name-node-name left)))
@@ -12957,28 +12970,43 @@ i.e. (\\='name\\=' \\='value\\=') = {name : { value: 3}}"
     (while (and temp names (js2-object-node-p temp-object))
       (setq temp (js2-search-object temp-object (pop names)))
       (and (setq node temp)
-         (setq temp-object (js2-object-prop-node-right temp))))
+         (setq temp-object (js2-infix-node-right temp))))
     (unless names node)))
 
 (defun js2-search-scope (node names)
   "Searches NODE scope for jump location matching NAMES.
 NAMES is a list of property values to search for. For functions
 and variables NAMES will contain one element."
-  (let (node-init
-        (val (js2-name-node-name (car names))))
-    (setq node-init (js2-get-symbol-declaration node val))
+  (let (node-init val)
+    (cond
+     ((js2-name-node-p (car names))
+      (setq val (js2-name-node-name (car names)))
+      (setq node-init (js2-get-symbol-declaration node val)))
+     ((and (js2-keyword-node-p (car names))
+           (equal (js2-keyword-node-type (car names))
+                  js2-THIS))
+      (let* ((scope (js2-node-get-enclosing-scope node))
+             (parent (js2-node-parent scope)))
+        (when (or (js2-method-node-p parent)
+                  (js2-object-prop-node-p parent))
+          ;; class or object
+          (setq node-init (js2-node-parent parent))))))
 
     (when (> (length names) 1)
-
-      ;; Check var declarations
-      (when (and node-init (string= val (js2-name-node-name node-init)))
-        (let ((parent (js2-node-parent node-init))
-              (temp-names names))
-          (pop temp-names) ;; First element is var name
-          (setq node-init (when (js2-var-init-node-p parent)
-                            (js2-search-object-for-prop
-                             (js2-var-init-node-initializer parent)
-                             temp-names)))))
+      (when node-init
+        (cond
+         ((js2-name-node-p (car names))
+          ;; Check var declarations
+          (when (string= val (js2-name-node-name node-init))
+            (let ((parent (js2-node-parent node-init)))
+              (setq node-init (when (js2-var-init-node-p parent)
+                                (js2-search-object-for-prop
+                                 (js2-var-init-node-initializer parent)
+                                 (cdr names)))))))
+         ((js2-object-node-p node-init)
+          (setq node-init (js2-search-object-for-prop
+                           node-init
+                           (cdr names))))))
 
       ;; Check all assign nodes
       (js2-visit-ast
@@ -12991,11 +13019,17 @@ and variables NAMES will contain one element."
                      (temp-names names))
                  (when (js2-prop-get-node-p left)
                    (let* ((prop-list (js2-compute-nested-prop-get left))
-                          (found (cl-loop for prop in prop-list
-                                          until (not (string= (js2-name-node-name
-                                                               (pop temp-names))
-                                                              (js2-name-node-name prop)))
-                                          if (not temp-names) return prop))
+                          ;; 'this' or 'super'
+                          (target-is-keyword (js2-keyword-node-p (car temp-names)))
+                          (_ (when target-is-keyword
+                               (pop temp-names)))
+                          (found (unless target-is-keyword
+                                   (cl-loop for prop in prop-list
+                                            until (not (string= (js2-name-node-name
+                                                                 (pop temp-names))
+                                                                (and (js2-name-node-p prop)
+                                                                     (js2-name-node-name prop))))
+                                            if (not temp-names) return prop)))
                           (found-node (or found
                                           (when (js2-object-node-p right)
                                             (js2-search-object-for-prop right

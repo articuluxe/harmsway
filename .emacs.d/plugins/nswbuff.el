@@ -10,7 +10,7 @@
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 18 May 2017
 ;; Keywords: extensions convenience
-;; Package-Version: 1.2
+;; Package-Version: 1.3
 ;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/joostkremers/nswbuff
 
@@ -211,15 +211,42 @@ any buffers from the standard buffer list that match
 `nswbuff-include-buffer-regexps'."
   :group 'nswbuff
   :type '(choice (const :tag "Use Default Buffer List" :value nil)
+                 (const :tag "Use Project Buffer List" :value nswbuff-project-buffer-list)
                  (const :tag "Use Projectile Buffer List" :value nswbuff-projectile-buffer-list)
                  (function :tag "Use Custom Function")))
+
+(declare-function project-current "ext:project")
+(declare-function project-root "ext:project")
+
+(defun nswbuff-project-buffer-list ()
+  "Return the buffers of the current project.el project.
+Added to the list are buffers that are not part of the current
+project but that match `nswbuff-include-buffer-regexps'.  If the
+current buffer is not part of a project, return nil."
+  (when-let ((curr-proj (project-current)))
+    (let ((conn (file-remote-p (project-root curr-proj))))
+      (seq-filter (lambda (buf)
+                    ;; Most of this defun is copied from upstream
+                    ;; project.el. There, it is assumed that a project
+                    ;; resides entirely on one host, and it is noted
+                    ;; that they may relax that in the future.
+                    ;; https://github.com/emacs-straight/project/blob/4072f35d85bf0a1c669329d66633e4819f497c1c/project.el#L1126-L1128
+                    (and (equal conn
+                                (file-remote-p (buffer-local-value 'default-directory buf)))
+                         (or
+                          (equal curr-proj
+                                 (with-current-buffer buf
+                                   (project-current)))
+                          (nswbuff-include-p (buffer-name buf)))))
+                  (buffer-list)))))
 
 (defun nswbuff-projectile-buffer-list ()
   "Return the buffers of the current Projectile project.
 Added to the list are buffers that are not part of the current
 project but that match `nswbuff-include-buffer-regexps'.  If the
 current buffer is not part of a project, return nil."
-  (if (projectile-project-p default-directory)
+  (if (and (fboundp 'projectile-project-p)
+           (projectile-project-p default-directory))
       (let ((projectile-buffers (projectile-project-buffers)))
         (dolist (buf (buffer-list) projectile-buffers)
           (if (and (nswbuff-include-p (buffer-name buf))

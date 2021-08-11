@@ -68,7 +68,7 @@
 ;;;; Constants
 
 (defconst plz-http-response-status-line-regexp
-  (rx "HTTP/" (group (1+ (or digit "."))) (1+ blank)
+  (rx bol "HTTP/" (group (1+ (or digit "."))) (1+ blank)
       (group (1+ digit)))
   "Regular expression matching HTTP response status line.")
 
@@ -192,7 +192,7 @@ It is called without arguments outside the curl process buffer.")
 
 ;;;;; Public
 
-(cl-defun plz-get (url &key headers as then else
+(cl-defun plz-get (url &key headers as then else noquery
                        (connect-timeout plz-connect-timeout)
                        (decode t decode-s))
   "Get HTTP URL with curl.
@@ -222,15 +222,17 @@ an error is signaled when the request fails, either
 
 HEADERS may be an alist of extra headers to send with the
 request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt."
+the initial connection attempt.
+
+NOQUERY is passed to `make-process', which see."
   (declare (indent defun))
   (plz--curl 'get url
              :headers headers
              :connect-timeout connect-timeout
              :decode (if (and decode-s (not decode)) nil decode)
-             :as as :then then :else else))
+             :as as :then then :else else :noquery noquery))
 
-(cl-defun plz-put (url body &key headers as then else
+(cl-defun plz-put (url body &key headers as then else noquery
                        (connect-timeout plz-connect-timeout)
                        (decode t decode-s))
   "PUT BODY to URL with curl.
@@ -260,16 +262,19 @@ an error is signaled when the request fails, either
 
 HEADERS may be an alist of extra headers to send with the
 request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt."
+the initial connection attempt.
+
+NOQUERY is passed to `make-process', which see."
   (declare (indent defun))
   (plz--curl 'put url
              :body body
              :headers headers
              :connect-timeout connect-timeout
              :decode (if (and decode-s (not decode)) nil decode)
-             :as as :then then :else else))
+             :as as :then then :else else :noquery noquery))
 
-(cl-defun plz (method url &key headers body as then else finally
+(cl-defun plz (method url &key headers body as then else finally noquery
+                      (body-type 'text)
                       (connect-timeout plz-connect-timeout)
                       (decode t decode-s))
   "Request BODY with METHOD to URL with curl.
@@ -302,14 +307,19 @@ THEN or ELSE, as appropriate.
 
 HEADERS may be an alist of extra headers to send with the
 request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt."
+the initial connection attempt.
+
+BODY-TYPE may be `text' to send BODY as text, or `binary' to send
+it as binary.
+
+NOQUERY is passed to `make-process', which see."
   (declare (indent defun))
   (plz--curl method url
-             :body body
+             :body body :body-type body-type
              :headers headers
              :connect-timeout connect-timeout
              :decode (if (and decode-s (not decode)) nil decode)
-             :as as :then then :else else :finally finally))
+             :as as :then then :else else :finally finally :noquery noquery))
 
 (cl-defun plz-get-sync (url &key headers as
                             (connect-timeout plz-connect-timeout)
@@ -349,7 +359,8 @@ the initial connection attempt."
 ;; Functions for calling and handling curl processes.
 
 (cl-defun plz--curl (method url &key body headers connect-timeout
-                            decode as then else finally)
+                            decode as then else finally noquery
+                            (body-type 'text))
   "Make HTTP METHOD request to URL with curl.
 
 AS selects the kind of result to pass to the callback function
@@ -377,20 +388,34 @@ FINALLY is an optional function called without argument after
 THEN or ELSE, as appropriate.
 
 BODY may be a string or buffer to send as the request body.
+BODY-TYPE may be `text' to send BODY as text, or `binary' to send
+it as binary.
 
 HEADERS may be an alist of extra headers to send with the
 request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt."
+the initial connection attempt.
+
+NOQUERY is passed to `make-process', which see."
   ;; Inspired by and copied from `elfeed-curl-retrieve'.
+
+  ;; NOTE: By default, for PUT requests and POST requests >1KB, curl sends an
+  ;; "Expect:" header, which causes servers to send a "100 Continue" response, which
+  ;; we don't want to have to deal with, so we disable it by setting the header to
+  ;; the empty string.  See <https://gms.tf/when-curl-sends-100-continue.html>.
+  ;; TODO: Handle "100 Continue" responses and remove this workaround.
+  (push (cons "Expect" "") headers)
   (let* ((header-args (cl-loop for (key . value) in headers
                                append (list "--header" (format "%s: %s" key value))))
+         (data-arg (pcase-exhaustive body-type
+                     ('binary "--data-binary")
+                     ('text "--data")))
          (curl-args (append plz-curl-default-args header-args
                             (when connect-timeout
                               (list "--connect-timeout" (number-to-string connect-timeout)))
                             (pcase method
                               ((or 'put 'post)
                                (cl-assert body)
-                               (list "--data" "@-" "--request" (upcase (symbol-name method)))))
+                               (list data-arg "@-" "--request" (upcase (symbol-name method)))))
                             (list url)))
          (decode (pcase as
                    ('binary nil)
@@ -402,12 +427,15 @@ the initial connection attempt."
                                    :command (append (list plz-curl-program) curl-args)
                                    :connection-type 'pipe
                                    :sentinel #'plz--sentinel
-                                   :stderr (current-buffer)))
+                                   :stderr (current-buffer)
+                                   :noquery noquery))
             ;; The THEN function is called in the response buffer.
             (then (pcase-exhaustive as
                     ((or 'binary 'string)
                      (lambda ()
                        (let ((coding-system (or (plz--coding-system) 'utf-8)))
+                         (pcase as
+                           ('binary (set-buffer-multibyte nil)))
                          (plz--narrow-to-body)
                          (when decode
                            (decode-coding-region (point) (point-max) coding-system))
@@ -476,6 +504,8 @@ Uses `call-process' to call curl synchronously."
                        ((or `nil 'string 'binary)
                         (lambda ()
                           (let ((coding-system (or (plz--coding-system) 'utf-8)))
+                            (pcase as
+                              ('binary (set-buffer-multibyte nil)))
                             (plz--narrow-to-body)
                             (when decode
                               (decode-coding-region (point) (point-max) coding-system))

@@ -141,8 +141,8 @@ want to use in the modeline *as substitute for* the original.")
        ;; Show branch
        (if vc-mode
            (concat
-            "" (substring-no-properties vc-mode
-                                         (+ (if (eq backend 'Hg) 2 3) 2)))  nil)))))
+            "" (substring-no-properties vc-mode ;    
+                                        (+ (if (eq backend 'Hg) 2 3) 2)))  nil)))))
 
 ;; Git diff in modeline
 ;; https://cocktailmake.github.io/posts/emacs-modeline-enhancement-for-git-diff/
@@ -190,19 +190,20 @@ want to use in the modeline *as substitute for* the original.")
          (space-down     -0.20)
          ;; Use status letters for TTY display
 	     (prefix          (if (display-graphic-p)
-                              (cond ((string= status "⨂")
-			                         (propertize (if (window-dedicated-p)" –– " " ⨂ ") 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face)))
-                                    ((string= status  "⨀")
-			                         (propertize (if (window-dedicated-p)" –– " " ⨀ ") 'face (if active 'bespoke-modeline-mod-face 'bespoke-modeline-inactive-face)))
-                                    ((string= status  "◯")
-		                             (propertize (if (window-dedicated-p)" –– " " ◯ ") 'face (if active 'bespoke-modeline-default-face 'bespoke-modeline-inactive-face)))
+                              (cond ((string= status bespoke-mode-line-gui-ro-symbol)
+			                         (propertize (if (window-dedicated-p)" –– " bespoke-mode-line-gui-ro-symbol) 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face)))
+                                    ((string= status bespoke-mode-line-gui-mod-symbol)
+			                         (propertize (if (window-dedicated-p)" –– " bespoke-mode-line-gui-mod-symbol) 'face (if active 'bespoke-modeline-mod-face 'bespoke-modeline-inactive-face)))
+                                    ((string= status bespoke-mode-line-gui-rw-symbol)
+		                             (propertize (if (window-dedicated-p)" –– " bespoke-mode-line-gui-rw-symbol) 'face (if active 'bespoke-modeline-default-face 'bespoke-modeline-inactive-face)))
                                     (t (propertize status 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face))))
-                            (cond ((string= status "RO")
-			                       (propertize (if (window-dedicated-p)" -- " " RO ") 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face)))
-                                  ((string= status  "**")
-			                       (propertize (if (window-dedicated-p)" -- " " ** ") 'face (if active 'bespoke-modeline-mod-face 'bespoke-modeline-inactive-face)))
-                                  ((string= status  "RW")
-		                           (propertize (if (window-dedicated-p)" -- " " RW ") 'face (if active 'bespoke-modeline-default-face 'bespoke-modeline-inactive-face)))
+
+                            (cond ((string= status bespoke-mode-line-tty-ro-symbol)
+			                       (propertize (if (window-dedicated-p)" -- " bespoke-mode-line-tty-ro-symbol) 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face)))
+                                  ((string= status bespoke-mode-line-tty-mod-symbol)
+			                       (propertize (if (window-dedicated-p)" -- " bespoke-mode-line-tty-mod-symbol) 'face (if active 'bespoke-modeline-mod-face 'bespoke-modeline-inactive-face)))
+                                  ((string= status  bespoke-mode-line-tty-rw-symbol)
+		                           (propertize (if (window-dedicated-p)" -- " bespoke-mode-line-tty-rw-symbol) 'face (if active 'bespoke-modeline-default-face 'bespoke-modeline-inactive-face)))
                                   (t (propertize status 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face))))))
          (left (concat
                 (propertize " "  'face (if active (cond ((eq bespoke-set-mode-line 'header)
@@ -255,13 +256,14 @@ want to use in the modeline *as substitute for* the original.")
                                       'fringe)))))
 
 ;;;; Mode line status
-  ;; ---------------------------------------------------------------------
-  (defun bespoke-modeline-status ()
-    "Return buffer status: read-only (⨂)/(RO), modified (⨀)/(**), or read-write (◯)/(RW)"
-    (let ((read-only   buffer-read-only)
-          (modified    (and buffer-file-name (buffer-modified-p))))
-      ;; Use status letters for TTY display
-      (cond (modified (if (display-graphic-p) "⨀" "**")) (read-only (if (display-graphic-p) "⨂" "RO")) (t (if (display-graphic-p) "◯" "RW")))))
+;; ---------------------------------------------------------------------
+(defun bespoke-modeline-status ()
+  "Return buffer status: default symbols are read-only (⨂)/(RO),
+modified (⨀)/(**), or read-write (◯)/(RW)"
+  (let ((read-only   buffer-read-only)
+        (modified    (and buffer-file-name (buffer-modified-p))))
+    ;; Use status letters for TTY display
+    (cond (modified (if (display-graphic-p) bespoke-mode-line-gui-mod-symbol bespoke-mode-line-tty-mod-symbol)) (read-only (if (display-graphic-p) bespoke-mode-line-gui-ro-symbol bespoke-mode-line-tty-ro-symbol)) (t (if (display-graphic-p) bespoke-mode-line-gui-rw-symbol bespoke-mode-line-tty-rw-symbol)))))
 
 ;;;; Default display
 (defun bespoke-modeline-default-mode ()
@@ -392,8 +394,7 @@ want to use in the modeline *as substitute for* the original.")
      (bespoke-modeline-status)
      buffer-name
      (concat "(" mode-name
-	         (if branch (concat ", "
-				                (propertize branch 'face 'italic)))
+             branch
 	         ")" )
      page-number)))
 
@@ -415,8 +416,7 @@ want to use in the modeline *as substitute for* the original.")
      (bespoke-modeline-status)
      buffer-name
      (concat "(" mode-name
-	         (if branch (concat ", "
-				                (propertize branch 'face 'italic)))
+             branch
 	         ")" )
      (concat page-number " "))))
 
@@ -574,7 +574,7 @@ want to use in the modeline *as substitute for* the original.")
   ;; Update selected window
   (setq bespoke-modeline--selected-window (selected-window))
   (setq-default header-line-format bespoke--mode-line)
-  (setq-default mode-line-format (list (propertize "%-" 'face `(:inherit fringe))))
+  (setq-default mode-line-format (list (propertize "%_" 'face `(:inherit fringe))))
   (force-mode-line-update))
 
 (defun bespoke--footer-line ()
@@ -602,7 +602,7 @@ Note that you may need to revert buffers to see the modeline properly."
     (progn
       (setq bespoke-set-mode-line 'header)
       (setq-default header-line-format bespoke--mode-line)
-      (setq-default mode-line-format (list (propertize "%-" 'face `(:inherit fringe))))
+      (setq-default mode-line-format (list (propertize "%_" 'face `(:inherit fringe))))
       (set-face-attribute 'header-line nil :inherit 'header-line)
       (set-face-attribute 'mode-line nil :inherit 'mode-line)
 	  (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line-inactive-face)))

@@ -61,7 +61,7 @@
 ;;; Code:
 
 (defun emacs-new-buffer-now ()
-  "Creates a new buffer with timestamp as the name"
+  "Creates a new buffer with timestamp as the name."
   (interactive)
   (let ((new-buffer-name (emacs-new-buffer--get-buffer-name)))
     (find-file (concat "~/"
@@ -69,7 +69,7 @@
                        new-buffer-name))))
 
 (defun emacs-new-buffer-as (extension)
-  "Creates a new buffer with timestamp as the name and extension as specified"
+  "Creates a new buffer with timestamp as the name and extension as specified."
   (interactive "sEnter a file extension for the new buffer: ")
   (let ((new-buffer-name (emacs-new-buffer--get-buffer-name)))
     (find-file (concat "~/"

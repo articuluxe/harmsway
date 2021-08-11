@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-07-22 11:48:35 dharms>
+;; Modified Time-stamp: <2021-08-11 11:31:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3880,7 +3880,8 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; applescript-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package applescript-mode
-  :mode "\\.applescript$"
+  :mode ("\\.applescript$" "\\.scpt$")
+  :interpreter "osascript"
   :config
   ;; (add-hook 'applescript-mode-hook
   ;;           (lambda ()

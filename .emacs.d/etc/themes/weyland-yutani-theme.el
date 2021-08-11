@@ -50,8 +50,8 @@ the parenthetical noise."
 
 
 (let (
-      (fg              "#a9b7ca")
-      (fg-alt          "#2b2c2e")       ;#606873
+      (fg              "#b0bcce")
+      (fg-alt          "#606873")       ;#606873
       (hl              "#26282c")
 
       (White           "#C3D0DF")
@@ -576,9 +576,14 @@ the parenthetical noise."
       :box (:line-width -1 :color ,base7)
       :extend t)
 
-    `(smerge-markers                                                             :background ,bg-Black
+    `(smerge-markers
+      :background ,bg-Black
       :underline ,vibrant-Purple
       :overline ,vibrant-Purple)
+    `(smerge-refined-removed :foreground ,vibrant-Red)
+    `(smerge-refined-added :foreground ,vibrant-Green)
+    `(smerge-upper :foreground "#dbddee" :background "#2a3341")
+    `(smerge-lower :foreground "#F0EDFE" :background ,bg-Violet)
     `(git-commit-comment-file                  :foreground ,Crimson)
 
     `(magit-filename                           :foreground ,Violet)
@@ -699,35 +704,58 @@ the parenthetical noise."
       :inherit highlight)
 
     ;; Face for highlighting odd-numbered non-current differences in buffer A.
+
     `(ediff-odd-diff-A
-      :foreground "#cfd6e0"
-      :background "#3b3f57")
+      :foreground "#ffc8c6"
+      :background "#834e4e")
+    `(ediff-even-diff-A
+      :foreground "#ffefee"
+      :background "#846867")
 
     `(ediff-odd-diff-B
-      :foreground "#cfd6e0"
-      :background "#3b3f57")
-
-    `(ediff-even-diff-A
-      :foreground "#cfd6e0"
-      :background "#3b3f57")
-
+      :foreground "#aae3a8"
+      :background "#4e6b4d")
     `(ediff-even-diff-B
-      :foreground "#cfd6e0"
-      :background "#3b3f57")
+      :foreground "#c8e5c7"
+      :background "#698368")
+
+    `(ediff-odd-diff-C
+      :foreground "#e0ded4"
+      :background "#585648")
+    `(ediff-even-diff-C
+      :foreground "#ede6c7"
+      :background "#6c674c")
+
+
+
+    `(ediff-current-diff-A
+      :foreground "#c7d0db"
+      :background "#553333")                                 ;
+
+    `(ediff-current-diff-B
+      :foreground "#e7ebef"
+      :background "#335533")
+
+    `(ediff-current-diff-C :bold t
+      :foreground ,vibrant-Finch
+      :background "#555432")
+
+    `(ediff-fine-diff-A
+      :foreground "#e7ebef"
+      :background "#aa2222")
 
     `(ediff-fine-diff-B
       :foreground ,bg-darker
       :background "#7daa22")
 
-    `(ediff-current-diff-A
-      :foreground "#c7d0db"
-      :background "#553333"
-      )                                 ;
+    `(ediff-fine-diff-C
+      :foreground "#c5c987"
+      :background "#555432")
 
-    `(ediff-current-diff-B
-      :foreground "#e7ebef"
-      :background "#335533"
-      )
+
+
+
+
 
     `(web-mode-builtin-face
       :inherit ,font-lock-builtin-face)

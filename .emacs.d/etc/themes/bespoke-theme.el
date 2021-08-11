@@ -231,7 +231,7 @@ subtlety stand out from the mode line and other adjacent faces."
 
 (defun bespoke--set-theme-variant ()
   "Set theme colors according to LIGHT or DARK variant"
-  (setq bespoke-foreground (--l/d "#282b35" "#eceff4"))
+  (setq bespoke-foreground (--l/d "#282b35" "#eceff1"))
   (setq bespoke-background (--l/d "#fffef9" "#282b35"))
 
   (setq bespoke-modeline   (--l/d "#e3e7ef" "#3c4353"))
@@ -275,6 +275,26 @@ subtlety stand out from the mode line and other adjacent faces."
    `(show-paren-match                              ((,class :foreground ,bespoke-yellow :background ,bespoke-green)))
    `(show-paren-mismatch                           ((,class :foreground ,bespoke-popout :background ,bespoke-critical)))
    `(tooltip nil                                   ((,class :height 0.85)))
+
+;;;;; Bespoke Faces
+   ;; NOTE: We want the bespoke colors to be available as faces. It seems like there
+   ;; should be a better way to do this but...
+   `(bespoke-foreground ((,class :foreground ,bespoke-foreground)))
+   `(bespoke-background ((,class :background ,bespoke-background)))
+   `(bespoke-modeline   ((,class :background ,bespoke-modeline)))
+   `(bespoke-highlight  ((,class :foreground ,bespoke-highlight)))
+   `(bespoke-inactive   ((,class :foreground ,bespoke-inactive)))
+   `(bespoke-critical   ((,class :foreground ,bespoke-critical)))
+   `(bespoke-salient    ((,class :foreground ,bespoke-salient)))
+   `(bespoke-strong     ((,class :foreground ,bespoke-strong)))
+   `(bespoke-popout     ((,class :foreground ,bespoke-popout)))
+   `(bespoke-subtle     ((,class :foreground ,bespoke-subtle)))
+   `(bespoke-faded      ((,class :foreground ,bespoke-faded)))
+   `(bespoke-blue       ((,class :foreground ,bespoke-blue)))
+   `(bespoke-green      ((,class :foreground ,bespoke-green)))
+   `(bespoke-red        ((,class :foreground ,bespoke-red)))
+   `(bespoke-brown      ((,class :foreground ,bespoke-brown)))
+   `(bespoke-yellow     ((,class :foreground ,bespoke-yellow)))
 
 ;;;;; Buttons
    `(custom-button                                 ((,class :foreground ,bespoke-foreground :background ,bespoke-highlight :box nil)))
@@ -376,7 +396,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(selectrum-quick-keys-highlight                ((,class :foreground ,bespoke-popout)))
 
 ;;;;;; Vertico
-   `(vertico-current                               ((,class :slant italic :weight bold :background ,bespoke-highlight)))
+   `(vertico-current                               ((,class :weight bold :background ,bespoke-highlight)))
 
 ;;;;;; Orderless
 
@@ -643,6 +663,20 @@ subtlety stand out from the mode line and other adjacent faces."
    `(magit-section-heading-selection ((,class :foreground ,bespoke-salient)))
    `(magit-section-highlight ((,class :background ,bespoke-highlight)))
    `(magit-tag                 ((,class :foreground ,bespoke-yellow)))
+   `(magit-header-line         ((,class :foreground ,bespoke-foreground
+                                        :background ,bespoke-modeline
+                                        :box (:line-width ,bespoke-set-mode-line-size
+                                              :color ,bespoke-modeline
+                                              :style nil)
+                                        :overline nil
+                                        :underline nil)))
+   `(magit-header-line-log-select ((,class :foreground ,bespoke-foreground
+                                           :background ,bespoke-modeline
+                                           :box (:line-width ,bespoke-set-mode-line-size
+                                                 :color ,bespoke-modeline
+                                                 :style nil)
+                                           :overline nil
+                                           :underline nil)))
 
 
 

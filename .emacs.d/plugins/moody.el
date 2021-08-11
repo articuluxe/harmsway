@@ -221,7 +221,7 @@ not specified, then faces based on `default', `mode-line' and
 ;;;; mode-line-buffer-identification
 
 (defvar moody-mode-line-buffer-identification
-  '(:eval (moody-tab (format-mode-line (propertized-buffer-identification "%b"))
+  '(:eval (moody-tab (car (propertized-buffer-identification (buffer-name)))
                      20 'down)))
 (put 'moody-mode-line-buffer-identification 'risky-local-variable t)
 (make-variable-buffer-local 'moody-mode-line-buffer-identification)
@@ -242,7 +242,7 @@ not specified, then faces based on `default', `mode-line' and
            (or sml/buffer-identification
                (sml/generate-buffer-identification)
                ;; Just in case the above are both nil.
-               (format-mode-line (propertized-buffer-identification "%b")))
+               (car (propertized-buffer-identification (buffer-name))))
            20 'down)))
 (put 'moody-sml/mode-line-buffer-identification 'risky-local-variable t)
 (make-variable-buffer-local 'moody-sml/mode-line-buffer-identification)
@@ -286,21 +286,15 @@ not specified, then faces based on `default', `mode-line' and
 Or put differently, return t if the possibly only temporarily
 selected window is still going to be selected when we return
 to the command loop."
-  (if (fboundp 'old-selected-window)
-      (or (eq (selected-window)
-              (old-selected-window))
-          (and (not (zerop (minibuffer-depth)))
-               (eq (selected-window)
-                   (with-selected-window (minibuffer-window)
-                     (minibuffer-selected-window)))))
-    (eq (selected-window) moody--active-window)))
+  (eq (selected-window) moody--active-window))
 
-(unless (fboundp 'old-selected-window)
-  (defun moody--set-active-window (_)
-    (let ((win (selected-window)))
-      (unless (minibuffer-window-active-p win)
-        (setq moody--active-window win))))
-  (add-hook 'pre-redisplay-functions 'moody--set-active-window))
+(defun moody--set-active-window (_)
+  (let ((win (selected-window)))
+    (setq moody--active-window
+          (if (minibuffer-window-active-p win)
+              (minibuffer-selected-window)
+            win))))
+(add-hook 'pre-redisplay-functions 'moody--set-active-window)
 
 ;;; Kludges
 

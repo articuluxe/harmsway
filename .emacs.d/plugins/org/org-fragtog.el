@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2020 Benjamin Levy - MIT/X11 License
 ;; Author: Benjamin Levy <blevy@protonmail.com>
-;; Version: 0.3.2
+;; Version: 0.3.3
 ;; Description: Automatically toggle Org mode LaTeX fragment previews as the cursor enters and exits them
 ;; Homepage: https://github.com/io12/org-fragtog
-;; Package-Requires: ((emacs "24.3") (org "9.3.2"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
@@ -87,20 +87,20 @@ It handles toggling fragments depending on whether the cursor entered or exited 
                    prev-frag-start-pos))
        ;; The current fragment changed
        (frag-changed (not frag-same))
-       ;; The fragment at prev-frag still exists.
+       ;; The fragment at position of previous fragment.
        ;; This can be nil when for example $foo$ is edited to become $foo $.
-       (prev-frag-still-exists (and prev-frag-start-pos
-                                    (save-excursion
-                                      (goto-char prev-frag-start-pos)
-                                      (org-fragtog--cursor-frag)))))
+       (frag-at-prev-pos (and prev-frag-start-pos
+                              (save-excursion
+                                (goto-char prev-frag-start-pos)
+                                (org-fragtog--cursor-frag)))))
 
     ;; Only do anything if the current fragment changed
     (when frag-changed
       ;; Current fragment is the new previous
       (setq org-fragtog--prev-frag cursor-frag)
       ;; Enable fragment if cursor left it and it still exists
-      (when prev-frag-still-exists
-        (org-fragtog--enable-frag prev-frag))
+      (when frag-at-prev-pos
+        (org-fragtog--enable-frag frag-at-prev-pos))
       ;; Disable fragment if cursor entered it
       (when cursor-frag
         (org-fragtog--disable-frag cursor-frag)))))

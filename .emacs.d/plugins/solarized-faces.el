@@ -1,6 +1,6 @@
 ;;; solarized-faces.el --- the faces definitions for solarized theme  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2011-2019 Bozhidar Batsov
+;; Copyright (C) 2011 Bozhidar Batsov
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; Author: Thomas Frössman <thomasf@jossystem.se>
@@ -122,7 +122,12 @@
      `(debbugs-gnu-handled ((,class (:foreground ,green))))
      `(debbugs-gnu-new ((,class (:foreground ,blue))))
      `(debbugs-gnu-pending ((,class (:foreground ,cyan))))
-     `(debbugs-gnu-stale ((,class (:foreground ,yellow))))
+     `(debbugs-gnu-stale ((,class (:foreground ,yellow)))) ;@deprecated0.20
+     `(debbugs-gnu-stale-1 ((,class (:foreground ,yellow))))
+     `(debbugs-gnu-stale-2 ((,class (:foreground ,yellow-1fg))))
+     `(debbugs-gnu-stale-3 ((,class (:foreground ,yellow-2fg))))
+     `(debbugs-gnu-stale-4 ((,class (:foreground ,orange-1fg))))
+     `(debbugs-gnu-stale-5 ((,class (:foreground ,orange-2fg))))
      `(debbugs-gnu-tagged ((,class (:foreground ,base1 :weight bold))))
 
 ;;;;; diary
@@ -611,17 +616,17 @@
        ((,class (:foreground ,(if solarized-emphasize-indicators
                                   red-hc red)
                              :background ,(if solarized-emphasize-indicators
-                                              red-lc base03) :weight bold))))
+                                              red-lc s-fringe-bg) :weight bold))))
      `(flycheck-fringe-warning
        ((,class (:foreground ,(if solarized-emphasize-indicators
                                   yellow-hc yellow)
                              :background ,(if solarized-emphasize-indicators
-                                              yellow-lc base03) :weight bold))))
+                                              yellow-lc s-fringe-bg) :weight bold))))
      `(flycheck-fringe-info
        ((,class (:foreground ,(if solarized-emphasize-indicators
                                   blue-hc base01)
                              :background ,(if solarized-emphasize-indicators
-                                              blue-lc base03) :weight bold))))
+                                              blue-lc s-fringe-bg) :weight bold))))
 ;;;;; flymake
      `(flymake-errline
        ((,(append '((supports :underline (:style wave))) class)
@@ -1180,10 +1185,18 @@
      `(markdown-footnote-face ((,class (:inherit default))))
      `(markdown-header-delimiter-face ((,class (:foreground ,base01))))
      `(markdown-header-face ((,class (:foreground ,blue))))
-     `(markdown-header-face-1 ((,class (:inherit markdown-header-face))))
-     `(markdown-header-face-2 ((,class (:inherit markdown-header-face))))
-     `(markdown-header-face-3 ((,class (:inherit markdown-header-face))))
-     `(markdown-header-face-4 ((,class (:inherit markdown-header-face))))
+     `(markdown-header-face-1 ((,class (:inherit markdown-header-face
+                                                 ,@(when solarized-scale-markdown-headlines
+                                                     (list :height solarized-height-plus-4))))))
+     `(markdown-header-face-2 ((,class (:inherit markdown-header-face
+                                                 ,@(when solarized-scale-markdown-headlines
+                                                     (list :height solarized-height-plus-3))))))
+     `(markdown-header-face-3 ((,class (:inherit markdown-header-face
+                                                 ,@(when solarized-scale-markdown-headlines
+                                                     (list :height solarized-height-plus-2))))))
+     `(markdown-header-face-4 ((,class (:inherit markdown-header-face
+                                                 ,@(when solarized-scale-markdown-headlines
+                                                     (list :height solarized-height-plus-1))))))
      `(markdown-header-face-5 ((,class (:inherit markdown-header-face))))
      `(markdown-header-face-6 ((,class (:inherit markdown-header-face))))
      `(markdown-header-rule-face ((,class (:foreground ,base01))))

@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.6.2
+;; Version: 1.6.3
 ;; Package-Requires: ((emacs "25.1") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
@@ -54,6 +54,9 @@
 
 
 ;; Depress warnings
+(defvar counsel--fzf-dir)
+(defvar ivy--directory)
+(defvar ivy-last)
 (defvar ivy-posframe-buffer)
 (declare-function ivy-posframe--display 'ivy-posframe)
 
@@ -89,6 +92,11 @@
 (defface all-the-icons-ivy-rich-icon-face
   '((t (:inherit default)))
   "Face used for the icons while `all-the-icons-ivy-rich-color-icon' is nil."
+  :group 'all-the-icons-ivy-rich)
+
+(defface all-the-icons-ivy-rich-dir-face
+  '((t (:inherit font-lock-doc-face)))
+  "Face used for the directory icon."
   :group 'all-the-icons-ivy-rich)
 
 (defface all-the-icons-ivy-rich-doc-face
@@ -157,6 +165,11 @@
 (defface all-the-icons-ivy-rich-file-owner-face
   '((t :inherit font-lock-keyword-face))
   "Face used for highlight file owners.")
+
+(defcustom all-the-icons-ivy-rich-icon t
+  "Whether display the icons."
+  :group 'all-the-icons-ivy-rich
+  :type 'boolean)
 
 (defcustom all-the-icons-ivy-rich-color-icon t
   "Whether display the colorful icons.
@@ -613,7 +626,12 @@ Return `default-directory' if no project was found."
 
 (defun all-the-icons-ivy-rich--file-path (candidate)
   "Get the file path of CANDIDATE."
-  (expand-file-name candidate ivy--directory))
+  (cond ((eq (ivy-state-caller ivy-last) 'counsel-fzf)
+         (expand-file-name candidate counsel--fzf-dir))
+        (ivy--directory
+         (expand-file-name candidate ivy--directory))
+        (t
+         default-directory)))
 
 (defun all-the-icons-ivy-rich--project-file-path (candidate)
   "Get the project file path of CANDIDATE."
@@ -787,7 +805,9 @@ Display the true name when the file is a symlink."
 
 (defun all-the-icons-ivy-rich--format-icon (icon)
   "Format ICON'."
-  (when icon
+  (when (and (display-graphic-p)
+             all-the-icons-ivy-rich-icon
+             icon)
     (format " %s"
             (let* ((props (get-text-property 0 'face icon))
                    (family (plist-get props :family))
@@ -801,10 +821,10 @@ Display the true name when the file is a symlink."
 
 (defun all-the-icons-ivy-rich-buffer-icon (candidate)
   "Display buffer icon from CANDIDATE in `ivy-rich'."
-  (let* ((buffer (get-buffer candidate))
-         (buffer-file-name (buffer-file-name buffer))
-         (major-mode (buffer-local-value 'major-mode buffer))
-         (icon (with-current-buffer buffer (all-the-icons-icon-for-buffer))))
+  (let ((icon (with-current-buffer (get-buffer candidate)
+                (if (eq major-mode 'dired-mode)
+                    (all-the-icons-icon-for-dir candidate :face 'all-the-icons-ivy-rich-dir-face)
+                  (all-the-icons-icon-for-buffer)))))
     (all-the-icons-ivy-rich--format-icon
      (if (or (null icon) (symbolp icon))
          (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :height 0.9 :v-adjust 0.0)
@@ -814,7 +834,10 @@ Display the true name when the file is a symlink."
   "Display file icon from CANDIDATE in `ivy-rich'."
   (let ((icon (cond
                ((ivy--dirname-p candidate)
-                (all-the-icons-icon-for-dir candidate :height 0.9 :v-adjust 0.01))
+                (all-the-icons-icon-for-dir candidate
+                                            :height 0.9
+                                            :v-adjust 0.01
+                                            :face 'all-the-icons-ivy-rich-dir-face))
                ((not (string-empty-p candidate))
                 (all-the-icons-icon-for-file candidate :height 0.9 :v-adjust 0.0)))))
     (all-the-icons-ivy-rich--format-icon
