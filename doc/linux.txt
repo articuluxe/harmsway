@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-01-27 17:31:42 dharms>
+# Modified Time-stamp: <2021-08-04 14:46:21 dharms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -56,6 +56,9 @@ systemctl disable --user emacs
 
 # does sudo require a tty? Comment out /etc/sudoers:
 #Defaults    requiretty
+
+# count open file descriptors
+find  /proc -type d -name fd 2>/dev/null | grep -v task
 
 cat /proc/cpuinfo
 cat /proc/meminfo
