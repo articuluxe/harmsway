@@ -1,6 +1,6 @@
 ### -*- mode: sh; -*-
 # .inputrc
-$include /etc/inputrc
+# $include /etc/inputrc
 "\e[5~":history-search-backward
 "\e[6~":history-search-forward
 Control-p: "\C-a$(\C-e)"
