@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-08-11 11:31:48 dharms>
+;; Modified Time-stamp: <2021-08-12 09:38:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -420,6 +420,7 @@ not an error if any files do not exist."
   :if (< emacs-major-version 25)
   :init
   (setq tags-revert-without-query t)
+  (setq etags-xref-prefer-current-file t)
   :bind ("\e\e." . etags-select-find-tag)
   :demand t
   :config
@@ -1190,6 +1191,10 @@ From `manuel-oberti.github.io' on 20190806."
   (setq magit-prefer-remote-upstream t)
   (setq magit-section-visibility-indicator '("…" . t))
   (setq magit-clone-always-transient t)
+  (setq magit-diff-refine-hunk t)
+  (setq magit-diff-paint-whitespace 'uncommitted)
+  (setq magit-diff-paint-whitespace-lines t)
+  (setq magit-diff-highlight-trailing t)
   (setq magit-status-initial-section '(((unstaged)(status))
                                        ((staged)(status))
                                        1))
