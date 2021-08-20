@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-08-12 10:09:16 dharms>
+;; Modified Time-stamp: <2021-08-19 14:21:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3171,6 +3171,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
            company-etags
            company-dabbrev
            )))
+  (setq company-files-exclusions '(".pdf" ".log" ".gz"))
   :config
   (global-company-mode 1)
   (add-hook 'completion-at-point-functions 'harmsway-company-at-point)

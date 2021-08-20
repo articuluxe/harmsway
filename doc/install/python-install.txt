@@ -1,2 +1,6 @@
 
 pip install epc jedi isort importmagic flake8 black sphinx virtualenv
+
+# to downgrade jedi:
+~/.emacs.d/.python-environments/default/bin/pip install jedi==0.17.2
+
