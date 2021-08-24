@@ -49,6 +49,7 @@ brew install bison
 brew install coreutils
 (setq insert-directory-program "gls")
 (setq dired-use-ls-dired t)
+brew install findutils
 
 # for org-download
 brew install pngpaste

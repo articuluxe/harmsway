@@ -61,14 +61,19 @@ function unmark {
     rm -i "$MARKPATH/$1"
 }
 function marks {
-    ls -l "$MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
+    ls -l "$MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\'$'\t-/g' && echo
+    # put \'$' before \t to make non-gnu sed understand tabs and newlines
 }
 function jump {
     cd -P "$MARKPATH/$1" 2>/dev/null || echo "No such mark: $1"
 }
 _completemarks() {
+    local exe
+    exe="$(which gfind)"
+    test -z "$exe" && exe="find"
     local curw=${COMP_WORDS[COMP_CWORD]}
-    local wordlist=$(find "$MARKPATH" -type l -printf "%f\\n")
+    local wordlist
+    wordlist=$("$exe" "$MARKPATH" -type l -printf "%f\\n")
     COMPREPLY=($(compgen -W "${wordlist[@]}" -- "$curw"))
     return 0
 }
