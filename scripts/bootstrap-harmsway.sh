@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-03-10 15:41:34 dharms>
+# Modified Time-stamp: <2021-09-01 12:45:22 dharms>
 # Modified by: Dan Harms
 # Keywords: tools
 
@@ -19,7 +19,7 @@ else
 fi
 
 mkdir -p $HOME/src && cd $HOME/src
-test -d harmsway/.git || git clone --recurse-submodules https://github.com/articuluxe/harmsway.git
+test -d harmsway/.git || git clone --recurse-submodules git@github.com:articuluxe/harmsway.git
 cd harmsway
 
 rm -f world.tar
