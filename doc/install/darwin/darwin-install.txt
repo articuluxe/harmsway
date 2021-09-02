@@ -51,6 +51,9 @@ brew install coreutils
 (setq dired-use-ls-dired t)
 brew install findutils
 
+brew install node
+npm i -g bash-language-server
+
 # for org-download
 brew install pngpaste
 brew install youtube-dl
