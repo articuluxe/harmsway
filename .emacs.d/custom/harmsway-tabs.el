@@ -2,8 +2,7 @@
 ;; Copyright (C) 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, March 19, 2021
-;; Version: 1.0
-;; Modified Time-stamp: <2021-03-19 09:33:23 dharms>
+;; Modified Time-stamp: <2021-09-03 11:31:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui
 
@@ -26,15 +25,18 @@
 
 ;;; Code:
 
-(setq tab-bar-show nil)
-(tab-bar-mode 1)
+(setq-default tab-bar-show nil)
+(setq tab-bar-new-button-show nil)
+(add-hook 'after-init-hook (lambda()
+                             (tab-bar-mode 1)
+                             (tab-bar-history-mode 1)))
 (global-set-key "\C-xtu" #'tab-bar-undo-close-tab)
 (global-set-key (kbd "C-5") #'tab-switcher)
 (global-set-key (kbd "M-' 5") #'tab-switcher)
-(global-set-key (kbd "C-7") #'tab-next)
-(global-set-key (kbd "M-' 7") #'tab-next)
-(global-set-key (kbd "C-6") (lambda () (interactive) (tab-next -1)))
-(global-set-key (kbd "M-' 6") (lambda () (interactive) (tab-next -1)))
+(global-set-key (kbd "C-7") #'tab-bar-history-forward)
+(global-set-key (kbd "M-' 7") #'tab-bar-history-forward)
+(global-set-key (kbd "C-6") #'tab-bar-history-back)
+(global-set-key (kbd "M-' 6") #'tab-bar-history-back)
 
 (defun harmsway-tab-name-fn ()
   "Return a suitable tab name, including project name."

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-08-19 14:21:04 dharms>
+;; Modified Time-stamp: <2021-09-03 11:11:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -844,6 +844,7 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ctrlxo ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ctrlxo
+  :disabled
   :bind (("C-x o" . ctrlxo-current-frame)
          ("<C-tab>" . ctrlxo)
          (:map ctrlxo-map
