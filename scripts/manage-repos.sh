@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2021-02-01 15:02:22 dharms>
+# Modified Time-stamp: <2021-09-08 17:24:01 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -43,7 +43,7 @@ find "$dir" -type f -name clone | sort | while read -r fname; do
             echo "--- Updating $repo due to the following differences:"
             echo "$res"
             echo -e
-            git pull
+            git pull --no-rebase
         fi
     elif [ -d "$parent/src/.hg" ]; then
         if [ -f "update" ]; then
