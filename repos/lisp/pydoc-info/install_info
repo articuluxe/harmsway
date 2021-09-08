@@ -1,2 +1,4 @@
-wget https://bitbucket.org/jonwaltman/pydoc-info/downloads/python.info.gz
-mv python.info.gz ../../../.emacs.d/etc/info/python2
+cd src/docs
+make
+gzip python.info
+mv python.info.gz ../../../../../.emacs.d/etc/info/python2

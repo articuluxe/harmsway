@@ -19,6 +19,8 @@
 
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
+;; Package-Requires: ((emacs "25.1") (dash "2.18.1") (git-commit "3.2.1") (magit-section "3.2.1") (transient "0.3.6") (with-editor "3.0.4"))
+;; Package-Version: 3.2.1
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; Magit is free software; you can redistribute it and/or modify it
@@ -106,8 +108,8 @@ own faces for the `header-line', or for parts of the
   :group 'magit-faces)
 
 (defface magit-branch-remote-head
-  '((((class color) (background light)) :inherit magit-branch-remote :box t)
-    (((class color) (background  dark)) :inherit magit-branch-remote :box t))
+  '((((supports (:box t))) :inherit magit-branch-remote :box t)
+    (t                     :inherit magit-branch-remote :inverse-video t))
   "Face for current branch."
   :group 'magit-faces)
 
@@ -118,8 +120,8 @@ own faces for the `header-line', or for parts of the
   :group 'magit-faces)
 
 (defface magit-branch-current
-  '((((class color) (background light)) :inherit magit-branch-local :box t)
-    (((class color) (background  dark)) :inherit magit-branch-local :box t))
+  '((((supports (:box t))) :inherit magit-branch-local :box t)
+    (t                     :inherit magit-branch-local :inverse-video t))
   "Face for current branch."
   :group 'magit-faces)
 
@@ -294,7 +296,10 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
   "Invoke a Magit command from a list of available commands."
   :info-manual "(magit)Top"
   ["Transient and dwim commands"
+   ;; → bound in magit-mode-map or magit-section-mode-map
+   ;; ↓ bound below
    [("A" "Apply"          magit-cherry-pick)
+    ;; a                  ↓
     ("b" "Branch"         magit-branch)
     ("B" "Bisect"         magit-bisect)
     ("c" "Commit"         magit-commit)
@@ -302,29 +307,51 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
     ("d" "Diff"           magit-diff)
     ("D" "Diff (change)"  magit-diff-refresh)
     ("e" "Ediff (dwim)"   magit-ediff-dwim)
-    ("E" "Ediff"          magit-ediff)]
-   [("f" "Fetch"          magit-fetch)
+    ("E" "Ediff"          magit-ediff)
+    ("f" "Fetch"          magit-fetch)
     ("F" "Pull"           magit-pull)
+    ;; g                  ↓
+    ;; G                → magit-refresh-all
+    ("h" "Help"           magit-help)
+    ("H" "Section info"   magit-describe-section :if-derived magit-mode)]
+   [("i" "Ignore"         magit-gitignore)
     ("I" "Init"           magit-init)
+    ("j" "Jump to section"magit-status-jump  :if-mode     magit-status-mode)
+    ("j" "Display status" magit-status-quick :if-not-mode magit-status-mode)
+    ("J" "Display buffer" magit-display-repository-buffer)
+    ;; k                  ↓
+    ;; K                → magit-file-untrack
     ("l" "Log"            magit-log)
     ("L" "Log (change)"   magit-log-refresh)
     ("m" "Merge"          magit-merge)
     ("M" "Remote"         magit-remote)
+    ;; n                → magit-section-forward
+    ;; N       reserved → forge-dispatch
     ("o" "Submodule"      magit-submodule)
-    ("O" "Subtree"        magit-subtree)]
-   [("P" "Push"           magit-push)
-    ("r" "Rebase"         magit-rebase)
+    ("O" "Subtree"        magit-subtree)
+    ;; p                → magit-section-backward
+    ("P" "Push"           magit-push)
+    ;; q                → magit-mode-bury-buffer
+    ("Q" "Command"        magit-git-command)]
+   [("r" "Rebase"         magit-rebase)
+    ;; R                → magit-file-rename
+    ;; s                  ↓
+    ;; S                  ↓
     ("t" "Tag"            magit-tag)
     ("T" "Note"           magit-notes)
+    ;; u                  ↓
+    ;; U                  ↓
+    ;; v                  ↓
     ("V" "Revert"         magit-revert)
     ("w" "Apply patches"  magit-am)
     ("W" "Format patches" magit-patch)
-    ("X" "Reset"          magit-reset)]
-   [("y" "Show Refs"      magit-show-refs)
+    ;; x                → magit-reset-quickly
+    ("X" "Reset"          magit-reset)
+    ("y" "Show Refs"      magit-show-refs)
     ("Y" "Cherries"       magit-cherry)
     ("z" "Stash"          magit-stash)
-    ("!" "Run"            magit-run)
-    ("%" "Worktree"       magit-worktree)]]
+    ("Z" "Worktree"       magit-worktree)
+    ("!" "Run"            magit-run)]]
   ["Applying changes"
    :if-derived magit-mode
    [("a" "Apply"          magit-apply)
@@ -356,8 +383,6 @@ This affects `magit-git-command', `magit-git-command-topdir',
 ;;;###autoload (autoload 'magit-run "magit" nil t)
 (transient-define-prefix magit-run ()
   "Run git or another command, or launch a graphical utility."
-
-
   [["Run git subcommand"
     ("!" "in repository root"   magit-git-command-topdir)
     ("p" "in working directory" magit-git-command)]
@@ -471,8 +496,10 @@ and Emacs to it."
         (toplib (or load-file-name buffer-file-name))
         debug)
     (unless (and toplib
-                 (equal (file-name-nondirectory toplib) "magit.el"))
-      (setq toplib (locate-library "magit.el")))
+                 (equal (file-name-sans-extension
+                         (file-name-nondirectory toplib))
+                        "magit"))
+      (setq toplib (locate-library "magit")))
     (setq toplib (and toplib (magit--straight-chase-links toplib)))
     (push toplib debug)
     (when toplib
@@ -532,8 +559,19 @@ and Emacs to it."
                         (magit-git-string "rev-parse" "HEAD"))))))))
     (if (stringp magit-version)
         (when print-dest
-          (princ (format "Magit %s, Git %s, Emacs %s, %s"
+          (princ (format "Magit %s%s, Git %s, Emacs %s, %s"
                          (or magit-version "(unknown)")
+                         (or (and (ignore-errors (version< "2008" magit-version))
+                                  (ignore-errors
+                                    (require 'lisp-mnt)
+                                    (and (fboundp 'lm-header)
+                                         (format
+                                          " [>= %s]"
+                                          (with-temp-buffer
+                                            (insert-file-contents
+                                             (locate-library "magit.el" t))
+                                            (lm-header "Package-Version"))))))
+                             "")
                          (or (let ((magit-git-debug
                                     (lambda (err)
                                       (display-warning '(magit git)

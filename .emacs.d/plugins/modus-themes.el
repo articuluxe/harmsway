@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://gitlab.com/protesilaos/modus-themes
 ;; Version: 1.5.0
-;; Last-Modified: <2021-08-04 09:04:57 +0300>
+;; Last-Modified: <2021-09-07 20:12:02 +0300>
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -4394,7 +4394,8 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(boon-modeline-off ((,class :inherit modus-themes-active-yellow)))
     `(boon-modeline-spc ((,class :inherit modus-themes-active-green)))
 ;;;;; bookmark
-    `(bookmark-face ((,class :inherit modus-themes-special-warm :extend t)))
+    `(bookmark-face ((,class :background ,bg-hl-alt :extend t)))
+    `(bookmark-menu-bookmark ((,class :inherit bold)))
 ;;;;; breakpoint (built-in gdb-mi.el)
     `(breakpoint-disabled ((,class :inherit shadow)))
     `(breakpoint-enabled ((,class :inherit bold :foreground ,red)))
@@ -4923,13 +4924,13 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(ebdb-phone-default ((,class :foreground ,cyan)))
     `(eieio-custom-slot-tag-face ((,class :foreground ,red-alt)))
 ;;;;; ediff
-    `(ediff-current-diff-A ((,class :inherit modus-themes-diff-focus-removed)))
+    `(ediff-current-diff-A ((,class :inherit modus-themes-diff-removed)))
     `(ediff-current-diff-Ancestor ((,class ,@(modus-themes--diff
                                               bg-alt fg-special-cold
                                               bg-special-cold fg-special-cold
                                               blue-nuanced-bg blue))))
-    `(ediff-current-diff-B ((,class :inherit modus-themes-diff-focus-added)))
-    `(ediff-current-diff-C ((,class :inherit modus-themes-diff-focus-changed)))
+    `(ediff-current-diff-B ((,class :inherit modus-themes-diff-added)))
+    `(ediff-current-diff-C ((,class :inherit modus-themes-diff-changed)))
     `(ediff-even-diff-A ((,class :background ,bg-alt)))
     `(ediff-even-diff-Ancestor ((,class :background ,bg-alt)))
     `(ediff-even-diff-B ((,class :background ,bg-alt)))
@@ -6401,6 +6402,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(notmuch-crypto-signature-good-key ((,class :inherit bold :foreground ,cyan)))
     `(notmuch-crypto-signature-unknown ((,class :inherit warning)))
     `(notmuch-hello-logo-background ((,class :background "gray50")))
+    `(notmuch-jump-key ((,class :inherit modus-themes-key-binding)))
     `(notmuch-message-summary-face ((,class :inherit (bold modus-themes-nuanced-cyan))))
     `(notmuch-search-count ((,class :inherit shadow)))
     `(notmuch-search-date ((,class :foreground ,cyan)))
@@ -6473,7 +6475,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
                                          yellow-refine-bg yellow-refine-fg))))
 ;;;;; org
     `(org-agenda-calendar-event ((,class :inherit shadow)))
-    `(org-agenda-calendar-sexp ((,class :inherit (modus-themes-slant shadow))))
+    `(org-agenda-calendar-sexp ((,class :inherit (modus-themes-slant org-agenda-calendar-event))))
     `(org-agenda-clocking ((,class :inherit modus-themes-special-cold :extend t)))
     `(org-agenda-column-dateline ((,class :background ,bg-alt)))
     `(org-agenda-current-time ((,class :foreground ,blue-alt-other-faint)))
@@ -6481,7 +6483,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(org-agenda-date-today ((,class :background ,bg-active
                                      ,@(modus-themes--agenda-date blue-active fg-main t cyan-active))))
     `(org-agenda-date-weekend ((,class ,@(modus-themes--agenda-date cyan-alt-other fg-alt nil cyan fg-main))))
-    `(org-agenda-diary ((,class :inherit shadow)))
+    `(org-agenda-diary ((,class :inherit org-agenda-calendar-event)))
     `(org-agenda-dimmed-todo-face ((,class :inherit shadow)))
     `(org-agenda-done ((,class :foreground ,@(modus-themes--success-deuteran
                                               blue-nuanced-fg
@@ -7248,7 +7250,10 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(transient-heading ((,class :inherit bold :foreground ,fg-main)))
     `(transient-inactive-argument ((,class :inherit shadow)))
     `(transient-inactive-value ((,class :inherit shadow)))
-    `(transient-key ((,class :inherit modus-themes-key-binding)))
+    ;; FIXME 2021-08-28: using `modus-themes-key-binding' leads to
+    ;; misalignments because of the added box property.
+    ;; `(transient-key ((,class :inherit modus-themes-key-binding)))
+    `(transient-key ((,class :inherit bold :foreground ,blue-alt-other)))
     `(transient-mismatched-key ((,class :underline t)))
     `(transient-nonstandard-key ((,class :underline t)))
     `(transient-pink ((,class :inherit bold :foreground ,magenta-alt-faint)))
@@ -7644,9 +7649,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
 (provide 'modus-themes)
 
 ;; Local Variables:
-;; time-stamp-start: "Last-Modified:[ \t]+\\\\?[\"<]"
-;; time-stamp-end: "\\\\?[\">]"
-;; time-stamp-format: "%Y-%02m-%02d %02H:%02M:%02S %5z"
+;; time-stamp-pattern: "Last-Modified: <%Y-%02m-%02d %02H:%02M:%02S %5z>"
 ;; End:
 
 ;;; modus-themes.el ends here

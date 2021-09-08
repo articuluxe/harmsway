@@ -63,7 +63,7 @@ branch Show counts for branches only.
 nil    Never show counts.
 
 To change the value in an existing buffer use the command
-`magit-refs-show-commit-count'"
+`magit-refs-set-show-commit-count'."
   :package-version '(magit . "2.1.0")
   :group 'magit-refs
   :safe (lambda (val) (memq val '(all branch nil)))
@@ -277,8 +277,8 @@ the outcome.
 (defvar magit-refs-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-mode-map)
-    (define-key map "\C-y" 'magit-refs-set-show-commit-count)
-    (define-key map "L"    'magit-margin-settings)
+    (define-key map (kbd "C-y") 'magit-refs-set-show-commit-count)
+    (define-key map (kbd "L")   'magit-margin-settings)
     map)
   "Keymap for `magit-refs-mode'.")
 
@@ -341,7 +341,9 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
   ["Actions"
    ("y" "Show refs, comparing them with HEAD"           magit-show-refs-head)
    ("c" "Show refs, comparing them with current branch" magit-show-refs-current)
-   ("o" "Show refs, comparing them with other branch"   magit-show-refs-other)]
+   ("o" "Show refs, comparing them with other branch"   magit-show-refs-other)
+   ("r" "Show refs, changing commit count display"
+    magit-refs-set-show-commit-count)]
   (interactive (list (or (derived-mode-p 'magit-refs-mode)
                          current-prefix-arg)))
   (if transient

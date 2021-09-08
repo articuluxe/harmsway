@@ -406,8 +406,8 @@ the upstream isn't ahead of the current branch) show."
   ["Commit limiting"
    (magit-log:-n)
    (magit:--author)
-   (7 "=s" "Limit to commits since" "--since=" transient-read-date)
-   (7 "=u" "Limit to commits until" "--until=" transient-read-date)
+   (7 magit-log:--since)
+   (7 magit-log:--until)
    (magit-log:--grep)
    (7 "-i" "Search case-insensitive" ("-i" "--regexp-ignore-case"))
    (7 "-I" "Invert search pattern"   "--invert-grep")
@@ -549,6 +549,20 @@ the upstream isn't ahead of the current branch) show."
   :key "-A"
   :argument "--author="
   :reader 'magit-transient-read-person)
+
+(transient-define-argument magit-log:--since ()
+  :description "Limit to commits since"
+  :class 'transient-option
+  :key "=s"
+  :argument "--since="
+  :reader 'transient-read-date)
+
+(transient-define-argument magit-log:--until ()
+  :description "Limit to commits until"
+  :class 'transient-option
+  :key "=u"
+  :argument "--until="
+  :reader 'transient-read-date)
 
 (transient-define-argument magit-log:--*-order ()
   :description "Order commits by"
@@ -951,9 +965,9 @@ of the current repository first; creating it if necessary."
 (defvar magit-log-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-mode-map)
-    (define-key map "\C-c\C-b" 'magit-go-backward)
-    (define-key map "\C-c\C-f" 'magit-go-forward)
-    (define-key map "\C-c\C-n" 'magit-log-move-to-parent)
+    (define-key map (kbd "C-c C-b") 'magit-go-backward)
+    (define-key map (kbd "C-c C-f") 'magit-go-forward)
+    (define-key map (kbd "C-c C-n") 'magit-log-move-to-parent)
     (define-key map "j" 'magit-log-move-to-revision)
     (define-key map "=" 'magit-log-toggle-commit-limit)
     (define-key map "+" 'magit-log-double-commit-limit)
@@ -1007,9 +1021,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
         (files magit-buffer-log-files))
     (magit-set-header-line-format
      (funcall magit-log-header-line-function revs args files))
-    (if (= (length files) 1)
-        (unless (magit-file-tracked-p (car files))
-          (setq args (cons "--full-history" args)))
+    (unless (= (length files) 1)
       (setq args (remove "--follow" args)))
     (when (and (car magit-log-remove-graph-args)
                (--any-p (string-match-p
@@ -1531,13 +1543,13 @@ The shortstat style is experimental and rather slow."
 (defvar magit-log-select-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-log-mode-map)
-    (define-key map "\C-c\C-b" 'undefined)
-    (define-key map "\C-c\C-f" 'undefined)
-    (define-key map "."        'magit-log-select-pick)
-    (define-key map "e"        'magit-log-select-pick)
-    (define-key map "\C-c\C-c" 'magit-log-select-pick)
-    (define-key map "q"        'magit-log-select-quit)
-    (define-key map "\C-c\C-k" 'magit-log-select-quit)
+    (define-key map (kbd "C-c C-b") 'undefined)
+    (define-key map (kbd "C-c C-f") 'undefined)
+    (define-key map (kbd ".")       'magit-log-select-pick)
+    (define-key map (kbd "e")       'magit-log-select-pick)
+    (define-key map (kbd "C-c C-c") 'magit-log-select-pick)
+    (define-key map (kbd "q")       'magit-log-select-quit)
+    (define-key map (kbd "C-c C-k") 'magit-log-select-quit)
     map)
   "Keymap for `magit-log-select-mode'.")
 

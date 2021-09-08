@@ -156,14 +156,23 @@
 ;;;; Variables
 
 (defvar-local plz-else nil
-  "Callback function for errored completion of request in current curl process buffer.")
+  "Callback function for errored completion of request.
+Called in current curl process buffer.")
 
 (defvar-local plz-then nil
-  "Callback function for successful completion of request in current curl process buffer.")
+  "Callback function for successful completion of request.
+Called in current curl process buffer.")
 
 (defvar-local plz-finally nil
-  "Function called unconditionally after completion of request, after the then/else function.
-It is called without arguments outside the curl process buffer.")
+  "Function called unconditionally after completion of request.
+Called after the then/else function, without arguments, outside
+the curl process buffer.")
+
+(defvar-local plz-result nil
+  "Used when `plz' is called synchronously.")
+
+(defvar-local plz-sync nil
+  "Used when `plz' is called synchronously.")
 
 ;;;; Customization
 
@@ -181,156 +190,62 @@ It is called without arguments outside the curl process buffer.")
     "--compressed"
     "--location"
     "--dump-header" "-")
-  "Default arguments to curl."
+  "Default arguments to curl.
+Note that these arguments are passed on the command line, which
+may be visible to other users on the local system."
   :type '(repeat string))
 
 (defcustom plz-connect-timeout 5
-  "Default connection timeout in seconds."
+  "Default connection timeout in seconds.
+This limits how long the connection phase may last (the
+\"--connect-timeout\" argument to curl)."
+  :type 'number)
+
+(defcustom plz-timeout 60
+  "Default request timeout in seconds.
+This limits how long an entire request may take, including the
+connection phase and waiting to receive the response (the
+\"--max-time\" argument to curl)."
   :type 'number)
 
 ;;;; Functions
 
 ;;;;; Public
 
-(cl-defun plz-get (url &key headers as then else noquery
-                       (connect-timeout plz-connect-timeout)
-                       (decode t decode-s))
-  "Get HTTP URL with curl.
-
-AS selects the kind of result to pass to the callback function
-THEN.  It may be:
-
-- `buffer' to pass the response buffer.
-- `binary' to pass the response body as an undecoded string.
-- `string' to pass the response body as a decoded string.
-- `response' to pass a `plz-response' struct.
-- A function, which is called in the response buffer with it
-  narrowed to the response body (suitable for, e.g. `json-read').
-
-If DECODE is non-nil, the response body is decoded automatically.
-For binary content, it should be nil.  When AS is `binary',
-DECODE is automatically set to nil.
-
-THEN is a callback function, whose sole argument is selected
-above with AS.
-
-ELSE is an optional callback function called when the request
-fails with one argument, a `plz-error' struct.  If ELSE is nil,
-an error is signaled when the request fails, either
-`plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' struct as the error data.
+(cl-defun plz (method url &key headers body else finally noquery
+                      (as 'string) (then 'sync)
+                      (body-type 'text) (decode t decode-s)
+                      (connect-timeout plz-connect-timeout) (timeout plz-timeout))
+  "Request METHOD from URL with curl.
+Return the curl process object or, for a synchronous request, the
+selected result.
 
 HEADERS may be an alist of extra headers to send with the
-request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt.
-
-NOQUERY is passed to `make-process', which see."
-  (declare (indent defun))
-  (plz--curl 'get url
-             :headers headers
-             :connect-timeout connect-timeout
-             :decode (if (and decode-s (not decode)) nil decode)
-             :as as :then then :else else :noquery noquery))
-
-(cl-defun plz-put (url body &key headers as then else noquery
-                       (connect-timeout plz-connect-timeout)
-                       (decode t decode-s))
-  "PUT BODY to URL with curl.
-
-AS selects the kind of result to pass to the callback function
-THEN.  It may be:
-
-- `buffer' to pass the response buffer.
-- `binary' to pass the response body as an undecoded string.
-- `string' to pass the response body as a decoded string.
-- `response' to pass a `plz-response' struct.
-- A function, which is called in the response buffer with it
-  narrowed to the response body (suitable for, e.g. `json-read').
-
-If DECODE is non-nil, the response body is decoded automatically.
-For binary content, it should be nil.  When AS is `binary',
-DECODE is automatically set to nil.
-
-THEN is a callback function, whose sole argument is selected
-above with AS.
-
-ELSE is an optional callback function called when the request
-fails with one argument, a `plz-error' struct.  If ELSE is nil,
-an error is signaled when the request fails, either
-`plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' struct as the error data.
-
-HEADERS may be an alist of extra headers to send with the
-request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt.
-
-NOQUERY is passed to `make-process', which see."
-  (declare (indent defun))
-  (plz--curl 'put url
-             :body body
-             :headers headers
-             :connect-timeout connect-timeout
-             :decode (if (and decode-s (not decode)) nil decode)
-             :as as :then then :else else :noquery noquery))
-
-(cl-defun plz (method url &key headers body as then else finally noquery
-                      (body-type 'text)
-                      (connect-timeout plz-connect-timeout)
-                      (decode t decode-s))
-  "Request BODY with METHOD to URL with curl.
-
-AS selects the kind of result to pass to the callback function
-THEN.  It may be:
-
-- `buffer' to pass the response buffer.
-- `binary' to pass the response body as an undecoded string.
-- `string' to pass the response body as a decoded string.
-- `response' to pass a `plz-response' struct.
-- A function, which is called in the response buffer with it
-  narrowed to the response body (suitable for, e.g. `json-read').
-
-If DECODE is non-nil, the response body is decoded automatically.
-For binary content, it should be nil.  When AS is `binary',
-DECODE is automatically set to nil.
-
-THEN is a callback function, whose sole argument is selected
-above with AS.
-
-ELSE is an optional callback function called when the request
-fails with one argument, a `plz-error' struct.  If ELSE is nil,
-an error is signaled when the request fails, either
-`plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' struct as the error data.
-
-FINALLY is an optional function called without argument after
-THEN or ELSE, as appropriate.
-
-HEADERS may be an alist of extra headers to send with the
-request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt.
+request.
 
 BODY-TYPE may be `text' to send BODY as text, or `binary' to send
 it as binary.
 
-NOQUERY is passed to `make-process', which see."
-  (declare (indent defun))
-  (plz--curl method url
-             :body body :body-type body-type
-             :headers headers
-             :connect-timeout connect-timeout
-             :decode (if (and decode-s (not decode)) nil decode)
-             :as as :then then :else else :finally finally :noquery noquery))
+AS selects the kind of result to pass to the callback function
+THEN, or the kind of result to return for synchronous requests.
+It may be:
 
-(cl-defun plz-get-sync (url &key headers as
-                            (connect-timeout plz-connect-timeout)
-                            (decode t decode-s))
-  "Get HTTP URL with curl synchronously.
-
-AS selects the kind of result to return.  It may be:
+- `buffer' to pass the response buffer.
 
 - `binary' to pass the response body as an undecoded string.
+
 - `string' to pass the response body as a decoded string.
+
 - `response' to pass a `plz-response' struct.
+
+- `file' to pass a temporary filename to which the response body
+  has been saved without decoding.
+
+- `(file FILENAME)' to pass FILENAME after having saved the
+  response body to it without decoding.  FILENAME must be a
+  non-existent file; if it exists, it will not be overwritten,
+  and an error will be signaled.
+
 - A function, which is called in the response buffer with it
   narrowed to the response body (suitable for, e.g. `json-read').
 
@@ -338,93 +253,76 @@ If DECODE is non-nil, the response body is decoded automatically.
 For binary content, it should be nil.  When AS is `binary',
 DECODE is automatically set to nil.
 
-If the request fails, an error is signaled, either
-`plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' struct as the error data.
-
-HEADERS may be an alist of extra headers to send with the
-request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt."
-  (declare (indent defun))
-  (plz--curl-sync 'get url
-                  :headers headers
-                  :connect-timeout connect-timeout
-                  :decode (if (and decode-s (not decode)) nil decode)
-                  :as as))
-
-;;;;; Private
-
-;;;;;; Curl
-
-;; Functions for calling and handling curl processes.
-
-(cl-defun plz--curl (method url &key body headers connect-timeout
-                            decode as then else finally noquery
-                            (body-type 'text))
-  "Make HTTP METHOD request to URL with curl.
-
-AS selects the kind of result to pass to the callback function
-THEN.  It may be:
-
-- `buffer' to pass the response buffer.
-- `binary' to pass the response body as an undecoded string.
-- `string' to pass the response body as a decoded string.
-- `response' to pass a `plz-response' struct.
-- A function, which is called in the response buffer with it
-  narrowed to the response body (suitable for, e.g. `json-read').
-
-If DECODE is non-nil, the response body is decoded automatically.
-
 THEN is a callback function, whose sole argument is selected
-above with AS.
+above with AS.  Or THEN may be `sync' to make a synchronous
+request, in which case the result is returned directly.
 
 ELSE is an optional callback function called when the request
 fails with one argument, a `plz-error' struct.  If ELSE is nil,
 an error is signaled when the request fails, either
 `plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' struct as the error data.
+`plz-error' struct as the error data.  For synchronous requests,
+this argument is ignored.
 
 FINALLY is an optional function called without argument after
-THEN or ELSE, as appropriate.
+THEN or ELSE, as appropriate.  For synchronous requests, this
+argument is ignored.
 
-BODY may be a string or buffer to send as the request body.
-BODY-TYPE may be `text' to send BODY as text, or `binary' to send
-it as binary.
-
-HEADERS may be an alist of extra headers to send with the
-request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt.
+CONNECT-TIMEOUT and TIMEOUT are a number of seconds that limit
+how long it takes to connect to a host and to receive a response
+from a host, respectively.
 
 NOQUERY is passed to `make-process', which see."
   ;; Inspired by and copied from `elfeed-curl-retrieve'.
-
+  (declare (indent defun))
+  (setf decode (if (and decode-s (not decode))
+                   nil decode))
   ;; NOTE: By default, for PUT requests and POST requests >1KB, curl sends an
   ;; "Expect:" header, which causes servers to send a "100 Continue" response, which
   ;; we don't want to have to deal with, so we disable it by setting the header to
   ;; the empty string.  See <https://gms.tf/when-curl-sends-100-continue.html>.
   ;; TODO: Handle "100 Continue" responses and remove this workaround.
   (push (cons "Expect" "") headers)
-  (let* ((header-args (cl-loop for (key . value) in headers
-                               append (list "--header" (format "%s: %s" key value))))
-         (data-arg (pcase-exhaustive body-type
+  (let* ((data-arg (pcase-exhaustive body-type
                      ('binary "--data-binary")
                      ('text "--data")))
-         (curl-args (append plz-curl-default-args header-args
-                            (when connect-timeout
-                              (list "--connect-timeout" (number-to-string connect-timeout)))
-                            (pcase method
-                              ((or 'put 'post)
-                               (cl-assert body)
-                               (list data-arg "@-" "--request" (upcase (symbol-name method)))))
-                            (list url)))
+         (curl-command-line-args (append plz-curl-default-args
+                                         (list "--config" "-")))
+         (curl-config-header-args (cl-loop for (key . value) in headers
+                                           collect (cons "--header" (format "%s: %s" key value))))
+         (curl-config-args (append curl-config-header-args
+                                   (list (cons "--url" url))
+                                   (when connect-timeout
+                                     (list (cons "--connect-timeout"
+                                                 (number-to-string connect-timeout))))
+                                   (when timeout
+                                     (list (cons "--max-time" (number-to-string timeout))))
+                                   (pcase method
+                                     ((or 'put 'post)
+                                      (cl-assert body)
+                                      (list (cons "--request" (upcase (symbol-name method)))
+                                            ;; It appears that this must be the last argument
+                                            ;; in order to pass data on the rest of STDIN.
+                                            (cons data-arg "@-"))))))
+         (curl-config (cl-loop for (key . value) in curl-config-args
+                               concat (format "%s \"%s\"\n" key value)))
          (decode (pcase as
                    ('binary nil)
-                   (_ decode))))
+                   (_ decode)))
+         sync-p)
+    (when (eq 'sync then)
+      (setf sync-p t
+            then (lambda (result)
+                   (setf plz-result result))))
     (with-current-buffer (generate-new-buffer " *plz-request-curl*")
-      (let ((process (make-process :name "plz-request-curl"
+      ;; Avoid making process in a nonexistent directory (in case the current
+      ;; default-directory has since been removed).  It's unclear what the best
+      ;; directory is, but this seems to make sense, and it should still exist.
+      (let ((default-directory temporary-file-directory)
+            (process (make-process :name "plz-request-curl"
                                    :buffer (current-buffer)
                                    :coding 'binary
-                                   :command (append (list plz-curl-program) curl-args)
+                                   :command (append (list plz-curl-program) curl-command-line-args)
                                    :connection-type 'pipe
                                    :sentinel #'plz--sentinel
                                    :stderr (current-buffer)
@@ -444,6 +342,33 @@ NOQUERY is passed to `make-process', which see."
                                (funcall then (current-buffer))))
                     ('response (lambda ()
                                  (funcall then (plz--response :decode-p decode))))
+                    ('file (lambda ()
+                             (set-buffer-multibyte nil)
+                             (plz--narrow-to-body)
+                             (let ((filename (make-temp-file "plz-")))
+                               (condition-case err
+                                   (write-region (point-min) (point-max) filename)
+                                 ;; In case of an error writing to the file, delete the temp file
+                                 ;; and signal the error.  Ignore any errors encountered while
+                                 ;; deleting the file, which would obscure the original error.
+                                 (error (ignore-errors
+                                          (delete-file filename))
+                                        (signal (car err) (cdr err))))
+                               (funcall then filename))))
+                    (`(file ,(and (pred stringp) filename))
+                     (lambda ()
+                       (set-buffer-multibyte nil)
+                       (plz--narrow-to-body)
+                       (condition-case err
+                           (write-region (point-min) (point-max) filename nil nil nil 'excl)
+                         ;; Since we are creating the file, it seems sensible to delete it in case of an
+                         ;; error while writing to it (e.g. a disk-full error).  And we ignore any errors
+                         ;; encountered while deleting the file, which would obscure the original error.
+                         (error (ignore-errors
+                                  (when (file-exists-p filename)
+                                    (delete-file filename)))
+                                (signal (car err) (cdr err))))
+                       (funcall then filename)))
                     ((pred functionp) (lambda ()
                                         (let ((coding-system (or (plz--coding-system) 'utf-8)))
                                           (plz--narrow-to-body)
@@ -452,74 +377,28 @@ NOQUERY is passed to `make-process', which see."
                                           (funcall then (funcall as))))))))
         (setf plz-then then
               plz-else else
-              plz-finally finally)
+              plz-finally finally
+              plz-sync sync-p)
+        ;; Send --config arguments.
+        (process-send-string process curl-config)
         (when body
           (cl-typecase body
-            (string (process-send-string process body)
-                    (process-send-eof process))
+            (string (process-send-string process body))
             (buffer (with-current-buffer body
-                      (process-send-region process (point-min) (point-max))
-                      (process-send-eof process)))))
-        process))))
+                      (process-send-region process (point-min) (point-max))))))
+        (process-send-eof process)
+        (if sync-p
+            (progn
+              (while
+                  ;; According to the Elisp manual, blocking on a process's
+                  ;; output is really this simple.  And it seems to work.
+                  (accept-process-output process))
+              (prog1 plz-result
+                (unless (eq as 'buffer)
+                  (kill-buffer))))
+          process)))))
 
-(cl-defun plz--curl-sync (_method url &key headers connect-timeout
-                                  decode as)
-  "Return result for HTTP request to URL made synchronously with curl.
-
-AS selects the kind of result to return.  It may be:
-
-- `string' to pass the response body as a string.
-- `response' to pass a `plz-response' struct.
-- A function, which is called in the response buffer with it
-  narrowed to the response body (suitable for, e.g. `json-read').
-
-If DECODE is non-nil, the response body is decoded automatically.
-
-HEADERS may be an alist of extra headers to send with the
-request.  CONNECT-TIMEOUT may be a number of seconds to timeout
-the initial connection attempt.
-
-If the request fails, an error is signaled, either
-`plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' struct as the error data.
-
-Uses `call-process' to call curl synchronously."
-  (with-current-buffer (generate-new-buffer " *plz-request-curl*")
-    (let* ((coding-system-for-read 'binary)
-           (process-connection-type nil)
-           (header-args (cl-loop for (key . value) in headers
-                                 collect (format "--header %s: %s" key value)))
-           (curl-args (append plz-curl-default-args header-args
-                              (when connect-timeout
-                                (list "--connect-timeout" (number-to-string connect-timeout)))
-                              (list url)))
-           (decode (pcase as
-                     ('binary nil)
-                     (_ decode)))
-           (status (apply #'call-process plz-curl-program nil t nil
-                          curl-args))
-           ;; THEN form copied from `plz--curl'.
-           ;; TODO: DRY this.  Maybe we could use a thread and a condition variable, but...
-           (plz-then (pcase-exhaustive as
-                       ((or `nil 'string 'binary)
-                        (lambda ()
-                          (let ((coding-system (or (plz--coding-system) 'utf-8)))
-                            (pcase as
-                              ('binary (set-buffer-multibyte nil)))
-                            (plz--narrow-to-body)
-                            (when decode
-                              (decode-coding-region (point) (point-max) coding-system))
-                            (buffer-string))))
-                       ('response
-                        (apply-partially #'plz--response :decode-p decode))
-                       ((pred functionp)
-                        (lambda ()
-                          (let ((coding-system (or (plz--coding-system) 'utf-8)))
-                            (plz--narrow-to-body)
-                            (when decode
-                              (decode-coding-region (point) (point-max) coding-system))
-                            (funcall as)))))))
-      (plz--sentinel (current-buffer) status))))
+;;;;; Private
 
 (defun plz--sentinel (process-or-buffer status)
   "Process buffer of curl output in PROCESS-OR-BUFFER.
@@ -530,9 +409,11 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
   (let* ((buffer (cl-etypecase process-or-buffer
                    (process (process-buffer process-or-buffer))
                    (buffer process-or-buffer)))
-         (finally (buffer-local-value 'plz-finally buffer)))
+         (finally (buffer-local-value 'plz-finally buffer))
+         sync)
     (unwind-protect
         (with-current-buffer buffer
+          (setf sync plz-sync)
           (pcase-exhaustive status
             ((or 0 "finished\n")
              ;; Curl exited normally: check HTTP status code.
@@ -552,6 +433,7 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
                     (curl-error-message (alist-get curl-exit-code plz-curl-errors))
                     (err (make-plz-error :curl-error (cons curl-exit-code curl-error-message))))
                (pcase-exhaustive plz-else
+                 ;; FIXME: Returning a plz-error struct which has a curl-error slot, wrapped in a plz-curl-error, is confusing.
                  (`nil (signal 'plz-curl-error err))
                  ((pred functionp) (funcall plz-else err)))))
 
@@ -563,7 +445,8 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
                  ((pred functionp) (funcall plz-else err)))))))
       (when finally
         (funcall finally))
-      (kill-buffer buffer))))
+      (unless sync
+        (kill-buffer buffer)))))
 
 ;;;;;; HTTP Responses
 

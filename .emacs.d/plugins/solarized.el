@@ -1,8 +1,8 @@
 ;;; solarized.el --- Solarized theme  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2011 Bozhidar Batsov
+;; Copyright (C) 2011-2021 Bozhidar Batsov
 
-;; Author: Bozhidar Batsov <bozhidar@batsov.com>
+;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; Author: Thomas Frössman <thomasf@jossystem.se>
 
 ;; This program is free software; you can redistribute it and/or modify

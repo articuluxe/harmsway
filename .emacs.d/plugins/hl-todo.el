@@ -130,9 +130,8 @@ Instead of a color (a string), each COLOR may alternatively be a
 face.
 
 The syntax class of the characters at either end has to be `w'
-\(which means word) in `hl-todo--syntax-table'.  That syntax
-table derives from `text-mode-syntax-table' but uses `w' as the
-class of \"?\".
+\(which means word) in `hl-todo--syntax-table' (which derives
+from `text-mode-syntax-table').
 
 This package, like most of Emacs, does not use POSIX regexp
 backtracking.  See info node `(elisp)POSIX Regexp' for why that
@@ -158,6 +157,12 @@ face controls the appearance of the respective keyword, except
 for either the foreground or the background color.  This option
 controls which of the two it is."
   :package-version '(hl-todo . "3.1.0")
+  :group 'hl-todo
+  :type 'boolean)
+
+(defcustom hl-todo-wrap-movement nil
+  "Whether movement commands wrap around when there are no more matches."
+  :package-version '(hl-todo . "3.4.0")
   :group 'hl-todo
   :type 'boolean)
 
@@ -290,8 +295,14 @@ A negative argument means move backward that many keywords."
                           (looking-at (hl-todo--regexp)))
                     (goto-char (match-end 0)))
                   (or (hl-todo--search)
-                      (user-error "No more matches"))))
-      (cl-decf arg))))
+                      (if hl-todo-wrap-movement
+                          nil
+                        (user-error "No more matches")))))
+      (cl-decf arg))
+    (when (> arg 0)
+      (goto-char (point-min))
+      (let ((hl-todo-wrap-movement nil))
+        (hl-todo-next arg)))))
 
 ;;;###autoload
 (defun hl-todo-previous (arg)
@@ -307,9 +318,15 @@ A negative argument means move forward that many keywords."
                   (hl-todo--search (concat (hl-todo--regexp) "\\=") nil t)
                   (or (hl-todo--search nil nil t)
                       (progn (goto-char start)
-                             (user-error "No more matches")))))
+                             (if hl-todo-wrap-movement
+                                 nil
+                               (user-error "No more matches"))))))
       (goto-char (match-end 0))
-      (cl-decf arg))))
+      (cl-decf arg))
+    (when (> arg 0)
+      (goto-char (point-max))
+      (let ((hl-todo-wrap-movement nil))
+        (hl-todo-previous arg)))))
 
 ;;;###autoload
 (defun hl-todo-occur ()

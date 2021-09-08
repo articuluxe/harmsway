@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.6.3
+;; Version: 1.6.4
 ;; Package-Requires: ((emacs "25.1") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
@@ -165,6 +165,34 @@
 (defface all-the-icons-ivy-rich-file-owner-face
   '((t :inherit font-lock-keyword-face))
   "Face used for highlight file owners.")
+
+(defface all-the-icons-ivy-rich-process-id-face
+  '((t :inherit default))
+  "Face used for process id.")
+
+(defface all-the-icons-ivy-rich-process-status-face
+  '((t :inherit success))
+  "Face used for process status.")
+
+(defface all-the-icons-ivy-rich-process-status-alt-face
+  '((t :inherit error))
+  "Face used for process status: stop, exit, closed and failed.")
+
+(defface all-the-icons-ivy-rich-process-buffer-face
+  '((t :inherit font-lock-keyword-face))
+  "Face used for process buffer label.")
+
+(defface all-the-icons-ivy-rich-process-tty-face
+  '((t :inherit font-lock-doc-face))
+  "Face used for process tty.")
+
+(defface all-the-icons-ivy-rich-process-thread-face
+  '((t :inherit font-lock-doc-face))
+  "Face used for process thread.")
+
+(defface all-the-icons-ivy-rich-process-command-face
+  '((t :inherit all-the-icons-ivy-rich-doc-face))
+  "Face used for process command.")
 
 (defcustom all-the-icons-ivy-rich-icon t
   "Whether display the icons."
@@ -417,7 +445,13 @@ It respects `all-the-icons-color-icons'."
     counsel-list-processes
     (:columns
      ((all-the-icons-ivy-rich-process-icon)
-      (ivy-rich-candidate))
+      (ivy-rich-candidate (:width 25))
+      (all-the-icons-ivy-rich-process-id (:width 7 :face all-the-icons-ivy-rich-process-id-face))
+      (all-the-icons-ivy-rich-process-status (:width 7))
+      (all-the-icons-ivy-rich-process-buffer-name (:width 25 :face all-the-icons-ivy-rich-process-buffer-face))
+      (all-the-icons-ivy-rich-process-tty-name (:width 12 :face all-the-icons-ivy-rich-process-tty-face))
+      (all-the-icons-ivy-rich-process-thread (:width 12 :face all-the-icons-ivy-rich-process-thread-face))
+      (all-the-icons-ivy-rich-process-command (:face all-the-icons-ivy-rich-process-command-face)))
      :delimiter "\t")
     counsel-projectile-switch-project
     (:columns
@@ -460,6 +494,53 @@ It respects `all-the-icons-color-icons'."
     (:columns
      ((all-the-icons-ivy-rich-company-icon)
       (ivy-rich-candidate))
+     :delimiter "\t")
+
+    ;; project
+    project-switch-project
+    (:columns
+     ((all-the-icons-ivy-rich-file-icon)
+      (all-the-icons-ivy-rich-project-name (:width 0.4))
+      (all-the-icons-ivy-rich-project-file-modes (:width 12 :face all-the-icons-ivy-rich-file-modes-face))
+      (all-the-icons-ivy-rich-project-file-id (:width 12 :face all-the-icons-ivy-rich-file-owner-face))
+      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+    project-find-file
+    (:columns
+     ((all-the-icons-ivy-rich-file-icon)
+      (all-the-icons-ivy-rich-project-find-file-transformer (:width 0.4))
+      (all-the-icons-ivy-rich-project-file-modes (:width 12 :face all-the-icons-ivy-rich-file-modes-face))
+      (all-the-icons-ivy-rich-project-file-id (:width 12 :face all-the-icons-ivy-rich-file-owner-face))
+      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+    project-or-external-find-file
+    (:columns
+     ((all-the-icons-ivy-rich-file-icon)
+      (all-the-icons-ivy-rich-project-find-file-transformer (:width 0.4))
+      (all-the-icons-ivy-rich-project-file-modes (:width 12 :face all-the-icons-ivy-rich-file-modes-face))
+      (all-the-icons-ivy-rich-project-file-id (:width 12 :face all-the-icons-ivy-rich-file-owner-face))
+      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+    project-dired
+    (:columns
+     ((all-the-icons-ivy-rich-file-icon)
+      (all-the-icons-ivy-rich-project-name (:width 0.4))
+      (all-the-icons-ivy-rich-project-file-modes (:width 12 :face all-the-icons-ivy-rich-file-modes-face))
+      (all-the-icons-ivy-rich-project-file-id (:width 12 :face all-the-icons-ivy-rich-file-owner-face))
+      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+    project-vc-dir
+    (:columns
+     ((all-the-icons-ivy-rich-file-icon)
+      (all-the-icons-ivy-rich-project-name (:width 0.4))
+      (all-the-icons-ivy-rich-project-file-modes (:width 12 :face all-the-icons-ivy-rich-file-modes-face))
+      (all-the-icons-ivy-rich-project-file-id (:width 12 :face all-the-icons-ivy-rich-file-owner-face))
+      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
      :delimiter "\t")
 
     ;; package
@@ -618,29 +699,25 @@ Return `default-directory' if no project was found."
         (ffip-get-project-root-directory)))
      ((fboundp 'projectile-project-root)
       (projectile-project-root))
-     ((and (fboundp 'project-current)
-           (fboundp 'project-roots))
+     ((fboundp 'project-current)
       (when-let ((project (project-current)))
-        (car (project-roots project))))
+        (expand-file-name (cdr project))))
      (t default-directory))))
 
 (defun all-the-icons-ivy-rich--file-path (candidate)
   "Get the file path of CANDIDATE."
-  (cond ((eq (ivy-state-caller ivy-last) 'counsel-fzf)
-         (expand-file-name candidate counsel--fzf-dir))
-        (ivy--directory
-         (expand-file-name candidate ivy--directory))
-        (t
-         default-directory)))
+  (if (eq (ivy-state-caller ivy-last) 'counsel-fzf)
+      (expand-file-name candidate counsel--fzf-dir)
+    (expand-file-name candidate ivy--directory)))
 
 (defun all-the-icons-ivy-rich--project-file-path (candidate)
   "Get the project file path of CANDIDATE."
   (expand-file-name candidate (all-the-icons-ivy-rich--project-root)))
 
-(defun all-the-icons-ivy-rich--file-transformer (candidate)
-  "Return project name from CANDIDATE."
-  (if (ivy--dirname-p candidate)
-      (propertize candidate 'face 'ivy-subdir)
+(defun all-the-icons-ivy-rich-project-find-file-transformer (candidate)
+  "Transform non-visited file names with `ivy-virtual' face."
+  (if (not (get-file-buffer (expand-file-name candidate (cdr (project-current)))))
+      (propertize candidate 'face 'ivy-virtual)
     candidate))
 
 (defun all-the-icons-ivy-rich--file-modes (file)
@@ -681,7 +758,7 @@ Return `default-directory' if no project was found."
   "Return file name from CANDIDATE when reading files.
 Display directories with different color.
 Display the true name when the file is a symlink."
-  (let* ((file (all-the-icons-ivy-rich--file-transformer candidate))
+  (let* ((file (ivy-read-file-transformer candidate))
          (path (all-the-icons-ivy-rich--file-path candidate))
          (type (unless (file-remote-p path)
                  (file-symlink-p path))))
@@ -785,6 +862,87 @@ Display the true name when the file is a symlink."
      ((and (boundp symbol) (not (keywordp symbol)))
       (ivy-rich-counsel-variable-docstring candidate))
      (t ""))))
+
+;; Support `counsel-list-processes'
+(defun all-the-icons-ivy-rich-process-id (candidate)
+  "Return process id from CANDIDATE.
+
+For a network, serial, and pipe connections, return \"--\"."
+  (let ((p (get-process candidate)))
+    (when (processp p)
+      (format "%s" (or (process-id p) "--")))))
+
+(defun all-the-icons-ivy-rich-process-status (candidate)
+  "Return process status from CANDIDATE."
+  (let ((p (get-process candidate)))
+    (when (processp p)
+      (let* ((status (process-status p))
+             (face (if (memq status '(stop exit closed failed))
+                       'all-the-icons-ivy-rich-process-status-alt-face
+                     'all-the-icons-ivy-rich-process-status-face)))
+        (propertize (symbol-name status) 'face face)))))
+
+(defun all-the-icons-ivy-rich-process-buffer-name (candidate)
+  "Return process buffer name from CANDIDATE.
+
+If the buffer is killed, return \"--\"."
+  (let ((p (get-process candidate)))
+    (when (processp p)
+      (let ((buf (process-buffer p)))
+        (if (buffer-live-p buf)
+		    (buffer-name buf)
+		  "--")))))
+
+(defun all-the-icons-ivy-rich-process-tty-name (candidate)
+  "Return the name of the terminal process uses from CANDIDATE."
+  (let ((p (get-process candidate)))
+    (when (processp p)
+      (or (process-tty-name p) "--"))))
+
+(defun all-the-icons-ivy-rich-process-thread (candidate)
+  "Return process thread from CANDIDATE."
+  (let ((p (get-process candidate)))
+    (when (processp p)
+      (cond
+       ((or
+         (null (process-thread p))
+         (not (fboundp 'thread-name))) "--")
+       ((eq (process-thread p) main-thread) "Main")
+	   ((thread-name (process-thread p)))
+	   (t "--")))))
+
+(defun all-the-icons-ivy-rich-process-command (candidate)
+  "Return process command from CANDIDATE."
+  (let ((p (get-process candidate)))
+    (when (processp p)
+      (let ((type (process-type p)))
+        (if (memq type '(network serial pipe))
+		    (let ((contact (process-contact p t t)))
+			  (if (eq type 'network)
+			      (format "(%s %s)"
+				          (if (plist-get contact :type)
+					          "datagram"
+				            "network")
+				          (if (plist-get contact :server)
+					          (format
+                               "server on %s"
+					           (if (plist-get contact :host)
+                                   (format "%s:%s"
+						                   (plist-get contact :host)
+                                           (plist-get
+                                            contact :service))
+					             (plist-get contact :local)))
+				            (format "connection to %s:%s"
+					                (plist-get contact :host)
+					                (plist-get contact :service))))
+			    (format "(serial port %s%s)"
+				        (or (plist-get contact :port) "?")
+				        (let ((speed (plist-get contact :speed)))
+				          (if speed
+					          (format " at %s b/s" speed)
+				            "")))))
+		  (mapconcat 'identity (process-command p) " "))))))
+
 
 ;;
 ;; Icons
@@ -939,7 +1097,7 @@ Display the true name when the file is a symlink."
 (defun all-the-icons-ivy-rich-process-icon (_candidate)
   "Display the process icon in `ivy-rich'."
   (all-the-icons-ivy-rich--format-icon
-   (all-the-icons-faicon "bolt" :height 1.0 :v-adjust -0.05 :face 'all-the-icons-lblue)))
+   (all-the-icons-octicon "zap" :height 1.0 :v-adjust -0.05 :face 'all-the-icons-lblue)))
 
 (defun all-the-icons-ivy-rich-imenu-icon (candidate)
   "Display the imenu icon from CANDIDATE in `ivy-rich'."

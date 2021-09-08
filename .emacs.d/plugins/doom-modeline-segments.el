@@ -436,12 +436,12 @@ like the scratch buffer where knowing the current project directory is important
                     ((doom-modeline--active) 'doom-modeline-buffer-path)
                     (t 'mode-line-inactive))))
     (concat (doom-modeline-spc)
-            (doom-modeline--buffer-state-icon)
             (and doom-modeline-major-mode-icon
                  (concat (doom-modeline-icon
                           'octicon "file-directory" "🖿" ""
                           :face face :v-adjust -0.05 :height 1.25)
                          (doom-modeline-vspc)))
+            (doom-modeline--buffer-state-icon)
             (propertize (abbreviate-file-name default-directory) 'face face))))
 
 (doom-modeline-def-segment buffer-default-directory-simple
@@ -650,7 +650,7 @@ Uses `all-the-icons-octicon' to fetch the icon."
   (setq doom-modeline--vcs-icon
         (when (and vc-mode buffer-file-name)
           (let* ((backend (vc-backend buffer-file-name))
-                 (state   (vc-state buffer-file-name backend)))
+                 (state   (vc-state (file-local-name buffer-file-name) backend)))
             (cond ((memq state '(edited added))
                    (doom-modeline-vcs-icon "git-compare" "⇆" "*" 'doom-modeline-info -0.05))
                   ((eq state 'needs-merge)
@@ -689,7 +689,7 @@ Uses `all-the-icons-octicon' to fetch the icon."
   (setq doom-modeline--vcs-text
         (when (and vc-mode buffer-file-name)
           (let* ((backend (vc-backend buffer-file-name))
-                 (state (vc-state buffer-file-name backend))
+                 (state (vc-state (file-local-name buffer-file-name) backend))
                  (str (if vc-display-status
                           (substring vc-mode (+ (if (eq backend 'Hg) 2 3) 2))
                         "")))
@@ -2864,13 +2864,8 @@ The cdr can also be a function that returns a name to use.")
   (let ((active (doom-modeline--active)))
     (concat
      (doom-modeline-spc)
-     ;; Snapshot icon
-     (doom-modeline-icon 'material "camera_alt" "📷" "%1*"
-                         :face (if active 'doom-modeline-highlight 'mode-line-inactive)
-                         :height 1.1 :v-adjust -0.25)
-     (and doom-modeline-icon (doom-modeline-vspc))
      (doom-modeline--buffer-mode-icon)
-     ;; Buffer name
+     (doom-modeline--buffer-state-icon)
      (propertize "*%b*" 'face (if active
                                   'doom-modeline-buffer-timemachine
                                 'mode-line-inactive)))))

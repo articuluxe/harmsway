@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 0.7
+;; Version: 0.8
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
@@ -130,7 +130,8 @@ determine it."
     ("\\<input method\\>" . input-method)
     ("\\<charset\\>" . charset)
     ("\\<coding system\\>" . coding-system)
-    ("\\<minor mode\\>" . minor-mode))
+    ("\\<minor mode\\>" . minor-mode)
+    ("\\<[Ll]ibrary\\>" . library))
   "Associates regexps to match against minibuffer prompts with categories."
   :type '(alist :key-type regexp :value-type symbol))
 
@@ -288,7 +289,9 @@ determine it."
 ;;;; Pre-declarations for external packages
 
 (defvar bookmark-alist)
-(declare-function bookmark-get-bookmark-record "bookmark")
+(declare-function bookmark-get-handler "bookmark")
+(declare-function bookmark-get-filename "bookmark")
+(declare-function bookmark-get-front-context-string "bookmark")
 
 (defvar package--builtins)
 (defvar package-archive-contents)
@@ -690,7 +693,7 @@ keybinding since CAND includes it."
   "Return bookmark type string of BM.
 
 The string is transformed according to `marginalia-bookmark-type-transformers'."
-  (let ((handler (or (alist-get 'handler bm) 'bookmark-default-handler)))
+  (let ((handler (or (bookmark-get-handler bm) 'bookmark-default-handler)))
     ;; Some libraries use lambda handlers instead of symbols. For
     ;; example the function `xwidget-webkit-bookmark-make-record' is
     ;; affected. I consider this bad style since then the lambda is
@@ -705,11 +708,11 @@ The string is transformed according to `marginalia-bookmark-type-transformers'."
 
 (defun marginalia-annotate-bookmark (cand)
   "Annotate bookmark CAND with its file name and front context string."
-  (when-let ((bm (bookmark-get-bookmark-record (assoc cand bookmark-alist))))
-    (let ((front (alist-get 'front-context-string bm)))
+  (when-let ((bm (assoc cand bookmark-alist)))
+    (let ((front (bookmark-get-front-context-string bm)))
       (marginalia--fields
        ((marginalia--bookmark-type bm) :width 10 :face 'marginalia-type)
-       ((alist-get 'filename bm) :truncate 40 :face 'marginalia-file-name)
+       ((bookmark-get-filename bm) :truncate 40 :face 'marginalia-file-name)
        ((if (or (not front) (string= front ""))
             ""
           (concat (string-trim
@@ -799,9 +802,11 @@ component of a full file path."
 
 (defun marginalia--annotate-local-file (cand)
   "Annotate local file CAND."
-  (when-let (attrs (file-attributes (substitute-in-file-name
-                                     (marginalia--full-candidate cand))
-                                    'integer))
+  (when-let (attrs (ignore-errors
+                     ;; may throw permission denied errors
+                     (file-attributes (substitute-in-file-name
+                                       (marginalia--full-candidate cand))
+                                      'integer)))
     (marginalia--fields
      ((marginalia--file-owner attrs)
       :width 12 :face 'marginalia-file-owner)
@@ -875,12 +880,13 @@ These annotations are skipped for remote paths."
 
 (defun marginalia--time-absolute (time)
   "Format TIME as an absolute age."
-  (format-time-string
-   (if (> (decoded-time-year (decode-time (current-time)))
-          (decoded-time-year (decode-time time)))
-       " %Y %b %d"
-     "%b %d %H:%M")
-   time))
+  (let ((system-time-locale "C"))
+    (format-time-string
+     (if (> (decoded-time-year (decode-time (current-time)))
+            (decoded-time-year (decode-time time)))
+         " %Y %b %d"
+       "%b %d %H:%M")
+     time)))
 
 (defun marginalia--time (time)
   "Format file age TIME, suitably for use in annotations."

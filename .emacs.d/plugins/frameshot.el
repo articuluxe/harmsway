@@ -163,8 +163,8 @@ configuration if any."
      (funcall (or .camera frameshot-camera-function)
               (expand-file-name
                (concat (and .name (concat .name "-"))
-                       (format-time-string "%Y%m%d-%H:%M:%S")))
-              .output))))
+                       (format-time-string "%Y%m%d-%H:%M:%S"))
+               .output)))))
 
 (defun frameshot-export-frame-svg (file)
   "Use `x-export-frames' to take a svg screenshot."

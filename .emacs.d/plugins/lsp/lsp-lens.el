@@ -39,7 +39,7 @@
   :group 'lsp-lens
   :type '(choice (const above-line)
                  (const end-of-line))
-  :package-version '(lsp-mode . "7.1"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defface lsp-lens-mouse-face
   '((t :height 0.8 :inherit link))
@@ -308,6 +308,13 @@ CALLBACK - callback for the lenses."
       (if (-all? #'lsp--lens-backend-present? lsp-lens--backend-cache)
           (funcall callback lsp-lens--backend-cache lsp--cur-version)
         (lsp-lens--backend-fetch-missing lsp-lens--backend-cache callback lsp--cur-version)))))
+
+(defun lsp--lens-on-refresh (workspace)
+  "Clear lens within all buffers of WORKSPACE, refreshing all workspace buffers."
+  (cl-assert (not (eq nil workspace)))
+  (cl-loop
+   for ws-buffer in (lsp--workspace-buffers workspace) do
+   (lsp-lens-refresh t ws-buffer)))
 
 ;;;###autoload
 (defun lsp-lens--enable ()

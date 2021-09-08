@@ -347,6 +347,13 @@ Math support can be enabled, disabled, or toggled later using
   :safe 'booleanp
   :package-version '(markdown-mode . "2.4"))
 
+(defcustom markdown-enable-highlighting-syntax nil
+  "Enable highlighting syntax."
+  :group 'markdown
+  :type 'boolean
+  :safe 'booleanp
+  :package-version '(markdown-mode . "2.5"))
+
 (defcustom markdown-css-paths nil
   "List of URLs of CSS files to link to in the output XHTML."
   :group 'markdown
@@ -842,7 +849,7 @@ Group 2 matches the separating whitespace.
 Group 3 matches the text.")
 
 (defconst markdown-regex-line-break
-  "[^ \n\t][ \t]*\\(  \\)$"
+  "[^ \n\t][ \t]*\\(  \\)\n"
   "Regular expression for matching line breaks.")
 
 (defconst markdown-regex-wiki-link
@@ -861,7 +868,7 @@ Group 5 matches the second component of the wiki link, when present.
 Group 6 matches the closing square brackets.")
 
 (defconst markdown-regex-uri
-  (concat "\\(" (regexp-opt markdown-uri-types) ":[^]\t\n\r<>,;() ]+\\)")
+  (concat "\\(" (regexp-opt markdown-uri-types) ":[^]\t\n\r<>; ]+\\)")
   "Regular expression for matching inline URIs.")
 
 (defconst markdown-regex-angle-uri
@@ -1042,6 +1049,15 @@ Group 3 matches all attributes and whitespace following the tag name.")
 (defconst markdown-regex-html-entity
   "\\(&#?[[:alnum:]]+;\\)"
   "Regular expression for matching HTML entities.")
+
+(defconst markdown-regex-highlighting
+  "\\(?1:^\\|[^\\]\\)\\(?2:\\(?3:==\\)\\(?4:[^ \n\t\\]\\|[^ \n\t]\\(?:.\\|\n[^\n]\\)*?[^\\ ]\\)\\(?5:==\\)\\)"
+"Regular expression for matching highlighting text.
+Group 1 matches the character before the opening equal, if any,
+ensuring that it is not a backslash escape.
+Group 2 matches the entire expression, including delimiters.
+Groups 3 and 5 matches the opening and closing delimiters.
+Group 4 matches the text inside the delimiters.")
 
 
 ;;; Syntax ====================================================================
@@ -1552,7 +1568,8 @@ MIDDLE-BEGIN is the start of the \"middle\" section of the block."
                          (cl-third fence-spec)
                          (list middle-begin close-begin))
       ;; If the block is a YAML block, propertize the declarations inside
-      (markdown-syntax-propertize-yaml-metadata middle-begin close-begin)
+      (when (< middle-begin close-begin) ;; workaround #634
+        (markdown-syntax-propertize-yaml-metadata middle-begin close-begin))
       ;; Propertize closing line of fenced block.
       (put-text-property close-begin close-end
                          (cl-cadadr fence-spec) close-data))))
@@ -1978,6 +1995,11 @@ For example, this applies to plain angle bracket URLs:
   "Face for HTML entities."
   :group 'markdown-faces)
 
+(defface markdown-highlighting-face
+  '((t (:background "yellow" :foreground "black")))
+  "Face for highlighting."
+  :group 'markdown-faces)
+
 (defcustom markdown-header-scaling nil
   "Whether to use variable-height faces for headers.
 When non-nil, `markdown-header-face' will inherit from
@@ -2170,6 +2192,9 @@ Depending on your font, some reasonable choices are:
     (,markdown-regex-strike-through . ((3 markdown-markup-properties)
                                        (4 'markdown-strike-through-face)
                                        (5 markdown-markup-properties)))
+    (markdown--match-highlighting . ((3 markdown-markup-properties)
+                                     (4 'markdown-highlighting-face)
+                                     (5 markdown-markup-properties)))
     (,markdown-regex-line-break . (1 'markdown-line-break-face prepend))
     (markdown-fontify-sub-superscripts)
     (markdown-match-inline-attributes . ((0 markdown-markup-properties prepend)))
@@ -2889,6 +2914,10 @@ When FACELESS is non-nil, do not return matches where faces have been applied."
                                 (match-beginning 3) (match-end 3)
                                 (match-beginning 4) (match-end 4)))
           t)))))
+
+(defun markdown--match-highlighting (last)
+  (when markdown-enable-highlighting-syntax
+    (re-search-forward markdown-regex-highlighting last t)))
 
 (defun markdown-match-math-generic (regex last)
   "Match REGEX from point to LAST.
@@ -5541,10 +5570,10 @@ See also `markdown-mode-map'.")
      ["Move Row Down" markdown-move-down
       :enable (markdown-table-at-point-p)
       :keys "C-c <down>"]
-     ["Move Column Left" markdown-demote
+     ["Move Column Left" markdown-promote
       :enable (markdown-table-at-point-p)
       :keys "C-c <left>"]
-     ["Move Column Right" markdown-promote
+     ["Move Column Right" markdown-demote
       :enable (markdown-table-at-point-p)
       :keys "C-c <right>"]
      ["Delete Row" markdown-table-delete-row
@@ -8999,7 +9028,8 @@ This function assumes point is on a table."
     (save-excursion
       (beginning-of-line)
       (while (search-forward "|" pos t)
-        (unless (markdown--thing-at-wiki-link (match-beginning 0))
+        (when (and (not (looking-back "\\\\|" (line-beginning-position)))
+                   (not (markdown--thing-at-wiki-link (match-beginning 0))))
           (setq cnt (1+ cnt)))))
     cnt))
 
@@ -9038,7 +9068,8 @@ table."
   (beginning-of-line 1)
   (when (> n 0)
     (while (and (> n 0) (search-forward "|" (point-at-eol) t))
-      (unless (markdown--thing-at-wiki-link (match-beginning 0))
+      (when (and (not (looking-back "\\\\|" (line-beginning-position)))
+                 (not (markdown--thing-at-wiki-link (match-beginning 0))))
         (cl-decf n)))
     (if on-delim
         (backward-char 1)
@@ -9256,7 +9287,7 @@ With optional argument UP, move it up."
      (goto-char begin)
      (while (< (point) end)
        (markdown-table-goto-column col t)
-       (and (looking-at "|[^|\n]+|")
+       (and (looking-at "|\\(?:\\\\|\\|[^|\n]\\)+|")
             (replace-match "|"))
        (forward-line)))
     (set-marker end nil)
@@ -9283,7 +9314,7 @@ With optional argument LEFT, move it to the left."
      (goto-char begin)
      (while (< (point) end)
        (markdown-table-goto-column col1 t)
-       (when (looking-at "|\\([^|\n]+\\)|\\([^|\n]+\\)|")
+       (when (looking-at "|\\(\\(?:\\\\|\\|[^|\n]\\|\\)+\\)|\\(\\(?:\\\\|\\|[^|\n]\\|\\)+\\)|")
          (replace-match "|\\2|\\1|"))
        (forward-line)))
     (set-marker end nil)
@@ -9443,8 +9474,12 @@ indicate that sorting should be done in reverse order."
                         (t 1))))
         (sorting-type
          (or sorting-type
-             (read-char-exclusive
-              "Sort type: [a]lpha [n]umeric (A/N means reversed): "))))
+             (progn
+               ;; workaround #641
+               ;; Emacs < 28 hides prompt message by another message. This erases it.
+               (message "")
+               (read-char-exclusive
+                "Sort type: [a]lpha [n]umeric (A/N means reversed): ")))))
     (save-restriction
       ;; Narrow buffer to appropriate sorting area
       (if (region-active-p)
@@ -9545,10 +9580,18 @@ spaces, or alternatively a TAB should be used as the separator."
              ((integerp separator)
               (if (< separator 1)
                   (user-error "Cell separator must contain one or more spaces")
-                (format "^ *\\| *\t *\\| \\{%d,\\}" separator)))
+                (format "^ *\\| *\t *\\| \\{%d,\\}\\|$" separator)))
              ((stringp separator) (format "^ *\\|%s" separator))
              (t (error "Invalid cell separator"))))
-      (while (re-search-forward re end t) (replace-match "| " t t)))
+      (let (finish)
+        (while (and (not finish) (re-search-forward re end t))
+          (if (eolp)
+              (progn
+                (replace-match "|" t t)
+                (forward-line 1)
+                (when (eobp)
+                  (setq finish t)))
+            (replace-match "| " t t)))))
     (goto-char begin)
     (when markdown-table-align-p
       (markdown-table-align))))
@@ -9715,6 +9758,7 @@ rows and columns and the column alignment."
                            ;; not paragraph-ending suffixes:
                            ".*  $" ; line ending in two spaces
                            "^#+"
+                           "^\\(?:   \\)?[-=]+[ \t]*$" ;; setext
                            "[ \t]*\\[\\^\\S-*\\]:[ \t]*$") ; just the start of a footnote def
                          "\\|"))
   (setq-local adaptive-fill-first-line-regexp "\\`[ \t]*[A-Z]?>[ \t]*?\\'")

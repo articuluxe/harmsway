@@ -197,6 +197,18 @@ is no file at point, then instead visit `default-directory'."
     (magit--not-inside-repository-error)))
 
 ;;;###autoload
+(defun magit-dired-am-apply-patches (repo &optional arg)
+  "In Dired, apply the marked (or next ARG) files as patches.
+If inside a repository, then apply in that.  Otherwise prompt
+for a repository."
+  (interactive (list (or (magit-toplevel)
+                         (magit-read-repository t))
+                     current-prefix-arg))
+  (let ((files (dired-get-marked-files nil arg nil nil t)))
+    (magit-status-setup-buffer repo)
+    (magit-am-apply-patches files)))
+
+;;;###autoload
 (defun magit-do-async-shell-command (file)
   "Open FILE with `dired-do-async-shell-command'.
 Interactively, open the file at point."
@@ -752,6 +764,55 @@ abbreviated revision to the `kill-ring' and the
                    rev))
         (push (list rev default-directory) magit-revision-stack)
         (kill-new (message "%s" rev))))))
+
+;;; Buffer Switching
+
+;;;###autoload
+(defun magit-display-repository-buffer (buffer)
+  "Display a Magit buffer belonging to the current Git repository.
+The buffer is displayed using `magit-display-buffer', which see."
+  (interactive (list (magit--read-repository-buffer
+                      "Display magit buffer: ")))
+  (magit-display-buffer buffer))
+
+;;;###autoload
+(defun magit-switch-to-repository-buffer (buffer)
+  "Switch to a Magit buffer belonging to the current Git repository."
+  (interactive (list (magit--read-repository-buffer
+                      "Switch to magit buffer: ")))
+  (switch-to-buffer buffer))
+
+;;;###autoload
+(defun magit-switch-to-repository-buffer-other-window (buffer)
+  "Switch to a Magit buffer belonging to the current Git repository."
+  (interactive (list (magit--read-repository-buffer
+                      "Switch to magit buffer in another window: ")))
+  (switch-to-buffer-other-window buffer))
+
+;;;###autoload
+(defun magit-switch-to-repository-buffer-other-frame (buffer)
+  "Switch to a Magit buffer belonging to the current Git repository."
+  (interactive (list (magit--read-repository-buffer
+                      "Switch to magit buffer in another frame: ")))
+  (switch-to-buffer-other-frame buffer))
+
+(defun magit--read-repository-buffer (prompt)
+  (if-let ((topdir (magit-rev-parse-safe "--show-toplevel")))
+      (read-buffer
+       prompt (magit-get-mode-buffer 'magit-status-mode) t
+       (pcase-lambda (`(,_ . ,buf))
+         (and buf
+              (with-current-buffer buf
+                (and (or (derived-mode-p 'magit-mode
+                                         'magit-repolist-mode
+                                         'magit-submodule-list-mode
+                                         'git-rebase-mode)
+                         (and buffer-file-name
+                              (string-match-p git-commit-filename-regexp
+                                              buffer-file-name)))
+                     (equal (magit-rev-parse-safe "--show-toplevel")
+                            topdir))))))
+    (user-error "Not inside a Git repository")))
 
 ;;; Miscellaneous
 

@@ -40,6 +40,7 @@
 ;; - evil
 ;; - flycheck
 ;; - flyspell-correct
+;; - git-commit
 ;; - hydra
 ;; - ido-vertical-mode
 ;; - linum-relative
@@ -650,6 +651,20 @@ Also bind `class' to ((class color) (min-colors 89))."
 
 ;;;;; flyspell-correct
    `(flyspell-correct-highlight-face          ((,class                                                     :inherit isearch)))
+
+;;;;; git-commit
+   `(git-commit-comment-action                ((,class :weight bold)))
+   `(git-commit-comment-branch-local          ((,class :foreground ,hr-blue)))
+   `(git-commit-comment-branch-remote         ((,class :foreground ,hr-cyan)))
+   `(git-commit-comment-detached              ((,class                                                     :inherit git-commit-comment-branch-local)))
+   `(git-commit-comment-file                  ((,class                                                     :inherit git-commit-pseudo-header)))
+   `(git-commit-comment-heading               ((,class                                                     :inherit git-commit-known-pseudo-header)))
+   `(git-commit-keyword                       ((,class                                                     :inherit font-lock-string-face)))
+   `(git-commit-known-pseudo-header           ((,class :foreground ,hr-yellow                              :weight bold)))
+   `(git-commit-nonempty-second-line          ((,class                                                     :inherit font-lock-warning-face)))
+   `(git-commit-overlong-summary              ((,class                                                     :inherit font-lock-warning-face)))
+   `(git-commit-pseudo-header                 ((,class                                                     :weight bold)))
+   `(git-commit-summary                       ((,class :foreground ,hr-blue)))
 
 ;;;;; hydra
    `(hydra-face-amaranth                      ((,class :foreground ,hr-orange                              :weight bold)))

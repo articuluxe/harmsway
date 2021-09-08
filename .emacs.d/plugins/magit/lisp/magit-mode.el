@@ -226,7 +226,7 @@ Valid values are:
   buffer.
 
 For more information see info node `(magit)Transient Arguments
-and Buffer Arguments'."
+and Buffer Variables'."
   :package-version '(magit . "3.0.0")
   :group 'magit-buffers
   :group 'magit-commands
@@ -259,7 +259,7 @@ Valid values are:
   buffer.
 
 For more information see info node `(magit)Transient Arguments
-and Buffer Arguments'."
+and Buffer Variables'."
   :package-version '(magit . "3.0.0")
   :group 'magit-buffers
   :group 'magit-commands
@@ -336,23 +336,16 @@ recommended value."
 (defvar magit-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-section-mode-map)
-    (define-key map [C-return]  'magit-visit-thing)
-    (define-key map (kbd "C-m") 'magit-visit-thing)
-    (define-key map (kbd "C-M-i") 'magit-dired-jump)
-    (define-key map [M-tab]     'magit-section-cycle-diffs)
-    (define-key map (kbd   "P") 'magit-push)
-    (define-key map (kbd   "k") 'magit-delete-thing)
-    (define-key map (kbd   "K") 'magit-file-untrack)
-    (define-key map (kbd   "i") 'magit-gitignore)
-    (define-key map (kbd   "I") 'magit-gitignore)
-    (define-key map (kbd "SPC") 'magit-diff-show-or-scroll-up)
+    (define-key map [C-return]    'magit-visit-thing)
+    (define-key map (kbd   "RET") 'magit-visit-thing)
+    (define-key map (kbd "M-TAB") 'magit-dired-jump)
+    (define-key map [M-tab]       'magit-section-cycle-diffs)
+    (define-key map (kbd   "SPC") 'magit-diff-show-or-scroll-up)
     (define-key map (kbd "S-SPC") 'magit-diff-show-or-scroll-down)
-    (define-key map (kbd "DEL") 'magit-diff-show-or-scroll-down)
-    (define-key map "+"         'magit-diff-more-context)
-    (define-key map "-"         'magit-diff-less-context)
-    (define-key map "0"         'magit-diff-default-context)
-    (define-key map "$" 'magit-process-buffer)
-    (define-key map "%" 'magit-worktree)
+    (define-key map (kbd   "DEL") 'magit-diff-show-or-scroll-down)
+    (define-key map "+"           'magit-diff-more-context)
+    (define-key map "-"           'magit-diff-less-context)
+    (define-key map "0"           'magit-diff-default-context)
     (define-key map "a" 'magit-cherry-apply)
     (define-key map "A" 'magit-cherry-pick)
     (define-key map "b" 'magit-branch)
@@ -369,13 +362,26 @@ recommended value."
     (define-key map "G" 'magit-refresh-all)
     (define-key map "h" 'magit-dispatch)
     (define-key map "?" 'magit-dispatch)
+    (define-key map "H" 'magit-describe-section)
+    (define-key map "i" 'magit-gitignore)
+    (define-key map "I" 'magit-init)
+    (define-key map "j" 'magit-status-quick)
+    (define-key map "J" 'magit-display-repository-buffer)
+    (define-key map "k" 'magit-delete-thing)
+    (define-key map "K" 'magit-file-untrack)
     (define-key map "l" 'magit-log)
     (define-key map "L" 'magit-log-refresh)
     (define-key map "m" 'magit-merge)
     (define-key map "M" 'magit-remote)
+    ;;  section-map "n"  magit-section-forward
+    ;;     reserved "N"  forge-dispatch
     (define-key map "o" 'magit-submodule)
     (define-key map "O" 'magit-subtree)
+    ;;  section-map "p"  magit-section-backward
+    (define-key map "P" 'magit-push)
     (define-key map "q" 'magit-mode-bury-buffer)
+    (define-key map "Q" 'magit-git-command)
+    (define-key map ":" 'magit-git-command)
     (define-key map "r" 'magit-rebase)
     (define-key map "R" 'magit-file-rename)
     (define-key map "s" 'magit-stage-file)
@@ -393,8 +399,9 @@ recommended value."
     (define-key map "y" 'magit-show-refs)
     (define-key map "Y" 'magit-cherry)
     (define-key map "z" 'magit-stash)
-    (define-key map "Z" 'magit-stash)
-    (define-key map ":" 'magit-git-command)
+    (define-key map "Z" 'magit-worktree)
+    (define-key map "%" 'magit-worktree)
+    (define-key map "$" 'magit-process-buffer)
     (define-key map "!" 'magit-run)
     (define-key map (kbd "C-c C-c") 'magit-dispatch)
     (define-key map (kbd "C-c C-e") 'magit-edit-thing)
@@ -440,6 +447,11 @@ Where applicable, section-specific keymaps bind another command
 which visits the thing at point using `browse-url'."
   (interactive)
   (user-error "There is no thing at point that could be browsed"))
+
+(defun magit-help ()
+  "Visit the Magit manual."
+  (interactive)
+  (info "magit"))
 
 (defvar bug-reference-map)
 (with-eval-after-load 'bug-reference
@@ -1082,8 +1094,8 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                        (or (nreverse (get-buffer-window-list buffer nil t))
                            (list (selected-window))))))
         (deactivate-mark)
+        (setq magit-section-pre-command-section nil)
         (setq magit-section-highlight-overlays nil)
-        (setq magit-section-highlighted-section nil)
         (setq magit-section-highlighted-sections nil)
         (setq magit-section-unhighlight-sections nil)
         (magit-process-unset-mode-line-error-status)
@@ -1109,7 +1121,8 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
 (defun magit-refresh-get-relative-position ()
   (when-let ((section (magit-current-section)))
     (let ((start (oref section start)))
-      (list (count-lines start (point))
+      (list (- (line-number-at-pos (point))
+               (line-number-at-pos start))
             (- (point) (line-beginning-position))
             (and (magit-hunk-section-p section)
                  (region-active-p)

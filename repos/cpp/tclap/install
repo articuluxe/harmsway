@@ -1,5 +1,7 @@
-cd src/tclap-1.2.2
-./configure --prefix=$HOME/opt/stow/tclap
+cd src/tclap-1.4.0-rc1
+mkdir bld
+cd bld
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/opt/stow/tclap ..
 make
 make install
 mkdir -p $HOME/opt/stow

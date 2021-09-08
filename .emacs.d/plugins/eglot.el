@@ -129,7 +129,10 @@ chosen (interactively or automatically)."
                              nil t nil nil (car (car available)))
                             available #'equal)))
                      ((cdr (car available)))
-                     (t (funcall err)))))
+                     (t
+                      ;; Don't error when used interactively, let the
+                      ;; Eglot prompt the user for alternative (github#719)
+                      nil))))
             (t
              (cl-loop for (p . args) in listified
                       for probe = (eglot--executable-find p t)
@@ -1383,7 +1386,10 @@ Doubles as an indicator of snippet support."
       (font-lock-ensure)
       (string-trim (filter-buffer-substring (point-min) (point-max))))))
 
-(defcustom eglot-ignored-server-capabilites (list)
+(define-obsolete-variable-alias 'eglot-ignored-server-capabilites
+  'eglot-ignored-server-capabilities "1.8")
+
+(defcustom eglot-ignored-server-capabilities (list)
   "LSP server capabilities that Eglot could use, but won't.
 You could add, for instance, the symbol
 `:documentHighlightProvider' to prevent automatic highlighting
@@ -2089,10 +2095,13 @@ Calls REPORT-FN (or arranges for it to be called) when the server
 publishes diagnostics.  Between calls to this function, REPORT-FN
 may be called multiple times (respecting the protocol of
 `flymake-backend-functions')."
-  (setq eglot--current-flymake-report-fn report-fn)
-  ;; Report anything unreported
-  (when eglot--unreported-diagnostics
-    (eglot--report-to-flymake (cdr eglot--unreported-diagnostics))))
+  (cond (eglot--managed-mode
+         (setq eglot--current-flymake-report-fn report-fn)
+         ;; Report anything unreported
+         (when eglot--unreported-diagnostics
+           (eglot--report-to-flymake (cdr eglot--unreported-diagnostics))))
+        (t
+         (funcall report-fn nil))))
 
 (defun eglot--report-to-flymake (diags)
   "Internal helper for `eglot-flymake-backend'."
@@ -2354,14 +2363,15 @@ is not active."
           ((null action)                                 ; try-completion
            (try-completion probe (funcall proxies)))
           ((eq action t)                                 ; all-completions
-           (cl-remove-if-not
+           (all-completions
+            ""
+            (funcall proxies)
             (lambda (proxy)
               (let* ((item (get-text-property 0 'eglot--lsp-item proxy))
                      (filterText (plist-get item :filterText)))
                 (and (or (null pred) (funcall pred proxy))
                      (string-prefix-p
-                      probe (or filterText proxy) completion-ignore-case))))
-            (funcall proxies)))))
+                      probe (or filterText proxy) completion-ignore-case))))))))
        :annotation-function
        (lambda (proxy)
          (eglot--dbind ((CompletionItem) detail kind)

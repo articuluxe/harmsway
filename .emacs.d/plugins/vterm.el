@@ -160,12 +160,22 @@ the executable."
 (require 'color)
 (require 'compile)
 (require 'face-remap)
+(require 'tramp)
+(require 'bookmark)
 
 ;;; Options
 
 (defcustom vterm-shell shell-file-name
   "The shell that gets run in the vterm."
   :type 'string
+  :group 'vterm)
+
+(defcustom vterm-tramp-shells '(("docker" "/bin/sh"))
+  "The shell that gets run in the vterm for tramp.
+
+`vterm-tramp-shells' has to be a list of pairs of the format:
+\(TRAMP-METHOD SHELL)"
+  :type '(alist :key-type string :value-type string)
   :group 'vterm)
 
 (defcustom vterm-buffer-name "*vterm*"
@@ -223,7 +233,7 @@ the point up."
   :group 'vterm)
 
 (defcustom vterm-keymap-exceptions
-  '("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o" "C-v" "M-v" "C-y" "M-y")
+  '("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o" "C-y" "M-y")
   "Exceptions for `vterm-keymap'.
 
 If you use a keybinding with a prefix-key, add that prefix-key to
@@ -297,14 +307,15 @@ demo: '(\"env1=v1\" \"env2=v2\")"
 
 Support copy text to emacs kill ring and system clipboard by using OSC 52.
 For example: send base64 encoded 'foo' to kill ring: echo -en '\e]52;c;Zm9v\a',
-tmux can share its copy buffer to terminals by supporting osc52(like iterm2 xterm),
-you can enable this feature for tmux by :
+tmux can share its copy buffer to terminals by supporting osc52(like iterm2
+ xterm) you can enable this feature for tmux by :
 set -g set-clipboard on         #osc 52 copy paste share with iterm
 set -ga terminal-overrides ',xterm*:XT:Ms=\E]52;%p1%s;%p2%s\007'
 set -ga terminal-overrides ',screen*:XT:Ms=\E]52;%p1%s;%p2%s\007'
 
-The clipboard querying/clearing functionality offered by OSC 52 is not implemented here,
-And for security reason, this feature is disabled by default."
+The clipboard querying/clearing functionality offered by OSC 52 is not
+implemented here,And for security reason, this feature is disabled
+by default."
   :type 'boolean
   :group 'vterm)
 
@@ -356,10 +367,11 @@ This means that vterm will render bold with the default face weight."
   :group 'vterm)
 
 (defcustom vterm-ignore-blink-cursor t
-  "When t, vterm will ignore request from application to turn on or off cursor blink.
+  "When t,vterm will ignore request from application to turn on/off cursor blink.
 
-If nil, cursor in any window may begin to blink or not blink because `blink-cursor-mode`
-is a global minor mode in Emacs, you can use `M-x blink-cursor-mode` to toggle."
+If nil, cursor in any window may begin to blink or not blink because
+`blink-cursor-mode`is a global minor mode in Emacs,
+you can use `M-x blink-cursor-mode` to toggle."
   :type 'boolean
   :group 'vterm)
 
@@ -382,6 +394,11 @@ to change your shell prompt to print 51;A.
 The second method is using a regular expression. This method does
 not require any shell-side configuration. See
 `term-prompt-regexp', for more information."
+  :type 'boolean
+  :group 'vterm)
+
+(defcustom vterm-bookmark-check-dir t
+  "When set to non-nil, also restore directory when restoring a vterm bookmark."
   :type 'boolean
   :group 'vterm)
 
@@ -659,7 +676,8 @@ Exceptions are defined by `vterm-keymap-exceptions'."
                                        "LINES"
                                        "COLUMNS")
                                      process-environment))
-        (inhibit-eol-conversion t)
+        ;; TODO: Figure out why inhibit is needed for curses to render correctly.
+        (inhibit-eol-conversion nil)
         (coding-system-for-read 'binary)
         (process-adaptive-read-buffering nil)
         (width (max (- (window-body-width) (vterm--get-margin-width))
@@ -701,9 +719,10 @@ Exceptions are defined by `vterm-keymap-exceptions'."
                ;; See: https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=220009
                (if (eq system-type 'berkeley-unix) "" "iutf8")
                (window-body-height)
-               width vterm-shell))
-           :coding 'no-conversion
+               width (vterm--get-shell)))
+           ;; :coding 'no-conversion
            :connection-type 'pty
+           :file-handler t
            :filter #'vterm--filter
            ;; The sentinel is needed if there are exit functions or if
            ;; vterm-kill-buffer-on-exit is set to t.  In this latter case,
@@ -724,7 +743,56 @@ Exceptions are defined by `vterm-keymap-exceptions'."
                #'vterm--window-adjust-process-window-size)
   ;; Support to compilation-shell-minor-mode
   ;; Is this necessary? See vterm--compilation-setup
-  (setq next-error-function 'vterm-next-error-function))
+  (setq next-error-function 'vterm-next-error-function)
+  (setq-local bookmark-make-record-function 'vterm--bookmark-make-record))
+
+(defun vterm--get-shell ()
+  "Get the shell that gets run in the vterm."
+  (if (ignore-errors (file-remote-p default-directory))
+      (with-parsed-tramp-file-name default-directory nil
+        (or (cadr (assoc method vterm-tramp-shells))
+            vterm-shell))
+    vterm-shell))
+
+(defun vterm--bookmark-make-record ()
+  "Create a vterm bookmark.
+
+Notes down the current directory and buffer name."
+  `(nil
+    (handler . vterm--bookmark-handler)
+    (thisdir . ,default-directory)
+    (buf-name . ,(buffer-name))
+    (defaults . nil)))
+
+
+;;;###autoload
+(defun vterm--bookmark-handler (bmk)
+  "Handler to restore a vterm bookmark BMK.
+
+If a vterm buffer of the same name does not exist, the function will create a
+new vterm buffer of the name. It also checks the current directory and sets
+it to the bookmarked directory if needed."
+  (let* ((thisdir (bookmark-prop-get bmk 'thisdir))
+         (buf-name (bookmark-prop-get bmk 'buf-name))
+         (buf (get-buffer buf-name))
+         (thismode (and buf (with-current-buffer buf major-mode))))
+    ;; create if no such vterm buffer exists
+    (when (or (not buf) (not (eq thismode 'vterm-mode)))
+      (setq buf (generate-new-buffer buf-name))
+      (with-current-buffer buf
+        (when vterm-bookmark-check-dir
+          (setq default-directory thisdir))
+        (vterm-mode)))
+    ;; check the current directory
+    (with-current-buffer buf
+      (when (and vterm-bookmark-check-dir
+                 (not (string-equal default-directory thisdir)))
+        (when vterm-copy-mode
+          (vterm-copy-mode-done nil))
+        (vterm-insert (concat "cd " thisdir))
+        (vterm-send-return)))
+    ;; set to this vterm buf
+    (set-buffer buf)))
 
 (defun vterm--compilation-setup ()
   "Function to enable the option `compilation-shell-minor-mode' for vterm.
@@ -825,7 +893,7 @@ will invert `vterm-copy-exclude-prompt' for that call."
         (when-let ((key (key-description (vector raw-key))))
           (vterm-send-key key shift meta ctrl))))))
 
-(defun vterm-send-key (key &optional shift meta ctrl)
+(defun vterm-send-key (key &optional shift meta ctrl accept-proc-output)
   "Send KEY to libvterm with optional modifiers SHIFT, META and CTRL."
   (deactivate-mark)
   (when vterm--term
@@ -835,7 +903,8 @@ will invert `vterm-copy-exclude-prompt' for that call."
         (setq key (upcase key)))
       (vterm--update vterm--term key shift meta ctrl)
       (setq vterm--redraw-immididately t)
-      (accept-process-output vterm--process vterm-timer-delay nil t))))
+      (when accept-proc-output
+        (accept-process-output vterm--process vterm-timer-delay nil t)))))
 
 (defun vterm-send (key)
   "Send KEY to libvterm.  KEY can be anything `kbd' understands."
@@ -1030,7 +1099,7 @@ Provide similar behavior as `insert' for vterm."
   (when vterm--term
     (if (vterm-goto-char start)
         (cl-loop repeat (- end start) do
-                 (vterm-send-delete))
+                 (vterm-send-key "<delete>" nil nil nil t))
       (let ((inhibit-read-only nil))
         (vterm--delete-region start end)))))
 
@@ -1049,13 +1118,13 @@ It will reset to original position if it can't move there."
       (setq cursor-pos (point))
       (setq pt cursor-pos)
       (while (and (> pos pt) moved)
-        (vterm-send-right)
+        (vterm-send-key "<right>" nil nil nil t)
         (setq moved (not (= pt (point))))
         (setq pt (point)))
       (setq pt (point))
       (setq moved t)
       (while (and (< pos pt) moved)
-        (vterm-send-left)
+        (vterm-send-key "<left>" nil nil nil t)
         (setq moved (not (= pt (point))))
         (setq pt (point)))
       (setq succ (= pos (point)))
@@ -1191,10 +1260,11 @@ value of `vterm-buffer-name'."
                    (t
                     (get-buffer-create vterm-buffer-name)))))
     (cl-assert (and buf (buffer-live-p buf)))
+    (funcall pop-to-buf-fun buf)
     (with-current-buffer buf
       (unless (derived-mode-p 'vterm-mode)
         (vterm-mode)))
-    (funcall pop-to-buf-fun buf)))
+    buf))
 
 ;;; Internal
 

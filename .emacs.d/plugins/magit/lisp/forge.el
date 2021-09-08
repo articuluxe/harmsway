@@ -70,7 +70,8 @@
 
 ;;;###autoload
 (with-eval-after-load 'magit-mode
-  (define-key magit-mode-map "'" 'forge-dispatch))
+  (define-key magit-mode-map "'" 'forge-dispatch)
+  (define-key magit-mode-map "N" 'forge-dispatch))
 
 (define-key magit-commit-section-map [remap magit-browse-thing] 'forge-browse-dwim)
 (define-key magit-remote-section-map [remap magit-browse-thing] 'forge-browse-remote)
@@ -79,8 +80,8 @@
 (define-key magit-commit-section-map (kbd "C-c C-v") 'forge-visit-topic)
 (define-key magit-branch-section-map (kbd "C-c C-v") 'forge-visit-topic)
 
-(transient-append-suffix 'magit-dispatch "%"
-  '("'" "Forge" forge-dispatch))
+(transient-insert-suffix 'magit-dispatch "o"
+  '("N" "Forge" forge-dispatch))
 
 (transient-append-suffix 'magit-fetch "m"
   '("y" "forge topics" forge-pull))
@@ -101,9 +102,9 @@
   '("y" "pull-request worktree" forge-checkout-worktree))
 
 (transient-append-suffix 'magit-status-jump "w"
-  '("'p" "pull-requests" forge-jump-to-pullreqs))
-(transient-append-suffix 'magit-status-jump "'p"
-  '("'i" "issues" forge-jump-to-issues))
+  '("Np" "pull-requests" forge-jump-to-pullreqs))
+(transient-append-suffix 'magit-status-jump "Np"
+  '("Ni" "issues" forge-jump-to-issues))
 
 (transient-append-suffix 'magit-merge "a"
   '(7 "f" "Merge using API" forge-merge))

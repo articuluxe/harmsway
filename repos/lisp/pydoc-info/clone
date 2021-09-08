@@ -1,1 +1,1 @@
-hg clone https://bitbucket.org/jonwaltman/pydoc-info src
+git clone https://github.com/visigoth/pydoc-info.git src

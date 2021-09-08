@@ -709,6 +709,10 @@ That is, if its name starts with \"*\"."
 
 ;;
 
+(defcustom bufler-indent-per-level 2
+  "How much indentation to apply per level of depth."
+  :type 'integer)
+
 (defvar bufler-column-format-fns nil
   "Alist mapping column names to formatting functions.
 Each function takes two arguments, the buffer and its depth in
@@ -734,7 +738,10 @@ PLIST may be a plist setting the following options:
   (declare (indent defun))
   (cl-check-type name string)
   (pcase-let* ((fn-name (intern (concat "bufler-column-format-" (downcase name))))
-               ((map :face :max-width) plist)
+               ;; NOTE: Emacs 27 inexplicably fails to expand this `pcase' binding form correctly at compile time,
+               ;; so we use the more explicit form.  See <https://github.com/alphapapa/bufler.el/issues/70>.
+               ;;  ((map :face :max-width) plist)
+               ((map (:face face) (:max-width max-width)) plist)
                (max-width-variable (intern (concat "bufler-column-" name "-max-width")))
                (max-width-docstring (format "Maximum width of the %s column." name)))
     `(progn
@@ -762,7 +769,7 @@ PLIST may be a plist setting the following options:
 (bufler-define-column "Name" (:max-width nil)
   ;; MAYBE: Move indentation back to `bufler-list'.  But this seems to
   ;; work well, and that might be more complicated.
-  (let ((indentation (make-string (* 2 depth) ? ))
+  (let ((indentation (make-string (* 2 bufler-indent-per-level) ? ))
         (mode-annotation (when (cl-loop for fn in bufler-buffer-mode-annotate-preds
                                         thereis (funcall fn buffer))
                            (propertize (concat (replace-regexp-in-string

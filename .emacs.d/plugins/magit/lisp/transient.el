@@ -2606,13 +2606,12 @@ stand-alone command."
     (cl-block nil
       (while t
         (let ((str (read-from-minibuffer prompt initial-input nil nil history)))
-          (cond ((string-equal str "")
-                 (cl-return nil))
-                ((string-match-p (if include-zero
-                                     "\\`\\(0\\|[1-9][0-9]*\\)\\'"
-                                   "\\`[1-9][0-9]*\\'")
-                                 str)
-                 (cl-return str))))
+          (when (or (string-equal str "")
+                    (string-match-p (if include-zero
+                                        "\\`\\(0\\|[1-9][0-9]*\\)\\'"
+                                      "\\`[1-9][0-9]*\\'")
+                                    str))
+            (cl-return str)))
         (message "Please enter a natural number (%s zero)."
                  (if include-zero "including" "excluding"))
         (sit-for 1)))))
@@ -3261,12 +3260,13 @@ Show the first one that is specified."
 
 (cl-defmethod transient-show-help ((obj transient-suffix))
   "Show the command doc-string."
-  (if (eq this-original-command 'transient-help)
+  (if (eq this-command 'transient-help)
       (if-let ((manpage (oref transient--prefix man-page)))
           (transient--show-manpage manpage)
         (transient--describe-function (oref transient--prefix command)))
     (if-let ((prefix (get (transient--suffix-command obj) 'transient--prefix))
-             (manpage (oref prefix man-page)))
+             (manpage (oref prefix man-page))
+             (- (not (eq this-command (oref transient--prefix command)))))
         (transient--show-manpage manpage)
       (transient--describe-function this-original-command))))
 

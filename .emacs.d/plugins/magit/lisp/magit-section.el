@@ -10,8 +10,8 @@
 
 ;; Keywords: tools
 ;; Homepage: https://github.com/magit/magit
-;; Package-Requires: ((emacs "25.1") (dash "20210330"))
-;; Package-Version: 3.2.0
+;; Package-Requires: ((emacs "25.1") (dash "2.18.1"))
+;; Package-Version: 3.2.1
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; Magit-Section is free software; you can redistribute it and/or modify
@@ -318,7 +318,7 @@ but that ship has sailed, thus this option."
 (defvar magit-section-mode-map
   (let ((map (make-keymap)))
     (suppress-keymap map t)
-    (define-key map (kbd "C-i") 'magit-section-toggle)
+    (define-key map (kbd "TAB") 'magit-section-toggle)
     (define-key map [C-tab]     'magit-section-cycle)
     (define-key map [M-tab]     'magit-section-cycle)
     ;; [backtab] is the most portable binding for Shift+Tab.
@@ -328,10 +328,10 @@ but that ship has sailed, thus this option."
     (define-key map (kbd   "n") 'magit-section-forward)
     (define-key map (kbd "M-p") 'magit-section-backward-sibling)
     (define-key map (kbd "M-n") 'magit-section-forward-sibling)
-    (define-key map "1"         'magit-section-show-level-1)
-    (define-key map "2"         'magit-section-show-level-2)
-    (define-key map "3"         'magit-section-show-level-3)
-    (define-key map "4"         'magit-section-show-level-4)
+    (define-key map (kbd   "1") 'magit-section-show-level-1)
+    (define-key map (kbd   "2") 'magit-section-show-level-2)
+    (define-key map (kbd   "3") 'magit-section-show-level-3)
+    (define-key map (kbd   "4") 'magit-section-show-level-4)
     (define-key map (kbd "M-1") 'magit-section-show-level-1-all)
     (define-key map (kbd "M-2") 'magit-section-show-level-2-all)
     (define-key map (kbd "M-3") 'magit-section-show-level-3-all)
@@ -357,8 +357,9 @@ Magit-Section is documented in info node `(magit-section)'."
   ;; (hack-dir-local-variables-non-file-buffer)
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
+  (add-hook 'pre-command-hook #'magit-section-pre-command-hook nil t)
   (add-hook 'post-command-hook #'magit-section-update-highlight t t)
-  (add-hook 'deactivate-mark-hook #'magit-section-update-highlight t t)
+  (add-hook 'deactivate-mark-hook #'magit-section-deactivate-mark t t)
   (setq-local redisplay-highlight-region-function
               'magit-section--highlight-region)
   (setq-local redisplay-unhighlight-region-function
@@ -1240,13 +1241,20 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
 
 ;;; Highlight
 
+(defvar-local magit-section-pre-command-section nil)
 (defvar-local magit-section-highlight-overlays nil)
-(defvar-local magit-section-highlighted-section nil)
 (defvar-local magit-section-highlighted-sections nil)
 (defvar-local magit-section-unhighlight-sections nil)
-(defun magit-section-update-highlight ()
+
+(defun magit-section-pre-command-hook ()
+  (setq magit-section-pre-command-section (magit-current-section)))
+
+(defun magit-section-deactivate-mark ()
+  (magit-section-update-highlight t))
+
+(defun magit-section-update-highlight (&optional force)
   (let ((section (magit-current-section)))
-    (unless (eq section magit-section-highlighted-section)
+    (when (or force (not (eq magit-section-pre-command-section section)))
       (let ((inhibit-read-only t)
             (deactivate-mark nil)
             (selection (magit-region-sections)))
@@ -1261,11 +1269,7 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
         (dolist (s magit-section-unhighlight-sections)
           (run-hook-with-args-until-success
            'magit-section-unhighlight-hook s selection))
-        (restore-buffer-modified-p nil)
-        (unless (eq magit-section-highlighted-section section)
-          (setq magit-section-highlighted-section
-                (and (not (oref section hidden))
-                     section)))))
+        (restore-buffer-modified-p nil)))
     (magit-section-maybe-paint-visibility-ellipses)))
 
 (defun magit-section-highlight (section selection)
@@ -1384,7 +1388,6 @@ invisible."
              start end window rol)))
 
 (defun magit-section--unhighlight-region (rol)
-  (setq magit-section-highlighted-section nil)
   (magit-section--delete-region-overlays)
   (funcall (default-value 'redisplay-unhighlight-region-function) rol))
 

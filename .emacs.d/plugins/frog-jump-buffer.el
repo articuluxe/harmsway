@@ -92,6 +92,11 @@ Shows all buffers by default."
 Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
   :type 'list)
 
+(defcustom frog-jump-buffer-use-all-the-icons-ivy nil
+  "Enable support for adding icons to the `frog-jump-buffer'.
+Warning: experimental. Requires installing `all-the-icons-ivy'."
+  :type 'boolean)
+
 (defun frog-jump-buffer-default-filter-actions ()
   "The built-in buffer filter actions available during `frog-jump-buffer'.
 Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
@@ -267,15 +272,15 @@ Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
            (unless frog-jump-buffer-include-current-buffer
              (list (buffer-name (current-buffer)))))))
 
-(defun frog-jump-buffer-iconify-buffer-names (buffer-names)
+(defun frog-jump-buffer-maybe-iconify-buffer-names (buffer-names)
   "Add an icon before each buffer name when `all-the-icons-ivy' is available."
-  (if (featurep 'all-the-icons-ivy)
-      (mapcar '(lambda (buffer-name)
-                 (cons
-                  (if (buffer-file-name (get-buffer buffer-name))
-                      (all-the-icons-ivy-file-transformer buffer-name)
-                    (all-the-icons-ivy-buffer-transformer buffer-name))
-                  buffer-name))
+  (if (and frog-jump-buffer-use-all-the-icons-ivy (featurep 'all-the-icons-ivy))
+      (mapcar #'(lambda (buffer-name)
+                  (cons
+                   (if (buffer-file-name (get-buffer buffer-name))
+                       (all-the-icons-ivy-file-transformer buffer-name)
+                     (all-the-icons-ivy-buffer-transformer buffer-name))
+                   buffer-name))
               buffer-names)
     buffer-names))
 
@@ -289,7 +294,9 @@ If FILTER-FUNCTION is present, filter the `buffer-list' with it."
          (frog-menu-posframe-parameters frog-jump-buffer-posframe-parameters)
          (frog-jump-buffer-current-filter-function
           (or frog-jump-buffer-current-filter-function frog-jump-buffer-default-filter))
-         (frog-menu-display-option-alist `((avy-posframe . ,frog-jump-buffer-posframe-handler)))
+         (frog-jump-buffer-display-option-alist (copy-alist frog-menu-display-option-alist))
+         (_ (rplacd (assq 'avy-posframe frog-jump-buffer-display-option-alist) frog-jump-buffer-posframe-handler))
+         (frog-menu-display-option-alist frog-jump-buffer-display-option-alist)
          (frog-jump-buffer-include-virtual-buffers
           (eq frog-jump-buffer-current-filter-function 'frog-jump-buffer-filter-recentf))
          (frog-jump-buffer-current-ignore-buffers (frog-jump-buffer-current-ignore-buffers))
@@ -298,7 +305,7 @@ If FILTER-FUNCTION is present, filter the `buffer-list' with it."
          (filter-keys (-map #'string-to-char (-map #'car actions)))
          (frog-menu-avy-keys (-difference frog-menu-avy-keys filter-keys))
          (prompt (frog-jump-buffer-prompt))
-         (res (frog-menu-read prompt (frog-jump-buffer-iconify-buffer-names
+         (res (frog-menu-read prompt (frog-jump-buffer-maybe-iconify-buffer-names
                                       (cl-sort buffer-names frog-jump-buffer-sort))
                               actions)))
     (if res

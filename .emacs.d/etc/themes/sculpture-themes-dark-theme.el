@@ -5,8 +5,8 @@
 ;; Author: t-e-r-m <newenewen@tutanota.com>
 ;; URL: https://github.com/t-e-r-m/sculpture-theme
 ;; Created: January 06, 2021
-;; Modified: May 29, 2021
-;; Version: 1.1.1
+;; Modified: August 28, 2021
+;; Version: 1.2.2
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -79,6 +79,7 @@
       (bw02 "#222222")
       (bw03 "#333333")
       (bw04 "#444444")
+      (bw05 "#555555")
       (bw06 "#666666")
       (bw07 "#777777")
       (bw08 "#888888")
@@ -120,7 +121,13 @@
       (ot10 "#713764")
       (ot11 "#201F0E")
       (ot12 "#D0CA62")
-      (ot13 "#313020"))
+      (ot13 "#313020")
+      (ot14 "#020202")
+      (ot15 "#161F14")
+      (ot16 "#5F1416")
+      (ot17 "#2E2C0A")
+      (ot18 "#96A880")
+      (ot19 "#F61E2F"))
 ;;;;; definitions
 ;;;;;; base
   (custom-theme-set-faces
@@ -157,6 +164,11 @@
    `(whitespace-tab       ((,class (:foreground ,ot00 :background ,ot06))))
    `(escape-glyph         ((,class (:foreground ,ot07))))
 
+   `(popup-tip-face           ((,class (:inherit (variable-pitch button) :foreground ,ot05))))
+   `(highlight-numbers-number ((,class (:foreground ,ot18))))
+   `(highlight-quoted-symbol  ((,class (:foreground ,ot12))))
+   `(highlight-quoted-quote   ((,class (:foreground ,ot01))))
+
 ;;;;;; font-lock
    `(font-lock-builtin-face              ((,class (:foreground ,ot05 :weight bold))))
    `(font-lock-comment-face              ((,class (:foreground ,bw10 :background ,ha09 :slant italic))))
@@ -167,7 +179,7 @@
    `(font-lock-string-face               ((,class (:foreground ,ha00))))
    `(font-lock-type-face                 ((,class (:foreground ,ha07))))
    `(font-lock-variable-name-face        ((,class (:foreground ,cs01))))
-   `(font-lock-doc-face                  ((,class (:foreground ,fg))))
+   `(font-lock-doc-face                  ((,class (:foreground ,ot19))))
    `(font-lock-warning-face              ((,class (:foreground ,cs00))))
    `(font-lock-preprocessor-face         ((,class (:background ,ha01))))
    `(font-lock-negation-char-face        ((,class (:foreground ,ha04))))
@@ -313,8 +325,8 @@
    `(query-replace  ((,class (:foreground ,fg   :background ,ot08))))
 
 ;;;;;; workspace, doom
-   `(+workspace-tab-face          ((,class (:foreground ,fg))))
-   `(+workspace-tab-selected-face ((,class (:foreground ,ha04 :background ,ot05))))
+   `(+workspace-tab-face          ((,class (:inherit variable-pitch :foreground ,fg))))
+   `(+workspace-tab-selected-face ((,class (:inherit variable-pitch :foreground ,ha04 :background ,ot05))))
 
 ;;;;;; +org-todo, custom
    `(+org-todo-cancel  ((,class (:inherit fixed-pitch :underline (:color ,cs00 :line-width -1)))))
@@ -332,15 +344,15 @@
    `(ido-incomplete-regexp ((,class (:foreground ,ha06))))
 
 ;;;;;; imenu-list
-   `(imenu-list-entry-face            ((,class (:foreground ,fg))))
-   `(imenu-list-entry-face-3          ((,class (:foreground ,ha01))))
-   `(imenu-list-entry-face-2          ((,class (:foreground ,ha04))))
-   `(imenu-list-entry-face-1          ((,class (:foreground ,ot12))))
-   `(imenu-list-entry-face-0          ((,class (:foreground ,ot04))))
-   `(imenu-list-entry-subalist-face-3 ((,class (:foreground ,ha01 :underline t))))
-   `(imenu-list-entry-subalist-face-2 ((,class (:foreground ,ha04 :underline t))))
-   `(imenu-list-entry-subalist-face-1 ((,class (:foreground ,ot12 :underline t))))
-   `(imenu-list-entry-subalist-face-0 ((,class (:foreground ,ot04 :underline t))))
+   `(imenu-list-entry-face            ((,class (:inherit variable-pitch :foreground ,fg))))
+   `(imenu-list-entry-face-3          ((,class (:inherit variable-pitch :foreground ,ha01))))
+   `(imenu-list-entry-face-2          ((,class (:inherit variable-pitch :foreground ,ha04))))
+   `(imenu-list-entry-face-1          ((,class (:inherit variable-pitch :foreground ,ot12))))
+   `(imenu-list-entry-face-0          ((,class (:inherit variable-pitch :foreground ,ot04))))
+   `(imenu-list-entry-subalist-face-3 ((,class (:inherit variable-pitch :foreground ,ha01 :underline t))))
+   `(imenu-list-entry-subalist-face-2 ((,class (:inherit variable-pitch :foreground ,ha04 :underline t))))
+   `(imenu-list-entry-subalist-face-1 ((,class (:inherit variable-pitch :foreground ,ot12 :underline t))))
+   `(imenu-list-entry-subalist-face-0 ((,class (:inherit variable-pitch :foreground ,ot04 :underline t))))
 
 ;;;;;; Sculpture-Themes-Dark-Head-Outline
    `(sculpture-themes-dark-head-outline-1 ((,class (:foreground ,ha04))))
@@ -469,6 +481,11 @@
    `(org-level-7 ((,class (:inherit sculpture-themes-dark-head-outline-7))))
    `(org-level-8 ((,class (:inherit sculpture-themes-dark-head-outline-8))))
 
+;;;;;; paren
+   `(show-paren-match            ((,class (:underline (:color ,ha02 :line-width -1)))))
+   `(show-paren-mismatch         ((,class (:underline (:color ,ha11 :line-width -1)))))
+   `(show-paren-match-expression ((,class (:underline (:color ,ot06 :line-width -1)))))
+
 ;;;;;; shr
    `(shr-link ((,class (:inherit org-link))))
    `(shr-selected-link ((,class (:inherit org-link :background ,ot08))))
@@ -551,6 +568,9 @@
    `(magit-log-graph              ((,class (:foreground ,ot00))))
    `(magit-tag                    ((,class (:foreground ,ha04 :underline t :inherit variable-pitch))))
    `(magit-popup-disabled-argument((,class (:foreground ,bw04))))
+   `(magit-blame-margin           ((,class (:inherit head-outline-3 :background ,bw03))))
+   `(magit-blame-heading          ((,class (:inherit head-outline-3 :background ,bw03))))
+   `(magit-blame-highlight        ((,class (:inherit head-outline-3 :background ,bw03))))
 
 ;;;;;; orderless
    `(orderless-match-face-0 ((,class (:inherit sculpture-themes-dark-head-outline-2 :weight bold))))
@@ -566,7 +586,64 @@
    `(ediff-even-diff-Ancestor ((,class (:background ,ot06))))
    `(ediff-even-diff-C ((,class (:background ,ot13))))
    `(ediff-even-diff-B ((,class (:background ,ot06))))
-   `(ediff-even-diff-A ((,class (:background ,ot06))))))
+   `(ediff-even-diff-A ((,class (:background ,ot06))))
+
+;;;;;; vertico
+   `(vertico-current     ((,class (:underline (:line-width -1 :color ,ot04) :weight bold))))
+   `(vertico-group-title ((,class (:inherit (sculpture-themes-dark-head-outline-7 variable-pitch)))))
+
+;;;;;; olivetti
+   `(olivetti-fringe ((,class (:background ,ot14))))
+
+;;;;;; flycheck
+   `(flycheck-info    ((,class (:underline (:line-width -1 :color ,ot15)))))
+   `(flycheck-error   ((,class (:underline (:line-width -1 :color ,ot16)))))
+   `(flycheck-warning ((,class (:underline (:line-width -1 :color ,ot17)))))
+
+   `(flycheck-posframe-face            ((,class (:inherit popup-tip-face))))
+   `(flycheck-posframe-info-face       ((,class (:inherit (popup-tip-face variable-pitch flycheck-info) :foreground ,ot15))))
+   `(flycheck-posframe-error-face      ((,class (:inherit (popup-tip-face variable-pitch flycheck-error) :foreground ,ot16))))
+   `(flycheck-posframe-border-face     ((,class (:inherit popup-tip-face))))
+   `(flycheck-posframe-warning-face    ((,class (:inherit (popup-tip-face variable-pitch flycheck-warning) :foreground ,ot17))))
+   `(flycheck-posframe-background-face ((,class (:inherit popup-tip-face))))
+
+;;;;;; tree-sitter
+   `(tree-sitter-hl-face:function.call ((,class (:inherit font-lock-function-name-face))))
+
+;;;;;; tabs
+   `(tab-line                   ((,class (:inherit mode-line))))
+   `(tab-bar                    ((,class (:inherit mode-line))))
+   `(tab-bar-tab                ((,class (:inherit mode-line))))
+   `(tab-bar-tab-inactive       ((,class (:inherit mode-line))))
+
+   `(centaur-tabs-default                    ((,class (:inherit variable-pitch :foreground ,bw12 :background ,bw00))))
+   `(centaur-tabs-selected                   ((,class (:inherit (variable-pitch mode-line-buffer-id)))))
+   `(centaur-tabs-unselected                 ((,class (:inherit (variable-pitch tab-bar-tab-inactive)))))
+   `(centaur-tabs-close-selected             ((,class (:inherit (variable-pitch mode-line-percent)))))
+   `(centaur-tabs-active-bar-face            ((,class (:inherit mode-line))))
+   `(centaur-tabs-close-mouse-face           ((,class (:inherit mode-line))))
+   `(centaur-tabs-close-unselected           ((,class (:inherit mode-line))))
+   `(centaur-tabs-selected-modified          ((,class (:inherit mode-line))))
+   `(centaur-tabs-unselected-modified        ((,class (:inherit mode-line))))
+   `(centaur-tabs-modified-marker-selected   ((,class (:inherit mode-line))))
+   `(centaur-tabs-modified-marker-unselected ((,class (:inherit mode-line))))
+
+;;;;;; highlight-indent-guides
+   `(highlight-indent-guides-odd-face             ((,class (:foreground ,bw02))))
+   `(highlight-indent-guides-even-face            ((,class (:foreground ,bw02))))
+   `(highlight-indent-guides-character-face       ((,class (:foreground ,bw03))))
+   `(highlight-indent-guides-stack-odd-face       ((,class (:foreground ,bw04))))
+   `(highlight-indent-guides-stack-even-face      ((,class (:foreground ,bw04))))
+   `(highlight-indent-guides-stack-character-face ((,class (:foreground ,bw05))))
+   `(highlight-indent-guides-top-odd-face         ((,class (:foreground ,bw08))))
+   `(highlight-indent-guides-top-even-face        ((,class (:foreground ,bw08))))
+   `(highlight-indent-guides-top-character-face   ((,class (:foreground ,bw09))))
+
+;;;;;; highlight-indentation
+   `(highlight-indentation-face                ((,class (:background ,bw02))))
+   `(highlight-indentation-guides-odd-face     ((,class (:inherit highlight-indentation-face))))
+   `(highlight-indentation-guides-even-face    ((,class (:inherit highlight-indentation-face))))
+   `(highlight-indentation-current-column-face ((,class (:background ,bw03))))))
 
 (provide-theme 'sculpture-themes-dark)
 

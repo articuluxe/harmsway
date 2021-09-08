@@ -5,7 +5,7 @@
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "26.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
-;; Version: 7.1.0
+;; Version: 8.0.0
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
 ;; This program is free software; you can redistribute it and/or modify
@@ -145,7 +145,7 @@ the buffer when it becomes large."
   :type 'boolean
   :package-version '(lsp-mode . "6.1"))
 
-(define-obsolete-variable-alias 'lsp-enable-semantic-highlighting 'lsp-semantic-tokens-enable "lsp-mode 7.1")
+(define-obsolete-variable-alias 'lsp-enable-semantic-highlighting 'lsp-semantic-tokens-enable "lsp-mode 8.0.0")
 
 (defcustom lsp-semantic-tokens-enable nil
   "Enable/disable support for semantic tokens.
@@ -300,7 +300,7 @@ the server has requested that."
   :package-version '(lsp-mode . "6.1"))
 ;;;###autoload(put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 
-(define-obsolete-variable-alias 'lsp-file-watch-ignored 'lsp-file-watch-ignored-directories "7.1.0")
+(define-obsolete-variable-alias 'lsp-file-watch-ignored 'lsp-file-watch-ignored-directories "8.0.0")
 
 (defcustom lsp-file-watch-ignored-directories
   '(; SCM tools
@@ -352,7 +352,7 @@ creating file watches. Customization of this variable is only honored at
 the global level or at a root of an lsp workspace."
   :group 'lsp-mode
   :type '(repeat string)
-  :package-version '(lsp-mode . "7.1.0"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (define-obsolete-function-alias 'lsp-file-watch-ignored 'lsp-file-watch-ignored-directories "7.0.1")
 
@@ -383,7 +383,7 @@ Customization of this variable is only honored at the global
 level or at a root of an lsp workspace."
   :group 'lsp-mode
   :type '(repeat string)
-  :package-version '(lsp-mode . "7.1.0"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 ;; Allow lsp-file-watch-ignored-files as a file or directory-local variable
 (put 'lsp-file-watch-ignored-files 'safe-local-variable 'lsp--string-listp)
@@ -505,7 +505,7 @@ before saving a document."
 It contains the operation source."
   :type 'hook
   :group 'lsp-mode
-  :package-version '(lsp-mode . "7.1"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defcustom lsp-modeline-code-actions-enable t
   "Whether to show code actions on modeline."
@@ -521,7 +521,7 @@ It contains the operation source."
   "Whether to show workspace status on modeline."
   :type 'boolean
   :group 'lsp-modeline
-  :package-version '(lsp-mode . "7.1"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defcustom lsp-headerline-breadcrumb-enable t
   "Whether to enable breadcrumb on headerline."
@@ -1026,7 +1026,7 @@ every element of it is of type string, else nil."
    (vectorp candidate)
    (seq-every-p #'stringp candidate)))
 
-(make-obsolete 'lsp--string-vector-p nil "lsp-mode 7.1")
+(make-obsolete 'lsp--string-vector-p nil "lsp-mode 8.0.0")
 
 (defun lsp--editable-vector-match (widget value)
   "Function for `lsp-editable-vector' :match."
@@ -1084,7 +1084,7 @@ Deprecated. Use `lsp-repeatable-vector' instead. "
   :tag "Vector"
   :type '(lsp-repeatable-vector string))
 
-(make-obsolete 'lsp-string-vector nil "lsp-mode 7.1")
+(make-obsolete 'lsp-string-vector nil "lsp-mode 8.0.0")
 
 (defvar lsp--show-message t
   "If non-nil, show debug message from `lsp-mode'.")
@@ -1910,7 +1910,7 @@ PARAMS - the data sent from WORKSPACE."
   "Progress prefix."
   :group 'lsp-mode
   :type 'string
-  :package-version '(lsp-mode . "7.1.0"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defcustom lsp-progress-function #'lsp-on-progress-modeline
   "Function for handling the progress notifications."
@@ -1921,7 +1921,7 @@ PARAMS - the data sent from WORKSPACE."
                  lsp-on-progress-legacy)
           (const ignore :tag "Ignore")
           (function :tag "Other function"))
-  :package-version '(lsp-mode . "7.1.0"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defun lsp--progress-status ()
   "Returns the status of the progress for the current workspaces."
@@ -3346,8 +3346,11 @@ disappearing, unset all the variables related to it."
                    ,@(when lsp-enable-file-watchers '((didChangeWatchedFiles . ((dynamicRegistration . t)))))
                    (workspaceFolders . t)
                    (configuration . t)
-                   ,@(when lsp-semantic-tokens-enable '((semanticTokens . ((refreshSupport . t)))))
-                   ,@(when lsp-lens-enable '((codeLens . ((refreshSupport . :json-false)))))
+                   ,@(when lsp-semantic-tokens-enable
+                       `((semanticTokens . ((refreshSupport . ,(or (and (boundp 'lsp-semantic-tokens-honor-refresh-requests)
+                                                                        lsp-semantic-tokens-honor-refresh-requests)
+                                                                   :json-false))))))
+                   ,@(when lsp-lens-enable '((codeLens . ((refreshSupport . t)))))
                    (fileOperations . ((didCreate . :json-false)
                                       (willCreate . :json-false)
                                       (didRename . :json-false)
@@ -3929,7 +3932,7 @@ yet."
                                    lsp--uri-to-path))
                      (version (lsp:versioned-text-document-identifier-version? text-document)))
                 (with-current-buffer (find-file-noselect filename)
-                  (or (null version) (zerop version)
+                  (or (null version) (zerop version) (= -1 version)
                       (equal version lsp--cur-version))))))
            document-changes)
     (error "Document changes cannot be applied")))
@@ -5409,7 +5412,7 @@ It will filter by KIND if non nil."
   "Execute code action by COMMAND-KIND."
   (if-let ((action (->> (lsp-get-or-calculate-code-actions command-kind)
                         (-filter (-lambda ((&CodeAction :kind?))
-                                   (and kind? (equal command-kind kind?))))
+                                   (and kind? (s-prefix? command-kind kind?))))
                         lsp--select-action)))
       (lsp-execute-code-action action)
     (signal 'lsp-no-code-actions '(command-kind))))
@@ -6181,6 +6184,11 @@ WORKSPACE is the active workspace."
                                  (fboundp 'lsp--semantic-tokens-on-refresh))
                         (lsp--semantic-tokens-on-refresh workspace))
                       nil)
+                     ((equal method "workspace/codeLens/refresh")
+                      (when (and lsp-lens-enable
+                                 (fboundp 'lsp--lens-on-refresh))
+                        (lsp--lens-on-refresh workspace))
+                      nil)
                      (t (lsp-warn "Unknown request method: %s" method) nil))))
     ;; Send response to the server.
     (unless (eq response 'delay-response)
@@ -6275,8 +6283,8 @@ WORKSPACE is the active workspace."
                                      (/ (nth 2 (time-since before-send)) 1000))
                 workspace))
              (when callback
-               (funcall callback (lsp:json-response-result json-data))
-               (remhash id (lsp--client-response-handlers client)))))
+               (remhash id (lsp--client-response-handlers client))
+               (funcall callback (lsp:json-response-result json-data)))))
           ('response-error
            (cl-assert id)
            (-let [(_ callback method _ before-send) (gethash id (lsp--client-response-handlers client))]
@@ -6286,8 +6294,8 @@ WORKSPACE is the active workspace."
                                      'incoming-resp (/ (nth 2 (time-since before-send)) 1000))
                 workspace))
              (when callback
-               (funcall callback (lsp:json-response-error-error json-data))
-               (remhash id (lsp--client-response-handlers client)))))
+               (remhash id (lsp--client-response-handlers client))
+               (funcall callback (lsp:json-response-error-error json-data)))))
           ('notification
            (lsp--on-notification workspace json-data))
           ('request (lsp--on-request workspace json-data)))))))
@@ -7204,7 +7212,7 @@ SESSION is the active session."
 (defcustom lsp-verify-signature t
   "Whether to check GPG signatures of downloaded files."
   :type 'boolean
-  :package-version '(lsp-mode . "7.1")
+  :package-version '(lsp-mode . "8.0.0")
   :group 'lsp-mode)
 
 (defvar lsp--dependencies (ht))
@@ -7585,7 +7593,7 @@ archieve(e. g. when the archieve has multiple files)"
   "The script to unzip."
   :group 'lsp-mode
   :type 'string
-  :package-version '(lsp-mode . "7.1"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defun lsp-unzip (zip-file dest)
   "Unzip ZIP-FILE to DEST."
@@ -7605,7 +7613,7 @@ Should be a format string with one argument for the file to be decompressed
 in place."
   :group 'lsp-mode
   :type 'string
-  :package-version '(lsp-mode . "7.1"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defun lsp-gunzip (gz-file)
   "Decompress GZ-FILE in place."
@@ -7620,7 +7628,7 @@ in place."
   "Vscode extension template url."
   :group 'lsp-mode
   :type 'string
-  :package-version '(lsp-mode . "7.1"))
+  :package-version '(lsp-mode . "8.0.0"))
 
 (defun lsp-vscode-extension-url (publisher name &optional version)
   "Return the URL to vscode extension.
@@ -8320,11 +8328,11 @@ This avoids overloading the server with many files when starting Emacs."
   (let ((buffer (current-buffer)))
     ;; Avoid false positives as desktop-mode restores buffers by deferring
     ;; visibility check until the stack clears.
-    (run-with-timer 0 nil (lambda ()
-                            (when (buffer-live-p buffer)
-                              (with-current-buffer buffer
-                                (unless (lsp--init-if-visible)
-                                  (add-hook 'window-configuration-change-hook #'lsp--init-if-visible nil t))))))))
+    (run-with-idle-timer 0 nil (lambda ()
+                                 (when (buffer-live-p buffer)
+                                   (with-current-buffer buffer
+                                     (unless (lsp--init-if-visible)
+                                       (add-hook 'window-configuration-change-hook #'lsp--init-if-visible nil t))))))))
 
 
 
@@ -8377,7 +8385,7 @@ This avoids overloading the server with many files when starting Emacs."
                  (-partition 2 checks))))))
 
 (define-obsolete-function-alias 'lsp-diagnose
-  'lsp-doctor "lsp-mode 7.1")
+  'lsp-doctor "lsp-mode 8.0.0")
 
 (defun lsp-doctor ()
   "Validate performance settings."

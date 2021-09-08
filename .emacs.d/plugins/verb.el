@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.13.1
+;; Package-Version: 2.14.0
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -114,7 +114,8 @@ This handler is used when no appropriate handler was found in
 
 (defcustom verb-export-functions
   '(("verb" . verb--export-to-verb)
-    ("curl" . verb--export-to-curl))
+    ("curl" . verb--export-to-curl)
+    ("eww" . verb--export-to-eww))
   "Alist of request specification export functions.
 Each element should have the form (NAME . FN), where NAME should be a
 user-friendly name for this function, and FN should be the function
@@ -314,7 +315,7 @@ I = Information.
 W = Warning.
 E = Error.")
 
-(defconst verb--http-header-regexp "^\\([[:alnum:]_-]+:\\).*$"
+(defconst verb--http-header-regexp "^\\s-*\\([[:alnum:]_-]+:\\).*$"
   "Regexp for font locking HTTP headers.")
 
 (defconst verb--http-header-parse-regexp
@@ -325,8 +326,17 @@ E = Error.")
   "Prefix for Verb metadata keys in heading properties.
 Matching is case insensitive.")
 
-(defconst verb-version "2.13.1"
+(defconst verb-version "2.14.0"
   "Verb package version.")
+
+(defconst verb--multipart-boundary-alphabet
+  (concat "abcdefghijklmnopqrstuvwxyz"
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+          "0123456789")
+  "Valid characters for multipart form boundaries.")
+
+(defconst verb--multipart-boundary-length 64
+  "Number of characters per multipart form boundary.")
 
 (defvar-local verb-http-response nil
   "HTTP response for this response buffer (`verb-response' object).
@@ -346,6 +356,9 @@ This variable is only set on buffers showing HTTP response bodies.")
 When Verb evaluates Lisp code tags, a tag may produce a buffer as a
 result. If the buffer-local value of this variable is non-nil for that
 buffer, Verb will kill it after it has finished reading its contents.")
+
+(defvar-local verb--multipart-boundary nil
+  "Current multipart form boundary available for use in specs.")
 
 (defvar verb-last nil
   "Stores the last received HTTP response (`verb-response' object).
@@ -384,6 +397,7 @@ other buffers without actually expanding the embedded code tags.")
     (define-key map (kbd "C-e") #'verb-export-request-on-point)
     (define-key map (kbd "C-u") #'verb-export-request-on-point-curl)
     (define-key map (kbd "C-b") #'verb-export-request-on-point-verb)
+    (define-key map (kbd "C-w") #'verb-export-request-on-point-eww)
     (define-key map (kbd "C-v") #'verb-set-var)
     map)
   "Keymap for `verb-mode' commands.
@@ -399,10 +413,10 @@ If REMOVE is nil, add the necessary keywords to
    (if remove #'font-lock-remove-keywords #'font-lock-add-keywords)
    nil
    `(;; GET
-     (,(concat "^\\(" (verb--http-methods-regexp) "\\)$")
+     (,(concat "^\\s-*\\(" (verb--http-methods-regexp) "\\)$")
       (1 'verb-http-keyword))
      ;; GET www.example.com
-     (,(concat "^\\(" (verb--http-methods-regexp) "\\)\\s-+.+$")
+     (,(concat "^\\s-*\\(" (verb--http-methods-regexp) "\\)\\s-+.+$")
       (1 'verb-http-keyword))
      ;; Content-type: application/json
      (,verb--http-header-regexp
@@ -438,6 +452,7 @@ If REMOVE is nil, add the necessary keywords to
         "--"
         ["Export request to curl" verb-export-request-on-point-curl]
         ["Export request to Verb" verb-export-request-on-point-verb]
+        ["Export request to EWW" verb-export-request-on-point-eww]
         "--"
         ["Customize Verb" verb-customize-group]
         ["Show log" verb-show-log]))
@@ -604,6 +619,7 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
     (define-key map (kbd "C-c C-r C-r") #'verb-toggle-show-headers)
     (define-key map (kbd "C-c C-r C-k") #'verb-kill-response-buffer-and-window)
     (define-key map (kbd "C-c C-r C-f") #'verb-re-send-request)
+    (define-key map (kbd "C-c C-r C-w") #'verb-re-send-request-eww)
     (define-key map (kbd "C-c C-r C-s") #'verb-show-request)
     (easy-menu-define verb-response-body-mode-menu map
       "Menu for Verb response body mode"
@@ -612,6 +628,7 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
         ["Kill buffer and window" verb-kill-response-buffer-and-window]
         "--"
         ["Re-send request" verb-re-send-request]
+        ["Re-send request with EWW" verb-re-send-request-eww]
         ["Show corresponding request" verb-show-request]))
     map)
   "Keymap for `verb-response-body-mode'.")
@@ -892,10 +909,12 @@ If no Verb Babel source blocks are found, return TEXT."
                   ""))))
       (or result text))))
 
-(defun verb--request-spec-from-babel-src-block (pos body)
+(defun verb--request-spec-from-babel-src-block (pos body vars)
   "Return a request spec generated from a Babel source block.
 BODY should contain the body of the source block.  POS should be a
-position of the buffer that lies inside the source block.
+position of the buffer that lies inside the source block.  VARS should
+be an alist of argument names and values that should be temporarily
+added to the values available through `verb-var'.
 
 Note that the entire buffer is considered when generating the request
 spec, not only the section contained by the source block.
@@ -903,7 +922,8 @@ spec, not only the section contained by the source block.
 This function is called from ob-verb.el (`org-babel-execute:verb')."
   (save-excursion
     (goto-char pos)
-    (let* ((metadata (verb--heading-properties verb--metadata-prefix))
+    (let* ((verb--vars (append vars verb--vars))
+           (metadata (verb--heading-properties verb--metadata-prefix))
            (rs (verb-request-spec-from-string body metadata)))
       ;; Go up one level first, if possible. Do this to avoid
       ;; re-reading the request in the current level (contained in the
@@ -964,15 +984,15 @@ all the request specs in SPECS, in the order they were passed in."
     (save-restriction
       (widen)
       (save-excursion
-      ;; First, go back to the current heading, if possible. If no
-      ;; heading is found, then don't attempt to read anything.
-      (setq done (not (verb--back-to-heading)))
-      ;; If there's at least one heading above us, go up through the
-      ;; headings tree taking a request specification from each level.
-      (while (not done)
-        (let ((spec (verb--request-spec-from-heading)))
-          (when spec (push spec specs)))
-        (setq done (not (verb--up-heading))))))
+        ;; First, go back to the current heading, if possible. If no
+        ;; heading is found, then don't attempt to read anything.
+        (setq done (not (verb--back-to-heading)))
+        ;; If there's at least one heading above us, go up through the
+        ;; headings tree taking a request specification from each level.
+        (while (not done)
+          (let ((spec (verb--request-spec-from-heading)))
+            (when spec (push spec specs)))
+          (setq done (not (verb--up-heading))))))
     (if specs
         (progn
           (setq final-spec (car specs))
@@ -1008,6 +1028,12 @@ delete any window displaying it."
           (delete-window))))
     (kill-buffer response-buf)))
 
+(defun verb--check-response-buffer ()
+  "Ensure that the current buffer is a response buffer."
+  (unless (verb--object-of-class-p verb-http-response 'verb-response)
+    (user-error "%s" (concat "Can't execute command as current buffer is not "
+                             "a response buffer"))))
+
 (defun verb-re-send-request ()
   "Re-send request for the response shown on current buffer.
 If the user chose to show the current response buffer on another
@@ -1018,11 +1044,19 @@ If you use this command frequently, consider setting
 `verb-auto-kill-response-buffers' to t.  This will help avoiding
 having many response buffers open."
   (interactive)
-  (unless (verb--object-of-class-p verb-http-response 'verb-response)
-    (user-error "%s" (concat "Can't re-send request as current buffer is not "
-                             "a response buffer")))
+  (verb--check-response-buffer)
   (verb--request-spec-send (oref verb-http-response request)
                            'this-window))
+
+(defun verb-re-send-request-eww ()
+  "Re-send request for the response shown on current buffer with EWW.
+The result will be displayed on a separate buffer managed by EWW."
+  (interactive)
+  (verb--check-response-buffer)
+  (let ((req (oref verb-http-response request)))
+    (unless (string= (oref (oref verb-http-response request) method) "GET")
+      (user-error "%s" "Can only perform GET requests using EWW"))
+    (verb--request-spec-send-eww req)))
 
 (defun verb-kill-buffer-and-window ()
   "Delete selected window and kill its current buffer.
@@ -1053,9 +1087,9 @@ use string VAR and value VALUE."
   (interactive)
   (verb--ensure-verb-mode)
   (let* ((v (or var
-               (completing-read "Variable: " (mapcar (lambda (e)
-                                                       (symbol-name (car e)))
-                                                     verb--vars))))
+                (completing-read "Variable: " (mapcar (lambda (e)
+                                                        (symbol-name (car e)))
+                                                      verb--vars))))
          (val (or value (read-string (format "Set value for %s: " v))))
          (elem (assoc-string v verb--vars)))
     (when (string-empty-p v)
@@ -1083,19 +1117,19 @@ buffer used to show the values."
   (let ((buf (current-buffer))
         (inhibit-read-only t))
     (with-current-buffer-window
-     (get-buffer-create "*Verb Variables*")
-     (cons 'display-buffer-below-selected
-           '((window-height . fit-window-to-buffer)))
-     nil
-     (unless (derived-mode-p 'special-mode)
-       (special-mode))
-     (dolist (elem (buffer-local-value 'verb--vars buf))
-       (insert (propertize (format "%s: " (car elem)) 'face 'verb-header)
-               (format "%s" (cdr elem)))
-       (newline))
-     (unless (zerop (buffer-size))
-       (backward-delete-char 1))
-     (current-buffer))))
+        (get-buffer-create "*Verb Variables*")
+        (cons 'display-buffer-below-selected
+              '((window-height . fit-window-to-buffer)))
+        nil
+      (unless (derived-mode-p 'special-mode)
+        (special-mode))
+      (dolist (elem (buffer-local-value 'verb--vars buf))
+        (insert (propertize (format "%s: " (car elem)) 'face 'verb-header)
+                (format "%s" (cdr elem)))
+        (newline))
+      (unless (zerop (buffer-size))
+        (backward-delete-char 1))
+      (current-buffer))))
 
 (defun verb-read-file (file &optional coding-system)
   "Return a buffer with the contents of FILE.
@@ -1358,7 +1392,7 @@ explicitly.  Lisp code tags are evaluated when exporting."
                                        nil t))))
     (when-let ((fn (cdr (assoc exporter verb-export-functions))))
       (funcall fn rs)
-      (verb--log nil 'I "Exported request to %s format." exporter))))
+      (verb--log nil 'I "Exported request to %s format" exporter))))
 
 ;;;###autoload
 (defun verb-export-request-on-point-verb ()
@@ -1374,6 +1408,13 @@ See `verb--export-to-curl' for more information."
   (interactive)
   (verb-export-request-on-point "curl"))
 
+;;;###autoload
+(defun verb-export-request-on-point-eww ()
+  "Export request on point to EWW.
+See `verb--export-to-eww' for more information."
+  (interactive)
+  (verb-export-request-on-point "eww"))
+
 (defun verb--export-to-verb (rs)
   "Export a request spec RS to Verb format.
 Return a new buffer with the export results inserted into it."
@@ -1382,6 +1423,14 @@ Return a new buffer with the export results inserted into it."
     (insert (verb-request-spec-to-string rs))
     (switch-to-buffer-other-window (current-buffer))
     (current-buffer)))
+
+(defun verb--export-to-eww (rs)
+  "Export and perform GET request RS using EWW.
+Return a buffer created by the `eww' function where the results will
+be displayed."
+  (unless (string= (oref rs method) "GET")
+    (user-error "%s" "Can only perform GET requests using EWW"))
+  (verb--request-spec-send-eww rs))
 
 (defun verb--export-to-curl (rs &optional no-message no-kill)
   "Export a request spec RS to curl format.
@@ -1763,6 +1812,12 @@ For more information, see `verb-advice-url'."
     (advice-remove 'url-http-handle-authentication
                    #'verb--http-handle-authentication)))
 
+(defun verb--get-accept-header (headers)
+  "Retrieve the value of the \"Accept\" header from alist HEADERS.
+If the header is not present, return \"*/*\" as default."
+  (verb--to-ascii (or (cdr (assoc-string "Accept" headers t))
+                      "*/*")))
+
 (cl-defmethod verb-request-spec-validate ((rs verb-request-spec))
   "Run validations on request spec RS and return it.
 If a validation does not pass, signal `user-error'."
@@ -1808,16 +1863,14 @@ loaded into."
     (verb-kill-all-response-buffers t))
 
   (let* ((url (oref rs url))
-         (accept-header (cdr (assoc-string "Accept"
-                                           (oref rs headers) t)))
          (url-request-method (verb--to-ascii (oref rs method)))
+         (url-mime-accept-string (verb--get-accept-header (oref rs headers)))
          (url-request-extra-headers (verb--prepare-http-headers
                                      (oref rs headers)))
          (content-type (verb--headers-content-type
                         url-request-extra-headers))
          (url-request-data (verb--encode-http-body (oref rs body)
                                                    (cdr content-type)))
-         (url-mime-accept-string (verb--to-ascii (or accept-header "*/*")))
          (num (setq verb--requests-count (1+ verb--requests-count)))
          (start-time (time-to-seconds))
          (response-buf (verb--generate-response-buffer num))
@@ -1898,6 +1951,25 @@ loaded into."
 
     ;; Return the response buffer
     response-buf))
+
+(cl-defmethod verb--request-spec-send-eww ((rs verb-request-spec))
+  "Send request spec RS using EWW (Emacs Web Wowser).
+Return the buffer created by EWW.
+
+Note: this function is unrelated to `verb--request-spec-send'."
+  ;; Require eww to load the `eww-accept-content-types' variable
+  (require 'eww)
+  (let ((eww-accept-content-types (verb--get-accept-header (oref rs headers)))
+        (url-request-extra-headers (verb--prepare-http-headers
+                                    (oref rs headers))))
+    (verb--advice-url)
+    (unwind-protect
+        (prog1
+            (eww (verb-request-spec-url-to-string rs))
+          ;; "Use" the variable to avoid compiler warning.
+          ;; This variable is not available in some Emacs versions.
+          eww-accept-content-types)
+      (verb--unadvice-url))))
 
 (cl-defmethod verb-request-spec-to-string ((rs verb-request-spec))
   "Return request spec RS as a string.
@@ -2121,6 +2193,44 @@ Additionally, allow matching `verb--template-keyword'."
                        (list verb--template-keyword
                              (downcase verb--template-keyword)))))
     (mapconcat #'identity terms "\\|")))
+
+(defun verb--generate-multipart-boundary ()
+  "Generate a new random multipart form boundary."
+  (let (chars i)
+    (dotimes (_ verb--multipart-boundary-length)
+      (setq i (% (abs (random)) (length verb--multipart-boundary-alphabet)))
+      (push (substring verb--multipart-boundary-alphabet i (1+ i)) chars))
+    (mapconcat #'identity chars "")))
+
+(defun verb-boundary (&optional boundary)
+  "Set the multipart form boundary for the current buffer.
+Use the value of BOUNDARY if it is non-nil.  Otherwise, generate a new
+random boundary using `verb--generate-multipart-boundary'.
+Once the boundary has been set for the current buffer (containing
+request specifications), it can be inserted into a request body using
+`verb-part'."
+  (setq verb--multipart-boundary (or boundary
+                                     (verb--generate-multipart-boundary))))
+
+(defun verb-part (&optional name filename)
+  "Start a new multipart form part.
+Use NAME as the 'name' parameter, and FILENAME as the 'filename'
+parameter in the Content-Disposition header.
+If neither NAME nor FILENAME are specified, instead of starting a new
+part, insert the final boundary delimiter."
+  (unless verb--multipart-boundary
+    (user-error "%s" (concat "No multipart boundary defined\n"
+                             "Please ensure you have called "
+                             "(verb-boundary) first within this "
+                             "requests tree")))
+  (if name
+      (concat "--" verb--multipart-boundary "\n"
+              "Content-Disposition: form-data; name=\"" name "\""
+              (when filename (concat "; filename=\"" filename "\"")))
+    (let (boundary)
+      (setq boundary verb--multipart-boundary
+            verb--multipart-boundary nil)
+      (concat "--" boundary "--"))))
 
 (defun verb--eval-string (s &optional context)
   "Eval S as Lisp code and return the result.
@@ -2359,6 +2469,8 @@ METADATA."
                          (replace-regexp-in-string
                           (concat verb-trim-body-end "$") "" rest)
                        rest))))
+      (when (buffer-local-value 'verb--multipart-boundary context)
+        (verb--log nil 'W "Detected an unfinished multipart form"))
       ;; Return a `verb-request-spec'
       (verb-request-spec :method method
                          :url (unless (string-empty-p (or url ""))

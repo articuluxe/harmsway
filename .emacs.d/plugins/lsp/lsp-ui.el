@@ -7,7 +7,7 @@
 ;; Keywords: languages, tools
 ;; URL: https://github.com/emacs-lsp/lsp-ui
 ;; Package-Requires: ((emacs "26.1") (dash "2.18.0") (lsp-mode "6.0") (markdown-mode "2.3"))
-;; Version: 7.0.1
+;; Version: 8.0.0
 
 ;;; License
 ;;
@@ -38,7 +38,7 @@
 (require 'find-func)
 
 (defconst lsp-ui-resources-dir
-  (--> (find-library-name "lsp-ui")
+  (--> (or load-file-name (buffer-file-name))
        (file-name-directory it)
        (expand-file-name "resources" it)
        (file-name-as-directory it)

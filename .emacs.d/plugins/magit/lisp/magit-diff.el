@@ -93,10 +93,10 @@
 (defcustom magit-diff-expansion-threshold 60
   "After how many seconds not to expand anymore diffs.
 
-Except in status buffers, diffs are usually start out fully
-expanded.  Because that can take a long time, all diffs that
-haven't been fontified during a refresh before the threshold
-defined here are instead displayed with their bodies collapsed.
+Except in status buffers, diffs usually start out fully expanded.
+Because that can take a long time, all diffs that haven't been
+fontified during a refresh before the threshold defined here are
+instead displayed with their bodies collapsed.
 
 Note that this can cause sections that were previously expanded
 to be collapsed.  So you should not pick a very low value here.
@@ -967,12 +967,14 @@ and `:slant'."
   :description "Detect renames"
   :class 'transient-option
   :argument "-M"
+  :allow-empty t
   :reader 'transient-read-number-N+)
 
 (transient-define-argument magit-diff:-C ()
   :description "Detect copies"
   :class 'transient-option
   :argument "-C"
+  :allow-empty t
   :reader 'transient-read-number-N+)
 
 (transient-define-argument magit-diff:--diff-algorithm ()
@@ -2949,8 +2951,7 @@ actually a `diff' but a `diffstat' section."
         (`(file  ,_  ,_  ,_) 'file)
         (`(module   t   t nil) 'files)
         (`(module  ,_  ,_  ,_) 'file)
-        (`(,(or `staged `unstaged `untracked)
-           nil ,_ ,_) 'list)))))
+        (`(,(or `staged `unstaged `untracked) nil ,_ ,_) 'list)))))
 
 (defun magit-diff-use-hunk-region-p ()
   (and (region-active-p)
@@ -3227,7 +3228,8 @@ are highlighted."
 
 (defun magit-diff-update-hunk-region (section)
   "Highlight the hunk-internal region if any."
-  (when (eq (magit-diff-scope section t) 'region)
+  (when (and (eq (oref section type) 'hunk)
+             (eq (magit-diff-scope section t) 'region))
     (magit-diff--make-hunk-overlay
      (oref section start)
      (1- (oref section content))

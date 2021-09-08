@@ -1,1 +1,1 @@
-cp src/*.el ../../../../.emacs.d/etc/themes
+cp src/lisp/*.el ../../../../.emacs.d/etc/themes

@@ -212,10 +212,8 @@ Returns a list with the buffer and the line number of the clicked line."
 
 (defvar diff-hl-show-hunk--inline-popup-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "p") #'diff-hl-show-hunk-previous)
-    (define-key map (kbd "n") #'diff-hl-show-hunk-next)
     (define-key map (kbd "c") #'diff-hl-show-hunk-copy-original-text)
-    (define-key map (kbd "r") #'diff-hl-show-hunk-revert-hunk)
+    (define-key map (kbd "n") #'diff-hl-show-hunk-revert-hunk)
     (define-key map (kbd "[") #'diff-hl-show-hunk-previous)
     (define-key map (kbd "]") #'diff-hl-show-hunk-next)
     (define-key map (kbd "{") #'diff-hl-show-hunk-previous)
@@ -273,7 +271,7 @@ BUFFER is a buffer with the hunk."
          (if (and (boundp 'diff-hl-reference-revision) diff-hl-reference-revision)
              (concat "Diff with " diff-hl-reference-revision)
            "Diff with HEAD")
-         "(q)Quit  (p)Previous  (n)Next  (r)Revert  (c)Copy original"
+         "(q)Quit  (\[)Previous  (\])Next  (n)Revert  (c)Copy original"
          diff-hl-show-hunk--inline-popup-map
          #'diff-hl-show-hunk-hide
          point
@@ -347,11 +345,10 @@ The backend is determined by `diff-hl-show-hunk-function'."
   (save-excursion
     (diff-hl-show-hunk-hide))
 
-  (cond
-   ((not (vc-backend buffer-file-name))
+  (unless (vc-backend buffer-file-name)
     (user-error "The buffer is not under version control"))
-   ((not (diff-hl-hunk-overlay-at (point)))
-    (diff-hl-previous-hunk)))
+
+  (diff-hl-find-current-hunk)
 
   (setq diff-hl-show-hunk--original-overlay nil)
 

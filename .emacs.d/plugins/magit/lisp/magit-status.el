@@ -309,6 +309,29 @@ also contains other useful hints.")
 
 (put 'magit-status-here 'interactive-only 'magit-status-setup-buffer)
 
+(defun magit-status-quick ()
+  "Show the status of the current Git repository, maybe without refreshing.
+
+If the status buffer of the current Git repository exists but
+isn't being displayed in the selected frame, then display it
+without refreshing it.
+
+If the status buffer is being displayed in the selected frame,
+then also refresh it.
+
+Prefix arguments have the same meaning as for `magit-status',
+and additionally cause the buffer to be refresh.
+
+To use this function instead of `magit-status', add this to your
+init file: (global-set-key (kbd \"C-x g\") 'magit-status-quick)."
+  (interactive)
+  (if-let ((buffer
+            (and (not current-prefix-arg)
+                 (not (magit-get-mode-buffer 'magit-status-mode nil 'selected))
+                 (magit-get-mode-buffer 'magit-status-mode))))
+      (magit-display-buffer buffer)
+    (call-interactively #'magit-status)))
+
 (defvar magit--remotes-using-recent-git nil)
 
 (defun magit--tramp-asserts (directory)
@@ -375,7 +398,8 @@ the info node `(tramp)Remote programs'." remote) :error)))))
     ("a " "Assumed unstaged" magit-jump-to-assume-unchanged
      :if (lambda () (memq 'magit-insert-assume-unchanged-files magit-status-sections-hook)))
     ("w " "Skip worktree" magit-jump-to-skip-worktree
-     :if (lambda () (memq 'magit-insert-skip-worktree-files magit-status-sections-hook)))]])
+     :if (lambda () (memq 'magit-insert-skip-worktree-files magit-status-sections-hook)))]
+   [("i" "Using Imenu" imenu)]])
 
 (define-derived-mode magit-status-mode magit-mode "Magit"
   "Mode for looking at Git status.
@@ -612,12 +636,13 @@ arguments are for internal use only."
               ((magit--valid-upstream-p remote merge)
                (if (equal remote ".")
                    (concat
-                    (propertize merge 'font-lock-face 'magit-branch-local)
-                    (propertize " does not exist"
+                    (propertize merge 'font-lock-face 'magit-branch-local) " "
+                    (propertize "does not exist"
                                 'font-lock-face 'font-lock-warning-face))
-                 (concat
+                 (format
+                  "%s %s %s"
                   (propertize merge 'font-lock-face 'magit-branch-remote)
-                  (propertize " does not exist on "
+                  (propertize "does not exist on"
                               'font-lock-face 'font-lock-warning-face)
                   (propertize remote 'font-lock-face 'magit-branch-remote))))
               (t
@@ -644,11 +669,11 @@ arguments are for internal use only."
                                          "(no commit message)"))))
          (let ((remote (magit-get-push-remote branch)))
            (if (magit-remote-p remote)
-               (concat target
-                       (propertize " does not exist"
+               (concat target " "
+                       (propertize "does not exist"
                                    'font-lock-face 'font-lock-warning-face))
-             (concat remote
-                     (propertize " remote does not exist"
+             (concat remote " "
+                     (propertize "remote does not exist"
                                  'font-lock-face 'font-lock-warning-face))))))
       (insert ?\n))))
 
