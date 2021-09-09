@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-05-27 11:26:25 dharms>
+;; Modified Time-stamp: <2021-09-09 17:22:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -63,5 +63,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; osx-dictionary ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package osx-dictionary)
+
+(defun harmsway-finder-path()
+  "Return path of foremost Finder window."
+  (let* ((script "tell application \"Finder\" to if (count of Finder windows) > 0 then get POSIX path of (target of front Finder window as text)")
+         (result (ns-do-applescript script)))
+    (if result (string-trim result) "")))
+
+(defun harmsway-dired-finder-path ()
+  "Open Finder's foremost window in dired."
+  (interactive)
+  (let ((path (harmsway-finder-path)))
+    (if (and path (not (string-empty-p path)))
+        (dired path)
+      (user-error "No finder window found")))
+  )
+
+(global-set-key "\C-c\M-E" #'harmsway-dired-finder-path)
 
 ;; darwin.el ends here
