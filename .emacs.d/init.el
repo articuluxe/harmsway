@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-09-03 11:11:49 dharms>
+;; Modified Time-stamp: <2021-09-09 09:49:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2027,6 +2027,7 @@ ARGS are the additional arguments."
   (setq doom-modeline-vcs-max-length 15)
   (setq doom-modeline-persp-name nil)
   (setq doom-modeline-buffer-file-name-style 'relative-from-project)
+  (setq doom-modeline-project-detection 'project)
   (when (featurep 'minions)
     (setq doom-modeline-minor-modes t))
   (add-hook 'after-init-hook #'doom-modeline-mode)
