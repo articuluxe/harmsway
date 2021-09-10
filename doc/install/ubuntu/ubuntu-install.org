@@ -130,6 +130,8 @@ export PATH=~/.cask/bin:$PATH
 
 sudo apt install autoconf
 sudo apt install automake
+sudo apt install bison
+sudo apt install byacc
 sudo apt install libtool
 sudo apt install python-dev
 sudo apt install doxygen
