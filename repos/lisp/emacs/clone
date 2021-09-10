@@ -1,3 +1,4 @@
+#git clone https://git.savannah.gnu.org/git/emacs.git src
 VERSION=27.2
 mkdir -p src
 cd src

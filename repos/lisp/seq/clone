@@ -1,2 +1,1 @@
 echo "Cloning seq from _elpa"
-mkdir -p src
