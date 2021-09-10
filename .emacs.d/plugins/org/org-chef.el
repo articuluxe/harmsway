@@ -44,7 +44,6 @@
 (require 'org-chef-edit)
 
 (require 'org-chef-24kitchen)
-(require 'org-chef-all-recipes)
 (require 'org-chef-json-ld)
 (require 'org-chef-genius-kitchen)
 (require 'org-chef-simply-recipes)
@@ -55,7 +54,6 @@
 (require 'org-chef-serious-eats)
 (require 'org-chef-reluctant-gourmet)
 (require 'org-chef-chef-koch)
-(require 'org-chef-steamy-kitchen)
 (require 'org-chef-nytimes)
 (require 'org-chef-saveur)
 (require 'org-chef-xiachufang)
@@ -84,29 +82,40 @@ for more information.")
   "Prefer JSON-LD extractor over custom extractor. This is for testing the JSON-LD functionality."
   :type 'boolean)
 
+(defun org-chef-to-unordered-list (list)
+  "Convert a LIST of strings into an org-element plain list"
+  (if (null list)
+      nil
+    `(plain-list nil ,(mapcar #'(lambda (x) `(item (:bullet "-" :pre-blank 0) ,x)) list))))
+
+(defun org-chef-to-ordered-list (list)
+  "Convert a LIST of strings into an ordered org-element plain list"
+    (if (null list)
+      nil
+      `(plain-list nil ,(mapcar #'(lambda (x) `(item (:bullet "1. " :pre-blank 0) ,x)) list))))
+
+(defun org-chef-recipe-to-org-element (recipe)
+  "Convert a RECIPE into an `org-element` AST."
+  `(headline (:title ,(cdr (assoc 'name recipe)) :level 1)
+             (property-drawer nil
+                              ((node-property (:key "source-url" :value ,(cdr (assoc 'source-url recipe))))
+                               (node-property (:key "servings"   :value ,(cdr (assoc 'servings recipe))))
+                               (node-property (:key "prep-time"  :value ,(format "%s" (cdr (assoc 'prep-time recipe)))))
+                               (node-property (:key "cook-time"  :value ,(format "%s" (cdr (assoc 'cook-time recipe)))))
+                               (node-property (:key "ready-in"   :value ,(format "%s" (cdr (assoc 'ready-in recipe)))))))
+             (headline (:title "Ingredients" :level 2 :pre-blank 1)
+                       ,(org-chef-to-unordered-list (cdr (assoc 'ingredients recipe))))
+             (headline (:title "Directions" :level 2 :pre-blank 1)
+                       ,(org-chef-to-ordered-list (cdr (assoc 'directions recipe))))))
+
+(defun org-chef-recipe-to-org (recipe)
+  "Convert a RECIPE into `org-mode` test."
+  (org-element-interpret-data (org-chef-recipe-to-org-element recipe)))
+
 (defun org-chef-recipe-insert-org (recipe)
   "Insert a RECIPE as an ‘org-mode’ heading."
-  (org-insert-heading)
-  (insert (cdr (assoc 'name recipe)))
-  (org-return)
-  (org-set-property "source-url" (cdr (assoc 'source-url recipe)))
-  (org-set-property "servings" (cdr (assoc 'servings recipe)))
-  (org-set-property "prep-time" (format "%s" (cdr (assoc 'prep-time recipe))))
-  (org-set-property "cook-time" (format "%s" (cdr (assoc 'cook-time recipe))))
-  (org-set-property "ready-in" (format "%s" (cdr (assoc 'ready-in recipe))))
-  (org-insert-subheading t)
-  (insert "Ingredients")
-  (org-return)
-  (org-return)
-  (org-chef-insert-org-list (cdr (assoc 'ingredients recipe)))
-  (org-return)
-  (org-return)
-  (org-insert-heading)
-  (insert "Directions")
-  (org-return)
-  (org-return)
-  (org-chef-insert-org-list (cdr (assoc 'directions recipe)) "1."))
-
+  (insert
+   (org-chef-recipe-to-org recipe)))
 
 (defun org-chef-recipe-org-string (recipe)
   "Get an ‘org-mode’ heading string for a RECIPE."
@@ -114,17 +123,14 @@ for more information.")
                     (org-chef-recipe-insert-org recipe)
                     (buffer-string)))
 
-
 (defun org-chef-match-url (BASE URL)
   "Match URL against a BASE url."
   (not (null (string-match-p (regexp-quote BASE) URL))))
-
 
 (defun org-chef-fetch-recipe-specific-url (URL)
   "Look up a recipe based on a specific URL."
   (cond
    ((org-chef-match-url "24kitchen.nl" URL) (org-chef-24kitchen-fetch URL))
-   ((org-chef-match-url "allrecipes.com" URL) (org-chef-all-recipes-fetch URL))
    ((org-chef-match-url "geniuskitchen.com" URL) (org-chef-genius-kitchen-fetch URL))
    ((org-chef-match-url "simplyrecipes.com" URL) (org-chef-simply-recipes-fetch URL))
    ((org-chef-match-url "marthastewart.com" URL) (org-chef-martha-stewart-fetch URL))
@@ -133,7 +139,6 @@ for more information.")
    ((org-chef-match-url "seriouseats.com" URL) (org-chef-serious-eats-fetch URL))
    ((org-chef-match-url "reluctantgourmet.com" URL) (org-chef-reluctant-gourmet-fetch URL))
    ((org-chef-match-url "chefkoch.de" URL) (org-chef-chef-koch-fetch URL))
-   ((org-chef-match-url "steamykitchen.com" URL) (org-chef-steamy-kitchen-fetch URL))
    ((org-chef-match-url "nytimes.com" URL) (org-chef-nytimes-fetch URL))
    ((org-chef-match-url "saveur.com" URL) (org-chef-saveur-fetch URL))
    ((org-chef-match-url "xiachufang.com" URL) (org-chef-xiachufang-fetch URL))

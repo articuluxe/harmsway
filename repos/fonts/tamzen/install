@@ -1,3 +1,2 @@
-cp src/fnt/*.fnt ../../../.fonts/tamzen
-cp src/dfont/*.dfont ../../../.fonts/tamzen
+cp src/ttf/*.ttf ../../../.fonts/tamzen
 cp src/bdf/*.bdf ../../../.fonts/tamzen

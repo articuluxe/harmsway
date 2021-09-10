@@ -4,7 +4,5 @@ cp src/Edlo/edlo-0.01/*.ttf ../../../.fonts/edlo
 cp src/Crystal/crystal-5.1/CRYSRG__.TTF ../../../.fonts/crystal/crystal.ttf
 cp src/Droid-Sans-Mono/droid-sans-mono-1.00/*.ttf ../../../.fonts/droid
 cp src/Proggy/proggy-clean-tt/Proggy.ttf ../../../.fonts/proggy
-cp src/Akkurat-Mono/akkurat-mono-1.000/*.OTF ../../../.fonts/akkurat
-cp src/Hasklig/Hasklig-1.1/*.otf ../../../.fonts/hasklig
-cp src/Andale-Mono/andale-mono-2.00x/*.ttf ../../../.fonts/andale
-cp src/Pt-Mono/pt-mono-1.003/*.ttf ../../../.fonts/ptmono
+cp src/Hasklig/Hasklig-1.2/TTF/*.ttf ../../../.fonts/hasklig
+cp src/Pt-Mono/*.ttf ../../../.fonts/ptmono
