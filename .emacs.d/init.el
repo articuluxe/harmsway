@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-09-09 09:49:55 dharms>
+;; Modified Time-stamp: <2021-09-10 16:23:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2022,6 +2022,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package doom-modeline
   :if (version<= "25.1" emacs-version)
+  :disabled
   :init
   (setq doom-modeline-checker-simple-format nil)
   (setq doom-modeline-vcs-max-length 15)
@@ -2034,6 +2035,13 @@ ARGS are the additional arguments."
   :config
   (when (featurep 'minions)
     (minions-mode 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mood-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package mood-line
+  :init
+  (setq mood-line-show-eol-style t)
+  :config
+  (mood-line-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons
