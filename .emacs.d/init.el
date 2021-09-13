@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-09-13 09:42:29 dharms>
+;; Modified Time-stamp: <2021-09-13 09:47:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2447,6 +2447,7 @@ ARGS are the additional arguments."
   (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
   (use-package dired+
     :init
+    (setq dired-kill-when-opening-new-dired-buffer t)
     (setq diredp-hide-details-initially-flag nil)
     (setq diredp-hide-details-propagate-flag t)
     ;; dired+'s default chord for chmod conflicts with arrow keys in terminal;
