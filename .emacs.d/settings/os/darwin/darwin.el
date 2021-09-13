@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-09-09 17:22:22 dharms>
+;; Modified Time-stamp: <2021-09-13 09:43:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -34,6 +34,7 @@
 (when (executable-find "gls")
   (setq insert-directory-program "gls"))
 
+(setq ns-pop-up-frames 'fresh)
 (setq mac-system-move-file-to-trash-use-finder t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
