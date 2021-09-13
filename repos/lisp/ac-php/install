@@ -1,0 +1,2 @@
+cp src/company-php.el ../../../.emacs.d/plugins/company
+cp src/ac-php-core.el ../../../.emacs.d/plugins/company
