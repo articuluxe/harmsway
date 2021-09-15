@@ -2,7 +2,7 @@
 ;; Copyright (C) 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, March 19, 2021
-;; Modified Time-stamp: <2021-09-15 10:03:17 dharms>
+;; Modified Time-stamp: <2021-09-15 10:18:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui
 
@@ -24,9 +24,11 @@
 ;;
 
 ;;; Code:
+(require 'proviso)
 
 (setq-default tab-bar-show nil)
 (setq tab-bar-new-button-show nil)
+(setq tab-bar-tab-name-function #'tab-bar-tab-name-truncated)
 (add-hook 'after-init-hook (lambda()
                              (tab-bar-mode 1)
                              (tab-bar-history-mode 1)))
@@ -45,10 +47,10 @@
   (tab-new)
   (tab-rename name))
 
-(defun harmsway-tab-name-fn ()
-  "Return a suitable tab name, including project name."
-  (or (proviso-current-project-name)
-      (tab-bar-tab-name-current-with-count)))
+;; (defun harmsway-tab-name-fn ()
+;;   "Return a suitable tab name, including project name."
+;;   (or (proviso-current-project-name)
+;;       (tab-bar-tab-name-current-with-count)))
 
 
 (provide 'harmsway-tabs)
