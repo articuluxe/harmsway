@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-09-13 09:47:57 dharms>
+;; Modified Time-stamp: <2021-09-16 13:33:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3017,6 +3017,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package eglot
   :commands eglot
   :bind ("C-c '" . eglot)
+  :init
+  (setq eglot-stay-out-of '(company))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lsp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
