@@ -4,7 +4,7 @@
 
 ;; Author: Carl Steib
 ;; URL: https://github.com/cstby/solo-jazz-emacs-theme
-;; Version: 0.6.0
+;; Version: 0.7.0
 ;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -41,11 +41,11 @@
 
 (eval-and-compile
   (defvar solo-jazz-theme-default-colors-alist
-    '(("_solo-jazz-white+1"               . "#ffffff")
-      ("solo-jazz-white"                  . "#fafafa")
+    '(("solo-jazz-white"                  . "#fafafa")
       ("solo-jazz-white-1"                . "#efefef")
       ("solo-jazz-lavender"               . "#eaeafa")
       ("solo-jazz-azure"                  . "#eafafa")
+      ("solo-jazz-rose"                   . "#faeaea")
       ("solo-jazz-grey"                   . "#d0d0d0")
       ("solo-jazz-slate"                  . "#778ca3")
       ("solo-jazz-black"                  . "#24292e")
@@ -128,7 +128,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(mode-line-buffer-id                     ((t (:foreground ,solo-jazz-teal))))
    `(mode-line-inactive                      ((t (:foreground ,solo-jazz-slate :background ,solo-jazz-white :box (:line-width -1 :color ,solo-jazz-grey)))))
    `(region                                  ((,class (:background ,solo-jazz-lavender))))
-   `(secondary-selection                     ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-purple))))
+   `(secondary-selection                     ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-white))))
    `(trailing-whitespace                     ((t (:background ,solo-jazz-red))))
    `(vertical-border                         ((t (:foreground ,solo-jazz-grey))))
 
@@ -191,6 +191,10 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(doom-modeline-buffer-major-mode         ((t (:foreground ,solo-jazz-purple))))
    `(doom-modeline-info                      ((t (:foreground ,solo-jazz-teal))))
 
+   ;; eval-sexp-fu
+   `(eval-sexp-fu-flash                      ((t (:background ,solo-jazz-blue :foreground ,solo-jazz-white))))
+   `(eval-sexp-fu-flash-error                ((t (:inherit error))))
+
    ;; hl-line
    `(hl-line-face                            ((,class (:background ,solo-jazz-azure)) (t :weight bold)))
    `(hl-line                                 ((,class (:background ,solo-jazz-azure)) (t :weight bold)))
@@ -208,7 +212,7 @@ Also bind `class' to ((class color) (min-colors 89))."
 
    ;; ivy
    `(ivy-confirm-face                        ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
-   `(ivy-current-match                       ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-purple :weight bold))))
+   `(ivy-current-match                       ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-white :weight bold))))
    `(ivy-match-required-face                 ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
    `(ivy-remote                              ((t (:foreground ,solo-jazz-blue :background ,solo-jazz-white))))
    `(ivy-subdir                              ((t (:foreground ,solo-jazz-blue :background ,solo-jazz-white))))
@@ -445,8 +449,8 @@ Also bind `class' to ((class color) (min-colors 89))."
 
    ;; show-paren
    `(show-paren-mismatch                     ((t (:foreground ,solo-jazz-red :background ,solo-jazz-white :weight bold))))
-   `(show-paren-match                        ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-teal+1 :weight bold))))
-   `(show-paren-match-expression             ((t (:background ,solo-jazz-white-1))))
+   `(show-paren-match                        ((t (:foreground ,solo-jazz-white :background ,solo-jazz-blue+1 :weight bold))))
+   `(show-paren-match-expression             ((t (:background ,solo-jazz-rose))))
 
    ;; undo-tree
    `(undo-tree-visualizer-active-branch-face ((t (:foreground ,solo-jazz-teal :weight bold))))

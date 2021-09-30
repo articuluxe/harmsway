@@ -59,7 +59,6 @@ structs of any kind understood by
   (sort
    rules
    (lambda (lhs rhs)
-     (message "%s|%s" lhs rhs)
      (> (elfeed-score-maint--get-last-match-date lhs)
         (elfeed-score-maint--get-last-match-date rhs)))))
 
@@ -127,12 +126,6 @@ structs of any kind understood by
    (t
     (error "Unknown keyword %S" key))))
 
-(define-obsolete-function-alias
-  'elfeed-score-display-rules-by-last-match
-  #'elfeed-score-maint-display-rules-by-last-match
-  "0.7.0"
-  "Re-factoring elfeed-score.el.")
-
 (defun elfeed-score-maint-display-rules-by-last-match (&optional category)
   "Display all scoring rules in descending order of last match.
 
@@ -169,12 +162,6 @@ categories will be displayed."
 	        (t
 	         (error "Invalid argument %S" category)))))
     (elfeed-score-maint--display-rules-by-last-match rules "elfeed-score Rules by Last Match")))
-
-(define-obsolete-function-alias
-  'elfeed-score-display-rules-by-match-hits
-  #'elfeed-score-maint-display-rules-by-match-hits
-  "0.7.0"
-  "Re-factoring elfeed-score.el.")
 
 (defun elfeed-score-maint-display-rules-by-match-hits (&optional category)
   "Display all scoring rules in descending order of match hits.

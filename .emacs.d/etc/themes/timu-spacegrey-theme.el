@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 06 Jun 2021
 ;; Keywords: faces themes
-;; Version: 1.5
+;; Version: 1.6
 ;; Package-Requires: ((emacs "25.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-spacegrey-theme
 
@@ -209,7 +209,7 @@ Possinle values: `dark' or `light'.")
      `(all-the-icons-silver ((,class (:foreground ,grey))))
      `(all-the-icons-yellow ((,class (:foreground ,yellow))))
 
-;;;; all-the-icons-dired - dark􋥋
+;;;; all-the-icons-dired - dark
      `(all-the-icons-dired-dir-face ((,class (:foreground ,fg-other))))
 
 ;;;; all-the-icons-ivy-rich - dark
@@ -366,27 +366,31 @@ Possinle values: `dark' or `light'.")
      `(cperl-nonoverridable-face ((,class (:inherit font-lock-builtin-face))))
 
 ;;;; custom - dark
-     `(custom-button ((,class (:foreground ,blue :background ,bg :box (:line-width 1 :style none)))))
-     `(custom-button-mouse ((,class (:foreground ,bg :background ,blue :box (:line-width 1 :style none)))))
-     `(custom-button-pressed ((,class (:foreground ,bg :background ,blue :box (:line-width 1 :style none)))))
-     `(custom-button-pressed-unraised ((,class (:foreground ,bg :background ,magenta :box (:line-width 1 :style none)))))
-     `(custom-button-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 1 :style none)))))
+     `(custom-button ((,class (:foreground ,fg :background ,bg-other :box (:line-width 3 :style released-button)))))
+     `(custom-button-mouse ((,class (:foreground ,yellow :background ,bg-other :box (:line-width 3 :style released-button)))))
+     `(custom-button-pressed ((,class (:foreground ,bg :background ,bg-other :box (:line-width 3 :style pressed-button)))))
+     `(custom-button-pressed-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 3 :style pressed-button)))))
+     `(custom-button-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 3 :style pressed-button)))))
      `(custom-changed ((,class (:foreground ,blue :background ,bg))))
      `(custom-comment ((,class (:foreground ,fg :background ,grey))))
      `(custom-comment-tag ((,class (:foreground ,grey))))
-     `(custom-group-subtitle ((,class (:foreground ,red))))
-     `(custom-group-tag ((,class (:foreground ,magenta))))
+     `(custom-documentation ((,class (:foreground ,fg))))
+     `(custom-face-tag ((,class (:foreground ,blue :weight bold))))
+     `(custom-group-subtitle ((,class (:foreground ,magenta :weight bold))))
+     `(custom-group-tag ((,class (:foreground ,magenta :weight bold))))
      `(custom-group-tag-1 ((,class (:foreground ,blue))))
-     `(custom-invalid ((,class (:foreground ,red :background ,red))))
-     `(custom-modified ((,class (:foreground ,blue :background ,blue))))
-     `(custom-saved ((,class (:foreground ,green :background ,green :bold bold))))
+     `(custom-invalid ((,class (:foreground ,red))))
+     `(custom-link ((,class (:foreground ,orange :underline t))))
+     `(custom-modified ((,class (:foreground ,blue))))
+     `(custom-rogue ((,class (:foreground ,blue :box (:line-width 3 :style none)))))
+     `(custom-saved ((,class (:foreground ,green :weight bold))))
      `(custom-set ((,class (:foreground ,yellow :background ,bg))))
-     `(custom-state ((,class (:foreground ,green :background ,green))))
+     `(custom-state ((,class (:foreground ,green))))
      `(custom-themed ((,class (:foreground ,yellow :background ,bg))))
      `(custom-variable-button ((,class (:foreground ,green :underline t))))
      `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
-     `(custom-variable-tag ((,class (:foreground ,purple))))
-     `(custom-visibility ((,class (:foreground ,blue :underline nil))))
+     `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
+     `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
 
 ;;;; diff-hl - dark
      `(diff-hl-change ((,class (:foreground ,orange :background ,orange))))
@@ -396,13 +400,18 @@ Possinle values: `dark' or `light'.")
 ;;;; dired - dark
      `(dired-directory ((,class (:foreground ,darkcyan))))
      `(dired-flagged ((,class (:foreground ,red))))
-     `(dired-header ((,class (:foreground ,blue :weight bold))))
+     `(dired-header ((,class (:foreground ,orange :weight bold :underline ,darkcyan))))
      `(dired-ignored ((,class (:foreground ,spacegrey5))))
      `(dired-mark ((,class (:foreground ,orange :weight bold))))
-     `(dired-marked ((,class (:foreground ,cyan :weight bold :inverse-video t))))
+     `(dired-marked ((,class (:foreground ,yellow :weight bold))))
      `(dired-perm-write ((,class (:foreground ,red :underline t))))
-     `(dired-symlink ((,class (:foreground ,magenta :weight bold))))
+     `(dired-symlink ((,class (:foreground ,magenta))))
      `(dired-warning ((,class (:foreground ,yellow))))
+
+;;;; dired-async - dark
+     `(dired-async-failures ((,class (:foreground ,red))))
+     `(dired-async-message ((,class (:foreground ,orange))))
+     `(dired-async-mode-message ((,class (:foreground ,orange))))
 
 ;;;; dired+ - dark
      `(diredp-compressed-file-suffix ((,class (:foreground ,spacegrey5))))
@@ -1027,6 +1036,11 @@ Possinle values: `dark' or `light'.")
      `(mu4e-column-faces-date ((,class (:foreground ,blue))))
      `(mu4e-column-faces-to-from ((,class (:foreground ,green))))
 
+;;;; mu4e-thread-folding - dark
+     `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline nil))))
+     `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+     `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+
 ;;;; multiple cursors - dark
      `(mc/cursor-face ((,class (:inherit cursor))))
 
@@ -1081,6 +1095,12 @@ Possinle values: `dark' or `light'.")
      `(notmuch-tree-no-match-tree-face ((,class (:foreground ,yellow))))
      `(notmuch-wash-cited-text ((,class (:foreground ,spacegrey4))))
      `(notmuch-wash-toggle-button ((,class (:foreground ,fg))))
+
+;;;; orderless - dark
+     `(orderless-match-face-0 ((,class (:foreground ,teal :weight bold :underline t))))
+     `(orderless-match-face-1 ((,class (:foreground ,darkcyan :weight bold :underline t))))
+     `(orderless-match-face-2 ((,class (:foreground ,cyan :weight bold :underline t))))
+     `(orderless-match-face-3 ((,class (:foreground ,green :weight bold :underline t))))
 
 ;;;; objed - dark
      `(objed-hl ((,class (:inherit region :background ,grey))))
@@ -1466,8 +1486,12 @@ Possinle values: `dark' or `light'.")
      `(whitespace-trailing ((,class (:inherit trailing-whitespace))))
 
 ;;;; widget - dark
+     `(widget-button ((,class (:foreground ,fg :weight bold))))
      `(widget-button-pressed ((,class (:foreground ,red))))
      `(widget-documentation ((,class (:foreground ,green))))
+     `(widget-field ((,class (:foreground ,fg :background ,spacegrey0 :extend nil))))
+     `(widget-inactive ((,class (:foreground ,grey :background ,bg-other))))
+     `(widget-single-line-field ((,class (:foreground ,fg :background ,spacegrey0))))
 
 ;;;; window-divider - dark
      `(window-divider ((,class (:inherit vertical-border))))
@@ -1795,27 +1819,31 @@ Possinle values: `dark' or `light'.")
      `(cperl-nonoverridable-face ((,class (:inherit font-lock-builtin-face))))
 
 ;;;; custom - light
-     `(custom-button ((,class (:foreground ,blue :background ,bg :box (:line-width 1 :style none)))))
-     `(custom-button-mouse ((,class (:foreground ,bg :background ,blue :box (:line-width 1 :style none)))))
-     `(custom-button-pressed ((,class (:foreground ,bg :background ,blue :box (:line-width 1 :style none)))))
-     `(custom-button-pressed-unraised ((,class (:foreground ,bg :background ,magenta :box (:line-width 1 :style none)))))
-     `(custom-button-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 1 :style none)))))
+     `(custom-button ((,class (:foreground ,fg :background ,bg-other :box (:line-width 3 :style released-button)))))
+     `(custom-button-mouse ((,class (:foreground ,yellow :background ,bg-other :box (:line-width 3 :style released-button)))))
+     `(custom-button-pressed ((,class (:foreground ,fg :background ,bg-other :box (:line-width 3 :style pressed-button)))))
+     `(custom-button-pressed-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 3 :style pressed-button)))))
+     `(custom-button-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 3 :style pressed-button)))))
      `(custom-changed ((,class (:foreground ,blue :background ,bg))))
      `(custom-comment ((,class (:foreground ,fg :background ,grey))))
      `(custom-comment-tag ((,class (:foreground ,grey))))
-     `(custom-group-subtitle ((,class (:foreground ,red))))
-     `(custom-group-tag ((,class (:foreground ,magenta))))
-     `(custom-group-tag-1 ((,class (:foreground ,blue))))
-     `(custom-invalid ((,class (:foreground ,red :background ,red))))
-     `(custom-modified ((,class (:foreground ,blue :background ,blue))))
-     `(custom-saved ((,class (:foreground ,green :background ,green :bold bold))))
+     `(custom-documentation ((,class (:foreground ,fg))))
+     `(custom-face-tag ((,class (:foreground ,blue :weight bold)))) ; done
+     `(custom-group-subtitle ((,class (:foreground ,red :weight bold))))
+     `(custom-group-tag ((,class (:foreground ,red :weight bold)))) ; done
+     `(custom-group-tag-1 ((,class (:foreground ,blue :weight bold))))
+     `(custom-invalid ((,class (:foreground ,red))))
+     `(custom-link ((,class (:foreground ,orange :underline t :weight bold)))) ; done
+     `(custom-modified ((,class (:foreground ,blue))))
+     `(custom-rogue ((,class (:foreground ,blue :box (:line-width 3 :style none)))))
+     `(custom-saved ((,class (:foreground ,green :weight bold))))
      `(custom-set ((,class (:foreground ,yellow :background ,bg))))
-     `(custom-state ((,class (:foreground ,green :background ,green))))
+     `(custom-state ((,class (:foreground ,green :weight bold))))
      `(custom-themed ((,class (:foreground ,yellow :background ,bg))))
      `(custom-variable-button ((,class (:foreground ,green :underline t))))
      `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
-     `(custom-variable-tag ((,class (:foreground ,purple))))
-     `(custom-visibility ((,class (:foreground ,blue :underline nil))))
+     `(custom-variable-tag ((,class (:foreground ,darkcyan :weight bold))))
+     `(custom-visibility ((,class (:foreground ,orange :height 0.8 :weight bold :underline t)))) ; done
 
 ;;;; diff-hl - light
      `(diff-hl-change ((,class (:foreground ,orange :background ,orange))))
@@ -1825,13 +1853,18 @@ Possinle values: `dark' or `light'.")
 ;;;; dired - light
      `(dired-directory ((,class (:foreground ,darkcyan))))
      `(dired-flagged ((,class (:foreground ,red))))
-     `(dired-header ((,class (:foreground ,blue :weight bold))))
+     `(dired-header ((,class (:foreground ,orange :weight bold :underline ,darkcyan))))
      `(dired-ignored ((,class (:foreground ,spacegrey5))))
      `(dired-mark ((,class (:foreground ,orange :weight bold))))
-     `(dired-marked ((,class (:foreground ,cyan :weight bold :inverse-video t))))
+     `(dired-marked ((,class (:foreground ,yellow :weight bold))))
      `(dired-perm-write ((,class (:foreground ,red :underline t))))
-     `(dired-symlink ((,class (:foreground ,magenta :weight bold))))
+     `(dired-symlink ((,class (:foreground ,magenta))))
      `(dired-warning ((,class (:foreground ,yellow))))
+
+;;;; dired-async - light
+     `(dired-async-failures ((,class (:foreground ,red))))
+     `(dired-async-message ((,class (:foreground ,orange))))
+     `(dired-async-mode-message ((,class (:foreground ,orange))))
 
 ;;;; dired+ - light
      `(diredp-compressed-file-suffix ((,class (:foreground ,spacegrey5))))
@@ -2456,6 +2489,11 @@ Possinle values: `dark' or `light'.")
      `(mu4e-column-faces-date ((,class (:foreground ,blue))))
      `(mu4e-column-faces-to-from ((,class (:foreground ,green))))
 
+;;;; mu4e-thread-folding - light
+     `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline nil))))
+     `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+     `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+
 ;;;; multiple cursors - light
      `(mc/cursor-face ((,class (:inherit cursor))))
 
@@ -2510,6 +2548,12 @@ Possinle values: `dark' or `light'.")
      `(notmuch-tree-no-match-tree-face ((,class (:foreground ,yellow))))
      `(notmuch-wash-cited-text ((,class (:foreground ,spacegrey4))))
      `(notmuch-wash-toggle-button ((,class (:foreground ,fg))))
+
+;;;; orderless - light
+     `(orderless-match-face-0 ((,class (:foreground ,darkblue :weight bold :underline t))))
+     `(orderless-match-face-1 ((,class (:foreground ,teal :weight bold :underline t))))
+     `(orderless-match-face-2 ((,class (:foreground ,darkcyan :weight bold :underline t))))
+     `(orderless-match-face-3 ((,class (:foreground ,cyan :weight bold :underline t))))
 
 ;;;; objed - light
      `(objed-hl ((,class (:inherit region :background ,grey))))
@@ -2895,8 +2939,12 @@ Possinle values: `dark' or `light'.")
      `(whitespace-trailing ((,class (:inherit trailing-whitespace))))
 
 ;;;; widget - light
+     `(widget-button ((,class (:foreground ,fg :weight bold))))
      `(widget-button-pressed ((,class (:foreground ,red))))
      `(widget-documentation ((,class (:foreground ,green))))
+     `(widget-field ((,class (:foreground ,fg :background ,spacegrey8 :extend nil))))
+     `(widget-inactive ((,class (:foreground ,grey :background ,bg-other))))
+     `(widget-single-line-field ((,class (:foreground ,fg :background ,spacegrey8))))
 
 ;;;; window-divider - light
      `(window-divider ((,class (:inherit vertical-border))))

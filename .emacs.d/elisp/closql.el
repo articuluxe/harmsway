@@ -273,8 +273,9 @@
 
 ;;; Database
 
-(defclass closql-database (emacsql-sqlite-connection)
-  ((object-class :allocation :class)))
+(defclass closql-database ()
+  ((object-class :allocation :class))
+  :abstract t)
 
 (cl-defmethod closql-db ((class (subclass closql-database))
                          &optional variable file debug)
@@ -283,10 +284,11 @@
              (prog1 db (emacsql db [:pragma (= foreign-keys on)]))))
       (let ((db-init (not (and file (file-exists-p file))))
             (db (make-instance class :file file)))
-        (set-process-query-on-exit-flag (oref db process) nil)
+        (when (slot-boundp db 'process)
+          (set-process-query-on-exit-flag (oref db process) nil))
         (when debug
           (emacsql-enable-debugging db))
-        (emacsql db (emacsql db [:pragma (= foreign-keys on)]))
+        (emacsql db [:pragma (= foreign-keys on)])
         (when db-init
           (closql--db-init db))
         (when variable
@@ -348,7 +350,7 @@
                   (eieio-object-class obj))
       (error "Cannot reload object")))
 
-(cl-defmethod closql-get ((db closql-database) ident &optional class)
+(cl-defmethod closql-get ((db closql-database) ident &optional class resolve)
   (unless class
     (setq class (oref-default db object-class)))
   (when-let ((row (car (emacsql db [:select * :from $i1
@@ -356,7 +358,7 @@
                                 (oref-default class closql-table)
                                 (oref-default class closql-primary-key)
                                 ident))))
-    (closql--remake-instance class db row t)))
+    (closql--remake-instance class db row resolve)))
 
 (cl-defmethod closql-query ((db closql-database) &optional select pred class)
   (if select

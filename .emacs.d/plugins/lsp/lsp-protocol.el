@@ -41,7 +41,7 @@
     "Convert a KEYWORD to string."
     (substring (symbol-name keyword) 1))
 
-  (defvar lsp-use-plists nil))
+  (defvar lsp-use-plists (getenv "LSP_USE_PLISTS")))
 
 (defmacro lsp-interface (&rest interfaces)
   "Generate LSP bindings from INTERFACES triplet.
@@ -391,6 +391,9 @@ See `-let' for a description of the destructuring mechanism."
                (omnisharp:RunTestResponse (:Results :Pass :Failure :ContextHadNoTests))
                (omnisharp:TestMessageEvent (:MessageLevel :Message))
                (omnisharp:DotNetTestResult (:MethodName :Outcome :ErrorMessage :ErrorStackTrace :StandardOutput :StandardError)))
+
+(lsp-interface (csharp-ls:CSharpMetadata (:textDocument))
+               (csharp-ls:CSharpMetadataResponse (:source :projectName :assemblyName :symbolName)))
 
 (lsp-interface (rls:Cmd (:args :binary :env :cwd) nil))
 

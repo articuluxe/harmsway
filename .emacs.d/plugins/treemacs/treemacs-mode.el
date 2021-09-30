@@ -127,6 +127,7 @@ Will be set by `treemacs--post-command'.")
     (define-key map (kbd "g")        'treemacs-git-mode)
     (define-key map (kbd "f")        'treemacs-follow-mode)
     (define-key map (kbd "a")        'treemacs-filewatch-mode)
+    (define-key map (kbd "n")        'treemacs-indent-guide-mode)
     map)
   "Keymap for commands that toggle state in `treemacs-mode'.")
 
@@ -303,6 +304,9 @@ Will simply return `treemacs--eldoc-msg'."
     (face-remap-add-relative 'default :background (car treemacs-window-background-color))
     (face-remap-add-relative 'fringe  :background (car treemacs-window-background-color))
     (face-remap-add-relative 'hl-line :background (cdr treemacs-window-background-color)))
+
+  (when treemacs-text-scale
+    (text-scale-increase treemacs-text-scale))
 
   (add-hook 'window-configuration-change-hook #'treemacs--on-window-config-change)
   (add-hook 'kill-buffer-hook #'treemacs--on-buffer-kill nil t)

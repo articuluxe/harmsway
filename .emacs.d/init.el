@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-09-16 13:33:29 dharms>
+;; Modified Time-stamp: <2021-09-30 11:43:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -526,6 +526,7 @@ not an error if any files do not exist."
   :config
   (define-key annotate-mode-map (kbd "C-c C-a") nil)
   (define-key annotate-mode-map (kbd "C-c C-s") nil)
+  (define-key annotate-mode-map (kbd "C-c C-d") nil)
   (define-key annotate-mode-map (kbd "C-c ]") nil)
   (define-key annotate-mode-map (kbd "C-c [") nil)
   (annotate-mode 1))
@@ -1839,6 +1840,7 @@ ARGS are the additional arguments."
   (setq ivy-use-selectable-prompt t)
   (setq ivy-use-virtual-buffers t)
   (setq ivy-dynamic-exhibit-delay-ms 20)
+  (setq ivy-format-functions-alist '((t . ivy-format-function-arrow)))
   (add-to-list 'ivy-re-builders-alist '(counsel-describe-function . ivy--regex-ignore-order))
   (add-to-list 'ivy-re-builders-alist '(counsel-describe-variable . ivy--regex-ignore-order))
   :config

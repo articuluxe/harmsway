@@ -1678,11 +1678,13 @@ the Magit-Status buffer for DIRECTORY."
        (not (< (point) (oref section content)))
        (= (char-after (line-beginning-position)) ?-)))
 
+(defvar magit-diff-visit-jump-to-change t)
+
 (defun magit-diff-hunk-line (section goto-from)
   (save-excursion
     (goto-char (line-beginning-position))
     (with-slots (content combined from-ranges from-range to-range) section
-      (when (< (point) content)
+      (when (and magit-diff-visit-jump-to-change (< (point) content))
         (goto-char content)
         (re-search-forward "^[-+]"))
       (+ (car (if goto-from from-range to-range))
@@ -1976,6 +1978,12 @@ Staging and applying changes is documented in info node
 (defvar magit-hunk-section-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-diff-section-base-map)
+    (let ((m (make-sparse-keymap)))
+      (define-key m (kbd "RET") 'magit-smerge-keep-current)
+      (define-key m (kbd "u")   'magit-smerge-keep-upper)
+      (define-key m (kbd "b")   'magit-smerge-keep-base)
+      (define-key m (kbd "l")   'magit-smerge-keep-lower)
+      (define-key map smerge-command-prefix m))
     map)
   "Keymap for `hunk' sections.")
 
@@ -2702,17 +2710,18 @@ or a ref which is not a branch, then it inserts nothing."
       (when-let ((window (get-buffer-window)))
         (let* ((column   (length (match-string 0)))
                (font-obj (query-font (font-at (point) window)))
-               (size     (* 2 (+ (aref font-obj 4)
-                                 (aref font-obj 5))))
+               (size     (* 2 (aref font-obj 4)))
                (align-to (+ column
                             (ceiling (/ size (aref font-obj 7) 1.0))
                             1))
                (gravatar-size (- size 2)))
           (ignore-errors ; service may be unreachable
             (gravatar-retrieve email 'magit-insert-revision-gravatar-cb
-                               (list rev (point-marker) align-to column))))))))
+                               (list gravatar-size rev
+                                     (point-marker)
+                                     align-to column))))))))
 
-(defun magit-insert-revision-gravatar-cb (image rev marker align-to column)
+(defun magit-insert-revision-gravatar-cb (image size rev marker align-to column)
   (unless (eq image 'error)
     (when-let ((buffer (marker-buffer marker)))
       (with-current-buffer buffer
@@ -2726,9 +2735,11 @@ or a ref which is not a branch, then it inserts nothing."
                                (car-safe
                                 (get-text-property (point) 'display)))
                               'image)))
-            (let ((top `((,@image :ascent center :relief 1)
+            (let ((top `((,@image
+                          :ascent center :relief 1 :scale 1 :height ,size)
                          (slice 0.0 0.0 1.0 0.5)))
-                  (bot `((,@image :ascent center :relief 1)
+                  (bot `((,@image
+                          :ascent center :relief 1 :scale 1 :height ,size)
                          (slice 0.0 0.5 1.0 1.0)))
                   (align `((space :align-to ,align-to))))
               (when magit-revision-use-gravatar-kludge

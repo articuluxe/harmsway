@@ -5,7 +5,7 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.7.0
+;; Version: 0.7.1
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -62,12 +62,12 @@ Initialized when either of the theme variants is loaded.")
 VARIANT can either be 'dark of 'light.  Values can be overridden
 via immaterial-color-override-alist).  The palette was created
 using the https://material.io/resources/color/ tool."
-  `(("background-primary"    . ,(if (eq variant 'dark) "#012027" "#fdfdfa"))
-    ("background-off"        . ,(if (eq variant 'dark) "#001b21" "#f8f8f4"))
-    ("background-on"         . ,(if (eq variant 'dark) "#01343f" "#f5f5e7"))
-    ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#333333"))
-    ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#444444"))
-    ("foreground-tertiary"   . ,(if (eq variant 'dark) "#aaaaaa" "#555555"))
+  `(("background-primary"    . ,(if (eq variant 'dark) "#012027" "#fdfefe"))
+    ("background-off"        . ,(if (eq variant 'dark) "#001b21" "#f9fafa"))
+    ("background-on"         . ,(if (eq variant 'dark) "#01343f" "#f3f3ec"))
+    ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#222222"))
+    ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#333333"))
+    ("foreground-tertiary"   . ,(if (eq variant 'dark) "#aaaaaa" "#444444"))
     ("primary"               . ,(if (eq variant 'dark) "#b39ddb" "#4527a0"))
     ("primary-light"         . ,(if (eq variant 'dark) "#e6ceff" "#7953d2"))
     ("primary-dark"          . ,(if (eq variant 'dark) "#836fa9" "#000070"))
@@ -78,22 +78,28 @@ using the https://material.io/resources/color/ tool."
     ("tertiary-light"        . ,(if (eq variant 'dark) "#c3fdff" "#5472d3"))
     ("tertiary-dark"         . ,(if (eq variant 'dark) "#5d99c6" "#002171"))
 
+    ;; colors to use for popup-like UI behavior such as `company-mode`
+    ;; completions, ivy/counsel, and lsp-ui.
+    ("popup-bg-border"        . ,(if (eq variant 'dark) "#024858" "#e3e3d3"))
+    ("popup-bg-prim"          . ,(if (eq variant 'dark) "#012830" "#f8f8f4"))
+    ("popup-bg-on"            . ,(if (eq variant 'dark) "#014453" "#fdfdfd"))
+
     ("error"                 . ,(if (eq variant 'dark) "#ef9a9a" "#b00202"))
     ("warning"               . ,(if (eq variant 'dark) "#ff9800" "#bf360c"))
     ("discrete"              . ,(if (eq variant 'dark) "#848484" "#757575"))
     ("vertical-border"       . ,(if (eq variant 'dark) "#001b21" "#f8f8f4"))
     ("cursor"                . ,(if (eq variant 'dark) "#64d8cb" "#64d8cb"))
     ("modeline-active-fg"    . ,(if (eq variant 'dark) "#ffffff" "#ffffff"))
-    ("modeline-active-bg"    . ,(if (eq variant 'dark) "#005662" "#9575cd"))
+    ("modeline-active-bg"    . ,(if (eq variant 'dark) "#005662" "#007b94"))
     ("modeline-inactive-fg"  . ,(if (eq variant 'dark) "#777777" "#9e9e9e"))
-    ("modeline-inactive-bg"  . ,(if (eq variant 'dark) "#001017" "#ede7f6"))
+    ("modeline-inactive-bg"  . ,(if (eq variant 'dark) "#001017" "#f9fafa"))
     ;; various task-specific colors
-    ("diff-added"            . ,(if (eq variant 'dark) "#063314" "#e6ffed"))
-    ("diff-added-refined"    . ,(if (eq variant 'dark) "#115c24" "#acf2bd"))
-    ("diff-removed"          . ,(if (eq variant 'dark) "#450a0d" "#ffeef0"))
-    ("diff-removed-refined"  . ,(if (eq variant 'dark) "#7f1217" "#fdb8c0"))
-    ("diff-changed"          . ,(if (eq variant 'dark) "#07275a" "#e1f0fe"))
-    ("diff-changed-refined"  . ,(if (eq variant 'dark) "#0c4296" "#a8d3ff"))
+    ("diff-added"            . ,(if (eq variant 'dark) "#033521" "#e6ffed"))
+    ("diff-added-refined"    . ,(if (eq variant 'dark) "#175b2b" "#acf2bd"))
+    ("diff-removed"          . ,(if (eq variant 'dark) "#3b0f19" "#ffebe9"))
+    ("diff-removed-refined"  . ,(if (eq variant 'dark) "#8d2323" "#ffc0c0"))
+    ("diff-changed"          . ,(if (eq variant 'dark) "#082145" "#e1f0fe"))
+    ("diff-changed-refined"  . ,(if (eq variant 'dark) "#103d7f" "#a8d3ff"))
     ))
 
 
@@ -130,8 +136,6 @@ negative)."
 NAME and VARIANT should be symbols."
   (progn
     (setq immaterial-color-alist (immaterial-create-color-alist variant))
-    ;; not sure why this isn't a custom face in lsp-ui-doc
-    (setq lsp-ui-doc-border (immaterial-color "modeline-active-bg"))
     (let ((class '((class color) (min-colors 89)))
 	  (fg1                  (immaterial-color "foreground-primary"))
 	  (fg2                  (immaterial-color "foreground-secondary"))
@@ -149,6 +153,10 @@ NAME and VARIANT should be symbols."
 	  (tert-light           (immaterial-color "tertiary-light"))
 	  (tert-dark            (immaterial-color "tertiary-dark"))
 	  (discrete             (immaterial-color "discrete"))
+
+	  (popup-bg-border      (immaterial-color "popup-bg-border"))
+	  (popup-bg-prim        (immaterial-color "popup-bg-prim"))
+	  (popup-bg-on          (immaterial-color "popup-bg-on"))
 
 	  (keyword              (immaterial-color "primary"))
 	  (builtin              (immaterial-color "primary"))
@@ -175,6 +183,15 @@ NAME and VARIANT should be symbols."
 	  (diff-changed-refined (immaterial-color "diff-changed-refined"))
 	  (diff-removed         (immaterial-color "diff-removed"))
 	  (diff-removed-refined (immaterial-color "diff-removed-refined")))
+
+      (custom-theme-set-variables
+       name
+       ;; note: this color vector controls the appearance of shell mode. It is
+       ;; set up to mimic the term-color-* faces. ["black" "red3" "green3"
+       ;; "yellow3" "blue2" "magenta3" "cyan3" "gray90"]
+       `(ansi-color-names-vector (vector ,fg1 ,sec ,prim ,warning ,sec-dark ,tert ,error ,bg-prim))
+       ;; not sure why this isn't a custom face in lsp-ui-doc
+       `(lsp-ui-doc-border ,popup-bg-border))
 
       (custom-theme-set-faces
        name
@@ -228,7 +245,7 @@ NAME and VARIANT should be symbols."
        ;; used for secondary selections and selected date/time in org-mode
        `(secondary-selection ((,class (:background ,bg-on :foreground ,sec-dark))))
        ;; face used for text highlighting in various contexts (e.g. ivy search)
-       `(highlight ((,class (:background ,bg-on :foreground ,fg2 :extend t))))
+       `(highlight ((,class (:background ,bg-on))))
        ;; hl-line-mode background
        `(hl-line ((,class (:background ,bg-on :extend t))))
        ;; linum-mode column
@@ -289,43 +306,54 @@ NAME and VARIANT should be symbols."
        `(slime-repl-inputed-output-face ((,class (:foreground ,sec))))
        `(trailing-whitespace ((,class :foreground nil :background ,warning)))
        ;;
-       ;; ansi-term/term: set up colors that work well with the theme at large
+       ;; ansi-term/term/vterm
        ;;
        `(term-default-fg-color ((,class (:foreground ,fg1, :background ,bg-prim))))
        `(term-default-bg-color ((,class (:foreground ,fg1 :background ,bg-prim))))
-       `(term-color-red        ((,class (:foreground ,error :background ,bg-prim))))
-       `(term-color-blue       ((,class (:foreground ,prim-dark))))
-       `(term-color-yellow     ((,class (:foreground ,prim))))
-       `(term-color-magenta    ((,class (:foreground ,prim-light))))
-       `(term-color-black      ((,class (:foreground ,sec-dark))))
-       `(term-color-green      ((,class (:foreground ,sec))))
-       `(term-color-cyan       ((,class (:foreground ,sec-light))))
-       `(term-color-white      ((,class (:foreground ,fg1))))
+       ;; used for most terminal text
+       `(term-color-black      ((,class (:foreground ,fg1))))
+       `(term-color-white      ((,class (:foreground ,bg-prim))))
+       ;; for example used for directories
+       `(term-color-blue       ((,class (:foreground ,sec-dark))))
+       ;; for example used for symlinks
+       `(term-color-cyan       ((,class (:foreground ,error))))
+       ;; for example used for scripts (.sh)
+       `(term-color-green      ((,class (:foreground ,prim))))
+       ;; for example used for archives (zip, deb, ...)
+       `(term-color-red        ((,class (:foreground ,sec))))
+       `(term-color-yellow     ((,class (:foreground ,warning))))
+       ;; for example used for media (images, audio, video)
+       `(term-color-magenta    ((,class (:foreground ,tert))))
        ;;
        ;; company -- "complete any" completion engine
        ;;
-       ;; Face used for the common part of completions in the echo area
-       `(company-echo-common ((,class (:foreground ,fg1 :background ,bg-on))))
-       ;; display (single remaining) suggestion while typing
-       `(company-preview ((,class (:background ,bg-on :foreground ,fg1))))
-       `(company-preview-common ((,class (:background ,bg-on :foreground ,fg1))))
-       `(company-preview-search ((,class (:foreground ,bg-on :background ,fg1))))
+       ;; Face used for the common part of completions in the echo area (appears
+       ;; to only be used with the echo area frontend).
+       `(company-echo-common ((,class (:foreground ,warning))))
        ;; scrollbar style in company tooltip
-       `(company-scrollbar-bg ((,class (:background ,diff-changed))))
-       `(company-scrollbar-fg ((,class (:background ,diff-changed-refined))))
-       ;; general style of tooltip popup
-       `(company-tooltip ((,class (:foreground ,fg1 :background ,diff-changed :bold t :box (:line-width -1 :color ,diff-changed-refined :style nil)))))
-       ;; annotation appearance (could be the return-type of a function)
-       `(company-tooltip-annotation ((,class (:weight normal :foreground ,fg1))))
-       ;; annotation appearance for the selected item in the completion list
-       `(company-tooltip-annotation-selection ((,class (:weight normal :inherit company-tooltip-selection))))
-       `(company-tooltip-search ((,class (:weight normal :inherit company-tooltip-selection))))
-       ;; the highlight style to use when typing and showing common search prefix
+       `(company-scrollbar-bg ((,class (:background ,popup-bg-prim))))
+       `(company-scrollbar-fg ((,class (:background ,popup-bg-on))))
+       ;; ;; general style of tooltip popup candidate list
+       `(company-tooltip ((,class (:foreground ,discrete :background ,popup-bg-prim))))
+       ;; ;; annotation appearance (right-hand side text; could be the signature of a function)
+       `(company-tooltip-annotation ((,class (:foreground ,sec :italic t))))
+       ;; the style to use for showing the common matched search prefix in candidates
        `(company-tooltip-common ((,class (:foreground ,warning))))
-       `(company-tooltip-common-selection ((,class (:foreground ,warning))))
-       ;; style for item mouse is hovering over
-       `(company-tooltip-selection ((,class (:weight bold :foreground ,fg1 :background ,diff-changed-refined))))
-       `(company-tooltip-mouse ((,class (:inherit company-tooltip-selection))))
+       ;; the style to use for showing the common matched search prefix in the *selected* candidate
+       `(company-tooltip-common-selection ((,class (:foreground ,warning :bold t))))
+       ;; style to use to highlight the *selected* candidate
+       `(company-tooltip-selection ((,class (:foreground ,fg1 :background ,popup-bg-on))))
+       ;; annotation (i.e. RHS) appearance for the *selected* item in the completion list
+       `(company-tooltip-annotation-selection ((,class (:inherit company-tooltip-annotation :bold nil))))
+       ;; style to use for candidate over which mouse pointer is hovering
+       `(company-tooltip-mouse ((,class (:inherit highlight))))
+       ;; when using `company-search-mode` this is the face to use for the
+       ;; matches of the entered search phrase
+       `(company-tooltip-search ((,class (:bold t :foreground ,warning))))
+       ;; same as above but for the *selected* candidate
+       `(company-tooltip-search-selection ((,class (:inherit company-tooltip-selection))))
+
+
        ;;
        ;; sh-mode
        ;;
@@ -377,27 +405,31 @@ NAME and VARIANT should be symbols."
        ;; lsp-ui
        ;;
        ;; ui-doc popup
-       `(lsp-ui-doc-background ((,class (:background ,(immaterial-color-lighten bg-off -2)))))
+       `(lsp-ui-doc-background ((,class (:background ,popup-bg-prim))))
+
+       ;; TODO: what's this?
+       ;; `(lsp-face-highlight-textual ((,class (:inherit highlight :bold t :foreground "red"))))
 
        ;;
        ;; lsp-ui-peek
        ;;
        ;; face to use for the file being peeked (to the left)
-       `(lsp-ui-peek-peek ((,class (:background ,bg-off))))
-       ;; face to use for the peek file listing (to the right)
-       `(lsp-ui-peek-list ((,class (:background ,bg-off :foreground ,fg2))))
-       ;; face for current selection in peek file listing (to the right)
-       `(lsp-ui-peek-selection ((,class (:inherit lsp-ui-peek-list :weight bold :foreground ,warning))))
+       `(lsp-ui-peek-peek ((,class (:background ,popup-bg-prim))))
+       ;; ;; face to use for the peek file listing (to the right)
+       `(lsp-ui-peek-list ((,class (:background ,popup-bg-prim))))
+       ;; face for current selection in peek file listing (to the right). note:
+       ;; only background face attribute appears to work.
+       `(lsp-ui-peek-selection ((,class (:background ,popup-bg-on))))
        ;; face for file names in file listing (to the right)
-       `(lsp-ui-peek-filename ((,class (:foreground ,prim))))
+       `(lsp-ui-peek-filename ((,class (:foreground ,discrete))))
        ;; face for the type/object being peeked at in listing to the right
-       `(lsp-ui-peek-highlight ((,class (:foreground ,warning))))
+       `(lsp-ui-peek-highlight ((,class (:foreground ,warning :bold t))))
        ;; face for line numbers in listing to the right
        `(lsp-ui-peek-line-number ((,class (:foreground ,discrete))))
        ;; face for header line above entire peek frame
-       `(lsp-ui-peek-header ((,class (:background ,modeline-active-bg :foreground ,modeline-active-fg :weight bold))))
+       `(lsp-ui-peek-header ((,class (:foreground ,discrete :background ,popup-bg-prim :weight semi-bold ))))
        ;; face for footer line below entire peek frame
-       `(lsp-ui-peek-footer ((,class (:background ,modeline-active-bg :foreground ,modeline-active-fg :weight bold))))
+       `(lsp-ui-peek-footer ((,class (:background ,popup-bg-prim))))
 
        ;;
        ;; ido
@@ -409,28 +441,29 @@ NAME and VARIANT should be symbols."
        ;;
        ;; ivy/swiper
        ;;
-       `(ivy-current-match ((,class (:background ,diff-changed :box (:line-width -1 :color ,diff-changed-refined)))))
+       ;; highlight current match under cursor
+       `(ivy-current-match ((,class (:weight semi-bold :background ,bg-on :extend t))))
+       ;; highlight match under mouse pointer
+       `(ivy-minibuffer-match-highlight ((,class (:inherit highlight))))
        ;; how to highlight the matching part of the search expression on presented
        ;; search candidates in the minibuffer.
+       ;; The background face for ‘ivy’ minibuffer matches.
        `(ivy-minibuffer-match-face-1 ((,class (:inherit isearch))))
+       ;; Face for ‘ivy’ minibuffer matches numbered 1 modulo 3.
        `(ivy-minibuffer-match-face-2 ((,class (:inherit isearch))))
+       ;; Face for ‘ivy’ minibuffer matches numbered 2 modulo 3.
        `(ivy-minibuffer-match-face-3 ((,class (:inherit isearch))))
+       ;; Face for ‘ivy’ minibuffer matches numbered 3 modulo 3.
        `(ivy-minibuffer-match-face-4 ((,class (:inherit isearch))))
-       ;; ivy information for grep-like searches (such as counsel-ag)
+       ;; ivy information for grep-like searches (such as `counsel-ag`)
        `(ivy-grep-info ((,class (:foreground ,sec-dark))))
        `(ivy-grep-line-number ((,class (:foreground ,sec-dark))))
-       ;; how to highlight the matching part of the search expression on presented
-       ;; search candidates in the buffer itself.
-       `(swiper-match-face-1 ((,class (:inherit isearch))))
-       `(swiper-match-face-2 ((,class (:inherit isearch))))
-       `(swiper-match-face-3 ((,class (:inherit isearch))))
-       `(swiper-match-face-4 ((,class (:inherit isearch))))
 
        ;;
        ;; ivy-posframe
        ;;
-       `(ivy-posframe ((,class (:background ,bg-off))))
-       `(ivy-posframe-border ((,class (:background ,discrete))))
+       `(ivy-posframe ((,class (:background ,popup-bg-prim))))
+       `(ivy-posframe-border ((,class (:background ,popup-bg-border))))
 
        ;;
        ;; org-mode
@@ -452,6 +485,8 @@ NAME and VARIANT should be symbols."
        `(org-level-6 ((,class (:weight semi-bold :foreground ,prim))))
        `(org-level-7 ((,class (:weight semi-bold :foreground ,prim))))
        `(org-level-8 ((,class (:weight semi-bold :foreground ,prim))))
+       ;; face used to indicate that a headline is DONE.
+       `(org-headline-done ((,class (:weight semi-bold :foreground ,discrete))))
        ;; face for the ellipsis in folded text
        `(org-ellipsis ((,class (:foreground ,tert))))
        ;; face to use for TODO keyword
@@ -571,15 +606,131 @@ NAME and VARIANT should be symbols."
        ;; face for lower version in conflict
        `(smerge-lower ((,class (:background ,diff-changed))))
        ;; face for added characters shown by smerge-refine
-       `(smerge-refined-added ((,class (:background ,(immaterial-color "diff-added-refined")))))
+       `(smerge-refined-added ((,class (:background ,diff-added-refined))))
        ;; face for removed characters shown by smerge-refine
-       `(smerge-refined-removed ((,class (:background ,(immaterial-color "diff-removed-refined")))))
+       `(smerge-refined-removed ((,class (:background ,diff-removed-refined))))
 
        ;;
        ;; xref
        ;;
        `(xref-file-header ((,class (:foreground ,prim))))
        `(xref-line-number ((,class (:foreground ,discrete))))
+
+       ;;
+       ;; compilation mode
+       ;;
+       ;; face used to highlight compiler information (and commonly in other
+       ;; moodes to display grep-like output such as file names)
+       `(compilation-info ((,class (:foreground ,prim))))
+       ;; face used to highlight compiler line numbers (and commonly in other
+       ;; moodes to display grep-like output such as file line numbers)
+       `(compilation-line-number ((,class (:foreground ,discrete))))
+
+
+       ;;
+       ;; completion (minibuffer.el)
+       ;;
+       ;; face for the parts of completions which matched the pattern
+       `(completions-common-part ((,class (:foreground ,warning))))
+       `(completions-annotations ((,class (:inherit font-lock-comment-face))))
+       ;; face for the first character after point in completions
+       `(completions-first-difference ((,class (:foreground ,error :weight bold))))
+
+       ;;
+       ;; magit
+       ;;
+       `(magit-section-heading ((,class (:foreground ,prim :weight bold))))
+       `(magit-section-secondary-heading ((,class (:foreground ,prim))))
+       `(magit-section-heading-selection ((,class (:foreground ,prim-light :weight bold :background ,bg-on))))
+       `(magit-section-highlight ((,class (:background ,bg-on))))
+       `(magit-header-line ((,class (:inherit header-line))))
+       `(magit-tag ((,class (:foreground ,sec))))
+       `(magit-hash ((,class (:foreground ,discrete))))
+       `(magit-filename ((,class (:foreground ,fg1 :weight semi-bold))))
+       ;; branch faces
+       `(magit-branch-local ((,class (:foreground ,sec))))
+       `(magit-branch-current ((,class (:foreground ,sec :background ,bg-on))))
+       `(magit-branch-remote ((,class (:foreground ,tert))))
+       `(magit-branch-remote-head ((,class (:foreground ,tert :background ,bg-on))))
+       ;; NOTE: magit-diff-hunk-heading, should be different from both
+       ;; magit-diff-hunk-heading-highlight and magit-section-highlight as well
+       ;; as from magit-diff-context and magit-diff-context-highlight
+       `(magit-diff-context ((,class (:foreground ,discrete :background ,bg-off))))
+       `(magit-diff-context-highlight ((,class (:foreground ,discrete :background ,bg-on))))
+       `(magit-diff-hunk-heading ((,class (:foreground ,discrete :background ,diff-changed))))
+       `(magit-diff-hunk-heading-highlight ((,class (:foreground ,discrete :background ,diff-changed-refined))))
+       `(magit-diff-hunk-heading-selection ((,class (:foreground ,fg1 :background ,diff-changed-refined))))
+       `(magit-diff-added ((,class (:background ,diff-added :extend t))))
+       `(magit-diff-added-highlight ((,class (:background ,diff-added-refined :extend t))))
+       `(magit-diff-removed ((,class (:background ,diff-removed :extend t))))
+       `(magit-diff-removed-highlight ((,class (:background ,diff-removed-refined))))
+       ;; face for file names in diffs
+       `(magit-diff-file-heading ((,class (:foreground ,fg3))))
+       `(magit-diff-file-heading-highlight ((,class (:foreground ,fg1 :background ,bg-on :extend t))))
+       ;; face to use when warning of trailing whitespace
+       `(magit-diff-whitespace-warning ((,class (:background ,diff-removed-refined))))
+       ;; NOTE: there are different `magit-blame` styles (heading, margin,
+       ;; highlight, lines). These can be cycled with "c". Some of these faces
+       ;; only apply to certain such styles.
+       `(magit-blame-heading ((,class (:foreground ,fg1 :slant normal :background ,diff-changed))))
+       `(magit-blame-highlight ((,class (:foreground ,fg1 :background ,diff-changed))))
+       ;; face used in `magit-blame` "margin mode" (use 'c' to cycle)
+       `(magit-blame-margin ((,class (:foreground ,fg1 :background ,diff-changed))))
+       ;; faces for formatting blame lines
+       `(magit-blame-name ((,class (:foreground ,fg1))))
+       `(magit-blame-date ((,class (:foreground ,fg1))))
+       `(magit-blame-summary ((,class (:foreground ,fg1))))
+       `(magit-blame-hash ((,class (:foreground ,fg1))))
+       `(magit-blame-dimmed ((,class (:foreground ,discrete))))
+       ;; magit-log
+       `(magit-log-graph ((,class (:foreground ,prim))))
+       `(magit-log-author ((,class (:foreground ,tert))))
+       `(magit-log-date ((,class (:foreground ,sec-dark))))
+       ;; magit-reflog
+       `(magit-reflog-amend ((,class (:foreground ,sec))))
+       `(magit-reflog-cherry-pick ((,class (:foreground ,sec-light))))
+       `(magit-reflog-commit ((,class (:foreground ,sec-dark))))
+       `(magit-reflog-merge ((,class (:foreground ,prim-dark))))
+       `(magit-reflog-rebase ((,class (:foreground ,prim-light))))
+       `(magit-reflog-checkout ((,class (:foreground ,tert))))
+       `(magit-reflog-remote ((,class (:foreground ,tert-dark))))
+       `(magit-reflog-other ((,class (:foreground ,tert-light))))
+       `(magit-reflog-reset ((,class (:foreground ,error))))
+       ;; face non-zero exit status
+       `(magit-process-ng ((,class (:foreground ,error))))
+       `(magit-process-ok ((,class (:foreground ,prim))))
+       ;; magit-cherry
+       ;; used for "+"
+       `(magit-cherry-unmatched ((,class (:foreground ,sec))))
+       ;; used for "-"
+       `(magit-cherry-equivalent ((,class (:foreground ,tert))))
+       ;; process status
+       `(magit-mode-line-process ((,class (:foreground ,fg1))))
+       `(magit-mode-line-process-error ((,class (:foreground ,error :weight bold))))
+       ;;
+       ;; dired
+       ;;
+       `(dired-directory ((,class (:foreground ,sec-dark))))
+       ;; face used for files flagged for deletion
+       `(dired-flagged ((,class (:foreground ,fg1 :background ,diff-removed))))
+       `(dired-header ((,class (:foreground ,prim))))
+       ;; face used for files suffixed with ‘completion-ignored-extensions’.
+       `(dired-ignored ((,class (:foreground ,discrete))))
+       ;; face used for asterisk of marked files
+       `(dired-mark ((,class (:foreground ,warning :weight bold))))
+       ;; face used for files marked
+       `(dired-marked ((,class (:foreground ,fg1 :background ,diff-changed))))
+       ;; face used to highlight permissions of group- and world-writable files.
+       `(dired-perm-write ((,class (:foreground ,error))))
+       ;; face used to highlight permissions of suid and guid files.
+       `(dired-set-id ((,class (:foreground ,warning))))
+       ;; face used for sockets, pipes, block devices and char devices.
+       `(dired-special ((,class (:foreground ,tert-light))))
+       ;; face used for symlinks
+       `(dired-symlink ((,class (:foreground ,error))))
+       ;; face used to highlight broken symblinks
+       `(dired-broken-symlink ((,class (:foreground ,fg1 :background ,diff-removed-refined))))
+       `(dired-warning ((,class (:foreground ,warning :background ,bg-on))))
        ))))
 
 

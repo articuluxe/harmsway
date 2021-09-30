@@ -109,7 +109,13 @@ forges and hosts."
            (format "%s:%s" id
                    (cond (stub path)
                          ((eq class 'forge-github-repository)
-                          (base64-decode-string their-id))
+                          ;; This is base64 encoded, according to
+                          ;; https://docs.github.com/en/graphql/reference/scalars#id.
+                          ;; Unfortunately that is not always true.
+                          ;; E.g. https://github.com/dit7ya/roamex.
+                          (condition-case nil
+                              (base64-decode-string their-id)
+                            (error their-id)))
                          (t their-id)))
            t)
           (or their-id path))))
@@ -289,7 +295,7 @@ Return the repository identified by HOST, OWNER and NAME."
 (cl-defmethod forge--topics-until ((repo forge-repository) until table)
   (if (oref repo sparse-p)
       until
-    (caar (forge-sql [:select [updated] :from $s1
+    (caar (forge-sql [:select [updated] :from $i1
                       :where (= repository $s2)
                       :order-by [(desc updated)]
                       :limit 1]

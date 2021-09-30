@@ -950,7 +950,7 @@ UPDATE is the indicator update function."
        (embark-keymap-prompter keymap update))
       ((guard (lookup-key keymap key))  ; if directly bound, then obey
        cmd)
-      ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
+      ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
       ('self-insert-command
        (minibuffer-message "Not an action")
@@ -1594,7 +1594,7 @@ minibuffer before executing the action."
            ((fboundp symbol) 'function)
            ((facep symbol) 'face)
            (library 'library)
-           (t symbol)))
+           (t 'symbol)))
         target))
 
 (defun embark--keybinding-command (_type target)
@@ -2991,7 +2991,7 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
 
 (defun embark-find-definition (symbol)
   "Find definition of Emacs Lisp SYMBOL."
-  (interactive "SSymbol: ")
+  (interactive "sSymbol: ")
   (let ((xref-backend-functions (lambda () 'elisp)))
     (xref-find-definitions symbol)))
 
@@ -3359,14 +3359,6 @@ and leaves the point to the left of it."
   ("n" embark-next-symbol)
   ("p" embark-previous-symbol))
 
-(embark-define-keymap embark-command-map
-  "Keymap for Embark command actions."
-  :parent embark-symbol-map
-  ("x" execute-extended-command)
-  ("I" Info-goto-emacs-command-node)
-  ("g" global-set-key)
-  ("l" local-set-key))
-
 (embark-define-keymap embark-face-map
   "Keymap for Embark face actions."
   :parent embark-symbol-map
@@ -3393,6 +3385,14 @@ and leaves the point to the left of it."
   :parent embark-symbol-map
   ("t" trace-function)
   ("T" untrace-function))
+
+(embark-define-keymap embark-command-map
+  "Keymap for Embark command actions."
+  :parent embark-function-map
+  ("x" execute-extended-command)
+  ("I" Info-goto-emacs-command-node)
+  ("g" global-set-key)
+  ("l" local-set-key))
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."

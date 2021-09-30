@@ -496,10 +496,10 @@ and Emacs to it."
         (toplib (or load-file-name buffer-file-name))
         debug)
     (unless (and toplib
-                 (equal (file-name-sans-extension
-                         (file-name-nondirectory toplib))
-                        "magit"))
-      (setq toplib (locate-library "magit")))
+                 (member (file-name-nondirectory toplib)
+                         '("magit.el" "magit.el.gz")))
+      (let ((load-suffixes '(".el")))
+        (setq toplib (locate-library "magit"))))
     (setq toplib (and toplib (magit--straight-chase-links toplib)))
     (push toplib debug)
     (when toplib

@@ -39,12 +39,14 @@
                (s-lines)
                (--first
                 (when (file-exists-p it)
-                  (->> (concat (shell-quote-argument it) " --version")
-                       (shell-command-to-string)
-                       (s-trim)
-                       (s-replace "Python " "")
-                       (s-left 1)
-                       (version<= "3")))))
+                  (condition-case _
+                      (->> (concat (shell-quote-argument it) " --version")
+                           (shell-command-to-string)
+                           (s-trim)
+                           (s-replace "Python " "")
+                           (s-left 1)
+                           (version<= "3"))
+                    (error nil)))))
         (error nil)))))
 
 (cl-macrolet
@@ -153,6 +155,16 @@ There are 2 options:
   "Enables eldoc display of the file path at point.
 Requires eldoc mode to be enabled."
   :type 'boolean
+  :group 'treemacs)
+
+(defcustom treemacs-indent-guide-style 'line
+  "Determines the apperance of `treemacs-indent-guide-mode'.
+The choices are
+ - `line' for indent guides to use the ' ┃ ' character for every indentation
+   level
+ - `block' to use a thick '██' block interspersed at every second indentation
+   level"
+  :type '(choice (const :tag "Line" 'line) (const :tag "Block" 'block))
   :group 'treemacs)
 
 (defcustom treemacs-indentation-string " "
@@ -774,6 +786,13 @@ included in `treemacs-display-in-side-window'."
 Can be set either to `treemacs-header-buttons-format' or any one of its
 constituent parts, or any other value acceptable for `header-line-format'."
   :type 'string
+  :group 'treemacs-window)
+
+(defcustom treemacs-text-scale nil
+  "Optional scale for the text (not the icons) in the treemacs window.
+If set the value will be passed to `text-scale-increase'.  Both positive and
+negative values are possible."
+  :type 'integer
   :group 'treemacs-window)
 
 (defcustom treemacs-select-when-already-in-treemacs 'move-back

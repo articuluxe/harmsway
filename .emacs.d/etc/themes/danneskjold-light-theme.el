@@ -74,6 +74,8 @@
                     (:background "#f50af708f906"
                                  :box (:line-width 2 :color "#f50af708f906")))))
 
+   `(org-agenda-current-time ((t (:foreground "black" :weight bold))))
+
    ;; '(org-block ((t (:inherit fixed-pitch))))
    ;; '(org-code ((t (:inherit (shadow fixed-pitch)))))
    ;; '(org-document-info ((t (:foreground "dark orange"))))

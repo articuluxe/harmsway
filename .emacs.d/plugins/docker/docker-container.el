@@ -38,6 +38,10 @@
   "Docker container customization group."
   :group 'docker)
 
+(defconst docker-container-id-template
+  "{{ json .Names }}"
+  "This Go template extracts the container id which will be passed to transient commands.")
+
 (defcustom docker-container-shell-file-name "/bin/sh"
   "Shell to use when entering containers."
   :group 'docker-container
@@ -50,31 +54,44 @@ This should be a cons cell (NAME . FLIP) where
 NAME is a string matching one of the column names
 and FLIP is a boolean to specify the sort order."
   :group 'docker-container
-  :type '(cons (choice (const "Id")
-                       (const "Image")
-                       (const "Command")
-                       (const "Created")
-                       (const "Status")
-                       (const "Ports")
-                       (const "Names"))
+  :type '(cons (string :tag "Column Name"
+                       :validate (lambda (widget)
+                                   (unless (--any-p (equal (plist-get it :name) (widget-value widget)) docker-container-columns)
+                                     (widget-put widget :error "Default Sort Key must match a column name")
+                                     widget)))
                (choice (const :tag "Ascending" nil)
                        (const :tag "Descending" t))))
+
+(defcustom docker-container-columns
+  '((:name "Id" :width 16 :template "{{json .ID}}" :sort nil :format nil)
+    (:name "Image" :width 15 :template "{{json .Image}}" :sort nil :format nil)
+    (:name "Command" :width 30 :template "{{json .Command}}" :sort nil :format nil)
+    (:name "Created" :width 23 :template "{{json .CreatedAt}}" :sort nil :format (lambda (x) (format-time-string "%F %T" (date-to-time x))))
+    (:name "Status" :width 20 :template "{{json .Status}}" :sort nil :format (lambda (x) (propertize x 'font-lock-face (docker-container-status-face x))))
+    (:name "Ports" :width 10 :template "{{json .Ports}}" :sort nil :format nil)
+    (:name "Names" :width 10 :template "{{json .Names}}" :sort nil :format nil))
+  "Column specification for docker containers.
+
+The order of entries defines the displayed column order.
+'Template' is the Go template passed to docker-container-ls to create the column
+data.   It should return a string delimited with double quotes.
+'Sort function' is a binary predicate that should return true when the first
+argument should be sorted before the second.
+'Format function' is a function from string to string that transforms the
+displayed values in the column."
+  :group 'docker-container
+  :set 'docker-utils-columns-setter
+  :get 'docker-utils-columns-getter
+  :type '(repeat (list :tag "Column"
+                       (string :tag "Name")
+                       (integer :tag "Width")
+                       (string :tag "Template")
+                       (sexp :tag "Sort function")
+                       (sexp :tag "Format function"))))
 
 (defun docker-container--read-shell (&optional read-shell-name)
   "Return `docker-container-shell-file-name' or read a shell name if READ-SHELL-NAME is truthy."
   (if read-shell-name (read-shell-command "Shell: ") docker-container-shell-file-name))
-
-(defun docker-container-parse (line)
-  "Convert a LINE from \"docker container ls\" to a `tabulated-list-entries' entry."
-  (condition-case nil
-      (let* ((data (json-read-from-string line))
-             (uptime (aref data 3))
-             (status (aref data 4)))
-        (aset data 3 (format-time-string "%F %T" (date-to-time uptime)))
-        (aset data 4 (propertize status 'font-lock-face (docker-container-status-face status)))
-        (list (aref data 6) data))
-    (json-readtable-error
-     (error "Could not read following string as json:\n%s" line))))
 
 (defun docker-container-status-face (status)
   "Return the correct face according to STATUS."
@@ -90,10 +107,10 @@ and FLIP is a boolean to specify the sort order."
 
 (defun docker-container-entries ()
   "Return the docker containers data for `tabulated-list-entries'."
-  (let* ((fmt "[{{json .ID}},{{json .Image}},{{json .Command}},{{json .CreatedAt}},{{json .Status}},{{json .Ports}},{{json .Names}}]")
+  (let* ((fmt (docker-utils-make-format-string docker-container-id-template docker-container-columns))
          (data (docker-run-docker "container ls" (docker-container-ls-arguments) (format "--format=\"%s\"" fmt)))
          (lines (s-split "\n" data t)))
-    (-map #'docker-container-parse lines)))
+    (-map (-partial #'docker-utils-parse docker-container-columns) lines)))
 
 (defun docker-container-refresh ()
   "Refresh the containers list."
@@ -270,12 +287,6 @@ nil, ask the user for it."
    ("d" "Open directory" docker-container-find-directory-selection)
    ("f" "Open file" docker-container-find-file-selection)])
 
-(docker-utils-transient-define-prefix docker-container-inspect ()
-  "Transient for inspecting containers."
-  :man-page "docker-container-inspect"
-  [:description docker-utils-generic-actions-heading
-   ("I" "Inspect" docker-utils-generic-action-with-buffer:json)])
-
 (docker-utils-transient-define-prefix docker-container-kill ()
   "Transient for kill signaling containers"
   :man-page "docker-container-kill"
@@ -362,7 +373,7 @@ nil, ask the user for it."
   ["Docker containers help"
    ("C" "Copy"       docker-container-cp)
    ("D" "Remove"     docker-container-rm)
-   ("I" "Inspect"    docker-container-inspect)
+   ("I" "Inspect"    docker-utils-inspect)
    ("K" "Kill"       docker-container-kill)
    ("L" "Logs"       docker-container-logs)
    ("O" "Stop"       docker-container-stop)
@@ -381,7 +392,7 @@ nil, ask the user for it."
     (define-key map "?" 'docker-container-help)
     (define-key map "C" 'docker-container-cp)
     (define-key map "D" 'docker-container-rm)
-    (define-key map "I" 'docker-container-inspect)
+    (define-key map "I" 'docker-utils-inspect)
     (define-key map "K" 'docker-container-kill)
     (define-key map "L" 'docker-container-logs)
     (define-key map "O" 'docker-container-stop)
@@ -407,7 +418,7 @@ nil, ask the user for it."
 
 (define-derived-mode docker-container-mode tabulated-list-mode "Containers Menu"
   "Major mode for handling a list of docker containers."
-  (setq tabulated-list-format [("Id" 16 t)("Image" 15 t)("Command" 30 t)("Created" 23 t)("Status" 20 t)("Ports" 10 t)("Names" 10 t)])
+  (setq tabulated-list-format (docker-utils-columns-list-format docker-container-columns))
   (setq tabulated-list-padding 2)
   (setq tabulated-list-sort-key docker-container-default-sort-key)
   (add-hook 'tabulated-list-revert-hook 'docker-container-refresh nil t)

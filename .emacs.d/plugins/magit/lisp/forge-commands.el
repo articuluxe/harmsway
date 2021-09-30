@@ -106,13 +106,13 @@ If pulling is too slow, then also consider setting the Git variable
               (called-interactively-p 'any)
               (magit-git-config-p "forge.autoPull" t))
       (forge--zap-repository-cache repo)
-      (when (oref repo selective-p)
-        (if (yes-or-no-p
-             (format "Always pull all of %s/%s's topics going forward?"
-                     (oref repo owner)
-                     (oref repo name)))
-            (oset repo selective-p nil)
-          (user-error "Abort")))
+      (when (and (oref repo selective-p)
+                 (called-interactively-p 'any)
+                 (yes-or-no-p
+                  (format "Always pull all of %s/%s's topics going forward?"
+                          (oref repo owner)
+                          (oref repo name))))
+        (oset repo selective-p nil))
       (setq forge--mode-line-buffer (current-buffer))
       (when-let ((remote  (oref repo remote))
                  (refspec (oref repo pullreq-refspec)))
@@ -170,7 +170,9 @@ If pulling is too slow, then also consider setting the Git variable
 If there is no current topic or with a prefix argument read a
 topic N to pull instead."
   (interactive (list (forge-read-topic "Pull topic")))
-  (forge--pull-topic (forge-get-repository t) n))
+  (let ((repo (forge-get-repository t)))
+    (forge--zap-repository-cache repo)
+    (forge--pull-topic repo n)))
 
 (cl-defmethod forge--pull-topic ((repo forge-repository) _n)
   (error "Fetching an individual topic not implemented for %s"
@@ -678,7 +680,8 @@ because the source branch has been deleted"))
         (magit-set "true" "branch" branch "rebase")
         (magit-git "branch" branch
                    (concat "--set-upstream-to="
-                           (if magit-branch-prefer-remote-upstream
+                           (if (or magit-branch-prefer-remote-upstream
+                                   (not (magit-branch-p base-ref)))
                                (concat upstream "/" base-ref)
                              base-ref))))
       (magit-set (number-to-string number) "branch" branch "pullRequest")
@@ -899,7 +902,8 @@ pull individual topics when the user invokes `forge-pull-topic'."
         (?a "[a]ll topics"
             (forge-pull repo))
         (?i "[i]ndividual topics (useful for casual contributors)"
-            (oset repo selective-p t))))))
+            (oset repo selective-p t)
+            (forge--pull repo nil))))))
 
 ;;;###autoload
 (defun forge-add-user-repositories (host user)

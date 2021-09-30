@@ -145,12 +145,8 @@ nil shows all `custom-available-themes'."
 (defcustom consult-after-jump-hook '(recenter)
   "Function called after jumping to a location.
 
-Commonly used functions for this hook are `recenter' and
-`reposition-window'.
-
-This is called during preview and for the jump after selection.
-You may want to add a function which pulses the current line, e.g.,
-`xref-pulse-momentarily'."
+Commonly used functions for this hook are `recenter' and `reposition-window'.
+This is called during preview and for the jump after selection."
   :type 'hook)
 
 (defcustom consult-line-start-from-top nil
@@ -537,9 +533,8 @@ ARGS is a list of commands or sources followed by the list of keyword-value pair
     (let ((opts (when (string-match " +--\\( +\\|\\'\\)" str)
                   (prog1 (substring str (match-end 0))
                     (setq str (substring str 0 (match-beginning 0)))))))
-      (unless (string-blank-p str)
-        ;; split-string-and-unquote fails if the quotes are invalid. Ignore it.
-        (cons str (and opts (ignore-errors (split-string-and-unquote opts))))))))
+      ;; split-string-and-unquote fails if the quotes are invalid. Ignore it.
+      (cons str (and opts (ignore-errors (split-string-and-unquote opts)))))))
 
 (defun consult--highlight-regexps (regexps str)
   "Highlight REGEXPS in STR.
@@ -1107,7 +1102,7 @@ See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
 (defun consult--jump-nomark (pos)
   "Go to POS and recenter."
   (cond
-   ((and (markerp pos) (not (buffer-live-p (marker-buffer pos))))
+   ((and (markerp pos) (not (marker-buffer pos)))
     ;; Only print a message, no error in order to not mess
     ;; with the minibuffer update hook.
     (message "Buffer is dead"))
@@ -1152,7 +1147,7 @@ FACE is the cursor face."
       (cond
        (restore
         (let ((saved-buffer (marker-buffer saved-pos)))
-          (if (not (buffer-live-p saved-buffer))
+          (if (not saved-buffer)
               (message "Buffer is dead")
             (set-buffer saved-buffer)
             (narrow-to-region saved-min saved-max)
@@ -2317,13 +2312,11 @@ These configuration options are supported:
         (completion--in-region start end collection predicate)
       (let* ((limit (car (completion-boundaries initial collection predicate "")))
              (category (completion-metadata-get metadata 'category))
-             (exit-status 'finished)
              (buffer (current-buffer))
              (completion
               (cond
                ((atom all) nil)
                ((and (consp all) (atom (cdr all)))
-                (setq exit-status 'sole)
                 (concat (substring initial 0 limit) (car all)))
                (t (car
                    (consult--with-preview
@@ -2375,7 +2368,11 @@ These configuration options are supported:
               (delete-region start end)
               (insert (substring-no-properties completion))
               (when-let (exit (plist-get completion-extra-properties :exit-function))
-                (funcall exit completion exit-status))
+                (funcall exit completion
+                         ;; If completion is finished and cannot be further completed,
+                         ;; return 'finished. Otherwise return 'exact.
+                         (if (eq (try-completion completion collection predicate) t)
+                             'finished 'exact)))
               t)
           (message "No completion")
           nil)))))

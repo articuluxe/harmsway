@@ -586,8 +586,11 @@
      `(ido-virtual ((,c (:foreground ,comment))))
      `(ido-vertical-match-face ((,c (:underline ,diredcl))))
 
-     ;; ivy
+     ;; completions
      `(ivy-current-match ((,c (:foreground "#FFCA00"))))
+     `(vertico-current ((,c (:foreground "#FFCA00"))))
+     `(consult-file ((,c (:inherit consult-buffer))))
+
      `(ivy-prompt-match ((,c (:bold t :foreground ,white))))
      `(ivy-confirm-face ((,c (:underline ,diredcl))))
 

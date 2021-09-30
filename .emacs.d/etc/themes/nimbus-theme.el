@@ -747,13 +747,14 @@
    `(lsp-ui-peek-selection ((t (:background ,selection))))
 
    ;; magit
-   `(magit-section-heading ((t (:foreground ,heading))))
-   `(magit-section-heading-selection ((t (:foreground ,red))))
-   `(magit-hash ((t (:foreground ,blue-gray))))
    `(magit-branch-local ((t (:foreground ,orange))))
    `(magit-branch-remote ((t (:foreground ,yellow))))
-   `(magit-tag ((t (:foreground ,tag))))
    `(magit-filename ((t (:foreground ,file))))
+   `(magit-hash ((t (:foreground ,blue-gray))))
+   `(magit-refname ((t (:foreground ,dark-green))))
+   `(magit-section-heading ((t (:foreground ,heading))))
+   `(magit-section-heading-selection ((t (:foreground ,red))))
+   `(magit-tag ((t (:foreground ,tag))))
 
    `(magit-diff-file-heading ((t (:foreground ,fg))))
    `(magit-diff-added ((t (:foreground ,diff-added))))
@@ -895,6 +896,7 @@
    `(org-done ((t (:foreground ,dark-green))))
    `(org-drawer ((t (:foreground ,special))))
    `(org-ellipsis ((t (:foreground ,light-gray))))
+   `(org-headline-done ((t (:foreground ,light-gray :strike-through t))))
    `(org-hide ((t (:foreground ,bg))))
    `(org-level-1 ((t (:foreground ,rainbow-1))))
    `(org-level-2 ((t (:foreground ,rainbow-2))))
