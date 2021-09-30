@@ -1,2 +1,2 @@
-cp src/desktop-fonts/overpass-mono/*.otf ../../../.fonts/overpass
+cp src/fonts/otf_mono/*.otf ../../../.fonts/overpass
 
