@@ -2,8 +2,7 @@
 ;; Copyright (C) 2015-2016, 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2021-03-01 05:47:43 dharms>
+;; Modified Time-stamp: <2021-09-30 14:02:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 

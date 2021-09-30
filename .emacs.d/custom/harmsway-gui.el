@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2021-03-30 09:40:32 dharms>
+;; Modified Time-stamp: <2021-09-30 14:01:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -47,8 +47,7 @@
 
 (add-hook 'after-init-hook #'harmsway-gui-load)
 
-(add-hook 'after-make-frame-functions #'harmsway-gui-disable-scrollbar)
-(add-hook 'after-make-frame-functions #'harmsway-gui-disable-toolbar)
+(add-hook 'after-make-frame-functions #'harmsway-gui-load)
 
 (provide 'harmsway-gui)
 ;;; harmsway-gui.el ends here
