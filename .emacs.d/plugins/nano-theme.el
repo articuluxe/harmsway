@@ -4,7 +4,7 @@
 
 ;; Maintainer: Nicolas P. Rougier <Nicolas.Rougier@inria.fr>
 ;; URL: https://github.com/rougier/nano-theme
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: theme, dark, light
 
@@ -80,142 +80,153 @@
 ;; You can use the theme as a regular theme or you can call
 ;; (nano-light) / (nano-dark) explicitely to install the light or dark
 ;; version.
+;;
+;; With GUI, you can mix frames with light and dark mode. Just call
+;; (nano-new-frame 'light) or (nano-new-frame 'dark)
 ;; 
-;; Optionally, you can use (nano-setup) to setup default settings.  Be
-;; careful since it will modify your configuration and requires
-;; specific fonts.
+;; Optionally, you can use (nano-mode) to setup recommended settings for
+;; the theme. Be careful since it will modify your configuration and
+;; requires a set of specific fonts. This needs to be called before
+;; setting the theme
 ;;
 ;; Recommended font is "Roboto Mono" or "Roboto Mono Nerd" if you want
 ;; to benefit from all the fancy glyphs. See https://www.nerdfonts.com.
 
 ;;; NEWS:
 
+;; Version 0.2
+;; - Split light / dark themes properly
+;; - Added a nano-new-frame function
+;;
 ;; Version 0.1
 ;; - Submission to ELPA
 
-
 ;;; Code:
 (require 'disp-table)
-
-(deftheme nano
-  "N Λ N O Theme")
 
 (defgroup nano nil
   "N Λ N O"
   :group 'convenience)
 
-(defgroup nano-light nil
-  "Light theme color palette" :group 'nano)
+(defgroup nano-theme nil
+  "Theme"
+  :group 'nano)
 
-(defgroup nano-dark nil
-  "Dark theme color palette" :group 'nano)
+(defgroup nano-theme-light nil
+  "Light color palette"
+  :group 'nano-theme)
 
-(defgroup nano-fonts nil
-  "Dark & Light theme fonts" :group 'nano)
+(defgroup nano-theme-dark nil
+  "Dark color palette"
+  :group 'nano-theme)
+
+(defgroup nano-theme-fonts nil
+  "Font stack"
+  :group 'nano-theme)
 
 (defcustom nano-fonts-use nil
   "Whether to use font stack"
-  :type 'boolean :group 'nano-fonts)
+  :type 'boolean :group 'nano-theme-fonts)
 
 (defface nano-mono
   '((t (:family "Roboto Mono"
         :height 140
         :weight light)))
   "Default monospaced font (Roboto Mono Light, 14pt)."
-  :group 'nano-fonts)
+  :group 'nano-theme-fonts)
 
 (defface nano-mono-alt
   '((t (:family "Fira Code"
         :height 140
         :weight light)))
   "Alternative monospaced font (Fira Code Light, 14pt)."
-  :group 'nano-fonts)
+  :group 'nano-theme-fonts)
 
 (defface nano-sans
   '((t (:family "Roboto"
         :height 140
         :weight light)))
   "Default proportional sans font (Roboto Light, 14pt)."
-  :group 'nano-fonts)
+  :group 'nano-theme-fonts)
 
 (defface nano-serif
   '((t (:family "Roboto Slab"
         :height 140
         :weight light)))
   "Default proportional serif font (Roboto Slab Light, 14pt)."
-  :group 'nano-fonts)
+  :group 'nano-theme-fonts)
 
 (defcustom nano-light-foreground "#37474F" ;; Blue Grey / L800
   "Default foreground color"
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-background "#FFFFFF" ;; White
   "Default background color"
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-highlight "#FAFAFA" ;; Very Light Grey
   "Highlight color is used to highlight part of the screen."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-subtle "#ECEFF1" ;; Blue Grey / L50
   "Subtle color is used to suggest a physical area on the screen."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-faded "#B0BEC5" ;; Blue Grey / L200
   "Faded face is for information that are less important."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-salient "#673AB7" ;; Deep Purple / L500
   "Salient color is used for information that are important."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-strong "#000000" ;; Black
   "Strong color is used for information of a structural nature."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-popout "#FFAB91" ;; Deep Orange / L200
   "Popout colour is used for information that needs attention."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-light-critical "#FF6F00" ;; Amber / L900
   "Critical face is for information that requires immediate action."
-  :type 'color :group 'nano-light)
+  :type 'color :group 'nano-theme-light)
 
 (defcustom nano-dark-foreground "#ECEFF4" ;; Snow Storm 3  / nord  6
   "Default foreground color"
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-background "#2E3440" ;; Polar Night 0 / nord  0
   "Default background color"
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-highlight "#3B4252" ;; Polar Night 1 / nord  1
   "Highdark color is used to highdark part of the screen."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-subtle "#434C5E" ;; Polar Night 2 / nord  2
   "Subtle color is used to suggest a physical area on the screen."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-faded "#677691" ;;
   "Faded face is for information that are less important."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-salient "#81A1C1" ;; Frost         / nord  9 
   "Salient color is used for information that are important."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-strong "#FFFFFF" ;; White
   "Strong color is used for information of a structural nature."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-popout "#D08770" ;; Aurora        / nord 12
   "Popout colour is used for information that needs attention."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defcustom nano-dark-critical  "#EBCB8B" ;; Aurora        / nord 11
   "Critical face is for information that requires immediate action."
-  :type 'color :group 'nano-dark)
+  :type 'color :group 'nano-theme-dark)
 
 (defface nano-critical nil
   "Critical face is for information that requires immediate action.
@@ -225,7 +236,8 @@ color, typically a shade of red. It must be used scarcely."
   :group nil)
 
 (defface nano-critical-i nil
-  "Critical face inversed." :group nil)
+  "Critical face inversed."
+  :group nil)
 
 (defface nano-popout nil
   "Popout face is used for information that needs attention.
@@ -235,7 +247,8 @@ attention through the popout effect."
   :group nil)
 
 (defface nano-popout-i nil
-  "Popout face inversed." :group nil)
+  "Popout face inversed."
+  :group nil)
 
 (defface nano-strong nil
   "Strong face is used for information of a structural nature.
@@ -246,7 +259,8 @@ directory, etc."
   :group nil)
 
 (defface nano-strong-i nil
-  "Strong face inversed." :group nil)
+  "Strong face inversed."
+  :group nil)
 
 (defface nano-salient nil
   "Salient face is used for information that are important.
@@ -256,7 +270,8 @@ intensity as the default face. This is typically used for links."
   :group nil)
 
 (defface nano-salient-i nil
-  "Strong face inversed." :group nil)
+  "Strong face inversed."
+  :group nil)
 
 (defface nano-faded nil
   "Faded face is for information that are less important.
@@ -267,7 +282,8 @@ abused anyway)."
   :group nil)
 
 (defface nano-faded-i nil
-  "Faded face inversed." :group nil)
+  "Faded face inversed."
+  :group nil)
 
 (defface nano-subtle nil
   "Subtle face is used to suggest a physical area on the screen.
@@ -277,16 +293,20 @@ background color that is barely perceptible."
   :group nil)
 
 (defface nano-subtle-i nil
-  "Subtle face inversed." :group nil)
+  "Subtle face inversed."
+  :group nil)
 
 (defface nano-default nil
-  "Default face." :group nil)
+  "Default face."
+  :group nil)
 
 (defface nano-default-i nil
-  "Default face inversed." :group nil)
+  "Default face inversed."
+  :group nil)
 
-(defun nano-setup ()
+(defun nano-mode ()
   "Defaults settings for nano (optional)"
+  (interactive)
 
   ;; Use nano fonts
   (setq nano-fonts-use t)
@@ -346,16 +366,13 @@ background color that is barely perceptible."
   (setq blink-cursor-mode nil)
 
   ;; No tooltips
-  (if (fboundp 'tooltip-mode)
-      (tooltip-mode -1))
+  (tooltip-mode -1)
 
   ;; No scroll bars
-  (if (fboundp 'scroll-bar-mode)
-      (scroll-bar-mode -1))
+  (scroll-bar-mode -1)
 
   ;; No toolbar
-  (if (fboundp 'tool-bar-mode)
-      (tool-bar-mode nil))
+  (tool-bar-mode -1)
 
   ;; Default frame settings
   (setq default-frame-alist
@@ -390,65 +407,6 @@ background color that is barely perceptible."
       (message "Roboto Mono Nerd font has not been found on your system"))))
 
 
-(defun nano-light ()
-  "Nano theme light"
-  
-  (interactive)
-  (setq widget-image-enable nil)
-  (setq x-underline-at-descent-line t)
-  (set-foreground-color nano-light-foreground)
-  (set-face-background 'internal-border nano-light-background (selected-frame))
-  (custom-set-variables '(frame-background-mode 'light))
-  (load-theme 'nano t)
-  (set-frame-parameter nil 'background-mode 'light)
-  (if (assq 'background-color default-frame-alist)
-      (setcdr (assq 'background-color default-frame-alist)
-              nano-light-background)
-    (add-to-list 'default-frame-alist
-                 `(background-color . ,nano-light-background)))
-  (if (assq 'background-mode default-frame-alist)
-      (setcdr (assq 'background-mode default-frame-alist) 'light)
-    (add-to-list 'default-frame-alist '(background-mode . light)))
-
-  (dolist (buffer (list " *Minibuf-0*" " *Echo Area 0*"
-                        " *Minibuf-1*" " *Echo Area 1*"))
-    (when (get-buffer buffer)
-      (with-current-buffer buffer
-        (face-remap-add-relative 'default 'nano-faded))))
-  (frame-set-background-mode (selected-frame))
-  (set-background-color nano-light-background))
-
-
-(defun nano-dark ()
-  "Nano theme dark"
-  
-  (interactive)
-  (setq widget-image-enable nil)
-  (setq x-underline-at-descent-line t)
-  (set-foreground-color nano-dark-foreground)
-  (set-face-background 'internal-border nano-dark-background (selected-frame))
-  (custom-set-variables '(frame-background-mode 'dark))
-  (load-theme 'nano t)
-  (set-frame-parameter nil 'background-mode 'dark)
-
-  (if (assq 'background-color default-frame-alist)
-      (setcdr (assq 'background-color default-frame-alist)
-              nano-dark-background)
-    (add-to-list 'default-frame-alist
-                 `(background-color . ,nano-dark-background)))
-  (if (assq 'background-mode default-frame-alist)
-      (setcdr (assq 'background-mode default-frame-alist) 'dark)
-    (add-to-list 'default-frame-alist '(background-mode . dark)))
-
-  (dolist (buffer (list " *Minibuf-0*" " *Echo Area 0*"
-                        " *Minibuf-1*" " *Echo Area 1*"))
-    (when (get-buffer buffer)
-      (with-current-buffer buffer
-        (face-remap-add-relative 'default 'nano-faded))))
-  (frame-set-background-mode (selected-frame))
-  (set-background-color nano-dark-background))
-
-
 ;; (defun inherit (face &optional inherit)
 ;;   "Extract face properties as a property list"
   
@@ -467,44 +425,92 @@ background color that is barely perceptible."
 ;;       properties)))
 
 
-;; ---  Theme ----------------------------------------------------------
-(let ((light     '((background light)))
-      (dark      '((background dark)))
-      ;; (tty-light '((type tty) (background light)))
-      ;; (tty-dark  '((type tty) (background dark)))
-      )
+(defun nano-new-frame (&optional mode)
+  "This funcion creates a new frame in light or dark MODE."
+  
+  (interactive)
+  (let ((mode (or mode (frame-parameter nil 'background-mode)))
+        (background-mode frame-background-mode)
+        (selected-frame (selected-frame))
+        (new-frame nil))
 
-  ;; Enforce nano fonts
-  (if nano-fonts-use
-      (custom-theme-set-faces
-       'nano
-       `(default ((,light (:foreground ,nano-light-foreground
-                           :weight     ,(face-attribute 'nano-mono :weight)
-                           :height     ,(face-attribute 'nano-mono :height)
-                           :family     ,(face-attribute 'nano-mono :family)))
-                  (,dark  (:foreground ,nano-dark-foreground
-                           :weight     ,(face-attribute 'nano-mono :weight)
-                           :height     ,(face-attribute 'nano-mono :height)
-                           :family     ,(face-attribute 'nano-mono :family)))))
-       `(nano-strong ((,light (:weight normal))
-                      (,dark  (:weight normal))))
-       `(variable-pitch  ((t (:weight ,(face-attribute 'nano-sans :weight)
-                              :height ,(face-attribute 'nano-sans :height)
-                              :family ,(face-attribute 'nano-sans :family)))))))
+    ;; Set mode
+    (setq frame-background-mode mode)
+    (setq new-frame (make-frame-command))
+    (select-frame new-frame)
 
-    ;; Enforce nano fonts
-  (if (not nano-fonts-use)
-      (custom-theme-set-faces
-       'nano
-       `(default ((,light (:foreground ,nano-light-foreground))
-                  (,dark  (:foreground ,nano-dark-foreground))))
-       `(nano-strong ((,light (:weight bold))
-                      (,dark  (:weight bold))))))
+    ;; This forces recomputation of faces on the new frame
+    (frame-set-background-mode (selected-frame))
+           
+    (when (eq mode 'light)
+      (set-foreground-color nano-light-foreground)
+      (set-background-color nano-light-background))
 
+    (when (eq mode 'dark)
+      (set-foreground-color nano-dark-foreground)
+      (set-background-color nano-dark-background))
+
+    ;; Restore background mode
+    (setq frame-background-mode background-mode)
+    (frame-set-background-mode selected-frame)
+    
+    new-frame))
+
+(defun nano-dark ()
+  "Load the nano dark theme on current frame."
+
+  (interactive)
+  (set-foreground-color nano-dark-foreground)
+  (set-background-color nano-dark-background)
+  (load-theme 'nano-dark t))
+
+(defun nano-light ()
+  "Load the nano light theme on current frame."
+
+  (interactive)
+  (set-foreground-color nano-light-foreground)
+  (set-background-color nano-light-background)
+  (load-theme 'nano-light t))
+
+
+(defun nano-theme (mode)
+  "Apply the nano theme according to MODE which can be 'dark or 'light."
+
+  (let ((light     '((background light)))
+        (dark      '((background dark)))
+        (theme      (if (eq mode 'dark)
+                       'nano-dark
+                     'nano-light)))
+
+    (set-frame-parameter nil 'background-mode mode)
+    (setq frame-background-mode mode)
+    (frame-set-background-mode (selected-frame))
+    
+    (when nano-fonts-use
+        (custom-theme-set-faces theme
+         `(default ((,light (:foreground ,nano-light-foreground
+                             :weight     ,(face-attribute 'nano-mono :weight)
+                             :height     ,(face-attribute 'nano-mono :height)
+                             :family     ,(face-attribute 'nano-mono :family)))
+                    (,dark  (:foreground ,nano-dark-foreground
+                             :weight     ,(face-attribute 'nano-mono :weight)
+                             :height     ,(face-attribute 'nano-mono :height)
+                             :family     ,(face-attribute 'nano-mono :family)))))
+         `(nano-strong ((,light (:weight normal))
+                        (,dark  (:weight normal))))
+         `(variable-pitch  ((t (:weight ,(face-attribute 'nano-sans :weight)
+                                :height ,(face-attribute 'nano-sans :height)
+                                :family ,(face-attribute 'nano-sans :family)))))))
+
+    (unless nano-fonts-use
+        (custom-theme-set-faces theme
+         `(default ((,light (:foreground ,nano-light-foreground))
+                    (,dark  (:foreground ,nano-dark-foreground))))
+         `(nano-strong ((,light (:weight bold))
+                        (,dark  (:weight bold))))))
 
   
-  (custom-theme-set-faces
-   'nano
+  (custom-theme-set-faces theme
    
    ;; --- Base ---------------------------------------------------------   
    `(cursor ((,light (:foreground ,nano-light-background
@@ -834,7 +840,6 @@ background color that is barely perceptible."
    '(message-mml                    ((t (:inherit nano-popout))))
    '(message-separator              ((t (:inherit nano-faded))))
 
-   
    ;; --- Outline ------------------------------------------------------
    '(outline-1                      ((t (:inherit nano-strong))))
    '(outline-2                      ((t (:inherit nano-strong))))
@@ -970,7 +975,6 @@ background color that is barely perceptible."
    '(mu4e-warning-face                      ((t (:inherit nano-popout))))
 
    ;; --- GNUS ---------------------------------------------------------
-
    '(gnus-button                            ((t (:inherit nano-salient))))
    '(gnus-cite-1                            ((t (:inherit nano-faded)))) 
    '(gnus-cite-10                           ((t (:inherit nano-faded))))
@@ -1086,7 +1090,6 @@ background color that is barely perceptible."
     '(rst-reference                         ((t (:inherit nano-salient))))
     '(rst-transition                        ((t (:inherit nano-default))))
 
-
     ;; --- Markdown ----------------------------------------------------
     '(markdown-blockquote-face              ((t (:inherit nano-default))))
     '(markdown-bold-face                     ((t (:inherit nano-strong))))
@@ -1131,7 +1134,6 @@ background color that is barely perceptible."
     '(markdown-table-face                   ((t (:inherit nano-default))))
     '(markdown-url-face                     ((t (:inherit nano-salient))))
 
-
     ;; --- Terminal ----------------------------------------------------
     '(term-bold        ((t (:inherit nano-strong))))
     '(term-color-black ((t (:inherit default))))
@@ -1149,10 +1151,12 @@ background color that is barely perceptible."
                              :background "#FFF9C4"))))  ;; material color yellow L100
     ))
 
-;;;###autoload
-(when (and (boundp 'custom-theme-load-path) load-file-name)
-  (add-to-list 'custom-theme-load-path
-               (file-name-as-directory (file-name-directory load-file-name))))
+  (dolist (buffer (list " *Minibuf-0*" " *Echo Area 0*"
+                        " *Minibuf-1*" " *Echo Area 1*"))
+    (when (get-buffer buffer)
+      (with-current-buffer buffer
+        (face-remap-add-relative 'default 'nano-faded)))))
 
-(provide-theme 'nano)
+
+(provide 'nano-theme)
 ;;; nano-theme.el ends here
