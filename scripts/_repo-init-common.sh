@@ -5,18 +5,19 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-03-25 18:02:35 dharms>
+# Modified Time-stamp: <2021-10-15 10:47:58 dharms>
 # Modified by: Dan Harms
 # Keywords: src repo
 
 if [ $# -lt 3 ]; then
-    echo "!!! Usage: repo-init.sh project version target"
+    echo "!!! Usage: repo-init.sh project version target <force>"
     exit 1
 fi
 
 proj=$1
 ver=$2
 subdir=$3
+force=$4
 recurse=true
 repo=~/config/repos/"$proj"/"$ver"
 # for display purposes
@@ -27,8 +28,11 @@ if [ "$subdir" == "." ]; then
     target="$(pwd)"
 fi
 
-_yesorno.sh "Clone $proj version $ver into $target?"
-[ $? == 1 ] && exit 1
+if [ -z "$force" ]; then
+    _yesorno.sh "Clone $proj version $ver into $target?"
+    [ $? == 1 ] && exit 1
+fi
+
 echo -e
 
 if [ "$recurse" = true ]; then
