@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, September 15, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-03-25 17:10:42 dharms>
+# Modified Time-stamp: <2021-10-19 11:02:00 dharms>
 # Modified by: Dan Harms
 # Keywords: repo src
 
@@ -23,7 +23,10 @@ if [ -z "$ver" ]; then
     exit 1
 fi
 
-target=~/config/repos/"$proj"/"$ver"/"$proj"-init.sh
+target=~/config/repos/"$proj"/"$ver"/_repo-init.sh
+if [ ! -f "$target" ]; then
+    target=~/config/repos/"$proj"/"$ver"/"$proj"-init.sh
+fi
 if [ ! -f "$target" ]; then
     echo "!!! $target not present; exiting..."
     exit 1
