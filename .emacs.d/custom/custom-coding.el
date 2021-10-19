@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2017, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
-;; Modified Time-stamp: <2021-05-18 16:48:11 dharms>
+;; Modified Time-stamp: <2021-10-15 11:32:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -40,7 +40,8 @@ name.  Otherwise, the base file name is used."
   (let* ((name (if (buffer-file-name)
                    (file-name-nondirectory (buffer-file-name))
                  (buffer-name)))
-         (project-name (proviso-current-project-name))
+         (project-name (replace-regexp-in-string "\\.\\|-" "_"
+                                                 (proviso-current-project-name)))
          (str
           (replace-regexp-in-string
            "\\.\\|-" "_"
