@@ -96,10 +96,9 @@
     (:reveal-slide-header "REVEAL_SLIDE_HEADER" nil org-reveal-slide-header t)
     (:reveal-slide-footer "REVEAL_SLIDE_FOOTER" nil org-reveal-slide-footer t)
     (:reveal-plugins "REVEAL_PLUGINS" nil nil t)
-    (:reveal-external-plugins "REVEAL_EXTERNAL_PLUGINS" nil nil newline)
+    (:reveal-external-plugins "REVEAL_EXTERNAL_PLUGINS" nil nil space)
     (:reveal-default-frag-style "REVEAL_DEFAULT_FRAG_STYLE" nil org-reveal-default-frag-style t)
     (:reveal-single-file nil "reveal_single_file" org-reveal-single-file t)
-    (:reveal-init-script "REVEAL_INIT_SCRIPT" nil org-reveal-init-script space)
     (:reveal-extra-script "REVEAL_EXTRA_SCRIPT" nil org-reveal-extra-script space)
     (:reveal-init-options "REVEAL_INIT_OPTIONS" nil org-reveal-init-options newline)
     (:reveal-highlight-css "REVEAL_HIGHLIGHT_CSS" nil org-reveal-highlight-css nil)
@@ -284,10 +283,28 @@ embedded into Reveal.initialize()."
 
 (defcustom org-reveal-external-plugins nil
   "Additional third-party Plugins to load with reveal.
+
+* When \"REVEAL_REVEAL_JS_VERSION\" is lower than 4
+
 Each entry should contain a name and an expression of the form
 \"{src: '%srelative/path/from/reveal/root', async:true/false,condition: jscallbackfunction(){}}\"
 Note that some plugins have dependencies such as jquery; these must be included here as well,
-BEFORE the plugins that depend on them."
+BEFORE the plugins that depend on them.
+
+* When \"REVEAL_REVEAL_JS_VERSION\" is 4 or higher
+
+The value should be an association list where the key of an entry
+is the name of the RevealJS plugin (e.g. RevealHighlight), and
+the value is either a string or a list of strings. Each string is
+going to be translated to an <script> tag in the output HTML.
+
+Example:
+
+(setq org-reveal-external-plugins
+      '((CopyCode .
+                  (\"https://cdn.jsdelivr.net/npm/reveal.js-copycode@1.0.2/plugin/copycode/copycode.js\"
+                   \"https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js\"))))
+"
   :group 'org-export-reveal
   :type 'alist)
 
@@ -296,11 +313,6 @@ BEFORE the plugins that depend on them."
   JS scripts and pictures."
   :group 'org-export-reveal
   :type 'boolean)
-
-(defcustom org-reveal-init-script nil
-  "Custom script that will be passed to Reveal.initialize."
-  :group 'org-export-reveal
-  :type 'string)
 
 (defcustom org-reveal-extra-script nil
   "Custom script that will be passed added to the script block, after Reveal.initialize."
@@ -777,8 +789,7 @@ custom variable `org-reveal-root'."
            (extra-initial-js-statement (plist-get info :reveal-extra-initial-js))
            (legacy-dependency-statement
             (unless (or in-single-file (eq version 4))
-              (org-reveal--legacy-dependency root-path plugins info)))
-           (init-script-statement (plist-get info :reveal-init-script)))
+              (org-reveal--legacy-dependency root-path plugins info))))
        (format "
 <script>
 // Full list of configuration options available here:
@@ -795,15 +806,28 @@ Reveal.initialize({
                                       (list reveal-4-plugin-statement
                                             init-options
                                             multiplex-statement
-                                            extra-initial-js-statement
+                                            (format extra-initial-js-statement root-path)
                                             legacy-dependency-statement))
                           ",\n")
                ;; Extra initialization scripts
                (or (plist-get info :reveal-extra-script) "")))
 )))
 
+(defun org-reveal--read-sexps-from-string (s)
+  (let ((s (string-trim s)))
+    (and (not (string-empty-p s))
+      (let ((r (read-from-string s)))
+        (let ((obj (car r))
+              (remain-index (cdr r)))
+          (and obj
+               (cons obj (org-reveal--read-sexps-from-string (substring s remain-index)))))))))
+
 (defun org-reveal-plugin-scripts-4 (plugins info)
   "Return scripts for initializing reveal.js 4.x builtin scripts"
+  ;; Return a tuple (represented as a list), the first value is a list of script
+  ;; tags that are going to be inlined to the final HTML output, the second
+  ;; value is a list of import statements that are going to be embedded in the
+  ;; Reveal.initialize call
   (if (not (null plugins))
       ;; Generate plugin scripts
       (let* ((plugins (mapcar
@@ -827,22 +851,36 @@ Reveal.initialize({
                         (RevealNotes . "%splugin/notes/notes.js")
                         (RevealMath . "%splugin/math/math.js")
                         (RevealZoom . "%splugin/zoom/zoom.js"))
-                      org-reveal-external-plugins))
+                      org-reveal-external-plugins
+                      ;; Buffer local plugins
+                      (let ((local-plugins (plist-get info :reveal-external-plugins)))
+                        (and local-plugins
+                             (org-reveal--read-sexps-from-string local-plugins)))))
              (plugin-js (seq-filter 'identity ;; Filter out nil
                                     (mapcar (lambda (p)
                                               (cdr (assoc p available-plugins)))
                                             plugins))))
         (if (not (null plugin-js))
             (cons
-             ;; Plugin initialization script
+             ;; First value of the tuple, a list of scripts HTML tags
              (let ((root-path (file-name-as-directory (plist-get info :reveal-root))))
                (mapconcat
                 (lambda (p)
-                  (format "<script src=\"%s\"></script>\n"
-                          (format p root-path)))
+                  ;; when it is a list, create a script tag for every entry
+                  (cond
+                   ((listp p)
+                    (mapconcat (lambda (pi)
+                                 (format "<script src=\"%s\"></script>\n"
+                                         (format pi root-path)))
+                               p
+                               ""))
+                   ;; when it is a single string, create a single script tag
+                   (t (format "<script src=\"%s\"></script>\n"
+                              (format p root-path)))))
                 plugin-js
                 ""))
-             ;; Reveal initialization for plugins
+             ;; Second value of the tuple, a list of Reveal plugin
+             ;; initialization statements
              (format "plugins: [%s]"
                      (mapconcat 'symbol-name plugins ", ")))
           ;; No available plugin info found. Perhaps wrong plugin

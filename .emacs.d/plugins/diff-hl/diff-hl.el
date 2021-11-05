@@ -36,8 +36,10 @@
 ;; `diff-hl-previous-hunk'   C-x v [
 ;; `diff-hl-next-hunk'       C-x v ]
 ;; `diff-hl-show-hunk'       C-x v *
+;; `diff-hl-stage-current-hunk' C-x v S
 ;; `diff-hl-set-reference-rev'
 ;; `diff-hl-reset-reference-rev'
+;; `diff-hl-unstage-file'
 ;;
 ;; The mode takes advantage of `smartrep' if it is installed.
 ;;
@@ -141,13 +143,15 @@
            (when on (global-diff-hl-mode 1)))))
 
 (defcustom diff-hl-highlight-revert-hunk-function
-  #'diff-hl-revert-highlight-first-column
-  "Function to highlight the current hunk in `diff-hl-revert-hunk'.
-The function is called at the beginning of the hunk and passed
+  #'diff-hl-revert-narrow-to-hunk
+  "Function to emphasize the current hunk in `diff-hl-revert-hunk'.
+The function is called at the beginning of the hunk and is passed
 the end position as its only argument."
   :type '(choice (const :tag "Do nothing" ignore)
                  (const :tag "Highlight the first column"
-                        diff-hl-revert-highlight-first-column)))
+                        diff-hl-revert-highlight-first-column)
+                 (const :tag "Narrow to the hunk"
+                        diff-hl-revert-narrow-to-hunk)))
 
 (defcustom diff-hl-global-modes '(not image-mode)
   "Modes for which `diff-hl-mode' is automagically turned on.
@@ -289,29 +293,29 @@ Only affects Git, it's the only backend that has staging area."
 (declare-function vc-git-command "vc-git")
 
 (defun diff-hl-changes-buffer (file backend)
-  (let ((buf-name " *diff-hl* "))
-    (if (and (eq backend 'Git)
-             (not diff-hl-reference-revision)
-             (not diff-hl-show-staged-changes))
-        (diff-hl-with-diff-switches
-         (apply #'vc-git-command buf-name 1
-                (list file)
-                "diff-files"
-                (cons "-p" (vc-switches 'git 'diff))))
-      (condition-case err
-          (diff-hl-with-diff-switches
-           (vc-call-backend backend 'diff (list file)
-                            diff-hl-reference-revision nil
-                            buf-name))
-        (error
-         ;; https://github.com/dgutov/diff-hl/issues/117
-         (when (string-match-p "\\`Failed (status 128)" (error-message-string err))
-           (diff-hl-with-diff-switches
-            (vc-call-backend backend 'diff (list file)
-                             "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-                             nil
-                             buf-name))))))
-    buf-name))
+  (diff-hl-with-diff-switches
+   (diff-hl-diff-against-reference file backend " *diff-hl* ")))
+
+(defun diff-hl-diff-against-reference (file backend buffer)
+  (if (and (eq backend 'Git)
+           (not diff-hl-reference-revision)
+           (not diff-hl-show-staged-changes))
+      (apply #'vc-git-command buffer 1
+             (list file)
+             "diff-files"
+             (cons "-p" (vc-switches 'git 'diff)))
+    (condition-case err
+        (vc-call-backend backend 'diff (list file)
+                         diff-hl-reference-revision nil
+                         buffer)
+      (error
+       ;; https://github.com/dgutov/diff-hl/issues/117
+       (when (string-match-p "\\`Failed (status 128)" (error-message-string err))
+         (vc-call-backend backend 'diff (list file)
+                          "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+                          nil
+                          buffer)))))
+  buffer)
 
 (defun diff-hl-changes ()
   (let* ((file buffer-file-name)
@@ -526,6 +530,9 @@ in the source file, or the last line of the hunk above it."
   "Face used to highlight the first column of the hunk to be reverted.")
 
 (defun diff-hl-revert-highlight-first-column (end)
+  (re-search-forward "^[+-]")
+  (forward-line 0)
+  (setq end (diff-hl-split-away-changes 0))
   (let ((inhibit-read-only t))
     (save-excursion
       (while (< (point) end)
@@ -533,40 +540,45 @@ in the source file, or the last line of the hunk above it."
                                          'diff-hl-reverted-hunk-highlight)
         (forward-line 1)))))
 
+(defun diff-hl-revert-narrow-to-hunk (end)
+  (narrow-to-region (point) end))
+
 (defun diff-hl-revert-hunk-1 ()
   (save-restriction
     (widen)
     (vc-buffer-sync)
-    (let ((diff-buffer (generate-new-buffer-name "*diff-hl*"))
-          (buffer (current-buffer))
-          (line (save-excursion
-                  (diff-hl-find-current-hunk)
-                  (line-number-at-pos)))
-          (fileset (vc-deduce-fileset)))
+    (let* ((diff-buffer (get-buffer-create
+                         (generate-new-buffer-name "*diff-hl*")))
+           (buffer (current-buffer))
+           (line (save-excursion
+                   (diff-hl-find-current-hunk)
+                   (line-number-at-pos)))
+           (file buffer-file-name)
+           (backend (vc-backend file)))
       (unwind-protect
           (progn
-            (vc-diff-internal nil fileset diff-hl-reference-revision nil
-                              nil diff-buffer)
+            (vc-setup-buffer diff-buffer)
+            (diff-hl-diff-against-reference file backend diff-buffer)
+            (set-buffer diff-buffer)
+            (diff-mode)
+            (setq-local diff-vc-backend backend)
+            (setq-local diff-vc-revisions (list diff-hl-reference-revision nil))
+            (setq buffer-read-only t)
+            (pop-to-buffer diff-buffer)
             (vc-run-delayed
-              (let (beg-line end-line m-end)
+              (vc-diff-finish diff-buffer nil)
+              (let (beg-line end-line m-beg m-end)
                 (when (eobp)
                   (with-current-buffer buffer (diff-hl-remove-overlays))
                   (user-error "Buffer is up-to-date"))
                 (with-no-warnings
                   (let (diff-auto-refine-mode)
                     (diff-hl-diff-skip-to line)))
-                (save-excursion
-                  (while (looking-at "[-+]") (forward-line 1))
-                  (setq end-line (line-number-at-pos (point)))
-                  (setq m-end (point-marker))
-                  (unless (eobp) (diff-split-hunk)))
-                (unless (looking-at "[-+]") (forward-line -1))
-                (while (looking-at "[-+]") (forward-line -1))
-                (setq beg-line (line-number-at-pos (point)))
-                (unless (looking-at "@")
-                  (forward-line 1)
-                  (diff-split-hunk))
+                (setq m-end (diff-hl-split-away-changes 3))
+                (setq m-beg (point-marker))
                 (funcall diff-hl-highlight-revert-hunk-function m-end)
+                (setq beg-line (line-number-at-pos m-beg)
+                      end-line (line-number-at-pos m-end))
                 (let ((wbh (window-body-height)))
                   (if (>= wbh (- end-line beg-line))
                       (recenter (/ (+ wbh (- beg-line end-line) 2) 2))
@@ -576,7 +588,7 @@ in the source file, or the last line of the hunk above it."
                     (diff-refine-hunk)))
                 (if diff-hl-ask-before-revert-hunk
                     (unless (yes-or-no-p (format "Revert current hunk in %s? "
-                                                 (cl-caadr fileset)))
+                                                 file))
                       (user-error "Revert canceled")))
                 (let ((diff-advance-after-apply-hunk nil))
                   (save-window-excursion
@@ -585,6 +597,35 @@ in the source file, or the last line of the hunk above it."
                   (save-buffer))
                 (message "Hunk reverted"))))
         (quit-windows-on diff-buffer t)))))
+
+(defun diff-hl-split-away-changes (max-context)
+  "Split away the minimal hunk at point from the rest of the hunk.
+
+The minimal hunk is the hunk a diff program would produce if
+asked for 0 lines of context. Add MAX-CONTEXT lines of context at
+most (stop when encounter another minimal hunk).
+
+Move point to the beginning of the delineated hunk and return
+its end position."
+  (let (end-marker)
+    (save-excursion
+      (while (looking-at "[-+]") (forward-line 1))
+      (dotimes (_i max-context)
+        (unless (looking-at "@\\|[-+]")
+          (forward-line 1)))
+      (setq end-marker (point-marker))
+      (unless (or (eobp)
+                  (looking-at "@"))
+        (diff-split-hunk)))
+    (unless (looking-at "[-+]") (forward-line -1))
+    (while (looking-at "[-+]") (forward-line -1))
+    (dotimes (_i max-context)
+      (unless (looking-at "@\\|[-+]")
+        (forward-line -1)))
+    (unless (looking-at "@")
+      (forward-line 1)
+      (diff-split-hunk))
+    end-marker))
 
 (defun diff-hl-revert-hunk ()
   "Revert the diff hunk with changes at or above the point."
@@ -641,6 +682,75 @@ in the source file, or the last line of the hunk above it."
     (goto-char (overlay-start hunk))
     (push-mark (overlay-end hunk) nil t)))
 
+(defun diff-hl--ensure-staging-supported ()
+  (let ((backend (vc-backend buffer-file-name)))
+    (unless (eq backend 'Git)
+      (user-error "Only Git supports staging; this file is controlled by %s" backend))))
+
+(defun diff-hl-stage-current-hunk ()
+  "Stage the hunk at or near point.
+
+Only supported with Git."
+  (interactive)
+  (diff-hl--ensure-staging-supported)
+  (diff-hl-find-current-hunk)
+  (let* ((line (line-number-at-pos))
+         (file buffer-file-name)
+         (dest-buffer (get-buffer-create " *diff-hl-stage*"))
+         (orig-buffer (current-buffer))
+         (file-base (shell-quote-argument (file-name-nondirectory file)))
+         success)
+    (with-current-buffer dest-buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)))
+    (diff-hl-diff-buffer-with-reference file dest-buffer nil 3)
+    (with-current-buffer dest-buffer
+      (with-no-warnings
+        (let (diff-auto-refine-mode)
+          (diff-hl-diff-skip-to line)))
+      (let ((inhibit-read-only t))
+        (diff-hl-split-away-changes 3)
+        (save-excursion
+          (diff-end-of-hunk)
+          (delete-region (point) (point-max)))
+        (diff-beginning-of-hunk)
+        (delete-region (point-min) (point))
+        ;; diff-no-select creates a very ugly header; Git rejects it
+        (insert (format "diff a/%s b/%s\n" file-base file-base))
+        (insert (format "--- a/%s\n" file-base))
+        (insert (format "+++ b/%s\n" file-base)))
+      (let ((patchfile (make-temp-file "diff-hl-stage-patch")))
+        (write-region (point-min) (point-max) patchfile
+                      nil 'silent)
+        (unwind-protect
+            (with-current-buffer orig-buffer
+              (with-output-to-string
+                (vc-git-command standard-output 0
+                                patchfile
+                                "apply" "--cached" ))
+              (setq success t))
+          (delete-file patchfile))))
+    (when success
+      (if diff-hl-show-staged-changes
+          (message (concat "Hunk staged; customize `diff-hl-show-staged-changes'"
+                           " to highlight only unstages changes"))
+        (message "Hunk staged"))
+      (unless diff-hl-show-staged-changes
+        (diff-hl-update)))))
+
+(defun diff-hl-unstage-file ()
+  (interactive)
+  "Unstage all changes in the current file.
+
+Only supported with Git."
+  (unless buffer-file-name
+    (user-error "No current file"))
+  (diff-hl--ensure-staging-supported)
+  (vc-git-command nil 0 buffer-file-name "reset")
+  (message "Unstaged all")
+  (unless diff-hl-show-staged-changes
+    (diff-hl-update)))
+
 (defvar diff-hl-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n" 'diff-hl-revert-hunk)
@@ -649,6 +759,7 @@ in the source file, or the last line of the hunk above it."
     (define-key map "*" 'diff-hl-show-hunk)
     (define-key map "{" 'diff-hl-show-hunk-previous)
     (define-key map "}" 'diff-hl-show-hunk-next)
+    (define-key map "S" 'diff-hl-stage-current-hunk)
     map))
 (fset 'diff-hl-command-map diff-hl-command-map)
 
@@ -825,10 +936,11 @@ the user should be returned."
 
 (declare-function diff-no-select "diff")
 
-(defun diff-hl-diff-buffer-with-reference (file &optional dest-buffer backend)
-  "Compute the diff between the current buffer contents and reference.
+(defun diff-hl-diff-buffer-with-reference (file &optional dest-buffer backend context-lines)
+  "Compute the diff between the current buffer contents and reference in BACKEND.
 The diffs are computed in the buffer DEST-BUFFER. This requires
-the `diff-program' to be in your `exec-path'."
+the `diff-program' to be in your `exec-path'.
+CONTEXT-LINES is the size of the unified diff context, defaults to 0."
   (require 'diff)
   (vc-ensure-vc-buffer)
   (save-current-buffer
@@ -848,8 +960,9 @@ the `diff-program' to be in your `exec-path'."
               (diff-hl-create-revision
                file
                (or diff-hl-reference-revision
-                   (diff-hl-working-revision file backend))))))
-      (diff-no-select rev (current-buffer) "-U 0 --strip-trailing-cr" 'noasync
+                   (diff-hl-working-revision file backend)))))
+           (switches (format "-U %d --strip-trailing-cr" (or context-lines 0))))
+      (diff-no-select rev (current-buffer) switches 'noasync
                       (get-buffer-create dest-buffer))
       (with-current-buffer dest-buffer
         (let ((inhibit-read-only t))

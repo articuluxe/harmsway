@@ -4,7 +4,7 @@
 
 ;; Maintainer: Nicolas P. Rougier <Nicolas.Rougier@inria.fr>
 ;; URL: https://github.com/rougier/nano-theme
-;; Version: 0.2
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: theme, dark, light
 
@@ -94,6 +94,9 @@
 
 ;;; NEWS:
 
+;; Version 0.2.1
+;; - Added nano-modeline faces
+
 ;; Version 0.2
 ;; - Split light / dark themes properly
 ;; - Added a nano-new-frame function
@@ -180,7 +183,7 @@
   "Salient color is used for information that are important."
   :type 'color :group 'nano-theme-light)
 
-(defcustom nano-light-strong "#000000" ;; Black
+(defcustom nano-light-strong "#263238" ;; Blue Grey / L900
   "Strong color is used for information of a structural nature."
   :type 'color :group 'nano-theme-light)
 
@@ -460,17 +463,47 @@ background color that is barely perceptible."
   "Load the nano dark theme on current frame."
 
   (interactive)
-  (set-foreground-color nano-dark-foreground)
-  (set-background-color nano-dark-background)
-  (load-theme 'nano-dark t))
+  ;; (setq inhibit-frame-set-background-mode nil)
+  ;; (setq frame-background-mode nil)
+  ;; (let ((parent (selected-frame))
+  ;;        (children (frame-list)))
+  ;;    (dolist (child children)
+  ;;      (when (eq (frame-parameter child 'parent-frame) parent)
+  ;;        (with-selected-frame child
+  ;;          (load-theme 'nano-dark t)
+  ;;          (setq frame-background-mode 'dark)))))
+  ;; (set-foreground-color nano-dark-foreground)
+  ;; (set-background-color nano-dark-background)
+  (load-theme 'nano-dark t)
+  (setq frame-background-mode 'dark))
 
 (defun nano-light ()
   "Load the nano light theme on current frame."
 
   (interactive)
-  (set-foreground-color nano-light-foreground)
-  (set-background-color nano-light-background)
-  (load-theme 'nano-light t))
+  ;; (setq inhibit-frame-set-background-mode t)
+  ;; (setq frame-background-mode nil)
+  ;; (let ((parent (selected-frame))
+  ;;       (children (frame-list)))
+  ;;   (dolist (child children)
+  ;;     (when (eq (frame-parameter child 'parent-frame) parent)
+  ;;       (with-selected-frame child
+  ;;         (load-theme 'nano-light t)))))
+    ;; (set-foreground-color nano-light-foreground)
+    ;; (set-background-color nano-light-background)
+    (load-theme 'nano-light t)
+    (setq frame-background-mode 'light))
+
+(defvar nano-theme--current 'light
+  "Current nano theme")
+
+(defun nano-theme-toggle ()
+  "Toggle theme on current frame."
+
+  (interactive)
+  (if (eq nano-theme--current 'light)
+      (nano-dark)
+    (nano-light)))
 
 
 (defun nano-theme (mode)
@@ -480,12 +513,26 @@ background color that is barely perceptible."
         (dark      '((background dark)))
         (theme      (if (eq mode 'dark)
                        'nano-dark
-                     'nano-light)))
+                      'nano-light)))
 
-    (set-frame-parameter nil 'background-mode mode)
-    (setq frame-background-mode mode)
-    (frame-set-background-mode (selected-frame))
+
     
+    ;; (add-to-list 'default-frame-alist `(background-mode . ,mode))
+    (add-to-list 'default-frame-alist `(background-color . ,(if (eq mode 'light)
+                                                                nano-light-background
+                                                              nano-dark-background)))
+    (add-to-list 'default-frame-alist `(foreground-color . ,(if (eq mode 'light)
+                                                                nano-light-foreground
+                                                              nano-dark-foreground)))
+
+    (custom-set-variables '(widget-image-enable nil)
+                          '(x-underline-at-descent-line t))
+    
+    (set-frame-parameter nil 'background-mode mode)
+;;    (setq frame-background-mode mode)
+;;    (setq nano-theme--current mode)
+;;    (frame-set-background-mode (selected-frame))
+
     (when nano-fonts-use
         (custom-theme-set-faces theme
          `(default ((,light (:foreground ,nano-light-foreground
@@ -496,8 +543,8 @@ background color that is barely perceptible."
                              :weight     ,(face-attribute 'nano-mono :weight)
                              :height     ,(face-attribute 'nano-mono :height)
                              :family     ,(face-attribute 'nano-mono :family)))))
-         `(nano-strong ((,light (:weight normal))
-                        (,dark  (:weight normal))))
+         `(nano-strong ((,light (:weight normal ))
+                        (,dark  (:weight normal ))))
          `(variable-pitch  ((t (:weight ,(face-attribute 'nano-sans :weight)
                                 :height ,(face-attribute 'nano-sans :height)
                                 :family ,(face-attribute 'nano-sans :family)))))))
@@ -506,13 +553,19 @@ background color that is barely perceptible."
         (custom-theme-set-faces theme
          `(default ((,light (:foreground ,nano-light-foreground))
                     (,dark  (:foreground ,nano-dark-foreground))))
-         `(nano-strong ((,light (:weight bold))
-                        (,dark  (:weight bold))))))
+         `(nano-strong ((,light (:weight bold :foreground ,nano-light-strong))
+                        (,dark  (:weight bold :foreground ,nano-dark-strong))))))
 
   
   (custom-theme-set-faces theme
    
    ;; --- Base ---------------------------------------------------------   
+
+   `(default ((,light  (:background ,nano-light-background
+                        :foreground ,nano-light-foreground))
+              (,dark  (:background ,nano-dark-background
+                       :foreground ,nano-dark-foreground))))
+
    `(cursor ((,light (:foreground ,nano-light-background
                       :background ,nano-light-foreground))
              (,dark  (:foreground ,nano-dark-background
@@ -653,8 +706,8 @@ background color that is barely perceptible."
    '(trailing-whitespace           ((t (:inherit nano-subtle))))
    '(secondary-selection           ((t (:inherit nano-subtle))))
    '(completions-annotations       ((t (:inherit nano-faded))))
-   '(completions-common-part       ((t (:inherit nano-faded))))
-   '(completions-first-difference  ((t (:inherit default))))
+   '(completions-common-part       ((t (:inherit nano-strong))))
+   '(completions-first-difference  ((t (:inherit nano-default))))
    '(tooltip                       ((t (:inherit nano-subtle))))
    '(read-multiple-choice-face     ((t (:inherit nano-strong))))
    '(nobreak-hyphen                ((t (:inherit nano-popout))))
@@ -788,6 +841,36 @@ background color that is barely perceptible."
 
    ;; --- Helpful ------------------------------------------------------
    '(helpful-heading                ((t (:inherit nano-strong))))
+
+   ;; --- Nano modeline ------------------------------------------------
+   '(nano-modeline-active               ((t (:inherit nano-subtle))))
+   '(nano-modeline-active-name          ((t (:inherit (nano-strong nano-modeline-active)))))
+   '(nano-modeline-active-primary       ((t (:inherit (nano-default nano-modeline-active)))))
+   '(nano-modeline-active-secondary     ((t (:inherit (nano-faded nano-modeline-active)))))
+   '(nano-modeline-active-status-RO     ((t (:inherit nano-popout-i))))
+   '(nano-modeline-active-status-RW     ((t (:inherit nano-faded-i))))
+   '(nano-modeline-active-status-**     ((t (:inherit nano-critical))))      
+
+   '(nano-modeline-inactive             ((t (:inherit nano-subtle))))
+   '(nano-modeline-inactive-name        ((t (:inherit (nano-faded nano-modeline-inactive)))))
+   '(nano-modeline-inactive-primary     ((t (:inherit (nano-faded nano-modeline-inactive)))))
+   '(nano-modeline-inactive-secondary   ((t (:inherit (nano-faded nano-modeline-inactive)))))
+   '(nano-modeline-inactive-status-RO   ((t (:inherit (nano-popout nano-modeline-inactive)))))
+   '(nano-modeline-inactive-status-RW   ((t (:inherit (nano-faded nano-modeline-inactive)))))
+   '(nano-modeline-inactive-status-**   ((t (:inherit (nano-critical-i nano-modeline-inactive)))))
+
+   ;; --- nano agenda ---------------------------------------------------------
+   '(nano-agenda-button               ((t (:inherit (nano-faded)))))
+   '(nano-agenda-day-name             ((t (:inherit (nano-faded)))))
+   '(nano-agenda-default              ((t (:inherit (nano-default)))))
+   '(nano-agenda-holidays             ((t (:inherit (nano-faded)))))
+   '(nano-agenda-month-name           ((t (:inherit (nano-strong)))))
+   '(nano-agenda-mouse                ((t (:inherit (nano-highlight)))))
+   '(nano-agenda-outday               ((t (:inherit (nano-subtle-i)))))
+   '(nano-agenda-selected             ((t (:inherit (nano-default-i)))))
+   '(nano-agenda-selected-today       ((t (:inherit (nano-popout-i nano-strong)))))
+   '(nano-agenda-today                ((t (:inherit (nano-popout nano-strong)))))
+   '(nano-agenda-weekend              ((t (:inherit (nano-faded)))))
 
    ;; --- EPA ----------------------------------------------------------
    '(epa-field-body                 ((t (:inherit nano-default))))
@@ -1134,6 +1217,119 @@ background color that is barely perceptible."
     '(markdown-table-face                   ((t (:inherit nano-default))))
     '(markdown-url-face                     ((t (:inherit nano-salient))))
 
+    ;; --- Magit (WIP) ---------------------------------------------------
+    '(magit-blame-highlight                  ((t (:inherit (highlight)))))
+    '(magit-diff-added-highlight             ((t (:inherit (highlight nano-salient nano-strong)))))
+    '(magit-diff-base-highlight              ((t (:inherit (highlight)))))
+    '(magit-diff-context-highlight           ((t (:inherit (highlight nano-faded)))))
+    '(magit-diff-file-heading-highlight      ((t (:inherit (highlight nano-strong)))))
+    '(magit-diff-hunk-heading-highlight      ((t (:inherit (nano-default)))))
+    '(magit-diff-our-highlight               ((t (:inherit (highlight)))))
+    '(magit-diff-removed-highlight           ((t (:inherit (highlight nano-popout nano-strong)))))
+    '(magit-diff-revision-summary-highlight  ((t (:inherit ()))))
+    '(magit-diff-their-highlight             ((t (:inherit (highlight)))))
+    '(magit-section-highlight                ((t (:inherit (highlight)))))
+
+    '(magit-blame-heading                    ((t (:inherit (nano-subtle nano-strong)))))
+    '(magit-diff-conflict-heading            ((t (:inherit (nano-subtle nano-strong)))))
+    '(magit-diff-file-heading                ((t (:inherit (nano-strong)))))
+    '(magit-diff-hunk-heading                ((t (:inherit (nano-subtle nano-default)))))
+    '(magit-diff-lines-heading               ((t (:inherit (nano-subtle nano-strong)))))
+    '(magit-section-heading                  ((t (:inherit (nano-salient nano-strong)))))
+
+    '(magit-bisect-bad                       ((t (:inherit nano-default))))
+    '(magit-bisect-good                      ((t (:inherit nano-default))))
+    '(magit-bisect-skip                      ((t (:inherit nano-default))))
+    '(magit-blame-date                       ((t (:inherit nano-default))))
+    '(magit-blame-dimmed                     ((t (:inherit nano-default))))
+    '(magit-blame-hash                       ((t (:inherit nano-faded))))
+
+    '(magit-blame-margin                     ((t (:inherit nano-default))))
+    '(magit-blame-name                       ((t (:inherit nano-default))))
+    '(magit-blame-summary                    ((t (:inherit nano-default))))
+
+    '(magit-branch-current                   ((t (:inherit (nano-strong nano-salient)))))
+    '(magit-branch-local                     ((t (:inherit nano-salient))))
+    '(magit-branch-remote                    ((t (:inherit (nano-salient)))))
+    '(magit-branch-remote-head               ((t (:inherit (nano-salient)))))
+    '(magit-branch-upstream                  ((t (:inherit (nano-salient)))))
+
+    '(magit-cherry-equivalent                ((t (:inherit nano-default))))
+    '(magit-cherry-unmatched                 ((t (:inherit nano-default))))
+
+    '(magit-diff-added                       ((t (:inherit (highlight nano-salient nano-strong)))))
+    '(magit-diff-base                        ((t (:inherit nano-default))))
+    '(magit-diff-context                     ((t (:inherit (highlight nano-faded)))))
+    '(magit-diff-file-heading-selection      ((t (:inherit nano-default))))
+    '(magit-diff-hunk-heading-selection      ((t (:inherit nano-default))))
+    '(magit-diff-hunk-region                 ((t (:inherit nano-default))))
+    '(magit-diff-lines-boundary              ((t (:inherit nano-default))))
+    '(magit-diff-our                         ((t (:inherit nano-default))))
+    '(magit-diff-removed                     ((t (:inherit (highlight nano-popout nano-strong)))))
+    '(magit-diff-revision-summary            ((t (:inherit nano-popout))))
+    '(magit-diff-their                       ((t (:inherit nano-default))))
+    '(magit-diff-whitespace-warning          ((t (:inherit nano-default))))
+    '(magit-diffstat-added                   ((t (:inherit nano-default))))
+    '(magit-diffstat-removed                 ((t (:inherit nano-default))))
+
+    '(magit-dimmed                           ((t (:inherit nano-faded))))
+    '(magit-filename                         ((t (:inherit nano-default))))
+    '(magit-hash                             ((t (:inherit nano-faded))))
+    '(magit-head                             ((t (:inherit nano-default))))
+    '(magit-header-line                      ((t (:inherit nano-default))))
+    '(magit-header-line-key                  ((t (:inherit nano-default))))
+    '(magit-header-line-log-select           ((t (:inherit nano-default))))
+
+    '(magit-keyword                          ((t (:inherit nano-default))))
+    '(magit-keyword-squash                   ((t (:inherit nano-default))))
+
+    '(magit-log-author                       ((t (:inherit nano-default))))
+    '(magit-log-date                         ((t (:inherit nano-default))))
+    '(magit-log-graph                        ((t (:inherit nano-default))))
+
+    '(magit-mode-line-process                ((t (:inherit nano-default))))
+    '(magit-mode-line-process-error          ((t (:inherit nano-default))))
+
+    '(magit-process-ng                       ((t (:inherit nano-default))))
+    '(magit-process-ok                       ((t (:inherit nano-default))))
+
+    '(magit-reflog-amend                     ((t (:inherit nano-default))))
+    '(magit-reflog-checkout                  ((t (:inherit nano-default))))
+    '(magit-reflog-cherry-pick               ((t (:inherit nano-default))))
+    '(magit-reflog-commit                    ((t (:inherit nano-default))))
+    '(magit-reflog-merge                     ((t (:inherit nano-default))))
+    '(magit-reflog-other                     ((t (:inherit nano-default))))
+    '(magit-reflog-rebase                    ((t (:inherit nano-default))))
+    '(magit-reflog-remote                    ((t (:inherit nano-default))))
+    '(magit-reflog-reset                     ((t (:inherit nano-default))))
+    '(magit-refname                          ((t (:inherit nano-default))))
+    '(magit-refname-pullreq                  ((t (:inherit nano-default))))
+    '(magit-refname-stash                    ((t (:inherit nano-default))))
+    '(magit-refname-wip                      ((t (:inherit nano-default))))
+
+    '(magit-section-heading-selection        ((t (:inherit nano-default))))
+    '(magit-section-secondary-heading        ((t (:inherit nano-default))))
+    '(magit-sequence-done                    ((t (:inherit nano-default))))
+    '(magit-sequence-drop                    ((t (:inherit nano-default))))
+    '(magit-sequence-exec                    ((t (:inherit nano-default))))
+    '(magit-sequence-head                    ((t (:inherit nano-default))))
+    '(magit-sequence-onto                    ((t (:inherit nano-default))))
+    '(magit-sequence-part                    ((t (:inherit nano-default))))
+    '(magit-sequence-pick                    ((t (:inherit nano-default))))
+    '(magit-sequence-stop                    ((t (:inherit nano-default))))
+
+    '(magit-signature-bad                    ((t (:inherit nano-default))))
+    '(magit-signature-error                  ((t (:inherit nano-default))))
+    '(magit-signature-expired                ((t (:inherit nano-default))))
+    '(magit-signature-expired-key            ((t (:inherit nano-default))))
+    '(magit-signature-good                   ((t (:inherit nano-default))))
+    '(magit-signature-revoked                ((t (:inherit nano-default))))
+    '(magit-signature-untrusted              ((t (:inherit nano-default))))
+
+    '(magit-tag                              ((t (:inherit nano-default-i))))
+
+
+    
     ;; --- Terminal ----------------------------------------------------
     '(term-bold        ((t (:inherit nano-strong))))
     '(term-color-black ((t (:inherit default))))

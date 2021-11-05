@@ -6,11 +6,11 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 1999-2021, Drew Adams, all rights reserved.
 ;; Created: Fri Mar 19 15:58:58 1999
-;; Version: 2021.06.21
+;; Version: 2021.10.03
 ;; Package-Requires: ()
-;; Last-Updated: Thu Jul 22 16:31:29 2021 (-0700)
+;; Last-Updated: Sun Oct  3 16:18:57 2021 (-0700)
 ;;           By: dradams
-;;     Update #: 13027
+;;     Update #: 13039
 ;; URL: https://www.emacswiki.org/emacs/download/dired%2b.el
 ;; Doc URL: https://www.emacswiki.org/emacs/DiredPlus
 ;; Keywords: unix, mouse, directories, diredp, dired
@@ -31,7 +31,7 @@
 ;;   `hl-line', `hl-line+', `image', `image-dired', `image-file',
 ;;   `image-mode', `info', `info+', `kmacro', `macroexp', `menu-bar',
 ;;   `menu-bar+', `misc-cmds', `misc-fns', `mwheel', `naked',
-;;   `palette', `pp', `pp+', `radix-tree', `replace', `ring',
+;;   `palette', `pp', `pp+', `radix-tree', `rect', `replace', `ring',
 ;;   `second-sel', `strings', `syntax', `text-mode', `thingatpt',
 ;;   `thingatpt+', `timer', `vline', `w32-browser',
 ;;   `w32browser-dlgopen', `wid-edit', `wid-edit+', `widget',
@@ -648,6 +648,7 @@
 ;;    `diredp-prompt-for-bookmark-prefix-flag',
 ;;    `diredp-recent-files-quit-kills-flag',
 ;;    `diredp-switches-in-mode-line',
+;;    `diredp-toggle-dot+dot-dot-flag',
 ;;    `diredp-visit-ignore-extensions', `diredp-visit-ignore-regexps',
 ;;    `diredp-w32-local-drives', `diredp-wrap-around-flag'.
 ;;
@@ -879,6 +880,11 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2021/10/03 dadams
+;;     Added: diredp-toggle-dot+dot-dot-flag.
+;;     dired-toggle-marks: Added optional arg FLIP.  Respect diredp-toggle-dot+dot-dot-flag.
+;; 2021/09/23 dadams
+;;     diredp-menu-bar-multiple-menu: Removed items that are anyway on Apply (Map) submenu.
 ;; 2021/07/22 dadams
 ;;     Added: diredp-remove-inserted-subdirs, diredp-fit-one-window-frame.
 ;;     dired-maybe-insert-subdir: With negative prefix arg, remove all inserted subdir listings.
@@ -2699,6 +2705,11 @@ Possible values:
           (const    :tag "Show full switches"                    as-is)
           (integer  :tag "Show first N chars of switches" :value 10)
           (function :tag "Format with function"           :value identity)))
+
+;;;###autoload
+(defcustom diredp-toggle-dot+dot-dot-flag t
+  "Non-nil means `dired-toggle-marks' acts also on `.' and `..'."
+  :type 'boolean :group 'Dired-Plus)
 
 ;;;###autoload
 (defcustom diredp-visit-ignore-extensions '("elc")
@@ -9571,7 +9582,7 @@ If after invoking COMMAND in all of the marked files new buffers have
 been created to visit some of them then you are prompted to kill those
 buffers.
 
-An errors are logged by `dired-log'.  Use `?'  to see the error
+Any errors are logged by `dired-log'.  Use `?'  to see the error
 messages.
 
 Be aware that COMMAND could be invoked in a directory (Dired) buffer.
@@ -12122,23 +12133,30 @@ Non-file lines are skipped."
 
 ;; REPLACE ORIGINAL in `dired.el':
 ;;
-;; Toggle also `.' and `..'.  See bug #48883.
+;; Toggle also `.' and `..', according to option `diredp-toggle-dot+dot-dot-flag'.
+;; See also Emacs bug #48883.
 ;;
-(defun dired-toggle-marks ()
+(defun dired-toggle-marks (&optional flip)
   "Toggle marks: marked files become unmarked, and vice versa.
 Marks (such as `C' and `D') other than `*' are not affected.
-Hidden subdirs are also not affected."
-  (interactive)
+Hidden subdirs are also not affected.
+
+Whether `.' and `..' are toggled is controlled by option
+`diredp-toggle-dot+dot-dot-flag'.  A prefix arg acts as if the option
+had the opposite value."
+  (interactive "P")
   (save-excursion
     (goto-char (point-min))
-    (let ((inhibit-read-only  t))
+    (let ((inhibit-read-only     t))
       (while (not (eobp))
         (or (dired-between-files)
-            ;; Use subst instead of insdel because it does not move the gap and thus should be faster and because
-            ;; other characters are left alone automatically
-            (apply 'subst-char-in-region (point) (1+ (point)) (if (eq ?\   (following-char)) ; SPC
-                                                                  (list ?\   dired-marker-char)
-                                                                (list dired-marker-char ?\  ))))
+            (and (if flip diredp-toggle-dot+dot-dot-flag (not diredp-toggle-dot+dot-dot-flag))
+                 (member (dired-get-filename t t) '("." "..")))
+            (apply 'subst-char-in-region (point)
+                   (1+ (point))
+                   (if (eq ?\   (following-char))
+                       (list ?\   dired-marker-char)
+                     (list dired-marker-char ?\  ))))
         (forward-line 1)))))
 
 
@@ -13906,7 +13924,7 @@ Marked (or next prefix arg) files & subdirs here
   \\[diredp-insert-subdirs]\t\t- Insert marked subdirectories
 
   \\[dired-copy-filename-as-kill]\t\t- Copy names for pasting
-  M-o \\[dired-copy-filename-as-kill]\t\t- Copy absolute names for pasting
+  M-0 \\[dired-copy-filename-as-kill]\t\t- Copy absolute names for pasting
   \\[diredp-yank-files]\t\t- Paste files whose absolute names you copied
   \\[dired-do-find-marked-files]\t\t- Visit
   \\[dired-do-print]\t\t- Print
@@ -14660,18 +14678,18 @@ If no one is selected, symmetric encryption will be performed.  "
     '(menu-item "Add Marked Files To Recent Visits" diredp-do-add-to-recentf
       :help "Add the files marked here to the list of recently visited files"
       :enable (featurep 'recentf)))
-(define-key diredp-menu-bar-multiple-menu [diredp-do-eval-in-marked]
-  '(menu-item "Eval Sexp In..." diredp-do-eval-in-marked
-              :help "Evaluate a Lisp sexp in each marked file"))
-;;; (define-key diredp-menu-bar-multiple-menu [diredp-do-invoke-in-marked]
-;;;   '(menu-item "Invoke Function In..." diredp-do-invoke-in-marked
-;;;               :help "Invoke a Lisp function in each marked file"))
-(define-key diredp-menu-bar-multiple-menu [diredp-do-apply-to-marked]
-  '(menu-item "Apply Function To..." diredp-do-apply-to-marked
-              :help "Apply a Lisp function to each marked file name"))
-(define-key diredp-menu-bar-multiple-menu [diredp-do-command-in-marked]
-    '(menu-item "Invoke Command/Macro In..." diredp-do-command-in-marked
-      :help "Invoke an Emacs command or keyboard macro in each marked file"))
+;;;; (define-key diredp-menu-bar-multiple-menu [diredp-do-eval-in-marked]
+;;;;   '(menu-item "Eval Sexp In..." diredp-do-eval-in-marked
+;;;;               :help "Evaluate a Lisp sexp in each marked file"))
+;;;; ;;; (define-key diredp-menu-bar-multiple-menu [diredp-do-invoke-in-marked]
+;;;; ;;;   '(menu-item "Invoke Function In..." diredp-do-invoke-in-marked
+;;;; ;;;               :help "Invoke a Lisp function in each marked file"))
+;;;; (define-key diredp-menu-bar-multiple-menu [diredp-do-apply-to-marked]
+;;;;   '(menu-item "Apply Function To..." diredp-do-apply-to-marked
+;;;;               :help "Apply a Lisp function to each marked file name"))
+;;;; (define-key diredp-menu-bar-multiple-menu [diredp-do-command-in-marked]
+;;;;     '(menu-item "Invoke Command/Macro In..." diredp-do-command-in-marked
+;;;;       :help "Invoke an Emacs command or keyboard macro in each marked file"))
 (define-key diredp-menu-bar-multiple-menu [print]
   '(menu-item "Print..." dired-do-print :help "Print marked files, supplying print command"))
 (define-key diredp-menu-bar-multiple-menu [compress]
@@ -15872,7 +15890,7 @@ If no one is selected, symmetric encryption will be performed.  "
 (define-key dired-mode-map "@"           nil) ; For Emacs 20
 (define-key dired-mode-map "@@"          'diredp-do-apply-to-marked)                ; `@ @'
 ;;; (define-key dired-mode-map (kbd "@ M-@") 'diredp-do-invoke-in-marked)               ; `@ M-@'
-(define-key dired-mode-map (kbd "@ M-x") 'diredp-do-command-in-marked)        ; `@ M-x'
+(define-key dired-mode-map (kbd "@ M-x") 'diredp-do-command-in-marked)              ; `@ M-x'
 (define-key dired-mode-map (kbd "@ M-:") 'diredp-do-eval-in-marked)                 ; `@ M-:'
 (define-key dired-mode-map "$"       'diredp-hide-subdir-nomove)                    ; `$'
 (define-key dired-mode-map "\M-$"    'dired-hide-subdir)                            ; `M-$'
@@ -16002,7 +16020,7 @@ If no one is selected, symmetric encryption will be performed.  "
   (define-key diredp-recursive-map "\M-\C-?"   'diredp-unmark-all-files-recursive))     ; `M-DEL'
 (define-key diredp-recursive-map "@@"          'diredp-do-apply-to-marked-recursive)    ; `@ @'
 ;;; (define-key diredp-recursive-map (kbd "@ M-@") 'diredp-do-invoke-in-marked-recursive)   ; `@ M-@'
-(define-key diredp-recursive-map (kbd "@ M-x") 'diredp-do-command-in-marked-recursive) ; `@ M-x'
+(define-key diredp-recursive-map (kbd "@ M-x") 'diredp-do-command-in-marked-recursive)  ; `@ M-x'
 (define-key diredp-recursive-map (kbd "@ M-:") 'diredp-do-eval-in-marked-recursive)     ; `@ M-:'
 (define-key diredp-recursive-map "#"           'diredp-flag-auto-save-files-recursive)  ; `#'
 (define-key diredp-recursive-map "*@"          'diredp-mark-symlinks-recursive)         ; `* @'

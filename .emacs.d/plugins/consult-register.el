@@ -28,11 +28,12 @@
 (defcustom consult-register-narrow
   `((?n "Number" ,#'numberp)
     (?s "String" ,#'stringp)
+    (?p "Point" ,#'markerp)
     (?r "Rectangle" ,(lambda (x) (stringp (car-safe x))))
     ;; frameset-register-p and kmacro-register-p exists since 27.1
-    (?f "Frameset" ,(lambda (x) (eq (type-of x) 'frameset-register)))
+    (?t "Frameset" ,(lambda (x) (eq (type-of x) 'frameset-register)))
     (?k "Kmacro" ,(lambda (x) (eq (type-of x) 'kmacro-register)))
-    (?p "Point" ,(lambda (x) (or (markerp x) (eq (car-safe x) 'file-query))))
+    (?f "File" ,(lambda (x) (memq (car-safe x) '(file file-query))))
     (?w "Window" ,(lambda (x) (window-configuration-p (car-safe x)))))
   "Register narrowing configuration.
 
@@ -96,6 +97,9 @@ This function can be used as `register-preview-function'."
          (format "%s at position %d"
                  (propertize (abbreviate-file-name (cadr val)) 'face 'consult-file)
                  (caddr val)))
+        ;; Display 'file
+        ((eq (car-safe val) 'file)
+         (propertize (abbreviate-file-name (cdr val)) 'face 'consult-file))
         ;; Display full line of buffer
         ((and (markerp val) (marker-buffer val))
          (with-current-buffer (marker-buffer val)
@@ -253,7 +257,8 @@ number. Otherwise store point, frameset, window or kmacro."
     (t
      `("Store"
        (?p "point" "Point to register: " ,#'point-to-register)
-       (?f "frameset" "Frameset to register: " ,#'frameset-to-register)
+       (?f "file" "File to register: " ,(lambda (r) (set-register r `(file . ,(buffer-file-name)))))
+       (?t "frameset" "Frameset to register: " ,#'frameset-to-register)
        (?w "window" "Window to register: " ,#'window-configuration-to-register)
        ,@(and last-kbd-macro `((?k "kmacro" "Kmacro to register: " ,#'kmacro-to-register))))))))
 

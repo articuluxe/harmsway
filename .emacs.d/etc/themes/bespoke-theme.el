@@ -1,4 +1,4 @@
-;;; bespoke-theme.el --- A custom theme  -*- lexical-binding: t; -*-
+;; bespoke-faces-colors.el --- A custom theme  -*- lexical-binding: t; -*-
 ;; Copyright (C) 2020 Colin McLear
 ;; -------------------------------------------------------------------
 ;; Authors: Colin McLear
@@ -33,7 +33,7 @@
 
 ;;;; Requirements
 (require 'bespoke-themes)
-(require 'bespoke-modeline)
+;; (require 'bespoke-modeline)
 
 (defvar evil-emacs-state-cursor)
 (defvar evil-normal-state-cursor)
@@ -184,6 +184,10 @@ shade to modeline color and to the highlight color."
 subtlety stand out from the mode line and other adjacent faces."
   :group 'faces)
 
+(defface bespoke-modeline nil
+  "Default face for the mode line."
+  :group 'faces)
+
 (defface bespoke-inactive nil
   "Face for the inactive mode line"
   :group 'faces)
@@ -207,25 +211,6 @@ subtlety stand out from the mode line and other adjacent faces."
 (defface bespoke-brown nil
   "A brownish accent face"
   :group 'faces)
-
-;;;;; Modeline faces
-
-(defface bespoke-modeline-default-face nil
-  "Default face for the mode line."
-  :group 'faces)
-
-(defface bespoke-modeline-mod-face nil
-  "Mode line face for modified buffers."
-  :group 'faces)
-
-(defface bespoke-modeline-ro-face nil
-  "Mode line face for read-only buffers."
-  :group 'faces)
-
-(defface bespoke-modeline-inactive-face nil
-  "Mode line face for inactive windows."
-  :group 'faces)
-
 
 ;;;; Define Theme
 (deftheme bespoke "A custom theme for yak shaving, with light and dark variants")
@@ -675,18 +660,18 @@ subtlety stand out from the mode line and other adjacent faces."
    `(magit-tag                 ((,class :foreground ,bespoke-yellow)))
    `(magit-header-line         ((,class :foreground ,bespoke-foreground
                                         :background ,bespoke-modeline
-                                        :box (:line-width ,bespoke-set-mode-line-size
-                                              :color ,bespoke-modeline
-                                              :style nil)
-                                        :overline nil
-                                        :underline nil)))
+                                        :box (:line-width (if (fboundp 'bespoke-modeline) bespoke-modeline-size 3))
+                                        :color ,bespoke-modeline
+                                        :style nil)
+                                :overline nil
+                                :underline nil))
    `(magit-header-line-log-select ((,class :foreground ,bespoke-foreground
                                            :background ,bespoke-modeline
-                                           :box (:line-width ,bespoke-set-mode-line-size
-                                                 :color ,bespoke-modeline
-                                                 :style nil)
-                                           :overline nil
-                                           :underline nil)))
+                                           :box (:line-width (if (fboundp 'bespoke-modeline) bespoke-modeline-size 3))
+                                           :color ,bespoke-modeline
+                                           :style nil)
+                                   :overline nil
+                                   :underline nil))
 
 
 
@@ -703,47 +688,58 @@ subtlety stand out from the mode line and other adjacent faces."
    `(message-mml                                   ((,class :foreground ,bespoke-popout)))
    `(message-separator                             ((,class :foreground ,bespoke-faded)))
 
-;;;;; Mode line/Header line
+;;;;; Mini-Popup (Childframe)
+   `(mini-popup-background ((,class :background ,bespoke-subtle)))
+   `(mini-popup-border     ((,class :background ,bespoke-subtle)))
 
-   ;; Mode line settings based on header or footer line
-   (when (eq bespoke-set-mode-line 'header)
-     `(header-line ((,class :foreground ,bespoke-foreground
+;;;;; Mode line/Header line
+;;;;;; Conditional Loading
+   ;; Mode line settings based on position
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position 'top)
+       `(header-line ((,class :foreground ,bespoke-foreground
+                              :background ,bespoke-modeline
+                              :box (:line-width ,bespoke-modeline-size
+                                    :color ,bespoke-modeline
+                                    :style nil)
+                              :overline nil
+                              :underline nil)))))
+
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position 'top)
+       `(mode-line  ((,class :height 0.1
+                             :underline ,bespoke-subtle
+                             :overline nil
+                             :box nil)))))
+
+
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position 'top)
+       `(mode-line-inactive  ((,class :height 0.1
+                                      :underline ,bespoke-subtle
+                                      :overline nil
+                                      :box nil)))))
+
+
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position 'bottom)
+       `(mode-line ((,class :foreground ,bespoke-foreground
                             :background ,bespoke-modeline
-                            :box (:line-width ,bespoke-set-mode-line-size
+                            :box (:line-width ,bespoke-modeline-size
                                   :color ,bespoke-modeline
                                   :style nil)
                             :overline nil
-                            :underline nil))))
+                            :underline nil)))))
 
-   (when (eq bespoke-set-mode-line 'header)
-     `(mode-line  ((,class :height 0.1
-                           :underline ,bespoke-subtle
-                           :overline nil
-                           :box nil))))
-
-   (when (eq bespoke-set-mode-line 'header)
-     `(mode-line-inactive  ((,class :height 0.1
-                                    :underline ,bespoke-subtle
-                                    :overline nil
-                                    :box nil))))
-
-   (when (eq bespoke-set-mode-line 'footer)
-     `(mode-line ((,class :foreground ,bespoke-foreground
-                          :background ,bespoke-modeline
-                          :box (:line-width ,bespoke-set-mode-line-size
-                                :color ,bespoke-modeline
-                                :style nil)
-                          :overline nil
-                          :underline nil))))
-
-   (when (eq bespoke-set-mode-line 'footer)
-     `(mode-line-inactive ((,class :foreground ,bespoke-subtle
-                                   :background ,bespoke-modeline
-                                   :box (:line-width ,bespoke-set-mode-line-size
-                                         :color ,bespoke-modeline
-                                         :style nil)
-                                   :overline nil
-                                   :underline nil))))
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position 'bottom)
+       `(mode-line-inactive ((,class :foreground ,bespoke-subtle
+                                     :background ,bespoke-modeline
+                                     :box (:line-width ,bespoke-modeline-size
+                                           :color ,bespoke-modeline
+                                           :style nil)
+                                     :overline nil
+                                     :underline nil)))))
 
    ;; no underline in terminal
    ;; FIXME: for some reason this seems necessary
@@ -755,43 +751,108 @@ subtlety stand out from the mode line and other adjacent faces."
                          :underline nil))
 
 
-   (when (eq bespoke-set-mode-line nil)
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position nil)
+       `(mode-line ((,class :foreground ,bespoke-foreground
+                            :background ,bespoke-modeline
+                            :box (:line-width ,bespoke-modeline-size
+                                  :color ,bespoke-modeline
+                                  :style nil)
+                            :overline nil
+                            :underline nil)))))
+
+   (when (fboundp 'bespoke-modeline)
+     (when (eq bespoke-modeline-position nil)
+       `(mode-line-inactive ((,class :foreground ,bespoke-faded
+                                     :background ,bespoke-modeline
+                                     :box (:line-width ,bespoke-modeline-size
+                                           :color ,bespoke-modeline
+                                           :style nil)
+                                     :overline nil
+                                     :underline nil)))))
+
+;;;;;; Mode line indicators
+
+   ;; Active
+   (when (fboundp 'bespoke-modeline)
+     `(bespoke-modeline-active               ((,class (:foreground ,bespoke-foreground
+                                                       :background ,bespoke-modeline
+                                                       :box (:line-width ,bespoke-modeline-size
+                                                             :color ,bespoke-modeline
+                                                             :style nil)
+                                                       :overline nil
+                                                       :underline nil)))))
+
+   `(bespoke-modeline-active-name          ((,class (:background ,bespoke-modeline
+                                                     :foreground ,bespoke-foreground))))
+   `(bespoke-modeline-active-primary       ((,class (:foreground ,bespoke-faded :weight light))))
+   `(bespoke-modeline-active-secondary     ((,class (:foreground ,bespoke-foreground))))
+   `(bespoke-modeline-active-status-RW ((,class :foreground ,bespoke-background
+                                                :background ,bespoke-blue
+                                                :box (:line-width 1 :color ,bespoke-blue :style nil))))
+
+   `(bespoke-modeline-active-status-** ((,class :foreground ,bespoke-background
+                                                :background ,bespoke-red
+                                                :box (:line-width 1 :color ,bespoke-red :style nil))))
+
+   `(bespoke-modeline-active-status-RO ((,class :foreground ,bespoke-background
+                                                :background ,bespoke-yellow
+                                                :box (:line-width 1 :color ,bespoke-yellow :style nil))))
+
+   ;; Inactive
+   (when (fboundp 'bespoke-modeline)
+     `(bespoke-modeline-inactive             ((,class (:foreground ,bespoke-subtle
+                                                       :background ,bespoke-modeline
+                                                       :box (:line-width ,bespoke-modeline-size
+                                                             :color ,bespoke-modeline
+                                                             :style nil)
+                                                       :overline nil
+                                                       :underline nil)))))
+   `(bespoke-modeline-inactive-name        ((,class (:foreground ,bespoke-faded :background ,bespoke-modeline :weight light))))
+   `(bespoke-modeline-inactive-primary     ((,class (:foreground ,bespoke-faded :background ,bespoke-modeline :weight light))))
+   `(bespoke-modeline-inactive-secondary   ((,class (:foreground ,bespoke-faded :background ,bespoke-modeline :weight light))))
+
+   `(bespoke-modeline-inactive-status-RO   ((,class :foreground ,bespoke-subtle
+                                                    :background ,bespoke-inactive
+                                                    :box (:line-width 1
+                                                          :color ,bespoke-inactive
+                                                          :style nil)
+                                                    :overline nil
+                                                    :underline nil)))
+
+   `(bespoke-modeline-inactive-status-RW ((,class :foreground ,bespoke-subtle
+                                                  :background ,bespoke-inactive
+                                                  :box (:line-width 1
+                                                        :color ,bespoke-inactive
+                                                        :style nil)
+                                                  :overline nil
+                                                  :underline nil)))
+
+   `(bespoke-modeline-inactive-status-**  ((,class :foreground ,bespoke-subtle
+                                                   :background ,bespoke-inactive
+                                                   :box (:line-width 1
+                                                         :color ,bespoke-inactive
+                                                         :style nil)
+                                                   :overline nil
+                                                   :underline nil)))
+
+   (when (not (fboundp 'bespoke-modeline))
      `(mode-line ((,class :foreground ,bespoke-foreground
                           :background ,bespoke-modeline
-                          :box (:line-width ,bespoke-set-mode-line-size
+                          :box (:line-width 3
                                 :color ,bespoke-modeline
                                 :style nil)
                           :overline nil
                           :underline nil))))
 
-   (when (eq bespoke-set-mode-line nil)
+   (when (not (fboundp 'bespoke-modeline))
      `(mode-line-inactive ((,class :foreground ,bespoke-faded
                                    :background ,bespoke-modeline
-                                   :box (:line-width ,bespoke-set-mode-line-size
+                                   :box (:line-width 3
                                          :color ,bespoke-modeline
                                          :style nil)
                                    :overline nil
                                    :underline nil))))
-
-
-   ;;; Mode line indicators
-
-   `(bespoke-modeline-default-face ((,class :foreground ,bespoke-background
-                                            :background ,bespoke-blue
-                                            :box (:line-width 1 :color ,bespoke-blue :style nil))))
-
-   `(bespoke-modeline-mod-face ((,class :foreground ,bespoke-background
-                                        :background ,bespoke-red
-                                        :box (:line-width 1 :color ,bespoke-red :style nil))))
-
-   `(bespoke-modeline-ro-face ((,class :foreground ,bespoke-background
-                                       :background ,bespoke-yellow
-                                       :box (:line-width 1 :color ,bespoke-yellow :style nil))))
-
-   `(bespoke-modeline-inactive-face ((,class :foreground ,bespoke-subtle
-                                             :background ,bespoke-inactive
-                                             :box (:line-width 1 :color ,bespoke-inactive :style nil))))
-
 
 ;;;;; Mu4e
    `(mu4e-attach-number-face                      ((,class :foreground ,bespoke-strong)))
@@ -1036,10 +1097,10 @@ subtlety stand out from the mode line and other adjacent faces."
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'bespoke)
-(provide 'bespoke-theme)
+(provide 'bespoke-faces-colors)
 
 
 ;; Local Variables:
 ;; eval: (when (fboundp 'rainbow-mode) (rainbow-mode 1))
 ;; End:
-;;; bespoke-theme.el ends here
+;;; bespoke-faces-colors.el ends here

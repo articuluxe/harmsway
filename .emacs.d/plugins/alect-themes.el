@@ -1,10 +1,10 @@
 ;;; alect-themes.el --- Configurable light, dark and black themes for Emacs 24 or later   -*- lexical-binding: t -*-
 
-;; Copyright © 2013–2020 Alex Kost
+;; Copyright © 2013–2021 Alex Kost
 
 ;; Author: Alex Kost <alezost@gmail.com>
 ;; Created: 10 Jul 2013
-;; Version: 0.9
+;; Version: 0.10
 ;; Package-Requires: ((emacs "24.0"))
 ;; URL: https://github.com/alezost/alect-themes
 ;; Keywords: color theme
@@ -481,7 +481,8 @@ For INVERT, see `alect-get-color'."
 
          ;; auxiliary faces for inheriting
          (alect-field-title    ((,c :foreground ,(gc 'yellow+1))))
-         (alect-block          ((,c :background ,(gc 'bg-0.5))))
+         (alect-block          ((,c :background ,(gc 'bg-0.5)
+                                    :extend t)))
          (alect-block-title    ((,c :inherit alect-block
                                     :foreground ,(gc 'green+1))))
          (alect-prompt         ((,c :foreground ,(gc 'magenta-1)
@@ -537,7 +538,8 @@ For INVERT, see `alect-get-color'."
          (alect-button-mouse   ((,c :inherit highlight
                                     :box (:line-width 2
                                           :style released-button))))
-         (alect-tab-default    ((,c :height 0.9 :box nil)))
+         (alect-tab-default    ((,c :height 0.9 :box nil
+                                    :background ,(gc 'bg-1))))
          (alect-tab-unselected ((,c :inherit alect-tab-default
                                     :foreground ,(gc 'fg-2)
                                     :background ,(gc 'bg)
@@ -709,15 +711,15 @@ For INVERT, see `alect-get-color'."
          (diff-added             ((,c :foreground ,(gc 'green-1))))
          (diff-changed           ((,c :foreground ,(gc 'yellow-1))))
          (diff-removed           ((,c :foreground ,(gc 'red-1))))
-         (diff-indicator-added   ((,c :inherit diff-added)))
-         (diff-indicator-changed ((,c :inherit diff-changed)))
-         (diff-indicator-removed ((,c :inherit diff-removed)))
-         (diff-refine-added      ((,c :inherit diff-added
-                                      :underline t)))
-         (diff-refine-changed    ((,c :inherit diff-changed
-                                      :underline t)))
-         (diff-refine-removed    ((,c :inherit diff-removed
-                                      :underline t)))
+         (diff-indicator-added   ((,c :inherit diff-added :weight bold)))
+         (diff-indicator-changed ((,c :inherit diff-changed :weight bold)))
+         (diff-indicator-removed ((,c :inherit diff-removed :weight bold)))
+         (diff-refine-added      ((,c :background ,(gc 'green-bg)
+                                      :foreground ,(gc 'fg+1))))
+         (diff-refine-changed    ((,c :background ,(gc 'yellow-bg)
+                                      :foreground ,(gc 'fg+1))))
+         (diff-refine-removed    ((,c :background ,(gc 'red-bg)
+                                      :foreground ,(gc 'fg+1))))
          (diff-header            ((,c :foreground ,(gc 'blue-2) :weight bold)))
          (diff-hunk-header       ((,c :inherit diff-header
                                       :foreground ,(gc 'green+2))))
@@ -1399,6 +1401,8 @@ For INVERT, see `alect-get-color'."
          (org-scheduled-previously  ((,c :foreground ,(gc 'red-2))))
          (org-scheduled-today       ((,c :foreground ,(gc 'blue+1))))
          (org-special-keyword       ((,c :inherit font-lock-doc-face)))
+         (org-drawer                ((,c :inherit org-special-keyword
+                                         :weight bold)))
          (org-table                 ((,c :foreground ,(gc 'fg-1))))
          (org-tag                   ((,c :slant italic)))
          (org-time-grid             ((,c :foreground ,(gc 'fg-2))))
@@ -1411,6 +1415,16 @@ For INVERT, see `alect-get-color'."
          (org-column                ((,c :background ,(gc 'bg-2))))
          (org-column-title          ((,c :background ,(gc 'bg-2)
                                          :underline t :weight bold)))
+
+         ;; org-transclusion
+         (org-transclusion-keyword     ((,c :inherit org-meta-line)))
+         (org-transclusion             ((,c :background ,(gc 'bg+1)
+                                            :extend t)))
+         (org-transclusion-edit        ((,c :inherit org-transclusion)))
+         (org-transclusion-source      ((,c :background ,(gc 'green-bg+1)
+                                            :extend t)))
+         (org-transclusion-source-edit ((,c :background ,(gc 'yellow-bg+1)
+                                            :extend t)))
 
          ;; outline
          (outline-1 ((,c :inherit alect-title-1)))
@@ -1614,6 +1628,10 @@ For INVERT, see `alect-get-color'."
          (sr-xml-face               ((,c :foreground ,(gc 'green+2))))
          (sr-html-face              ((,c :foreground ,(gc 'cyan+2))))
 
+         (sunshine-forecast-date-face        ((,c :inherit alect-time)))
+         (sunshine-forecast-day-divider-face ((,c :foreground ,(gc 'fg-1))))
+         (sunshine-forecast-headline-face    ((,c :inherit alect-title)))
+
          ;; syslog-mode
          (syslog-error ((,c :inherit error)))
          (syslog-warn  ((,c :inherit warning)))
@@ -1622,6 +1640,12 @@ For INVERT, see `alect-get-color'."
          (syslog-hour  ((,c :foreground ,(gc 'blue+1))))
          (syslog-su    ((,c :foreground ,(gc 'cyan))))
          (syslog-ip    ((,c :foreground ,(gc 'yellow+1) :underline t)))
+
+         ;; tab-bar
+         (tab-line                ((,c :inherit header-line)))
+         (tab-bar                 ((,c :inherit alect-tab-default)))
+         (tab-bar-tab             ((,c :inherit alect-tab-selected)))
+         (tab-bar-tab-inactive    ((,c :inherit alect-tab-unselected)))
 
          ;; tabbar
          (tabbar-default          ((,c :inherit alect-tab-default)))
@@ -1710,8 +1734,16 @@ For INVERT, see `alect-get-color'."
          (vc-removed-state       ((,c :foreground ,(gc 'red-1))))
 
          ;; emacs-w3m
-         (w3m-anchor                       ((,c :inherit link)))
-         (w3m-arrived-anchor               ((,c :inherit link-visited)))
+         (w3m-anchor                       ((,c :inherit link
+                                                :underline nil)))
+         (w3m-arrived-anchor               ((,c :inherit link-visited
+                                                :underline nil)))
+         (w3m-current-anchor               ((,c :inherit link
+                                                :weight bold)))
+         (w3m-image-anchor                 ((,c :inherit w3m-anchor
+                                                :box (:line-width -1
+                                                      :color ,(gc 'green)
+                                                      :style nil))))
          (w3m-form                         ((,c :foreground ,(gc 'red-1)
                                                 :underline t)))
          (w3m-form-button                  ((,c :inherit alect-button)))
@@ -1728,14 +1760,25 @@ For INVERT, see `alect-get-color'."
          (w3m-tab-unselected-unseen        ((,c :inherit w3m-tab-unselected
                                                 :foreground ,(gc 'fg))))
          (w3m-tab-mouse                    ((,c :inherit alect-tab-mouse)))
-         (w3m-header-line-location-title   ((,c :inherit header-line)))
-         (w3m-header-line-location-content ((,c :foreground ,(gc 'blue-1)
+         (w3m-header-line-background       ((,c :background ,(gc 'bg))))
+         (w3m-header-line-title            ((,c :inherit (alect-title
+                                                          header-line))))
+         (w3m-header-line-content          ((,c :foreground ,(gc 'blue-1)
                                                 :inherit header-line)))
          (w3m-history-current-url          ((,c :inherit alect-selected-item)))
-         (w3m-image-anchor                 ((,c :background ,(gc 'bg+1))))
 
          ;; which-func-mode
          (which-func ((,c :inherit font-lock-function-name-face)))
+
+         ;; which-key
+         (which-key-key-face                 ((,c :inherit alect-key)))
+         (which-key-separator-face           ((,c :foreground ,(gc 'fg-1))))
+         (which-key-note-face                ((,c :inherit font-lock-comment-face)))
+         (which-key-command-description-face ((,c nil)))
+         (which-key-highlighted-command-face ((,c :foreground ,(gc 'blue))))
+         (which-key-group-description-face   ((,c :inherit which-key-command-description-face
+                                                  :weight bold)))
+         (which-key-docstring-face           ((,c :inherit font-lock-doc-face)))
 
          ;; whitespace-mode
          (whitespace-space            ((,c :foreground ,(gc 'bg+1))))

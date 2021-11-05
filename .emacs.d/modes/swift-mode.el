@@ -3,12 +3,12 @@
 ;; Copyright (C) 2014-2021 taku0, Chris Barrett, Bozhidar Batsov,
 ;;                         Arthur Evstifeev
 
-;; Authors: taku0 (http://github.com/taku0)
+;; Author: taku0 (http://github.com/taku0)
 ;;       Chris Barrett <chris.d.barrett@me.com>
 ;;       Bozhidar Batsov <bozhidar@batsov.com>
 ;;       Arthur Evstifeev <lod@pisem.net>
 ;;
-;; Version: 8.4.0
+;; Version: 8.4.2
 ;; Package-Requires: ((emacs "24.4") (seq "2.3"))
 ;; Keywords: languages swift
 ;; URL: https://github.com/swift-emacs/swift-mode

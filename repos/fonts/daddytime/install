@@ -1,2 +1,2 @@
-cp src/build/*.ttf ../../../.fonts/daddytime
+cp src/build/*.otf ../../../.fonts/daddytime
 

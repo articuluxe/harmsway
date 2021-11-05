@@ -146,10 +146,9 @@ It returns a file name which can be used directly as argument of
 
 (defcustom doom-modeline-height 25
   "How tall the mode-line should be. It's only respected in GUI.
-If the actual char height is larger, it respects the actual char height."
+If the actual char height is larger, it respects the actual char height.
+If `doom-modeline-height' is <= 0 the modeline will have default height."
   :type 'integer
-  :set (lambda (sym val)
-         (set sym (if (> val 0) val 1)))
   :group 'doom-modeline)
 
 (defcustom doom-modeline-bar-width 4
@@ -188,7 +187,7 @@ nil means to use `default-directory'.
 
 The project management packages have some issues on detecting project root.
 e.g. `projectile' doesn't handle symlink folders well, while `project' is
-unable to hanle sub-projects.
+unable to handle sub-projects.
 Specify another one if you encounter the issue."
   :type '(choice (const :tag "Auto-detect" auto)
                  (const :tag "Find File in Project" ffip)
@@ -803,7 +802,7 @@ etc. (also see the face `doom-modeline-unread-number')."
 
 ;; FIXME #183: Force to calculate mode-line height
 ;; @see https://github.com/seagle0128/doom-modeline/issues/183
-(defvar-local doom-modeline--size-hacked-p nil)
+;; @see https://github.com/seagle0128/doom-modeline/issues/483
 (defun doom-modeline-redisplay (&rest _)
   "Call `redisplay' to trigger mode-line height calculations.
 
@@ -817,18 +816,16 @@ These calculations can be triggered by calling `redisplay'
 explicitly at the appropriate time and this functions purpose
 is to make it easier to do so.
 
-This function is like `redisplay' with non-nil FORCE argument.
-It accepts an arbitrary number of arguments making it suitable
-as a `:before' advice for any function.  If the current buffer
-has no mode-line or this function has already been called in it,
-then this function does nothing."
+This function is like `redisplay' with non-nil FORCE argument,
+but it will only trigger a redisplay when there is a non nil
+`mode-line-format' and the height of the mode-line is different
+from that of the `default' face. This function is intended to be
+used as an advice to window creation functions."
   (when (and (bound-and-true-p doom-modeline-mode)
              mode-line-format
-             (not doom-modeline--size-hacked-p))
-    (setq doom-modeline--size-hacked-p t)
+             (/= (frame-char-height) (window-mode-line-height)))
     (redisplay t)))
-(advice-add #'fit-window-to-buffer :before #'doom-modeline-redisplay)
-(advice-add #'resize-temp-buffer-window :before #'doom-modeline-redisplay)
+(advice-add 'split-window :after #'doom-modeline-redisplay)
 
 ;; Keep `doom-modeline-current-window' up-to-date
 (defun doom-modeline--get-current-window (&optional frame)
@@ -849,34 +846,17 @@ then this function does nothing."
 
 (defun doom-modeline-set-selected-window (&rest _)
   "Set `doom-modeline-current-window' appropriately."
-  (when-let ((win (doom-modeline--get-current-window)))
-    (unless (or (minibuffer-window-active-p win)
-                (and (bound-and-true-p lv-wnd) (eq lv-wnd win)))
-      (setq doom-modeline-current-window win))))
+  (let ((win (doom-modeline--get-current-window)))
+    (setq doom-modeline-current-window
+          (if (minibuffer-window-active-p win)
+              (minibuffer-selected-window)
+            win))))
 
 (defun doom-modeline-unset-selected-window ()
   "Unset `doom-modeline-current-window' appropriately."
   (setq doom-modeline-current-window nil))
 
-(add-hook 'after-make-frame-functions #'doom-modeline-set-selected-window)
-(add-hook 'buffer-list-update-hook #'doom-modeline-set-selected-window)
-(add-hook 'window-configuration-change-hook #'doom-modeline-set-selected-window)
-(add-hook 'window-selection-change-functions #'doom-modeline-set-selected-window)
-(add-hook 'exwm-workspace-switch-hook #'doom-modeline-set-selected-window)
-(with-no-warnings
-  (if (boundp 'after-focus-change-function)
-      (progn
-        (defun doom-modeline-refresh-frame ()
-          (setq doom-modeline-current-window nil)
-          (cl-loop for frame in (frame-list)
-                   if (eq (frame-focus-state frame) t)
-                   return (setq doom-modeline-current-window
-                                (doom-modeline--get-current-window frame)))
-          (force-mode-line-update))
-        (add-function :after after-focus-change-function #'doom-modeline-refresh-frame))
-    (progn
-      (add-hook 'focus-in-hook #'doom-modeline-set-selected-window)
-      (add-hook 'focus-out-hook #'doom-modeline-unset-selected-window))))
+(add-hook 'pre-redisplay-functions #'doom-modeline-set-selected-window)
 
 ;; Ensure modeline is inactive when Emacs is unfocused (and active otherwise)
 (defvar doom-modeline-remap-face-cookie nil)
@@ -1042,8 +1022,9 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
     ;; WORKAROUND: Fix tall issue of 27 on Linux
     ;; @see https://github.com/seagle0128/doom-modeline/issues/271
     (round
-     (* (if (and (>= emacs-major-version 27)
-                 (not (eq system-type 'darwin)))
+     (* (if (or (<= doom-modeline-height 0)
+                (and (>= emacs-major-version 27)
+                     (not (eq system-type 'darwin))))
             1.0
           (if doom-modeline-icon 1.68 1.25))
         (cond ((integerp height) (/ height 10))
@@ -1086,7 +1067,8 @@ See https://github.com/seagle0128/doom-modeline/issues/301."
 (defun doom-modeline-icon (icon-set icon-name unicode text &rest args)
   "Display icon of ICON-NAME with ARGS in mode-line.
 
-ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon', etc.
+ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon',
+etc.
 UNICODE is the unicode char fallback. TEXT is the ASCII char fallback.
 ARGS is same as `all-the-icons-octicon' and others."
   (let ((face (or (plist-get args :face) 'mode-line)))
@@ -1223,7 +1205,8 @@ directory too."
 (advice-add #'shrink-path--dirs-internal :override #'doom-modeline-shrink-path--dirs-internal)
 
 (defun doom-modeline-buffer-file-name ()
-  "Propertized variable `buffer-file-name' based on `doom-modeline-buffer-file-name-style'."
+  "Propertized variable `buffer-file-name' based on
+`doom-modeline-buffer-file-name-style'."
   (let* ((buffer-file-name (file-local-name (or (buffer-file-name (buffer-base-buffer)) "")))
          (buffer-file-truename (file-local-name
                                 (or buffer-file-truename (file-truename buffer-file-name) "")))
@@ -1283,7 +1266,8 @@ If TRUNCATE-TAIL is t also truncate the parent directory of the file."
                             'face 'doom-modeline-buffer-file))))))
 
 (defun doom-modeline--buffer-file-name-relative (_file-path true-file-path &optional include-project)
-  "Propertized variable `buffer-file-name' showing directories relative to project's root only."
+  "Propertized variable `buffer-file-name' showing directories relative to
+project's root only."
   (let ((root (file-local-name (doom-modeline-project-root))))
     (if (null root)
         (propertize "%b" 'face 'doom-modeline-buffer-file)

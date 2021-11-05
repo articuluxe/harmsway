@@ -207,13 +207,6 @@ This variable has to be customized before `forge' is loaded."
   (or (forge-get-issue id)
       (forge-get-pullreq id)))
 
-(defun forge--topic-string-to-number (s)
-  (save-match-data
-    (if (string-match "\\`\\([!#]\\)?\\([0-9]+\\)" s)
-        (* (if (equal (match-string 1 s) "!") -1 1)
-           (string-to-number (match-string 2 s)))
-      (error "forge--topic-string-to-number: Invalid argument %S" s))))
-
 (cl-defmethod forge-ls-recent-topics ((repo forge-repository) table)
   (magit--with-repository-local-cache (list 'forge-ls-recent-topics table)
     (let* ((id (oref repo id))
@@ -255,26 +248,30 @@ This variable has to be customized before `forge' is loaded."
                (cdr forge-topic-list-order)
                :key (lambda (it) (eieio-oref it (car forge-topic-list-order)))))))
 
-(cl-defmethod forge-ls-topics ((repo forge-repository) class &optional type)
-  (mapcar (lambda (row)
-            (closql--remake-instance class (forge-db) row))
-          (let ((table (oref-default class closql-table))
-                (id (oref repo id)))
-            (pcase-exhaustive type
-              (`open   (forge-sql [:select * :from $i1
-                                   :where (and (= repository $s2)
-                                               (isnull closed))
-                                   :order-by [(desc number)]]
-                                  table id))
-              (`closed (forge-sql [:select * :from $i1
-                                   :where (and (= repository $s2)
-                                               (notnull closed))
-                                   :order-by [(desc number)]]
-                                  table id))
-              (`nil    (forge-sql [:select * :from $i1
-                                   :where (= repository $s2)
-                                   :order-by [(desc number)]]
-                                  table id))))))
+(cl-defmethod forge-ls-topics ((repo forge-repository)
+                               class &optional type select)
+  (let* ((table (oref-default class closql-table))
+         (id (oref repo id))
+         (rows (pcase-exhaustive type
+                 (`open   (forge-sql [:select $i1 :from $i2
+                                      :where (and (= repository $s3)
+                                                  (isnull closed))
+                                      :order-by [(desc number)]]
+                                     (or select '*) table id))
+                 (`closed (forge-sql [:select $i1 :from $i2
+                                      :where (and (= repository $s3)
+                                                  (notnull closed))
+                                      :order-by [(desc number)]]
+                                     (or select '*) table id))
+                 (`nil    (forge-sql [:select $i1 :from $i2
+                                      :where (= repository $s3)
+                                      :order-by [(desc number)]]
+                                     (or select '*) table id)))))
+    (if select
+        rows
+      (mapcar (lambda (row)
+                (closql--remake-instance class (forge-db) row))
+              rows))))
 
 ;;; Utilities
 
@@ -472,9 +469,16 @@ identifier."
 (cl-defun forge-insert-topic-state
     (&optional (topic forge-buffer-topic))
   (magit-insert-section (topic-state)
-    (insert (format "%-11s" "State: ")
-            (symbol-name (oref topic state))
-            "\n")))
+    (insert (format
+             "%-11s%s\n" "State: "
+             (let ((state (oref topic state)))
+               (magit--propertize-face
+                (symbol-name state)
+                (pcase (list state (forge-pullreq-p (forge-topic-at-point)))
+                  (`(merged) 'forge-topic-merged)
+                  (`(closed) 'forge-topic-closed)
+                  (`(open t) 'forge-topic-unmerged)
+                  (`(open)   'forge-topic-open))))))))
 
 (defvar forge-topic-milestone-section-map
   (let ((map (make-sparse-keymap)))
@@ -671,33 +675,40 @@ Return a value between 0 and 1."
 
 ;;; Completion
 
-(defun forge-read-topic (prompt)
+(defun forge-read-topic (prompt &optional type)
+  (when (eq type t)
+    (setq type (if current-prefix-arg nil 'open)))
   (let* ((default (forge-current-topic))
          (repo    (forge-get-repository (or default t)))
-         (gitlabp (forge--childp repo 'forge-gitlab-repository))
-         (choices (sort
-                   (nconc
-                    (let ((prefix (if gitlabp "!" "")))
-                      (mapcar (lambda (topic)
-                                (forge--topic-format-choice topic prefix))
-                              (oref repo pullreqs)))
-                    (let ((prefix (if gitlabp "#" "")))
-                      (mapcar (lambda (topic)
-                                (forge--topic-format-choice topic prefix))
-                              (oref repo issues))))
-                   #'string>))
-         (choice  (magit-completing-read
-                   prompt choices nil nil nil nil
-                   (and default
-                        (forge--topic-format-choice
-                         default (and (not gitlabp) ""))))))
-    (forge--topic-string-to-number choice)))
+         (choices (mapcar
+                   (apply-partially #'forge--topic-format-choice repo)
+                   (cl-sort
+                    (nconc
+                     (forge-ls-pullreqs repo type [number title id class])
+                     (forge-ls-issues   repo type [number title id class]))
+                    #'> :key #'car))))
+    (cdr (assoc (magit-completing-read
+                 prompt choices nil nil nil nil
+                 (and default
+                      (setq default (forge--topic-format-choice default))
+                      (member default choices)
+                      (car default)))
+                choices))))
 
-(defun forge--topic-format-choice (topic &optional prefix)
-  (format "%s%s  %s"
-          (or prefix (forge--topic-type-prefix topic) "")
-          (oref topic number)
-          (oref topic title)))
+(cl-defmethod forge--topic-format-choice ((topic forge-topic))
+  (cons (format "%s%s  %s"
+                (forge--topic-type-prefix topic)
+                (oref topic number)
+                (oref topic title))
+        (oref topic id)))
+
+(cl-defmethod forge--topic-format-choice ((repo forge-repository) args)
+  (pcase-let ((`(,number ,title ,id ,class) args))
+    (cons (format "%s%s  %s"
+                  (forge--topic-type-prefix repo class)
+                  number
+                  title)
+          id)))
 
 (defun forge-topic-completion-at-point ()
   (let ((bol (line-beginning-position))

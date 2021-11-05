@@ -346,6 +346,7 @@ the server has requested that."
     "[/\\\\]\\.shadow-cljs\\'"
     "[/\\\\]\\.babel_cache\\'"
     "[/\\\\]\\.cpcache\\'"
+    "[/\\\\]\\checkouts\\'"
     ;; .Net Core build-output
     "[/\\\\]bin/Debug\\'"
     "[/\\\\]obj\\'"
@@ -797,6 +798,7 @@ Changes take effect only when a new session is started."
                                         (zig-mode . "zig")
                                         (text-mode . "plaintext")
                                         (markdown-mode . "markdown")
+                                        (gfm-mode . "markdown")
                                         (beancount-mode . "beancount"))
   "Language id configuration.")
 
@@ -833,6 +835,7 @@ directory")
     ("textDocument/formatting" :capability :documentFormattingProvider)
     ("textDocument/hover" :capability :hoverProvider)
     ("textDocument/implementation" :capability :implementationProvider)
+    ("textDocument/linkedEditingRange" :capability :linkedEditingRangeProvider)
     ("textDocument/onTypeFormatting" :capability :documentOnTypeFormattingProvider)
     ("textDocument/prepareRename"
      :check-command (lambda (workspace)
@@ -899,7 +902,7 @@ must be used for handling a particular message.")
 (define-obsolete-variable-alias 'lsp-lens-auto-enable
   'lsp-lens-enable "lsp-mode 7.0.1")
 
-(defcustom lsp-lens-enable nil
+(defcustom lsp-lens-enable t
   "Auto enable lenses if server supports."
   :group 'lsp-lens
   :type 'boolean
@@ -1493,7 +1496,8 @@ return value of `body' or nil if interrupted."
   (async-request-handlers (make-hash-table :test 'equal))
   download-server-fn
   download-in-progress?
-  buffers)
+  buffers
+  synchronize-sections)
 
 (defun lsp-clients-executable-find (find-command &rest args)
   "Finds an executable by invoking a search command.
@@ -1920,6 +1924,15 @@ PARAMS - the data sent from WORKSPACE."
     (if choices
         (completing-read (concat message " ") (seq-into choices 'list) nil t)
       (lsp-log message))))
+
+(lsp-defun lsp--window-show-document ((&ShowDocumentParams :uri :selection?))
+  "Show document URI in a buffer and go to SELECTION if any."
+  (let ((path (lsp--uri-to-path uri)))
+    (when (f-exists? path)
+      (with-current-buffer (find-file path)
+        (when selection?
+          (goto-char (lsp--position-to-point (lsp:range-start selection?))))
+        t))))
 
 (defcustom lsp-progress-prefix " ⌛ "
   "Progress prefix."
@@ -3427,6 +3440,7 @@ disappearing, unset all the variables related to it."
                                                         ;; Remove this after jdtls support resolveSupport
                                                         (resolveAdditionalTextEditsSupport . t)
                                                         (insertReplaceSupport . t)
+                                                        (deprecatedSupport . t)
                                                         (resolveSupport
                                                          . ((properties . ["documentation"
                                                                            "details"
@@ -3448,11 +3462,10 @@ disappearing, unset all the variables related to it."
                       (publishDiagnostics . ((relatedInformation . t)
                                              (tagSupport . ((valueSet . [1 2])))
                                              (versionSupport . t)))
-                      (moniker . nil)
-                      (linkedEditingRange . nil)))
+                      (linkedEditingRange . ((dynamicRegistration . t)))))
      (window . ((workDoneProgress . t)
                 (showMessage . nil)
-                (showDocument . nil))))
+                (showDocument . ((support . t))))))
    custom-capabilities))
 
 (defun lsp-find-roots-for-workspace (workspace session)
@@ -3494,10 +3507,13 @@ disappearing, unset all the variables related to it."
                            lsp--registered-capability-options
                            (lsp:did-change-watched-files-registration-options-watchers)
                            (seq-find
-                            (-lambda ((&FileSystemWatcher :glob-pattern :kind?))
+                            (-lambda ((fs-watcher &as &FileSystemWatcher :glob-pattern :kind? :_cachedRegexp cached-regexp))
                               (when (or (null kind?)
                                         (> (logand kind? watch-bit) 0))
-                                (-let [regexes (lsp-glob-to-regexps glob-pattern)]
+                                (-let [regexes (or cached-regexp
+                                                   (let ((regexp (lsp-glob-to-regexps glob-pattern)))
+                                                     (lsp-put fs-watcher :_cachedRegexp regexp)
+                                                     regexp))]
                                   (-any? (lambda (re)
                                            (or (string-match re changed-file)
                                                (string-match re rel-changed-file)))
@@ -4409,7 +4425,10 @@ Added to `after-change-functions'."
   ;; So (47 54 0) means add    7 chars starting at pos 47
   ;; So (47 47 7) means delete 7 chars starting at pos 47
   (save-match-data
-    (let ((inhibit-quit t))
+    (let ((inhibit-quit t)
+          ;; make sure that `lsp-on-change' is called in multi-workspace context
+          ;; see #2901
+          lsp--cur-workspace)
       ;; A (revert-buffer) call with the 'preserve-modes parameter (eg, as done
       ;; by auto-revert-mode) will cause this handler to get called with a nil
       ;; buffer-file-name. We need the buffer-file-name to send notifications;
@@ -4839,20 +4858,21 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
   most recently requested highlights.")
 
 (defun lsp--document-highlight ()
-  (let ((curr-sym-bounds (bounds-of-thing-at-point 'symbol)))
-    (unless (or (looking-at "[[:space:]\n]")
-                (not lsp-enable-symbol-highlighting)
-                (and lsp--have-document-highlights
-                     curr-sym-bounds
-                     (equal curr-sym-bounds
-                            lsp--symbol-bounds-of-last-highlight-invocation)))
-      (setq lsp--symbol-bounds-of-last-highlight-invocation
-            curr-sym-bounds)
-      (lsp-request-async "textDocument/documentHighlight"
-                         (lsp--text-document-position-params)
-                         #'lsp--document-highlight-callback
-                         :mode 'tick
-                         :cancel-token :highlights))))
+  (when (lsp-feature? "textDocument/documentHighlight")
+    (let ((curr-sym-bounds (bounds-of-thing-at-point 'symbol)))
+      (unless (or (looking-at "[[:space:]\n]")
+                  (not lsp-enable-symbol-highlighting)
+                  (and lsp--have-document-highlights
+                       curr-sym-bounds
+                       (equal curr-sym-bounds
+                              lsp--symbol-bounds-of-last-highlight-invocation)))
+        (setq lsp--symbol-bounds-of-last-highlight-invocation
+              curr-sym-bounds)
+        (lsp-request-async "textDocument/documentHighlight"
+                           (lsp--text-document-position-params)
+                           #'lsp--document-highlight-callback
+                           :mode 'tick
+                           :cancel-token :highlights)))))
 
 (defun lsp-describe-thing-at-point ()
   "Display the type signature and documentation of the thing at
@@ -6028,8 +6048,8 @@ The command is executed via `workspace/executeCommand'"
                       (list :command command))))
         (lsp-request "workspace/executeCommand" params))
     (error
-     (lsp--error "`workspace/executeCommand' with `%s' failed.\n\n%S"
-                 command err))))
+     (error "`workspace/executeCommand' with `%s' failed.\n\n%S"
+            command err))))
 
 (defun lsp-send-execute-command (command &optional args)
   "Create and send a 'workspace/executeCommand' message having command COMMAND and optional ARGS."
@@ -6193,6 +6213,10 @@ WORKSPACE is the active workspace."
                      ((equal method "window/showMessageRequest")
                       (let ((choice (lsp--window-log-message-request params)))
                         `(:title ,choice)))
+                     ((equal method "window/showDocument")
+                      (let ((success? (lsp--window-show-document params)))
+                        (lsp-make-show-document-result :success (or success?
+                                                                    :json-false))))
                      ((equal method "client/unregisterCapability")
                       (mapc #'lsp--server-unregister-capability
                             (lsp:unregistration-params-unregisterations params))
@@ -6502,23 +6526,17 @@ an alist
       (cons signature
             (lsp--imenu-create-hierarchical-index filtered-children)))))
 
-(lsp-defun lsp--symbol-ignore ((&SymbolInformation :kind :location))
+(lsp-defun lsp--symbol-ignore ((&SymbolInformation :kind))
   "Determine if SYM is for the current document and is to be shown."
   ;; It's a SymbolInformation or DocumentSymbol, which is always in the
   ;; current buffer file.
-  (or (and lsp-imenu-index-symbol-kinds
-           (numberp kind)
-           (let ((clamped-kind (if (< 0 kind (length lsp/symbol-kind-lookup))
-                                   kind
-                                 0)))
-             (not (memql (aref lsp/symbol-kind-lookup clamped-kind)
-                         lsp-imenu-index-symbol-kinds))))
-      (and location
-           (not (eq (->> location
-                         (lsp:location-uri)
-                         (lsp--uri-to-path)
-                         (find-buffer-visiting))
-                    (current-buffer))))))
+  (and lsp-imenu-index-symbol-kinds
+       (numberp kind)
+       (let ((clamped-kind (if (< 0 kind (length lsp/symbol-kind-lookup))
+                               kind
+                             0)))
+         (not (memql (aref lsp/symbol-kind-lookup clamped-kind)
+                     lsp-imenu-index-symbol-kinds)))))
 
 (lsp-defun lsp--get-symbol-type ((&SymbolInformation :kind))
   "The string name of the kind of SYM."
@@ -7418,26 +7436,51 @@ Check `*lsp-install*' and `*lsp-log*' buffer."
 
 ;;;###autoload
 (defun lsp-install-server (update? &optional server-id)
-  "Interactively install server.
+  "Interactively install or re-install server.
 When prefix UPDATE? is t force installation even if the server is present."
   (interactive "P")
   (lsp--require-packages)
-  (lsp--install-server-internal
-   (or (gethash server-id lsp-clients)
-       (lsp--completing-read
-        "Select server to install: "
-        (or (->> lsp-clients
-                 (ht-values)
-                 (-filter (-andfn
-                           (-orfn (-not #'lsp--server-binary-present?)
-                                  (-const update?))
-                           (-not #'lsp--client-download-in-progress?)
-                           #'lsp--client-download-server-fn)))
-            (user-error "There are no servers with automatic installation"))
-        (-compose #'symbol-name #'lsp--client-server-id)
-        nil
-        t))
-   update?))
+  (let* ((chosen-client (or (gethash server-id lsp-clients)
+                            (lsp--completing-read
+                             "Select server to install/re-install: "
+                             (or (->> lsp-clients
+                                      (ht-values)
+                                      (-filter (-andfn
+                                                (-not #'lsp--client-download-in-progress?)
+                                                #'lsp--client-download-server-fn)))
+                                 (user-error "There are no servers with automatic installation"))
+                             (lambda (client)
+                               (let ((server-name (-> client lsp--client-server-id symbol-name)))
+                                 (if (lsp--server-binary-present? client)
+                                     (concat server-name " (Already installed)")
+                                   server-name)))
+                             nil
+                             t)))
+         (update? (or update?
+                      (and (not (lsp--client-download-in-progress? chosen-client))
+                           (lsp--server-binary-present? chosen-client)))))
+    (lsp--install-server-internal chosen-client update?)))
+
+;;;###autoload
+(defun lsp-update-server (&optional server-id)
+  "Interactively update a server."
+  (interactive)
+  (lsp--require-packages)
+  (let ((chosen-client (or (gethash server-id lsp-clients)
+                           (lsp--completing-read
+                            "Select server to update (if not on the list, probably you need to `lsp-install-server`): "
+                            (or (->> lsp-clients
+                                     (ht-values)
+                                     (-filter (-andfn
+                                               (-not #'lsp--client-download-in-progress?)
+                                               #'lsp--client-download-server-fn
+                                               #'lsp--server-binary-present?)))
+                                (user-error "There are no servers to update"))
+                            (lambda (client)
+                              (-> client lsp--client-server-id symbol-name))
+                            nil
+                            t))))
+    (lsp--install-server-internal chosen-client t)))
 
 ;;;###autoload
 (defun lsp-ensure-server (server-id)
@@ -7836,6 +7879,31 @@ TBL - a hash table, PATHS is the path to the nested VALUE."
                                              (ht-set! tbl path temp-tbl)
                                              temp-tbl))))
                        (lsp-ht-set nested-tbl rst value)))))
+
+;; sections
+
+(defmacro defcustom-lsp (symbol standard doc &rest args)
+  "Defines `lsp-mode' server property."
+  (let ((path (plist-get args :lsp-path)))
+    (cl-remf args :lsp-path)
+    `(progn
+       (lsp-register-custom-settings
+        (quote ((,path ,symbol ,(equal ''boolean (plist-get args :type))))))
+
+       (defcustom ,symbol ,standard ,doc
+         :set (lambda (sym val)
+                (lsp--set-custom-property sym val ,path))
+         ,@args))))
+
+(defun lsp--set-custom-property (sym val path)
+  (set sym val)
+  (let ((section (cl-first (s-split "\\." path))))
+    (mapc (lambda (workspace)
+            (when (-contains? (lsp--client-synchronize-sections (lsp--workspace-client workspace))
+                              section)
+              (with-lsp-workspace workspace
+                (lsp--set-configuration (lsp-configuration-section section)))))
+          (lsp--session-workspaces (lsp-session)))))
 
 (defun lsp-configuration-section (section)
   "Get settings for SECTION."
@@ -7853,6 +7921,7 @@ TBL - a hash table, PATHS is the path to the nested VALUE."
           lsp-client-settings)
     ret))
 
+
 (defun lsp--start-connection (session client project-root)
   "Initiates connection created from CLIENT for PROJECT-ROOT.
 SESSION is the active session."

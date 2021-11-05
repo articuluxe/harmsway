@@ -32,7 +32,6 @@
 (require 'docker-compose)
 (require 'docker-container)
 (require 'docker-image)
-(require 'docker-machine)
 (require 'docker-network)
 (require 'docker-volume)
 
@@ -57,13 +56,12 @@
    (5 "Tk" "TLS key" "--tlskey" docker-read-certificate)
    (5 "l" "Log level" "--log-level " docker-read-log-level)]
   ["Docker"
-   ("c" "Containers" docker-containers)
-   ("i" "Images"     docker-images)
-   ("n" "Networks"   docker-networks)
-   ("v" "Volumes"    docker-volumes)]
+   ("c" docker-container-description-with-stats docker-containers)
+   ("i" docker-image-description-with-stats     docker-images)
+   ("n" docker-network-description-with-stats   docker-networks)
+   ("v" docker-volume-description-with-stats    docker-volumes)]
   ["Other"
-   ("C" "Compose"    docker-compose)
-   ("M" "Machines"   docker-machines)])
+   ("C" "Compose"    docker-compose)])
 
 (provide 'docker)
 

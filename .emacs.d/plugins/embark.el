@@ -1,10 +1,11 @@
 ;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020, 2021  Omar Antolín Camarena
+;; Copyright (C) 2021  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
+;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.12
+;; Version: 0.13
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -120,6 +121,7 @@
     (library . embark-library-map)
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
+    (email . embark-email-map)
     (buffer . embark-buffer-map)
     (expression . embark-expression-map)
     (identifier . embark-identifier-map)
@@ -148,10 +150,13 @@ For any type not listed here, `embark-act' will use
     embark-target-collect-candidate
     embark-target-completion-at-point
     embark-target-bug-reference-at-point
+    embark-target-package-at-point
+    embark-target-email-at-point
     embark-target-url-at-point
     embark-target-file-at-point
-    embark-target-identifier-at-point
     embark-target-custom-variable-at-point
+    embark-target-identifier-at-point
+    embark-target-library-file-at-point
     embark-target-expression-at-point
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
@@ -400,6 +405,11 @@ the key :always are executed always."
   '(;; region commands which prompt for a filename
     (write-region embark--ignore-target embark--mark-target)
     (append-to-file embark--ignore-target embark--mark-target)
+    ;; commands which evaluate code not given at a prompt
+    (embark-pp-eval-defun embark--ignore-target)
+    (eval-defun embark--ignore-target)
+    (eval-last-sexp embark--end-of-target embark--ignore-target)
+    (embark-eval-replace embark--ignore-target embark--mark-target)
     ;; motion commands that need to position point to skip current match
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
@@ -428,7 +438,11 @@ the key :always are executed always."
     (capitalize-region embark--mark-target)
     (count-words-region embark--mark-target)
     (shell-command-on-region embark--mark-target)
-    (delete-region embark--mark-target))
+    (delete-region embark--mark-target)
+    ;; commands we want to be able to jump back from
+    ;; (embark-find-definition achieves this by calling
+    ;; xref-find-definitions which pushes the markers itself)
+    (find-library embark--xref-push-markers))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -447,6 +461,7 @@ arguments and more details."
   '((bookmark-delete embark--restart)
     (bookmark-rename embark--restart)
     (delete-file embark--restart)
+    (embark-recentf-remove embark--restart)
     (rename-file embark--restart)
     (copy-file embark--restart)
     (delete-directory embark--restart)
@@ -643,7 +658,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
                      (dired-get-filename t 'no-error-if-not-filep)))
       (save-excursion
         (end-of-line)
-        `(file ,(abbreviate-file-name file)
+        `(file ,(abbreviate-file-name (expand-file-name file))
                ,(save-excursion
                   (re-search-backward " " (line-beginning-position) 'noerror)
                   (1+ (point)))
@@ -652,10 +667,20 @@ In `dired-mode', it uses `dired-get-filename' instead."
       (unless (or (string-match-p "^/https?:/" file)
                   (when-let (filename (thing-at-point 'filename))
                     (ffap-el-mode filename)))
-        `(file ,(abbreviate-file-name file)
+        `(file ,(abbreviate-file-name (expand-file-name file))
                ;; TODO the boundaries may be wrong, this should be generalized.
                ;; Unfortunately ffap does not make the bounds available.
                . ,(bounds-of-thing-at-point 'filename))))))
+
+(defun embark-target-library-file-at-point ()
+  "Target the file of the Emacs Lisp library at point.
+The function `embark-target-file-at-point' could also easily
+target Emacs Lisp library files, the only reason it doesn't is so
+that library files and other types of file targets can be given
+different priorities in `embark-target-finders'."
+  (when-let* ((name (thing-at-point 'filename))
+              (lib (ffap-el-mode name)))
+    `(file ,lib . ,(bounds-of-thing-at-point 'filename))))
 
 (defun embark-target-bug-reference-at-point ()
   "Target a bug reference at point."
@@ -664,13 +689,31 @@ In `dired-mode', it uses `dired-get-filename' instead."
     `(url ,(overlay-get ov 'bug-reference-url)
           ,(overlay-start ov) . ,(overlay-end ov))))
 
+(defun embark-target-package-at-point ()
+  "Target the package on the current line in a `package-menu-mode-menu' buffer."
+  (when (derived-mode-p 'package-menu-mode)
+    (when-let ((pkg (get-text-property (point) 'tabulated-list-id)))
+      `(package ,(symbol-name (package-desc-name pkg))
+                ,(line-beginning-position) . ,(line-end-position)))))
+
+(defun embark-target-email-at-point ()
+  "Target the email address at point."
+  (when-let ((email (thing-at-point 'email)))
+    (when (string-prefix-p "mailto:" email)
+      (setq email (string-remove-prefix "mailto:" email)))
+    `(email ,email . ,(bounds-of-thing-at-point 'email))))
+
 (defun embark-target-url-at-point ()
   "Target the URL at point."
-  (when-let ((url (ffap-url-at-point)))
-    `(url ,url
-          ;; TODO the boundaries may be wrong, this should be generalized.
-          ;; Unfortunately ffap does not make the bounds available.
-          . ,(bounds-of-thing-at-point 'url))))
+  (if-let ((url (thing-at-point 'url)))
+      `(url ,url . ,(thing-at-point-bounds-of-url-at-point t))
+    (when-let ((url (or (get-text-property (point) 'shr-url)
+                        (get-text-property (point) 'image-url))))
+      `(url ,url
+            ,(previous-single-property-change
+              (min (1+ (point)) (point-max)) 'mouse-face nil (point-min))
+            . ,(next-single-property-change
+                (point) 'mouse-face nil (point-max))))))
 
 (declare-function widget-at "wid-edit")
 
@@ -879,7 +922,7 @@ the minibuffer is open, the message is added to the prompt."
                (shadowed-targets (cdr targets))
                (indicator
                 (cond
-                 ((eq (car target) 'embark-become)
+                 ((eq (plist-get target :type) 'embark-become)
                   (propertize "Become" 'face 'highlight))
                  ((and (minibufferp)
                        (not (eq 'embark-keybinding
@@ -928,7 +971,7 @@ the minibuffer is open, the message is added to the prompt."
                                (setq prefix new-prefix)
                                (when (/= (length prefix) 0)
                                  (funcall update prefix))))))))
-          (read-key-sequence nil nil nil t 'cmd-loop))
+          (read-key-sequence-vector nil nil nil t 'cmd-loop))
       (when timer
         (cancel-timer timer)))))
 
@@ -937,21 +980,38 @@ the minibuffer is open, the message is added to the prompt."
 Besides the bindings in KEYMAP, the user is free to use all their
 key bindings and even \\[execute-extended-command] to select a command.
 UPDATE is the indicator update function."
-  (let* ((key (let ((overriding-terminal-local-map keymap))
-                (embark--read-key-sequence update)))
+  (let* ((keys (let ((overriding-terminal-local-map keymap))
+                 (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
-                (key-binding key))))
+                (key-binding keys 'accept-default))))
     (pcase cmd
-      ('embark-keymap-help
-       (embark-completing-read-prompter keymap nil))
+      ((or 'embark-keymap-help
+           (and 'nil            ; cmd is nil but last key is help-char
+                (guard (eq help-char (aref keys (1- (length keys)))))))
+       (let ((embark-indicators
+              (cl-set-difference embark-indicators
+                                 '(embark-verbose-indicator
+                                   embark-mixed-indicator)))
+             (prefix-map
+              (if (eq cmd 'embark-keymap-help)
+                  keymap
+                (let ((overriding-terminal-local-map keymap))
+                  (key-binding (seq-take keys (1- (length keys)))
+                               'accept-default)))))
+         (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
+                                            'visible)))
+           (quit-window 'kill-buffer win))
+         (embark-completing-read-prompter prefix-map update)))
       ((or 'universal-argument 'negative-argument 'digit-argument)
-       (let ((last-command-event (aref key 0)))
+       (let ((last-command-event (aref keys 0))
+             ;; prevent `digit-argument' from modifying the overriding map
+             (overriding-terminal-local-map overriding-terminal-local-map))
          (command-execute cmd))
        (embark-keymap-prompter keymap update))
-      ((guard (lookup-key keymap key))  ; if directly bound, then obey
-       cmd)
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
+      ((guard (lookup-key keymap keys))  ; if directly bound, then obey
+       cmd)
       ('self-insert-command
        (minibuffer-message "Not an action")
        (embark-keymap-prompter keymap update))
@@ -963,7 +1023,7 @@ UPDATE is the indicator update function."
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
       ((or 'scroll-bar-toolkit-scroll 'mwheel-scroll 'mac-mwheel-scroll)
-       (funcall cmd (aref key (1- (length key))))
+       (funcall cmd (aref keys (1- (length keys))))
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
@@ -1070,48 +1130,45 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
           (catch 'choice
             (minibuffer-with-setup-hook
                 (lambda ()
-                  (when embark-keymap-prompter-key
-                    (use-local-map
-                     (make-composed-keymap
-                      (let ((map (make-sparse-keymap))
-                            (cycle (embark--cycle-key)))
-                        ;; Rebind `embark-cycle' in order allow cycling
-                        ;; from the `completing-read' prompter. Additionally
-                        ;; `embark-cycle' can be selected via
-                        ;; `completing-read'. The downside is that this breaks
-                        ;; recursively acting on the candidates of type
-                        ;; embark-keybinding in the `completing-read' prompter.
-                        (define-key map cycle
-                          (cond
-                           ((lookup-key keymap cycle)
-                              (lambda ()
-                                (interactive)
-                                (throw 'choice 'embark-cycle)))
-                           ((null embark-cycle-key)
-                            (lambda ()
-                              (interactive)
-                              (minibuffer-message
-                               (concat "Single target; can't cycle. "
-                                       "Press `%s' again to act.")
-                               (key-description cycle))
-                              (define-key map cycle #'embark-act)))))
-                        (define-key map embark-keymap-prompter-key
+                  (let ((map (make-sparse-keymap)))
+                    (when-let (cycle (embark--cycle-key))
+                      ;; Rebind `embark-cycle' in order allow cycling
+                      ;; from the `completing-read' prompter. Additionally
+                      ;; `embark-cycle' can be selected via
+                      ;; `completing-read'. The downside is that this breaks
+                      ;; recursively acting on the candidates of type
+                      ;; embark-keybinding in the `completing-read' prompter.
+                      (define-key map cycle
+                        (cond
+                         ((lookup-key keymap cycle)
                           (lambda ()
                             (interactive)
-                            (let*
-                                ((desc
-                                  (let ((overriding-terminal-local-map keymap))
-                                    (key-description
-                                     (read-key-sequence "Key:"))))
-                                 (cmd
-                                  (cl-loop
-                                   for (_s _n cmd _k desc1) in candidates
-                                   when (equal desc desc1) return cmd)))
-                              (if (null cmd)
-                                  (user-error "Unknown key")
-                                (throw 'choice cmd)))))
-                        map)
-                      (current-local-map)))))
+                            (throw 'choice 'embark-cycle)))
+                         ((null embark-cycle-key)
+                          (lambda ()
+                            (interactive)
+                            (minibuffer-message
+                             (concat "Single target; can't cycle. "
+                                     "Press `%s' again to act.")
+                             (key-description cycle))
+                            (define-key map cycle #'embark-act))))))
+                    (when embark-keymap-prompter-key
+                      (define-key map embark-keymap-prompter-key
+                        (lambda ()
+                          (interactive)
+                          (let*
+                              ((desc
+                                (let ((overriding-terminal-local-map keymap))
+                                  (key-description
+                                   (read-key-sequence "Key:"))))
+                               (cmd
+                                (cl-loop
+                                 for (_s _n cmd _k desc1) in candidates
+                                 when (equal desc desc1) return cmd)))
+                            (if (null cmd)
+                                (user-error "Unknown key")
+                              (throw 'choice cmd))))))
+                    (use-local-map (make-composed-keymap map (current-local-map)))))
               (completing-read
                "Command: "
                (lambda (string predicate action)
@@ -1340,7 +1397,9 @@ the variable `embark-verbose-indicator-display-action'."
           (quit-window 'kill-buffer win))
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
-           (lookup-key keymap prefix)
+           ;; Lookup prefix keymap globally if not found in action keymap
+           (let ((overriding-terminal-local-map keymap))
+             (key-binding prefix 'accept-default))
          keymap)
        targets)
       (let ((display-buffer-alist
@@ -1419,7 +1478,7 @@ The selected command will be executed.  The set of key bindings can
 be restricted by passing a PREFIX key."
   (interactive)
   (let ((keymap (if prefix
-                    (key-binding prefix)
+                    (key-binding prefix 'accept-default)
                   (make-composed-keymap (current-active-maps t)))))
     (unless (keymapp keymap)
       (user-error "No key bindings found"))
@@ -1486,8 +1545,16 @@ queued most recently to the one queued least recently."
       ;; exiting a recursive edit, so set up the following timer as a backup.
       (setq timer (run-at-time 0 nil pch))))
 
-  (push (lambda () (apply fn args))
-        embark--run-after-command-functions))
+  ;; Keep the default-directory alive, since this is often overwritten,
+  ;; for example by Consult commands.
+  ;; TODO it might be necessary to add more dynamically bound variables
+  ;; here. What we actually want are functions `capture-dynamic-scope'
+  ;; and `eval-in-dynamic-scope', but this does not exist?
+  (let ((dir default-directory))
+    (push (lambda ()
+            (let ((default-directory dir))
+              (apply fn args)))
+          embark--run-after-command-functions)))
 
 (defun embark--quit-and-run (fn &rest args)
   "Quit the minibuffer and then call FN with ARGS.
@@ -1634,7 +1701,7 @@ work on them."
           target)))
 
 (defun embark--remove-package-version (_type target)
-  "Remove version number from a versioned package."
+  "Remove version number from a versioned package TARGET."
   (cons 'package (replace-regexp-in-string "-[0-9.]+$" "" target)))
 
 (defun embark--targets ()
@@ -1676,13 +1743,13 @@ plist concerns one target, and has keys `:type', `:target',
                       (let ((trans (funcall transform type target)))
                         (list :type (car trans) :target (cdr trans)))
                     (list :type type :target target)))))
-           (unless (and (equal (plist-get full-target :target)
-                               (plist-get (car targets) :target))
-                        (eq (plist-get full-target :type)
-                            (plist-get (car targets) :type)))
-             (push full-target targets))
+           (push full-target targets)
            (minibufferp)))))
-    (nreverse targets)))
+    (cl-delete-duplicates
+     (nreverse targets)
+     :test (lambda (t1 t2)
+             (and (equal (plist-get t1 :target) (plist-get t2 :target))
+                  (eq (plist-get t1 :type) (plist-get t2 :type)))))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
@@ -1919,22 +1986,22 @@ these notions differ is file completion, in which case the
 completion boundaries single out the path component containing
 point."
   (interactive "P")
-  (if (not (minibufferp))
-      (user-error "Not in a minibuffer")
-    (let* ((target (if full
-                       (minibuffer-contents)
-                     (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-                       (substring (minibuffer-contents) beg
-                                  (+ end (embark--minibuffer-point))))))
-           (keymap (embark--become-keymap))
-           (targets `((:type embark-become :target ,target)))
-           (indicators (mapcar #'funcall embark-indicators))
-           (become (unwind-protect
-                       (embark--prompt indicators keymap targets)
-                     (mapc #'funcall indicators))))
-      (unless become
-        (user-error "Canceled"))
-      (embark--become-command become target))))
+  (unless (minibufferp)
+    (user-error "Not in a minibuffer"))
+  (let* ((target (if full
+                     (minibuffer-contents)
+                   (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+                     (substring (minibuffer-contents) beg
+                                (+ end (embark--minibuffer-point))))))
+         (keymap (embark--become-keymap))
+         (targets `((:type embark-become :target ,target)))
+         (indicators (mapcar #'funcall embark-indicators))
+         (become (unwind-protect
+                     (embark--prompt indicators keymap targets)
+                   (mapc #'funcall indicators))))
+    (unless become
+      (user-error "Canceled"))
+    (embark--become-command become target)))
 
 (defun embark--become-command (command input)
   "Quit current minibuffer and start COMMAND with INPUT."
@@ -2021,6 +2088,10 @@ default initial view for types not mentioned separately."
     (bookmark . embark-export-bookmarks)
     (variable . embark-export-customize-variable)
     (face . embark-export-customize-face)
+    (symbol . embark-export-apropos)
+    (minor-mode . embark-export-apropos)
+    (function . embark-export-apropos)
+    (command . embark-export-apropos)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -2357,10 +2428,12 @@ determine the width."
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
-  (let ((candidates (if embark-collect-affixator
-                        (funcall embark-collect-affixator
-                                 embark-collect-candidates)
-                      embark-collect-candidates)))
+  (let ((candidates embark-collect-candidates))
+    (when-let ((affixator embark-collect-affixator)
+               (dir default-directory)) ; smuggle to the target window
+      (with-selected-window (or (embark--target-window) (selected-window))
+          (let ((default-directory dir)) ; for file annotator
+            (setq candidates (funcall affixator candidates)))))
     (setq tabulated-list-format
           (if embark-collect-affixator
               `[("Candidate" ,(embark-collect--max-width candidates) t)
@@ -2372,21 +2445,18 @@ determine the width."
     (setq tabulated-list-entries
           (mapcar
            (if embark-collect-affixator
-               (let ((dir default-directory)) ; smuggle to the target window
-                 (with-current-buffer (embark--target-buffer)
-                   (let ((default-directory dir)) ; for file annotator
-                     (pcase-lambda (`(,cand ,prefix ,annotation))
-                       (let* ((length (length annotation))
-                              (faces (text-property-not-all
-                                      0 length 'face nil annotation)))
-                         (when faces (add-face-text-property
-                                      0 length 'default t annotation))
-                         `(,cand
-                           [(,(propertize cand 'line-prefix prefix)
-                             type embark-collect-entry)
-                            (,annotation
-                             ,@(unless faces
-                                 '(face embark-collect-annotation)))]))))))
+               (pcase-lambda (`(,cand ,prefix ,annotation))
+                 (let* ((length (length annotation))
+                        (faces (text-property-not-all
+                                0 length 'face nil annotation)))
+                   (when faces (add-face-text-property
+                                0 length 'default t annotation))
+                   `(,cand
+                     [(,(propertize cand 'line-prefix prefix)
+                       type embark-collect-entry)
+                      (,annotation
+                       ,@(unless faces
+                           '(face embark-collect-annotation)))])))
              (lambda (cand)
                `(,cand [(,cand type embark-collect-entry)])))
            candidates))))
@@ -2763,10 +2833,24 @@ buffer for each type of completion."
                 (after embark-after-export-hook))
             (embark--quit-and-run
              (lambda ()
-               (let ((default-directory dir) ; dired needs this info
+               ;; TODO see embark--quit-and-run and embark--run-after-command,
+               ;; there the default-directory is also smuggled to the lambda.
+               ;; This should be fixed properly.
+               (let ((default-directory dir) ;; dired needs this info
                      (embark-after-export-hook after))
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
+
+(defmacro embark--export-rename (buffer title &rest body)
+  "Run BODY and rename BUFFER to Embark export buffer with TITLE."
+  (declare (indent 2))
+  (let ((saved (make-symbol "saved")))
+    `(let ((,saved (embark-rename-buffer
+                    ,buffer " *Embark Saved*" t)))
+       ,@body
+       (pop-to-buffer (embark-rename-buffer
+                       ,buffer ,(format "*Embark Export %s*" title) t))
+       (when ,saved (embark-rename-buffer ,saved ,buffer)))))
 
 (defun embark--export-customize (items title type pred)
   "Create a customization buffer listing ITEMS.
@@ -2778,6 +2862,19 @@ PRED is a predicate function used to filter the items."
             for sym = (intern-soft item)
             when (and sym (funcall pred sym)) collect `(,sym ,type))
    (format "*Embark Export %s*" title)))
+
+(autoload 'apropos-parse-pattern "apropos")
+(autoload 'apropos-symbols-internal "apropos")
+(defun embark-export-apropos (symbols)
+  "Create apropos buffer listing SYMBOLS."
+  (embark--export-rename "*Apropos*" "Apropos"
+    (apropos-parse-pattern "") ;; Initialize apropos pattern
+    (apropos-symbols-internal
+     (delq nil (mapcar #'intern-soft symbols))
+     (bound-and-true-p apropos-do-all))
+    (with-current-buffer "*Apropos*"
+      ;; Reverting the apropos buffer is not possible
+      (setq-local revert-buffer-function #'revert-buffer--default))))
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
@@ -2829,18 +2926,13 @@ PRED is a predicate function used to filter the items."
 
 (defun embark-export-bookmarks (bookmarks)
   "Create a `bookmark-bmenu-mode' buffer listing BOOKMARKS."
-  (let ((bookmark-alist
-         (cl-remove-if-not
-          (lambda (bmark)
-            (member (car bmark) bookmarks))
-          bookmark-alist))
-        (saved-buffer
-         (embark-rename-buffer "*Bookmark List*" "*Saved Bookmark List*" t)))
-    (bookmark-bmenu-list)
-    (pop-to-buffer
-     (embark-rename-buffer "*Bookmark List*" "*Embark Export Bookmarks*" t))
-    (when saved-buffer
-      (embark-rename-buffer saved-buffer "*Bookmark List*"))))
+  (embark--export-rename "*Bookmark List*" "Bookmarks"
+    (let ((bookmark-alist
+           (cl-remove-if-not
+            (lambda (bmark)
+              (member (car bmark) bookmarks))
+            bookmark-alist)))
+      (bookmark-bmenu-list))))
 
 ;;; Integration with external completion UIs
 
@@ -2987,6 +3079,12 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
+(defvar recentf-list)
+(defun embark-recentf-remove (file)
+  "Remove FILE from the list of recent files."
+  (interactive (list (completing-read "Remove recent file: " recentf-list nil t)))
+  (setq recentf-list (delete (expand-file-name file) recentf-list)))
+
 (defvar xref-backend-functions)
 
 (defun embark-find-definition (symbol)
@@ -3024,20 +3122,30 @@ Returns the new name actually used."
                     (append (mapcar #'car package-alist)
                             (mapcar #'car package-archive-contents)
                             (mapcar #'car package--builtins)))))
-                                                     
+
 (defun embark-browse-package-url (pkg)
   "Open homepage for package PKG with `browse-url'."
-  (interactive (list (embark--prompt-for-package))) 
+  (interactive (list (embark--prompt-for-package)))
   (if-let ((url (embark--package-url pkg)))
       (browse-url url)
     (user-error "No homepage found for `%s'" pkg)))
 
 (defun embark-save-package-url (pkg)
-  "Save URL of homepage for package PKG on the kill-ring."
+  "Save URL of homepage for package PKG on the `kill-ring'."
   (interactive (list (embark--prompt-for-package)))
   (if-let ((url (embark--package-url pkg)))
       (kill-new url)
     (user-error "No homepage found for `%s'" pkg)))
+
+(defun embark-save-variable-value (var)
+  "Save value of VAR in the `kill-ring'."
+  (interactive "SVariable: ")
+  (kill-new (string-trim (pp-to-string (symbol-value var)))))
+
+(defun embark-insert-variable-value (var)
+  "Insert value of VAR."
+  (interactive "SVariable: ")
+  (insert (string-trim (pp-to-string (symbol-value var)))))
 
 (defun embark-insert-relative-path (file)
   "Insert relative path to FILE.
@@ -3128,6 +3236,35 @@ The search respects symbol boundaries."
     (unless (re-search-backward regexp nil t)
       (user-error "Symbol `%s' not found" symbol))))
 
+(defun embark-compose-mail (address)
+  "Compose email to ADDRESS."
+  ;; The only reason we cannot use compose-mail directly is its
+  ;; interactive specification, which just supllies nil for the
+  ;; address (and several other arguments).
+  (interactive "sTo: ")
+  (compose-mail address))
+
+(autoload 'pp-display-expression "pp")
+(defun embark-pp-eval-defun (edebug)
+  "Run `eval-defun' and pretty print the result.
+With a prefix argument EDEBUG, instrument the code for debugging."
+  (interactive "P")
+  (cl-letf (((symbol-function #'eval-expression-print-format)
+             (lambda (result)
+               (pp-display-expression result "*Pp Eval Output*"))))
+    (eval-defun edebug)))
+
+(defun embark-eval-replace ()
+  "Evaluate region and replace with evaluated result."
+  (interactive)
+  (let ((beg (region-beginning))
+        (end (region-end)))
+    (save-excursion
+      (goto-char end)
+      (insert (prin1-to-string
+               (eval (read (buffer-substring beg end)) lexical-binding)))
+      (delete-region beg end))))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3175,6 +3312,11 @@ and leaves the point to the left of it."
 (defun embark--ignore-target (&rest _)
   "Ignore the target."
   (ignore (read-from-minibuffer "")))
+
+(autoload 'xref--push-markers "xref")
+(defun embark--xref-push-markers (&rest _)
+  "Push the xref markers to leave a location trail."
+  (xref--push-markers))
 
 ;;; keymaps
 
@@ -3236,6 +3378,7 @@ and leaves the point to the left of it."
   ("c" capitalize-region)
   ("|" shell-command-on-region)
   ("e" eval-region)
+  ("<" embark-eval-replace)
   ("a" align)
   ("A" align-regexp)
   ("i" indent-rigidly)
@@ -3271,10 +3414,12 @@ and leaves the point to the left of it."
   ("j" embark-dired-jump)
   ("!" shell-command)
   ("&" async-shell-command)
+  ("<" insert-file)
   ("m" chmod)
   ("=" ediff-files)
   ("e" embark-eshell)
   ("+" make-directory)
+  ("-" embark-recentf-remove)
   ("I" embark-insert-relative-path)
   ("W" embark-save-relative-path)
   ("l" load-file)
@@ -3287,6 +3432,11 @@ and leaves the point to the left of it."
   ("b" browse-url)
   ("e" eww))
 
+(embark-define-keymap embark-email-map
+  "Keymap for Embark email actions."
+  ("RET" embark-compose-mail)
+  ("c" embark-compose-mail))
+
 (embark-define-keymap embark-library-map
   "Keymap for operations on Emacs Lisp libraries."
   ("RET" find-library)
@@ -3294,20 +3444,20 @@ and leaves the point to the left of it."
   ("f" find-library)
   ("h" finder-commentary)
   ("a" apropos-library)
-  ("w" locate-library))
+  ("L" locate-library))
 
 (embark-define-keymap embark-buffer-map
   "Keymap for Embark buffer actions."
   ("RET" switch-to-buffer)
   ("k" kill-buffer)
-  ("I" insert-buffer)
   ("b" switch-to-buffer)
   ("o" switch-to-buffer-other-window)
   ("z" embark-bury-buffer)
   ("q" embark-kill-buffer-and-window)
   ("r" embark-rename-buffer)
   ("=" ediff-buffers)
-  ("|" embark-shell-command-on-buffer))
+  ("|" embark-shell-command-on-buffer)
+  ("<" insert-buffer))
 
 (embark-define-keymap embark-identifier-map
   "Keymap for Embark identifier actions."
@@ -3325,6 +3475,7 @@ and leaves the point to the left of it."
   "Keymap for Embark expression actions."
   ("RET" pp-eval-expression)
   ("e" pp-eval-expression)
+  ("<" embark-eval-replace)
   ("m" pp-macroexpand-expression)
   ("TAB" indent-region)
   ("r" raise-sexp)
@@ -3337,8 +3488,8 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
   :parent embark-expression-map
-  ("RET" eval-defun)
-  ("e" eval-defun)
+  ("RET" embark-pp-eval-defun)
+  ("e" embark-pp-eval-defun)
   ("c" compile-defun)
   ("l" elint-defun)
   ("D" edebug-defun)
@@ -3376,7 +3527,9 @@ and leaves the point to the left of it."
   :parent embark-symbol-map
   ("=" set-variable)
   ("c" customize-set-variable)
-  ("u" customize-variable))
+  ("u" customize-variable)
+  ("v" embark-save-variable-value)
+  ("<" embark-insert-variable-value))
 
 (declare-function untrace-function "trace")
 
@@ -3414,8 +3567,7 @@ and leaves the point to the left of it."
   ("r" bookmark-rename)
   ("R" bookmark-relocate)
   ("l" bookmark-locate)
-  ("i" bookmark-insert)
-  ("I" embark-insert)
+  ("<" bookmark-insert)
   ("j" bookmark-jump)
   ("o" bookmark-jump-other-window)
   ("f" bookmark-jump-other-frame))

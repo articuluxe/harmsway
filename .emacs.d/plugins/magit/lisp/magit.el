@@ -19,8 +19,8 @@
 
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
-;; Package-Requires: ((emacs "25.1") (dash "2.18.1") (git-commit "3.2.1") (magit-section "3.2.1") (transient "0.3.6") (with-editor "3.0.4"))
-;; Package-Version: 3.2.1
+;; Package-Requires: ((emacs "25.1") (dash "2.19.1") (git-commit "3.3.0") (magit-section "3.3.0") (transient "0.3.6") (with-editor "3.0.5"))
+;; Package-Version: 3.3.0
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; Magit is free software; you can redistribute it and/or modify it
@@ -366,7 +366,7 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
    ("g" "       refresh current buffer"   magit-refresh)
    ("<tab>" "   toggle section at point"  magit-section-toggle)
    ("<return>" "visit thing at point"     magit-visit-thing)
-   ("C-h m" "   show all key bindings"    describe-mode)])
+   ("C-x m" "   show all key bindings"    describe-mode)])
 
 ;;; Git Popup
 
@@ -498,7 +498,7 @@ and Emacs to it."
     (unless (and toplib
                  (member (file-name-nondirectory toplib)
                          '("magit.el" "magit.el.gz")))
-      (let ((load-suffixes '(".el")))
+      (let ((load-suffixes (reverse load-suffixes))) ; prefer .el than .elc
         (setq toplib (locate-library "magit"))))
     (setq toplib (and toplib (magit--straight-chase-links toplib)))
     (push toplib debug)

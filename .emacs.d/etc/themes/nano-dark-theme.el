@@ -4,7 +4,7 @@
 
 ;; Maintainer: Nicolas P. Rougier <Nicolas.Rougier@inria.fr>
 ;; URL: https://github.com/rougier/nano-theme
-;; Version: 0.2
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: theme, dark, light
 
@@ -38,7 +38,6 @@
 
 (deftheme nano-dark
   "N Λ N O dark theme")
-
 
 (set-foreground-color nano-dark-foreground)
 (set-background-color nano-dark-background)

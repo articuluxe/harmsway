@@ -84,22 +84,22 @@
   '("N" "Forge" forge-dispatch))
 
 (transient-append-suffix 'magit-fetch "m"
-  '("y" "forge topics" forge-pull))
-(transient-append-suffix 'magit-fetch "y"
-  '("Y" "forge notifications" forge-pull-notifications))
+  '("n" "forge topics" forge-pull))
+(transient-append-suffix 'magit-fetch "n"
+  '("N" "forge notifications" forge-pull-notifications))
 
 (transient-append-suffix 'magit-pull "m"
-  '("y" "forge topics" forge-pull))
-(transient-append-suffix 'magit-pull "y"
-  '("Y" "forge notifications" forge-pull-notifications))
+  '("n" "forge topics" forge-pull))
+(transient-append-suffix 'magit-pull "n"
+  '("N" "forge notifications" forge-pull-notifications))
 
 (transient-append-suffix 'magit-branch "w"
-  '("y" "pull-request" forge-checkout-pullreq))
+  '("f" "pull-request" forge-checkout-pullreq))
 (transient-append-suffix 'magit-branch "W"
-  '("Y" "from pull-request" forge-branch-pullreq))
+  '("F" "from pull-request" forge-branch-pullreq))
 
 (transient-append-suffix 'magit-worktree "c"
-  '("y" "pull-request worktree" forge-checkout-worktree))
+  '("n" "pull-request worktree" forge-checkout-worktree))
 
 (transient-append-suffix 'magit-status-jump "w"
   '("Np" "pull-requests" forge-jump-to-pullreqs))
@@ -107,7 +107,7 @@
   '("Ni" "issues" forge-jump-to-issues))
 
 (transient-append-suffix 'magit-merge "a"
-  '(7 "f" "Merge using API" forge-merge))
+  '(7 "M" "Merge using API" forge-merge))
 
 ;;; Startup Asserts
 

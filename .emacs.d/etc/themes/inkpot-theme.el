@@ -1,10 +1,10 @@
-;;; inkpot-theme.el --- port of vim's inkpot theme -*- lexical-binding: t -*-
+;;; inkpot-theme.el --- A port of vim's inkpot theme -*- lexical-binding: t -*-
 
 ;; Author: Sarah Iovan <sarah@hwaetageek.com>
 ;;         Campbell Barton <ideasman42@gmail.com>
 ;; URL: https://gitlab.com/ideasman42/emacs-inkpot-theme
 ;; Version: 0.1
-;; Keywords: color, theme
+;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@
 
       (ip-brown-bright          "#f0ad6d") ;; fg:Number
       (ip-brown-light           "#ffcd8b") ;; fg:Constant fg:String
-      ;; (ip-brown-light+30.9   "#ffffcd") ;; fg:DiffText fg:DiffChange fg:DiffDelete fg:DiffAdd
+      (ip-brown-light+30.9      "#ffffcd") ;; fg:DiffText fg:DiffChange fg:DiffDelete fg:DiffAdd
 
       (ip-cream-light           "#cfbfad") ;; fg:Normal fg:MBENormal fg:MatchParen
 
@@ -214,6 +214,17 @@
    `(diff-refine-added ((t (:background ,ip-green-mid))))
    `(diff-refine-removed ((t (:background ,ip-red-dark+0.2))))
 
+   ;; Headers:
+   ;; These are displayed grouped.
+   `(diff-header ((t (:foreground ,ip-brown-light+30.9 :background ,ip-grey+18))))
+   ;; Use the same colors, too many tones here makes diff headers overly busy.
+   `(diff-index ((t (:foreground ,ip-brown-light+30.9 :background ,ip-grey+25))))
+   `(diff-file-header ((t (:foreground ,ip-brown-light+30.9 :background ,ip-grey+25))))
+   ;; These are displayed side-by-side, a rare exception where a black
+   ;; background is useful to visually separate content.
+   `(diff-hunk-header ((t (:foreground ,ip-cyan-mid :background ,ip-black))))
+   `(diff-function ((t (:foreground ,ip-yellow-bright :background ,ip-black))))
+
    ;; ediff-mode
    `(ediff-current-diff-A ((t (:foreground ,ip-cream-light :background ,ip-red-mid))))
    `(ediff-current-diff-Ancestor ((t (:foreground ,ip-cream-light :background ,ip-red-mid))))
@@ -360,6 +371,12 @@
    `(lsp-face-highlight-read ((t (:background ,ip-slate-dark+7.9))))
    `(lsp-face-highlight-write ((t (:background ,ip-slate-dark+7.9))))
    `(lsp-face-highlight-textual ((t (:background ,ip-slate-dark+7.9))))
+   ;; Arbitrary, could be a little lighter?
+   `(lsp-face-semhl-comment ((t (:foreground ,ip-grey+25))))
+
+   ;; magit-commit-mark (melpa).
+   `(magit-commit-mark-read-face ((t (:foreground ,ip-slate-light))))
+   `(magit-commit-mark-unread-face ((t (:foreground ,ip-green-bright))))
 
    ;; auto-complete (melpa).
    `(ac-candidate-face ((t (:foreground ,ip-white :background ,ip-slate-mid))))

@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 0.8
+;; Version: 0.9
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
@@ -45,11 +45,10 @@
 (defcustom marginalia-truncate-width 80
   "Maximum truncation width of annotation fields.
 
-This value is adjusted in the `minibuffer-setup-hook' depending
-on the `window-width'."
+This value is adjusted depending on the `window-width'."
   :type 'integer)
 
-(defcustom marginalia-separator-threshold 120
+(defcustom marginalia-separator-threshold 160
   "Use wider separator for window widths larger than this value."
   :type 'integer)
 
@@ -146,10 +145,12 @@ determine it."
   :type '(alist :key-type symbol :value-type symbol))
 
 (defcustom marginalia-bookmark-type-transformers
-  `(("\\`bookmark-\\(.*?\\)-handler\\'" . "\\1")
-    ("default" . "File")
-    ("\\`\\(.*?\\)-+bookmark-jump\\(?:-handler\\)?\\'" . "\\1")
-    (".*" . ,#'capitalize))
+  (let ((words (regexp-opt '("handle" "handler" "jump" "bookmark"))))
+    `((,(format "-+%s-+" words) . "-")
+      (,(format "\\`%s-+" words) . "")
+      (,(format "-%s\\'" words) . "")
+      ("\\`default\\'" . "File")
+      (".*" . ,#'capitalize)))
   "List of bookmark type transformers."
   :type '(alist :key-type regexp :value-type (choice string function)))
 
@@ -325,10 +326,10 @@ for performance profiling of the annotators.")
 (defvar marginalia--separator "    "
   "Field separator.")
 
-(defvar marginalia--margin nil
+(defvar marginalia--margin 0
   "Right margin.")
 
-(defvar-local marginalia--this-command nil
+(defvar-local marginalia--command nil
   "Last command symbol saved in order to allow annotations.")
 
 (defvar-local marginalia--base-position 0
@@ -348,13 +349,11 @@ for performance profiling of the annotators.")
 (defun marginalia--align (str)
   "Align STR at the right margin."
   (unless (string-blank-p str)
-    (when marginalia--margin
-      (setq str (concat str marginalia--margin)))
     (concat " "
             (propertize
              " "
              'display
-             `(space :align-to (- right ,marginalia-align-offset ,(string-width str))))
+             `(space :align-to (- right ,marginalia--margin ,(string-width str))))
             str)))
 
 (cl-defmacro marginalia--field (field &key truncate format face width)
@@ -446,10 +445,9 @@ s side-effect-free
 - obsolete
 
 Variable:
-u custom
+u custom (U modified compared to global value)
 v variable
-l local
-* modified
+l local (L modified compared to default value)
 - obsolete
 
 Other:
@@ -472,9 +470,18 @@ t cl-type"
        (and (get s 'byte-obsolete-info) "-")))
     (when (boundp s)
       (concat
-       (and (local-variable-if-set-p s) "l")
-       (if (custom-variable-p s) "u" "v")
-       (and (ignore-errors (not (equal (symbol-value s) (default-value s)))) "*")
+       (when (local-variable-if-set-p s)
+         (if (ignore-errors
+               (not (equal (symbol-value s)
+                           (default-value s))))
+             "L" "l"))
+       (if (custom-variable-p s)
+           (if (ignore-errors
+                 (not (equal
+                       (symbol-value s)
+                       (eval (car (get s 'standard-value))))))
+               "U" "u")
+         "v")
        (and (get s 'byte-obsolete-variable) "-")))
     (and (facep s) "a")
     (and (fboundp 'cl-find-class) (cl-find-class s) "t"))))
@@ -553,7 +560,7 @@ keybinding since CAND includes it."
   "Return the variable value of SYM as string."
   (cond
    ((not (boundp sym))
-    (propertize "<unbound>" 'face 'marginalia-null))
+    (propertize "#<unbound>" 'face 'marginalia-null))
    ((and marginalia-censor-variables
          (let ((name (symbol-name sym)))
            (seq-find (lambda (r)
@@ -566,13 +573,19 @@ keybinding since CAND includes it."
         (pcase (symbol-value sym)
           ('nil (propertize "nil" 'face 'marginalia-null))
           ('t (propertize "t" 'face 'marginalia-true))
-          ((pred keymapp) (propertize "<keymap>" 'face 'marginalia-value))
-          ((pred hash-table-p) (propertize "<hash-table>" 'face 'marginalia-value))
+          ((pred keymapp) (propertize "#<keymap>" 'face 'marginalia-value))
+          ((pred hash-table-p) (propertize "#<hash-table>" 'face 'marginalia-value))
+          ((pred syntax-table-p) (propertize "#<syntax-table>" 'face 'marginalia-value))
+          ;; Emacs BUG: abbrev-table-p throws an error
+          ((guard (ignore-errors (abbrev-table-p val))) (propertize "#<abbrev-table>" 'face 'marginalia-value))
+          ((pred char-table-p) (propertize "#<char-table>" 'face 'marginalia-value))
+          ((pred byte-code-function-p) (propertize "#<byte-code-function>" 'face 'marginalia-function))
           ((and (pred functionp) (pred symbolp))
            ;; NOTE: We are not consistent here, values are generally printed unquoted. But we
            ;; make an exception for function symbols to visually distinguish them from symbols.
            ;; I am not entirely happy with this, but we should not add quotation to every type.
            (propertize (format "#'%s" val) 'face 'marginalia-function))
+          ((pred recordp) (propertize (format "#<record %s>" (type-of val)) 'face 'marginalia-value))
           ((pred symbolp) (propertize (symbol-name val) 'face 'marginalia-symbol))
           ((pred numberp) (propertize (number-to-string val) 'face 'marginalia-number))
           (_ (let ((print-escape-newlines t)
@@ -882,8 +895,9 @@ These annotations are skipped for remote paths."
   "Format TIME as an absolute age."
   (let ((system-time-locale "C"))
     (format-time-string
-     (if (> (decoded-time-year (decode-time (current-time)))
-            (decoded-time-year (decode-time time)))
+     ;; decoded-time-year is only available on Emacs 27, use nth 5 here.
+     (if (> (nth 5 (decode-time (current-time)))
+            (nth 5 (decode-time time)))
          " %Y %b %d"
        "%b %d %H:%M")
      time)))
@@ -912,14 +926,17 @@ These annotations are skipped for remote paths."
 
 (defun marginalia-classify-by-command-name ()
   "Lookup category for current command."
-  (and marginalia--this-command
-       (alist-get marginalia--this-command marginalia-command-categories)))
+  (and marginalia--command
+       (alist-get marginalia--command marginalia-command-categories)))
 
 (defun marginalia-classify-original-category ()
   "Return original category reported by completion metadata."
   ;; NOTE: Use `alist-get' instead of `completion-metadata-get' to bypass our
   ;; `marginalia--completion-metadata-get' advice!
-  (alist-get 'category marginalia--metadata))
+  (when-let (cat (alist-get 'category marginalia--metadata))
+    ;; Ignore Emacs 28 symbol-help category in order to ensure that the
+    ;; categories are refined to our categories function and variable.
+    (and (not (eq cat 'symbol-help)) cat)))
 
 (defun marginalia-classify-symbol ()
   "Determine if currently completing symbols."
@@ -962,10 +979,12 @@ looking for a regexp that matches the prompt."
        (with-selected-window (or (minibuffer-selected-window) (selected-window))
          (let ((marginalia--cache ,c) ;; Take the cache from the minibuffer
                (marginalia-truncate-width (min (/ ,w 2) marginalia-truncate-width))
-               (marginalia-align-offset (or marginalia-align-offset ,o))
                (marginalia--separator (if (>= ,w marginalia-separator-threshold) "    " " "))
-               (marginalia--margin (when (>= ,w (+ marginalia-margin-min marginalia-margin-threshold))
-                                     (make-string (- ,w marginalia-margin-threshold) 32))))
+               (marginalia--margin
+                (+ (or marginalia-align-offset ,o)
+                   (if (>= ,w (+ marginalia-margin-min marginalia-margin-threshold))
+                       (- ,w marginalia-margin-threshold)
+                     0))))
            ,@body)))))
 
 (defun marginalia--cache-reset ()
@@ -1021,9 +1040,11 @@ PROP is the property which is looked up."
        (run-hook-with-args-until-success 'marginalia-classifiers)))))
 
 (defun marginalia--minibuffer-setup ()
-  "Setup minibuffer for `marginalia-mode'.
+  "Setup the minibuffer for Marginalia.
 Remember `this-command' for `marginalia-classify-by-command-name'."
-  (setq marginalia--cache t marginalia--this-command this-command)
+  (setq marginalia--cache t marginalia--command this-command)
+  ;; Reset cache if window size changes, recompute alignment
+  (add-hook 'window-state-change-hook #'marginalia--cache-reset nil 'local)
   (marginalia--cache-reset))
 
 (defun marginalia--base-position (completions)
@@ -1040,7 +1061,7 @@ Remember `this-command' for `marginalia-classify-by-command-name'."
 ;;;###autoload
 (define-minor-mode marginalia-mode
   "Annotate completion candidates with richer information."
-  :global t
+  :global t :group 'marginalia
   (if marginalia-mode
       (progn
         ;; Ensure that we remember this-command in order to select the annotation function.

@@ -429,8 +429,9 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
                'local-map mode-line-buffer-identification-keymap)))
 
 (doom-modeline-def-segment buffer-default-directory
-  "Displays `default-directory' with the icon and state . This is for special buffers
-like the scratch buffer where knowing the current project directory is important."
+  "Displays `default-directory' with the icon and state . This is for special
+buffers like the scratch buffer where knowing the current project directory is
+important."
   (let ((face (cond ((buffer-modified-p)
                      'doom-modeline-buffer-modified)
                     ((doom-modeline--active) 'doom-modeline-buffer-path)
@@ -1139,7 +1140,8 @@ lines are selected, or the NxM dimensions of a block selection."
                         (format "%dL" lines))
                        ((> lines 1)
                         (format "%dC %dL" (- end beg) lines))
-                       ((format "%dC" (- end beg))))
+                       (t
+                        (format "%dC" (- end beg))))
                  (when doom-modeline-enable-word-count
                    (format " %dW" (count-words beg end)))
                  (doom-modeline-spc)))
@@ -1331,10 +1333,10 @@ mouse-1: Display Line and Column Mode Menu"
 
 (doom-modeline-def-segment matches
   "Displays: 1. the currently recording macro, 2. A current/total for the
-current search term (with `anzu'), 3. The number of substitutions being conducted
-with `evil-ex-substitute', and/or 4. The number of active `iedit' regions,
-5. The current/total for the highlight term (with `symbol-overlay'), 6. The number
-of active `multiple-cursors'."
+current search term (with `anzu'), 3. The number of substitutions being
+conducted with `evil-ex-substitute', and/or 4. The number of active `iedit'
+regions, 5. The current/total for the highlight term (with `symbol-overlay'),
+6. The number of active `multiple-cursors'."
   (let ((meta (concat (doom-modeline--macro-recording)
                       (doom-modeline--anzu)
                       (doom-modeline--phi-search)
@@ -2082,13 +2084,44 @@ mouse-1: Start server"))
                                    map)))))
 (add-hook 'eglot--managed-mode-hook #'doom-modeline-update-eglot)
 
-(defvar-local doom-modeline--tags
-  (propertize
-   (doom-modeline-lsp-icon "LSP" 'doom-modeline-lsp-success)
-   'help-echo "TAGS: Citre mode
+(defvar-local doom-modeline--tags nil)
+(defun doom-modeline-update-tags ()
+  "Update tags state."
+  (setq doom-modeline--tags
+        (propertize
+         (doom-modeline-lsp-icon "LSP" 'doom-modeline-lsp-success)
+         'help-echo "TAGS: Citre mode
 mouse-1: Toggle citre mode"
-   'mouse-face 'mode-line-highlight
-   'local-map (make-mode-line-mouse-map 'mouse-1 #'citre-mode)))
+         'mouse-face 'mode-line-highlight
+         'local-map (make-mode-line-mouse-map 'mouse-1 #'citre-mode))))
+(add-hook 'citre-mode-hook #'doom-modeline-update-tags)
+
+(defun doom-modeline-update-lsp-icon ()
+  "Update lsp icon."
+  (cond ((bound-and-true-p lsp-mode)
+         (doom-modeline-update-lsp))
+        ((bound-and-true-p eglot--managed-mode)
+         (doom-modeline-update-eglot))
+        ((bound-and-true-p citre-mode)
+         (doom-modeline-update-tags))))
+
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-icon
+ (lambda (_sym val op _where)
+   (when (eq op 'set)
+     (setq doom-modeline-icon val)
+     (dolist (buf (buffer-list))
+       (with-current-buffer buf
+         (doom-modeline-update-lsp-icon))))))
+
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-unicode-fallback
+ (lambda (_sym val op _where)
+   (when (eq op 'set)
+     (setq doom-modeline-unicode-fallback val)
+     (dolist (buf (buffer-list))
+       (with-current-buffer buf
+         (doom-modeline-update-lsp-icon))))))
 
 (doom-modeline-def-segment lsp
   "The LSP server state."

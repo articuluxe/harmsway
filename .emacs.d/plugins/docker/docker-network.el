@@ -79,20 +79,64 @@ displayed values in the column."
                        (sexp :tag "Sort function")
                        (sexp :tag "Format function"))))
 
-(defun docker-network-entries ()
+(defun docker-network-entries (&optional args)
   "Return the docker networks data for `tabulated-list-entries'."
   (let* ((fmt (docker-utils-make-format-string docker-network-id-template docker-network-columns))
-         (data (docker-run-docker "network ls" (docker-network-ls-arguments) (format "--format=\"%s\"" fmt)))
+         (data (docker-run-docker "network ls" args (format "--format=\"%s\"" fmt)))
          (lines (s-split "\n" data t)))
     (-map (-partial #'docker-utils-parse docker-network-columns) lines)))
 
+(defun docker-network-entries-propertized (&optional args)
+  "Return the docker networks data for `tabulated-list-entries'."
+  (let ((all (docker-network-entries args))
+        (dangling (docker-network-entries "--filter dangling=true")))
+    (--map-when (-contains? dangling it) (docker-network-entry-set-dangling it) all)))
+
+(defun docker-network-dangling-p (entry-id)
+  "Predicate for if ENTRY-ID is dangling.
+
+For example (docker-network-dangling-p (tabulated-list-get-id)) is t when the entry under point is dangling."
+  (get-text-property 0 'docker-network-dangling entry-id))
+
+(defun docker-network-entry-set-dangling (parsed-entry)
+  "Mark PARSED-ENTRY (output of `docker-network-entries') as dangling.
+
+The result is the tabulated list id for an entry is propertized with
+'docker-network-dangling and the entry is fontified with 'docker-face-dangling."
+  (list (propertize (car parsed-entry) 'docker-network-dangling t)
+        (apply #'vector (--map (propertize it 'font-lock-face 'docker-face-dangling) (cadr parsed-entry)))))
+
+(defun docker-network-description-with-stats ()
+  "Return the networks stats string."
+  (let* ((inhibit-message t)
+         (entries (docker-network-entries-propertized))
+         (dangling (-filter (-compose #'docker-network-dangling-p 'car) entries)))
+    (format "Networks (%s total, %s dangling)"
+            (length entries)
+            (propertize (number-to-string (length dangling)) 'face 'docker-face-dangling))))
+
 (defun docker-network-refresh ()
   "Refresh the networks list."
-  (setq tabulated-list-entries (docker-network-entries)))
+  (setq tabulated-list-entries (docker-network-entries-propertized (docker-network-ls-arguments))))
 
 (defun docker-network-read-name ()
   "Read a network name."
   (completing-read "Network: " (-map #'car (docker-network-entries))))
+
+(defun docker-network-mark-dangling ()
+  "Mark only the dangling networks listed in *docker-networks*.
+
+This clears any user marks first and respects any tablist filters
+applied to the buffer."
+  (interactive)
+  (switch-to-buffer "*docker-networks*")
+  (tablist-unmark-all-marks)
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (eobp))
+      (when (docker-network-dangling-p (tabulated-list-get-id))
+        (tablist-put-mark))
+      (forward-line))))
 
 (defun docker-network-ls-arguments ()
   "Return the latest used arguments in the `docker-network-ls' transient."
@@ -102,6 +146,7 @@ displayed values in the column."
   "Transient for listing networks."
   :man-page "docker-network-ls"
   ["Arguments"
+   ("d" "Dangling" "--filter dangling=true")
    ("f" "Filter" "--filter " read-string)
    ("n" "Don't truncate" "--no-trunc")]
   ["Actions"
@@ -116,16 +161,18 @@ displayed values in the column."
 (transient-define-prefix docker-network-help ()
   "Help transient for docker networks."
   ["Docker networks help"
-   ("D" "Remove"     docker-network-rm)
-   ("I" "Inspect"    docker-utils-inspect)
-   ("l" "List"       docker-network-ls)])
+   ("D" "Remove"        docker-network-rm)
+   ("I" "Inspect"       docker-utils-inspect)
+   ("d" "Mark Dangling" docker-network-mark-dangling)
+   ("l" "List"          docker-network-ls)])
 
 (defvar docker-network-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "?" 'docker-network-help)
     (define-key map "D" 'docker-network-rm)
-    (define-key map "l" 'docker-network-ls)
     (define-key map "I" 'docker-utils-inspect)
+    (define-key map "d" 'docker-network-mark-dangling)
+    (define-key map "l" 'docker-network-ls)
     map)
   "Keymap for `docker-network-mode'.")
 

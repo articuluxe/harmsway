@@ -1,4 +1,4 @@
-;;; brutal-theme.el --- Brutalist theme -*- lexical-binding: t; -*-
+;;; brutal-dark-theme.el --- Brutalist theme -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021, Topi Kettunen <topi@kettunen.io>
 
@@ -26,21 +26,24 @@
 
 ;; Brutalist theme for Emacs for all your minimalistic needs.
 
-(deftheme brutal)
+;;; Code:
+
+(deftheme brutal-dark)
 
 (let ((class '((class color) (min-colors 89)))
-       (fg1 "#444444")
-       (fg2 "#535353")
-       (fg3 "#626262")
-       (fg4 "#717171")
-       (bg1 "#ffffef")
-       (bg2 "#ebebdc")
-       (bg3 "#d6d6c9")
-       (comment "#969696"))
+      (fg1 "#dbdbdb")
+      (fg2 "#c9c9c9")
+      (fg3 "#b8b8b8")
+      (fg4 "#a6a6a6")
+      (bg1 "#101010")
+      (bg2 "#272b30")
+      (bg3 "#3a3e42")
+      (hl "#171717")
+      (comment "#969696"))
   
   (custom-theme-set-faces
    
-   'brutal
+   'brutal-dark
 
    ;; Crucial faces
    ;;
@@ -49,11 +52,11 @@
    
    `(default ((,class (:background ,bg1 :foreground ,fg1))))
    `(highlight ((,class (:foreground ,fg3 :background ,bg3))))
-   `(hl-line ((,class (:background  ,bg2))))
+   `(hl-line ((,class (:background  ,hl))))
    `(fringe ((,class (:background ,bg2 :foreground ,fg4))))
    `(cursor ((,class (:background ,fg1))))
-   `(isearch ((,class (:bold t :foreground ,bg1 :background ,fg1))))
-   `(mode-line ((,class (:bold t :foreground ,bg1 :background ,fg1))))
+   `(isearch ((,class (:foreground ,bg1 :background ,fg1))))
+   `(mode-line ((,class (:foreground ,bg1 :background ,fg1))))
    `(mode-line-inactive ((,class (:foreground ,fg4 :background ,bg2 :weight normal))))
    `(font-lock-comment-face ((,class (:foreground ,comment))))
    `(org-link ((,class (:underline '(:color ,fg1)))))
@@ -270,15 +273,16 @@
    `(jde-java-font-lock-number-face ((t nil)))
    
    '(terraform--resource-name-face ((t nil)))
-   '(terraform--resource-type-face ((t nil)))))
+   '(terraform--resource-type-face ((t nil)))
 
-(provide-theme 'brutal)
+   '(tuareg-font-lock-governing-face ((t nil)))
+   '(tuareg-font-lock-multistage-face ((t nil)))
+   '(tuareg-font-lock-operator-face ((t nil)))
+   '(tuareg-font-lock-error-face ((t nil)))
+   '(tuareg-font-lock-interactive-output-face ((t nil)))
+   '(tuareg-font-lock-interactive-error-face ((t nil)))))
 
-;;;###autoload
-(when load-file-name
-  (add-to-list 'custom-theme-load-path
-               (file-name-as-directory (file-name-directory load-file-name))))
-
-(provide 'brutal-theme)
+(provide-theme 'brutal-dark)
+(provide 'brutal-dark-theme)
 
 ;;; brutal-theme.el ends here

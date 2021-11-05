@@ -3,7 +3,7 @@
 ;; Copyright (C) 2014-2021 taku0, Chris Barrett, Bozhidar Batsov,
 ;;                         Arthur Evstifeev, Michael Sanders
 
-;; Authors: taku0 (http://github.com/taku0)
+;; Author: taku0 (http://github.com/taku0)
 ;;       Chris Barrett <chris.d.barrett@me.com>
 ;;       Bozhidar Batsov <bozhidar@batsov.com>
 ;;       Arthur Evstifeev <lod@pisem.net>
@@ -210,9 +210,10 @@ This function does not search beyond LIMIT."
   (goto-char pos)
   (forward-comment (- (point)))
   (skip-syntax-backward "w_")
-  (and (< (point) limit)
-       (looking-at
-        "\\<\\(func\\|enum\\|struct\\|class\\|protocol\\|extension\\|actor\\)\\>")))
+  (and
+   (< (point) limit)
+   (looking-at
+    "\\<\\(func\\|enum\\|struct\\|class\\|protocol\\|extension\\|actor\\)\\>")))
 
 (defun swift-mode:property-access-pos-p (pos limit)
   "Return t if POS is just before the property name of a member expression.
@@ -652,15 +653,15 @@ Excludes true, false, and keywords begin with a number sign.")
      .
      'swift-mode:builtin-precedence-group-face)
 
-    ;; Method/function calls
-    ("\\<\\(\\(\\sw\\|\\s_\\)+\\)\\>\\??\\s-*("
-     1
-     'swift-mode:function-call-face)
-
     ;; Function and type declarations
     (swift-mode:font-lock-match-declared-function-names
      .
      'swift-mode:function-name-face)
+
+    ;; Method/function calls
+    ("\\<\\(\\(\\sw\\|\\s_\\)+\\)\\>\\??\\s-*("
+     1
+     'swift-mode:function-call-face)
 
     ;; Property accesses
     (swift-mode:font-lock-match-property-access

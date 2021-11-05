@@ -270,7 +270,11 @@ NAME and VARIANT should be symbols."
        ;; mode-line of the inactive buffer (e.g. in case of split window)
        `(mode-line-inactive  ((,class (:background ,modeline-inactive-bg :foreground ,modeline-inactive-fg))))
        `(mode-line-buffer-id ((,class (:weight bold))))
-
+       ;;
+       ;; buffer menu buffer (C-x C-b)
+       ;;
+       ;; face for buffer names in the buffer menu
+       `(buffer-menu-buffer ((,class (:foreground ,sec))))
        ;;
        ;; powerline
        ;;
@@ -565,11 +569,14 @@ NAME and VARIANT should be symbols."
        ;;
        ;; diff-mode
        ;;
+       ;; face inherited by hunk and index header faces
+       `(diff-header ((,class (:foreground ,fg1))))
        ;; used to highlight file header lines in diffs
        `(diff-file-header ((,class (:foreground ,prim :weight bold))))
-       `(diff-header ((,class (:foreground ,discrete))))
+       ;; face of context (text surrounding a hunk)
+       `(diff-context ((,class (:foreground ,discrete))))
        ;; used to highlight function names produced by `diff -p`
-       `(diff-function ((,class (:foreground ,discrete))))
+       `(diff-function ((,class (:foreground ,fg1))))
        ;; used to highlight added lines
        `(diff-added ((,class (:background ,(immaterial-color "diff-added") :extend t))))
        ;; face used for added characters shown by ‘diff-refine-hunk’.
@@ -731,6 +738,13 @@ NAME and VARIANT should be symbols."
        ;; face used to highlight broken symblinks
        `(dired-broken-symlink ((,class (:foreground ,fg1 :background ,diff-removed-refined))))
        `(dired-warning ((,class (:foreground ,warning :background ,bg-on))))
+       ;;
+       ;; keycast
+       ;;
+       ;; face for the last key combination
+       `(keycast-key ((,class (:foreground ,warning :weight bold :height 1.1))))
+       ;; face for the last command
+       `(keycast-command ((,class (:foreground ,warning :weight bold :slant italic :height 1.1))))
        ))))
 
 

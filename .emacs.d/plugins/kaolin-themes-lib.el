@@ -412,10 +412,10 @@
 
     ;; TODO:
     (kaolin-comment
-      (pcase kaolin-themes-comments-style
-        ('normal comment)
-        ('alt  comment-alt)
-        ('contrast comment-contrast)))
+     (pcase kaolin-themes-comments-style
+       ('normal comment)
+       ('alt  comment-alt)
+       ('contrast comment-contrast)))
 
     (kaolin-org-heading-size (if kaolin-themes-org-scale-headings 1.1 1.0))
 
@@ -549,31 +549,35 @@
     (font-lock-variable-name-face     (:foreground var))
     (font-lock-warning-face           (:background nil :foreground warning))
 
+    (font-lock-regexp-grouping-construct (:foreground num))
+    (font-lock-regexp-grouping-backslash (:foreground num))
+
     ;; Kaolin faces
     (kaolin-themes-boolean (:foreground bool))
 
     ;; General
-    (default             (:background bg1 :foreground fg1))
-    (warning             (:foreground warning))
-    (error               (:foreground err))
-    (shadow              (:foreground comment))
-    (file-name-shadow    (:inherit 'shadow))
-    (region              (:background selection :foreground fg4))
-    (secondary-selection (:background hl-bg :foreground adaptive-fg))
-    (fringe              (:background fringe :foreground fg1))
-    (cursor              (:background cursor))
-    (vertical-border     (:foreground win-border))
-    (window-divider      (:foreground win-border))
-    (minibuffer-prompt   (:background nil :foreground prompt :bold bold))
-    (bold                (:bold bold))
-    (italic              (:italic italic))
-    (default-italic      (:italic italic))
-    (bold-italic         (:bold bold :italic italic))
-    (link                (:foreground link :underline underline))
-    (link-visited        (:inherit 'link :underline nil))
-    (success             (:background nil :foreground done))
-    (escape-glyph        (:background nil :foreground cyan3))
-    (trailing-whitespace (:background err))
+    (default               (:background bg1 :foreground fg1))
+    (warning               (:foreground warning))
+    (error                 (:foreground err))
+    (shadow                (:foreground comment))
+    (file-name-shadow      (:inherit 'shadow))
+    (region                (:background selection :foreground fg4))
+    (secondary-selection   (:background hl-bg :foreground adaptive-fg))
+    (fringe                (:background fringe :foreground fg1))
+    (cursor                (:background cursor))
+    (vertical-border       (:foreground win-border))
+    (window-divider        (:foreground win-border))
+    (minibuffer-prompt     (:background nil :foreground prompt :bold bold))
+    (bold                  (:bold bold))
+    (italic                (:italic italic))
+    (default-italic        (:italic italic))
+    (bold-italic           (:bold bold :italic italic))
+    (link                  (:foreground link :underline underline))
+    (link-visited          (:inherit 'link :underline nil))
+    (success               (:background nil :foreground done))
+    (escape-glyph          (:background nil :foreground cyan3))
+    (trailing-whitespace   (:background err))
+    (fill-column-indicator (:foreground bg4))
 
     (menu        (:background bg2 :foreground fg2))
     (header-line (:background nil :foreground num))
@@ -585,7 +589,7 @@
     (isearch      (:background nil :foreground hl :bold bold :underline underline))
     (isearch-fail (:background nil :foreground err))
 
-    ;; Interface
+    ;; Emacs UI
     (package-name                   (:inherit 'link :underline nil))
     (button                         (:inherit 'link))
     (custom-button                  (:background nil :foreground button-color :box (:line-width 1 :color button-color :style 'none) :height 0.9))
@@ -690,6 +694,10 @@
     (diredfl-tagged-autofile-name   (:foreground num :underline underline))
     (diredfl-write-priv             (:foreground diff-mod))
 
+    ;; TODO: ERC - IRC client for Emacs
+    (erc-timestamp-face (:foreground num))
+    (erc-error-face     (:inherit 'font-lock-error-face))
+
     ;; Jabber
     (jabber-activity-face          (:foreground todo   :weight 'bold))
     (jabber-activity-personal-face (:foreground str  :weight 'bold))
@@ -716,6 +724,18 @@
     (highlight-quoted-quote   (:inherit 'font-lock-builtin-face))
     (highlight-quoted-symbol  (:inherit 'font-lock-keyword-face))
     (highlight-symbol-face    (:background bg4))
+
+    ;; hi-lock
+    (hi-black-hb (:inherit 'bold))
+    (hi-aquamarine (:foreground bg1 :background kaolin-cyan))
+    (hi-blue (:foreground bg1 :background kaolin-blue))
+    (hi-blue-b (:foreground kaolin-blue :inherit 'bold))
+    (hi-green (:foreground bg1 :background kaolin-green))
+    (hi-green-b (:foreground kaolin-green :weight 'bold))
+    (hi-pink (:foreground bg1 :background kaolin-magenta))
+    (hi-red-b (:foreground kaolin-red :weight 'bold))
+    (hi-yellow (:foreground bg1 :background kaolin-yellow))
+    (hi-salmon (:foreground bg1 :background diff-bg-mod))
 
     ;; Highlight indent guides
     (highlight-indent-guides-odd-face        (:background hl-indent))
@@ -839,6 +859,19 @@
     (elfeed-log-debug-level-face     (:foreground kaolin-blue))
     (elfeed-log-error-level-face     (:foreground err))
 
+    ;; debbugs
+    (debbugs-gnu-done      (:foreground comment))
+    (debbugs-gnu-forwarded (:foreground kaolin-yellow))
+    (debbugs-gnu-handled   (:foreground done))
+    (debbugs-gnu-new       (:foreground todo))
+    (debbugs-gnu-pending   (:foreground kaolin-cyan))
+    (debbugs-gnu-stale-1   (:foreground rb1))
+    (debbugs-gnu-stale-2   (:foreground rb2))
+    (debbugs-gnu-stale-3   (:foreground rb3))
+    (debbugs-gnu-stale-4   (:foreground rb4))
+    (debbugs-gnu-stale-5   (:foreground rb5))
+    (debbugs-gnu-tagged    (:foreground prep))
+
     ;; TODO: Newsticker faces
 
     ;; Modeline
@@ -908,6 +941,7 @@
 
     ;; Additional completion
     (ac-completion-face    (:foreground keyword :underline underline))
+    (icomplete-first-match (:inherit 'match))
     (icompletep-determined (:foreground builtin))
 
     ;; info faces
@@ -942,6 +976,12 @@
     (company-preview                  (:background nil :foreground keyword))
     (company-preview-common           (:background bg2 :foreground diff-mod))
     (company-preview-search           (:inherit 'company-tooltip-search))
+
+    ;; corfu
+    (corfu-background (:background tooltip-bg))
+    (corfu-echo       (:foreground doc))
+    (corfu-current    (:background tooltip-hl-bg :foreground tooltip-hl-fg))
+    (corfu-border     (:background bg4))
 
     ;; all-the-icons
     (all-the-icons-red      (:foreground red1))
@@ -1143,6 +1183,9 @@
     (rst-level-5   (:foreground type))
     (rst-level-6   (:foreground keyword))
 
+    ;; csv-mode
+    (csv-separator-face (:inherit 'escape-glyph))
+
     ;; Latex/Auctex
     (font-latex-bold-face                (:inherit 'bold))
     (font-latex-italic-face              (:inherit 'italic))
@@ -1221,51 +1264,55 @@
     ;; smerge-refined-added
     ;; smerge-refined-removed
 
-   ;; Ediff
-   ;; (ediff-current-diff-A (:background hl-line :foreground fg4))
-   ;; (ediff-current-diff-B (:background hl-line :foreground fg4))
-   ;; (ediff-current-diff-C (:background hl-line :foreground fg4))
-   (ediff-current-diff-Ancestor (:background diff-bg-mod :foreground fg2))
-   (ediff-current-diff-A (:background red2 :foreground fg2))
-   (ediff-current-diff-B (:background spring-green2 :foreground fg2))
-   (ediff-current-diff-C (:background cyan2 :foreground fg2))
+    ;; Ediff
+    ;; (ediff-current-diff-A (:background hl-line :foreground fg4))
+    ;; (ediff-current-diff-B (:background hl-line :foreground fg4))
+    ;; (ediff-current-diff-C (:background hl-line :foreground fg4))
+    (ediff-current-diff-Ancestor (:background diff-bg-mod :foreground fg2))
+    (ediff-current-diff-A (:background red2 :foreground fg2))
+    (ediff-current-diff-B (:background spring-green2 :foreground fg2))
+    (ediff-current-diff-C (:background cyan2 :foreground fg2))
 
-   (ediff-even-diff-Ancestor (:background bg3))
-   (ediff-even-diff-A (:background bg3))
-   (ediff-even-diff-B (:background bg3))
-   (ediff-even-diff-C (:background bg3))
+    (ediff-even-diff-Ancestor (:background bg3))
+    (ediff-even-diff-A (:background bg3))
+    (ediff-even-diff-B (:background bg3))
+    (ediff-even-diff-C (:background bg3))
 
-   (ediff-fine-diff-Ancestor (:background diff-bg-mod :bold bold :foreground white0))
-   (ediff-fine-diff-A (:background red3 :bold bold :foreground white0))
-   (ediff-fine-diff-B (:background spring-green1 :bold bold :foreground white0))
-   (ediff-fine-diff-C (:background cyan1 :bold bold :foreground white0))
+    (ediff-fine-diff-Ancestor (:background diff-bg-mod :bold bold :foreground white0))
+    (ediff-fine-diff-A (:background red3 :bold bold :foreground white0))
+    (ediff-fine-diff-B (:background spring-green1 :bold bold :foreground white0))
+    (ediff-fine-diff-C (:background cyan1 :bold bold :foreground white0))
 
-   (ediff-odd-diff-Ancestor (:background bg4))
-   (ediff-odd-diff-A (:background bg4))
-   (ediff-odd-diff-B (:background bg4))
-   (ediff-odd-diff-C (:background bg4))
+    (ediff-odd-diff-Ancestor (:background bg4))
+    (ediff-odd-diff-A (:background bg4))
+    (ediff-odd-diff-B (:background bg4))
+    (ediff-odd-diff-C (:background bg4))
 
-   ;; calendar.el
-   (calendar-today (:background bg4 :foreground keyword))
+    ;; calendar.el
+    (diary (:foreground kaolin-yellow))
+    (holiday (:foreground bg1 :background kaolin-red))
+    (calendar-today (:background bg4 :foreground keyword))
 
-   ;; calfw
-   (cfw:face-grid (:foreground comment))
-   (cfw:face-title (:foreground prep :weight 'bold :height 1.8))
-   (cfw:face-default-content (:foreground fg1))
-   (cfw:face-day-title (:background bg3 :foreground fg1))
-   (cfw:face-today (:background bg3 :foreground prep))
-   (cfw:face-today-title (:background todo :foreground bg1))
-   (cfw:face-saturday (:background bg3 :foreground todo))
-   (cfw:face-sunday (:background bg3 :foreground todo))
-   (cfw:face-holiday (:background bg3 :foreground functions))
-   (cfw:face-periods (:foreground num))
-   (cfw:face-header (:background bg3 :foreground str))
-   (cfw:face-annotation (:foreground doc))
-   (cfw:face-select (:background hl :foreground bg1))
-   (cfw:face-toolbar (:background nil :foreground nil))
-   (cfw:face-toolbar-button-on (:background nil :foreground hl))
-   (cfw:face-toolbar-button-off (:foreground fg4))
-   (cfw:face-disable (:background bg3 :foreground comment))
+    ;; calfw
+    (cfw:face-grid               (:foreground comment))
+    (cfw:face-title              (:foreground prep :weight 'bold :height 1.8))
+    (cfw:face-default-content    (:foreground fg1))
+    (cfw:face-day-title          (:background bg3 :foreground fg1))
+    (cfw:face-today              (:background bg3 :foreground prep))
+    (cfw:face-today-title        (:background todo :foreground bg1))
+    (cfw:face-saturday           (:background bg3 :foreground todo))
+    (cfw:face-sunday             (:background bg3 :foreground todo))
+    (cfw:face-holiday            (:background bg3 :foreground functions))
+    (cfw:face-periods            (:foreground num))
+    (cfw:face-header             (:background bg3 :foreground str))
+    (cfw:face-annotation         (:foreground doc))
+    (cfw:face-select             (:background hl :foreground bg1))
+    (cfw:face-toolbar            (:background nil :foreground nil))
+    (cfw:face-toolbar-button-on  (:background nil :foreground hl))
+    (cfw:face-toolbar-button-off (:foreground fg4))
+    (cfw:face-disable            (:background bg3 :foreground comment))
+
+    ;; TODO emms
 
     ;; Imenu list
     ;; (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
@@ -1312,9 +1359,9 @@
     (git-gutter:deleted   (:background bg1 :foreground diff-rem :bold bold))
 
     ;; Diff-hl
-    (diff-hl-insert (:background diff-add))
-    (diff-hl-change (:background diff-mod))
-    (diff-hl-delete (:background diff-rem))
+    (diff-hl-insert        (:background diff-add))
+    (diff-hl-change        (:background diff-mod))
+    (diff-hl-delete        (:background diff-rem))
     (diff-hl-margin-insert (:background diff-add :foreground bg1 :slant 'normal))
     (diff-hl-margin-change (:background diff-mod :foreground bg1 :slant 'normal))
     (diff-hl-margin-delete (:background diff-rem :foreground bg1 :slant 'normal))
@@ -1435,15 +1482,20 @@
 
     ;; org-habit
     ;; TODO: bg blend
-    (org-habit-clear-face (:background kaolin-blue))
-    (org-habit-clear-future-face (:background bg4))
-    (org-habit-ready-face (:background diff-add))
-    (org-habit-ready-future-face (:background diff-bg-add))
-    (org-habit-alert-face (:background diff-mod))
-    (org-habit-alert-future-face (:background diff-bg-mod))
-    (org-habit-overdue-face (:background diff-rem))
+    (org-habit-clear-face          (:background kaolin-blue))
+    (org-habit-clear-future-face   (:background bg4))
+    (org-habit-ready-face          (:background diff-add))
+    (org-habit-ready-future-face   (:background diff-bg-add))
+    (org-habit-alert-face          (:background diff-mod))
+    (org-habit-alert-future-face   (:background diff-bg-mod))
+    (org-habit-overdue-face        (:background diff-rem))
     (org-habit-overdue-future-face (:background diff-bg-rem))
 
+    ;; Re-builder
+    (reb-match-0 (:foreground bg1 :background hl))
+    (reb-match-1 (:foreground bg1 :background search1))
+    (reb-match-2 (:foreground bg1 :background search2))
+    (reb-match-3 (:foreground bg1 :background search3))
 
     ;; Emmet
     (emmet-preview-input   (:foreground nil :background nil))
@@ -1474,19 +1526,19 @@
     (web-mode-warning-face          (:inherit 'font-lock-warning-face))
 
     ;; Alert
-    (alert-high-face (:inherit 'bold :foreground kaolin-red))
-    (alert-low-face (:inherit 'bold :foreground fg2))
+    (alert-high-face     (:inherit 'bold :foreground kaolin-red))
+    (alert-low-face      (:inherit 'bold :foreground fg2))
     (alert-moderate-face (:inherit 'bold :foreground warning))
-    (alert-trivial-face (:inherit 'bold :foreground fg2))
-    (alert-urgent-face (:inherit 'bold :foreground kaolin-red))
+    (alert-trivial-face  (:inherit 'bold :foreground fg2))
+    (alert-urgent-face   (:inherit 'bold :foreground kaolin-red))
 
     ;; ert
-    (ert-test-result-expected (:background done :foreground bg1))
+    (ert-test-result-expected   (:background done :foreground bg1))
     (ert-test-result-unexpected (:background err :foreground bg1))
-
 
     ;; Nim
     (nim-font-lock-export-face (:inherit 'font-lock-function-name-face :italic nil))
+    (nim-font-lock-number-face (:foreground num))
 
     ;; Evil ex
     (evil-ex-info                   (:foreground orange1))
@@ -1502,6 +1554,12 @@
     (evil-snipe-first-match-face (:foreground search1))
     (evil-snipe-matches-face     (:foreground search2))
 
+    ;; evil-mc
+    (evil-mc-cursor-default-face (:background kaolin-cyan :foreground bg1 :inverse-video nil))
+    (evil-mc-region-face         (:inherit 'region))
+    (evil-mc-cursor-bar-face     (:background kaolin-cyan :foreground bg1 :height 1))
+    (evil-mc-cursor-hbar-face    (:underline (:color hl)))
+
     ;; Beacon-mode
     (beacon-fallback-background (:background pulse))
 
@@ -1512,7 +1570,7 @@
     (solaire-org-hide-face   (:inherit 'org-hide))
 
     ;; Tuareg/OCaml
-    (tuareg-font-double-colon-face            (:foreground warning))
+    (tuareg-font-double-semicolon-face        (:foreground warning))
     (tuareg-font-lock-governing-face          (:foreground keyword))
     ;; TODO maybe str or prep, num, functions
     (tuareg-font-lock-operator-face           (:foreground builtin))
@@ -1553,6 +1611,23 @@
     (cider-test-success-face                 (:background done :foreground bg1))
     (cider-traced-face                       (:background bg2 :foreground fg2 :box (:color comment :line-width -1)))
     (cider-warning-highlight-face            (:foreground fg2 :underline (:style underline-style :color warning)))
+
+    ;; Clojure test
+    (clojure-test-failure-face (:background nil :inherit 'flymake-warning))
+    (clojure-test-error-face   (:background nil :inherit 'flymake-error))
+    (clojure-test-success-face (:background nil :inherit 'flymake-note))
+
+    ;; kaocha-runner
+    (kaocha-runner-error-face   (:foreground err))
+    (kaocha-runner-success-face (:foreground done))
+    (kaocha-runner-warning-face (:inherit warning))
+
+    ;; erlang
+    ;; EDTS errors
+    (edts-face-warning-line      (:inherit 'flymake-warning))
+    (edts-face-warning-mode-line (:foreground warning :weight 'bold))
+    (edts-face-error-line        (:inherit 'flymake-error))
+    (edts-face-error-mode-line   (:foreground err :weight 'bold))
 
     ;; Markdown
     (markdown-bold-face               (:inherit 'bold))
@@ -1661,6 +1736,11 @@
     (wgrep-file-face   (:foreground comment))
     (wgrep-reject-face (:inherit 'error))
 
+    ;; xref
+    (xref-file-header (:foreground header))
+    (xref-line-number (:inherit 'compilation-line-number))
+    (xref-match       (:foreground hl :underline underline))
+
     ;; tldr
     (tldr-title          (:foreground header :weight 'bold))
     (tldr-introduction   (:foreground comment))
@@ -1668,7 +1748,25 @@
     (tldr-command-itself (:background functions :foreground bg1))
     (tldr-code-block     (:background bg2 :foreground functions))
 
-     ;; Avy
+    ;; antlr-mode
+    (antlr-keyword  (:inherit 'font-lock-keyword-face))
+    (antlr-syntax   (:inherit 'font-lock-constant-face))
+    (antlr-ruledef  (:inherit 'font-lock-function-name-face))
+    (antlr-ruleref  (:inherit 'font-lock-type-face))
+    (antlr-tokendef (:inherit 'font-lock-function-name-face))
+    (antlr-tokenref (:inherit 'font-lock-type-face))
+    (antlr-literal  (:inherit 'font-lock-string-face))
+
+    ;; Anzu mode
+    (anzu-mode-line          (:foreground num))
+    (anzu-mode-line-no-match (:foreground err))
+    (anzu-replace-highlight  (:inherit 'lazy-highlight))
+    (anzu-replace-to         (:inherit 'isearch))
+    (anzu-match-1            (:foreground search1))
+    (anzu-match-2            (:foreground search2))
+    (anzu-match-3            (:foreground search3))
+
+    ;; Avy
     (avy-background-face (:inherit 'font-lock-comment-face))
     (avy-lead-face       (:background spring-green2 :foreground adaptive-fg :weight 'bold))
     (avy-lead-face-0     (:background red2 :foreground adaptive-fg :weight 'bold))
@@ -1679,6 +1777,25 @@
     (aw-leading-char-face (:background nil :foreground hl :bold bold :height 1.4))
     (aw-background-face   (:foreground comment :bold bold))
     (aw-key-face          (:foreground keysym :bold bold))
+
+    ;; Marginalia
+    (marginalia-documentation (:inherit 'font-lock-doc-face))
+    (marginalia-key           (:foreground keysym))
+    (marginalia-mode          (:foreground str))
+    (marginalia-number        (:foreground num))
+    (marginalia-size          (:foreground num))
+    (marginalia-type          (:foreground type))
+    (marginalia-date          (:foreground str))
+    (marginalia-value         (:foreground var))
+    (marginalia-char          (:foreground hl))
+    (marginalia-on            (:inherit 'success))
+    (marginalia-file-owner    (:foreground prep))
+
+    (marginalia-file-name       (:foreground str))
+    (marginalia-file-priv-dir   (:foreground keyword))
+    (marginalia-file-priv-read  (:foreground diff-add))
+    (marginalia-file-priv-write (:foreground diff-mod))
+    (marginalia-file-priv-exec  (:foreground diff-rem))
 
     ;; Ivy
     (ivy-confirm-face            (:inherit 'success))
@@ -1697,7 +1814,7 @@
     (ivy-minibuffer-match-face-4 (:background nil :foreground search3 :bold bold))
 
     ;; Ivy posframe
-    (ivy-posframe (:background tooltip-bg))
+    (ivy-posframe        (:background tooltip-bg))
     (ivy-posframe-border (:background bg4))
 
     ;; Counsel
@@ -1712,20 +1829,21 @@
     (counsel-css-selector-depth-face-6 (:foreground kaolin-navy))
 
     ;; Swiper
-    (swiper-match-face-1 (:background bg2 :foreground ivy1))
-    (swiper-match-face-2 (:background bg2 :foreground search1 :bold bold))
-    (swiper-match-face-3 (:background bg2 :foreground search2 :bold bold))
-    (swiper-match-face-4 (:background bg2 :foreground search3 :bold bold))
+    (swiper-match-face-1            (:background bg2 :foreground ivy1))
+    (swiper-match-face-2            (:background bg2 :foreground search1 :bold bold))
+    (swiper-match-face-3            (:background bg2 :foreground search2 :bold bold))
+    (swiper-match-face-4            (:background bg2 :foreground search3 :bold bold))
     (swiper-background-match-face-1 (:inherit 'swiper-match-face-1 :bold nil :background bg1))
     (swiper-background-match-face-2 (:inherit 'swiper-match-face-2 :bold nil :background bg1))
     (swiper-background-match-face-3 (:inherit 'swiper-match-face-3 :bold nil :background bg1))
     (swiper-background-match-face-4 (:inherit 'swiper-match-face-4 :bold nil :background bg1))
-    (swiper-line-face    (:inherit 'hl-line))
+    (swiper-line-face               (:inherit 'hl-line))
 
 
     ;; Default completion
     (completions-common-part (:foreground functions))
     (completions-annotations (:foreground doc))
+    ;; (completions-first-difference (:foreground diff-mod))
 
     ;; Selectrum
     ;; (selectrum-quick-keys-match       (:background keysym :foreground bg1 :underline underline))
@@ -1733,6 +1851,21 @@
     (selectrum-current-candidate             (:background hl-line :foreground hl :bold t))
     (selectrum-prescient-primary-highlight   (:foreground search1))
     (selectrum-prescient-secondary-highlight (:foreground search2))
+
+    ;; Vertico
+    (vertico-current         (:background hl-line :foreground hl :bold t))
+    (vertico-multiline       (:inherit 'shadow))
+    (vertico-group-title     (:inherit 'shadow))
+    (vertico-group-separator (:inherit 'shadow :strike-through t))
+    ;; Vertico-quick
+    (vertico-quick1          (:background bg2 :foreground search1 :weight 'bold))
+    (vertico-quick2          (:background bg2 :foreground search2 :weight 'bold))
+
+    ;; Orderless
+    (orderless-match-face-0 (:foreground hl))
+    (orderless-match-face-1 (:foreground search1))
+    (orderless-match-face-2 (:foreground search2))
+    (orderless-match-face-3 (:foreground search3))
 
     ;; tabbar
     (tabbar-default             (:background bg1 :foreground bg1 :height 1.0))
@@ -1746,10 +1879,16 @@
     (tabbar-selected-modified   (:inherit 'tabbar-selected :foreground diff-add))
 
     ;; built-in tab-bar mode
-    (tab-bar (:background bg0 :foreground fg1))
-    (tab-line (:background bg0 :foreground fg1))
-    (tab-bar-tab (:background bg1 :foreground fg1))
-    (tab-bar-tab-inactive (:background bg1 :foreground comment))
+    (tab-bar                  (:background bg0 :foreground fg1))
+    (tab-bar-tab              (:background bg1 :foreground fg1))
+    (tab-bar-tab-inactive     (:background bg1 :foreground comment))
+
+    ;; built-in tab-line
+    (tab-line                 (:background bg0 :foreground fg1))
+    (tab-line-tab             (:background bg1 :foreground fg1))
+    (tab-line-tab-inactive    (:background bg1 :foreground comment))
+    (tab-line-close-highlight (:foreground kaolin-red))
+
 
     ;; Awesome-tabs
     (awesome-tab-default    (:background bg1 :foreground bg1))
@@ -1757,14 +1896,17 @@
     (awesome-tab-selected   (:background bg3 :foreground hl))
 
     ;; Centaur-tabs
-    (centaur-tabs-default    (:background bg0 :foreground bg0))
-    (centaur-tabs-selected   (:background bg1 :foreground fg1))
-    (centaur-tabs-unselected (:background bg0 :foreground comment))
-    (centaur-tabs-selected-modified   (:background bg1 :foreground todo))
-    (centaur-tabs-unselected-modified (:background bg0 :foreground todo))
-    (centaur-tabs-active-bar-face (:background keyword))
-    (centaur-tabs-modified-marker-selected (:inherit 'centaur-tabs-selected :foreground keyword))
-    (centaur-tabs-modified-marker-unselected (:inherit 'centaur-tabs-unselected :foreground keyword))))
+    (centaur-tabs-default                    (:background bg0 :foreground bg0))
+    (centaur-tabs-selected                   (:background bg1 :foreground fg1))
+    (centaur-tabs-unselected                 (:background bg0 :foreground comment))
+    (centaur-tabs-selected-modified          (:background bg1 :foreground todo))
+    (centaur-tabs-unselected-modified        (:background bg0 :foreground todo))
+    (centaur-tabs-active-bar-face            (:background keyword))
+    (centaur-tabs-modified-marker-selected   (:inherit 'centaur-tabs-selected :foreground keyword))
+    (centaur-tabs-modified-marker-unselected (:inherit 'centaur-tabs-unselected :foreground keyword))
+
+    ;; perspective.el
+    (persp-selected-face (:foreground kaolin-blue :weight 'bold))))
 
 (provide 'kaolin-themes-lib)
 

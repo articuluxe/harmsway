@@ -2268,6 +2268,7 @@ section or a child thereof."
           (unless (equal (match-string 1) "/dev/null")
             (setq file (match-string 1))))
          ((looking-at "Binary files .+ and .+ differ\n"))
+         ((looking-at "Binary files differ\n"))
          ;; TODO Use all combined diff extended headers.
          ((looking-at "mode .+\n"))
          (t
@@ -2337,7 +2338,7 @@ section or a child thereof."
              (equal (match-string 1) module))
         (magit-bind-match-strings (_module range rewind) nil
           (magit-delete-line)
-          (while (looking-at "^  \\([<>]\\) \\(.+\\)$")
+          (while (looking-at "^  \\([<>]\\) \\(.*\\)$")
             (magit-delete-line))
           (when rewind
             (setq range (replace-regexp-in-string "[^.]\\(\\.\\.\\)[^.]"
@@ -2710,7 +2711,8 @@ or a ref which is not a branch, then it inserts nothing."
       (when-let ((window (get-buffer-window)))
         (let* ((column   (length (match-string 0)))
                (font-obj (query-font (font-at (point) window)))
-               (size     (* 2 (aref font-obj 4)))
+               (size     (* 2 (+ (aref font-obj 4)
+                                 (aref font-obj 5))))
                (align-to (+ column
                             (ceiling (/ size (aref font-obj 7) 1.0))
                             1))
@@ -2735,12 +2737,12 @@ or a ref which is not a branch, then it inserts nothing."
                                (car-safe
                                 (get-text-property (point) 'display)))
                               'image)))
-            (let ((top `((,@image
-                          :ascent center :relief 1 :scale 1 :height ,size)
-                         (slice 0.0 0.0 1.0 0.5)))
-                  (bot `((,@image
-                          :ascent center :relief 1 :scale 1 :height ,size)
-                         (slice 0.0 0.5 1.0 1.0)))
+            (setf (image-property image :ascent) 'center)
+            (setf (image-property image :relief) 1)
+            (setf (image-property image :scale)  1)
+            (setf (image-property image :height) size)
+            (let ((top (list image '(slice 0.0 0.0 1.0 0.5)))
+                  (bot (list image '(slice 0.0 0.5 1.0 1.0)))
                   (align `((space :align-to ,align-to))))
               (when magit-revision-use-gravatar-kludge
                 (cl-rotatef top bot))

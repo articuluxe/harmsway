@@ -37,10 +37,10 @@
   :group 'docker)
 
 (defconst docker-image-id-template
-  "{{if (eq \\\"<none>\\\" .Repository .Tag)}}{{ json .ID }}{{else}}\\\"{{ .Repository }}:{{ .Tag }}\\\"{{end}}"
+  "[{{ json .Repository }},{{ json .Tag }},{{ json .ID }}]"
   "This Go template defines what will be passed to transient commands.
 
-The default value uses Repository:Tag unless either is <none>, then it uses Id.")
+This value is processed by `docker-image-make-id'.")
 
 (defcustom docker-image-default-sort-key '("Repository" . nil)
   "Sort key for docker images.
@@ -102,16 +102,59 @@ corresponding to arguments.
 Also note if you do not specify `docker-run-default-args', they will be ignored."
   :type '(repeat (list string (repeat string))))
 
-(defun docker-image-entries ()
+
+(defun docker-image-make-id (parsed-line)
+  "Fix the id string of the entry and return the fixed entry.
+
+PARSED-LINE is the output of `docker-utils-parse', the car is expected to
+be the list (repository tag id).  See `docker-image-id-template'."
+  ;; This could be written as a complex go template,
+  ;; however the literal '<none>' causes havoc in the windows shell.
+  (-let* ((([repo tag id] rest) parsed-line)
+          (new-id (if (or (equal repo "<none>") (equal tag "<none>"))
+                      id
+                    (format "%s:%s" repo tag))))
+    (list new-id rest)))
+
+(defun docker-image-entries (&optional args)
   "Return the docker images data for `tabulated-list-entries'."
   (let* ((fmt (docker-utils-make-format-string docker-image-id-template docker-image-columns))
-         (data (docker-run-docker "image ls" (docker-image-ls-arguments) (format "--format=\"%s\"" fmt)))
+         (data (docker-run-docker "image ls" args (format "--format=\"%s\"" fmt)))
          (lines (s-split "\n" data t)))
-    (-map (-partial #'docker-utils-parse docker-image-columns) lines)))
+    (--map (docker-image-make-id (docker-utils-parse docker-image-columns it)) lines)))
+
+(defun docker-image-entries-propertized (&optional args)
+  "Return the docker images data for `tabulated-list-entries' with dangling images propertized."
+  (let ((all (docker-image-entries args))
+        (dangling (docker-image-entries "--filter dangling=true")))
+    (--map-when (-contains? dangling it) (docker-image-entry-set-dangling it) all)))
+
+(defun docker-image-dangling-p (entry-id)           ;
+  "Predicate for if ENTRY-ID is dangling.
+
+For example (docker-image-dangling-p (tabulated-list-get-id)) is t when the entry under point is dangling."
+  (get-text-property 0 'docker-image-dangling entry-id))
+
+(defun docker-image-entry-set-dangling (parsed-entry)
+  "Mark PARSED-ENTRY (output of `docker-image-entries') as dangling.
+
+The result is the tabulated list id for an entry is propertized with
+'docker-image-dangling and the entry is fontified with 'docker-face-dangling."
+  (list (propertize (car parsed-entry) 'docker-image-dangling t)
+        (apply #'vector (--map (propertize it 'font-lock-face 'docker-face-dangling) (cadr parsed-entry)))))
+
+(defun docker-image-description-with-stats ()
+  "Return the images stats string."
+  (let* ((inhibit-message t)
+         (entries (docker-image-entries-propertized))
+         (dangling (-filter (-compose #'docker-image-dangling-p 'car) entries)))
+    (format "Images (%s total, %s dangling)"
+            (length entries)
+            (propertize (number-to-string (length dangling)) 'face 'docker-face-dangling))))
 
 (defun docker-image-refresh ()
   "Refresh the images list."
-  (setq tabulated-list-entries (docker-image-entries)))
+  (setq tabulated-list-entries (docker-image-entries-propertized (docker-image-ls-arguments))))
 
 (defun docker-image-read-name ()
   "Read an image name."
@@ -140,6 +183,21 @@ Also note if you do not specify `docker-run-default-args', they will be ignored.
     (docker-run-docker "tag" it (read-string (format "Tag for %s: " it))))
   (tablist-revert))
 
+(defun docker-image-mark-dangling ()
+  "Mark only the dangling images listed in *docker-images*.
+
+This clears any user marks first and respects any tablist filters
+applied to the buffer."
+  (interactive)
+  (switch-to-buffer "*docker-images*")
+  (tablist-unmark-all-marks)
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (eobp))
+      (when (docker-image-dangling-p (tabulated-list-get-id))
+        (tablist-put-mark))
+      (forward-line))))
+
 (defun docker-image-ls-arguments ()
   "Return the latest used arguments in the `docker-image-ls' transient."
   (car (alist-get 'docker-image-ls transient-history)))
@@ -149,7 +207,7 @@ Also note if you do not specify `docker-run-default-args', they will be ignored.
   :man-page "docker-image-ls"
   ["Arguments"
    ("a" "All" "--all")
-   ("d" "Dangling" "-f dangling=true")
+   ("d" "Dangling" "--filter dangling=true")
    ("f" "Filter" "--filter" read-string)
    ("n" "Don't truncate" "--no-trunc")]
   ["Actions"
@@ -222,13 +280,14 @@ Also note if you do not specify `docker-run-default-args', they will be ignored.
 (transient-define-prefix docker-image-help ()
   "Help transient for docker images."
   ["Docker images help"
-   ("D" "Remove"  docker-image-rm)
-   ("F" "Pull"    docker-image-pull)
-   ("I" "Inspect" docker-utils-inspect)
-   ("P" "Push"    docker-image-push)
-   ("R" "Run"     docker-image-run)
-   ("T" "Tag"     docker-image-tag-selection)
-   ("l" "List"    docker-image-ls)])
+   ("D" "Remove"        docker-image-rm)
+   ("F" "Pull"          docker-image-pull)
+   ("I" "Inspect"       docker-utils-inspect)
+   ("P" "Push"          docker-image-push)
+   ("R" "Run"           docker-image-run)
+   ("T" "Tag"           docker-image-tag-selection)
+   ("d" "Mark Dangling" docker-image-mark-dangling)
+   ("l" "List"          docker-image-ls)])
 
 (defvar docker-image-mode-map
   (let ((map (make-sparse-keymap)))
@@ -239,6 +298,7 @@ Also note if you do not specify `docker-run-default-args', they will be ignored.
     (define-key map "P" 'docker-image-push)
     (define-key map "R" 'docker-image-run)
     (define-key map "T" 'docker-image-tag-selection)
+    (define-key map "d" 'docker-image-mark-dangling)
     (define-key map "l" 'docker-image-ls)
     map)
   "Keymap for `docker-image-mode'.")

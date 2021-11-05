@@ -59,36 +59,18 @@
    `(diredp-number ((t (:foreground "#ffcc00"))))
 
    ;; hl-line
-   `(hl-line ((t (:background "#f50af50af50a"))))
+   `(hl-line ((t (:background "gray96"))))
 
    ;; org
-   ;; `(org-link ((t (:foreground "#D0E1F9" :underline "#2b4b6e"))))
    `(org-meta-line ((t (:foreground "#9b59b6"))))
 
    `(org-block-begin-line ((t (:foreground "black" :weight bold :background "white"))))
    `(org-block-end-line ((t (:foreground "black" :weight bold :background "white"))))
    '(org-block ((t (:extend t :background "ghost white"))))
-   ;; '(org-code ((t (:inherit (shadow fixed-pitch)))))
 
-   `(org-verbatim ((t
-                    (:background "#f50af708f906"
-                                 :box (:line-width 2 :color "#f50af708f906")))))
+   `(org-verbatim ((t (:background "gray96" :box (:line-width 2 :color "gray96")))))
 
-   `(org-agenda-current-time ((t (:foreground "black" :weight bold))))
-
-   ;; '(org-block ((t (:inherit fixed-pitch))))
-   ;; '(org-code ((t (:inherit (shadow fixed-pitch)))))
-   ;; '(org-document-info ((t (:foreground "dark orange"))))
-   ;; '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
-   ;; '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
-   ;; '(org-link ((t (:foreground "royal blue" :underline t))))
-   ;; '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
-   ;; '(org-property-value ((t (:inherit fixed-pitch))) t)
-   ;; '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
-   ;; '(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
-   ;; '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
-   ;; '(org-verbatim ((t (:inherit (shadow fixed-pitch)))))
-   ))
+   `(org-agenda-current-time ((t (:foreground "black" :weight bold))))))
 
 (provide-theme 'danneskjold-light)
 ;;; danneskjold-light-theme.el ends here

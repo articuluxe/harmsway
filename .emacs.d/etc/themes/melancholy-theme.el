@@ -4,7 +4,7 @@
 
 ;; Author: Sod Oscarfono <sod@oscarfono.com>
 ;; URL: http://github.com/techquila/melancholy-theme
-;; Package-Version: 20190620.1001
+;; Package-Version: 20211026.1001
 ;; Version: 2.0
 ;; Package-requires: emacs
 
@@ -109,10 +109,10 @@
 
     ;; parens / smart-parens
     ;; ========================================
-    `(show-paren-match ((t (:background ,my-shadow :foreground ,my-pop :weight bold))))
-    `(show-paren-mismatch ((t (:background ,my-warning :weight bold))))
-    `(sp-show-pair-match-face ((t (:background ,my-shadow :weight bold))))
-    `(sp-show-pair-mismatch-face ((t (:background ,my-warning :weight bold))))
+    `(show-paren-match ((t (:background ,my-shadow :foreground ,my-pop :weight extra-bold))))
+    `(show-paren-mismatch ((t (:background ,my-warning :weight extra-bold))))
+    `(sp-show-pair-match-face ((t (:background ,my-shadow :weight extra-bold))))
+    `(sp-show-pair-mismatch-face ((t (:background ,my-warning :weight extra-bold))))
     `(sp-pair-overlay-face ((t (:background ,my-contrast))))
 
     ;; info/errors

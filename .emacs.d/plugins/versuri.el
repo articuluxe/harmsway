@@ -4,7 +4,7 @@
 
 ;; Author: Mihai Olteanu <mihai_olteanu@fastmail.fm>
 ;; Version: 1.0
-;; Package-Requires: ((emacs "26.1") (dash "2.16.0") (request "0.3.0") (anaphora "1.0.4") (esxml "0.1.0") (s "1.12.0") (esqlite "0.3.1") (ivy "0.11.0"))
+;; Package-Requires: ((emacs "26.1") (dash "2.16.0") (request "0.3.0") (anaphora "1.0.4") (esxml "0.1.0") (s "1.12.0") (esqlite "0.3.1"))
 ;; Keywords: multimedia
 ;; URL: https://github.com/mihaiolteanu/versuri/
 
@@ -30,7 +30,7 @@
 ;; - makeitpersonal, genius, songlyrics, metrolyrics, musixmatch and azlyrics
 ;; are all supported
 ;; - add new websites or modify existing ones with `versuri-add-website'
-;; - search the database with ivy-read and either for all the entries in the
+;; - search the database with `completing-read' and either for all the entries in the
 ;; database, all the entries for a given artist or all the entries where the
 ;; lyrics field contains a given string.
 ;; - synchronous bulk request for lyrics for a given list of songs.
@@ -46,7 +46,6 @@
 (require 'esxml-query)
 (require 's)
 (require 'esqlite)
-(require 'ivy)
 
 (defconst versuri--db-file-name "/versuri.db"
   "Name of the db containing all the lyrics.")
@@ -116,10 +115,46 @@
    (format "DELETE FROM lyrics WHERE artist=\"%s\" and song=\"%s\""
            artist song)))
 
-(defun versuri-ivy-search (str)
+(defun versuri--do-search (str)
+  (let ((entries (cond ((s-blank? (s-trim str))
+                        (versuri--db-all-entries))
+                       ((s-equals-p " " (substring str 0 1))
+                        (versuri--db-artists-like (s-trim str)))
+                       (t (versuri--db-search-lyrics-like str)))))
+    (cl-multiple-value-bind (artist-max-len song-max-len)
+        (cl-loop for entry in entries
+                 maximize (length (cadr entry)) into artist
+                 maximize (length (caddr entry)) into song
+                 finally (return (cl-values artist song)))
+      (mapcan
+       (lambda (song)
+         (mapcar (lambda (verse)
+                   (list
+                    ;; Build a table of artist/song/verse with padding.
+                    (format (s-format  "%-$0s   %-$1s   %s" 'elt
+                                       ;; Add the padding
+                                       `(,artist-max-len ,song-max-len))
+                            ;; Add the actual artist, song and verse.
+                            (cadr song) (caddr song) verse)
+                    ;; Artist and song, recoverable in :action lambda.
+                    (cadr song) (caddr song)))
+                 ;; Go through all the verses in the lyrics column for each entry.
+                 (if (not (or (seq-empty-p str)
+                              (s-equals-p " " (substring str 0 1))))
+                     (seq-uniq
+                      (mapcan (lambda (line)
+                                (s-match (format ".*%s.*" str) line))
+                              (s-lines (cadddr song))))
+                   ;; First line of the lyrics.
+                   (list (car (s-lines (cadddr song)))))))
+       ;; All entries in db that contain str in the lyrics column.
+       entries))))
+
+(defun versuri-search (str)
   "Search the database for all entries that match STR.
-Use ivy to let the user select one of the entries and return it.
-Each entry contains the artist name, song name and a verse line.
+Use `completing-read' to let the user select one of the entries
+and return it.  Each entry contains the artist name, song name
+and a verse line.
 
 If STR is empty, this is a search through all the entries in the
 database.
@@ -131,45 +166,13 @@ Otherwise, this is a search for all the lyrics that contain STR.
 There can be more entries with the same artist and song name if
 the STR matches multiple lines in the lyrics."
   (interactive "MSearch lyrics: ")
-  (let (res)
-    (ivy-read
-     "Select Lyrics: "
-     (let ((entries (cond ((s-blank? (s-trim str))
-                           (versuri--db-all-entries))
-                          ((s-equals-p " " (substring str 0 1))
-                           (versuri--db-artists-like (s-trim str)))
-                          (t (versuri--db-search-lyrics-like str)))))
-       (cl-multiple-value-bind (artist-max-len song-max-len)
-           (cl-loop for entry in entries
-                    maximize (length (cadr entry)) into artist
-                    maximize (length (caddr entry)) into song
-                    finally (return (cl-values artist song)))
-         (mapcan
-          (lambda (song)
-            (mapcar (lambda (verse)
-                 (list
-                  ;; Build a table of artist/song/verse with padding.
-                  (format (s-format  "%-$0s   %-$1s   %s" 'elt
-                                     ;; Add the padding
-                                     `(,artist-max-len ,song-max-len))
-                          ;; Add the actual artist, song and verse.
-                          (cadr song) (caddr song) verse)
-                  ;; Artist and song, recoverable in :action lambda.
-                  (cadr song) (caddr song)))
-               ;; Go through all the verses in the lyrics column for each entry.
-               (if (not (or (seq-empty-p str)
-                            (s-equals-p " " (substring str 0 1))))
-                   (seq-uniq
-                    (mapcan (lambda (line)
-                              (s-match (format ".*%s.*" str) line))
-                            (s-lines (cadddr song))))
-                 ;; First line of the lyrics.
-                 (list (car (s-lines (cadddr song)))))))
-          ;; All entries in db that contain str in the lyrics column.
-          entries)))
-     :action (lambda (song)
-               (setf res (list (cadr song) (caddr song)))))
-    res))
+  (let* ((res (versuri--do-search str))
+         (song (when res
+                 (completing-read "Select Lyrics: " res))))
+    (when song
+      (cdr (assoc song res #'string=)))))
+
+(defalias 'versuri-ivy-search #'versuri-search)
 
 (defconst versuri--websites nil
   "A list of all the websites where lyrics can be searched.")
@@ -328,24 +331,56 @@ the call with the remaining websites."
               (versuri-lyrics artist song callback
                               (-remove-item website websites))))))))
 
+(defvar versuri--artist nil)
+(defvar versuri--song nil)
+(defvar versuri--buffer nil)
+
+(defun versuri-lyrics-forget ()
+  "Forget the current lyrics and kill the buffer."
+  (interactive)
+  (versuri-delete-lyrics versuri--artist versuri--song)
+  (kill-buffer versuri--buffer))
+
+(defun versuri-lyrics-try-another-site ()
+  "Find another website for this lyrics.
+Similar to `versuri-lyrics-forget', but the lyrics is then
+searched and displayed again in a new buffer.  Not all websites
+have the same lyrics for the same song.  Some might be
+incomplete, some might be ugly."
+  (interactive)
+  (versuri-delete-lyrics versuri--artist versuri--song)
+  (kill-buffer versuri--buffer)
+  (versuri-display versuri--artist versuri--song))
+
+(defface versuri-lyrics-title
+  '((t :inherit default :height 1.6))
+  "Face for the lyrics title in `versuri-mode'.")
+
+(defface versuri-lyrics-text
+  '((t :inherit default))
+  "Face for the lyrics text in `versuri-mode'.")
+
+(defvar versuri-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "q") #'kill-current-buffer)
+    (define-key m (kbd "x") #'versuri-lyrics-forget)
+    (define-key m (kbd "r") #'versuri-lyrics-try-another-site)
+    m)
+  "Keymap for `versuri-mode'.")
+
+(define-derived-mode versuri-mode fundamental-mode "versuri"
+  "Major mode for versuri lyrics buffers."
+  (make-local-variable 'versuri--artist)
+  (make-local-variable 'versuri--song)
+  (make-local-variable 'versuri--buffer)
+  (read-only-mode))
+
 (defun versuri-display (artist song)
   "Search and display the lyrics for ARTIST and SONG in a buffer.
 
 Async call.  When found, the lyrics are inserted in a new
-read-only buffer.  If the buffer with the same lyrics already
-exists, switch to it and don't create a new buffer.  Inside the
-buffer, the following keybindings are active:
-
-q: kill the buffer
-
-x: delete the entry from the database and kill the
-buffer.  Useful if you don't want to keep the lyrics around.
-
-r: find the lyrics on another website and redisplay the buffer.
-This is similar to 'x', but the lyrics is then searched and
-displayed again in a new buffer.  Not all websites have the same
-lyrics for the same song.  Some might be incomplete, some might
-be ugly."
+`versuri-mode' buffer.  If the buffer with the same lyrics
+already exists, switch to it and don't create a new buffer."
   (versuri-lyrics artist song
     (lambda (lyrics)
       (let ((name (format "%s - %s | lyrics" artist song)))
@@ -353,23 +388,17 @@ be ugly."
             (switch-to-buffer it)
           (let ((b (generate-new-buffer name)))
             (with-current-buffer b
-              (insert (format "%s - %s\n\n" artist song))
-              (insert lyrics)
-              (read-only-mode)
-              (local-set-key (kbd "q") 'kill-current-buffer)
-              ;; Forget about these lyrics.
-              (local-set-key (kbd "x")
-                             (lambda ()
-                               (interactive)
-                               (versuri-delete-lyrics artist song)
-                               (kill-buffer it)))
-              ;; Find another website for these lyrics.
-              (local-set-key (kbd "r")
-                             (lambda ()
-                               (interactive)
-                               (versuri-delete-lyrics artist song)
-                               (kill-buffer it)
-                               (versuri-display artist song))))
+              (save-excursion
+                (insert
+                 (propertize (format "%s - %s\n\n" artist song)
+                             'face 'versuri-lyrics-title))
+                (insert
+                 (propertize lyrics
+                             'face 'versuri-lyrics-text)))
+              (versuri-mode)
+              (setq-local versuri--artist artist)
+              (setq-local versuri--song song)
+              (setq-local versuri--buffer it))
             (switch-to-buffer b)))))))
 
 (defun versuri-save (artist song)

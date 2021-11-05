@@ -210,7 +210,7 @@ Returns a list with the buffer and the line number of the clicked line."
   (posn-set-point (event-start event))
   (diff-hl-show-hunk))
 
-(defvar diff-hl-show-hunk--inline-popup-map
+(defvar diff-hl-show-hunk-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "p") #'diff-hl-show-hunk-previous)
     (define-key map (kbd "n") #'diff-hl-show-hunk-next)
@@ -220,6 +220,7 @@ Returns a list with the buffer and the line number of the clicked line."
     (define-key map (kbd "]") #'diff-hl-show-hunk-next)
     (define-key map (kbd "{") #'diff-hl-show-hunk-previous)
     (define-key map (kbd "}") #'diff-hl-show-hunk-next)
+    (define-key map (kbd "S") #'diff-hl-show-hunk-stage-hunk)
     map))
 
 (defvar diff-hl-show-hunk--hide-function)
@@ -264,21 +265,25 @@ BUFFER is a buffer with the hunk."
                   (overlay-put invisible-overlay 'invisible nil)
                   (delete-overlay invisible-overlay)
                   (diff-hl-inline-popup-hide)))))
+      (diff-hl-show-hunk--goto-hunk-overlay overlay)
       (let ((height
              (when smart-lines
                (when (not (eq 0 original-lines-number))
-                 original-lines-number))))
+                 original-lines-number)))
+            (footer "(q)Quit  (p)Previous  (n)Next  (r)Revert  (c)Copy original"))
+        (unless diff-hl-show-staged-changes
+          (setq footer (concat footer " (S)Stage")))
         (diff-hl-inline-popup-show
          propertized-lines
          (if (and (boundp 'diff-hl-reference-revision) diff-hl-reference-revision)
              (concat "Diff with " diff-hl-reference-revision)
            "Diff with HEAD")
-         "(q)Quit  (p)Previous  (n)Next  (r)Revert  (c)Copy original"
-         diff-hl-show-hunk--inline-popup-map
+         footer
+         diff-hl-show-hunk-map
          #'diff-hl-show-hunk-hide
          point
          height))
-      (diff-hl-show-hunk--goto-hunk-overlay overlay))))
+      )))
 
 (defun diff-hl-show-hunk-copy-original-text ()
   "Extracts all the lines from BUFFER starting with '-' to the kill ring."
@@ -287,10 +292,17 @@ BUFFER is a buffer with the hunk."
   (message "Original hunk content added to kill-ring"))
 
 (defun diff-hl-show-hunk-revert-hunk ()
-  "Dismiss the popup and prompt to revert the current diff hunk."
+  "Dismiss the popup and revert the current diff hunk."
   (interactive)
   (diff-hl-show-hunk-hide)
-  (diff-hl-revert-hunk))
+  (let (diff-hl-ask-before-revert-hunk)
+    (diff-hl-revert-hunk)))
+
+(defun diff-hl-show-hunk-stage-hunk ()
+  "Dismiss the popup and stage the current hunk."
+  (interactive)
+  (diff-hl-show-hunk-hide)
+  (diff-hl-stage-current-hunk))
 
 ;;;###autoload
 (defun diff-hl-show-hunk-previous ()
@@ -317,9 +329,13 @@ of `diff-hl-show-hunk'."
   "Tries to display the whole overlay, and place the point at the
 end of the OVERLAY, so posframe/inline is placed below the hunk."
   (when (and (overlayp overlay) (overlay-buffer overlay))
-    (goto-char (overlay-start overlay))
-    (when (< (point) (window-start))
-      (set-window-start nil (point)))
+    (let ((pt (point)))
+      (goto-char (overlay-start overlay))
+      (cond
+       ((< (point) (window-start))
+        (set-window-start nil (point)))
+       ((> (point) pt)
+        (redisplay))))
     (goto-char (1- (overlay-end overlay)))))
 
 ;;;###autoload
