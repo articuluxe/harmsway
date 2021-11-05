@@ -1,2 +1,2 @@
 echo "Cloning queue from _elpa"
-mkdir -p src
+mkdir -p src/.git-ignore

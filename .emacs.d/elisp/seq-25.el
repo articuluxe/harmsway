@@ -1,6 +1,6 @@
 ;;; seq-25.el --- seq.el implementation for Emacs 25.x -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2014-2021 Free Software Foundation, Inc.
 
 ;; Author: Nicolas Petton <nicolas@petton.fr>
 ;; Keywords: sequences
@@ -60,7 +60,7 @@
 
 (seq--when-emacs-25-p
 
- (eval-when-compile (require 'cl-generic))
+(eval-when-compile (require 'cl-generic))
  
 ;; We used to use some sequence functions from cl-lib, but this
 ;; dependency was swapped around so that it will be easier to make
@@ -97,6 +97,14 @@ name to be bound to the rest of SEQUENCE."
   (declare (indent 2) (debug (sexp form body)))
   `(pcase-let ((,(seq--make-pcase-patterns args) ,sequence))
      ,@body))
+
+(defmacro seq-setq (args sequence)
+  "Assign to the variables in ARGS the elements of SEQUENCE.
+
+ARGS can also include the `&rest' marker followed by a variable
+name to be bound to the rest of SEQUENCE."
+  (declare (debug (sexp form)))
+  `(pcase-setq ,(seq--make-pcase-patterns args) ,sequence))
 
 
 ;;; Basic seq functions that have to be implemented by new sequence types
@@ -138,9 +146,10 @@ Unlike `seq-map', FUNCTION takes two arguments: the element of
 the sequence, and its index within the sequence."
   (let ((index 0))
     (seq-do (lambda (elt)
-               (funcall function elt index)
-               (setq index (1+ index)))
-             sequence)))
+              (funcall function elt index)
+              (setq index (1+ index)))
+            sequence))
+  nil)
 
 (cl-defgeneric seqp (object)
   "Return non-nil if OBJECT is a sequence, nil otherwise."
@@ -318,7 +327,7 @@ list."
     (_ (error "Not a sequence type name: %S" type))))
 
 (cl-defgeneric seq-filter (pred sequence)
-  "Return a list of all the elements for which (PRED element) is non-nil in SEQUENCE."
+  "Return a list of all elements for which (PRED element) is non-nil in SEQUENCE."
   (let ((exclude (make-symbol "exclude")))
     (delq exclude (seq-map (lambda (elt)
                              (if (funcall pred elt)
@@ -335,9 +344,11 @@ list."
   "Reduce the function FUNCTION across SEQUENCE, starting with INITIAL-VALUE.
 
 Return the result of calling FUNCTION with INITIAL-VALUE and the
-first element of SEQUENCE, then calling FUNCTION with that result and
-the second element of SEQUENCE, then with that result and the third
-element of SEQUENCE, etc.
+first element of SEQUENCE, then calling FUNCTION with that result
+and the second element of SEQUENCE, then with that result and the
+third element of SEQUENCE, etc.  FUNCTION will be called with
+INITIAL-VALUE (and then the accumulated value) as the first
+argument, and the elements from SEQUENCE as the second argument.
 
 If SEQUENCE is empty, return INITIAL-VALUE and FUNCTION is not called."
   (if (seq-empty-p sequence)
@@ -386,10 +397,11 @@ found or not."
         (setq count (+ 1 count))))
     count))
 
+;; Can't use `with-suppressed-warnings' as that was added in 27.1.
 (cl-defgeneric seq-contains (sequence elt &optional testfn)
-  (declare (obsolete seq-contains-p "27.1"))
   "Return the first element in SEQUENCE that is equal to ELT.
 Equality is defined by TESTFN if non-nil or by `equal' if nil."
+  (declare (obsolete seq-contains-p "27.1"))
   (seq-some (lambda (e)
               (when (funcall (or testfn #'equal) elt e)
                 e))
@@ -405,7 +417,8 @@ Equality is defined by TESTFN if non-nil or by `equal' if nil."
       nil))
 
 (cl-defgeneric seq-set-equal-p (sequence1 sequence2 &optional testfn)
-  "Return non-nil if SEQUENCE1 and SEQUENCE2 contain the same elements, regardless of order.
+  "Return non-nil if SEQUENCE1 and SEQUENCE2 contain the same elements.
+This does not depend on the order of the elements.
 Equality is defined by TESTFN if non-nil or by `equal' if nil."
   (and (seq-every-p (lambda (item1) (seq-contains-p sequence2 item1 testfn)) sequence1)
        (seq-every-p (lambda (item2) (seq-contains-p sequence1 item2 testfn)) sequence2)))
@@ -437,7 +450,7 @@ The result is a sequence of type TYPE, or a list if TYPE is nil."
          (seq-map function sequence)))
 
 (cl-defgeneric seq-partition (sequence n)
-  "Return a list of the elements of SEQUENCE grouped into sub-sequences of length N.
+  "Return list of elements of SEQUENCE grouped into sub-sequences of length N.
 The last sequence may contain less than N elements.  If N is a
 negative integer or 0, nil is returned."
   (unless (< n 1)
@@ -446,6 +459,17 @@ negative integer or 0, nil is returned."
         (push (seq-take sequence n) result)
         (setq sequence (seq-drop sequence n)))
       (nreverse result))))
+
+(cl-defgeneric seq-union (sequence1 sequence2 &optional testfn)
+  "Return a list of all elements that appear in either SEQUENCE1 or SEQUENCE2.
+Equality is defined by TESTFN if non-nil or by `equal' if nil."
+  (let* ((accum (lambda (acc elt)
+                  (if (seq-contains-p acc elt testfn)
+                      acc
+                    (cons elt acc))))
+         (result (seq-reduce accum sequence2
+                          (seq-reduce accum sequence1 '()))))
+    (nreverse result)))
 
 (cl-defgeneric seq-intersection (sequence1 sequence2 &optional testfn)
   "Return a list of the elements that appear in both SEQUENCE1 and SEQUENCE2.
