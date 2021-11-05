@@ -30,8 +30,8 @@ use_clang()
 
 use_gcc()
 {
-    export CC=${CSTDLIB_BIN}/gcc-10
-    export CXX=${CSTDLIB_BIN}/g++-10
+    export CC=${CSTDLIB_BIN}/gcc-11
+    export CXX=${CSTDLIB_BIN}/g++-11
 }
 
 # # >>> conda initialize >>>
