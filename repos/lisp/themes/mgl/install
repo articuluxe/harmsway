@@ -1,2 +1,1 @@
-cp src/color-theme-mgl.el ../../../../.emacs.d/plugins
-find src -maxdepth 1 -name \*.el | grep -v color-theme-mgl.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
+find src -maxdepth 1 -name \*.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
