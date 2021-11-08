@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-05 14:54:25 dharms>
+;; Modified Time-stamp: <2021-11-08 14:00:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1186,6 +1186,7 @@ From `manuel-oberti.github.io' on 20190806."
   ;; (plink), and we put git in our exec-path anyways, so the full path is
   ;; unneeded.  This is also the default setting anyway on other platforms.
   (setq magit-git-executable "git")
+  (setq magit-bury-buffer-function #'magit-restore-window-configuration)
   (setq magit-revision-filter-files-on-follow t)
   (setq magit-log-show-refname-after-summary nil)
   (setq magit-no-confirm '())
