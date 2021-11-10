@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-11-10 10:59:24 dharms>
+# Modified Time-stamp: <2021-11-10 11:26:38 dharms>
 # Modified by: Dan Harms
 # Keywords: src repo
 
@@ -50,7 +50,7 @@ fi
 echo -e
 echo "Installing files from $repo..."
 find "$repo" -maxdepth 1 -name \*.sh -print | grep -v "$proj"-init.sh \
-    grep -v _repo-init.sh | xargs -I '{}' cp -pfv '{}' .
+    | grep -v _repo-init.sh | xargs -I '{}' cp -pfv '{}' .
 find "$repo" -maxdepth 1 -name \*.env -print0 | xargs -0I '{}' cp -pfv '{}' .
 find "$repo" -maxdepth 1 -name \*.proviso -print0 | xargs -0I '{}' cp -pfv '{}' .
 find "$repo" -maxdepth 1 -name \*.tar -print0 | xargs -0I '{}' cp -pfv '{}' .
