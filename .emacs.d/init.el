@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-08 14:00:43 dharms>
+;; Modified Time-stamp: <2021-11-18 16:31:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1216,7 +1216,7 @@ From `manuel-oberti.github.io' on 20190806."
               ("e" . ediff-merge-revisions-with-ancestor) ;; to see all differences, even those automatically merged
               ("m" . magit-toggle-margin)
               ("b" . magit-blame-addition)
-              ("B" . magit-blame-reverse)
+              ("M-b" . magit-blame-reverse)
               ("U" . magit-unstage-all) ;; unstage all changes (like SU but forces HEAD)
               ("s" . magit-stage-file)
               ("u" . magit-unstage-file)
@@ -1312,6 +1312,10 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc-msg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vc-msg
   :bind (:map harmsway-git-keymap ("," . vc-msg-show)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; blamer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package blamer
+  :bind (:map harmsway-git-keymap ("B" . blamer-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-walktree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-walktree
