@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-18 16:31:40 dharms>
+;; Modified Time-stamp: <2021-11-22 17:46:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4487,6 +4487,11 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pydoc-info ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pydoc-info :after python)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pyinspect ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pyinspect
+  :bind (:map harmsway-python-prefix
+              ("i" . pyinspect-inspect-at-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; py-isort ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package py-isort
