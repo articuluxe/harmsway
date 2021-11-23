@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-22 17:46:06 dharms>
+;; Modified Time-stamp: <2021-11-23 13:31:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -173,6 +173,7 @@ up to 10 times."
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
 (setq auto-window-vscroll nil)
+(setq show-paren-context-when-offscreen t)
 (show-paren-mode t)
 (size-indication-mode 1)
 ;; don't add new-lines to end of buffer on scroll
@@ -374,6 +375,7 @@ not an error if any files do not exist."
          ("<SPC>" . proviso-deploy-show)
          )
   :init
+  (setq tags-revert-without-query t)
   (define-prefix-command 'proviso-deploy-keymode-map)
   (global-set-key "\C-cpl" 'proviso-deploy-keymode-map)
   :config
@@ -1179,6 +1181,11 @@ From `manuel-oberti.github.io' on 20190806."
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
     (magit-status-setup-buffer default-directory)))
 
+(defun harmsway-magit-diff-file-dwim ()
+  "Open diff with same file in previously checked-out branch."
+  (interactive)
+  (magit-find-file-other-window (magit-get-previous-branch) (buffer-file-name)))
+
 (use-package magit
   :if (not (version< emacs-version "25.1"))
   :init
@@ -1221,7 +1228,7 @@ From `manuel-oberti.github.io' on 20190806."
               ("s" . magit-stage-file)
               ("u" . magit-unstage-file)
               ("r" . magit-reset-soft) ;; soft reset; hard reset can use C-u x
-              ("d" . magit-diff-buffer-file-popup)
+              ("d" . harmsway-magit-diff-file-dwim)
               ("c" . magit-clone)
               ("x" . magit-clean)
               ("k" . magit-checkout-stage)
