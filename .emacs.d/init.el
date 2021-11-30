@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-30 12:50:01 dharms>
+;; Modified Time-stamp: <2021-11-30 13:23:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4519,6 +4519,11 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pydoc-info ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pydoc-info :after python)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; insert-docstring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package python-insert-docstring
+  :bind (:map python-mode-map
+              ("C-c M-i" . python-insert-docstring-with-google-style-at-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pyinspect ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pyinspect
