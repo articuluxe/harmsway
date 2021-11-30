@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-23 13:31:19 dharms>
+;; Modified Time-stamp: <2021-11-30 11:28:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2619,6 +2619,18 @@ ARGS are the additional arguments."
   :after treemacs)
 (use-package lsp-treemacs
   :commands (lsp-treemacs-errors-list lsp-treemacs-quick-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; filetree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package filetree
+  :disabled                             ;needs helm
+  :bind (("C-c 0ftr" . filetree-show-recentf-files)
+         ("C-c 0ft." . filetree-show-cur-dir)
+         ("C-c 0ftd" . filetree-show-cur-dir-recursively)
+         ("C-c 0ftb" . filetree-show-cur-buffers)
+         )
+  :init
+  (setq filetree-use-all-the-icons t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft
