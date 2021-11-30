@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2021  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2021-11-05 14:42:18 dharms>
+;; Modified Time-stamp: <2021-11-30 10:53:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -133,6 +133,8 @@
           ((eq sym 'farmhouse-dark)
            (custom-theme-set-faces sym '(iedit-occurrence ((t (:inherit region))))))
           ((eq sym 'foggy-night)
+           (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
+          ((eq sym 'github-dark-vscode)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
           ((eq sym 'github-modern)
            (custom-theme-set-faces sym '(show-paren-match ((t (:bold t :foreground "#d0d0d0" :background "#032f62")))))
