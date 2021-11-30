@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-30 11:28:16 dharms>
+;; Modified Time-stamp: <2021-11-30 11:44:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2319,6 +2319,9 @@ ARGS are the additional arguments."
     (require 'ob-shell))
   (require 'ox-md)                      ;markdown export
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; orgtbl-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package orgtbl-edit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org-chef ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package org-chef
