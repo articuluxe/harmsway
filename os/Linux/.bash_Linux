@@ -2,3 +2,9 @@
 # .bash_Linux
 export TAR=$(which tar)
 alias ls='/bin/ls --color=tty'
+
+function diff_dirs {
+    test "$#" -ne 2 && echo "Need 2 directories" && return 0
+    diff <(find "$1" -type f -exec stat -c '%N %z' '{}' \; | sort) \
+         <(find "$2" -type f -exec stat -c '%N %z' '{}' \; | sort)
+}

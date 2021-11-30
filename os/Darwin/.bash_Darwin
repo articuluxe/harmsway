@@ -7,3 +7,9 @@ cdf() {
     target=`osascript -e 'tell application "Finder" to if (count of Finder windows) > 0 then get POSIX path of (target of front Finder window as text)'`
     test -n "$target" && cd "$target" && pwd
 }
+
+function diff_dirs {
+    test "$#" -ne 2 && echo "Need 2 directories" && return 0
+    diff <(find "$1" -type f -exec stat -f '%N %z' '{}' \; | sort) \
+         <(find "$2" -type f -exec stat -f '%N %z' '{}' \; | sort)
+}
