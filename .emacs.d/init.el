@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-30 11:44:44 dharms>
+;; Modified Time-stamp: <2021-11-30 12:50:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3462,7 +3462,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (setq flycheck-indication-mode nil)
   (setq flycheck-global-modes
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode
-                          js2-mode go-mode php-mode))
+                          js2-mode go-mode php-mode phps-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (setq-default flycheck-shellcheck-follow-sources nil)
   (use-package flycheck-package :config (flycheck-package-setup))
@@ -4360,7 +4360,7 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; php-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package php-mode
-  :mode ("\\.php$" "\\.inc$")
+  :mode ("\\.php$" "\\.phtml$" "\\.inc$")
   :init
   (add-hook 'php-mode-hook
             (lambda()
@@ -4368,6 +4368,16 @@ This function's result only has value if it is preceded by any font changes."
               (add-to-list 'semantic-symref-filepattern-alist '(php-mode "*.php" "*.inc"))))
   :config
   (define-key php-mode-map "\C-c\C-c" nil)
+  )
+
+(use-package phps-mode
+  :mode ("\\.php$" "\\.phtml$" "\\.inc$")
+  :disabled
+  :init
+  (setq phps-mode-async-process t)
+  (setq phps-mode-async-process-using-async-el nil)
+  :config
+  (phps-mode-flycheck-setup)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pip-requirements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
