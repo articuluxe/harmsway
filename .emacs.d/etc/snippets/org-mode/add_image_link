@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: AddImageLink
+# key: <i
+# --
+#+CAPTION: ${1:Caption}
+[[`(current-kill 0)`]]
