@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, November  5, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-11-05 13:53:56 dharms>
+# Modified Time-stamp: <2021-12-10 13:56:55 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -26,7 +26,9 @@ if [ ! -d "$parent/src" ] && [ -f "$parent/clone" ]; then
     ./clone
 fi
 # update
-if [ -d "$parent/src/.git" ] || [ -d "$parent/src/.git-ignore" ]; then
+if [ -d "$parent/src/.git" ] \
+       || [ -d "$parent/src/.git-ignore" ] \
+       || [ -d "$parent/src/.git-ignore_$(uname -s)" ]; then
     if [ -f "update" ]; then
         updatefile="$parent/update"
     fi
@@ -82,6 +84,8 @@ fi
 # install
 cd "$parent" || exit
 if [ -f "$parent/.ignore_install" ]; then
+    :
+elif [ -f "$parent/.ignore_install_$(uname -s)" ]; then
     :
 elif [ -f "$parent/install_$(uname -s)" ]; then
     ./"install_$(uname -s)"
