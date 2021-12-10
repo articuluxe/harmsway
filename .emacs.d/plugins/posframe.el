@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 1.1.0
+;; Version: 1.1.2
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -49,6 +49,14 @@
   "Set the posframe's frame-parameter: inhibit-double-buffering."
   :group 'posframe
   :type 'boolean)
+
+(defcustom posframe-mouse-banish-function #'posframe-mouse-banish-default
+  "The function used to banish mouse.
+
+Function `posframe-mouse-banish-default' will work well in most
+case, but suggest use function `posframe-mouse-banish-simple' or
+custom function for EXWM users."
+  :type 'function)
 
 (defvar-local posframe--frame nil
   "Record posframe's frame.")
@@ -679,28 +687,29 @@ You can use `posframe-delete-all' to delete all posframes."
                              (cons parent-buffer-name parent-buffer)))
 
       ;; Mouse banish
-      (when (and (car mouse-position)
-                 (cdr mouse-position))
-        (posframe--mouse-banish
-         (list :parent-frame parent-frame
-               :mouse-x (+ (or (car ref-position) 0)
-                           (car mouse-position))
-               :mouse-y (+ (or (cdr ref-position) 0)
-                           (cdr mouse-position))
-               :posframe-x
-               (if (>= (car position) 0)
-                   (car position)
-                 (- (frame-pixel-width parent-frame)
-                    (frame-pixel-width posframe)))
-               :posframe-y
-               (if (>= (cdr position) 0)
-                   (cdr position)
-                 (- (frame-pixel-height parent-frame)
-                    (frame-pixel-height posframe)))
-               :posframe-width (frame-pixel-width posframe)
-               :posframe-height (frame-pixel-height posframe)
-               :parent-frame-width parent-frame-width
-               :parent-frame-height parent-frame-height)))
+      (funcall
+       posframe-mouse-banish-function
+       (list :parent-frame parent-frame
+             :mouse-x (when (car mouse-position)
+                        (+ (or (car ref-position) 0)
+                           (car mouse-position)))
+             :mouse-y (when (cdr mouse-position)
+                        (+ (or (cdr ref-position) 0)
+                           (cdr mouse-position)))
+             :posframe-x
+             (if (>= (car position) 0)
+                 (car position)
+               (- (frame-pixel-width parent-frame)
+                  (frame-pixel-width posframe)))
+             :posframe-y
+             (if (>= (cdr position) 0)
+                 (cdr position)
+               (- (frame-pixel-height parent-frame)
+                  (frame-pixel-height posframe)))
+             :posframe-width (frame-pixel-width posframe)
+             :posframe-height (frame-pixel-height posframe)
+             :parent-frame-width parent-frame-width
+             :parent-frame-height parent-frame-height))
 
       ;; Return posframe
       posframe)))
@@ -722,7 +731,25 @@ You can use `posframe-delete-all' to delete all posframes."
             (cons position height))
       height)))
 
-(defun posframe--mouse-banish (info)
+(defun posframe-mouse-banish-simple (info)
+  "Banish mouse to (0, 0) of posframe base on INFO."
+  (let ((parent-frame (plist-get info :parent-frame))
+        (x (plist-get info :posframe-x))
+        (y (plist-get info :posframe-y))
+        (w (plist-get info :posframe-width))
+        (h (plist-get info :posframe-height))
+        (p-w (plist-get info :parent-frame-width))
+        (p-h (plist-get info :parent-frame-height)))
+    (set-mouse-pixel-position
+     parent-frame
+     (if (= x 0)
+         (min p-w (+ w 5))
+       (max 0 (- x 5)))
+     (if (= y 0)
+         (min p-h (+ h 10))
+       (max 0 (- y 10))))))
+
+(defun posframe-mouse-banish-default (info)
   "Banish mouse base on INFO.
 
 FIXME: This is a hacky fix for the mouse focus problem, which like:
@@ -736,7 +763,8 @@ https://github.com/tumashu/posframe/issues/4#issuecomment-357514918"
          (h (plist-get info :posframe-height))
          (p-w (plist-get info :parent-frame-width))
          (p-h (plist-get info :parent-frame-height)))
-    (when (and (>= m-x x)
+    (when (and m-x m-y
+               (>= m-x x)
                (<= m-x (+ x w))
                (>= m-y y)
                (<= m-y (+ y h)))
@@ -897,8 +925,7 @@ to do similar job:
       (when (or (equal buffer-or-name (car buffer-info))
                 (equal buffer-or-name (cdr buffer-info)))
         (with-current-buffer buffer-or-name
-          (apply #'posframe--set-frame-size
-                 frame posframe--last-posframe-size))))))
+          (posframe--set-frame-size posframe--last-posframe-size))))))
 
 (defun posframe-hide (buffer-or-name)
   "Hide posframe pertaining to BUFFER-OR-NAME.

@@ -53,7 +53,6 @@
 (require 'auth-source)
 (require 'cl-lib)
 (require 'gnutls)
-(require 'json)
 (require 'let-alist)
 (require 'url)
 (require 'url-auth)
@@ -81,6 +80,19 @@ only serves as documentation.")
 
 (defvar ghub-insecure-hosts nil
   "List of hosts that use http instead of https.")
+
+(defvar ghub-json-use-jansson nil
+  "Whether to use the Jansson library, if available.
+This is experimental.  Only let-bind this but do not enable it
+globally because doing that is likely to break other packages
+that use `ghub'.  As a user also do not enable this yet.
+See https://github.com/magit/ghub/pull/149.")
+
+(defvar ghub-json-object-type 'alist
+  "The object type that is used for json payload decoding.")
+
+(defvar ghub-json-array-type 'list
+  "The array type that is used for json payload decoding.")
 
 ;;; Request
 ;;;; Object
@@ -625,13 +637,21 @@ and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=34341.")
   (let ((raw (ghub--decode-payload)))
     (and raw
          (condition-case nil
-             (let ((json-object-type 'alist)
-                   (json-array-type  'list)
-                   (json-key-type    'symbol)
-                   (json-false       nil)
-                   (json-null        nil))
-               (json-read-from-string raw))
-           (json-readtable-error
+             (if (and ghub-json-use-jansson
+                      (fboundp 'json-parse-string))
+                 (json-parse-string
+                  raw
+                  :object-type  ghub-json-object-type
+                  :array-type   ghub-json-array-type
+                  :false-object nil
+                  :null-object  nil)
+               (require 'json)
+               (let ((json-object-type ghub-json-object-type)
+                     (json-array-type  ghub-json-array-type)
+                     (json-false       nil)
+                     (json-null        nil))
+                 (json-read-from-string raw)))
+           ((json-parse-error json-readtable-error)
             `((message
                . ,(if (looking-at "<!DOCTYPE html>")
                       (if (re-search-forward
@@ -652,10 +672,15 @@ and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=34341.")
   (and payload
        (progn
          (unless (stringp payload)
-           ;; Unfortunately `json-encode' may modify the input.
-           ;; See https://debbugs.gnu.org/cgi/bugreport.cgi?bug=40693.
-           ;; and https://github.com/magit/forge/issues/267
-           (setq payload (json-encode (copy-tree payload))))
+           (setq payload
+                 (if (and ghub-json-use-jansson
+                          (fboundp 'json-serialize))
+                     (json-serialize payload)
+                   ;; Unfortunately `json-encode' may modify the input.
+                   ;; See https://debbugs.gnu.org/cgi/bugreport.cgi?bug=40693.
+                   ;; and https://github.com/magit/forge/issues/267
+                   (require 'json)
+                   (json-encode (copy-tree payload)))))
          (encode-coding-string payload 'utf-8))))
 
 (defun ghub--url-encode-params (params)
@@ -698,7 +723,7 @@ and call `auth-source-forget+'."
                 headers)
         (cons (ghub--auth host auth username forge) headers)))))
 
-(defun ghub--auth (host auth &optional username forge)
+(cl-defgeneric ghub--auth (host auth &optional username forge)
   (unless username
     (setq username (ghub--username host forge)))
   (if (eq auth 'basic)
@@ -766,7 +791,7 @@ or (info \"(ghub)Getting Started\") for instructions.
                             user host))))))
     (if (functionp token) (funcall token) token)))
 
-(cl-defmethod ghub--host (&optional forge)
+(cl-defgeneric ghub--host (&optional forge)
   (cl-ecase forge
     ((nil github)
      (or (ignore-errors (car (process-lines "git" "config" "github.host")))
@@ -784,7 +809,7 @@ or (info \"(ghub)Getting Started\") for instructions.
      (or (ignore-errors (car (process-lines "git" "config" "bitbucket.host")))
          (bound-and-true-p buck-default-host)))))
 
-(cl-defmethod ghub--username (host &optional forge)
+(cl-defgeneric ghub--username (host &optional forge)
   (let ((var
          (cl-ecase forge
            ((nil github)

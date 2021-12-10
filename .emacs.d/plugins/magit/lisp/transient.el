@@ -911,7 +911,7 @@ functions.  Different infix commands behave differently because
 the concrete methods are different for different infix command
 classes.  In rare case the above command function might not be
 suitable, even if you define your own infix command class.  In
-that case you have to use `transient-suffix-command' to define
+that case you have to use `transient-define-suffix' to define
 the infix command and use t as the value of the `:transient'
 keyword.
 
@@ -3637,6 +3637,19 @@ search instead."
            (string-prefix-p "edebug" (symbol-name this-command)))))
 
 ;;;; Miscellaneous
+
+(with-eval-after-load 'lisp-mode
+  (cl-pushnew (list nil (concat "^\\s-*("
+                                (eval-when-compile
+			          (regexp-opt
+			           '("transient-define-prefix"
+                                     "transient-define-suffix"
+                                     "transient-define-infix"
+                                     "transient-define-argument")
+                                   t))
+		                "\\s-+\\(" lisp-mode-symbol-regexp "\\)")
+	            2)
+              lisp-imenu-generic-expression :test #'equal))
 
 (declare-function which-key-mode "which-key" (&optional arg))
 

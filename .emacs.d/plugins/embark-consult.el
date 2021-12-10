@@ -155,8 +155,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
             (setq last-buf this-buf))
           (insert (concat lineno contents nl))))
       (goto-char (point-min))
-      (occur-mode)
-      (setq-local occur-highlight-regexp "^.*$"))
+      (occur-mode))
     (pop-to-buffer buf)))
 
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
@@ -225,16 +224,12 @@ actual type."
 (setf (alist-get 'consult-register embark-collect-initial-view-alist)
       'zebra)
 
-;;; Support for consult-yank*
-
-(setf (alist-get 'consult-yank embark-collect-initial-view-alist)
-      'zebra)
-
 ;;; Bindings for consult commands in embark keymaps
 
 (define-key embark-file-map "x" #'consult-file-externally)
 
 (define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
+(define-key embark-become-file+buffer-map "C4b" #'consult-buffer-other-window)
 
 ;;; Support for Consult search commands
 
@@ -310,6 +305,20 @@ that is a Consult async command."
    (cl-pushnew #'embark-consult--add-async-separator
                (alist-get cmd embark-setup-action-hooks)))
  embark-consult-async-search-map)
+
+;;; Tables of contents for buffers: imenu and outline candidate collectors
+
+(defun embark-consult-outline-candidates ()
+  "Collect all outline headings in the current buffer."
+  (cons 'consult-location (consult--outline-candidates)))
+
+(autoload 'consult-imenu--items "consult-imenu")
+(defun embark-consult-imenu-candidates ()
+  "Collect all imenu items in the current buffer."
+  (cons 'imenu (mapcar #'car (consult-imenu--items))))
+
+(setf (alist-get 'imenu embark-default-action-overrides) #'consult-imenu)
+(add-to-list 'embark-candidate-collectors #'embark-consult-outline-candidates 'append)
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here

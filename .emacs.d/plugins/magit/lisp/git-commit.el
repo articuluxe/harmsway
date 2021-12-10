@@ -404,6 +404,8 @@ This is only used if Magit is available."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "M-p")     'git-commit-prev-message)
     (define-key map (kbd "M-n")     'git-commit-next-message)
+    (define-key map (kbd "C-c M-p") 'git-commit-search-message-backward)
+    (define-key map (kbd "C-c M-n") 'git-commit-search-message-forward)
     (define-key map (kbd "C-c C-i") 'git-commit-insert-pseudo-header)
     (define-key map (kbd "C-c C-a") 'git-commit-ack)
     (define-key map (kbd "C-c M-i") 'git-commit-suggested)
@@ -724,17 +726,44 @@ With a numeric prefix ARG, go forward ARG comments."
   (interactive "*p")
   (git-commit-prev-message (- arg)))
 
+(defun git-commit-search-message-backward (string)
+  "Search backward through message history for a match for STRING.
+Save current message first."
+  (interactive
+   ;; Avoid `format-prompt' because it isn't available until Emacs 28.
+   (list (read-string (format "Comment substring (default %s): "
+                              log-edit-last-comment-match)
+                      nil nil log-edit-last-comment-match)))
+  (cl-letf (((symbol-function #'log-edit-previous-comment)
+             (symbol-function #'git-commit-prev-message)))
+    (log-edit-comment-search-backward string)))
+
+(defun git-commit-search-message-forward (string)
+  "Search forward through message history for a match for STRING.
+Save current message first."
+  (interactive
+   ;; Avoid `format-prompt' because it isn't available until Emacs 28.
+   (list (read-string (format "Comment substring (default %s): "
+                              log-edit-last-comment-match)
+                      nil nil log-edit-last-comment-match)))
+  (cl-letf (((symbol-function #'log-edit-previous-comment)
+             (symbol-function #'git-commit-prev-message)))
+    (log-edit-comment-search-forward string)))
+
 (defun git-commit-save-message ()
   "Save current message to `log-edit-comment-ring'."
   (interactive)
-  (when-let ((message (git-commit-buffer-message)))
-    (when-let ((index (ring-member log-edit-comment-ring message)))
-      (ring-remove log-edit-comment-ring index))
-    (ring-insert log-edit-comment-ring message)
-    (when (and git-commit-use-local-message-ring
-               (fboundp 'magit-repository-local-set))
-      (magit-repository-local-set 'log-edit-comment-ring
-                                  log-edit-comment-ring))))
+  (if-let ((message (git-commit-buffer-message)))
+      (progn
+        (when-let ((index (ring-member log-edit-comment-ring message)))
+          (ring-remove log-edit-comment-ring index))
+        (ring-insert log-edit-comment-ring message)
+        (when (and git-commit-use-local-message-ring
+                   (fboundp 'magit-repository-local-set))
+          (magit-repository-local-set 'log-edit-comment-ring
+                                      log-edit-comment-ring))
+        (message "Message saved"))
+    (message "Only whitespace and/or comments; message not saved")))
 
 (defun git-commit-prepare-message-ring ()
   (make-local-variable 'log-edit-comment-ring-index)

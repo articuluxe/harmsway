@@ -49,6 +49,8 @@
 (require 'cl-lib)
 (require 'thingatpt)
 
+(declare-function ebib "ext:ebib.el" (&optional file key))
+
 (defvar-local pandoc--@-counter 0 "Counter for (@)-lists.")
 
 (defvar pandoc--window-config nil
@@ -246,7 +248,7 @@ file (i.e., if the output file is set to nil), return nil."
         (and (null (pandoc--get 'output)) ; or if the user set no output file but either
              (or pdf            ; (i) we're converting to pdf, or
                  (member (pandoc--get 'write) ; (ii) the output format is odt, epub or docx
-                         '("odt" "epub" "docx")))))
+                         '("odt" "epub" "docx" "pptx")))))
     (format "%s/%s%s"  ; we create an output file name.
             (expand-file-name (or (pandoc--get 'output-dir)
                                   (file-name-directory input-file)))
@@ -1139,8 +1141,6 @@ argument, the option is toggled."
 ;;                      :style 'toggle
 ;;                      :selected `(pandoc--get (quote ,(cdr option)))))
 ;;            pandoc--switches))
-
-(easy-menu-add pandoc-mode-menu pandoc-mode-map)
 
 ;; hydras
 

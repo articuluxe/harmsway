@@ -102,6 +102,7 @@ Will be set by `treemacs--post-command'.")
     (define-key map (kbd "s")     'treemacs-switch-workspace)
     (define-key map (kbd "e")     'treemacs-edit-workspaces)
     (define-key map (kbd "f")     'treemacs-set-fallback-workspace)
+    (define-key map (kbd "n")     'treemacs-next-workspace)
     map)
   "Keymap for workspace-related commands in `treemacs-mode'.")
 
@@ -270,7 +271,7 @@ Will simply return `treemacs--eldoc-msg'."
       (setq evil-treemacs-state-cursor
             (if treemacs-show-cursor
                 evil-motion-state-cursor
-              '(hbar . 0)))))
+              '(bar . 0)))))
 
   ;; higher fuzz value makes it less likely to start a mouse drag
   ;; and make a switch to visual state

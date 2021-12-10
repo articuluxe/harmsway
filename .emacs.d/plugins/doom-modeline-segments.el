@@ -881,14 +881,12 @@ mouse-3: Next error"
                         (define-key map [mode-line mouse-3]
                           #'flycheck-next-error)
                         (when (featurep 'mwheel)
-                          (define-key map (vector 'mode-line
-                                                  mouse-wheel-down-event)
+                          (define-key map [mode-line mouse-wheel-down-event]
                             (lambda (event)
                               (interactive "e")
                               (with-selected-window (posn-window (event-start event))
                                 (flycheck-previous-error 1))))
-                          (define-key map (vector 'mode-line
-                                                  mouse-wheel-up-event)
+                          (define-key map [mode-line mouse-wheel-up-event]
                             (lambda (event)
                               (interactive "e")
                               (with-selected-window (posn-window (event-start event))
@@ -2375,7 +2373,7 @@ mouse-1: Toggle Debug on Quit"
   "Update PDF pages."
   (setq doom-modeline--pdf-pages
         (format "  P%d/%d "
-                (eval `(pdf-view-current-page))
+                (or (eval `(pdf-view-current-page)) 0)
                 (pdf-cache-number-of-pages))))
 (add-hook 'pdf-view-change-page-hook #'doom-modeline-update-pdf-pages)
 
@@ -2946,6 +2944,21 @@ mouse-3: Restart preview"
                                   #'grip-restart-preview)
                                 map)))
      (doom-modeline-spc))))
+
+;;
+;; Follow mode
+;;
+
+(doom-modeline-def-segment follow
+  (when (bound-and-true-p follow-mode)
+    (let* ((windows (follow-all-followers))
+           (nwindows (length windows))
+           (nfollowing (- (length (memq (selected-window) windows))
+                          1)))
+      (concat
+       (doom-modeline-spc)
+       (propertize (format "Follow %d/%d" (- nwindows nfollowing) nwindows)
+                   'face 'doom-modeline-buffer-minor-mode)))))
 
 (provide 'doom-modeline-segments)
 

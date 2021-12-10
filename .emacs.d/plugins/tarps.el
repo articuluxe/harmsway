@@ -228,10 +228,7 @@
                     (magit-diff-removed-highlight :foreground "#aa2222")
 
                     (magit-diff-removed :background "#ffdddd")
-                    (magit-diff-removed-highlight :background "#eecccc")
-                    )))
-
-
+                    (magit-diff-removed-highlight :background "#eecccc"))))
 
            ,@(-mapcat
                (lambda (args)
@@ -279,6 +276,9 @@
 
                   (show-paren-match :focused)
                   (show-paren-match-expression :focused)
+
+                  (line-number :weak :faded)
+                  (line-number-current-line :focused)
                   ))
 
            ;; inheritors
@@ -334,6 +334,16 @@
                     ;; make cider inline test faces similar to magit
                     ;; (abusing for consistency)
                     magit-diff-removed-highlight (cider-test-failure-face cider-test-error-face)
+                    magit-diff-added-highlight cider-test-success-face
+
+
+                    magit-diff-removed smerge-upper
+                    magit-diff-added smerge-lower
+                    default smerge-markers
+
+                    ;; todo?:
+                    ;; diff-refined-removed
+                    ;; diff-refined-added
 
                     )))
 

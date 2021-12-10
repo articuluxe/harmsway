@@ -174,12 +174,12 @@ As defined by the Language Server Protocol 3.16."
 
 (defcustom lsp-client-packages
   '(ccls lsp-actionscript lsp-ada lsp-angular lsp-bash lsp-beancount lsp-clangd lsp-clojure lsp-cmake
-         lsp-crystal lsp-csharp lsp-css lsp-d lsp-dart lsp-dhall lsp-dockerfile lsp-elm
+         lsp-crystal lsp-csharp lsp-css lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile lsp-elm
          lsp-elixir lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go lsp-graphql
          lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-java lsp-javascript lsp-json
-         lsp-kotlin lsp-ltex lsp-lua lsp-markdown lsp-nim lsp-nix lsp-metals lsp-ocaml lsp-perl lsp-php lsp-pwsh
-         lsp-pyls lsp-pylsp lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet
-         lsp-tex lsp-terraform lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
+         lsp-kotlin lsp-latex lsp-ltex lsp-lua lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-metals lsp-mssql lsp-ocaml lsp-pascal lsp-perl lsp-php lsp-pwsh
+         lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sourcekit lsp-sonarlint
+         lsp-tailwindcss lsp-tex lsp-terraform lsp-toml lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
          lsp-yaml lsp-sqls lsp-svelte lsp-steep lsp-zig)
   "List of the clients to be automatically required."
   :group 'lsp-mode
@@ -347,6 +347,8 @@ the server has requested that."
     "[/\\\\]\\.babel_cache\\'"
     "[/\\\\]\\.cpcache\\'"
     "[/\\\\]\\checkouts\\'"
+    ;; Maven
+    "[/\\\\]\\.m2\\'"
     ;; .Net Core build-output
     "[/\\\\]bin/Debug\\'"
     "[/\\\\]obj\\'"
@@ -799,7 +801,10 @@ Changes take effect only when a new session is started."
                                         (text-mode . "plaintext")
                                         (markdown-mode . "markdown")
                                         (gfm-mode . "markdown")
-                                        (beancount-mode . "beancount"))
+                                        (beancount-mode . "beancount")
+                                        (conf-toml-mode . "toml")
+                                        (org-mode . "plaintext")
+                                        (nginx-mode . "nginx"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -1831,9 +1836,9 @@ regex in IGNORED-FILES."
     lsp-clojure lsp-cmake lsp-crystal lsp-csharp lsp-css lsp-d lsp-dhall
     lsp-dockerfile lsp-elixir lsp-elm lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript
     lsp-go lsp-graphql lsp-groovy lsp-hack lsp-haxe lsp-html lsp-javascript lsp-json lsp-kotlin lsp-lua
-    lsp-markdown lsp-nim lsp-nix lsp-ocaml lsp-perl lsp-php lsp-prolog lsp-purescript lsp-pwsh
+    lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-ocaml lsp-perl lsp-php lsp-prolog lsp-purescript lsp-pwsh
     lsp-pyls lsp-pylsp lsp-racket lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sqls
-    lsp-steep lsp-svelte lsp-terraform lsp-tex lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl
+    lsp-steep lsp-svelte lsp-terraform lsp-tex lsp-toml lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl
     lsp-vimscript lsp-xml lsp-yaml lsp-zig)
   "List of downstream deps.")
 
@@ -3999,12 +4004,17 @@ OPERATION is symbol representing the source of this text edit."
         (progn
           (lsp--check-document-changes-version document-changes)
           (->> document-changes
-               (seq-filter (-lambda ((&CreateFile :kind))
-                             (or (not kind) (equal kind "edit"))))
+               (seq-filter (-lambda ((&CreateFile :kind)) (equal kind "create")))
                (seq-do (lambda (change) (lsp--apply-text-document-edit change operation))))
           (->> document-changes
                (seq-filter (-lambda ((&CreateFile :kind))
-                             (not (or (not kind) (equal kind "edit")))))
+                             (and (or (not kind) (equal kind "edit"))
+                                  (not (equal kind "create")))))
+               (seq-do (lambda (change) (lsp--apply-text-document-edit change operation))))
+          (->> document-changes
+               (seq-filter (-lambda ((&CreateFile :kind))
+                             (and (not (or (not kind) (equal kind "edit")))
+                                  (not (equal kind "create")))))
                (seq-do (lambda (change) (lsp--apply-text-document-edit change operation)))))
       (lsp-map
        (lambda (uri text-edits)
@@ -4040,7 +4050,8 @@ interface TextDocumentEdit {
                 (mkdir (f-dirname file-name) t)
                 (f-touch file-name)
                 (when (lsp:create-file-options-overwrite? options?)
-                  (f-write-text "" nil file-name))))
+                  (f-write-text "" nil file-name))
+                (find-file-noselect file-name)))
     ("delete" (-let (((&DeleteFile :uri :options? (&DeleteFileOptions? :recursive?)) edit))
                 (f-delete (lsp--uri-to-path uri) recursive?)))
     ("rename" (-let* (((&RenameFile :old-uri :new-uri :options? (&RenameFileOptions? :overwrite?)) edit)
@@ -4203,9 +4214,11 @@ LSP server result."
                                 (indent-to-column offset))))
                   (t indent-line-function))))
       (goto-char start)
-      (while (and (equal (forward-line 1) 0)
+      (forward-line)
+      (while (and (not (eobp))
                   (<= (line-number-at-pos) end-line))
-        (funcall indent-line-function)))))
+        (funcall indent-line-function)
+        (forward-line)))))
 
 (defun lsp--apply-text-edits (edits &optional operation)
   "Apply the EDITS described in the TextEdit[] object.
@@ -4536,6 +4549,8 @@ Added to `after-change-functions'."
     (run-hooks 'lsp-on-change-hook)))
 
 (defun lsp--after-change (buffer)
+  (when (fboundp 'lsp--semantic-tokens-refresh-if-enabled)
+    (lsp--semantic-tokens-refresh-if-enabled buffer))
   (when lsp--on-change-timer
     (cancel-timer lsp--on-change-timer))
   (setq lsp--on-change-timer (run-with-idle-timer
@@ -5982,7 +5997,10 @@ REFERENCES? t when METHOD returns references."
 (cl-defun lsp-find-implementation (&key display-action)
   "Find implementations of the symbol under point."
   (interactive)
-  (lsp-find-locations "textDocument/implementation" nil :display-action display-action))
+  (lsp-find-locations "textDocument/implementation"
+                      nil
+                      :display-action display-action
+                      :references? t))
 
 (cl-defun lsp-find-references (&optional include-declaration &key display-action)
   "Find references of the symbol under point."
@@ -7499,6 +7517,7 @@ When prefix UPDATE? is t force installation even if the server is present."
                                             (lambda (&rest _)
                                               (generate-new-buffer-name (format "*lsp-install: %s*" name))))
       (lsp-installation-buffer-mode +1)
+      (view-mode +1)
       (add-hook
        'compilation-finish-functions
        (lambda (_buf status)
@@ -8237,7 +8256,21 @@ Returns nil if the project should not be added to the current SESSION."
       (lsp--suggest-project-root))
     (lsp-find-session-folder session file-name)
     (unless lsp-auto-guess-root
-      (lsp--find-root-interactively session)))))
+      (when-let ((root-folder (lsp--find-root-interactively session)))
+        (if (or (not (f-equal? root-folder (expand-file-name "~/")))
+                (yes-or-no-p
+                 (concat
+                  (propertize "[WARNING] " 'face 'warning)
+                  "You are trying to import your home folder as project root. This may cause performance issue because some language servers (python, lua, etc) will try to scan all files under project root. To avoid that you may:
+
+1. Use `I' option from the interactive project import to select subfolder(e. g. `~/foo/bar' instead of `~/').
+2. If your file is under `~/' then create a subfolder and move that file in this folder.
+
+Type `No' to go back to project selection.
+Type `Yes' to confirm `HOME' as project root.
+Type `C-g' to cancel project import process and stop `lsp'")))
+            root-folder
+          (lsp--calculate-root session file-name)))))))
 
 (defun lsp--try-open-in-library-workspace ()
   "Try opening current file as library file in any of the active workspace.

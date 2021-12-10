@@ -5,7 +5,7 @@
 ;; Author:      Marcin Swieczkowski <marcin.swieczkowski@gmail.com>
 ;;              See README.md for full list of contributors.
 ;; Created:     Thu Mar 2 22:19:19 CET 2017
-;; Version:     1.0.0
+;; Version:     1.1.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; URL:         https://github.com/m-cat/nimbus-theme
 ;; Keywords:    faces
@@ -58,7 +58,7 @@
        (light-blue     "#68a5e9")
        (blue           "#598bc1")
        (dark-blue      "#267E99")
-       ;; (light-orange   "#eaaa0c")
+       (light-orange   "#eaaa0c")
        (orange         "#df9522")
        (dark-tan       "#7d7c61")
        (bright-yellow  "#fffe0a")
@@ -95,7 +95,7 @@
        (nimbus-warn    "#f57e00")
 
        (bg             "#1a1a1a")
-       (fg             "#AAB0AB")
+       (fg             "#aab0ab")
 
        ;; Define color variables.
 
@@ -116,12 +116,13 @@
        (indent         darker-gray)
        (key            blue)
        (line           blue-gray)
-       (line-current   dark-green)
+       (line-current   green)
        (name           dark-green)
        (number         orange)
        (selection      purple-bg)
-       (separator      orange)
+       (separator      brown)
        (special        blue-gray)
+       (strike         brown)
        (summary        red)
        (tag            dark-blue)
 
@@ -155,7 +156,7 @@
    `nimbus ;; You must use the same theme name here...
    `(default ((t (:foreground ,fg :background ,bg :bold nil))))
 
-   `(cursor ((t (:foreground ,black :background ,cursor))))
+   `(cursor ((t (:background ,cursor))))
    `(fringe ((t (:inherit default :background ,fringe))))
    `(highlight ((t (:background ,teal-bg))))
    `(link ((t (:foreground ,lighter-blue :underline t))))
@@ -181,12 +182,13 @@
    `(font-lock-constant-face ((t (:foreground ,purple))))
    `(font-lock-warning-face ((t (:inherit warning))))
    `(font-lock-variable-name-face ((t (:foreground ,yellow))))
-   `(font-lock-doc-face ((t (:inherit font-lock-comment-face :foreground ,lighter-green))))
+   `(font-lock-doc-face ((t (:foreground ,brown))))
 
    ;;; Built-in
 
    `(bookmark-face ((t (:foreground nil :background ,selection))))
    `(button ((t (:foreground ,blue :underline t))))
+   `(escape-glyph ((t (:foreground ,dark-blue))))
    `(header-line ((t (:background ,light-purple-bg :foreground ,fg))))
    `(help-key-binding ((t (:foreground ,key))))
    `(isearch ((t (:foreground ,black :background ,search))))
@@ -194,7 +196,7 @@
    `(linum ((t (:inherit fringe :foreground ,line))))
    `(match ((t (:foreground ,black :background ,match))))
    `(popup-tip-face ((t (:background ,fg :foreground ,bg))))
-   `(trailing-whitespace ((t (:foreground ,white :underline t))))
+   `(trailing-whitespace ((t (:background ,red-bg))))
    `(vertical-border ((t (:foreground ,dark-gray))))
 
    ;;; Modes
@@ -649,7 +651,9 @@
    ;; highlight-indent-guides
    `(highlight-indent-guides-character-face ((t (:foreground ,indent))))
    `(highlight-indent-guides-odd-face ((t (:background ,darkest-gray))))
-   `(highlight-indent-guides-even-face ((t (:background ,darker-gray))))
+   `(highlight-indent-guides-even-face ((t (:background ,darkest-gray))))
+   `(highlight-indent-guides-top-odd-face ((t (:background ,teal-bg))))
+   `(highlight-indent-guides-top-even-face ((t (:background ,teal-bg))))
 
    ;; highlight-numbers
    `(highlight-numbers-number ((t (:foreground ,number))))
@@ -659,6 +663,12 @@
 
    ;; highlight-quoted
    `(highlight-quoted-symbol ((t (:foreground ,purple))))
+
+   ;; highlight-symbol
+   `(highlight-symbol-face ((t (:inherit highlight))))
+
+   ;; highlight-thing
+   `(highlight-thing ((t (:inherit highlight))))
 
    ;; hl-line
    `(hl-line ((t (:background ,hl-line))))
@@ -818,6 +828,12 @@
    `(magit-log-date ((t (:foreground ,date :slant normal))))
    `(magit-log-graph ((t (:foreground ,separator))))
 
+   ;; magit-commit-mark
+   `(magit-commit-mark-read-face ((t (:foreground ,gray :slant italic))))
+   ;; `(magit-commit-mark-star-face ((t ( ))))
+   `(magit-commit-mark-unread-face ((t (:inherit magit-hash))))
+   `(magit-commit-mark-urgent-face ((t (:foreground ,red))))
+
    ;; makey
    `(makey-key-mode-button-face ((t (:inherit font-lock-constant-face))))
 
@@ -882,15 +898,11 @@
    `(nswbuff-special-buffers-face ((t (:foreground ,special))))
 
    ;; org
-   `(org-agenda-date ((t (:foreground ,date))))
-   `(org-agenda-date-today ((t (:inherit org-agenda-date :bold t))))
-   `(org-agenda-date-weekend ((t (:inherit org-agenda-date :slant italic))))
-   `(org-agenda-done ((t (:foreground ,dark-green))))
-   `(org-agenda-structure ((t (:foreground ,heading))))
    `(org-block-begin-line ((t (:inherit org-meta-line :underline ,indent))))
    `(org-block-end-line ((t (:inherit org-meta-line :overline ,indent))))
    `(org-checkbox ((t (:foreground ,dark-tan :bold t))))
-   ;; `(org-checkbox-statistics-todo ((t (:inherit org-todo))))
+   `(org-checkbox-statistics-done ((t (:foreground ,dark-green))))
+   `(org-checkbox-statistics-todo ((t (:foreground ,red))))
    `(org-date ((t (:inherit link))))
    `(org-date-selected ((t (:inherit highlight :foreground ,current))))
    `(org-document-info ((t (:foreground ,lighter-green))))
@@ -898,7 +910,7 @@
    `(org-done ((t (:foreground ,dark-green))))
    `(org-drawer ((t (:foreground ,special))))
    `(org-ellipsis ((t (:foreground ,light-gray))))
-   `(org-headline-done ((t (:foreground ,light-gray :strike-through t))))
+   `(org-headline-done ((t (:foreground ,light-gray :strike-through ,strike))))
    `(org-hide ((t (:foreground ,bg))))
    `(org-level-1 ((t (:foreground ,rainbow-1))))
    `(org-level-2 ((t (:foreground ,rainbow-2))))
@@ -908,7 +920,7 @@
    `(org-level-6 ((t (:foreground ,rainbow-6))))
    `(org-level-7 ((t (:foreground ,rainbow-7))))
    `(org-level-8 ((t (:foreground ,rainbow-8))))
-   `(org-priority ((t (:foreground ,dark-red))))
+   `(org-priority ((t (:foreground ,light-orange))))
    `(org-scheduled ((t (:foreground ,green))))
    `(org-scheduled-previously ((t (:foreground ,orange))))
    `(org-scheduled-today ((t (:foreground ,yellow))))
@@ -916,15 +928,32 @@
    `(org-table ((t (:foreground ,lighter-blue))))
    `(org-tag ((t (:foreground ,tag))))
    `(org-time-grid ((t (:foreground ,blue-gray))))
-   `(org-todo ((t (:foreground ,red))))
+   `(org-todo ((t (:foreground ,dark-red))))
    `(org-upcoming-deadline ((t (:inherit org-warning :bold nil))))
    `(org-warning ((t (:inherit font-lock-warning-face :foreground ,red))))
+
+   ;; org-agenda
+   `(org-agenda-date ((t (:foreground ,date))))
+   `(org-agenda-date-today ((t (:inherit org-agenda-date :bold t))))
+   `(org-agenda-date-weekend ((t (:inherit org-agenda-date :slant italic))))
+   `(org-agenda-done ((t (:inherit org-done))))
+   `(org-agenda-structure ((t (:foreground ,heading))))
+
+   ;; org-habit
+   ;; `(org-habit-alert-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-alert-future-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-overdue-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-overdue-future-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-clear-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-clear-future-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-ready-face ((t (:background ,dark-tan))))
+   ;; `(org-habit-ready-future-face ((t (:background ,dark-tan))))
 
    ;; org-recur
    `(org-recur ((t (:foreground ,dark-tan))))
 
    ;; org-super-agenda
-   `(org-super-agenda-header ((t (:inherit font-lock-comment-face))))
+   `(org-super-agenda-header ((t (:foreground ,brown))))
 
    ;; package
    `(package-name ((t (:inherit link))))
@@ -933,6 +962,11 @@
 
    ;; paradox
    `(paradox-mode-line-face ((t (:foreground ,blue-bg :bold t))))
+
+   ;; paren
+   `(paren-face-match ((t (:foreground ,yellow))))
+   `(paren-face-mismatch ((t (:foreground ,nimbus-err))))
+   `(paren-face-no-match ((t (:foreground ,nimbus-warn))))
 
    ;; powerline
    `(powerline-active1 ((t (:foreground ,black :background ,darker-green))))
@@ -1000,7 +1034,7 @@
 
    ;; show-paren
    `(show-paren-match ((t (:foreground ,bright-yellow))))
-   `(show-paren-mismatch ((t (:inherit error :bold nil))))
+   `(show-paren-mismatch ((t (:foreground ,nimbus-err))))
 
    ;; slime
    `(sldb-restartable-frame-line-face ((t (:foreground ,green))))
@@ -1093,16 +1127,16 @@
    `(web-mode-current-element-highlight-face ((t (:inherit highlight))))
    `(web-mode-doctype-face ((t (:inherit font-lock-doc-face))))
    `(web-mode-error-face ((t (:inherit error))))
-   `(web-mode-folded-face ((t (:underline t))))
+   `(web-mode-folded-face ((t (:strike-through ,strike))))
    `(web-mode-function-call-face ((t (:inherit font-lock-function-name-face))))
    `(web-mode-function-name-face ((t (:inherit font-lock-function-name-face))))
    `(web-mode-html-attr-custom-face ((t (:inherit font-lock-comment-face))))
    `(web-mode-html-attr-equal-face ((t (:inherit font-lock-comment-face))))
-   `(web-mode-html-attr-name-face ((t (:inherit font-lock-comment-face))))
+   `(web-mode-html-attr-name-face ((t (:foreground ,special))))
    `(web-mode-html-attr-value-face ((t (:inherit font-lock-string-face))))
-   `(web-mode-html-tag-bracket-face ((t (:inherit font-lock-comment-face))))
-   `(web-mode-html-tag-custom-face ((t (:inherit font-lock-comment-face))))
-   `(web-mode-html-tag-face ((t (:inherit font-lock-comment-face))))
+   `(web-mode-html-tag-bracket-face ((t (:foreground ,separator))))
+   `(web-mode-html-tag-custom-face ((t (:foreground ,special))))
+   `(web-mode-html-tag-face ((t (:foreground ,blue))))
    `(web-mode-javascript-comment-face ((t (:inherit font-lock-comment-face))))
    `(web-mode-javascript-string-face ((t (:inherit font-lock-string-face))))
    `(web-mode-json-comment-face ((t (:inherit font-lock-comment-face))))
@@ -1140,7 +1174,7 @@
    `(whitespace-empty ((t (:foreground ,gray :background "gray10"))))
    `(whitespace-hspace ((t (:foreground ,gray :background "grey11"))))
    `(whitespace-indentation ((t (:foreground ,gray :background "gray12"))))
-   `(whitespace-line ((t (:underline ,nimbus-err :bold nil))))
+   `(whitespace-line ((t (:background ,red-bg))))
    `(whitespace-newline ((t (:foreground ,gray))))
    `(whitespace-space ((t (:foreground ,gray))))
    `(whitespace-space-after-tab ((t (:foreground ,gray :background "gray13"))))

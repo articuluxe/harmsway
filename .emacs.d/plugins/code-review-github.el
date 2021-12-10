@@ -30,7 +30,7 @@
 
 (require 'ghub)
 (require 'deferred)
-(require 'code-review-core)
+(require 'code-review-interfaces)
 (require 'code-review-db)
 (require 'a)
 
@@ -39,7 +39,8 @@
 
 (defgroup code-review-github nil
   "Interact with GitHub REST and GraphQL APIs."
-  :group 'tools)
+  :group 'code-review
+  :link '(custom-group-link 'code-review-gitlab))
 
 (defcustom code-review-github-host "api.github.com"
   "Host for the GitHub api if you use the hosted version of GitHub."
@@ -52,6 +53,7 @@
 (defconst code-review-github-token-scopes '(repo)
   "Only repo scope needed to read PRs and submit reviews.")
 
+;; vars
 (defvar code-review-log-file)
 
 (defun code-review--log (origin msg)
@@ -72,17 +74,19 @@
 (defun code-review-github-errback (&rest m)
   "Error callback, displays the error message M."
   (let-alist m
+    (code-review--log
+     "code-review-github-errback"
+     (prin1-to-string m))
     (let* ((status (-second-item .error)))
-      (code-review--log
-       "code-review-github-errback"
-       (prin1-to-string m))
       (cond
        ((= status 422)
         (let ((errors (string-join
                        (a-get (-third-item .error) 'errors)
                        " AND "))
               (msg (string-trim (a-get (-third-item .error) 'message))))
-          (message "Errors: %S" (if (string-empty-p errors) msg errors))))
+          (message "Errors: %S" (if (string-empty-p errors)
+                                    msg
+                                  (string-join (list msg errors) ". ")))))
        ((= status 404)
         (message "Provided URL Not Found"))
        ((= status 401)
@@ -91,7 +95,7 @@ https://github.com/wandersoncferreira/code-review#configuration"))
        (t
         (message "Unknown error talking to Github: %s" m))))))
 
-(cl-defmethod code-review-core-pullreq-diff ((github code-review-github-repo) callback)
+(cl-defmethod code-review-pullreq-diff ((github code-review-github-repo) callback)
   "Get PR diff from GITHUB, run CALLBACK after answer."
   (let ((owner (oref github owner))
         (repo (oref github repo))
@@ -105,10 +109,10 @@ https://github.com/wandersoncferreira/code-review#configuration"))
               :callback callback
               :errorback #'code-review-github-errback)))
 
-(cl-defmethod code-review-core-diff-deferred ((github code-review-github-repo))
+(cl-defmethod code-review-diff-deferred ((github code-review-github-repo))
   "Get PR diff from GITHUB using deferred lib."
   (let ((d (deferred:new #'identity)))
-    (code-review-core-pullreq-diff
+    (code-review-pullreq-diff
      github
      (apply-partially
       (lambda (d v &rest _)
@@ -116,7 +120,7 @@ https://github.com/wandersoncferreira/code-review#configuration"))
       d))
     d))
 
-(cl-defmethod code-review-core-commit-diff ((github code-review-github-repo) callback)
+(cl-defmethod code-review-commit-diff ((github code-review-github-repo) callback)
   "Get PR diff from GITHUB, run CALLBACK after answer."
   (let ((owner (oref github owner))
         (repo (oref github repo))
@@ -130,10 +134,10 @@ https://github.com/wandersoncferreira/code-review#configuration"))
               :callback callback
               :errorback #'code-review-github-errback)))
 
-(cl-defmethod code-review-core-commit-diff-deferred ((github code-review-github-repo))
+(cl-defmethod code-review-commit-diff-deferred ((github code-review-github-repo))
   "Get PR diff from GITHUB using deferred lib."
   (let ((d (deferred:new #'identity)))
-    (code-review-core-commit-diff
+    (code-review-commit-diff
      github
      (apply-partially
       (lambda (d v &rest _)
@@ -141,14 +145,16 @@ https://github.com/wandersoncferreira/code-review#configuration"))
       d))
     d))
 
-(cl-defmethod code-review-core-pullreq-infos ((github code-review-github-repo) callback)
+(cl-defmethod code-review-pullreq-infos ((github code-review-github-repo) callback)
   "Get PR details from GITHUB and dispatch to CALLBACK."
   (let* ((repo (oref github repo))
          (owner (oref github owner))
          (num (oref github number))
-         (query (format "query {
+         (query
+          (format "query {
   repository(name: \"%s\", owner: \"%s\") {
-    pullRequest(number: %s){
+    pullRequest(number:%s){
+      id
       headRef { target{ oid } }
       baseRefName
       headRefName
@@ -157,6 +163,34 @@ https://github.com/wandersoncferreira/code-review#configuration"))
       number
       createdAt
       updatedAt
+      latestOpinionatedReviews(first: 100) {
+         nodes {
+           author {
+             login
+           }
+           createdAt
+           state
+         }
+       }
+      reviewRequests(first:100){
+         nodes {
+           asCodeOwner
+           requestedReviewer {
+             __typename
+             ... on User {
+               login
+               name
+             }
+           }
+         }
+       }
+      files(first:100) {
+        nodes {
+          path
+          additions
+          deletions
+        }
+      }
       milestone {
         title
         progressPercentage
@@ -183,6 +217,7 @@ https://github.com/wandersoncferreira/code-review#configuration"))
       suggestedReviewers {
         reviewer {
           name
+          login
         }
       }
       commits(first: 100) {
@@ -191,12 +226,45 @@ https://github.com/wandersoncferreira/code-review#configuration"))
           commit {
             abbreviatedOid
             message
+            statusCheckRollup {
+              state
+              contexts(first:50){
+                nodes {
+                  ... on CheckRun {
+                    startedAt
+                    completedAt
+                    name
+                    text
+                    title
+                    summary
+                    status
+                    conclusion
+                    detailsUrl
+                    checkSuite {
+                      app {
+                        id
+                        name
+                        description
+                        slug
+                        logoUrl
+                      }
+                      workflowRun {
+                        workflow
+                        {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
       title
       state
-      bodyText
+      bodyHTML
       reactions(first:50){
         nodes {
           id
@@ -205,6 +273,7 @@ https://github.com/wandersoncferreira/code-review#configuration"))
       }
       comments(first:50) {
         nodes {
+          typename:__typename
           reactions(first:50){
             nodes {
               id
@@ -215,23 +284,25 @@ https://github.com/wandersoncferreira/code-review#configuration"))
             login
           }
           databaseId
-          bodyText
+          bodyHTML
           createdAt
           updatedAt
         }
       }
       reviews(first: 50) {
         nodes {
+          typename:__typename
           author { login }
-          bodyText
+          bodyHTML
           state
           createdAt
+          databaseId
           updatedAt
           comments(first: 50) {
             nodes {
               createdAt
               updatedAt
-              bodyText
+              bodyHTML
               originalPosition
               diffHunk
               position
@@ -250,25 +321,28 @@ https://github.com/wandersoncferreira/code-review#configuration"))
       }
     }
   }
-}" repo owner num)))
+}
+" repo owner (if (numberp num)
+                 num
+               (string-to-number num)))))
     (ghub-graphql query
-                  '()
+                  nil
                   :auth 'code-review
                   :host code-review-github-host
                   :callback callback
                   :errorback #'code-review-github-errback)))
 
-(cl-defmethod code-review-core-infos-deferred ((github code-review-github-repo))
+(cl-defmethod code-review-infos-deferred ((github code-review-github-repo))
   "Get PR infos from GITHUB using deferred lib."
   (let ((d (deferred:new #'identity)))
-    (code-review-core-pullreq-infos
+    (code-review-pullreq-infos
      github
      (apply-partially (lambda (d v &rest _)
                         (deferred:callback-post d v))
                       d))
     d))
 
-(cl-defmethod code-review-core-get-labels ((github code-review-github-repo))
+(cl-defmethod code-review-get-labels ((github code-review-github-repo))
   "Get labels from GITHUB."
   (let ((resp
          (ghub-get (format "/repos/%s/%s/labels"
@@ -281,8 +355,8 @@ https://github.com/wandersoncferreira/code-review#configuration"))
        (a-get l 'name))
      resp)))
 
-(cl-defmethod code-review-core-set-labels ((github code-review-github-repo))
-  "Set labels for your pr at GITHUB."
+(cl-defmethod code-review-set-labels ((github code-review-github-repo) callback)
+  "Set labels for your pr at GITHUB and call CALLBACK."
   (let ((url (format "/repos/%s/%s/issues/%s/labels"
                      (oref github owner)
                      (oref github repo)
@@ -297,9 +371,10 @@ https://github.com/wandersoncferreira/code-review#configuration"))
                                                  (oref github labels))
                                            []))
              :auth 'code-review
-             :errorback #'code-review-github-errback)))
+             :errorback #'code-review-github-errback
+             :callback (lambda (&rest _) (funcall callback)))))
 
-(cl-defmethod code-review-core-get-assignees ((github code-review-github-repo))
+(cl-defmethod code-review-get-assignees ((github code-review-github-repo))
   "Get labels from GITHUB."
   (let ((resp
          (ghub-get (format "/repos/%s/%s/assignees"
@@ -312,8 +387,8 @@ https://github.com/wandersoncferreira/code-review#configuration"))
        (a-get l 'login))
      resp)))
 
-(cl-defmethod code-review-core-set-assignee ((github code-review-github-repo))
-  "Set assignee to your PR in GITHUB."
+(cl-defmethod code-review-set-assignee ((github code-review-github-repo) callback)
+  "Set assignee to your PR in GITHUB and call CALLBACK."
   (ghub-post (format "/repos/%s/%s/issues/%s/assignees"
                      (oref github owner)
                      (oref github repo)
@@ -323,9 +398,10 @@ https://github.com/wandersoncferreira/code-review#configuration"))
              :payload (a-alist 'assignees (-map (lambda (it)
                                                   (a-get it 'login))
                                                 (oref github assignees)))
-             :errorback #'code-review-github-errback))
+             :errorback #'code-review-github-errback
+             :callback (lambda (&rest _) (funcall callback))))
 
-(cl-defmethod code-review-core-get-milestones ((github code-review-github-repo))
+(cl-defmethod code-review-get-milestones ((github code-review-github-repo))
   "Get milestones from GITHUB."
   (let ((resp
          (ghub-get (format "/repos/%s/%s/milestones"
@@ -338,8 +414,8 @@ https://github.com/wandersoncferreira/code-review#configuration"))
        `(,(a-get l 'title) . ,(a-get l 'number)))
      resp)))
 
-(cl-defmethod code-review-core-set-milestone ((github code-review-github-repo))
-  "Set milestone for a pullreq in GITHUB."
+(cl-defmethod code-review-set-milestone ((github code-review-github-repo) callback)
+  "Set milestone for a pullreq in GITHUB and call CALLBACK."
   (ghub-patch (format "/repos/%s/%s/issues/%s"
                       (oref github owner)
                       (oref github repo)
@@ -347,10 +423,14 @@ https://github.com/wandersoncferreira/code-review#configuration"))
               nil
               :auth 'code-review
               :payload (a-alist 'milestone (a-get (oref github milestones) 'number))
-              :errorback #'code-review-github-errback))
+              :errorback #'code-review-github-errback
+              :callback (lambda (res &rest _)
+                          (if (a-get res 'milestone)
+                              (funcall callback)
+                            (message "You cannot set this Milestone. Verify if the milestone exist in Github.")))))
 
-(cl-defmethod code-review-core-set-title ((github code-review-github-repo))
-  "Set title for a pullreq in GITHUB."
+(cl-defmethod code-review-set-title ((github code-review-github-repo) callback)
+  "Set title for a pullreq in GITHUB and call CALLBACK."
   (ghub-patch (format "/repos/%s/%s/pulls/%s"
                       (oref github owner)
                       (oref github repo)
@@ -358,10 +438,11 @@ https://github.com/wandersoncferreira/code-review#configuration"))
               nil
               :auth 'code-review
               :payload (a-alist 'title (oref github title))
-              :errorback #'code-review-github-errback))
+              :errorback #'code-review-github-errback
+              :callback (lambda (&rest _) (funcall callback))))
 
-(cl-defmethod code-review-core-set-description ((github code-review-github-repo))
-  "Set description for a pullreq in GITHUB."
+(cl-defmethod code-review-set-description ((github code-review-github-repo) callback)
+  "Set description for a pullreq in GITHUB and call CALLBACK."
   (ghub-patch (format "/repos/%s/%s/pulls/%s"
                       (oref github owner)
                       (oref github repo)
@@ -369,9 +450,10 @@ https://github.com/wandersoncferreira/code-review#configuration"))
               nil
               :auth 'code-review
               :payload (a-alist 'body (oref github description))
-              :errorback #'code-review-github-errback))
+              :errorback #'code-review-github-errback
+              :callback (lambda (&rest _) (funcall callback))))
 
-(cl-defmethod code-review-core-merge ((github code-review-github-repo) strategy)
+(cl-defmethod code-review-merge ((github code-review-github-repo) strategy)
   "Merge a PR in GITHUB using a STRATEGY."
   (ghub-put (format "/repos/%s/%s/pulls/%s/merge"
                     (oref github owner)
@@ -385,7 +467,7 @@ https://github.com/wandersoncferreira/code-review#configuration"))
                               'merge_method strategy)
             :errorback #'code-review-github-errback))
 
-(cl-defmethod code-review-core-set-reaction ((github code-review-github-repo) context-name comment-id reaction)
+(cl-defmethod code-review-set-reaction ((github code-review-github-repo) context-name comment-id reaction)
   "Set REACTION in GITHUB pullreq COMMENT-ID given a CONTEXT-NAME e.g. issue, pr, discussion."
   (let ((path (pcase context-name
                 ("pr-description"
@@ -406,7 +488,7 @@ https://github.com/wandersoncferreira/code-review#configuration"))
                :auth 'code-review
                :payload (a-alist 'content r))))
 
-(cl-defmethod code-review-core-delete-reaction ((github code-review-github-repo) context-name comment-id reaction-id)
+(cl-defmethod code-review-delete-reaction ((github code-review-github-repo) context-name comment-id reaction-id)
   "Delete REACTION-ID in GITHUB pullreq COMMENT-ID given a CONTEXT-NAME e.g. issue, pr, discussion."
   (let ((path (pcase context-name
                 ("pr-description"
@@ -421,6 +503,213 @@ https://github.com/wandersoncferreira/code-review#configuration"))
                          path)
                  nil
                  :auth 'code-review)))
+
+(defclass code-review-submit-github-replies ()
+  ((pr      :initform nil)
+   (replies :initform nil
+            :type (satisfies
+                   (lambda (it)
+                     (-all-p #'code-review-submit-reply-p it))))))
+
+(cl-defmethod code-review-send-replies ((replies code-review-submit-github-replies) callback)
+  "Submit replies to review comments inline given REPLIES and a CALLBACK fn."
+  (let ((pr (oref replies pr)))
+    (deferred:$
+      (deferred:parallel
+        (-map
+         (lambda (reply)
+           (lambda ()
+             (ghub-post (format "/repos/%s/%s/pulls/%s/comments/%s/replies"
+                                (oref pr owner)
+                                (oref pr repo)
+                                (oref pr number)
+                                (oref reply reply-to-id))
+                        nil
+                        :payload (a-alist 'body (oref reply body))
+                        :headers code-review-github-diffheader
+                        :auth 'code-review
+                        :host code-review-github-host
+                        :callback (lambda (&rest _))
+                        :errorback #'code-review-github-errback)))
+         (oref replies replies)))
+
+      (deferred:nextc it
+        (lambda (_x)
+          (funcall callback)))
+
+      (deferred:error it
+        (lambda (err)
+          (message "Got an error from the Github Reply API %S!" err))))))
+
+(defclass code-review-submit-github-review ()
+  ((state :initform nil)
+   (pr :initform nil)
+   (local-comments :initform nil
+                   :type (satisfies
+                          (lambda (it)
+                            (-all-p #'code-review-submit-local-coment-p it))))
+   (feedback :initform nil)))
+
+(cl-defmethod code-review-send-review ((review code-review-submit-github-review) callback)
+  "Submit review comments given REVIEW and a CALLBACK fn."
+  (let* ((pr (oref review pr))
+         (payload (a-alist 'event (oref review state)
+                           'commit_id (oref pr sha)))
+         (payload (if (oref review feedback)
+                      (a-assoc payload 'body (oref review feedback))
+                    payload))
+         (payload (if (oref review local-comments)
+                      (a-assoc payload 'comments (--sort
+                                                  (< (a-get it 'position)
+                                                     (a-get other 'position))
+                                                  (-map
+                                                   (lambda (c)
+                                                     `((path . ,(oref c path))
+                                                       (position . ,(oref c position))
+                                                       (body . ,(oref c body))))
+                                                   (oref review local-comments))))
+                    payload)))
+    (ghub-post (format "/repos/%s/%s/pulls/%s/reviews"
+                       (oref pr owner)
+                       (oref pr repo)
+                       (oref pr number))
+               nil
+               :auth 'code-review
+               :payload payload
+               :host code-review-github-host
+               :errorback #'code-review-github-errback
+               :callback callback)))
+
+(cl-defmethod code-review-get-assinable-users ((github code-review-github-repo))
+  "Get a list of assignable users for current PR in GITHUB."
+  (let ((infos (oref github raw-infos))
+        (query "query($repo_owner:String!, $repo_name:String!, $cursor:String) {
+   repository(owner: $repo_owner, name: $repo_name) {
+     assignableUsers(first: 100, after: $cursor) {
+       pageInfo {
+         endCursor
+         hasNextPage
+       }
+       nodes {
+         id
+         login
+         name
+       }
+     }
+   }
+ }"))
+    (if-let (users (a-get infos 'assignable-users))
+        users
+      (let ((has-next-page t)
+            cursor res)
+        (while has-next-page
+          (let ((graphql-res (ghub-graphql query
+                                           `((repo_owner . ,(oref github owner))
+                                             (repo_name . ,(oref github repo))
+                                             (cursor . ,cursor))
+                                           :auth 'code-review
+                                           :host code-review-github-host)))
+            (let-alist graphql-res
+              (setq has-next-page .data.repository.assignableUsers.pageInfo.hasNextPage
+                    cursor .data.repository.assignableUsers.pageInfo.endCursor
+                    res (append res .data.repository.assignableUsers.nodes)))))
+        (oset github raw-infos (a-assoc infos 'assignable-users res))
+        (code-review-db-update github)
+        res))))
+
+(cl-defmethod code-review-request-review ((github code-review-github-repo) user-ids callback)
+  "Request review for your GITHUB PR from USER-IDS and call CALLBACK afterward."
+  (let ((query "mutation($input: RequestReviewsInput!) {
+  requestReviews(input: $input) {
+    pullRequest {
+      id
+    }
+  }
+}
+")
+        (pr-id (a-get (oref github raw-infos) 'id)))
+    (ghub-graphql query
+                  `((input . ((pullRequestId . ,pr-id)
+                              (userIds . ,user-ids))))
+                  :auth 'code-review
+                  :host code-review-github-host
+                  :callback (lambda (&rest _)
+                              (message "Review requested successfully!")
+                              (funcall callback))
+                  :errorback #'code-review-github-errback)))
+
+(cl-defmethod code-review-new-issue ((github code-review-github-repo) body title callback)
+  "Create a new issue in GITHUB given a BODY and TITLE and call CALLBACK."
+  (ghub-post (format "/repos/%s/%s/issues"
+                     (oref github owner)
+                     (oref github repo))
+             nil
+             :auth 'code-review
+             :payload (a-alist 'body body 'title title)
+             :errorback #'code-review-github-errback
+             :callback callback))
+
+(cl-defmethod code-review-github-promote-comment-to-new-issue-data ((github code-review-github-repo))
+  "Promote comment to new issue in GITHUB."
+  (let ((section (magit-current-section)))
+    (with-slots (value) section
+      (let* ((orig-identifier (cond
+                               ((code-review-code-comment-section-p section)
+                                "discussion_r")
+                               ((code-review-comment-section-p section)
+                                (pcase (oref value typename)
+                                  ("IssueComment" "issuecomment-")
+                                  ("PullRequestReview" "pullrequestreview-")))
+                               (t
+                                (error "Promote comment to issue not supported for this type of comment"))))
+             (reference-link (format "https://github.com/%s/%s/issues/%s#%s%s"
+                                     (oref github owner)
+                                     (oref github repo)
+                                     (oref github number)
+                                     orig-identifier
+                                     (oref value id)))
+             (title (-first-item (split-string (oref value msg) "\n"))))
+        `((reference-link . ,reference-link)
+          (author . ,(oref value author))
+          (title . ,title)
+          (body . ,(oref value msg)))))))
+
+(cl-defmethod code-review-binary-file-url ((github code-review-github-repo) filename &optional blob?)
+  "Make the GITHUB url for the FILENAME.
+Return the blob URL if BLOB? is provided."
+  (if blob?
+      (format "https://github.com/%s/%s/blob/%s/%s"
+              (oref github owner)
+              (oref github repo)
+              (oref github sha)
+              filename)
+    (format "https://%s/repos/%s/%s/contents/%s?ref=%s"
+            code-review-github-host
+            (oref github owner)
+            (oref github repo)
+            filename
+            (oref github sha))))
+
+(cl-defmethod code-review-binary-file ((github code-review-github-repo) filename)
+  "Get FILENAME from GITHUB."
+  (let* ((pwd (auth-source-pick-first-password :host code-review-github-host))
+         (headers (format "--header 'Authorization: token %s' --header 'Accept: application/vnd.github.v3.raw'"
+                          pwd))
+         (url (code-review-binary-file-url github filename)))
+    (code-review-utils--fetch-binary-data url filename headers)))
+
+(cl-defmethod code-review-new-issue-comment ((github code-review-github-repo) comment-msg callback)
+  "Create a new comment issue for GITHUB sending the COMMENT-MSG and call CALLBACK."
+  (ghub-post (format "/repos/%s/%s/issues/%s/comments"
+                     (oref github owner)
+                     (oref github repo)
+                     (oref github number))
+             nil
+             :auth 'code-review
+             :host code-review-github-host
+             :payload (a-alist 'body comment-msg)
+             :callback callback
+             :errorback #'code-review-github-errback))
 
 (provide 'code-review-github)
 ;;; code-review-github.el ends here
