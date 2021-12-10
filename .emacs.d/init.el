@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-11-30 13:23:15 dharms>
+;; Modified Time-stamp: <2021-12-10 10:40:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2571,6 +2571,12 @@ ARGS are the additional arguments."
               (call-interactively command))
             (dired-get-marked-files))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired-subtree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dired-subtree
+  :after dired
+  :bind (:map dired-mode-map
+              ("TAB" . dired-subtree-toggle)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; disk-usage ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package disk-usage
