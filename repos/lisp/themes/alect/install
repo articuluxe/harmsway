@@ -1,3 +1,2 @@
 cp src/alect-themes.el ../../../../.emacs.d/plugins
 find src -maxdepth 1 -name \*.el | grep -v alect-themes.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
-
