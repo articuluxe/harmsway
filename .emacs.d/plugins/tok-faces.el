@@ -5,7 +5,7 @@
 ;; Author: Topi Kettunen <mail@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -36,32 +36,21 @@
      
      ;; Crucial faces
      
-     `(default ((,class (:background ,bg1 :foreground ,fg1)))))
-
-    ))
-
-(defvar tok-minimal-definition
-  '(
-    (custom-theme-set-faces
-
-     theme-name
-     
-     ;; Crucial faces
-     
-     `(default ((,class (:background ,bg1 :foreground ,fg2))))
+     `(default ((,class (:background ,bg1 :foreground ,fg1))))
      `(highlight ((,class (:foreground ,fg3 :background ,bg3))))
      `(hl-line ((,class (:background  ,hl))))
-     `(fringe ((,class (:background ,bg2 :foreground ,fg4))))
+     `(fringe ((,class (:background ,bg1 :foreground ,fg1))))
      `(cursor ((,class (:background ,fg1))))
      `(isearch ((,class (:foreground ,bg1 :background ,fg1))))
-     `(mode-line ((,class (:foreground ,bg1 :background ,fg1))))
-     `(mode-line-inactive ((,class (:foreground ,fg4 :background ,bg2 :weight normal))))
-     `(font-lock-comment-face ((,class (:foreground ,comment :weight bold))))
-     `(font-lock-doc-face ((,class (:foreground ,comment :weight bold))))
+     `(mode-line ((,class (:foreground ,fg-active :background ,bg-active :box (:line-width -1 :color ,fg3)))))
+     `(mode-line-active ((,class :inherit mode-line)))
+     `(mode-line-inactive ((,class (:foreground ,fg-inactive :background ,bg-inactive :box (:line-width -1 :color ,fg4)))))
+     `(font-lock-comment-face ((,class (:foreground ,comment))))
+     `(font-lock-doc-face ((,class (:foreground ,comment))))
      `(org-link ((,class (:underline '(:color ,fg1)))))
      `(region ((,class (:background ,bg3))))
 
-     ;; Default coloring for company-mode is good enough
+     ;; Default colorings
 
      ;; `(company-echo-common ((t nil)))
      ;; `(company-preview ((t nil)))
@@ -76,6 +65,31 @@
      ;; `(company-tooltip-mouse ((t nil)))
      ;; `(company-tooltip-selection ((t nil)))
      ;; `(company-template-field ((t nil)))
+
+     ;; `(magit-item-highlight ((t nil)))
+     ;; `(magit-section-heading        ((t nil)))
+     ;; `(magit-hunk-heading           ((t nil)))
+     ;; `(magit-section-highlight      ((t nil)))
+     ;; `(magit-hunk-heading-highlight ((t nil)))
+     ;; `(magit-diff-context-highlight ((t nil)))
+     ;; `(magit-diffstat-added   ((t nil)))
+     ;; `(magit-diffstat-removed ((t nil)))
+     ;; `(magit-process-ok ((t nil)))
+     ;; `(magit-process-ng ((t nil)))
+     ;; `(magit-branch ((t nil)))
+     ;; `(magit-log-author ((t nil)))
+     ;; `(magit-hash ((t nil)))
+     ;; `(magit-diff-file-header ((t nil)))
+
+     ;; `(term ((t nil)))
+     ;; `(term-color-black ((t nil)))
+     ;; `(term-color-blue ((t nil)))
+     ;; `(term-color-red ((t nil)))
+     ;; `(term-color-green ((t nil)))
+     ;; `(term-color-yellow ((t nil)))
+     ;; `(term-color-magenta ((t nil)))
+     ;; `(term-color-cyan ((t nil)))
+     ;; `(term-color-white ((t nil)))
      
      ;; Disabled faces
 
@@ -196,32 +210,7 @@
      `(rainbow-delimiters-depth-8-face ((t nil)))
      `(rainbow-delimiters-unmatched-face ((t nil)))
      
-     `(magit-item-highlight ((t nil)))
-     `(magit-section-heading        ((t nil)))
-     `(magit-hunk-heading           ((t nil)))
-     `(magit-section-highlight      ((t nil)))
-     `(magit-hunk-heading-highlight ((t nil)))
-     `(magit-diff-context-highlight ((t nil)))
-     `(magit-diffstat-added   ((t nil)))
-     `(magit-diffstat-removed ((t nil)))
-     `(magit-process-ok ((t nil)))
-     `(magit-process-ng ((t nil)))
-     `(magit-branch ((t nil)))
-     `(magit-log-author ((t nil)))
-     `(magit-hash ((t nil)))
-     `(magit-diff-file-header ((t nil)))
-     
      `(lazy-highlight ((t nil)))
-     
-     `(term ((t nil)))
-     `(term-color-black ((t nil)))
-     `(term-color-blue ((t nil)))
-     `(term-color-red ((t nil)))
-     `(term-color-green ((t nil)))
-     `(term-color-yellow ((t nil)))
-     `(term-color-magenta ((t nil)))
-     `(term-color-cyan ((t nil)))
-     `(term-color-white ((t nil)))
      
      `(helm-header ((t nil)))
      `(helm-source-header ((t nil)))

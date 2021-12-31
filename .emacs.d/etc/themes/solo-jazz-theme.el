@@ -4,7 +4,7 @@
 
 ;; Author: Carl Steib
 ;; URL: https://github.com/cstby/solo-jazz-emacs-theme
-;; Version: 0.7.0
+;; Version: 0.8.1
 ;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -45,6 +45,7 @@
       ("solo-jazz-white-1"                . "#efefef")
       ("solo-jazz-lavender"               . "#eaeafa")
       ("solo-jazz-azure"                  . "#eafafa")
+      ("solo-jazz-honeydew"               . "#eafaea")
       ("solo-jazz-rose"                   . "#faeaea")
       ("solo-jazz-grey"                   . "#d0d0d0")
       ("solo-jazz-slate"                  . "#778ca3")
@@ -64,11 +65,13 @@
 
       ;; diff
       ("solo-jazz-diff-added"             . "#e6ffed")
-      ("solo-jazz-diff-added-highlight"   . "#acf2bd")
+      ("solo-jazz-diff-added-highlight"   . "#ccffd8")
+      ("solo-jazz-diff-added-refine"      . "#acf2bc")
       ("solo-jazz-diff-changed"           . "#ffe1b9")
       ("solo-jazz-diff-changed-highlight" . "#ffc86f")
       ("solo-jazz-diff-removed"           . "#ffeef0")
-      ("solo-jazz-diff-removed-highlight" . "#fdb8c0"))
+      ("solo-jazz-diff-removed-highlight" . "#ffd7d5")
+      ("solo-jazz-diff-removed-refine"    . "#fdb8c0"))
 
     "Solo-Jazz color palette.Each element has the form (NAME . HEX)."))
 
@@ -178,11 +181,24 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(diff-added                              ((t (:background ,solo-jazz-diff-added :foreground ,solo-jazz-black))))
    `(diff-changed                            ((t (:background ,solo-jazz-diff-changed :foreground ,solo-jazz-black))))
    `(diff-removed                            ((t (:background ,solo-jazz-diff-removed :foreground ,solo-jazz-black))))
-   `(diff-refine-added                       ((t (:background ,solo-jazz-diff-added-highlight :foreground ,solo-jazz-black))))
+   `(diff-refine-added                       ((t (:background ,solo-jazz-diff-added-refine :foreground ,solo-jazz-black))))
    `(diff-refine-change                      ((t (:background ,solo-jazz-diff-changed-highlight :foreground ,solo-jazz-black))))
-   `(diff-refine-removed                     ((t (:background ,solo-jazz-diff-removed-highlight :foreground ,solo-jazz-black))))
+   `(diff-refine-removed                     ((t (:background ,solo-jazz-diff-removed-refine :foreground ,solo-jazz-black))))
    `(diff-header                             ((,class (:background ,solo-jazz-white)) (t (:background ,solo-jazz-purple :foreground ,solo-jazz-white))))
    `(diff-file-header                        ((,class (:background ,solo-jazz-white :foreground ,solo-jazz-purple :bold t)) (t (:background ,solo-jazz-purple :foreground ,solo-jazz-white :bold t))))
+
+   ;; dired
+   `(dired-directory                         ((t (:foreground ,solo-jazz-blue))))
+   `(dired-header                            ((t (:foreground ,solo-jazz-teal))))
+   `(dired-perm-write                        ((t (:foreground ,solo-jazz-pink))))
+   `(dired-symlink                           ((t (:inherit link))))
+   `(dired-subtree-depth-1-face              ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
+   `(dired-subtree-depth-2-face              ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
+   `(dired-subtree-depth-3-face              ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
+   `(dired-subtree-depth-4-face              ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
+   `(dired-subtree-depth-5-face              ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
+   `(dired-subtree-depth-6-face              ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
+   `(all-the-icons-dired-dir-face            ((t (:foreground ,solo-jazz-purple))))
 
    ;; doom-modeline
    `(doom-modeline-buffer-path               ((t (:foreground ,solo-jazz-purple))))
@@ -260,25 +276,26 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(magit-diffstat-removed                  ((t (:foreground ,solo-jazz-blue+1))))
 
    `(magit-diff-added                        ((t (:inherit diff-added))))
-   `(magit-diff-added-highlight              ((t (:inherit diff-refine-added))))
-   `(magit-diff-context-highlight            ((t (:background ,solo-jazz-white :foreground "grey70"))))
+   `(magit-diff-added-highlight              ((t (:background ,solo-jazz-diff-added-highlight :foreground ,solo-jazz-black))))
+   `(magit-diff-context                      ((t (:background ,solo-jazz-white :foreground ,solo-jazz-slate))))
+   `(magit-diff-context-highlight            ((t (:background ,solo-jazz-white :foreground ,solo-jazz-black))))
    `(magit-diff-file-heading                 ((t (:weight bold))))
-   `(magit-diff-file-heading-highlight       ((t (:background ,solo-jazz-white  :weight bold))))
+   `(magit-diff-file-heading-highlight       ((t (:background ,solo-jazz-lavender  :weight bold))))
    `(magit-diff-file-heading-selection       ((t (:background ,solo-jazz-white :foreground ,solo-jazz-purple :weight bold))))
-   `(magit-diff-hunk-heading                 ((t (:background ,solo-jazz-white))))
-   `(magit-diff-hunk-heading-highlight       ((t (:background ,solo-jazz-white))))
+   `(magit-diff-hunk-heading                 ((t (:background ,solo-jazz-white-1 :foreground ,solo-jazz-black))))
+   `(magit-diff-hunk-heading-highlight       ((t (:background ,solo-jazz-lavender :foreground ,solo-jazz-purple))))
    `(magit-diff-hunk-heading-selection       ((t (:background ,solo-jazz-white :foreground ,solo-jazz-purple))))
    `(magit-diff-lines-heading                ((t (:background ,solo-jazz-purple :foreground ,solo-jazz-white))))
    `(magit-diff-removed                      ((t (:inherit diff-removed))))
-   `(magit-diff-removed-highlight            ((t (:inherit diff-refine-removed))))
+   `(magit-diff-removed-highlight            ((t (:background ,solo-jazz-diff-removed-highlight :foreground ,solo-jazz-black))))
 
    `(magit-dimmed                            ((t (:foreground ,solo-jazz-slate))))
    `(magit-hash                              ((t (:foreground ,solo-jazz-pink))))
    `(magit-head                              ((t (:foreground ,solo-jazz-purple   :weight bold))))
 
    `(magit-log-author                        ((t (:foreground ,solo-jazz-blue))))
-   `(magit-log-date                          ((t (:foreground ,solo-jazz-purple))))
-   `(magit-log-graph                         ((t (:foreground ,solo-jazz-purple))))
+   `(magit-log-date                          ((t (:foreground ,solo-jazz-teal))))
+   `(magit-log-graph                         ((t (:foreground ,solo-jazz-slate))))
 
    `(magit-popup-heading                     ((t (:foreground ,solo-jazz-teal  :weight bold))))
    `(magit-popup-key                         ((t (:foreground ,solo-jazz-slate :weight bold))))
@@ -315,38 +332,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(magit-sequence-done                     ((t (:foreground ,solo-jazz-purple))))
    `(magit-sequence-onto                     ((t (:foreground ,solo-jazz-purple))))
 
-   `(magit-tag                               ((t (:foreground ,solo-jazz-pink :weight bold))))
-
-   `(magit-process-ok                        ((t (:inheret success))))
-   `(magit-process-ng                        ((t (:inherit error))))
-
-   `(magit-reflog-commit                     ((t (:foreground ,solo-jazz-slate))))
-   `(magit-reflog-amend                      ((t (:foreground ,solo-jazz-purple))))
-   `(magit-reflog-merge                      ((t (:foreground ,solo-jazz-slate))))
-   `(magit-reflog-checkout                   ((t (:foreground ,solo-jazz-purple))))
-   `(magit-reflog-reset                      ((t (:foreground ,solo-jazz-blue+1))))
-   `(magit-reflog-rebase                     ((t (:foreground ,solo-jazz-purple))))
-   `(magit-reflog-cherry-pick                ((t (:foreground ,solo-jazz-slate))))
-   `(magit-reflog-remote                     ((t (:foreground ,solo-jazz-pink))))
-   `(magit-reflog-other                      ((t (:foreground ,solo-jazz-pink))))
-
-   `(magit-refname                           ((t (:background ,solo-jazz-white :foreground ,solo-jazz-purple :weight bold))))
-   `(magit-refname-stash                     ((t (:background ,solo-jazz-white :foreground ,solo-jazz-purple :weight bold))))
-   `(magit-refname-wip                       ((t (:background ,solo-jazz-white :foreground ,solo-jazz-purple :weight bold))))
-
-   `(magit-section-highlight                 ((t (:background ,solo-jazz-lavender))))
-   `(magit-section-heading                   ((t (:foreground ,solo-jazz-teal :weight bold))))
-   `(magit-section-heading-selection         ((t (:foreground ,solo-jazz-purple :weight bold))))
-
-   `(magit-sequence-pick                     ((t (:foreground ,solo-jazz-purple))))
-   `(magit-sequence-stop                     ((t (:foreground ,solo-jazz-slate))))
-   `(magit-sequence-part                     ((t (:foreground ,solo-jazz-teal))))
-   `(magit-sequence-head                     ((t (:foreground ,solo-jazz-purple))))
-   `(magit-sequence-drop                     ((t (:foreground ,solo-jazz-blue+1))))
-   `(magit-sequence-done                     ((t (:foreground ,solo-jazz-purple))))
-   `(magit-sequence-onto                     ((t (:foreground ,solo-jazz-purple))))
-
-   `(magit-tag                               ((t (:foreground ,solo-jazz-blue :weight bold))))
+   `(magit-tag                               ((t (:foreground ,solo-jazz-orange :weight bold))))
 
    `(magit-signature-good                    ((t (:foreground ,solo-jazz-slate))))
    `(magit-signature-bad                     ((t (:foreground ,solo-jazz-blue+1))))
@@ -449,8 +435,8 @@ Also bind `class' to ((class color) (min-colors 89))."
 
    ;; show-paren
    `(show-paren-mismatch                     ((t (:foreground ,solo-jazz-red :background ,solo-jazz-white :weight bold))))
-   `(show-paren-match                        ((t (:foreground ,solo-jazz-white :background ,solo-jazz-blue+1 :weight bold))))
-   `(show-paren-match-expression             ((t (:background ,solo-jazz-rose))))
+   `(show-paren-match                        ((t (:foreground ,solo-jazz-teal+1 :background ,solo-jazz-honeydew :weight bold))))
+   `(show-paren-match-expression             ((t (:background ,solo-jazz-honeydew))))
 
    ;; undo-tree
    `(undo-tree-visualizer-active-branch-face ((t (:foreground ,solo-jazz-teal :weight bold))))

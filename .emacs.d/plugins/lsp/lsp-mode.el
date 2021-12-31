@@ -4,7 +4,7 @@
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "26.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
+;; Package-Requires: ((emacs "26.3") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
 ;; Version: 8.0.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
@@ -335,6 +335,7 @@ the server has requested that."
     "[/\\\\]\\.ccls-cache\\'"
     "[/\\\\]\\.vscode\\'"
     "[/\\\\]\\.venv\\'"
+    "[/\\\\]\\.mypy_cache\\'"
     ;; Autotools output
     "[/\\\\]\\.deps\\'"
     "[/\\\\]build-aux\\'"
@@ -355,6 +356,8 @@ the server has requested that."
     ;; OCaml and Dune
     "[/\\\\]_opam\\'"
     "[/\\\\]_build\\'"
+    ;; Elixir
+    "[/\\\\]\\.elixir_ls\\'"
     ;; nix-direnv
     "[/\\\\]\\.direnv\\'")
   "List of regexps matching directory paths which won't be monitored when
@@ -573,10 +576,7 @@ The hook will receive two parameters list of added and removed folders."
   :type 'hook
   :group 'lsp-mode)
 
-(defcustom lsp-eldoc-hook '(lsp-hover)
-  "Hooks to run for eldoc."
-  :type 'hook
-  :group 'lsp-mode)
+(make-obsolete 'lsp-eldoc-hook 'eldoc-documentation-functions "lsp-mode 8.0.0")
 
 (defcustom lsp-before-apply-edits-hook nil
   "Hooks to run before applying edits."
@@ -709,11 +709,13 @@ Changes take effect only when a new session is started."
                                         (".*\\.jsonc$" . "jsonc")
                                         (".*\\.php$" . "php")
                                         (".*\\.svelte$" . "svelte")
+                                        (".*\\.ebuild$" . "shellscript")
                                         (ada-mode . "ada")
                                         (nxml-mode . "xml")
                                         (sql-mode . "sql")
                                         (vimrc-mode . "vim")
                                         (sh-mode . "shellscript")
+                                        (ebuild-mode . "shellscript")
                                         (scala-mode . "scala")
                                         (julia-mode . "julia")
                                         (clojure-mode . "clojure")
@@ -803,7 +805,7 @@ Changes take effect only when a new session is started."
                                         (gfm-mode . "markdown")
                                         (beancount-mode . "beancount")
                                         (conf-toml-mode . "toml")
-                                        (org-mode . "plaintext")
+                                        (org-mode . "org")
                                         (nginx-mode . "nginx"))
   "Language id configuration.")
 
@@ -1139,17 +1141,6 @@ See #2049"
 (defun lsp--error (format &rest args)
   "Display lsp error message with FORMAT with ARGS."
   (lsp--message "%s :: %s" (propertize "LSP" 'face 'error) (apply #'format format args)))
-
-(defun lsp--eldoc-message (&optional msg)
-  "Show MSG in eldoc."
-  (setq lsp--eldoc-saved-message msg)
-  (run-with-idle-timer 0 nil (lambda ()
-                               ;; XXX: new eldoc in Emacs 28
-                               ;; recommends running the hook variable
-                               ;; `eldoc-documentation-functions'
-                               ;; instead of using eldoc-message
-                               (with-no-warnings
-                                 (eldoc-message msg)))))
 
 (defun lsp-log (format &rest args)
   "Log message to the ’*lsp-log*’ buffer.
@@ -2385,7 +2376,7 @@ BINDINGS is a list of (key def desc cond)."
                             item))))
                     (when (stringp ,key)
                       (setq lsp--binding-descriptions
-                            (nconc lsp--binding-descriptions '(,key ,desc)))))))
+                            (append lsp--binding-descriptions '(,key ,desc)))))))
        macroexp-progn))
 
 (defvar lsp--describe-buffer nil)
@@ -3797,7 +3788,7 @@ yet."
   (cond
    (lsp-managed-mode
     (when (lsp-feature? "textDocument/hover")
-      (add-function :before-until (local 'eldoc-documentation-function) #'lsp-eldoc-function)
+      (add-hook 'eldoc-documentation-functions #'lsp-eldoc-function nil t)
       (eldoc-mode 1))
 
     (add-hook 'after-change-functions #'lsp-on-change nil t)
@@ -3832,8 +3823,8 @@ yet."
              (lsp--on-idle buffer)))))))
    (t
     (lsp-unconfig-buffer)
-    (remove-function (local 'eldoc-documentation-function) #'lsp-eldoc-function)
 
+    (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function t)
     (remove-hook 'post-command-hook #'lsp--post-command t)
     (remove-hook 'after-change-functions #'lsp-on-change t)
     (remove-hook 'after-revert-hook #'lsp-on-revert t)
@@ -4850,10 +4841,33 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
    (->> lsp--cur-workspace lsp--workspace-client lsp--client-response-handlers (remhash id))
    (lsp-notify "$/cancelRequest" `(:id ,id))))
 
-(defun lsp-eldoc-function ()
-  "`lsp-mode' eldoc function."
-  (run-hooks 'lsp-eldoc-hook)
-  eldoc-last-message)
+(defvar-local lsp--hover-saved-bounds nil)
+
+(defun lsp-eldoc-function (cb &rest _ignored)
+  "`lsp-mode' eldoc function to display hover info (based on `textDocument/hover')."
+  (if (and lsp--hover-saved-bounds
+           (lsp--point-in-bounds-p lsp--hover-saved-bounds))
+      lsp--eldoc-saved-message
+    (setq lsp--hover-saved-bounds nil
+          lsp--eldoc-saved-message nil)
+    (if (looking-at "[[:space:]\n]")
+        (setq lsp--eldoc-saved-message nil) ; And returns nil.
+      (when (and lsp-eldoc-enable-hover (lsp--capability :hoverProvider))
+        (lsp-request-async
+         "textDocument/hover"
+         (lsp--text-document-position-params)
+         (-lambda ((hover &as &Hover? :range? :contents))
+           (when hover
+             (when range?
+               (setq lsp--hover-saved-bounds (lsp--range-to-region range?)))
+             (let ((msg (and contents
+                             (lsp--render-on-hover-content
+                              contents
+                              lsp-eldoc-render-all))))
+               (funcall cb (setq lsp--eldoc-saved-message msg)))))
+         :error-handler #'ignore
+         :mode 'tick
+         :cancel-token :eldoc-hover)))))
 
 (defun lsp--point-on-highlight? ()
   (-some? (lambda (overlay)
@@ -5014,6 +5028,12 @@ In addition, each can have property:
   "Showing inline image or not."
   :group 'lsp-mode
   :type 'boolean)
+
+(defcustom lsp-enable-suggest-server-download t
+  "When non-nil enable server downloading suggestions."
+  :group 'lsp-mode
+  :type 'boolean
+  :package-version '(lsp-mode . "8.0.1"))
 
 (defun lsp--display-inline-image (mode)
   "Add image property if available."
@@ -5414,36 +5434,6 @@ It will show up only if current point has signature help."
         result))
      :mode 'unchanged
      :cancel-token :document-color-token)))
-
-
-;; hover
-
-(defvar-local lsp--hover-saved-bounds nil)
-
-(defun lsp-hover ()
-  "Display hover info (based on `textDocument/signatureHelp')."
-  (if (and lsp--hover-saved-bounds
-           (lsp--point-in-bounds-p lsp--hover-saved-bounds))
-      (lsp--eldoc-message lsp--eldoc-saved-message)
-    (setq lsp--hover-saved-bounds nil
-          lsp--eldoc-saved-message nil)
-    (if (looking-at "[[:space:]\n]")
-        (lsp--eldoc-message nil)
-      (when (and lsp-eldoc-enable-hover (lsp--capability :hoverProvider))
-        (lsp-request-async
-         "textDocument/hover"
-         (lsp--text-document-position-params)
-         (-lambda ((hover &as &Hover? :range? :contents))
-           (when hover
-             (when range?
-               (setq lsp--hover-saved-bounds (lsp--range-to-region range?)))
-             (lsp--eldoc-message (and contents
-                                      (lsp--render-on-hover-content
-                                       contents
-                                       lsp-eldoc-render-all)))))
-         :error-handler #'ignore
-         :mode 'tick
-         :cancel-token :eldoc-hover)))))
 
 
 
@@ -7783,7 +7773,7 @@ the next question until the queue is empty."
     (when lsp--question-queue
       (lsp--process-question-queue))))
 
-(defun lsp--matching-clients? (client)
+(defun lsp--supports-buffer? (client)
   (and
    ;; both file and client remote or both local
    (eq (---truthy? (file-remote-p (buffer-file-name)))
@@ -7811,7 +7801,7 @@ the next question until the queue is empty."
 SESSION is the currently active session. The function will also
 pick only remote enabled clients in case the FILE-NAME is on
 remote machine and vice versa."
-  (-when-let (matching-clients (lsp--filter-clients (-andfn #'lsp--matching-clients?
+  (-when-let (matching-clients (lsp--filter-clients (-andfn #'lsp--supports-buffer?
                                                             #'lsp--server-binary-present?)))
     (lsp-log "Found the following clients for %s: %s"
              (buffer-file-name)
@@ -8282,7 +8272,7 @@ The library folders are defined by each client for each of the active workspace.
                              (-sort (lambda (a _b)
                                       (-contains? lsp--last-active-workspaces a)))
                              (--first
-                              (and (-> it lsp--workspace-client lsp--matching-clients?)
+                              (and (-> it lsp--workspace-client lsp--supports-buffer?)
                                    (when-let ((library-folders-fn
                                                (-> it lsp--workspace-client lsp--client-library-folders-fn)))
                                      (-first (lambda (library-folder)
@@ -8407,7 +8397,7 @@ argument ask the user to select which language server to start."
   (when (buffer-file-name)
     (let (clients
           (matching-clients (lsp--filter-clients
-                             (-andfn #'lsp--matching-clients?
+                             (-andfn #'lsp--supports-buffer?
                                      #'lsp--server-binary-present?))))
       (cond
        (matching-clients
@@ -8425,7 +8415,7 @@ argument ask the user to select which language server to start."
                      (apply 'concat (--map (format "[%s]" (lsp--workspace-print it))
                                            lsp--buffer-workspaces)))))
        ;; look for servers which are currently being downloaded.
-       ((setq clients (lsp--filter-clients (-andfn #'lsp--matching-clients?
+       ((setq clients (lsp--filter-clients (-andfn #'lsp--supports-buffer?
                                                    #'lsp--client-download-in-progress?)))
         (lsp--info "There are language server(%s) installation in progress.
 The server(s) will be started in the buffer when it has finished."
@@ -8434,9 +8424,11 @@ The server(s) will be started in the buffer when it has finished."
                   (cl-pushnew (current-buffer) (lsp--client-buffers client)))
                 clients))
        ;; look for servers to install
-       ((setq clients (lsp--filter-clients (-andfn #'lsp--matching-clients?
-                                                   #'lsp--client-download-server-fn
-                                                   (-not #'lsp--client-download-in-progress?))))
+       ((setq clients (lsp--filter-clients
+                       (-andfn #'lsp--supports-buffer?
+                               (-const lsp-enable-suggest-server-download)
+                               #'lsp--client-download-server-fn
+                               (-not #'lsp--client-download-in-progress?))))
         (let ((client (lsp--completing-read
                        (concat "Unable to find installed server supporting this file. "
                                "The following servers could be installed automatically: ")
@@ -8446,11 +8438,23 @@ The server(s) will be started in the buffer when it has finished."
                        t)))
           (cl-pushnew (current-buffer) (lsp--client-buffers client))
           (lsp--install-server-internal client)))
+       ;; automatic installation disabled
+       ((setq clients (unless matching-clients
+                        (lsp--filter-clients (-andfn #'lsp--supports-buffer?
+                                                     #'lsp--client-download-server-fn
+                                                     (-not (-const lsp-enable-suggest-server-download))
+                                                     (-not #'lsp--server-binary-present?)))))
+        (lsp--warn "The following servers support current file but automatic download is disabled: %s
+\(If you have already installed the server check *lsp-log*)."
+                   (mapconcat (lambda (client)
+                                (symbol-name (lsp--client-server-id client)))
+                              clients
+                              " ")))
        ;; no clients present
        ((setq clients (unless matching-clients
-                        (lsp--filter-clients (-andfn #'lsp--matching-clients?
+                        (lsp--filter-clients (-andfn #'lsp--supports-buffer?
                                                      (-not #'lsp--server-binary-present?)))))
-        (lsp--warn "The following servers support current file but do not have automatic installation configuration: %s
+        (lsp--warn "The following servers support current file but do not have automatic installation: %s
 You may find the installation instructions at https://emacs-lsp.github.io/lsp-mode/page/languages.
 \(If you have already installed the server check *lsp-log*)."
                    (mapconcat (lambda (client)
@@ -8458,7 +8462,7 @@ You may find the installation instructions at https://emacs-lsp.github.io/lsp-mo
                               clients
                               " ")))
        ;; no matches
-       ((-> #'lsp--matching-clients? lsp--filter-clients not)
+       ((-> #'lsp--supports-buffer? lsp--filter-clients not)
         (lsp--error "There are no language servers supporting current mode `%s' registered with `lsp-mode'.
 This issue might be caused by:
 1. The language you are trying to use does not have built-in support in `lsp-mode'. You must install the required support manually. Examples of this are `lsp-java' or `lsp-metals'.
@@ -8542,7 +8546,7 @@ This avoids overloading the server with many files when starting Emacs."
                                     (let ((res (with-current-buffer buf
                                                  ,form)))
                                       (cond
-                                       ((eq res :optional) (propertize "NOT AVAILABLE (OPTIONAL)" 'face 'warning))
+                                       ((eq res :optional) (propertize "OPTIONAL" 'face 'warning))
                                        (res (propertize "OK" 'face 'success))
                                        (t (propertize "ERROR" 'face 'error)))))))
                  (-partition 2 checks))))))
@@ -8565,6 +8569,7 @@ This avoids overloading the server with many files when starting Emacs."
               nil)
      (error t))
    "`gc-cons-threshold' increased?" (> gc-cons-threshold 800000)
+   "Using `plist' for deserialized objects?" (or lsp-use-plists :optional)
    "Using gccemacs with emacs lisp native compilation (https://akrl.sdf.org/gccemacs.html)"
    (or (and (fboundp 'native-comp-available-p)
             (native-comp-available-p))
@@ -8823,6 +8828,23 @@ This avoids overloading the server with many files when starting Emacs."
         (lsp--virtual-buffer-update-position)
         (lsp--info "Disconnected from buffer %s" file-name))
     (lsp--error "Nothing to disconnect from?")))
+
+
+
+;;;###autoload
+(defun lsp-start-plain ()
+  "Start `lsp-mode' using mininal configuration using the latest `melpa' version of the packages.
+
+In case the major-mode that you are using for "
+  (interactive)
+  (let ((start-plain (make-temp-file "plain" nil ".el")))
+    (url-copy-file "https://raw.githubusercontent.com/emacs-lsp/lsp-mode/master/scripts/lsp-start-plain.el"
+                   start-plain t)
+    (async-shell-command
+     (format "%s -q -l %s"
+             (expand-file-name invocation-name invocation-directory)
+             start-plain)
+     (generate-new-buffer " *lsp-start-plain*"))))
 
 
 

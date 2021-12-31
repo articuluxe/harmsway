@@ -69,7 +69,8 @@
   "Extensible inline text completion mechanism."
   :group 'abbrev
   :group 'convenience
-  :group 'matching)
+  :group 'matching
+  :link '(custom-manual "(company) Top"))
 
 (defgroup company-faces nil
   "Faces used by Company."
@@ -265,8 +266,9 @@ The visualized data is stored in `company-prefix', `company-candidates',
   :type 'integer)
 
 (defcustom company-tooltip-minimum 6
-  "The minimum height of the tooltip.
-If this many lines are not available, prefer to display the tooltip above."
+  "Ensure visibility of this number of candidates.
+When that many lines are not available between point and the bottom of the
+window, display the tooltip above point."
   :type 'integer)
 
 (defcustom company-tooltip-minimum-width 0

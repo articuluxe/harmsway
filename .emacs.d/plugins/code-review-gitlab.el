@@ -4,7 +4,7 @@
 ;;
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
-;; Version: 0.0.1
+;; Version: 0.0.5
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;;
 ;; This file is not part of GNU Emacs.
@@ -28,10 +28,12 @@
 ;;
 ;;; Code:
 
+(require 'dash)
+(require 'let-alist)
 (require 'code-review-db)
+(require 'code-review-parse-hunk)
 (require 'code-review-interfaces)
 (require 'code-review-utils)
-(require 'let-alist)
 
 (defgroup code-review-gitlab nil
   "Interact with Gitlab REST and GraphQL APIs."
@@ -127,7 +129,8 @@ an object then we need to build the diff string ourselves here."
   (let* ((review-comments (nreverse
                            (-filter
                             (lambda (c)
-                              (not (code-review-gitlab--regular-comment? c)))
+                              (and (not (code-review-gitlab--regular-comment? c))
+                                   (not (a-get c 'system))))
                             raw-comments)))
          (grouped-comments (-group-by
                             (lambda (c)
@@ -152,18 +155,16 @@ an object then we need to build the diff string ourselves here."
          (comment->code-review-comment
           (lambda (c)
             (let-alist c
-              (let* ((mapping  (alist-get .position.oldPath code-review-gitlab-line-diff-mapping
+              (let* ((path .position.oldPath)
+                     (mapping  (alist-get .position.oldPath code-review-gitlab-line-diff-mapping
                                           nil nil 'equal))
-                     (discussion-id (-second-item
-                                     (split-string .discussion.id "DiffDiscussion/")))
-                     (diff-pos
-                      ;; NOTE: not sure if this should not be a little different in the future
-                      ;; e.g. verify if the comment was done in Added/Removed/Unchanged line
-                      ;; and handling accordingly.
-                      (+ 1 (- (or .position.oldLine
-                                  .position.newLine)
-                              (or (a-get-in mapping (list 'old 'beg))
-                                  (a-get-in mapping (list 'new 'beg)))))))
+                     (line-obj (if .position.oldLine
+                                   `((old . t)
+                                     (line-pos . ,.position.oldLine))
+                                 `((new . t)
+                                   (line-pos . ,.position.newLine))))
+                     (discussion-id (-second-item (split-string .discussion.id "DiffDiscussion/")))
+                     (diff-pos (code-review-parse-hunk-relative-pos mapping line-obj)))
                 `((author (login . ,.author.login))
                   (state . ,"")
                   (bodyHTML .,"")
@@ -190,19 +191,9 @@ an object then we need to build the diff string ourselves here."
 (defun code-review-gitlab--regular-comment? (comment)
   "Predicate to identify regular (overview) COMMENT from review comment."
   (let-alist comment
-    (let ((has-in-mapping?
-           (or (a-get-in (alist-get .position.oldPath code-review-gitlab-line-diff-mapping
-                                    nil nil 'equal)
-                         (list 'old 'beg))
-               (a-get-in (alist-get .position.newPath code-review-gitlab-line-diff-mapping
-                                    nil nil 'equal)
-                         (list 'new 'beg)))))
-      (or (and (not .system)
-               (not has-in-mapping?))
-          (and (not .system)
-               (or (not (a-get comment 'resolvable))
-                   (not (a-get comment 'position))))
-          (not has-in-mapping?)))))
+    (and (not .system)
+         (or (not .resolvable)
+             (not .position)))))
 
 (defun code-review-gitlab-fix-infos (gitlab-infos)
   "Make GITLAB-INFOS structure compatible with GITHUB."
@@ -235,16 +226,18 @@ The payload is used to send a MR review to Gitlab."
     (pcase line-type
       ("ADDED"
        (a-assoc-in payload (list 'position 'new_line)
-                   (+ (- pos (a-get-in mapping (list 'new 'end))) 1)))
+                   (code-review-parse-hunk-line-pos mapping `((added . t) (line-pos . ,pos)))))
       ("REMOVED"
        (a-assoc-in payload (list 'position 'old_line)
-                   (- (+ pos (a-get-in mapping (list 'old 'beg))) 1)))
+                   (code-review-parse-hunk-line-pos mapping `((deleted . t) (line-pos . ,pos)))))
       ("UNCHANGED"
-       (-> payload
-           (a-assoc-in (list 'position 'new_line)
-                       (+ (- pos (a-get-in mapping (list 'new 'end))) 1))
-           (a-assoc-in (list 'position 'old_line)
-                       (- (+ pos (a-get-in mapping (list 'old 'beg))) 1)))))))
+       (let ((line-pos-res
+              (code-review-parse-hunk-line-pos
+               mapping
+               `((normal . t) (line-pos . ,pos)))))
+         (-> payload
+             (a-assoc-in (list 'position 'new_line) (a-get line-pos-res 'new-line))
+             (a-assoc-in (list 'position 'old_line) (a-get line-pos-res 'old-line))))))))
 
 ;;; classes
 
@@ -288,10 +281,11 @@ The payload is used to send a MR review to Gitlab."
       d))
     d))
 
-(cl-defmethod code-review-pullreq-infos ((gitlab code-review-gitlab-repo) callback)
-  "Get PR details from GITLAB and dispatch to CALLBACK."
+(cl-defmethod code-review-pullreq-infos ((gitlab code-review-gitlab-repo) fallback? callback)
+  "Get PR details from GITLAB, choose minimal query on FALLBACK? and dispatch to CALLBACK."
   (let* ((owner (oref gitlab owner))
          (repo (oref gitlab repo))
+         (repo-clean (replace-regexp-in-string "%2F" "/" repo))
          (number (oref gitlab number))
          (query
           (format "query{
@@ -364,17 +358,19 @@ repository:project(fullPath: \"%s\") {
     }
   }
 }
-" (format "%s/%s" owner repo) number)))
+" (format "%s/%s" owner repo-clean) number)))
     (code-review-gitlab--graphql
      query
      nil
      callback)))
 
-(cl-defmethod code-review-infos-deferred ((gitlab code-review-gitlab-repo))
-  "Get PR infos from GITLAB."
+(cl-defmethod code-review-infos-deferred ((gitlab code-review-gitlab-repo) &optional fallback?)
+  "Get PR infos from GITLAB.
+Optionally sets FALLBACK? to get minimal query."
   (let ((d (deferred:new #'identity)))
     (code-review-pullreq-infos
      gitlab
+     fallback?
      (apply-partially
       (lambda (d v &rest _)
         (deferred:callback-post d v))
@@ -383,36 +379,13 @@ repository:project(fullPath: \"%s\") {
 
 (defun code-review-gitlab-pos-line-number->diff-line-number (gitlab-diff)
   "Get mapping of pos-line to diff-line given GITLAB-DIFF."
-  (let* ((if-zero-null (lambda (n)
-                         (let ((nn (string-to-number n)))
-                           (when (> nn 0)
-                             nn))))
-         (regex
-          (rx "@@ -"
-              (group-n 1 (one-or-more digit))
-              ","
-              (group-n 2 (one-or-more digit))
-              " +"
-              (group-n 3 (one-or-more digit))
-              ","
-              (group-n 4 (one-or-more digit))))
-         (res
+  (let* ((res
           (-reduce-from
            (lambda (acc it)
              (let ((str (a-get it 'diff)))
-               (save-match-data
-                 (if (and (string-match regex str))
-                     ;;; NOTE: it's possible that using "old_path" blindly here
-                     ;;; might cause issues when this value is null
-                     (a-assoc acc (or (a-get it 'old_path)
-                                      (a-get it 'new_path))
-                              (a-alist 'old (a-alist 'beg (funcall if-zero-null (match-string 1 str))
-                                                     'end (funcall if-zero-null (match-string 2 str))
-                                                     'path (a-get it 'old_path))
-                                       'new (a-alist 'beg (funcall if-zero-null (match-string 3 str))
-                                                     'end (funcall if-zero-null (match-string 4 str))
-                                                     'path (a-get it 'new_path))))
-                   acc))))
+               (a-assoc acc (or (a-get it 'old_path)
+                                (a-get it 'new_path))
+                        (code-review-parse-hunk-table str))))
            nil
            gitlab-diff)))
     (setq code-review-gitlab-line-diff-mapping res)))
@@ -481,7 +454,7 @@ repository:project(fullPath: \"%s\") {
                   :callback (lambda (&rest _)
                               (message "Approved!"))))
       ("REQUEST_CHANGES"
-       (message "Not supported in Gitlab"))
+       (error "Not supported in Gitlab"))
       ("COMMENT"))
 
     ;; 3. call callback
@@ -496,11 +469,15 @@ repository:project(fullPath: \"%s\") {
   (message "Not supported in Gitlab yet.")
   nil)
 
+(cl-defmethod code-review-get-assignable-users ((_gitlab code-review-gitlab-repo))
+  "Get a list of assignable users for current PR at GITLAB."
+(code-review-gitlab-not-supported-message))
+
 (cl-defmethod code-review-get-labels ((_gitlab code-review-gitlab-repo))
   "Get labels for your pr at GITLAB."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-set-labels ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-labels ((_gitlab code-review-gitlab-repo) _callback)
   "Set labels for your pr at GITLAB and call CALLBACK."
   (code-review-gitlab-not-supported-message))
 
@@ -508,7 +485,7 @@ repository:project(fullPath: \"%s\") {
   "Get assignees for your pr at GITLAB."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-set-assignee ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-assignee ((_gitlab code-review-gitlab-repo) _callback)
   "Set yourself as assignee in GITLAB and call CALLBACK."
   (code-review-gitlab-not-supported-message))
 
@@ -516,15 +493,15 @@ repository:project(fullPath: \"%s\") {
   "Get milestones for your pr at GITLAB."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-set-milestone ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-milestone ((_gitlab code-review-gitlab-repo) _callback)
   "Set milestone for your pr in GITLAB and call CALLBACK."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-set-title ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-title ((_gitlab code-review-gitlab-repo) _callback)
   "Set title for your pr in GITLAB and call CALLBACK."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-set-description ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-description ((_gitlab code-review-gitlab-repo) _callback)
   "Set description for your pr in GITLAB and call CALLBACK."
   (code-review-gitlab-not-supported-message))
 
@@ -532,7 +509,7 @@ repository:project(fullPath: \"%s\") {
   "Merge a pr in GITLAB using STRATEGY."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-set-reaction ((_gitlab code-review-gitlab-repo))
+(cl-defmethod code-review-send-reaction ((_gitlab code-review-gitlab-repo))
   "Set reaction for your pr in GITLAB."
   (code-review-gitlab-not-supported-message))
 
@@ -570,6 +547,28 @@ Return the blob URL if BLOB? is provided."
              :payload (a-alist 'body comment-msg)
              :callback callback
              :errorback #'code-review-gitlab-errback))
+
+(cl-defmethod code-review-new-code-comment ((gitlab code-review-gitlab-repo) local-comment callback)
+  "Creare a new code comment in GITLAB from a LOCAL-COMMENT and call CALLBACK."
+  (let* ((infos (oref gitlab raw-infos))
+         (payload (a-alist 'body (oref local-comment msg)
+                           'position (a-alist 'position_type "text"
+                                              'base_sha (a-get-in infos (list 'diffRefs 'baseSha))
+                                              'head_sha (a-get-in infos (list 'diffRefs 'headSha))
+                                              'start_sha (a-get-in infos (list 'diffRefs 'startSha))
+                                              'new_path (oref local-comment path)
+                                              'old_path (oref local-comment path)))))
+    (glab-post (format "/v4/projects/%s/merge_requests/%s/discussions"
+                       (code-review-gitlab--project-id gitlab)
+                       (oref gitlab number))
+               nil
+               :auth 'code-review
+               :host code-review-gitlab-host
+               :payload (code-review-gitlab-fix-payload payload local-comment)
+               :callback (lambda (&rest _)
+                           (message "Review Comments successfully!")))
+    (sit-for 0.5)
+    (funcall callback)))
 
 (provide 'code-review-gitlab)
 ;;; code-review-gitlab.el ends here

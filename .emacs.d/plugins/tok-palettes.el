@@ -5,7 +5,7 @@
 ;; Author: Topi Kettunen <mail@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -29,28 +29,22 @@
 ;;; Code:
 
 (defvar tok-dark-color-palette-alist
-  '((fg1 . "#e6e6e6")
-    (bg1 . "#101010"))
-  "Dark palette")
-
-(defvar tok-light-color-palette-alist
-  '((fg1 . "#1a1a1a")
-    (bg1 . "#ebebeb"))
-  "Light palette")
-
-(defvar tok-minimal-dark-color-palette-alist
   '((fg1 . "#ffffff")
     (fg2 . "#e6e6e6")
     (fg3 . "#b8b8b8")
     (fg4 . "#a6a6a6")
-    (bg1 . "#101010")
+    (bg1 . "#000000")
     (bg2 . "#272b30")
     (bg3 . "#3a3e42")
     (hl . "#171717")
-    (comment . "#ffffff"))
-  "Minmal dark palette")
+    (bg-active . "#323232")
+    (fg-active . "#f4f4f4")
+    (bg-inactive . "#1e1e1e")
+    (fg-inactive . "#bfc0c4")
+    (comment . "#a8a8a8"))
+  "Dark palette")
 
-(defvar tok-minimal-light-color-palette-alist
+(defvar tok-light-color-palette-alist
   '((fg1 . "#000000")
     (fg2 . "#1a1a1a")
     (fg3 . "#515151")
@@ -59,8 +53,12 @@
     (bg2 . "#ebebeb")
     (bg3 . "#d6d6d6")
     (hl . "#f8f8f8")
-    (comment . "#000000"))
-  "Minimal light palette")
+    (bg-active . "#d7d7d7")
+    (fg-active . "#0a0a0a")
+    (bg-inactive . "#efefef")
+    (fg-inactive . "#404148")
+    (comment . "#505050"))
+  "Light palette")
 
 (provide 'tok-palettes)
 

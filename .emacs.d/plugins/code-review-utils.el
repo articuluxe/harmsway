@@ -4,7 +4,7 @@
 ;;
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
-;; Version: 0.0.1
+;; Version: 0.0.5
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;;
 ;; This file is not part of GNU Emacs.
@@ -35,13 +35,33 @@
 (require 'forge-post)
 (require 'forge-core)
 (require 'forge-github)
-(require 'code-review-github)
 
-;;;
-(defvar code-review-buffer-name)
-(defvar code-review-commit-buffer-name)
-(defvar code-review-log-file)
-(defvar code-review-comment-cursor-pos)
+(defcustom code-review-github-base-url "github.com"
+  "Host used to identify PR URLs from Github."
+  :type 'string
+  :group 'code-review-github)
+
+(defcustom code-review-gitlab-base-url "gitlab.com"
+  "Host used to identify PR URLs from Gitlab."
+  :type 'string
+  :group 'code-review-gitlab)
+
+(defcustom code-review-bitbucket-base-url "bitbucket.org"
+  "Host used to identify PR URLs from Bitbucket."
+  :type 'string
+  :group 'code-review-bitbucket)
+
+(defcustom code-review-download-dir "/tmp/code-review/"
+  "Directory where code review will download binary files."
+  :type 'string
+  :group 'code-review)
+
+(defcustom code-review-log-file (expand-file-name
+                                 "code-review-error.log"
+                                 user-emacs-directory)
+  "Path to write append only log errors."
+  :group 'code-review
+  :type 'file)
 
 ;;; COMMENTS
 
@@ -237,21 +257,35 @@ using COMMENTS."
 (defun code-review-utils-pr-from-url (url)
   "Extract a pr alist from a pull request URL."
   (cond
-   ((string-prefix-p "https://gitlab.com" url)
+   ((string-prefix-p (format "https://%s" code-review-gitlab-base-url) url)
     (save-match-data
-      (and (string-match ".*/\\(.*\\)/\\(.*\\)/-/merge_requests/\\([0-9]+\\)" url)
+      (and (string-match (format "https://%s/\\([^/]*\\)/\\(.*\\)/-/merge_requests/\\([0-9]+\\)"
+                                 code-review-gitlab-base-url)
+                         url)
            (a-alist 'num (match-string 3 url)
-                    'repo (match-string 2 url)
+                    'repo (replace-regexp-in-string "/" "%2F" (match-string 2 url))
                     'owner (match-string 1 url)
                     'forge 'gitlab
                     'url url))))
-   ((string-prefix-p "https://github.com" url)
+   ((string-prefix-p (format "https://%s" code-review-github-base-url) url)
     (save-match-data
-      (and (string-match ".*/\\(.*\\)/\\(.*\\)/pull/\\([0-9]+\\)" url)
+      (and (string-match (format "https://%s/\\(.*\\)/\\(.*\\)/pull/\\([0-9]+\\)"
+                                 code-review-github-base-url)
+                         url)
            (a-alist 'num   (match-string 3 url)
                     'repo  (match-string 2 url)
                     'owner (match-string 1 url)
                     'forge 'github
+                    'url url))))
+   ((string-prefix-p (format "https://%s" code-review-bitbucket-base-url) url)
+    (save-match-data
+      (and (string-match (format "https://%s/\\(.*\\)/\\(.*\\)/pull-requests/\\([0-9]+\\)"
+                                 code-review-bitbucket-base-url)
+                         url)
+           (a-alist 'num   (match-string 3 url)
+                    'repo  (match-string 2 url)
+                    'owner (match-string 1 url)
+                    'forge 'bitbucket
                     'url url))))))
 
 (defun code-review-utils-build-obj (pr-alist)
@@ -268,13 +302,20 @@ using COMMENTS."
        (code-review-gitlab-repo :owner .owner
                                 :repo .repo
                                 :number .num)))
+     ((equal .forge 'bitbucket)
+      (code-review-db--pullreq-create
+       (code-review-bitbucket-repo :owner .owner
+                                   :repo .repo
+                                   :number .num)))
      (t
-      (message "Forge not supported")))))
+      (error "Forge not supported")))))
 
 (defun code-review-utils-build-obj-from-url (url)
   "Return obj from URL."
   (let ((pr-alist (code-review-utils-pr-from-url url)))
-    (code-review-utils-build-obj pr-alist)))
+    (if pr-alist
+        (code-review-utils-build-obj pr-alist)
+      (error "Could not identify the PR with the given URL: %s" url))))
 
 
 ;;; COLORS
@@ -308,44 +349,6 @@ Return a value between 0 and 1."
 Return a value between 0 and 1."
   (/ (+ (* .2126 red) (* .7152 green) (* .0722 blue)) 256))
 
-
-;;; SECTION
-
-(defun code-review-utils--gen-submit-structure (&optional feedback)
-  "Return A-LIST with replies and reviews to submit.
-If you already have a FEEDBACK string to submit use it."
-  (interactive)
-  (let* ((replies nil)
-         (review-comments nil)
-         (feedback feedback)
-         (pullreq (code-review-db-get-pullreq)))
-    (with-current-buffer (get-buffer code-review-buffer-name)
-      (save-excursion
-        (goto-char (point-min))
-        (magit-wash-sequence
-         (lambda ()
-           (let ((section (magit-current-section)))
-             (with-slots (type value) section
-               (cond
-                ((code-review-reply-comment-section-p section))
-                ((equal type 'code-review-reply-comment-header)
-                 (let-alist value
-                   (push `((comment-id . ,.comment.databaseId)
-                           (body . ,.comment.bodyText))
-                         replies)))
-                ((equal type 'code-review-feedback)
-                 (setq feedback (or (a-get value 'feedback) feedback)))
-                ((equal type 'code-review-local-comment-header)
-                 (let-alist value
-                   (push `((path . ,.comment.path)
-                           (position . ,.comment.position)
-                           (body . ,.comment.bodyText))
-                         review-comments))))
-               (forward-line)))))))
-    (oset pullreq replies replies)
-    (oset pullreq review review-comments)
-    (oset pullreq feedback feedback)
-    pullreq))
 
 ;;; Forge interface
 

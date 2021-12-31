@@ -5,7 +5,7 @@
 ;; Author: Topi Kettunen <mail@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -46,21 +46,6 @@ VARIANT is 'dark or 'light."
             ,@(mapcar (lambda (elm) `(,(car elm) ,(cdr elm))) color-palette*))
        (let ((custom--inhibit-theme-enable nil))
          ,@tok-definition))))
-
-;;; Setup Start
-(defmacro tok-minimal-with-color-variables (variant theme-name color-palette)
-  "Eval `tok-color-definition' in tok COLOR-PALETTE for THEME-NAME.
-VARIANT is 'dark or 'light."
-  (declare (indent defun))
-  (let ((color-palette* (eval color-palette)))
-    `(let* ((class '((class color) (min-colors 89)))
-            (light-class (append '((background light)) class))
-            (dark-class (append '((background dark)) class))
-            (theme-name ,theme-name)
-            (variant ,variant)
-            ,@(mapcar (lambda (elm) `(,(car elm) ,(cdr elm))) color-palette*))
-       (let ((custom--inhibit-theme-enable nil))
-         ,@tok-minimal-definition))))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

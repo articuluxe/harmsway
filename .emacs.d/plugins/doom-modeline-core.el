@@ -826,7 +826,7 @@ used as an advice to window creation functions."
              (/= (frame-char-height) (window-mode-line-height)))
     (redisplay t)))
 (unless (>= emacs-major-version 29)
-  (advice-add 'split-window :after #'doom-modeline-redisplay))
+  (advice-add #'fit-window-to-buffer :before #'doom-modeline-redisplay))
 
 ;; Keep `doom-modeline-current-window' up-to-date
 (defun doom-modeline--get-current-window (&optional frame)
@@ -971,7 +971,7 @@ Example:
                'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
                'display `((space
                            :align-to
-                           (- (+ right right-fringe right-margin)
+                           (- (+ right right-fringe right-margin scroll-bar)
                               ,(* (let ((width (doom-modeline--font-width)))
                                     (or (and (= width 1) 1)
                                         (/ width (frame-char-width) 1.0)))
@@ -1188,28 +1188,6 @@ Return nil if no project was found."
   "Get the path to the root of your project.
 Return `default-directory' if no project was found."
   (or (doom-modeline--project-root) default-directory))
-
-;; HACK: fix invalid-regexp "Trailing backslash" while handling $HOME on Windows
-(defun doom-modeline-shrink-path--dirs-internal (full-path &optional truncate-all)
-  "Return fish-style truncated string based on FULL-PATH.
-Optional parameter TRUNCATE-ALL will cause the function to truncate the last
-directory too."
-  (let* ((home (expand-file-name "~"))
-         (path (replace-regexp-in-string
-                (s-concat "^" home) "~" full-path))
-         (split (s-split "/" path 'omit-nulls))
-         (split-len (length split))
-         shrunk)
-    (->> split
-         (--map-indexed (if (= it-index (1- split-len))
-                            (if truncate-all (shrink-path--truncate it) it)
-                          (shrink-path--truncate it)))
-         (s-join "/")
-         (setq shrunk))
-    (s-concat (unless (s-matches? (rx bos (or "~" "/")) shrunk) "/")
-              shrunk
-              (unless (s-ends-with? "/" shrunk) "/"))))
-(advice-add #'shrink-path--dirs-internal :override #'doom-modeline-shrink-path--dirs-internal)
 
 (defun doom-modeline-buffer-file-name ()
   "Propertized variable `buffer-file-name' based on

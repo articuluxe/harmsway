@@ -1,4 +1,5 @@
 set -e
+rm -rf src/build
 mkdir -p src/build
 cd src/build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..

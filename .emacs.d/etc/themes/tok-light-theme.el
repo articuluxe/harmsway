@@ -5,7 +5,7 @@
 ;; Author: Topi Kettunen <mail@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -39,6 +39,6 @@
   tok-light-color-palette-alist)
 
 (provide-theme 'tok-light)
-(provide 'tok-light)
+(provide 'tok-light-theme)
 
 ;;; tok-light-theme.el ends here

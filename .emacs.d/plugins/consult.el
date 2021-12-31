@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 0.13
+;; Version: 0.14
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/consult
 
@@ -36,7 +36,7 @@
 
 ;; The Consult commands are compatible with completion systems based
 ;; on the Emacs `completing-read' API, including the default completion
-;; system, Icomplete, Selectrum, Vertico and Embark.
+;; system, Vertico, Icomplete, Mct, Selectrum and Embark.
 
 ;; Consult has been inspired by Counsel. Some of the Consult commands
 ;; originated in the Counsel package or the Selectrum wiki. See the
@@ -1580,18 +1580,18 @@ SPLIT is the splitting function."
 ASYNC is the async function which receives the candidates.
 CMD is the command line builder function.
 PROPS are optional properties passed to `make-process'."
-  (let ((proc) (last-args) (indicator) (count))
+  (let (proc proc-buf last-args indicator count)
     (lambda (action)
       (pcase action
         ("" ;; If no input is provided kill current process
          (when proc
            (delete-process proc)
-           (setq proc nil))
+           (kill-buffer proc-buf)
+           (setq proc nil proc-buf nil))
          (setq last-args nil))
         ((pred stringp)
          (funcall async action)
          (let* ((args (funcall cmd action))
-                (stderr-buffer (generate-new-buffer " *consult-async-stderr*"))
                 (flush t)
                 (rest "")
                 (proc-filter
@@ -1624,24 +1624,25 @@ PROPS are optional properties passed to `make-process'."
                    (with-current-buffer (get-buffer-create consult--async-log)
                      (goto-char (point-max))
                      (insert ">>>>> stderr >>>>>\n")
-                     (insert-buffer-substring stderr-buffer)
-                     (insert "<<<<< stderr <<<<<\n")
-                     (kill-buffer stderr-buffer)))))
+                     (insert-buffer-substring proc-buf)
+                     (insert "<<<<< stderr <<<<<\n")))))
            (unless (equal args last-args)
              (setq last-args args)
              (when proc
                (delete-process proc)
-               (setq proc nil))
+               (kill-buffer proc-buf)
+               (setq proc nil proc-buf nil))
              (when args
                (overlay-put indicator 'display #("*" 0 1 (face consult-async-running)))
                (consult--async-log "consult--async-process started %S\n" args)
                (setq count 0
+                     proc-buf (generate-new-buffer " *consult-async-stderr*")
                      proc (apply #'make-process
                                  `(,@props
                                    :connection-type pipe
                                    :name ,(car args)
                                    ;;; XXX tramp bug, the stderr buffer must be empty
-                                   :stderr ,stderr-buffer
+                                   :stderr ,proc-buf
                                    :noquery t
                                    :command ,args
                                    :filter ,proc-filter
@@ -1650,7 +1651,8 @@ PROPS are optional properties passed to `make-process'."
         ('destroy
          (when proc
            (delete-process proc)
-           (setq proc nil))
+           (kill-buffer proc-buf)
+           (setq proc nil proc-buf nil))
          (delete-overlay indicator)
          (funcall async 'destroy))
         ('setup
@@ -2043,7 +2045,7 @@ INHERIT-INPUT-METHOD, if non-nil the minibuffer inherits the input method."
   (let* ((src (consult--multi-source sources cand))
          (annotate (plist-get src :annotate))
          (ann (if annotate
-                  (funcall annotate (cdr (get-text-property 0 'consult-multi cand)))
+                  (funcall annotate (cdr (get-text-property 0 'multi-category cand)))
                 (plist-get src :name))))
     (and ann (concat align ann))))
 
@@ -2072,7 +2074,7 @@ INHERIT-INPUT-METHOD, if non-nil the minibuffer inherits the input method."
 (defun consult--multi-lookup (sources _ candidates cand)
   "Lookup CAND in CANDIDATES given SOURCES."
   (if-let (found (member cand candidates))
-      (cons (cdr (get-text-property 0 'consult-multi (car found)))
+      (cons (cdr (get-text-property 0 'multi-category (car found)))
             (consult--multi-source sources cand))
     (unless (string-blank-p cand)
       (list cand))))
@@ -2090,7 +2092,7 @@ INHERIT-INPUT-METHOD, if non-nil the minibuffer inherits the input method."
         (dolist (item items)
           (let ((cand (consult--tofu-append item idx))
                 (width (consult--display-width item)))
-            (add-text-properties 0 (length item) `(,@face consult-multi (,cat . ,item)) cand)
+            (add-text-properties 0 (length item) `(,@face multi-category (,cat . ,item)) cand)
             (when (> width max-width) (setq max-width width))
             (push cand candidates))))
       (setq idx (1+ idx)))
@@ -2179,7 +2181,7 @@ Optional source fields:
                            options
                            (list
                             :default     (car candidates)
-                            :category    'consult-multi
+                            :category    'multi-category
                             :predicate   (apply-partially #'consult--multi-predicate sources)
                             :annotate    (apply-partially #'consult--multi-annotate sources align)
                             :group       (apply-partially #'consult--multi-group sources)
@@ -2387,23 +2389,37 @@ These configuration options are supported:
 
 ;;;;; Function: consult-completing-read-multiple
 
+(defun consult--crm-selected ()
+  "Return selected candidates from `consult-completing-read-multiple'."
+  (when (eq minibuffer-history-variable 'consult--crm-history)
+    (mapcar
+     (apply-partially #'get-text-property 0 'consult--crm-selected)
+     (all-completions
+      "" minibuffer-completion-table
+      (lambda (cand)
+        (and (stringp cand)
+             (get-text-property 0 'consult--crm-selected cand)
+             (or (not minibuffer-completion-predicate)
+                 (funcall minibuffer-completion-predicate cand))))))))
+
 ;;;###autoload
 (defun consult-completing-read-multiple (prompt table &optional
                                                 pred require-match initial-input
                                                 hist def inherit-input-method)
   "Enhanced replacement for `completing-read-multiple'.
 See `completing-read-multiple' for the documentation of the arguments."
-  (let* ((orig-items
+  (let* ((orig-items (all-completions "" table pred))
+         (prefixed-orig-items
           (funcall
            (if-let (prefix (car consult-crm-prefix))
                (apply-partially #'mapcar (lambda (item) (propertize item 'line-prefix prefix)))
              #'identity)
-           (all-completions "" table pred)))
+           orig-items))
          (format-item
           (lambda (item)
             ;; Restore original candidate in order to preserve formatting
-            (setq item (propertize (or (car (member item orig-items)) item)
-                                   'consult--crm-selected t
+            (setq item (or (car (member item orig-items)) item)
+                  item (propertize item 'consult--crm-selected item
                                    'line-prefix (cdr consult-crm-prefix)))
             (add-face-text-property 0 (length item) 'consult-crm-selected 'append item)
             item))
@@ -2428,7 +2444,7 @@ See `completing-read-multiple' for the documentation of the arguments."
          (consult--crm-history (append (mapcar #'substring-no-properties selected) hist-val))
          (items (append selected
                         (seq-remove (lambda (x) (member x selected))
-                                    orig-items)))
+                                    prefixed-orig-items)))
          (orig-md (and (functionp table) (cdr (funcall table "" nil 'metadata))))
          (group-fun (alist-get 'group-function orig-md))
          (sort-fun
@@ -2479,7 +2495,7 @@ See `completing-read-multiple' for the documentation of the arguments."
                          consult--crm-history (append (mapcar #'substring-no-properties selected) hist-val)
                          items (append selected
                                        (seq-remove (lambda (x) (member x selected))
-                                                   orig-items)))
+                                                   prefixed-orig-items)))
                    (when overlay
                      (overlay-put overlay 'display
                                   (when selected
@@ -2516,15 +2532,16 @@ See `completing-read-multiple' for the documentation of the arguments."
                     "" ;; default
                     inherit-input-method)))
               (unless (or (equal result "") selected)
-                (setq selected (split-string (substring-no-properties result) separator 'omit-nulls)
-                      consult--crm-history (append selected hist-val)))))
+                (setq selected (split-string result separator 'omit-nulls)
+                      consult--crm-history (append (mapcar #'substring-no-properties selected) hist-val)))))
         (remove-hook 'pre-command-hook hook)))
-    (set hist-sym consult--crm-history)
     (when (consp def)
       (setq def (car def)))
     (if (and def (not (equal "" def)) (not selected))
         (split-string def separator 'omit-nulls)
-      (mapcar #'substring-no-properties selected))))
+      (setq selected (mapcar #'substring-no-properties selected))
+      (set hist-sym (append selected (symbol-value hist-sym)))
+      selected)))
 
 ;;;; Commands
 
@@ -2959,13 +2976,20 @@ INITIAL is the initial input."
            (consult--completion-filter-dispatch
             pattern cands 'consult-location 'highlight))))
   (consult--forbid-minibuffer)
-  (barf-if-buffer-read-only)
-  (consult--with-increased-gc
-   (consult--prompt
-    :prompt "Keep lines: "
-    :initial initial
-    :history 'consult--keep-lines-history
-    :state (consult--keep-lines-state filter))))
+  (cl-letf ((ro buffer-read-only)
+            ((buffer-local-value 'buffer-read-only (current-buffer)) nil))
+    (consult--minibuffer-with-setup-hook
+        (lambda ()
+          (when ro
+            (minibuffer-message
+             (substitute-command-keys
+              " [Unlocked read-only buffer. \\[minibuffer-keyboard-quit] to quit.]"))))
+        (consult--with-increased-gc
+         (consult--prompt
+          :prompt "Keep lines: "
+          :initial initial
+          :history 'consult--keep-lines-history
+          :state (consult--keep-lines-state filter))))))
 
 ;;;;; Command: consult-focus-lines
 

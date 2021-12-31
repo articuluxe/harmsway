@@ -4,25 +4,25 @@
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://gitlab.com/protesilaos/modus-themes
-;; Version: 1.7.0
-;; Last-Modified: <2021-12-07 18:00:45 +0200>
+;; Version: 2.0.0
+;; Last-Modified: <2021-12-31 05:55:23 +0200>
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
 ;; This file is part of GNU Emacs.
 
-;; This program is free software; you can redistribute it and/or modify
+;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or (at
-;; your option) any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
-;; This program is distributed in the hope that it will be useful, but
-;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;; General Public License for more details.
+;; GNU Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 ;;
@@ -124,7 +124,7 @@
 ;;     diff-mode
 ;;     dim-autoload
 ;;     dir-treeview
-;;     dired
+;;     Dired
 ;;     dired-async
 ;;     dired-git
 ;;     dired-git-info
@@ -545,9 +545,6 @@ cover the blue-cyan-magenta side of the spectrum."
     ;; while bg-tab-inactive should be combined with fg-dim, whereas
     ;; bg-tab-inactive-alt goes together with fg-main
     ;;
-    ;; bg-tab-bar is only intended for the bar that holds the tabs and
-    ;; can only be combined with fg-main
-    ;;
     ;; fg-escape-char-construct and fg-escape-char-backslash can
     ;; be combined bg-main, bg-dim, bg-alt
     ;;
@@ -577,7 +574,6 @@ cover the blue-cyan-magenta side of the spectrum."
     (bg-region-accent . "#afafef")
     (bg-region-accent-subtle . "#efdfff")
 
-    (bg-tab-bar . "#d5d5d5")
     (bg-tab-active . "#f6f6f6")
     (bg-tab-inactive . "#b7b7b7")
     (bg-tab-inactive-accent . "#a9b4f6")
@@ -746,8 +742,8 @@ symbol and the latter as a string.")
     (green-graph-1-bg . "#0f8f07")
     (yellow-graph-0-bg . "#ffd03e")
     (yellow-graph-1-bg . "#d7d800")
-    (blue-graph-0-bg . "#406fff")
     (blue-graph-1-bg . "#2f50c8")
+    (blue-graph-0-bg . "#5f8fff")
     (magenta-graph-0-bg . "#af7bee")
     (magenta-graph-1-bg . "#7f59cf")
     (cyan-graph-0-bg . "#47dcfa")
@@ -790,9 +786,6 @@ symbol and the latter as a string.")
     ;; while bg-tab-inactive should be combined with fg-dim, whereas
     ;; bg-tab-inactive-alt goes together with fg-main
     ;;
-    ;; bg-tab-bar is only intended for the bar that holds the tabs and
-    ;; can only be combined with fg-main
-    ;;
     ;; fg-escape-char-construct and fg-escape-char-backslash can
     ;; be combined bg-main, bg-dim, bg-alt
     ;;
@@ -822,7 +815,6 @@ symbol and the latter as a string.")
     (bg-region-accent . "#4f3d88")
     (bg-region-accent-subtle . "#240f55")
 
-    (bg-tab-bar . "#2c2c2c")
     (bg-tab-active . "#0e0e0e")
     (bg-tab-inactive . "#424242")
     (bg-tab-inactive-accent . "#35398f")
@@ -896,7 +888,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-subtle-green nil
   "Subtle green background combined with a dimmed foreground.
@@ -904,7 +896,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-subtle-yellow nil
   "Subtle yellow background combined with a dimmed foreground.
@@ -912,7 +904,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-subtle-blue nil
   "Subtle blue background combined with a dimmed foreground.
@@ -920,7 +912,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-subtle-magenta nil
   "Subtle magenta background combined with a dimmed foreground.
@@ -928,7 +920,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-subtle-cyan nil
   "Subtle cyan background combined with a dimmed foreground.
@@ -936,7 +928,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-subtle-neutral nil
   "Subtle gray background combined with a dimmed foreground.
@@ -944,7 +936,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-red nil
   "Intense red background combined with the main foreground.
@@ -952,7 +944,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-green nil
   "Intense green background combined with the main foreground.
@@ -960,7 +952,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-yellow nil
   "Intense yellow background combined with the main foreground.
@@ -968,7 +960,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-blue nil
   "Intense blue background combined with the main foreground.
@@ -976,7 +968,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-magenta nil
   "Intense magenta background combined with the main foreground.
@@ -984,7 +976,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-cyan nil
   "Intense cyan background combined with the main foreground.
@@ -992,7 +984,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-intense-neutral nil
   "Intense gray background combined with the main foreground.
@@ -1000,7 +992,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-refine-red nil
   "Combination of accented red background and foreground.
@@ -1008,7 +1000,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-refine-green nil
   "Combination of accented green background and foreground.
@@ -1016,7 +1008,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-refine-yellow nil
   "Combination of accented yellow background and foreground.
@@ -1024,7 +1016,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-refine-blue nil
   "Combination of accented blue background and foreground.
@@ -1032,7 +1024,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-refine-magenta nil
   "Combination of accented magenta background and foreground.
@@ -1040,7 +1032,7 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-refine-cyan nil
   "Combination of accented cyan background and foreground.
@@ -1048,91 +1040,91 @@ This is used for general purpose highlighting, mostly in buffers
 or for completion interfaces.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-active-red nil
   "A red background meant for use on the mode line or similar.
 This is combined with the mode lines primary foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-active-green nil
   "A green background meant for use on the mode line or similar.
 This is combined with the mode lines primary foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-active-yellow nil
   "A yellow background meant for use on the mode line or similar.
 This is combined with the mode lines primary foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-active-blue nil
   "A blue background meant for use on the mode line or similar.
 This is combined with the mode lines primary foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-active-magenta nil
   "A magenta background meant for use on the mode line or similar.
 This is combined with the mode lines primary foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-active-cyan nil
   "A cyan background meant for use on the mode line or similar.
 This is combined with the mode lines primary foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fringe-red nil
   "A red background meant for use on the fringe or similar.
 This is combined with the main foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fringe-green nil
   "A green background meant for use on the fringe or similar.
 This is combined with the main foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fringe-yellow nil
   "A yellow background meant for use on the fringe or similar.
 This is combined with the main foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fringe-blue nil
   "A blue background meant for use on the fringe or similar.
 This is combined with the main foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fringe-magenta nil
   "A magenta background meant for use on the fringe or similar.
 This is combined with the main foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fringe-cyan nil
   "A cyan background meant for use on the fringe or similar.
 This is combined with the main foreground value.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-nuanced-red nil
   "A nuanced red background.
@@ -1142,7 +1134,7 @@ headings, and any other surface that needs to retain the colors
 on display.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-nuanced-green nil
   "A nuanced green background.
@@ -1152,7 +1144,7 @@ headings, and any other surface that needs to retain the colors
 on display.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-nuanced-yellow nil
   "A nuanced yellow background.
@@ -1162,7 +1154,7 @@ headings, and any other surface that needs to retain the colors
 on display.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-nuanced-blue nil
   "A nuanced blue background.
@@ -1172,7 +1164,7 @@ headings, and any other surface that needs to retain the colors
 on display.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-nuanced-magenta nil
   "A nuanced magenta background.
@@ -1182,7 +1174,7 @@ headings, and any other surface that needs to retain the colors
 on display.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-nuanced-cyan nil
   "A nuanced cyan background.
@@ -1192,7 +1184,7 @@ headings, and any other surface that needs to retain the colors
 on display.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-special-cold nil
   "Combines the 'special cold' background and foreground values.
@@ -1201,7 +1193,7 @@ suitable and where a combination of more saturated colors would
 not be appropriate.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-special-mild nil
   "Combines the 'special mild' background and foreground values.
@@ -1210,7 +1202,7 @@ suitable and where a combination of more saturated colors would
 not be appropriate.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-special-warm nil
   "Combines the 'special warm' background and foreground values.
@@ -1219,7 +1211,7 @@ suitable and where a combination of more saturated colors would
 not be appropriate.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-special-calm nil
   "Combines the 'special calm' background and foreground values.
@@ -1228,7 +1220,7 @@ suitable and where a combination of more saturated colors would
 not be appropriate.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-added nil
   "Combines green colors for the 'added' state in diffs.
@@ -1236,7 +1228,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-changed nil
   "Combines yellow colors for the 'changed' state in diffs.
@@ -1244,7 +1236,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-removed nil
   "Combines red colors for the 'removed' state in diffs.
@@ -1252,7 +1244,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-refine-added nil
   "Combines green colors for word-wise 'added' state in diffs.
@@ -1260,7 +1252,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-refine-changed nil
   "Combines yellow colors for word-wise 'changed' state in diffs.
@@ -1268,7 +1260,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-refine-removed nil
   "Combines red colors for word-wise 'removed' state in diffs.
@@ -1276,7 +1268,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-focus-added nil
   "Combines green colors for the focused 'added' state in diffs.
@@ -1284,7 +1276,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-focus-changed nil
   "Combines yellow colors for the focused 'changed' state in.
@@ -1292,7 +1284,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-focus-removed nil
   "Combines red colors for the focused 'removed' state in diffs.
@@ -1300,7 +1292,7 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-diff-heading nil
   "Combines blue colors for the diff hunk heading.
@@ -1308,40 +1300,40 @@ The applied colors are contingent on the value assigned to
 `modus-themes-diffs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-pseudo-header nil
   "Generic style for some elements that function like headings.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-mark-alt nil
   "Combines yellow colors for marking special lines.
 This is intended for use in modes such as Dired, Ibuffer, Proced.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-mark-del nil
   "Combines red colors for marking deletable lines.
 This is intended for use in modes such as Dired, Ibuffer, Proced.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-mark-sel nil
   "Combines green colors for marking lines.
 This is intended for use in modes such as Dired, Ibuffer, Proced.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-mark-symbol nil
   "Applies a blue color and other styles for mark indicators.
 This is intended for use in modes such as Dired, Ibuffer, Proced.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-1 nil
   "General purpose face for use in headings level 1.
@@ -1349,7 +1341,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-2 nil
   "General purpose face for use in headings level 2.
@@ -1357,7 +1349,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-3 nil
   "General purpose face for use in headings level 3.
@@ -1365,7 +1357,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-4 nil
   "General purpose face for use in headings level 4.
@@ -1373,7 +1365,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-5 nil
   "General purpose face for use in headings level 5.
@@ -1381,7 +1373,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-6 nil
   "General purpose face for use in headings level 6.
@@ -1389,7 +1381,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-7 nil
   "General purpose face for use in headings level 7.
@@ -1397,7 +1389,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-heading-8 nil
   "General purpose face for use in headings level 8.
@@ -1405,7 +1397,7 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-headings' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-hl-line nil
   "General purpose face for the current line.
@@ -1413,21 +1405,21 @@ The exact attributes assigned to this face are contingent on the
 values assigned to the `modus-themes-hl-line' variable.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-bold nil
   "Generic face for applying a conditional bold weight.
 This behaves in accordance with `modus-themes-bold-constructs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-slant nil
   "Generic face for applying a conditional slant (italics).
 This behaves in accordance with `modus-themes-italic-constructs'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-variable-pitch nil
   "Generic face for applying a conditional `variable-pitch'.
@@ -1436,19 +1428,19 @@ This behaves in accordance with `modus-themes-mixed-fonts',
 and `modus-themes-variable-pitch-ui'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-fixed-pitch nil
   "Generic face for applying a conditional `fixed-pitch'.
 This behaves in accordance with `modus-themes-mixed-fonts'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-ui-variable-pitch nil
   "Face for `modus-themes-variable-pitch-ui'.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-red-0 nil
   "Special subdued red face for use in graphs.
@@ -1457,7 +1449,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-red-1 nil
   "Special prominent red face for use in graphs.
@@ -1466,7 +1458,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-green-0 nil
   "Special subdued green face for use in graphs.
@@ -1475,7 +1467,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-green-1 nil
   "Special prominent green face for use in graphs.
@@ -1484,7 +1476,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-yellow-0 nil
   "Special subdued yellow face for use in graphs.
@@ -1493,7 +1485,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-yellow-1 nil
   "Special prominent yellow face for use in graphs.
@@ -1502,7 +1494,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-blue-0 nil
   "Special subdued blue face for use in graphs.
@@ -1511,7 +1503,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-blue-1 nil
   "Special prominent blue face for use in graphs.
@@ -1520,7 +1512,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-magenta-0 nil
   "Special subdued magenta face for use in graphs.
@@ -1529,7 +1521,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-magenta-1 nil
   "Special prominent magenta face for use in graphs.
@@ -1538,7 +1530,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-cyan-0 nil
   "Special subdued cyan face for use in graphs.
@@ -1547,7 +1539,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-graph-cyan-1 nil
   "Special prominent cyan face for use in graphs.
@@ -1556,7 +1548,7 @@ habit graph where faithfulness to the semantics of a color value
 is of paramount importance.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-lang-note nil
   "Generic face for linter or spell checker notes.
@@ -1564,7 +1556,7 @@ The exact attributes and color combinations are controlled by
 `modus-themes-lang-checkers'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-lang-warning nil
   "Generic face for linter or spell checker warnings.
@@ -1572,7 +1564,7 @@ The exact attributes and color combinations are controlled by
 `modus-themes-lang-checkers'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-lang-error nil
   "Generic face for linter or spell checker errors.
@@ -1580,7 +1572,7 @@ The exact attributes and color combinations are controlled by
 `modus-themes-lang-checkers'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-reset-soft nil
   "Generic face to set most face properties to nil.
@@ -1591,7 +1583,7 @@ text should not be underlined as well) yet still blend in.  Also
 see `modus-themes-reset-hard'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-reset-hard nil
   "Generic face to set all face properties to nil.
@@ -1602,32 +1594,32 @@ text should not be underlined as well) and not blend in.  Also
 see `modus-themes-reset-soft'.
 
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-key-binding nil
   "Generic face for key bindings.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-search-success nil
   "Generic face for successful search.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-search-success-modeline nil
   "Generic mode line indicator for successful search.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-search-success-lazy nil
   "Generic face for successful, lazily highlighted search.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 (defface modus-themes-prompt nil
   "Generic face for command prompts.
 The actual styling of the face is done by `modus-themes-faces'."
-  :group 'modus-theme-faces)
+  :group 'modus-themes-faces)
 
 ;; "Grue" is "green" and "blue".
 (defface modus-themes-grue nil
@@ -2331,25 +2323,32 @@ variables `flymake-fringe-indicator-position' and
   :link '(info-link "(modus-themes) Language checkers"))
 
 (defcustom modus-themes-org-blocks nil
-  "Use a subtle gray or color-coded background for Org blocks.
+  "Set the overall style of Org code blocks, quotes, and the like.
 
-Nil (the default) means that the block has no distinct background
-of its own and uses the one that applies to the rest of the
-buffer.
+Nil (the default) means that the block has no background of its
+own: it uses the one that applies to the rest of the buffer.  In
+this case, the delimiter lines have a gray color for their text,
+making them look exactly like all other Org properties.
 
 Option `gray-background' applies a subtle gray background to the
 block's contents.  It also affects the begin and end lines of the
-block: their background extends to the edge of the window for
-Emacs version >= 27 where the ':extend' keyword is recognized by
-`set-face-attribute' (this is contingent on the variable
-`org-fontify-whole-block-delimiter-line').
+block as they get another shade of gray as their background,
+which differentiates them from the contents of the block.  All
+background colors extend to the edge of the window, giving the
+area a rectangular, \"blocky\" presentation.
 
 Option `tinted-background' uses a slightly colored background for
 the contents of the block.  The exact color will depend on the
 programming language and is controlled by the variable
 `org-src-block-faces' (refer to the theme's source code for the
 current association list).  For this to take effect, the Org
-buffer needs to be restarted with `org-mode-restart'.
+buffer needs to be restarted with `org-mode-restart'.  In this
+scenario, it may be better to inhibit the extension of the
+delimiter lines' background to the edge of the window because Org
+does not provide a mechanism to update their colors depending on
+the contents of the block.  Disable the extension of such
+backgrounds by setting `org-fontify-whole-block-delimiter-line'
+to nil.
 
 Code blocks use their major mode's colors only when the variable
 `org-src-fontify-natively' is non-nil.  While quote/verse blocks
@@ -2361,7 +2360,7 @@ Older versions of the themes provided options `grayscale' (or
 are aliases for `gray-background' and `tinted-background',
 respectively."
   :group 'modus-themes
-  :package-version '(modus-themes . "1.4.0")
+  :package-version '(modus-themes . "2.1.0")
   :version "28.1"
   :type '(choice
           (const :format "[%v] %t\n" :tag "No Org block background (default)" nil)
@@ -2410,7 +2409,9 @@ The padding has no effect when the `moody' property is also used,
 because Moody already applies its own tweaks.  To ensure that the
 underline is placed at the bottom of the mode line, set
 `x-underline-at-descent-line' to non-nil (this is not needed when
-the `borderless' property is also set).
+the `borderless' property is also set).  For users on Emacs 29,
+the `x-use-underline-position-properties' variable must also be
+set to nil.
 
 Combinations of any of those properties are expressed as a list,
 like in these examples:
@@ -2524,17 +2525,17 @@ each completion framework.
 Option `moderate' applies a combination of background and
 foreground that is fairly subtle.  For Icomplete and friends this
 constitutes a departure from their default aesthetics, however
-the difference is small.  While Helm, Ivy et al appear slightly
+the difference is small.  While Helm, Ivy et al. appear slightly
 different than their original looks, as they are toned down a
 bit.
 
 Option `opinionated' uses color combinations that refashion the
 completion UI.  For the Icomplete camp this means that intense
 background and foreground combinations are used: in effect their
-looks emulate those of Helm, Ivy and company in their original
-style.  Whereas the other group of packages will revert to an
-even more nuanced aesthetic with some additional changes to the
-choice of hues.
+looks emulate those of Helm, Ivy and co. in their original style.
+Whereas the other group of packages will revert to an even more
+nuanced aesthetic with some additional changes to the choice of
+hues.
 
 To appreciate the scope of this customization option, you should
 spend some time with every one of the nil (default), `moderate',
@@ -3082,7 +3083,7 @@ differ in overall intensity.  FAINTFG is a nuanced color."
            ('unspecified)))))
 
 (defun modus-themes--prompt (mainfg intensefg grayfg subtlebg intensebg intensebg-fg subtlebggray intensebggray)
-  "Conditional use of colors for prompts.
+  "Conditional use of colors for text prompt faces.
 MAINFG is the prompt's standard foreground.  INTENSEFG is a more
 prominent alternative to the main foreground, while GRAYFG is a
 less luminant shade of gray.
@@ -3532,8 +3533,9 @@ set to `rainbow'."
     ('gray-background (list :background bg :foreground fg :extend t))
     ('grayscale (list :background bg :foreground fg :extend t))
     ('greyscale (list :background bg :foreground fg :extend t))
-    ('rainbow (list :background bgaccent :foreground fgaccent))
-    (_ (list :background bg :foreground fg))))
+    ('tinted-background (list :background bgaccent :foreground fgaccent :extend nil))
+    ('rainbow (list :background bgaccent :foreground fgaccent :extend nil))
+    (_ (list :foreground fg :extend nil))))
 
 (defun modus-themes--mode-line-attrs
     (fg bg fg-alt bg-alt fg-accent bg-accent border border-3d &optional alt-style fg-distant)
@@ -3741,7 +3743,7 @@ is a background color and BGNEUTRAL is its fallback value."
            (t)))))
 
 (defun modus-themes--link-color (fg fgfaint &optional neutralfg)
-  "Extends `modus-themes--link'.
+  "Extend `modus-themes--link'.
 FG is the main accented foreground.  FGFAINT is also accented,
 yet desaturated.  Optional NEUTRALFG is a gray value."
   (let ((properties
@@ -4436,12 +4438,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(font-latex-italic-face ((,class :inherit italic)))
     `(font-latex-math-face ((,class :inherit font-lock-constant-face)))
     `(font-latex-script-char-face ((,class :inherit font-lock-builtin-face)))
-    `(font-latex-sectioning-0-face ((,class :inherit modus-themes-heading-1)))
-    `(font-latex-sectioning-1-face ((,class :inherit modus-themes-heading-2)))
-    `(font-latex-sectioning-2-face ((,class :inherit modus-themes-heading-3)))
-    `(font-latex-sectioning-3-face ((,class :inherit modus-themes-heading-4)))
-    `(font-latex-sectioning-4-face ((,class :inherit modus-themes-heading-5)))
-    `(font-latex-sectioning-5-face ((,class :inherit modus-themes-heading-6)))
+    `(font-latex-sectioning-5-face ((,class :inherit (bold modus-themes-variable-pitch) :foreground ,blue-nuanced-fg)))
     `(font-latex-sedate-face ((,class :inherit font-lock-keyword-face)))
     `(font-latex-slide-title-face ((,class :inherit modus-themes-heading-1)))
     `(font-latex-string-face ((,class :inherit font-lock-string-face)))
@@ -5352,17 +5349,17 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(font-lock-regexp-grouping-backslash ((,class :inherit bold
                                                    ,@(modus-themes--syntax-string
                                                       fg-escape-char-backslash yellow-alt-faint
-                                                      yellow magenta-alt
-                                                      yellow-faint red-faint))))
+                                                      yellow-alt magenta-alt
+                                                      red-faint green-alt-other-faint))))
     `(font-lock-regexp-grouping-construct ((,class :inherit bold
                                                    ,@(modus-themes--syntax-string
                                                       fg-escape-char-construct red-alt-other-faint
-                                                      blue blue-alt-other
+                                                      red-alt-other blue-alt-other
                                                       blue-faint blue-alt-other-faint))))
     `(font-lock-string-face ((,class ,@(modus-themes--syntax-string
                                         blue-alt blue-alt-faint
-                                        green red
-                                        green-faint red-faint))))
+                                        green-alt-other red-alt
+                                        green-alt-faint red-alt-faint))))
     `(font-lock-type-face ((,class :inherit modus-themes-bold
                                    ,@(modus-themes--syntax-foreground
                                       cyan-alt-other cyan-alt-faint))))
@@ -5765,7 +5762,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(info-header-node ((,class :inherit (shadow bold))))
     `(info-header-xref ((,class :foreground ,blue-active)))
     `(info-index-match ((,class :inherit match)))
-    `(info-menu-header ((,class :inherit modus-themes-heading-3)))
+    `(info-menu-header ((,class :inherit modus-themes-pseudo-header)))
     `(info-menu-star ((,class :foreground ,red)))
     `(info-node ((,class :inherit bold)))
     `(info-title-1 ((,class :inherit modus-themes-heading-1)))
@@ -6506,7 +6503,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(org-date ((,class :inherit ,(if modus-themes-mixed-fonts
                                       '(fixed-pitch modus-themes-link-symlink)
                                     'modus-themes-link-symlink))))
-    `(org-date-selected ((,class :inherit bold :foreground ,blue-alt :inverse-video t)))
+    `(org-date-selected ((,class :foreground ,blue-alt :inverse-video t)))
     `(org-dispatcher-highlight ((,class :inherit (bold modus-themes-mark-alt))))
     `(org-document-info ((,class :foreground ,fg-special-cold)))
     `(org-document-info-keyword ((,class :inherit (shadow modus-themes-fixed-pitch))))
@@ -6521,7 +6518,8 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(org-habit-alert-face ((,class ,@(modus-themes--agenda-habit
                                        yellow-graph-0-bg
                                        yellow-graph-0-bg
-                                       yellow-graph-1-bg))))
+                                       yellow-graph-1-bg)
+                                    :foreground "black"))) ; special case
     `(org-habit-alert-future-face ((,class ,@(modus-themes--agenda-habit
                                               yellow-graph-1-bg
                                               yellow-graph-0-bg
@@ -6530,7 +6528,8 @@ by virtue of calling either of `modus-themes-load-operandi' and
                                        blue-graph-0-bg
                                        green-graph-1-bg
                                        blue-graph-1-bg
-                                       blue-graph-1-bg))))
+                                       blue-graph-1-bg)
+                                    :foreground "black"))) ; special case
     `(org-habit-clear-future-face ((,class ,@(modus-themes--agenda-habit
                                               blue-graph-1-bg
                                               green-graph-1-bg
@@ -6548,7 +6547,8 @@ by virtue of calling either of `modus-themes-load-operandi' and
                                        green-graph-0-bg
                                        green-graph-0-bg
                                        green-graph-1-bg
-                                       blue-graph-0-bg))))
+                                       blue-graph-0-bg)
+                                    :foreground "black"))) ; special case
     `(org-habit-ready-future-face ((,class ,@(modus-themes--agenda-habit
                                               green-graph-1-bg
                                               green-graph-0-bg
@@ -6585,7 +6585,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(org-sexp-date ((,class :foreground ,cyan-alt-other)))
     `(org-special-keyword ((,class :inherit (shadow modus-themes-fixed-pitch))))
     `(org-table ((,class :inherit modus-themes-fixed-pitch :foreground ,fg-special-cold)))
-    `(org-table-header ((,class :inherit (fixed-pitch modus-themes-intense-neutral))))
+    `(org-table-header ((,class :inherit (fixed-pitch modus-themes-special-cold))))
     `(org-tag ((,class :foreground ,magenta-nuanced-fg)))
     `(org-tag-group ((,class :inherit bold :foreground ,cyan-nuanced-fg)))
     `(org-target ((,class :underline t)))
@@ -6622,7 +6622,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(org-superstar-item ((,class :foreground ,fg-main)))
     `(org-superstar-leading ((,class :foreground ,fg-whitespace)))
 ;;;;; org-table-sticky-header
-    `(org-table-sticky-header-face ((,class :inherit modus-themes-intense-neutral)))
+    `(org-table-sticky-header-face ((,class :inherit modus-themes-special-cold)))
 ;;;;; org-tree-slide
     `(org-tree-slide-header-overlay-face ((,class :inherit org-document-title)))
 ;;;;; org-treescope

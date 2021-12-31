@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 1.1.2
+;; Version: 1.1.3
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -874,7 +874,8 @@ This need PARENT-FRAME-WIDTH and PARENT-FRAME-HEIGHT"
 
 (defun posframe--make-frame-invisible (frame)
   "`make-frame-invisible' replacement to hide FRAME safely."
-  (when (frame-live-p frame)
+  (when (and (frame-live-p frame)
+             (frame-visible-p frame))
     (make-frame-invisible frame)))
 
 (defun posframe--run-refresh-timer (repeat size-info)
