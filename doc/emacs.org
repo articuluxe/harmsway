@@ -15,6 +15,9 @@ M-x pp-macroexpand-last-sexp
 pkill -USR2 emacs
 sudo strace -yy -p `pidof emacs`
 #+END_SRC
+# find out which library required a feature
+(require 'loadhist)
+(file-dependents (feature-file 'cl))
 
 C-x RET f unix   change buffer's file coding system
 C-x C-m f   change file's default text encoding
