@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; rubicon --- host file
-;; Copyright (C) 2015-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-11-08 16:31:05 dharms>
+;; Modified Time-stamp: <2022-01-14 11:49:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -60,6 +60,8 @@
                             "Ricty Diminished 15"
                             "QuickType Mono 14"
                             "BPmono 14"
+                            "Courier Prime Code 16"
+                            "Recursive Monospace 15"
                             "Verily Serif Mono 14"
                             "Sometype Mono 14"
                             "Oxygen Mono 12"
