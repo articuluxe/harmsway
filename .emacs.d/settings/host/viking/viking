@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; viking --- host file
-;; Copyright (C) 2015-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-10-05 10:52:13 dharms>
+;; Modified Time-stamp: <2022-01-14 17:02:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -71,6 +71,8 @@
                             "Julia Mono 12"
                             "Share Tech Mono 14"
                             "Envy Code R 12"
+                            "Courier Prime Code 12"
+                            "Recursive Monospace 12"
                             "TerminessTTF Nerd Font Mono 14"
                             "DaddyTimeMono 14"
                             "Monoid 12"
