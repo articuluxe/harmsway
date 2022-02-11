@@ -1,17 +1,19 @@
 #!/usr/bin/env sh
 # pgp.txt --- help regarding pgp
-# Copyright (C) 2016-2017  Dan Harms (dharms)
+# Copyright (C) 2016-2017, 2022  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, September 14, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-02-27 11:16:02 dan.harms>
+# Modified Time-stamp: <2022-02-11 10:03:02 dharms>
 # Modified by: Dan Harms
 # Keywords: pgp gpg
 
 # Generate keys
 gpg --gen-key
+gpg --full-gen-key [later versions]
 # List keys
 gpg --list-keys
+gpg --list-secret-keys --keyid-format LONG <email>
 # Edit key
 gpg --edit-key
 ## Assign trust
@@ -19,7 +21,7 @@ trust
 5
 
 # Generate backups:
-gpg --armor --export > pgp-public-keys.asc
+gpg --armor --export [KEY] > pgp-public-keys.asc
 gpg --armor --export-secret-keys > pgp-private-keys.asc
 gpg --armor --export-secret-subkeys > pgp-private-subkeys.asc
 gpg --export-ownertrust > pgp-ownertrust.asc

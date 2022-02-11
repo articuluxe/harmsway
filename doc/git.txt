@@ -20,6 +20,17 @@ git config --system core.autocrlf input
 git config --global credential.helper wincred
 # for magit: set environment variable
 (setenv "GIT_SSH" "C:\Program Files\Portable PuTTY\plink.exe")
+# add a gpg key
+git config --global user.signingkey <LONG_KEY_SEC>
+
+# GIT SIGNING: This can go in $USER/.gitconfig
+# or per repo in .git/config
+[user]
+    email = <email>
+    name = <name>
+    signingkey = <LONG_KEY_SEC>
+[commit]
+    gpgsign = true
 
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 

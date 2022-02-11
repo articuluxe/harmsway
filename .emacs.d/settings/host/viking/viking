@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-01-14 17:02:28 dharms>
+;; Modified Time-stamp: <2022-02-11 10:37:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -54,6 +54,7 @@
                             "Go Mono 12"
                             "Anka/Coder 12"
                             "League Mono Variable 14"
+                            "QuickType Mono 13"
                             "Ubuntu Mono 14"
                             "Andale Mono 12"
                             "M+ 2m regular 12"
