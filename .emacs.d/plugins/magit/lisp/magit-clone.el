@@ -1,6 +1,6 @@
 ;;; magit-clone.el --- clone a repository  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2008-2021  The Magit Project Contributors
+;; Copyright (C) 2008-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -117,6 +117,9 @@ the name of the owner.  Also see `magit-clone-name-alist'."
   ["Setup arguments"
    ("-o" "Set name of remote"     ("-o" "--origin="))
    ("-b" "Set HEAD branch"        ("-b" "--branch="))
+   (magit-clone:--filter
+    :if (lambda () (magit-git-version>= "2.17.0"))
+    :level 7)
    ("-g" "Separate git directory" "--separate-git-dir="
     transient-read-directory :level 7)
    ("-t" "Use template directory" "--template="
@@ -129,12 +132,27 @@ the name of the owner.  Also see `magit-clone-name-alist'."
    ("s" "shallow"            magit-clone-shallow)
    ("d" "shallow since date" magit-clone-shallow-since :level 7)
    ("e" "shallow excluding"  magit-clone-shallow-exclude :level 7)
+   (">" "sparse checkout"    magit-clone-sparse
+    :if (lambda () (magit-git-version>= "2.25.0"))
+    :level 6)
    ("b" "bare"               magit-clone-bare)
    ("m" "mirror"             magit-clone-mirror)]
   (interactive (list (or magit-clone-always-transient current-prefix-arg)))
   (if transient
       (transient-setup #'magit-clone)
     (call-interactively #'magit-clone-regular)))
+
+(transient-define-argument magit-clone:--filter ()
+  :description "Filter some objects"
+  :class 'transient-option
+  :key "-f"
+  :argument "--filter="
+  :reader 'magit-clone-read-filter)
+
+(defun magit-clone-read-filter (prompt initial-input history)
+  (magit-completing-read prompt
+                         (list "blob:none" "tree:0")
+                         nil nil initial-input history))
 
 ;;;###autoload
 (defun magit-clone-regular (repository directory args)
@@ -193,7 +211,14 @@ Then show the status buffer for the new repository."
   (interactive (magit-clone-read-args))
   (magit-clone-internal repository directory (cons "--mirror" args)))
 
-(defun magit-clone-internal (repository directory args)
+;;;###autoload
+(defun magit-clone-sparse (repository directory args)
+  "Clone REPOSITORY into DIRECTORY and create a sparse checkout."
+  (interactive (magit-clone-read-args))
+  (magit-clone-internal repository directory (cons "--no-checkout" args)
+                        'sparse))
+
+(defun magit-clone-internal (repository directory args &optional sparse)
   (let* ((checkout (not (memq (car args) '("--bare" "--mirror"))))
          (remote (or (transient-arg-value "--origin" args)
                      (magit-get "clone.defaultRemote")
@@ -234,6 +259,13 @@ Then show the status buffer for the new repository."
                (setf (magit-get "remote.pushDefault") remote))
              (unless magit-clone-set-remote-head
                (magit-remote-unset-head remote))))
+         (when (and sparse checkout)
+           (when (magit-git-version< "2.25.0")
+             (user-error
+              "`git sparse-checkout' not available until Git v2.25"))
+           (let ((default-directory directory))
+             (magit-call-git "sparse-checkout" "init" "--cone")
+             (magit-call-git "checkout" (magit-get-current-branch))))
          (with-current-buffer (process-get process 'command-buf)
            (magit-status-setup-buffer directory)))))))
 

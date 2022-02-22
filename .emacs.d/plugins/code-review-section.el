@@ -4,7 +4,7 @@
 ;;
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
-;; Version: 0.0.5
+;; Version: 0.0.6
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;;
 ;; This file is not part of GNU Emacs.
@@ -237,7 +237,36 @@ INDENT count of spaces are added at the start of every line."
 
 ;; headers
 
-(defclass code-review-title-section (magit-section)
+(defclass code-review-author-section (magit-section)
+  ((keymap :initform 'code-review-author-section-map)
+   (login :initarg :login)
+   (url :initarg :url)))
+
+(defvar code-review-author-section-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") 'code-review-utils--visit-author-at-point)
+    (define-key map [mouse-2] 'code-review-utils--visit-author-at-point)
+    (define-key map [follow-link] 'code-review-utils--visit-author-at-point)
+    map)
+  "Keymaps for header author section.")
+
+(defun code-review-section-insert-author ()
+  "Insert the author of the PR in the buffer."
+  (let-alist (code-review-db--pullreq-raw-infos)
+    (when .author.login
+      (let ((obj (code-review-author-section
+                  :login .author.login
+                  :url .author.url)))
+        (magit-insert-section (code-review-author-section obj)
+          (insert (format "%-17s" "Author: "))
+          (insert (propertize (format "@%s" .author.login)
+                              'face 'code-review-author-header-face
+                              'mouse-face 'highlight
+                              'help-echo "Visit author's page"
+                              'keymap 'code-review-author-section-map))
+          (insert ?\n))))))
+
+ (defclass code-review-title-section (magit-section)
   ((keymap  :initform 'code-review-title-section-map)
    (title  :initform nil
            :type (or null string))))
@@ -332,7 +361,7 @@ INDENT count of spaces are added at the start of every line."
 (defun code-review-section-insert-labels ()
   "Insert the labels of the header buffer."
   (let* ((infos (code-review-db--pullreq-raw-infos))
-         (labels (-distinct
+         (labels (code-review--distinct-labels
                   (append (code-review-db--pullreq-labels)
                           (a-get-in infos (list 'labels 'nodes)))))
          (obj (code-review-labels-section :labels labels)))
@@ -365,24 +394,73 @@ INDENT count of spaces are added at the start of every line."
 (defvar code-review-assignees-section-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'code-review-set-assignee)
+    (define-key map [mouse-2] 'code-review-set-assignee)
+    (define-key map [follow-link] 'code-review-set-assignee)
     map)
   "Keymaps for code-comment sections.")
+
+(defclass code-review-assignee-section (magit-section)
+  ((keymap :initform 'code-review-assignee-section-map)
+   (name :initarg :name)
+   (url :initarg :url)))
+
+(defun code-review-assignee-visit-at-remote (&rest _)
+  (interactive)
+  (with-slots (value) (magit-current-section)
+    (let ((url (oref value url)))
+      (if url
+          (browse-url url)
+        (message "Can't visit the user in remote. Missing profile URL.")))))
+
+(defvar code-review-assignee-section-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "RET") 'code-review-assignee-visit-at-remote)
+    (define-key map [mouse-2] 'code-review-assignee-visit-at-remote)
+    (define-key map [follow-link] 'code-review-assignee-visit-at-remote)
+    map)
+  "Keymaps for assignee section")
 
 (defun code-review-section-insert-assignee ()
   "Insert the assignee of the header buffer."
   (let* ((infos (code-review-db--pullreq-assignees))
          (assignee-names (-map
                           (lambda (a)
-                            (format "%s (@%s)"
-                                    (a-get a 'name)
-                                    (a-get a 'login)))
-                          infos))
-         (assignees (if assignee-names
-                        (string-join assignee-names ", ")
-                      (propertize "No one — Assign yourself" 'font-lock-face 'magit-dimmed)))
-         (obj (code-review-assignees-section :assignees assignees)))
-    (magit-insert-section (code-review-assignees-section obj)
-      (insert (format "%-17s" "Assignees: ") assignees)
+                            (let ((name
+                                   (if (a-get a 'name)
+                                       (format "%s (@%s)"
+                                               (a-get a 'name)
+                                               (a-get a 'login))
+                                     (format "@%s" (a-get a 'login)))))
+                              `((name . ,name)
+                                (url . ,(a-get a 'url)))))
+                          infos)))
+    (magit-insert-section (code-review-assignees-section)
+      (insert (format "%-17s" "Assignees: "))
+      (if (not assignee-names)
+          (insert (propertize "No one — Assign yourself"
+                              'font-lock-face 'code-review-dimmed
+                              'mouse-face 'highlight
+                              'help-echo "Set new assignee"
+                              'keymap 'code-review-assignees-section-map))
+        (progn
+          (insert (propertize "Set new assignee"
+                              'font-lock-face 'code-review-dimmed
+                              'mouse-face 'highlight
+                              'help-echo "Set new assignee"
+                              'keymap 'code-review-assignees-section-map))
+          (insert ?\n)
+          (dolist (assignee assignee-names)
+            (let-alist assignee
+              (let ((assignee-obj (code-review-assignee-section
+                                   :name .name
+                                   :url .url)))
+                (magit-insert-section (code-review-assignee-section assignee-obj)
+                  (insert (propertize .name
+                                      'face 'code-review-author-header-face
+                                      'mouse-face 'highlight
+                                      'help-echo "Visit author's page"
+                                      'keymap 'code-review-assignee-section-map))))))
+          (insert ?\n)))
       (insert ?\n))))
 
 (defclass code-review-project-section (magit-section)
@@ -420,6 +498,8 @@ INDENT count of spaces are added at the start of every line."
 (defvar code-review-suggested-reviewers-section-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'code-review-request-review-at-point)
+    (define-key map [mouse-2] 'code-review-request-review-at-point)
+    (define-key map [follow-link] 'code-review-request-review-at-point)
     map)
   "Keymaps for suggested reviewers section.")
 
@@ -454,13 +534,37 @@ INDENT count of spaces are added at the start of every line."
               (insert " " suggested-reviewers)
             (dolist (sr suggested-reviewers)
               (insert ?\n)
-              (insert (propertize "Request Review" 'face 'code-review-request-review-face))
+              (insert (propertize "Request Review"
+                                  'face 'code-review-request-review-face
+                                  'mouse-face 'highlight
+                                  'help-echo "Request review from reviewe"
+                                  'keymap 'code-review-suggested-reviewers-section-map))
               (insert " - ")
               (insert (propertize (concat "@" sr) 'face 'code-review-author-face))))
           (insert ?\n))))))
 
 (defclass code-review-reviewers-section (magit-section)
   (()))
+
+(defclass code-review-reviewer-section (magit-section)
+  ((keymap :initform 'code-review-reviewer-section-map)
+   (login :initarg :login)
+   (url :initarg :url)))
+
+(defvar code-review-reviewer-section-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mouse-2] 'code-review-reviewer-visit-at-remote)
+    (define-key map [follow-link] 'code-review-reviewer-visit-at-remote)
+    map)
+  "Keymaps for reviewer section.")
+
+(defun code-review-reviewer-visit-at-remote (&rest _)
+  (interactive)
+  (with-slots (value) (magit-current-section)
+    (let ((url (oref value url)))
+      (if url
+          (browse-url url)
+        (message "Can't visit the user in remote. Missing profile URL.")))))
 
 (defun code-review-section-insert-reviewers ()
   "Insert the reviewers section."
@@ -471,14 +575,22 @@ INDENT count of spaces are added at the start of every line."
       (maphash (lambda (status users-objs)
                  (dolist (user-o users-objs)
                    (let-alist user-o
-                     (insert (code-review--propertize-keyword status))
-                     (insert " - ")
-                     (insert (propertize (concat "@" .login) 'face 'code-review-author-face))
-                     (when .code-owner?
-                       (insert " as CODE OWNER"))
-                     (when .at
-                       (insert " " (propertize (code-review-utils--format-timestamp .at) 'face 'code-review-timestamp-face))))
-                   (insert ?\n)))
+                     (let ((obj (code-review-reviewer-section
+                                 :login .login
+                                 :url .url)))
+                       (magit-insert-section (code-review-reviewer-section obj)
+                         (insert (code-review--propertize-keyword status))
+                         (insert " - ")
+                         (insert (propertize (concat "@" .login)
+                                             'face 'code-review-author-face
+                                             'mouse-face 'highlight
+                                             'help-echo "Visit user profile"
+                                             'keymap 'code-review-reviewer-section-map))
+                         (when .code-owner?
+                           (insert " as CODE OWNER"))
+                         (when .at
+                           (insert " " (propertize (code-review-utils--format-timestamp .at) 'face 'code-review-timestamp-face))))
+                       (insert ?\n)))))
                groups)
       (insert ?\n))))
 
@@ -512,6 +624,8 @@ INDENT count of spaces are added at the start of every line."
 (defvar code-review-commit-check-detail-section-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'code-review-commit-goto-check-at-remote)
+    (define-key map [mouse-2] 'code-review-commit-goto-check-at-remote)
+    (define-key map [follow-link] 'code-review-commit-goto-check-at-remote)
     map)
   "Keymaps for commit check section.")
 
@@ -530,13 +644,14 @@ INDENT count of spaces are added at the start of every line."
               (magit-insert-section commit-section (code-review-commit-section obj)
                 (if (and (code-review-github-repo-p pr) .commit.statusCheckRollup.contexts.nodes)
                     (progn
-                      (insert (format "%s%s %s %s"
+                      (insert (format "%s%s %s "
                                       (propertize (format "%-6s " (oref obj sha)) 'font-lock-face 'magit-hash)
                                       (oref obj msg)
                                       (if (string-equal .commit.statusCheckRollup.state "SUCCESS")
                                           ":white_check_mark:"
-                                        ":x:")
-                                      (propertize "Details:" 'font-lock-face 'code-review-checker-detail-face)))
+                                        ":x:")))
+                      (insert
+                       (propertize "Expand for Details:" 'font-lock-face 'code-review-checker-detail-face))
                       (oset commit-section hidden t)
                       (magit-insert-heading)
                       (dolist (check .commit.statusCheckRollup.contexts.nodes)
@@ -552,7 +667,10 @@ INDENT count of spaces are added at the start of every line."
                                                                                (code-review-utils--elapsed-time .completedAt .startedAt)))
                                                         'font-lock-face 'magit-dimmed))
                                     (insert (propertize ":white_check_mark: Details"
-                                                        'font-lock-face 'code-review-checker-detail-face)))
+                                                        'font-lock-face 'code-review-checker-detail-face
+                                                        'mouse-face 'highlight
+                                                        'help-echo "Visit the page for details"
+                                                        'keymap 'code-review-commit-check-detail-section-map)))
                                 (progn
                                   (insert (propertize (format "%-7s %s / %s" "" .checkSuite.workflowRun.workflow.name .title)
                                                       'font-lock-face 'code-review-checker-name-face))
@@ -560,7 +678,10 @@ INDENT count of spaces are added at the start of every line."
                                   (insert (propertize (format "%s  " .summary)
                                                       'font-lock-face 'magit-dimmed))
                                   (insert (propertize ":x: Details"
-                                                      'font-lock-face 'code-review-checker-detail-face))))))
+                                                      'font-lock-face 'code-review-checker-detail-face
+                                                      'mouse-face 'highlight
+                                                      'help-echo "Visit the page for details"
+                                                      'keymap 'code-review-commit-check-detail-section-map))))))
                           (insert "\n"))))
                   (progn
                     (insert (propertize (format "%-6s " (oref obj sha)) 'font-lock-face 'magit-hash))
@@ -862,7 +983,6 @@ INDENT count of spaces are added at the start of every line."
 (defclass code-review-binary-file-section (magit-section)
   ((keymap :initform 'code-review-binary-file-section-map)))
 
-
 (defvar code-review-code-comment-section-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'code-review-comment-add-or-edit)
@@ -894,6 +1014,9 @@ INDENT count of spaces are added at the start of every line."
 (defvar code-review-binary-file-section-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "RET") 'code-review-utils--visit-binary-file-at-point)
+    (define-key map [mouse-2] 'code-review-utils--visit-binary-file-at-point)
+    (define-key map [follow-link] 'code-review-utils--visit-binary-file-at-point)
+    (define-key map [mouse-3] 'code-review-utils--visit-binary-file-at-remote)
     (define-key map (kbd "C-c C-v") 'code-review-utils--visit-binary-file-at-remote)
     map)
   "Keymaps for binary files sections.")
@@ -932,7 +1055,7 @@ INDENT count of spaces are added at the start of every line."
   "Get the pretty version of milestone for a given OBJ."
   (cond
    ((and (oref obj title) (oref obj perc))
-    (format "%s (%s%%)"
+    (format "%s (%0.2f%%)"
             (oref obj title)
             (oref obj perc)))
    ((oref obj title)
@@ -940,7 +1063,7 @@ INDENT count of spaces are added at the start of every line."
    (t
     "No milestone")))
 
-(defun code-review-commit-goto-check-at-remote ()
+(defun code-review-commit-goto-check-at-remote (&rest _)
   "Visit the details of the check at point in the remote."
   (interactive)
   (let ((section (magit-current-section)))
@@ -1170,13 +1293,14 @@ Optionally DELETE? flag must be set if you want to remove it."
       (add-face-text-property 0 (length heading) 'code-review-recent-comment-heading t heading)
       (magit-insert-heading heading)
       (magit-insert-section (code-review-code-comment-section obj)
-        (code-review--insert-html (oref obj msg) (* 3 code-review-section-indent-width))
+        (code-review--insert-html
+         (oref obj msg)
+         (* 3 code-review-section-indent-width))
         (when-let (reactions-obj (oref obj reactions))
           (code-review-comment-insert-reactions
            reactions-obj
            "code-comment"
-           (oref obj id)))
-        (insert ?\n)))))
+           (oref obj id)))))))
 
 (defun code-review-section-insert-outdated-comment (comments amount-loc)
   "Insert outdated COMMENTS in the buffer of PULLREQ-ID considering AMOUNT-LOC."
@@ -1223,8 +1347,10 @@ Optionally DELETE? flag must be set if you want to remove it."
               (oset outdated-section hidden t)
 
               (dolist (c (alist-get safe-hunk hunk-groups nil nil 'equal))
-                (let* ((written-loc (code-review--html-written-loc (oref c msg) (* 3 code-review-section-indent-width)))
-                       (amount-new-loc-outdated-partial (+ 2 written-loc))
+                (let* ((written-loc (code-review--html-written-loc
+                                     (oref c msg)
+                                     (* 3 code-review-section-indent-width)))
+                       (amount-new-loc-outdated-partial (+ 1 written-loc))
                        (amount-new-loc-outdated (if (oref c reactions)
                                                     (+ 2 amount-new-loc-outdated-partial)
                                                   amount-new-loc-outdated-partial)))
@@ -1243,7 +1369,9 @@ Optionally DELETE? flag must be set if you want to remove it."
                                                   (oref c author)
                                                   (oref c state)))
                     (magit-insert-section (code-review-outdated-comment-section c)
-                      (code-review--insert-html (oref c msg) (* 3 code-review-section-indent-width))
+                      (code-review--insert-html
+                       (oref c msg)
+                       (* 3 code-review-section-indent-width))
                       (when-let (reactions-obj (oref c reactions))
                         (code-review-comment-insert-reactions
                          reactions-obj
@@ -1282,8 +1410,10 @@ A quite good assumption: every comment in an outdated hunk will be outdated."
                        code-review-section--display-diff-comments)
                   (and (code-review-code-comment-section-p c)
                        code-review-section--display-diff-comments))
-          (let* ((written-loc (code-review--html-written-loc (oref c msg) (* 3 code-review-section-indent-width)))
-                 (amount-loc-incr-partial (+ 2 written-loc))
+          (let* ((written-loc (code-review--html-written-loc
+                               (oref c msg)
+                               (* 3 code-review-section-indent-width)))
+                 (amount-loc-incr-partial (+ 1 written-loc))
                  (amount-loc-incr (if (oref c reactions)
                                       (+ 2 amount-loc-incr-partial)
                                     amount-loc-incr-partial)))
@@ -1336,7 +1466,11 @@ ORIG, STATUS, MODES, RENAME, HEADER and LONG-STATUS are arguments of the origina
         (magit-insert-heading)))
     (when (string-match-p "Binary files.*" header)
       (magit-insert-section (code-review-binary-file-section file)
-        (insert (propertize "Visit file" 'face 'code-review-request-review-face) "\n")))
+        (insert (propertize "Visit file"
+                            'face 'code-review-request-review-face
+                            'mouse-face 'highlight
+                            'help-echo "Visit the file in Dired buffer"
+                            'keymap 'code-review-binary-file-section-map) "\n")))
     (magit-wash-sequence #'magit-diff-wash-hunk)))
 
 (defun code-review-section--magit-diff-wash-hunk ()
@@ -1480,18 +1614,14 @@ If you want to display a minibuffer MSG in the end."
             (if window
                 (progn
                   (pop-to-buffer buff-name)
-                  (set-window-start window ws)
-                  (when code-review-comment-cursor-pos
-                    (goto-char code-review-comment-cursor-pos)))
+                  (set-window-start window ws))
               (progn
                 (funcall code-review-new-buffer-window-strategy buff-name)
                 (goto-char (point-min))))
-            (if commit-focus?
-                (progn
-                  (code-review-mode)
-                  (code-review-commit-minor-mode))
-              (code-review-mode))
+            (code-review-mode)
             (code-review-section-insert-header-title)
+            (when code-review-comment-cursor-pos
+              (goto-char code-review-comment-cursor-pos))
             (when msg
               (message nil)
               (message msg)))))
@@ -1514,7 +1644,7 @@ If you want to display a minibuffer MSG in the end."
 
 (cl-defmethod code-review--auth-token-set? (obj res)
   "Default catch all unknown values passed to this function as OBJ and RES."
-  (code-review--log
+  (code-review-utils--log
    "code-review--auth-token-set?"
    (string-join (list
                  (prin1-to-string obj)
@@ -1533,16 +1663,16 @@ If you want to display a minibuffer MSG in the end."
             raw-infos-complete)))
 
     (when errors-complete-query
-      (code-review--log "code-review--internal-build"
+      (code-review-utils--log "code-review--internal-build"
                         (format "Data returned by GraphQL API: \n %s" (prin1-to-string res)))
       (message "GraphQL Github data contains errors. See `code-review-log-file' for details."))
 
     ;; verify must have value!
     (let-alist raw-infos
       (when (not .headRefOid)
-        (code-review--log "code-review--internal-build"
+        (code-review-utils--log "code-review--internal-build"
                           "Commit SHA not returned by GraphQL Github API. See `code-review-log-file' for details")
-        (code-review--log "code-review--internal-build"
+        (code-review-utils--log "code-review--internal-build"
                           (format "Data returned by GraphQL API: \n %s" (prin1-to-string res)))
         (error "Missing required data")))
 
@@ -1558,14 +1688,14 @@ If you want to display a minibuffer MSG in the end."
 
     ;; 1.2 trigger renders
     (progress-reporter-update progress 5)
-    (code-review--trigger-hooks buff-name msg)
+    (code-review--trigger-hooks buff-name nil msg)
     (progress-reporter-done progress)))
 
 (cl-defmethod code-review--internal-build ((_gitlab code-review-gitlab-repo) progress res &optional buff-name msg)
   "Helper function to build process for GITLAB based on the fetched RES informing PROGRESS."
 
   (when-let (err (a-get (-second-item res) 'errors))
-    (code-review--log
+    (code-review-utils--log
      "code-review--internal-build"
      (format "Data returned by GraphQL API: \n%s" (prin1-to-string err))))
 
@@ -1588,13 +1718,18 @@ If you want to display a minibuffer MSG in the end."
 
   ;; 1.3. trigger renders
   (progress-reporter-update progress 6)
-  (code-review--trigger-hooks buff-name msg)
+  (code-review--trigger-hooks buff-name nil msg)
   (progress-reporter-done progress))
 
 (cl-defmethod code-review--internal-build ((_bitbucket code-review-bitbucket-repo) progress res &optional buff-name msg)
   "Helper function to build process for BITBUCKET based on the fetched RES informing PROGRESS."
+  (prin1 (format "RESULT:%s\n" (-second-item res)))
   (let* ((raw-infos (let-alist (-second-item res)
                       `((title . ,.title)
+                        (author . ((login . ,.author.nickname)
+                                   (url . ,(format "https://%s/%s"
+                                                   code-review-bitbucket-base-url
+                                                   .author.nickname))))
                         (number . ,.id)
                         (state . ,.state)
                         (bodyHTML . ,.rendered.description.html)
@@ -1602,6 +1737,7 @@ If you want to display a minibuffer MSG in the end."
                         (baseRefName . ,.destination.branch.name)
                         (headRefName . ,.source.branch.name)
                         (comments (nodes . ,.comments.nodes))
+                        (commits . ,.commits)
                         (reviews (nodes . ,.reviews.nodes))))))
 
     ;; 1. save raw diff data
@@ -1622,7 +1758,7 @@ If you want to display a minibuffer MSG in the end."
 
     ;; 1.3 trigger renders
     (progress-reporter-update progress 5)
-    (code-review--trigger-hooks buff-name msg)
+    (code-review--trigger-hooks buff-name nil msg)
     (progress-reporter-done progress)))
 
 (defcustom code-review-log-raw-request-responses nil
@@ -1690,12 +1826,11 @@ If you want to provide a MSG for the end of the process."
 (defun code-review-section-delete-comment ()
   "Delete a local comment."
   (interactive)
-  (let ((buff-name (if code-review-comment-commit-buffer?
-                       code-review-commit-buffer-name
-                     code-review-buffer-name)))
-    (with-slots (value start end) (magit-current-section)
+  (with-current-buffer code-review-buffer-name
+    (setq code-review-comment-cursor-pos (point))
+    (with-slots (value) (magit-current-section)
       (code-review-db-delete-raw-comment (oref value internalId))
-      (code-review--build-buffer buff-name))))
+      (code-review--build-buffer))))
 
 (provide 'code-review-section)
 ;;; code-review-section.el ends here

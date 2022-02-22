@@ -4,7 +4,7 @@
 ;;
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
-;; Version: 0.0.5
+;; Version: 0.0.6
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;;
 ;; This file is not part of GNU Emacs.
@@ -53,10 +53,7 @@
 (defclass code-review-gitlab-repo (code-review-db-pullreq)
   ((callback :initform nil)))
 
-;;; vars
-(defvar code-review-log-file)
-
-(defvar code-review-gitlab-line-diff-mapping nil
+ (defvar code-review-gitlab-line-diff-mapping nil
   "Hold structure to convert Line number position into diff positions.
 For internal usage only.")
 
@@ -64,7 +61,8 @@ For internal usage only.")
 
 (defun code-review-gitlab--project-id (pr)
   "Return the project ID for a PR."
-  (format "%s%%2F%s" (oref pr owner) (oref pr repo)))
+  (let ((owner (replace-regexp-in-string "/" "%2F" (oref pr owner))))
+    (format "%s%%2F%s" owner (oref pr repo))))
 
 (defun code-review-gitlab-errback (&rest m)
   "Error callback, displays the error message M."
@@ -72,7 +70,7 @@ For internal usage only.")
     (code-review-utils--log
      "code-review-gitlab-errback"
      (prin1-to-string m))
-    (message "Unknown error talking to Gitlab: %s" m)))
+    (error "Unknown error talking to Gitlab: %s" m)))
 
 (defun code-review-gitlab--graphql (graphql variables callback)
   "Make GRAPHQL call to GITLAB.
@@ -82,7 +80,8 @@ Optionally using VARIABLES.  Provide HOST and CALLBACK fn."
                                                   ,@(and variables `(("variables" ,@variables)))))
                 :auth 'code-review
                 :host code-review-gitlab-graphql-host
-                :callback callback))
+                :callback callback
+                :errorback #'code-review-gitlab-errback))
 
 ;;; Functions to standardize Gitlab returned datastructure to the ones used by
 ;;; Github, adopted as standard in the project conception :/.
@@ -124,14 +123,56 @@ an object then we need to build the diff string ourselves here."
     ""
     pr-changes)))
 
-(defun code-review-gitlab-fix-review-comments (raw-comments)
-  "Format RAW-COMMENTS to be compatible with established shape in the package."
-  (let* ((review-comments (nreverse
-                           (-filter
-                            (lambda (c)
-                              (and (not (code-review-gitlab--regular-comment? c))
-                                   (not (a-get c 'system))))
-                            raw-comments)))
+(defun code-review-gitlab--review-comments (all-comments)
+  "Return only review comments from ALL-COMMENTS."
+  (--sort
+   (> (time-to-seconds (date-to-time (a-get it 'createdAt)))
+      (time-to-seconds (date-to-time (a-get other 'createdAt))))
+   (-filter
+    (lambda (c)
+      (and (not (code-review-gitlab--regular-comment? c))
+           (not (a-get c 'system))))
+    all-comments)))
+
+(defun code-review-gitlab--overview-comments (all-comments)
+  "Return only overview comments from ALL-COMMENTS."
+  (nreverse
+   (-filter
+    (lambda (c)
+      (code-review-gitlab--regular-comment? c))
+    all-comments)))
+
+(defun code-review-gitlab--review-comment->code-review-comment (comment)
+  "Transform a Gitlab review COMMENT into `code-review-comment' structure."
+  (let-alist comment
+    (let* ((path .position.oldPath)
+           (mapping  (alist-get .position.oldPath
+                                code-review-gitlab-line-diff-mapping
+                                nil nil 'equal))
+           (line-obj (if .position.oldLine
+                         `((old . t)
+                           (line-pos . ,.position.oldLine))
+                       `((new . t)
+                         (line-pos . ,.position.newLine))))
+           (discussion-id (-> .discussion.id
+                              (split-string "DiffDiscussion/")
+                              (-second-item)))
+           (diff-pos (code-review-parse-hunk-relative-pos mapping line-obj)))
+      `((author (login . ,.author.login))
+        (state . ,"")
+        (bodyHTML .,"")
+        (createdAt . ,.createdAt)
+        (updatedAt . ,.updatedAt)
+        (comments (nodes ((bodyHTML . ,.bodyHTML)
+                          (path . ,.position.oldPath)
+                          (position . ,diff-pos)
+                          (databaseId . ,discussion-id)
+                          (createdAt . ,.createdAt)
+                          (updatedAt . ,.updatedAt))))))))
+
+(defun code-review-gitlab-fix-review-comments (all-comments)
+  "Get `code-review-comment' structure out of ALL-COMMENTS to all review comments."
+  (let* ((review-comments (code-review-gitlab--review-comments all-comments))
          (grouped-comments (-group-by
                             (lambda (c)
                               (let ((line (or (a-get-in c (list 'position 'oldLine))
@@ -141,50 +182,30 @@ an object then we need to build the diff string ourselves here."
                                 ;; a positional line number to be possible to
                                 ;; place it in the diff. However, Gitlab's API
                                 ;; does not provide a good differentiation
-                                ;; between a Overview comment and a Diff comment
-                                ;; so the heuristic used here might be incomplete.
+                                ;; between an Overview comment and a Diff
+                                ;; comment so the heuristic used in
+                                ;; `code-review-gitlab--review-comments' might
+                                ;; be incomplete.
                                 (if (not (numberp line))
-                                    (throw 'gitlab-comment-without-line-number
-                                           "Review Comment
+                                    (error "Review Comment
                                     without position line number
                                     found! Possibly a bug in
                                     heuristic to identify Review
-                                    Comments.")
+                                    Comments")
                                   (concat path ":" (number-to-string line)))))
-                            review-comments))
-         (comment->code-review-comment
-          (lambda (c)
-            (let-alist c
-              (let* ((path .position.oldPath)
-                     (mapping  (alist-get .position.oldPath code-review-gitlab-line-diff-mapping
-                                          nil nil 'equal))
-                     (line-obj (if .position.oldLine
-                                   `((old . t)
-                                     (line-pos . ,.position.oldLine))
-                                 `((new . t)
-                                   (line-pos . ,.position.newLine))))
-                     (discussion-id (-second-item (split-string .discussion.id "DiffDiscussion/")))
-                     (diff-pos (code-review-parse-hunk-relative-pos mapping line-obj)))
-                `((author (login . ,.author.login))
-                  (state . ,"")
-                  (bodyHTML .,"")
-                  (createdAt . ,.createdAt)
-                  (updatedAt . ,.updatedAt)
-                  (comments (nodes ((bodyHTML . ,.bodyHTML)
-                                    (path . ,.position.oldPath)
-                                    (position . ,diff-pos)
-                                    (databaseId . ,discussion-id)
-                                    (createdAt . ,.createdAt)
-                                    (updatedAt . ,.updatedAt))))))))))
+                            review-comments)))
     (-reduce-from
      (lambda (acc k)
        (let* ((comments (alist-get k grouped-comments nil nil 'equal)))
          (if (> (length comments) 1)
-             (append acc (-map
-                          (lambda (c)
-                            (funcall comment->code-review-comment c))
-                          (nreverse comments)))
-           (cons (funcall comment->code-review-comment (-first-item comments)) acc))))
+             (append acc
+                     (-map
+                      (lambda (c)
+                        (code-review-gitlab--review-comment->code-review-comment c))
+                      (nreverse comments)))
+           (cons (code-review-gitlab--review-comment->code-review-comment
+                  (-first-item comments))
+                 acc))))
      nil
      (a-keys grouped-comments))))
 
@@ -197,23 +218,19 @@ an object then we need to build the diff string ourselves here."
 
 (defun code-review-gitlab-fix-infos (gitlab-infos)
   "Make GITLAB-INFOS structure compatible with GITHUB."
-  (let ((comment-nodes (a-get-in gitlab-infos (list 'comments 'nodes))))
-    (-> gitlab-infos
-        (a-assoc 'commits
-                 (a-alist 'totalCount (a-get gitlab-infos 'commitCount)
-                          'nodes (-map
-                                  (lambda (c)
-                                    (a-alist 'commit c))
-                                  (a-get-in gitlab-infos (list 'commitsWithoutMergeCommits 'nodes)))))
-        (a-assoc 'comments
-                 (a-alist 'nodes
-                          (nreverse
-                           (-filter
-                            (lambda (c)
-                              (code-review-gitlab--regular-comment? c))
-                            comment-nodes))))
-        (a-assoc 'reviews
-                 (a-alist 'nodes (code-review-gitlab-fix-review-comments comment-nodes))))))
+  (let ((all-comments (a-get-in gitlab-infos (list 'comments 'nodes))))
+    (let-alist gitlab-infos
+      (-> gitlab-infos
+          (a-assoc 'commits
+                   (a-alist 'totalCount .commitCount
+                            'nodes (-map
+                                    (lambda (c)
+                                      (a-alist 'commit c))
+                                    .commitsWithoutMergeCommits.nodes)))
+          (a-assoc 'comments
+                   (a-alist 'nodes (code-review-gitlab--overview-comments all-comments)))
+          (a-assoc 'reviews
+                   (a-alist 'nodes (code-review-gitlab-fix-review-comments all-comments)))))))
 
 (defun code-review-gitlab-fix-payload (payload comment)
   "Adjust the PAYLOAD based on the COMMENT.
@@ -268,7 +285,8 @@ The payload is used to send a MR review to Gitlab."
             :unpaginate t
             :host code-review-gitlab-host
             :auth 'code-review
-            :callback callback))
+            :callback callback
+            :errorback #'code-review-gitlab-errback))
 
 (cl-defmethod code-review-diff-deferred ((gitlab code-review-gitlab-repo))
   "Get DIFF from GITLAB."
@@ -292,6 +310,10 @@ The payload is used to send a MR review to Gitlab."
 repository:project(fullPath: \"%s\") {
     pullRequest:mergeRequest(iid: \"%s\") {
       id
+      author {
+        login:username
+        url:webUrl
+      }
       comments:notes(first: 50){
         nodes {
           databaseId:id
@@ -418,7 +440,15 @@ Optionally sets FALLBACK? to get minimal query."
 
       (deferred:error it
         (lambda (err)
-          (message "Got an error from the Gitlab Reply API %S!" err))))))
+          (error "Got an error from the Gitlab Reply API %S!" err))))))
+
+(defun code-review-gitlab--user ()
+  "Get the user in the authinfo file."
+  (-> (auth-source-search :host code-review-gitlab-host)
+      (car)
+      (plist-get :user)
+      (split-string "\\^")
+      (car)))
 
 (cl-defmethod code-review-send-review ((review code-review-submit-gitlab-review) callback)
   "Submit review comments given REVIEW and a CALLBACK fn."
@@ -451,11 +481,19 @@ Optionally sets FALLBACK? to get minimal query."
                   nil
                   :auth 'code-review
                   :host code-review-gitlab-host
-                  :callback (lambda (&rest _)
-                              (message "Approved!"))))
+                  :payload `((sha . ,(a-get-in infos (list 'diffRefs 'headSha))))
+                  :username (code-review-gitlab--user)))
       ("REQUEST_CHANGES"
        (error "Not supported in Gitlab"))
-      ("COMMENT"))
+      ("COMMENT"
+       (glab-post (format "/v4/projects/%s/merge_requests/%s/discussions"
+                          (code-review-gitlab--project-id pr)
+                          (oref pr number))
+                  nil
+                  :auth 'code-review
+                  :host code-review-gitlab-host
+                  :payload `((body . ,(oref review feedback))))
+       (message "Review Comment successfully sent!")))
 
     ;; 3. call callback
     ;; seems like we need to wait a bit for gitlab's API to update the new reply record
@@ -473,13 +511,34 @@ Optionally sets FALLBACK? to get minimal query."
   "Get a list of assignable users for current PR at GITLAB."
 (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-get-labels ((_gitlab code-review-gitlab-repo))
+(cl-defmethod code-review-get-labels ((gitlab code-review-gitlab-repo))
   "Get labels for your pr at GITLAB."
-  (code-review-gitlab-not-supported-message))
+  (let ((res (glab-get (format "/v4/projects/%s/labels"
+                               (code-review-gitlab--project-id gitlab))
+                       nil
+                       :unpaginate t
+                       :host code-review-gitlab-host
+                       :auth 'code-review
+                       :noerror 'return)))
+    (if (a-get res 'error)
+        (error (prin1-to-string res))
+      (-map
+       (lambda (it)
+         (a-get it 'name))
+       res))))
 
-(cl-defmethod code-review-send-labels ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-labels ((gitlab code-review-gitlab-repo) callback)
   "Set labels for your pr at GITLAB and call CALLBACK."
-  (code-review-gitlab-not-supported-message))
+  (let* ((labels (-map (lambda (it) (a-get it 'name)) (oref gitlab labels)))
+         (labels-str (string-join labels ",")))
+    (glab-put (format "/v4/projects/%s/merge_requests/%s"
+                      (code-review-gitlab--project-id gitlab)
+                      (oref gitlab number))
+              nil
+              :auth 'code-review
+              :host code-review-gitlab-host
+              :payload `((labels .,labels-str))
+              :callback (lambda (&rest _) (funcall callback)))))
 
 (cl-defmethod code-review-get-assignees ((_gitlab code-review-gitlab-repo))
   "Get assignees for your pr at GITLAB."
@@ -497,9 +556,16 @@ Optionally sets FALLBACK? to get minimal query."
   "Set milestone for your pr in GITLAB and call CALLBACK."
   (code-review-gitlab-not-supported-message))
 
-(cl-defmethod code-review-send-title ((_gitlab code-review-gitlab-repo) _callback)
+(cl-defmethod code-review-send-title ((gitlab code-review-gitlab-repo) callback)
   "Set title for your pr in GITLAB and call CALLBACK."
-  (code-review-gitlab-not-supported-message))
+  (glab-put (format "/v4/projects/%s/merge_requests/%s"
+                    (code-review-gitlab--project-id gitlab)
+                    (oref gitlab number))
+            nil
+            :auth 'code-review
+            :host code-review-gitlab-host
+            :payload `((title .,(oref gitlab title)))
+            :callback (lambda (&rest _) (funcall callback))))
 
 (cl-defmethod code-review-send-description ((_gitlab code-review-gitlab-repo) _callback)
   "Set description for your pr in GITLAB and call CALLBACK."
@@ -566,9 +632,10 @@ Return the blob URL if BLOB? is provided."
                :host code-review-gitlab-host
                :payload (code-review-gitlab-fix-payload payload local-comment)
                :callback (lambda (&rest _)
-                           (message "Review Comments successfully!")))
-    (sit-for 0.5)
-    (funcall callback)))
+                           (message "Review Comments successfully!")
+                           (sit-for 0.5)
+                           (funcall callback))
+               :errorback #'code-review-gitlab-errback)))
 
 (provide 'code-review-gitlab)
 ;;; code-review-gitlab.el ends here

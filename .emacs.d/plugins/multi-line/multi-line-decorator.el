@@ -22,6 +22,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'eieio)
 (require 'shut-up)
 
@@ -49,7 +50,7 @@
   ((respacer :initarg :respacer)
    (decorator :initarg :decorator)))
 
-(defmethod multi-line-respace-one ((decorator multi-line-each-decorator)
+(cl-defmethod multi-line-respace-one ((decorator multi-line-each-decorator)
                                    index candidates)
   (funcall (oref decorator decorator) (oref decorator respacer) index
            candidates))
@@ -107,7 +108,7 @@ appropriately populated by the executor."
 (defclass multi-line-space-restoring-respacer ()
   ((respacer :initarg :respacer)))
 
-(defmethod multi-line-respace-one ((respacer multi-line-space-restoring-respacer)
+(cl-defmethod multi-line-respace-one ((respacer multi-line-space-restoring-respacer)
                                    index candidates)
   (cl-destructuring-bind (startm . endm) (multi-line-space-markers)
     (let* ((start (marker-position startm))

@@ -1,6 +1,6 @@
 ;;; git-rebase.el --- Edit Git rebase files  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -827,6 +827,24 @@ By default, this is the same except for the \"pick\" command."
   (add-to-list 'recentf-exclude git-rebase-filename-regexp))
 
 (add-to-list 'with-editor-file-name-history-exclude git-rebase-filename-regexp)
+
+;;; Imenu Support
+
+(defun magit-imenu--rebase-prev-index-position-function ()
+  "Move point to previous commit in git-rebase buffer.
+Used as a value for `imenu-prev-index-position-function'."
+  (catch 'found
+    (while (not (bobp))
+      (git-rebase-backward-line)
+      (when (git-rebase-line-p)
+        (throw 'found t)))))
+
+(defun magit-imenu--rebase-extract-index-name-function ()
+  "Return imenu name for line at point.
+Point should be at the beginning of the line.  This function
+is used as a value for `imenu-extract-index-name-function'."
+  (buffer-substring-no-properties (line-beginning-position)
+                                  (line-end-position)))
 
 ;;; _
 (provide 'git-rebase)

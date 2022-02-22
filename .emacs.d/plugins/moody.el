@@ -1,6 +1,6 @@
 ;;; moody.el --- Tabs and ribbons for the mode line  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2021  Jonas Bernoulli
+;; Copyright (C) 2018-2022  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/moody
@@ -61,6 +61,11 @@
 ;;         (set-face-attribute 'mode-line-inactive nil :box        nil)
 ;;         (set-face-attribute 'mode-line-inactive nil :background "#f9f2d9")))
 
+;; * Note that the above example is for `solarized-theme' and that for
+;;   your theme (face-attribute 'mode-line :underline) may return nil.
+;;   If you want borders, use something like (let ((line "red")) ...),
+;;   in that case.
+
 ;; * Add something like this to your init file:
 ;;
 ;;     (use-package moody
@@ -86,8 +91,9 @@
 ;;; Options
 
 (defcustom moody-mode-line-height
-  (let ((font (face-font 'mode-line)))
-    (if font (* 2 (aref (font-info font) 2)) 30))
+  (and (fboundp 'font-info)
+       (let ((font (face-font 'mode-line)))
+         (if font (* 2 (aref (font-info font) 2)) 30)))
   "When using `moody', height of the mode line in pixels.
 
 This should be an even number or nil to leave this unspecified,
@@ -142,7 +148,7 @@ If optional REVERSE is non-nil, then replace WRAPPED with PLAIN."
 (defun moody-format-find (elt &optional format)
   (cl-labels ((find (elt tree)
                     (cond ((eq tree elt) tree)
-	                  ((consp tree)
+                          ((consp tree)
                            (or (find elt (car tree))
                                (find elt (cdr tree)))))))
     (find elt (or format (default-value 'mode-line-format)))))

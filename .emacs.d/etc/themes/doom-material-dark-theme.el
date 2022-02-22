@@ -98,6 +98,8 @@ Can be an integer to determine the exact padding."
      :inherit '(hl-line default)
      :foreground cyan :distant-foreground nil
      :weight 'normal :italic nil :underline nil :strike-through nil)
+   (completions-first-difference :foreground yellow)
+   (icomplete-first-match :foreground green :underline t :weight 'bold)
 
    ;;;; doom-modeline
    (doom-modeline-buffer-path       :foreground green :weight 'bold)
@@ -167,6 +169,7 @@ Can be an integer to determine the exact padding."
    (org-level-6 :foreground magenta)
    (org-level-7 :foreground teal)
    (org-level-8 :foreground violet)
+   (org-todo :foreground orange)
    ;;;; css
    (css-property :foreground orange)
    (css-proprietary-property :foreground magenta)

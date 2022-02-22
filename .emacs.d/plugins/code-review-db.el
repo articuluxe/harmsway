@@ -4,7 +4,7 @@
 ;;
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
-;; Version: 0.0.5
+;; Version: 0.0.6
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;;
 ;; This file is not part of GNU Emacs.
@@ -408,7 +408,7 @@
   (let* ((pr (code-review-db-get-pullreq))
          (raw-comments (oref pr raw-comments)))
     (oset pr raw-comments (append raw-comments (list comment)))
-    (closql-insert (code-review-db) pr t)))
+    (code-review-db-update pr)))
 
 (defun code-review-db--pullreq-feedback ()
   "Get feedback for the current pr."

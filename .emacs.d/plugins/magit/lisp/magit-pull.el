@@ -1,6 +1,6 @@
 ;;; magit-pull.el --- update local objects and refs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2008-2021  The Magit Project Contributors
+;; Copyright (C) 2008-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -93,7 +93,7 @@ push-remote."
   (pcase-let ((`(,branch ,remote)
                (magit--select-push-remote "pull from there")))
     (run-hooks 'magit-credential-hook)
-    (magit-run-git-async "pull" args remote branch)))
+    (magit-run-git-with-editor "pull" args remote branch)))
 
 (defun magit-pull--pushbranch-description ()
   ;; Also used by `magit-rebase-onto-pushremote'.

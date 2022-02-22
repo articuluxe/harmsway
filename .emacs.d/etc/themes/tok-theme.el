@@ -1,8 +1,8 @@
 ;;; tok-theme.el --- My theme -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021, Topi Kettunen <mail@topikettunen.com>
+;; Copyright (C) 2021, Topi Kettunen <topi@topikettunen.com>
 
-;; Author: Topi Kettunen <mail@topikettunen.com>
+;; Author: Topi Kettunen <topi@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.3"))
@@ -33,6 +33,16 @@
 
 (require 'tok)
 
+(eval-when-compile
+  (require 'tok-palette))
+
+(deftheme tok
+  "My theme.")
+
+(tok-with-color-variables 'tok
+  tok-theme-color-palette-alist)
+
+(provide-theme 'tok)
 (provide 'tok-theme)
 
 ;;; tok-theme.el ends here

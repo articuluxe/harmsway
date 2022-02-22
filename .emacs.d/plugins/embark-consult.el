@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.3
+;; Version: 0.4
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1") (embark "0.12") (consult "0.10"))
 
@@ -77,7 +77,7 @@
   (and (derived-mode-p 'embark-collect-mode)
        (active-minibuffer-window)
        (eq (window-buffer (active-minibuffer-window)) embark-collect-from)
-       (ignore-errors (button-label (point)))))
+       (get-text-property (point) 'embark--candidate)))
 
 (add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
 
@@ -114,7 +114,7 @@
 
 (defun embark-consult-goto-location (target)
   "Jump to consult location TARGET."
-  (consult--jump (car (get-text-property 0 'consult-location target)))
+  (consult--jump (car (consult--get-location target)))
   (pulse-momentary-highlight-one-line (point)))
 
 (setf (alist-get 'consult-location embark-default-action-overrides)
@@ -129,7 +129,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
     (with-current-buffer buf
       (dolist (line lines)
         (pcase-let*
-            ((`(,loc . ,num) (get-text-property 0 'consult-location line))
+            ((`(,loc . ,num) (consult--get-location line))
              ;; the text properties added to the following strings are
              ;; taken from occur-engine
              (lineno (propertize (format "%7d:" num)
@@ -158,10 +158,18 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (occur-mode))
     (pop-to-buffer buf)))
 
+(defun embark-consult--upgrade-markers ()
+  "Upgrade consult-location cheap markers to real markers.
+This function is meant to be added to `embark-collect-mode-hook'."
+  (when (and (eq embark--type 'consult-location)
+             (not (eq embark-collect--kind :completions)))
+    (mapc #'consult--get-location embark-collect-candidates)))
+
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
 (setf (alist-get 'consult-location embark-exporters-alist)
       #'embark-consult-export-occur)
+(cl-pushnew #'embark-consult--upgrade-markers embark-collect-mode-hook)
 
 ;;; Support for consult-grep
 
@@ -205,11 +213,6 @@ The elements of LINES are assumed to be values of category `consult-line'."
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       #'embark-consult--target-strip)
-
-;;; Support for consult-register
-
-(setf (alist-get 'consult-register embark-collect-initial-view-alist)
-      'zebra)
 
 ;;; Bindings for consult commands in embark keymaps
 

@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 06 Jun 2021
 ;; Keywords: faces themes
-;; Version: 1.7
+;; Version: 1.9
 ;; Package-Requires: ((emacs "25.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-spacegrey-theme
 
@@ -45,7 +45,7 @@
 ;;       (load-theme 'timu-spacegrey t)
 ;;
 ;;   B. From Melpa
-;;     1. M-x package-instal RET timu-spacegrey-theme.el RET.
+;;     1. M-x package-install RET timu-spacegrey-theme RET.
 ;;     2. In your `~/.emacs.d/init.el' or `~/.emacs':
 ;;       (load-theme 'timu-spacegrey t)
 ;;
@@ -72,6 +72,39 @@
   "Customise group for the \"Timu Spacegrey\" theme."
   :group 'faces
   :prefix "timu-spacegrey-")
+
+(defface timu-spacegrey-default-face
+  '((t nil))
+  "Custom basic default `timu-spacegrey-theme' face."
+  :group 'timu-spacegrey-theme)
+
+(defface timu-spacegrey-bold-face
+  '((t :weight bold))
+  "Custom basic bold `timu-spacegrey-theme' face."
+  :group 'timu-spacegrey-theme)
+
+(defface timu-spacegrey-bold-face-italic
+  '((t :weight bold :slant italic))
+  "Custom basic bold-italic `timu-spacegrey-theme' face."
+  :group 'timu-spacegrey-theme)
+
+(defface timu-spacegrey-italic-face
+  '((((supports :slant italic)) :slant italic)
+    (t :slant italic))
+  "Custom basic italic `timu-spacegrey-theme' face."
+  :group 'timu-spacegrey-theme)
+
+(defface timu-spacegrey-underline-face
+  '((((supports :underline t)) :underline t)
+    (t :underline t))
+  "Custom basic underlined `timu-spacegrey-theme' face."
+  :group 'timu-spacegrey-theme)
+
+(defface timu-spacegrey-strike-through-face
+  '((((supports :strike-through t)) :strike-through t)
+    (t :strike-through t))
+  "Custom basic strike-through `timu-spacegrey-theme' face."
+  :group 'timu-spacegrey-theme)
 
 (defcustom timu-spacegrey-flavour "dark"
   "Variable to control the variant of the theme.
@@ -113,12 +146,22 @@ Sourced other themes to get information about font faces for packages.")
         (purple     "#c678dd")
         (cyan       "#46d9ff")
         (lightcyan  "#88c0d0")
-        (darkcyan   "#5699af"))
+        (darkcyan   "#5699af")
+        (black      "#000000")
+        (white      "#ffffff"))
 
     (custom-theme-set-faces
      'timu-spacegrey
 
 ;;; Custom faces - dark
+
+;;;; timu-spacegrey-faces - dark
+     `(timu-spacegrey-default-face ((,class (:background ,bg :foreground ,fg))))
+     `(timu-spacegrey-bold-face ((,class (:weight bold :foreground ,spacegrey8))))
+     `(timu-spacegrey-bold-face-italic ((,class (:weight bold :slant italic :foreground ,spacegrey8))))
+     `(timu-spacegrey-italic-face ((,class (:slant italic :foreground ,white))))
+     `(timu-spacegrey-underline-face ((,class (:underline ,yellow))))
+     `(timu-spacegrey-strike-through-face ((,class (:strike-through ,yellow))))
 
 ;;;; default faces - dark
      `(bold ((,class (:weight bold))))
@@ -417,6 +460,21 @@ Sourced other themes to get information about font faces for packages.")
      `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
      `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
      `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
+
+;;; diff - dark
+     `(diff-added ((,class (:foreground ,bg :background ,green :extend t))))
+     `(diff-indicator-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
+     `(diff-refine-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
+     `(diff-changed ((,class (:foreground ,bg :background ,yellow :extend t))))
+     `(diff-indicator-changed ((,class (:foreground ,bg :weight bold :background ,yellow :extend t))))
+     `(diff-refine-changed ((,class (:foreground ,bg :weight bold :background ,yellow :extend t))))
+     `(diff-removed ((,class (:foreground ,bg :background ,red :extend t))))
+     `(diff-indicator-removed ((,class (:foreground ,bg :weight bold :background ,red :extend t))))
+     `(diff-refine-removed ((,class (:foreground ,bg :weight bold :background ,red :extend t))))
+     `(diff-header ((,class (:foreground ,darkcyan))))
+     `(diff-file-header ((,class (:foreground ,orange :weight bold))))
+     `(diff-hunk-header ((,class (:foreground ,bg :background ,magenta :extend t))))
+     `(diff-function ((,class (:foreground ,bg :background ,magenta :extend t))))
 
 ;;;; diff-hl - dark
      `(diff-hl-change ((,class (:foreground ,orange :background ,orange))))
@@ -1616,12 +1674,22 @@ Sourced other themes to get information about font faces for packages.")
         (purple     "#c678dd")
         (cyan       "#46d9ff")
         (lightcyan  "#88c0d0")
-        (darkcyan   "#5699af"))
+        (darkcyan   "#5699af")
+        (black      "#000000")
+        (white      "#ffffff"))
 
     (custom-theme-set-faces
      'timu-spacegrey
 
 ;;; Custom faces - light
+
+;;;; timu-spacegrey-faces - light
+     `(timu-spacegrey-default-face ((,class (:background ,bg :foreground ,fg))))
+     `(timu-spacegrey-bold-face ((,class (:weight bold :foreground ,spacegrey0))))
+     `(timu-spacegrey-bold-face-italic ((,class (:weight bold :slant italic :foreground ,spacegrey0))))
+     `(timu-spacegrey-italic-face ((,class (:slant italic :foreground ,black))))
+     `(timu-spacegrey-underline-face ((,class (:underline ,red))))
+     `(timu-spacegrey-strike-through-face ((,class (:strike-through ,red))))
 
 ;;;; default faces - light
      `(bold ((,class (:weight bold))))
@@ -1919,7 +1987,22 @@ Sourced other themes to get information about font faces for packages.")
      `(custom-variable-button ((,class (:foreground ,green :underline t))))
      `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
      `(custom-variable-tag ((,class (:foreground ,darkcyan :weight bold))))
-     `(custom-visibility ((,class (:foreground ,orange :height 0.8 :weight bold :underline t)))) ; done
+     `(custom-visibility ((,class (:foreground ,orange :height 0.8 :weight bold :underline t))))
+
+;;; diff - light
+     `(diff-added ((,class (:foreground ,bg :background ,green :extend t))))
+     `(diff-indicator-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
+     `(diff-refine-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
+     `(diff-changed ((,class (:foreground ,bg :background ,yellow :extend t))))
+     `(diff-indicator-changed ((,class (:foreground ,bg :weight bold :background ,yellow :extend t))))
+     `(diff-refine-changed ((,class (:foreground ,bg :weight bold :background ,yellow :extend t))))
+     `(diff-removed ((,class (:foreground ,bg :background ,red :extend t))))
+     `(diff-indicator-removed ((,class (:foreground ,bg :weight bold :background ,red :extend t))))
+     `(diff-refine-removed ((,class (:foreground ,bg :weight bold :background ,red :extend t))))
+     `(diff-header ((,class (:foreground ,darkcyan))))
+     `(diff-file-header ((,class (:foreground ,orange :weight bold))))
+     `(diff-hunk-header ((,class (:foreground ,bg :background ,magenta :extend t))))
+     `(diff-function ((,class (:foreground ,bg :background ,magenta :extend t))))
 
 ;;;; diff-hl - light
      `(diff-hl-change ((,class (:foreground ,orange :background ,orange))))

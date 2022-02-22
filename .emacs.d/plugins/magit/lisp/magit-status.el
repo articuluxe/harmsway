@@ -1,6 +1,6 @@
 ;;; magit-status.el --- the grand overview  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -333,30 +333,6 @@ init file: (global-set-key (kbd \"C-x g\") 'magit-status-quick)."
       (magit-display-buffer buffer)
     (call-interactively #'magit-status)))
 
-(defvar magit--remotes-using-recent-git nil)
-
-(defun magit--tramp-asserts (directory)
-  (when-let ((remote (file-remote-p directory)))
-    (unless (member remote magit--remotes-using-recent-git)
-      (if-let ((version (let ((default-directory directory))
-                          (magit-git-version))))
-          (if (version<= magit--minimal-git version)
-              (push remote magit--remotes-using-recent-git)
-            (display-warning 'magit (format "\
-Magit requires Git >= %s, but on %s the version is %s.
-
-If multiple Git versions are installed on the host, then the
-problem might be that TRAMP uses the wrong executable.
-
-Check the value of `magit-remote-git-executable' and consult
-the info node `(tramp)Remote programs'.
-" magit--minimal-git remote version) :error))
-        (display-warning 'magit (format "\
-Magit cannot find Git on %s.
-
-Check the value of `magit-remote-git-executable' and consult
-the info node `(tramp)Remote programs'." remote) :error)))))
-
 ;;; Mode
 
 (defvar magit-status-mode-map
@@ -430,8 +406,7 @@ Type \\[magit-commit] to create a commit.
 \\{magit-status-mode-map}"
   :group 'magit-status
   (hack-dir-local-variables-non-file-buffer)
-  (setq imenu-create-index-function
-        'magit-imenu--status-create-index-function))
+  (setq magit--imenu-group-types '(not branch commit)))
 
 (put 'magit-status-mode 'magit-diff-default-arguments
      '("--no-ext-diff"))
@@ -442,7 +417,8 @@ Type \\[magit-commit] to create a commit.
 (defun magit-status-setup-buffer (&optional directory)
   (unless directory
     (setq directory default-directory))
-  (magit--tramp-asserts directory)
+  (when (file-remote-p directory)
+    (magit-git-version-assert))
   (let* ((default-directory directory)
          (d (magit-diff--get-value 'magit-status-mode
                                    magit-status-use-buffer-arguments))
@@ -658,11 +634,11 @@ arguments are for internal use only."
       (insert (format "%-10s" "Push: "))
       (insert
        (if (magit-rev-verify target)
-           (concat target " "
-                   (and magit-status-show-hashes-in-headers
+           (concat (and magit-status-show-hashes-in-headers
                         (concat (propertize (magit-rev-format "%h" target)
                                             'font-lock-face 'magit-hash)
                                 " "))
+                   target " "
                    (funcall magit-log-format-message-function target
                             (funcall magit-log-format-message-function nil
                                      (or (magit-rev-format "%s" target)

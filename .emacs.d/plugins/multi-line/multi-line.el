@@ -94,7 +94,7 @@
    (respace :initarg :respace
             :initform (multi-line-get-default-respacer))))
 
-(defmethod multi-line-candidates ((strategy multi-line-strategy)
+(cl-defmethod multi-line-candidates ((strategy multi-line-strategy)
                                   &optional context)
   "Get the multi-line candidates at point."
   (let ((enter-strategy (oref strategy enter))
@@ -102,7 +102,7 @@
     (multi-line-enter enter-strategy context)
     (multi-line-find find-strategy context)))
 
-(defmethod multi-line-execute ((strategy multi-line-strategy) &optional context)
+(cl-defmethod multi-line-execute ((strategy multi-line-strategy) &optional context)
   (when (or (eq context t) (equal context 'single-line))
     (setq context (plist-put nil :respacer-name :single-line)))
   (save-excursion

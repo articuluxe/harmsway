@@ -1,6 +1,6 @@
 ;;; magit-diff.el --- inspect Git diffs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -535,24 +535,24 @@ If you prefer the old behaviors, then set this to t."
 (defface magit-diff-hunk-heading
   `((((class color) (background light))
      ,@(and (>= emacs-major-version 27) '(:extend t))
-     :background "grey80"
-     :foreground "grey30")
+     :background "grey90"
+     :foreground "grey20")
     (((class color) (background dark))
      ,@(and (>= emacs-major-version 27) '(:extend t))
      :background "grey25"
-     :foreground "grey70"))
+     :foreground "grey95"))
   "Face for diff hunk headings."
   :group 'magit-faces)
 
 (defface magit-diff-hunk-heading-highlight
   `((((class color) (background light))
      ,@(and (>= emacs-major-version 27) '(:extend t))
-     :background "grey75"
-     :foreground "grey30")
+     :background "grey80"
+     :foreground "grey20")
     (((class color) (background dark))
      ,@(and (>= emacs-major-version 27) '(:extend t))
      :background "grey35"
-     :foreground "grey70"))
+     :foreground "grey95"))
   "Face for current diff hunk headings."
   :group 'magit-faces)
 
@@ -833,29 +833,6 @@ and `:slant'."
     (setq magit-buffer-diff-files files)
     (magit-refresh)))
 
-;;; Section Classes
-
-(defclass magit-file-section (magit-section)
-  ((keymap :initform 'magit-file-section-map)
-   (source :initform nil)
-   (header :initform nil)))
-
-(defclass magit-module-section (magit-file-section)
-  ((keymap :initform 'magit-hunk-section-map)))
-
-(defclass magit-hunk-section (magit-section)
-  ((keymap      :initform 'magit-hunk-section-map)
-   (refined     :initform nil)
-   (combined    :initform nil)
-   (from-range  :initform nil)
-   (from-ranges :initform nil)
-   (to-range    :initform nil)
-   (about       :initform nil)))
-
-(setf (alist-get 'hunk   magit--section-type-alist) 'magit-hunk-section)
-(setf (alist-get 'module magit--section-type-alist) 'magit-module-section)
-(setf (alist-get 'file   magit--section-type-alist) 'magit-file-section)
-
 ;;; Commands
 ;;;; Prefix Commands
 
@@ -952,9 +929,9 @@ and `:slant'."
   :reader 'magit-read-files
   :multi-value t)
 
-(defun magit-read-files (prompt initial-input history)
+(defun magit-read-files (prompt initial-input history &optional list-fn)
   (magit-completing-read-multiple* prompt
-                                   (magit-list-files)
+                                   (funcall (or list-fn #'magit-list-files))
                                    nil nil
                                    (or initial-input (magit-file-at-point))
                                    history))
@@ -1902,10 +1879,7 @@ Staging and applying changes is documented in info node
 \\{magit-diff-mode-map}"
   :group 'magit-diff
   (hack-dir-local-variables-non-file-buffer)
-  (setq imenu-prev-index-position-function
-        'magit-imenu--diff-prev-index-position-function)
-  (setq imenu-extract-index-name-function
-        'magit-imenu--diff-extract-index-name-function))
+  (setq magit--imenu-item-types 'file))
 
 (put 'magit-diff-mode 'magit-diff-default-arguments
      '("--stat" "--no-ext-diff"))
@@ -2053,15 +2027,9 @@ Staging and applying changes is documented in info node
                (remove "--literal-pathspecs" magit-git-global-arguments)))
     ;; As of Git 2.19.0, we need to generate diffs with
     ;; --ita-visible-in-index so that `magit-stage' can work with
-    ;; intent-to-add files (see #4026).  Cache the result for each
-    ;; repo to avoid a `git version' call for every diff insertion.
+    ;; intent-to-add files (see #4026).
     (when (and (not (equal cmd "merge-tree"))
-               (pcase (magit-repository-local-get 'diff-ita-kludge-p 'unset)
-                 (`unset
-                  (let ((val (version<= "2.19.0" (magit-git-version))))
-                    (magit-repository-local-set 'diff-ita-kludge-p val)
-                    val))
-                 (val val)))
+               (magit-git-version>= "2.19.0"))
       (push "--ita-visible-in-index" args))
     (setq args (magit-diff--maybe-add-stat-arguments args))
     (when (cl-member-if (lambda (arg) (string-prefix-p "--color-moved" arg)) args)
@@ -2221,7 +2189,7 @@ section or a child thereof."
                        ("removed in remote" "removed"))))
       (magit-delete-line)
       (while (looking-at
-              "^  \\([^ ]+\\) +[0-9]\\{6\\} \\([a-z0-9]\\{40\\}\\) \\(.+\\)$")
+              "^  \\([^ ]+\\) +[0-9]\\{6\\} \\([a-z0-9]\\{40,\\}\\) \\(.+\\)$")
         (magit-bind-match-strings (side _blob name) nil
           (pcase side
             ("result" (setq file name))
@@ -2554,6 +2522,10 @@ or a ref which is not a branch, then it inserts nothing."
             (fill-region (point) (line-end-position))))
         (when magit-revision-use-hash-sections
           (save-excursion
+            ;; Start after beg to prevent a (commit text) section from
+            ;; starting at the same point as the (commit-message)
+            ;; section.
+            (goto-char (1+ beg))
             (while (not (eobp))
               (re-search-forward "\\_<" nil 'move)
               (let ((beg (point)))

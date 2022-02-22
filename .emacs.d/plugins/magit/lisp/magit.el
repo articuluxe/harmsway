@@ -1,6 +1,6 @@
 ;;; magit.el --- A Git porcelain inside Emacs  -*- lexical-binding: t; coding: utf-8 -*-
 
-;; Copyright (C) 2008-2021  The Magit Project Contributors
+;; Copyright (C) 2008-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -20,7 +20,7 @@
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 ;; Package-Requires: ((emacs "25.1") (dash "2.19.1") (git-commit "3.3.0") (magit-section "3.3.0") (transient "0.3.6") (with-editor "3.0.5"))
-;; Package-Version: 3.3.0
+;; Package-Version: 3.3.0-git
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; Magit is free software; you can redistribute it and/or modify it
@@ -65,9 +65,6 @@
 (require 'package nil t) ; used in `magit-version'
 (require 'with-editor)
 
-(defconst magit--minimal-git "2.2.0")
-(defconst magit--minimal-emacs "25.1")
-
 ;;; Faces
 
 (defface magit-header-line
@@ -92,7 +89,7 @@ own faces for the `header-line', or for parts of the
 (defface magit-hash
   '((((class color) (background light)) :foreground "grey60")
     (((class color) (background  dark)) :foreground "grey40"))
-  "Face for the sha1 part of the log output."
+  "Face for the commit object name in the log output."
   :group 'magit-faces)
 
 (defface magit-tag
@@ -368,10 +365,18 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
     ("U" "Unstage all"    magit-unstage-all)]]
   ["Essential commands"
    :if-derived magit-mode
-   ("g" "       refresh current buffer"   magit-refresh)
-   ("<tab>" "   toggle section at point"  magit-section-toggle)
-   ("<return>" "visit thing at point"     magit-visit-thing)
-   ("C-x m" "   show all key bindings"    describe-mode)])
+   [("g" "       refresh current buffer"   magit-refresh)
+    ("q" "       bury current buffer"      magit-mode-bury-buffer)
+    ("<tab>" "   toggle section at point"  magit-section-toggle)
+    ("<return>" "visit thing at point"     magit-visit-thing)]
+   [("C-x m"    "show all key bindings"    describe-mode)
+    ("C-x i"    "show Info manual"         magit-info)]])
+
+;;;###autoload
+(defun magit-info ()
+  "Show Magit's Info manual."
+  (interactive)
+  (info "magit"))
 
 ;;; Git Popup
 
@@ -447,8 +452,9 @@ is run in the top-level directory of the current working tree."
   (let ((default-directory (or directory default-directory))
         (process-environment process-environment))
     (push "GIT_PAGER=cat" process-environment)
-    (magit-start-process shell-file-name nil
-                         shell-command-switch command))
+    (magit--with-connection-local-variables
+     (magit-start-process shell-file-name nil
+                          shell-command-switch command)))
   (magit-process-buffer))
 
 (defun magit-read-shell-command (&optional toplevel initial-input)
@@ -566,7 +572,8 @@ and Emacs to it."
         (when print-dest
           (princ (format "Magit %s%s, Git %s, Emacs %s, %s"
                          (or magit-version "(unknown)")
-                         (or (and (ignore-errors (version< "2008" magit-version))
+                         (or (and (ignore-errors
+                                    (magit--version>= magit-version "2008"))
                                   (ignore-errors
                                     (require 'lisp-mnt)
                                     (and (fboundp 'lm-header)
@@ -577,12 +584,7 @@ and Emacs to it."
                                              (locate-library "magit.el" t))
                                             (lm-header "Package-Version"))))))
                              "")
-                         (or (let ((magit-git-debug
-                                    (lambda (err)
-                                      (display-warning '(magit git)
-                                                       err :error))))
-                               (magit-git-version t))
-                             "(unknown)")
+                         (magit--safe-git-version)
                          emacs-version
                          system-type)
                  print-dest))
@@ -595,45 +597,6 @@ and Emacs to it."
         (message "Cannot determine Magit's version %S" debug)))
     magit-version))
 
-;;; Debugging Tools
-
-(defun magit-debug-git-executable ()
-  "Display a buffer with information about `magit-git-executable'.
-Also include information about `magit-remote-git-executable'.
-See info node `(magit)Debugging Tools' for more information."
-  (interactive)
-  (with-current-buffer (get-buffer-create "*magit-git-debug*")
-    (pop-to-buffer (current-buffer))
-    (erase-buffer)
-    (insert (format "magit-remote-git-executable: %S\n"
-                    magit-remote-git-executable))
-    (insert (concat
-             (format "magit-git-executable: %S" magit-git-executable)
-             (and (not (file-name-absolute-p magit-git-executable))
-                  (format " [%S]" (executable-find magit-git-executable)))
-             (format " (%s)\n"
-                     (let* ((errmsg nil)
-                            (magit-git-debug (lambda (err) (setq errmsg err))))
-                       (or (magit-git-version t) errmsg)))))
-    (insert (format "exec-path: %S\n" exec-path))
-    (--when-let (cl-set-difference
-                 (-filter #'file-exists-p (remq nil (parse-colon-path
-                                                     (getenv "PATH"))))
-                 (-filter #'file-exists-p (remq nil exec-path))
-                 :test #'file-equal-p)
-      (insert (format "  entries in PATH, but not in exec-path: %S\n" it)))
-    (dolist (execdir exec-path)
-      (insert (format "  %s (%s)\n" execdir (car (file-attributes execdir))))
-      (when (file-directory-p execdir)
-        (dolist (exec (directory-files
-                       execdir t (concat
-                                  "\\`git" (regexp-opt exec-suffixes) "\\'")))
-          (insert (format "    %s (%s)\n" exec
-                          (let* ((magit-git-executable exec)
-                                 (errmsg nil)
-                                 (magit-git-debug (lambda (err) (setq errmsg err))))
-                            (or (magit-git-version t) errmsg)))))))))
-
 ;;; Startup Asserts
 
 (defun magit-startup-asserts ()
@@ -645,25 +608,9 @@ https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
     (setenv "GIT_WORK_TREE")
     (message "Magit unset $GIT_WORK_TREE (was %S).  See \
 https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
-  (let ((version (magit-git-version)))
-    (when (and version
-               (version< version magit--minimal-git)
-               (not (equal (getenv "CI") "true")))
-      (display-warning 'magit (format "\
-Magit requires Git >= %s, you are using %s.
-
-If this comes as a surprise to you, because you do actually have
-a newer version installed, then that probably means that the
-older version happens to appear earlier on the `$PATH'.  If you
-always start Emacs from a shell, then that can be fixed in the
-shell's init file.  If you start Emacs by clicking on an icon,
-or using some sort of application launcher, then you probably
-have to adjust the environment as seen by graphical interface.
-For X11 something like ~/.xinitrc should work.
-
-If you use Tramp to work inside remote Git repositories, then you
-have to make sure a suitable Git is used on the remote machines
-too.\n" magit--minimal-git version) :error)))
+  ;; Git isn't required while building Magit.
+  (cl-eval-when (load eval)
+    (magit-git-version-assert))
   (when (version< emacs-version magit--minimal-emacs)
     (display-warning 'magit (format "\
 Magit requires Emacs >= %s, you are using %s.
@@ -710,9 +657,9 @@ For X11 something like ~/.xinitrc should work.\n"
     (require 'magit-subtree)
     (require 'magit-ediff)
     (require 'magit-gitignore)
+    (require 'magit-sparse-checkout)
     (require 'magit-extras)
     (require 'git-rebase)
-    (require 'magit-imenu)
     (require 'magit-bookmark)))
 
 (with-eval-after-load 'bookmark

@@ -58,6 +58,8 @@
  '(shadow ((t (:foreground "cornsilk4"))))
  '(secondary-selection ((((class color) (min-colors 88) (background light)) (:background "yellow1")) (((class color) (min-colors 88) (background dark)) (:background "SkyBlue4")) (((class color) (min-colors 16) (background light)) (:background "yellow")) (((class color) (min-colors 16) (background dark)) (:background "SkyBlue4")) (((class color) (min-colors 8)) (:foreground "black" :background "cyan")) (t (:inverse-video t))))
  '(trailing-whitespace ((t (:background "cornsilk2"))))
+ '(corfu-current ((t (:background "white" :foreground "black"))))
+ '(corfu-default ((t (:background "cornsilk2"))))
  '(emms-playlist-selected-face ((t (:background "cornsilk2" :foreground "black"))))
  '(emms-playlist-track-face ((t (:foreground "red4"))))
  '(erc-notice-face ((t (:foreground "cornsilk4"))))
@@ -220,7 +222,7 @@
  'faff
  ;; ansi-color-names-vector: defaults such as yellow3 are nearly unreadable
  '(ansi-color-names-vector
-   ["black" "red3" "green4" "yellow" "blue2" "magenta4" "cyan4" "white"])
+   ["black" "red3" "green4" "yellow4" "blue2" "magenta4" "cyan4" "white"])
  ;; lsp-diagnostics-attributes: the default for `unnecessary', is gray, which is
  ;; nearly invisible on cornsilk3.
  '(lsp-diagnostics-attributes

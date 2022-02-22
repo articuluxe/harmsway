@@ -1,6 +1,6 @@
 ;;; magit-section.el --- Sections for read-only buffers  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -11,7 +11,7 @@
 ;; Keywords: tools
 ;; Homepage: https://github.com/magit/magit
 ;; Package-Requires: ((emacs "25.1") (dash "2.19.1"))
-;; Package-Version: 3.3.0
+;; Package-Version: 3.3.0-git
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; Magit-Section is free software; you can redistribute it and/or modify
@@ -289,6 +289,10 @@ but that ship has sailed, thus this option."
      ,@(and (>= emacs-major-version 27) '(:extend t))
      :foreground "LightSalmon3"))
   "Face for selected section headings."
+  :group 'magit-section-faces)
+
+(defface magit-section-child-count '((t nil))
+  "Face used for child counts at the end of some section headings."
   :group 'magit-section-faces)
 
 ;;; Classes
@@ -1238,7 +1242,9 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
                (eq (char-before (1- content)) ?:))
       (save-excursion
         (goto-char (- content 2))
-        (insert (format " (%s)" count))
+        (insert (concat (magit--propertize-face " " 'magit-section-heading)
+                        (magit--propertize-face (format "(%s)" count)
+                                                'magit-section-child-count)))
         (delete-char 1)))))
 
 ;;; Highlight
@@ -1656,27 +1662,6 @@ If optional SECTION is nil, use the current section."
                 (magit-section-position-in-heading-p section (region-end))))
        t))
 
-(defun magit-section--backward-protected ()
-  "Move to the beginning of the current or the previous visible section.
-Same as `magit-section-backward' but for non-interactive use.
-Suppress `magit-section-movement-hook', and return a boolean to
-indicate whether a section was found, instead of raising an error
-if not."
-  (condition-case nil
-      (let ((magit-section-movement-hook nil))
-        (magit-section-backward)
-        t)
-    (user-error nil)))
-
-(defun magit-section--backward-find (predicate)
-  "Move to the first previous section satisfying PREDICATE.
-PREDICATE does not take any parameter and should not move
-point."
-  (let (found)
-    (while (and (setq found (magit-section--backward-protected))
-                (not (funcall predicate))))
-    found))
-
 (defun magit-wash-sequence (function)
   "Repeatedly call FUNCTION until it returns nil or eob is reached.
 FUNCTION has to move point forward or return nil."
@@ -1784,6 +1769,38 @@ Configuration'."
                                     (plist-get p prop)
                                     val)))))
               (overlays-at pos t)))
+
+(defun magit-face-property-all (face string)
+  "Return non-nil if FACE is present in all of STRING."
+  (catch 'missing
+    (let ((pos 0))
+      (while (setq pos (next-single-property-change pos 'font-lock-face string))
+        (let ((val (get-text-property pos 'font-lock-face string)))
+          (unless (if (consp val)
+                      (memq face val)
+                    (eq face val))
+            (throw 'missing nil))))
+      (not pos))))
+
+(defun magit--add-face-text-property (beg end face &optional append object)
+  "Like `add-face-text-property' but for `font-lock-face'."
+  (while (< beg end)
+    (let* ((pos (next-single-property-change beg 'font-lock-face object end))
+           (val (get-text-property beg 'font-lock-face object))
+           (val (if (listp val) val (list val))))
+      (put-text-property beg pos 'font-lock-face
+                         (if append
+                             (append val (list face))
+                           (cons face val))
+                         object)
+      (setq beg pos))))
+
+(defun magit--propertize-face (string face)
+  (propertize string 'face face 'font-lock-face face))
+
+(defun magit--put-face (beg end face string)
+  (put-text-property beg end 'face face string)
+  (put-text-property beg end 'font-lock-face face string))
 
 ;;; Bitmaps
 

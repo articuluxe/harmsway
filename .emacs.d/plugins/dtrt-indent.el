@@ -1,11 +1,11 @@
 ;;; dtrt-indent.el --- Adapt to foreign indentation offsets
 
 ;; Copyright (C) 2003, 2007, 2008 Julian Scheid
-;; Copyright (C) 2014-2021 Reuben Thomas
+;; Copyright (C) 2014-2022 Reuben Thomas
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.4
+;; Version: 1.6
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -41,7 +41,8 @@
 ;; only be made if the guess is considered reliable.  This way it
 ;; should leave you off no worse than before.
 ;;
-;; To install, M-x customize-variable dtrt-indent-mode, and turn it on.
+;; To install, M-x customize-group dtrt-indent-global, and turn on "Dtrt
+;; Indent Global Mode".
 ;;
 ;; The default settings have been carefully chosen and tested to work
 ;; reliably on a wide range of source files.  However, if it doesn't work
@@ -200,6 +201,8 @@ adjusted transparently."
             (when dtrt-indent-run-after-smie
               (dtrt-indent-try-set-offset)))
         (dtrt-indent-try-set-offset))
+        ;; (unless (and (featurep 'editorconfig) editorconfig-mode)
+        ;;   (dtrt-indent-try-set-offset)))
     (dtrt-indent-undo)))
 
 ;;;###autoload
@@ -354,6 +357,7 @@ quote, for example.")
     (plantuml-mode   default       plantuml-indent-level) ; PlantUML
     (pug-mode        default       pug-tab-width)         ; Pug
     (cmake-mode      cmake         cmake-tab-width)       ; CMake
+    (xquery-mode     sgml          xquery-mode-indent-width) ; XQuery
 
     ;; Modes that use SMIE if available
     (sh-mode         default       sh-basic-offset)      ; Shell Script

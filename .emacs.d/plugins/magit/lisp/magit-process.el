@@ -1,6 +1,6 @@
 ;;; magit-process.el --- process functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -33,8 +33,7 @@
 
 ;;; Code:
 
-(require 'magit-utils)
-(require 'magit-section)
+(require 'magit-base)
 (require 'magit-git)
 (require 'magit-mode)
 
@@ -286,10 +285,7 @@ Used when `magit-process-display-mode-line-error' is non-nil."
   "Mode for looking at Git process output."
   :group 'magit-process
   (hack-dir-local-variables-non-file-buffer)
-  (setq imenu-prev-index-position-function
-        'magit-imenu--process-prev-index-position-function)
-  (setq imenu-extract-index-name-function
-        'magit-imenu--process-extract-index-name-function))
+  (setq magit--imenu-item-types 'process))
 
 (defun magit-process-buffer (&optional nodisplay)
   "Display the current repository's process buffer.

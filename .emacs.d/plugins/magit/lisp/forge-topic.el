@@ -1,6 +1,6 @@
 ;;; forge-topic.el --- Topics support              -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2021  Jonas Bernoulli
+;; Copyright (C) 2018-2022  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -312,9 +312,10 @@ implement such a function themselves.  See #447.")
              (setq topic-section-type 'pullreq)))
       (magit-insert-section ((eval list-section-type) nil t)
         (magit-insert-heading
-          (format "%s (%s)"
-                  (propertize heading 'font-lock-face 'magit-section-heading)
-                  (length topics)))
+          (concat (magit--propertize-face (concat heading " ")
+                                          'magit-section-heading)
+                  (magit--propertize-face (format "(%s)" (length topics))
+                                          'magit-section-child-count)))
         (magit-make-margin-overlay nil t)
         (magit-insert-section-body
           (dolist (topic topics)
@@ -365,6 +366,8 @@ identifier."
     (define-key map (kbd "C-c C-n") 'forge-create-post)
     (define-key map (kbd "C-c C-r") 'forge-create-post)
     (define-key map [remap magit-browse-thing] 'forge-browse-topic)
+    (define-key map [remap magit-visit-thing] 'markdown-follow-link-at-point)
+    (define-key map [mouse-2] 'markdown-follow-link-at-point)
     map))
 
 (define-derived-mode forge-topic-mode magit-mode "View Topic"

@@ -1,25 +1,11 @@
 ;;; inkpot-theme.el --- A port of vim's inkpot theme -*- lexical-binding: t -*-
 
+;; SPDX-License-Identifier: GPL-2.0-or-later
 ;; Author: Sarah Iovan <sarah@hwaetageek.com>
 ;;         Campbell Barton <ideasman42@gmail.com>
 ;; URL: https://gitlab.com/ideasman42/emacs-inkpot-theme
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.1"))
-
-;; This program is free software: you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-;; This file is not part of Emacs.
 
 ;;; Commentary:
 
@@ -128,11 +114,14 @@
    `(success ((t (:foreground ,ip-green-bright))))
    `(warning ((t (:foreground ,ip-white :background ,ip-brown-mid+13))))
    `(error ((t (:foreground ,ip-white :background ,ip-red-dark))))
+
    ;; UI.
    `(button ((t (:underline t :foreground ,ip-pink-light))))
    `(link ((t (:foreground ,ip-pink-light))))
    `(link-visited ((t (:foreground ,ip-pink-dark)))) ;; Not a vim color, just a little darker.
    `(widget-field ((t (:foreground ,ip-pink-dark :background ,ip-yellow-bright)))) ;; FIXME
+   ;; Follow other window border colors (mode-line in this case), don't blend in with the fringe.
+   `(scroll-bar ((t (:foreground ,ip-grey+73 :background ,ip-slate-dark+15.7))))
 
    ;; Default (font-lock)
    `(font-lock-builtin-face ((t (:foreground ,ip-pink-light))))

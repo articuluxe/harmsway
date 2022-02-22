@@ -1,10 +1,11 @@
 ;;; leuven-dark-theme.el --- Awesome Emacs color theme on dark background
 
-;; Copyright (C) 2003-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2003-2022 Free Software Foundation, Inc.
 
 ;; Author: Fabrice Niessen <(concat "fniessen" at-sign "pirilampo.org")>
-;; URL: https://github.com/fniessen/emacs-leuven-dark-theme
-;; Version: 20210507.1752
+;; Contributor: Thibault Polge <(concat "thibault" at-sign "thb.lt")>
+;; URL: https://github.com/fniessen/emacs-leuven-theme
+;; Version: 20220203.1046
 ;; Keywords: color theme
 
 ;; This file is part of GNU Emacs.
@@ -45,7 +46,7 @@
 The theme has to be reloaded after changing anything in this group."
   :group 'faces)
 
-(defcustom leuven-scale-org-document-title t
+(defcustom leuven-dark-scale-org-document-title t
   "Scale Org document title.
 This can be nil for unscaled, t for using the theme default, or a scaling
 number."
@@ -81,6 +82,7 @@ number."
           (const :tag "Default provided by theme" t)
           (number :tag "Set scaling")))
 
+;;;###autoload
 (defun leuven-dark-scale-font (control default-height)
   "Function for splicing optional font heights into face descriptions.
 CONTROL can be a number, nil, or t.  When t, use DEFAULT-HEIGHT."
@@ -783,7 +785,7 @@ more...")
    `(org-dim ((,class (:foreground "#5a555f"))))
    `(org-document-info ((,class (:foreground "#bbb7bf"))))
    `(org-document-info-keyword ((,class (:foreground "#ff7138" :background "#38332a"))))
-   `(org-document-title ((,class (,@(leuven-scale-font leuven-scale-org-document-title 1.8)  :weight bold :foreground "#ffffff"))))
+   `(org-document-title ((,class (,@(leuven-dark-scale-font leuven-dark-scale-org-document-title 1.8)  :weight bold :foreground "#ffffff"))))
    `(org-done ((,class (:weight bold :box (:line-width 1 :color "#49444e") :foreground "#49444e" :background "#322d37"))))
    `(org-drawer ((,class (:weight bold :foreground "#ff44ff" :background "#38203d"))))
    `(org-ellipsis ((,class (:underline nil :foreground "#6b666f")))) ; #0611a5

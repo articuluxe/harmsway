@@ -1,21 +1,6 @@
 ;;; phps-mode-automation-parser-generator --- Generate a parser for PHP YACC grammar -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2021  Free Software Foundation, Inc.
-
-;; This file is not part of GNU Emacs.
-
-;; This program is free software; you can redistribute it and/or
-;; modify it under the terms of the GNU General Public License as
-;; published by the Free Software Foundation; either version 2, or (at
-;; your option) any later version.
-
-;; This program is distributed in the hope that it will be useful, but
-;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;; General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; Copyright (C) 2018-2022  Free Software Foundation, Inc.
 
 
 ;;; Commentary:
@@ -141,23 +126,23 @@
        Productions-Block)
       (Productions-Block
        (Productions-Delimiter Productions Productions-Delimiter
-                              (lambda(args) (format "'(\n\n%s\n\n)" (nth 1 args))))
+                              (lambda(args _terminals) (format "'(\n\n%s\n\n)" (nth 1 args))))
        )
       (Productions-Delimiter
        (productions-delimiter
-        (lambda(args) ""))
+        (lambda(args _terminals) ""))
        )
       (Productions
        (Production
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        (Productions Production
-                    (lambda(args) (format "%s\n\n%s" (nth 0 args) (nth 1 args))))
+                    (lambda(args _terminals) (format "%s\n\n%s" (nth 0 args) (nth 1 args))))
        )
       (Production
        (Comment Production
-                (lambda(args) (format "%s" (nth 1 args))))
+                (lambda(args _terminals) (format "%s" (nth 1 args))))
        (LHS ":" RHSS Production-End
-            (lambda(args)
+            (lambda(args _terminals)
               ;; Store distinct LHS
               (unless (gethash
                        (intern (nth 0 args))
@@ -180,19 +165,19 @@
        (";" ";"))
       (LHS
        (Symbol
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        )
       (RHSS
        (RHS
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        (RHSS "|" RHS
-             (lambda(args) (format "%s\n  %s" (nth 0 args) (nth 2 args))))
+             (lambda(args _terminals) (format "%s\n  %s" (nth 0 args) (nth 2 args))))
        )
       (RHS
        (RHS-Symbol
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        (RHS-Symbols
-        (lambda(args)
+        (lambda(args _terminals)
           (if (string-match-p " " args)
               (format "(%s)" args)
             (format "%s" args))))
@@ -200,13 +185,13 @@
       (RHS-Symbols
        (RHS-Symbol
         RHS-Symbols
-        (lambda (args)
+        (lambda (args _terminals)
           (if (string= (nth 1 args) "")
               (format "%s" (nth 0 args))
             (format "%s %s" (nth 0 args) (nth 1 args)))))
        (RHS-Symbol
         RHS-Symbol
-        (lambda (args)
+        (lambda (args _terminals)
           (if (string= (nth 1 args) "")
               (format "%s" (nth 0 args))
             (format "%s %s" (nth 0 args) (nth 1 args)))))
@@ -217,14 +202,14 @@
        Symbol)
       (Comment
        (comment
-        (lambda(args) "")))
+        (lambda(args _terminals) "")))
       (Logic
        (logic
-        (lambda(args) ""))
+        (lambda(args _terminals) ""))
        )
       (Symbol
        (symbol
-        (lambda(args)
+        (lambda(args _terminals)
           ;; Store distinct symbols
           (unless (gethash
                    (intern args)
@@ -236,7 +221,7 @@
           
           (format "%s" args)))
        (literal
-        (lambda(args)
+        (lambda(args _terminals)
           ;; Store distinct symbols
           (unless (gethash
                    (format "%s" (substring args 1 2))
@@ -492,23 +477,23 @@
        )
       (Declarations-Block
        (Declarations
-        (lambda(args)
+        (lambda(args _terminals)
           (format "'(\n%s)" args))))
       (Declarations
        (Declaration
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        (Declaration Declarations
-                    (lambda(args) (format "%s%s" (nth 0 args) (nth 1 args))))
+                    (lambda(args _terminals) (format "%s%s" (nth 0 args) (nth 1 args))))
        )
       (Declaration
        (comment
-        (lambda(args) ""))
+        (lambda(args _terminals) ""))
        (Type Symbols
-             (lambda(args) (format "  (%s %s)\n" (nth 0 args) (nth 1 args))))
+             (lambda(args _terminals) (format "  (%s %s)\n" (nth 0 args) (nth 1 args))))
        )
       (Type
        (type
-        (lambda(args)
+        (lambda(args _terminals)
           (unless
               (gethash
                args
@@ -521,15 +506,15 @@
        )
       (Symbols
        (Symbol
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        (Symbol Symbols
-               (lambda(args) (format "%s %s" (nth 0 args) (nth 1 args))))
+               (lambda(args _terminals) (format "%s %s" (nth 0 args) (nth 1 args))))
        )
       (Symbol
        (symbol
-        (lambda(args) (format "%s" args)))
+        (lambda(args _terminals) (format "%s" args)))
        (literal
-        (lambda(args)
+        (lambda(args _terminals)
           (format "\"%s\"" (substring args 1 2))))
        )
       )

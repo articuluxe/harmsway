@@ -225,7 +225,8 @@ Will be set by `treemacs--post-command'.")
                (doom-modeline-def-modeline 'treemacs '(bar " " major-mode))
                (doom-modeline 'treemacs))
               (t
-               '(" Treemacs ")))))
+               '(:eval (format " Treemacs: %s"
+                               (treemacs-workspace->name (treemacs-current-workspace))))))))
 
 (defun treemacs--post-command ()
   "Set the default directory to the nearest directory of the current node.
@@ -233,6 +234,17 @@ If there is no node at point use \"~/\" instead.
 Also skip hidden buttons (as employed by variadic extensions).
 
 Used as a post command hook."
+  (let ((newline-char 10)
+        (point-max (point-max)))
+    (unless (= newline-char (char-before point-max))
+      (treemacs-with-writable-buffer
+       (save-excursion
+         (goto-char point-max)
+         (insert newline-char)
+         ;; make sure that the projects-end marker keeps pointing at
+         ;; the end of the last project button
+         (when (equal (point) (marker-position (treemacs--projects-end)))
+           (move-marker (treemacs--projects-end) (1- (point))))))))
   (-when-let (btn (treemacs-current-button))
     (when (treemacs-button-get btn 'invisible)
       (treemacs-next-line 1))

@@ -1,6 +1,6 @@
 ;;; magit-git.el --- Git functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -29,8 +29,7 @@
 
 ;;; Code:
 
-(require 'magit-utils)
-(require 'magit-section)
+(require 'magit-base)
 
 ;; From `magit-branch'.
 (defvar magit-branch-prefer-remote-upstream)
@@ -574,11 +573,128 @@ call function WASHER with ARGS as its sole argument."
         (magit-cancel-section))
       (magit-maybe-make-margin-overlay))))
 
-(defun magit-git-version (&optional raw)
-  (--when-let (let (magit-git-global-arguments)
-                (ignore-errors (substring (magit-git-string "version") 12)))
-    (if raw it (and (string-match "\\`\\([0-9]+\\(\\.[0-9]+\\)\\{1,2\\}\\)" it)
-                    (match-string 1 it)))))
+;;; Git Version
+
+(defconst magit--git-version-regexp
+  "\\`git version \\([0-9]+\\(\\.[0-9]+\\)\\{1,2\\}\\)")
+
+(defvar magit--host-git-version-cache nil)
+
+(defun magit-git-version>= (n)
+  "Return t if `magit-git-version's value is greater than or equal to N."
+  (magit--version>= (magit-git-version) n))
+
+(defun magit-git-version< (n)
+  "Return t if `magit-git-version's value is smaller than N."
+  (version< (magit-git-version) n))
+
+(defun magit-git-version ()
+  "Return the Git version used for `default-directory'.
+Raise an error if Git cannot be found, if it exits with a
+non-zero status, or the output does not have the expected
+format."
+  (magit--with-refresh-cache default-directory
+    (let ((host (file-remote-p default-directory)))
+      (or (cdr (assoc host magit--host-git-version-cache))
+          (magit--with-temp-process-buffer
+            ;; Unset global arguments for ancient Git versions.
+            (let* ((magit-git-global-arguments nil)
+                   (status (magit-process-git t "version"))
+                   (output (buffer-string)))
+              (cond
+               ((not (zerop status))
+                (display-warning
+                 'magit
+                 (format "%S\n\nRunning \"%s --version\" failed with output:\n\n%s"
+                         (if host
+                             (format "Magit cannot find Git on host %S.\n
+Check the value of `magit-remote-git-executable' using
+`magit-debug-git-executable' and consult the info node
+`(tramp)Remote programs'." host)
+                           "Magit cannot find Git.\n
+Check the values of `magit-git-executable' and `exec-path'
+using `magit-debug-git-executable'.")
+                         (magit-git-executable)
+                         output)))
+               ((save-match-data
+                  (and (string-match magit--git-version-regexp output)
+                       (let ((version (match-string 1 output)))
+                         (push (cons host version)
+                               magit--host-git-version-cache)
+                         version))))
+               (t (error "Unexpected \"%s --version\" output: %S"
+                         (magit-git-executable)
+                         output)))))))))
+
+(defun magit-git-version-assert (&optional minimal who)
+  "Assert that the used Git version is greater than or equal to MINIMAL.
+If optional MINIMAL is nil, compare with `magit--minimal-git'
+instead.  Optional WHO if non-nil specifies what functionality
+needs at least MINIMAL, otherwise it defaults to \"Magit\"."
+  (when (magit-git-version< (or minimal magit--minimal-git))
+    (let* ((host (file-remote-p default-directory))
+           (msg (format-spec
+                 (cond (host "\
+%w requires Git %m or greater, but on %h the version is %m.
+
+If multiple Git versions are installed on the host, then the
+problem might be that TRAMP uses the wrong executable.
+
+Check the value of `magit-remote-git-executable' and consult
+the info node `(tramp)Remote programs'.\n")
+                       (t "\
+%w requires Git %m or greater, but you are using %v.
+
+If you have multiple Git versions installed, then check the
+values of `magit-remote-git-executable' and `exec-path'.\n"))
+                 `((?w . ,(or who "Magit"))
+                   (?m . ,(or minimal magit--minimal-git))
+                   (?v . ,(magit-git-version))
+                   (?h . ,host)))))
+      (display-warning 'magit msg :error))))
+
+(defun magit--safe-git-version ()
+  "Return the Git version used for `default-directory' or an error message."
+  (magit--with-temp-process-buffer
+    (let* ((magit-git-global-arguments nil)
+           (status (magit-process-git t "version"))
+           (output (buffer-string)))
+      (cond ((not (zerop status)) output)
+            ((save-match-data
+               (and (string-match magit--git-version-regexp output)
+                    (match-string 1 output))))
+            (t output)))))
+
+(defun magit-debug-git-executable ()
+  "Display a buffer with information about `magit-git-executable'.
+Also include information about `magit-remote-git-executable'.
+See info node `(magit)Debugging Tools' for more information."
+  (interactive)
+  (with-current-buffer (get-buffer-create "*magit-git-debug*")
+    (pop-to-buffer (current-buffer))
+    (erase-buffer)
+    (insert (format "magit-remote-git-executable: %S\n"
+                    magit-remote-git-executable))
+    (insert (concat
+             (format "magit-git-executable: %S" magit-git-executable)
+             (and (not (file-name-absolute-p magit-git-executable))
+                  (format " [%S]" (executable-find magit-git-executable)))
+             (format " (%s)\n" (magit--safe-git-version))))
+    (insert (format "exec-path: %S\n" exec-path))
+    (--when-let (cl-set-difference
+                 (-filter #'file-exists-p (remq nil (parse-colon-path
+                                                     (getenv "PATH"))))
+                 (-filter #'file-exists-p (remq nil exec-path))
+                 :test #'file-equal-p)
+      (insert (format "  entries in PATH, but not in exec-path: %S\n" it)))
+    (dolist (execdir exec-path)
+      (insert (format "  %s (%s)\n" execdir (car (file-attributes execdir))))
+      (when (file-directory-p execdir)
+        (dolist (exec (directory-files
+                       execdir t (concat
+                                  "\\`git" (regexp-opt exec-suffixes) "\\'")))
+          (insert (format "    %s (%s)\n" exec
+                          (magit--safe-git-version))))))))
 
 ;;; Variables
 
@@ -914,6 +1030,11 @@ tracked file."
 (defun magit-untracked-files (&optional all files)
   (magit-list-files "--other" (unless all "--exclude-standard") "--" files))
 
+(defun magit-modified-files (&optional nomodules files)
+  (magit-git-items "diff-index" "-z" "--name-only"
+                   (and nomodules "--ignore-submodules")
+                   (magit-headish) "--" files))
+
 (defun magit-unstaged-files (&optional nomodules files)
   (magit-git-items "diff-files" "-z" "--name-only"
                    (and nomodules "--ignore-submodules")
@@ -951,6 +1072,12 @@ tracked file."
 (defun magit-revision-files (rev)
   (magit-with-toplevel
     (magit-git-items "ls-tree" "-z" "-r" "--name-only" rev)))
+
+(defun magit-revision-directories (rev)
+  "List directories that contain a tracked file in revision REV."
+  (magit-with-toplevel
+    (mapcar #'file-name-as-directory
+            (magit-git-items "ls-tree" "-z" "-r" "-d" "--name-only" rev))))
 
 (defun magit-changed-files (rev-or-range &optional other-rev)
   "Return list of files the have changed between two revisions.
@@ -1199,7 +1326,7 @@ ref that should have been excluded, then that is discarded and
 this function returns nil instead.  This is unfortunate because
 there might be other refs that do match.  To fix that, update
 Git."
-  (if (version< (magit-git-version) "2.13")
+  (if (magit-git-version< "2.13")
       (when-let
           ((ref (magit-git-string "name-rev" "--name-only" "--no-undefined"
                                   (and pattern (concat "--refs=" pattern))
@@ -1456,7 +1583,8 @@ configured remote is an url, or the named branch does not exist,
 then return nil.  I.e. return the name of an existing local or
 remote-tracking branch.  The returned string is colorized
 according to the branch type."
-  (magit--with-refresh-cache (list 'magit-get-upstream-branch branch)
+  (magit--with-refresh-cache
+      (list default-directory 'magit-get-upstream-branch branch)
     (when-let ((branch (or branch (magit-get-current-branch)))
                (upstream (magit-ref-abbrev (concat branch "@{upstream}"))))
       (magit--propertize-face
@@ -1526,7 +1654,8 @@ according to the branch type."
     (magit--propertize-face remote 'magit-branch-remote)))
 
 (defun magit-get-push-branch (&optional branch verify)
-  (magit--with-refresh-cache (list 'magit-get-push-branch branch verify)
+  (magit--with-refresh-cache
+      (list default-directory 'magit-get-push-branch branch verify)
     (when-let ((branch (or branch (setq branch (magit-get-current-branch))))
                (remote (magit-get-push-remote branch))
                (target (concat remote "/" branch)))
@@ -1691,7 +1820,9 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                                         ((and val (pred listp)) val)))
                                (or namespaces magit-list-refs-namespaces))))
     (if (member format '("%(refname)" "%(refname:short)"))
-        (--remove (string-match-p "\\(\\`\\|/\\)HEAD\\'" it) refs)
+        (let ((case-fold-search nil))
+          (--remove (string-match-p "\\(\\`\\|/\\)HEAD\\'" it)
+                    refs))
       refs)))
 
 (defun magit-list-branches ()
@@ -1811,7 +1942,7 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
           (magit-git-lines "submodule" "status")))
 
 (defun magit-list-module-paths ()
-  (--mapcat (and (string-match "^160000 [0-9a-z]\\{40\\} 0\t\\(.+\\)$" it)
+  (--mapcat (and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" it)
                  (list (match-string 1 it)))
             (magit-git-items "ls-files" "-z" "--stage")))
 
@@ -1959,12 +2090,13 @@ Return a list of two integers: (A>B B>A)."
     (cdr (split-string it))))
 
 (defun magit-patch-id (rev)
-  (magit--with-temp-process-buffer
-    (magit-process-file
-     shell-file-name nil '(t nil) nil shell-command-switch
-     (let ((exec (shell-quote-argument (magit-git-executable))))
-       (format "%s diff-tree -u %s | %s patch-id" exec rev exec)))
-    (car (split-string (buffer-string)))))
+  (magit--with-connection-local-variables
+   (magit--with-temp-process-buffer
+     (magit-process-file
+      shell-file-name nil '(t nil) nil shell-command-switch
+      (let ((exec (shell-quote-argument (magit-git-executable))))
+        (format "%s diff-tree -u %s | %s patch-id" exec rev exec)))
+     (car (split-string (buffer-string))))))
 
 (defun magit-rev-format (format &optional rev args)
   (let ((str (magit-git-string "show" "--no-patch"
@@ -2160,7 +2292,7 @@ and this option only controls what face is used.")
 
 (defun magit-update-ref (ref message rev &optional stashish)
   (let ((magit--refresh-cache nil))
-    (or (if (not (version< (magit-git-version) "2.6.0"))
+    (or (if (magit-git-version>= "2.6.0")
             (zerop (magit-call-git "update-ref" "--create-reflog"
                                    "-m" message ref rev
                                    (or (magit-rev-verify ref) "")))

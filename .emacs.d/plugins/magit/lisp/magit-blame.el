@@ -1,6 +1,6 @@
 ;;; magit-blame.el --- blame support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2021  The Magit Project Contributors
+;; Copyright (C) 2012-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -476,7 +476,7 @@ modes is toggled, then this mode also gets toggled automatically.
 
 (defun magit-blame--parse-chunk (type)
   (let (chunk revinfo)
-    (unless (looking-at "^\\(.\\{40\\}\\) \\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\)")
+    (unless (looking-at "^\\(.\\{40,\\}\\) \\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\)")
       (error "Blaming failed due to unexpected output: %s"
              (buffer-substring-no-properties (point) (line-end-position))))
     (with-slots (orig-rev orig-file prev-rev prev-file)
@@ -491,7 +491,7 @@ modes is toggled, then this mode also gets toggled automatically.
           (cond ((looking-at "^filename \\(.+\\)")
                  (setq done t)
                  (setf orig-file (magit-decode-git-path (match-string 1))))
-                ((looking-at "^previous \\(.\\{40\\}\\) \\(.+\\)")
+                ((looking-at "^previous \\(.\\{40,\\}\\) \\(.+\\)")
                  (setf prev-rev  (match-string 1))
                  (setf prev-file (magit-decode-git-path (match-string 2))))
                 ((looking-at "^\\([^ ]+\\) \\(.+\\)")
@@ -638,7 +638,7 @@ modes is toggled, then this mode also gets toggled automatically.
 
 (defun magit-blame--format-string-1 (rev revinfo format face)
   (let ((str
-         (if (equal rev "0000000000000000000000000000000000000000")
+         (if (string-match-p "\\`0\\{40,\\}\\'" rev)
              (propertize (concat (if (string-prefix-p "\s" format) "\s" "")
                                  "Not Yet Committed"
                                  (if (string-suffix-p "\n" format) "\n" ""))

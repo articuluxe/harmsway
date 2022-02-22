@@ -1,6 +1,6 @@
 ;;; magit-stash.el --- stash support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2008-2021  The Magit Project Contributors
+;; Copyright (C) 2008-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -31,9 +31,7 @@
 
 (require 'magit)
 (require 'magit-reflog)
-
-;; For `magit-stash-drop'.
-(defvar helm-comp-read-use-marked)
+(require 'magit-sequence)
 
 ;;; Options
 
@@ -98,7 +96,8 @@ AUTHOR-WIDTH has to be an integer.  When the name of the author
     ("z" "both"          magit-stash-both)
     ("i" "index"         magit-stash-index)
     ("w" "worktree"      magit-stash-worktree)
-    ("x" "keeping index" magit-stash-keep-index)]
+    ("x" "keeping index" magit-stash-keep-index)
+    ("P" "push"          magit-stash-push :level 5)]
    ["Snapshot"
     ("Z" "both"          magit-snapshot-both)
     ("I" "index"         magit-snapshot-index)
@@ -213,6 +212,30 @@ while two prefix arguments are equivalent to `--all'."
   (magit-stash-save (concat "WIP on " (magit-stash-summary))
                     index worktree untracked refresh t))
 
+;;;###autoload (autoload 'magit-stash-push "magit-stash" nil t)
+(transient-define-prefix magit-stash-push (&optional transient args)
+  "Create stash using \"git stash push\".
+
+This differs from Magit's other stashing commands, which don't
+use \"git stash\" and are generally more flexible but don't allow
+specifying a list of files to be stashed."
+  :man-page "git-stash"
+  ["Arguments"
+   (magit:-- :reader ,(-rpartial #'magit-read-files
+                                 #'magit-modified-files))
+   ("-u" "Also save untracked files" ("-u" "--include-untracked"))
+   ("-a" "Also save untracked and ignored files" ("-a" "--all"))
+   ("-k" "Keep index" ("-k" "--keep-index"))
+   ("-K" "Don't keep index" "--no-keep-index")]
+  ["Actions"
+   ("P" "push" magit-stash-push)]
+  (interactive (if (eq transient-current-command 'magit-stash-push)
+                   (list nil (transient-args 'magit-stash-push))
+                 (list t)))
+  (if transient
+      (transient-setup 'magit-stash-push)
+    (magit-run-git "stash" "push" args)))
+
 ;;;###autoload
 (defun magit-stash-apply (stash)
   "Apply a stash to the working tree.
@@ -241,8 +264,7 @@ When the region is active offer to drop all contained stashes."
   (interactive
    (list (--if-let (magit-region-values 'stash)
              (magit-confirm 'drop-stashes nil "Drop %i stashes" nil it)
-           (let ((helm-comp-read-use-marked t))
-             (magit-read-stash "Drop stash")))))
+           (magit-read-stash "Drop stash"))))
   (dolist (stash (if (listp stash)
                      (nreverse (prog1 stash (setq stash (car stash))))
                    (list stash)))
@@ -355,6 +377,7 @@ current branch or `HEAD' as the start-point."
 
 (defvar magit-stashes-section-map
   (let ((map (make-sparse-keymap)))
+    (define-key map [remap magit-visit-thing]  'magit-stash-list)
     (define-key map [remap magit-delete-thing] 'magit-stash-clear)
     map)
   "Keymap for `stashes' section.")
@@ -378,14 +401,7 @@ If optional REF is non-nil, show reflog for that instead.
 If optional HEADING is non-nil, use that as section heading
 instead of \"Stashes:\"."
   (let ((verified (magit-rev-verify ref))
-        (autostash
-         (and (magit-rebase-in-progress-p)
-              (thread-first
-                  (if (file-directory-p (magit-git-dir "rebase-merge"))
-                      "rebase-merge/autostash"
-                    "rebase-apply/autostash")
-                magit-git-dir
-                magit-file-line))))
+        (autostash (magit-rebase--get-state-lines "autostash")))
     (when (or autostash verified)
       (magit-insert-section (stashes ref)
         (magit-insert-heading heading)
@@ -481,7 +497,8 @@ If there is no stash buffer in the same frame, then do nothing."
 (define-derived-mode magit-stash-mode magit-diff-mode "Magit Stash"
   "Mode for looking at individual stashes."
   :group 'magit-diff
-  (hack-dir-local-variables-non-file-buffer))
+  (hack-dir-local-variables-non-file-buffer)
+  (setq magit--imenu-group-types '(commit)))
 
 (defun magit-stash-setup-buffer (stash args files)
   (magit-setup-buffer #'magit-stash-mode nil

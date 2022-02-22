@@ -1,6 +1,6 @@
 ;;; git-commit.el --- Edit Git commit messages  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -14,7 +14,7 @@
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 ;; Package-Requires: ((emacs "25.1") (transient "0.3.6") (with-editor "3.0.5"))
-;; Package-Version: 3.3.0
+;; Package-Version: 3.3.0-git
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -115,9 +115,9 @@
 (require 'seq)
 (require 'subr-x)
 
+(require 'magit-base nil t)
 (require 'magit-git nil t)
 (require 'magit-mode nil t)
-(require 'magit-utils nil t)
 
 (require 'log-edit)
 (require 'ring)
@@ -135,7 +135,7 @@
 (defvar font-lock-beg)
 (defvar font-lock-end)
 
-(declare-function magit-completing-read "magit-utils"
+(declare-function magit-completing-read "magit-base"
                   (prompt collection &optional predicate require-match
                           initial-input hist def fallback))
 (declare-function magit-expand-git-file-name "magit-git" (filename))
@@ -210,7 +210,7 @@ The major mode configured here is turned on by the minor mode
   "Hook run at the end of `git-commit-setup'."
   :group 'git-commit
   :type 'hook
-  :get (and (featurep 'magit-utils) 'magit-hook-custom-get)
+  :get (and (featurep 'magit-base) 'magit-hook-custom-get)
   :options '(git-commit-save-message
              git-commit-setup-changelog-support
              magit-generate-changelog
@@ -240,7 +240,7 @@ This hook is only run if `magit' is available.
 Also see `magit-post-commit-hook'."
   :group 'git-commit
   :type 'hook
-  :get (and (featurep 'magit-utils) 'magit-hook-custom-get))
+  :get (and (featurep 'magit-base) 'magit-hook-custom-get))
 
 (defcustom git-commit-finish-query-functions
   '(git-commit-check-style-conventions)
@@ -795,6 +795,13 @@ Save current message first."
         (setq str (replace-match "\n" t t str)))
       str)))
 
+;;; Utilities
+
+(defsubst git-commit-executable ()
+  (if (fboundp 'magit-git-executable)
+      (magit-git-executable)
+    "git"))
+
 ;;; Headers
 
 (transient-define-prefix git-commit-insert-pseudo-header ()
@@ -859,13 +866,17 @@ Save current message first."
 (defun git-commit-self-ident ()
   (list (or (getenv "GIT_AUTHOR_NAME")
             (getenv "GIT_COMMITTER_NAME")
-            (ignore-errors (car (process-lines "git" "config" "user.name")))
+            (with-demoted-errors "Error running 'git config user.name': %S"
+              (car (process-lines
+                    (git-commit-executable) "config" "user.name")))
             user-full-name
             (read-string "Name: "))
         (or (getenv "GIT_AUTHOR_EMAIL")
             (getenv "GIT_COMMITTER_EMAIL")
             (getenv "EMAIL")
-            (ignore-errors (car (process-lines "git" "config" "user.email")))
+            (with-demoted-errors "Error running 'git config user.email': %S"
+              (car (process-lines
+                    (git-commit-executable) "config" "user.email")))
             (read-string "Email: "))))
 
 (defvar git-commit-read-ident-history nil)
@@ -1027,49 +1038,53 @@ Added to `font-lock-extend-region-functions'."
   "Font-Lock keywords for Git-Commit mode.")
 
 (defun git-commit-setup-font-lock ()
-  (let ((table (make-syntax-table (syntax-table))))
-    (when comment-start
-      (modify-syntax-entry (string-to-char comment-start) "." table))
-    (modify-syntax-entry ?#  "." table)
-    (modify-syntax-entry ?\" "." table)
-    (modify-syntax-entry ?\' "." table)
-    (modify-syntax-entry ?`  "." table)
-    (set-syntax-table table))
-  (setq-local comment-start
-              (or (with-temp-buffer
-                    (call-process "git" nil (current-buffer) nil
-                                  "config" "core.commentchar")
-                    (unless (bobp)
-                      (goto-char (point-min))
-                      (buffer-substring (point) (line-end-position))))
-                  "#"))
-  (setq-local comment-start-skip (format "^%s+[\s\t]*" comment-start))
-  (setq-local comment-end-skip "\n")
-  (setq-local comment-use-syntax nil)
-  (setq-local git-commit--branch-name-regexp
-              (if (and (featurep 'magit-git)
-                       ;; When using cygwin git, we may end up in a
-                       ;; non-existing directory, which would cause
-                       ;; any git calls to signal an error.
-                       (file-accessible-directory-p default-directory))
-                  (progn
-                    ;; Make sure the below functions are available.
-                    (require 'magit)
-                    ;; Font-Lock wants every submatch to succeed, so
-                    ;; also match the empty string.  Avoid listing
-                    ;; remote branches and using `regexp-quote',
-                    ;; because in repositories have thousands of
-                    ;; branches that would be very slow.  See #4353.
-                    (format "\\(\\(?:%s\\)\\|\\)\\([^']+\\)"
-                            (mapconcat #'identity
-                                       (magit-list-local-branch-names)
-                                       "\\|")))
-                "\\([^']*\\)"))
-  (setq-local font-lock-multiline t)
-  (add-hook 'font-lock-extend-region-functions
-            #'git-commit-extend-region-summary-line
-            t t)
-  (font-lock-add-keywords nil git-commit-font-lock-keywords))
+  (with-demoted-errors "Error running git-commit-setup-font-lock: %S"
+    (let ((table (make-syntax-table (syntax-table))))
+      (when comment-start
+        (modify-syntax-entry (string-to-char comment-start) "." table))
+      (modify-syntax-entry ?#  "." table)
+      (modify-syntax-entry ?\" "." table)
+      (modify-syntax-entry ?\' "." table)
+      (modify-syntax-entry ?`  "." table)
+      (set-syntax-table table))
+    (setq-local comment-start
+                (or (with-temp-buffer
+                      (and (zerop
+                            (call-process
+                             (git-commit-executable) nil (list t nil) nil
+                             "config" "core.commentchar"))
+                           (not (bobp))
+                           (progn
+                             (goto-char (point-min))
+                             (buffer-substring (point) (line-end-position)))))
+                    "#"))
+    (setq-local comment-start-skip (format "^%s+[\s\t]*" comment-start))
+    (setq-local comment-end-skip "\n")
+    (setq-local comment-use-syntax nil)
+    (setq-local git-commit--branch-name-regexp
+                (if (and (featurep 'magit-git)
+                         ;; When using cygwin git, we may end up in a
+                         ;; non-existing directory, which would cause
+                         ;; any git calls to signal an error.
+                         (file-accessible-directory-p default-directory))
+                    (progn
+                      ;; Make sure the below functions are available.
+                      (require 'magit)
+                      ;; Font-Lock wants every submatch to succeed, so
+                      ;; also match the empty string.  Avoid listing
+                      ;; remote branches and using `regexp-quote',
+                      ;; because in repositories have thousands of
+                      ;; branches that would be very slow.  See #4353.
+                      (format "\\(\\(?:%s\\)\\|\\)\\([^']+\\)"
+                              (mapconcat #'identity
+                                         (magit-list-local-branch-names)
+                                         "\\|")))
+                  "\\([^']*\\)"))
+    (setq-local font-lock-multiline t)
+    (add-hook 'font-lock-extend-region-functions
+              #'git-commit-extend-region-summary-line
+              t t)
+    (font-lock-add-keywords nil git-commit-font-lock-keywords)))
 
 (defun git-commit-propertize-diff ()
   (require 'diff-mode)

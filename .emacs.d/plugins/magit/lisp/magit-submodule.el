@@ -1,6 +1,6 @@
 ;;; magit-submodule.el --- submodule support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2011-2021  The Magit Project Contributors
+;; Copyright (C) 2011-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -66,14 +66,27 @@ is inserted.  If it is nil, then all sections listed in
 
 (defcustom magit-submodule-list-columns
   '(("Path"     25 magit-modulelist-column-path   nil)
-    ("Version"  25 magit-repolist-column-version  nil)
+    ("Version"  25 magit-repolist-column-version
+     ((:sort magit-repolist-version<)))
     ("Branch"   20 magit-repolist-column-branch   nil)
-    ("B<U" 3 magit-repolist-column-unpulled-from-upstream   ((:right-align t)))
-    ("B>U" 3 magit-repolist-column-unpushed-to-upstream     ((:right-align t)))
-    ("B<P" 3 magit-repolist-column-unpulled-from-pushremote ((:right-align t)))
-    ("B>P" 3 magit-repolist-column-unpushed-to-pushremote   ((:right-align t)))
-    ("B"   3 magit-repolist-column-branches                 ((:right-align t)))
-    ("S"   3 magit-repolist-column-stashes                  ((:right-align t))))
+    ("B<U" 3 magit-repolist-column-unpulled-from-upstream
+     ((:right-align t)
+      (:sort <)))
+    ("B>U" 3 magit-repolist-column-unpushed-to-upstream
+     ((:right-align t)
+      (:sort <)))
+    ("B<P" 3 magit-repolist-column-unpulled-from-pushremote
+     ((:right-align t)
+      (:sort <)))
+    ("B>P" 3 magit-repolist-column-unpushed-to-pushremote
+     ((:right-align t)
+      (:sort <)))
+    ("B"   3 magit-repolist-column-branches
+     ((:right-align t)
+      (:sort <)))
+    ("S"   3 magit-repolist-column-stashes
+     ((:right-align t)
+      (:sort <))))
   "List of columns displayed by `magit-list-submodules'.
 
 Each element has the form (HEADER WIDTH FORMAT PROPS).
@@ -83,7 +96,15 @@ of the column.  FORMAT is a function that is called with one
 argument, the repository identification (usually its basename),
 and with `default-directory' bound to the toplevel of its working
 tree.  It has to return a string to be inserted or nil.  PROPS is
-an alist that supports the keys `:right-align' and `:pad-right'.
+an alist that supports the keys `:right-align', `:pad-right' and
+`:sort'.
+
+The `:sort' function has a weird interface described in the
+docstring of `tabulated-list--get-sort'.  Alternatively `<' and
+`magit-repolist-version<' can be used as those functions are
+automatically replaced with functions that satisfy the interface.
+Set `:sort' to nil to inhibit sorting; if unspecifed, then the
+column is sortable using the default sorter.
 
 You may wish to display a range of numeric columns using just one
 character per column and without any padding between columns, in
@@ -100,6 +121,7 @@ than 9."
                                  (list (choice :tag "Property"
                                                (const :right-align)
                                                (const :pad-right)
+                                               (const :sort)
                                                (symbol))
                                        (sexp   :tag "Value"))))))
 
@@ -225,7 +247,7 @@ it is nil, then PATH also becomes the name."
              (magit-process-sentinel process event)
            (process-put process 'inhibit-refresh t)
            (magit-process-sentinel process event)
-           (unless (version< (magit-git-version) "2.12.0")
+           (when (magit-git-version>= "2.12.0")
              (magit-call-git "submodule" "absorbgitdirs" path))
            (magit-refresh)))))))
 
@@ -360,7 +382,7 @@ to recover from making a mistake here, but don't count on it."
            (list (magit-read-module-path "Remove module")))
          (magit-submodule-arguments "--force")
          current-prefix-arg))
-  (when (version< (magit-git-version) "2.12.0")
+  (when (magit-git-version< "2.12.0")
     (error "This command requires Git v2.12.0"))
   (when magit-submodule-remove-trash-gitdirs
     (setq trash-gitdirs t))
@@ -383,14 +405,14 @@ to recover from making a mistake here, but don't count on it."
                                           (expand-file-name module))))
                   (magit-git "stash" "push"
                              "-m" "backup before removal of this module")))
-            (setq modules (cl-set-difference modules modified)))
+            (setq modules (cl-set-difference modules modified :test #'equal)))
         (if (cdr modified)
             (message "Omitting %s modules with uncommitted changes: %s"
                      (length modified)
                      (mapconcat #'identity modified ", "))
           (message "Omitting module %s, it has uncommitted changes"
                    (car modified)))
-        (setq modules (cl-set-difference modules modified))))
+        (setq modules (cl-set-difference modules modified :test #'equal))))
     (when modules
       (let ((alist
              (and trash-gitdirs
@@ -630,21 +652,12 @@ These sections can be expanded to show the respective commits."
          (magit-generate-new-buffer 'magit-submodule-list-mode))))
   (magit-submodule-list-mode)
   (setq-local magit-repolist-columns columns)
+  (setq-local magit-repolist-sort-key magit-submodule-list-sort-key)
   (setq-local magit-submodule-list-predicate predicate)
+  (magit-repolist-setup-1)
   (magit-submodule-list-refresh))
 
 (defun magit-submodule-list-refresh ()
-  (unless tabulated-list-sort-key
-    (setq tabulated-list-sort-key
-          (pcase-let ((`(,column . ,flip) magit-submodule-list-sort-key))
-            (cons (or (car (assoc column magit-submodule-list-columns))
-                      (caar magit-submodule-list-columns))
-                  flip))))
-  (setq tabulated-list-format
-        (vconcat (mapcar (pcase-lambda (`(,title ,width ,_fn ,props))
-                           (nconc (list title width t)
-                                  (-flatten props)))
-                         magit-repolist-columns)))
   (setq tabulated-list-entries
         (-keep (lambda (module)
                  (let ((default-directory
@@ -670,6 +683,20 @@ These sections can be expanded to show the respective commits."
 (defun magit-modulelist-column-path (spec)
   "Insert the relative path of the submodule."
   (cadr (assq :path spec)))
+
+;;;; Imenu Support
+
+(defun magit-imenu--submodule-prev-index-position-function ()
+  "Move point to previous line in magit-submodule-list buffer.
+Used as a value for `imenu-prev-index-position-function'."
+  (unless (bobp)
+    (forward-line -1)))
+
+(defun magit-imenu--submodule-extract-index-name-function ()
+  "Return imenu name for line at point.
+Point should be at the beginning of the line.  This function
+is used as a value for `imenu-extract-index-name-function'."
+  (car (tabulated-list-get-entry)))
 
 ;;; Utilities
 

@@ -5,7 +5,7 @@
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
 ;; Created: October 14, 2021
-;; Version: 0.0.5
+;; Version: 0.0.6
 ;; Keywords: git, tools, vc
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;; Package-Requires: ((emacs "25.1") (closql "1.2.0") (magit "3.0.0") (a "1.0.0") (ghub "3.5.1") (uuidgen "1.2") (deferred "0.5.1") (markdown-mode "2.4") (forge "0.3.0") (emojify "1.2"))
@@ -53,14 +53,15 @@
 
 (defcustom code-review-headers-hook
   '(code-review-section-insert-header-title
+    code-review-section-insert-author
     code-review-section-insert-title
     code-review-section-insert-state
     code-review-section-insert-ref
     code-review-section-insert-milestone
     code-review-section-insert-labels
-    code-review-section-insert-assignee
     code-review-section-insert-project
     code-review-section-insert-is-draft
+    code-review-section-insert-assignee
     code-review-section-insert-suggested-reviewers
     code-review-section-insert-reviewers)
   "Hook run to insert headers into the code review buffer."
@@ -156,6 +157,7 @@ OUTDATED."
     (define-key map (kbd "r") 'code-review-transient-api)
     (define-key map (kbd "RET") 'code-review-comment-add-or-edit)
     (define-key map (kbd "C-c RET") 'code-review-submit-single-diff-comment-at-point)
+    (define-key map (kbd "C-c C-s") 'code-review-comment-code-suggestion)
     (define-key map (kbd "G") 'code-review-reload)
     (set-keymap-parent map magit-section-mode-map)
     map))

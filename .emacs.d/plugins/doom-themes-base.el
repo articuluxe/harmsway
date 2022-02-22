@@ -795,6 +795,13 @@
     (selectrum-current-candidate :background region :distant-foreground nil :extend t)
     ;;;; vertico
     (vertico-current :background region :distant-foreground nil :extend t)
+    ;;;; vertico-posframe
+    ;;(vertico-posframe :inherit 'default)
+    (vertico-posframe-border :background grey)
+    (vertico-posframe-border-2 :background red)
+    (vertico-posframe-border-3 :background green)
+    (vertico-posframe-border-4 :background blue)
+    (vertico-posframe-border-fallback :background yellow)
     ;;;; jabber
     (jabber-activity-face          :foreground red   :weight 'bold)
     (jabber-activity-personal-face :foreground blue  :weight 'bold)
@@ -1259,8 +1266,6 @@
     ;;;; solaire-mode
     (solaire-default-face  :inherit 'default :background bg-alt)
     (solaire-hl-line-face  :inherit 'hl-line :background bg :extend t)
-    ((solaire-mode-line-face &inherit mode-line))
-    ((solaire-mode-line-inactive-face &inherit mode-line-inactive))
     ;;;; spaceline
     (spaceline-highlight-face   :background highlight)
     (spaceline-modified         :background vc-modified)

@@ -1,6 +1,6 @@
 ;;; rust-mode.el --- A major-mode for editing Rust source code -*-lexical-binding: t-*-
 
-;; Version: 1.0.3
+;; Version: 1.0.4
 ;; Author: Mozilla
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
@@ -319,7 +319,7 @@ See `prettify-symbols-compose-predicate'."
           (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
           (regexp-opt
-           '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
+           '("enum" "struct" "union" "type" "mod" "fn" "static" "impl"
              "extern" "trait" "async"))
           "\\_>")
   "Start of a Rust item.")
@@ -360,6 +360,16 @@ See `prettify-symbols-compose-predicate'."
     "isize" "usize"
     "bool"
     "str" "char"))
+
+(defconst rust-number-with-type
+  (eval-when-compile
+    (concat
+     "\\_<\\(?:0[box]?\\|[1-9]\\)[[:digit:]a-fA-F_.]*\\(?:[eE][+-]?[[:digit:]_]\\)?"
+     (regexp-opt '("u8" "i8" "u16" "i16" "u32" "i32" "u64" "i64"
+                   "u128" "i128" "usize" "isize" "f32" "f64")
+                 t)
+     "\\_>"))
+  "Regular expression matching a number with a type suffix.")
 
 (defvar rust-builtin-formatting-macros
   '("eprint"
@@ -470,6 +480,8 @@ Does not match type annotations of the form \"foo::<\"."
      ("\\?" . 'rust-question-mark)
      ("\\(&+\\)\\(?:'\\(?:\\<\\|_\\)\\|\\<\\|[[({:*_|]\\)"
       1 'rust-ampersand-face)
+     ;; Numbers with type suffix
+     (,rust-number-with-type 1 font-lock-type-face)
      )
 
    ;; Ensure we highlight `Foo` in `struct Foo` as a type.

@@ -1,12 +1,15 @@
 ;;; orderless.el --- Completion style for matching regexps in any order  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Omar Antolín Camarena
+;; Copyright (C) 2021  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
+;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: extensions
-;; Version: 0.6
+;; Version: 0.7
 ;; Homepage: https://github.com/oantolin/orderless
 ;; Package-Requires: ((emacs "26.1"))
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -128,9 +131,6 @@ a list of them."
   :options '(orderless-regexp
              orderless-literal
              orderless-initialism
-             orderless-strict-initialism
-             orderless-strict-leading-initialism
-             orderless-strict-full-initialism
              orderless-prefixes
              orderless-flex))
 
@@ -186,6 +186,7 @@ This is simply `regexp-quote'.")
 If BEFORE is specified, add it to the beginning of the rx
 sequence.  If AFTER is specified, add it to the end of the rx
 sequence."
+  (declare (indent 1))
   (rx-to-string
    `(seq
      ,(or before "")
@@ -199,53 +200,14 @@ sequence."
 This means the characters in COMPONENT must occur in the
 candidate in that order, but not necessarily consecutively."
   (orderless--separated-by '(zero-or-more nonl)
-   (cl-loop for char across component collect char)))
+    (cl-loop for char across component collect char)))
 
 (defun orderless-initialism (component)
   "Match a component as an initialism.
 This means the characters in COMPONENT must occur in the
 candidate, in that order, at the beginning of words."
   (orderless--separated-by '(zero-or-more nonl)
-   (cl-loop for char across component collect `(seq word-start ,char))))
-
-(defun orderless--strict-*-initialism (component &optional anchored)
-  "Match a COMPONENT as a strict initialism, optionally ANCHORED.
-The characters in COMPONENT must occur in the candidate in that
-order at the beginning of subsequent words comprised of letters.
-Only non-letters can be in between the words that start with the
-initials.
-
-If ANCHORED is `start' require that the first initial appear in
-the first word of the candidate.  If ANCHORED is `both' require
-that the first and last initials appear in the first and last
-words of the candidate, respectively."
-  (orderless--separated-by
-   '(seq (zero-or-more alpha) word-end (zero-or-more (not alpha)))
-   (cl-loop for char across component collect `(seq word-start ,char))
-   (when anchored '(seq (group buffer-start) (zero-or-more (not alpha))))
-   (when (eq anchored 'both)
-     '(seq (zero-or-more alpha) word-end (zero-or-more (not alpha)) eol))))
-
-(defun orderless-strict-initialism (component)
-  "Match a COMPONENT as a strict initialism.
-This means the characters in COMPONENT must occur in the
-candidate in that order at the beginning of subsequent words
-comprised of letters.  Only non-letters can be in between the
-words that start with the initials."
-  (orderless--strict-*-initialism component))
-
-(defun orderless-strict-leading-initialism (component)
-  "Match a COMPONENT as a strict initialism, anchored at start.
-See `orderless-strict-initialism'.  Additionally require that the
-first initial appear in the first word of the candidate."
-  (orderless--strict-*-initialism component 'start))
-
-(defun orderless-strict-full-initialism (component)
-  "Match a COMPONENT as a strict initialism, anchored at both ends.
-See `orderless-strict-initialism'.  Additionally require that the
-first and last initials appear in the first and last words of the
-candidate, respectively."
-  (orderless--strict-*-initialism component 'both))
+    (cl-loop for char across component collect `(seq word-start ,char))))
 
 (defun orderless-prefixes (component)
   "Match a component as multiple word prefixes.
@@ -253,8 +215,8 @@ The COMPONENT is split at word endings, and each piece must match
 at a word boundary in the candidate.  This is similar to the
 `partial-completion' completion style."
   (orderless--separated-by '(zero-or-more nonl)
-   (cl-loop for prefix in (split-string component "\\>")
-            collect `(seq word-boundary ,prefix))))
+    (cl-loop for prefix in (split-string component "\\>")
+             collect `(seq word-boundary ,prefix))))
 
 (defun orderless-without-literal (component)
   "Match strings that do *not* contain COMPONENT as a literal match."
@@ -508,10 +470,11 @@ string for the completion style."
   (let* ((fn-name (lambda (string) (intern (concat (symbol-name name) string))))
          (try-completion  (funcall fn-name "-try-completion"))
          (all-completions (funcall fn-name "-all-completions"))
-         (doc-fmt "`%s' function for the %s completion style.
-This configures orderless according to the %s completion style and
-delegates to `orderless-%s'.")
-         (fn-doc (lambda (fn) (format doc-fmt fn name name fn))))
+         (doc-fmt "`%s' function for the %s style.
+This function delegates to `orderless-%s'.
+The orderless configuration is locally modified
+specifically for the %s style.")
+         (fn-doc (lambda (fn) (format doc-fmt fn name fn name name))))
   `(progn
      (defun ,try-completion (string table pred point)
        ,(funcall fn-doc "try-completion")
@@ -526,9 +489,6 @@ delegates to `orderless-%s'.")
 
 ;;; Ivy integration
 
-(defvar ivy-regex)
-(defvar ivy-highlight-functions-alist)
-
 ;;;###autoload
 (defun orderless-ivy-re-builder (str)
   "Convert STR into regexps for use with ivy.
@@ -538,6 +498,7 @@ a value in `ivy-re-builders-alist'."
               (orderless-pattern-compiler str))
       ""))
 
+(defvar ivy-regex)
 (defun orderless-ivy-highlight (str)
   "Highlight a match in STR of each regexp in `ivy-regex'.
 This function is for integration of orderless with ivy."
@@ -545,6 +506,7 @@ This function is for integration of orderless with ivy."
 
 ;;;###autoload
 (with-eval-after-load 'ivy
+  (defvar ivy-highlight-functions-alist)
   (add-to-list 'ivy-highlight-functions-alist
                '(orderless-ivy-re-builder . orderless-ivy-highlight)))
 

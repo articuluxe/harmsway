@@ -4,7 +4,7 @@
 
 ;; Maintainer: Nicolas P. Rougier <Nicolas.Rougier@inria.fr>
 ;; URL: https://github.com/rougier/nano-theme
-;; Version: 0.2.1
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: theme, dark, light
 
@@ -94,6 +94,11 @@
 
 ;;; NEWS:
 
+;; Version 0.3.0
+;; - Added italic (Victor Mono)
+;; - Less salient critical face
+;; - Added orderles, marginalia & corfu faces
+
 ;; Version 0.2.1
 ;; - Added nano-modeline faces
 
@@ -112,7 +117,7 @@
   :group 'convenience)
 
 (defgroup nano-theme nil
-  "Theme"
+  "N Λ N O Theme"
   :group 'nano)
 
 (defgroup nano-theme-light nil
@@ -159,6 +164,14 @@
   "Default proportional serif font (Roboto Slab Light, 14pt)."
   :group 'nano-theme-fonts)
 
+(defface nano-italic
+  '((t (:family "Victor Mono"
+        :slant italic
+        :height 140
+        :weight regular)))
+  "Default italic font (Victor Mono Italic Light, 14pt)."
+  :group 'nano-theme-fonts)
+
 (defcustom nano-light-foreground "#37474F" ;; Blue Grey / L800
   "Default foreground color"
   :type 'color :group 'nano-theme-light)
@@ -175,7 +188,7 @@
   "Subtle color is used to suggest a physical area on the screen."
   :type 'color :group 'nano-theme-light)
 
-(defcustom nano-light-faded "#B0BEC5" ;; Blue Grey / L200
+(defcustom nano-light-faded "#90A4AE" ;; Blue Grey / L300
   "Faded face is for information that are less important."
   :type 'color :group 'nano-theme-light)
 
@@ -390,7 +403,7 @@ background color that is barely perceptible."
                  '(menu-bar-lines . 0))))
 
   ;; Line spacing (in pixels)
-  (setq line-spacing 0)
+  ;; (setq line-spacing 0)
   
   ;; Vertical window divider
   (setq window-divider-default-right-width 24)
@@ -463,36 +476,25 @@ background color that is barely perceptible."
   "Load the nano dark theme on current frame."
 
   (interactive)
-  ;; (setq inhibit-frame-set-background-mode nil)
-  ;; (setq frame-background-mode nil)
-  ;; (let ((parent (selected-frame))
-  ;;        (children (frame-list)))
-  ;;    (dolist (child children)
-  ;;      (when (eq (frame-parameter child 'parent-frame) parent)
-  ;;        (with-selected-frame child
-  ;;          (load-theme 'nano-dark t)
-  ;;          (setq frame-background-mode 'dark)))))
-  ;; (set-foreground-color nano-dark-foreground)
-  ;; (set-background-color nano-dark-background)
-  (load-theme 'nano-dark t)
-  (setq frame-background-mode 'dark))
+   ;; (let ((parent (selected-frame))
+   ;;        (children (frame-list)))
+   ;;    (dolist (child children)
+   ;;      (when (eq (frame-parameter child 'parent-frame) parent)
+   ;;        (with-selected-frame child
+   ;;          (setq frame-background-mode 'dark)
+   ;;          (set-foreground-color nano-dark-foreground)
+   ;;          (set-background-color nano-dark-background)
+   ;;          (frame-set-background-mode child)
+   ;;          (load-theme 'nano-dark t)))))
+  ;;  (set-foreground-color nano-dark-foreground)
+  ;;   (set-background-color nano-dark-background)
+  (load-theme 'nano-dark t))
 
 (defun nano-light ()
   "Load the nano light theme on current frame."
 
   (interactive)
-  ;; (setq inhibit-frame-set-background-mode t)
-  ;; (setq frame-background-mode nil)
-  ;; (let ((parent (selected-frame))
-  ;;       (children (frame-list)))
-  ;;   (dolist (child children)
-  ;;     (when (eq (frame-parameter child 'parent-frame) parent)
-  ;;       (with-selected-frame child
-  ;;         (load-theme 'nano-light t)))))
-    ;; (set-foreground-color nano-light-foreground)
-    ;; (set-background-color nano-light-background)
-    (load-theme 'nano-light t)
-    (setq frame-background-mode 'light))
+  (load-theme 'nano-light t))
 
 (defvar nano-theme--current 'light
   "Current nano theme")
@@ -509,29 +511,30 @@ background color that is barely perceptible."
 (defun nano-theme (mode)
   "Apply the nano theme according to MODE which can be 'dark or 'light."
 
+  ;; (message (format "Theme applied: %s" mode))
+  
   (let ((light     '((background light)))
         (dark      '((background dark)))
         (theme      (if (eq mode 'dark)
                        'nano-dark
                       'nano-light)))
-
-
     
-    ;; (add-to-list 'default-frame-alist `(background-mode . ,mode))
-    (add-to-list 'default-frame-alist `(background-color . ,(if (eq mode 'light)
-                                                                nano-light-background
-                                                              nano-dark-background)))
-    (add-to-list 'default-frame-alist `(foreground-color . ,(if (eq mode 'light)
-                                                                nano-light-foreground
-                                                              nano-dark-foreground)))
+     (add-to-list 'default-frame-alist `(background-mode . ,mode))
+     (add-to-list 'default-frame-alist `(background-color . ,(if (eq mode 'light)
+                                                                 nano-light-background
+                                                               nano-dark-background)))
+     (add-to-list 'default-frame-alist `(foreground-color . ,(if (eq mode 'light)
+                                                                 nano-light-foreground
+                                                               nano-dark-foreground)))
 
     (custom-set-variables '(widget-image-enable nil)
                           '(x-underline-at-descent-line t))
     
-    (set-frame-parameter nil 'background-mode mode)
-;;    (setq frame-background-mode mode)
-;;    (setq nano-theme--current mode)
-;;    (frame-set-background-mode (selected-frame))
+    ;; (set-frame-parameter nil 'background-mode mode)
+    (setq frame-background-mode mode)
+    (frame-set-background-mode (selected-frame))
+    ;; (setq nano-theme--current mode)
+    ;; (frame-set-background-mode (selected-frame))
 
     (when nano-fonts-use
         (custom-theme-set-faces theme
@@ -543,6 +546,16 @@ background color that is barely perceptible."
                              :weight     ,(face-attribute 'nano-mono :weight)
                              :height     ,(face-attribute 'nano-mono :height)
                              :family     ,(face-attribute 'nano-mono :family)))))
+         `(italic ((,light (:foreground ,nano-light-foreground
+                             :weight     ,(face-attribute 'nano-italic :weight)
+                             :height     ,(face-attribute 'nano-italic :height)
+                             :slant      ,(face-attribute 'nano-italic :slant)
+                             :family     ,(face-attribute 'nano-italic :family)))
+                    (,dark  (:foreground ,nano-dark-foreground
+                             :weight     ,(face-attribute 'nano-italic :weight)
+                             :height     ,(face-attribute 'nano-italic :height)
+                             :slant      ,(face-attribute 'nano-italic :slant)
+                             :family     ,(face-attribute 'nano-italic :family)))))
          `(nano-strong ((,light (:weight normal ))
                         (,dark  (:weight normal ))))
          `(variable-pitch  ((t (:weight ,(face-attribute 'nano-sans :weight)
@@ -556,15 +569,15 @@ background color that is barely perceptible."
          `(nano-strong ((,light (:weight bold :foreground ,nano-light-strong))
                         (,dark  (:weight bold :foreground ,nano-dark-strong))))))
 
-  
-  (custom-theme-set-faces theme
+    
+    (custom-theme-set-faces theme
    
    ;; --- Base ---------------------------------------------------------   
 
-   `(default ((,light  (:background ,nano-light-background
-                        :foreground ,nano-light-foreground))
-              (,dark  (:background ,nano-dark-background
-                       :foreground ,nano-dark-foreground))))
+;;   `(default ((,light  (:background ,nano-light-background
+;;                        :foreground ,nano-light-foreground))
+;;              (,dark  (:background ,nano-dark-background
+;;                       :foreground ,nano-dark-foreground))))
 
    `(cursor ((,light (:foreground ,nano-light-background
                       :background ,nano-light-foreground))
@@ -627,17 +640,17 @@ background color that is barely perceptible."
                     (,dark  (:foreground ,nano-dark-background
                              :background ,nano-dark-popout))))
    
-   `(nano-critical ((,light (:foreground ,nano-light-background
-                             :background ,nano-light-critical))
-                    (,dark  (:foreground ,nano-dark-background
-                             :background ,nano-dark-critical))))
+   `(nano-critical ((,light (:foreground ,nano-light-critical
+                             :weight normal))
+                    (,dark  (:foreground ,nano-dark-critical
+                             :weight normal))))
 
-   `(nano-critical-i ((,light (:foreground ,nano-light-critical
-                            ;; :background ,nano-light-background
-                                           ))
-                      (,dark  (:foreground ,nano-dark-critical
-                   ;; :background ,nano-dark-background
-                    ))))
+   `(nano-critical-i ((,light (:foreground ,nano-light-background
+                               :background ,nano-light-critical
+                               :weight normal))
+                      (,dark  (:foreground ,nano-dark-background
+                               :background ,nano-dark-critical
+                               :weight normal))))
    
    ;; --- Header & mode line -------------------------------------------
    
@@ -681,7 +694,7 @@ background color that is barely perceptible."
    ;; '(italic                      ((t (:slant italic))))
    '(italic                      ((t (:inherit nano-faded))))
    '(bold-italic                 ((t (:inherit nano-strong))))
-   '(region                      ((t (:inherit nano-subtle))))
+   '(region                      ((t (:inherit nano-subtle :distant-foreground nil))))
    '(fringe                      ((t (:inherit (nano-faded)))))
    '(hl-line                     ((t (:inherit highlight))))
    '(link                        ((t (:inherit nano-salient))))
@@ -737,14 +750,14 @@ background color that is barely perceptible."
    
    ;; --- Line numbers -------------------------------------------------
    '(line-number                  ((t (:inherit nano-faded))))
-   '(line-number-current-line     ((t (:inherit default))))
+   '(line-number-current-line     ((t (:inherit nil))))
    `(line-number-major-tick       ((t (:inherit nano-faded))))
    '(line-number-minor-tick       ((t (:inherit nano-faded))))
    
    ;; --- Font lock ----------------------------------------------------
    '(font-lock-comment-face        ((t (:inherit nano-faded))))
    '(font-lock-doc-face            ((t (:inherit nano-faded))))
-   '(font-lock-string-face         ((t (:inherit nano-popout))))
+   '(font-lock-string-face         ((t (:inherit nano-faded))))
    '(font-lock-constant-face       ((t (:inherit nano-salient))))
    '(font-lock-warning-face        ((t (:inherit nano-popout))))
    '(font-lock-function-name-face  ((t (:inherit nano-strong))))
@@ -780,6 +793,9 @@ background color that is barely perceptible."
     '(company-scrollbar-fg                 ((t (:inherit nano-default-i))))
     '(company-scrollbar-bg                 ((t (:inherit nano-faded-i))))
 
+    '(company-tooltip-scrollbar-thumb      ((t (:inherit nano-default-i))))
+    '(company-tooltip-scrollbar-track      ((t (:inherit nano-faded-i))))
+    
     '(company-tooltip-common               ((t (:inherit nano-strong))))
     '(company-tooltip-common-selection     ((t (:inherit nano-salient-i
                                                 :weight normal))))
@@ -847,17 +863,20 @@ background color that is barely perceptible."
    '(nano-modeline-active-name          ((t (:inherit (nano-strong nano-modeline-active)))))
    '(nano-modeline-active-primary       ((t (:inherit (nano-default nano-modeline-active)))))
    '(nano-modeline-active-secondary     ((t (:inherit (nano-faded nano-modeline-active)))))
-   '(nano-modeline-active-status-RO     ((t (:inherit nano-popout-i))))
-   '(nano-modeline-active-status-RW     ((t (:inherit nano-faded-i))))
-   '(nano-modeline-active-status-**     ((t (:inherit nano-critical))))      
+   '(nano-modeline-active-status-RO     ((t (:inherit (nano-subtle nano-strong)))))
+   '(nano-modeline-active-status-RW     ((t (:inherit (nano-faded-i nano-strong)))))
+   '(nano-modeline-active-status-**     ((t (:inherit (nano-popout-i nano-strong)))))
 
    '(nano-modeline-inactive             ((t (:inherit nano-subtle))))
    '(nano-modeline-inactive-name        ((t (:inherit (nano-faded nano-modeline-inactive)))))
    '(nano-modeline-inactive-primary     ((t (:inherit (nano-faded nano-modeline-inactive)))))
    '(nano-modeline-inactive-secondary   ((t (:inherit (nano-faded nano-modeline-inactive)))))
-   '(nano-modeline-inactive-status-RO   ((t (:inherit (nano-popout nano-modeline-inactive)))))
-   '(nano-modeline-inactive-status-RW   ((t (:inherit (nano-faded nano-modeline-inactive)))))
-   '(nano-modeline-inactive-status-**   ((t (:inherit (nano-critical-i nano-modeline-inactive)))))
+   '(nano-modeline-inactive-status-RO   ((t (:inherit (nano-faded
+                                                       nano-strong nano-modeline-inactive)))))
+   '(nano-modeline-inactive-status-RW   ((t (:inherit (nano-faded
+                                                       nano-strong nano-modeline-inactive)))))
+   '(nano-modeline-inactive-status-**   ((t (:inherit (nano-popout
+                                                       nano-strong nano-modeline-inactive)))))
 
    ;; --- nano agenda ---------------------------------------------------------
    '(nano-agenda-button               ((t (:inherit (nano-faded)))))
@@ -906,6 +925,22 @@ background color that is barely perceptible."
    '(diff-refine-changed            ((t (:inherit nano-popout))))
    '(diff-refine-removed            ((t (:inherit nano-faded
                                          :strike-through t))))
+
+   ;; --- Corfu --------------------------------------------------------
+   '(corfu-annotations              ((t (:inherit nano-faded))))
+   '(corfu-bar                      ((t (:inherit nano-default-i))))
+   '(corfu-border                   ((t (:inherit nano-default-i))))
+   '(corfu-current                  ((t (:inherit highlight))))
+   '(corfu-default                  ((t (:inherit nano-subtle))))
+   '(corfu-deprecated               ((t (:inherit nano-faded))))
+   '(corfu-echo                     ((t (:inherit nano-faded))))
+
+   ;; --- Orderless ----------------------------------------------------
+   '(orderless-match-face-0         ((t (:inherit (nano-salient
+                                                   nano-strong)))))
+   '(orderless-match-face-1         ((t (:inherit (nano-strong)))))
+   '(orderless-match-face-2         ((t (:inherit (nano-strong)))))
+   '(orderless-match-face-3         ((t (:inherit (nano-strong)))))
    
    ;; --- Message ------------------------------------------------------
    '(message-cited-text-1           ((t (:inherit nano-faded))))
@@ -934,8 +969,10 @@ background color that is barely perceptible."
    '(outline-8                      ((t (:inherit nano-strong))))
    
    ;; --- Fly spell ----------------------------------------------------
-   '(flyspell-duplicate             ((t (:inherit nano-popout))))
-   '(flyspell-incorrect             ((t (:inherit nano-popout))))
+   '(flyspell-duplicate             ((t (:inherit (highlight nano-faded)
+                                         :underline t))))
+   '(flyspell-incorrect             ((t (:inherit (highlight nano-faded)
+                                         :underline t))))
 
    ;; --- Org agenda ---------------------------------------------------
    '(org-agenda-calendar-event      ((t (:inherit nano-default))))
@@ -967,7 +1004,7 @@ background color that is barely perceptible."
    '(org-checkbox-statistics-done            ((t (:inherit nano-faded))))
    '(org-checkbox-statistics-todo            ((t (:inherit nano-faded))))
    '(org-clock-overlay                       ((t (:inherit nano-faded))))
-   '(org-code                                ((t (:inherit nano-faded))))
+   '(org-code                                ((t (:inherit nano-default))))
    '(org-column                              ((t (:inherit nano-faded))))
    '(org-column-title                        ((t (:inherit nano-faded))))
    '(org-date                                ((t (:inherit nano-faded))))
@@ -1128,7 +1165,41 @@ background color that is barely perceptible."
    '(gnus-summary-normal-undownloaded       ((t (:inherit nano-faded))))
    '(gnus-summary-normal-unread             ((t (:inherit nano-faded))))
    '(gnus-summary-selected                  ((t (:inherit nano-faded))))
-   
+
+   ;; --- Marginalia ---------------------------------------------------
+   '(marginalia-archive                     ((t (:inherit nano-faded))))
+   '(marginalia-char                        ((t (:inherit nano-faded))))
+   '(marginalia-date                        ((t (:inherit nano-faded))))
+   '(marginalia-documentation               ((t (:inherit nano-faded))))
+   '(marginalia-file-name                   ((t (:inherit nano-faded))))
+   '(marginalia-file-owner                  ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-dir               ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-exec              ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-link              ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-no                ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-other             ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-rare              ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-read              ((t (:inherit nano-faded))))
+   '(marginalia-file-priv-write             ((t (:inherit nano-faded))))
+   '(marginalia-function                    ((t (:inherit nano-faded))))
+   '(marginalia-installed                   ((t (:inherit nano-faded))))
+   '(marginalia-key                         ((t (:inherit nano-faded))))
+   '(marginalia-lighter                     ((t (:inherit nano-faded))))
+   '(marginalia-list                        ((t (:inherit nano-faded))))
+   '(marginalia-mode                        ((t (:inherit nano-faded))))
+   '(marginalia-modified                    ((t (:inherit nano-faded))))
+   '(marginalia-null                        ((t (:inherit nano-faded))))
+   '(marginalia-number                      ((t (:inherit nano-faded))))
+   '(marginalia-off                         ((t (:inherit nano-faded))))
+   '(marginalia-on                          ((t (:inherit nano-faded))))
+   '(marginalia-size                        ((t (:inherit nano-faded))))
+   '(marginalia-string                      ((t (:inherit nano-faded))))
+   '(marginalia-symbol                      ((t (:inherit nano-faded))))
+   '(marginalia-true                        ((t (:inherit nano-faded))))
+   '(marginalia-type                        ((t (:inherit nano-faded))))
+   '(marginalia-value                       ((t (:inherit nano-faded))))
+   '(marginalia-version                     ((t (:inherit nano-faded))))
+
    ;; --- Elfeed -------------------------------------------------------
     '(elfeed-log-date-face                    ((t (:inherit nano-faded))))
     '(elfeed-log-info-level-face            ((t (:inherit nano-default))))
@@ -1173,6 +1244,8 @@ background color that is barely perceptible."
     '(rst-reference                         ((t (:inherit nano-salient))))
     '(rst-transition                        ((t (:inherit nano-default))))
 
+
+    
     ;; --- Markdown ----------------------------------------------------
     '(markdown-blockquote-face              ((t (:inherit nano-default))))
     '(markdown-bold-face                     ((t (:inherit nano-strong))))

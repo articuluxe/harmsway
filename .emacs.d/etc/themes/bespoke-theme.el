@@ -33,7 +33,6 @@
 
 ;;;; Requirements
 (require 'bespoke-themes)
-;; (require 'bespoke-modeline)
 
 (defvar evil-emacs-state-cursor)
 (defvar evil-normal-state-cursor)
@@ -172,7 +171,7 @@ secondary information."
   "Subtle face is used to suggest a physical area on the screen.
 It's main use is for differentiating regions without drawing a
 significant amount of attention. It is also closely related in
-shade to modeline color and to the highlight color."
+shade to the modeline color and to the highlight color."
   :group 'faces)
 
 ;;;;; Accent faces
@@ -264,7 +263,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(link                                          ((,class :foreground ,bespoke-salient)))
    `(region                                        ((,class :background ,bespoke-highlight)))
    `(fringe                                        ((,class :foreground ,bespoke-faded :weight light)))
-   `(highlight                                     ((,class :background ,bespoke-highlight)))
+   `(highlight                                     ((,class :background ,bespoke-subtle)))
    `(lazy-highlight                                ((,class :foreground ,bespoke-green)))
    `(trailing-whitespace                           ((,class :foreground ,bespoke-faded)))
    `(show-paren-match                              ((,class :foreground ,bespoke-yellow :background ,bespoke-green)))
@@ -300,6 +299,22 @@ subtlety stand out from the mode line and other adjacent faces."
    `(bookmark-menu-heading                         ((,class :foreground ,bespoke-strong)))
    `(bookmark-menu-bookmark                        ((,class :foreground ,bespoke-salient)))
    `(bookmark-face                                 ((,class :foreground ,bespoke-salient)))
+
+;;;;; Childframes
+;;;;;; Mini-Frame
+   `(mini-popup-background ((,class :background ,bespoke-subtle)))
+   `(mini-popup-border     ((,class :background ,bespoke-subtle)))
+
+;;;;;; Mini-Popup (Childframe)
+   `(mini-popup-background ((,class :background ,bespoke-subtle)))
+   `(mini-popup-border     ((,class :background ,bespoke-subtle)))
+
+;;;;;; Posframe
+
+   `(which-key-posframe                           ((,class :background ,bespoke-subtle)))
+   `(which-key-posframe-border                    ((,class :background ,bespoke-subtle)))
+   `(transient-posframe-border                    ((,class :background ,bespoke-subtle)))
+   `(transient-posframe                           ((,class :foreground ,bespoke-strong :background ,bespoke-subtle)))
 
 ;;;;; Completion/Narrowing
 
@@ -391,7 +406,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(selectrum-quick-keys-highlight                ((,class :foreground ,bespoke-popout)))
 
 ;;;;;; Vertico
-   `(vertico-current                               ((,class :weight bold :background ,bespoke-highlight)))
+   `(vertico-current                               ((,class :weight regular :background ,bespoke-highlight)))
 
 ;;;;;; Orderless
 
@@ -688,12 +703,20 @@ subtlety stand out from the mode line and other adjacent faces."
    `(message-mml                                   ((,class :foreground ,bespoke-popout)))
    `(message-separator                             ((,class :foreground ,bespoke-faded)))
 
-;;;;; Mini-Popup (Childframe)
-   `(mini-popup-background ((,class :background ,bespoke-subtle)))
-   `(mini-popup-border     ((,class :background ,bespoke-subtle)))
+;;;;; Meow
+   `(meow-normal-cursor         ((,class :background ,bespoke-yellow)))
+   `(meow-insert-cursor         ((,class :background ,bespoke-critical)))
+   `(meow-keypad-cursor         ((,class :background ,bespoke-brown)))
+   `(meow-motion-cursor         ((,class :background ,bespoke-green)))
+   `(meow-kmacro-cursor         ((,class :background ,bespoke-salient)))
+   `(meow-beacon-cursor         ((,class :background ,bespoke-yellow)))
+   `(meow-beacon-fake-selection ((,class :background ,bespoke-modeline)))
+   `(meow-beacon-fake-cursor    ((,class :background ,bespoke-yellow)))
 
 ;;;;; Mode line/Header line
 ;;;;;; Conditional Loading
+   ;; NOTE: these settings are specifically for bespoke-modeline
+   ;; See https://github.com/mclear-tools/bespoke-modeline
    ;; Mode line settings based on position
    (when (fboundp 'bespoke-modeline)
      (when (eq bespoke-modeline-position 'top)
@@ -741,7 +764,7 @@ subtlety stand out from the mode line and other adjacent faces."
                                      :overline nil
                                      :underline nil)))))
 
-   ;; no underline in terminal
+   ;; No underline in terminal
    ;; FIXME: for some reason this seems necessary
    ;; to disable underline in terminal
    (when (not (display-graphic-p))
@@ -872,7 +895,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(mu4e-footer-face                             ((,class :foreground ,bespoke-faded)))
    `(mu4e-forwarded-face                          ((,class :inherit    default)))
    `(mu4e-header-face                             ((,class :inherit    default)))
-   `(mu4e-header-highlight-face                   ((,class :foreground ,bespoke-subtle)))
+   `(mu4e-header-highlight-face                   ((,class :inherit highlight)))
    `(mu4e-header-key-face                         ((,class :foreground ,bespoke-strong)))
    `(mu4e-header-marks-face                       ((,class :foreground ,bespoke-faded)))
    `(mu4e-header-title-face                       ((,class :foreground ,bespoke-strong)))
@@ -883,15 +906,15 @@ subtlety stand out from the mode line and other adjacent faces."
    `(mu4e-moved-face                              ((,class :foreground ,bespoke-faded)))
    `(mu4e-ok-face                                 ((,class :foreground ,bespoke-faded)))
    `(mu4e-region-code                             ((,class :foreground ,bespoke-faded)))
-   `(mu4e-replied-face                            ((,class :foreground ,bespoke-salient)))
+   `(mu4e-replied-face                            ((,class :foreground ,bespoke-popout)))
    `(mu4e-special-header-value-face               ((,class :inherit    default)))
    `(mu4e-system-face                             ((,class :foreground ,bespoke-faded)))
    `(mu4e-title-face                              ((,class :foreground ,bespoke-strong)))
    `(mu4e-trashed-face                            ((,class :foreground ,bespoke-faded)))
-   `(mu4e-unread-face                             ((,class :foreground ,bespoke-strong)))
+   `(mu4e-unread-face                             ((,class :inherit    bold)))
    `(mu4e-url-number-face                         ((,class :foreground ,bespoke-faded)))
    `(mu4e-view-body-face                          ((,class :inherit    default)))
-   `(mu4e-warning-face                            ((,class :foreground ,bespoke-faded)))
+   `(mu4e-warning-face                            ((,class :foreground ,bespoke-critical)))
 
 ;;;;; Org-agenda
    `(org-agenda-calendar-event                    ((,class :inherit default)))
@@ -921,6 +944,8 @@ subtlety stand out from the mode line and other adjacent faces."
    `(org-checkbox                                 ((,class :foreground ,bespoke-faded)))
    `(org-checkbox-statistics-done                 ((,class :foreground ,bespoke-faded)))
    `(org-checkbox-statistics-todo                 ((,class :foreground ,bespoke-faded)))
+   `(org-cite                                     ((,class :foreground ,bespoke-salient)))
+   `(org-cite-key                                 ((,class :foreground ,bespoke-green)))
    `(org-clock-overlay                            ((,class :foreground ,bespoke-faded)))
    `(org-code                                     ((,class :foreground ,bespoke-faded)))
    `(org-column                                   ((,class :foreground ,bespoke-faded)))
@@ -930,7 +955,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(org-default                                  ((,class :foreground ,bespoke-faded)))
    `(org-document-info                            ((,class :foreground ,bespoke-faded :weight light)))
    `(org-document-info-keyword                    ((,class :foreground ,bespoke-faded :weight light)))
-   `(org-document-title                           ((,class :inherit ,(if bespoke-set-variable-pitch 'variable-pitch 'default) :height 1.25 :foreground ,bespoke-salient)))
+   `(org-document-title                           ((,class :inherit ,(if bespoke-set-variable-pitch 'variable-pitch 'default) :height 1.1 :foreground ,bespoke-salient)))
    `(org-done                                     ((,class :foreground ,bespoke-faded :strike-through t)))
    `(org-drawer                                   ((,class :foreground ,bespoke-faded :weight light)))
    `(org-ellipsis                                 ((,class :foreground ,bespoke-faded)))
@@ -974,7 +999,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(org-warning                                  ((,class :foreground ,bespoke-popout)))
 
 ;;;;; Outline
-   `(outline-minor-0      ((,class :background ,bespoke-subtle)))
+   `(outline-minor-0      ((,class :background ,bespoke-highlight)))
    `(outline-1            ((,class :inherit ,(if bespoke-set-variable-pitch 'variable-pitch 'default) :weight normal :foreground ,bespoke-green)))
    `(outline-2            ((,class :inherit ,(if bespoke-set-variable-pitch 'variable-pitch 'default) :weight normal :foreground ,bespoke-blue)))
    `(outline-3            ((,class :inherit outline-1)))
@@ -1022,13 +1047,6 @@ subtlety stand out from the mode line and other adjacent faces."
    `(term-color-magenta                           ((,class :foreground ,bespoke-popout)))
    `(term-color-red                               ((,class :foreground ,bespoke-critical)))
    `(term-color-yellow                            ((,class :foreground ,bespoke-yellow)))
-
-;;;;; Posframe
-
-   `(which-key-posframe                           ((,class :background ,bespoke-subtle)))
-   `(which-key-posframe-border                    ((,class :background ,bespoke-subtle)))
-   `(transient-posframe-border                    ((,class :background ,bespoke-subtle)))
-   `(transient-posframe                           ((,class :foreground ,bespoke-strong :background ,bespoke-subtle)))
 
 ;;;;; Window Divs
    ;; divide windows more attractively

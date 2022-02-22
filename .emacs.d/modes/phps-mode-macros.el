@@ -1,6 +1,6 @@
 ;;; phps-mode-macros.el --- Macros for major mode -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2021  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2022  Free Software Foundation, Inc.
 
 ;;; Commentary:
 
@@ -12,10 +12,10 @@
   nil
   "Debug messages during macro expansion time, default nil.")
 
-(defmacro phps-mode-debug-message (&rest message)
-  "Display debug MESSAGE when debug flag is on."
+(defmacro phps-mode-debug-message (&rest code)
+  "Run CODE only when debug flag is on."
   `(when ,phps-mode-macrotime-debug
-    ,@message))
+    ,@code))
 
 (provide 'phps-mode-macros)
 ;;; phps-mode-macros.el ends here

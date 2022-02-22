@@ -42,8 +42,6 @@
   (samuraiRed		"#E82424" "#585858")
   (roninYellow		"#FF9E3B" "#585858")
 
-  (roninYellow		"#FF9E3B" "#585858")
-
   (waveAqua1		"#6A9589" "#6a9589")
   (dragonBlue		"#658594" "#658594")
   (fujiGray         "#727169" "#717C7C")
@@ -72,10 +70,10 @@
   (button                                        (:foreground waveAqua2))
   (child-frame                                   (:background sumiInk-0 :foreground sumiInk-0))
   (child-frame-border                            (:background sumiInk-0 :foreground sumiInk-0))
-  (cursor                                        (:background autumnRed :foreground sumiInk-0))
+  (cursor                                        (:background lightBlue :foreground sumiInk-0))
   (default                                       (:background sumiInk-1 :foreground fujiWhite ))
   (error                                         (:foreground samuraiRed))
-  (fringe                                        (:inherit 'default))
+  (fringe                                        (:foreground sumiInk-3))
   (glyph-face                                    (:background sumiInk-4))
   (glyphless-char                                (:foreground sumiInk-4))
   (header-line                                   (:background sumiInk-0))
@@ -94,7 +92,7 @@
   (mode-line-highlight                           (:foreground boatYellow2))
   (mode-line-buffer-id                           (:foreground waveAqua2 :bold t))
   (numbers                                       (:background sakuraPink))
-  (region                                        (:background waveBlue-1))
+  (region                                        (:background waveBlue-2))
   (separator-line                                (:background sumiInk-0))
   (shadow                                        (:background sumiInk-0))
   (success                                       (:foreground waveAqua2))
@@ -103,19 +101,19 @@
   (window-border                                 (:background sumiInk-1))
   (window-divider-first-pixel                    (:background sumiInk-1))
   (window-divider-last-pixel                     (:background sumiInk-1))
+  (hi-yellow                                     (:background carpYellow :foreground sumiInk-1))
 
   ;; Font lock
   (font-lock-type-face                           (:foreground waveAqua2))
   (font-lock-regexp-grouping-backslash           (:foreground boatYellow2))
   (font-lock-keyword-face                        (:bold t :foreground oniViolet))
   (font-lock-warning-face                        (:foreground roninYellow))
-  (font-lock-constant-face                       (:foreground carpYellow))
   (font-lock-string-face                         (:foreground springGreen))
   (font-lock-builtin-face                        (:foreground springBlue))
   (font-lock-reference-face                      (:foreground peachRed))
-  (font-lock-constant-face                       (:foreground surimiOrange))
+  (font-lock-constant-face                       (:foreground carpYellow))
   (font-lock-function-name-face                  (:foreground crystalBlue))
-  (font-lock-variable-name-face                  (:foreground peachRed))
+  (font-lock-variable-name-face                  (:foreground waveRed))
   (font-lock-negation-char-face                  (:foreground peachRed))
   (font-lock-comment-face                        (:foreground fujiGray))
   (font-lock-comment-delimiter-face              (:foreground fujiGray))
@@ -125,7 +123,6 @@
   (elisp-shorthand-font-lock-face                (:foreground fujiWhite))
 
   (info-xref                                     (:foreground carpYellow))
-  (highlight-quoted-symbol                       (:foreground springGreen))
   (minibuffer-prompt-end                         (:foreground fujiWhite :background sumiInk-0))
   (minibuffer-prompt                             (:foreground fujiWhite :background sumiInk-0))
   (epa-mark                                      (:foreground waveRed))
@@ -144,8 +141,8 @@
   ;; Doom visual state
   (doom-modeline-evil-motion-state               (:foreground lightBlue))
   (doom-modeline-evil-emacs-state                (:foreground crystalBlue))
-  (doom-modeline-evil-insert-state               (:foreground springViolet2))
-  (doom-modeline-evil-normal-state               (:foreground fujiWhite))
+  (doom-modeline-evil-insert-state               (:foreground roninYellow))
+  (doom-modeline-evil-normal-state               (:foreground lightBlue))
   (doom-modeline-evil-visual-state               (:foreground springBlue))
   (doom-modeline-evil-replace-state              (:foreground peachRed))
   (doom-modeline-evil-operator-state             (:foreground crystalBlue))
@@ -241,19 +238,22 @@
   (rainbow-delimiters-depth-9-face               (:foreground springViolet2))
 
   ;; show-paren
-  (show-paren-match                              (:background surimiOrange :foreground sumiInk-0 :bold t))
-  (show-paren-match-expression	                 (:background surimiOrange :foreground sumiInk-0 :bold t))
+  (show-paren-match                              (:background waveAqua1 :foreground sumiInk-0 :bold t))
+  (show-paren-match-expression	                 (:background waveAqua1 :foreground sumiInk-0 :bold t))
   (show-paren-mismatch                           (:background peachRed :foreground old-white))
   (tooltip                                       (:background sumiInk-4))
   
   ;; company-box
-  (company-tooltip                               (:background sumiInk-0))
   (company-box                                   (:background sumiInk-0))
+  (company-tooltip                               (:background sumiInk-0))
   (company-tooltip-common                        (:foreground carpYellow))
+  (company-tooltip-quick-access                  (:foreground roninYellow))
+  (company-tooltip-scrollbar-thumb               (:background autumnRed))
+  (company-tooltip-scrollbar-track               (:background sumiInk-2))
   (company-tooltip-search                        (:background peachRed :foreground sumiInk-0 :distant-foreground fujiWhite))
-  (company-tooltip-selection                     (:background comet :foreground peachRed :bold t))
+  (company-tooltip-selection                     (:background waveBlue-2 :foreground roninYellow :bold t))
   (company-tooltip-mouse                         (:background peachRed :foreground sumiInk-0 :distant-foreground fujiWhite))
-  (company-tooltip-annotation                    (:foreground waveAqua2))
+  (company-tooltip-annotation                    (:foreground oniViolet))
   (company-scrollbar-bg                          (:inherit 'tooltip))
   (company-scrollbar-fg                          (:background peachRed))
   (company-preview                               (:foreground carpYellow))
@@ -264,15 +264,18 @@
   ;; flycheck
   (flycheck-posframe-background-face             (:background sumiInk-0))
   (flycheck-posframe-face                        (:background sumiInk-0))
-  (flycheck-posframe-info-face                   (:background sumiInk-0 :foreground lightBlue))
-  (flycheck-posframe-warning-face                (:background sumiInk-0 :foreground carpYellow))
-  (flycheck-posframe-error-face                  (:background sumiInk-0 :foreground springViolet2))
-  (flycheck-fringe-warning                       (:inerit 'warning))
-  (flycheck-fringe-error                         (:inherit 'error))
-  (flycheck-fringe-info                          (:foreground waveAqua1))
-  (flycheck-error-list-warning                   (:inherit 'warning :bold t))
-  (flycheck-error-list-error                     (:inherit 'error :bold t))
+  (flycheck-posframe-info-face                   (:background sumiInk-0 :foreground autumnGreen))
+  (flycheck-posframe-warning-face                (:background sumiInk-0 :foreground lightBlue))
+  (flycheck-posframe-error-face                  (:background sumiInk-0 :foreground samuraiRed))
+  (flycheck-fringe-warning                       (:foreground lightBlue))
+  (flycheck-fringe-error                         (:foreground samuraiRed))
+  (flycheck-fringe-info                          (:foreground autumnGreen))
+  (flycheck-error-list-warning                   (:foreground roninYellow :bold t))
+  (flycheck-error-list-error                     (:foreground samuraiRed :bold t))
   (flycheck-error-list-info                      (:foreground waveAqua1 :bold t))
+  (flycheck-inline-error                         (:foreground samuraiRed :background winterRed :italic t :height 128))
+  (flycheck-inline-info                          (:foreground lightBlue :background winterBlue :italic t :height 128))
+  (flycheck-inline-warning                       (:foreground roninYellow :background winterYellow :italic t :height 128))
 
   ;; indent dots
   (highlight-indent-guides-character-face        (:foreground sumiInk-3))
@@ -283,6 +286,12 @@
   (highlight-indent-guides-even-face             (:foreground sumiInk-2))
   (highlight-indent-guides-odd-face              (:foreground comet))
 
+  ;;
+  (highlight-operators-face                      (:foreground boatYellow2))
+  (highlight-quoted-symbol                       (:foreground springGreen))
+  (highlight-numbers-face                        (:foreground sakuraPink))
+  (highlight-symbol-face                         (:background waveBlue-1 :foreground lightBlue))
+  
   ;; ivy
   (ivy-current-match                             (:background crystalBlue :foreground sumiInk-0 :bold t))
   (ivy-action                                    (:background nil :foreground fujiWhite))
@@ -310,7 +319,7 @@
   (treemacs-git-renamed-face		   	 (:foreground fujiWhite))
   (treemacs-git-modified-face		   	 (:foreground springGreen))
 
-  ;; tree-sitter 
+  ;; tree-sitter
   (tree-sitter-hl-face:constant                  (:background peachRed))
   (tree-sitter-hl-face:constant.builtin          (:background peachRed))
   (tree-sitter-hl-face:function.call             (:background springViolet2))
@@ -400,22 +409,30 @@
   (hydra-face-teal                               (:foreground lightBlue))
 
   ;; centaur-tabs
-  (centaur-tabs-active-bar-face                  (:background sumiInk-1 :foreground fujiWhite))
+  (centaur-tabs-active-bar-face                  (:background springBlue :foreground fujiWhite))
   (centaur-tabs-selected                         (:background sumiInk-1 :foreground fujiWhite :bold t))
   (centaur-tabs-selected-modified                (:background sumiInk-1 :foreground fujiWhite))
-  (centaur-tabs-modified-marker-selected         (:background sumiInk-1 :foreground fujiWhite))
+  (centaur-tabs-modified-marker-selected         (:background sumiInk-1 :foreground autumnYellow))
   (centaur-tabs-close-selected                   (:inherit 'centaur-tabs-selected))
   (tab-line                                      (:background sumiInk-0))
 
-  (centaur-tabs-unselected                       (:background sumiInk-0 :foreground fujiGray))
+  (centaur-tabs-unselected                       (:background sumiInk-0 :foreground sumiInk-4))
   (centaur-tabs-unselected-modified              (:background sumiInk-0 :foreground peachRed))
-  (centaur-tabs-modified-marker-unselected       (:background sumiInk-0 :foreground fujiGray))
-  (centaur-tabs-close-unselected                 (:background sumiInk-0 :foreground fujiGray))
+  (centaur-tabs-modified-marker-unselected       (:background sumiInk-0 :foreground sumiInk-4))
+  (centaur-tabs-close-unselected                 (:background sumiInk-0 :foreground sumiInk-4))
 
   (centaur-tabs-close-mouse-face                 (:background nil :foreground peachRed))
-  (centaur-tabs-default                          (:background sumiInk-0))
+  (centaur-tabs-default                          (:background roninYellow ))
   (centaur-tabs-name-mouse-face                  (:foreground springBlue :bold t))
-   
+
+  (git-gutter:added                              (:foreground springBlue :background winterBlue))
+  (git-gutter:deleted                            (:foreground peachRed :background winterRed))
+  (git-gutter:modified                           (:inherit 'git-gutter:added :foreground comet))
+
+  (diff-hl-margin-change                         (:foreground springBlue :background winterBlue))
+  (diff-hl-margin-delete                         (:foreground peachRed :background winterRed))
+  (diff-hl-margin-insert                         (:foreground comet :background winterBlue))
+  
  ))
 
 ;;;###autoload

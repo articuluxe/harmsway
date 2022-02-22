@@ -1,6 +1,6 @@
 ;;; magit-margin.el --- margins in Magit buffers  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(require 'magit-section)
+(require 'magit-base)
 (require 'magit-transient)
 (require 'magit-mode)
 
@@ -77,6 +77,9 @@ does not carry to other options."
   (setcar magit-buffer-margin (not (magit-buffer-margin-p)))
   (magit-set-buffer-margin))
 
+(defvar magit-margin-default-time-format nil
+  "See https://github.com/magit/magit/pull/4605.")
+
 (defun magit-cycle-margin-style ()
   "Cycle style used for the Magit margin."
   (interactive)
@@ -87,7 +90,8 @@ does not carry to other options."
         (pcase (cadr magit-buffer-margin)
           (`age 'age-abbreviated)
           (`age-abbreviated
-           (let ((default (cadr (symbol-value (magit-margin-option)))))
+           (let ((default (or magit-margin-default-time-format
+                              (cadr (symbol-value (magit-margin-option))))))
              (if (stringp default) default "%Y-%m-%d %H:%M ")))
           (_ 'age)))
   (magit-set-buffer-margin nil t))

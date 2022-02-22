@@ -1,6 +1,6 @@
 ;;; reveal-in-folder.el --- Reveal current file in folder  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2019  Shen, Jen-Chieh
+;; Copyright (C) 2019-2022  Shen, Jen-Chieh
 ;; Created date 2019-11-06 23:14:19
 
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
@@ -64,11 +64,11 @@
      ;; Windows
      ((memq system-type '(cygwin windows-nt ms-dos))
       (cond (buf-name
-             (setq buf-name (s-replace "/" "\\" buf-name))
-             (setq cmd (format "explorer /select,%s" buf-name)))
+             (setq buf-name (s-replace "/" "\\" buf-name)
+                   cmd (format "explorer /select,%s" buf-name)))
             ((ignore-errors (file-directory-p path))
-             (setq path (s-replace "/" "\\" path))
-             (setq cmd (format "explorer /select,%s" path)))
+             (setq path (s-replace "/" "\\" path)
+                   cmd (format "explorer /select,%s" path)))
             (t (setq cmd "explorer ."))))
      ;; macOS
      ((eq system-type 'darwin)

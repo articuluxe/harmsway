@@ -1,4 +1,4 @@
-;;; docker-volume.el --- Emacs interface to docker-volume  -*- lexical-binding: t -*-
+;;; docker-volume.el --- Interface to docker-volume  -*- lexical-binding: t -*-
 
 ;; Author: Philippe Vaucher <philippe.vaucher@gmail.com>
 
@@ -24,12 +24,14 @@
 ;;; Code:
 
 (require 's)
+(require 'aio)
 (require 'dash)
 (require 'json)
 (require 'tablist)
 (require 'transient)
 
 (require 'docker-core)
+(require 'docker-faces)
 (require 'docker-utils)
 
 (defgroup docker-volume nil
@@ -56,12 +58,12 @@ and FLIP is a boolean to specify the sort order."
                        (const :tag "Descending" t))))
 
 (defcustom docker-volume-columns
-  '((:name "Driver" :width 10 :template "{{json .Driver}}" :sort nil :format nil)
-    (:name "Name" :width 40 :template "{{json .Name}}" :sort nil :format nil))
+  '((:name "Driver" :width 10 :template "{{ json .Driver }}" :sort nil :format nil)
+    (:name "Name" :width 40 :template "{{ json .Name }}" :sort nil :format nil))
   "Column specification for docker volumes.
 
 The order of entries defines the displayed column order.
-'Template' is the Go template passed to docker-volume-ls to create the column
+'Template' is the Go template passed to `docker-volume-ls' to create the column
 data.   It should return a string delimited with double quotes.
 'Sort function' is a binary predicate that should return true when the first
 argument should be sorted before the second.
@@ -77,18 +79,20 @@ displayed values in the column."
                        (sexp :tag "Sort function")
                        (sexp :tag "Format function"))))
 
-(defun docker-volume-entries (&optional args)
+(defalias 'docker-volume-inspect 'docker-inspect)
+
+(aio-defun docker-volume-entries (&rest args)
   "Return the docker volumes data for `tabulated-list-entries'."
   (let* ((fmt (docker-utils-make-format-string docker-volume-id-template docker-volume-columns))
-         (data (docker-run-docker "volume ls" args (format "--format=\"%s\"" fmt)))
+         (data (aio-await (docker-run-docker-async "volume" "ls" args (format "--format=\"%s\"" fmt))))
          (lines (s-split "\n" data t)))
     (-map (-partial #'docker-utils-parse docker-volume-columns) lines)))
 
-(defun docker-volume-entries-propertized (&optional args)
-  "Return the docker volumes data for `tabulated-list-entries' with dangling volumes propertized."
-  (let ((all (docker-volume-entries args))
-        (dangling (docker-volume-entries "--filter dangling=true")))
-    (--map-when (-contains? dangling it) (docker-volume-entry-set-dangling it) all)))
+(aio-defun docker-volume-entries-propertized (&rest args)
+  "Return the propertized docker volumes data for `tabulated-list-entries'."
+  (let ((entries (aio-await (docker-volume-entries args)))
+        (dangling (aio-await (docker-volume-entries args "--filter dangling=true"))))
+    (--map-when (-contains? dangling it) (docker-volume-entry-set-dangling it) entries)))
 
 (defun docker-volume-dangling-p (entry-id)
   "Predicate for if ENTRY-ID is dangling.
@@ -96,36 +100,42 @@ displayed values in the column."
 For example (docker-volume-dangling-p (tabulated-list-get-id)) is t when the entry under point is dangling."
   (get-text-property 0 'docker-volume-dangling entry-id))
 
-(defun docker-volume-entry-set-dangling (parsed-entry)
-  "Mark PARSED-ENTRY (output of `docker-volume-entries') as dangling.
+(defun docker-volume-entry-set-dangling (entry)
+  "Mark ENTRY (output of `docker-volume-entries') as dangling.
 
 The result is the tabulated list id for an entry is propertized with
 'docker-volume-dangling and the entry is fontified with 'docker-face-dangling."
-  (list (propertize (car parsed-entry) 'docker-volume-dangling t)
-        (apply #'vector (--map (propertize it 'font-lock-face 'docker-face-dangling) (cadr parsed-entry)))))
+  (list (propertize (car entry) 'docker-volume-dangling t)
+        (apply #'vector (--map (propertize it 'font-lock-face 'docker-face-dangling) (cadr entry)))))
 
-(defun docker-volume-description-with-stats ()
-  "Return the volumes stats string."
-  (let* ((inhibit-message t)
-         (entries (docker-volume-entries-propertized))
-         (dangling (-filter (-compose #'docker-volume-dangling-p 'car) entries)))
-    (format "Volumes (%s total, %s dangling)"
-            (length entries)
-            (propertize (number-to-string (length dangling)) 'face 'docker-face-dangling))))
+(aio-defun docker-volume-update-status-async ()
+  "Write the status to `docker-status-strings'."
+  (plist-put docker-status-strings :volumes "Volumes")
+  (let* ((entries (aio-await (docker-volume-entries-propertized (docker-volume-ls-arguments))))
+         (dangling (--filter (docker-volume-dangling-p (car it)) entries)))
+    (plist-put docker-status-strings
+               :volumes
+               (format "Volumes (%s total, %s dangling)"
+                       (number-to-string (length entries))
+                       (propertize (number-to-string (length dangling)) 'face 'docker-face-dangling)))
+    (transient--redisplay)))
 
-(defun docker-volume-refresh ()
+(add-hook 'docker-open-hook #'docker-volume-update-status-async)
+
+(aio-defun docker-volume-refresh ()
   "Refresh the volumes list."
-  (setq tabulated-list-entries (docker-volume-entries-propertized (docker-volume-ls-arguments))))
+  (setq tabulated-list-entries (aio-await (docker-volume-entries-propertized (docker-volume-ls-arguments))))
+  (tabulated-list-print t))
 
 (defun docker-volume-read-name ()
   "Read a volume name."
   (completing-read "Volume: " (-map #'car (docker-volume-entries))))
 
-;;;###autoload
-(defun docker-volume-dired (name)
+;;;###autoload (autoload 'docker-volume-dired "docker-volume" nil t)
+(aio-defun docker-volume-dired (name)
   "Enter `dired' in the volume named NAME."
   (interactive (list (docker-volume-read-name)))
-  (let ((path (docker-run-docker "inspect" "-f" "\"{{ .Mountpoint }}\"" name)))
+  (let ((path (aio-await (docker-run-docker-async "inspect" "-f" "\"{{ .Mountpoint }}\"" name))))
     (dired (format "/sudo::%s" path))))
 
 (defun docker-volume-dired-selection ()
@@ -150,9 +160,7 @@ applied to the buffer."
         (tablist-put-mark))
       (forward-line))))
 
-(defun docker-volume-ls-arguments ()
-  "Return the latest used arguments in the `docker-volume-ls' transient."
-  (car (alist-get 'docker-volume-ls transient-history)))
+(docker-utils-define-transient-arguments docker-volume-ls)
 
 (transient-define-prefix docker-volume-ls ()
   "Transient for listing volumes."
@@ -166,14 +174,14 @@ applied to the buffer."
 (docker-utils-transient-define-prefix docker-volume-rm ()
   "Transient for removing volumes."
   :man-page "docker-volume-rm"
-  [:description docker-utils-generic-actions-heading
-   ("D" "Remove" docker-utils-generic-action)])
+  [:description docker-generic-action-description
+   ("D" "Remove" docker-generic-action-multiple-ids)])
 
 (transient-define-prefix docker-volume-help ()
   "Help transient for docker volumes."
   ["Docker volumes help"
    ("D" "Remove"        docker-volume-rm)
-   ("I" "Inspect"       docker-utils-inspect)
+   ("I" "Inspect"       docker-volume-inspect)
    ("d" "Mark Dangling" docker-volume-mark-dangling)
    ("f" "Dired"         docker-volume-dired-selection)
    ("l" "List"          docker-volume-ls)])
@@ -182,14 +190,14 @@ applied to the buffer."
   (let ((map (make-sparse-keymap)))
     (define-key map "?" 'docker-volume-help)
     (define-key map "D" 'docker-volume-rm)
-    (define-key map "I" 'docker-utils-inspect)
+    (define-key map "I" 'docker-volume-inspect)
     (define-key map "d" 'docker-volume-mark-dangling)
     (define-key map "f" 'docker-volume-dired-selection)
     (define-key map "l" 'docker-volume-ls)
     map)
   "Keymap for `docker-volume-mode'.")
 
-;;;###autoload
+;;;###autoload (autoload 'docker-volumes "docker-volume" nil t)
 (defun docker-volumes ()
   "List docker volumes."
   (interactive)

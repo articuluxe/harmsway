@@ -1,8 +1,8 @@
 ;;; tok.el --- My theme -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021, Topi Kettunen <mail@topikettunen.com>
+;; Copyright (C) 2021, Topi Kettunen <topi@topikettunen.com>
 
-;; Author: Topi Kettunen <mail@topikettunen.com>
+;; Author: Topi Kettunen <topi@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.3"))
@@ -33,16 +33,13 @@
 (require 'tok-faces)
 
 ;;; Setup Start
-(defmacro tok-with-color-variables (variant theme-name color-palette)
-  "Eval `tok-definition' in tok COLOR-PALETTE for THEME-NAME.
-VARIANT is 'dark or 'light."
+(defmacro tok-with-color-variables (theme-name color-palette)
+  "Eval `tok-definition' in tok COLOR-PALETTE for THEME-NAME."
   (declare (indent defun))
   (let ((color-palette* (eval color-palette)))
     `(let* ((class '((class color) (min-colors 89)))
             (light-class (append '((background light)) class))
-            (dark-class (append '((background dark)) class))
             (theme-name ,theme-name)
-            (variant ,variant)
             ,@(mapcar (lambda (elm) `(,(car elm) ,(cdr elm))) color-palette*))
        (let ((custom--inhibit-theme-enable nil))
          ,@tok-definition))))

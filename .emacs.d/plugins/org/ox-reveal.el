@@ -101,6 +101,7 @@
     (:reveal-single-file nil "reveal_single_file" org-reveal-single-file t)
     (:reveal-extra-script "REVEAL_EXTRA_SCRIPT" nil org-reveal-extra-script space)
     (:reveal-extra-script-src "REVEAL_EXTRA_SCRIPT_SRC" nil org-reveal-extra-script-src split)
+    (:reveal-extra-script-before-src "REVEAL_EXTRA_SCRIPT_BEFORE_SRC" nil org-reveal-extra-script-before-src split)
     (:reveal-init-options "REVEAL_INIT_OPTIONS" nil org-reveal-init-options newline)
     (:reveal-highlight-css "REVEAL_HIGHLIGHT_CSS" nil org-reveal-highlight-css nil)
     (:reveal-reveal-js-version "REVEAL_REVEAL_JS_VERSION" nil nil t)
@@ -321,7 +322,12 @@ Example:
   :type 'string)
 
 (defcustom org-reveal-extra-script-src '()
-  "Custom script source that will be embedded in a <script src> tag."
+  "Custom script source that will be embedded in a <script src> tag, after the call to Reveal.initialize()."
+  :group 'org-export-reveal
+  :type 'list)
+
+(defcustom org-reveal-extra-script-before-src '()
+  "Custom script source that will be embedded in a <script src> tag, before the call to Reveal.initialize()."
   :group 'org-export-reveal
   :type 'list)
 
@@ -734,6 +740,44 @@ dependencies: [
               (if (string= "" extra-codes) all-plugins (append (list extra-codes) all-plugins))))
         (mapconcat 'identity total-codes ",\n"))
       "]\n"))
+
+(defun org-reveal--script-tag-by-file-name (fname in-single-file)
+  "Create a <script> tag for including scripts from the given
+file name. If in single file mode, the <script> tag encloses the
+contents of the file, otherwise it is a tag pointing to the file"
+  (if in-single-file
+      (let ((local-fname (org-reveal--file-url-to-path fname)))
+        (if (file-readable-p local-fname)
+            ;; Embed script into HTML
+            (concat "<script>\n"
+                    (org-reveal--read-file local-fname)
+                    "\n</script>\n")
+          ;; Cannot read fname, just error out
+          (error (concat "Cannot generate single file presentation due to "
+                         local-fname
+                         " is not readable"))))
+    (format "<script src=\"%s\"></script>\n" fname)))
+
+(defun org-reveal--script-tags-by-auto-file-names (fnames in-single-file)
+  "Create multiple <script> tags for multiple file names, but
+  also accept single file name and create only one tag."
+  (if (stringp fnames)
+      (org-reveal--script-tag-by-file-name fnames in-single-file)
+    (mapconcat (lambda (fname)
+                 (org-reveal--script-tag-by-file-name fname in-single-file))
+               fnames
+               "")))
+
+(defun org-reveal--multi-level-mapconcat (func sequence seperator)
+  "Multilevel mapconcat. FUNC is applied to each element of seq
+  unless the element itself is a list, in which case func is
+  lifted and applied."
+  (mapconcat (lambda (e)
+               (if (listp e)
+                   (org-reveal--multi-level-mapconcat func e seperator)
+                 (funcall func e)))
+             sequence seperator))
+
 (defun org-reveal-scripts (info)
   "Return the necessary scripts for initializing reveal.js using
 custom variable `org-reveal-root'."
@@ -744,30 +788,19 @@ custom variable `org-reveal-root'."
          (local-root-path (org-reveal--file-url-to-path root-path))
          (local-reveal-js (org-reveal--choose-path local-root-path version "dist/reveal.js" "js/reveal.js"))
          (plugins (org-reveal--get-plugins info))
+         (in-single-file (plist-get info :reveal-single-file))
          (reveal-4-plugin (if (eq 4 version)
-                              (org-reveal-plugin-scripts-4 plugins info)
-                            (cons nil nil)))
-         (in-single-file (plist-get info :reveal-single-file)))
+                              (org-reveal-plugin-scripts-4 plugins info in-single-file)
+                            (cons nil nil))))
     (concat
      ;; reveal.js/js/reveal.js
-     (if (and in-single-file
-              (file-readable-p local-reveal-js))
-         ;; Embed scripts into HTML
-         (concat "<script>\n"
-                 (org-reveal--read-file local-reveal-js)
-                 "\n</script>")
-       ;; Fall-back to extern script links
-       (if in-single-file
-           ;; Tried to embed scripts but failed. Print a message about possible errors.
-           (error (concat "Cannot read "
-                            (mapconcat 'identity
-                                       (delq nil (mapcar (lambda (file) (if (not (file-readable-p file)) file))
-                                                         (list local-reveal-js)))
-                                       ", "))))
-       (concat
-        "<script src=\"" reveal-js "\"></script>\n"))
+     (org-reveal--script-tag-by-file-name local-reveal-js in-single-file)
      ;; plugin headings
      (if-format "%s\n" (car reveal-4-plugin))
+
+     ;; Extra <script src="..."></script> tags before the call to Reveal.initialize()
+     (org-reveal--script-tags-by-auto-file-names (plist-get info :reveal-extra-script-before-src)
+                                                 in-single-file)
 
      ;; Reveal.initialize
      (let ((reveal-4-plugin-statement (cdr reveal-4-plugin))
@@ -820,15 +853,8 @@ Reveal.initialize({
                ;; Extra initialization scripts
                (or (plist-get info :reveal-extra-script) "")))
      ;; Extra <script src="..."></script> tags
-     (let ((src-list (let ((l (plist-get info :reveal-extra-script-src)))
-                       ;; map to a single string to a list.
-                       (if (stringp l)
-                           (list l)
-                         l))))
-       (and src-list
-            (mapconcat (lambda (src) (format "<script src=\"%s\"></script>" src))
-                       src-list
-                       "\n"))))))
+     (org-reveal--script-tags-by-auto-file-names (plist-get info :reveal-extra-script-src)
+                                                 in-single-file))))
 
 (defun org-reveal--read-sexps-from-string (s)
   (let ((s (string-trim s)))
@@ -873,12 +899,11 @@ Reveal.initialize({
       ;; nil, no %s or %% found
       fmt)))
 
-(defun org-reveal-plugin-scripts-4 (plugins info)
-  "Return scripts for initializing reveal.js 4.x builtin scripts"
-  ;; Return a tuple (represented as a list), the first value is a list of script
-  ;; tags that are going to be inlined to the final HTML output, the second
-  ;; value is a list of import statements that are going to be embedded in the
-  ;; Reveal.initialize call
+(defun org-reveal-plugin-scripts-4 (plugins info in-single-file)
+  "Return scripts for initializing reveal.js 4.x builtin scripts."
+  ;; Return a pair whose first value is the HTML contents for the
+  ;; plugin scripts, the second value is a list of import statements
+  ;; to be embedded in the Reveal.initialize call
   (if (not (null plugins))
       ;; Generate plugin scripts
       (let* ((plugins (mapcar
@@ -913,23 +938,13 @@ Reveal.initialize({
                                             plugins))))
         (if (not (null plugin-js))
             (cons
-             ;; First value of the tuple, a list of scripts HTML tags
+             ;; First value of the pair, a list of script file names
              (let ((root-path (org-reveal-root-path info)))
-               (mapconcat
+               (org-reveal--multi-level-mapconcat
                 (lambda (p)
-                  ;; when it is a list, create a script tag for every entry
-                  (cond
-                   ((listp p)
-                    (mapconcat (lambda (pi)
-                                 (format "<script src=\"%s\"></script>\n"
-                                         (org-reveal--replace-first-%s pi root-path)))
-                               p
-                               ""))
-                   ;; when it is a single string, create a single script tag
-                   (t (format "<script src=\"%s\"></script>\n"
-                              (org-reveal--replace-first-%s p root-path)))))
-                plugin-js
-                ""))
+                  (org-reveal--script-tag-by-file-name (org-reveal--replace-first-%s p root-path)
+                                                       in-single-file))
+                plugin-js ""))
              ;; Second value of the tuple, a list of Reveal plugin
              ;; initialization statements
              (format "plugins: [%s]"

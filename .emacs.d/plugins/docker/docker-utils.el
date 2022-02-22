@@ -24,27 +24,35 @@
 ;;; Code:
 
 (require 's)
+(require 'aio)
 (require 'dash)
 (require 'tramp)
 (require 'tablist)
 (require 'json-mode)
 (require 'transient)
 
-(require 'docker-core)
-
 (defun docker-utils-get-marked-items-ids ()
   "Get the id part of `tablist-get-marked-items'."
   (-map #'car (tablist-get-marked-items)))
 
 (defun docker-utils-ensure-items ()
+  "Ensure at least one item is selected."
   (when (null (docker-utils-get-marked-items-ids))
     (user-error "This action cannot be used in an empty list")))
+
+(defun docker-utils-generate-new-buffer-name (program &rest args)
+  "Wrapper around `generate-new-buffer-name' using PROGRAM and ARGS."
+  (generate-new-buffer-name (format "* %s %s *" program (s-join " " args))))
+
+(defun docker-utils-generate-new-buffer (program &rest args)
+  "Wrapper around `generate-new-buffer' using PROGRAM and ARGS."
+  (generate-new-buffer (apply #'docker-utils-generate-new-buffer-name program args)))
 
 (defmacro docker-utils-with-buffer (name &rest body)
   "Wrapper around `with-current-buffer'.
 Execute BODY in a buffer named with the help of NAME."
   (declare (indent defun))
-  `(with-current-buffer (docker-generate-new-buffer ,name)
+  `(with-current-buffer (docker-utils-generate-new-buffer "docker" ,name)
      (setq buffer-read-only nil)
      (erase-buffer)
      ,@body
@@ -53,51 +61,22 @@ Execute BODY in a buffer named with the help of NAME."
      (pop-to-buffer (current-buffer))))
 
 (defmacro docker-utils-transient-define-prefix (name arglist &rest args)
+  "Wrapper around `transient-define-prefix' forwarding NAME, ARGLIST and ARGS and calling `docker-utils-ensure-items'."
   `(transient-define-prefix ,name ,arglist
      ,@args
      (interactive)
      (docker-utils-ensure-items)
      (transient-setup ',name)))
 
-(defun docker-utils-get-transient-action ()
-  (s-replace "-" " " (s-chop-prefix "docker-" (symbol-name transient-current-command))))
-
-(defun docker-utils-generic-actions-heading ()
-  (let ((items (s-join ", " (docker-utils-get-marked-items-ids))))
-    (format "%s %s"
-            (propertize "Actions on" 'face 'transient-heading)
-            (propertize items        'face 'transient-value))))
-
-(defun docker-utils-generic-action (action args)
-  (interactive (list (docker-utils-get-transient-action)
-                     (transient-args transient-current-command)))
-  (--each (docker-utils-get-marked-items-ids)
-    (docker-run-docker action args it))
-  (tablist-revert))
-
-(defun docker-utils-generic-action-async (action args)
-  (interactive (list (docker-utils-get-transient-action)
-                     (transient-args transient-current-command)))
-  (--each (docker-utils-get-marked-items-ids)
-    (docker-run-docker-async action args it))
-  (tablist-revert))
-
-(defun docker-utils-generic-action-with-buffer (action args)
-  (interactive (list (docker-utils-get-transient-action)
-                     (transient-args transient-current-command)))
-  (--each (docker-utils-get-marked-items-ids)
-    (docker-utils-with-buffer (format "%s %s" action it)
-      (insert (docker-run-docker action args it))))
-  (tablist-revert))
-
-(defun docker-utils-generic-action-with-buffer:json (action args)
-  (interactive (list (docker-utils-get-transient-action)
-                     (transient-args transient-current-command)))
-  (--each (docker-utils-get-marked-items-ids)
-    (docker-utils-with-buffer (format "%s %s" action it)
-      (insert (docker-run-docker action args it))
-      (json-mode)))
-  (tablist-revert))
+(defmacro docker-utils-define-transient-arguments (name)
+  "Define the transient arguments function using NAME that return the latest transient value or its default."
+  `(defun ,(intern (format "%s-arguments" name)) ()
+     ,(format "Return the latest used arguments in the `%s' transient." name)
+     (let ((history (alist-get ',name transient-history))
+           (default (transient-default-value (get ',name 'transient--prefix))))
+       (if (equal 0 (length history))
+           (car default)
+         (car history)))))
 
 (defun docker-utils-pop-to-buffer (name)
   "Like `pop-to-buffer', but suffix NAME with the host if on a remote host."
@@ -116,15 +95,6 @@ Execute BODY in a buffer named with the help of NAME."
          (value (string-to-number (-second-item parts)))
          (multiplier (docker-utils-unit-multiplier (-third-item parts))))
     (* value multiplier)))
-
-(defun docker-utils-inspect ()
-  "Docker Inspect the tablist entry under point."
-  (interactive)
-  (let ((entry-id (tabulated-list-get-id)))
-    (docker-utils-with-buffer (format "inspect %s" entry-id)
-      (insert (docker-run-docker "inspect" () entry-id))
-      (js-mode)
-      (view-mode))))
 
 (defun docker-utils-human-size-predicate (a b)
   "Sort A and B by image size."

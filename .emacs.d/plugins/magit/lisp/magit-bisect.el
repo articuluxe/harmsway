@@ -1,6 +1,6 @@
 ;;; magit-bisect.el --- bisect support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2011-2021  The Magit Project Contributors
+;; Copyright (C) 2011-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -65,11 +65,11 @@
    ["Arguments"
     ("-n" "Don't checkout commits"              "--no-checkout")
     ("-p" "Follow only first parent of a merge" "--first-parent"
-     :if (lambda () (version<= "2.29" (magit-git-version))))
+     :if (lambda () (magit-git-version>= "2.29")))
     (6 magit-bisect:--term-old
-       :if (lambda () (version<= "2.7" (magit-git-version))))
+       :if (lambda () (magit-git-version>= "2.7")))
     (6 magit-bisect:--term-new
-       :if (lambda () (version<= "2.7" (magit-git-version))))]
+       :if (lambda () (magit-git-version>= "2.7")))]
    ["Actions"
     ("B" "Start"        magit-bisect-start)
     ("s" "Start script" magit-bisect-run)]]
@@ -78,7 +78,7 @@
    ("B" "Bad"          magit-bisect-bad)
    ("g" "Good"         magit-bisect-good)
    (6 "m" "Mark"       magit-bisect-mark
-      :if (lambda () (version<= "2.7" (magit-git-version))))
+      :if (lambda () (magit-git-version>= "2.7")))
    ("k" "Skip"         magit-bisect-skip)
    ("r" "Reset"        magit-bisect-reset)
    ("s" "Run script"   magit-bisect-run)])
@@ -204,7 +204,9 @@ bisect run'."
        (magit-process-git-arguments
         (list "bisect" "start" bad good args)))
       (magit-refresh)))
-  (magit-git-bisect "run" (list shell-file-name shell-command-switch cmdline)))
+  (magit--with-connection-local-variables
+   (magit-git-bisect "run" (list shell-file-name
+                                 shell-command-switch cmdline))))
 
 (defun magit-git-bisect (subcommand &optional args no-assert)
   (unless (or no-assert (magit-bisect-in-progress-p))
@@ -248,7 +250,7 @@ bisect run'."
                       "It appears you have invoked `git bisect' from a shell."
                       "There is nothing wrong with that, we just cannot display"
                       "anything useful here.  Consult the shell output instead.")))
-           (done-re "^\\([a-z0-9]\\{40\\}\\) is the first bad commit$")
+           (done-re "^\\([a-z0-9]\\{40,\\}\\) is the first bad commit$")
            (bad-line (or (and (string-match done-re (car lines))
                               (pop lines))
                          (--first (string-match done-re it) lines))))
@@ -297,7 +299,7 @@ bisect run'."
                               (magit-abbrev-length)))
             (insert ?\n)))))
     (when (re-search-forward
-           "# first bad commit: \\[\\([a-z0-9]\\{40\\}\\)\\] [^\n]+\n" nil t)
+           "# first bad commit: \\[\\([a-z0-9]\\{40,\\}\\)\\] [^\n]+\n" nil t)
       (magit-bind-match-strings (hash) nil
         (magit-delete-match)
         (magit-insert-section (bisect-item)

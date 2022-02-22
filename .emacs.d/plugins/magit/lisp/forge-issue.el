@@ -1,6 +1,6 @@
 ;;; forge-issue.el --- Issue support               -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2021  Jonas Bernoulli
+;; Copyright (C) 2018-2022  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -176,11 +176,12 @@ Also see option `forge-topic-list-limit'."
 
 (defun forge-insert-assigned-issues ()
   "Insert a list of open issues that are assigned to you."
-  (when-let ((repo (forge-get-repository nil)))
-    (unless (oref repo sparse-p)
-      (forge-insert-topics "Assigned issues"
-                           (forge--ls-assigned-issues repo)
-                           (forge--topic-type-prefix repo 'issue)))))
+  (when forge-display-in-status-buffer
+    (when-let ((repo (forge-get-repository nil)))
+      (unless (oref repo sparse-p)
+        (forge-insert-topics "Assigned issues"
+                             (forge--ls-assigned-issues repo)
+                             (forge--topic-type-prefix repo 'issue))))))
 
 (defun forge--ls-assigned-issues (repo)
   (mapcar (lambda (row)
@@ -199,11 +200,12 @@ Also see option `forge-topic-list-limit'."
 
 (defun forge-insert-authored-issues ()
   "Insert a list of open issues that are authored to you."
-  (when-let ((repo (forge-get-repository nil)))
-    (unless (oref repo sparse-p)
-      (forge-insert-topics "Authored issues"
-                           (forge--ls-authored-issues repo)
-                           (forge--topic-type-prefix repo 'issue)))))
+  (when forge-display-in-status-buffer
+    (when-let ((repo (forge-get-repository nil)))
+      (unless (oref repo sparse-p)
+        (forge-insert-topics "Authored issues"
+                             (forge--ls-authored-issues repo)
+                             (forge--topic-type-prefix repo 'issue))))))
 
 (defun forge--ls-authored-issues (repo)
   (mapcar (lambda (row)

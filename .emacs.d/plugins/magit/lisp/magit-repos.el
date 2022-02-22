@@ -1,6 +1,6 @@
 ;;; magit-repos.el --- listing repositories  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -69,13 +69,16 @@ This option controls which repositories are being listed by
 
 (defcustom magit-repolist-columns
   '(("Name"    25 magit-repolist-column-ident nil)
-    ("Version" 25 magit-repolist-column-version nil)
+    ("Version" 25 magit-repolist-column-version
+     ((:sort magit-repolist-version<)))
     ("B<U"      3 magit-repolist-column-unpulled-from-upstream
-     ((:right-align t)
-      (:help-echo "Upstream changes not in branch")))
+     (;; (:help-echo "Upstream changes not in branch")
+      (:right-align t)
+      (:sort <)))
     ("B>U"      3 magit-repolist-column-unpushed-to-upstream
-     ((:right-align t)
-      (:help-echo "Local changes not in upstream")))
+     (;; (:help-echo "Local changes not in upstream")
+      (:right-align t)
+      (:sort <)))
     ("Path"    99 magit-repolist-column-path nil))
   "List of columns displayed by `magit-list-repositories'.
 
@@ -86,9 +89,15 @@ of the column.  FORMAT is a function that is called with one
 argument, the repository identification (usually its basename),
 and with `default-directory' bound to the toplevel of its working
 tree.  It has to return a string to be inserted or nil.  PROPS is
-an alist that supports the keys `:right-align' and `:pad-right'.
-Some entries also use `:help-echo', but `tabulated-list' does not
-actually support that yet.
+an alist that supports the keys `:right-align', `:pad-right' and
+`:sort'.
+
+The `:sort' function has a weird interface described in the
+docstring of `tabulated-list--get-sort'.  Alternatively `<' and
+`magit-repolist-version<' can be used as those functions are
+automatically replaced with functions that satisfy the interface.
+Set `:sort' to nil to inhibit sorting; if unspecifed, then the
+column is sortable using the default sorter.
 
 You may wish to display a range of numeric columns using just one
 character per column and without any padding between columns, in
@@ -105,6 +114,7 @@ than 9."
                                  (list (choice :tag "Property"
                                                (const :right-align)
                                                (const :pad-right)
+                                               (const :sort)
                                                (symbol))
                                        (sexp   :tag "Value"))))))
 
@@ -137,7 +147,7 @@ non-nil, means to invert the resulting sort."
                        (boolean :tag "Flip order"))))
 
 ;;; List Repositories
-;;;; Command
+;;;; List Commands
 ;;;###autoload
 (defun magit-list-repositories ()
   "Display a list of repositories.
@@ -147,14 +157,7 @@ repositories are displayed."
   (interactive)
   (magit-repolist-setup (default-value 'magit-repolist-columns)))
 
-;;;; Mode
-
-(defvar magit-repolist-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map tabulated-list-mode-map)
-    (define-key map (kbd "C-m") 'magit-repolist-status)
-    map)
-  "Local keymap for Magit-Repolist mode buffers.")
+;;;; Mode Commands
 
 (defun magit-repolist-status (&optional _button)
   "Show the status for the repository at point."
@@ -162,6 +165,108 @@ repositories are displayed."
   (--if-let (tabulated-list-get-id)
       (magit-status-setup-buffer (expand-file-name it))
     (user-error "There is no repository at point")))
+
+(defun magit-repolist-mark ()
+  "Mark a repository and move to the next line."
+  (interactive)
+  (magit-repolist--ensure-padding)
+  (tabulated-list-put-tag "*" t))
+
+(defun magit-repolist-unmark ()
+  "Unmark a repository and move to the next line."
+  (interactive)
+  (tabulated-list-put-tag " " t))
+
+(defun magit-repolist-fetch (repos)
+  "Fetch all marked or listed repositories."
+  (interactive (list (magit-repolist--get-repos ?*)))
+  (run-hooks 'magit-credential-hook)
+  (magit-repolist--mapc (apply-partially #'magit-run-git "remote" "update")
+                        repos "Fetching in %s..."))
+
+(defun magit-repolist-find-file-other-frame (repos file)
+  "Find a file in all marked or listed repositories."
+  (interactive (list (magit-repolist--get-repos ?*)
+                     (read-string "Find file in repositories: ")))
+  (magit-repolist--mapc (apply-partially #'find-file-other-frame file) repos))
+
+(defun magit-repolist--ensure-padding ()
+  "Set `tabulated-list-padding' to 2, unless that is already non-zero."
+  (when (zerop tabulated-list-padding)
+    (setq tabulated-list-padding 2)
+    (tabulated-list-init-header)
+    (tabulated-list-print t)))
+
+(defun magit-repolist--get-repos (&optional char)
+  "Return marked repositories or `all' if none are marked.
+If optional CHAR is non-nil, then only return repositories
+marked with that character.  If no repositories are marked
+then ask whether to act on all repositories instead."
+  (or (magit-repolist--marked-repos char)
+      (if (magit-confirm 'repolist-all
+            "Nothing selected.  Act on ALL displayed repositories")
+          'all
+        (user-error "Abort"))))
+
+(defun magit-repolist--marked-repos (&optional char)
+  "Return marked repositories.
+If optional CHAR is non-nil, then only return repositories
+marked with that character."
+  (let (c list)
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (setq c (char-after))
+        (unless (eq c ?\s)
+          (if char
+              (when (eq c char)
+                (push (tabulated-list-get-id) list))
+            (push (cons c (tabulated-list-get-id)) list)))
+        (forward-line)))
+    list))
+
+(defun magit-repolist--mapc (fn repos &optional msg)
+  "Apply FN to each directory in REPOS for side effects only.
+If REPOS is the symbol `all', then call FN for all displayed
+repositories.  When FN is called, `default-directory' is bound to
+the top-level directory of the current repository.  If optional
+MSG is non-nil then that is displayed around each call to FN.
+If it contains \"%s\" then the directory is substituted for that."
+  (when (eq repos 'all)
+    (setq repos nil)
+    (save-excursion
+      (goto-char (point-min))
+      (while (not (eobp))
+        (push (tabulated-list-get-id) repos)
+        (forward-line)))
+    (setq repos (nreverse repos)))
+  (let ((base default-directory)
+        (len (length repos))
+        (i 0))
+    (mapc (lambda (repo)
+            (let ((default-directory
+                   (file-name-as-directory (expand-file-name repo base))))
+              (if msg
+                  (let ((msg (concat (format "(%s/%s) " (cl-incf i) len)
+                                     (format msg default-directory))))
+                    (message msg)
+                    (funcall fn)
+                    (message (concat msg "done")))
+                (funcall fn))))
+          repos)))
+
+;;;; Mode
+
+(defvar magit-repolist-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "C-m") 'magit-repolist-status)
+    (define-key map (kbd "m")   'magit-repolist-mark)
+    (define-key map (kbd "u")   'magit-repolist-unmark)
+    (define-key map (kbd "f")   'magit-repolist-fetch)
+    (define-key map (kbd "5")   'magit-repolist-find-file-other-frame)
+    map)
+  "Local keymap for Magit-Repolist mode buffers.")
 
 (define-derived-mode magit-repolist-mode tabulated-list-mode "Repos"
   "Major mode for browsing a list of Git repositories."
@@ -180,10 +285,11 @@ repositories are displayed."
   (with-current-buffer (get-buffer-create "*Magit Repositories*")
     (magit-repolist-mode)
     (setq-local magit-repolist-columns columns)
+    (magit-repolist-setup-1)
     (magit-repolist-refresh)
     (switch-to-buffer (current-buffer))))
 
-(defun magit-repolist-refresh ()
+(defun magit-repolist-setup-1 ()
   (unless tabulated-list-sort-key
     (setq tabulated-list-sort-key
           (pcase-let ((`(,column . ,flip) magit-repolist-sort-key))
@@ -191,10 +297,25 @@ repositories are displayed."
                       (caar magit-repolist-columns))
                   flip))))
   (setq tabulated-list-format
-        (vconcat (mapcar (pcase-lambda (`(,title ,width ,_fn ,props))
-                           (nconc (list title width t)
-                                  (-flatten props)))
-                         magit-repolist-columns)))
+        (vconcat (-map-indexed
+                  (lambda (idx column)
+                    (pcase-let* ((`(,title ,width ,_fn ,props) column)
+                                 (sort-set (assoc :sort props))
+                                 (sort-fn (cadr sort-set)))
+                      (nconc (list title width
+                                   (cond ((eq sort-fn '<)
+                                          (magit-repolist-make-sorter
+                                           sort-fn #'string-to-number idx))
+                                         ((eq sort-fn 'magit-repolist-version<)
+                                          (magit-repolist-make-sorter
+                                           sort-fn #'identity idx))
+                                         (sort-fn sort-fn)
+                                         (sort-set nil)
+                                         (t t)))
+                             (-flatten props))))
+                  magit-repolist-columns))))
+
+(defun magit-repolist-refresh ()
   (setq tabulated-list-entries
         (mapcar (pcase-lambda (`(,id . ,path))
                   (let ((default-directory path))
@@ -218,6 +339,18 @@ repositories are displayed."
 
 ;;;; Columns
 
+(defun magit-repolist-make-sorter (sort-predicate convert-cell column-idx)
+  "Return a function suitable as a sorter for tabulated lists.
+See `tabulated-list--get-sorter'.  Given a more reasonable API
+this would not be necessary and one could just use SORT-PREDICATE
+directly.  CONVERT-CELL can be used to turn the cell value, which
+is always a string back into e.g. a number.  COLUMN-IDX has to be
+the index of the column that uses the returned sorter function."
+  (lambda (a b)
+    (funcall sort-predicate
+             (funcall convert-cell (aref (cadr a) column-idx))
+             (funcall convert-cell (aref (cadr b) column-idx)))))
+
 (defun magit-repolist-column-ident (spec)
   "Insert the identification of the repository.
 Usually this is just its basename."
@@ -227,6 +360,15 @@ Usually this is just its basename."
   "Insert the absolute path of the repository."
   (abbreviate-file-name default-directory))
 
+(defvar magit-repolist-column-version-regexp "\
+\\(?1:-\\(?2:[0-9]*\\)\
+\\(?3:-g[a-z0-9]*\\)\\)?\
+\\(?:-\\(?4:dirty\\)\\)\
+?\\'")
+
+(defvar magit-repolist-column-version-resume-regexp
+   "\\`Resume development\\'")
+
 (defun magit-repolist-column-version (_)
   "Insert a description of the repository's `HEAD' revision."
   (when-let ((v (or (magit-git-string "describe" "--tags" "--dirty")
@@ -234,18 +376,30 @@ Usually this is just its basename."
                     (magit-git-string "show" "--no-patch" "--format=%cd-g%h"
                                       "--date=format:%Y%m%d.%H%M"))))
     (save-match-data
-      (when (string-match
-             "\\(?:-\\([0-9]*\\)-g[a-z0-9]*\\)?\\(?:-\\(dirty\\)\\)?\\'" v)
+      (when (string-match magit-repolist-column-version-regexp v)
         (magit--put-face (match-beginning 0) (match-end 0) 'shadow v)
-        (when (match-end 1)
-          (magit--put-face (match-beginning 1) (match-end 1) 'bold v))
         (when (match-end 2)
-          (magit--put-face (match-beginning 2) (match-end 2) 'error v)))
+          (magit--put-face (match-beginning 2) (match-end 2) 'bold v))
+        (when (match-end 4)
+          (magit--put-face (match-beginning 4) (match-end 4) 'error v))
+        (when (and (equal (match-string 2 v) "1")
+                   (string-match-p magit-repolist-column-version-resume-regexp
+                                   (magit-rev-format "%s")))
+          (setq v (replace-match (propertize "+" 'face 'shadow) t t v 1))))
       (if (and v (string-match "\\`[0-9]" v))
           (concat " " v)
         (when (and v (string-match "\\`[^0-9]+" v))
           (magit--put-face 0 (match-end 0) 'shadow v))
         v))))
+
+(defun magit-repolist-version< (a b)
+  (save-match-data
+    (let ((re "[0-9]+\\(\\.[0-9]*\\)*"))
+      (setq a (and (string-match re a) (match-string 0 a)))
+      (setq b (and (string-match re b) (match-string 0 b)))
+      (cond ((and a b) (version< a b))
+            (b nil)
+            (t t)))))
 
 (defun magit-repolist-column-branch (_)
   "Insert the current branch."
@@ -314,6 +468,23 @@ which only lists the first one found."
        "+"
      (number-to-string n))
    (if (> n (or (cadr (assq :normal-count spec)) 0)) 'bold 'shadow)))
+
+;;;; Imenu Support
+
+(defun magit-imenu--repolist-prev-index-position-function ()
+  "Move point to previous line in magit-repolist buffer.
+Used as a value for `imenu-prev-index-position-function'."
+  (unless (bobp)
+    (forward-line -1)))
+
+(defun magit-imenu--repolist-extract-index-name-function ()
+  "Return imenu name for line at point.
+Point should be at the beginning of the line.  This function
+is used as a value for `imenu-extract-index-name-function'."
+  (let ((entry (tabulated-list-get-entry)))
+    (format "%s (%s)"
+            (car entry)
+            (car (last entry)))))
 
 ;;; Read Repository
 

@@ -1,6 +1,6 @@
 ;;; magit-mode.el --- create and refresh Magit buffers  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -31,7 +31,7 @@
 
 ;;; Code:
 
-(require 'magit-section)
+(require 'magit-base)
 (require 'magit-git)
 
 (require 'format-spec)
@@ -403,6 +403,7 @@ recommended value."
     (define-key map "%" 'magit-worktree)
     (define-key map "$" 'magit-process-buffer)
     (define-key map "!" 'magit-run)
+    (define-key map ">" 'magit-sparse-checkout)
     (define-key map (kbd "C-c C-c") 'magit-dispatch)
     (define-key map (kbd "C-c C-e") 'magit-edit-thing)
     (define-key map (kbd "C-c C-o") 'magit-browse-thing)
@@ -527,6 +528,7 @@ Magit is documented in info node `(magit)'."
   (setq mode-line-process (magit-repository-local-get 'mode-line-process))
   (setq-local revert-buffer-function 'magit-refresh-buffer)
   (setq-local bookmark-make-record-function 'magit--make-bookmark)
+  (setq-local imenu-create-index-function 'magit--imenu-create-index)
   (setq-local isearch-filter-predicate 'magit-section--open-temporarily))
 
 ;;; Local Variables
@@ -578,6 +580,9 @@ your mode instead of adding an entry to this variable.")
 
 (defvar-local magit-previous-section nil)
 (put 'magit-previous-section 'permanent-local t)
+
+(defvar-local magit--imenu-group-types nil)
+(defvar-local magit--imenu-item-types nil)
 
 ;;; Setup Buffer
 
@@ -1420,21 +1425,93 @@ Unless specified, REPOSITORY is the current buffer's repository."
         (magit-repository-local-get
          (cons mode 'magit-section-visibility-cache))))
 
-(defun magit-zap-caches ()
+(defun magit-zap-caches (&optional all)
   "Zap caches for the current repository.
-Remove the repository's entry from `magit-repository-local-cache'
-and set `magit-section-visibility-cache' to nil in all of the
-repository's Magit buffers."
+
+Remove the repository's entry from `magit-repository-local-cache',
+remove the host's entry from `magit--host-git-version-cache', set
+`magit-section-visibility-cache' to nil for all Magit buffers of
+the repository and set `magit--libgit-available-p' to `unknown'.
+
+With a prefix argument or if optional ALL is non-nil, discard the
+mentioned caches completely."
   (interactive)
-  (magit-with-toplevel
-    (setq magit-repository-local-cache
-          (cl-delete default-directory
-                     magit-repository-local-cache
-                     :key #'car :test #'equal)))
-  (dolist (buffer (magit-mode-get-buffers))
-    (with-current-buffer buffer
-      (setq magit-section-visibility-cache nil)))
+  (cond (all
+         (setq magit-repository-local-cache nil)
+         (setq magit--host-git-version-cache nil)
+         (dolist (buffer (buffer-list))
+           (with-current-buffer buffer
+             (when (derived-mode-p 'magit-mode)
+               (setq magit-section-visibility-cache nil)))))
+        (t
+         (magit-with-toplevel
+           (setq magit-repository-local-cache
+                 (cl-delete default-directory
+                            magit-repository-local-cache
+                            :key #'car :test #'equal))
+           (setq magit--host-git-version-cache
+                 (cl-delete (file-remote-p default-directory)
+                            magit--host-git-version-cache
+                            :key #'car :test #'equal)))
+         (dolist (buffer (magit-mode-get-buffers))
+           (with-current-buffer buffer
+             (setq magit-section-visibility-cache nil)))))
   (setq magit--libgit-available-p 'unknown))
+
+;;; Imenu Support
+
+(defun magit--imenu-create-index ()
+  ;; If `which-function-mode' is active, then the create-index
+  ;; function is called at the time the major-mode is being enabled.
+  ;; Modes that derive from `magit-mode' have not populated the buffer
+  ;; at that time yet, so we have to abort.
+  (and magit-root-section
+       (or magit--imenu-group-types
+           magit--imenu-item-types)
+       (let ((index
+              (mapcan
+               (lambda (section)
+                 (cond
+                  (magit--imenu-group-types
+                   (and (if (eq (car-safe magit--imenu-group-types) 'not)
+                            (not (magit-section-match
+                                  (cdr magit--imenu-group-types)
+                                  section))
+                          (magit-section-match magit--imenu-group-types section))
+                        (when-let ((children (oref section children)))
+                          `((,(magit--imenu-index-name section)
+                             ,@(mapcar (lambda (s)
+                                         (cons (magit--imenu-index-name s)
+                                               (oref s start)))
+                                       children))))))
+                  (magit--imenu-item-types
+                   (and (magit-section-match magit--imenu-item-types section)
+                        `((,(magit--imenu-index-name section)
+                           . ,(oref section start)))))))
+               (oref magit-root-section children))))
+         (if (and magit--imenu-group-types (symbolp magit--imenu-group-types))
+             (cdar index)
+           index))))
+
+(defun magit--imenu-index-name (section)
+  (let ((heading (buffer-substring-no-properties
+                  (oref section start)
+                  (1- (or (oref section content)
+                          (oref section end))))))
+    (save-match-data
+      (cond
+       ((and (magit-section-match [commit logbuf] section)
+             (string-match "[^ ]+\\([ *|]*\\).+" heading))
+        (replace-match " " t t heading 1))
+       ((magit-section-match
+         '([branch local branchbuf] [tag tags branchbuf]) section)
+        (oref section value))
+       ((magit-section-match [branch remote branchbuf] section)
+        (concat (oref (oref section parent) value) "/"
+                (oref section value)))
+       ((string-match " ([0-9]+)\\'" heading)
+        (substring heading 0 (match-beginning 0)))
+       (t heading)))))
 
 ;;; Utilities
 

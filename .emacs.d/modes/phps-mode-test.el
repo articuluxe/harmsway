@@ -1,21 +1,6 @@
 ;;; phps-mode-test.el --- Commons for tests -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2021  Free Software Foundation, Inc.
-
-;; This file is not part of GNU Emacs.
-
-;; This program is free software; you can redistribute it and/or
-;; modify it under the terms of the GNU General Public License as
-;; published by the Free Software Foundation; either version 2, or (at
-;; your option) any later version.
-
-;; This program is distributed in the hope that it will be useful, but
-;; WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;; General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; Copyright (C) 2018-2022  Free Software Foundation, Inc.
 
 
 ;;; Commentary:
@@ -44,7 +29,6 @@
          (incremental-parse-error)
          (incremental-tokens)
          (incremental-imenu)
-         (incremental-indent)
          (incremental-buffer)
          (incremental-bookkeeping)
          (incremental-nest-location-stack)
@@ -58,7 +42,6 @@
          (initial-parse-error)
          (initial-tokens)
          (initial-imenu)
-         (initial-indent)
          (initial-buffer)
          (initial-bookkeeping)
          (initial-nest-location-stack))
@@ -85,7 +68,6 @@
      (setq incremental-states phps-mode-lex-analyzer--states)
      (setq incremental-tokens phps-mode-lex-analyzer--tokens)
      (setq incremental-imenu phps-mode-lex-analyzer--imenu)
-     (setq incremental-indent (phps-mode-test--hash-to-list phps-mode-lex-analyzer--lines-indent))
      (setq incremental-buffer (buffer-substring (point-min) (point-max)))
      (setq incremental-bookkeeping (phps-mode-test--hash-to-list phps-mode-lex-analyzer--bookkeeping t))
      (setq incremental-nest-location-stack phps-mode-lex-analyzer--nest-location-stack)
@@ -106,14 +88,13 @@
      (setq initial-parse-error phps-mode-lex-analyzer--parse-error)
      (setq initial-tokens phps-mode-lex-analyzer--tokens)
      (setq initial-imenu phps-mode-lex-analyzer--imenu)
-     (setq initial-indent (phps-mode-test--hash-to-list phps-mode-lex-analyzer--lines-indent))
      (setq initial-buffer (buffer-substring (point-min) (point-max)))
      (setq initial-bookkeeping (phps-mode-test--hash-to-list phps-mode-lex-analyzer--bookkeeping t))
      (setq initial-nest-location-stack phps-mode-lex-analyzer--nest-location-stack)
 
      ;; Run tests
      (phps-mode-debug-message
-       (message "\nComparing tokens, lines indent and imenu  between buffer:\n\n'%s'\n\nand:\n\n'%s'\n" initial-buffer incremental-buffer))
+       (message "\nComparing tokens, bookkeeping and imenu between buffer:\n\n'%s'\n\nand:\n\n'%s'\n" initial-buffer incremental-buffer))
      (should (equal initial-buffer incremental-buffer))
      ;; (message "Initial tokens: %s\n" initial-tokens)
      ;; (message "Incremental tokens: %s\n" incremental-tokens)
@@ -126,9 +107,6 @@
      (should (equal initial-parse-trail incremental-parse-trail))
      (should (equal initial-parse-error incremental-parse-error))
      (should (equal initial-nest-location-stack incremental-nest-location-stack))
-     ;; (message "Initial indent: %s\n" initial-indent)
-     ;; (message "Incremental indent: %s\n" incremental-indent)
-     (should (equal initial-indent incremental-indent))
      (should (equal initial-imenu incremental-imenu))
      (should (equal initial-bookkeeping incremental-bookkeeping))
 

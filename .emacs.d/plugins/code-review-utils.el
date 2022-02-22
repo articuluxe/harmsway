@@ -4,7 +4,7 @@
 ;;
 ;; Author: Wanderson Ferreira <https://github.com/wandersoncferreira>
 ;; Maintainer: Wanderson Ferreira <wand@hey.com>
-;; Version: 0.0.5
+;; Version: 0.0.6
 ;; Homepage: https://github.com/wandersoncferreira/code-review
 ;;
 ;; This file is not part of GNU Emacs.
@@ -467,19 +467,33 @@ Expect the same output as `git diff --no-prefix`"
                             (let-alist r
                               `((code-owner? . ,.asCodeOwner)
                                 (login . ,.requestedReviewer.login)
+                                (url . ,.requestedReviewer.url)
                                 (at))))
-                          .reviewRequests.nodes)
+                          (-distinct .reviewRequests.nodes))
                groups)
       (mapc (lambda (o)
               (let-alist o
-                (push `((code-owner?)
-                        (login . ,.author.login)
-                        (at . ,.createdAt))
-                      (gethash .state groups))))
+                (let ((current-data (gethash .state groups)))
+                  (when (not (-contains-p (-map
+                                           (lambda (it)
+                                             (a-get it 'login))
+                                           current-data)
+                                          .author.login))
+                    (push `((code-owner?)
+                            (login . ,.author.login)
+                            (url . ,.author.url)
+                            (at . ,.createdAt))
+                          (gethash .state groups))))))
             .latestOpinionatedReviews.nodes)
       groups)))
 
-(defun code-review-utils--visit-binary-file-at-point ()
+(defun code-review-utils--visit-author-at-point (&rest _)
+  "Visit author at point."
+  (interactive)
+  (with-slots (value) (magit-current-section)
+    (browse-url (oref value url))))
+
+(defun code-review-utils--visit-binary-file-at-point (&rest _)
   "Visit binary file at point."
   (interactive)
   (let ((section (magit-current-section))
@@ -491,7 +505,7 @@ Expect the same output as `git diff --no-prefix`"
             (message "Fetch binary file error! Try to view in the Forge using C-c C-v")
           (dired-at-point dired-url))))))
 
-(defun code-review-utils--visit-binary-file-at-remote ()
+(defun code-review-utils--visit-binary-file-at-remote (&rest _)
   "Visit binary file in the forge."
   (interactive)
   (let ((section (magit-current-section))
@@ -510,6 +524,17 @@ Expect the same output as `git diff --no-prefix`"
                     (format "curl %s '%s' -o %s"
                             headers url output)))
       output)))
+
+(defun code-review--distinct-labels (labels)
+  "Distinct LABELS."
+  (let (res)
+    (-filter
+     (lambda (it)
+       (when (not (-contains-p res (a-get it 'name)))
+         (progn
+           (setq res (append res (list (a-get it 'name))))
+           t)))
+     labels)))
 
 (provide 'code-review-utils)
 ;;; code-review-utils.el ends here

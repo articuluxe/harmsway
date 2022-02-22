@@ -70,6 +70,7 @@
 
    `(org-verbatim ((t (:background "gray96" :box (:line-width 2 :color "gray96")))))
 
+   '(org-upcoming-deadline ((t (:foreground "purple3"))))
    `(org-agenda-current-time ((t (:foreground "black" :weight bold))))))
 
 (provide-theme 'danneskjold-light)

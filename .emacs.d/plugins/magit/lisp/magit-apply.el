@@ -1,6 +1,6 @@
 ;;; magit-apply.el --- apply Git diffs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2021  The Magit Project Contributors
+;; Copyright (C) 2010-2022  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -546,7 +546,8 @@ of a side, then keep that side without prompting."
           (`(?Z) (dolist (f (magit-untracked-files nil file))
                    (push f delete)))
           ((or `(?Z ?? ??) `(?Z ?! ?!)) (push file delete))
-          ((or `(?Z ?D ? ) `(,_ ?D ?D)) (push file delete))
+          (`(?Z ?D ? )                  (push file delete))
+          (`(,_ ?D ?D)                  (push file resolve))
           ((or `(,_ ?U ,_) `(,_ ,_ ?U)) (push file resolve))
           (`(,_ ?A ?A)                  (push file resolve))
           (`(?X ?M ,(or ?  ?M ?D)) (push section discard))

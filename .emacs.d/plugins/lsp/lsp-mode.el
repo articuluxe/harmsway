@@ -4,7 +4,7 @@
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "26.3") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
+;; Package-Requires: ((emacs "26.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
 ;; Version: 8.0.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
@@ -178,8 +178,8 @@ As defined by the Language Server Protocol 3.16."
          lsp-elixir lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go lsp-graphql
          lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-java lsp-javascript lsp-json
          lsp-kotlin lsp-latex lsp-ltex lsp-lua lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-metals lsp-mssql lsp-ocaml lsp-pascal lsp-perl lsp-php lsp-pwsh
-         lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sourcekit lsp-sonarlint
-         lsp-tailwindcss lsp-tex lsp-terraform lsp-toml lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
+         lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-remark lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sourcekit lsp-sonarlint
+         lsp-tailwindcss lsp-tex lsp-terraform lsp-toml lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
          lsp-yaml lsp-sqls lsp-svelte lsp-steep lsp-zig)
   "List of the clients to be automatically required."
   :group 'lsp-mode
@@ -373,7 +373,7 @@ the global level or at a root of an lsp workspace."
   lsp-file-watch-ignored-directories)
 
 ;; Allow lsp-file-watch-ignored-directories as a file or directory-local variable
-(put 'lsp-file-watch-ignored-directories 'safe-local-variable 'lsp--string-listp)
+;;;###autoload(put 'lsp-file-watch-ignored-directories 'safe-local-variable 'lsp--string-listp)
 
 (defcustom lsp-file-watch-ignored-files
   '(
@@ -399,7 +399,7 @@ level or at a root of an lsp workspace."
   :package-version '(lsp-mode . "8.0.0"))
 
 ;; Allow lsp-file-watch-ignored-files as a file or directory-local variable
-(put 'lsp-file-watch-ignored-files 'safe-local-variable 'lsp--string-listp)
+;;;###autoload(put 'lsp-file-watch-ignored-files 'safe-local-variable 'lsp--string-listp)
 
 (defcustom lsp-after-uninitialized-functions nil
   "List of functions to be called after a Language Server has been uninitialized."
@@ -576,7 +576,10 @@ The hook will receive two parameters list of added and removed folders."
   :type 'hook
   :group 'lsp-mode)
 
-(make-obsolete 'lsp-eldoc-hook 'eldoc-documentation-functions "lsp-mode 8.0.0")
+(defcustom lsp-eldoc-hook '(lsp-hover)
+  "Hooks to run for eldoc."
+  :type 'hook
+  :group 'lsp-mode)
 
 (defcustom lsp-before-apply-edits-hook nil
   "Hooks to run before applying edits."
@@ -643,8 +646,10 @@ are determined by the index of the element."
 ;; vibhavp: Should we use a lower value (5)?
 (defcustom lsp-response-timeout 10
   "Number of seconds to wait for a response from the language server before
-timing out."
-  :type 'number
+timing out. Nil if no timeout."
+  :type '(choice
+          (number :tag "Seconds")
+          (const :tag "No timeout" nil))
   :group 'lsp-mode)
 
 (defcustom lsp-tcp-connection-timeout 2
@@ -1040,6 +1045,7 @@ calling `remove-overlays'.")
   "Return a sequence of the elements of SEQUENCE except the first one."
   (seq-drop sequence 1))
 
+;;;###autoload
 (defun lsp--string-listp (sequence)
   "Return t if all elements of SEQUENCE are strings, else nil."
   (not (seq-find (lambda (x) (not (stringp x))) sequence)))
@@ -1141,6 +1147,17 @@ See #2049"
 (defun lsp--error (format &rest args)
   "Display lsp error message with FORMAT with ARGS."
   (lsp--message "%s :: %s" (propertize "LSP" 'face 'error) (apply #'format format args)))
+
+(defun lsp--eldoc-message (&optional msg)
+  "Show MSG in eldoc."
+  (setq lsp--eldoc-saved-message msg)
+  (run-with-idle-timer 0 nil (lambda ()
+                               ;; XXX: new eldoc in Emacs 28
+                               ;; recommends running the hook variable
+                               ;; `eldoc-documentation-functions'
+                               ;; instead of using eldoc-message
+                               (with-no-warnings
+                                 (eldoc-message msg)))))
 
 (defun lsp-log (format &rest args)
   "Log message to the ’*lsp-log*’ buffer.
@@ -1304,14 +1321,18 @@ the lists according to METHOD."
 (defun lsp--completing-read (prompt collection transform-fn &optional predicate
                                     require-match initial-input
                                     hist def inherit-input-method)
-  "Wrap `completing-read' to provide transformation function.
+  "Wrap `completing-read' to provide transformation function and disable sort.
 
 TRANSFORM-FN will be used to transform each of the items before displaying.
 
 PROMPT COLLECTION PREDICATE REQUIRE-MATCH INITIAL-INPUT HIST DEF
 INHERIT-INPUT-METHOD will be proxied to `completing-read' without changes."
   (let* ((col (--map (cons (funcall transform-fn it) it) collection))
-         (completion (completing-read prompt col
+         (completion (completing-read prompt
+                                      (lambda (string pred action)
+                                        (if (eq action 'metadata)
+                                            `(metadata (display-sort-function . identity))
+                                          (complete-with-action action col string pred)))
                                       predicate require-match initial-input hist
                                       def inherit-input-method)))
     (cdr (assoc completion col))))
@@ -1829,7 +1850,7 @@ regex in IGNORED-FILES."
     lsp-go lsp-graphql lsp-groovy lsp-hack lsp-haxe lsp-html lsp-javascript lsp-json lsp-kotlin lsp-lua
     lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-ocaml lsp-perl lsp-php lsp-prolog lsp-purescript lsp-pwsh
     lsp-pyls lsp-pylsp lsp-racket lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sqls
-    lsp-steep lsp-svelte lsp-terraform lsp-tex lsp-toml lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl
+    lsp-steep lsp-svelte lsp-terraform lsp-tex lsp-toml lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-vhdl
     lsp-vimscript lsp-xml lsp-yaml lsp-zig)
   "List of downstream deps.")
 
@@ -1892,6 +1913,27 @@ regex in IGNORED-FILES."
   (declare (debug (form body))
            (indent 1))
   `(when-let ((lsp--cur-workspace ,workspace)) ,@body))
+
+(lsp-defun lsp--window-show-quick-pick (_workspace (&ShowQuickPickParams :place-holder :can-pick-many :items))
+  (if-let* ((selectfunc (if can-pick-many #'completing-read-multiple #'completing-read))
+            (itemLabels (seq-map (-lambda ((item &as &QuickPickItem :label)) (format "%s" label))
+                                 items))
+            (result (funcall-interactively
+                     selectfunc
+                     (format "%s%s " place-holder (if can-pick-many " (* for all)" "")) itemLabels))
+            (choices (if (listp result)
+                         (if (equal result '("*"))
+                             itemLabels
+                           result)
+                       (list result))))
+      (vconcat (seq-filter #'identity (seq-map (-lambda ((item &as &QuickPickItem :label :user-data))
+                                                 (if (member label choices)
+                                                     (lsp-make-quick-pick-item :label label :picked t :user-data user-data)
+                                                   nil))
+                                               items)))))
+
+(lsp-defun lsp--window-show-input-box (_workspace (&ShowInputBoxParams :prompt :value?))
+  (read-string (format "%s: " prompt) (or value? "")))
 
 (lsp-defun lsp--window-show-message (_workspace (&ShowMessageRequestParams :message :type))
   "Send the server's messages to log.
@@ -3072,7 +3114,10 @@ If NO-WAIT is non-nil send the request as notification."
       (lsp-notify method params)
     (let* ((send-time (time-to-seconds (current-time)))
            ;; max time by which we must get a response
-           (expected-time (+ send-time lsp-response-timeout))
+           (expected-time
+            (and
+             lsp-response-timeout
+             (+ send-time lsp-response-timeout)))
            resp-result resp-error done?)
       (unwind-protect
           (progn
@@ -3084,9 +3129,11 @@ If NO-WAIT is non-nil send the request as notification."
                                :cancel-token :sync-request)
             (while (not (or resp-error resp-result))
               (catch 'lsp-done
-                (accept-process-output nil (- expected-time send-time)))
+                (accept-process-output
+                 nil
+                 (if expected-time (- expected-time send-time) 1)))
               (setq send-time (time-to-seconds (current-time)))
-              (when (< expected-time send-time)
+              (when (and expected-time (< expected-time send-time))
                 (error "Timeout while waiting for response.  Method: %s" method)))
             (setq done? t)
             (cond
@@ -3104,7 +3151,10 @@ Return same value as `lsp--while-no-input' and respecting `non-essential'."
   (if non-essential
     (let* ((send-time (time-to-seconds (current-time)))
            ;; max time by which we must get a response
-           (expected-time (+ send-time lsp-response-timeout))
+           (expected-time
+            (and
+             lsp-response-timeout
+             (+ send-time lsp-response-timeout)))
            resp-result resp-error done?)
         (unwind-protect
             (progn
@@ -3115,9 +3165,10 @@ Return same value as `lsp--while-no-input' and respecting `non-essential'."
                                  :cancel-token :sync-request)
               (while (not (or resp-error resp-result (input-pending-p)))
                 (catch 'lsp-done
-                  (sit-for (- expected-time send-time)))
+                  (sit-for
+                   (if expected-time (- expected-time send-time) 1)))
                 (setq send-time (time-to-seconds (current-time)))
-                (when (< expected-time send-time)
+                (when (and expected-time (< expected-time send-time))
                   (error "Timeout while waiting for response.  Method: %s" method)))
               (setq done? (or resp-error resp-result))
               (cond
@@ -3788,7 +3839,7 @@ yet."
   (cond
    (lsp-managed-mode
     (when (lsp-feature? "textDocument/hover")
-      (add-hook 'eldoc-documentation-functions #'lsp-eldoc-function nil t)
+      (add-function :before-until (local 'eldoc-documentation-function) #'lsp-eldoc-function)
       (eldoc-mode 1))
 
     (add-hook 'after-change-functions #'lsp-on-change nil t)
@@ -3823,8 +3874,8 @@ yet."
              (lsp--on-idle buffer)))))))
    (t
     (lsp-unconfig-buffer)
+    (remove-function (local 'eldoc-documentation-function) #'lsp-eldoc-function)
 
-    (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function t)
     (remove-hook 'post-command-hook #'lsp--post-command t)
     (remove-hook 'after-change-functions #'lsp-on-change t)
     (remove-hook 'after-revert-hook #'lsp-on-revert t)
@@ -4841,33 +4892,10 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
    (->> lsp--cur-workspace lsp--workspace-client lsp--client-response-handlers (remhash id))
    (lsp-notify "$/cancelRequest" `(:id ,id))))
 
-(defvar-local lsp--hover-saved-bounds nil)
-
-(defun lsp-eldoc-function (cb &rest _ignored)
-  "`lsp-mode' eldoc function to display hover info (based on `textDocument/hover')."
-  (if (and lsp--hover-saved-bounds
-           (lsp--point-in-bounds-p lsp--hover-saved-bounds))
-      lsp--eldoc-saved-message
-    (setq lsp--hover-saved-bounds nil
-          lsp--eldoc-saved-message nil)
-    (if (looking-at "[[:space:]\n]")
-        (setq lsp--eldoc-saved-message nil) ; And returns nil.
-      (when (and lsp-eldoc-enable-hover (lsp--capability :hoverProvider))
-        (lsp-request-async
-         "textDocument/hover"
-         (lsp--text-document-position-params)
-         (-lambda ((hover &as &Hover? :range? :contents))
-           (when hover
-             (when range?
-               (setq lsp--hover-saved-bounds (lsp--range-to-region range?)))
-             (let ((msg (and contents
-                             (lsp--render-on-hover-content
-                              contents
-                              lsp-eldoc-render-all))))
-               (funcall cb (setq lsp--eldoc-saved-message msg)))))
-         :error-handler #'ignore
-         :mode 'tick
-         :cancel-token :eldoc-hover)))))
+(defun lsp-eldoc-function ()
+  "`lsp-mode' eldoc function."
+  (run-hooks 'lsp-eldoc-hook)
+  eldoc-last-message)
 
 (defun lsp--point-on-highlight? ()
   (-some? (lambda (overlay)
@@ -5434,6 +5462,36 @@ It will show up only if current point has signature help."
         result))
      :mode 'unchanged
      :cancel-token :document-color-token)))
+
+
+;; hover
+
+(defvar-local lsp--hover-saved-bounds nil)
+
+(defun lsp-hover ()
+  "Display hover info (based on `textDocument/signatureHelp')."
+  (if (and lsp--hover-saved-bounds
+           (lsp--point-in-bounds-p lsp--hover-saved-bounds))
+      (lsp--eldoc-message lsp--eldoc-saved-message)
+    (setq lsp--hover-saved-bounds nil
+          lsp--eldoc-saved-message nil)
+    (if (looking-at "[[:space:]\n]")
+        (lsp--eldoc-message nil)
+      (when (and lsp-eldoc-enable-hover (lsp--capability :hoverProvider))
+        (lsp-request-async
+         "textDocument/hover"
+         (lsp--text-document-position-params)
+         (-lambda ((hover &as &Hover? :range? :contents))
+           (when hover
+             (when range?
+               (setq lsp--hover-saved-bounds (lsp--range-to-region range?)))
+             (lsp--eldoc-message (and contents
+                                      (lsp--render-on-hover-content
+                                       contents
+                                       lsp-eldoc-render-all)))))
+         :error-handler #'ignore
+         :mode 'tick
+         :cancel-token :eldoc-hover)))))
 
 
 
@@ -6137,6 +6195,8 @@ textDocument/didOpen for the new file."
 (defconst lsp--default-notification-handlers
   (ht ("window/showMessage" #'lsp--window-show-message)
       ("window/logMessage" #'lsp--window-log-message)
+      ("window/showInputBox" #'lsp--window-show-input-box)
+      ("window/showQuickPick" #'lsp--window-show-quick-pick)
       ("textDocument/publishDiagnostics" #'lsp--on-diagnostics)
       ("textDocument/diagnosticsEnd" #'ignore)
       ("textDocument/diagnosticsBegin" #'ignore)
@@ -8569,8 +8629,8 @@ This avoids overloading the server with many files when starting Emacs."
               nil)
      (error t))
    "`gc-cons-threshold' increased?" (> gc-cons-threshold 800000)
-   "Using `plist' for deserialized objects?" (or lsp-use-plists :optional)
-   "Using gccemacs with emacs lisp native compilation (https://akrl.sdf.org/gccemacs.html)"
+   "Using `plist' for deserialized objects? (refer to https://emacs-lsp.github.io/lsp-mode/page/performance/#use-plists-for-deserialization)" (or lsp-use-plists :optional)
+   "Using emacs 28+ with native compilation?"
    (or (and (fboundp 'native-comp-available-p)
             (native-comp-available-p))
        :optional)))
@@ -8841,9 +8901,10 @@ In case the major-mode that you are using for "
     (url-copy-file "https://raw.githubusercontent.com/emacs-lsp/lsp-mode/master/scripts/lsp-start-plain.el"
                    start-plain t)
     (async-shell-command
-     (format "%s -q -l %s"
+     (format "%s -q -l %s %s"
              (expand-file-name invocation-name invocation-directory)
-             start-plain)
+             start-plain
+             (or (buffer-file-name) ""))
      (generate-new-buffer " *lsp-start-plain*"))))
 
 
