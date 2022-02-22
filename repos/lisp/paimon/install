@@ -1,0 +1,2 @@
+mkdir -p ../../../.emacs.d/plugins/paimon
+cp -rf src/src/*.el ../../../.emacs.d/plugins/paimon
