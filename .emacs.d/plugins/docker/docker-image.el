@@ -106,25 +106,6 @@ corresponding to arguments.
 Also note if you do not specify `docker-run-default-args', they will be ignored."
   :type '(repeat (list string (repeat string))))
 
-<<<<<<< HEAD
-
-(defun docker-image-make-id (parsed-line)
-  "Fix the id string of the entry and return the fixed entry.
-
-PARSED-LINE is the output of `docker-utils-parse', the car is expected to
-be the list (repository tag id).  See `docker-image-id-template'."
-  ;; This could be written as a complex go template,
-  ;; however the literal '<none>' causes havoc in the windows shell.
-  (-let* ((([repo tag id] rest) parsed-line)
-          (new-id (if (or (equal repo "<none>") (equal tag "<none>"))
-                      id
-                    (format "%s:%s" repo tag))))
-    (list new-id rest)))
-
-(defun docker-image-entries (&optional args)
-||||||| merged common ancestors
-(defun docker-image-entries (&optional args)
-=======
 (defalias 'docker-image-inspect 'docker-inspect)
 
 (defun docker-image-make-id (parsed-line)
@@ -141,7 +122,6 @@ be the list (repository tag id).  See `docker-image-id-template'."
     (list new-id rest)))
 
 (aio-defun docker-image-entries (&rest args)
->>>>>>> 641258c0bdee3f477ab710d1fa65cddf41cb24db
   "Return the docker images data for `tabulated-list-entries'."
   (let* ((fmt (docker-utils-make-format-string docker-image-id-template docker-image-columns))
          (data (aio-await (docker-run-docker-async "image" "ls" args (format "--format=\"%s\"" fmt))))

@@ -69,18 +69,10 @@
   "Wrapper around `read-directory-name' forwarding PROMPT and INITIAL-INPUT."
   (read-directory-name prompt nil nil t initial-input))
 
-<<<<<<< HEAD
-(defun docker-compose-read-environment-file (prompt &optional initial-input _history)
-  "Wrapper around `read-file-name'."
-  (read-file-name prompt nil nil t initial-input))
-
-||||||| merged common ancestors
-=======
 (defun docker-compose-read-environment-file (prompt &optional initial-input _history)
   "Wrapper around `read-file-name' forwarding PROMPT and INITIAL-INPUT."
   (read-file-name prompt nil nil t initial-input))
 
->>>>>>> 641258c0bdee3f477ab710d1fa65cddf41cb24db
 (defun docker-compose-read-compose-file (prompt &optional initial-input _history)
   "Wrapper around `read-file-name' forwarding PROMPT and INITIAL-INPUT."
   (read-file-name prompt nil nil t initial-input (apply-partially 'string-match ".*\\.yml\\|.*\\.yaml")))
