@@ -1,6 +1,6 @@
 ;;; org-jira.el --- Syncing between Jira and Org-mode. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016-2019 Matthew Carter <m@ahungry.com>
+;; Copyright (C) 2016-2022 Matthew Carter <m@ahungry.com>
 ;; Copyright (C) 2011 Bao Haojun
 ;;
 ;; Authors:
@@ -9,7 +9,7 @@
 ;;
 ;; Maintainer: Matthew Carter <m@ahungry.com>
 ;; URL: https://github.com/ahungry/org-jira
-;; Version: 4.3.1
+;; Version: 4.3.2
 ;; Keywords: ahungry jira org bug tracker
 ;; Package-Requires: ((emacs "24.5") (cl-lib "0.5") (request "0.2.0") (dash "2.14.1"))
 
@@ -37,6 +37,9 @@
 ;; issue servers.
 
 ;;; News:
+
+;;;; Changes in 4.3.2:
+;; - Fixes issues with org-jira-add-comment and org-jira-update-comment
 
 ;;;; Changes in 4.3.1:
 ;; - Fix to make custom-jql results sync worklogs properly.
@@ -116,6 +119,7 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'cl))
 (require 'org)
 (require 'org-clock)
 (require 'cl-lib)
@@ -371,14 +375,14 @@ See `org-default-priority' for more info."
   (declare (debug t)
            (indent 0))
   `(save-excursion
-     (save-restriction
-       (widen)
-       (unless (looking-at "^\\*\\* ")
-         (search-backward-regexp "^\\*\\* " nil t)) ; go to top heading
-       (let ((org-jira-id (org-jira-id)))
-         (unless (and org-jira-id (string-match (jiralib-get-issue-regexp) (downcase org-jira-id)))
-           (error "Not on an issue region!")))
-       ,@body)))
+    (save-restriction
+      (widen)
+      (unless (looking-at "^\\*\\* ")
+        (search-backward-regexp "^\\*\\* " nil t)) ; go to top heading
+      (let ((org-jira-id (org-jira-id)))
+        (unless (and org-jira-id (string-match (jiralib-get-issue-regexp) (downcase org-jira-id)))
+          (error "Not on an issue region!")))
+      ,@body)))
 
 (defmacro org-jira-with-callback (&rest body)
   "Simpler way to write the data BODY callbacks."
@@ -1852,7 +1856,7 @@ that should be bound to an issue."
            ;; about the local properties, not any hierarchal or special
            ;; ones).
            (let ((org-special-properties nil))
-             (or (org-entry-get (point) key)
+             (or (org-entry-get (point) key t)
                  ""))))))
 
 (defun org-jira-read-action (actions)

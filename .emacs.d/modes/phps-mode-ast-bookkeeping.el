@@ -602,13 +602,23 @@
 
            ;; Infix expressions
            ((or
-             (equal type 'addition-expression)
-             (equal type 'boolean-and-expression)
              (equal type 'boolean-or-expression)
-             (equal type 'logical-and-expression)
+             (equal type 'boolean-and-expression)
              (equal type 'logical-or-expression)
+             (equal type 'logical-and-expression)
              (equal type 'logical-xor-expression)
-             (equal type 'concat-expression))
+             (equal type 'bitwise-or-expression)
+             (equal type 'bitwise-and-expression)
+             (equal type 'bitwise-xor-expression)
+             (equal type 'concat-expression)
+             (equal type 'addition-expression)
+             (equal type 'subtraction-expression)
+             (equal type 'multiplication-expression)
+             (equal type 'exponentiation-expression)
+             (equal type 'division-expression)
+             (equal type 'modulo-expression)
+             (equal type 'bitwise-shift-left-expression)
+             (equal type 'bitwise-shift-right-expression))
             (when-let ((bs (reverse (plist-get item 'b))))
               (dolist (b bs)
                 (push `(,scope ,b) bookkeeping-stack)))
@@ -759,6 +769,96 @@
 
            ((equal type 'array-object-dereferencable)
             (let* ((subject (plist-get item 'subject))
+                   (downcase-subject-name (downcase (plist-get subject 'name)))
+                   (property-name (plist-get item 'property-name)))
+
+              (when downcase-subject-name
+                (cond
+
+                 ((string= downcase-subject-name "$this")
+                  (puthash
+                   (list
+                    (plist-get subject 'start)
+                    (plist-get subject 'end))
+                   1
+                   bookkeeping)
+                  ;; When current scope is arrow function
+                  ;; we should go up in scope until we get out of
+                  ;; arrow functions scope
+                  (let ((sub-scope scope)
+                        (head-scope)
+                        (is-arrow-function-scope t))
+                    (while (and
+                            sub-scope
+                            is-arrow-function-scope)
+                      (setq
+                       head-scope
+                       (car sub-scope))
+                      (setq
+                       sub-scope
+                       (cdr sub-scope))
+                      (unless (equal
+                               (plist-get head-scope 'type)
+                               'arrow-function)
+                        (setq is-arrow-function-scope nil)))
+                    (let* ((predefined)
+                           (variable-ids
+                            (phps-mode-ast-bookkeeping--generate-variable-scope-string
+                             sub-scope
+                             (concat "$" property-name)
+                             t))
+                           (symbol-id
+                            (phps-mode-ast-bookkeeping--generate-symbol-scope-string
+                             sub-scope
+                             property-name))
+                           (bookkeeping-object
+                            (list
+                             (plist-get item 'property-start)
+                             (plist-get item 'property-end))))
+                      (when (gethash symbol-id bookkeeping)
+                        (setq
+                         predefined
+                         t))
+                      (dolist (variable-id variable-ids)
+                        (when (gethash variable-id bookkeeping)
+                          (setq
+                           predefined
+                           t)))
+                      (if predefined
+                          (puthash
+                           bookkeeping-object
+                           1
+                           bookkeeping)
+                        (puthash
+                         bookkeeping-object
+                         0
+                         bookkeeping)))))
+
+                 (t
+                  (let ((variable-ids
+                         (phps-mode-ast-bookkeeping--generate-variable-scope-string
+                          scope
+                          (plist-get subject 'name)
+                          t))
+                        (predefined 0))
+                    (dolist (variable-id variable-ids)
+                      (when (gethash
+                             variable-id
+                             bookkeeping)
+                        (setq
+                         predefined
+                         1)))
+                    (puthash
+                     (list
+                      (plist-get subject 'start)
+                      (plist-get subject 'end))
+                     predefined
+                     bookkeeping)))
+
+                 ))))
+
+           ((equal type 'variable)
+            (let* ((subject (plist-get item 'array-object-dereferencable))
                    (downcase-subject-name (downcase (plist-get subject 'name)))
                    (property-name (plist-get item 'property-name)))
 

@@ -6,7 +6,7 @@
 ;; URL: https://github.com/Ladicle/hydra-posframe
 ;; Keywords: convenience, languages, tools
 ;; Version: 1.0.0
-;; Package-Requires: ((emacs "26.1") (hydra "0.14.0") (posframe "0.4.3"))
+;; Package-Requires: ((emacs "26.1") (hydra "0.14.0") (posframe "1.1.4"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -51,6 +51,12 @@ When 0, no border is showed."
   :group 'hydra-posframe
   :type 'function)
 
+(defcustom hydra-posframe-font nil
+  "The font used by hydra-posframe.
+When nil, Using current frame's font as fallback."
+  :group 'hydra-posframe
+  :type 'string)
+
 (defface hydra-posframe-face
   '((t :inherit default))
   "The background and foreground color of the posframe.
@@ -74,12 +80,13 @@ Only `background` is used in this face."
   "Show hydra hints on the posframe"
   (posframe-show
    hydra-posframe-buffer
+   :font hydra-posframe-font
    :poshandler hydra-posframe-poshandler
    :foreground-color (face-foreground 'hydra-posframe-face nil t)
    :background-color (face-background 'hydra-posframe-face nil t)
-   :internal-border-width hydra-posframe-border-width
-   :internal-border-color (face-attribute 'hydra-posframe-border-face :background)
-   :string str
+   :border-width hydra-posframe-border-width
+   :border-color (face-attribute 'hydra-posframe-border-face :background)
+   :string (concat str "\n")
    :override-parameters hydra-posframe-parameters)
   (let ((current-frame
          (buffer-local-value 'posframe--frame

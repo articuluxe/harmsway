@@ -78,10 +78,14 @@ The key must be either a string or a vector.
 This is the key representation accepted by `define-key'."
   :type '(choice key-sequence (const nil)))
 
-(defcustom consult-project-root-function
-  #'consult--project-root-default-function
-  "Function which returns project root directory.
+(defvar consult-project-root-function nil)
+(make-obsolete-variable 'consult-project-root-function "Deprecated in favor of `consult-project-function'." "0.15")
 
+(defcustom consult-project-function
+  #'consult--default-project-function
+  "Function which returns project root directory.
+The function takes one boolargument MAY-PROMPT. If MAY-PROMPT is non-nil,
+the function may ask the prompt the user for a project directory.
 The root directory is used by `consult-buffer' and `consult-grep'."
   :type '(choice function (const nil)))
 
@@ -598,17 +602,20 @@ If no capturing groups are used highlight the whole match."
      (lambda (x) (or (cdr (assoc x consult--convert-regexp-table)) x))
      regexp 'fixedcase 'literal)))
 
-(defun consult--default-regexp-compiler (input type)
+(defun consult--default-regexp-compiler (input type ignore-case)
   "Compile the INPUT string to a list of regular expressions.
 The function should return a pair, the list of regular expressions and a
-highlight function. The highlight function should take a single argument, the
-string to highlight given the INPUT. TYPE is the desired type of regular
-expression, which can be `basic', `extended', `emacs' or `pcre'."
+highlight function. The highlight function should take a single
+argument, the string to highlight given the INPUT. TYPE is the desired
+type of regular expression, which can be `basic', `extended', `emacs' or
+`pcre'. If IGNORE-CASE is non-nil return a highlight function which
+matches case insensitively."
   (setq input (consult--split-escaped input))
   (cons (mapcar (lambda (x) (consult--convert-regexp x type)) input)
         (when-let (regexps (seq-filter #'consult--valid-regexp-p input))
           (lambda (str)
-            (consult--highlight-regexps regexps str)))))
+            (let ((case-fold-search ignore-case))
+              (consult--highlight-regexps regexps str))))))
 
 (defun consult--split-escaped (str)
   "Split STR at spaces, which can be escaped with backslash."
@@ -821,7 +828,7 @@ only the last two path components are shown.
 
 If DIR is a string, it is returned.
 If DIR is a true value, the user is asked.
-Then the `consult-project-root-function' is tried.
+Then the `consult-project-function' is tried.
 Otherwise the `default-directory' is returned."
   (let* ((dir
           (cond
@@ -845,24 +852,19 @@ Otherwise the `default-directory' is returned."
       (t (format "%s (%s): " prompt (consult--abbreviate-directory dir))))
      edir)))
 
-(defun consult--project-root-default-function (&optional maybe-prompt)
+(defun consult--default-project-function (may-prompt)
   "Return project root directory.
-When no project is found and MAYBE-PROMPT is non-nil ask the user."
-  (when-let (proj (project-current maybe-prompt))
+When no project is found and MAY-PROMPT is non-nil ask the user."
+  (when-let (proj (project-current may-prompt))
     (cond
      ((fboundp 'project-root) (project-root proj))
      ((fboundp 'project-roots) (car (project-roots proj))))))
 
-(defun consult--project-root (&optional maybe-prompt)
+(defun consult--project-root (&optional may-prompt)
   "Return project root as absolute path.
-When no project is found and MAYBE-PROMPT is non-nil ask the user."
-  (when-let (root (and consult-project-root-function
-                       (if maybe-prompt
-                           (condition-case nil
-                               (funcall consult-project-root-function t)
-                             (wrong-number-of-arguments
-                              (funcall consult-project-root-function)))
-                         (funcall consult-project-root-function))))
+When no project is found and MAY-PROMPT is non-nil ask the user."
+  (when-let (root (and consult-project-function
+                       (funcall consult-project-function may-prompt)))
     (expand-file-name root)))
 
 (defun consult--project-name (dir)
@@ -1055,7 +1057,7 @@ tofu-encoded MARKER suffix for disambiguation."
 ;; we cannot use it here since it excludes too much (e.g., invisible)
 ;; and at the same time not enough (e.g., cursor-sensor-functions).
 (defconst consult--remove-text-properties
-  '(category cursor cursor-intangible cursor-sensor-functions field follow-link font-lock-face
+  '(category cursor cursor-intangible cursor-sensor-functions field follow-link
     fontified front-sticky help-echo insert-behind-hooks insert-in-front-hooks intangible keymap
     local-map modification-hooks mouse-face pointer read-only rear-nonsticky yank-handler)
   "List of text properties to remove from buffer strings.")
@@ -1294,9 +1296,8 @@ and CANDIDATE."
               (setq consult--preview-function
                     (let ((last-preview))
                       (lambda ()
-                        (with-selected-window (or (active-minibuffer-window)
-                                                  (selected-window))
-                          (when-let (cand (funcall candidate))
+                        (when-let (cand (funcall candidate))
+                          (with-selected-window (active-minibuffer-window)
                             (let ((input (minibuffer-contents-no-properties)))
                               (with-selected-window (or (minibuffer-selected-window) (next-window))
                                 (let ((transformed (funcall transform input cand))
@@ -4053,7 +4054,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
     :face     consult-buffer
     :history  buffer-name-history
     :state    ,#'consult--buffer-state
-    :enabled  ,(lambda () consult-project-root-function)
+    :enabled  ,(lambda () consult-project-function)
     :items
     ,(lambda ()
        (consult--buffer-query :sort 'visibility
@@ -4069,7 +4070,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
     :face     consult-file
     :history  file-name-history
     :state    ,#'consult--file-state
-    :enabled  ,(lambda () (and consult-project-root-function
+    :enabled  ,(lambda () (and consult-project-function
                                recentf-mode))
     :items
     ,(lambda ()
@@ -4144,7 +4145,7 @@ The command supports recent files, bookmarks, views and project files as
 virtual buffers. Buffers are previewed. Narrowing to buffers (b), files (f),
 bookmarks (m) and project files (p) is supported via the corresponding
 keys. In order to determine the project-specific files and buffers, the
-`consult-project-root-function' is used. The virtual buffer SOURCES
+`consult-project-function' is used. The virtual buffer SOURCES
 default to `consult-buffer-sources'. See `consult--multi' for the
 configuration of the virtual buffer sources."
   (interactive)
@@ -4173,14 +4174,14 @@ configuration of the virtual buffer sources."
   ;; project. But who does that? Working on the first level on project A
   ;; and on the second level on project B and on the third level on project C?
   ;; You mustn't be afraid to dream a little bigger, darling.
-  `(let ((consult-project-root-function
+  `(let ((consult-project-function
           (let ((root (or (consult--project-root t) (user-error "No project found")))
                 (depth (recursion-depth))
-                (orig consult-project-root-function))
-            (lambda (&rest args)
+                (orig consult-project-function))
+            (lambda (may-prompt)
               (if (= depth (recursion-depth))
                   root
-                (apply orig args))))))
+                (funcall orig may-prompt))))))
      ,@body))
 
 ;;;###autoload
@@ -4388,7 +4389,8 @@ INITIAL is inital input."
   (pcase-let* ((cmd (split-string-and-unquote consult-grep-args))
                (type (consult--grep-regexp-type (car cmd)))
                (`(,arg . ,opts) (consult--command-split input))
-               (`(,re . ,hl) (funcall consult--regexp-compiler arg type)))
+               (`(,re . ,hl) (funcall consult--regexp-compiler arg type
+                                      (member "--ignore-case" cmd))))
     (when re
       (list :command
             (append cmd
@@ -4431,7 +4433,7 @@ Here we give a few example inputs:
 The symbol at point is added to the future history. If `consult-grep'
 is called interactively with a prefix argument, the user can specify
 the directory to search in. By default the project directory is used
-if `consult-project-root-function' is defined and returns non-nil.
+if `consult-project-function' is defined and returns non-nil.
 Otherwise the `default-directory' is searched."
   (interactive "P")
   (consult--grep "Grep" #'consult--grep-builder dir initial))
@@ -4440,11 +4442,13 @@ Otherwise the `default-directory' is searched."
 
 (defun consult--git-grep-builder (input)
   "Build command line given CONFIG and INPUT."
-  (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-               (`(,re . ,hl) (funcall consult--regexp-compiler arg 'extended)))
+  (pcase-let* ((cmd (split-string-and-unquote consult-git-grep-args))
+               (`(,arg . ,opts) (consult--command-split input))
+               (`(,re . ,hl) (funcall consult--regexp-compiler arg 'extended
+                                      (member "--ignore-case" cmd))))
     (when re
       (list :command
-            (append (split-string-and-unquote consult-git-grep-args)
+            (append cmd
                     (cdr (mapcan (lambda (x) (list "--and" "-e" x)) re))
                     opts)
             :highlight hl))))
@@ -4471,7 +4475,12 @@ See `consult-grep' for more details."
   (pcase-let* ((cmd (split-string-and-unquote consult-ripgrep-args))
                (type (consult--ripgrep-regexp-type (car cmd)))
                (`(,arg . ,opts) (consult--command-split input))
-               (`(,re . ,hl) (funcall consult--regexp-compiler arg type)))
+               (`(,re . ,hl) (funcall consult--regexp-compiler arg type
+                                      (if (member "--smart-case" cmd)
+                                          (let ((case-fold-search nil))
+                                           ;; Case insensitive if there are no uppercase letters
+                                           (not (string-match-p "[[:upper:]]" input)))
+                                        (member "--ignore-case" cmd)))))
     (when re
       (list :command
             (append cmd
@@ -4526,7 +4535,8 @@ INITIAL is inital input."
   (pcase-let* ((cmd (split-string-and-unquote consult-find-args))
                (type (consult--find-regexp-type (car cmd)))
                (`(,arg . ,opts) (consult--command-split input))
-               (`(,re . ,hl) (funcall consult--regexp-compiler arg type)))
+               ;; ignore-case=t since -iregex is used below
+               (`(,re . ,hl) (funcall consult--regexp-compiler arg type t)))
     (when re
       (list :command
             (append cmd
@@ -4557,13 +4567,13 @@ See `consult-grep' for more details regarding the asynchronous search."
 
 (defun consult--locate-builder (input)
   "Build command line given INPUT."
-  (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
-               (`(,re . ,hl) (funcall consult--regexp-compiler arg 'basic)))
+  (pcase-let* ((cmd (split-string-and-unquote consult-locate-args))
+               (`(,arg . ,opts) (consult--command-split input))
+               (`(,re . ,hl) (funcall consult--regexp-compiler arg 'basic
+                                      (member "--ignore-case" cmd))))
     (when re
       (list :command
-            (append (split-string-and-unquote consult-locate-args)
-                    (list (consult--join-regexps re 'basic))
-                    opts)
+            (append cmd (list (consult--join-regexps re 'basic)) opts)
             :highlight hl))))
 
 ;;;###autoload
@@ -4583,7 +4593,7 @@ See `consult-grep' for more details regarding the asynchronous search."
     (unless (string-blank-p arg)
       (list :command (append (split-string-and-unquote consult-man-args)
                              (list arg) opts)
-            :highlight (cdr (consult--default-regexp-compiler input 'basic))))))
+            :highlight (cdr (consult--default-regexp-compiler input 'basic t))))))
 
 (defun consult--man-format (lines)
   "Format man candidates from LINES."

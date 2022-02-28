@@ -60,28 +60,21 @@
                                     (0 ?i)
                                     (1 ?w)
                                     (_ ?e))
-                   'consult-compile--marker (point-marker)
-                   'consult-compile--loc (compilation--message->loc msg))
+                   'consult--candidate (point-marker))
                   candidates))))
       (nreverse candidates))))
 
-(defun consult-compile--error-lookup (_ candidates cand)
-  "Lookup marker of CAND by accessing CANDIDATES list."
-  (when-let ((cand (car (member cand candidates)))
-             (marker (get-text-property 0 'consult-compile--marker cand))
-             (loc (get-text-property 0 'consult-compile--loc cand))
-             (buffer (marker-buffer marker))
-             (default-directory (buffer-local-value 'default-directory buffer)))
-    (consult--position-marker
-     ;; taken from compile.el
-     (apply #'compilation-find-file
-            marker
-            (caar (compilation--loc->file-struct loc))
-            (cadar (compilation--loc->file-struct loc))
-            (compilation--file-struct->formats
-             (compilation--loc->file-struct loc)))
-     (compilation--loc->line loc)
-     (compilation--loc->col loc))))
+(defun consult-compile--lookup (marker)
+  "Lookup error position given error MARKER."
+  (when-let (buffer (and marker (marker-buffer marker)))
+    (with-current-buffer buffer
+      (let ((next-error-highlight nil)
+            (compilation-current-error marker)
+            (overlay-arrow-position overlay-arrow-position))
+        (ignore-errors
+          (save-window-excursion
+            (compilation-next-error-function 0)
+            (point-marker)))))))
 
 (defun consult-compile--compilation-buffers (file)
   "Return a list of compilation buffers relevant to FILE."
@@ -91,6 +84,17 @@
      (with-current-buffer buffer
        (and (compilation-buffer-internal-p)
             (file-in-directory-p file default-directory))))))
+
+(defun consult-compile--state ()
+  "Like `consult--jump-state', also setting the current compilation error."
+  (let ((state (consult--jump-state 'consult-preview-error)))
+    (lambda (marker restore)
+      (let ((pos (consult-compile--lookup marker)))
+        (when-let (buffer (and restore marker (marker-buffer marker)))
+          (with-current-buffer buffer
+            (setq compilation-current-error marker
+                  overlay-arrow-position marker)))
+        (funcall state pos restore)))))
 
 ;;;###autoload
 (defun consult-compile-error ()
@@ -112,11 +116,11 @@ preview of the currently selected error."
    :sort nil
    :require-match t
    :history t ;; disable history
-   :lookup #'consult-compile--error-lookup
+   :lookup #'consult--lookup-candidate
    :group (consult--type-group consult-compile--narrow)
    :narrow (consult--type-narrow consult-compile--narrow)
    :history '(:input consult-compile--history)
-   :state (consult--jump-state 'consult-preview-error)))
+   :state (consult-compile--state)))
 
 (provide 'consult-compile)
 ;;; consult-compile.el ends here

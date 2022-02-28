@@ -4,11 +4,11 @@
 ;; Maintainer: Jose A Ortega Ruiz
 ;; Keywords: docs, convenience
 ;; License: GPL-3.0-or-later
-;; Version: 0.3
+;; Version: 0.4
 ;; Package-Requires: ((emacs "26.1") (consult "0.9"))
 ;; Homepage: https://codeberg.org/jao/consult-recoll
 
-;; Copyright (C) 2021  Jose A Ortega Ruiz
+;; Copyright (C) 2021, 2022  Jose A Ortega Ruiz
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -121,7 +121,8 @@ If given, use INITIAL as the starting point of the query."
   "Consult recoll's local index.
 With prefix argument ASK, the user is prompted for an initial query string."
   (interactive "P")
-  (let ((initial (when ask (read-string "Initial query: "))))
+  (let ((initial (when ask
+                   (if (stringp ask) ask (read-string "Initial query: ")))))
     (consult-recoll--open (consult-recoll--search initial))))
 
 (provide 'consult-recoll)
