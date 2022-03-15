@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.15
+;; Version: 0.16
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -1842,7 +1842,6 @@ minibuffer before executing the action."
                         (with-selected-window action-window
                           (let ((enable-recursive-minibuffers t)
                                 (embark--command command)
-                                (this-command action)
                                 (prefix-arg prefix)
                                 ;; the next two avoid mouse dialogs
                                 (use-dialog-box nil)
@@ -1856,6 +1855,7 @@ minibuffer before executing the action."
                                  (if (characterp last-command-event)
                                      (string last-command-event)
                                    (kbd "RET"))))
+                              (setq this-command action)
                               (command-execute action)))
                           (setq final-window (selected-window)))
                       (embark--run-action-hooks embark-post-action-hooks
@@ -2355,10 +2355,9 @@ point."
          (lambda ()
            (delete-minibuffer-contents)
            (insert input))
-       (let ((this-command command)
-             ;; the next two avoid mouse dialogs
-             (use-dialog-box nil)
+       (let ((use-dialog-box nil) ;; avoid mouse dialogs
              (last-nonmenu-event 13))
+         (setq this-command command)
          (command-execute command))))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
@@ -3624,25 +3623,29 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
-(defun embark-next-symbol (symbol)
-  "Jump to next occurrence of SYMBOL.
+(defun embark-next-symbol ()
+  "Jump to next occurrence of symbol at point.
 The search respects symbol boundaries."
-  (interactive "sSymbol: ")
-  (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
-    (when (looking-at regexp)
-      (forward-symbol 1))
-    (unless (re-search-forward regexp nil t)
-      (user-error "Symbol `%s' not found" symbol))))
+  (interactive)
+  (if-let ((symbol (thing-at-point 'symbol)))
+      (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
+        (when (looking-at regexp)
+          (forward-symbol 1))
+        (unless (re-search-forward regexp nil t)
+          (user-error "Symbol `%s' not found" symbol)))
+    (user-error "No symbol at point")))
 
-(defun embark-previous-symbol (symbol)
-  "Jump to previous occurrence SYMBOL.
+(defun embark-previous-symbol ()
+  "Jump to previous occurrence of symbol at point.
 The search respects symbol boundaries."
-  (interactive "sSymbol: ")
-  (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
-    (when (looking-back regexp (- (point) (length symbol)))
-      (forward-symbol -1))
-    (unless (re-search-backward regexp nil t)
-      (user-error "Symbol `%s' not found" symbol))))
+  (interactive)
+  (if-let ((symbol (thing-at-point 'symbol)))
+      (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
+        (when (looking-back regexp (- (point) (length symbol)))
+          (forward-symbol -1))
+        (unless (re-search-backward regexp nil t)
+          (user-error "Symbol `%s' not found" symbol)))
+    (user-error "No symbol at point")))
 
 (defun embark-compose-mail (address)
   "Compose email to ADDRESS."

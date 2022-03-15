@@ -26,7 +26,6 @@
 (require 's)
 (require 'aio)
 (require 'dash)
-(require 'vterm nil 'noerror)
 
 (require 'docker-group)
 (require 'docker-utils)
@@ -35,6 +34,19 @@
   "Run docker as root."
   :group 'docker
   :type 'boolean)
+
+(defcustom docker-show-messages t
+  "If non-nil `message' docker commands which are run."
+  :group 'docker
+  :type 'boolean)
+
+(defcustom docker-run-async-with-buffer-function (if (featurep 'vterm)
+                                                     'docker-run-async-with-buffer-vterm
+                                                   'docker-run-async-with-buffer-shell)
+  "Function used to run a program with a live buffer attached to it."
+  :group 'docker
+  :type 'symbol)
+
 
 (defmacro docker-with-sudo (&rest body)
   "Ensure `default-directory' is set correctly according to `docker-run-as-root' then execute BODY."
@@ -49,7 +61,7 @@
   (docker-with-sudo
     (let* ((process-args (-remove 's-blank? (-flatten args)))
            (command (s-join " " (-insert-at 0 program process-args))))
-      (message "Running: %s" command)
+      (when docker-show-messages (message "Running: %s" command))
       (start-file-process-shell-command command (apply #'docker-utils-generate-new-buffer-name program process-args) command))))
 
 (defun docker-run-async (program &rest args)
@@ -62,9 +74,7 @@
 
 (defun docker-run-async-with-buffer (program &rest args)
   "Execute \"PROGRAM ARGS\" and display output in a new buffer."
-  (if (featurep 'vterm)
-      (apply #'docker-run-async-with-buffer-vterm program args)
-    (apply #'docker-run-async-with-buffer-shell program args)))
+   (apply docker-run-async-with-buffer-function program args))
 
 (defun docker-run-async-with-buffer-shell (program &rest args)
   "Execute \"PROGRAM ARGS\" and display output in a new `shell' buffer."
@@ -77,10 +87,16 @@
 
 (defun docker-run-async-with-buffer-vterm (program &rest args)
   "Execute \"PROGRAM ARGS\" and display output in a new `vterm' buffer."
-  (let* ((process-args (-remove 's-blank? (-flatten args)))
-         (vterm-shell (s-join " " (-insert-at 0 program process-args)))
-         (vterm-kill-buffer-on-exit nil))
-    (vterm-other-window (apply #'docker-utils-generate-new-buffer-name program process-args))))
+  (defvar vterm-kill-buffer-on-exit)
+  (defvar vterm-shell)
+  (require 'vterm nil 'noerror)
+  (if (fboundp 'vterm-other-window)
+      (let* ((process-args (-remove 's-blank? (-flatten args)))
+             (vterm-shell (s-join " " (-insert-at 0 program process-args)))
+             (vterm-kill-buffer-on-exit nil))
+        (vterm-other-window
+         (apply #'docker-utils-generate-new-buffer-name program process-args)))
+    (error "The vterm package is not installed")))
 
 (defun docker-process-sentinel (promise process event)
   "Sentinel that resolves the PROMISE using PROCESS and EVENT."
@@ -90,8 +106,8 @@
         (error "Error running: \"%s\" (%s)" (process-name process) event)
       (aio-resolve promise
                    (lambda ()
-                     (message nil)
-                     (message "Finished: %s" (process-name process))
+                     (when docker-show-messages
+                       (message "Finished: %s" (process-name process)))
                      (run-with-timer 2 nil (lambda () (message nil)))
                      (with-current-buffer (process-buffer process)
                        (prog1 (buffer-substring-no-properties (point-min) (point-max))

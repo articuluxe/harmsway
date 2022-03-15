@@ -23,13 +23,15 @@
 
 ;;; Commentary:
 
-;; python-docstring-mode.el is a minor mode for intelligently
-;; reformatting (refilling) and highlighting Python docstrings. It
-;; understands both epytext and Sphinx formats (even intermingled!),
-;; so it knows how to reflow them correctly. It will also highlight
-;; markup in your docstrings, including epytext and reStructuredText.
+;; python-docstring-mode.el is a minor mode for intelligently reformatting
+;; (refilling) and highlighting Python docstrings.  It understands both epytext
+;; and Sphinx formats (even intermingled!), so it knows how to reflow them
+;; correctly.  It will also highlight markup in your docstrings, including
+;; epytext and reStructuredText.
 
 ;;; Code:
+
+(require 'syntax)
 
 (defcustom python-docstring-sentence-end-double-space t
   "If non-nil, use double spaces when formatting text.
@@ -56,17 +58,22 @@ single space is used."
               (save-excursion
                 (let* ((orig-point (point))
                        (syx (syntax-ppss))
-                       (in-string (if (nth 3 syx) t
+                       (in-string (if (eq (syntax-ppss-context syx) 'string) t
                                     (progn
                                       (setf fill-it-anyway t)
                                       (throw 'not-a-string nil))))
-                       (string-start (+ (goto-char (nth 8 syx))
-                                        3))
-                       (rawchar (if (eql (char-before (point)) ?r)
+                       (syntax-element-start (nth 8 syx))
+                       (string-start
+                        (+ (goto-char (+ syntax-element-start
+                                         (if (eq (char-before syntax-element-start) ?\")
+                                             -2 0
+                                             )))
+                           3))
+                       (is-raw-python-string (if (eq (char-before string-start) ?r)
                                     1
                                   0))
                        ;; at the beginning of the screen here
-                       (indent-count (- (- string-start (+ rawchar 3))
+                       (indent-count (- (- string-start (+ is-raw-python-string 3))
                                         (save-excursion
                                           (beginning-of-line)
                                           (point))))
@@ -104,7 +111,7 @@ single space is used."
         (call-interactively 'fill-paragraph))))
 
 (defvar python-docstring-field-with-arg-re
-  "^\\s-*\\([@:]\\)\\(param\\|parameter\\|arg\\|argument\\|type\\|keyword\\|kwarg\\|kwparam\\|raise\\|raises\\|except\\|exception\\|ivar\\|ivariable\\|cvar\\|cvariable\\|var\\|variable\\|type\\|group\\|todo\\|newfield\\)\\s-+\\([a-zA-Z_][a-zA-Z0-9_,. ]*?\\)\\(:\\)")
+  "^\\s-*\\([@:]\\)\\(param\\|parameter\\|arg\\|argument\\|type\\|keyword\\|kwarg\\|kwparam\\|raise\\|raises\\|except\\|exception\\|ivar\\|ivariable\\|cvar\\|cvariable\\|var\\|variable\\|type\\|group\\|todo\\|newfield\\)\\s-+\\(~*[a-zA-Z_][a-zA-Z0-9_,. ]*?\\)\\(:\\)")
 
 (defvar python-docstring-field-no-arg-re
   "^\\s-*\\([@:]\\)\\(raise\\|raises\\|return\\|returns\\|rtype\\|returntype\\|type\\|sort\\|see\\|seealso\\|note\\|attention\\|bug\\|warning\\|warn\\|version\\|todo\\|deprecated\\|since\\|status\\|change\\|changed\\|permission\\|requires\\|require\\|requirement\\|precondition\\|precond\\|postcondition\\|postcod\\|invariant\\|author\\|organization\\|org\\|copyright\\|(c)\\|license\\|contact\\|summary\\|params\\|param\\)\\(:\\)")

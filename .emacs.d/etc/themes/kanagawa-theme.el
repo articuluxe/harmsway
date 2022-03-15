@@ -179,7 +179,7 @@
   (org-block-begin-line                          (:background sumiInk-0 :foreground sumiInk-2))
   (org-block-end-line	                         (:background sumiInk-0 :foreground sumiInk-2))
   (org-headline-done                             (:foreground dragonBlue :strike-through t))
-  (org-todo                                      (:foreground waveAqua2 :bold t))
+  (org-todo                                      (:foreground surimiOrange :bold t))
   (org-headline-todo                             (:foreground sumiInk-2))
   (org-upcoming-deadline                         (:foreground peachRed))
   (org-footnote                                  (:foreground waveAqua2))
@@ -241,7 +241,7 @@
   (show-paren-match                              (:background waveAqua1 :foreground sumiInk-0 :bold t))
   (show-paren-match-expression	                 (:background waveAqua1 :foreground sumiInk-0 :bold t))
   (show-paren-mismatch                           (:background peachRed :foreground old-white))
-  (tooltip                                       (:background sumiInk-4))
+  (tooltip                                       (:foreground sumiInk-0 :background carpYellow :bold t))
   
   ;; company-box
   (company-box                                   (:background sumiInk-0))
@@ -417,6 +417,7 @@
   (tab-line                                      (:background sumiInk-0))
 
   (centaur-tabs-unselected                       (:background sumiInk-0 :foreground sumiInk-4))
+  (centaur-tabs-default                          (:background sumiInk-0 :foreground sumiInk-4))
   (centaur-tabs-unselected-modified              (:background sumiInk-0 :foreground peachRed))
   (centaur-tabs-modified-marker-unselected       (:background sumiInk-0 :foreground sumiInk-4))
   (centaur-tabs-close-unselected                 (:background sumiInk-0 :foreground sumiInk-4))
@@ -432,6 +433,9 @@
   (diff-hl-margin-change                         (:foreground springBlue :background winterBlue))
   (diff-hl-margin-delete                         (:foreground peachRed :background winterRed))
   (diff-hl-margin-insert                         (:foreground comet :background winterBlue))
+
+  (bm-fringe-face                                (:background peachRed :foreground sumiInk-3))
+  (bm-fringe-persistent-face                     (:background peachRed :foreground sumiInk-3))
   
  ))
 

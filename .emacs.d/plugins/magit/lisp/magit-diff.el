@@ -1019,22 +1019,36 @@ and `:slant'."
 (defun magit-diff-dwim (&optional args files)
   "Show changes for the thing at point."
   (interactive (magit-diff-arguments))
-  (pcase (magit-diff--dwim)
-    (`unmerged (magit-diff-unmerged args files))
-    (`unstaged (magit-diff-unstaged args files))
-    (`staged
-     (let ((file (magit-file-at-point)))
-       (if (and file (equal (cddr (car (magit-file-status file))) '(?D ?U)))
-           ;; File was deleted by us and modified by them.  Show the latter.
-           (magit-diff-unmerged args (list file))
-         (magit-diff-staged nil args files))))
-    (`(commit . ,value)
-     (magit-diff-range (format "%s^..%s" value value) args files))
-    (`(stash  . ,value) (magit-stash-show value args))
-    ((and range (pred stringp))
-     (magit-diff-range range args files))
-    (_
-     (call-interactively #'magit-diff-range))))
+  (let ((default-directory default-directory)
+        (section (magit-current-section)))
+    (cond
+     ((magit-section-match 'module section)
+      (setq default-directory
+            (expand-file-name
+             (file-name-as-directory (oref section value))))
+      (magit-diff-range (oref section range)))
+     (t
+      (when (magit-section-match 'module-commit section)
+        (setq args nil)
+        (setq files nil)
+        (setq default-directory
+              (expand-file-name
+               (file-name-as-directory (magit-section-parent-value section)))))
+      (pcase (magit-diff--dwim)
+        (`unmerged (magit-diff-unmerged args files))
+        (`unstaged (magit-diff-unstaged args files))
+        (`staged
+         (let ((file (magit-file-at-point)))
+           (if (and file (equal (cddr (car (magit-file-status file))) '(?D ?U)))
+               ;; File was deleted by us and modified by them.  Show the latter.
+               (magit-diff-unmerged args (list file))
+             (magit-diff-staged nil args files))))
+        (`(stash . ,value) (magit-stash-show value args))
+        (`(commit . ,value)
+         (magit-diff-range (format "%s^..%s" value value) args files))
+        ((and range (pred stringp))
+         (magit-diff-range range args files))
+        (_ (call-interactively #'magit-diff-range)))))))
 
 (defun magit-diff--dwim ()
   "Return information for performing DWIM diff.
@@ -1651,8 +1665,7 @@ the Magit-Status buffer for DIRECTORY."
        section
        ;; Currently the `hunk' type is also abused for file
        ;; mode changes, which we are not interested in here.
-       ;; Such sections have no value.
-       (oref section value)
+       (not (equal (oref section value) '(chmod)))
        section))))
 
 (defun magit-diff-visit--goto-from-p (section in-worktree)
@@ -3009,7 +3022,8 @@ are highlighted."
       (unless (and (region-active-p)
                    (<= (region-beginning) beg))
         (magit-section-make-overlay beg cnt 'magit-section-highlight))
-      (unless (oref section hidden)
+      (if (oref section hidden)
+          (oset section washer #'ignore)
         (dolist (child (oref section children))
           (when (or (eq this-command 'mouse-drag-region)
                     (not (and (region-active-p)

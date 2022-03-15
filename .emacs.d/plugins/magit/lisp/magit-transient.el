@@ -47,6 +47,9 @@
    (fallback    :initarg :fallback    :initform nil)
    (default     :initarg :default     :initform nil)))
 
+(defclass magit--git-variable:boolean (magit--git-variable:choices)
+  ((choices     :initarg :choices     :initform '("true" "false"))))
+
 (defclass magit--git-variable:urls (magit--git-variable)
   ((seturl-arg  :initarg :seturl-arg  :initform nil)))
 
@@ -71,14 +74,23 @@
                 (t
                  (magit-get arg variable))))))
 
+(cl-defmethod transient-init-value ((obj magit--git-variable:boolean))
+  (let ((variable (format (oref obj variable)
+                          (oref obj scope)))
+        (arg (if (oref obj global) "--global" "--local")))
+    (oset obj variable variable)
+    (oset obj value (if (magit-get-boolean arg variable) "true" "false"))))
+
 ;;;; Read
 
 (cl-defmethod transient-infix-read :around ((obj magit--git-variable:urls))
-  (mapcar (lambda (url)
-            (if (string-prefix-p "~" url)
-                (expand-file-name url)
-              url))
-          (cl-call-next-method obj)))
+  (transient--with-emergency-exit
+    (transient--with-suspended-override
+     (mapcar (lambda (url)
+               (if (string-prefix-p "~" url)
+                   (expand-file-name url)
+                 url))
+             (cl-call-next-method obj)))))
 
 (cl-defmethod transient-infix-read ((obj magit--git-variable:choices))
   (let ((choices (oref obj choices)))
@@ -154,25 +166,30 @@
 (cl-defmethod transient-format-value ((obj magit--git-variable:choices))
   (let* ((variable (oref obj variable))
          (choices  (oref obj choices))
-         (local    (magit-git-string "config" "--local"  variable))
+         (globalp  (oref obj global))
+         (value    nil)
          (global   (magit-git-string "config" "--global" variable))
          (default  (oref obj default))
          (fallback (oref obj fallback))
          (fallback (and fallback
                         (when-let ((val (magit-get fallback)))
                           (concat fallback ":" val)))))
+    (if (not globalp)
+        (setq value (magit-git-string "config" "--local"  variable))
+      (setq value global)
+      (setq global nil))
     (when (functionp choices)
       (setq choices (funcall choices)))
     (concat
      (propertize "[" 'face 'transient-inactive-value)
      (mapconcat (lambda (choice)
-                  (propertize choice 'face (if (equal choice local)
+                  (propertize choice 'face (if (equal choice value)
                                                (if (member choice choices)
                                                    'transient-value
                                                  'font-lock-warning-face)
                                              'transient-inactive-value)))
-                (if (and local (not (member local choices)))
-                    (cons local choices)
+                (if (and value (not (member value choices)))
+                    (cons value choices)
                   choices)
                 (propertize "|" 'face 'transient-inactive-value))
      (and (or global fallback default)
@@ -180,7 +197,7 @@
            (propertize "|" 'face 'transient-inactive-value)
            (cond (global
                   (propertize (concat "global:" global)
-                              'face (cond (local
+                              'face (cond (value
                                            'transient-inactive-value)
                                           ((member global choices)
                                            'transient-value)
@@ -188,12 +205,12 @@
                                            'font-lock-warning-face))))
                  (fallback
                   (propertize fallback
-                              'face (if local
+                              'face (if value
                                         'transient-inactive-value
                                       'transient-value)))
                  (default
                    (propertize (concat "default:" default)
-                               'face (if local
+                               'face (if value
                                          'transient-inactive-value
                                        'transient-value))))))
      (propertize "]" 'face 'transient-inactive-value))))

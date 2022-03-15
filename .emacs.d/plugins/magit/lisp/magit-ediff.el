@@ -118,7 +118,8 @@ tree at the time of stashing."
   ["Ediff"
    [("E" "Dwim"          magit-ediff-dwim)
     ("s" "Stage"         magit-ediff-stage)
-    ("m" "Resolve"       magit-ediff-resolve)]
+    ("m" "Resolve"       magit-ediff-resolve)
+    ("t" "Resolve using mergetool" magit-git-mergetool)]
    [("u" "Show unstaged" magit-ediff-show-unstaged)
     ("i" "Show staged"   magit-ediff-show-staged)
     ("w" "Show worktree" magit-ediff-show-working-tree)]
@@ -134,13 +135,7 @@ FILE has to be relative to the top directory of the repository.
 In the rare event that you want to manually resolve all
 conflicts, including those already resolved by Git, use
 `ediff-merge-revisions-with-ancestor'."
-  (interactive
-   (let ((current  (magit-current-file))
-         (unmerged (magit-unmerged-files)))
-     (unless unmerged
-       (user-error "There are no unresolved conflicts"))
-     (list (magit-completing-read "Resolve file" unmerged nil t nil nil
-                                  (car (member current unmerged))))))
+  (interactive (list (magit-read-unmerged-file)))
   (magit-with-toplevel
     (with-current-buffer (find-file-noselect file)
       (smerge-ediff)

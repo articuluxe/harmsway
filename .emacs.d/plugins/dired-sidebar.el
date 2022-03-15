@@ -66,11 +66,10 @@ This face can be customized using `dired-sidebar-face'."
   :type 'boolean
   :group 'dired-sidebar)
 
-(defcustom dired-sidebar-face nil
+(defface dired-sidebar-face nil
   "Face used by `dired-sidebar' for custom font.
 
 This only takes effect if `dired-sidebar-use-custom-font' is true."
-  :type 'list
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-use-custom-modeline t
@@ -807,7 +806,8 @@ the relevant file-directory clicked on by the mouse."
             ;; Found from calling: (eieio-class-slots 'ede-proj-project)
             (slot-value project 'directory)
           ;; e.g. (vc . "~/.emacs.d/straight/repos/dired-sidebar/")
-          (cdr project))
+          ;; or (vc Git "~/.emacs.d/straight/repos/dired-sidebar/")
+          (car (last project)))
       default-directory)))
 
 (defun dired-sidebar-buffer-name (dir)
@@ -851,7 +851,7 @@ the relevant file-directory clicked on by the mouse."
 
 Set font to a variable width (proportional) in the current buffer."
   (interactive)
-  (setq-local buffer-face-mode-face dired-sidebar-face)
+  (setq-local buffer-face-mode-face 'dired-sidebar-face)
   (buffer-face-mode))
 
 (defun dired-sidebar-set-mode-line ()

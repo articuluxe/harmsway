@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.7.0
+;; Version: 1.7.1
 ;; Package-Requires: ((emacs "25.1") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
@@ -963,7 +963,7 @@ Display the true name when the file is a symlink."
 (defun all-the-icons-ivy-rich--truncate-docstring (doc)
   "Truncate DOC string."
   (if (and doc (string-match "^\\(.+\\)\\([\r\n]\\)?" doc))
-      (match-string 1 doc)
+      (truncate-string-to-width (match-string 1 doc) 80)
     ""))
 
 ;; Support `counsel-describe-face'
@@ -1147,11 +1147,12 @@ Only available in `emacs-lisp-mode'."
 ;; Support `counsel-descbinds'
 (defun all-the-icons-ivy-rich-keybinding-docstring (cand)
   "Return keybinding's documentation for CAND."
-  (let ((width 15))
-    (if (length> cand width)
-        (all-the-icons-ivy-rich--truncate-docstring
-         (describe-key-briefly (kbd (substring-no-properties cand 0 width))))
-      "")))
+  ;; The magic number 15 is from `counsel--descbinds-cands'
+  (if (not (string-match-p " ignore" cand))
+      (let* ((pos (string-match-p " .+" cand 15))
+             (sym (string-trim (substring cand pos))))
+        (all-the-icons-ivy-rich-symbol-docstring sym))
+    ""))
 
 ;; Support `customize-group'
 (defun all-the-icons-ivy-rich-custom-group-docstring (cand)

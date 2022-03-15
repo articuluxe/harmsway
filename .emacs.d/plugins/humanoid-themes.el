@@ -149,7 +149,7 @@ or similar."
         (purple-dark   (if (eq variant 'dark) (if (humanoid-themes-tc) "#7d46c0" "purple3")         (if (humanoid-themes-tc) "#2f1086" "purple4")))
         (aqua-light    (if (eq variant 'dark) (if (humanoid-themes-tc) "#60e2e4" "turquoise1")      (if (humanoid-themes-tc) "#0ed1d1" "cyan3")))
         (aqua          (if (eq variant 'dark) (if (humanoid-themes-tc) "#0ed1d1" "turquoise2")      (if (humanoid-themes-tc) "#08a7b3" "cyan4")))
-        (aqua-dark     (if (eq variant 'dark) (if (humanoid-themes-tc) "#08a7b3" "turquoise3")      (if (humanoid-themes-tc) "#006873" "DarkSlateGray")))
+        (aqua-dark     (if (eq variant 'dark) (if (humanoid-themes-tc) "#08a7b3" "turquoise3")      (if (humanoid-themes-tc) "#007784" "DarkSlateGray")))
         (aqua-bg       (if (eq variant 'dark) (if (humanoid-themes-tc) "#054948" "DarkSlateGrey")   (if (humanoid-themes-tc) "#c4e5e5" "azure1")))
         (cyan          (if (eq variant 'dark) (if (humanoid-themes-tc) "#1de9b6" "aquamarine2")     (if (humanoid-themes-tc) "#00bfa5" "aquamarine3")))
         (brown-light   (if (eq variant 'dark) (if (humanoid-themes-tc) "#cb8802" "tan1")            (if (humanoid-themes-tc) "#cb8802" "tan1")))
@@ -1078,7 +1078,7 @@ or similar."
      `(org-block-begin-line          ((,class (:inherit font-lock-comment-face :background ,bg2 :extend t))))
      `(org-block-end-line            ((,class (:inherit org-block-begin-line))))
      `(org-clock-overlay             ((,class (:foreground ,comp))))
-     `(org-code                      ((,class (:foreground ,cyan))))
+     `(org-code                      ((,class (:foreground ,str))))
      `(org-column                    ((,class (:background ,highlight :distant-foreground ,base))))
      `(org-column-title              ((,class (:inherit org-column))))
      `(org-date                      ((,class (:underline t :foreground ,var))))
@@ -1108,9 +1108,10 @@ or similar."
      `(org-sexp-date                 ((,class (:foreground ,var))))
      `(org-special-keyword           ((,class (:foreground ,func))))
      `(org-table                     ((,class (:background ,head1-bg :foreground ,base))))
-     `(org-tag                       ((,class (:foreground ,meta))))
+     `(org-tag                       ((,class (:inherit italic :foreground ,meta :height 0.85))))
      `(org-time-grid                 ((,class (:foreground ,str))))
-     `(org-todo                      ((,class (:inherit bold :background ,yellow-bg :foreground ,war))))
+     `(org-todo                      ((,class (:inherit bold
+                                               :foreground ,war))))
      `(org-upcoming-deadline         ((,class (:inherit org-priority :foreground ,war))))
      `(org-upcoming-distant-deadline ((,class (:inherit org-priority :foreground ,suc))))
      `(org-verbatim                  ((,class (:foreground ,keyword))))
@@ -1391,35 +1392,44 @@ or similar."
      `(undo-tree-visualizer-register-face   ((,class (:foreground ,comp))))
      `(undo-tree-visualizer-unmodified-face ((,class (:foreground ,var)))))
 
-    (custom-theme-set-variables
-     theme-name
+      (custom-theme-set-variables
+          theme-name
 
-     ;;; ansi-color-names
-     `(ansi-color-names-vector [,bg4 ,red ,green ,yellow ,blue ,magenta ,cyan ,base])
+          ;;; ansi-color-names
+          `(ansi-color-names-vector [,bg4 ,red ,green ,yellow ,blue ,magenta ,cyan ,base])
 
-     ;;; hl-todo
-     `(hl-todo-keyword-faces '(("HOLD"       . ,brown-fg)
-                               ("TODO"       . ,magenta)
-                               ("NEXT"       . ,purple)
-                               ("THEM"       . ,aqua)
-                               ("PROG"       . ,cyan)
-                               ("OKAY"       . ,suc)
-                               ("DONT"       . ,war)
-                               ("FAIL"       . ,err)
-                               ("BUG"        . ,red)
-                               ("DONE"       . ,suc)
-                               ("NOTE"       . ,yellow)
-                               ("KLUDGE"     . ,orange)
-                               ("HACK"       . ,green-fg)
-                               ("TEMP"       . ,gray)
-                               ("FIXME"      . ,red-fg)
-                               ("XXX+"       . ,var)
-                               ("REVIEW"     . ,brown)
-                               ("DEPRECATED" . ,blue-fg)
-                               ("\\?\\?\\?+" . ,meta)))
+          ;;; hl-todo
+          `(hl-todo-keyword-faces
+               `,(let ((new-list
+                           '(
+                                ("HOLD"       . (:inherit bold :foreground ,brown-fg))
+                                ("TODO"       . (:inherit bold :foreground ,magenta))
+                                ("NEXT"       . (:inherit bold :foreground ,purple))
+                                ("THEM"       . (:inherit bold :foreground ,aqua))
+                                ("PROG"       . (:inherit bold :foreground ,cyan))
+                                ("OKAY"       . (:inherit bold :foreground ,suc))
+                                ("DONT"       . (:inherit bold :foreground ,war))
+                                ("FAIL"       . (:inherit bold :foreground ,err))
+                                ("BUG"        . (:inherit bold :foreground ,red))
+                                ("DONE"       . (:inherit bold :foreground ,suc))
+                                ("NOTE"       . (:inherit bold :foreground ,yellow))
+                                ("KLUDGE"     . (:inherit bold :foreground ,orange))
+                                ("HACK"       . (:inherit bold :foreground ,green-fg))
+                                ("TEMP"       . (:inherit bold :foreground ,gray))
+                                ("FIXME"      . (:inherit bold :foreground ,red-fg))
+                                ("XXX+"       . (:inherit bold :foreground ,var))
+                                ("REVIEW"     . (:inherit bold :foreground ,brown))
+                                ("DEPRECATED" . (:inherit bold :foreground ,blue-fg))
+                                ("\\?\\?\\?+" . (:inherit bold :foreground ,meta)))))
+                     (mapcar (lambda (pair)
+                                 (if-let* ((word (car pair))
+                                              (hex (assoc-default word new-list)))
+                                     (cons word hex)
+                                     pair))
+                         hl-todo-keyword-faces)))
 
-     ;;; pdf-tools
-     `(pdf-view-midnight-colors '(,base . ,bg1)))))
+          ;;; pdf-tools
+          `(pdf-view-midnight-colors '(,base . ,bg1)))))
 
 
 ;;;###autoload

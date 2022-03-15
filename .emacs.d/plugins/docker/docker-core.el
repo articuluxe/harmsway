@@ -41,7 +41,7 @@
 (defvar docker-status-strings '(:containers "" :images "" :networks "" :volumes "")
   "Plist of statuses for `docker' transient.")
 
-(defcustom docker-display-status-in-transient t
+(defcustom docker-show-status t
   "Whether to display docker status in the main transient buffer."
   :group 'docker
   :type 'boolean)
@@ -55,7 +55,7 @@
   (apply #'docker-run-async-with-buffer docker-command (docker-arguments) args))
 
 (defun docker-get-transient-action ()
-  "Extract the action out of `current-transient-command'."
+  "Extract the action out of `transient-current-command'."
   (s-replace "-" " " (s-chop-prefix "docker-" (symbol-name transient-current-command))))
 
 (defun docker-generic-action-description ()

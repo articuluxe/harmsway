@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 0.12
+;; Version: 0.13
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
@@ -64,13 +64,6 @@ This value is adjusted depending on the `window-width'."
 (defcustom marginalia-align-offset 0
   "Additional offset added to the alignment."
   :type 'integer)
-
-(defvar marginalia-separator-threshold nil)
-(defvar marginalia-margin-min nil)
-(defvar marginalia-margin-threshold nil)
-(make-obsolete-variable 'marginalia-separator-threshold "Deprecated in favor of `marginalia-separator'." "0.11")
-(make-obsolete-variable 'marginalia-margin-min "Deprecated in favor of `marginalia-align'." "0.11")
-(make-obsolete-variable 'marginalia-margin-threshold "Deprecated in favor of `marginalia-threshold'." "0.11")
 
 (defcustom marginalia-max-relative-age (* 60 60 24 14)
   "Maximum relative age in seconds displayed by the file annotator.
@@ -704,7 +697,7 @@ keybinding since CAND includes it."
 
 (defun marginalia-annotate-package (cand)
   "Annotate package CAND with its description summary."
-  (when-let* ((pkg-alist (and (bound-and-true-p package-alist) package-alist))
+  (when-let* ((pkg-alist (bound-and-true-p package-alist))
               (pkg (intern-soft (replace-regexp-in-string "-[[:digit:]\\.-]+\\'" "" cand)))
               ;; taken from `describe-package-1'
               (desc (or (car (alist-get pkg pkg-alist))
@@ -737,7 +730,7 @@ The string is transformed according to `marginalia-bookmark-type-transformers'."
 
 (defun marginalia-annotate-bookmark (cand)
   "Annotate bookmark CAND with its file name and front context string."
-  (when-let ((bm (assoc cand bookmark-alist)))
+  (when-let ((bm (assoc cand (bound-and-true-p bookmark-alist))))
     (let ((front (bookmark-get-front-context-string bm)))
       (marginalia--fields
        ((marginalia--bookmark-type bm) :width 10 :face 'marginalia-type)
