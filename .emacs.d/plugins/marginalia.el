@@ -6,7 +6,7 @@
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
 ;; Version: 0.13
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
 ;; This file is part of GNU Emacs.
@@ -41,9 +41,6 @@
   :group 'convenience
   :group 'minibuffer
   :prefix "marginalia-")
-
-(define-obsolete-variable-alias 'marginalia-truncate-width
-  'marginalia-field-width "0.11")
 
 (defcustom marginalia-field-width 80
   "Maximum truncation width of annotation fields.
@@ -123,7 +120,7 @@ determine it."
     ("\\<color\\>" . color)
     ("\\<face\\>" . face)
     ("\\<environment variable\\>" . environment-variable)
-    ("\\<function\\>" . function)
+    ("\\<function\\|hook to remove\\>" . function)
     ("\\<variable\\>" . variable)
     ("\\<input method\\>" . input-method)
     ("\\<charset\\>" . charset)
@@ -136,7 +133,7 @@ determine it."
   :type '(alist :key-type regexp :value-type symbol))
 
 (defcustom marginalia-censor-variables
-  '("pass")
+  '("pass\\|auth-source-netrc-cache\\|auth-source-.*-nonce")
   "The values of variables matching any of these regular expressions is not shown."
   :type '(repeat (choice symbol regexp)))
 
@@ -440,6 +437,7 @@ c command
 C interactive-only command
 m macro
 M special-form
+g cl-generic
 p pure
 s side-effect-free
 @ autoloaded
@@ -465,6 +463,7 @@ t cl-type"
         ((get s 'side-effect-free) "s"))
        (cond
         ((commandp s) (if (get s 'interactive-only) "C" "c"))
+        ((cl-generic-p s) "g")
         ((macrop (symbol-function s)) "m")
         ((special-form-p (symbol-function s)) "M")
         (t "f"))
@@ -868,8 +867,7 @@ These annotations are skipped for remote paths."
     (when (or (/= (user-uid) uid) (/= (group-gid) gid))
       (format "%s:%s"
               (or (user-login-name uid) uid)
-              ;; group-name was introduced on Emacs 27
-              (or (and (fboundp 'group-name) (group-name gid)) gid)))))
+              (or (group-name gid) gid)))))
 
 (defun marginalia--file-modes (attrs)
   "Return fontified file modes given the ATTRS."
@@ -917,9 +915,8 @@ These annotations are skipped for remote paths."
   "Format TIME as an absolute age."
   (let ((system-time-locale "C"))
     (format-time-string
-     ;; decoded-time-year is only available on Emacs 27, use nth 5 here.
-     (if (> (nth 5 (decode-time (current-time)))
-            (nth 5 (decode-time time)))
+     (if (> (decoded-time-year (decode-time (current-time)))
+            (decoded-time-year (decode-time time)))
          " %Y %b %d"
        "%b %d %H:%M")
      time)))
@@ -1032,9 +1029,7 @@ These annotations are skipped for remote paths."
                       (lambda (tab _) (equal (alist-get 'name tab) cand)))))
     (let* ((tab (nth index tabs))
            (ws (alist-get 'ws tab))
-           ;; window-state-buffers requires Emacs 27
-           (bufs (and (fboundp 'window-state-buffers)
-                      (window-state-buffers ws))))
+           (bufs (window-state-buffers ws)))
       ;; NOTE: When the buffer key is present in the window state
       ;; it is added in front of the window buffer list and gets duplicated.
       (when (cadr (assq 'buffer ws)) (pop bufs))

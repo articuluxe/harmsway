@@ -81,19 +81,19 @@ popup."
   :class 'transient-option
   :shortarg "-t"
   :argument "--tool="
-  :reader 'magit--read-mergetool)
+  :reader #'magit--read-mergetool)
 
 (transient-define-infix magit-merge.guitool ()
   :class 'magit--git-variable
   :variable "merge.guitool"
   :global t
-  :reader 'magit--read-mergetool)
+  :reader #'magit--read-mergetool)
 
 (transient-define-infix magit-merge.tool ()
   :class 'magit--git-variable
   :variable "merge.tool"
   :global t
-  :reader 'magit--read-mergetool)
+  :reader #'magit--read-mergetool)
 
 (defun magit--read-mergetool (prompt _initial-input history)
   (let ((choices nil)
@@ -218,8 +218,8 @@ like pretty much every other keymap:
     (kbd \"C-x g\") \\='ido-enter-magit-status)"
   (interactive)
   (setq ido-exit 'fallback)
-  (setq ido-fallback 'magit-status)                ; for Emacs >= 26.2
-  (with-no-warnings (setq fallback 'magit-status)) ; for Emacs 25
+  (setq ido-fallback #'magit-status)                ; for Emacs >= 26.2
+  (with-no-warnings (setq fallback #'magit-status)) ; for Emacs 25
   (exit-minibuffer))
 
 ;;;###autoload
@@ -558,11 +558,11 @@ list returned by `magit-rebase-arguments'."
         "Type %p on a commit to reshelve it and the commits above it,"))
      (t
       (cl-flet ((adjust (time offset)
-                        (format-time-string
-                         "%F %T %z"
-                         (+ (floor time)
-                            (* offset 60)
-                            (- (car (decode-time time)))))))
+                  (format-time-string
+                   "%F %T %z"
+                   (+ (floor time)
+                      (* offset 60)
+                      (- (car (decode-time time)))))))
         (let* ((start (concat rev "^"))
                (range (concat start ".." current))
                (time-rev (adjust (float-time (string-to-number
@@ -694,10 +694,10 @@ the minibuffer too."
   (interactive
    (if (or current-prefix-arg (not magit-revision-stack))
        (let ((default-directory
-               (or (and (not (= (prefix-numeric-value current-prefix-arg) 16))
-                        (or (magit-toplevel)
-                            (cadr (car magit-revision-stack))))
-                   (magit-read-repository))))
+              (or (and (not (= (prefix-numeric-value current-prefix-arg) 16))
+                       (or (magit-toplevel)
+                           (cadr (car magit-revision-stack))))
+                  (magit-read-repository))))
          (list (magit-read-branch-or-commit "Insert revision")
                default-directory))
      (push (caar magit-revision-stack) magit-revision-history)
@@ -745,7 +745,7 @@ the minibuffer too."
     (user-error "Revision stack is empty")))
 
 (define-key git-commit-mode-map
-  (kbd "C-c C-w") 'magit-pop-revision-stack)
+  (kbd "C-c C-w") #'magit-pop-revision-stack)
 
 ;;;###autoload
 (defun magit-copy-section-value (arg)

@@ -565,9 +565,14 @@ subtlety stand out from the mode line and other adjacent faces."
    `(git-gutter-fr:deleted      ((,class :foreground ,bespoke-red)))
    `(git-gutter-fr:modified     ((,class :foreground ,bespoke-popout)))
 
+;;;;; Goggles
+   `(goggles-added   ((,class :background ,bespoke-green)))
+   `(goggles-changed ((,class :background ,bespoke-popout)))
+   `(goggles-removed ((,class :background ,bespoke-red)))
+
 ;;;;; Help(ful)
 
-   `(helpful-heading                               ((,class :inherit ,(if bespoke-set-variable-pitch 'variable-pitch 'default) :foreground ,bespoke-blue :height 1.25)))
+   `(helpful-heading ((,class :inherit ,(if bespoke-set-variable-pitch 'variable-pitch 'default) :foreground ,bespoke-blue :height 1.25)))
 
 
 ;;;;; Highlight-Indentation
@@ -1018,6 +1023,17 @@ subtlety stand out from the mode line and other adjacent faces."
    `(outline-7            ((,class :inherit outline-3)))
    `(outline-8            ((,class :inherit outline-4)))
 
+;;;;; Rainbow Delimiters
+   `(rainbow-delimiters-depth-1-face ((,class :foreground ,bespoke-popout     :weight medium)))
+   `(rainbow-delimiters-depth-2-face ((,class :foreground ,bespoke-salient    :weight light)))
+   `(rainbow-delimiters-depth-3-face ((,class :foreground ,bespoke-brown      :weight light)))
+   `(rainbow-delimiters-depth-4-face ((,class :foreground ,bespoke-yellow     :weight light)))
+   `(rainbow-delimiters-depth-5-face ((,class :foreground ,bespoke-green      :weight light)))
+   `(rainbow-delimiters-depth-6-face ((,class :foreground ,bespoke-red        :weight light)))
+   `(rainbow-delimiters-depth-7-face ((,class :foreground ,bespoke-blue       :weight light)))
+   `(rainbow-delimiters-depth-8-face ((,class :foreground ,bespoke-faded      :weight light)))
+   `(rainbow-delimiters-depth-9-face ((,class :foreground ,bespoke-foreground :weight light)))
+
 ;;;;; Search
    `(evil-ex-search                               ((,class :background ,bespoke-popout)))
    `(isearch                                      ((,class :background ,bespoke-popout :foreground ,bespoke-highlight :weight bold)))
@@ -1038,6 +1054,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(match                                        ((,class :forgeround ,bespoke-popout :weight bold)))
 
 ;;;;; Speed Bar
+
    `(speedbar-button-face                         ((,class :foreground ,bespoke-faded)))
    `(speedbar-directory-face                      ((,class :foreground ,bespoke-foreground :bold t)))
    `(speedbar-file-face                           ((,class :foreground ,bespoke-foreground :background ,bespoke-background)))
@@ -1046,16 +1063,20 @@ subtlety stand out from the mode line and other adjacent faces."
    `(speedbar-separator-face                      ((,class :foreground ,bespoke-faded)))
    `(speedbar-tag-face                            ((,class :foreground ,bespoke-faded)))
 
+;;;;; Tabs
+   `(tab-bar-echo-area-tab               ((,class :foreground ,bespoke-faded :underline t :weight bold)))
+   `(tab-bar-echo-area-tab-group-current ((,class :foreground ,bespoke-faded)))
+
 ;;;;; Term
    `(term-bold                                    ((,class :foreground ,bespoke-strong :weight semi-bold)))
-   `(term-color-black                             ((,class :foregroud  ,bespoke-background)))
-   `(term-color-white                             ((,class :foreground ,bespoke-foreground)))
-   `(term-color-blue                              ((,class :foreground ,bespoke-blue)))
-   `(term-color-cyan                              ((,class :foreground ,bespoke-salient)))
-   `(term-color-green                             ((,class :foreground ,bespoke-green)))
-   `(term-color-magenta                           ((,class :foreground ,bespoke-popout)))
-   `(term-color-red                               ((,class :foreground ,bespoke-critical)))
-   `(term-color-yellow                            ((,class :foreground ,bespoke-yellow)))
+   `(term-color-black                             ((,class :foreground ,bespoke-background :background ,bespoke-background)))
+   `(term-color-white                             ((,class :foreground ,bespoke-foreground :background ,bespoke-foreground)))
+   `(term-color-blue                              ((,class :foreground ,bespoke-blue :background ,bespoke-blue)))
+   `(term-color-cyan                              ((,class :foreground ,bespoke-salient :background ,bespoke-salient)))
+   `(term-color-green                             ((,class :foreground ,bespoke-green :background ,bespoke-green)))
+   `(term-color-magenta                           ((,class :foreground ,bespoke-popout :background ,bespoke-popout)))
+   `(term-color-red                               ((,class :foreground ,bespoke-critical :background ,bespoke-critical)))
+   `(term-color-yellow                            ((,class :foreground ,bespoke-yellow :background ,bespoke-yellow)))
 
 ;;;;; Window Divs
    ;; divide windows more attractively

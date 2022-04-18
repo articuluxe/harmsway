@@ -1,12 +1,12 @@
-;;; shanty-themes.el --- The theme for digital workers
+;;; shanty-themes.el --- The themes for digital workers -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2022 Philip Gaber
 
 ;; Author: Philip Gaber <phga@posteo.de>
 ;; Maintainer: Philip Gaber <phga@posteo.de>
 ;; Created: 2022-02-07
-;; URL: https://github.com/qhga/shanty-theme
-;; Version: 0.4
+;; URL: https://github.com/qhga/shanty-themes
+;; Version: 1.0
 ;; Package-Requires: ((emacs "27.2"))
 ;; Keywords: faces, theme, blue, yellow, gold, dark, light
 
@@ -26,51 +26,68 @@
 ;; Resources I found useful
 ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Face-Attributes.html
 
-(defun shanty--activate-theme(theme)
-  (let* ((bg-2       (gethash 'bg-2      shanty-theme-colors))
-         (bg-1       (gethash 'bg-1      shanty-theme-colors))
-         (bg         (gethash 'bg        shanty-theme-colors))
-         (bg+1       (gethash 'bg+1      shanty-theme-colors))
-         (bg+2       (gethash 'bg+2      shanty-theme-colors))
-         (fg-2       (gethash 'fg-2      shanty-theme-colors))
-         (fg-1       (gethash 'fg-1      shanty-theme-colors))
-         (fg         (gethash 'fg        shanty-theme-colors))
-         (fg+1       (gethash 'fg+1      shanty-theme-colors))
-         (white      (gethash 'white     shanty-theme-colors))
-         (black      (gethash 'black     shanty-theme-colors))
-         (yellow-1   (gethash 'yellow-1  shanty-theme-colors))
-         (yellow     (gethash 'yellow    shanty-theme-colors))
-         (yellow+1   (gethash 'yellow+1  shanty-theme-colors))
-         (orange-1   (gethash 'orange-1  shanty-theme-colors))
-         (orange     (gethash 'orange    shanty-theme-colors))
-         (orange+1   (gethash 'orange+1  shanty-theme-colors))
-         ;; (red-2      (gethash 'red-2     shanty-theme-colors))
-         (red-1      (gethash 'red-1     shanty-theme-colors))
-         (red        (gethash 'red       shanty-theme-colors))
-         (red+1      (gethash 'red+1     shanty-theme-colors))
-         (green-1    (gethash 'green-1   shanty-theme-colors))
-         (green      (gethash 'green     shanty-theme-colors))
-         (green+1    (gethash 'green+1   shanty-theme-colors))
-         (green+2    (gethash 'green+2   shanty-theme-colors))
-         ;; (blue-2     (gethash 'blue-2    shanty-theme-colors))
-         (blue-1     (gethash 'blue-1    shanty-theme-colors))
-         (blue       (gethash 'blue      shanty-theme-colors))
-         (blue+1     (gethash 'blue+1    shanty-theme-colors))
-         (magenta-2  (gethash 'magenta-2 shanty-theme-colors))
-         (magenta-1  (gethash 'magenta-1 shanty-theme-colors))
-         (magenta    (gethash 'magenta   shanty-theme-colors))
-         (magenta+1  (gethash 'magenta+1 shanty-theme-colors))
-         (purple-1   (gethash 'purple-1  shanty-theme-colors))
-         ;; (purple-2   (gethash 'purple-2  shanty-theme-colors))
-         (purple     (gethash 'purple    shanty-theme-colors))
-         (purple+1   (gethash 'purple+1  shanty-theme-colors))
+
+;;; Commentary:
+;; Shanty themes provide a light & dark theme for Emacs
+
+;;; Code:
+
+;; So the doc can contain the quoted version
+(declare-function shanty-themes--li-da "shanty-themes")
+
+(defun shanty-themes--activate-theme(theme colors)
+  "Set the faces according to the activated theme.
+
+Populates the color variables according to the provided COLORS
+hashmap which are then used to define the faces.  THEME is later
+used in the closure `shanty-themes--li-da' to make distinct
+changes to some faces that have to be different in the light vs
+the dark theme.  Possible values for THEME could be 'shanty-light
+or 'shanty-dark"
+  (let* ((bg-2       (gethash 'bg-2      colors))
+         (bg-1       (gethash 'bg-1      colors))
+         (bg         (gethash 'bg        colors))
+         (bg+1       (gethash 'bg+1      colors))
+         (bg+2       (gethash 'bg+2      colors))
+         (fg-2       (gethash 'fg-2      colors))
+         (fg-1       (gethash 'fg-1      colors))
+         (fg         (gethash 'fg        colors))
+         (fg+1       (gethash 'fg+1      colors))
+         (white      (gethash 'white     colors))
+         (black      (gethash 'black     colors))
+         (yellow-1   (gethash 'yellow-1  colors))
+         (yellow     (gethash 'yellow    colors))
+         (yellow+1   (gethash 'yellow+1  colors))
+         ;; (orange-1   (gethash 'orange-1  colors))
+         (orange     (gethash 'orange    colors))
+         (orange+1   (gethash 'orange+1  colors))
+         ;; (red-2      (gethash 'red-2     colors))
+         ;; (red-1      (gethash 'red-1     colors))
+         (red        (gethash 'red       colors))
+         (red+1      (gethash 'red+1     colors))
+         ;; (green-1    (gethash 'green-1   colors))
+         (green      (gethash 'green     colors))
+         (green+1    (gethash 'green+1   colors))
+         (green+2    (gethash 'green+2   colors))
+         ;; (blue-2     (gethash 'blue-2    colors))
+         (blue-1     (gethash 'blue-1    colors))
+         (blue       (gethash 'blue      colors))
+         (blue+1     (gethash 'blue+1    colors))
+         ;; (magenta-2  (gethash 'magenta-2 colors))
+         ;; (magenta-1  (gethash 'magenta-1 colors))
+         (magenta    (gethash 'magenta   colors))
+         (magenta+1  (gethash 'magenta+1 colors))
+         ;; (purple-1   (gethash 'purple-1  colors))
+         ;; (purple-2   (gethash 'purple-2  colors))
+         (purple     (gethash 'purple    colors))
+         (purple+1   (gethash 'purple+1  colors))
 
          (shanty-heading '(:weight bold))
          (shanty-box '(:box (:line-width -1))))
 
-    (defun shanty--li-da(light-color dark-color)
+    (defun shanty-themes--li-da(light-color dark-color)
       "Depending on the requested theme returns the appropriate color"
-      (if (eq theme 'shanty-light) light-color dark-color))
+      (if (eq theme 'shanty-themes-light) light-color dark-color))
 
     (custom-theme-set-faces
      theme
@@ -84,7 +101,7 @@
      `(cursor ((t (:background ,white))))
      ;; TODO: Add support to disable
      `(hl-line ((t (:background ,bg+1))))
-     `(region ((t (:background ,(shanty--li-da bg-2 bg+2)))))
+     `(region ((t (:background ,(shanty-themes--li-da bg-2 bg+2)))))
      `(link ((t (:foreground ,green :underline t))))
      `(link-visited ((t (:foreground ,magenta+1 :underline t))))
      ;; `(button ((t (:foreground ,fg :background ,green))))
@@ -103,7 +120,7 @@
      `(show-paren-match ((t (:background ,fg-2))))
      ;; TODO: Not working properly -> mayb rainbow-delimiter
      `(show-paren-mismatch ((t (:background ,red))))
-     `(shadow ((t (:foreground ,(shanty--li-da fg-1 fg-2)))))
+     `(shadow ((t (:foreground ,(shanty-themes--li-da fg-1 fg-2)))))
      `(font-lock-comment-face ((t (:inherit shadow))))
      `(font-lock-doc-face ((t (:foreground ,magenta))))
      `(font-lock-keyword-face ((t (:foreground ,yellow :weight bold))))
@@ -154,7 +171,7 @@
      `(dired-async-mode-message ((t (:foreground ,yellow))))
 
      ;;;; mode-line
-     `(mode-line ((t (:background ,(shanty--li-da bg-2 bg-1) :foreground ,fg
+     `(mode-line ((t (:background ,(shanty-themes--li-da bg-2 bg-1) :foreground ,fg
                       :distant-foreground ,fg-2
                       :overline ,fg-2))))
      `(mode-line-active ((t (:inherit mode-line))))
@@ -488,6 +505,24 @@
      `(diff-refine-changed ((t (:background ,yellow+1 :foreground ,bg))))
      `(diff-refine-removed ((t (:background ,red+1 :foreground ,bg))))
 
+     ;;;; ediff
+     `(ediff-current-diff-A ((t (:background ,red+1 :foreground ,bg))))
+     `(ediff-current-diff-Ancestor ((t (:background ,blue-1 :foreground ,bg))))
+     `(ediff-current-diff-B ((t (:background ,green+1 :foreground ,bg))))
+     `(ediff-current-diff-C ((t (:background ,yellow+1 :foreground ,bg))))
+     `(ediff-fine-diff-A ((t (:background ,red :foreground ,bg))))
+     `(ediff-fine-diff-Ancestor ((t (:background ,blue :foreground ,bg))))
+     `(ediff-fine-diff-B ((t (:background ,green :foreground ,bg))))
+     `(ediff-fine-diff-C ((t (:background ,yellow :foreground ,bg))))
+     `(ediff-even-diff-A ((t (:background ,fg+1 :foreground ,bg))))
+     `(ediff-even-diff-B ((t (:background ,fg :foreground ,bg+1))))
+     `(ediff-even-diff-Ancestor ((t (:inherit ediff-even-diff-B))))
+     `(ediff-even-diff-C ((t (:inherit ediff-even-diff-A))))
+     `(ediff-odd-diff-A ((t (:background ,fg+1 :foreground ,bg))))
+     `(ediff-odd-diff-B ((t (:background ,fg :foreground ,bg+1))))
+     `(ediff-odd-diff-Ancestor ((t (:inherit ediff-odd-diff-B))))
+     `(ediff-odd-diff-C ((t (:inherit ediff-odd-diff-A))))
+
      ;;;; custom
      `(custom-invalid ((t (:background ,red :foreground ,bg))))
      `(custom-modified ((t (:background ,blue+1 :foreground ,bg))))
@@ -602,8 +637,7 @@
      `(widget-field ((t (:background ,fg-2))))
      `(widget-single-line-field ((t (:background ,fg-2))))
      `(pulse-highlight-face ((t (:background ,blue+1 :foreground ,bg))))
-     `(pulse-highlight-start-face ((t (:background ,blue+1 :foreground ,bg))))
-     )))
+     `(pulse-highlight-start-face ((t (:background ,blue+1 :foreground ,bg)))))))
 
 ;;; Add theme directory to custom theme load path
 ;;; Source: modus-themes (thanks)
@@ -613,6 +647,6 @@
     (unless (equal dir (expand-file-name "themes/" data-directory))
       (add-to-list 'custom-theme-load-path dir))))
 
-(provide 'shanty)
+(provide 'shanty-themes)
 
 ;;; shanty-themes.el ends here

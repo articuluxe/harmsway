@@ -5,8 +5,8 @@
 ;; Author: Christian Johansson <christian@cvj.se>
 ;; Maintainer: Christian Johansson <christian@cvj.se>
 ;; Created: 3 Mar 2018
-;; Modified: 4 Mar 2022
-;; Version: 0.4.18
+;; Modified: 23 Mar 2022
+;; Version: 0.4.20
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-phps-mode
 
@@ -78,7 +78,10 @@
   "Re-scan buffer."
   (interactive)
   (phps-mode-lex-analyzer--reset-local-variables t)
-  (phps-mode-lex-analyzer--re2c-run))
+  (phps-mode-lex-analyzer--re2c-run
+   nil
+   (not (buffer-modified-p))
+   (not (buffer-modified-p))))
 
 ;;;###autoload
 (defun phps-mode-flycheck-setup ()
@@ -239,7 +242,10 @@
    t)
 
   ;; Initial run of lexer
-  (phps-mode-lex-analyzer--re2c-run))
+  (phps-mode-lex-analyzer--re2c-run
+   nil
+   (not (buffer-modified-p))
+   (not (buffer-modified-p))))
 
 (provide 'phps-mode)
 ;;; phps-mode.el ends here

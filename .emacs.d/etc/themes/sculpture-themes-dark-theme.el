@@ -6,7 +6,7 @@
 ;; URL: https://github.com/t-e-r-m/sculpture-theme
 ;; Created: January 06, 2021
 ;; Modified: March 7, 2022
-;; Version: 1.3.0
+;; Version: 1.4.3
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -191,13 +191,13 @@
    `(font-lock-regexp-grouping-backslash ((,class (:foreground ,cs01))))
 
 ;;;;;; Header line and mode line
-   `(header-line                ((,class (:foreground ,fg   :background ,bw00))))
-   `(header-line-highlight      ((,class (:foreground ,fg   :background ,bw00))))
    `(mode-line                  ((,class (:foreground ,cs01 :background ,bw00 :box (:line-width 1 :color ,bw04)))))
    `(mode-line-buffer-id        ((,class (:foreground ,ot05 :background ,bw00))))
    `(mode-line-emphasis         ((,class (:foreground ,ha05 :background ,bw00))))
    `(mode-line-highlight        ((,class (:foreground ,ha05 :background ,bw00))))
    `(mode-line-inactive         ((,class (:foreground ,bw08 :background ,bw00 :box (:line-width 1 :color ,bw00)))))
+   `(header-line                ((,class (:inherit mode-line))))
+   `(header-line-highlight      ((,class (:inherit mode-line-highlight))))
 
 ;;;;;;; custom
    `(sculpture-themes-dark-modeline-line                     ((,class (:inherit (cursor variable-pitch) :foreground ,bg))))
@@ -661,7 +661,51 @@
    `(eglot-highlight-symbol-face  ((,class (:underline (:line-width -1 :color ,fg) :inherit (bold)))))
 
 ;;;;;; lsp-mode
-   `(lsp-ui-peek-list ((,class :background ,bw01)))))
+   `(lsp-ui-peek-list ((,class :background ,bw01)))
+
+   `(lsp-face-highlight-write   ((,class :background ,bw01)))
+   `(lsp-face-highlight-textual ((,class :inherit (lsp-face-highlight-write))))
+   `(lsp-face-highlight-read    ((,class :inherit (lsp-face-highlight-write) :underline (:line-width -1 :color ,cs00))))
+
+   `(lsp-face-semhl-number   ((,class :inherit (font-lock-constant-face))))
+   `(lsp-face-semhl-constant ((,class :inherit (font-lock-constant-face))))
+
+   `(lsp-face-semhl-regexp ((,class :inherit (font-lock-string-face bold))))
+   `(lsp-face-semhl-string ((,class :inherit (font-lock-string-face))))
+
+   `(lsp-face-semhl-enum           ((,class :inherit (font-lock-keyword-face))))
+   `(lsp-face-semhl-type           ((,class :inherit (font-lock-keyword-face underline))))
+   `(lsp-face-semhl-class          ((,class :inherit (font-lock-keyword-face underline italic))))
+   `(lsp-face-semhl-struct         ((,class :inherit (font-lock-keyword-face italic))))
+   `(lsp-face-semhl-interface      ((,class :inherit (font-lock-keyword-face bold-italic))))
+   `(lsp-face-semhl-namespace      ((,class :inherit (font-lock-keyword-face bold-italic underline))))
+   `(lsp-face-semhl-type-parameter ((,class :inherit (font-lock-keyword-face bold underline))))
+
+   `(lsp-face-semhl-event     ((,class :inherit (font-lock-variable-name-face underline))))
+   `(lsp-face-semhl-member    ((,class :inherit (font-lock-variable-name-face bold-italic))))
+   `(lsp-face-semhl-property  ((,class :inherit (font-lock-variable-name-face italic))))
+   `(lsp-face-semhl-variable  ((,class :inherit (font-lock-variable-name-face bold))))
+   `(lsp-face-semhl-parameter ((,class :inherit (font-lock-variable-name-face underline italic))))
+
+   `(lsp-face-semhl-label   ((,class :inherit (font-lock-comment-face underline))))
+   `(lsp-face-semhl-comment ((,class :inherit (font-lock-comment-face))))
+
+   `(lsp-face-semhl-method     ((,class :inherit (font-lock-function-name-face italic))))
+   `(lsp-face-semhl-function   ((,class :inherit (font-lock-function-name-face underline bold))))
+   `(lsp-face-semhl-operator   ((,class :inherit (font-lock-function-name-face bold-italic))))
+   `(lsp-face-semhl-definition ((,class :inherit (font-lock-function-name-face bold))))
+
+   `(lsp-face-semhl-static  ((,class :inherit (font-lock-keyword-face underline))))
+   `(lsp-face-semhl-keyword ((,class :inherit (font-lock-keyword-face bold))))
+
+   `(lsp-face-semhl-default-library ((,class :inherit (font-lock-builtin-face) :underline (:line-width -1 :color ,ot05))))
+
+   ;; `(lsp-face-semhl-macro ((,class :inherit )))
+   ;; `(lsp-face-semhl-deprecated ((,class :inherit )))
+   ;; `(lsp-face-rename ((,class :inherit )))
+
+;;;;;; pulsar
+   `(pulsar-generic ((:inherit highlight)))))
 
 (provide-theme 'sculpture-themes-dark)
 

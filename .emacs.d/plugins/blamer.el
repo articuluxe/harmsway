@@ -4,8 +4,8 @@
 
 ;; Author: Artur Yaroshenko <artawower@protonmail.com>
 ;; URL: https://github.com/artawower/blamer.el
-;; Package-Requires: ((emacs "27.1") (a "1.0.0"))
-;; Version: 0.4.4
+;; Package-Requires: ((emacs "27.1"))
+;; Version: 0.4.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@
 (require 'simple)
 (require 'time-date)
 (require 'tramp)
-(require 'a)
 
 (defconst blamer--regexp-info
   (concat "^(?\\(?1:[^\s]+\\) [^\s]*[[:blank:]]?\(\\(?2:[^\n]+\\)"
@@ -271,6 +270,9 @@ author name by left click and copying commit hash by right click.
 (defvar blamer--overlays '()
   "Current active overlays for git blame messages.")
 
+(defvar blamer--block-render-p nil
+  "Lock rendering, useful for external packages.")
+
 (defvar-local blamer--current-author nil
   "Git.name for current repository.")
 
@@ -369,6 +371,14 @@ Will show the available `blamer-bindings'."
       (+ (or (ignore-errors (line-number-display-width)) 0) 0)
     0))
 
+(defun blamer--plist-merge (&rest plists)
+  "Create a single property list from all PLISTS."
+  (let ((rtn (pop plists)))
+    (dolist (plist plists rtn)
+      (setq rtn (plist-put rtn
+                           (pop plist)
+                           (pop plist))))))
+
 (defun blamer--real-window-width ()
   "Get real visible width of the window.
 Taking into account the line number column."
@@ -402,9 +412,9 @@ COMMIT-INFO - all the commit information, for `blamer--apply-bindings'"
                                                                    (blamer--format-commit-message commit-message))))
 
          (formatted-message (propertize formatted-message
-                                        'face (flatten-tree
-                                               (a-merge (face-all-attributes 'blamer-face (selected-frame))
-                                                        `((:background ,(blamer--get-background-color)))))
+                                        'face (blamer--plist-merge
+                                               (flatten-tree (face-all-attributes 'blamer-face (selected-frame)))
+                                               `(:background ,(blamer--get-background-color)))
                                         'cursor t))
          (formatted-message (blamer--apply-tooltip formatted-message commit-info))
          (formatted-message (blamer--apply-bindings formatted-message commit-info))
@@ -675,9 +685,10 @@ TYPE - is optional argument that can replace global `blamer-type' variable."
   "Function for checking current active blamer type before rendering with delay.
 Optional TYPE argument will override global `blamer-type'."
   (let ((blamer-type (or type blamer-type)))
-    (unless (and (or (eq blamer-type 'overlay-popup)
-                     (eq blamer-type 'visual))
-                 (use-region-p))
+    (unless (or (and (or (eq blamer-type 'overlay-popup)
+                         (eq blamer-type 'visual))
+                     (use-region-p))
+                blamer--block-render-p)
       (blamer--render blamer-type))))
 
 (defun blamer--render-commit-info-with-delay ()
@@ -706,10 +717,11 @@ LOCAL-TYPE is force replacement of current `blamer-type' for handle rendering."
          (clear-overlays-p (or long-line-p region-deselected-p))
          (type (or local-type blamer-type)))
 
-    (when clear-overlays-p
+    (when (and clear-overlays-p (not blamer--block-render-p))
       (blamer--clear-overlay))
 
     (when (and (not long-line-p)
+               (not blamer--block-render-p)
                (or (eq type 'both)
                    (and (eq type 'visual) (not (use-region-p)))
                    (and (eq type 'overlay-popup) (not (use-region-p)))

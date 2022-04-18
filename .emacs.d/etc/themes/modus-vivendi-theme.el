@@ -1,10 +1,10 @@
-;;; modus-vivendi-theme.el --- Accessible and customizable dark theme (WCAG AAA) -*- lexical-binding:t -*-
+;;; modus-vivendi-theme.el --- Elegant, highly legible and customizable light theme -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2019-2022  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; URL: https://gitlab.com/protesilaos/modus-themes
-;; Version: 2.2.0
+;; URL: https://git.sr.ht/~protesilaos/modus-themes
+;; Version: 2.3.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -59,11 +59,11 @@
     (require 'modus-themes))
 
   (deftheme modus-vivendi
-    "Accessible and customizable dark theme (WCAG AAA standard).
+    "Elegant, highly legible and customizable dark theme.
 Conforms with the highest legibility standard for color contrast
 between background and foreground in any given piece of text,
 which corresponds to a minimum contrast in relative luminance of
-7:1.")
+7:1 (WCAG AAA standard).")
 
   (modus-themes-theme modus-vivendi)
 

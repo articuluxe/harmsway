@@ -169,7 +169,8 @@
          (globalp  (oref obj global))
          (value    nil)
          (global   (magit-git-string "config" "--global" variable))
-         (default  (oref obj default))
+         (defaultp (oref obj default))
+         (default  (if (functionp defaultp) (funcall defaultp obj) defaultp))
          (fallback (oref obj fallback))
          (fallback (and fallback
                         (when-let ((val (magit-get fallback)))
@@ -209,10 +210,12 @@
                                         'transient-inactive-value
                                       'transient-value)))
                  (default
-                   (propertize (concat "default:" default)
-                               'face (if value
-                                         'transient-inactive-value
-                                       'transient-value))))))
+                  (propertize (if (functionp defaultp)
+                                  (concat "dwim:" default)
+                                (concat "default:" default))
+                              'face (if value
+                                        'transient-inactive-value
+                                      'transient-value))))))
      (propertize "]" 'face 'transient-inactive-value))))
 
 ;;; _

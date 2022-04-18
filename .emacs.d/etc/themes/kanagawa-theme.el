@@ -1,4 +1,5 @@
 ;;; package: --- A theme inspired by the colors of the famous painting by Katsushika Hokusa
+
 ;;; Commentary: Original theme created by rebelot see: https://github.com/rebelot/kanagawa.nvim
 ;;; Code:
 
@@ -61,8 +62,7 @@
   (peachRed         "#FF5D62" "#717C7C")
   (surimiOrange		"#FFA066" "#717C7C")
   (katanaGray		"#717C7C" "#717C7C")
-  (comet            "#54536D" "#4e4e4e")
-  )
+  (comet            "#54536D" "#4e4e4e"))
 
   ;; Customize faces
   (
@@ -137,14 +137,14 @@
   (doom-modeline-battery-error                   (:foreground peachRed))
   (doom-modeline-battery-normal                  (:foreground springViolet1))
   (doom-modeline-battery-full                    (:foreground waveAqua2))
-
+  
   ;; Doom visual state
   (doom-modeline-evil-motion-state               (:foreground lightBlue))
   (doom-modeline-evil-emacs-state                (:foreground crystalBlue))
-  (doom-modeline-evil-insert-state               (:foreground roninYellow))
+  (doom-modeline-evil-insert-state               (:foreground peachRed))
   (doom-modeline-evil-normal-state               (:foreground lightBlue))
-  (doom-modeline-evil-visual-state               (:foreground springBlue))
-  (doom-modeline-evil-replace-state              (:foreground peachRed))
+  (doom-modeline-evil-visual-state               (:foreground springGreen))
+  (doom-modeline-evil-replace-state              (:foreground roninYellow))
   (doom-modeline-evil-operator-state             (:foreground crystalBlue))
 
   (doom-modeline-project-dir                     (:bold t :foreground waveAqua2))
@@ -247,13 +247,13 @@
   (company-box                                   (:background sumiInk-0))
   (company-tooltip                               (:background sumiInk-0))
   (company-tooltip-common                        (:foreground carpYellow))
-  (company-tooltip-quick-access                  (:foreground roninYellow))
+  (company-tooltip-quick-access                  (:foreground springViolet2))
   (company-tooltip-scrollbar-thumb               (:background autumnRed))
   (company-tooltip-scrollbar-track               (:background sumiInk-2))
-  (company-tooltip-search                        (:background peachRed :foreground sumiInk-0 :distant-foreground fujiWhite))
-  (company-tooltip-selection                     (:background waveBlue-2 :foreground roninYellow :bold t))
-  (company-tooltip-mouse                         (:background peachRed :foreground sumiInk-0 :distant-foreground fujiWhite))
-  (company-tooltip-annotation                    (:foreground oniViolet))
+  (company-tooltip-search                        (:background carpYellow :foreground sumiInk-0 :distant-foreground fujiWhite))
+  (company-tooltip-selection                     (:background winterBlue :foreground lightBlue :bold t))
+  (company-tooltip-mouse                         (:background sumiInk-0 :foreground sumiInk-0 :distant-foreground fujiWhite))
+  (company-tooltip-annotation                    (:foreground crystalBlue))
   (company-scrollbar-bg                          (:inherit 'tooltip))
   (company-scrollbar-fg                          (:background peachRed))
   (company-preview                               (:foreground carpYellow))
@@ -273,9 +273,9 @@
   (flycheck-error-list-warning                   (:foreground roninYellow :bold t))
   (flycheck-error-list-error                     (:foreground samuraiRed :bold t))
   (flycheck-error-list-info                      (:foreground waveAqua1 :bold t))
-  (flycheck-inline-error                         (:foreground samuraiRed :background winterRed :italic t :height 128))
-  (flycheck-inline-info                          (:foreground lightBlue :background winterBlue :italic t :height 128))
-  (flycheck-inline-warning                       (:foreground roninYellow :background winterYellow :italic t :height 128))
+  (flycheck-inline-error                         (:foreground samuraiRed :background winterRed :italic t :bold t :height 138))
+  (flycheck-inline-info                          (:foreground lightBlue :background winterBlue :italic t  :bold t :height 138))
+  (flycheck-inline-warning                       (:foreground roninYellow :background winterYellow :italic t :bold t :height 138))
 
   ;; indent dots
   (highlight-indent-guides-character-face        (:foreground sumiInk-3))
@@ -286,7 +286,6 @@
   (highlight-indent-guides-even-face             (:foreground sumiInk-2))
   (highlight-indent-guides-odd-face              (:foreground comet))
 
-  ;;
   (highlight-operators-face                      (:foreground boatYellow2))
   (highlight-quoted-symbol                       (:foreground springGreen))
   (highlight-numbers-face                        (:foreground sakuraPink))
@@ -426,9 +425,9 @@
   (centaur-tabs-default                          (:background roninYellow ))
   (centaur-tabs-name-mouse-face                  (:foreground springBlue :bold t))
 
-  (git-gutter:added                              (:foreground springBlue :background winterBlue))
-  (git-gutter:deleted                            (:foreground peachRed :background winterRed))
-  (git-gutter:modified                           (:inherit 'git-gutter:added :foreground comet))
+  (git-gutter:added                              (:foreground autumnGreen))
+  (git-gutter:deleted                            (:foreground waveRed))
+  (git-gutter:modified                           (:foreground springBlue))
 
   (diff-hl-margin-change                         (:foreground springBlue :background winterBlue))
   (diff-hl-margin-delete                         (:foreground peachRed :background winterRed))
@@ -436,7 +435,17 @@
 
   (bm-fringe-face                                (:background peachRed :foreground sumiInk-3))
   (bm-fringe-persistent-face                     (:background peachRed :foreground sumiInk-3))
-  
+
+  (ansi-color-green                              (:foreground springGreen))
+  (ansi-color-cyan                               (:foreground waveAqua2))
+  (ansi-color-magenta                            (:foreground sakuraPink))
+  (ansi-color-blue                               (:foreground crystalBlue))
+  (ansi-color-red                                (:foreground peachRed))
+  (ansi-color-white                              (:foreground fujiWhite))
+  (ansi-color-yellow                             (:foreground autumnYellow))
+  (ansi-color-bright-white                       (:foreground old-white))
+  (ansi-color-bright-white                       (:foreground old-white))
+      
  ))
 
 ;;;###autoload

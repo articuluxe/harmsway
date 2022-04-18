@@ -109,8 +109,10 @@ This only takes effect if on a local connection. (e.g. Not Tramp)"
   :type 'integer
   :group 'dired-sidebar)
 
-(defcustom dired-sidebar-refresh-on-projectile-switch t
-  "Refresh sidebar when `projectile' changes projects."
+(define-obsolete-variable-alias 'dired-sidebar-refresh-on-projectile-switch
+'dired-sidebar-refresh-on-project-switch "2022-04-13")
+(defcustom dired-sidebar-refresh-on-project-switch t
+  "Refresh sidebar when `projectile' or `project' changes projects."
   :type 'boolean
   :group 'dired-sidebar)
 
@@ -310,12 +312,17 @@ For more information, look up `delete-other-windows'."
   :type 'boolean
   :group 'dired-sidebar)
 
-(defcustom dired-sidebar-one-instance-p nil
+
+(define-obsolete-variable-alias 'dired-sidebar-one-instance-p
+'dired-sidebar-use-one-instance "2022-04-13")
+(defcustom dired-sidebar-use-one-instance nil
   "Only show one buffer instance for dired-sidebar for each frame."
   :type 'boolean
   :group 'dired-sidebar)
 
-(defcustom dired-sidebar-display-icons-for-remote-p nil
+(define-obsolete-variable-alias 'dired-sidebar-display-icons-for-remote-p
+'dired-sidebar-display-remote-icons "2022-04-13")
+(defcustom dired-sidebar-display-remote-icons nil
   "Show icons for remote directories. nil by default for performance reasons."
   :type 'boolean
   :group 'dired-sidebar)
@@ -496,7 +503,9 @@ Works around marker pointing to wrong buffer in Emacs 25."
   (when dired-sidebar-use-custom-modeline
     (dired-sidebar-set-mode-line))
 
-  (when dired-sidebar-refresh-on-projectile-switch
+  (when dired-sidebar-refresh-on-project-switch
+    (advice-add 'project-find-file
+                :after #'dired-sidebar-follow-file)
     (add-hook 'projectile-after-switch-project-hook
               #'dired-sidebar-follow-file))
 
@@ -800,14 +809,8 @@ the relevant file-directory clicked on by the mouse."
     ;; Use `project' if `projectile' is not loaded yet.
     ;; `projectile' is a big package and takes a while to load so it's better
     ;; to defer loading it as long as possible (until the user chooses).
-    (dired-sidebar-if-let* ((project (project-current)))
-        ;; https://github.com/jojojames/dired-sidebar/issues/61
-        (if (eq (type-of project) 'ede-proj-project)
-            ;; Found from calling: (eieio-class-slots 'ede-proj-project)
-            (slot-value project 'directory)
-          ;; e.g. (vc . "~/.emacs.d/straight/repos/dired-sidebar/")
-          ;; or (vc Git "~/.emacs.d/straight/repos/dired-sidebar/")
-          (car (last project)))
+    (dired-sidebar-if-let* ((pr (project-current)))
+        (project-root pr)
       default-directory)))
 
 (defun dired-sidebar-buffer-name (dir)
@@ -941,7 +944,7 @@ Optional argument NOCONFIRM Pass NOCONFIRM on to `dired-buffer-stale-p'."
         (ignore auto-revert-verbose) ;; Make byte compiler happy.
         (revert-buffer)))))
 
-(defun dired-sidebar-follow-file ()
+(defun dired-sidebar-follow-file (&rest _)
   "Follow new file.
 
 The root of the sidebar will be determined by `dired-sidebar-get-dir-to-show'

@@ -61,7 +61,12 @@
 
 (defface selectrum-current-candidate
   '((t :inherit highlight :extend t))
-  "Face used to highlight the currently selected candidate."
+  "Face used to highlight the currently selected candidate.
+
+In Emacs 27 and greater, this face is assumed to have the
+`:extend' attribute set to a non-nil value (the default).
+ This is expected by user options like
+`selectrum-extend-current-candidate-highlight'."
   :group 'selectrum-faces)
 
 (defface selectrum-completion-annotation
@@ -360,11 +365,14 @@ setting."
 (defcustom selectrum-extend-current-candidate-highlight 'auto
   "Whether to extend highlighting of the current candidate until the margin.
 
-When set to nil only highlight the displayed text. When set to
-`auto' (the default) Selectrum will only highlight the displayed
-text unless the session defines any annotations in which case the
-highlighting is automatically extended. Any other non-nil value
-means to always extend the highlighting."
+When set to nil, only highlight the displayed text. When set to
+`auto' (the default), the highlighting is automatically extended
+when the session defines any annotations. Any other non-nil value
+means to always extend the highlighting.
+
+In Emacs 27 and greater, this option requires that the face
+`selectrum-current-candidate' have a non-nil value for the
+`:extend' attribute (the default)."
   :type '(choice (const :tag "Automatic" auto) boolean))
 
 (defcustom selectrum-files-select-input-dirs nil
@@ -1040,7 +1048,8 @@ displayed first and LAST-INDEX-DISPLAYED the index of the last one."
     (dolist (cand candidates)
       (when-let (new-title (and groupf (funcall groupf cand nil)))
         (unless (equal last-title new-title)
-          (push (format selectrum-group-format (setq last-title new-title)) lines)
+          (push (format selectrum-group-format (setq last-title new-title))
+                lines)
           (push "\n" lines))
         (setq cand (funcall groupf cand 'transform)))
       (let* ((formatting-current-candidate
@@ -2033,7 +2042,8 @@ end. Otherwise, loop back around."
   (interactive "p")
   (when selectrum--current-candidate-index
     (let ((new-pos (+ selectrum--current-candidate-index
-                      (* (or arg 1) selectrum--actual-num-candidates-displayed)))
+                      (* (or arg 1)
+                         selectrum--actual-num-candidates-displayed)))
           (max-index (1- (length (selectrum-get-current-candidates t)))))
       ;; Paging commands cannot select the input line.
       (setq selectrum--current-candidate-index

@@ -142,6 +142,19 @@ It returns a file name which can be used directly as argument of
   :group 'mode-line
   :link '(url-link :tag "Homepage" "https://github.com/seagle0128/doom-modeline"))
 
+(defcustom doom-modeline-support-imenu nil
+  "If non-nil, cause imenu to see `doom-modeline' declarations.
+This is done by adjusting `lisp-imenu-generic-expression' to
+include support for finding `doom-modeline-def-*' forms.
+
+Must be set before loading doom-modeline."
+  :type 'boolean
+  :set (lambda (_sym val)
+         (if val
+             (add-hook 'emacs-lisp-mode-hook #'doom-modeline-add-imenu)
+           (remove-hook 'emacs-lisp-mode-hook #'doom-modeline-add-imenu)))
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-height 25
   "How tall the mode-line should be. It's only respected in GUI.
 If the actual char height is larger, it respects the actual char height.
@@ -521,6 +534,18 @@ If nil, don't set up a hook."
   :type 'integer
   :group 'doom-modeline)
 
+(defcustom doom-modeline-gnus-idle nil
+  "Whether to wait an idle time to scan for news.
+
+When t, sets `doom-modeline-gnus-timer' as an idle timer.  If a
+number, Emacs must have been idle this given time, checked after
+reach the defined timer, to fetch news.  The time step can be
+configured in `gnus-demon-timestep'."
+  :type '(choice
+	  (boolean :tag "Set `doom-modeline-gnus-timer' as an idle timer")
+	  (number :tag "Set a custom idle timer"))
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-gnus-excluded-groups nil
   "A list of groups to be excluded from the unread count.
 Groups' names list in `gnus-newsrc-alist'`"
@@ -560,8 +585,18 @@ It requires `circe' or `erc' package."
   "Face used for the white space."
   :group 'doom-modeline-faces)
 
+(defface doom-modeline-spc-inactive-face
+  '((t (:inherit mode-line-inactive)))
+  "Face used for the inactive white space."
+  :group 'doom-modeline-faces)
+
 (defface doom-modeline-vspc-face
   '((t (:inherit variable-pitch)))
+  "Face used for the variable white space."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-vspc-inactive-face
+  '((t (:inherit (mode-line-inactive doom-modeline-vspc-face))))
   "Face used for the variable white space."
   :group 'doom-modeline-faces)
 
@@ -801,6 +836,38 @@ etc. (also see the face `doom-modeline-unread-number')."
 
 
 ;;
+;; Utilities
+;;
+
+(defun doom-modeline-add-font-lock ()
+  "Fontify `doom-modeline-def-*' statements."
+  (font-lock-add-keywords
+   'emacs-lisp-mode
+   '(("(\\(doom-modeline-def-.+\\)\\_> +\\(.*?\\)\\_>"
+      (1 font-lock-keyword-face)
+      (2 font-lock-constant-face)))))
+(doom-modeline-add-font-lock)
+
+(defun doom-modeline-add-imenu ()
+  "Add to `imenu' index."
+  (add-to-list
+   'imenu-generic-expression
+   '("Modelines"
+     "^\\s-*(\\(doom-modeline-def-modeline\\)\\s-+\\(\\(?:\\sw\\|\\s_\\|\\s'\\|\\\\.\\)+\\)"
+     2))
+  (add-to-list
+   'imenu-generic-expression
+   '("Segments"
+     "^\\s-*(\\(doom-modeline-def-segment\\)\\s-+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)"
+     2))
+  (add-to-list
+   'imenu-generic-expression
+   '("Envs"
+     "^\\s-*(\\(doom-modeline-def-env\\)\\s-+\\(\\(?:\\sw\\|\\s_\\|\\\\.\\)+\\)"
+     2)))
+
+
+;;
 ;; Core helpers
 ;;
 
@@ -1013,19 +1080,19 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
   "Text style with whitespace."
   (propertize " " 'face (if (doom-modeline--active)
                             'doom-modeline-spc-face
-                          '(:inherit mode-line-inactive))))
+                          'doom-modeline-spc-inactive-face)))
 
 (defsubst doom-modeline-wspc ()
   "Text style with wide whitespace."
   (propertize "  " 'face (if (doom-modeline--active)
-                            'doom-modeline-spc-face
-                          '(:inherit mode-line-inactive))))
+                             'doom-modeline-spc-face
+                           'doom-modeline-spc-inactive-face)))
 
 (defsubst doom-modeline-vspc ()
   "Text style with icons in mode-line."
   (propertize " " 'face (if (doom-modeline--active)
                             'doom-modeline-vspc-face
-                          '(:inherit (doom-modeline-vspc-face mode-line-inactive)))))
+                          'doom-modeline-vspc-inactive-face)))
 
 (defun doom-modeline--font-height ()
   "Calculate the actual char height of the mode-line."
