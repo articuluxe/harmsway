@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-12-13 16:13:45 dharms>
+;; Modified Time-stamp: <2022-04-18 11:34:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1396,6 +1396,15 @@ ARGS are the additional arguments."
   :init
   (setq shell-pop-autocd-to-working-dir nil)
   (setq shell-pop-universal-key "<f1>"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-focus-reporting ;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package terminal-focus-reporting
+  :if (not (display-graphic-p))
+  :config
+  (terminal-focus-reporting-mode)
+  ;; following doesn't work on darwin
+  ;; (add-function :after after-focus-change-function ...)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package terminal-here
