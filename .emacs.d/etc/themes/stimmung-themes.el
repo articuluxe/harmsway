@@ -41,6 +41,61 @@
 
 ;;; Code:
 
+;;; Theme loading/toggle inspired/sourced from the fantastic `protesilaos/modus-themes'
+
+(defgroup stimmung-themes nil
+  "Stimmung settings.
+You have to re-load the theme for these changes to take effect."
+  :group 'faces
+  :prefix "stimmung-theme-"
+  :link   '(url-link "https://github.com/motform/stimmung-themes"))
+
+(defcustom stimmung-themes-dark-highlight-color "#40382b" ; I dub this shade "Japanese gravy"
+  "The primarily color for highlights, the only non-monochrome color in code."
+  :type 'string
+  :group 'stimmung-themes)
+
+(defcustom stimmung-themes-light-highlight-color "cornsilk1"
+  "The primarily color for highlights, the only non-monochrome color in code."
+  :type 'string
+  :group 'stimmung-themes)
+
+;;;###autoload
+(defun stimmung-themes-load-dark ()
+  "Load `stimmung-dark' and disable `stimmung-light'."
+  (interactive)
+  (disable-theme 'stimmung-themes-light)
+  (load-theme 'stimmung-themes-dark t))
+
+;;;###autoload
+(defun stimmung-themes-load-light ()
+  "Load `stimmung-light' and disable `stimmung-dark'."
+  (interactive)
+  (disable-theme 'stimmung-themes-dark)
+  (load-theme 'stimmung-themes-light t))
+
+;;;###autoload
+(defun stimmung-themes--toggle-prompt ()
+  "Helper for `stimmung-themes-toggle'."
+  (let ((theme (intern (completing-read "Load Stimmung theme: "
+                           '(stimmung-themes-light stimmung-themes-dark) nil t))))
+	(mapc #'disable-theme custom-enabled-themes) ; make sure to disable any non-stimmung themes to ignore accidental face-overlap
+	(pcase theme
+	  ('stimmung-themes-light (stimmung-themes-load-light))
+	  ('stimmung-themes-dark  (stimmung-themes-load-dark)))))
+
+;;;###autoload
+(defun stimmung-themes-toggle ()
+  "Toggle between the dark and light version of `stimmung-themes'.
+Prompt the user for which to pick in case none is enabled.
+Currently assumes the themes is loaded, which might be an issue.
+Inspired by stimmung-themes."
+  (interactive)
+  (pcase (car custom-enabled-themes)
+	('stimmung-themes-light (stimmung-themes-load-dark))
+	('stimmung-themes-dark  (stimmung-themes-load-light))
+	(_ (stimmung-themes--toggle-prompt))))
+
 (provide 'stimmung-themes)
 
 ;; Local Variables:

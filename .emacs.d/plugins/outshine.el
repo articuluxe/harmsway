@@ -2143,6 +2143,7 @@ i.e. the text following the regexp match until the next space character."
               outshine-imenu-generic-expression)
              (imenu-prev-index-position-function nil)
              (imenu-extract-index-name-function nil)
+             (imenu-create-index-function 'imenu-default-create-index-function)
              (imenu-auto-rescan t)
              (imenu-auto-rescan-maxout 360000))
         ;; prefer idomenu
@@ -2173,6 +2174,7 @@ i.e. the text following the regexp match until the next space character."
           outshine-imenu-default-generic-expression)
          (imenu-prev-index-position-function nil)
          (imenu-extract-index-name-function nil)
+         (imenu-create-index-function 'imenu-default-create-index-function)
          (imenu-auto-rescan t)
          (imenu-auto-rescan-maxout 360000))
     ;; prefer idomenu

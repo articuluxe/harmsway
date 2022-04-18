@@ -114,10 +114,13 @@
   (setq phps-mode-lex-analyzer--states nil)
   (setq phps-mode-lex-analyzer--tokens nil)
   (when clear-existing
-    (phps-mode-serial--kill-active (buffer-name))
-    (when buffer-file-name
-      (phps-mode-cache-delete buffer-file-name)))
-  )
+    (phps-mode-serial--kill-active
+     (buffer-name))
+    (when (and
+           buffer-file-name
+           phps-mode-cache--use-p)
+      (phps-mode-cache-delete
+       buffer-file-name))))
 
 (defun phps-mode-lex-analyzer--set-region-syntax-color (start end properties)
   "Do syntax coloring for region START to END with PROPERTIES."
@@ -198,8 +201,8 @@
            phps-mode-lex-analyzer--lexer-index
            (cdr (cdr (car phps-mode-lexer--generated-new-tokens)))))))))
 
-(defun phps-mode-lex-analyzer--re2c-run (&optional force-synchronous)
-  "Run lexer, optionally FORCE-SYNCHRONOUS."
+(defun phps-mode-lex-analyzer--re2c-run (&optional force-synchronous allow-cache-read allow-cache-write)
+  "Run lexer, optionally FORCE-SYNCHRONOUS mode, ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
   (interactive)
   (require 'phps-mode-macros)
   (phps-mode-debug-message (message "Lexer run"))
@@ -228,7 +231,9 @@
         nil
         nil
         nil
-        buffer-file-name))
+        buffer-file-name
+        allow-cache-read
+        allow-cache-write))
 
      (lambda(lex-result)
        (when (get-buffer buffer-name)
@@ -245,23 +250,49 @@
            (setq phps-mode-lex-analyzer--parse-trail (nth 7 lex-result))
            (setq phps-mode-lex-analyzer--parse-error (nth 8 lex-result))
            (setq phps-mode-lex-analyzer--ast (nth 9 lex-result))
-           (setq phps-mode-lex-analyzer--imenu (nth 10 lex-result))
-           (setq phps-mode-lex-analyzer--bookkeeping (nth 11 lex-result))
+
+           ;; Catch errors in bookkeeping generation
+           (condition-case conditions
+               (phps-mode-ast-bookkeeping--generate
+                phps-mode-lex-analyzer--ast)
+             (error
+              (display-warning
+               'phps-mode
+               (format "Failed to generate bookkeeping: %S" conditions)
+               :warning
+               "*PHPs Bookkeeping Generation Errors*")))
+           (setq phps-mode-lex-analyzer--bookkeeping
+                 phps-mode-ast-bookkeeping--index)
+
+           ;; Catch errors in imenu generation
+           (condition-case conditions
+               (phps-mode-ast-imenu--generate
+                phps-mode-lex-analyzer--ast)
+             (error
+              (display-warning
+               'phps-mode
+               (format "Failed to generate imenu: %S" conditions)
+               :warning
+               "*PHPs Imenu Generation Errors*")))
+           (setq phps-mode-lex-analyzer--imenu phps-mode-ast-imenu--index)
+
            (setq phps-mode-lex-analyzer--processed-buffer-p t)
            (phps-mode-lex-analyzer--reset-imenu)
-           (when (fboundp 'thread-yield)
-             (thread-yield))
 
            ;; Apply syntax color on tokens
            (dolist (token phps-mode-lex-analyzer--tokens)
              (let ((start (car (cdr token)))
                    (end (cdr (cdr token))))
-               (let ((token-syntax-color (phps-mode-lex-analyzer--get-token-syntax-color token)))
+               (let ((token-syntax-color
+                      (phps-mode-lex-analyzer--get-token-syntax-color token)))
                  (if token-syntax-color
                      (phps-mode-lex-analyzer--set-region-syntax-color
                       start end (list 'font-lock-face token-syntax-color))
                    (phps-mode-lex-analyzer--clear-region-syntax-color
                     start end)))))
+
+           ;; Reset buffer changes minimum index
+           (phps-mode-lex-analyzer--reset-changes)
 
            ;; Signal parser error (if any)
            (when phps-mode-lex-analyzer--parse-error
@@ -335,7 +366,7 @@
 
 (defun phps-mode-lex-analyzer--incremental-lex-string
     (buffer-name buffer-contents incremental-start-new-buffer point-max
-                 head-states incremental-state incremental-state-stack incremental-heredoc-label incremental-heredoc-label-stack incremental-nest-location-stack head-tokens &optional force-synchronous filename)
+                 head-states incremental-state incremental-state-stack incremental-heredoc-label incremental-heredoc-label-stack incremental-nest-location-stack head-tokens &optional force-synchronous filename allow-cache-write)
   "Incremental lex region."
   (let ((async (and (boundp 'phps-mode-async-process)
                     phps-mode-async-process))
@@ -343,6 +374,7 @@
                                phps-mode-async-process-using-async-el)))
     (when force-synchronous
       (setq async nil))
+
     (phps-mode-serial-commands
 
      buffer-name
@@ -359,7 +391,9 @@
         incremental-heredoc-label-stack
         incremental-nest-location-stack
         head-tokens
-        filename))
+        filename
+        nil
+        allow-cache-write))
 
      (lambda(lex-result)
        (when (get-buffer buffer-name)
@@ -378,8 +412,31 @@
            (setq phps-mode-lex-analyzer--parse-trail (nth 7 lex-result))
            (setq phps-mode-lex-analyzer--parse-error (nth 8 lex-result))
            (setq phps-mode-lex-analyzer--ast (nth 9 lex-result))
-           (setq phps-mode-lex-analyzer--imenu (nth 10 lex-result))
-           (setq phps-mode-lex-analyzer--bookkeeping (nth 11 lex-result))
+
+           ;; Catch errors in bookkeeping generation
+           (condition-case conditions
+               (phps-mode-ast-bookkeeping--generate
+                phps-mode-lex-analyzer--ast)
+             (error
+              (display-warning
+               'phps-mode
+               (format "Failed to generate bookkeeping: %S" conditions)
+               :warning
+               "*PHPs Bookkeeping Generation Errors*")))
+           (setq phps-mode-lex-analyzer--bookkeeping
+                 phps-mode-ast-bookkeeping--index)
+
+           ;; Catch errors in imenu generation
+           (condition-case conditions
+               (phps-mode-ast-imenu--generate
+                phps-mode-lex-analyzer--ast)
+             (error
+              (display-warning
+               'phps-mode
+               (format "Failed to generate imenu: %S" conditions)
+               :warning
+               "*PHPs Imenu Generation Errors*")))
+           (setq phps-mode-lex-analyzer--imenu phps-mode-ast-imenu--index)
 
            (phps-mode-debug-message
             (message "Incremental tokens: %s" phps-mode-lex-analyzer--tokens))
@@ -387,8 +444,6 @@
            ;; Save processed result
            (setq phps-mode-lex-analyzer--processed-buffer-p t)
            (phps-mode-lex-analyzer--reset-imenu)
-           (when (fboundp 'thread-yield)
-             (thread-yield))
 
            ;; Apply syntax color on tokens
            (dolist (token phps-mode-lex-analyzer--tokens)
@@ -400,6 +455,9 @@
                  (if token-syntax-color
                      (phps-mode-lex-analyzer--set-region-syntax-color start end (list 'font-lock-face token-syntax-color))
                    (phps-mode-lex-analyzer--clear-region-syntax-color start end)))))
+
+           ;; Reset buffer changes minimum index
+           (phps-mode-lex-analyzer--reset-changes)
 
            ;; Signal parser error (if any)
            (when phps-mode-lex-analyzer--parse-error
@@ -521,7 +579,12 @@
 (defun phps-mode-lex-analyzer--move-tokens (start diff)
   "Update tokens with moved lexer tokens after or equal to START with modification DIFF."
   (when phps-mode-lex-analyzer--tokens
-    (setq phps-mode-lex-analyzer--tokens (phps-mode-lex-analyzer--get-moved-tokens phps-mode-lex-analyzer--tokens start diff))))
+    (setq
+     phps-mode-lex-analyzer--tokens
+     (phps-mode-lex-analyzer--get-moved-tokens
+      phps-mode-lex-analyzer--tokens
+      start
+      diff))))
 
 (defun phps-mode-lex-analyzer--get-moved-tokens (old-tokens start diff)
   "Return moved lexer OLD-TOKENS positions after (or equal to) START with DIFF points."
@@ -578,23 +641,6 @@
 
                 ;; Reset idle timer
                 (phps-mode-lex-analyzer--cancel-idle-timer)
-
-                ;; Reset buffer changes minimum index
-                (phps-mode-lex-analyzer--reset-changes)
-
-                ;; Reset tokens and states here
-                (setq phps-mode-lex-analyzer--tokens nil)
-                (setq phps-mode-lex-analyzer--states nil)
-                (setq phps-mode-lex-analyzer--state nil)
-                (setq phps-mode-lex-analyzer--state-stack nil)
-                (setq phps-mode-lex-analyzer--heredoc-label nil)
-                (setq phps-mode-lex-analyzer--heredoc-label-stack nil)
-                (setq phps-mode-lex-analyzer--nest-location-stack nil)
-                (setq phps-mode-lex-analyzer--parse-trail nil)
-                (setq phps-mode-lex-analyzer--parse-error nil)
-                (setq phps-mode-lex-analyzer--ast nil)
-                (setq phps-mode-lex-analyzer--imenu nil)
-                (setq phps-mode-lex-analyzer--bookkeeping nil)
 
                 ;; NOTE Starts are inclusive while ends are exclusive buffer locations
 
@@ -691,7 +737,8 @@
                              incremental-nest-location-stack
                              head-tokens
                              force-synchronous
-                             (if (buffer-modified-p) nil buffer-file-name))
+                             (if (buffer-modified-p) nil buffer-file-name)
+                             (not (buffer-modified-p)))
 
                             (phps-mode-debug-message
                              (message "Incremental tokens: %s" incremental-tokens)))
@@ -717,7 +764,10 @@
           (push (list 'RUN-FULL-LEXER) log)
           (phps-mode-debug-message
            (message "Running full lexer"))
-          (phps-mode-lex-analyzer--re2c-run force-synchronous))
+          (phps-mode-lex-analyzer--re2c-run
+           force-synchronous
+           nil
+           (not (buffer-modified-p))))
 
         log))))
 
@@ -822,6 +872,8 @@
       (progn
         (phps-mode-debug-message
          (message "After change registration is enabled"))
+
+        ;; Kill active thread (if any)
         (phps-mode-serial--kill-active (buffer-name))
         
         ;; If we haven't scheduled incremental lexer before - do it
@@ -830,15 +882,19 @@
                    (not phps-mode-lex-analyzer--idle-timer))
           (phps-mode-lex-analyzer--start-idle-timer))
 
+        ;; When change position is before previous start position - update it
         (when (or
                (not phps-mode-lex-analyzer--change-min)
                (< start phps-mode-lex-analyzer--change-min))
-          (setq phps-mode-lex-analyzer--change-min start))
+          (setq
+           phps-mode-lex-analyzer--change-min
+           start))
 
         (when (and
                (boundp 'phps-mode-idle-interval)
                (not phps-mode-idle-interval))
-          (phps-mode-lex-analyzer--process-changes (current-buffer))))
+          (phps-mode-lex-analyzer--process-changes
+           (current-buffer))))
     (phps-mode-debug-message
      (message "After change registration is disabled"))))
 
@@ -1074,7 +1130,7 @@
          token-start)))
     parser-tokens))
 
-(defun phps-mode-lex-analyzer--lex-string (contents &optional start end states state state-stack heredoc-label heredoc-label-stack nest-location-stack tokens filename)
+(defun phps-mode-lex-analyzer--lex-string (contents &optional start end states state state-stack heredoc-label heredoc-label-stack nest-location-stack tokens filename allow-cache-read allow-cache-write)
   "Run lexer on CONTENTS."
   ;; Create a separate buffer, run lexer inside of it, catch errors and return them
   ;; to enable nice presentation
@@ -1083,20 +1139,24 @@
   (let ((loaded-from-cache)
         (cache-key))
 
-    ;; Load cache if possible
-    (when filename
+    ;; Build cache key if possible
+    (when (and
+           phps-mode-cache--use-p
+           filename)
       (setq
        cache-key
        filename)
-      (unless end
-        (when
-            (phps-mode-cache-test-p
-             cache-key
-             filename)
-          (setq
-           loaded-from-cache
-           (phps-mode-cache-load
-            cache-key)))))
+
+      ;; Load cache if possible and permitted
+      (when (and
+             allow-cache-read
+             (phps-mode-cache-test-p
+              cache-key
+              filename))
+        (setq
+         loaded-from-cache
+         (phps-mode-cache-load
+          cache-key))))
 
     (if loaded-from-cache
         loaded-from-cache
@@ -1104,9 +1164,7 @@
               (generate-new-buffer "*PHPs Lexer*"))
              (parse-error)
              (parse-trail)
-             (ast-tree)
-             (imenu-index)
-             (bookkeeping-index))
+             (ast-tree))
 
         ;; Create temporary buffer and run lexer in it
         (when (get-buffer buffer)
@@ -1181,9 +1239,7 @@
             ;; Error-free parse here
             (condition-case conditions
                 (progn
-                  (phps-mode-ast--generate)
-                  (phps-mode-ast-bookkeeping--generate)
-                  (phps-mode-ast-imenu--generate))
+                  (phps-mode-ast--generate))
               (error
                (setq
                 parse-error
@@ -1192,29 +1248,28 @@
             ;; Need to copy buffer-local values before killing buffer
             (setq parse-trail phps-mode-ast--parse-trail)
             (setq ast-tree phps-mode-ast--tree)
-            (setq imenu-index phps-mode-ast-imenu--index)
-            (setq bookkeeping-index phps-mode-ast-bookkeeping--index)
 
             (kill-buffer)))
 
-        (let
-            ((data
-              (list
-               tokens
-               states
-               state
-               state-stack
-               heredoc-label
-               heredoc-label-stack
-               nest-location-stack
-               parse-trail
-               parse-error
-               ast-tree
-               imenu-index
-               bookkeeping-index)))
+        (let ((data
+               (list
+                tokens
+                states
+                state
+                state-stack
+                heredoc-label
+                heredoc-label-stack
+                nest-location-stack
+                parse-trail
+                parse-error
+                ast-tree)))
 
-          ;; Save cache if possible
-          (when cache-key
+          ;; Save cache if possible and permitted
+          (when (and
+                 phps-mode-cache--use-p
+                 allow-cache-write
+                 cache-key)
+            ;; (message "Saved to cache")
             (phps-mode-cache-save
              data
              cache-key))

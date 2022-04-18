@@ -1346,12 +1346,11 @@ regions, 5. The current/total for the highlight term (with `symbol-overlay'),
                       (doom-modeline--iedit)
                       (doom-modeline--symbol-overlay)
                       (doom-modeline--multiple-cursors))))
-    (or (and (not (equal meta "")) meta)
-        (doom-modeline--buffer-size)))
-  )
+    (or (and (not (string-empty-p meta)) meta)
+        (doom-modeline--buffer-size))))
 
 (doom-modeline-def-segment buffer-size
-  "Display buffer size"
+  "Display buffer size."
   (doom-modeline--buffer-size))
 
 ;;
@@ -1524,7 +1523,8 @@ one. The ignored buffers are excluded unless `aw-ignore-on' is nil."
         (propertize (format " %s " num)
                     'face (if (doom-modeline--active)
                               'doom-modeline-buffer-major-mode
-                            'mode-line-inactive)))))
+                            'mode-line-inactive))
+      (doom-modeline-spc))))
 
 
 ;;
@@ -2481,7 +2481,7 @@ mouse-1: Toggle Debug on Quit"
     ;; Scan gnus in the background if the timer is higher than 0
     (doom-modeline-update-gnus-status)
     (if (> doom-modeline-gnus-timer 0)
-        (gnus-demon-add-handler 'gnus-demon-scan-news doom-modeline-gnus-timer nil))))
+        (gnus-demon-add-handler 'gnus-demon-scan-news doom-modeline-gnus-timer doom-modeline-gnus-idle))))
 (add-hook 'gnus-started-hook #'doom-modeline-start-gnus-listener)
 
 ;; Stop the listener if gnus isn't running

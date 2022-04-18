@@ -276,7 +276,7 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
 
 ;;;###autoload
 (progn
-  (defun magit-maybe-define-global-key-bindings ()
+  (defun magit-maybe-define-global-key-bindings (&optional force)
     (when magit-define-global-key-bindings
       (let ((map (current-global-map)))
         (dolist (elt '(("C-x g"   . magit-status)
@@ -284,12 +284,13 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
                        ("C-c M-g" . magit-file-dispatch)))
           (let ((key (kbd (car elt)))
                 (def (cdr elt)))
-            (unless (or (lookup-key map key)
-                        (where-is-internal def (make-sparse-keymap) t))
+            (when (or force
+                      (not (or (lookup-key map key)
+                               (where-is-internal def (make-sparse-keymap) t))))
               (define-key map key def)))))))
   (if after-init-time
       (magit-maybe-define-global-key-bindings)
-    (add-hook 'after-init-hook 'magit-maybe-define-global-key-bindings t)))
+    (add-hook 'after-init-hook #'magit-maybe-define-global-key-bindings t)))
 
 ;;; Dispatch Popup
 
@@ -314,7 +315,7 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
     ("F" "Pull"           magit-pull)
     ;; g                  ↓
     ;; G                → magit-refresh-all
-    ("h" "Help"           magit-help)
+    ("h" "Help"           magit-info)
     ("H" "Section info"   magit-describe-section :if-derived magit-mode)]
    [("i" "Ignore"         magit-gitignore)
     ("I" "Init"           magit-init)
@@ -371,12 +372,6 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
     ("<return>" "visit thing at point"     magit-visit-thing)]
    [("C-x m"    "show all key bindings"    describe-mode)
     ("C-x i"    "show Info manual"         magit-info)]])
-
-;;;###autoload
-(defun magit-info ()
-  "Show Magit's Info manual."
-  (interactive)
-  (info "magit"))
 
 ;;; Git Popup
 
@@ -460,10 +455,10 @@ is run in the top-level directory of the current working tree."
 
 (defun magit-read-shell-command (&optional toplevel initial-input)
   (let ((default-directory
-          (if (or toplevel current-prefix-arg)
-              (or (magit-toplevel)
-                  (magit--not-inside-repository-error))
-            default-directory)))
+         (if (or toplevel current-prefix-arg)
+             (or (magit-toplevel)
+                 (magit--not-inside-repository-error))
+           default-directory)))
     (read-shell-command (if magit-shell-command-verbose-prompt
                             (format "Async shell command in %s: "
                                     (abbreviate-file-name default-directory))
@@ -492,7 +487,7 @@ is run in the top-level directory of the current working tree."
 
 ;;; Version
 
-(defvar magit-version 'undefined
+(defvar magit-version #'undefined
   "The version of Magit that you're using.
 Use the function by the same name instead of this variable.")
 
@@ -616,7 +611,7 @@ and Emacs to it."
      ;; See comment above.
      "https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike"))
   ;; Git isn't required while building Magit.
-  (cl-eval-when (load eval)
+  (unless byte-compile-current-file
     (magit-git-version-assert))
   (when (version< emacs-version magit--minimal-emacs)
     (display-warning 'magit (format "\
@@ -672,10 +667,11 @@ For X11 something like ~/.xinitrc should work.\n"
 (with-eval-after-load 'bookmark
   (require 'magit-bookmark))
 
-(if after-init-time
-    (progn (magit-startup-asserts)
-           (magit-version))
-  (add-hook 'after-init-hook #'magit-startup-asserts t)
-  (add-hook 'after-init-hook #'magit-version t))
+(unless byte-compile-current-file
+  (if after-init-time
+      (progn (magit-startup-asserts)
+             (magit-version))
+    (add-hook 'after-init-hook #'magit-startup-asserts t)
+    (add-hook 'after-init-hook #'magit-version t)))
 
 ;;; magit.el ends here

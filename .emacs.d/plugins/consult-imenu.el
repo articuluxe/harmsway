@@ -175,18 +175,20 @@ this function can jump across buffers."
       :prompt prompt
       :state
       (let ((preview (consult--jump-preview)))
-        (lambda (cand restore)
+        (lambda (action cand)
           ;; Only preview simple menu items which are markers,
           ;; in order to avoid any bad side effects.
-          (funcall preview (and (markerp (cdr cand)) (cdr cand)) restore)))
+          (funcall preview action (and (markerp (cdr cand)) (cdr cand)))))
       :require-match t
       :group
       (when narrow
         (lambda (cand transform)
-          (when-let (type (get-text-property 0 'consult--type cand))
-            (if transform
-                (substring cand (1+ (next-single-property-change 0 'consult--type cand)))
-              (alist-get type narrow)))))
+          (let ((type (get-text-property 0 'consult--type cand)))
+            (cond
+             ((and transform type)
+              (substring cand (1+ (next-single-property-change 0 'consult--type cand))))
+             (transform cand)
+             (type (alist-get type narrow))))))
       :narrow
       (when narrow
         (list :predicate

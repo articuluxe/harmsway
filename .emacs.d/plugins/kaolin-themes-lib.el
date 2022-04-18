@@ -5,6 +5,11 @@
 ;; TODO: change :bold and :italic to :weight and :slant
 ;; NOTE: Emacs in 28 has a built-in versin of color-dark-p
 
+;; TODO: replace all colors with variables
+;; TODO: add :extend t to some faces like hl-line
+
+;; TODO: allow modify colors on user side? Using extra map (such as kaolin-themes-user-colors, kaolin-themes-user-faces) to merge
+
 (defun kaolin-themes--color-lab-luminance (color)
   "Return the luminance through LAB color space of a color string (e.g. \"#ffaa00\", \"blue\")."
   (nth 0 (apply #'color-srgb-to-lab (color-name-to-rgb color))))
@@ -806,7 +811,7 @@
     (message-header-cc            (:inherit 'message-header-to))
     (message-header-name          (:foreground header))
     (message-header-newsgroups    (:foreground type  :slant 'normal))
-    (message-header-other         (:foreground fg0 :background nil :weight 'normal))
+    (message-header-other         (:foreground fg1 :background nil :weight 'normal))
     (message-mml                  (:foreground comment))
     (message-separator            (:foreground comment))
 
@@ -819,27 +824,29 @@
     (notmuch-crypto-signature-unknown    (:foreground fg2 :background err))
     (notmuch-hello-logo-background       (:background bg1))
     (notmuch-message-summary-face        (:background bg2))
-    (notmuch-search-flagged-face         (:foreground hl))
-    (notmuch-search-non-matching-authors (:foreground fg4))
-    ;; (notmuch-search-subject              nil)
+    (notmuch-search-date                 (:foreground var))
+    (notmuch-search-count                (:foreground comment))
+    (notmuch-search-subject              (:foreground fg1))
     (notmuch-search-unread-face          (:weight 'bold))
+    (notmuch-search-flagged-face         (:foreground hl))
+    (notmuch-search-matching-authors     (:foreground builtin))
+    (notmuch-search-non-matching-authors (:foreground fg4))
     (notmuch-tag-added                   (:underline diff-add))
     (notmuch-tag-deleted                 (:strike-through diff-rem))
-    (notmuch-tag-face                    (:background bg3))
+    (notmuch-tag-face                    (:foreground type))
     (notmuch-tag-flagged                 (:foreground hl))
     (notmuch-tag-unread                  (:background warning))
-    (notmuch-tree-match-author-face      (:weight 'bold))
-    ;; (notmuch-tree-match-date-face        nil)
-    ;; (notmuch-tree-match-face             nil)
-    ;; (notmuch-tree-match-subject-face     nil)
-    (notmuch-tree-match-tag-face         (:weight 'bold :background bg3))
-    ;; (notmuch-tree-match-tree-face        nil)
-    ;; (notmuch-tree-no-match-author-face   nil)
-    ;; (notmuch-tree-no-match-date-face     nil)
+    (notmuch-tree-match-face             (:foreground fg1))
+    (notmuch-tree-match-author-face      (:weight 'bold :inherit 'notmuch-search-matching-authors))
+    (notmuch-tree-match-date-face        (:weight 'bold :inherit 'notmuch-search-date))
+    (notmuch-tree-match-subject-face     (:inherit 'notmuch-search-subject))
+    (notmuch-tree-match-tag-face         (:inherit 'notmuch-tag-face))
+    (notmuch-tree-no-match-tree-face     (:foreground comment))
+    (notmuch-tree-no-match-author-face   (:inherit 'notmuch-search-matching-authors))
+    (notmuch-tree-no-match-date-face     (:inherit 'notmuch-search-date))
     (notmuch-tree-no-match-face          (:foreground fg4))
-    ;; (notmuch-tree-no-match-subject-face  nil)
-    ;; (notmuch-tree-no-match-tag-face      nil)
-    ;; (notmuch-tree-no-match-tree-face     nil)
+    (notmuch-tree-no-match-subject-face  (:foreground comment))
+    (notmuch-tree-no-match-tag-face      (:foreground comment))
     (notmuch-wash-cited-text             (:foreground comment))
     (notmuch-wash-toggle-button          (:background bg2))
 
@@ -1044,9 +1051,9 @@
     (magit-diff-context           (:background bg1 :foreground fg3))
     (magit-diff-context-highlight (:background bg2 :foreground fg2))
     (magit-diff-added             (:background bg1 :foreground diff-bg-add))
-    (magit-diff-added-highlight   (:background diff-bg-add :foreground fg0))
+    (magit-diff-added-highlight   (:background diff-bg-add :foreground fg1))
     (magit-diff-removed           (:background bg1 :foreground diff-bg-rem))
-    (magit-diff-removed-highlight (:background diff-bg-rem :foreground fg0))
+    (magit-diff-removed-highlight (:background diff-bg-rem :foreground fg1))
     (magit-diffstat-added         (:foreground diff-add))
     (magit-diffstat-removed       (:foreground diff-rem))
     (magit-tag                    (:foreground orange1))
@@ -1217,6 +1224,10 @@
     (undo-tree-visualizer-unmodified-face    (:foreground done))
     (undo-tree-visualizer-register-face      (:foreground type))
 
+    ;; Vundo
+    (vundo-default (:foreground fg1))
+    (vundo-highlight (:foreground hl :weight 'bold))
+
     ;; Rainbow delimeters
     ;; TODO: light themes
     (show-paren-match (:background bg2 :foreground rb-match :bold bold))
@@ -1378,6 +1389,25 @@
     (frog-menu-action-keybinding-face   (:foreground keysym :bold bold))
 
     ;; Terminal
+
+    ;; Ansi-color faces (built-in Emacs 28.1+)
+    (ansi-color-black          (:foreground kaolin-black :background kaolin-black))
+    (ansi-color-red            (:foreground kaolin-red :background kaolin-red))
+    (ansi-color-green          (:foreground kaolin-green :background kaolin-green))
+    (ansi-color-yellow         (:foreground kaolin-yellow :background kaolin-yellow))
+    (ansi-color-blue           (:foreground kaolin-blue :background kaolin-blue))
+    (ansi-color-magenta        (:foreground kaolin-magenta :background kaolin-magenta))
+    (ansi-color-cyan           (:foreground kaolin-cyan :background kaolin-cyan))
+    (ansi-color-white          (:foreground kaolin-white :background kaolin-white))
+    ;; (ansi-color-bright-black   (:inherit ansi-color-bright-black :weight bold))
+    ;; (ansi-color-bright-red     (:inherit ansi-color-bright-red :weight bold))
+    ;; (ansi-color-bright-green   (:inherit ansi-color-bright-green :weight bold))
+    ;; (ansi-color-bright-yellow  (:inherit ansi-color-bright-yellow :weight bold))
+    ;; (ansi-color-bright-blue    (:inherit ansi-color-bright-blue :weight bold))
+    ;; (ansi-color-bright-magenta (:inherit ansi-color-bright-magenta :weight bold))
+    ;; (ansi-color-bright-cyan    (:inherit ansi-color-bright-cyan :weight bold))
+    ;; (ansi-color-bright-white   (:inherit ansi-color-bright-white :weight bold))
+
     (term               (:background bg1 :foreground fg1))
     (term-color-black   (:foreground kaolin-black))
     (term-color-red     (:foreground kaolin-red))

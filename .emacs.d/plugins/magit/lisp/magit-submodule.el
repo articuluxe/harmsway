@@ -185,7 +185,7 @@ and also setting this variable to t will lead to tears."
   ())
 
 (cl-defmethod transient-format-description ((obj magit--git-submodule-suffix))
-  (let ((value (delq nil (mapcar 'transient-infix-value transient--suffixes))))
+  (let ((value (delq nil (mapcar #'transient-infix-value transient--suffixes))))
     (replace-regexp-in-string
      "\\[--[^]]+\\]"
      (lambda (match)
@@ -482,12 +482,12 @@ or, failing that, the abbreviated HEAD commit hash."
   (magit-with-toplevel
     (let* ((modules (magit-list-module-paths))
            (path-format (format "%%-%is "
-                                (min (apply 'max (mapcar 'length modules))
+                                (min (apply #'max (mapcar #'length modules))
                                      (/ (window-width) 2))))
            (branch-format (format "%%-%is " (min 25 (/ (window-width) 3)))))
       (dolist (module modules)
         (let ((default-directory
-                (expand-file-name (file-name-as-directory module))))
+               (expand-file-name (file-name-as-directory module))))
           (magit-insert-section (magit-module-section module t)
             (insert (propertize (format path-format module)
                                 'font-lock-face 'magit-diff-file-heading))
@@ -510,19 +510,25 @@ or, failing that, the abbreviated HEAD commit hash."
 
 (defvar magit-modules-section-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap magit-visit-thing] 'magit-list-submodules)
+    (magit-menu-set map [remap magit-visit-thing]
+      #'magit-list-submodules "List %t")
     map)
   "Keymap for `modules' sections.")
 
 (defvar magit-module-section-map
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map magit-file-section-map)
-    (define-key map (kbd "C-j") 'magit-submodule-visit)
-    (define-key map [C-return]  'magit-submodule-visit)
-    (define-key map [remap magit-visit-thing]  'magit-submodule-visit)
-    (define-key map [remap magit-delete-thing] 'magit-submodule-unpopulate)
-    (define-key map "K" 'magit-file-untrack)
-    (define-key map "R" 'magit-file-rename)
+    (define-key map (kbd "C-j") #'magit-submodule-visit)
+    (define-key map [C-return]  #'magit-submodule-visit)
+    (magit-menu-set map [magit-visit-thing]
+      #'magit-submodule-visit "Visit %s")
+    (magit-menu-set map [magit-stage-file]
+      #'magit-stage "Stage %T"
+      '(:visible (eq (magit-diff-type) 'unstaged)))
+    (magit-menu-set map [magit-unstage-file]
+      #'magit-unstage "Unstage %T"
+      '(:visible (eq (magit-diff-type) 'staged)))
+    (define-key-after map [separator-magit-submodule] menu-bar-separator)
+    (magit-menu-set map [magit-submodule] #'magit-submodule "Module commands...")
     map)
   "Keymap for `module' sections.")
 
@@ -600,7 +606,7 @@ These sections can be expanded to show the respective commits."
           (dolist (module modules)
             (when (magit-module-worktree-p module)
               (let ((default-directory
-                      (expand-file-name (file-name-as-directory module))))
+                     (expand-file-name (file-name-as-directory module))))
                 (when (magit-file-accessible-directory-p default-directory)
                   (magit-insert-section sec (magit-module-section module t)
                     (magit-insert-heading
@@ -609,7 +615,7 @@ These sections can be expanded to show the respective commits."
                       ":")
                     (oset sec range range)
                     (magit-git-wash
-                        (apply-partially 'magit-log-wash-log 'module)
+                        (apply-partially #'magit-log-wash-log 'module)
                       "-c" "push.default=current" "log" "--oneline" range)
                     (when (> (point)
                              (oref sec content))
@@ -638,11 +644,10 @@ These sections can be expanded to show the respective commits."
   :group 'magit-repolist-mode
   (setq-local x-stretch-cursor nil)
   (setq tabulated-list-padding 0)
-  (add-hook 'tabulated-list-revert-hook 'magit-submodule-list-refresh nil t)
+  (add-hook 'tabulated-list-revert-hook #'magit-submodule-list-refresh nil t)
   (setq imenu-prev-index-position-function
-        #'magit-imenu--submodule-prev-index-position-function)
-  (setq imenu-extract-index-name-function
-        #'magit-imenu--submodule-extract-index-name-function))
+        #'magit-repolist--imenu-prev-index-position)
+  (setq imenu-extract-index-name-function #'tabulated-list-get-id))
 
 (defvar-local magit-submodule-list-predicate nil)
 
@@ -662,7 +667,7 @@ These sections can be expanded to show the respective commits."
   (setq tabulated-list-entries
         (-keep (lambda (module)
                  (let ((default-directory
-                         (expand-file-name (file-name-as-directory module))))
+                        (expand-file-name (file-name-as-directory module))))
                    (and (file-exists-p ".git")
                         (or (not magit-submodule-list-predicate)
                             (funcall magit-submodule-list-predicate module))
@@ -684,20 +689,6 @@ These sections can be expanded to show the respective commits."
 (defun magit-modulelist-column-path (spec)
   "Insert the relative path of the submodule."
   (cadr (assq :path spec)))
-
-;;;; Imenu Support
-
-(defun magit-imenu--submodule-prev-index-position-function ()
-  "Move point to previous line in magit-submodule-list buffer.
-Used as a value for `imenu-prev-index-position-function'."
-  (unless (bobp)
-    (forward-line -1)))
-
-(defun magit-imenu--submodule-extract-index-name-function ()
-  "Return imenu name for line at point.
-Point should be at the beginning of the line.  This function
-is used as a value for `imenu-extract-index-name-function'."
-  (car (tabulated-list-get-entry)))
 
 ;;; Utilities
 

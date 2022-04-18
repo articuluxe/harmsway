@@ -134,12 +134,14 @@
  `(rjsx-text             ((t (:inherit default))))
  `(rjsx-tag-bracket-face ((t (:inherit web-mode-html-attr-name-face))))
 
- `(markdown-markup-face           ((t :foreground "#7EA728" :background "#1E1E1E")))
- `(markdown-code-face             ((t :foreground "#7EA728" :background "#2B2B2B" :extend t :inherit nil)))
+ `(markdown-markup-face           ((t :foreground "#7EA728" :background "#2B2B2B")))
+ `(markdown-code-face             ((t :foreground "#D2D2D2" :background "#2B2B2B" :extend t :inherit nil)))
  `(markdown-list-face             ((t :foreground "gold3")))
  `(markdown-table-face            ((t :foreground "#87CEFA" :background "#1E1E1E")))
  `(markdown-header-face           ((t :foreground "#B5CCEB" :background "#1E1E1E")))
  `(markdown-header-delimiter-face ((t :foreground "#B5CCEB" :background "#1E1E1E")))
+ `(markdown-metadata-key-face     ((t :foreground "#17A0FB")))
+ `(markdown-metadata-value-face   ((t :foreground "#D2D2D2")))
 
  `(org-block   ((t :foreground "#D2D2D2" :background "#2B2B2B" :extend t :inherit nil)))
  `(org-level-1 ((t :foreground "#B5CCEB")))
@@ -154,6 +156,8 @@
  `(web-mode-doctype-face       ((t :foreground "Pink3")))
  `(web-mode-comment-face       ((t :foreground "olive drab")))
  `(web-mode-block-comment-face ((t :foreground "olive drab")))
+
+ `(define-it-pop-tip-color ((t :background "#2A2D38")))
 
  `(preview-it-background ((t :background "#2A2D38")))
  )

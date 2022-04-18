@@ -619,7 +619,7 @@ Magit status buffer."
              (let ((process-connection-type nil)
                    (process-environment (magit-process-environment))
                    (default-process-coding-system
-                     (magit--process-coding-system)))
+                    (magit--process-coding-system)))
                (apply #'start-file-process "git" process-buf
                       (magit-git-executable) args))))
         (process-put process 'command-buf command-buf)
@@ -954,7 +954,7 @@ as argument."
     (apply fn name buffer program args)))
 
 (advice-add 'tramp-sh-handle-start-file-process :around
-            'tramp-sh-handle-start-file-process--magit-tramp-process-environment)
+            #'tramp-sh-handle-start-file-process--magit-tramp-process-environment)
 
 (defun tramp-sh-handle-process-file--magit-tramp-process-environment
     (fn program &optional infile destination display &rest args)
@@ -965,7 +965,7 @@ as argument."
     (apply fn program infile destination display args)))
 
 (advice-add 'tramp-sh-handle-process-file :around
-            'tramp-sh-handle-process-file--magit-tramp-process-environment)
+            #'tramp-sh-handle-process-file--magit-tramp-process-environment)
 
 (defvar magit-mode-line-process-map
   (let ((map (make-sparse-keymap)))
@@ -1024,15 +1024,15 @@ If STR is supplied, it replaces the `mode-line-process' text."
     (let ((repokey (magit-repository-local-repository)))
       ;; The following closure captures the repokey value, and is
       ;; added to `pre-command-hook'.
-      (cl-labels ((enable-magit-process-unset-mode-line
-                   () ;;; Remove ourself from the hook variable, so
-                      ;;; that we only run once.
-                   (remove-hook 'pre-command-hook
-                                #'enable-magit-process-unset-mode-line)
-                   ;; Clear the inhibit flag for the repository in
-                   ;; which we set it.
-                   (magit-repository-local-set
-                    'inhibit-magit-process-unset-mode-line nil repokey)))
+      (cl-labels ((enable-magit-process-unset-mode-line ()
+                    ;; Remove ourself from the hook variable, so
+                    ;; that we only run once.
+                    (remove-hook 'pre-command-hook
+                                 #'enable-magit-process-unset-mode-line)
+                    ;; Clear the inhibit flag for the repository in
+                    ;; which we set it.
+                    (magit-repository-local-set
+                     'inhibit-magit-process-unset-mode-line nil repokey)))
         ;; Set the inhibit flag until the next command is invoked.
         (magit-repository-local-set
          'inhibit-magit-process-unset-mode-line t repokey)

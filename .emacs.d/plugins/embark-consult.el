@@ -75,8 +75,6 @@
 (defun embark-consult--collect-candidate ()
   "Return candidate at point in collect buffer."
   (and (derived-mode-p 'embark-collect-mode)
-       (active-minibuffer-window)
-       (eq (window-buffer (active-minibuffer-window)) embark-collect-from)
        (get-text-property (point) 'embark--candidate)))
 
 (add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
@@ -161,12 +159,10 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (defun embark-consult--upgrade-markers ()
   "Upgrade consult-location cheap markers to real markers.
 This function is meant to be added to `embark-collect-mode-hook'."
-  (when (and (eq embark--type 'consult-location)
-             (not (eq embark-collect--kind :completions)))
-    (mapc #'consult--get-location embark-collect-candidates)))
+  (when (eq embark--type 'consult-location)
+    (mapc (lambda (entry) (consult--get-location (car entry)))
+          tabulated-list-entries)))
 
-(setf (alist-get 'consult-location embark-collect-initial-view-alist)
-      'list)
 (setf (alist-get 'consult-location embark-exporters-alist)
       #'embark-consult-export-occur)
 (cl-pushnew #'embark-consult--upgrade-markers embark-collect-mode-hook)
@@ -175,6 +171,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (defvar wgrep-header/footer-parser)
 (declare-function wgrep-setup "ext:wgrep")
+
+(embark-define-keymap embark-consult-export-grep-map
+  "A keymap for Embark Export grep-mode buffers."
+  ("g" revert-buffer))
 
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES."
@@ -185,7 +185,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (goto-char (point-min))
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore)
-      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+      (when (fboundp 'wgrep-setup) (wgrep-setup))
+      (use-local-map (make-composed-keymap
+                      embark-consult-export-grep-map
+                      (current-local-map))))
     (pop-to-buffer buf)))
 
 (defun embark-consult-goto-grep (location)
@@ -206,8 +209,14 @@ This function is meant to be added to `embark-collect-mode-hook'."
       #'embark-consult-goto-grep)
 (setf (alist-get 'consult-grep embark-exporters-alist)
       #'embark-consult-export-grep)
-(setf (alist-get 'consult-grep embark-collect-initial-view-alist)
-      'list)
+
+;;; Support for consult-find and consult-locate
+
+(setf (alist-get '(file . consult-find) embark-default-action-overrides)
+      #'find-file)
+
+(setf (alist-get '(file . consult-locate) embark-default-action-overrides)
+      #'find-file)
 
 ;;; Support for consult-isearch
 

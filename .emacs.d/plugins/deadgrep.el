@@ -5,7 +5,7 @@
 ;; Author: Wilfred Hughes <me@wilfred.me.uk>
 ;; URL: https://github.com/Wilfred/deadgrep
 ;; Keywords: tools
-;; Version: 0.11
+;; Version: 0.12
 ;; Package-Requires: ((emacs "25.1") (dash "2.12.0") (s "1.11.0") (spinner "1.7.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -35,6 +35,7 @@
 (require 's)
 (require 'dash)
 (require 'spinner)
+(require 'project)
 
 (defgroup deadgrep nil
   "A powerful text search UI using ripgrep."
@@ -180,6 +181,8 @@ It is used to create `imenu' index.")
   (rx "\x1b[" (+ digit) "m")
   "Regular expression for an ANSI color code.")
 
+(defvar deadgrep--incremental-active nil)
+
 (defun deadgrep--insert-output (output &optional finished)
   "Propertize OUTPUT from rigrep and write to the current buffer."
   ;; If we had an unfinished line from our last call, include that.
@@ -301,7 +304,8 @@ It is used to create `imenu' index.")
               (insert output))))
 
         (run-hooks 'deadgrep-finished-hook)
-        (message "Deadgrep finished")))))
+        (unless deadgrep--incremental-active
+          (message "Deadgrep finished"))))))
 
 (defun deadgrep--process-filter (process output)
   ;; Searches may see a lot of output, but it's really useful to have
@@ -1428,6 +1432,30 @@ for a string, offering the current word as a default."
       (push search-term deadgrep-history))
     search-term))
 
+(defun deadgrep-incremental ()
+  (interactive)
+  (catch 'break
+    (let ((deadgrep--incremental-active t)
+          (search-term (or deadgrep--search-term "")))
+      (while t
+        (let ((next-char
+               (read-char
+                ;; TODO: Use the same prompt format as other search options.
+                (format "%s %s"
+                        (apply #'propertize "Incremental Search (RET when done):" minibuffer-prompt-properties)
+                        search-term))))
+          (cond
+           ((eq next-char ?\C-m)
+            (throw 'break nil))
+           ((eq next-char ?\C-?)
+            (setq search-term (s-left -1 search-term)))
+           (t
+            (setq search-term (concat search-term (list next-char))))))
+        (when (> (length search-term) 2)
+          (setq deadgrep--search-term search-term)
+          (deadgrep-restart))))))
+
+
 (defun deadgrep--normalise-dirname (path)
   "Expand PATH and ensure that it doesn't end with a slash.
 If PATH is remote path, it is not expanded."
@@ -1458,12 +1486,13 @@ Otherwise, return PATH as is."
   (let ((root default-directory)
         (project (project-current)))
     (when project
-      (-when-let (roots (project-roots project))
-        (setq root (car roots))))
+      (setq root (project-root project)))
     (when root
       (deadgrep--lookup-override root))))
 
 (defun deadgrep--write-postponed ()
+  "Write a message to the current buffer informing the user that
+deadgrep is ready but not yet searching."
   (let* ((inhibit-read-only t)
          (restart-key
           (where-is-internal #'deadgrep-restart deadgrep-mode-map t)))

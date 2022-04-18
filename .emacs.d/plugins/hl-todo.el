@@ -30,7 +30,7 @@
 ;; Highlight TODO and similar keywords in comments and strings.
 
 ;; You can either explicitly turn on `hl-todo-mode' in certain buffers
-;; or use the the global variant `global-hl-todo-mode', which enables
+;; or use the global variant `global-hl-todo-mode', which enables
 ;; the local mode based on each buffer's major-mode and the options
 ;; `hl-todo-include-modes' and `hl-todo-exclude-modes'.  By default
 ;; `hl-todo-mode' is enabled for all buffers whose major-mode derive
@@ -41,10 +41,10 @@
 ;; known keywords, and to insert a keyword.  If you want to use these
 ;; commands, then you should bind them in `hl-todo-mode-map', e.g.:
 ;;
-;;   (define-key hl-todo-mode-map (kbd "C-c p") 'hl-todo-previous)
-;;   (define-key hl-todo-mode-map (kbd "C-c n") 'hl-todo-next)
-;;   (define-key hl-todo-mode-map (kbd "C-c o") 'hl-todo-occur)
-;;   (define-key hl-todo-mode-map (kbd "C-c i") 'hl-todo-insert)
+;;   (define-key hl-todo-mode-map (kbd "C-c p") #'hl-todo-previous)
+;;   (define-key hl-todo-mode-map (kbd "C-c n") #'hl-todo-next)
+;;   (define-key hl-todo-mode-map (kbd "C-c o") #'hl-todo-occur)
+;;   (define-key hl-todo-mode-map (kbd "C-c i") #'hl-todo-insert)
 
 ;; See [[https://www.emacswiki.org/emacs/FixmeMode][this list]] on the Emacswiki for other packages that implement
 ;; the same basic features, but which might also provide additional
@@ -52,7 +52,7 @@
 
 ;;; Code:
 
-(require' cl-lib)
+(require 'cl-lib)
 
 (eval-when-compile
   (require 'subr-x))
@@ -296,9 +296,12 @@ A negative argument means move backward that many keywords."
                         (user-error "No more matches")))))
       (cl-decf arg))
     (when (> arg 0)
-      (goto-char (point-min))
-      (let ((hl-todo-wrap-movement nil))
-        (hl-todo-next arg)))))
+      (let ((pos (save-excursion
+                   (goto-char (point-min))
+                   (let ((hl-todo-wrap-movement nil))
+                     (hl-todo-next arg))
+                   (point))))
+        (goto-char pos)))))
 
 ;;;###autoload
 (defun hl-todo-previous (arg)
@@ -320,9 +323,12 @@ A negative argument means move forward that many keywords."
       (goto-char (match-end 0))
       (cl-decf arg))
     (when (> arg 0)
-      (goto-char (point-max))
-      (let ((hl-todo-wrap-movement nil))
-        (hl-todo-previous arg)))))
+      (let ((pos (save-excursion
+                   (goto-char (point-max))
+                   (let ((hl-todo-wrap-movement nil))
+                     (hl-todo-previous arg))
+                   (point))))
+        (goto-char pos)))))
 
 ;;;###autoload
 (defun hl-todo-occur ()
@@ -372,7 +378,7 @@ current line."
     (indent-region (line-beginning-position) (line-end-position)))))
 
 (define-obsolete-function-alias 'hl-todo-insert-keyword
-  'hl-todo-insert "hl-todo 3.0.0")
+  #'hl-todo-insert "hl-todo 3.0.0")
 
 ;;; _
 (provide 'hl-todo)

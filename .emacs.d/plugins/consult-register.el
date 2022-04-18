@@ -124,11 +124,11 @@ SHOW-EMPTY must be t if the window should be shown for an empty register list."
                 '((window-height . fit-window-to-buffer)
                   (preserve-size . (nil . t))))
           nil
-        (setq-local cursor-in-non-selected-windows nil)
-        (setq-local mode-line-format nil)
-        (setq-local truncate-lines t)
-        (setq-local window-min-height 1)
-        (setq-local window-resize-pixelwise t)
+        (setq-local cursor-in-non-selected-windows nil
+                    mode-line-format nil
+                    truncate-lines t
+                    window-min-height 1
+                    window-resize-pixelwise t)
         (insert (mapconcat
                  (lambda (reg)
                    (concat (funcall register-preview-function reg) separator))
@@ -188,12 +188,11 @@ built-in register access functions. The command supports narrowing, see
     :category 'multi-category
     :state
     (let ((preview (consult--jump-preview)))
-      (lambda (cand restore)
+      (lambda (action cand)
         ;; Preview only markers
-        (funcall preview
+        (funcall preview action
                  (when-let (reg (get-register cand))
-                   (and (markerp reg) reg))
-                 restore)))
+                   (and (markerp reg) reg)))))
     :group (consult--type-group consult-register--narrow)
     :narrow (consult--type-narrow consult-register--narrow)
     :sort nil

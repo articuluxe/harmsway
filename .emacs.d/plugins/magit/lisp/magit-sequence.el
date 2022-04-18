@@ -165,7 +165,7 @@ This discards all changes made since the sequence started."
   :class 'transient-option
   :shortarg "-m"
   :argument "--mainline="
-  :reader 'transient-read-number-N+)
+  :reader #'transient-read-number-N+)
 
 (defun magit-cherry-pick-read-args (prompt)
   (list (or (nreverse (magit-region-values 'commit))
@@ -176,8 +176,8 @@ This discards all changes made since the sequence started."
   (declare (indent defun))
   (let ((commits (or (nreverse (magit-region-values 'commit))
                      (list (funcall (if away
-                                        'magit-read-branch-or-commit
-                                      'magit-read-other-branch-or-commit)
+                                        #'magit-read-branch-or-commit
+                                      #'magit-read-other-branch-or-commit)
                                     (format "%s cherry" (capitalize verb))))))
         (current (or (magit-get-current-branch)
                      (and allow-detached (magit-rev-parse "HEAD")))))
@@ -340,7 +340,7 @@ the process manually."
     (magit-run-git-sequencer
      (if revert "revert" "cherry-pick")
      (pcase-let ((`(,merge ,non-merge)
-                  (-separate 'magit-merge-commit-p commits)))
+                  (-separate #'magit-merge-commit-p commits)))
        (cond
         ((not merge)
          (--remove (string-prefix-p "--mainline=" it) args))
@@ -357,7 +357,11 @@ the process manually."
 
 (defun magit-cherry-pick-in-progress-p ()
   ;; .git/sequencer/todo does not exist when there is only one commit left.
-  (file-exists-p (magit-git-dir "CHERRY_PICK_HEAD")))
+  (or (file-exists-p (magit-git-dir "CHERRY_PICK_HEAD"))
+      ;; And CHERRY_PICK_HEAD does not exist when a conflict happens
+      ;; while picking a series of commits with --no-commit.
+      (when-let ((line (magit-file-line (magit-git-dir "sequencer/todo"))))
+        (string-match-p "^pick" line))))
 
 ;;; Revert
 
@@ -409,7 +413,11 @@ without prompting."
 
 (defun magit-revert-in-progress-p ()
   ;; .git/sequencer/todo does not exist when there is only one commit left.
-  (file-exists-p (magit-git-dir "REVERT_HEAD")))
+  (or (file-exists-p (magit-git-dir "REVERT_HEAD"))
+      ;; And REVERT_HEAD does not exist when a conflict happens while
+      ;; reverting a series of commits with --no-commit.
+      (when-let ((line (magit-file-line (magit-git-dir "sequencer/todo"))))
+        (string-match-p "^revert" line))))
 
 ;;; Patch
 
@@ -448,7 +456,7 @@ without prompting."
   :class 'transient-option
   :argument "-p"
   :allow-empty t
-  :reader 'transient-read-number-N+)
+  :reader #'transient-read-number-N+)
 
 ;;;###autoload
 (defun magit-am-apply-patches (&optional files args)
@@ -522,7 +530,7 @@ This discards all changes made since the sequence started."
    (7 magit-merge:--strategy)
    (7 magit-merge:--strategy-option)
    (7 "=X" magit-diff:--diff-algorithm :argument "-Xdiff-algorithm=")
-   (7 "-f" "Forge rebase"           ("-f" "--force-rebase"))
+   (7 "-f" "Force rebase"           ("-f" "--force-rebase"))
    ("-d" "Use author date as committer date" "--committer-date-is-author-date")
    ("-t" "Use current time as author date"   "--ignore-date")
    ("-a" "Autosquash"               "--autosquash")
@@ -580,8 +588,8 @@ This discards all changes made since the sequence started."
 With a prefix argument or when the push-remote is either not
 configured or unusable, then let the user first configure the
 push-remote."
-  :if 'magit-get-current-branch
-  :description 'magit-pull--pushbranch-description
+  :if #'magit-get-current-branch
+  :description #'magit-pull--pushbranch-description
   (interactive (list (magit-rebase-arguments)))
   (pcase-let ((`(,branch ,remote)
                (magit--select-push-remote "rebase onto that")))
@@ -594,8 +602,8 @@ push-remote."
 With a prefix argument or when the upstream is either not
 configured or unusable, then let the user first configure
 the upstream."
-  :if 'magit-get-current-branch
-  :description 'magit-rebase--upstream-description
+  :if #'magit-get-current-branch
+  :description #'magit-rebase--upstream-description
   (interactive (list (magit-rebase-arguments)))
   (let* ((branch (or (magit-get-current-branch)
                      (user-error "No branch is checked out")))
@@ -1052,7 +1060,7 @@ status buffer (i.e. the reverse of how they will be applied)."
             (magit-sequence-insert-commit "gone" stop 'magit-sequence-drop)))
           (setq stop nil))))
     (dolist (rev done)
-      (apply 'magit-sequence-insert-commit
+      (apply #'magit-sequence-insert-commit
              (cond ((equal rev stop)
                     ;; ...but its reincarnation lives on.
                     ;; Or it didn't die in the first place.

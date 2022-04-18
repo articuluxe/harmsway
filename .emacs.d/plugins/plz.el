@@ -303,7 +303,9 @@ NOQUERY is passed to `make-process', which see."
                                       (list (cons "--request" (upcase (symbol-name method)))
                                             ;; It appears that this must be the last argument
                                             ;; in order to pass data on the rest of STDIN.
-                                            (cons data-arg "@-"))))))
+                                            (cons data-arg "@-")))
+                                     ('delete
+                                      (list (cons "--request" (upcase (symbol-name method))))))))
          (curl-config (cl-loop for (key . value) in curl-config-args
                                concat (format "%s \"%s\"\n" key value)))
          (decode (pcase as
@@ -459,7 +461,8 @@ according to the apparent coding system."
   (save-excursion
     (goto-char (point-min))
     ;; Parse HTTP version and status code.
-    (looking-at plz-http-response-status-line-regexp)
+    (unless (looking-at plz-http-response-status-line-regexp)
+      (error "Unable to parse HTTP response"))
     (let* ((http-version (string-to-number (match-string 1)))
            (status-code (string-to-number (match-string 2)))
            (headers (plz--headers))
@@ -478,7 +481,7 @@ according to the apparent coding system."
 HEADERS may optionally be an alist of parsed HTTP headers to
 refer to rather than the current buffer's unparsed headers."
   (let* ((headers (or headers (plz--headers)))
-         (content-type (alist-get "Content-Type" headers nil nil #'string=)))
+         (content-type (alist-get 'content-type headers)))
     (when content-type
       (coding-system-from-name content-type))))
 

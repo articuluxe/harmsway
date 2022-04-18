@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022 Benjamin Vincent Schulenburg <ben@wolkenwelten.net>
 
 ;; Author: Benjamin Vincent Schulenburg
-;; URL: http://github.com/morgentau-theme/morgentau-theme.el
+;; URL: https://github.com/Melchizedek6809/morgentau-theme
 ;; Created: 2022
 ;; Version: 1.0
 ;; Keywords: theme, dark, faces

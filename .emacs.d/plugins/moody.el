@@ -147,10 +147,10 @@ If optional REVERSE is non-nil, then replace WRAPPED with PLAIN."
 
 (defun moody-format-find (elt &optional format)
   (cl-labels ((find (elt tree)
-                    (cond ((eq tree elt) tree)
-                          ((consp tree)
-                           (or (find elt (car tree))
-                               (find elt (cdr tree)))))))
+                (cond ((eq tree elt) tree)
+                      ((consp tree)
+                       (or (find elt (car tree))
+                           (find elt (cdr tree)))))))
     (find elt (or format (default-value 'mode-line-format)))))
 
 (defun moody-tab (string &optional width direction)
@@ -261,8 +261,8 @@ not specified, then faces based on `default', `mode-line' and
 ;;;; mode-line-buffer-identification
 
 (defvar-local moody-mode-line-buffer-identification
-  '(:eval (moody-tab (car (propertized-buffer-identification (buffer-name)))
-                     20 'down)))
+    '(:eval (moody-tab (car (propertized-buffer-identification (buffer-name)))
+                       20 'down)))
 
 (put 'moody-mode-line-buffer-identification 'risky-local-variable t)
 
@@ -283,12 +283,12 @@ If called interactively, then toggle between the variants."
 (defvar sml/mode-line-buffer-identification) ; defined in `smart-mode-line.el'
 
 (defvar-local moody-sml/mode-line-buffer-identification
-  '(:eval (moody-tab
-           (or sml/buffer-identification
-               (sml/generate-buffer-identification)
-               ;; Just in case the above are both nil.
-               (car (propertized-buffer-identification (buffer-name))))
-           20 'down)))
+    '(:eval (moody-tab
+             (or sml/buffer-identification
+                 (sml/generate-buffer-identification)
+                 ;; Just in case the above are both nil.
+                 (car (propertized-buffer-identification (buffer-name))))
+             20 'down)))
 
 (put 'moody-sml/mode-line-buffer-identification 'risky-local-variable t)
 
@@ -319,7 +319,7 @@ already been called."
 ;;;; vc-mode
 
 (defvar-local moody-vc-mode
-  '(:eval (moody-ribbon (substring vc-mode 1) nil 'up)))
+    '(:eval (moody-ribbon (substring vc-mode 1) nil 'up)))
 
 (put 'moody-vc-mode 'risky-local-variable t)
 
@@ -360,9 +360,10 @@ change how the message is shown and/or in which mode-line(s)."
   (if (minibufferp)
       (progn
         (add-hook 'minibuffer-exit-hook
-                  (lambda () (setq eldoc-mode-line-string nil
-                              ;; https://debbugs.gnu.org/16920
-                              eldoc-last-message nil))
+                  (lambda ()
+                    (setq eldoc-mode-line-string nil)
+                    ;; https://debbugs.gnu.org/16920
+                    (setq eldoc-last-message nil))
                   nil t)
         (with-current-buffer
             (window-buffer
@@ -413,9 +414,9 @@ If called interactively, then toggle between the variants."
 ;;;; mode-line-front-space
 
 (defvar-local moody-mode-line-front-space
-  '(:eval (if (display-graphic-p)
-              (propertize " " 'display `((space :align-to 0)))
-            "-")))
+    '(:eval (if (display-graphic-p)
+                (propertize " " 'display `((space :align-to 0)))
+              "-")))
 
 (put 'moody-mode-line-front-space 'risky-local-variable t)
 
@@ -451,7 +452,7 @@ to the command loop."
           (if (minibuffer-window-active-p win)
               (minibuffer-selected-window)
             win))))
-(add-hook 'pre-redisplay-functions 'moody--set-active-window)
+(add-hook 'pre-redisplay-functions #'moody--set-active-window)
 
 ;;; Kludges
 
@@ -487,22 +488,22 @@ be used as an advice to window creation functions."
 (defun moody-slant-apple-rgb (direction c1 c2 c3 &optional height)
   (require (quote color))
   (cl-flet ((cnv (color)
-                 (pcase-let*
-                     ((`(,r ,g ,b) (color-name-to-rgb color))
-                      (`(,x ,y ,z) (color-srgb-to-xyz r g b))
-                      (r (expt (+ (*  3.2404542 x)
-                                  (* -1.5371385 y)
-                                  (* -0.4985314 z))
-                               (/ 1.8)))
-                      (g (expt (+ (* -0.9692660 x)
-                                  (*  1.8760108 y)
-                                  (*  0.0415560 z))
-                               (/ 1.8)))
-                      (b (expt (+ (*  0.0556434 x)
-                                  (* -0.2040259 y)
-                                  (*  1.0572252 z))
-                               (/ 1.8))))
-                   (color-rgb-to-hex r g b))))
+              (pcase-let*
+                  ((`(,r ,g ,b) (color-name-to-rgb color))
+                   (`(,x ,y ,z) (color-srgb-to-xyz r g b))
+                   (r (expt (+ (*  3.2404542 x)
+                               (* -1.5371385 y)
+                               (* -0.4985314 z))
+                            (/ 1.8)))
+                   (g (expt (+ (* -0.9692660 x)
+                               (*  1.8760108 y)
+                               (*  0.0415560 z))
+                            (/ 1.8)))
+                   (b (expt (+ (*  0.0556434 x)
+                               (* -0.2040259 y)
+                               (*  1.0572252 z))
+                            (/ 1.8))))
+                (color-rgb-to-hex r g b))))
     (moody-slant direction (cnv c1) (cnv c2) (cnv c3) height)))
 
 ;;; _

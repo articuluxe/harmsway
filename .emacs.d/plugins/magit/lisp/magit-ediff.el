@@ -55,7 +55,7 @@ invoked using Magit."
   :package-version '(magit . "2.2.0")
   :group 'magit-ediff
   :type 'hook
-  :get 'magit-hook-custom-get
+  :get #'magit-hook-custom-get
   :options '(magit-ediff-cleanup-auxiliary-buffers
              magit-ediff-restore-previous-winconf))
 
@@ -101,11 +101,10 @@ tree at the time of stashing."
   :group 'magit-ediff
   :type 'boolean)
 
-(defcustom magit-ediff-use-indirect-buffers nil
-  "Whether to use indirect buffers."
-  :package-version '(magit . "3.1.0")
-  :group 'magit-ediff
-  :type 'boolean)
+(defvar magit-ediff-use-indirect-buffers nil
+  "Whether to use indirect buffers.
+Ediff already does a lot of buffer and file shuffling and I
+recommend you do not further complicate that by enabling this.")
 
 ;;; Commands
 
@@ -271,13 +270,23 @@ range)."
   "Read file in REVB, return it and the corresponding file in REVA.
 When FILEB is non-nil, use this as REVB's file instead of
 prompting for it."
-  (unless fileB
-    (setq fileB (magit-read-file-choice
-                 (format "File to compare between %s and %s"
-                         revA (or revB "the working tree"))
-                 (magit-changed-files revA revB)
-                 (format "No changed files between %s and %s"
-                         revA (or revB "the working tree")))))
+  (unless (and fileB (member fileB (magit-revision-files revB)))
+    (setq fileB
+          (or (and fileB
+                   magit-buffer-log-files
+                   (derived-mode-p 'magit-log-mode)
+                   (member "--follow" magit-buffer-log-args)
+                   (cdr (assoc fileB
+                               (magit-renamed-files
+                                revB
+                                (oref (car (oref magit-root-section children))
+                                      value)))))
+              (magit-read-file-choice
+               (format "File to compare between %s and %s"
+                       revA (or revB "the working tree"))
+               (magit-changed-files revA revB)
+               (format "No changed files between %s and %s"
+                       revA (or revB "the working tree"))))))
   (list (or (car (member fileB (magit-revision-files revA)))
             (cdr (assoc fileB (magit-renamed-files revB revA)))
             (magit-read-file-choice
@@ -344,16 +353,16 @@ mind at all, then it asks the user for a command to run."
               (call-interactively
                (magit-read-char-case
                    "Failed to read your mind; do you want to " t
-                 (?c "[c]ommit"  'magit-ediff-show-commit)
-                 (?r "[r]ange"   'magit-ediff-compare)
-                 (?s "[s]tage"   'magit-ediff-stage)
-                 (?v "resol[v]e" 'magit-ediff-resolve))))
-             ((eq command 'magit-ediff-compare)
-              (apply 'magit-ediff-compare revA revB
+                 (?c "[c]ommit"  #'magit-ediff-show-commit)
+                 (?r "[r]ange"   #'magit-ediff-compare)
+                 (?s "[s]tage"   #'magit-ediff-stage)
+                 (?v "resol[v]e" #'magit-ediff-resolve))))
+             ((eq command #'magit-ediff-compare)
+              (apply #'magit-ediff-compare revA revB
                      (magit-ediff-read-files revA revB file)))
-             ((eq command 'magit-ediff-show-commit)
+             ((eq command #'magit-ediff-show-commit)
               (magit-ediff-show-commit revB))
-             ((eq command 'magit-ediff-show-stash)
+             ((eq command #'magit-ediff-show-stash)
               (magit-ediff-show-stash revB))
              (file
               (funcall command file))

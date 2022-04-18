@@ -176,8 +176,8 @@
               (setq list2 (mapcar #'list list2)))
             ;; `list2' may not be sorted at all and `list1' has to
             ;; be sorted because Elisp and SQLite sort differently.
-            (setq list1 (cl-sort list1 'string< :key #'car))
-            (setq list2 (cl-sort list2 'string< :key #'car))
+            (setq list1 (cl-sort list1 #'string< :key #'car))
+            (setq list2 (cl-sort list2 #'string< :key #'car))
             (while (progn (setq elt1 (car list1))
                           (setq elt2 (car list2))
                           (or elt1 elt2))
@@ -484,7 +484,7 @@
 
 (defun closql-where-class-in (classes)
   (vconcat
-   (mapcar 'closql--abbrev-class
+   (mapcar #'closql--abbrev-class
            (cl-mapcan (lambda (sym)
                         (let ((str (symbol-name sym)))
                           (cond ((string-match-p "--eieio-childp\\'" str)
@@ -506,15 +506,14 @@
 (cl-defmethod closql--list-subabbrevs ((class (subclass closql-object))
                                        &optional wildcards)
   (cl-labels
-      ((types
-        (class)
-        (let ((children (eieio--class-children (cl--find-class class)))
-              ;; An abstract base-class may violate its own naming rules.
-              (abbrev (ignore-errors (closql--abbrev-class class))))
-          (nconc (and (not (class-abstract-p class)) (list abbrev))
-                 (and wildcards children
-                      (list (if abbrev (intern (format "%s*" abbrev)) '*)))
-                 (cl-mapcan #'types children)))))
+      ((types (class)
+         (let ((children (eieio--class-children (cl--find-class class)))
+               ;; An abstract base-class may violate its own naming rules.
+               (abbrev (ignore-errors (closql--abbrev-class class))))
+           (nconc (and (not (class-abstract-p class)) (list abbrev))
+                  (and wildcards children
+                       (list (if abbrev (intern (format "%s*" abbrev)) '*)))
+                  (cl-mapcan #'types children)))))
     (sort (types class) #'string<)))
 
 (cl-defmethod closql--set-object-class ((db closql-database) obj class)

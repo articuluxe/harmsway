@@ -130,7 +130,7 @@ AUTHOR-WIDTH has to be an integer.  When the name of the author
   :group 'magit-margin
   :safe (lambda (val) (memq val '(all branch nil)))
   :type magit-log-margin--custom-type
-  :initialize 'magit-custom-initialize-reset
+  :initialize #'magit-custom-initialize-reset
   :set-after '(magit-log-margin)
   :set (apply-partially #'magit-margin-set-variable 'magit-refs-mode))
 
@@ -277,8 +277,8 @@ the outcome.
 (defvar magit-refs-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map magit-mode-map)
-    (define-key map (kbd "C-y") 'magit-refs-set-show-commit-count)
-    (define-key map (kbd "L")   'magit-margin-settings)
+    (define-key map (kbd "C-y") #'magit-refs-set-show-commit-count)
+    (define-key map (kbd "L")   #'magit-margin-settings)
     map)
   "Keymap for `magit-refs-mode'.")
 
@@ -317,7 +317,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
            (mapconcat #'identity magit-buffer-arguments " ")))
   (magit-insert-section (branchbuf)
     (magit-run-section-hook 'magit-refs-sections-hook))
-  (add-hook 'kill-buffer-hook 'magit-preserve-section-visibility-cache))
+  (add-hook 'kill-buffer-hook #'magit-preserve-section-visibility-cache))
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-refs-mode))
   (cons magit-buffer-upstream magit-buffer-arguments))
@@ -373,14 +373,14 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
   :class 'transient-option
   :key "-c"
   :argument "--contains="
-  :reader 'magit-transient-read-revision)
+  :reader #'magit-transient-read-revision)
 
 (transient-define-argument magit-for-each-ref:--sort ()
   :description "Sort"
   :class 'transient-option
   :key "-s"
   :argument "--sort="
-  :reader 'magit-read-ref-sort)
+  :reader #'magit-read-ref-sort)
 
 (defun magit-read-ref-sort (prompt initial-input _history)
   (magit-completing-read prompt
@@ -429,10 +429,12 @@ This command behaves just like `magit-show-commit', except if
 point is on a reference in a `magit-refs-mode' buffer (a buffer
 listing branches and tags), in which case the behavior may be
 different, but only if you have customized the option
-`magit-visit-ref-behavior' (which see)."
+`magit-visit-ref-behavior' (which see).  When invoked from a
+menu this command always behaves like `magit-show-commit'."
   (interactive)
   (if (and (derived-mode-p 'magit-refs-mode)
-           (magit-section-match '(branch tag)))
+           (magit-section-match '(branch tag))
+           (magit-menu-position))
       (let ((ref (oref (magit-current-section) value)))
         (cond (current-prefix-arg
                (cond ((memq 'focus-on-ref magit-visit-ref-behavior)
@@ -476,23 +478,23 @@ Branch %s already exists.
 
 (defvar magit-remote-section-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap magit-delete-thing] 'magit-remote-remove)
-    (define-key map "R"                        'magit-remote-rename)
+    (magit-menu-set map [magit-delete-thing] #'magit-remote-remove "Remove %m")
+    (magit-menu-set map [magit-file-rename]  #'magit-remote-rename "Rename %s")
     map)
   "Keymap for `remote' sections.")
 
 (defvar magit-branch-section-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap magit-visit-thing]  'magit-visit-ref)
-    (define-key map [remap magit-delete-thing] 'magit-branch-delete)
-    (define-key map "R"                        'magit-branch-rename)
+    (magit-menu-set map [magit-visit-thing]  #'magit-visit-ref     "Visit commit")
+    (magit-menu-set map [magit-delete-thing] #'magit-branch-delete "Delete %m")
+    (magit-menu-set map [magit-file-rename]  #'magit-branch-rename "Rename %s")
     map)
   "Keymap for `branch' sections.")
 
 (defvar magit-tag-section-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap magit-visit-thing]  'magit-visit-ref)
-    (define-key map [remap magit-delete-thing] 'magit-tag-delete)
+    (magit-menu-set map [magit-visit-thing]  #'magit-visit-ref  "Visit %s")
+    (magit-menu-set map [magit-delete-thing] #'magit-tag-delete "Delete %m")
     map)
   "Keymap for `tag' sections.")
 
@@ -510,7 +512,7 @@ line is inserted at all."
     (magit-insert-section (branchdesc branch t)
       (magit-insert-heading branch ": " (car desc))
       (when (cdr desc)
-        (insert (mapconcat 'identity (cdr desc) "\n"))
+        (insert (mapconcat #'identity (cdr desc) "\n"))
         (insert "\n\n")))))
 
 (defun magit-insert-tags ()
@@ -603,7 +605,7 @@ line is inserted at all."
     (magit-make-margin-overlay nil t)))
 
 (defun magit-refs--format-local-branches ()
-  (let ((lines (-keep 'magit-refs--format-local-branch
+  (let ((lines (-keep #'magit-refs--format-local-branch
                       (magit-git-lines
                        "for-each-ref"
                        (concat "--format=\
@@ -742,7 +744,7 @@ line is inserted at all."
   (magit-insert-section-body
     (let ((start (point))
           (magit-insert-section--current nil))
-      (magit-git-wash (apply-partially 'magit-log-wash-log 'cherry)
+      (magit-git-wash (apply-partially #'magit-log-wash-log 'cherry)
         "cherry" "-v" (magit-abbrev-arg) magit-buffer-upstream ref)
       (if (= (point) start)
           (message "No cherries for %s" ref)

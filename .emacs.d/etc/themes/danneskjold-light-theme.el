@@ -17,6 +17,8 @@
    `(swiper-match-face-3 ((t (:height ,zoom-in-factor))))
    `(swiper-match-face-4 ((t (:height ,zoom-in-factor))))
 
+   `(tooltip ((t (:foreground "black" :background "white" :family "JetBrains Mono"))))
+
    `(line-number ((t (:foreground "grey"))))
    `(line-number-current-line ((t (:foreground "#749AF7"))))
 
@@ -59,7 +61,7 @@
    `(diredp-number ((t (:foreground "#ffcc00"))))
 
    ;; hl-line
-   `(hl-line ((t (:background "gray96"))))
+   `(hl-line ((t (:background "gray98"))))
 
    ;; org
    `(org-meta-line ((t (:foreground "#9b59b6"))))

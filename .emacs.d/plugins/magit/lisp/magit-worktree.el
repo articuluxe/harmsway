@@ -33,7 +33,7 @@
 
 ;;; Options
 
-(defcustom magit-worktree-read-directory-name-function 'read-directory-name
+(defcustom magit-worktree-read-directory-name-function #'read-directory-name
   "Function used to read a directory for worktree commands.
 This is called with one argument, the prompt, and can be used
 to e.g. use a base directory other than `default-directory'.
@@ -150,8 +150,10 @@ then show it in Dired instead."
 
 (defvar magit-worktree-section-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [remap magit-visit-thing]  'magit-worktree-status)
-    (define-key map [remap magit-delete-thing] 'magit-worktree-delete)
+    (magit-menu-set map [magit-visit-thing]  #'magit-worktree-status "Visit %s")
+    (magit-menu-set map [magit-delete-thing] #'magit-worktree-delete "Delete %m")
+    (define-key-after map [separator-magit-worktree] menu-bar-separator)
+    (magit-menu-set map [magit-worktree ] #'magit-worktree "Worktree commands...")
     map)
   "Keymap for `worktree' sections.")
 

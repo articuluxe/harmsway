@@ -78,12 +78,24 @@ Execute BODY in a buffer named with the help of NAME."
            (car default)
          (car history)))))
 
+(defmacro docker-utils-refresh-entries (promise)
+  "Update the current buffer with the results of PROMISE."
+  `(let ((buffer (current-buffer))
+         (entries (aio-await ,promise)))
+     (with-current-buffer buffer
+       (setq tabulated-list-entries entries)
+       (tabulated-list-print t))))
+
+(defvar docker-pop-to-buffer-action nil
+  "Action to use internally when `docker-utils-pop-to-buffer' calls `pop-to-buffer'")
+
 (defun docker-utils-pop-to-buffer (name)
   "Like `pop-to-buffer', but suffix NAME with the host if on a remote host."
   (pop-to-buffer
    (if (file-remote-p default-directory)
        (with-parsed-tramp-file-name default-directory nil (concat name " - " host))
-     name)))
+     name)
+   docker-pop-to-buffer-action))
 
 (defun docker-utils-unit-multiplier (str)
   "Return the correct multiplier for STR."
