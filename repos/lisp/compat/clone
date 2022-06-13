@@ -1,0 +1,2 @@
+echo "Cloning compat from _elpa"
+mkdir -p src/.git-ignore
