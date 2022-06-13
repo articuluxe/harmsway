@@ -1,19 +1,16 @@
-;;; magit-clone.el --- clone a repository  -*- lexical-binding: t -*-
+;;; magit-clone.el --- Clone a repository  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -233,7 +230,7 @@ Then show the status buffer for the new repository."
     (setq directory (file-name-as-directory (expand-file-name directory)))
     (when (file-exists-p directory)
       (if (file-directory-p directory)
-          (when (> (length (directory-files directory)) 2)
+          (when (length> (directory-files directory) 2)
             (let ((name (magit-clone--url-to-name repository)))
               (unless (and name
                            (setq directory (file-name-as-directory
@@ -317,9 +314,9 @@ Then show the status buffer for the new repository."
   (format-spec
    magit-clone-url-format
    `((?h . ,host)
-     (?n . ,(if (string-match-p "/" repo)
+     (?n . ,(if (string-search "/" repo)
                 repo
-              (if (string-match-p "\\." user)
+              (if (string-search "." user)
                   (if-let ((user (magit-get user)))
                       (concat user "/" repo)
                     (user-error "Set %S or specify owner explicitly" user))

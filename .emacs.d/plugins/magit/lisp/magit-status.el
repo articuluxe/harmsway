@@ -1,19 +1,16 @@
-;;; magit-status.el --- the grand overview  -*- lexical-binding: t -*-
+;;; magit-status.el --- The grand overview  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -324,7 +321,7 @@ Prefix arguments have the same meaning as for `magit-status',
 and additionally cause the buffer to be refresh.
 
 To use this function instead of `magit-status', add this to your
-init file: (global-set-key (kbd \"C-x g\") 'magit-status-quick)."
+init file: (global-set-key (kbd \"C-x g\") \\='magit-status-quick)."
   (interactive)
   (if-let ((buffer
             (and (not current-prefix-arg)
@@ -406,6 +403,9 @@ Type \\[magit-commit] to create a commit.
 \\{magit-status-mode-map}"
   :group 'magit-status
   (hack-dir-local-variables-non-file-buffer)
+  (when magit-status-initial-section
+    (add-hook 'magit-refresh-buffer-hook
+              #'magit-status-goto-initial-section nil t))
   (setq magit--imenu-group-types '(not branch commit)))
 
 (put 'magit-status-mode 'magit-diff-default-arguments
@@ -452,19 +452,7 @@ Type \\[magit-commit] to create a commit.
     (magit-run-section-hook 'magit-status-sections-hook)))
 
 (defun magit-status-goto-initial-section ()
-  "In a `magit-status-mode' buffer, jump `magit-status-initial-section'.
-Actually doing so is deferred until `magit-refresh-buffer-hook'
-runs `magit-status-goto-initial-section-1'.  That function then
-removes itself from the hook, so that this only happens when the
-status buffer is first created."
-  (when (and magit-status-initial-section
-             (derived-mode-p 'magit-status-mode))
-    (add-hook 'magit-refresh-buffer-hook
-              #'magit-status-goto-initial-section-1 nil t)))
-
-(defun magit-status-goto-initial-section-1 ()
-  "In a `magit-status-mode' buffer, jump `magit-status-initial-section'.
-This function removes itself from `magit-refresh-buffer-hook'."
+  "Jump to the section specified by `magit-status-initial-section'."
   (when-let ((section
               (--some (if (integerp it)
                           (nth (1- it)
@@ -479,7 +467,7 @@ This function removes itself from `magit-refresh-buffer-hook'."
           (magit-section-hide section)
         (magit-section-show section))))
   (remove-hook 'magit-refresh-buffer-hook
-               #'magit-status-goto-initial-section-1 t))
+               #'magit-status-goto-initial-section t))
 
 (defun magit-status-maybe-update-revision-buffer (&optional _)
   "When moving in the status buffer, update the revision buffer.
@@ -629,8 +617,8 @@ arguments are for internal use only."
 
 (defun magit-insert-push-branch-header ()
   "Insert a header line about the branch the current branch is pushed to."
-  (when-let ((branch (magit-get-current-branch))
-             (target (magit-get-push-branch branch)))
+  (when-let* ((branch (magit-get-current-branch))
+              (target (magit-get-push-branch branch)))
     (magit-insert-section (branch target)
       (insert (format "%-10s" "Push: "))
       (insert
@@ -702,10 +690,10 @@ arguments are for internal use only."
 If no remote is configured for the current branch, then fall back
 showing the \"origin\" remote, or if that does not exist the first
 remote in alphabetic order."
-  (when-let ((name (magit-get-some-remote))
-             ;; Under certain configurations it's possible for url
-             ;; to be nil, when name is not, see #2858.
-             (url (magit-get "remote" name "url")))
+  (when-let* ((name (magit-get-some-remote))
+              ;; Under certain configurations it's possible for
+              ;; url to be nil, when name is not, see #2858.
+              (url (magit-get "remote" name "url")))
     (magit-insert-section (remote name)
       (insert (format "%-10s" "Remote: "))
       (insert (propertize name 'font-lock-face 'magit-branch-remote) ?\s)

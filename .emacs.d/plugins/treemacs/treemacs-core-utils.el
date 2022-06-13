@@ -119,7 +119,14 @@
 (treemacs-import-functions-from "treemacs-persistence"
   treemacs--maybe-load-workspaces)
 
+(treemacs-import-functions-from "treemacs-annotations"
+  treemacs--delete-annotation)
+
 (declare-function treemacs-mode "treemacs-mode")
+
+(defconst treemacs--empty-table (ht)
+  "Constant value of an empty hash table.
+Used to avoid creating unnecessary garbage.")
 
 (defvar treemacs--closed-node-states
   '(root-node-closed
@@ -423,6 +430,7 @@ being edited to trigger."
   (inline-letevals (path no-buffer-delete)
     (inline-quote
      (progn
+       (treemacs--delete-annotation ,path)
        (unless ,no-buffer-delete (treemacs--kill-buffers-after-deletion ,path t))
        (treemacs--stop-watching ,path t)
        ;; filewatch mode needs the node's information to be in the dom
@@ -932,7 +940,7 @@ Will return t when FILE
 2) starts with 'flycheck_' (flycheck temp files)
 3) ends with '~' (backup files)
 4) is surrounded with # (auto save files)
-5) is '.git'
+5) is '.git' (see also `treemacs-hide-dot-git-directory')
 6) is '.' or '..' (default dirs)"
   (declare (side-effect-free t) (pure t))
   (inline-letevals (file)
@@ -943,7 +951,8 @@ Will return t when FILE
            (eq ?~ last)
            (string-equal ,file ".")
            (string-equal ,file "..")
-           (string-equal ,file ".git")
+           (and treemacs-hide-dot-git-directory
+                (string-equal ,file ".git"))
            (string-prefix-p "flycheck_" ,file))))))
 
 (define-inline treemacs--mac-ignore-file-predicate (file _)

@@ -1,12 +1,15 @@
 ;;; plz.el --- HTTP library                         -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2019  Adam Porter
+;; Copyright (C) 2019-2022  Free Software Foundation, Inc.
 
 ;; Author: Adam Porter <adam@alphapapa.net>
+;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.1-pre
+;; Version: 0.1
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: comm, network, http
+
+;; This file is part of GNU Emacs.
 
 ;;; License:
 
@@ -30,10 +33,8 @@
 ;;
 ;; Why this package?
 ;;
-;; 1.  `url' works well for many things, but it has some issues (and have
-;;     you seen its code?).
-;; 2.  `request' works well for many things, but it has some issues (and
-;;     have you seen its code?).
+;; 1.  `url' works well for many things, but it has some issues.
+;; 2.  `request' works well for many things, but it has some issues.
 ;; 3.  Chris Wellons doesn't have time to factor his excellent
 ;;     elfeed-curl.el library out of Elfeed.  This will have to do.
 ;;
@@ -42,6 +43,47 @@
 ;; 1.  There's already a package called `http'.
 ;; 2.  There's already a package called `request'.
 ;; 3.  Naming things is hard.
+
+;;;; Usage:
+
+;; Call function `plz' to make an HTTP request.  Its docstring
+;; explains its arguments.  `plz' also supports other HTTP methods,
+;; uploading and downloading binary files, sending URL parameters and
+;; HTTP headers, configurable timeouts, error-handling "else" and
+;; always-called "finally" functions, and more.
+
+;; Basic usage is simple.  For example, to make a synchronous request
+;; and return the HTTP response body as a string:
+;;
+;;   (plz 'get "https://httpbin.org/get")
+;;
+;; Which returns the JSON object as a string:
+;;
+;;   "{
+;;     \"args\": {},
+;;     \"headers\": {
+;;       \"Accept\": \"*/*\",
+;;       \"Accept-Encoding\": \"deflate, gzip\",
+;;       \"Host\": \"httpbin.org\",
+;;       \"User-Agent\": \"curl/7.35.0\"
+;;     },
+;;     \"origin\": \"xxx.xxx.xxx.xxx\",
+;;     \"url\": \"https://httpbin.org/get\"
+;;   }"
+;;
+;; To make the same request asynchronously, decoding the JSON and
+;; printing a message with a value from it:
+;;
+;;   (plz 'get "https://httpbin.org/get" :as #'json-read
+;;     :then (lambda (alist) (message "URL: %s" (alist-get 'url alist))))
+;;
+;; Which, after the request returns, prints:
+;;
+;;   URL: https://httpbin.org/get
+
+;;;; Credits:
+
+;; Thanks to Chris Wellons for inspiration, encouragement, and advice.
 
 ;;; Code:
 

@@ -643,6 +643,15 @@ with a text face property `deadgrep-match-face'."
    (deadgrep--buffer-name deadgrep--search-term default-directory))
   (deadgrep-restart))
 
+(defun deadgrep-parent-directory ()
+  "Restart the search in the parent directory."
+  (interactive)
+  (setq default-directory
+        (file-name-directory (directory-file-name default-directory)))
+  (rename-buffer
+   (deadgrep--buffer-name deadgrep--search-term default-directory))
+  (deadgrep-restart))
+
 (defun deadgrep--button (text type &rest properties)
   ;; `make-text-button' mutates the string to add properties, so copy
   ;; TEXT first.
@@ -923,7 +932,9 @@ Returns a list ordered by the most recently accessed."
 
     (define-key map (kbd "S") #'deadgrep-search-term)
     (define-key map (kbd "D") #'deadgrep-directory)
+    (define-key map (kbd "^") #'deadgrep-parent-directory)
     (define-key map (kbd "g") #'deadgrep-restart)
+    (define-key map (kbd "I") #'deadgrep-incremental)
 
     ;; TODO: this should work when point is anywhere in the file, not
     ;; just on its heading.
@@ -1486,7 +1497,13 @@ Otherwise, return PATH as is."
   (let ((root default-directory)
         (project (project-current)))
     (when project
-      (setq root (project-root project)))
+      (cond ((fboundp 'project-root)
+             ;; This function was defined in Emacs 28.
+             (setq root (project-root project)))
+            (t
+             ;; Older Emacsen.
+             (-when-let (roots (project-roots project))
+               (setq root (car roots))))))
     (when root
       (deadgrep--lookup-override root))))
 
@@ -1627,3 +1644,7 @@ This is intended for use with `next-error-function', which see."
 
 (provide 'deadgrep)
 ;;; deadgrep.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: (not obsolete)
+;; End:

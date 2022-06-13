@@ -33,6 +33,7 @@
 (require 'treemacs-workspaces)
 (require 'treemacs-visuals)
 (require 'treemacs-logging)
+(require 'treemacs-annotations)
 
 (eval-when-compile
   (require 'cl-lib)
@@ -91,6 +92,19 @@ is a marker pointing to POS."
   (declare (side-effect-free t))
   (inline-letevals (pos)
     (inline-quote (copy-marker ,pos t))))
+
+(define-inline treemacs--button-in-line (pos)
+  "Return the button in the line at POS in the current buffer, or nil.
+If the button at POS is a text property button, the return value
+is a marker pointing to POS."
+  (inline-letevals (pos)
+    (inline-quote
+     (save-excursion
+       (goto-char ,pos)
+       (copy-marker
+        (next-single-property-change
+         (line-beginning-position) 'button nil (line-end-position))
+        t)))))
 
 (define-inline treemacs--current-screen-line ()
   "Get the current screen line in the selected window."
@@ -412,10 +426,14 @@ set to PARENT."
             (setf git-info (treemacs--get-or-parse-git-result ,git-future))
             (ht-set! treemacs--git-cache ,root git-info))
            ('deferred
-             (setq git-info (or (ht-get treemacs--git-cache ,root) (ht)))
-             (run-with-timer 0.5 nil #'treemacs--apply-deferred-git-state ,parent ,git-future (current-buffer)))
+             (setf git-info (or (ht-get treemacs--git-cache ,root) treemacs--empty-table)))
            (_
-            (setq git-info (ht))))
+            (setf git-info treemacs--empty-table)))
+
+         (run-with-timer
+          0.5 nil
+          #'treemacs--apply-annotations-deferred
+          ,parent ,root (current-buffer) ,git-future)
 
          (if treemacs-pre-file-insert-predicates
              (progn
@@ -460,7 +478,9 @@ set to PARENT."
             0
             (length it)
             'face
-            (treemacs--get-node-face (concat ,root "/" it) git-info 'treemacs-directory-face)
+            (-if-let (ann (treemacs-get-annotation (concat ,root "/" it)))
+                (treemacs-annotation->face-value ann)
+              'treemacs-directory-face)
             it))
          (insert (apply #'concat dir-strings))
 
@@ -470,7 +490,9 @@ set to PARENT."
             0
             (length it)
             'face
-            (treemacs--get-node-face (concat ,root "/" it) git-info 'treemacs-git-unmodified-face)
+            (-if-let (ann (treemacs-get-annotation (concat ,root "/" it)))
+                (treemacs-annotation->face-value ann)
+              'treemacs-git-unmodified-face)
             it))
          (insert (apply #'concat file-strings))
 
@@ -630,6 +652,7 @@ PROJECT: Project Struct"
                  'category 'default-button
                  'face (treemacs--root-face project)
                  :project project
+                 :key path
                  :symlink (when (treemacs-project->is-readable? project)
                             (file-symlink-p path))
                  :state 'root-node-closed

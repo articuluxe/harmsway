@@ -290,9 +290,11 @@ Optional argument MAKE-CD whether insert a cd command."
   "Cd to the directory where your previous buffer file exists.
 after you have toggle to the vterm buffer with `vterm-toggle'."
   (interactive)
-  (when vterm-toggle--cd-cmd
-    (vterm-send-string vterm-toggle--cd-cmd t)
-    (vterm-send-return)))
+  (if (eq major-mode 'vterm-mode)
+      (when vterm-toggle--cd-cmd
+        (vterm-send-string vterm-toggle--cd-cmd t)
+        (vterm-send-return))
+    (call-interactively #'vterm-toggle-cd-show)))
 
 (defun vterm-toggle--new(&optional buffer-name)
   "New vterm buffer."
@@ -427,6 +429,10 @@ Optional argument ARGS optional args."
   (add-to-list 'vterm-toggle--buffer-list (current-buffer)))
 (add-hook 'vterm-mode-hook #'vterm-toggle--mode-hook)
 
+(dolist (buf (buffer-list))
+  (when (eq (buffer-local-value 'major-mode buf) 'vterm-mode)
+    (add-to-list 'vterm-toggle--buffer-list buf t)))
+
 (defun vterm-toggle--switch (direction offset)
   "Internal `vterm-toggle' buffers switch function.
 If DIRECTION is `forward', switch to the next term.
@@ -441,7 +447,7 @@ Option OFFSET for skip OFFSET number term buffer."
                                   (mod (- index offset) buffer-list-len))))
               (switch-to-buffer (nth target-index vterm-toggle--buffer-list)))
           (switch-to-buffer (car vterm-toggle--buffer-list))))
-    nil))
+    (call-interactively 'vterm)))
 
 ;;;###autoload
 (defun vterm-toggle-forward (&optional offset)

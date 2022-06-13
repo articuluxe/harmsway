@@ -1,19 +1,16 @@
-;;; magit-notes.el --- notes support  -*- lexical-binding: t -*-
+;;; magit-notes.el --- Notes support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -167,16 +164,16 @@ Also see `magit-notes-merge'."
 ;;; Readers
 
 (defun magit-notes-read-ref (prompt _initial-input history)
-  (--when-let (magit-completing-read
-               prompt (magit-list-notes-refnames) nil nil
-               (--when-let (magit-get "core.notesRef")
-                 (if (string-prefix-p "refs/notes/" it)
-                     (substring it 11)
-                   it))
-               history)
-    (if (string-prefix-p "refs/" it)
-        it
-      (concat "refs/notes/" it))))
+  (and-let* ((ref (magit-completing-read
+                   prompt (magit-list-notes-refnames) nil nil
+                   (and-let* ((def (magit-get "core.notesRef")))
+                     (if (string-prefix-p "refs/notes/" def)
+                         (substring def 11)
+                       def))
+                   history)))
+    (if (string-prefix-p "refs/" ref)
+        ref
+      (concat "refs/notes/" ref))))
 
 (defun magit-notes-read-refs (prompt &optional _initial-input _history)
   (mapcar (lambda (ref)
@@ -195,9 +192,9 @@ Also see `magit-notes-merge'."
 
 (defun magit-notes-read-args (prompt)
   (list (magit-read-branch-or-commit prompt (magit-stash-at-point))
-        (--when-let (--first (string-match "^--ref=\\(.+\\)" it)
-                             (transient-args 'magit-notes))
-          (match-string 1 it))))
+        (and-let* ((str (--first (string-match "^--ref=\\(.+\\)" it)
+                                 (transient-args 'magit-notes))))
+          (match-string 1 str))))
 
 ;;; _
 (provide 'magit-notes)

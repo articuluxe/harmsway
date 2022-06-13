@@ -1,19 +1,16 @@
-;;; magit-sequence.el --- history manipulation in Magit  -*- lexical-binding: t -*-
+;;; magit-sequence.el --- History manipulation in Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2011-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -186,8 +183,8 @@ This discards all changes made since the sequence started."
     (let ((reachable (magit-rev-ancestor-p (car commits) current))
           (msg "Cannot %s cherries that %s reachable from HEAD"))
       (pcase (list away reachable)
-        (`(nil t) (user-error msg verb "are"))
-        (`(t nil) (user-error msg verb "are not"))))
+        ('(nil t) (user-error msg verb "are"))
+        ('(t nil) (user-error msg verb "are not"))))
     `(,commits
       ,@(funcall fn commits)
       ,(transient-args 'magit-cherry-pick))))
@@ -313,12 +310,11 @@ the process manually."
                    (magit-refresh)))
                 (t
                  (magit-git "checkout" src)
-                 (let ((process-environment process-environment))
-                   (push (format "%s=%s -i -ne '/^pick (%s)/ or print'"
-                                 "GIT_SEQUENCE_EDITOR"
-                                 magit-perl-executable
-                                 (mapconcat #'magit-rev-abbrev commits "|"))
-                         process-environment)
+                 (with-environment-variables
+                     (("GIT_SEQUENCE_EDITOR"
+                       (format "%s -i -ne '/^pick (%s)/ or print'"
+                               magit-perl-executable
+                               (mapconcat #'magit-rev-abbrev commits "|"))))
                    (magit-run-git-sequencer "rebase" "-i" keep))
                  (when checkout-dst
                    (set-process-sentinel
@@ -334,7 +330,7 @@ the process manually."
 (defun magit--cherry-pick (commits args &optional revert)
   (let ((command (if revert "revert" "cherry-pick")))
     (when (stringp commits)
-      (setq commits (if (string-match-p "\\.\\." commits)
+      (setq commits (if (string-search ".." commits)
                         (split-string commits "\\.\\.")
                       (list commits))))
     (magit-run-git-sequencer
@@ -361,7 +357,7 @@ the process manually."
       ;; And CHERRY_PICK_HEAD does not exist when a conflict happens
       ;; while picking a series of commits with --no-commit.
       (when-let ((line (magit-file-line (magit-git-dir "sequencer/todo"))))
-        (string-match-p "^pick" line))))
+        (string-prefix-p "pick" line))))
 
 ;;; Revert
 
@@ -417,7 +413,7 @@ without prompting."
       ;; And REVERT_HEAD does not exist when a conflict happens while
       ;; reverting a series of commits with --no-commit.
       (when-let ((line (magit-file-line (magit-git-dir "sequencer/todo"))))
-        (string-match-p "^revert" line))))
+        (string-prefix-p "revert" line))))
 
 ;;; Patch
 
@@ -616,7 +612,7 @@ the upstream."
     (magit-git-rebase upstream args)))
 
 (defun magit-rebase--upstream-description ()
-  (when-let ((branch (magit-get-current-branch)))
+  (and-let* ((branch (magit-get-current-branch)))
     (or (magit-get-upstream-branch branch)
         (let ((remote (magit-get "branch" branch "remote"))
               (merge  (magit-get "branch" branch "merge"))
@@ -823,8 +819,7 @@ edit.  With a prefix argument the old message is reused as-is."
           (magit-commit-amend-assert
            (magit-file-line (magit-git-dir "rebase-merge/orig-head"))))
         (if noedit
-            (let ((process-environment process-environment))
-              (push "GIT_EDITOR=true" process-environment)
+            (with-environment-variables (("GIT_EDITOR" "true"))
               (magit-run-git-async (magit--rebase-resume-command) "--continue")
               (set-process-sentinel magit-this-process
                                     #'magit-sequencer-process-sentinel)
@@ -981,13 +976,13 @@ status buffer (i.e. the reverse of how they will be applied)."
   (dolist (line (magit-rebase--todo))
     (with-slots (action-type action action-options target) line
       (pcase action-type
-        (`commit
+        ('commit
          (magit-sequence-insert-commit action target 'magit-sequence-pick))
         ((or (or `exec `label)
              (and `merge (guard (not action-options))))
          (insert (propertize action 'font-lock-face 'magit-sequence-onto) "\s"
                  (propertize target 'font-lock-face 'git-rebase-label) "\n"))
-        (`merge
+        ('merge
          (if-let ((hash (and (string-match "-[cC] \\([^ ]+\\)" action-options)
                              (match-string 1 action-options))))
              (magit-insert-section (commit hash)
@@ -999,8 +994,8 @@ status buffer (i.e. the reverse of how they will be applied)."
   (magit-sequence-insert-sequence
    (magit-file-line (magit-git-dir "rebase-merge/stopped-sha"))
    onto
-   (--when-let (magit-file-lines (magit-git-dir "rebase-merge/done"))
-     (cadr (split-string (car (last it)))))))
+   (and-let* ((lines (magit-file-lines (magit-git-dir "rebase-merge/done"))))
+     (cadr (split-string (car (last lines)))))))
 
 (defun magit-rebase-insert-apply-sequence (onto)
   (let ((rewritten

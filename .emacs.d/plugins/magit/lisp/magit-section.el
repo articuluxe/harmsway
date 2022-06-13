@@ -1,31 +1,33 @@
-;;; magit-section.el --- Sections for read-only buffers  -*- lexical-binding: t -*-
+;;; magit-section.el --- Sections for read-only buffers  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
-;; Keywords: tools
 ;; Homepage: https://github.com/magit/magit
-;; Package-Requires: ((emacs "25.1") (dash "2.19.1"))
+;; Keywords: tools
+
 ;; Package-Version: 3.3.0-git
+;; Package-Requires: ((emacs "25.1") (compat "28.1.1.0") (dash "2.19.1"))
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit-Section is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; Magit is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Magit-Section is distributed in the hope that it will be useful,
+;; Magit is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
+
+;; You should have received a copy of the AUTHORS.md file, which
+;; lists all contributors.  If not, see https://magit.vc/authors.
 
 ;;; Commentary:
 
@@ -37,6 +39,9 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'compat)
+(require 'compat-26)
+(require 'compat-27)
 (require 'dash)
 (require 'eieio)
 (require 'format-spec)
@@ -45,7 +50,8 @@
 
 (eval-when-compile (require 'benchmark))
 
-(defvar magit-section-highlight-force-update)
+;; For `magit-section-get-relative-position'
+(declare-function magit-hunk-section-p "magit-diff" (section) t)
 
 ;;; Hooks
 
@@ -74,11 +80,6 @@ Stop at the first function that returns non-nil.  The returned
 value should be `show', `hide' or nil.  If no function returns
 non-nil, determine the visibility as usual, i.e. use the
 hardcoded section specific default (see `magit-insert-section').")
-
-(defvar magit-section-goto-successor-hook nil
-  "Hook used to go to the same section as was current before a refresh.
-This is only used if the standard mechanism for doing so did not
-succeed.")
 
 ;;; Options
 
@@ -258,6 +259,15 @@ no effect.  This also has no effect for Emacs >= 28, where
   :package-version '(magit-section . "3.4.0")
   :group 'magit-section
   :type 'boolean)
+
+;;; Variables
+
+(defvar-local magit-section-pre-command-region-p nil)
+(defvar-local magit-section-pre-command-section nil)
+(defvar-local magit-section-highlight-force-update nil)
+(defvar-local magit-section-highlight-overlays nil)
+(defvar-local magit-section-highlighted-sections nil)
+(defvar-local magit-section-unhighlight-sections nil)
 
 ;;; Faces
 
@@ -440,7 +450,7 @@ never modify it.")
   "Return point or the position where the context menu was invoked.
 When using the context menu, return the position the user clicked
 on, provided the current buffer is the buffer in which the click
-occured.  Otherwise return the same value as `point'."
+occurred.  Otherwise return the same value as `point'."
   (if magit--context-menu-section
       (magit-menu-position)
     (point)))
@@ -449,7 +459,7 @@ occured.  Otherwise return the same value as `point'."
   "Return the THING at point or where the context menu was invoked.
 When using the context menu, return the thing the user clicked
 on, provided the current buffer is the buffer in which the click
-occured.  Otherwise return the same value as `thing-at-point'.
+occurred.  Otherwise return the same value as `thing-at-point'.
 For the meaning of THING and NO-PROPERTIES see that function."
   (if-let ((pos (magit-menu-position)))
       (save-excursion
@@ -461,7 +471,7 @@ For the meaning of THING and NO-PROPERTIES see that function."
   "Return the section at point or where the context menu was invoked.
 When using the context menu, return the section that the user
 clicked on, provided the current buffer is the buffer in which
-the click occured.  Otherwise return the section at point."
+the click occurred.  Otherwise return the section at point."
   (or magit--context-menu-section
       (magit-section-at)
       magit-root-section))
@@ -475,7 +485,7 @@ the click occured.  Otherwise return the section at point."
 The return value has the form ((TYPE . VALUE)...)."
   (cons (cons (oref section type)
               (magit-section-ident-value section))
-        (when-let ((parent (oref section parent)))
+        (and-let* ((parent (oref section parent)))
           (magit-section-ident parent))))
 
 (cl-defgeneric magit-section-ident-value (object)
@@ -529,7 +539,7 @@ instead of in the one whose root `magit-root-section' is."
   "Return the lineage of SECTION.
 The return value has the form (TYPE...)."
   (cons (oref section type)
-        (when-let ((parent (oref section parent)))
+        (and-let* ((parent (oref section parent)))
           (magit-section-lineage parent))))
 
 (defvar magit-insert-section--current nil "For internal use only.")
@@ -549,8 +559,13 @@ The return value has the form (TYPE...)."
                         (magit-section-at))))
     (unless (region-active-p)
       (setq magit--context-menu-buffer (current-buffer))
-      (setq magit--context-menu-section section)
-      (magit-section-update-highlight t))
+      (if-let ((alt (save-excursion
+                      (mouse-set-point click)
+                      (run-hook-with-args-until-success
+                       'magit-menu-alternative-section-hook section))))
+          (setq magit--context-menu-section (setq section alt))
+        (setq magit--context-menu-section section)
+        (magit-section-update-highlight t)))
     (when (magit-section-content-p section)
       (define-key-after menu [magit-section-toggle]
         `(menu-item
@@ -624,7 +639,7 @@ the expression (magit-menu-format-desc DESC) for that.  See
   (define-key-after keymap key
     `( menu-item ,desc ,def ,@props
        ;; Without this, the keys for point would be shown instead
-       ;; of the relevant ones from where the click occured.
+       ;; of the relevant ones from where the click occurred.
        ,@(and (not (region-active-p))
               (list :keys
                     (lambda ()
@@ -992,8 +1007,8 @@ hidden."
 When the body of an ancestor of SECTION is collapsed then
 SECTION's body (and heading) obviously cannot be visible."
   (or (oref section hidden)
-      (--when-let (oref section parent)
-        (magit-section-invisible-p it))))
+      (and-let* ((parent (oref section parent)))
+        (magit-section-invisible-p parent))))
 
 (defun magit-section-show-level (level)
   "Show surrounding sections up to LEVEL.
@@ -1090,12 +1105,12 @@ section lineage.  This command is intended for debugging purposes."
                      (if ident
                          (magit-section-ident section)
                        (apply #'vector (magit-section-lineage section)))
-                     (when-let ((m (oref section start)))
+                     (and-let* ((m (oref section start)))
                        (marker-position m))
                      (if-let ((m (oref section content)))
                          (format "[%s-]" (marker-position m))
                        "")
-                     (when-let ((m (oref section end)))
+                     (and-let* ((m (oref section end)))
                        (marker-position m)))))
     (if (called-interactively-p 'any)
         (message "%s" str)
@@ -1195,7 +1210,7 @@ of course you want to be that precise."
 (defun magit-section-match-2 (condition section)
   (if (eq (car condition) '*)
       (or (magit-section-match-2 (cdr condition) section)
-          (when-let ((parent (oref section parent)))
+          (and-let* ((parent (oref section parent)))
             (magit-section-match-2 condition parent)))
     (and (let ((c (car condition)))
            (if (class-p c)
@@ -1204,7 +1219,7 @@ of course you want to be that precise."
                  (cl-typep section class)
                (eq (oref section type) c))))
          (or (not (setq condition (cdr condition)))
-             (when-let ((parent (oref section parent)))
+             (and-let* ((parent (oref section parent)))
                (magit-section-match-2 condition parent))))))
 
 (defun magit-section-value-if (condition &optional section)
@@ -1216,7 +1231,7 @@ then return nil.  If the section does not match, then return
 nil.
 
 See `magit-section-match' for the forms CONDITION can take."
-  (when-let ((section (or section (magit-current-section))))
+  (and-let* ((section (or section (magit-current-section))))
     (and (magit-section-match condition section)
          (oref section value))))
 
@@ -1561,13 +1576,6 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
 
 ;;; Highlight
 
-(defvar-local magit-section-pre-command-region-p nil)
-(defvar-local magit-section-pre-command-section nil)
-(defvar-local magit-section-highlight-force-update nil)
-(defvar-local magit-section-highlight-overlays nil)
-(defvar-local magit-section-highlighted-sections nil)
-(defvar-local magit-section-unhighlight-sections nil)
-
 (defun magit-section-pre-command-hook ()
   (when (and (not (bound-and-true-p transient--prefix))
              (or magit--context-menu-buffer
@@ -1600,9 +1608,7 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
   (let ((section (magit-current-section)))
     (when (or force
               magit-section-highlight-force-update
-              (cond ; `xor' wasn't added until 27.1.
-               ((not magit-section-pre-command-region-p) (region-active-p))
-               ((not (region-active-p)) magit-section-pre-command-region-p))
+              (xor magit-section-pre-command-region-p (region-active-p))
               (not (eq magit-section-pre-command-section section)))
       (let ((inhibit-read-only t)
             (deactivate-mark nil)
@@ -1681,39 +1687,55 @@ invisible."
     (push ov magit-section-highlight-overlays)
     ov))
 
-(defun magit-section-goto-successor (section line char arg)
-  (let ((ident (magit-section-ident section)))
-    (--if-let (magit-get-section ident)
-        (let ((start (oref it start)))
-          (goto-char start)
-          (unless (eq it magit-root-section)
-            (ignore-errors
-              (forward-line line)
-              (forward-char char))
-            (unless (eq (magit-current-section) it)
-              (goto-char start))))
-      (or (run-hook-with-args-until-success
-           'magit-section-goto-successor-hook section arg)
-          (goto-char (--if-let (magit-section-goto-successor-1 section)
-                         (if (eq (oref it type) 'button)
-                             (point-min)
-                           (oref it start))
-                       (point-min)))))))
+(cl-defgeneric magit-section-get-relative-position (section))
 
-(defun magit-section-goto-successor-1 (section)
-  (or (--when-let (pcase (oref section type)
-                    (`staged 'unstaged)
-                    (`unstaged 'staged)
-                    (`unpushed 'unpulled)
-                    (`unpulled 'unpushed))
-        (magit-get-section `((,it) (status))))
-      (--when-let (car (magit-section-siblings section 'next))
-        (magit-get-section (magit-section-ident it)))
-      (--when-let (car (magit-section-siblings section 'prev))
-        (magit-get-section (magit-section-ident it)))
-      (--when-let (oref section parent)
-        (or (magit-get-section (magit-section-ident it))
-            (magit-section-goto-successor-1 it)))))
+(cl-defmethod magit-section-get-relative-position ((section magit-section))
+  (let ((start (oref section start))
+        (point (magit-point)))
+    (list (- (line-number-at-pos point)
+             (line-number-at-pos start))
+          (- point (line-beginning-position)))))
+
+(cl-defgeneric magit-section-goto-successor ())
+
+(cl-defmethod magit-section-goto-successor ((section magit-section)
+                                            line char &optional _arg)
+  (or (magit-section-goto-successor--same section line char)
+      (magit-section-goto-successor--related section)))
+
+(defun magit-section-goto-successor--same (section line char)
+  (let ((ident (magit-section-ident section)))
+    (and-let* ((found (magit-get-section ident)))
+      (let ((start (oref found start)))
+        (goto-char start)
+        (unless (eq found magit-root-section)
+          (ignore-errors
+            (forward-line line)
+            (forward-char char))
+          (unless (eq (magit-current-section) found)
+            (goto-char start))))
+      t)))
+
+(defun magit-section-goto-successor--related (section)
+  (and-let* ((found (magit-section-goto-successor--related-1 section)))
+    (goto-char (if (eq (oref found type) 'button)
+                   (point-min)
+                 (oref found start)))))
+
+(defun magit-section-goto-successor--related-1 (section)
+  (or (and-let* ((alt (pcase (oref section type)
+                        ('staged 'unstaged)
+                        ('unstaged 'staged)
+                        ('unpushed 'unpulled)
+                        ('unpulled 'unpushed))))
+        (magit-get-section `((,alt) (status))))
+      (and-let* ((next (car (magit-section-siblings section 'next))))
+        (magit-get-section (magit-section-ident next)))
+      (and-let* ((prev (car (magit-section-siblings section 'prev))))
+        (magit-get-section (magit-section-ident prev)))
+      (and-let* ((parent (oref section parent)))
+        (or (magit-get-section (magit-section-ident parent))
+            (magit-section-goto-successor--related-1 parent)))))
 
 ;;; Region
 
@@ -1753,13 +1775,10 @@ invisible."
 
 (cl-defun magit-section-cache-visibility
     (&optional (section magit-insert-section--current))
-  ;; Emacs 25's `alist-get' lacks TESTFN.
-  (let* ((id  (magit-section-ident section))
-         (elt (assoc id magit-section-visibility-cache))
-         (val (if (oref section hidden) 'hide 'show)))
-    (if elt
-        (setcdr elt val)
-      (push (cons id val) magit-section-visibility-cache))))
+  (setf (compat-alist-get (magit-section-ident section)
+                          magit-section-visibility-cache
+                          nil nil #'equal)
+        (if (oref section hidden) 'hide 'show)))
 
 (cl-defun magit-section-maybe-cache-visibility
     (&optional (section magit-insert-section--current))
@@ -1889,11 +1908,11 @@ invisible."
             (memq section (if sselection
                               selection
                             (setq selection (magit-region-sections))))
-            (--when-let (oref section parent)
-              (magit-section-selected-p it selection)))))
+            (and-let* ((parent (oref section parent)))
+              (magit-section-selected-p parent selection)))))
 
 (defun magit-section-parent-value (section)
-  (when-let ((parent (oref section parent)))
+  (and-let* ((parent (oref section parent)))
     (oref parent value)))
 
 (defun magit-section-siblings (section &optional direction)
@@ -1903,12 +1922,12 @@ If optional DIRECTION is `prev', then return siblings that come
 before SECTION.  If it is `next', then return siblings that come
 after SECTION.  For all other values, return all siblings
 excluding SECTION itself."
-  (when-let ((parent (oref section parent)))
-    (let ((siblings (oref parent children)))
-      (pcase direction
-        (`prev  (cdr (member section (reverse siblings))))
-        (`next  (cdr (member section siblings)))
-        (_      (remq section siblings))))))
+  (and-let* ((parent (oref section parent))
+             (siblings (oref parent children)))
+    (pcase direction
+      ('prev  (cdr (member section (reverse siblings))))
+      ('next  (cdr (member section siblings)))
+      (_      (remq section siblings)))))
 
 (defun magit-region-values (&optional condition multiple)
   "Return a list of the values of the selected sections.

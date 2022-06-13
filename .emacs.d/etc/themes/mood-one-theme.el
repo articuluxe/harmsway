@@ -178,6 +178,10 @@
    `(compilation-mode-line-exit ((,class (:inherit 'compilation-info))))
    `(compilation-mode-line-fail ((,class (:inherit 'compilation-error))))
 
+   ;; completions
+   `(completions-annotations ((,class (:inherit 'shadow))))
+   `(completions-common-part ((,class (:foreground ,violet))))
+
    ;; custom
    `(custom-button ((,class (:background ,base-2 :foreground ,blue :box (:line-width 1 :color ,base-0)))))
    `(custom-button-unraised ((,class (:background ,bg :foreground ,violet :box (:line-width 1)))))
@@ -374,6 +378,13 @@
    ;; company-box
    `(company-box-candidate ((,class (:foreground ,fg))))
 
+   ;; corfu
+   `(corfu-default ((,class (:background ,base-3 :foreground ,fg))))
+   `(corfu-current ((,class (:background ,base-4))))
+   `(corfu-bar ((,class (:background ,base-4))))
+   `(corfu-border ((,class (:background ,base-3))))
+   `(corfu-echo ((,class (:inherit 'font-lock-doc-face))))
+
    ;; diff-hl
    `(diff-hl-change ((,class (:foreground ,orange))))
    `(diff-hl-delete ((,class (:foreground ,red))))
@@ -483,9 +494,9 @@
    `(linum-relative-current-face ((,class (:inherit 'line-number-current-line))))
 
    ;; lsp
-   `(lsp-face-highlight-textual ((,class (:background ,dark-blue :foreground ,base-8 :distant-foreground ,base-0 :weight bold))))
-   `(lsp-face-highlight-read ((,class (:background ,dark-blue :foreground ,base-8 :distant-foreground ,base-0 :weight bold))))
-   `(lsp-face-highlight-write ((,class (:background ,dark-blue :foreground ,base-8 :distant-foreground ,base-0 :weight bold))))
+   `(lsp-face-highlight-textual ((,class (:background ,base-4 :distant-foreground ,base-0))))
+   `(lsp-face-highlight-read ((,class (:background ,base-4 :distant-foreground ,base-0))))
+   `(lsp-face-highlight-write ((,class (:background ,base-4 :distant-foreground ,base-0))))
 
    ;; lsp-ui-doc
    `(lsp-ui-doc-background ((,class (:background ,base-3))))

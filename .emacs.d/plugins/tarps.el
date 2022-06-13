@@ -1,10 +1,10 @@
 ;;; tarps.el --- color themes for emacs -*- coding: utf-8; lexical-binding: t -*-
 
-;; Copyright (C) 2020 neeasade
+;; Copyright (C) 2022 neeasade
 
 ;; Author: neeasade <neeasade@gmail.com>
 ;; URL: https://github.com/neeasade/tarps
-;; Package-Requires: ((emacs "26.1") (ct "0.1") (helpful "0.19") (fn "0.1.2") (s "1.12.0") (ht "2.3") (base16-theme "1.1"))
+;; Package-Requires: ((emacs "26.1") (ct "0.2") (fn "0.1.2") (helpful "0.19") (s "1.12.0") (ht "2.3") (base16-theme "3.0"))
 ;; Version: 0.1
 
 ;;; Commentary:
@@ -12,12 +12,11 @@
 ;;; Code:
 ;; This code has evolved "organically" -- tarp/theme* and tarp/theme are mutable globals assumed to be set by the themes.
 
+(require 'base16-theme)
 (require 'ct)
 (require 'helpful)
 (require 'ht)
-(require 'fn)
 (require 's)
-(require 'base16-theme)
 
 (defcustom tarp/tweak-function nil
   "A function hook that allows you to tweak the colorscheme before it is mapped to faces"
@@ -37,21 +36,20 @@
     (nth (- (abs index) 1) (reverse coll))
     (nth index coll)))
 
+(defun tarp/show-contrast-against (level)
+  "show contrast levels of fg colors in tarp/theme against BG."
+  (-map (lambda (label)
+          (let ((color (tarp/get label level)))
+            (format "%s: %s %s"
+              label
+              (ct-contrast-ratio color (tarp/get :background level))
+              color)))
+    '(:foreground :faded :primary :assumed :alt :strings)))
+
 (defun tarp/show-contrasts ()
   (interactive)
   "message the contrast ratios of colors in the loaded theme against it's backgrounds"
-
-  (defun tarp/show-contrast-against (level)
-    "show contrast levels of fg colors in tarp/theme against BG."
-    (-map (fn (format "%s: %s %s"
-                <>
-                (ct-contrast-ratio (tarp/get <> level) (tarp/get :background level))
-                (tarp/get <> level)))
-      '(:foreground :faded :primary :assumed :alt :strings)))
-
-  (->>
-    '(:normal :weak :strong :focused)
-
+  (->> '(:normal :weak :strong :focused)
     (-mapcat
       (lambda (level)
         `(,(format "against background %s %s" level (tarp/get :background level))
@@ -114,16 +112,17 @@
       )))
 
 (defun tarp/get-function-sexp (sym)
-  "get SYM as a quoted list, using helpful.el"
+  "Get SYM as a quoted list, using helpful.el."
   (read
-    (helpful--source sym t
-      (first (helpful--definition sym t))
-      (second (helpful--definition sym t)))))
+    (seq-let (buffer point _) (helpful--definition sym t)
+      (helpful--source sym t buffer point))))
 
 (defun tarp/theme-get-parent (face label theme-faces)
   ;; search up throughout parents of FACE (via :inherit) that firstly has a non-nil LABEL (or return nil)
   ;; theme-faces looks like ((face <plist spec>) (face <plist-spec>)..)
-  (let* ((match (first (-filter (fn (eq (first <>) face)) theme-faces)))
+  (let* ((match (-first (lambda (theme-face)
+                          (eq (-first-item theme-face) face))
+                  theme-faces))
           (face (car match))
           (spec (cdr match)))
     (if (plist-member spec label)
@@ -148,11 +147,10 @@
     (
       ;; steal the list that's hardcoded in base16-theme-define
       ;; cf https://github.com/belak/base16-emacs/blob/93b1513a9994355492314e809cdbfb0d21f1e30d/base16-theme.el#L186
-      (original-theme (->>
-                        (tarp/get-function-sexp 'base16-theme-define)
+      (original-theme (->> (tarp/get-function-sexp 'base16-theme-define)
                         (nth 4)
                         (nth 3)
-                        (second)))
+                        (-second-item)))
 
       ;; note individual changes
       (theme-changes
@@ -187,6 +185,11 @@
            (secondary-selection :background ,(tarp/get :background :strong))
            (magit-diff-context-highlight :background ,(tarp/get :background :weak))
 
+           ;; todo: reconsider this. see https://github.com/tarsius/paren-face
+           ;; (parenthesis :foreground ,(tarp/get :background :strong))
+           ;; (parenthesis :foreground ,(tarp/get :assumed))
+           ;; (parenthesis :foreground ,(tarp/get :background :strong))
+
            ;; magit diff faces aren't included in base16-emacs
            ,@(when (ct-is-light-p (tarp/get :background))
                ;; only handling light for now
@@ -202,18 +205,18 @@
                    (og-green-hue (ct-get-hsluv-h og-green))
 
                    (bg-green-strong (-> (tarp/get :background :normal)
-                                      (ct-transform-hsluv-h og-green-hue)))
+                                      (ct-edit-hsluv-h og-green-hue)))
 
-                   (bg-green-weak (ct-transform-hsluv-h (tarp/get :background :strong)
+                   (bg-green-weak (ct-edit-hsluv-h (tarp/get :background :strong)
                                     og-green-hue))
 
                    (og-red "#ffdddd")
                    (og-red-hue (ct-get-hsluv-h og-red))
 
-                   (bg-red-strong (ct-transform-hsluv-h (tarp/get :background :weak)
+                   (bg-red-strong (ct-edit-hsluv-h (tarp/get :background :weak)
                                     og-red-hue))
 
-                   (bg-red-weak (ct-transform-hsluv-h (tarp/get :background :strong)
+                   (bg-red-weak (ct-edit-hsluv-h (tarp/get :background :strong)
                                   og-red-hue)))
                  `(
                     ;; ignore the above and use the builtin colors for now
@@ -231,13 +234,12 @@
                     (magit-diff-removed-highlight :background "#eecccc"))))
 
            ,@(-mapcat
-               (lambda (args)
-                 (seq-let (face back-label fore-label) args
-                   (->> `(:inverse-video nil
-                           :background ,(tarp/get :background back-label)
-                           :foreground ,(tarp/get (or fore-label :foreground) back-label))
-                     (-partition 2)
-                     (-map (-partial 'cons face)))))
+               (-lambda ((face back-label fore-label))
+                 (->> `(:inverse-video nil
+                         :background ,(tarp/get :background back-label)
+                         :foreground ,(tarp/get (or fore-label :foreground) back-label))
+                   (-partition 2)
+                   (-map (-partial 'cons face))))
                `(
                   (avy-lead-face :strong :primary)
                   (avy-lead-face-0 :strong :assumed)
@@ -274,6 +276,10 @@
                   (org-link :weak :alt)
                   (org-code :weak)
 
+                  (org-block :weak)
+                  (org-block-begin-line :normal)
+                  (org-block-end-line :normal)
+
                   (show-paren-match :focused)
                   (show-paren-match-expression :focused)
 
@@ -284,10 +290,9 @@
            ;; inheritors
            ;; goal here is mostly to theme other markup languages like org
            ,@(-mapcat
-               (lambda (args)
-                 (seq-let (parent children) args
-                   (-mapcat (-partial #'tarp/theme-face-derive parent)
-                     (if (listp children) children (list children)))))
+               (-lambda ((parent children))
+                 (-mapcat (-partial #'tarp/theme-face-derive parent)
+                   (-list children)))
                (-partition 2
                  '(
                     ;; HEADINGS
@@ -329,8 +334,6 @@
 
                     org-checkbox markdown-gfm-checkbox-face
 
-
-
                     ;; make cider inline test faces similar to magit
                     ;; (abusing for consistency)
                     magit-diff-removed-highlight (cider-test-failure-face cider-test-error-face)
@@ -353,16 +356,15 @@
       (new-theme
         ;; apply our individual changes to the original theme
         (-reduce-from
-          (lambda (state theme-change)
-            (seq-let (face key value) theme-change
-              (if (-contains-p (-map 'first state) face)
-                (-map
-                  (lambda (entry)
-                    (if (eq (first entry) face)
-                      `(,face ,@(plist-put (cdr entry) key value))
-                      entry))
-                  state)
-                (cons theme-change state))))
+          (-lambda (state (face key value))
+            (if (-contains-p (-map #'-first-item state) face)
+              (-map
+                (lambda (entry)
+                  (if (eq (-first-item entry) face)
+                    `(,face ,@(plist-put (cdr entry) key value))
+                    entry))
+                state)
+              (cons (list face key value) state)))
           original-theme
           theme-changes))
 
@@ -372,7 +374,7 @@
         (-map
           (lambda (face-spec)
             (let*
-              ((face (first face-spec))
+              ((face (car face-spec))
                 (spec (cdr face-spec))
 
                 (background (tarp/theme-get-parent face :background new-theme))
@@ -426,16 +428,13 @@
     ))
 
 (defun tarp/base16-theme-define (theme-name)
+  "Implementation of `base16-theme-define` with tarp face list"
   (when (-non-nil tarp/tweak-function)
     (funcall tarp/tweak-function))
 
-  (let ((theme-colors (append
-                        (tarp/map-to-base16)
-                        (ht-to-plist tarp/theme))))
-
-    (base16-set-faces
-      theme-name
-      theme-colors
+  (let ((theme-colors (append (tarp/map-to-base16) (ht-to-plist tarp/theme))))
+    (base16-theme-set-faces
+      theme-name theme-colors
       (tarp/theme-make-faces theme-colors))
 
     (when (boundp 'evil-normal-state-cursor)
@@ -445,39 +444,13 @@
           evil-insert-state-cursor `(,c bar)
           evil-visual-state-cursor `(,c box))))
 
-    ;; other (the rest of the original base16-theme-define):
-
     ;; Anything leftover that doesn't fall neatly into a face goes here.
-    (let ((base00 (plist-get theme-colors :base00))
-           (base01 (plist-get theme-colors :base01))
-           (base02 (plist-get theme-colors :base02))
-           (base03 (plist-get theme-colors :base03))
-           (base04 (plist-get theme-colors :base04))
-           (base05 (plist-get theme-colors :base05))
-           (base06 (plist-get theme-colors :base06))
-           (base07 (plist-get theme-colors :base07))
-           (base08 (plist-get theme-colors :base08))
-           (base09 (plist-get theme-colors :base09))
-           (base0A (plist-get theme-colors :base0A))
-           (base0B (plist-get theme-colors :base0B))
-           (base0C (plist-get theme-colors :base0C))
-           (base0D (plist-get theme-colors :base0D))
-           (base0E (plist-get theme-colors :base0E))
-           (base0F (plist-get theme-colors :base0F)))
-      (custom-theme-set-variables
-        theme-name
-        `(ansi-color-names-vector
-           ;; black, base08, base0B, base0A, base0D, magenta, cyan, white
-           [,base00 ,base08 ,base0B ,base0A ,base0D ,base0E ,base0D ,base05]))
-
-      ;; Emacs 24.3 changed ’ansi-term-color-vector’ from a vector of colors
-      ;; to a vector of faces.
-      (when (version< emacs-version "24.3")
-        (custom-theme-set-variables
-          theme-name
-          `(ansi-term-color-vector
-             ;; black, base08, base0B, base0A, base0D, magenta, cyan, white
-             [unspecified ,base00 ,base08 ,base0B ,base0A ,base0D ,base0E ,base0D ,base05]))))))
+    (custom-theme-set-variables theme-name
+      `(ansi-color-names-vector
+         ;; black, base08, base0B, base0A, base0D, magenta, cyan, white
+         ,(->> '(:base00 :base08 :base0B :base0A :base0D :base0E :base0D :base05)
+            (-map (lambda (key) (plist-get theme-colors key)))
+            (apply 'vector))))))
 
 (and load-file-name
   (boundp 'custom-theme-load-path)

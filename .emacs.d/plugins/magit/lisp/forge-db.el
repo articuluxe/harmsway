@@ -1,29 +1,29 @@
-;;; forge-db.el --- Database implementation       -*- lexical-binding: t -*-
+;;; forge-db.el --- Database implementation  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
 (require 'closql)
+(require 'compat)
 (require 'eieio)
 (require 'emacsql)
 (require 'emacsql-sqlite)
@@ -93,12 +93,12 @@ to be used like this.  See https://nullprogram.com/blog/2014/02/06/."
    (require (quote emacsql-sqlite-builtin))
    (with-no-warnings
      (defclass forge-database (emacsql-sqlite-builtin-connection closql-database)
-       ((object-class :initform 'epkg-package)))))
+       ((object-class :initform 'forge-repository)))))
   (sqlite-module
    (require (quote emacsql-sqlite-module))
    (with-no-warnings
      (defclass forge-database (emacsql-sqlite-module-connection closql-database)
-       ((object-class :initform 'epkg-package)))))
+       ((object-class :initform 'forge-repository)))))
   (libsqlite3
    (require (quote emacsql-libsqlite3))
    (with-no-warnings

@@ -1,16 +1,21 @@
-;;; closql.el --- store EIEIO objects using EmacSQL  -*- lexical-binding: t; -*-
+;;; closql.el --- Store EIEIO objects using EmacSQL  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2016-2022  Jonas Bernoulli
+;; Copyright (C) 2016-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/emacscollective/closql
 ;; Keywords: extensions
-;; Package-Requires: ((emacs "25.1") (emacsql-sqlite "3.0.0"))
+
+;; Package-Requires: (
+;;     (emacs "25.1")
+;;     (compat "28.1.1.0")
+;;     (emacsql-sqlite "3.0.0"))
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is free software; you can redistribute it and/or modify
+;; This file is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published
-;; by the Free Software Foundation; either version 3 of the License,
+;; by the Free Software Foundation, either version 3 of the License,
 ;; or (at your option) any later version.
 ;;
 ;; This file is distributed in the hope that it will be useful,
@@ -31,13 +36,15 @@
 
 ;;; Code:
 
+(require 'compat)
 (require 'eieio)
 (require 'emacsql-sqlite)
 
 (eval-when-compile (require 'subr-x))
 
-(unless (boundp 'eieio--unbound) ; New name since Emacs 28.1.
-  (defvaralias 'eieio--unbound 'eieio-unbound nil))
+(eval-and-compile
+  (unless (boundp 'eieio--unbound) ; New name since Emacs 28.1.
+    (defvaralias 'eieio--unbound 'eieio-unbound nil)))
 
 ;;; Objects
 
@@ -52,7 +59,9 @@
   :abstract t)
 
 (defun closql--closql-object-p (obj)
-  (cl-letf (((symbol-function #'eieio--full-class-object)
+  ;; Prevent a recursive load when the class object is autoloaded.
+  ;; See c1a9b816ec.  Don't #'quote; doesn't exist in older releases.
+  (cl-letf (((symbol-function 'eieio--full-class-object)
              #'eieio--class-object))
     (closql-object--eieio-childp obj)))
 
@@ -113,7 +122,7 @@
               (let ((columns (closql--table-columns db table)))
                 (aset obj c
                       (mapcar
-                       (if (= (length columns) 2) #'cadr #'cdr)
+                       (if (length= columns 2) #'cadr #'cdr)
                        (emacsql db [:select * :from $i1
                                     :where (= $i2 $s3)
                                     :order-by [(asc $i4)]]
@@ -171,7 +180,7 @@
           (let ((list1 (closql-oref obj slot))
                 (list2 value)
                 elt1 elt2)
-            (when (= (length columns) 2)
+            (when (length= columns 2)
               (setq list1 (mapcar #'list list1))
               (setq list2 (mapcar #'list list2)))
             ;; `list2' may not be sorted at all and `list1' has to
@@ -225,7 +234,7 @@
 
 (defun closql--slot-table (obj slot)
   (let ((tbl (closql--slot-get obj slot :closql-table)))
-    (and tbl (intern (replace-regexp-in-string
+    (and tbl (intern (string-replace
                       "-" "_"
                       (symbol-name (if (symbolp tbl) tbl (car tbl))))))))
 
@@ -352,7 +361,7 @@
 (cl-defmethod closql-get ((db closql-database) ident &optional class resolve)
   (unless class
     (setq class (oref-default db object-class)))
-  (when-let ((row (car (emacsql db [:select * :from $i1
+  (and-let* ((row (car (emacsql db [:select * :from $i1
                                     :where (= $i2 $s3)]
                                 (oref-default class closql-table)
                                 (oref-default class closql-primary-key)
@@ -487,10 +496,10 @@
    (mapcar #'closql--abbrev-class
            (cl-mapcan (lambda (sym)
                         (let ((str (symbol-name sym)))
-                          (cond ((string-match-p "--eieio-childp\\'" str)
+                          (cond ((string-suffix-p "--eieio-childp" str)
                                  (closql--list-subclasses
                                   (intern (substring str 0 -14)) nil))
-                                ((string-match-p "-p\\'" str)
+                                ((string-suffix-p "-p" str)
                                  (list (intern (substring str 0 -2))))
                                 (t
                                  (list sym)))))
@@ -559,8 +568,8 @@ WHERE d.%s = i.%s AND d.%s = '%S';"
     (unless (listp tbls)
       (error "%s isn't an indirect slot" slot))
     (pcase-let ((`(,d-tbl ,i-tbl) tbls))
-      (list (intern (replace-regexp-in-string "-" "_" (symbol-name d-tbl)))
-            (intern (replace-regexp-in-string "-" "_" (symbol-name i-tbl)))))))
+      (list (intern (string-replace "-" "_" (symbol-name d-tbl)))
+            (intern (string-replace "-" "_" (symbol-name i-tbl)))))))
 
 ;;; Utilities
 

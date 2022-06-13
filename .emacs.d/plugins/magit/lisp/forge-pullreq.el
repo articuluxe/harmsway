@@ -1,25 +1,24 @@
-;;; forge-pullreq.el --- Pullreq support          -*- lexical-binding: t -*-
+;;; forge-pullreq.el --- Pullreq support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -123,7 +122,7 @@
               'forge-pullreq))
 
 (cl-defmethod forge-get-pullreq ((number integer))
-  (when-let ((repo (forge-get-repository t)))
+  (and-let* ((repo (forge-get-repository t)))
     (forge-get-pullreq repo number)))
 
 (cl-defmethod forge-get-pullreq ((id string))
@@ -214,13 +213,16 @@ yourself, in which case you probably should not reset either.
     (and (magit-rev-verify ref) ref)))
 
 (defun forge--pullreq-range (pullreq &optional endpoints)
-  (when-let ((head (forge--pullreq-ref pullreq)))
+  (and-let* ((head (forge--pullreq-ref pullreq)))
     (concat (forge--get-remote) "/" (oref pullreq base-ref)
             (if endpoints "..." "..")
             head)))
 
 (cl-defmethod forge-get-url ((pullreq forge-pullreq))
   (forge--format pullreq 'pullreq-url-format))
+
+(defun forge--pullreq-by-forge-short-link-at-point ()
+  (forge--topic-by-forge-short-link-at-point '("#" "!") #'forge-get-pullreq))
 
 ;;; Sections
 
@@ -236,11 +238,12 @@ yourself, in which case you probably should not reset either.
 
 (defun forge-pullreq-at-point ()
   (or (magit-section-value-if 'pullreq)
-      (when-let ((post (magit-section-value-if 'post)))
+      (and-let* ((post (magit-section-value-if 'post)))
         (cond ((forge-pullreq-p post)
                post)
               ((forge-pullreq-post-p post)
-               (forge-get-pullreq post))))))
+               (forge-get-pullreq post))))
+      (forge--pullreq-by-forge-short-link-at-point)))
 
 (defvar forge-pullreqs-section-map
   (let ((map (make-sparse-keymap)))

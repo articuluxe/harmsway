@@ -195,7 +195,8 @@ language-server/bin/php-language-server.php"))
                                 (json-mode . ,(eglot-alternatives '(("vscode-json-language-server" "--stdio") ("json-languageserver" "--stdio"))))
                                 (dockerfile-mode . ("docker-langserver" "--stdio"))
                                 (clojure-mode . ("clojure-lsp"))
-                                (csharp-mode . ("omnisharp" "-lsp")))
+                                (csharp-mode . ("omnisharp" "-lsp"))
+                                (purescript-mode . ("purescript-language-server" "--stdio")))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 identifies the buffers that are to be managed by a specific
@@ -1439,7 +1440,7 @@ If optional MARKER, return a marker instead"
   (when (keywordp uri) (setq uri (substring (symbol-name uri) 1)))
   (let* ((server (eglot-current-server))
          (remote-prefix (and server (eglot--trampish-p server)))
-         (retval (url-filename (url-generic-parse-url (url-unhex-string uri))))
+         (retval (url-unhex-string (url-filename (url-generic-parse-url uri))))
          ;; Remove the leading "/" for local MS Windows-style paths.
          (normalized (if (and (not remote-prefix)
                               (eq system-type 'windows-nt)
@@ -1956,14 +1957,16 @@ COMMAND is a symbol naming the command."
               (cond ((null sev) 'eglot-error)
                     ((<= sev 1) 'eglot-error)
                     ((= sev 2)  'eglot-warning)
-                    (t          'eglot-note))))
+                    (t          'eglot-note)))
+            (mess (source code message)
+              (concat source (and code (format " [%s]" code)) ": " message)))
     (if-let ((buffer (find-buffer-visiting (eglot--uri-to-path uri))))
         (with-current-buffer buffer
           (cl-loop
            for diag-spec across diagnostics
-           collect (eglot--dbind ((Diagnostic) range message severity source tags)
+           collect (eglot--dbind ((Diagnostic) range code message severity source tags)
                        diag-spec
-                     (setq message (concat source ": " message))
+                     (setq message (mess source code message))
                      (pcase-let
                          ((`(,beg . ,end) (eglot--range-region range)))
                        ;; Fallback to `flymake-diag-region' if server
@@ -1993,15 +1996,19 @@ COMMAND is a symbol naming the command."
                                              collect it)))
                           `((face . ,faces))))))
            into diags
-           finally (cond (eglot--current-flymake-report-fn
+           finally (cond ((and
+                           ;; only add to current report if Flymake
+                           ;; starts on idle-timer (github#958)
+                           (not (null flymake-no-changes-timeout))
+                           eglot--current-flymake-report-fn)
                           (eglot--report-to-flymake diags))
                          (t
                           (setq eglot--diagnostics diags)))))
       (cl-loop
        with path = (expand-file-name (eglot--uri-to-path uri))
        for diag-spec across diagnostics
-       collect (eglot--dbind ((Diagnostic) range message severity source) diag-spec
-                 (setq message (concat source ": " message))
+       collect (eglot--dbind ((Diagnostic) code range message severity source) diag-spec
+                 (setq message (mess source code message))
                  (let* ((start (plist-get range :start))
                         (line (1+ (plist-get start :line)))
                         (char (1+ (plist-get start :character))))
@@ -2198,11 +2205,12 @@ When called interactively, use the currently active server"
    server :workspace/didChangeConfiguration
    (list
     :settings
-    (cl-loop for (section . v) in eglot-workspace-configuration
-             collect (if (keywordp section)
-                         section
-                       (intern (format ":%s" section)))
-             collect v))))
+    (or (cl-loop for (section . v) in eglot-workspace-configuration
+                 collect (if (keywordp section)
+                             section
+                           (intern (format ":%s" section)))
+                 collect v)
+        eglot--{}))))
 
 (cl-defmethod eglot-handle-request
   (server (_method (eql workspace/configuration)) &key items)
@@ -2647,7 +2655,7 @@ for which LSP on-type-formatting should be requested."
             (line-beginning-position))))
        :exit-function
        (lambda (proxy status)
-         (when (eq status 'finished)
+         (when (memq status '(finished exact))
            ;; To assist in using this whole `completion-at-point'
            ;; function inside `completion-in-region', ensure the exit
            ;; function runs in the buffer where the completion was

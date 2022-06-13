@@ -1,29 +1,28 @@
-;;; keycast.el --- Show current command and its binding  -*- lexical-binding: t -*-
+;;; keycast.el --- Show current command and its binding  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/keycast
+;; Keywords: multimedia
 
-;; Package-Requires: ((emacs "25.3"))
+;; Package-Requires: ((emacs "25.3") (compat "28.1.1.0"))
 ;; Package-Version: 1.2.0-git
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
 ;; This file is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 ;;
-;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
-
-;; This file is not part of GNU Emacs.
+;; You should have received a copy of the GNU General Public License
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -35,11 +34,11 @@
 
 ;;; Code:
 
+(require 'compat)
 (require 'format-spec)
 
-(eval-when-compile
-  (require 'cl-lib)
-  (require 'subr-x))
+(eval-when-compile (require 'cl-lib))
+(eval-when-compile (require 'subr-x))
 
 (define-obsolete-variable-alias 'keycast-insert-after
   'keycast-mode-line-insert-after "Keycast 2.0.0")
@@ -493,7 +492,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
   "Produce key binding information for the tab bar."
   (and keycast-tab-bar-mode
        (keycast--active-frame-p)
-       (when-let ((output (keycast--format keycast-tab-bar-format)))
+       (and-let* ((output (keycast--format keycast-tab-bar-format)))
          (concat output
                  (make-string (max 0 (- keycast-tab-bar-minimal-width
                                         (length output)))

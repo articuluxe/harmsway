@@ -1,19 +1,16 @@
-;;; magit-repos.el --- listing repositories  -*- lexical-binding: t -*-
+;;; magit-repos.el --- Listing repositories  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -311,7 +308,7 @@ If it contains \"%s\" then the directory is substituted for that."
                                          (sort-fn sort-fn)
                                          (sort-set nil)
                                          (t t)))
-                             (-flatten props))))
+                             (flatten-tree props))))
                   magit-repolist-columns))))
 
 (defun magit-repolist-refresh ()
@@ -374,9 +371,9 @@ Usually this is just its basename."
 
 (defun magit-repolist-column-version (_)
   "Insert a description of the repository's `HEAD' revision."
-  (when-let ((v (or (magit-git-string "describe" "--tags" "--dirty")
+  (and-let* ((v (or (magit-git-string "describe" "--tags" "--dirty")
                     ;; If there are no tags, use the date in MELPA format.
-                    (magit-git-string "show" "--no-patch" "--format=%cd-g%h"
+                    (magit-rev-format "%cd-g%h" nil
                                       "--date=format:%Y%m%d.%H%M"))))
     (save-match-data
       (when (string-match magit-repolist-column-version-regexp v)
@@ -438,23 +435,23 @@ which only lists the first one found."
 
 (defun magit-repolist-column-unpulled-from-upstream (spec)
   "Insert number of upstream commits not in the current branch."
-  (--when-let (magit-get-upstream-branch)
-    (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" it)) spec)))
+  (and-let* ((br (magit-get-upstream-branch)))
+    (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" br)) spec)))
 
 (defun magit-repolist-column-unpulled-from-pushremote (spec)
   "Insert number of commits in the push branch but not the current branch."
-  (--when-let (magit-get-push-branch nil t)
-    (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" it)) spec)))
+  (and-let* ((br (magit-get-push-branch nil t)))
+    (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" br)) spec)))
 
 (defun magit-repolist-column-unpushed-to-upstream (spec)
   "Insert number of commits in the current branch but not its upstream."
-  (--when-let (magit-get-upstream-branch)
-    (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" it)) spec)))
+  (and-let* ((br (magit-get-upstream-branch)))
+    (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" br)) spec)))
 
 (defun magit-repolist-column-unpushed-to-pushremote (spec)
   "Insert number of commits in the current branch but not its push branch."
-  (--when-let (magit-get-push-branch nil t)
-    (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" it)) spec)))
+  (and-let* ((br (magit-get-push-branch nil t)))
+    (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" br)) spec)))
 
 (defun magit-repolist-column-branches (spec)
   "Insert number of branches."
@@ -521,7 +518,7 @@ instead."
       (puthash (car a) (cons (cdr a) (gethash (car a) dict)) dict))
     (maphash
      (lambda (key value)
-       (if (= (length value) 1)
+       (if (length= value 1)
            (push (cons key (car value)) result)
          (setq result
                (append result

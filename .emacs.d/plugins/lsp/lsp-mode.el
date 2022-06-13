@@ -176,7 +176,7 @@ As defined by the Language Server Protocol 3.16."
   '(ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-bash lsp-beancount lsp-clangd lsp-clojure
          lsp-cmake lsp-crystal lsp-csharp lsp-css lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile
          lsp-elm lsp-elixir lsp-emmet lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go
-         lsp-graphql lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-idris lsp-java lsp-javascript
+         lsp-gleam lsp-graphql lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-idris lsp-java lsp-javascript
          lsp-json lsp-kotlin lsp-latex lsp-ltex lsp-lua lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-magik
          lsp-metals lsp-mssql lsp-ocaml lsp-openscad lsp-pascal lsp-perl lsp-perlnavigator lsp-php lsp-pwsh lsp-pyls lsp-pylsp
          lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-remark lsp-rf lsp-rust lsp-solargraph
@@ -191,6 +191,14 @@ As defined by the Language Server Protocol 3.16."
   "If non-nil, display LSP $/progress reports via a spinner in the modeline."
   :group 'lsp-mode
   :type 'boolean)
+
+(defcustom lsp-progress-spinner-type 'progress-bar
+  "Holds the type of spinner to be used in the mode-line.
+Takes a value accepted by `spinner-start'."
+  :group 'lsp-mode
+  :type `(choice :tag "Choose a spinner by name"
+                 ,@(mapcar (lambda (c) (list 'const (car c)))
+                           spinner-types)))
 
 (defvar-local lsp--cur-workspace nil)
 
@@ -522,6 +530,14 @@ It contains the operation source."
   :group 'lsp-mode
   :package-version '(lsp-mode . "8.0.0"))
 
+(defcustom lsp-apply-edits-after-file-operations t
+  "Whether to apply edits returned by server after file operations if any.
+Applicable only if server supports workspace.fileOperations for operations:
+`workspace/willRenameFiles', `workspace/willCreateFiles' and
+`workspace/willDeleteFiles'."
+  :group 'lsp-mode
+  :type 'boolean)
+
 (defcustom lsp-modeline-code-actions-enable t
   "Whether to show code actions on modeline."
   :type 'boolean
@@ -717,6 +733,7 @@ Changes take effect only when a new session is started."
                                         (".*\\.php$" . "php")
                                         (".*\\.svelte$" . "svelte")
                                         (".*\\.ebuild$" . "shellscript")
+                                        (".*/PKGBUILD$" . "shellscript")
                                         (".*\\.ttcn3$" . "ttcn3")
                                         (ada-mode . "ada")
                                         (nxml-mode . "xml")
@@ -724,6 +741,7 @@ Changes take effect only when a new session is started."
                                         (vimrc-mode . "vim")
                                         (sh-mode . "shellscript")
                                         (ebuild-mode . "shellscript")
+                                        (pkgbuild-mode . "shellscript")
                                         (scala-mode . "scala")
                                         (julia-mode . "julia")
                                         (clojure-mode . "clojure")
@@ -819,7 +837,8 @@ Changes take effect only when a new session is started."
                                         (nginx-mode . "nginx")
                                         (magik-mode . "magik")
                                         (idris-mode . "idris")
-                                        (idris2-mode . "idris2"))
+                                        (idris2-mode . "idris2")
+                                        (gleam-mode . "gleam"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -1140,8 +1159,9 @@ in emacs 27.
 
 See #2049"
   (when lsp--show-message
-    (let ((inhibit-message (and (minibufferp)
-                                (version< emacs-version "27.0"))))
+    (let ((inhibit-message (or inhibit-message
+                               (and (minibufferp)
+                                    (version< emacs-version "27.0")))))
       (apply #'message format args))))
 
 (defun lsp--info (format &rest args)
@@ -1316,7 +1336,7 @@ the lists according to METHOD."
 
 (defun lsp--spinner-start ()
   "Start spinner indication."
-  (condition-case _err (spinner-start 'progress-bar-filled) (error)))
+  (condition-case _err (spinner-start (lsp-progress-spinner-type)) (error)))
 
 (defun lsp--propertize (str type)
   "Propertize STR as per TYPE."
@@ -1859,7 +1879,7 @@ regex in IGNORED-FILES."
     lsp-actionscript lsp-ada lsp-angular lsp-bash lsp-beancount lsp-clangd
     lsp-clojure lsp-cmake lsp-crystal lsp-csharp lsp-css lsp-d lsp-dhall
     lsp-dockerfile lsp-elixir lsp-elm lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript
-    lsp-go lsp-graphql lsp-groovy lsp-hack lsp-haxe lsp-html lsp-idris lsp-javascript lsp-json lsp-kotlin lsp-lua
+    lsp-go lsp-gleam lsp-graphql lsp-groovy lsp-hack lsp-haxe lsp-html lsp-idris lsp-javascript lsp-json lsp-kotlin lsp-lua
     lsp-markdown lsp-nginx lsp-nim lsp-nix lsp-ocaml lsp-perl lsp-perlnavigator lsp-php lsp-prolog lsp-purescript lsp-pwsh
     lsp-pyls lsp-pylsp lsp-racket lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet lsp-sqls
     lsp-steep lsp-svelte lsp-terraform lsp-tex lsp-toml lsp-ttcn3 lsp-typeprof lsp-v lsp-vala lsp-verilog
@@ -2044,7 +2064,7 @@ WORKSPACE is the workspace that contains the progress token."
      (-let* (((&WorkDoneProgressBegin :title :percentage?) value)
              (reporter
               (if lsp-progress-via-spinner
-                  (let* ((spinner-strings (alist-get 'progress-bar spinner-types))
+                  (let* ((spinner-strings (alist-get (lsp-progress-spinner-type) spinner-types))
                          ;; Set message as a tooltip for the spinner strings
                          (propertized-strings
                           (seq-map (lambda (string) (propertize string 'help-echo title))
@@ -2754,7 +2774,7 @@ and end-of-string meta-characters."
     map)
   "Keymap for `lsp-mode'.")
 
-(define-minor-mode lsp-mode ""
+(define-minor-mode lsp-mode "Mode for LSP interaction."
   :keymap lsp-mode-map
   :lighter
   (" LSP["
@@ -3120,7 +3140,8 @@ synchronously.
 
 (cl-defun lsp-request (method params &key no-wait no-merge)
   "Send request METHOD with PARAMS.
-If NO-MERGE is non-nil, don't merge the results but return alist workspace->result.
+If NO-MERGE is non-nil, don't merge the results but return alist
+workspace->result.
 If NO-WAIT is non-nil send the request as notification."
   (if no-wait
       (lsp-notify method params)
@@ -3458,8 +3479,8 @@ disappearing, unset all the variables related to it."
                    ,@(when lsp-lens-enable '((codeLens . ((refreshSupport . t)))))
                    (fileOperations . ((didCreate . :json-false)
                                       (willCreate . :json-false)
-                                      (didRename . :json-false)
-                                      (willRename . :json-false)
+                                      (didRename . t)
+                                      (willRename . t)
                                       (didDelete . :json-false)
                                       (willDelete . :json-false)))))
      (textDocument . ((declaration . ((linkSupport . t)))
@@ -3472,8 +3493,8 @@ disappearing, unset all the variables related to it."
                       (formatting . ((dynamicRegistration . t)))
                       (rangeFormatting . ((dynamicRegistration . t)))
                       ,@(when (and lsp-semantic-tokens-enable
-                                   (boundp 'lsp-semantic-tokens-capabilities))
-                          lsp-semantic-tokens-capabilities)
+                                   (functionp 'lsp--semantic-tokens-capabilities))
+                          (lsp--semantic-tokens-capabilities))
                       (rename . ((dynamicRegistration . t) (prepareSupport . t)))
                       (codeAction . ((dynamicRegistration . t)
                                      (isPreferredSupport . t)
@@ -3502,7 +3523,7 @@ disappearing, unset all the variables related to it."
                                                         (deprecatedSupport . t)
                                                         (resolveSupport
                                                          . ((properties . ["documentation"
-                                                                           "details"
+                                                                           "detail"
                                                                            "additionalTextEdits"
                                                                            "command"])))
                                                         (insertTextModeSupport . ((valueSet . [1 2])))))
@@ -3686,6 +3707,32 @@ in that particular folder."
        (lsp:server-capabilities-text-document-sync?)
        (lsp:text-document-sync-options-save?)
        (lsp:text-document-save-registration-options-include-text?)))
+
+(defun lsp--send-will-rename-files-p (path)
+  "Return whether willRenameFiles request should be sent to the server.
+If any filters, checks if it applies for PATH."
+  (let* ((will-rename (-> (lsp--server-capabilities)
+                          (lsp:server-capabilities-workspace?)
+                          (lsp:workspace-server-capabilities-file-operations?)
+                          (lsp:workspace-file-operations-will-rename?)))
+         (filters (seq-into (lsp:file-operation-registration-options-filters will-rename) 'list)))
+    (and will-rename
+         (or (seq-empty-p filters)
+             (-any? (-lambda ((&FileOperationFilter :scheme? :pattern (&FileOperationPattern :glob)))
+                      (-let [regexes (lsp-glob-to-regexps glob)]
+                        (and (or (not scheme?)
+                                 (string-prefix-p scheme? (lsp--path-to-uri path)))
+                             (-any? (lambda (re)
+                                      (string-match re path))
+                                    regexes))))
+                    filters)))))
+
+(defun lsp--send-did-rename-files-p ()
+  "Return whether didRenameFiles notification should be sent to the server."
+  (-> (lsp--server-capabilities)
+      (lsp:server-capabilities-workspace?)
+      (lsp:workspace-server-capabilities-file-operations?)
+      (lsp:workspace-file-operations-did-rename?)))
 
 (declare-function project-roots "ext:project" (project) t)
 (declare-function project-root "ext:project" (project) t)
@@ -5824,7 +5871,8 @@ perform the request synchronously."
                              (setq lsp--document-symbols document-symbols
                                    lsp--document-symbols-tick tick)
                              (lsp--imenu-refresh))
-                           :mode 'alive)
+                           :mode 'alive
+                           :cancel-token :document-symbols)
         lsp--document-symbols))))
 
 (advice-add 'imenu-update-menubar :around
@@ -6010,6 +6058,27 @@ relied upon."
                                     :position ,(lsp--cur-position)
                                     :newName ,newname))))
     (lsp--apply-workspace-edit edits 'rename)))
+
+(defun lsp--on-rename-file (old-func old-name new-name &optional ok-if-already-exists?)
+  "Advice around function `rename-file'.
+Applies OLD-FUNC with OLD-NAME, NEW-NAME and OK-IF-ALREADY-EXISTS?.
+
+This advice sends workspace/willRenameFiles before renaming file
+to check if server wants to apply any workspaceEdits after renamed."
+  (if (and lsp-apply-edits-after-file-operations
+           (lsp--send-will-rename-files-p old-name))
+      (let ((params (lsp-make-rename-files-params
+                     :files (vector (lsp-make-file-rename
+                                     :oldUri (lsp--path-to-uri old-name)
+                                     :newUri (lsp--path-to-uri new-name))))))
+        (when-let ((edits (lsp-request "workspace/willRenameFiles" params)))
+          (lsp--apply-workspace-edit edits 'rename-file)
+          (funcall old-func old-name new-name ok-if-already-exists?)
+          (when (lsp--send-did-rename-files-p)
+            (lsp-notify "workspace/didRenameFiles" params))))
+    (funcall old-func old-name new-name ok-if-already-exists?)))
+
+(advice-add 'rename-file :around #'lsp--on-rename-file)
 
 (defun lsp-show-xrefs (xrefs display-action references?)
   (unless (region-active-p) (push-mark nil t))
@@ -6405,7 +6474,7 @@ WORKSPACE is the active workspace."
   "Read json from the current buffer."
   (if (progn
         (require 'json)
-        (fboundp 'json-parse-string))
+        (fboundp 'json-parse-buffer))
       `(json-parse-buffer :object-type (if lsp-use-plists
                                            'plist
                                          'hash-table)
@@ -8226,30 +8295,42 @@ IGNORE-MULTI-FOLDER to ignore multi folder server."
     (lsp--open-in-workspace workspace)
     workspace))
 
+(defun lsp--read-char (prompt &optional options)
+  "Wrapper for `read-char-from-minibuffer' if Emacs +27.
+Fallback to `read-key' otherwise.
+PROMPT is the message and OPTIONS the available options."
+  (if (fboundp 'read-char-from-minibuffer)
+      (read-char-from-minibuffer prompt options)
+    (read-key prompt)))
+
 (defun lsp--find-root-interactively (session)
   "Find project interactively.
 Returns nil if the project should not be added to the current SESSION."
   (condition-case nil
       (let* ((project-root-suggestion (or (lsp--suggest-project-root) default-directory))
-             (action (read-key (format
-                                "%s is not part of any project. Select action:
+             (action (lsp--read-char
+                      (format
+                       "%s is not part of any project.
 
-%s==>Import project root %s.
-%s==>Import project by selecting root directory interactively.
-%s==>Import project at current directory %s.
-%s==>Do not ask again for the current project by adding %s to lsp-session-folders-blacklist.
-%s==>Do not ask again for the current project by selecting ignore path interactively.
-%s==>Do nothing: ask again when opening other files from the current project."
-                                (propertize (buffer-name) 'face 'bold)
-                                (propertize "i" 'face 'success)
-                                (propertize project-root-suggestion 'face 'bold)
-                                (propertize "I" 'face 'success)
-                                (propertize "." 'face 'success)
-                                (propertize default-directory 'face 'bold)
-                                (propertize "d" 'face 'warning)
-                                (propertize project-root-suggestion 'face 'bold)
-                                (propertize "D" 'face 'warning)
-                                (propertize "n" 'face 'warning)))))
+%s ==> Import project root %s
+%s ==> Import project by selecting root directory interactively
+%s ==> Import project at current directory %s
+%s ==> Do not ask again for the current project by adding %s to lsp-session-folders-blacklist
+%s ==> Do not ask again for the current project by selecting ignore path interactively
+%s ==> Do nothing: ask again when opening other files from the current project
+
+Select action: "
+                       (propertize (buffer-name) 'face 'bold)
+                       (propertize "i" 'face 'success)
+                       (propertize project-root-suggestion 'face 'bold)
+                       (propertize "I" 'face 'success)
+                       (propertize "." 'face 'success)
+                       (propertize default-directory 'face 'bold)
+                       (propertize "d" 'face 'warning)
+                       (propertize project-root-suggestion 'face 'bold)
+                       (propertize "D" 'face 'warning)
+                       (propertize "n" 'face 'warning))
+                      '(?i ?\r ?I ?. ?d ?D ?n))))
         (cl-case action
           (?i project-root-suggestion)
           (?\r project-root-suggestion)
@@ -8456,6 +8537,11 @@ Errors if there are none."
   (lsp--warn "Restarting %s" (lsp--workspace-print workspace))
   (with-lsp-workspace workspace (lsp--shutdown-workspace t)))
 
+(defcustom lsp-warn-no-matched-clients t
+  "Don't show message when there are no supported clients."
+  :group 'lsp-mode
+  :type 'boolean)
+
 ;;;###autoload
 (defun lsp (&optional arg)
   "Entry point for the server startup.
@@ -8536,14 +8622,16 @@ You may find the installation instructions at https://emacs-lsp.github.io/lsp-mo
                               clients
                               " ")))
        ;; no matches
-       ((-> #'lsp--supports-buffer? lsp--filter-clients not)
+       ((and lsp-warn-no-matched-clients
+             (-> #'lsp--supports-buffer? lsp--filter-clients not))
         (lsp--error "There are no language servers supporting current mode `%s' registered with `lsp-mode'.
 This issue might be caused by:
 1. The language you are trying to use does not have built-in support in `lsp-mode'. You must install the required support manually. Examples of this are `lsp-java' or `lsp-metals'.
 2. The language server that you expect to run is not configured to run for major mode `%s'. You may check that by checking the `:major-modes' that are passed to `lsp-register-client'.
 3. `lsp-mode' doesn't have any integration for the language behind `%s'. Refer to https://emacs-lsp.github.io/lsp-mode/page/languages and https://langserver.org/ .
 4. You are over `tramp'. In this case follow https://emacs-lsp.github.io/lsp-mode/page/remote/.
-5. You have disabled the `lsp-mode' clients for that file. (Check `lsp-enabled-clients' and `lsp-disabled-clients')."
+5. You have disabled the `lsp-mode' clients for that file. (Check `lsp-enabled-clients' and `lsp-disabled-clients').
+You can customize `lsp-warn-no-matched-clients' to disable this message."
                     major-mode major-mode major-mode))))))
 
 (defun lsp--buffer-visible-p ()
@@ -8745,6 +8833,10 @@ This avoids overloading the server with many files when starting Emacs."
   (lsp-diagnostics-lsp-checker-if-needed)
   (unless (flycheck-checker-supports-major-mode-p 'lsp mode)
     (flycheck-add-mode 'lsp mode)))
+
+(defun lsp-progress-spinner-type ()
+  "Retrive the spinner type value, if value is not a symbol of `spinner-types defaults to 'progress-bar."
+  (or (car (assoc lsp-progress-spinner-type spinner-types)) 'progress-bar))
 
 (defun lsp-org ()
   (interactive)

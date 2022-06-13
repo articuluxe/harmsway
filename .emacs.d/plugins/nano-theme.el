@@ -4,7 +4,7 @@
 
 ;; Maintainer: Nicolas P. Rougier <Nicolas.Rougier@inria.fr>
 ;; URL: https://github.com/rougier/nano-theme
-;; Version: 0.3.0
+;; Version: 0.3.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: theme, dark, light
 
@@ -93,6 +93,10 @@
 ;; to benefit from all the fancy glyphs. See https://www.nerdfonts.com.
 
 ;;; NEWS:
+
+;; Version 0.3.1
+;; - Modified vertico and org modes
+;; - Added imenu-list, ansi-color and SHR faces
 
 ;; Version 0.3.0
 ;; - Added italic (Victor Mono)
@@ -925,7 +929,17 @@ background color that is barely perceptible."
    '(diff-refine-changed            ((t (:inherit nano-popout))))
    '(diff-refine-removed            ((t (:inherit nano-faded
                                          :strike-through t))))
+   ;; --- Vertico --------------------------------------------------------
+   '(vertico-current                       ((t (:inherit (nano-strong
+                                                          nano-subtle)))))
+   '(vertico-group-separator               ((t (:inherit nano-faded))))
+   '(vertico-group-title                   ((t (:inherit nano-faded))))
+   '(vertico-multiline                     ((t (:inherit nano-faded))))
 
+   ;; --- Citar --------------------------------------------------------
+   '(citar                          ((t (:inherit nano-faded))))
+   '(citar-highlight                ((t (:inherit nano-default))))
+   
    ;; --- Corfu --------------------------------------------------------
    '(corfu-annotations              ((t (:inherit nano-faded))))
    '(corfu-bar                      ((t (:inherit nano-default-i))))
@@ -998,13 +1012,15 @@ background color that is barely perceptible."
    ;; --- Org ----------------------------------------------------------
    '(org-archived                            ((t (:inherit nano-faded))))
    '(org-block                               ((t (:inherit highlight))))
-   '(org-block-begin-line                    ((t (:inherit nano-faded))))
-   '(org-block-end-line                      ((t (:inherit nano-faded))))
+   `(org-block-begin-line                    ((t (:inherit nano-faded
+                                                 :underline ,(face-background 'nano-subtle)))))
+   `(org-block-end-line                      ((t (:inherit nano-faded
+                                                 :overline ,(face-background 'nano-subtle)))))
    '(org-checkbox                            ((t (:inherit nano-faded))))
    '(org-checkbox-statistics-done            ((t (:inherit nano-faded))))
    '(org-checkbox-statistics-todo            ((t (:inherit nano-faded))))
    '(org-clock-overlay                       ((t (:inherit nano-faded))))
-   '(org-code                                ((t (:inherit nano-default))))
+   '(org-code                                ((t (:inherit nano-salient))))
    '(org-column                              ((t (:inherit nano-faded))))
    '(org-column-title                        ((t (:inherit nano-faded))))
    '(org-date                                ((t (:inherit nano-faded))))
@@ -1225,6 +1241,17 @@ background color that is barely perceptible."
     '(deft-time-face                       ((t (:inherit nano-salient))))
     '(deft-title-face                       ((t (:inherit nano-strong))))
 
+    ;; --- imenu-list ---------------------------------------------------
+    '(imenu-list-entry-face                 ((t (:inherit nano-default))))
+    '(imenu-list-entry-face-0                ((t (:inherit nano-strong))))
+    '(imenu-list-entry-face-1               ((t ( ))))
+    '(imenu-list-entry-face-2               ((t ( ))))
+    '(imenu-list-entry-face-3               ((t ( ))))
+    '(imenu-list-entry-subalist-face-0      ((t (:inherit nano-strong))))
+    '(imenu-list-entry-subalist-face-1      ((t ( ))))
+    '(imenu-list-entry-subalist-face-2      ((t ( ))))
+    '(imenu-list-entry-subalist-face-3      ((t ( ))))
+
     ;; --- Restructured text -------------------------------------------
     '(rst-adornment                           ((t (:inherit nano-faded))))
     '(rst-block                             ((t (:inherit nano-default))))
@@ -1245,6 +1272,17 @@ background color that is barely perceptible."
     '(rst-transition                        ((t (:inherit nano-default))))
 
 
+    ;; ---SHR ---------------------------------------------------------
+    '(shr-abbreviation                    ((t (:inherit nano-popout))))
+    '(shr-h1                              ((t (:inherit nano-strong))))
+    '(shr-h2                              ((t (:inherit nano-strong))))
+    '(shr-h3                              ((t (:inherit nano-strong))))
+    '(shr-h4                              ((t (:inherit nano-strong))))
+    '(shr-h5                              ((t (:inherit nano-strong))))
+    '(shr-h6                              ((t (:inherit nano-strong))))
+    '(shr-link                           ((t (:inherit nano-salient))))
+    '(shr-selected-link      ((t (:inherit nano-salient nano-subtle))))
+    '(shr-strike-through                   ((t (:inherit nano-faded))))
     
     ;; --- Markdown ----------------------------------------------------
     '(markdown-blockquote-face              ((t (:inherit nano-default))))
@@ -1341,7 +1379,7 @@ background color that is barely perceptible."
     '(magit-diff-removed                     ((t (:inherit (highlight nano-popout nano-strong)))))
     '(magit-diff-revision-summary            ((t (:inherit nano-popout))))
     '(magit-diff-their                       ((t (:inherit nano-default))))
-    '(magit-diff-whitespace-warning          ((t (:inherit nano-default))))
+    '(magit-diff-whitespace-warning          ((t (:inherit nano-subtle))))
     '(magit-diffstat-added                   ((t (:inherit nano-default))))
     '(magit-diffstat-removed                 ((t (:inherit nano-default))))
 
@@ -1361,7 +1399,7 @@ background color that is barely perceptible."
     '(magit-log-graph                        ((t (:inherit nano-default))))
 
     '(magit-mode-line-process                ((t (:inherit nano-default))))
-    '(magit-mode-line-process-error          ((t (:inherit nano-default))))
+    '(magit-mode-line-process-error          ((t (:inherit nano-critical))))
 
     '(magit-process-ng                       ((t (:inherit nano-default))))
     '(magit-process-ok                       ((t (:inherit nano-default))))
@@ -1399,8 +1437,35 @@ background color that is barely perceptible."
     '(magit-signature-revoked                ((t (:inherit nano-default))))
     '(magit-signature-untrusted              ((t (:inherit nano-default))))
 
-    '(magit-tag                              ((t (:inherit nano-default-i))))
+    '(magit-tag                              ((t (:inherit nano-strong))))
 
+
+
+    ;; --- ANSI colors ----------------------------------------------------
+
+    '(ansi-color-black                       ((t (:inherit nano-default))))
+    '(ansi-color-bold                         ((t (:inherit nano-strong))))
+    '(ansi-color-bright-black                 ((t (:inherit nano-strong))))
+    '(ansi-color-faint                         ((t (:inherit nano-faded))))
+    '(ansi-color-fast-blink                    ((t (:inherit nano-faded))))
+    '(ansi-color-slow-blink                    ((t (:inherit nano-faded))))
+    '(ansi-color-inverse                   ((t (:inherit nano-default-i))))
+    '(ansi-color-italic                            ((t (:inherit italic))))
+    '(ansi-color-underline                     ((t (:inherit nano-faded))))
+    '(ansi-color-blue           ((t (:foreground "#42A5F5")))) ;; material color blue L400
+    '(ansi-color-bright-blue    ((t (:background "#BBDEFB")))) ;; material color blue L100
+    '(ansi-color-cyan           ((t (:foreground "#26C6DA")))) ;; material color cyan L400
+    '(ansi-color-bright-cyan    ((t (:background "#B2EBF2")))) ;; material color cyan L100
+    '(ansi-color-green          ((t (:foreground "#66BB6A")))) ;; material color green L400
+    '(ansi-color-bright-green   ((t (:background "#C8E6C9")))) ;; material color green L100
+    '(ansi-color-magenta        ((t (:foreground "#AB47BC")))) ;; material color purple L400
+    '(ansi-color-bright-magenta ((t (:background "#E1BEE7")))) ;; material color purple L100
+    '(ansi-color-red            ((t (:foreground "#EF5350")))) ;; material color red L400
+    '(ansi-color-bright-red     ((t (:background "#FFCDD2")))) ;; material color red L100
+    '(ansi-color-white          ((t (:inherit nano-subtle))))
+    '(ansi-color-bright-white   ((t (:inherit default)))) 
+    '(ansi-color-yellow         ((t (:foreground "#FFEE58")))) ;; material color yellow L400
+    '(ansi-color-bright-yellow  ((t (:background "#FFF9C4")))) ;; material color yellow L100
 
     
     ;; --- Terminal ----------------------------------------------------

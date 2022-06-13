@@ -1,19 +1,16 @@
-;;; magit-refs.el --- listing references  -*- lexical-binding: t -*-
+;;; magit-refs.el --- Listing references  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -359,7 +356,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
      ((eq major-mode 'magit-refs-mode)
       (setq args magit-buffer-arguments))
      ((and (memq use-buffer-args '(always selected))
-           (when-let ((buffer (magit-get-mode-buffer
+           (when-let* ((buffer (magit-get-mode-buffer ;debbugs#31840
                                'magit-refs-mode nil
                                (eq use-buffer-args 'selected))))
              (setq args (buffer-local-value 'magit-buffer-arguments buffer))
@@ -434,7 +431,7 @@ menu this command always behaves like `magit-show-commit'."
   (interactive)
   (if (and (derived-mode-p 'magit-refs-mode)
            (magit-section-match '(branch tag))
-           (magit-menu-position))
+           (not (magit-menu-position)))
       (let ((ref (oref (magit-current-section) value)))
         (cond (current-prefix-arg
                (cond ((memq 'focus-on-ref magit-visit-ref-behavior)
@@ -498,15 +495,29 @@ Branch %s already exists.
     map)
   "Keymap for `tag' sections.")
 
+(defun magit--painted-branch-as-menu-section (section)
+  (and-let* ((branch (and (magit-section-match 'commit)
+                          (magit--painted-branch-at-point))))
+    (let ((dummy (magit-section :type 'branch :value branch)))
+      (oset dummy keymap magit-branch-section-map)
+      (dolist (slot '(start content hidden parent children))
+        (when (slot-boundp section slot)
+          (setf (eieio-oref dummy slot)
+                (eieio-oref section slot))))
+      dummy)))
+
+(add-hook 'magit-menu-alternative-section-hook
+          #'magit--painted-branch-as-menu-section)
+
 (defun magit-insert-branch-description ()
   "Insert header containing the description of the current branch.
 Insert a header line with the name and description of the
 current branch.  The description is taken from the Git variable
 `branch.<NAME>.description'; if that is undefined then no header
 line is inserted at all."
-  (when-let ((branch (magit-get-current-branch))
-             (desc (magit-get "branch" branch "description"))
-             (desc (split-string desc "\n")))
+  (when-let* ((branch (magit-get-current-branch))
+              (desc (magit-get "branch" branch "description"))
+              (desc (split-string desc "\n")))
     (when (equal (car (last desc)) "")
       (setq desc (butlast desc)))
     (magit-insert-section (branchdesc branch t)

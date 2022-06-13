@@ -86,6 +86,9 @@ The path can be absolute or relative to that of the linted file.")
   "List of errors and warnings for the current buffer.
 This is bound dynamically while the checks run.")
 
+(defconst package-lint-emacs-head-version '(29)
+  "Version of Emacs HEAD.")
+
 (defconst package-lint-backport-libraries
   (list (list 'cl-lib "\\`cl-")
         (list 'cl-generic "\\`cl-\\(?:def\\)?generic")
@@ -130,7 +133,7 @@ optional minimum version containing the feature.")
     info)
   "A hash table from SYMBOL to a list of events in its history.
 Each event is of the form (ACTION . EMACS-VER), where ACTION is a
-symbol such as 'variable-added.")
+symbol such as `variable-added'.")
 
 (defun package-lint-symbol-info (sym)
   "Retrieve information about SYM, as an alist of (ACTION . EMACS-VER)."
@@ -427,20 +430,30 @@ the form (PACKAGE-NAME PACKAGE-VERSION DEP-POSITION)."
   (let (valid-deps)
     (dolist (entry parsed-deps)
       (pcase entry
-        ((and `(,package-name ,package-version)
-              (guard (symbolp package-name))
-              (guard (stringp package-version)))
+        ((or (and `(,package-name ,package-version)
+                  (guard (symbolp package-name))
+                  (guard (stringp package-version)))
+             (and `(,package-name)
+                  (guard (symbolp package-name)))
+             (and package-name
+                  (guard (symbolp package-name))))
          ;; Find the column at which the dependency is declared so we can
          ;; properly report the position of errors.
          (let ((dep-pos
                 (save-excursion
                   (goto-char position)
-                  (let ((pattern
-                         (format "( *\\(%s\\)\\(?:)\\|[^[:alnum:]_\\-].*?)\\)"
-                                 (regexp-quote (symbol-name package-name)))))
-                    (if (re-search-forward pattern (line-end-position) t)
+                  (let* ((symbol-pattern
+                          (format "\\(%s\\)"
+                                  (regexp-quote (symbol-name package-name))))
+                         (list-pattern
+                          (format "( *%s\\(?:[^[:alnum:]_\\-].*?\\)?)"
+                                  symbol-pattern)))
+                    (if (or (re-search-forward list-pattern (line-end-position) t)
+                            (re-search-forward symbol-pattern (line-end-position) t))
                         (match-beginning 1)
                       position)))))
+           (unless package-version
+             (setq package-version "0"))
            (if (ignore-errors (version-to-list package-version))
                (push (list package-name
                            (version-to-list package-version)
@@ -481,7 +494,7 @@ required version PACKAGE-VERSION.  If not, raise an error for DEP-POS."
          'error
          "You can only depend on Emacs version 24 or greater: package.el for Emacs 23 does not support the \"emacs\" pseudopackage."
          dep-pos))
-       ((version-list-<= '(28) package-version)
+       ((version-list-<= package-lint-emacs-head-version package-version)
         (package-lint--error-at-point
          'warning
          "This makes the package uninstallable in all released Emacs versions."
@@ -1202,7 +1215,7 @@ Returns a list, each element of which is list of
 
    (LINE COL TYPE MESSAGE)
 
-where TYPE is either 'warning or 'error.
+where TYPE is either `warning' or `error'.
 
 Current buffer is used if none is specified."
   (with-current-buffer (or buffer (current-buffer))

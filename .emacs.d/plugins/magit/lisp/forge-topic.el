@@ -1,25 +1,24 @@
-;;; forge-topic.el --- Topics support              -*- lexical-binding: t -*-
+;;; forge-topic.el --- Topics support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -295,9 +294,7 @@ implement such a function themselves.  See #447.")
 
 (defun forge--sanitize-string (string)
   ;; For Gitlab this may also be nil.
-  (if string
-      (replace-regexp-in-string "\r\n" "\n" string t t)
-    ""))
+  (if string (string-replace "\r\n" "\n" string) ""))
 
 (defun forge-insert-topics (heading topics prefix)
   "Under a new section with HEADING, insert TOPICS."
@@ -360,6 +357,18 @@ identifier."
      (oref topic author)
      (format-time-string "%s" (parse-iso8601-time-string (oref topic created)))
      t)))
+
+(defun forge--topic-by-forge-short-link-at-point (known-prefixes finder)
+  "Finds a topic by forge-dependant short link around point.
+The topic number is expected to be a number prefixed by any of
+the elements in KNOWN-PREFIXES. If a reference is found, FINDER
+is called and a topic object is returned if available."
+  (and-let* ((number (number-at-point))
+             (prefix (buffer-substring-no-properties
+                      (- (match-beginning 0) 1)
+                      (match-beginning 0))))
+    (and (member prefix known-prefixes)
+         (funcall finder number))))
 
 ;;; Mode
 
@@ -486,10 +495,10 @@ identifier."
                (magit--propertize-face
                 (symbol-name state)
                 (pcase (list state (forge-pullreq-p (forge-topic-at-point)))
-                  (`(merged) 'forge-topic-merged)
-                  (`(closed) 'forge-topic-closed)
-                  (`(open t) 'forge-topic-unmerged)
-                  (`(open)   'forge-topic-open))))))))
+                  ('(merged) 'forge-topic-merged)
+                  ('(closed) 'forge-topic-closed)
+                  ('(open t) 'forge-topic-unmerged)
+                  ('(open)   'forge-topic-open))))))))
 
 (defvar forge-topic-milestone-section-map
   (let ((map (make-sparse-keymap)))
@@ -508,7 +517,7 @@ identifier."
             "\n")))
 
 (defun forge--get-topic-milestone (topic)
-  (when-let ((id (oref topic milestone)))
+  (and-let* ((id (oref topic milestone)))
     (caar (forge-sql [:select [title] :from milestone :where (= id $s1)] id))))
 
 (defvar forge-topic-labels-section-map
@@ -526,7 +535,7 @@ identifier."
     (insert ?\n)))
 
 (defun forge--format-topic-labels (topic)
-  (when-let ((labels (closql--iref topic 'labels)))
+  (and-let* ((labels (closql--iref topic 'labels)))
     (mapconcat (pcase-lambda (`(,name ,color ,_desc))
                  (propertize name 'font-lock-face (list :box color)))
                labels " ")))
@@ -777,8 +786,10 @@ Return a value between 0 and 1."
   (save-match-data
     (save-excursion
       (goto-char (point-min))
-      (let ((alist (or (save-excursion (forge--topic-parse-yaml))
-                       (save-excursion (forge--topic-parse-plain)))))
+      (let ((alist (save-excursion (forge--topic-parse-yaml))))
+        (if alist
+            (setf (alist-get 'yaml alist) t)
+          (setq alist (save-excursion (forge--topic-parse-plain))))
         (setf (alist-get 'file alist) file)
         (setf (alist-get 'text alist) (magit--buffer-string nil nil ?\n))
         (when (and file (not (alist-get 'prompt alist)))

@@ -1,11 +1,11 @@
 ;;; package --- Summary: melancholy-theme.el --- A dark theme for dark minds -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016 Sod Oscarfono
+;; Copyright (C) 2022 Cooper Oscarfono
 
-;; Author: Sod Oscarfono <sod@oscarfono.com>
-;; URL: http://github.com/techquila/melancholy-theme
-;; Package-Version: 20220108.1001
-;; Version: 2.8
+;; Author: Cooper Oscarfono <cooper@oscarfono.com>
+;; URL: https://github.com/baaash/melancholy-theme
+;; Package-Version: 20220424.1001
+;; Version: 3.0.1
 ;; Package-requires: emacs, ttf-ubuntu-font-family
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -30,14 +30,17 @@
 ;; The idea is to get it right by 2020. :-)
 ;;
 ;;
-;; You must install the ubuntu fonts package to use this theme:
+;; You must install the following fonts to use this theme:
 ;;
 ;; sudo apt install ttf-ubuntu-font-family
 ;;
-;; And the Milkshake font:
+;; Josefin Sans:
+;; https://www.1001freefonts.com/d/5819/josefin-sans.zip
 ;;
-;; https://www.fontmirror.com/app_public/files/t/1/family_zip/2020/02/Milkshake_Font_Family_(Fontmirror).zip
-
+;; Dancing Script font:
+;; https://www.1001freefonts.com/d/4914/dancing-script.zip
+;;
+;; ========================================
 
 
 ;;; Code:
@@ -46,10 +49,10 @@
 (deftheme melancholy
   "A dark theme for dark minds" )
 
-(let ((font-family-default   "Ubuntu" )
+(let ((font-family-default   "Josefin Sans" )
      (font-family-monospace "Ubuntu Mono" )
-;;   (font-family-condensed "Ubuntu Condensed" )
-     (font-family-cursive   "Milkshake" )
+     ;;   (font-family-condensed "Josefin Sans" )
+     (font-family-cursive   "Dancing Script" )
      (my-active             "#F92672" )
      (my-visited            "#999999" )
      (my-info               "#FFB728" )
@@ -60,7 +63,7 @@
      (my-shadow             "#333333" )
      (my-pop                "#00B7FF" )
      (my-warning            "#FF6969" )
-     (my-btw                "#8B4538" )
+     ;;  (my-btw                "#8B4538" )
      (my-white              "#FFFFFF" )
     )
 
@@ -73,7 +76,6 @@
 
     `(default ((t (:family ,font-family-monospace
                    :width normal
-                   :height 99
                    :weight normal
                    :slant normal
                    :foreground ,my-hicontrast
@@ -196,6 +198,10 @@
     `(helm-separator ((t (:background ,my-deepcontrast ))))
 
 
+    ;; heredocs
+    ;;=========================================
+    `(sh-heredoc ((t (:foreground ,my-pop ))))
+
     ;; isearch
     ;; ========================================
     `(isearch ((t (:foreground ,my-shadow :background ,my-highlight ))))
@@ -203,8 +209,12 @@
 
     ;; magit
     ;; ========================================
-     `(magit-section-highlight ((t (:foreground ,my-pop :background ,my-deepcontrast ))))
-
+    `(magit-section-highlight ((t (:foreground ,my-pop :background ,my-deepcontrast ))))
+    `(magit-diff-added ((t (:foreground ,my-highlight :background ,my-deepcontrast ))))
+    `(magit-diff-added-highlight ((t (:foreground ,my-highlight :background ,my-deepcontrast))))
+    `(magit-diff-removed ((t (:foreground ,my-warning :background ,my-deepcontrast))))
+    `(magit-diff-removed-highlight ((t (:foreground ,my-warning :background ,my-deepcontrast))))
+    `(magit-diff-hunk-heading-highlight ((t (:foreground ,my-pop :background ,my-deepcontrast ))))
 
     ;; minibuffer
     ;; ========================================
@@ -217,7 +227,8 @@
     `(org-agenda-date-today ((t (:weight extra-bold :foreground ,my-highlight ))))
     `(org-agenda-date-weekend ((t (:foreground ,my-deepcontrast ))))
     `(org-agenda-done ((t (:slant italic :foreground ,my-contrast :strike-through t ))))
-    `(org-imminent-deadline ((t (:foreground ,my-pop ))))
+    `(org-agenda-structure ((t (:slant italic :foreground ,my-pop))))
+    `(org-imminent-deadline ((t (:foreground ,my-active))))
     `(org-upcoming-deadline ((t (:slant italic :foreground ,my-visited ))))
     `(org-priority ((t (:family ,font-family-monospace :slant normal :foreground ,my-visited ))))
     `(org-block-begin-line ((t (:foreground ,my-shadow :background ,my-contrast ))))
@@ -226,14 +237,14 @@
     `(org-date ((t (:foreground ,my-visited ))))
     `(org-document-info ((t :(:height 1.25 foreground ,my-visited ))))
     `(org-document-info-keyword ((t (:foreground ,my-contrast ))))
-    `(org-document-title ((t (:family ,font-family-cursive  :height 1.9 :foreground ,my-info ))))
+    `(org-document-title ((t (:family ,font-family-cursive :foreground ,my-info :height 4.20 :weight extra-bold ))))
     `(org-done ((t (:foreground ,my-contrast :strike-through t ))))
     `(org-headline-done ((t (:foreground ,my-contrast :strike-through t ))))
-    `(org-level-1 ((t :family ,font-family-default :height 1.4 :weight bold )))
-    `(org-level-2 ((t :family ,font-family-default :height 1.25 :weight regular )))
-    `(org-level-3 ((t :family ,font-family-default :height 1.125 :weight normal )))
-    `(org-level-4 ((t :family ,font-family-default :weight light )))
-    `(org-level-5 ((t :family ,font-family-default :weight extra-light )))
+    `(org-level-1 ((t :family ,font-family-default :foreground ,my-info :height 2.8 )))
+    `(org-level-2 ((t :family ,font-family-cursive :foreground ,my-info :height 2.0 :slant italic )))
+    `(org-level-3 ((t :family ,font-family-default :height 1.8 )))
+    `(org-level-4 ((t :family ,font-family-default :height 1.5 :weight light )))
+    `(org-level-5 ((t :family ,font-family-default :height 1.5 :weight extra-light )))
     `(org-level-6 ((t :inherit (org-level-5) )))
     `(org-level-7 ((t :inherit (org-level-5) )))
     `(org-link ((t :foreground ,my-active :underline t )))
@@ -247,10 +258,20 @@
     ;; =======================================
     `(speedbar-directory-face ((t :family ,font-family-monospace :foreground ,my-contrast t )))
     `(speedbar-file-face ((t (:family ,font-family-monospace :foreground ,my-contrast ))))
-    `(speedbar-selected-face ((t (:weight extra-bold :foreground ,my-active ))))
-    `(speedbar-highlight-face ((t (:foreground ,my-pop ))))
+    `(speedbar-selected-face ((t (:weight extra-bold :foreground ,my-highlight ))))
+    `(speedbar-highlight-face ((t (:foreground ,my-active))))
     `(speedbar- ((t (:foreground ,my-active ))))
-    `(speedbar-button-face ((t (:foreground ,my-highlight ))))
+    `(speedbar-button-face ((t (:foreground ,my-pop ))))
+
+    ;; Terminal
+    ;; =========================================
+    `(term-color-black ((t (:foreground ,my-shadow ))))
+    `(term-color-blue ((t (:foreground ,my-pop ))))
+;;    `(term-color-cyan ((t (:foreground ,my-pop ))))
+    `(term-color-green ((t (:foreground ,my-highlight ))))
+    `(term-color-magenta ((t (:foreground ,my-active ))))
+    `(term-color-red ((t (:foreground ,my-warning ))))
+    `(term-color-white ((t (:foreground ,my-white ))))
 
     ;; The End
     ;; =========================================

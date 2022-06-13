@@ -1,25 +1,24 @@
-;;; forge-notify.el --- Notify support             -*- lexical-binding: t -*-
+;;; forge-notify.el --- Notify support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -49,11 +48,11 @@
 
 (cl-defmethod forge-get-repository ((notify forge-notification))
   "Return the object for the repository that NOTIFY belongs to."
-  (when-let ((id (oref notify repository)))
+  (and-let* ((id (oref notify repository)))
     (closql-get (forge-db) id 'forge-repository)))
 
 (cl-defmethod forge-get-notification ((topic forge-topic))
-  (when-let ((row (car (forge-sql [:select * :from notification
+  (and-let* ((row (car (forge-sql [:select * :from notification
                                    :where (and (= repository $s1)
                                                (= topic $s2))]
                                   (oref topic repository)

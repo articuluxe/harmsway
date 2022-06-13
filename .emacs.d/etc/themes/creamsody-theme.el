@@ -4,7 +4,7 @@
 
 ;; Authors: Jason Milkins <jasonm23@gmail.com>
 ;; URL: http://github.com/emacsfodder/emacs-theme-creamsody
-;; Version: 0.3.7
+;; Version: 0.3.14
 ;; Package-Requires: ((autothemer "0.2"))
 
 ;;; Commentary:
@@ -126,7 +126,8 @@
   (creamsody-turquoise4           "#61ACBB" "turquoise4"))
 
  ((default                                   (:foreground creamsody-foreground0 :background creamsody-background0))
-  (cursor                                    (:background creamsody-foreground0))
+  (highlight                                 (:foreground creamsody-foreground0 :background creamsody-mid_cyan))
+  (cursor                                    (:background creamsody-muted_blue))
   (link                                      (:foreground creamsody-bright_blue :underline t))
   (link-visited                              (:foreground creamsody-bright_blue :underline nil))
 
@@ -141,7 +142,7 @@
   (window-divider-last-pixel                 (:foreground creamsody-muted_blue ))
 
   (linum                                     (:foreground creamsody-background4))
-  (hl-line                                   (:background creamsody-background_purple))
+  (hl-line                                   (:background creamsody-background1))
   (region                                    (:background creamsody-mid_green :distant-foreground creamsody-foreground0))
   (secondary-selection                       (:background creamsody-mid_orange))
   (cua-rectangle                             (:background creamsody-mid_green :distant-foreground creamsody-foreground0))
@@ -803,6 +804,36 @@
   (dired-perm-write                         (:inherit 'font-lock-comment-delimiter-face))
   (dired-symlink                            (:inherit 'font-lock-keyword-face))
   (dired-warning                            (:inherit 'font-lock-warning-face))
+
+  (diredfl-dir-heading                      (:foreground creamsody-foreground1))
+  (diredfl-dir-name                         (:foreground creamsody-bright_cyan ))
+  (diredfl-autofile-name                    (:foreground creamsody-foreground1 ))
+  (diredfl-tagged-autofile-name             (:foreground creamsody-foreground1 :background creamsody-background1))
+
+  (diredfl-compressed-file-name             (:foreground creamsody-foreground1 ))
+  (diredfl-compressed-file-suffix           (:foreground creamsody-foreground1 ))
+  (diredfl-date-time                        (:foreground creamsody-aquamarine4))
+  (diredfl-deletion                         (:foreground creamsody-faded_red ))
+  (diredfl-deletion-file-name               (:foreground creamsody-faded_red ))
+  (diredfl-file-name                        (:foreground creamsody-faded_aqua))
+  (diredfl-file-suffix                      (:foreground creamsody-faded_aqua))
+  (diredfl-flag-mark                        (:foreground creamsody-bright_cyan))
+  (diredfl-flag-mark-line                   (:foreground creamsody-foreground0 :background creamsody-background1 ))
+
+  (diredfl-ignored-file-name                (:foreground creamsody-foreground3 ))
+  (diredfl-number                           (:foreground creamsody-foreground2 ))
+  (diredfl-executable-tag                   (:foreground creamsody-bright_orange ))
+
+  (diredfl-dir-priv                         (:foreground creamsody-bright_cyan :background creamsody-background1))
+  (diredfl-exec-priv                        (:foreground creamsody-bright_orange :background creamsody-background1 ))
+  (diredfl-link-priv                        (:foreground creamsody-bright_purple :background creamsody-background1 ))
+  (diredfl-no-priv                          (:foreground creamsody-foreground4 :background creamsody-background1))
+  (diredfl-other-priv                       (:background creamsody-background1 ))
+  (diredfl-rare-priv                        (:background creamsody-background1 ))
+  (diredfl-read-priv                        (:foreground creamsody-bright_aqua :background creamsody-background1))
+  (diredfl-write-priv                       (:foreground creamsody-bright_green :background creamsody-background1))
+
+  (diredfl-symlink                          (:foreground creamsody-neutral_cyan ))
 
   (dropdown-list-face                       (:foreground creamsody-black :background creamsody-foreground0_hard :inherit 'default))
   (dropdown-list-selection-face             (:background creamsody-bright_purple :inherit 'dropdown-list))

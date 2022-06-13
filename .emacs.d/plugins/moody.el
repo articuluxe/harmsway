@@ -1,28 +1,27 @@
-;;; moody.el --- Tabs and ribbons for the mode line  -*- lexical-binding: t -*-
+;;; moody.el --- Tabs and ribbons for the mode line  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/moody
+;; Keywords: faces
 
-;; Package-Requires: ((emacs "25.3"))
+;; Package-Requires: ((emacs "25.3") (compat "28.1.1.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
 ;; This file is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 ;;
-;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
-
-;; This file is not part of GNU Emacs.
+;; You should have received a copy of the GNU General Public License
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -87,6 +86,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'compat)
 
 ;;; Options
 
@@ -222,10 +222,10 @@ not specified, then faces based on `default', `mode-line' and
      (propertize "|" 'face face 'display
                  (apply moody-slant-function
                         (pcase (list type direction)
-                          (`(tab    down) (cons 'up   slant))
-                          (`(tab    up)   (cons 'down slant))
-                          (`(ribbon down) (cons 'down (reverse slant)))
-                          (`(ribbon up)   (cons 'up   (reverse slant)))))))))
+                          ('(tab    down) (cons 'up   slant))
+                          ('(tab    up)   (cons 'down slant))
+                          ('(ribbon down) (cons 'down (reverse slant)))
+                          ('(ribbon up)   (cons 'up   (reverse slant)))))))))
 
 (defvar moody--cache nil)
 
@@ -341,7 +341,11 @@ If called interactively, then toggle between the variants."
     (and (window-at-side-p nil 'bottom)
          ;; Side windows tend to be too narrow; so if there
          ;; are any, then display in all bottom mode-lines.
-         (or (not (eq (window-main-window) (frame-root-window)))
+         (or (not (eq (cond ((fboundp 'window-main-window) ; >= 26.1
+                             (window-main-window))
+                            ((fboundp 'window--major-non-side-window) ; < 26.1
+                             (window--major-non-side-window)))
+                      (frame-root-window)))
              (window-at-side-p nil 'left))
          (list " " (moody-tab eldoc-mode-line-string nil 'up)))))
 

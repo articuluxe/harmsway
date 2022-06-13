@@ -1,19 +1,16 @@
-;;; magit-branch.el --- branch support  -*- lexical-binding: t -*-
+;;; magit-branch.el --- Branch support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -554,7 +551,7 @@ defaulting to the branch at point."
   (interactive
    (let ((branches (magit-region-values 'branch t))
          (force current-prefix-arg))
-     (if (> (length branches) 1)
+     (if (length> branches 1)
          (magit-confirm t nil "Delete %i branches" nil branches)
        (setq branches
              (list (magit-read-branch-prefer-other
@@ -612,7 +609,7 @@ defaulting to the branch at point."
                      (magit-rev-parse "--short" ref))
             (magit-call-git "update-ref" "-d" ref))
           (magit-refresh)))))
-     ((> (length branches) 1)
+     ((length> branches 1)
       (setq branches (delete (magit-get-current-branch) branches))
       (mapc #'magit-branch-maybe-delete-pr-remote branches)
       (mapc #'magit-branch-unset-pushRemote branches)
@@ -673,7 +670,7 @@ defaulting to the branch at point."
                         (format "+refs/heads/%s:refs/remotes/%s/%s"
                                 merge remote merge))))))
           (when (member refspec refspecs)
-            (if (and (= (length refspecs) 1)
+            (if (and (length= refspecs 1)
                      (magit-confirm 'delete-pr-remote
                        (format "Also delete remote %s (%s)" remote
                                "no pull-request branch remains")
@@ -860,9 +857,9 @@ and also rename the respective reflog file."
   :class 'magit--git-branch:upstream)
 
 (cl-defmethod transient-init-value ((obj magit--git-branch:upstream))
-  (when-let ((branch (oref transient--prefix scope))
-             (remote (magit-get "branch" branch "remote"))
-             (merge  (magit-get "branch" branch "merge")))
+  (when-let* ((branch (oref transient--prefix scope))
+              (remote (magit-get "branch" branch "remote"))
+              (merge  (magit-get "branch" branch "merge")))
     (oset obj value (list remote merge))))
 
 (cl-defmethod transient-infix-read ((obj magit--git-branch:upstream))
@@ -873,10 +870,10 @@ and also rename the respective reflog file."
 (cl-defmethod transient-infix-set ((obj magit--git-branch:upstream) refname)
   (magit-set-upstream-branch (oref transient--prefix scope) refname)
   (oset obj value
-        (let ((branch (oref transient--prefix scope)))
-          (when-let ((r (magit-get "branch" branch "remote"))
-                     (m (magit-get "branch" branch "merge")))
-            (list r m))))
+        (and-let* ((branch (oref transient--prefix scope))
+                   (r (magit-get "branch" branch "remote"))
+                   (m (magit-get "branch" branch "merge")))
+          (list r m)))
   (magit-refresh))
 
 (cl-defmethod transient-format ((obj magit--git-branch:upstream))

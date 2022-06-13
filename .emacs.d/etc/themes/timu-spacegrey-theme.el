@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 06 Jun 2021
 ;; Keywords: faces themes
-;; Version: 1.9
+;; Version: 2.1
 ;; Package-Requires: ((emacs "25.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-spacegrey-theme
 
@@ -57,14 +57,31 @@
 ;;         (load-theme 'timu-spacegrey t))
 ;;
 ;; II. Configuration
-;;   There is a light version now included as well.
-;;   By default the theme is `dark', to setup the `light' flavour:
+;;   A. Dark and light fravour
+;;     By default the theme is `dark', to setup the `light' flavour:
 ;;
-;;   A. Change the variable `timu-spacegrey-flavour' in the Customization Interface.
-;;      M-x customize RET. Then Search for `timu'.
+;;     - Change the variable `timu-spacegrey-flavour' in the Customization Interface.
+;;       M-x customize RET. Then Search for `timu'.
 ;;
-;;   B. add the following to your `~/.emacs.d/init.el' or `~/.emacs'
-;;     (setq timu-spacegrey-flavour "light")
+;;     or
+;;
+;;     - add the following to your `~/.emacs.d/init.el' or `~/.emacs'
+;;       (setq timu-spacegrey-flavour "light")
+;;
+;;   B. Scale selected faces
+;;     You can now scale (up) some faces (in `org-mode' for now):
+;;
+;;     - `org-document-info'
+;;     - `org-document-title'
+;;     - `org-level-1'
+;;     - `org-level-2'
+;;     - `org-level-3'
+;;
+;;     More to follow in the future.
+;;
+;;     By default the scaling is turned off.
+;;     To setup the scaling add the following to your `~/.emacs.d/init.el' or `~/.emacs':
+;;       (customize-set-variable 'timu-spacegrey-scale-faces t)
 
 ;;; Code:
 
@@ -111,6 +128,20 @@
 Possinle values: `dark' or `light'."
   :type 'string
   :group 'timu-spacegrey-theme)
+
+(defcustom timu-spacegrey-scale-faces nil
+  "Variable to control the scale of select faces."
+  :type 'boolean
+  :group 'timu-spacegrey-theme)
+
+(defun timu-spacegrey-do-scale (face-height)
+  "Function for scaling the face to the FACE-HEIGHT.
+Uses `timu-spacegrey-scale-faces' for conditional."
+  (cond
+   ((eq t timu-spacegrey-scale-faces)
+    (list :height face-height))
+   ((eq nil timu-spacegrey-scale-faces)
+    (list :height 1.0))))
 
 (deftheme timu-spacegrey
   "Custom theme inspired by the spacegray theme in Sublime Text.
@@ -605,6 +636,13 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; doom-modeline - dark
      `(doom-modeline-bar-inactive ((,class (:background nil))))
      `(doom-modeline-eldoc-bar ((,class (:background ,green))))
+     `(doom-modeline-evil-emacs-state ((,class (:foreground ,cyan :weight bold))))
+     `(doom-modeline-evil-insert-state ((,class (:foreground ,red :weight bold))))
+     `(doom-modeline-evil-motion-state ((,class (:foreground ,blue :weight bold))))
+     `(doom-modeline-evil-normal-state ((,class (:foreground ,green :weight bold))))
+     `(doom-modeline-evil-operator-state ((,class (:foreground ,magenta :weight bold))))
+     `(doom-modeline-evil-replace-state ((,class (:foreground ,purple :weight bold))))
+     `(doom-modeline-evil-visual-state ((,class (:foreground ,yellow :weight bold))))
 
 ;;;; ediff - dark
      `(ediff-current-diff-A ((,class (:foreground ,bg :background ,red :extend t))))
@@ -1301,8 +1339,8 @@ Sourced other themes to get information about font faces for packages.")
      `(org-code ((,class (:foreground ,green))))
      `(org-date ((,class (:foreground ,yellow))))
      `(org-default ((,class (:background ,bg :foreground ,fg))))
-     `(org-document-info ((,class (:foreground ,orange))))
-     `(org-document-title ((,class (:foreground ,orange :weight bold))))
+     `(org-document-info ((,class (:foreground ,orange ,@(timu-spacegrey-do-scale 1.2)))))
+     `(org-document-title ((,class (:foreground ,orange :weight bold ,@(timu-spacegrey-do-scale 1.3)))))
      `(org-done ((,class (:foreground ,spacegrey5))))
      `(org-ellipsis ((,class (:underline nil :background nil :foreground ,grey))))
      `(org-footnote ((,class (:foreground ,orange))))
@@ -1310,9 +1348,9 @@ Sourced other themes to get information about font faces for packages.")
      `(org-headline-done ((,class (:foreground ,spacegrey5))))
      `(org-hide ((,class (:foreground ,bg))))
      `(org-latex-and-related ((,class (:foreground ,spacegrey8 :weight bold))))
-     `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold))))
-     `(org-level-2 ((,class (:foreground ,magenta :weight bold))))
-     `(org-level-3 ((,class (:foreground ,darkcyan :weight bold))))
+     `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-spacegrey-do-scale 1.3)))))
+     `(org-level-2 ((,class (:foreground ,magenta :weight bold ,@(timu-spacegrey-do-scale 1.2)))))
+     `(org-level-3 ((,class (:foreground ,darkcyan :weight bold ,@(timu-spacegrey-do-scale 1.1)))))
      `(org-level-4 ((,class (:foreground ,orange))))
      `(org-level-5 ((,class (:foreground ,green))))
      `(org-level-6 ((,class (:foreground ,teal))))
@@ -1432,7 +1470,7 @@ Sourced other themes to get information about font faces for packages.")
      `(sh-quoted-exec ((,class (:foreground ,fg :weight bold))))
 
 ;;;; show-paren - dark
-     `(show-paren-match ((,class (:foreground ,red :background ,spacegrey0 :weight ultra-bold))))
+     `(show-paren-match ((,class (:foreground ,red :weight ultra-bold :underline ,red))))
      `(show-paren-mismatch ((,class (:foreground ,spacegrey0 :background ,red :weight ultra-bold))))
 
 ;;;; smart-mode-line - dark
@@ -1570,6 +1608,45 @@ Sourced other themes to get information about font faces for packages.")
      `(treemacs-git-untracked-face ((,class (:foreground ,spacegrey5 :slant italic))))
      `(treemacs-root-face ((,class (:foreground ,green :weight bold :height 1.2))))
      `(treemacs-tags-face ((,class (:foreground ,orange))))
+
+;;;; tree-sitter-hl - dark
+     `(tree-sitter-hl-face:function ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:function.call ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:function.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:function.special ((,class (:foreground ,fg :weight bold))))
+     `(tree-sitter-hl-face:function.macro ((,class (:foreground ,fg :weight bold))))
+     `(tree-sitter-hl-face:method ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:method.call ((,class (:foreground ,red))))
+     `(tree-sitter-hl-face:type ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:type.parameter ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:type.argument ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:type.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:type.super ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:constructor ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:variable ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:variable.parameter ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:variable.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:variable.special ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:property ((,class (:foreground ,magenta))))
+     `(tree-sitter-hl-face:property.definition ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:comment ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(tree-sitter-hl-face:doc ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(tree-sitter-hl-face:string ((,class (:foreground ,green))))
+     `(tree-sitter-hl-face:string.special ((,class (:foreground ,green :weight bold))))
+     `(tree-sitter-hl-face:escape ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:embedded ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:keyword ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:operator ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:label ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:constant ((,class (:foreground ,magenta))))
+     `(tree-sitter-hl-face:constant.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:number ((,class (:foreground ,magenta))))
+     `(tree-sitter-hl-face:punctuation ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:punctuation.bracket ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:punctuation.delimiter ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:punctuation.special ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:tag ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:attribute ((,class (:foreground ,fg))))
 
 ;;;; typescript-mode - dark
      `(typescript-jsdoc-tag ((,class (:foreground ,spacegrey5))))
@@ -2171,6 +2248,13 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; doom-modeline - light
      `(doom-modeline-bar-inactive ((,class (:background nil))))
      `(doom-modeline-eldoc-bar ((,class (:background ,green))))
+     `(doom-modeline-evil-emacs-state ((,class (:foreground ,cyan :weight bold))))
+     `(doom-modeline-evil-insert-state ((,class (:foreground ,red :weight bold))))
+     `(doom-modeline-evil-motion-state ((,class (:foreground ,blue :weight bold))))
+     `(doom-modeline-evil-normal-state ((,class (:foreground ,green :weight bold))))
+     `(doom-modeline-evil-operator-state ((,class (:foreground ,magenta :weight bold))))
+     `(doom-modeline-evil-replace-state ((,class (:foreground ,purple :weight bold))))
+     `(doom-modeline-evil-visual-state ((,class (:foreground ,yellow :weight bold))))
 
 ;;;; ediff - light
      `(ediff-current-diff-A ((,class (:foreground ,fg :background ,red :extend t))))
@@ -2867,8 +2951,8 @@ Sourced other themes to get information about font faces for packages.")
      `(org-code ((,class (:foreground ,green))))
      `(org-date ((,class (:foreground ,yellow))))
      `(org-default ((,class (:background ,bg :foreground ,fg))))
-     `(org-document-info ((,class (:foreground ,orange))))
-     `(org-document-title ((,class (:foreground ,orange :weight bold))))
+     `(org-document-info ((,class (:foreground ,orange ,@(timu-spacegrey-do-scale 1.2)))))
+     `(org-document-title ((,class (:foreground ,orange :weight bold ,@(timu-spacegrey-do-scale 1.3)))))
      `(org-done ((,class (:foreground ,spacegrey5))))
      `(org-ellipsis ((,class (:underline nil :background nil :foreground ,grey))))
      `(org-footnote ((,class (:foreground ,orange))))
@@ -2876,9 +2960,9 @@ Sourced other themes to get information about font faces for packages.")
      `(org-headline-done ((,class (:foreground ,spacegrey5))))
      `(org-hide ((,class (:foreground ,bg))))
      `(org-latex-and-related ((,class (:foreground ,spacegrey8 :weight bold))))
-     `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold))))
-     `(org-level-2 ((,class (:foreground ,magenta :weight bold))))
-     `(org-level-3 ((,class (:foreground ,darkcyan :weight bold))))
+     `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-spacegrey-do-scale 1.3)))))
+     `(org-level-2 ((,class (:foreground ,magenta :weight bold ,@(timu-spacegrey-do-scale 1.2)))))
+     `(org-level-3 ((,class (:foreground ,darkcyan :weight bold ,@(timu-spacegrey-do-scale 1.1)))))
      `(org-level-4 ((,class (:foreground ,orange))))
      `(org-level-5 ((,class (:foreground ,green))))
      `(org-level-6 ((,class (:foreground ,teal))))
@@ -2998,7 +3082,7 @@ Sourced other themes to get information about font faces for packages.")
      `(sh-quoted-exec ((,class (:foreground ,fg :weight bold))))
 
 ;;;; show-paren - light
-     `(show-paren-match ((,class (:foreground ,red :background ,spacegrey0 :weight ultra-bold))))
+     `(show-paren-match ((,class (:foreground ,red :weight ultra-bold :underline ,red))))
      `(show-paren-mismatch ((,class (:foreground ,spacegrey0 :background ,red :weight ultra-bold))))
 
 ;;;; smart-mode-line - light
@@ -3136,6 +3220,45 @@ Sourced other themes to get information about font faces for packages.")
      `(treemacs-git-untracked-face ((,class (:foreground ,spacegrey5 :slant italic))))
      `(treemacs-root-face ((,class (:foreground ,green :weight bold :height 1.2))))
      `(treemacs-tags-face ((,class (:foreground ,orange))))
+
+;;;; tree-sitter-hl - light
+     `(tree-sitter-hl-face:function ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:function.call ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:function.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:function.special ((,class (:foreground ,fg :weight bold))))
+     `(tree-sitter-hl-face:function.macro ((,class (:foreground ,fg :weight bold))))
+     `(tree-sitter-hl-face:method ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:method.call ((,class (:foreground ,red))))
+     `(tree-sitter-hl-face:type ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:type.parameter ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:type.argument ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:type.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:type.super ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:constructor ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:variable ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:variable.parameter ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:variable.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:variable.special ((,class (:foreground ,yellow))))
+     `(tree-sitter-hl-face:property ((,class (:foreground ,magenta))))
+     `(tree-sitter-hl-face:property.definition ((,class (:foreground ,darkcyan))))
+     `(tree-sitter-hl-face:comment ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(tree-sitter-hl-face:doc ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(tree-sitter-hl-face:string ((,class (:foreground ,green))))
+     `(tree-sitter-hl-face:string.special ((,class (:foreground ,green :weight bold))))
+     `(tree-sitter-hl-face:escape ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:embedded ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:keyword ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:operator ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:label ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:constant ((,class (:foreground ,magenta))))
+     `(tree-sitter-hl-face:constant.builtin ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:number ((,class (:foreground ,magenta))))
+     `(tree-sitter-hl-face:punctuation ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:punctuation.bracket ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:punctuation.delimiter ((,class (:foreground ,fg))))
+     `(tree-sitter-hl-face:punctuation.special ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:tag ((,class (:foreground ,orange))))
+     `(tree-sitter-hl-face:attribute ((,class (:foreground ,fg))))
 
 ;;;; typescript-mode - light
      `(typescript-jsdoc-tag ((,class (:foreground ,spacegrey5))))

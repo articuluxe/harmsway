@@ -1,25 +1,24 @@
-;;; forge-commands.el --- Commands                 -*- lexical-binding: t -*-
+;;; forge-commands.el --- Commands  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -134,8 +133,8 @@ If pulling is too slow, then also consider setting the Git variable
                           (oref repo name))))
         (oset repo selective-p nil))
       (setq forge--mode-line-buffer (current-buffer))
-      (when-let ((remote  (oref repo remote))
-                 (refspec (oref repo pullreq-refspec)))
+      (when-let* ((remote  (oref repo remote))
+                  (refspec (oref repo pullreq-refspec)))
         (when (and create
                    (not (member refspec (magit-get-all "remote" remote "fetch")))
                    (or (eq forge-add-pullreq-refspec t)
@@ -344,15 +343,19 @@ read a topic to visit instead."
 (defun forge-visit-pullreq (pullreq)
   "View the current pull-request in a separate buffer.
 If there is no current pull-request or with a prefix argument
-read a PULLREQ to visit instead."
+read a PULLREQ to visit instead. If point is looking at a pullreq
+reference with Gitlab/Github notation try to visit the pullreq
+with that number."
   (interactive (list (forge-read-pullreq "View pull-request" t)))
   (forge-visit (forge-get-pullreq pullreq)))
 
 ;;;###autoload
 (defun forge-visit-issue (issue)
   "Visit the current issue in a separate buffer.
-If there is no current issue or with a prefix argument
-read an ISSUE to visit instead."
+If there is no current issue or with a prefix argument read an
+ISSUE to visit instead. If point is looking at an issue reference
+with Gitlab/Github notation try to visit the issue with that
+number."
   (interactive (list (forge-read-issue "View issue" t)))
   (forge-visit (forge-get-issue issue)))
 
@@ -395,11 +398,11 @@ read an ISSUE to visit instead."
                    "Source branch"
                    (magit-list-remote-branch-names)
                    nil t nil 'magit-revision-history
-                   (or (when-let ((d (magit-branch-at-point)))
+                   (or (and-let* ((d (magit-branch-at-point)))
                          (if (magit-remote-branch-p d)
                              d
                            (magit-get-push-branch d t)))
-                       (when-let ((d (magit-get-current-branch)))
+                       (and-let* ((d (magit-get-current-branch)))
                          (if (magit-remote-branch-p d)
                              d
                            (magit-get-push-branch d t))))))
@@ -663,7 +666,7 @@ Please see the manual for more information."
            (remote head-user)
            (branch (forge--pullreq-branch-select pullreq))
            (pr-branch head-ref))
-      (when (string-match-p ":" pr-branch)
+      (when (string-search ":" pr-branch)
         ;; Such a branch name would be invalid.  If we encounter
         ;; it anyway, then that means that the source branch and
         ;; the merge-request ref are missing.
@@ -754,7 +757,7 @@ information."
            id)))
   (when (and (file-exists-p path)
              (not (and (file-directory-p path)
-                       (= (length (directory-files "/tmp/testing/")) 2))))
+                       (length= (directory-files "/tmp/testing/") 2))))
     (user-error "%s already exists and isn't empty" path))
   (magit-worktree-checkout path
                            (let ((magit-inhibit-refresh t))
@@ -772,7 +775,7 @@ information."
                    (if (string-match-p "\\`pr-[0-9]+\\'" branch)
                        (number-to-string number)
                      (format "%s-%s" number
-                             (replace-regexp-in-string "/" "-" head-ref)))))))
+                             (string-replace "/" "-" head-ref)))))))
       (when (equal path "")
         (user-error "The empty string isn't a valid path"))
       path)))
@@ -940,7 +943,7 @@ pull individual topics when the user invokes `forge-pull-topic'."
   (interactive
    (let ((str (magit-read-string-ns
                "Add repository to database (url or name)"
-               (when-let ((repo (forge-get-repository 'stub))
+               (and-let* ((repo (forge-get-repository 'stub))
                           (remote (oref repo remote)))
                  (magit-git-string "remote" "get-url" remote)))))
      (if (string-match-p "\\(://\\|@\\)" str)
@@ -1025,7 +1028,7 @@ as merged."
 (defun forge-remove-topic-locally (topic)
   "Remove a topic from the local database only.
 Due to how the supported APIs work, it would be too expensive to
-automatically remove topics from the local datbase that were
+automatically remove topics from the local database that were
 removed from the forge.  The purpose of this command is to allow
 you to manually clean up the local database."
   (interactive (list (forge-read-topic "Delete topic LOCALLY only")))

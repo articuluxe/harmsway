@@ -1,26 +1,27 @@
-;;; frameshot.el --- Take screenshots of a frame  -*- lexical-binding: t -*-
+;;; frameshot.el --- Take screenshots of a frame  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/frameshot
+;; Keywords: multimedia
 
-;; Package-Requires: ((emacs "25.3"))
+;; Package-Requires: ((emacs "25.3") (compat "28.1.1.0"))
 
-;; This file is not part of GNU Emacs.
+;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
-
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
+;;
 ;; This file is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-
-;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -35,6 +36,8 @@
 ;; `convert' is required.
 
 ;;; Code:
+
+(require 'compat)
 
 (eval-when-compile (require 'subr-x))
 
@@ -232,9 +235,6 @@ The drop shadow details are taken from `frameshot-config'."
   "Float the frame and remove decoration when using the `i3wm' window manager."
   (frameshot--call-process "i3-msg" "floating enable, border pixel 0"))
 
-(declare-function fci-mode "fill-column-indicator" (&optional ARG))
-(declare-function which-key-mode "which-key" (&optional ARG))
-
 (defun frameshot-tarsius-setup ()
   "Setup the frame like the author of this package does.
 
@@ -251,8 +251,6 @@ loading the package that you want to demo."
   (setq window-min-height 1)
   (setq indicate-buffer-boundaries nil)
   (setq visual-line-fringe-indicators '(nil nil))
-  (remove-hook 'emacs-lisp-mode-hook  #'fci-mode)
-  (remove-hook 'git-commit-setup-hook #'fci-mode)
   (remove-hook 'prog-mode-hook 'indicate-buffer-boundaries-left))
 
 ;;; _

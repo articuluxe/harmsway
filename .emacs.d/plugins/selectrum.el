@@ -1,10 +1,10 @@
 ;;; selectrum.el --- Easily select item from list -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Radon Rosborough
+;; Copyright (C) 2019-2022 Radian LLC and contributors
 
-;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Author: Radian LLC <contact+selectrum@radian.codes>
 ;; Created: 8 Dec 2019
-;; Homepage: https://github.com/raxod502/selectrum
+;; Homepage: https://github.com/radian-software/selectrum
 ;; Keywords: extensions
 ;; Package-Requires: ((emacs "26.1"))
 ;; SPDX-License-Identifier: MIT
@@ -25,7 +25,7 @@
 ;; `selectrum-mode', which enhances `completing-read' and all related
 ;; functions automatically without the need for further configuration.
 
-;; Please see https://github.com/raxod502/selectrum for more
+;; Please see https://github.com/radian-software/selectrum for more
 ;; information.
 
 ;;; Code:
@@ -90,7 +90,7 @@ In Emacs 27 and greater, this face is assumed to have the
   "Simple incremental narrowing framework with sane API."
   :group 'convenience
   :prefix "selectrum-"
-  :link '(url-link "https://github.com/raxod502/selectrum"))
+  :link '(url-link "https://github.com/radian-software/selectrum"))
 
 (defcustom selectrum-default-value-format
   (propertize " [default: %s]" 'face 'minibuffer-prompt)
@@ -1493,7 +1493,7 @@ the update."
   (let ((inhibit-read-only t)
         ;; Don't record undo information while messing with the
         ;; minibuffer, as per
-        ;; <https://github.com/raxod502/selectrum/issues/31>.
+        ;; <https://github.com/radian-software/selectrum/issues/31>.
         (buffer-undo-list t)
         (input (buffer-substring (minibuffer-prompt-end)
                                  (point-max)))
@@ -1801,9 +1801,9 @@ Invisible parts of the display string are removed."
   ;; scratch.
   ;;
   ;; See:
-  ;; <https://github.com/raxod502/selectrum/issues/21>
-  ;; <https://github.com/raxod502/selectrum/issues/58>
-  ;; <https://github.com/raxod502/selectrum/pull/76>
+  ;; <https://github.com/radian-software/selectrum/issues/21>
+  ;; <https://github.com/radian-software/selectrum/issues/58>
+  ;; <https://github.com/radian-software/selectrum/pull/76>
   (let ((str (copy-sequence str))
         (face 'selectrum-current-candidate))
     (if (version< emacs-version "27")
@@ -2674,7 +2674,7 @@ default candidate by submitting empty input."
   (let* ((minibuffer-allow-text-properties t)
          (resize-mini-windows 'grow-only)
          (prompt (selectrum--remove-default-from-prompt prompt))
-         ;; <https://github.com/raxod502/selectrum/issues/99>
+         ;; <https://github.com/radian-software/selectrum/issues/99>
          (icomplete-mode nil)
          (buf (current-buffer))
          (res
@@ -3137,7 +3137,7 @@ For PROMPT, COLLECTION, PREDICATE, REQUIRE-MATCH, INITIAL-INPUT,
 For PROMPT, DIR, DEFAULT-FILENAME, MUSTMATCH, INITIAL, and
 PREDICATE, see `read-file-name'."
   (let* ((crf completing-read-function)
-         ;; See <https://github.com/raxod502/selectrum/issues/61>.
+         ;; See <https://github.com/radian-software/selectrum/issues/61>.
          ;; When you invoke another `completing-read' command
          ;; recursively then it inherits the
          ;; `completing-read-function' binding, and unless it's
@@ -3155,7 +3155,10 @@ PREDICATE, see `read-file-name'."
                                 default-filename))
                      (df (expand-file-name default))
                      (dd (expand-file-name default-directory))
-                     (default-in-prompt-dir
+                     ;; Weird indentation to make things indent the
+                     ;; same in both Emacs 28 and Emacs 29, because
+                     ;; apparently something changed?
+                     ( default-in-prompt-dir
                        (equal (file-name-directory
                                (directory-file-name df))
                               (file-name-directory dd)))
@@ -3208,14 +3211,13 @@ PREDICATE, see `read-file-name'."
 
 ;;;###autoload
 (defun selectrum--fix-dired-read-dir-and-switches (func &rest args)
-  "Make \\[dired] do the \"right thing\" with its default candidate.
-By default \\[dired] uses `read-file-name' internally, which
-causes Selectrum to provide you with the first file inside the
-working directory as the default candidate. However, it would
-arguably be more semantically appropriate to use
-`read-directory-name', and this is especially important for
-Selectrum since this causes it to select the working directory
-initially.
+  "Make Dired do the \"right thing\" with its default candidate.
+By default Dired uses `read-file-name' internally, which causes
+Selectrum to provide you with the first file inside the working
+directory as the default candidate. However, it would arguably be
+more semantically appropriate to use `read-directory-name', and
+this is especially important for Selectrum since this causes it
+to select the working directory initially.
 
 To test that this advice is working correctly, type \\[dired] and
 accept the default candidate. You should have opened the working
@@ -3271,11 +3273,12 @@ the built-in `read-library-name'."
         (table (make-hash-table :test #'equal))
         (lib-name-cands nil)      ; Cleaned-up and disambiguated cands
         (file-name-cands nil))    ; Other candidates
-    (dolist (dir (or (if (boundp 'find-library-source-path)
-                         ;; In Emacs 28.1, `find-function-source-path'
-                         ;; was renamed to `find-library-source-path'.
-                         find-library-source-path
-                       find-function-source-path)
+    (dolist (dir (or (symbol-value
+                      (if (boundp 'find-library-source-path)
+                          ;; In Emacs 28.1, `find-function-source-path'
+                          ;; was renamed to `find-library-source-path'.
+                          'find-library-source-path
+                        'find-function-source-path))
                      load-path))
       (condition-case _
           (let ((found-libs))

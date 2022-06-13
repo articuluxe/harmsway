@@ -1,19 +1,16 @@
-;;; magit-wip.el --- commit snapshots to work-in-progress refs  -*- lexical-binding: t -*-
+;;; magit-wip.el --- Commit snapshots to work-in-progress refs  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -369,7 +366,7 @@ commit message."
 (defun magit--wip-ref (namespace &optional ref)
   (concat magit-wip-namespace namespace
           (or (and ref (string-prefix-p "refs/" ref) ref)
-              (when-let ((branch (and (not (equal ref "HEAD"))
+              (and-let* ((branch (and (not (equal ref "HEAD"))
                                       (or ref (magit-get-current-branch)))))
                 (concat "refs/heads/" branch))
               "HEAD")))
@@ -436,7 +433,7 @@ many \"branches\" of each wip ref are shown."
                           args files))
 
 (defun magit-wip-log-get-tips (wipref count)
-  (when-let ((reflog (magit-git-lines "reflog" wipref)))
+  (and-let* ((reflog (magit-git-lines "reflog" wipref)))
     (let (tips)
       (while (and reflog (> count 1))
         ;; "start autosaving ..." is the current message, but it used

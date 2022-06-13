@@ -1,19 +1,16 @@
-;;; magit-mode.el --- create and refresh Magit buffers  -*- lexical-binding: t -*-
+;;; magit-mode.el --- Create and refresh Magit buffers  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -37,24 +34,6 @@
 (require 'format-spec)
 (require 'help-mode)
 (require 'transient)
-
-;; For `magit-display-buffer-fullcolumn-most-v1' from `git-commit'
-(defvar git-commit-mode)
-;; For `magit-refresh'
-(defvar magit-post-commit-hook-commands)
-(defvar magit-post-stage-hook-commands)
-(defvar magit-post-unstage-hook-commands)
-;; For `magit-refresh' and `magit-refresh-all'
-(declare-function magit-auto-revert-buffers "magit-autorevert" ())
-;; For `magit-refresh-buffer'
-(declare-function magit-process-unset-mode-line-error-status "magit-process" ())
-;; For `magit-refresh-get-relative-position'
-(declare-function magit-hunk-section-p "magit-diff" (section) t)
-;; For `magit-mode-setup-internal'
-(declare-function magit-status-goto-initial-section "magit-status" ())
-;; For `magit-mode'
-(defvar bookmark-make-record-function)
-(declare-function magit--make-bookmark "magit-bookmark" ())
 
 ;;; Options
 
@@ -97,7 +76,11 @@ inside your function."
   :type 'hook
   :options '(magit-maybe-save-repository-buffers))
 
-(defcustom magit-post-refresh-hook nil
+(defcustom magit-post-refresh-hook
+  '(magit-auto-revert-buffers
+    magit-run-post-commit-hook
+    magit-run-post-stage-hook
+    magit-run-post-unstage-hook)
   "Hook run after refreshing in `magit-refresh'.
 
 This hook, or `magit-pre-refresh-hook', should be used
@@ -108,7 +91,11 @@ To run a function with a particular buffer current, use
 inside your function."
   :package-version '(magit . "2.4.0")
   :group 'magit-refresh
-  :type 'hook)
+  :type 'hook
+  :options '(magit-auto-revert-buffers
+             magit-run-post-commit-hook
+             magit-run-post-stage-hook
+             magit-run-post-unstage-hook))
 
 (defcustom magit-display-buffer-function #'magit-display-buffer-traditional
   "The function used to display a Magit buffer.
@@ -587,7 +574,7 @@ your mode instead of adding an entry to this variable.")
 (make-obsolete-variable 'magit-buffer-lock-functions nil "Magit 3.0.0")
 
 (cl-defgeneric magit-buffer-value ()
-  (when-let ((fn (cdr (assq major-mode magit-buffer-lock-functions))))
+  (and-let* ((fn (cdr (assq major-mode magit-buffer-lock-functions))))
     (funcall fn (with-no-warnings magit-refresh-args))))
 
 (defvar-local magit-previous-section nil)
@@ -617,8 +604,7 @@ your mode instead of adding an entry to this variable.")
          (section (and buffer (magit-current-section)))
          (created (not buffer)))
     (unless buffer
-      (setq buffer (magit-with-toplevel
-                     (magit-generate-new-buffer mode value))))
+      (setq buffer (magit-generate-new-buffer mode value)))
     (with-current-buffer buffer
       (setq magit-previous-section section)
       (funcall mode)
@@ -626,7 +612,6 @@ your mode instead of adding an entry to this variable.")
       (pcase-dolist (`(,var ,val) bindings)
         (set (make-local-variable var) val))
       (when created
-        (magit-status-goto-initial-section)
         (run-hooks 'magit-create-buffer-hook)))
     (magit-display-buffer buffer)
     (with-current-buffer buffer
@@ -655,8 +640,7 @@ locked to its value, which is derived from MODE and ARGS."
          (section (and buffer (magit-current-section)))
          (created (not buffer)))
     (unless buffer
-      (setq buffer (magit-with-toplevel
-                     (magit-generate-new-buffer mode value))))
+      (setq buffer (magit-generate-new-buffer mode value)))
     (with-current-buffer buffer
       (setq magit-previous-section section)
       (with-no-warnings
@@ -664,7 +648,6 @@ locked to its value, which is derived from MODE and ARGS."
       (funcall mode)
       (magit-xref-setup 'magit-mode-setup-internal args)
       (when created
-        (magit-status-goto-initial-section)
         (run-hooks 'magit-create-buffer-hook)))
     (magit-display-buffer buffer)
     (with-current-buffer buffer
@@ -803,7 +786,7 @@ the mode of the current buffer derives from `magit-log-mode' or
 `magit-cherry-mode'."
   (display-buffer
    buffer
-   (cond ((and (or git-commit-mode
+   (cond ((and (or (bound-and-true-p git-commit-mode)
                    (derived-mode-p 'magit-log-mode
                                    'magit-cherry-mode
                                    'magit-reflog-mode))
@@ -864,48 +847,47 @@ If `visible', then only consider buffers on all visible frames.
 If `selected' or t, then only consider buffers on the selected
   frame.
 If a frame, then only consider buffers on that frame."
-  (if-let ((topdir (magit-toplevel)))
-      (cl-flet* ((b (buffer)
-                   (with-current-buffer buffer
-                     (and (eq major-mode mode)
-                          (equal magit--default-directory topdir)
-                          (if value
-                              (and magit-buffer-locked-p
-                                   (equal (magit-buffer-value) value))
-                            (not magit-buffer-locked-p))
-                          buffer)))
-                 (w (window)
-                   (b (window-buffer window)))
-                 (f (frame)
-                   (seq-some #'w (window-list frame 'no-minibuf))))
-        (pcase-exhaustive frame
-          (`nil                   (seq-some #'b (buffer-list)))
-          (`all                   (seq-some #'f (frame-list)))
-          (`visible               (seq-some #'f (visible-frame-list)))
-          ((or `selected `t)      (seq-some #'w (window-list (selected-frame))))
-          ((guard (framep frame)) (seq-some #'w (window-list frame)))))
-    (magit--not-inside-repository-error)))
+  (let ((topdir (magit--toplevel-safe)))
+    (cl-flet* ((b (buffer)
+                 (with-current-buffer buffer
+                   (and (eq major-mode mode)
+                        (equal magit--default-directory topdir)
+                        (if value
+                            (and magit-buffer-locked-p
+                                 (equal (magit-buffer-value) value))
+                          (not magit-buffer-locked-p))
+                        buffer)))
+               (w (window)
+                 (b (window-buffer window)))
+               (f (frame)
+                 (seq-some #'w (window-list frame 'no-minibuf))))
+      (pcase-exhaustive frame
+        ('nil                   (seq-some #'b (buffer-list)))
+        ('all                   (seq-some #'f (frame-list)))
+        ('visible               (seq-some #'f (visible-frame-list)))
+        ((or 'selected 't)      (seq-some #'w (window-list (selected-frame))))
+        ((guard (framep frame)) (seq-some #'w (window-list frame)))))))
 
 (defun magit-mode-get-buffer (mode &optional create frame value)
   (declare (obsolete magit-get-mode-buffer "Magit 3.0.0"))
   (when create
     (error "`magit-mode-get-buffer's CREATE argument is obsolete"))
-  (if-let ((topdir (magit-toplevel)))
-      (--first (with-current-buffer it
-                 (and (eq major-mode mode)
-                      (equal magit--default-directory topdir)
-                      (if value
-                          (and magit-buffer-locked-p
-                               (equal (magit-buffer-value) value))
-                        (not magit-buffer-locked-p))))
-               (if frame
-                   (mapcar #'window-buffer
-                           (window-list (unless (eq frame t) frame)))
-                 (buffer-list)))
-    (magit--not-inside-repository-error)))
+  (let ((topdir (magit--toplevel-safe)))
+    (--first (with-current-buffer it
+               (and (eq major-mode mode)
+                    (equal magit--default-directory topdir)
+                    (if value
+                        (and magit-buffer-locked-p
+                             (equal (magit-buffer-value) value))
+                      (not magit-buffer-locked-p))))
+             (if frame
+                 (mapcar #'window-buffer
+                         (window-list (unless (eq frame t) frame)))
+               (buffer-list)))))
 
-(defun magit-generate-new-buffer (mode &optional value)
-  (let* ((name (funcall magit-generate-buffer-name-function mode value))
+(defun magit-generate-new-buffer (mode &optional value directory)
+  (let* ((default-directory (or directory (magit--toplevel-safe)))
+         (name (funcall magit-generate-buffer-name-function mode value))
          (buffer (generate-new-buffer name)))
     (with-current-buffer buffer
       (setq magit--default-directory default-directory)
@@ -1051,15 +1033,6 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                            (magit-get-mode-buffer 'magit-status-mode))
             (with-current-buffer it
               (magit-refresh-buffer)))
-          (magit-auto-revert-buffers)
-          (cond
-           ((and (not this-command)
-                 (memq last-command magit-post-commit-hook-commands))
-            (magit-run-hook-with-benchmark 'magit-post-commit-hook))
-           ((memq this-command magit-post-stage-hook-commands)
-            (magit-run-hook-with-benchmark 'magit-post-stage-hook))
-           ((memq this-command magit-post-unstage-hook-commands)
-            (magit-run-hook-with-benchmark 'magit-post-unstage-hook)))
           (magit-run-hook-with-benchmark 'magit-post-refresh-hook)
           (when magit-refresh-verbose
             (let* ((c (caar magit--refresh-cache))
@@ -1081,7 +1054,6 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
   (magit-run-hook-with-benchmark 'magit-pre-refresh-hook)
   (dolist (buffer (magit-mode-get-buffers))
     (with-current-buffer buffer (magit-refresh-buffer)))
-  (magit-auto-revert-buffers)
   (magit-run-hook-with-benchmark 'magit-post-refresh-hook))
 
 (defvar-local magit-refresh-start-time nil)
@@ -1100,10 +1072,11 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                        (lambda (window)
                          (with-selected-window window
                            (with-current-buffer buffer
-                             (when-let ((section (magit-section-at)))
+                             (and-let* ((section (magit-section-at)))
                                `(( ,window
                                    ,section
-                                   ,@(magit-refresh-get-relative-position)))))))
+                                   ,@(magit-section-get-relative-position
+                                      section)))))))
                        ;; If it qualifies, then the selected window
                        ;; comes first, but we want to handle it last
                        ;; so that its `magit-section-movement-hook'
@@ -1115,7 +1088,6 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
         (setq magit-section-highlight-overlays nil)
         (setq magit-section-highlighted-sections nil)
         (setq magit-section-unhighlight-sections nil)
-        (magit-process-unset-mode-line-error-status)
         (let ((inhibit-read-only t))
           (erase-buffer)
           (save-excursion
@@ -1135,34 +1107,12 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                  (float-time (time-subtract (current-time)
                                             magit-refresh-start-time)))))))
 
-(defun magit-refresh-get-relative-position ()
-  (when-let ((section (magit-current-section)))
-    (let ((start (oref section start))
-          (point (magit-point)))
-      (list (- (line-number-at-pos point)
-               (line-number-at-pos start))
-            (- point (line-beginning-position))
-            (and (magit-hunk-section-p section)
-                 (region-active-p)
-                 (progn (goto-char (line-beginning-position))
-                        (when  (looking-at "^[-+]") (forward-line))
-                        (while (looking-at "^[ @]") (forward-line))
-                        (let ((beg point))
-                          (cond ((looking-at "^[-+]")
-                                 (forward-line)
-                                 (while (looking-at "^[-+]") (forward-line))
-                                 (while (looking-at "^ ")    (forward-line))
-                                 (forward-line -1)
-                                 (regexp-quote (buffer-substring-no-properties
-                                                beg (line-end-position))))
-                                (t t)))))))))
-
 ;;; Save File-Visiting Buffers
 
-(defvar disable-magit-save-buffers nil)
+(defvar magit--disable-save-buffers nil)
 
 (defun magit-pre-command-hook ()
-  (setq disable-magit-save-buffers nil))
+  (setq magit--disable-save-buffers nil))
 (add-hook 'pre-command-hook #'magit-pre-command-hook)
 
 (defvar magit-after-save-refresh-buffers nil)
@@ -1188,7 +1138,7 @@ Note that refreshing a Magit buffer is done by re-creating its
 contents from scratch, which can be slow in large repositories.
 If you are not satisfied with Magit's performance, then you
 should obviously not add this function to that hook."
-  (when (and (not disable-magit-save-buffers)
+  (when (and (not magit--disable-save-buffers)
              (magit-inside-worktree-p t))
     (--when-let (ignore-errors (magit-get-mode-buffer 'magit-status-mode))
       (add-to-list 'magit-after-save-refresh-buffers it)
@@ -1200,8 +1150,8 @@ Do so if `magit-save-repository-buffers' is non-nil.  You should
 not remove this from any hooks, instead set that variable to nil
 if you so desire."
   (when (and magit-save-repository-buffers
-             (not disable-magit-save-buffers))
-    (setq disable-magit-save-buffers t)
+             (not magit--disable-save-buffers))
+    (setq magit--disable-save-buffers t)
     (let ((msg (current-message)))
       (magit-save-repository-buffers
        (eq magit-save-repository-buffers 'dontask))
@@ -1389,7 +1339,7 @@ Return a (KEY . VALUE) cons cell.
 The KEY is matched using `equal'.
 
 Unless specified, REPOSITORY is the current buffer's repository."
-  (when-let ((cache (assoc (or repository
+  (and-let* ((cache (assoc (or repository
                                (magit-repository-local-repository))
                            magit-repository-local-cache)))
     (assoc key (cdr cache))))
@@ -1413,9 +1363,7 @@ Unless specified, REPOSITORY is the current buffer's repository."
   (when-let ((cache (assoc (or repository
                                (magit-repository-local-repository))
                            magit-repository-local-cache)))
-    ;; There is no `assoc-delete-all'.
-    (setf (cdr cache)
-          (cl-delete key (cdr cache) :key #'car :test #'equal))))
+    (setf cache (compat-assoc-delete-all key cache))))
 
 (defmacro magit--with-repository-local-cache (key &rest body)
   (declare (indent 1) (debug (form body)))
@@ -1491,7 +1439,7 @@ mentioned caches completely."
                                   (cdr magit--imenu-group-types)
                                   section))
                           (magit-section-match magit--imenu-group-types section))
-                        (when-let ((children (oref section children)))
+                        (and-let* ((children (oref section children)))
                           `((,(magit--imenu-index-name section)
                              ,@(mapcar (lambda (s)
                                          (cons (magit--imenu-index-name s)
@@ -1525,6 +1473,85 @@ mentioned caches completely."
        ((string-match " ([0-9]+)\\'" heading)
         (substring heading 0 (match-beginning 0)))
        (t heading)))))
+
+;;; Bookmark support
+
+(declare-function bookmark-get-filename "bookmark" (bookmark-name-or-record))
+(declare-function bookmark-make-record-default "bookmark"
+                  (&optional no-file no-context posn))
+(declare-function bookmark-prop-get "bookmark" (bookmark-name-or-record prop))
+(declare-function bookmark-prop-set "bookmark" (bookmark-name-or-record prop val))
+
+(defun magit--make-bookmark ()
+  "Create a bookmark for the current Magit buffer.
+Input values are the major-mode's `magit-bookmark-name' method,
+and the buffer-local values of the variables referenced in its
+`magit-bookmark-variables' property."
+  (require 'bookmark)
+  (if (plist-member (symbol-plist major-mode) 'magit-bookmark-variables)
+      ;; `bookmark-make-record-default's return value does not match
+      ;; (NAME . ALIST), even though it is used as the default value
+      ;; of `bookmark-make-record-function', which states that such
+      ;; functions must do that.  See #4356.
+      (let ((bookmark (cons nil (bookmark-make-record-default 'no-file))))
+        (bookmark-prop-set bookmark 'handler  #'magit--handle-bookmark)
+        (bookmark-prop-set bookmark 'mode     major-mode)
+        (bookmark-prop-set bookmark 'filename (magit-toplevel))
+        (bookmark-prop-set bookmark 'defaults (list (magit-bookmark-name)))
+        (dolist (var (get major-mode 'magit-bookmark-variables))
+          (bookmark-prop-set bookmark var (symbol-value var)))
+        (bookmark-prop-set
+         bookmark 'magit-hidden-sections
+         (--keep (and (oref it hidden)
+                      (cons (oref it type)
+                            (if (derived-mode-p 'magit-stash-mode)
+                                (string-replace magit-buffer-revision
+                                                magit-buffer-revision-hash
+                                                (oref it value))
+                              (oref it value))))
+                 (oref magit-root-section children)))
+        bookmark)
+    (user-error "Bookmarking is not implemented for %s buffers" major-mode)))
+
+(defun magit--handle-bookmark (bookmark)
+  "Open a bookmark created by `magit--make-bookmark'.
+Call the `magit-*-setup-buffer' function of the the major-mode
+with the variables' values as arguments, which were recorded by
+`magit--make-bookmark'.  Ignore `magit-display-buffer-function'."
+  (let ((buffer (let ((default-directory (bookmark-get-filename bookmark))
+                      (mode (bookmark-prop-get bookmark 'mode))
+                      (magit-display-buffer-function #'identity)
+                      (magit-display-buffer-noselect t))
+                  (apply (intern (format "%s-setup-buffer"
+                                         (substring (symbol-name mode) 0 -5)))
+                         (--map (bookmark-prop-get bookmark it)
+                                (get mode 'magit-bookmark-variables))))))
+    (set-buffer buffer) ; That is the interface we have to adhere to.
+    (when-let ((hidden (bookmark-prop-get bookmark 'magit-hidden-sections)))
+      (with-current-buffer buffer
+        (dolist (child (oref magit-root-section children))
+          (if (member (cons (oref child type)
+                            (oref child value))
+                      hidden)
+              (magit-section-hide child)
+            (magit-section-show child)))))
+    ;; Compatibility with `bookmark+' package.  See #4356.
+    (when (bound-and-true-p bmkp-jump-display-function)
+      (funcall bmkp-jump-display-function (current-buffer)))
+    nil))
+
+(cl-defgeneric magit-bookmark-name ()
+  "Return name for bookmark to current buffer."
+  (format "%s%s"
+          (substring (symbol-name major-mode) 0 -5)
+          (if-let ((vars (get major-mode 'magit-bookmark-variables)))
+              (cl-mapcan (lambda (var)
+                           (let ((val (symbol-value var)))
+                             (if (and val (atom val))
+                                 (list val)
+                               val)))
+                         vars)
+            "")))
 
 ;;; Utilities
 

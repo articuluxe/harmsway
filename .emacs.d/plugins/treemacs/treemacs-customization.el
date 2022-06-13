@@ -142,8 +142,8 @@ There are 2 options:
    minibuffer input is used.
  - `from-minibuffer': will read input from the minibuffer, same as baseline
    Emacs."
-  :type '(choice (const :tag "With Child Frame Popup" 'from-child-frame)
-                 (const :tag "From the Minibuffer (Emacs Default)" 'from-minibuffer))
+  :type '(choice (const :tag "With Child Frame Popup" from-child-frame)
+                 (const :tag "From the Minibuffer (Emacs Default)" from-minibuffer))
   :group 'treemacs)
 
 (defcustom treemacs-move-forward-on-expand nil
@@ -160,8 +160,8 @@ There are 2 options:
    permissions of the file at point
 
 Requires eldoc mode to be enabled."
-  :type '(choice (const :tag "Simple" 'simple)
-                 (const :tag "Detailed" 'detailed))
+  :type '(choice (const :tag "Simple" simple)
+                 (const :tag "Detailed" detailed))
   :group 'treemacs)
 
 (defcustom treemacs-indent-guide-style 'line
@@ -171,7 +171,8 @@ The choices are
    level
  - `block' to use a thick '██' block interspersed at every second indentation
    level"
-  :type '(choice (const :tag "Line" 'line) (const :tag "Block" 'block))
+  :type '(choice (const :tag "Line" line)
+                 (const :tag "Block" block))
   :group 'treemacs)
 
 (defcustom treemacs-indentation-string " "
@@ -278,8 +279,16 @@ of how this config works and how to modify it."
   :group 'treemacs)
 
 (defcustom treemacs-dotfiles-regex (rx bol "." (1+ any))
-  "Files matching this regular expression count as dotfiles."
+  "Files matching this regular expression count as dotfiles.
+This controls the matching behaviour of `treemacs-toggle-show-dotfiles'."
   :type 'regexp
+  :group 'treemacs)
+
+(defcustom treemacs-hide-dot-git-directory t
+  "Indicates whether the .git directory should be hidden.
+When this is non-nil the .git dir will be hidden regardless of current setting
+of `treemacs-toggle-show-dotfiles'."
+  :type 'list
   :group 'treemacs)
 
 (defcustom treemacs-sorting 'alphabetic-asc
@@ -572,7 +581,8 @@ Can be set to nil to use the default value."
 
 (defcustom treemacs-persist-file
   (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
-  "Path to the file treemacs uses to persist its state."
+  "Path to the file treemacs uses to persist its state.
+Can be set to nil to disable workspace persistence."
   :group 'treemacs
   :type 'string)
 
@@ -714,8 +724,8 @@ This is only relevant when using the deferred variant of git-mode."
 (defcustom treemacs-max-git-entries 5000
   "Maximum number of git status entries treemacs will process.
 Information for entries that number will be silently ignored.  The 'entries'
-refer to the lines output by `git status --porcelain --ignored'.  The limit does
-not apply to the simple `treemacs-git-mode.'"
+refer to the lines output by `git status --porcelain --ignored=matching'.
+The limit does not apply to the simple `treemacs-git-mode.'"
   :type 'number
   :group 'treemacs-git)
 
@@ -733,13 +743,14 @@ the python3 binary."
 
 (defcustom treemacs-git-command-pipe ""
   "Text to be appended to treemacs' git command.
-With `treemacs-git-mode' the command `git status --porcelain --ignored .' is
-run to fetch a directory's git information.  The content of this variable will
-be appended to this git command.  This might be useful in cases when the output
-produced by git is so large that it leads to palpable delays, while setting
-`treemacs-max-git-entries' leads to loss of information.  In such a scenario an
-additional filter statement (for example `| grep -v \"/vendor_dir/\"') can be
-used to reduce the size of the output to a manageable volume for treemacs."
+With `treemacs-git-mode' the command
+`git status --porcelain --ignored=matching .' is run to fetch a directory's git
+information.  The content of this variable will be appended to this git command.
+This might be useful in cases when the output produced by git is so large that
+it leads to palpable delays, while setting `treemacs-max-git-entries' leads to
+loss of information.  In such a scenario an additional filter statement (for
+example `| grep -v \"/vendor_dir/\"') can be used to reduce the size of the
+output to a manageable volume for treemacs."
   :type 'string
   :group 'treemacs-git)
 
@@ -815,6 +826,13 @@ constituent parts, or any other value acceptable for `header-line-format'."
 If set the value will be passed to `text-scale-increase'.  Both positive and
 negative values are possible."
   :type 'integer
+  :group 'treemacs-window)
+
+(defcustom treemacs-header-scroll-indicators '(nil . "^^^^^^")
+  "The strings used for `treemacs-indicate-top-scroll-mode'.
+The value must be a cons, where the car is the string used when treemacs is
+scrolled all the way to the top, and the cdr is used when it isn't."
+  :type '(cons string string)
   :group 'treemacs-window)
 
 (defcustom treemacs-select-when-already-in-treemacs 'move-back

@@ -1,19 +1,16 @@
-;;; magit-blame.el --- blame support for Magit  -*- lexical-binding: t -*-
+;;; magit-blame.el --- Blame support for Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2012-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -226,6 +223,20 @@ Also see option `magit-blame-styles'."
   "Face used for dates when blaming."
   :group 'magit-faces)
 
+;;; Variables
+
+(defvar-local magit-blame-buffer-read-only nil)
+(defvar-local magit-blame-cache nil)
+(defvar-local magit-blame-disabled-modes nil)
+(defvar-local magit-blame-process nil)
+(defvar-local magit-blame-recursive-p nil)
+(defvar-local magit-blame-type nil)
+(defvar-local magit-blame-separator nil)
+(defvar-local magit-blame-previous-chunk nil)
+
+(defvar-local magit-blame--make-margin-overlays nil)
+(defvar-local magit-blame--style nil)
+
 ;;; Chunks
 
 (defclass magit-blame-chunk ()
@@ -258,7 +269,10 @@ Also see option `magit-blame-styles'."
                                 (magit-blame-arguments))
                               "-L" line rev "--" file)
                              (goto-char (point-min))
-                             (car (magit-blame--parse-chunk type)))))
+                             (if (eobp)
+                                 (unless noerror
+                                   (error "Cannot get blame chunk at eob"))
+                               (car (magit-blame--parse-chunk type))))))
                    (noerror nil)
                    (t (error "Buffer does not visit a tracked file")))))))
 
@@ -304,23 +318,6 @@ in `magit-blame-read-only-mode-map' instead.")
   "Keymap for `magit-blame-read-only-mode'.")
 
 ;;; Modes
-;;;; Variables
-
-(defvar-local magit-blame-buffer-read-only nil)
-(defvar-local magit-blame-cache nil)
-(defvar-local magit-blame-disabled-modes nil)
-(defvar-local magit-blame-process nil)
-(defvar-local magit-blame-recursive-p nil)
-(defvar-local magit-blame-type nil)
-(defvar-local magit-blame-separator nil)
-(defvar-local magit-blame-previous-chunk nil)
-
-(defvar-local magit-blame--make-margin-overlays nil)
-(defvar-local magit-blame--style nil)
-
-(defsubst magit-blame--style-get (key)
-  (cdr (assoc key (cdr magit-blame--style))))
-
 ;;;; Base Mode
 
 (define-minor-mode magit-blame-mode
@@ -538,6 +535,9 @@ modes is toggled, then this mode also gets toggled automatically.
 
 ;;; Display
 
+(defsubst magit-blame--style-get (key)
+  (cdr (assoc key (cdr magit-blame--style))))
+
 (defun magit-blame--make-overlays (buf chunk revinfo)
   (with-current-buffer buf
     (save-excursion
@@ -718,7 +718,7 @@ modes is toggled, then this mode also gets toggled automatically.
 (defun magit-blame--format-time-string (time tz)
   (let* ((time-format (or (magit-blame--style-get 'time-format)
                           magit-blame-time-format))
-         (tz-in-second (and (string-match "%z" time-format)
+         (tz-in-second (and (string-search "%z" time-format)
                             (car (last (parse-time-string tz))))))
     (format-time-string time-format
                         (seconds-to-time (string-to-number time))
@@ -963,9 +963,9 @@ instead of the hash, like `kill-ring-save' would."
 ;;; Utilities
 
 (defun magit-blame-maybe-update-revision-buffer ()
-  (when-let ((chunk  (magit-current-blame-chunk))
-             (commit (oref chunk orig-rev))
-             (buffer (magit-get-mode-buffer 'magit-revision-mode nil t)))
+  (when-let* ((chunk  (magit-current-blame-chunk))
+              (commit (oref chunk orig-rev))
+              (buffer (magit-get-mode-buffer 'magit-revision-mode nil t)))
     (if magit--update-revision-buffer
         (setq magit--update-revision-buffer (list commit buffer))
       (setq magit--update-revision-buffer (list commit buffer))

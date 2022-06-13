@@ -903,6 +903,17 @@
     (telephone-line-evil-emacs      (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-emacs))
     (telephone-line-projectile      (:foreground var))
 
+    ;; N Λ N O Modeline
+    (nano-modeline-active           (:inherit 'mode-line))
+    (nano-modeline-active-name      (:background line-bg1 :foreground functions))
+    (nano-modeline-active-primary   (:background line-bg1 :foreground str))
+    (nano-modeline-active-secondary (:background line-bg1 :foreground var))
+    (nano-modeline-active-status-** (:background line-bg2 :foreground warning))
+    (nano-modeline-active-status-RO (:background line-bg2 :foreground err))
+    (nano-modeline-active-status-RW (:background line-bg2 :foreground line-fg))
+    (nano-modeline-inactive         (:inherit 'mode-line-inactive))
+
+
     ;; Doom-modeline
     (doom-modeline-bar                 (:background keyword))
     (doom-modeline-inactive-bar        (:background line-bg1))
@@ -976,8 +987,8 @@
     (company-tooltip-annotation       (:foreground doc))
     (company-tooltip-search           (:background hl :foreground bg1 :distant-foreground fg1))
     (company-tooltip-search-selection (:background selection))
-    (company-scrollbar-bg             (:background company-scroll-bg))
-    (company-scrollbar-fg             (:background company-scroll-fg))
+    (company-tooltip-scrollbar-track  (:background company-scroll-bg))
+    (company-tooltip-scrollbar-thumb  (:background company-scroll-fg))
     (company-template-field           (:foreground comment :underline t))
     (company-echo-common              (:background bg1 :foreground diff-mod))
     (company-preview                  (:background nil :foreground keyword))

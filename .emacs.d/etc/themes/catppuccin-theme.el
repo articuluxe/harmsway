@@ -26,25 +26,29 @@
   (red        "#F28FAD" "#ff87af")
   (peach      "#F8BD96" "#ffaf87")
   (yellow     "#FAE3B0" "#ffd7af")
-  (green      "#ABE9B3" "#afd7af")
+  (green      "#ABE9B3" "#87afaf")
   (teal       "#B5E8E0" "#afd7d7")
-  (blue       "#96CDFB" "#afd7ff")
+  (blue       "#96CDFB" "#00d7ff")
   (sky        "#89DCEB" "#afffff")
   (lavender   "#C9CBFF" "#d7d7ff")
 
   ;; Dark - monochrome:ish
-  (dark       "#0C0A10" "#000000")
-  (black      "#15121C" "#080808")
-  (black-1    "#1B1923" "#080808")
-  (black-2    "#1E1E28" "#121212")
-  (black-3    "#332E41" "#303030")
-  (black-4    "#575268" "#4e4e4e")
-  (gray       "#6E6C7E" "#585858")
-  (gray-1     "#988BA2" "#8a8a8a")
-  (gray-2     "#C3BAC6" "#9e9e9e")
-  (white      "#DFDEF1" "#eeeeee")
-  (yellow-bg  "#383227" "#875f5f")
-
+  (dark        "#0C0A10" "#000000")
+  (black       "#15121C" "#080808")
+  (black-1     "#1B1923" "#080808")
+  (black-2     "#1E1E28" "#121212")
+  (black-3     "#332E41" "#303030")
+  (black-4     "#575268" "#4e4e4e")
+  (gray        "#6E6C7E" "#585858")
+  (gray-1      "#988BA2" "#8a8a8a")
+  (gray-2      "#C3BAC6" "#9e9e9e")
+  (white       "#DFDEF1" "#eeeeee")
+  (blue-bg     "#0C121A" "#875f5f")
+  (red-bg      "#18090E" "#875f5f")
+  (yellow-bg   "#383227" "#875f5f")
+  (blue-bg-2   "#243341" "#875f5f")
+  (red-bg-2    "#18090E" "#875f5f")
+  (yellow-bg-2 "#383227" "#875f5f")
   )
 
  ;; Customize faces
@@ -75,7 +79,7 @@
   (mode-line-highlight                  (:foreground flamingo))
   (mode-line-buffer-id                  (:foreground green :bold t))
   (numbers                              (:background green :foreground black))
-  (region                               (:background rosewater :foreground black-2))
+  (region                               (:background black-4))
   (separator-line                       (:background black-2))
   (shadow                               (:background black))
   (success                              (:foreground green))
@@ -85,28 +89,32 @@
   (window-divider-first-pixel           (:foreground black-2))
   (window-divider-last-pixel            (:background black-2))
 
-  ;; Font lock
+  ;; ;; Font lock
   (font-lock-type-face                  (:foreground lavender))
   (font-lock-regexp-grouping-backslash  (:foreground yellow))
   (font-lock-keyword-face               (:bold t :foreground maroon))
   (font-lock-warning-face               (:foreground red))
   (font-lock-constant-face              (:foreground lavender))
-  (font-lock-string-face                (:foreground green))
+  (font-lock-string-face                (:foreground green :italic t))
   (font-lock-builtin-face               (:foreground yellow))
   (font-lock-reference-face				(:foreground sky))
   (font-lock-constant-face              (:foreground flamingo))
   (font-lock-function-name-face         (:foreground blue))
   (font-lock-variable-name-face         (:foreground mauve))
   (font-lock-negation-char-face         (:foreground red))
-  (font-lock-comment-face               (:foreground gray))
-  (font-lock-comment-delimiter-face     (:foreground gray))
+  (font-lock-comment-face               (:foreground gray :italic t))
+  (font-lock-comment-delimiter-face     (:foreground gray :italic t))
   (font-lock-doc-face                   (:foreground gray))
   (font-lock-doc-markup-face            (:foreground gray))
   (font-lock-preprocessor-face	   		(:foreground gray))
   (elisp-shorthand-font-lock-face       (:foreground peach))
 
-  (info-xref                            (:foreground yellow))
+  (highlight-operators-face             (:foreground red))
   (highlight-quoted-symbol              (:foreground maroon))
+  (highlight-numbers-face               (:foreground pink))
+  (highlight-symbol-face                (:background red-bg :foreground red :weight 'semi-bold))
+  (info-xref                            (:foreground yellow))
+  
   (minibuffer-prompt-end                (:background dark :foreground peach))
   (minibuffer-prompt                    (:foreground peach :background black))
   (epa-mark                             (:foreground pink))
@@ -144,6 +152,7 @@
   (doom-modeline-bar                    (:bold t :background lavender))
   (doom-modeline-panel                  (:inherit 'bold :background flamingo :foreground black-2))
 
+
   ;;elfeed
   (elfeed-search-feed-face              (:foreground lavender))
   (elfeed-search-tag-face               (:foreground green))
@@ -161,6 +170,7 @@
   ;; org-mode
   (org-done                             (:foreground gray-1))
   (org-code                             (:background black))
+  (org-meta-line                        (:background blue-bg :foreground blue))
   (org-block                            (:background black))
   (org-block-begin-line                 (:background black :foreground gray-1))
   (org-block-end-line	                (:background black :foreground gray-1))
@@ -227,23 +237,23 @@
   (show-paren-match-expression					(:background peach :foreground dark :bold t))
   (show-paren-mismatch							(:background red :foreground white))
 
-  (tooltip (:background black))
+  (company-tooltip                          (:background black-3 :foreground white))
+  (company-box                              (:background black-3 :foreground white))
+  (company-tooltip-common                   (:foreground yellow))
+  (company-tooltip-search                   (:background red :foreground black :distant-foreground rosewater))
+  (company-tooltip-selection                (:background black-4 :foreground red :bold t))
+  (company-tooltip-mouse                    (:background red :foreground black :distant-foreground rosewater))
+  (company-tooltip-annotation               (:foreground green))
+  (company-tooltip-scrollbar-track          (:background black-4))
+  (company-tooltip-scrollbar-thumb          (:background flamingo))
+  (company-scrollbar-bg                     (:inherit 'tooltip))
+  (company-scrollbar-fg                     (:background red))
+  (company-preview                          (:foreground yellow))
+  (company-preview-common                   (:background red :foreground black))
+  (company-preview-search                   (:inherit 'company-tooltip-search))
+  (company-template-field                   (:inherit 'match))
 
-  ;; company-box  (company-tooltip            :inherit 'tooltip)
-  (company-tooltip			  (:background black))
-  (company-box				  (:background black))
-  (company-tooltip-common     (:foreground yellow))
-  (company-tooltip-search     (:background red :foreground black :distant-foreground rosewater))
-  (company-tooltip-selection  (:background black-4 :foreground red :bold t))
-  (company-tooltip-mouse      (:background red :foreground black :distant-foreground rosewater))
-  (company-tooltip-annotation (:foreground green))
-  (company-scrollbar-bg       (:inherit 'tooltip))
-  (company-scrollbar-fg       (:background red))
-  (company-preview            (:foreground yellow))
-  (company-preview-common     (:background red :foreground black))
-  (company-preview-search     (:inherit 'company-tooltip-search))
-  (company-template-field     (:inherit 'match))
-
+  ;; Flycheck
   (flycheck-posframe-background-face	(:background black))
   (flycheck-posframe-face				(:background black))
   (flycheck-posframe-info-face  		(:background black :foreground teal))
@@ -255,6 +265,9 @@
   (flycheck-error-list-warning          (:foreground yellow :bold t))
   (flycheck-error-list-error            (:foreground red :bold t))
   (flycheck-error-list-info             (:foreground blue :bold t))
+  (flycheck-inline-error                (:foreground red-bg :background red :weight 'semi-bold :height 128 :box '(:line-width 1 :color red-bg)))
+  (flycheck-inline-info                 (:foreground blue-bg :background blue :weight 'semi-bold :height 128 :box '(:line-width 1 :color blue-bg)))
+  (flycheck-inline-warning              (:foreground yellow-bg :background yellow :weight 'semi-bold :height 128 :box '(:line-width 1 :color yellow-bg)))
 
   ;; indent dots
   (highlight-indent-guides-character-face       (:foreground black-3))
@@ -290,10 +303,6 @@
   (treemacs-git-unmodified-face		   			(:foreground rosewater))
   (treemacs-git-renamed-face		   			(:foreground rosewater))
   (treemacs-git-modified-face		   			(:foreground maroon))
-
-  (tree-sitter-hl-face:constant					(:background red))
-  (tree-sitter-hl-face:constant.builtin			(:background red))
-  (tree-sitter-hl-face:function.call			(:background mauve))
 
   ;; lets support solaire mode
   (solaire-default-face (:background black-1))
@@ -332,23 +341,27 @@
   (evil-ex-substitute-replacement (:foreground peach :strike-through nil :inherit 'evil-ex-substitute-matches))
   (evil-search-highlight-persist-highlight-face (:background yellow))
 
-  (term (:background dark :foreground dark))
-  (term-color-blue (:background blue :foreround blue))
+  (ansi-color-black (:background black-2))
+
+  (term (:background black-2 :foreground rosewater))
+  (term-color-blue (:background blue :foreground blue))
   (term-color-bright-blue (:inherit 'term-color-blue))
-  (term-color-green (:background green :foreround green))
-  (term-color-bright-green (:inherit 'term-color-green))
-  (term-color-black (:background dark :foreground black))
-  (term-color-bright-black (:background black-1 :foreground black-1))
-  (term-color-white (:background rosewater :foreground rosewater))
-  (term-color-bright-white (:background white :foreground white))
   (term-color-red (:background red :foreground red))
   (term-color-bright-red (:background maroon :foreground maroon))
   (term-color-yellow (:background yellow :foreground yellow))
   (term-color-bright-yellow (:background yellow :foreground yellow))
+
+  (term-color-green (:background green :foreground green))
+  (term-color-bright-green (:inherit 'term-color-green))
+
+  (term-color-bright-black (:background black-1 :foreground red))
+  (term-color-white (:background rosewater :foreground rosewater))
+  (term-color-bright-white (:background white :foreground white))
   (term-color-cyan (:background sky :foreground sky))
   (term-color-bright-cyan (:background sky :foreground sky))
   (term-color-magenta (:background mauve :foreground mauve))
   (term-color-bright-magenta (:background mauve :foreground mauve))
+  (term-underline (:background mauve :foreground blue))
 
   (popup-face (:inherit 'tooltip))
   (popup-selection-face (:inherit 'tooltip))
@@ -374,6 +387,10 @@
   (hydra-face-red			(:foreground red))
   (hydra-face-teal			(:foreground teal))
 
+  ;; Bookmarks
+  (bm-fringe-face                           (:background red :foreground black))
+  (bm-fringe-persistent-face                (:background red :foreground black))
+
   (centaur-tabs-active-bar-face				(:background black-2 :foreground rosewater))
   (centaur-tabs-selected					(:background black-2 :foreground rosewater :bold t))
   (centaur-tabs-selected-modified			(:background black-2 :foreground rosewater))
@@ -388,6 +405,60 @@
   (centaur-tabs-close-mouse-face			(:background nil :foreground red))
   (centaur-tabs-default						(:background black-1))
   (centaur-tabs-name-mouse-face				(:foreground blue :bold t))
+
+  (git-gutter:added                              (:foreground green))
+  (git-gutter:deleted                            (:foreground red))
+  (git-gutter:modified                           (:foreground blue))
+  
+  (tree-sitter-hl-face:attribute                 (:foreground blue))
+  (tree-sitter-hl-face:escape                    (:foreground blue))
+  (tree-sitter-hl-face:constructor               (:foreground red :weight 'semi-bold))
+  
+  (tree-sitter-hl-face:constant                  (:foreground yellow))
+  (tree-sitter-hl-face:constant.builtin          (:foreground yellow :weight 'semi-bold))
+
+  (tree-sitter-hl-face:embedded                  (:foreground lavender))
+  
+  (tree-sitter-hl-face:function                  (:foreground peach))
+  (tree-sitter-hl-face:function.builtin          (:foreground peach))
+  (tree-sitter-hl-face:function.call             (:foreground mauve))
+  (tree-sitter-hl-face:function.macro            (:foreground blue))
+  (tree-sitter-hl-face:function.special          (:foreground peach))
+  (tree-sitter-hl-face:function.label            (:foreground peach))
+ 
+  (tree-sitter-hl-face:method                    (:foreground lavender))
+  (tree-sitter-hl-face:method.call               (:foreground lavender))
+
+  (tree-sitter-hl-face:property                  (:foreground flamingo))
+  (tree-sitter-hl-face:property.definition       (:foreground flamingo :italic t))
+  
+  (tree-sitter-hl-face:tag                       (:foreground yellow))
+
+  (tree-sitter-hl-face:type                      (:foreground mauve :bold t))
+  (tree-sitter-hl-face:type.argument             (:foreground mauve :bold t))
+  (tree-sitter-hl-face:type.builtin              (:foreground mauve))
+  (tree-sitter-hl-face:type.parameter            (:foreground mauve))
+  (tree-sitter-hl-face:type.super                (:foreground mauve :bold t))
+
+  (tree-sitter-hl-face:variable                  (:foreground rosewater :italic t))
+  (tree-sitter-hl-face:variable.builtin          (:foreground rosewater))
+  (tree-sitter-hl-face:variable.parameter        (:foreground rosewater :italic t))
+  (tree-sitter-hl-face:variable.special          (:foreground rosewater))
+  (tree-sitter-hl-face:variable.synthesized      (:foreground rosewater))
+
+  (tree-sitter-hl-face:number                    (:foreground pink))
+  (tree-sitter-hl-face:operator                  (:foreground pink :bold t))
+  
+  (tree-sitter-hl-face:punctuation               (:foreground red))
+  (tree-sitter-hl-face:punctuation.bracket       (:foreground red :bold t))
+  (tree-sitter-hl-face:punctuation.delimiter     (:foreground red :bold t))
+  (tree-sitter-hl-face:punctuation.special       (:foreground red))
+
+  (tree-sitter-hl-face:case-pattern              (:foreground red))
+  (tree-sitter-hl-face:variable.synthesized      (:foreground red))
+  (tree-sitter-hl-face:keyword.compiler          (:foreground red :bold t :italic t))
+
+  (doom-themes-visual-bell                       (:background red))
  ))
 
 ;;;###autoload

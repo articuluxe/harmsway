@@ -1,27 +1,24 @@
-;;; git-rebase.el --- Edit Git rebase files  -*- lexical-binding: t -*-
+;;; git-rebase.el --- Edit Git rebase files  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Phil Jackson <phil@shellarchive.co.uk>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
-
-;; This file is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
+;; Magit is free software: you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; Magit is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+;; License for more details.
+;;
 ;; You should have received a copy of the GNU General Public License
-;; along with this file.  If not, see <http://www.gnu.org/licenses/>.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -160,8 +157,8 @@
     (define-key map (kbd "b")   #'git-rebase-break)
     (define-key map (kbd "e")   #'git-rebase-edit)
     (define-key map (kbd "l")   #'git-rebase-label)
-    (define-key map (kbd "MM")  #'git-rebase-merge)
-    (define-key map (kbd "Mt")  #'git-rebase-merge-toggle-editmsg)
+    (define-key map (kbd "M M") #'git-rebase-merge)
+    (define-key map (kbd "M t") #'git-rebase-merge-toggle-editmsg)
     (define-key map (kbd "m")   #'git-rebase-edit)
     (define-key map (kbd "f")   #'git-rebase-fixup)
     (define-key map (kbd "q")   #'undefined)
@@ -318,7 +315,7 @@ instance with all nil values is returned."
                              git-rebase-line-regexps)))
         (git-rebase-action
          :action-type    type
-         :action         (when-let ((action (match-string-no-properties 1)))
+         :action         (and-let* ((action (match-string-no-properties 1)))
                            (or (cdr (assoc action git-rebase-short-options))
                                action))
          :action-options (match-string-no-properties 2)
@@ -639,15 +636,15 @@ Like `undo' but works in read-only buffers."
     (undo arg)))
 
 (defun git-rebase--show-commit (&optional scroll)
-  (let ((disable-magit-save-buffers t))
+  (let ((magit--disable-save-buffers t))
     (save-excursion
       (goto-char (line-beginning-position))
       (--if-let (with-slots (action-type target) (git-rebase-current-line)
                   (and (eq action-type 'commit)
                        target))
           (pcase scroll
-            (`up   (magit-diff-show-or-scroll-up))
-            (`down (magit-diff-show-or-scroll-down))
+            ('up   (magit-diff-show-or-scroll-up))
+            ('down (magit-diff-show-or-scroll-down))
             (_     (apply #'magit-show-commit it
                           (magit-diff-arguments 'magit-revision-mode))))
         (ding)))))
@@ -689,10 +686,10 @@ Like `forward-line' but go into the opposite direction."
 (define-derived-mode git-rebase-mode special-mode "Git Rebase"
   "Major mode for editing of a Git rebase file.
 
-Rebase files are generated when you run 'git rebase -i' or run
+Rebase files are generated when you run \"git rebase -i\" or run
 `magit-interactive-rebase'.  They describe how Git should perform
 the rebase.  See the documentation for git-rebase (e.g., by
-running 'man git-rebase' at the command line) for details."
+running \"man git-rebase\" at the command line) for details."
   :group 'git-rebase
   (setq comment-start (or (magit-get "core.commentChar") "#"))
   (setq git-rebase-comment-re (concat "^" (regexp-quote comment-start)))
@@ -786,26 +783,39 @@ By default, this is the same except for the \"pick\" command."
                   nil t))
         (goto-char (line-beginning-position))
         (pcase-dolist (`(,cmd . ,desc) git-rebase-command-descriptions)
-          (insert (format "%s %-8s %s\n"
+          (insert (format (propertize "%s %s %s\n"
+                                      'font-lock-face 'font-lock-comment-face)
                           comment-start
-                          (substitute-command-keys (format "\\[%s]" cmd))
+                          (string-pad
+                           (substitute-command-keys (format "\\[%s]" cmd)) 8)
                           desc)))
-        (while (re-search-forward (concat git-rebase-comment-re
-                                          "\\(  ?\\)\\([^\n,],\\) "
-                                          "\\([^\n ]+\\) ")
-                                  nil t)
-          (let ((cmd (intern (concat "git-rebase-" (match-string 3)))))
-            (if (not (fboundp cmd))
-                (delete-region (line-beginning-position) (1+ (line-end-position)))
-              (replace-match " " t t nil 1)
-              (replace-match
-               (format "%-8s"
-                       (mapconcat #'key-description
-                                  (--remove (eq (elt it 0) 'menu-bar)
-                                            (reverse (where-is-internal
-                                                      cmd git-rebase-mode-map)))
-                                  ", "))
-               t t nil 2))))))))
+        (while (re-search-forward
+                (concat git-rebase-comment-re "\\(?:"
+                        "\\( \\.?     *\\)\\|"
+                        "\\( +\\)\\([^\n,],\\) \\([^\n ]+\\) \\)")
+                nil t)
+          (if (match-string 1)
+              (replace-match (make-string 10 ?\s) t t nil 1)
+            (let ((cmd (intern (concat "git-rebase-" (match-string 4)))))
+              (if (not (fboundp cmd))
+                  (delete-region (line-beginning-position)
+                                 (1+ (line-end-position)))
+                (add-text-properties (line-beginning-position)
+                                     (1+ (line-end-position))
+                                     '(font-lock-face font-lock-comment-face))
+                (replace-match " " t t nil 2)
+                (replace-match
+                 (string-pad
+                  (mapconcat (lambda (key)
+                               (save-match-data
+                                 (substitute-command-keys
+                                  (format "\\`%s'" (key-description key)))))
+                             (cl-remove-if (lambda (key) (eq (elt key 0) 'menu-bar))
+                                           (reverse (where-is-internal
+                                                     cmd git-rebase-mode-map)))
+                             ", ")
+                  8)
+                 t t nil 3)))))))))
 
 (add-hook 'git-rebase-mode-hook #'git-rebase-mode-show-keybindings t)
 

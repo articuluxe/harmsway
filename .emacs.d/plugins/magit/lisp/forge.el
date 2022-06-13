@@ -1,27 +1,26 @@
-;;; forge.el --- Access Git forges from Magit     -*- lexical-binding: t -*-
+;;; forge.el --- Access Git forges from Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/magit/forge
 ;; Keywords: git tools vc
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -79,6 +78,11 @@ If you want to disable this, then you must set this to nil before
 If you want to disable this, then you must set this to nil before
 `magit' is loaded.  If you do it before `forge' but after `magit'
 is loaded, then `magit-mode-map' ends up being modified anyway.")
+
+;;;###autoload
+(with-eval-after-load 'git-commit
+  (when forge-add-default-bindings
+    (define-key git-commit-mode-map (kbd "C-c C-v") #'forge-visit-topic)))
 
 ;;;###autoload
 (with-eval-after-load 'magit-mode

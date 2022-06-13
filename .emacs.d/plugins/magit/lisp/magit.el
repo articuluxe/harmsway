@@ -1,42 +1,49 @@
-;;; magit.el --- A Git porcelain inside Emacs  -*- lexical-binding: t; coding: utf-8 -*-
+;;; magit.el --- A Git porcelain inside Emacs  -*- lexical-binding:t; coding:utf-8 -*-
 
-;; Copyright (C) 2008-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Marius Vollmer <marius.vollmer@gmail.com>
-;;      Jonas Bernoulli <jonas@bernoul.li>
+;;     Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
-;;      Kyle Meyer <kyle@kyleam.com>
-;;      Noam Postavsky <npostavs@users.sourceforge.net>
+;;     Kyle Meyer <kyle@kyleam.com>
 ;; Former-Maintainers:
-;;      Nicolas Dudebout <nicolas.dudebout@gatech.edu>
-;;      Peter J. Weisberg <pj@irregularexpressions.net>
-;;      Phil Jackson <phil@shellarchive.co.uk>
-;;      Rémi Vanicat <vanicat@debian.org>
-;;      Yann Hodique <yann.hodique@gmail.com>
+;;     Nicolas Dudebout <nicolas.dudebout@gatech.edu>
+;;     Noam Postavsky <npostavs@users.sourceforge.net>
+;;     Peter J. Weisberg <pj@irregularexpressions.net>
+;;     Phil Jackson <phil@shellarchive.co.uk>
+;;     Rémi Vanicat <vanicat@debian.org>
+;;     Yann Hodique <yann.hodique@gmail.com>
 
-;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
-;; Package-Requires: ((emacs "25.1") (dash "2.19.1") (git-commit "3.3.0") (magit-section "3.3.0") (transient "0.3.6") (with-editor "3.0.5"))
+;; Keywords: git tools vc
+
 ;; Package-Version: 3.3.0-git
+;; Package-Requires: (
+;;     (emacs "25.1")
+;;     (compat "28.1.1.0")
+;;     (dash "2.19.1")
+;;     (git-commit "3.3.0")
+;;     (magit-section "3.3.0")
+;;     (transient "0.3.6")
+;;     (with-editor "3.0.5"))
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; Magit is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Magit is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; Magit is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Magit requires at least GNU Emacs 25.1 and Git 2.2.0.
+;; You should have received a copy of the AUTHORS.md file, which
+;; lists all contributors.  If not, see https://magit.vc/authors.
 
 ;;; Commentary:
 
@@ -64,6 +71,22 @@
 (require 'format-spec)
 (require 'package nil t) ; used in `magit-version'
 (require 'with-editor)
+
+;; For `magit:--gpg-sign'
+(declare-function epg-list-keys "epg" (context &optional name mode))
+(declare-function epg-decode-dn "epg" (alist))
+
+;;; Options
+
+(defcustom magit-openpgp-default-signing-key nil
+  "Fingerprint of your default Openpgp key used for signing.
+If the specified primary key has signing capacity then it is used
+as the value of the `--gpg-sign' argument without prompting, even
+when other such keys exist.  To be able to select another key you
+must then use a prefix argument."
+  :package-version '(magit . "3.4.0")
+  :group 'magit-commands
+  :type 'string)
 
 ;;; Faces
 
@@ -445,12 +468,11 @@ is run in the top-level directory of the current working tree."
   (magit--shell-command command (magit-toplevel)))
 
 (defun magit--shell-command (command &optional directory)
-  (let ((default-directory (or directory default-directory))
-        (process-environment process-environment))
-    (push "GIT_PAGER=cat" process-environment)
-    (magit--with-connection-local-variables
-     (magit-start-process shell-file-name nil
-                          shell-command-switch command)))
+  (let ((default-directory (or directory default-directory)))
+    (with-environment-variables (("GIT_PAGER" "cat"))
+      (magit--with-connection-local-variables
+       (magit-start-process shell-file-name nil
+                            shell-command-switch command))))
   (magit-process-buffer))
 
 (defun magit-read-shell-command (&optional toplevel initial-input)
@@ -464,6 +486,58 @@ is run in the top-level directory of the current working tree."
                                     (abbreviate-file-name default-directory))
                           "Async shell command: ")
                         initial-input 'magit-git-command-history)))
+
+;;; Shared Infix Arguments
+
+(transient-define-argument magit:--gpg-sign ()
+  :description "Sign using gpg"
+  :class 'transient-option
+  :shortarg "-S"
+  :argument "--gpg-sign="
+  :allow-empty t
+  :reader #'magit-read-gpg-signing-key)
+
+(defvar magit-gpg-secret-key-hist nil)
+
+(defun magit-read-gpg-secret-key
+    (prompt &optional initial-input history predicate default)
+  (require 'epa)
+  (let* ((keys (cl-mapcan
+                (lambda (cert)
+                  (and (or (not predicate)
+                           (funcall predicate cert))
+                       (let* ((key (car (epg-key-sub-key-list cert)))
+                              (fpr (epg-sub-key-fingerprint key))
+                              (id  (epg-sub-key-id key))
+                              (author
+                               (and-let* ((id-obj
+                                           (car (epg-key-user-id-list cert))))
+                                 (let ((id-str (epg-user-id-string id-obj)))
+                                   (if (stringp id-str)
+                                       id-str
+                                     (epg-decode-dn id-obj))))))
+                         (list
+                          (propertize fpr 'display
+                                      (concat (substring fpr 0 (- (length id)))
+                                              (propertize id 'face 'highlight)
+                                              " " author))))))
+                (epg-list-keys (epg-make-context epa-protocol) nil t)))
+         (choice (or (and (not current-prefix-arg)
+                          (or (and (length= keys 1) (car keys))
+                              (and default (car (member default keys)))))
+                     (completing-read prompt keys nil nil nil
+                                      history nil initial-input))))
+    (set-text-properties 0 (length choice) nil choice)
+    choice))
+
+(defun magit-read-gpg-signing-key (prompt &optional initial-input history)
+  (magit-read-gpg-secret-key
+   prompt initial-input history
+   (lambda (cert)
+     (cl-some (lambda (key)
+                (memq 'sign (epg-sub-key-capability key)))
+              (epg-key-sub-key-list cert)))
+   magit-openpgp-default-signing-key))
 
 ;;; Font-Lock Keywords
 
@@ -611,7 +685,7 @@ and Emacs to it."
      ;; See comment above.
      "https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike"))
   ;; Git isn't required while building Magit.
-  (unless byte-compile-current-file
+  (unless (bound-and-true-p byte-compile-current-file)
     (magit-git-version-assert))
   (when (version< emacs-version magit--minimal-emacs)
     (display-warning 'magit (format "\
@@ -667,7 +741,7 @@ For X11 something like ~/.xinitrc should work.\n"
 (with-eval-after-load 'bookmark
   (require 'magit-bookmark))
 
-(unless byte-compile-current-file
+(unless (bound-and-true-p byte-compile-current-file)
   (if after-init-time
       (progn (magit-startup-asserts)
              (magit-version))

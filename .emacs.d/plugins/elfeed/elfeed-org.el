@@ -34,6 +34,7 @@
 
 (require 'elfeed)
 (require 'org)
+(require 'org-element)
 (require 'dash)
 (require 's)
 (require 'cl-lib)
@@ -217,8 +218,9 @@ all.  Which in my opinion makes the process more traceable."
            (> (length headline) 1))
       (progn
         (add-to-list 'elfeed-feeds (butlast headline))
-        (let ((feed (elfeed-db-get-feed (car headline))))
-          (setf (elfeed-meta feed :title) (car (last headline)))
+        (let ((feed (elfeed-db-get-feed (car headline)))
+              (title (substring-no-properties (car (last headline)))))
+          (setf (elfeed-meta feed :title) title)
           (elfeed-meta feed :title)))
     (add-to-list 'elfeed-feeds headline)))
 
@@ -318,7 +320,8 @@ Argument ORG-BUFFER the buffer to write the OPML content to."
             (if url
                 (setq opml-outline (format "  %s<outline title=\"%s\" xmlUrl=\"%s\"/>\n"
                                            (make-string (* 2 current-level) ? )
-                                           title (xml-escape-string url)))
+                                           (xml-escape-string title)
+                                           (xml-escape-string url)))
               (unless (s-starts-with? "entry-title" heading)
                 (unless (member rmh-elfeed-org-tree-id tags)
                   ;; insert category title only when it is neither the top
@@ -327,7 +330,7 @@ Argument ORG-BUFFER the buffer to write the OPML content to."
                     (push current-level need-ends)
                     (setq opml-outline (format "  %s<outline title=\"%s\">\n"
                                                (make-string (* 2 current-level) ? )
-                                               title))))))
+                                               (xml-escape-string title)))))))
             (setq opml-body (concat opml-body opml-outline))))))
 
     ;; fill missing end outlines at end

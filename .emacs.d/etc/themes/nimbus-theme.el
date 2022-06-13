@@ -439,6 +439,10 @@
    `(ediff-odd-diff-B ((t (:background "#171723"))))
    `(ediff-odd-diff-C ((t (:background "#171723"))))
 
+   ;; eglot
+   `(eglot-highlight-symbol-face ((t (:inherit highlight))))
+   `(eglot-diagnostic-tag-unnecessary-face ((t (:underline (:color ,nimbus-warn :style wave)))))
+
    ;; elfeed
    `(elfeed-log-debug-level-face ((t (:foreground ,blue))))
    `(elfeed-log-error-level-face ((t (:inherit error))))
@@ -522,6 +526,7 @@
    ;; git
    `(git-commit-summary ((t (:foreground ,summary))))
    `(git-commit-comment-action ((t (:foreground ,orange))))
+   `(git-commit-comment-file ((t (:foreground ,file))))
    `(git-commit-comment-heading ((t (:foreground ,heading))))
 
    `(git-rebase-comment-heading ((t (:foreground ,heading))))
@@ -751,6 +756,9 @@
    ;; linum-relative
    `(linum-relative-current-face ((t (:inherit line-number-current-line :background ,fringe))))
 
+   ;; lsp
+   `(lsp-face-highlight-read ((t (:inherit highlight))))
+
    ;; lsp-ui
    ;; This face seems to break once I set it.
    `(lsp-ui-doc-background ((t (:background ,light-purple-bg))))
@@ -780,7 +788,8 @@
 
    `(magit-diff-hunk-heading ((t (:inherit default :background ,dark-teal-bg))))
    `(magit-section-highlight ((t (:background ,hl-line))))
-   `(magit-diff-context-highlight ((t (:background ,gray-bg))))
+   `(magit-diff-context ((t (:foreground ,light-gray))))
+   `(magit-diff-context-highlight ((t (:foreground ,light-gray :background ,gray-bg))))
    `(magit-diff-file-heading-highlight ((t (:background ,hl-line :slant normal :underline nil))))
    `(magit-diff-hunk-heading-highlight ((t (:background ,teal-bg))))
    `(magit-diff-added-highlight ((t (:foreground ,diff-added :background ,darkest-gray))))
@@ -1030,6 +1039,11 @@
    `(ruler-mode-pad ((t (:foreground ,lighter-green))))
    `(ruler-mode-tab-stop ((t (:foreground ,blue))))
 
+   ;; rustic
+   `(rustic-cargo-outdated ((t (:inherit error))))
+   `(rustic-popup-key ((t (:foreground ,key))))
+   `(rustic-popup-section ((t (:foreground ,heading))))
+
    ;; secondary-selection
    `(secondary-selection ((t (:background ,red-bg))))
 
@@ -1151,7 +1165,7 @@
    `(web-mode-javascript-string-face ((t (:inherit font-lock-string-face))))
    `(web-mode-json-comment-face ((t (:inherit font-lock-comment-face))))
    `(web-mode-json-context-face ((t (:foreground ,purple))))
-   `(web-mode-json-key-face ((t (:foreground ,pink))))
+   `(web-mode-json-key-face ((t (:inherit font-lock-builtin-face))))
    `(web-mode-json-string-face ((t (:inherit font-lock-string-face))))
    `(web-mode-keyword-face ((t (:inherit font-lock-keyword-face))))
    `(web-mode-param-name-face ((t (:inherit font-lock-variable-name-face))))

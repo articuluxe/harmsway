@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t; -*-
-;; temporary experimental version of struan, while approaching tarp 2.0
+;; namesake: the Struan family, from James Clavell's Asian Saga series
 
 (require 'tarps)
 
@@ -12,7 +12,7 @@
                   (ct-make-hsluv 265 60 40) 60)
                 (-map (fn (tarp/nth <> it))
                   '(1 -1 2 3))
-                (-map (fn (ct-transform-hsluv-l <> 80)) it)
+                (-map (fn (ct-edit-hsluv-l <> 80)) it)
                 (-map
                   (fn (ct-tint-ratio <> background 4.3))
                   it)))
@@ -21,7 +21,7 @@
 
       (faded
         (ct-tint-ratio
-          (ct-transform-hsl
+          (ct-edit-hsl
             (ct-tint-ratio background background 5.5)
             ;; (nth 2 colors)
             (lambda (h s l) (list h 80 70)))
@@ -37,8 +37,8 @@
       (:alt (nth 2 colors))
       (:strings
         (-> (nth 3 colors)
-          (ct-transform-lch-l (-partial '+ 10))
-          (ct-transform-lch-c 100)
+          (ct-edit-lch-l (-partial '+ 10))
+          (ct-edit-lch-c 100)
           (ct-tint-ratio background 4.3))))))
 
 (let*
@@ -54,22 +54,20 @@
 
     (background>
       (-> background
-        (ct-iterate
-          'ct-lab-darken
+        (ct-iterate 'ct-edit-lab-l-dec
           (fn (> (ct-name-distance <> background) 4)))
-        (ct-transform-hsluv-h (ct-get-hsluv-h alt))))
+        (ct-edit-hsluv-h (ct-get-hsluv-h alt))))
 
     (background>>
       (-> background
-        (ct-iterate
-          'ct-lab-darken
+        (ct-iterate 'ct-edit-lab-l-dec
           (fn (> (ct-name-distance <> background) 7)))
-        (ct-transform-hsluv-h (ct-get-hsluv-h primary))))
+        (ct-edit-hsluv-h (ct-get-hsluv-h primary))))
 
     (background+
       (-> alt
-        (ct-transform-lch-c 25)
-        (ct-transform-hsluv-l
+        (ct-edit-lch-c 25)
+        (ct-edit-hsluv-l
           (ct-get-hsluv-l background>>)))))
 
   (setq tarp/theme*
@@ -89,24 +87,7 @@
       ;; strong emphasis
       (:strong (tarp/struan-get-colors background>>))))
 
-  ;; convienence
-  (defun tarp/get (label &optional emphasis )
-    (ht-get* tarp/theme* (or emphasis :normal) label))
-
-  ;; shim:
-  (setq tarp/theme
-    (ht-merge
-      (ht-get tarp/theme* :normal)
-      (ht
-        (:foreground+ (tarp/get :foreground :focused))
-        (:background+ (tarp/get :background :focused))
-        (:background_ (tarp/get :background :weak))
-        (:background__ (tarp/get :background :strong))
-        (:accent1  (tarp/get :primary))
-        (:accent1_ (tarp/get :assumed))
-        (:accent2  (tarp/get :alt))
-        (:accent2_ (tarp/get :strings))
-        (:foreground_ (tarp/get :faded))))))
+  (setq tarp/theme (ht-get tarp/theme* :normal)))
 
 (deftheme tarp-struan)
 (tarp/base16-theme-define 'tarp-struan)

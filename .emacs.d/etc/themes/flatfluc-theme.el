@@ -31,6 +31,8 @@
 
 ;;; Code:
 
+(defconst fui-hint-ice "#c7ecee")
+(defconst fuit-soaring-eagle "#95afc0")
 (defconst fui-turquoise "#1abc9c")
 (defconst fui-emerald "#2ecc71")
 (defconst fui-river "#3498db")
@@ -293,6 +295,9 @@
  `(org-checkbox ((t (:weight normal :foreground ,fui-dark-concrete))))
  `(org-mode-line-clock ((t (:background nil))))
  `(org-document-title ((t (:weight normal :foreground nil))))
+ `(org-block-begin-line ((t (:underline ,fui-dark-concrete :foreground ,fui-dark-river :background ,fui-hint-ice :weight bold))))
+ `(org-block ((t (:background ,fui-deep-clouds))))
+ `(org-block-end-line ((t (:overline ,fui-dark-concrete :foreground ,fui-dark-river :background ,fui-hint-ice :weight bold))))
 
  ;; ==== Message
  `(message-header-name ((t (:foreground ,fui-dark-concrete))))

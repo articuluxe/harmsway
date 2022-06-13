@@ -1,25 +1,24 @@
-;;; forge-github.el --- Github support            -*- lexical-binding: t -*-
+;;; forge-github.el --- Github support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -391,8 +390,7 @@
                   (owner  (oref repo owner))
                   (name   (oref repo name))
                   (id     (forge--object-id repoid (string-to-number .id)))
-                  (alias  (intern (concat "_" (replace-regexp-in-string
-                                               "=" "_" id)))))
+                  (alias  (intern (concat "_" (string-replace "=" "_" id)))))
              (list alias repo
                    `((,alias repository)
                      [(name ,name)
@@ -509,6 +507,9 @@
 
 (cl-defmethod forge--submit-create-pullreq ((_ forge-github-repository) repo)
   (let-alist (forge--topic-parse-buffer)
+    (when (and .yaml (local-variable-p 'forge--buffer-draft-p))
+      (user-error "Cannot use yaml frontmatter and set `%s' at the same time"
+                  'forge--buffer-draft-p))
     (pcase-let* ((`(,base-remote . ,base-branch)
                   (magit-split-branch-name forge--buffer-base-branch))
                  (`(,head-remote . ,head-branch)
@@ -525,8 +526,9 @@
                         head-branch
                       (concat (oref head-repo owner) ":"
                               head-branch)))
-          ;; KLUDGE for https://github.com/zkry/yaml.el/pull/28.
-          (draft . ,(if (eq .draft :false) nil .draft))
+          (draft . ,(if (local-variable-p 'forge--buffer-draft-p)
+                        forge--buffer-draft-p
+                      .draft))
           (maintainer_can_modify . t))
         :callback  (forge--post-submit-callback)
         :errorback (forge--post-submit-errorback)))))
@@ -628,7 +630,7 @@
 
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-issue)))
-  (when-let ((files (magit-revision-files (oref repo default-branch))))
+  (and-let* ((files (magit-revision-files (oref repo default-branch))))
     (let ((case-fold-search t))
       (if-let ((file (--first (string-match-p "\
 \\`\\(\\|docs/\\|\\.github/\\)issue_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)
@@ -647,7 +649,7 @@
 
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-pullreq)))
-  (when-let ((files (magit-revision-files (oref repo default-branch))))
+  (and-let* ((files (magit-revision-files (oref repo default-branch))))
     (let ((case-fold-search t))
       (if-let ((file (--first (string-match-p "\
 \\`\\(\\|docs/\\|\\.github/\\)pull_request_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)

@@ -1,25 +1,24 @@
-;;; forge-gitlab.el --- Gitlab support            -*- lexical-binding: t -*-
+;;; forge-gitlab.el --- Gitlab support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022  Jonas Bernoulli
+;; Copyright (C) 2018-2022 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is not part of GNU Emacs.
-
-;; Forge is free software; you can redistribute it and/or modify it
-;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; This file is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; Forge is distributed in the hope that it will be useful, but WITHOUT
-;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
-;; License for more details.
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Forge.  If not, see http://www.gnu.org/licenses.
+;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Code:
 
@@ -150,7 +149,8 @@
     (forge--glab-get repo "/projects/:project/issues"
       `((per_page . 100)
         (order_by . "updated_at")
-        (updated_after . ,(forge--topics-until repo until 'issue)))
+        ,@(and-let* ((after (forge--topics-until repo until 'issue)))
+            `((updated_after . ,after))))
       :unpaginate t
       :callback (lambda (value _headers _status _req)
                   (funcall cb cb value)))))
@@ -237,7 +237,8 @@
     (forge--glab-get repo "/projects/:project/merge_requests"
       `((per_page . 100)
         (order_by . "updated_at")
-        (updated_after . ,(forge--topics-until repo until 'pullreq)))
+        ,@(and-let* ((after (forge--topics-until repo until 'pullreq)))
+            `((updated_after . ,after))))
       :unpaginate t
       :callback (lambda (value _headers _status _req)
                   (funcall cb cb value)))))
@@ -275,7 +276,7 @@
   (let-alist (car cur)
     (forge--glab-get repo (format "/projects/%s" .target_project_id) nil
       :errorback (lambda (_err _headers _status _req)
-                   (setf (alist-get 'source_project (car cur)) nil)
+                   (setf (alist-get 'target_project (car cur)) nil)
                    (funcall cb cb))
       :callback (lambda (value _headers _status _req)
                   (setf (alist-get 'target_project (car cur)) value)
@@ -366,7 +367,7 @@
 (cl-defmethod forge--fetch-forks ((repo forge-gitlab-repository) callback)
   (forge--glab-get repo "/projects/:project/forks"
     '((per_page . 100)
-      (simple . "true"))
+      (simple . t))
     :unpaginate t
     :callback (lambda (value _headers _status _req)
                 (funcall callback callback (cons 'forks value)))))
@@ -553,7 +554,7 @@
                                     topic hash method)
   (forge--glab-put topic
     "/projects/:project/merge_requests/:number/merge"
-    `((squash . ,(if (eq method 'squash) "true" "false"))
+    `((squash . ,(eq method 'squash))
       ,@(and hash `((sha . ,hash))))))
 
 ;;; Utilities

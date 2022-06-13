@@ -1,11 +1,11 @@
 ;;; pandoc-mode-utils.el --- Part of `pandoc-mode'  -*- lexical-binding: t -*-
 
-;; Copyright (c) 2009-2021 Joost Kremers
+;; Copyright (c) 2009-2022 Joost Kremers
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.31
+;; Version: 2.32
 ;; Keywords: text, pandoc
 ;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
 
@@ -1267,7 +1267,7 @@ evaluated."
 (define-pandoc-choice-option ipynb-output       (specific "p" "%-21s")        "Jupyter Output Cells" ("best" "all" "none") ("ipynb"))
 (define-pandoc-list-option   pdf-engine-opt     (specific "o" "%-21s") string "PDF Options" "PDF Option")
 (define-pandoc-choice-option pdf-engine         (specific "e" "%-21s")        "PDF Engine"
-  ("pdflatex" "lualatex" "xelatex" "wkhtmltopdf" "weasyprint" "prince" "context" "pdfroff"))
+  ("pdflatex" "lualatex" "xelatex" "tectonic" "latexmk" "wkhtmltopdf" "weasyprint" "prince" "pagedjs-cli" "context" "pdfroff"))
 (define-pandoc-file-option   reference-doc      (specific "R" "%-21s")        "Reference Doc")
 (define-pandoc-number-option slide-level        (specific "H" "%-21s")        "Slide Level Header")
 (define-pandoc-switch        incremental        (specific "i" "%-21s")        "Incremental")

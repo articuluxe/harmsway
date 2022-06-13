@@ -1,19 +1,16 @@
-;;; magit-push.el --- update remote objects and refs  -*- lexical-binding: t -*-
+;;; magit-push.el --- Update remote objects and refs  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -90,7 +87,7 @@ argument the push-remote can be changed before pushed to it."
                (magit--select-push-remote "push there")))
     (when changed
       (magit-confirm 'set-and-push
-        (replace-regexp-in-string
+        (string-replace
          "%" "%%"
          (format "Really use \"%s\" as push-remote and push \"%s\" there"
                  remote branch))))
@@ -152,7 +149,7 @@ the upstream."
           ;; is what the user wants to happen.
           (setq merge (concat "refs/heads/" merge)))
         (magit-confirm 'set-and-push
-          (replace-regexp-in-string
+          (string-replace
            "%" "%%"
            (format "Really use \"%s\" as upstream and push \"%s\" there"
                    upstream branch))))
@@ -161,7 +158,7 @@ the upstream."
     (magit-run-git-async "push" "-v" args remote (concat branch ":" merge))))
 
 (defun magit-push--upstream-description ()
-  (when-let ((branch (magit-get-current-branch)))
+  (and-let* ((branch (magit-get-current-branch)))
     (or (magit-get-upstream-branch branch)
         (let ((remote (magit-get "branch" branch "remote"))
               (merge  (magit-get "branch" branch "merge"))
@@ -296,24 +293,24 @@ what this command will do.  For example:
 (defun magit-push-implicitly--desc ()
   (let ((default (magit-get "push.default")))
     (unless (equal default "nothing")
-      (or (when-let ((remote (or (magit-get-remote)
+      (or (and-let* ((remote (or (magit-get-remote)
                                  (magit-primary-remote)))
                      (refspec (magit-get "remote" remote "push")))
             (format "%s using %s"
                     (magit--propertize-face remote 'magit-branch-remote)
                     (magit--propertize-face refspec 'bold)))
-          (--when-let (and (not (magit-get-push-branch))
-                           (magit-get-upstream-branch))
+          (and-let* ((upstream (and (not (magit-get-push-branch))
+                                    (magit-get-upstream-branch))))
             (format "%s aka %s\n"
-                    (magit-branch-set-face it)
+                    (magit-branch-set-face upstream)
                     (magit--propertize-face "@{upstream}" 'bold)))
-          (--when-let (magit-get-push-branch)
+          (and-let* ((push-branch (magit-get-push-branch)))
             (format "%s aka %s\n"
-                    (magit-branch-set-face it)
+                    (magit-branch-set-face push-branch)
                     (magit--propertize-face "pushRemote" 'bold)))
-          (--when-let (magit-get-@{push}-branch)
+          (and-let* ((push-branch (magit-get-@{push}-branch)))
             (format "%s aka %s\n"
-                    (magit-branch-set-face it)
+                    (magit-branch-set-face push-branch)
                     (magit--propertize-face "@{push}" 'bold)))
           (format "using %s (%s is %s)\n"
                   (magit--propertize-face "git push"     'bold)

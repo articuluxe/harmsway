@@ -1,22 +1,16 @@
-;;; magit-base.el --- early birds   -*- lexical-binding: t; coding: utf-8 -*-
+;;; magit-base.el --- Early birds  -*- lexical-binding:t; coding:utf-8 -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
-;; Contains code from GNU Emacs https://www.gnu.org/software/emacs,
-;; released under the GNU General Public License version 3 or later.
-
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -24,7 +18,10 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
+
+;; This file contains code taken from GNU Emacs, which is
+;; Copyright (C) 1976-2022 Free Software Foundation, Inc.
 
 ;;; Commentary:
 
@@ -39,6 +36,9 @@
 (defconst magit--minimal-emacs "25.1")
 
 (require 'cl-lib)
+(require 'compat)
+(require 'compat-26)
+(require 'compat-27)
 (require 'dash)
 (require 'eieio)
 (require 'seq)
@@ -56,8 +56,6 @@
 
 (eval-when-compile (require 'which-func))
 (declare-function which-function "which-func" ())
-
-(defvar magit-wip-before-change-mode)
 
 ;;; Options
 
@@ -85,6 +83,8 @@ alphabetical order, depending on your version of Ivy."
 
 (defcustom magit-dwim-selection
   '((magit-stash-apply        nil t)
+    (magit-ediff-resolve-all  nil t)
+    (magit-ediff-resolve-rest nil t)
     (magit-stash-branch       nil t)
     (magit-stash-branch-here  nil t)
     (magit-stash-format-patch nil t)
@@ -669,25 +669,10 @@ third-party completion frameworks."
        ;; when reading commit ranges. 798aff564
        (helm-crm-default-separator
         (if no-split nil (bound-and-true-p helm-crm-default-separator)))
-       (values
-        (if (and no-split
-                 (advice-member-p 'consult-completing-read-multiple
-                                  'completing-read-multiple))
-            ;; Our NO-SPLIT hack is not compatible with `CONSULT's
-            ;; implemenation so fall back to the original function.
-            ;; #4437
-            (unwind-protect
-                (progn
-                  (advice-remove 'completing-read-multiple
-                                 'consult-completing-read-multiple)
-                  (completing-read-multiple
-                   prompt table predicate require-match initial-input
-                   hist def inherit-input-method))
-              (advice-add 'completing-read-multiple :override
-                          'consult-completing-read-multiple))
-          (completing-read-multiple
-           prompt table predicate require-match initial-input
-           hist def inherit-input-method))))
+       ;; And now, the moment we have all been waiting for...
+       (values (completing-read-multiple
+                prompt table predicate require-match initial-input
+                hist def inherit-input-method)))
     (if no-split input values)))
 
 (defun magit-ido-completing-read
@@ -712,7 +697,7 @@ back to built-in `completing-read' for now." :error)
                                    initial-input hist def)))
 
 (defun magit-prompt-with-default (prompt def)
-  (if (and def (> (length prompt) 2)
+  (if (and def (length> prompt 2)
            (string-equal ": " (substring prompt -2)))
       (format "%s (default %s): " (substring prompt 0 -2) def)
     prompt))
@@ -821,9 +806,9 @@ ACTION is a member of option `magit-slow-confirm'."
              (or (not sitems) items))
             ((not sitems)
              (magit-y-or-n-p prompt action))
-            ((= (length items) 1)
+            ((length= items 1)
              (and (magit-y-or-n-p prompt action) items))
-            ((> (length items) 1)
+            ((length> items 1)
              (and (magit-y-or-n-p (concat (mapconcat #'identity items "\n")
                                           "\n\n" prompt-n)
                                   action)
@@ -841,8 +826,9 @@ ACTION is a member of option `magit-slow-confirm'."
 
 (defun magit-confirm-make-prompt (action)
   (let ((prompt (symbol-name action)))
-    (replace-regexp-in-string
-     "-" " " (concat (upcase (substring prompt 0 1)) (substring prompt 1)))))
+    (string-replace "-" " "
+                    (concat (upcase (substring prompt 0 1))
+                            (substring prompt 1)))))
 
 (defun magit-read-number-string (prompt &optional default _history)
   "Like `read-number' but return value is a string.
@@ -875,6 +861,7 @@ See info node `(magit)Debugging Tools' for more information."
                           ((not (equal lib "libgit"))
                            (error "Cannot find mandatory dependency %s" lib)))))
                      '(;; Like `LOAD_PATH' in `default.mk'.
+                       "compat"
                        "dash"
                        "libgit"
                        "transient"
@@ -1036,7 +1023,9 @@ and https://github.com/magit/magit/issues/2295."
   (and (file-directory-p filename)
        (file-accessible-directory-p filename)))
 
-(when (magit--version>= emacs-version "25.1")
+(when (< emacs-major-version 27)
+  ;; Work around https://debbugs.gnu.org/cgi/bugreport.cgi?bug=21559.
+  ;; Fixed by cb55ccae8be946f1562d74718086a4c8c8308ee5 in Emacs 27.1.
   (with-eval-after-load 'vc-git
     (defun vc-git-conflicted-files (directory)
       "Return the list of files with conflicts in DIRECTORY."
@@ -1111,12 +1100,12 @@ setting `imenu--index-alist' to nil before calling that function."
 
 (defun magit-custom-initialize-reset (symbol exp)
   "Initialize SYMBOL based on EXP.
-Set the symbol, using `set-default' (unlike
-`custom-initialize-reset' which uses the `:set' function if any.)
-The value is either the symbol's current value
- (as obtained using the `:get' function), if any,
-or the value in the symbol's `saved-value' property if any,
-or (last of all) the value of EXP."
+Set the value of the variable SYMBOL, using `set-default'
+\(unlike `custom-initialize-reset', which uses the `:set'
+function if any).  The value is either the symbol's current
+value (as obtained using the `:get' function), if any, or
+the value in the symbol's `saved-value' property if any, or
+\(last of all) the value of EXP."
   (set-default-toplevel-value
    symbol
    (condition-case nil
@@ -1162,10 +1151,10 @@ or (last of all) the value of EXP."
                "\\*note[ \n\t]+\\([^:]*\\):\\(:\\|[ \n\t]*(\\)?")))
     (if (and node (string-match "^(gitman)\\(.+\\)" node))
         (pcase magit-view-git-manual-method
-          (`info  (funcall fn fork))
-          (`man   (require 'man)
+          ('info  (funcall fn fork))
+          ('man   (require 'man)
                   (man (match-string 1 node)))
-          (`woman (require 'woman)
+          ('woman (require 'woman)
                   (woman (match-string 1 node)))
           (_
            (user-error "Invalid value for `magit-view-git-manual-method'")))
@@ -1181,8 +1170,8 @@ or (last of all) the value of EXP."
 ;;;###autoload
 (defun org-man-export--magit-gitman (fn link description format)
   (if (and (eq format 'texinfo)
-           (string-match-p "\\`git" link))
-      (replace-regexp-in-string "%s" link "
+           (string-prefix-p "git" link))
+      (string-replace "%s" link "
 @ifinfo
 @ref{%s,,,gitman,}.
 @end ifinfo

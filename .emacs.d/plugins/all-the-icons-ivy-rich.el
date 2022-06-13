@@ -991,7 +991,9 @@ Return `default-directory' if no project was found."
       (projectile-project-root))
      ((fboundp 'project-current)
       (when-let ((project (project-current)))
-        (expand-file-name (cdr project))))
+        (expand-file-name (if (fboundp 'project-root)
+                              (project-root project)
+                            (cdr project)))))
      (t default-directory))))
 
 (defun all-the-icons-ivy-rich--file-path (cand)
@@ -1006,7 +1008,9 @@ Return `default-directory' if no project was found."
 
 (defun all-the-icons-ivy-rich-project-find-file-transformer (cand)
   "Transform non-visited file names with `ivy-virtual' face."
-  (if (not (get-file-buffer (expand-file-name cand (cdr (project-current)))))
+  (if (not (get-file-buffer (expand-file-name cand (if (fboundp 'project-root)
+                                                       (project-root (project-current))
+                                                     (cdr (project-current))))))
       (propertize cand 'face 'ivy-virtual)
     cand))
 
@@ -1452,15 +1456,20 @@ If the buffer is killed, return \"--\"."
 
 (defun all-the-icons-ivy-rich-process-thread (cand)
   "Return process thread for CAND."
-  (let ((p (get-process cand)))
-    (when (processp p)
-      (cond
-       ((or
-         (null (process-thread p))
-         (not (fboundp 'thread-name))) "--")
-       ((eq (process-thread p) main-thread) "Main")
-	   ((thread-name (process-thread p)))
-	   (t "--")))))
+  (if (> emacs-major-version 26)
+      (propertize
+       (format "%-12s"
+               (let ((p (get-process cand)))
+                 (when (processp p)
+                   (cond
+                    ((or
+                      (null (process-thread p))
+                      (not (fboundp 'thread-name))) "--")
+                    ((eq (process-thread p) main-thread) "Main")
+	                ((thread-name (process-thread p)))
+	                (t "--")))))
+       'face 'all-the-icons-ivy-rich-process-thread-face)
+    ""))
 
 (defun all-the-icons-ivy-rich-process-command (cand)
   "Return process command for CAND."
@@ -1468,7 +1477,9 @@ If the buffer is killed, return \"--\"."
     (when (processp p)
       (let ((type (process-type p)))
         (if (memq type '(network serial pipe))
-		    (let ((contact (process-contact p t t)))
+		    (let ((contact (if (> emacs-major-version 26)
+                               (process-contact p t t)
+                             (process-contact p t))))
 			  (if (eq type 'network)
 			      (format "(%s %s)"
 				          (if (plist-get contact :type)
@@ -1503,7 +1514,8 @@ If the buffer is killed, return \"--\"."
 
 (defun all-the-icons-ivy-rich-library-path (cand)
   "Return library path for CAND."
-  (abbreviate-file-name (find-library-name cand)))
+  (abbreviate-file-name
+   (or (ignore-errors (find-library-name cand)) "")))
 
 ;; Support `counsel-world-clock'
 (defun all-the-icons-ivy-rich-world-clock (cand)
@@ -1556,10 +1568,7 @@ If the buffer is killed, return \"--\"."
   (when (and (display-graphic-p) all-the-icons-ivy-rich-icon)
     (let ((icon (cond
                  ((ivy--dirname-p cand)
-                  (all-the-icons-icon-for-dir cand
-                                              :height 0.9
-                                              :v-adjust 0.01
-                                              :face 'all-the-icons-ivy-rich-dir-face))
+                  (all-the-icons-icon-for-dir cand :face 'all-the-icons-ivy-rich-dir-face))
                  ((not (string-empty-p cand))
                   (all-the-icons-icon-for-file (file-name-nondirectory cand) :height 0.9 :v-adjust 0.0)))))
       (all-the-icons-ivy-rich--format-icon

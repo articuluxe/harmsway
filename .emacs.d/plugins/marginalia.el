@@ -394,7 +394,7 @@ FACE is the name of the face, with which the field should be propertized."
 (defun marginalia--annotator (cat)
   "Return annotation function for category CAT."
   (pcase (car (alist-get cat marginalia-annotator-registry))
-    ('none (lambda (_) nil))
+    ('none #'ignore)
     ('builtin nil)
     (fun fun)))
 
@@ -599,17 +599,22 @@ keybinding since CAND includes it."
           ((pred numberp) (propertize (number-to-string val) 'face 'marginalia-number))
           (_ (let ((print-escape-newlines t)
                    (print-escape-control-characters t)
-                   (print-escape-multibyte t)
-                   (print-level 10)
+                   ;;(print-escape-multibyte t)
+                   (print-level 3)
                    (print-length marginalia-field-width))
                (propertize
-                (prin1-to-string
-                 (if (stringp val)
-                     ;; Get rid of string properties to save some of the precious space
-                     (substring-no-properties
-                      val 0
-                      (min (length val) marginalia-field-width))
-                   val))
+                (replace-regexp-in-string
+                 ;; `print-escape-control-characters' does not escape Unicode control characters.
+                 "[\x0-\x1F\x7f-\x9f\x061c\x200e\x200f\x202a-\x202e\x2066-\x2069]"
+                 (lambda (x) (format "\\x%x" (string-to-char x)))
+                 (prin1-to-string
+                  (if (stringp val)
+                      ;; Get rid of string properties to save some of the precious space
+                      (substring-no-properties
+                       val 0
+                       (min (length val) marginalia-field-width))
+                    val))
+                 'fixedcase 'literal)
                 'face
                 (cond
                  ((listp val) 'marginalia-list)
@@ -988,7 +993,10 @@ These annotations are skipped for remote paths."
       ;; since it decompresses the whole file, which is slower.
       (setq doc (or (ignore-errors
                       (shell-command-to-string
-                       (format "zcat -f %s | head -n1" (shell-quote-argument file))))
+                       (format (if (string-suffix-p ".gz" file)
+                                   "gzip -c -q -d %s | head -n1"
+                                 "head -n1 %s")
+                               (shell-quote-argument file))))
                  ""))
       (cond
        ((string-match "\\`(define-package\\s-+\"\\([^\"]+\\)\"" doc)

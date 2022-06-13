@@ -1,19 +1,16 @@
-;;; magit-process.el --- process functionality  -*- lexical-binding: t -*-
+;;; magit-process.el --- Process functionality  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; Magit is free software; you can redistribute it and/or modify it
+;; Magit is free software: you can redistribute it and/or modify it
 ;; under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
 ;; Magit is distributed in the hope that it will be useful, but WITHOUT
 ;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
@@ -21,7 +18,7 @@
 ;; License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with Magit.  If not, see http://www.gnu.org/licenses.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -39,9 +36,6 @@
 
 (require 'ansi-color)
 (require 'with-editor)
-
-(declare-function auth-source-search "auth-source"
-                  (&rest spec &key max require create delete &allow-other-keys))
 
 ;;; Options
 
@@ -306,8 +300,8 @@ optional NODISPLAY is non-nil also display it."
                                  (and (eq major-mode 'magit-process-mode)
                                       (equal default-directory topdir)))
                                (buffer-list))
-                      (let ((default-directory topdir))
-                        (magit-generate-new-buffer 'magit-process-mode)))))
+                      (magit-generate-new-buffer 'magit-process-mode
+                                                 nil topdir))))
       (with-current-buffer buffer
         (if magit-root-section
             (when magit-process-log-max
@@ -491,7 +485,7 @@ and still alive), as well as the respective Magit status buffer.
 
 See `magit-start-process' for more information."
   (message "Running %s %s" (magit-git-executable)
-           (let ((m (mapconcat #'identity (-flatten args) " ")))
+           (let ((m (mapconcat #'identity (flatten-tree args) " ")))
              (remove-list-of-text-properties 0 (length m) '(face) m)
              m))
   (magit-start-git nil args))
@@ -729,22 +723,22 @@ Magit status buffer."
   "Special sentinel used by `magit-run-git-sequencer'."
   (when (memq (process-status process) '(exit signal))
     (magit-process-sentinel process event)
-    (when-let ((process-buf (process-buffer process)))
-      (when (buffer-live-p process-buf)
-        (when-let ((status-buf (with-current-buffer process-buf
-                                 (magit-get-mode-buffer 'magit-status-mode))))
-          (with-current-buffer status-buf
-            (--when-let
-                (magit-get-section
-                 `((commit . ,(magit-rev-parse "HEAD"))
-                   (,(pcase (car (cadr (-split-at
-                                        (1+ (length magit-git-global-arguments))
-                                        (process-command process))))
-                       ((or "rebase" "am")   'rebase-sequence)
-                       ((or "cherry-pick" "revert") 'sequence)))
-                   (status)))
-              (goto-char (oref it start))
-              (magit-section-update-highlight))))))))
+    (when-let* ((process-buf (process-buffer process))
+                (- (buffer-live-p process-buf))
+                (status-buf (with-current-buffer process-buf
+                              (magit-get-mode-buffer 'magit-status-mode))))
+      (with-current-buffer status-buf
+        (--when-let
+            (magit-get-section
+             `((commit . ,(magit-rev-parse "HEAD"))
+               (,(pcase (car (cadr (-split-at
+                                    (1+ (length magit-git-global-arguments))
+                                    (process-command process))))
+                   ((or "rebase" "am")   'rebase-sequence)
+                   ((or "cherry-pick" "revert") 'sequence)))
+               (status)))
+          (goto-char (oref it start))
+          (magit-section-update-highlight))))))
 
 (defun magit-process-filter (proc string)
   "Default filter used by `magit-start-process'."
@@ -801,11 +795,11 @@ Magit status buffer."
 If found, return the password.  Otherwise, return nil.
 
 To use this function add it to the appropriate hook
-  (add-hook 'magit-process-find-password-functions
-            'magit-process-password-auth-source)
+  (add-hook \\='magit-process-find-password-functions
+            \\='magit-process-password-auth-source)
 
 KEY typically derives from a prompt such as:
-  Password for 'https://yourname@github.com'
+  Password for \\='https://yourname@github.com\\='
 in which case it would be the string
   yourname@github.com
 which matches the ~/.authinfo.gpg entry
@@ -838,7 +832,8 @@ be translated on the fly by doing this once
 
 [1]: https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token."
   (require 'auth-source)
-  (and (string-match "\\`\\(.+\\)@\\([^@]+\\)\\'" key)
+  (and (fboundp 'auth-source-search)
+       (string-match "\\`\\(.+\\)@\\([^@]+\\)\\'" key)
        (let* ((user (match-string 1 key))
               (host (match-string 2 key))
               (secret
@@ -875,7 +870,7 @@ from the user."
                       magit-process-password-prompt-regexps string)))
     (process-send-string
      process (magit-process-kill-on-abort process
-               (concat (or (when-let ((key (match-string 99 string)))
+               (concat (or (and-let* ((key (match-string 99 string)))
                              (run-hook-with-args-until-success
                               'magit-process-find-password-functions key))
                            (read-passwd prompt))
@@ -1047,6 +1042,9 @@ If STR is supplied, it replaces the `mode-line-process' text."
                (eq (get-text-property 1 'font-lock-face status)
                    'magit-mode-line-process-error))
       (magit-process-unset-mode-line))))
+
+(add-hook 'magit-refresh-buffer-hook
+          #'magit-process-unset-mode-line-error-status)
 
 (defun magit-process-unset-mode-line (&optional directory)
   "Remove the git command from the mode line."

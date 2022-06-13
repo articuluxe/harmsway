@@ -1,34 +1,40 @@
-;;; git-commit.el --- Edit Git commit messages  -*- lexical-binding: t; -*-
+;;; git-commit.el --- Edit Git commit messages  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2010-2022  The Magit Project Contributors
-;;
-;; You should have received a copy of the AUTHORS.md file which
-;; lists all contributors.  If not, see http://magit.vc/authors.
+;; Copyright (C) 2008-2022 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;;      Sebastian Wiesner <lunaryorn@gmail.com>
-;;      Florian Ragwitz <rafl@debian.org>
-;;      Marius Vollmer <marius.vollmer@gmail.com>
+;;     Sebastian Wiesner <lunaryorn@gmail.com>
+;;     Florian Ragwitz <rafl@debian.org>
+;;     Marius Vollmer <marius.vollmer@gmail.com>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 
-;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
-;; Package-Requires: ((emacs "25.1") (transient "0.3.6") (with-editor "3.0.5"))
+;; Keywords: git tools vc
+
 ;; Package-Version: 3.3.0-git
+;; Package-Requires: (
+;;     (emacs "25.1")
+;;     (compat "28.1.1.0")
+;;     (transient "0.3.6")
+;;     (with-editor "3.0.5"))
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-;; This file is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 3, or (at your option)
-;; any later version.
+;; Magit is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation, either version 3 of the License,
+;; or (at your option) any later version.
 ;;
-;; This file is distributed in the hope that it will be useful,
+;; Magit is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with this file.  If not, see <http://www.gnu.org/licenses/>.
+;; along with Magit.  If not, see <https://www.gnu.org/licenses/>.
+
+;; You should have received a copy of the AUTHORS.md file, which
+;; lists all contributors.  If not, see https://magit.vc/authors.
 
 ;;; Commentary:
 
@@ -110,14 +116,9 @@
 ;;   M-x customize-group RET git-commit RET
 
 ;;; Code:
-;;;; Dependencies
 
 (require 'seq)
 (require 'subr-x)
-
-(require 'magit-base nil t)
-(require 'magit-git nil t)
-(require 'magit-mode nil t)
 
 (require 'log-edit)
 (require 'ring)
@@ -126,23 +127,22 @@
 (require 'transient)
 (require 'with-editor)
 
-(defvar recentf-exclude)
-
-;;;; Declarations
+;; For historic reasons Magit isn't a hard dependency.
+(unless (and (require 'magit-base nil t)
+             (require 'magit-git nil t))
+  (declare-function magit-completing-read "magit-base"
+                    ( prompt collection &optional predicate require-match
+                      initial-input hist def fallback))
+  (declare-function magit-expand-git-file-name "magit-git" (filename))
+  (declare-function magit-git-lines "magit-git" (&rest args))
+  (declare-function magit-hook-custom-get "magit-base" (symbol))
+  (declare-function magit-list-local-branch-names "magit-git" ()))
 
 (defvar diff-default-read-only)
 (defvar flyspell-generic-check-word-predicate)
 (defvar font-lock-beg)
 (defvar font-lock-end)
-
-(declare-function magit-completing-read "magit-base"
-                  (prompt collection &optional predicate require-match
-                          initial-input hist def fallback))
-(declare-function magit-expand-git-file-name "magit-git" (filename))
-(declare-function magit-git-lines "magit-git" (&rest args))
-(declare-function magit-list-local-branch-names "magit-git" ())
-(declare-function magit-list-remote-branch-names "magit-git"
-                  (&optional remote relative))
+(defvar recentf-exclude)
 
 ;;; Options
 ;;;; Variables
@@ -556,6 +556,9 @@ to recover older messages")
             #'git-commit-save-message nil t)
   (add-hook 'with-editor-pre-cancel-hook
             #'git-commit-save-message nil t)
+  (when (fboundp 'magit-commit--reset-command)
+    (add-hook 'with-editor-post-finish-hook #'magit-commit--reset-command)
+    (add-hook 'with-editor-post-cancel-hook #'magit-commit--reset-command))
   (when (and (fboundp 'magit-rev-parse)
              (not (memq last-command
                         '(magit-sequencer-continue
