@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-06-10 10:51:58 dharms>
+;; Modified Time-stamp: <2022-06-13 12:02:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1400,6 +1400,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-focus-reporting ;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package terminal-focus-reporting
   :if (not (display-graphic-p))
+  :disabled
   :config
   (terminal-focus-reporting-mode)
   ;; following doesn't work on darwin
