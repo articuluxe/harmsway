@@ -178,6 +178,32 @@ Intended for internal use."
     (delete-frame eldoc-box--frame)
     (setq eldoc-box--frame nil)))
 
+;;;;; Help at point
+
+(defvar eldoc-box--help-at-point-last-point 0
+  "This point cache is used by clean up function.
+If (point) != last point, cleanup frame.")
+
+(defun eldoc-box--help-at-point-cleanup ()
+  "Try to clean up the childframe made by eldoc-box hack."
+  (if (or (eq (point) eldoc-box--help-at-point-last-point)
+          ;; don't clean up when the user clicks childframe
+          (eq (selected-frame) eldoc-box--frame))
+      (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup)
+    (eldoc-box-quit-frame)
+    (kill-local-variable 'eldoc-display-functions)))
+
+(defun eldoc-box-help-at-point ()
+  "Display documentation of the symbol at point."
+  (interactive)
+  (let ((eldoc-box-position-function
+         #'eldoc-box--default-at-point-position-function))
+    (eldoc-box--display
+     (with-current-buffer eldoc--doc-buffer
+       (buffer-string))))
+  (setq eldoc-box--help-at-point-last-point (point))
+  (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup))
+
 ;;;; Backstage
 ;;;;; Variable
 (defvar eldoc-box--buffer " *eldoc-box*"
@@ -202,6 +228,7 @@ STR has to be a proper documentation, not empty string, not nil, etc."
       (erase-buffer)
       (insert str)
       (goto-char (point-min))
+      (visual-line-mode)
       (run-hook-with-args 'eldoc-box-buffer-hook))
     (eldoc-box--get-frame doc-buffer)))
 
@@ -453,17 +480,6 @@ You can use \[keyboard-quit] to hide the doc."
 (eval-and-compile
   (require 'jsonrpc)
   (when (require 'eglot nil t)
-    (defvar eldoc-box-eglot-help-at-point-last-point 0
-      "This point cache is used by clean up function.
-If (point) != last point, cleanup frame.")
-
-    (defun eldoc-box--eglot-help-at-point-cleanup ()
-      "Try to clean up the childframe made by eldoc-box hack."
-      (if (or (eq (point) eldoc-box-eglot-help-at-point-last-point)
-              ;; don't clean up when the user clicks childframe
-              (eq (selected-frame) eldoc-box--frame))
-          (run-with-timer 0.1 nil #'eldoc-box--eglot-help-at-point-cleanup)
-        (eldoc-box-quit-frame)))
 
     (defvar eglot--managed-mode)
     (declare-function eglot--dbind "eglot.el")
@@ -488,8 +504,8 @@ If (point) != last point, cleanup frame.")
             (if hover-info
                 (eldoc-box--display hover-info)
               (eglot--error "No hover info here"))))
-        (setq eldoc-box-eglot-help-at-point-last-point (point))
-        (run-with-timer 0.1 nil #'eldoc-box--eglot-help-at-point-cleanup)))))
+        (setq eldoc-box--help-at-point-last-point (point))
+        (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup)))))
 
 ;;;; Comany compatibility
 ;;

@@ -4,7 +4,7 @@
 
 ;; Author: Justin Talbott <justin@waymondo.com>
 ;; URL: http://github.com/waymondo/apropospriate-theme
-;; Version: 0.1.1
+;; Version: 0.2.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@
 ;; A light & dark theme set for Emacs.
 
 ;;; Code:
-
-(require 'color)
 
 (defgroup apropospriate nil
   "Apropospriate theme options."
@@ -47,7 +45,7 @@ Set to `1.0' or nil to prevent font size manipulation."
   (declare (indent 0))
   `(let* ((class '((class color) (min-colors 89)))
           (variant ,variant)
-          (base00   (if (eq variant 'light) "#FAFAFA" "#424242"))
+          (base00   (if (eq variant 'light) "#F5F5F5" "#424242"))
           (base01   (if (eq variant 'light) "#90A4AE" "#757575"))
           (base02   (if (eq variant 'light) "#78909C" "#9E9E9E"))
           (base03   (if (eq variant 'light) "#546E7A" "#E0E0E0"))
@@ -73,30 +71,17 @@ Set to `1.0' or nil to prevent font size manipulation."
           (teal-1   (if (eq variant 'light) "#00897B" "#4DB6AC"))
           (green    (if (eq variant 'light) "#66BB6A" "#C5E1A5"))
           (green-1  (if (eq variant 'light) "#558B2F" "#F4FF81"))
-          (base00-1 (if (eq variant 'light)
-                        (color-lighten-name base00 3)
-                      (color-darken-name base00 3)))
-          (base00-2 (if (eq variant 'light)
-                        (color-lighten-name base00 5)
-                      (color-darken-name base00 5)))
-          (base00-3 (if (eq variant 'light)
-                        (color-lighten-name base00 10)
-                      (color-darken-name base00 10)))
-          (base00+1 (if (eq variant 'light)
-                        (color-darken-name base00 2)
-                      (color-lighten-name base00 2)))
-          (base00+2 (if (eq variant 'light)
-                        (color-darken-name base00 8)
-                      (color-lighten-name base00 8)))
-          (base00+3 (if (eq variant 'light)
-                        (color-darken-name base00 12)
-                      (color-lighten-name base00 12)))
-          (base03-1 (if (eq variant 'light) (color-lighten-name base03 10) (color-darken-name base03 10)))
+          (base00-1 (if (eq variant 'light) "#FBFBFB" "#3A3A3A"))
+          (base00-2 (if (eq variant 'light) "#FDFDFD" "#323232"))
+          (base00-3 (if (eq variant 'light) "#FFFFFF" "#2A2A2A"))
+          (base00+1 (if (eq variant 'light) "#F0F0F0" "#494949"))
+          (base00+2 (if (eq variant 'light) "#EBEBEB" "#515151"))
+          (base00+3 (if (eq variant 'light) "#E6E6E6" "#595959"))
           (light-emphasis (if (eq variant 'light) base00+3 base00-3))
           (light-emphasis-1 (if (eq variant 'light) base00+2 base00-2))
           (light-emphasis-2 (if (eq variant 'light) base00+1 base00-1))
-          (flashing-color (if (eq variant 'light) pink (color-darken-name pink 25)))
-          (highlight-line-color (if (eq variant 'light) base00-1 base00+1)))
+          (flashing-color (if (eq variant 'light) "#FCE2EB" "#EE758C"))
+          (highlight-line-color (if (eq variant 'light) "#EEEEEE" "#444444")))
      ,@body))
 
 (defun create-apropospriate-theme (variant theme-name)
@@ -110,7 +95,7 @@ Set to `1.0' or nil to prevent font size manipulation."
      `(border ((,class (:background ,base02))))
      `(cursor ((,class (:background ,pink-1 :inverse-video t))))
      `(highlight ((,class (:background ,base00+1))))
-     `(hl-line ((,class (:background ,highlight-line-color))))
+     `(hl-line ((,class (:background ,(if (eq variant 'light) base00-1 base00+1)))))
      `(link ((,class (:foreground ,blue :underline t))))
      `(link-visited ((,class (:inherit link :foreground ,purple))))
      `(minibuffer-prompt ((,class (:foreground ,blue :weight bold))))
@@ -287,8 +272,8 @@ Set to `1.0' or nil to prevent font size manipulation."
      `(which-key-posframe ((,class :background ,base00-2 :foreground ,base03)))
      `(which-key-posframe-border ((,class :background ,base00-2)))
      `(company-posframe-quickhelp ((,class :background ,base00-2 :foreground ,base03)))
-     `(frog-menu-prompt-face ((,class :foreground ,base03-1)))
-     `(frog-menu-actions-face ((,class :foreground ,base03-1)))
+     `(frog-menu-prompt-face ((,class :foreground ,base03)))
+     `(frog-menu-actions-face ((,class :foreground ,base03)))
      `(frog-menu-posframe-background-face ((,class :background ,base00-2)))
      `(frog-menu-action-keybinding-face ((,class :inherit avy-lead-face)))
      `(ivy-posframe-border ((,class :background ,base00-2)))
@@ -309,7 +294,7 @@ Set to `1.0' or nil to prevent font size manipulation."
      `(company-preview-common ((,class (:foreground ,base02))))
      `(company-preview-search ((,class (:background ,base00))))
      `(corfu-default ((,class (:background ,base00-2 :foreground ,base02))))
-     `(corfu-current ((,class (:background ,base00-1 :foreground ,base03))))
+     `(corfu-current ((,class (:background ,highlight-line-color :foreground ,base03))))
      `(corfu-bar ((,class (:background ,base00+1 :foreground ,base00+3))))
      `(corfu-border ((,class (:background ,base00-2 :foreground ,base03))))
      `(tempel-field ((,class (:background ,base00-2 :foreground ,base03))))
@@ -639,7 +624,7 @@ Set to `1.0' or nil to prevent font size manipulation."
      `(eshell-ls-special ((,class (:foreground ,orange))))
      `(eshell-ls-symlink ((,class (:foreground ,purple))))
      `(ansi-color-black ((,class (:foreground ,base03))))
-     `(ansi-color-bright-black ((,class (:foreground ,base03-1))))
+     `(ansi-color-bright-black ((,class (:foreground ,base03))))
      `(ansi-color-red ((,class (:foreground ,red))))
      `(ansi-color-bright-red ((,class (:foreground ,red-1))))
      `(ansi-color-green ((,class (:foreground ,green))))

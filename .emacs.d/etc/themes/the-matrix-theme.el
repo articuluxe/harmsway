@@ -70,6 +70,7 @@
    `(highlight ((t (:foreground ,color-hl :weight bold :underline (:color ,color-hl)))))
    `(match ((t (:inherit highlight))))
    `(hl-line ((t (:underline (:color ,color-dark) :extend t))))
+   `(separator-line ((t (:height 0.1 :background ,color-darker))))
    `(widget-field ((t (:foreground ,color-bright :background ,color-bg-alt))))
    `(trailing-whitespace ((t (:background ,color-bg-red))))
    `(escape-glyph ((t (:inverse-video t))))
@@ -235,6 +236,9 @@
 
    ;; org-tree-slide
    `(org-tree-slide-header-overlay-face ((t (:inherit font-lock-comment-face :foreground nil :background nil))))
+
+   ;; shortdoc
+   `(shortdoc-heading ((t (:inherit outline-1))))
 
    ;; compilation
    `(compilation-error ((t (:inherit error))))
@@ -405,7 +409,8 @@
    `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold))))
    `(tuareg-font-lock-label-face ((t (:inherit shadow))))
    `(tuareg-font-lock-line-number-face ((t (:inherit linum))))
-   `(tuareg-font-double-colon-face ((t (:inherit tuareg-font-lock-interactive-directive-face))))
+   `(tuareg-font-double-semicolon-face ((t (:inherit tuareg-font-lock-interactive-directive-face))))
+   `(tuareg-font-double-colon-face ((t (:inherit tuareg-font-double-semicolon-face))))
    `(tuareg-font-lock-error-face ((t (:inherit error))))
 
    ;; merlin

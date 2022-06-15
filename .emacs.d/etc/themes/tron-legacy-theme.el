@@ -120,7 +120,7 @@
 
    ;;;;; More built-in UI
    `(region                                   ((,class (:background ,bg-hl :distant-foreground ,fg0 :extend nil))))
-   `(highlight                                ((,class (:foreground ,bg3 :background ,fg3))))
+   `(highlight                                ((,class (:foreground ,fg3 :background nil :underline t)))) ; link hover
    `(hl-line                                  ((,class (:background ,hl-line))))
    `(fringe                                   ((,class (:background ,bg1 :foreground ,fg4))))
    `(cursor                                   ((,class (:background ,cursor))))
@@ -173,7 +173,7 @@
    `(org-footnote                             ((,class (:underline t :foreground ,fg4))))
    `(org-link                                 ((,class (:underline t :foreground ,type ))))
    `(org-special-keyword                      ((,class (:foreground ,tron-green))))
-   `(org-block                                ((,class (:foreground ,fg2 :background ,bg0 :extend t))))
+   `(org-block                                ((,class (:foreground ,fg2 :background ,bg2 :extend t))))
    `(org-quote                                ((,class (:inherit org-block :slant italic))))
    `(org-verse                                ((,class (:inherit org-block :slant italic))))
    `(org-todo                                 ((,class (:box (:line-width 1 :color ,tron-lightred)

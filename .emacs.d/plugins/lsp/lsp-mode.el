@@ -1780,7 +1780,8 @@ Do you want to watch all files in %s? "
 
 (defun lsp--path-is-watchable-directory (path dir ignored-directories)
   "Figure out whether PATH (inside of DIR) is meant to have a file watcher set.
-IGNORED-DIRECTORIES is a list of regexes to filter out directories we don't want to watch."
+IGNORED-DIRECTORIES is a list of regexes to filter out directories we don't
+want to watch."
   (let
       ((full-path (f-join dir path)))
     (and (f-dir-p full-path)
@@ -1790,7 +1791,7 @@ IGNORED-DIRECTORIES is a list of regexes to filter out directories we don't want
 
 
 (defun lsp--all-watchable-directories (dir ignored-directories)
-  "Traverse DIR recursively and return a list of paths that should have watchers set on them.
+  "Traverse DIR recursively returning a list of paths that should have watchers.
 IGNORED-DIRECTORIES will be used for exclusions"
   (let* ((dir (if (f-symlink? dir)
                   (file-truename dir)
@@ -1988,7 +1989,7 @@ PARAMS - the data sent from WORKSPACE."
        (lsp-log "%s" (lsp--propertize message type))))))
 
 (lsp-defun lsp--window-log-message-request ((&ShowMessageRequestParams :message :type :actions?))
-  "Display a message request to the user and send the user's selection back to the server."
+  "Display a message request to user sending the user selection back to server."
   (let* ((message (lsp--propertize message type))
          (choices (seq-map #'lsp:message-action-item-title actions?)))
     (if choices
@@ -4095,7 +4096,7 @@ yet."
                   (or (null version) (zerop version) (= -1 version)
                       (equal version lsp--cur-version))))))
            document-changes)
-    (error "Document changes cannot be applied")))
+    (error "Document changes cannot be applied due to different document version")))
 
 (defun lsp--apply-workspace-edit (workspace-edit &optional operation)
   "Apply the WorkspaceEdit object WORKSPACE-EDIT.

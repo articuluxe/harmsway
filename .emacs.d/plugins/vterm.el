@@ -305,7 +305,7 @@ demo: '(\"env1=v1\" \"env2=v2\")"
 (defcustom vterm-enable-manipulate-selection-data-by-osc52 nil
   "Support OSC 52 MANIPULATE SELECTION DATA.
 
-Support copy text to emacs kill ring and system clipboard by using OSC 52.
+Support copy text to Emacs kill ring and system clipboard by using OSC 52.
 For example: send base64 encoded 'foo' to kill ring: echo -en '\e]52;c;Zm9v\a',
 tmux can share its copy buffer to terminals by supporting osc52(like iterm2
  xterm) you can enable this feature for tmux by :
@@ -372,7 +372,7 @@ This means that vterm will render bold with the default face weight."
   :group 'vterm)
 
 (defcustom vterm-ignore-blink-cursor t
-  "When t,vterm will ignore request from application to turn on/off cursor blink.
+  "When t, vterm will ignore request from application to turn on/off cursor blink.
 
 If nil, cursor in any window may begin to blink or not blink because
 `blink-cursor-mode`is a global minor mode in Emacs,
@@ -1584,7 +1584,8 @@ the called functions."
          (f (assoc command vterm-eval-cmds)))
     (if f
         (apply (cadr f) args)
-      (message "Failed to find command: %s" command))))
+      (message "Failed to find command: %s.  To execute a command,
+                add it to the `vterm-eval-cmd' list" command))))
 
 ;; TODO: Improve doc string, it should not point to the readme but it should
 ;;       be self-contained.

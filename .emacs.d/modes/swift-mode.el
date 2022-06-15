@@ -8,7 +8,7 @@
 ;;       Bozhidar Batsov <bozhidar@batsov.com>
 ;;       Arthur Evstifeev <lod@pisem.net>
 ;;
-;; Version: 8.4.2
+;; Version: 8.5.0
 ;; Package-Requires: ((emacs "24.4") (seq "2.3"))
 ;; Keywords: languages swift
 ;; URL: https://github.com/swift-emacs/swift-mode
@@ -194,7 +194,12 @@ Signal `scan-error' if it hits opening parentheses."
   (setq-local fill-indent-according-to-mode t)
   (setq-local comment-multi-line t)
   (setq-local comment-line-break-function #'swift-mode:indent-new-comment-line)
-  (setq-local fill-paragraph-function #'swift-mode:comment-fill-function)
+  (setq-local fill-paragraph-function #'swift-mode:fill-paragraph)
+  (setq-local fill-forward-paragraph-function
+              #'swift-mode:fill-forward-paragraph)
+  (setq-local normal-auto-fill-function #'swift-mode:do-auto-fill)
+  (swift-mode:install-fill-region-as-paragraph-advice)
+  (swift-mode:install-current-fill-column-advice)
 
   (setq-local parse-sexp-lookup-properties t)
   (add-hook 'syntax-propertize-extend-region-functions

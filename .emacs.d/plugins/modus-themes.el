@@ -4330,7 +4330,8 @@ by virtue of calling either of `modus-themes-load-operandi' and
                                       cyan-alt-other blue-alt-other fg-alt
                                       cyan-nuanced-bg blue-refine-bg fg-main
                                       bg-alt bg-active))))
-    `(modus-themes-reset-hard ((,class :inherit (fixed-pitch modus-themes-reset-soft))))
+    `(modus-themes-reset-hard ((,class :inherit (fixed-pitch modus-themes-reset-soft)
+                                       :family ,(face-attribute 'default :family))))
     `(modus-themes-reset-soft ((,class :background ,bg-main :foreground ,fg-main
                                        :weight normal :slant normal :strike-through nil
                                        :box nil :underline nil :overline nil :extend nil)))
@@ -5805,6 +5806,26 @@ by virtue of calling either of `modus-themes-load-operandi' and
     `(info-title-2 ((,class :inherit modus-themes-heading-2)))
     `(info-title-3 ((,class :inherit modus-themes-heading-3)))
     `(info-title-4 ((,class :inherit modus-themes-heading-4)))
+;;;;; info+ (info-plus)
+    `(info-command-ref-item ((,class :inherit font-lock-function-name-face)))
+    `(info-constant-ref-item ((,class :inherit font-lock-constant-face)))
+    `(info-custom-delimited ((,class :inherit modus-themes-markup-verbatim)))
+    `(info-double-quoted-name ((,class :inherit font-lock-string-face)))
+    `(info-file (( )))
+    `(info-function-ref-item ((,class :inherit font-lock-function-name-face)))
+    `(info-glossary-word ((,class :inherit modus-themes-box-button)))
+    `(info-indented-text (( )))
+    `(info-isolated-backquote (( )))
+    `(info-isolated-quote (( )))
+    `(info-macro-ref-item ((,class :inherit font-lock-keyword-face)))
+    `(info-menu ((,class :inherit bold)))
+    `(info-quoted-name ((,class :inherit modus-themes-markup-verbatim)))
+    `(info-reference-item ((,class :inherit bold)))
+    `(info-special-form-ref-item ((,class :inherit warning)))
+    `(info-string ((,class :inherit font-lock-string-face)))
+    `(info-syntax-class-item ((,class :inherit modus-themes-markup-code)))
+    `(info-user-option-ref-item ((,class :inherit font-lock-variable-name-face)))
+    `(info-variable-ref-item ((,class :inherit font-lock-variable-name-face)))
 ;;;;; info-colors
     `(info-colors-lisp-code-block ((,class :inherit modus-themes-fixed-pitch)))
     `(info-colors-ref-item-command ((,class :inherit font-lock-function-name-face)))
@@ -5926,7 +5947,7 @@ by virtue of calling either of `modus-themes-load-operandi' and
     ;; fall back to `default' otherwise line numbers do not scale when
     ;; using `text-scale-adjust'.
     `(line-number
-      ((,class :inherit ,(if modus-themes-mixed-fonts 'fixed-pitch 'default)
+      ((,class :inherit ,(if modus-themes-mixed-fonts '(fixed-pitch default) 'default)
                ,@(modus-themes--line-numbers
                   fg-alt bg-dim
                   fg-unfocused))))

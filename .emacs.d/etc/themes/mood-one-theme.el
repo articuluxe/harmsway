@@ -76,6 +76,9 @@
 
 (let ((class '((class color) (min-colors 256)))
 
+      ;; Layout/Sizing
+      (mode-line-padding 8)
+
       ;; Base (Background) Colors
       (bg (if (mood-one-theme--true-color-p) "#282c30" "#1c1c1c"))
       (bg-alt (if (mood-one-theme--true-color-p) "#212428" "#121212"))
@@ -153,12 +156,12 @@
    `(font-lock-regexp-grouping-construct ((,class (:inherit 'bold :foreground ,blue))))
 
    ;; mode-line / header-line
-   `(mode-line ((,class (:background ,base-0 :foreground ,fg :box (:line-width 7 :color ,base-0)))))
-   `(mode-line-inactive ((,class (:background ,bg-alt :foreground ,base-5 :box (:line-width 7 :color ,bg-alt)))))
+   `(mode-line ((,class (:background ,base-0 :foreground ,fg :box (:line-width ,mode-line-padding :color ,base-0)))))
+   `(mode-line-inactive ((,class (:background ,bg-alt :foreground ,base-5 :box (:line-width ,mode-line-padding :color ,bg-alt)))))
    `(mode-line-emphasis ((,class (:foreground ,blue))))
-   `(mode-line-highlight ((,class (:inherit 'highlight))))
+   `(mode-line-highlight ((,class (:foreground ,fg))))
    `(mode-line-buffer-id ((,class (:foreground ,violet :weight bold))))
-   `(header-line ((,class (:inherit 'mode-line))))
+   `(header-line ((,class (:inherit 'mode-line-inactive))))
 
    ;; ===============================
    ;; -- built-in packages/plugins --
@@ -183,12 +186,12 @@
    `(completions-common-part ((,class (:foreground ,violet))))
 
    ;; custom
-   `(custom-button ((,class (:background ,base-2 :foreground ,blue :box (:line-width 1 :color ,base-0)))))
-   `(custom-button-unraised ((,class (:background ,bg :foreground ,violet :box (:line-width 1)))))
-   `(custom-button-pressed-unraised ((,class (:background ,violet :foreground ,fg :box (:line-width 1)))))
-   `(custom-button-pressed ((,class (:background ,blue :foreground ,bg :box (:line-width 1 :color ,base-5)))))
-   `(custom-button-mouse ((,class (:background ,blue :foreground ,bg :box (:line-width 1 :color ,base-5)))))
-   `(custom-variable-button ((,class (:foreground ,green :underline t))))
+   `(custom-button ((,class (:background ,base-3 :foreground ,fg :box (:line-width 3 :color ,base-3)))))
+   `(custom-button-pressed ((,class (:background ,base-4 :foreground ,fg :box (:line-width 3 :color ,base-4)))))
+   `(custom-button-unraised ((,class (:inherit 'custom-button))))
+   `(custom-button-pressed-unraised ((,class (:inherit 'custom-button-pressed))))
+   `(custom-button-mouse ((,class (:inherit 'custom-button-pressed))))
+   `(custom-variable-button ((,class (:inherit 'link :foreground ,green))))
    `(custom-saved ((,class (:foreground ,green :bold bold))))
    `(custom-comment ((,class (:foreground ,fg :background ,dark-blue))))
    `(custom-comment-tag ((,class (:foreground ,gray))))
@@ -270,8 +273,11 @@
    `(eshell-ls-unreadable ((,class (:foreground ,base-5))))
 
    ;; gdb
-   `(breakpoint-enabled ((, class (:foreground ,red))))
-   `(breakpoint-disabled ((, class (:foreground ,base-5))))
+   `(breakpoint-enabled ((,class (:foreground ,red))))
+   `(breakpoint-disabled ((,class (:foreground ,base-5))))
+
+   ;; help
+   `(help-key-binding ((,class (:foreground ,pink))))
 
    ;; hl-line
    `(hl-line ((,class (:background ,bg-alt :extend t))))
@@ -312,17 +318,19 @@
    `(message-mml ((,class (:foreground ,base-5 :slant italic))))
    `(message-cited-text ((,class (:foreground ,magenta))))
 
+   ;; pulse
+   `(pulse-highlight-start-face ((,class (:background ,base-5 :extend t))))
+
    ;; show-paren
    `(show-paren-match ((,class (:background ,base-0 :foreground ,red :weight ultra-bold))))
    `(show-paren-mismatch ((,class (:background ,red :foreground ,base-0 :weight ultra-bold))))
 
    ;; tab-line/tab-bar
-   `(tab-line ((,class (:background ,bg-alt :foreground ,bg-alt))))
-   `(tab-line-tab ((,class (:background ,bg :foreground ,fg))))
-   `(tab-line-tab-inactive ((,class (:background ,bg-alt :foreground ,fg-alt))))
-   `(tab-line-tab-current ((,class (:background ,bg :foreground ,fg))))
+   `(tab-line ((,class (:background ,bg-alt))))
+   `(tab-line-tab ((,class (:background ,bg :foreground ,fg :box (:line-width ,mode-line-padding :color ,bg)))))
+   `(tab-line-tab-inactive ((,class (:background ,bg-alt :foreground ,fg-alt :box (:line-width ,mode-line-padding :color ,bg-alt)))))
+   `(tab-line-tab-current ((,class (:inherit 'tab-line-tab))))
    `(tab-line-highlight ((,class (:inherit 'tab-line-tab))))
-   `(tab-line-close-highlight ((,class (:foreground ,base-0))))
    `(tab-bar ((,class (:inherit 'tab-line))))
    `(tab-bar-tab ((,class (:inherit 'tab-line-tab))))
    `(tab-bar-tab-inactive ((,class (:inherit 'tab-line-tab-inactive))))
@@ -522,7 +530,7 @@
    `(magit-blame-date ((,class (:foreground ,red))))
    `(magit-blame-heading ((,class (:background ,base-3 :foreground ,orange))))
    `(magit-branch-current ((,class (:foreground ,blue))))
-   `(magit-branch-local ((,class (:foreground ,cyan))))
+   `(magit-branch-local ((,class (:foreground ,yellow))))
    `(magit-branch-remote ((,class (:foreground ,green))))
    `(magit-cherry-equivalent ((,class (:foreground ,violet))))
    `(magit-cherry-unmatched ((,class (:foreground ,cyan))))
@@ -667,6 +675,9 @@
    `(undo-tree-visualizer-unmodified-face ((,class (:foreground ,base-5))))
    `(undo-tree-visualizer-active-branch-face ((,class (:foreground ,blue))))
    `(undo-tree-visualizer-register-face ((,class (:foreground ,yellow))))
+
+   ;; vertico
+   `(vertico-current ((,class (:background ,base-4 :extend t))))
 
    ;; which-func
    `(which-func ((,class (:foreground ,blue))))
