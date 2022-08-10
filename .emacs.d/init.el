@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-06-13 12:02:48 dharms>
+;; Modified Time-stamp: <2022-08-10 13:03:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2653,7 +2653,7 @@ ARGS are the additional arguments."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft
-  :bind ("C-c M-d" . deft)
+  :bind ("C-c 0dd" . deft)
   :commands deft-find-file
   :config
   (setq deft-extensions '("org" "md" "txt"))
