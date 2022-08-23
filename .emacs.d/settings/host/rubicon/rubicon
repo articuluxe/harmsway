@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-01-14 11:49:46 dharms>
+;; Modified Time-stamp: <2022-08-23 15:06:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -47,6 +47,7 @@
                             "Inconsolata 14"
                             "NanumGothicCoding 14"
                             "Iosevka 16"
+                            "Iosevka Comfy 14"
                             "Go Mono 14"
                             "Anka/Coder 14"
                             "League Mono Variable 14"

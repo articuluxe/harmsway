@@ -39,6 +39,7 @@ brew install boost
 brew install --HEAD asio
 brew install the_silver_searcher
 brew install ripgrep
+brew install ugrep
 brew install wget
 brew install duti
 brew install keychain
