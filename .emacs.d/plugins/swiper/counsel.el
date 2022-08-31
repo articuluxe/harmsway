@@ -1795,7 +1795,8 @@ currently checked out."
                (and (string-match "\\`[[:blank:]]+" line)
                     (list (substring line (match-end 0)))))
              (let ((default-directory (counsel-locate-git-root)))
-               (split-string (shell-command-to-string "git branch -vv --all")
+               (split-string (shell-command-to-string
+                              "git branch -vv --all --no-color")
                              "\n" t))))
 
 ;;;###autoload
@@ -1962,12 +1963,12 @@ choose between `yes-or-no-p' and `y-or-n-p'; otherwise default to
 These files are un-ignored if `ivy-text' matches them.  The
 common way to show all files is to start `ivy-text' with a dot.
 
-Example value: \"\\(?:\\`[#.]\\)\\|\\(?:[#~]\\'\\)\".  This will hide
-temporary and lock files.
+Example value: \"\\\\=`[#.]\\|[#~]\\\\='\".
+This will hide temporary and lock files.
 \\<ivy-minibuffer-map>
-Choosing the dotfiles option, \"\\`\\.\", might be convenient,
+Choosing the dotfiles option, \"\\\\=`\\.\", might be convenient,
 since you can still access the dotfiles if your input starts with
-a dot. The generic way to toggle ignored files is \\[ivy-toggle-ignore],
+a dot.  The generic way to toggle ignored files is \\[ivy-toggle-ignore],
 but the leading dot is a lot faster."
   :type `(choice
           (const :tag "None" nil)

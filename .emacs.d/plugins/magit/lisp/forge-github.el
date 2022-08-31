@@ -147,6 +147,7 @@
                                       :repository (oref repo id)
                                       :number     .number)))))
         (oset issue id         issue-id)
+        (oset issue their-id   .id)
         (oset issue state      (pcase-exhaustive .state
                                  ("CLOSED" 'closed)
                                  ("OPEN"   'open)))
@@ -197,6 +198,7 @@
                            (forge-pullreq :id           pullreq-id
                                           :repository   (oref repo id)
                                           :number       .number)))))
+        (oset pullreq their-id     .id)
         (oset pullreq state        (pcase-exhaustive .state
                                      ("MERGED" 'merged)
                                      ("CLOSED" 'closed)
@@ -210,12 +212,15 @@
                                          (t "0")))
         (oset pullreq closed       .closedAt)
         (oset pullreq merged       .mergedAt)
+        (oset pullreq draft-p      .isDraft)
         (oset pullreq locked-p     .locked)
         (oset pullreq editable-p   .maintainerCanModify)
         (oset pullreq cross-repo-p .isCrossRepository)
         (oset pullreq base-ref     .baseRef.name)
+        (oset pullreq base-rev     .baseRefOid)
         (oset pullreq base-repo    .baseRef.repository.nameWithOwner)
         (oset pullreq head-ref     .headRef.name)
+        (oset pullreq head-rev     .headRefOid)
         (oset pullreq head-user    .headRef.repository.owner.login)
         (oset pullreq head-repo    .headRef.repository.nameWithOwner)
         (oset pullreq milestone    (and .milestone.id
@@ -579,6 +584,28 @@
                   (open   "CLOSED"))))
     :callback (forge--set-field-callback)))
 
+(cl-defmethod forge--set-topic-draft
+  ((_repo forge-github-repository) topic value)
+  (let ((buffer (current-buffer)))
+    (ghub-graphql
+     `(mutation (,(if value
+                      'convertPullRequestToDraft
+                    'markPullRequestReadyForReview)
+                 [(input $input ,(if value
+                                     'ConvertPullRequestToDraftInput!
+                                   'MarkPullRequestReadyForReviewInput!))]
+                 (pullRequest isDraft)))
+     `((input (pullRequestId . ,(oref topic their-id))))
+     :host (oref (forge-get-repository topic) apihost)
+     :auth 'forge
+     :callback (lambda (data &rest _)
+                 (if (assq 'error data)
+                     (ghub--graphql-pp-response data)
+                   (oset topic draft-p value)
+                   (when (buffer-live-p buffer)
+                     (with-current-buffer buffer
+                       (magit-refresh-buffer))))))))
+
 (cl-defmethod forge--set-topic-milestone
   ((repo forge-github-repository) topic milestone)
   (forge--ghub-patch topic
@@ -597,12 +624,6 @@
   (forge--ghub-put topic "/repos/:owner/:repo/issues/:number/labels" nil
     :payload labels
     :callback (forge--set-field-callback)))
-
-(cl-defmethod forge--delete-comment
-  ((_repo forge-github-repository) post)
-  (forge--ghub-delete post "/repos/:owner/:repo/issues/comments/:number")
-  (closql-delete post)
-  (magit-refresh))
 
 (cl-defmethod forge--set-topic-assignees
   ((_repo forge-github-repository) topic assignees)
@@ -627,6 +648,12 @@
         "/repos/:owner/:repo/pulls/:number/requested_reviewers"
         `((reviewers . ,remove)))))
   (forge-pull))
+
+(cl-defmethod forge--delete-comment
+  ((_repo forge-github-repository) post)
+  (forge--ghub-delete post "/repos/:owner/:repo/issues/comments/:number")
+  (closql-delete post)
+  (magit-refresh))
 
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-issue)))

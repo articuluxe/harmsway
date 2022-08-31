@@ -3,7 +3,7 @@
 ;; Copyright (C) 2021 TEC
 
 ;; Author: TEC <https://github.com/tecosaur>
-;; Maintainer: TEC <tec@tecosaur.com>
+;; Maintainer: TEC <contact@tecosaur.net>
 ;; Created: February 06, 2021
 ;; Modified: February 06, 2021
 ;; Version: 0.1.0
@@ -109,13 +109,25 @@ Formatted with the app name, and truncated window name."
   :type 'string
   :group 'emacs-everywhere)
 
+(defcustom emacs-everywhere-major-mode-function
+  (cond
+   ((executable-find "pandoc") #'org-mode)
+   ((fboundp 'markdown-mode) #'emacs-everywhere-major-mode-org-or-markdown)
+   (t #'text-mode))
+  "Function which sets the major mode for the Emacs Everywhere buffer.
+
+When set to `org-mode', pandoc is used to convert from markdown to Org
+when applicable."
+  :type 'function
+  :options '(org-mode
+             emacs-everywhere-major-mode-org-or-markdown
+             text-mode)
+  :group 'emacs-everywhere)
+
 (defcustom emacs-everywhere-init-hooks
-  `(emacs-everywhere-set-frame-name
+  '(emacs-everywhere-set-frame-name
     emacs-everywhere-set-frame-position
-    ,(cond
-      ((executable-find "pandoc") #'org-mode)
-      ((fboundp 'markdown-mode) #'emacs-everywhere-major-mode-org-or-markdown)
-      (t #'text-mode))
+    emacs-everywhere-apply-major-mode
     emacs-everywhere-insert-selection
     emacs-everywhere-remove-trailing-whitespace
     emacs-everywhere-init-spell-check)
@@ -193,7 +205,7 @@ Make sure that it will be matched by `emacs-everywhere-file-patterns'."
 
 ;;;###autoload
 (defun emacs-everywhere (&optional file line column)
-  "Lanuch the emacs-everywhere frame from emacsclient."
+  "Launch the emacs-everywhere frame from emacsclient."
   (let ((app-info (emacs-everywhere-app-info)))
     (apply #'call-process "emacsclient" nil 0 nil
            (delq
@@ -264,6 +276,10 @@ buffers.")
   (when (keymapp emacs-everywhere-mode-initial-map)
     (set-transient-map emacs-everywhere-mode-initial-map)))
 
+(defun emacs-everywhere-apply-major-mode ()
+  "Call `emacs-everywhere-major-mode-function'."
+  (funcall emacs-everywhere-major-mode-function))
+
 (defun emacs-everywhere-erase-buffer ()
   "Delete the contents of the current buffer."
   (interactive)
@@ -288,6 +304,7 @@ Never paste content when ABORT is non-nil."
     (unless abort
       (run-hooks 'emacs-everywhere-final-hooks)
       (gui-select-text (buffer-string))
+      (gui-backend-set-selection 'PRIMARY (buffer-string))
       (when emacs-everywhere-copy-command ; handle clipboard finicklyness
         (let ((inhibit-message t)
               (require-final-newline nil)

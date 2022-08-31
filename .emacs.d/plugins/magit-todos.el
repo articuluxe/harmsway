@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; URL: http://github.com/alphapapa/magit-todos
 ;; Version: 1.6-pre
-;; Package-Requires: ((emacs "25.2") (async "1.9.2") (dash "2.13.0") (f "0.17.2") (hl-todo "1.9.0") (magit "2.13.0") (pcre2el "1.8") (s "1.12.0") (transient "0.2.0"))
+;; Package-Requires: ((emacs "26.1") (async "1.9.2") (dash "2.13.0") (f "0.17.2") (hl-todo "1.9.0") (magit "2.13.0") (pcre2el "1.8") (s "1.12.0") (transient "0.2.0"))
 ;; Keywords: magit, vc
 
 ;;; Commentary:
@@ -64,7 +64,6 @@
 ;;;; Requirements
 
 (require 'cl-lib)
-(require 'org)
 (require 'grep)
 (require 'seq)
 
@@ -408,6 +407,7 @@ Only necessary when option `magit-todos-update' is nil."
   (setq-local magit-todos-branch-list-merge-base-ref ref)
   (magit-todos-update))
 
+(declare-function org-show-entry "org")
 (cl-defun magit-todos-jump-to-item (&key peek (item (oref (magit-current-section) value)))
   "Show current item.
 If PEEK is non-nil, keep focus in status buffer window."
@@ -1044,6 +1044,7 @@ if the process's buffer has already been deleted."
 
 (defun magit-todos--format-org (item)
   "Return ITEM formatted as from an Org file."
+  (require 'org)
   (magit-todos--fontify-like-in-org-mode
    (concat (magit-todos-item-org-level item) " "
            (magit-todos-item-keyword item) " "
@@ -1386,6 +1387,7 @@ When SYNC is non-nil, match items are returned."
 ;; Helm or Ivy to be installed; it is only called after one of them is loaded.
 
 (declare-function helm-make-source "ext:helm-source")
+(declare-function helm "ext:helm")
 
 (with-eval-after-load 'helm
   (defvar helm-magit-todos-source

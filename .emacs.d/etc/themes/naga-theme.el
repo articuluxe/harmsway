@@ -95,11 +95,14 @@ The default style is green text in a green box."
       (mode-line-inactive (:box "#555555" :background ,bg :foreground ,comment))
       (isearch (:foreground ,bg :weight semi-bold :background ,fg))
       (lazy-highlight (:foreground ,fg :background "blue3"))
-      (show-paren-match (:foreground ,bg :background "cyan4"))
+      (show-paren-match (:foreground ,bg :background ,red))
       (show-paren-mismatch (:foreground "red" :background ,dark-blue))
       (completions-common-part (:inherit 'orderless-match-face-0))
       (error (:foreground ,red))
       (compilation-mode-line-run (:foreground ,yellow))
+      (cursor (:background ,red))
+      (shadow (:foreground ,comment-light))
+      (match (:foreground ,yellow :background ,bg-green :slant oblique))
 
       ;; orderless
       (orderless-match-face-0 (:foreground ,purple))
@@ -121,6 +124,12 @@ The default style is green text in a green box."
       (company-tooltip (:background "gray10"))
       (company-tooltip-common (:foreground ,orange))
       (company-tooltip-selection (:background ,dark-blue :weight bold))
+
+      ;; corfu
+      (corfu-current (:inherit 'highlight))
+      (corfu-default (:background "#090909"))
+      (corfu-border (:background ,fg-dark))
+      (corfu-bar (:background ,comment-light))
 
       ;; which-key
       (which-key-key-face (:foreground ,yellow))
@@ -168,8 +177,8 @@ The default style is green text in a green box."
       (line-number-current-line (:foreground "dark green"))
 
       ;; org
-      (org-todo (:foreground ,orange-red))
-      (org-done (:foreground ,fg))
+      (org-todo (:foreground ,orange-red :weight bold))
+      (org-done (:foreground ,fg :weight bold))
       (org-headline-todo (:foreground ,orange-red))
       (org-headline-done (:foreground ,comment :strike-through t))
       (org-document-title (:foreground ,cyan))
@@ -177,8 +186,8 @@ The default style is green text in a green box."
       (org-verbatim (:foreground ,purple))
       (org-code (:foreground ,string))
       (org-block (:background ,block))
-      (org-block-begin-line (:foreground ,comment))
-      (org-block-end-line (:inherit 'org-block-begin-line :extend nil))
+      (org-block-begin-line (:slant oblique :foreground ,comment-dark))
+      (org-block-end-line (:slant oblique :foreground ,comment-dark))
       (org-special-keyword (:foreground ,comment))
 
       ;; magit
@@ -203,6 +212,18 @@ The default style is green text in a green box."
       (whitespace-space (:foreground ,whitespace-fg :background ,bg))
       (whitespace-tab (:foreground ,whitespace-fg :background ,bg))
       (whitespace-line (:foreground ,orange-red :background ,bg))
+      (whitespace-newline (:foreground ,whitespace-fg :background ,bg))
+      (whitespace-empty (:foreground ,red :background ,yellow))
+      (whitespace-indentation (:foreground ,red :background ,yellow))
+      (whitespace-space-before-tab (:foreground ,red :background ,orange))
+      (whitespace-space-after-tab (:foreground ,red :background ,yellow))
+      (whitespace-missing-newline-at-eof (:background ,string))
+      (whitespace-trailing (:background ,red))
+      (whitespace-big-indent (:background ,red))
+
+      ;; shortdoc
+      (shortdoc-section (:inherit 'default))
+      (shortdoc-heading (:inherit 'default :weight bold :height 1.3))
 
       ;; gnus and message-mode
       (gnus-header (:inherit default))
@@ -228,7 +249,10 @@ The default style is green text in a green box."
       ;; envrc
       (envrc-mode-line-none-face (:foreground ,fg))
       (envrc-mode-line-on-face (:foreground ,string))
-      (envrc-mode-line-error-face (:inherit 'error)))))
+      (envrc-mode-line-error-face (:inherit 'error))
+
+      ;; eglot
+      (eglot-highlight-symbol-face (:foreground ,fg :background ,bg-green :weight bold)))))
 
 ;; Set all the colors to their actual values.
 (let ((bg "#040404")
@@ -244,12 +268,13 @@ The default style is green text in a green box."
       (orange "#ff9000")
       (comment "#707370")
       (comment-light "#909590")
+      (comment-dark "#353535")
       (grey "#aabaaa")
       (dark-blue "#01018a")
       (sea-green "#3cb371")
       (orange-red "#ff4500")
       (red "#ff1500")
-      (whitespace-fg "#151515")
+      (whitespace-fg "#555f55")
       (block "#121212")
       (block-light "#252525"))
   (apply #'custom-theme-set-faces

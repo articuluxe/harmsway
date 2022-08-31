@@ -86,17 +86,17 @@
       (bg-cyan     "#88cfd0")
 
       ;; Diffs
-      (bg-added          "#d6efd2")
-      (bg-added-faint    "#e5f5e0")
-      (bg-added-refine   "#c8e3c0")
+      (bg-added          "#ccefcf")
+      (bg-added-faint    "#e0f3e0")
+      (bg-added-refine   "#bae0c0")
 
       (bg-changed        "#ffe5b9")
       (bg-changed-faint  "#ffefc5")
       (bg-changed-refine "#ffd09f")
 
-      (bg-removed        "#ffd8d8")
-      (bg-removed-faint  "#ffe5e5")
-      (bg-removed-refine "#ffc0b0")
+      (bg-removed        "#ffd4d8")
+      (bg-removed-faint  "#ffe3e3")
+      (bg-removed-refine "#ffc0ca")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -125,7 +125,7 @@
       (bg-warning    "#ffe0aa") ; check with warning
       (bg-info       "#ddf5cc") ; check with info
 
-      (border        "#ded0bb")
+      (border        "#cdc2bb")
       (cursor        "#cf1f00")
       (fg-intense    "#000000")
 
@@ -134,11 +134,11 @@
       (warning yellow-warmer)
       (info green)
 
-      (link red)
+      (link cyan-warmer)
       (link-alt green-warmer)
-      (date cyan-warmer)
+      (date cyan-cooler)
       (name yellow)
-      (keybind red-cooler)
+      (keybind red-warmer)
 
       (builtin red-cooler)
       (comment green-faint)
@@ -151,6 +151,9 @@
       (type green-cooler)
       (variable magenta-cooler)
 
+      (rx-escape blue) ; compare with `string'
+      (rx-construct magenta-warmer)
+
       (accent-0 red)
       (accent-1 green-cooler)
       (accent-2 yellow)
@@ -161,6 +164,7 @@
       (mail-2 yellow)
       (mail-3 green-cooler)
       (mail-4 yellow-cooler)
+      (mail-5 blue)
 
       (rainbow-0 yellow)
       (rainbow-1 red)

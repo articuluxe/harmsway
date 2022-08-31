@@ -134,11 +134,11 @@
       (warning yellow-warmer)
       (info green-cooler)
 
-      (link blue)
+      (link cyan)
       (link-alt magenta)
       (date cyan)
       (name blue-warmer)
-      (keybind blue-cooler)
+      (keybind green-cooler)
 
       (builtin green-cooler)
       (comment yellow-faint)
@@ -151,6 +151,9 @@
       (type magenta-cooler)
       (variable cyan-warmer)
 
+      (rx-escape green) ; compare with `string'
+      (rx-construct magenta-warmer)
+
       (accent-0 blue-cooler)
       (accent-1 magenta-warmer)
       (accent-2 cyan-cooler)
@@ -161,6 +164,7 @@
       (mail-2 green-cooler)
       (mail-3 yellow)
       (mail-4 magenta-cooler)
+      (mail-5 cyan)
 
       (rainbow-0 cyan-warmer)
       (rainbow-1 magenta-cooler)

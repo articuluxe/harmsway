@@ -68,16 +68,10 @@
    (timeline)
    (marks                :closql-table (pullreq-mark mark))
    (note                 :initarg :note :initform nil)
-   ;; We don't use these fields:
-   ;; includesCreatedEdit (huh?),
-   ;; lastEditedAt (same as updatedAt?),
-   ;; publishedAt (same as createdAt?),
-   ;; activeLockReason, additions, authorAssociation, (baseRefName), baseRefOid,
-   ;; bodyHTML, bodyText, canBeRebased, changedFiles, closed, createdViaEmail,
-   ;; databaseId, deletions, editor, (headRefName), headRefOid, mergeCommit,
-   ;; mergeStateStatus, mergeable, merged, mergedBy, permalink,
-   ;; potentialMergeCommit,, reactionGroups, resourcePath, revertResourcePath,
-   ;; revertUrl, url, viewer{*}
+   (base-rev             :initarg :base-rev)
+   (head-rev             :initarg :head-rev)
+   (draft-p              :initarg :draft-p)
+   (their-id             :initarg :their-id)
    ))
 
 (defclass forge-pullreq-post (forge-post)
@@ -95,14 +89,6 @@
    (body                 :initarg :body)
    (edits)
    (reactions)
-   ;; We don't use these fields:
-   ;; includesCreatedEdit (huh?),
-   ;; lastEditedAt (same as updatedAt?),
-   ;; publishedAt (same as createdAt?),
-   ;; pullRequest (same as issue),
-   ;; repository (use .pullreq.project),
-   ;; authorAssociation, bodyHTML, bodyText, createdViaEmail,
-   ;; editor, id, reactionGroups, resourcePath, url, viewer{*}
    ))
 
 ;;; Query
@@ -268,12 +254,26 @@ Also see option `forge-topic-list-limit'."
                              (forge-ls-recent-topics repo 'pullreq)
                              (forge--topic-type-prefix repo 'pullreq))))))
 
-(defun forge--insert-pullreq-commits (pullreq)
-  (when-let ((range (forge--pullreq-range pullreq)))
-    (magit-insert-section-body
-      (cl-letf (((symbol-function #'magit-cancel-section) (lambda ())))
-        (magit-insert-log range magit-buffer-log-args)
-        (magit-make-margin-overlay nil t)))))
+(defun forge--insert-pullreq-commits (pullreq &optional all)
+  (cl-letf (((symbol-function #'magit-cancel-section) (lambda ())))
+    (if all
+        ;; Numeric pr ref, pr branch (if it exists) and api
+        ;; pr range may be out of sync.  Just show them all.
+        (magit-insert-section-body
+          (magit-insert-log
+           (delq nil (list (concat "^" (or (oref pullreq base-rev)
+                                           (concat (forge--get-remote) "/"
+                                                   (oref pullreq base-ref))))
+                           (forge--pullreq-ref pullreq)
+                           (forge--pullreq-branch-active pullreq)
+                           (and-let* ((branch (oref pullreq head-ref)))
+                             (and (magit-local-branch-p branch) branch))))
+           (seq-uniq (cons "--graph" magit-buffer-log-args)))
+          (magit-make-margin-overlay nil t))
+      (when-let ((range (forge--pullreq-range pullreq)))
+        (magit-insert-section-body
+          (magit-insert-log range magit-buffer-log-args)
+          (magit-make-margin-overlay nil t))))))
 
 (cl-defmethod forge--insert-topic-contents :after ((pullreq forge-pullreq)
                                                    _width _prefix)

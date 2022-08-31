@@ -42,9 +42,9 @@
   (defconst ef-spring-palette
     '(;; Basic tones
       (bg-main     "#f6fff9")
-      (fg-main     "#3f4946")
+      (fg-main     "#34494a")
       (bg-dim      "#e8f0f0")
-      (fg-dim      "#707586")
+      (fg-dim      "#777294")
       (bg-alt      "#e0e6e3")
       (fg-alt      "#9d5e7a")
 
@@ -86,17 +86,17 @@
       (bg-cyan     "#88cfe0")
 
       ;; Diffs
-      (bg-added          "#ddfadd")
-      (bg-added-faint    "#ecffec")
-      (bg-added-refine   "#c0efc0")
+      (bg-added          "#dfffe0")
+      (bg-added-faint    "#e0ffea")
+      (bg-added-refine   "#c3efd3")
 
       (bg-changed        "#ffe0b9")
       (bg-changed-faint  "#ffefcb")
       (bg-changed-refine "#ffcf9f")
 
-      (bg-removed        "#ffe2e2")
-      (bg-removed-faint  "#ffefef")
-      (bg-removed-refine "#ffc0c0")
+      (bg-removed        "#ffe4dd")
+      (bg-removed-faint  "#ffefea")
+      (bg-removed-refine "#ffcdc0")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -125,7 +125,7 @@
       (bg-warning    "#ffecba") ; check with warning
       (bg-info       "#ccf5dd") ; check with info
 
-      (border        "#b9d0c4")
+      (border        "#b4c4c0")
       (cursor        "#bf0040")
       (fg-intense    "#000000")
 
@@ -134,11 +134,11 @@
       (warning yellow-warmer)
       (info green)
 
-      (link green-cooler)
-      (link-alt blue-cooler)
+      (link cyan-cooler)
+      (link-alt yellow-cooler)
       (date cyan)
       (name green-cooler)
-      (keybind red-warmer)
+      (keybind magenta-warmer)
 
       (builtin green)
       (comment yellow-faint)
@@ -151,6 +151,9 @@
       (type magenta-cooler)
       (variable cyan)
 
+      (rx-escape cyan) ; compare with `string'
+      (rx-construct magenta-warmer)
+
       (accent-0 green)
       (accent-1 red-cooler)
       (accent-2 blue)
@@ -161,6 +164,7 @@
       (mail-2 yellow-warmer)
       (mail-3 blue)
       (mail-4 green-warmer)
+      (mail-5 cyan-cooler)
 
       (rainbow-0 red-cooler)
       (rainbow-1 green-cooler)

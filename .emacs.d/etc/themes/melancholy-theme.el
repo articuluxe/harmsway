@@ -3,7 +3,7 @@
 ;; Copyright (C) 2022 Cooper Oscarfono
 
 ;; Author: Cooper Oscarfono <cooper@oscarfono.com>
-;; URL: https://github.com/baaash/melancholy-theme
+;; URL: https://github.com/techquila/melancholy-theme
 ;; Package-Version: 20220424.1001
 ;; Version: 3.0.1
 ;; Package-requires: emacs, ttf-ubuntu-font-family
@@ -34,8 +34,8 @@
 ;;
 ;; sudo apt install ttf-ubuntu-font-family
 ;;
-;; Josefin Sans:
-;; https://www.1001freefonts.com/d/5819/josefin-sans.zip
+;; Source Sans Pro:
+;; https://fonts.google.com/specimen/Source+Sans+Pro
 ;;
 ;; Dancing Script font:
 ;; https://www.1001freefonts.com/d/4914/dancing-script.zip
@@ -49,10 +49,13 @@
 (deftheme melancholy
   "A dark theme for dark minds" )
 
-(let ((font-family-default   "Josefin Sans" )
-     (font-family-monospace "Ubuntu Mono" )
-     ;;   (font-family-condensed "Josefin Sans" )
-     (font-family-cursive   "Dancing Script" )
+(let
+   (
+     (font-cursive "DancingScript" )
+     (font-default   "NotoSansCJK" )
+     (font-mono "Inconsolata" )
+     (font-sans "NotoSansCJK" )
+     (my-fluff              "#FCDEEA" )
      (my-active             "#F92672" )
      (my-visited            "#999999" )
      (my-info               "#FFB728" )
@@ -74,7 +77,8 @@
     ;;;; default
     ;; ========================================
 
-    `(default ((t (:family ,font-family-monospace
+    `(default ((t (
+                   :family ,font-default
                    :width normal
                    :weight normal
                    :slant normal
@@ -105,13 +109,13 @@
     ;; base settings
     ;; ========================================
     `(cursor ((t (:background ,my-hicontrast ))))
-    `(region ((t (:background ,my-deepcontrast ))))
+    `(region ((t (:background ,my-highlight :foreground ,my-shadow ))))
     `(query-replace ((t (:inherit isearch ))))
     `(match ((t (:background ,my-pop ))))
     `(highlight ((t (:foreground ,my-pop :background ,my-contrast ))))
     `(lazy-highlight ((t (:foreground ,my-shadow :background ,my-highlight ))))
-    `(fixed-pitch ((t (:family ,font-family-monospace ))))
-    `(variable-pitch ((t (:family ,font-family-default :height 99 :weight normal ))))
+    `(fixed-pitch ((t (:family ,font-mono ))))
+    `(variable-pitch ((t (:family ,font-sans :height 99 :weight normal ))))
     `(bold ((t (:weight bold ))))
     `(italic ((t (:slant italic ))))
     `(bold-italic ((t (:weight bold :slant italic ))))
@@ -119,14 +123,14 @@
     `(button ((t (:foreground ,my-active :underline (:color foreground-color :style line) ))))
     `(link ((t (:foreground ,my-active :underline t :weight bold ))))
     `(link-visited ((t ( :foreground ,my-visited ))))
-    `(secondary-selection ((t (:background ,my-deepcontrast ))))
+    `(secondary-selection ((t (:background ,my-fluff ))))
     `(font-lock-builtin-face ((t (:foreground ,my-highlight ))))
     `(font-lock-comment-delimiter-face ((t (:foreground ,my-visited ))))
     `(font-lock-comment-face ((t (:foreground ,my-visited ))))
     `(font-lock-constant-face ((t (:foreground ,my-info ))))
     `(font-lock-doc-face ((t (:foreground ,my-info ))))
     `(font-lock-function-name-face ((t (:foreground ,my-pop ))))
-    `(font-lock-keyword-face ((t (:family ,font-family-cursive :height 1.4 :foreground ,my-active ))))
+    `(font-lock-keyword-face ((t (:family ,font-cursive :height 1.4 :foreground ,my-active ))))
     `(font-lock-negation-char-face ((t (:foreground ,my-active ))))
     `(font-lock-preprocessor-face ((t (:foreground ,my-active ))))
     `(font-lock-regexp-grouping-backslash ((t (:foreground ,my-pop  ))))
@@ -169,7 +173,7 @@
 
     ;; dired
     ;; ========================================
-    `(dired-header ((t (:family ,font-family-monospace :foreground ,my-pop ))))
+    `(dired-header ((t (:family ,font-mono :foreground ,my-pop ))))
 
     ;; flycheck
     ;; ========================================
@@ -193,7 +197,7 @@
     `(helm-buffer-directory ((t (:foreground ,my-shadow :background ,my-hicontrast ))))
     `(helm-grep-match ((t (:foreground ,my-highlight ))))
     `(helm-header ((t ( :foreground ,my-white ))))
-    `(helm-source-header ((t (:family ,font-family-cursive :height 1.8 :foreground ,my-contrast :underline t ))))
+    `(helm-source-header ((t (:family ,font-cursive :height 1.8 :foreground ,my-contrast :underline t ))))
     `(helm-selection ((t (:foreground ,my-deepcontrast :background ,my-pop ))))
     `(helm-separator ((t (:background ,my-deepcontrast ))))
 
@@ -224,40 +228,46 @@
     ;; ========================================
     `(org-agenda-day-view ((t (:weight bold :foreground ,my-visited ))))
     `(org-agenda-date ((t (:foreground ,my-contrast ))))
-    `(org-agenda-date-today ((t (:weight extra-bold :foreground ,my-highlight ))))
+    `(org-agenda-date-today ((t ( :background ,my-highlight :foreground ,my-deepcontrast :weight bold ))))
     `(org-agenda-date-weekend ((t (:foreground ,my-deepcontrast ))))
     `(org-agenda-done ((t (:slant italic :foreground ,my-contrast :strike-through t ))))
-    `(org-agenda-structure ((t (:slant italic :foreground ,my-pop))))
-    `(org-imminent-deadline ((t (:foreground ,my-active))))
-    `(org-upcoming-deadline ((t (:slant italic :foreground ,my-visited ))))
-    `(org-priority ((t (:family ,font-family-monospace :slant normal :foreground ,my-visited ))))
+    `(org-agenda-structure ((t (:slant italic :foreground ,my-pop ))))
+    `(org-imminent-deadline ((t (:foreground ,my-warning))))
+    `(org-deadline-past-days ((t (:foreground ,my-warning ))))
+    `(org-deadline-warning-days ((t (:foreground ,my-warning ))))
+    `(org-upcoming-deadline ((t (:foreground ,my-visited :slant italic ))))
+    `(org-priority ((t (:family ,font-mono :foreground ,my-visited :slant normal  ))))
     `(org-block-begin-line ((t (:foreground ,my-shadow :background ,my-contrast ))))
     `(org-block ((t (:foreground ,my-pop :background ,my-deepcontrast :box nil ))))
     `(org-block-end-line ((t (:foreground ,my-shadow :background ,my-contrast ))))
     `(org-date ((t (:foreground ,my-visited ))))
     `(org-document-info ((t :(:height 1.25 foreground ,my-visited ))))
     `(org-document-info-keyword ((t (:foreground ,my-contrast ))))
-    `(org-document-title ((t (:family ,font-family-cursive :foreground ,my-info :height 4.20 :weight extra-bold ))))
+    `(org-document-title ((t (:family ,font-cursive :foreground ,my-info :height 4.20 :weight extra-bold ))))
     `(org-done ((t (:foreground ,my-contrast :strike-through t ))))
     `(org-headline-done ((t (:foreground ,my-contrast :strike-through t ))))
-    `(org-level-1 ((t :family ,font-family-default :foreground ,my-info :height 2.8 )))
-    `(org-level-2 ((t :family ,font-family-cursive :foreground ,my-info :height 2.0 :slant italic )))
-    `(org-level-3 ((t :family ,font-family-default :height 1.8 )))
-    `(org-level-4 ((t :family ,font-family-default :height 1.5 :weight light )))
-    `(org-level-5 ((t :family ,font-family-default :height 1.5 :weight extra-light )))
-    `(org-level-6 ((t :inherit (org-level-5) )))
-    `(org-level-7 ((t :inherit (org-level-5) )))
+    `(org-level-1 ((t :family ,font-sans  :height 2.8 :weight bold )))
+    `(org-level-2 ((t :family ,font-cursive :foreground ,my-contrast :height 2.4 :weight bold :slant italic )))
+    `(org-level-3 ((t :family ,font-cursive :foreground ,my-active :height 1.8 :weight regular )))
+    `(org-level-4 ((t :family ,font-sans :foreground ,my-contrast :height 1.4 :weight regular )))
+    `(org-level-5 ((t :family ,font-sans :height 1.3  :weight thin )))
+    `(org-level-6 ((t :family ,font-sans :height 1.3  :weight regular )))
+    `(org-level-7 ((t :family ,font-sans :foreground ,my-contrast :height 1.2 :weight regular )))
+    `(org-level-8 ((t :family ,font-sans :height 1.2 :weight regular )))
+    `(org-level-9 ((t :family ,font-sans :height 1.2 :weight  light )))
     `(org-link ((t :foreground ,my-active :underline t )))
-    `(org-src-block-faces ((t :family ,font-family-monospace )))
-    `(org-special-keyword ((t :family ,font-family-default :foreground ,my-contrast )))
-    `(org-table ((t :family ,font-family-monospace )))
+    `(org-scheduled ((t :foreground ,my-info )))
+    `(org-scheduled-today ((t :foreground ,my-highlight )))
+    `(org-src-block-faces ((t :family ,font-mono )))
+    `(org-special-keyword ((t :family ,font-default :foreground ,my-contrast )))
+    `(org-table ((t :family ,font-mono :foreground ,my-contrast )))
     `(org-tag ((t (:foreground ,my-active ))))
     `(org-todo ((t (:foreground ,my-info ))))
 
     ;; Speedbar
     ;; =======================================
-    `(speedbar-directory-face ((t :family ,font-family-monospace :foreground ,my-contrast t )))
-    `(speedbar-file-face ((t (:family ,font-family-monospace :foreground ,my-contrast ))))
+    `(speedbar-directory-face ((t :family ,font-mono :foreground ,my-contrast t )))
+    `(speedbar-file-face ((t (:family ,font-mono :foreground ,my-contrast ))))
     `(speedbar-selected-face ((t (:weight extra-bold :foreground ,my-highlight ))))
     `(speedbar-highlight-face ((t (:foreground ,my-active))))
     `(speedbar- ((t (:foreground ,my-active ))))
@@ -265,13 +275,16 @@
 
     ;; Terminal
     ;; =========================================
-    `(term-color-black ((t (:foreground ,my-shadow ))))
-    `(term-color-blue ((t (:foreground ,my-pop ))))
-;;    `(term-color-cyan ((t (:foreground ,my-pop ))))
-    `(term-color-green ((t (:foreground ,my-highlight ))))
-    `(term-color-magenta ((t (:foreground ,my-active ))))
-    `(term-color-red ((t (:foreground ,my-warning ))))
-    `(term-color-white ((t (:foreground ,my-white ))))
+    `(term-color-black ((t (:family ,font-mono :foreground ,my-shadow ))))
+    `(term-color-blue ((t (:family ,font-mono :foreground ,my-pop ))))
+;;    `(term-color-cyan ((t (:family ,font-mono :foreground ,my-pop ))))
+    `(term-color-green ((t (:family ,font-mono :foreground ,my-highlight ))))
+    `(term-color-magenta ((t (:family ,font-mono :foreground ,my-active ))))
+    `(term-color-red ((t (::family ,font-mono foreground ,my-warning ))))
+    `(term-color-white ((t (:family ,font-mono :foreground ,my-white ))))
+
+
+    `(multi-term-dedicated-buffer ((t (:family ,font-mono :foreground ,my-shadow ))))
 
     ;; The End
     ;; =========================================

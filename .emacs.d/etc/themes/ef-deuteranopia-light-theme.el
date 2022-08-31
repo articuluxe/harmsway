@@ -46,7 +46,7 @@
     '(;; Basic tones
       (bg-main     "#f5f5ff")
       (fg-main     "#1a1a2f")
-      (bg-dim      "#e4e4f0")
+      (bg-dim      "#e8e8ea")
       (fg-dim      "#70627f")
       (bg-alt      "#d3d3e0")
       (fg-alt      "#6f6336")
@@ -89,7 +89,7 @@
       (bg-cyan     "#88c8ff")
 
       ;; Diffs
-      (bg-added          "#dfdfff")
+      (bg-added          "#dbdbff")
       (bg-added-faint    "#e4e4ff")
       (bg-added-refine   "#c0c0ef")
 
@@ -98,7 +98,7 @@
       (bg-changed-refine "#e0b0d0")
 
       (bg-removed        "#fff0af")
-      (bg-removed-faint  "#efe6cf")
+      (bg-removed-faint  "#efefcb")
       (bg-removed-refine "#f0da88")
 
       ;; Graphs
@@ -128,7 +128,7 @@
       (bg-warning    "#ffe0aa") ; check with warning
       (bg-info       "#d0dfff") ; check with info
 
-      (border        "#bbbbef")
+      (border        "#c0c0d4")
       (cursor        "#0000bb")
       (fg-intense    "#000000")
 
@@ -154,6 +154,9 @@
       (type yellow)
       (variable cyan-cooler)
 
+      (rx-escape cyan-faint) ; compare with `string'
+      (rx-construct blue-warmer)
+
       (accent-0 blue-cooler)
       (accent-1 yellow-warmer)
       (accent-2 cyan)
@@ -164,6 +167,7 @@
       (mail-2 cyan-cooler)
       (mail-3 yellow)
       (mail-4 cyan)
+      (mail-5 blue-cooler)
 
       (rainbow-0 blue)
       (rainbow-1 yellow)

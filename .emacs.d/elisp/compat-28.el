@@ -39,7 +39,9 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'compat-macs))
+(require 'compat-macs "compat-macs.el")
+
+(compat-declare-version "28.1")
 
 ;;;; Defined in fns.c
 
@@ -197,7 +199,12 @@ If COUNT is non-nil and a natural number, the function will
   :min-version "27"
   (if (or (listp object) (vectorp object))
       (apply #'json-insert object args)
-    (insert (apply #'compat-json-serialize object args))))
+    ;; `compat-json-serialize' is not sharp-quoted as the byte
+    ;; compiled doesn't always know that the function has been
+    ;; defined, but it will only be used in this function if the
+    ;; prefixed definition of `json-serialize' (see above) has also
+    ;; been defined.
+    (insert (apply 'compat-json-serialize object args))))
 
 (compat-defun json-parse-string (string &rest args)
   "Handle top-level JSON values."
@@ -280,22 +287,23 @@ and BLUE, is normalized to have its value in [0,65535]."
        ;; [0] http://www.nic.funet.fi/pub/X11/X11R4/DOCS/color/Xcms.text
        ;; [1] https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/master/src/xcms/LRGB.c#L1392
        ((string-match
-         (rx bos "rgbi:" (* space)
-             (group (? (or "-" "+"))
-                    (or (: (+ digit) (? "." (* digit)))
-                        (: "." (+ digit)))
-                    (? "e" (? (or "-" "+")) (+ digit)))
-             "/" (* space)
-             (group (? (or "-" "+"))
-                    (or (: (+ digit) (? "." (* digit)))
-                        (: "." (+ digit)))
-                    (? "e" (? (or "-" "+")) (+ digit)))
-             "/" (* space)
-             (group (? (or "-" "+"))
-                    (or (: (+ digit) (? "." (* digit)))
-                        (: "." (+ digit)))
-                    (? "e" (? (or "-" "+")) (+ digit)))
-             eos)
+         ;; (rx bos "rgbi:" (* space)
+         ;;     (group (? (or "-" "+"))
+         ;;            (or (: (+ digit) (? "." (* digit)))
+         ;;                (: "." (+ digit)))
+         ;;            (? "e" (? (or "-" "+")) (+ digit)))
+         ;;     "/" (* space)
+         ;;     (group (? (or "-" "+"))
+         ;;            (or (: (+ digit) (? "." (* digit)))
+         ;;                (: "." (+ digit)))
+         ;;            (? "e" (? (or "-" "+")) (+ digit)))
+         ;;     "/" (* space)
+         ;;     (group (? (or "-" "+"))
+         ;;            (or (: (+ digit) (? "." (* digit)))
+         ;;                (: "." (+ digit)))
+         ;;            (? "e" (? (or "-" "+")) (+ digit)))
+         ;;     eos)
+         "\\`rgbi:[[:space:]]*\\([+-]?\\(?:[[:digit:]]+\\(?:\\.[[:digit:]]*\\)?\\|\\.[[:digit:]]+\\)\\(?:e[+-]?[[:digit:]]+\\)?\\)/[[:space:]]*\\([+-]?\\(?:[[:digit:]]+\\(?:\\.[[:digit:]]*\\)?\\|\\.[[:digit:]]+\\)\\(?:e[+-]?[[:digit:]]+\\)?\\)/[[:space:]]*\\([+-]?\\(?:[[:digit:]]+\\(?:\\.[[:digit:]]*\\)?\\|\\.[[:digit:]]+\\)\\(?:e[+-]?[[:digit:]]+\\)?\\)\\'"
          spec)
         (let ((r (round (* (string-to-number (match-string 1 spec)) 65535)))
               (g (round (* (string-to-number (match-string 2 spec)) 65535)))
@@ -441,6 +449,10 @@ not a list, return a one-element list containing OBJECT."
   (if (listp object)
       object
     (list object)))
+
+(compat-defun subr-primitive-p (object)
+  "Return t if OBJECT is a built-in primitive function."
+  (subrp object))
 
 ;;;; Defined in subr-x.el
 
@@ -732,7 +744,7 @@ is included in the return value."
      (apply #'format prompt format-args))
    (and default
         (or (not (stringp default))
-            (not (null default)))
+            (> (length default) 0))
         (format " (default %s)"
                 (if (consp default)
                     (car default)
@@ -846,5 +858,25 @@ directory or directories specified."
     (apply 'update-directory-autoloads
            (if (listp dir) dir (list dir)))))
 
-(provide 'compat-28)
+;;;; Defined in time-data.el
+
+(compat-defun decoded-time-period (time)
+  "Interpret DECODED as a period and return its length in seconds.
+For computational purposes, years are 365 days long and months
+are 30 days long."
+  :feature 'time-date
+  :version "28"
+  ;; Inlining the definitions from compat-27
+  (+ (if (consp (nth 0 time))
+         ;; Fractional second.
+         (/ (float (car (nth 0 time)))
+            (cdr (nth 0 time)))
+       (or (nth 0 time) 0))
+     (* (or (nth 1 time) 0) 60)
+     (* (or (nth 2 time) 0) 60 60)
+     (* (or (nth 3 time) 0) 60 60 24)
+     (* (or (nth 4 time) 0) 60 60 24 30)
+     (* (or (nth 5 time) 0) 60 60 24 365)))
+
+(compat--inhibit-prefixed (provide 'compat-28))
 ;;; compat-28.el ends here

@@ -535,14 +535,15 @@ Return nil otherwise."
 (defconst swift-mode:preprocessor-keywords
   '("#available" "#colorLiteral" "#column" "#dsohandle" "#else" "#elseif"
     "#endif" "#error" "#file" "#filePath" "#fileLiteral" "#function" "#if"
-    "#imageLiteral" "#keyPath" "#line" "#selector" "#sourceLocation" "#warning")
+    "#imageLiteral" "#keyPath" "#line" "#selector" "#sourceLocation"
+    "#unavailable" "#warning")
   "Keywords that begin with a number sign (#).")
 
 (defconst swift-mode:declaration-keywords
   '("associatedtype" "class" "deinit" "enum" "extension" "fileprivate" "func"
     "import" "init" "inout" "internal" "let" "open" "operator" "private"
-    "protocol" "public" "some" "static" "struct" "subscript" "typealias" "var"
-    "actor" "nonisolated" "isolated")
+    "protocol" "public" "any" "some" "static" "struct" "subscript" "typealias"
+    "var" "actor" "nonisolated" "isolated" "distributed")
   "Keywords used in declarations.")
 
 (defconst swift-mode:statement-keywords
@@ -569,7 +570,7 @@ Excludes true, false, and keywords begin with a number sign.")
   '("os" "arch" "swift" "compiler" "canImport" "targetEnvironment"
     "OSX" "macOS" "iOS" "watchOS" "tvOS" "i386" "x86_64" "arm" "arm64"
     "iOSApplicationExtension" "OSXApplicationExtension"
-    "macOSApplicationExtension" "simulator")
+    "macOSApplicationExtension" "simulator" "unavailable" "noasync")
   "Keywords for build configuration statements.")
 
 (defconst swift-mode:standard-precedence-groups

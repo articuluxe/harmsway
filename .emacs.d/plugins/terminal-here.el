@@ -24,11 +24,6 @@
 ;; name parsing. I'm not sure if that's possible though.
 (require 'tramp)
 
-;; TODO: readme updates, v2?
-
-;; TODO ssh support on Mac OS?
-
-;; TODO try to fix Konsole ssh
 
 
 
@@ -44,16 +39,21 @@
     (cond
      ;; Try to guess from the wide range of "standard" environment variables!
      ;; Based on xdg_util.cc.
-     ((equal xdg-current-desktop "Unity") 'gnome-terminal)
+     ((equal xdg-current-desktop "Enlightenment") 'terminology)
      ((equal xdg-current-desktop "GNOME") 'gnome-terminal)
      ((equal xdg-current-desktop "KDE") 'konsole)
+     ((equal xdg-current-desktop "LXQt") 'qterminal)
+     ((equal xdg-current-desktop "Unity") 'gnome-terminal)
+     ((equal xdg-current-desktop "XFCE") 'xfce4-terminal)
+     ((equal desktop-session "enlightenment") 'terminology)
      ((equal desktop-session "gnome") 'gnome-terminal)
-     ((equal desktop-session "mate") 'gnome-terminal)
-     ((equal desktop-session "kde4") 'konsole)
-     ((equal desktop-session "kde-plasma") 'konsole)
      ((equal desktop-session "kde") 'konsole)
-     ((equal desktop-session "xubuntu") 'xfce-terminal)
-     ((string-match-p (regexp-quote "xfce") desktop-session) 'xfce-terminal)
+     ((equal desktop-session "kde-plasma") 'konsole)
+     ((equal desktop-session "kde4") 'konsole)
+     ((equal desktop-session "lxqt") 'qterminal)
+     ((equal desktop-session "mate") 'gnome-terminal)
+     ((equal desktop-session "xubuntu") 'xfce4-terminal)
+     ((string-match-p (regexp-quote "xfce") desktop-session) 'xfce4-terminal)
 
      ;; We've failed, hopefully we're on a Debian-based OS so that we can use this
      ((executable-find "x-terminal-emulator") 'x-terminal-emulator))))
@@ -70,6 +70,7 @@ Common settings:
     konsole
     xfce4-terminal
     terminator
+    terminology
     xterm
     sakura
     urxvt
@@ -79,6 +80,7 @@ Common settings:
     kitty
     tilix
     foot
+    qterminal
 
 Usually this variable should be one of the symbols listed above.
 
@@ -210,10 +212,12 @@ buffer is not in a project."
    (cons 'xst                 (list "xst"))
    (cons 'st                  #'terminal-here--find-and-run-st)
    (cons 'konsole             (list "konsole"))
+   (cons 'qterminal           (list "qterminal"))
    (cons 'xterm               (list "xterm"))
    (cons 'sakura              (list "sakura"))
    (cons 'xfce4-terminal      (list "xfce4-terminal"))
    (cons 'terminator          (list "terminator"))
+   (cons 'terminology         (list "terminology"))
    (cons 'tilix               (list "tilix"))
    (cons 'kitty               (list "kitty"))
    (cons 'foot                (list "foot"))
@@ -251,10 +255,12 @@ terminal-here with tramp files to create ssh connections."
    (cons 'xst            "-e") ; popular st fork
    (cons 'st             "-e")
    (cons 'konsole        "-e") ; ssh seems to immediately exit with konsole
+   (cons 'qterminal      "-e")
    (cons 'xterm          "-e")
    (cons 'sakura         "-e")
    (cons 'xfce4-terminal "-x")
    (cons 'terminator     "-x")
+   (cons 'terminology    "-e")
    (cons 'tilix          "-e")
    (cons 'kitty          "--") ; kitty and foot don't need a special
    (cons 'foot           "--") ; flag for this, but we have to specify something.
@@ -272,8 +278,10 @@ instead of this table."
                        (choice (repeat string)
                                (function)))))
 
-(defvar terminal-here--verbose nil
-  "Print commands before they are run.")
+(defcustom terminal-here-verbose nil
+  "Print commands before they are run."
+  :group 'terminal-here
+  :type 'boolean)
 
 
 
@@ -281,11 +289,6 @@ instead of this table."
 
 (defun terminal-here--non-function-symbol-p (x)
   (and (symbolp x) (not (functionp x))))
-
-(defun terminal-here--per-os-command-table-p (x)
-  (and (listp x)
-       (consp (car x))
-       (terminal-here--non-function-symbol-p (caar x))))
 
 (defun terminal-here--os-terminal-command ()
   (or
@@ -298,7 +301,7 @@ instead of this table."
      terminal-here-windows-terminal-command)
    (user-error "No terminal configuration found for OS %s" system-type)))
 
-(defun terminal-here--maybe-lookup-in-command-table (term-spec)
+(defun terminal-here--maybe-lookup-in-terminal-command-table (term-spec)
   (if (not (terminal-here--non-function-symbol-p term-spec))
       term-spec
     (let ((terminal-command (alist-get term-spec terminal-here-terminal-command-table)))
@@ -311,16 +314,16 @@ instead of this table."
       x
     (funcall x dir)))
 
-(defun terminal-here--maybe-add-mac-os-open (command)
+(defun terminal-here--maybe-add-mac-os-open (terminal-command)
   "On Mac OS we use the open command to run the terminal in `default-directory'."
   (if (and (equal system-type 'darwin)
-           (not (equal (car command) "open")))
-      (append (list "open" "-a" (car command) "." "--args") (cdr command))
-    command))
+           (not (equal (car terminal-command) "open")))
+      (append (list "open" "-a" (car terminal-command) "." "--args") (cdr terminal-command))
+    terminal-command))
 
 (defun terminal-here--get-terminal-command (dir)
   (thread-last (terminal-here--os-terminal-command)
-    (terminal-here--maybe-lookup-in-command-table)
+    (terminal-here--maybe-lookup-in-terminal-command-table)
     (terminal-here--maybe-funcall dir)
     (terminal-here--maybe-add-mac-os-open)))
 
@@ -334,12 +337,6 @@ instead of this table."
            (user-error "No flag settings found for terminal %s in `terminal-here-command-flag-table'" term-spec))
          flag)))
    (user-error "Couldn't work out how to run an ssh command in your terminal, customize `terminal-here-command-flag' or set `terminal-here-terminal-command' to specify your terminal by symbol")))
-
-(defun terminal-here--term-command (dir)
-  (let ((ssh-data (terminal-here--parse-ssh-dir dir)))
-    (if ssh-data
-        (terminal-here--ssh-command (car ssh-data) (cadr ssh-data))
-      (terminal-here--get-terminal-command dir))))
 
 
 
@@ -358,67 +355,82 @@ instead of this table."
     (with-parsed-tramp-file-name dir nil
       (list (if user (concat user "@" host) host) localname))))
 
-(defun terminal-here--ssh-command (remote dir)
-  (append (terminal-here--term-command "") (list (terminal-here--get-command-flag) "ssh" "-t" remote
-                                    "cd" (shell-quote-argument dir) "&&" "exec" "$SHELL" "-")))
+(defun terminal-here--ssh-command (ssh-data)
+  (let ((remote (car ssh-data))
+        (dir (cadr ssh-data)))
+    (append (terminal-here--get-terminal-command "")
+            (list (terminal-here--get-command-flag) "ssh" "-t" remote
+                  "cd" (shell-quote-argument dir) "&&" "exec" "$SHELL" "-"))))
 
-(defun terminal-here-maybe-tramp-path-to-directory (dir)
+(defun terminal-here--tramp-path-to-directory (dir)
   "Extract the local part of a local tramp path.
 
 Given a tramp path returns the local part, otherwise returns
 nil."
-  (when (tramp-tramp-file-p dir)
-    (let ((file-name-struct (tramp-dissect-file-name dir)))
-      (cond
-       ;; sudo: just strip the extra tramp stuff
-       ((equal (tramp-file-name-method file-name-struct) "sudo")
-        (tramp-file-name-localname file-name-struct))
-       ;; ssh: run with a custom command handled later
-       ((equal (tramp-file-name-method file-name-struct) "ssh") dir)
-       (t (user-error "Terminal here cannot currently handle tramp files other than sudo and ssh"))))))
+  (let ((file-name-struct (tramp-dissect-file-name dir)))
+    (cond
+     ;; sudo: just strip the extra tramp stuff
+     ((equal (tramp-file-name-method file-name-struct) "sudo")
+      (tramp-file-name-localname file-name-struct))
+     ;; ssh: run with a custom command handled later
+     ((equal (tramp-file-name-method file-name-struct) "ssh") dir)
+     (t (user-error "Terminal here cannot currently handle tramp files other than sudo and ssh")))))
 
 
 
 
 ;;; Launching
 
-(defun terminal-here-launch-in-directory (dir)
+(defun terminal-here-launch-in-directory (dir &optional inner-command)
   "Launch a terminal in directory DIR.
 
 Handles tramp paths sensibly."
-  (terminal-here--run-command (terminal-here--term-command dir)
-                 (or (terminal-here-maybe-tramp-path-to-directory dir) dir)))
+  (let* ((local-dir (if (tramp-tramp-file-p dir) (terminal-here--tramp-path-to-directory dir) dir))
+         (ssh-data (terminal-here--parse-ssh-dir dir))
+         (terminal-command (if ssh-data
+                               (terminal-here--ssh-command ssh-data)
+                             (terminal-here--get-terminal-command local-dir))))
+    (when (and ssh-data inner-command)
+      (user-error "Custom commands are not currently supported over ssh."))
+
+    (terminal-here--run-command
+     (append terminal-command
+             (when inner-command (list (terminal-here--get-command-flag)))
+             inner-command)
+     local-dir)))
 
 (defun terminal-here--run-command (command dir)
-  (when terminal-here--verbose
-    (message "Running %s with default-directory %s" command dir))
+  (when terminal-here-verbose
+    (message "Running `%s` with default-directory `%s`" (mapconcat #'identity command " ") dir))
   (let* ((default-directory dir)
          (process-name (car command))
          (proc (apply #'start-process process-name nil command)))
     (set-process-sentinel
      proc
      (lambda (proc _)
-       (when (and (eq (process-status proc) 'exit) (/= (process-exit-status proc) 0))
-         (message "Error: in terminal here, command `%s` exited with error code %d"
+       (when (and (eq (process-status proc) 'exit)
+                  (or (/= (process-exit-status proc) 0)
+                      terminal-here-verbose))
+         (message "In terminal here, command `%s` exited with error code %d"
                   (mapconcat #'identity command " ")
                   (process-exit-status proc)))))
     ;; Don't close when emacs closes, seems to only be necessary on Windows.
     (set-process-query-on-exit-flag proc nil)))
 
 ;;;###autoload
-(defun terminal-here-launch ()
+(defun terminal-here-launch (&optional inner-command)
   "Launch a terminal in the current working directory.
 
 This is the directory of the current buffer unless you have
 changed it by running `cd'."
   (interactive)
-  (terminal-here-launch-in-directory default-directory))
+  (terminal-here-launch-in-directory default-directory inner-command))
 
 ;;;###autoload
 (defalias 'terminal-here 'terminal-here-launch)
 
 ;;;###autoload
-(defun terminal-here-project-launch ()
+(defun terminal-here-project-launch (&optional inner-command)
   "Launch a terminal in the current project root.
 
 Uses `terminal-here-project-root-function' to determine the
@@ -431,7 +443,7 @@ project root."
          (root (funcall real-project-root-function)))
     (when (not root)
       (user-error "Not in any project according to `terminal-here-project-root-function'"))
-    (terminal-here-launch-in-directory root)))
+    (terminal-here-launch-in-directory root inner-command)))
 
 
 
@@ -450,3 +462,21 @@ project root."
 ;;   (set symbl (eval (car (get symbl 'standard-value)))))
 ;; (ds/custom-reset-var 'terminal-here-terminal-command-table)
 ;; (ds/custom-reset-var 'terminal-here-command-flag-table)
+
+
+;; ;; Handy code for manually QA-ing things
+
+;; (terminal-here-launch (list "htop"))
+;; (terminal-here-launch (list "less" (buffer-file-name)))
+;; (terminal-here-launch (list (getenv "SHELL") "-c" "ls && exec $SHELL"))
+
+;; ;; These only work if you have the right directories with venvs in them:
+;; (let ((default-directory "~/code/monorepo")
+;;       (buffer-file-name "~/code/monorepo/README.md"))
+;;   (terminal-here-launch (list (getenv "SHELL") "-c" "source .root-venv/bin/activate && exec $SHELL")))
+
+;; (let ((default-directory "~/code/monorepo")
+;;       (buffer-file-name "~/code/monorepo/README.md"))
+;;   (terminal-here-launch (list "bash" "-c" "source .root-venv/bin/activate && exec bash")))
+
+;; (progn (find-file "/ssh:aws:/home/ec2-user/test") (terminal-here-launch))

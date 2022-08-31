@@ -210,6 +210,12 @@ May be used to add extra space between groups in `bufler-list'."
                  (alist :key-type (integer :tag "Group level")
                         :value-type (string :tag "Suffix string"))))
 
+(defcustom bufler-list-switch-buffer-action '((display-buffer-reuse-window
+                                               display-buffer-same-window))
+  "Display buffer action used by `bufler-list-buffer-switch'.
+See `display-buffer' for more information."
+  :type 'sexp)
+
 (defcustom bufler-cache-related-dirs-p t
   "Whether to cache whether directory pairs are related.
 Computing whether one directory is related to another can be
@@ -440,14 +446,7 @@ NAME, okay, `checkdoc'?"
 
 (bufler-define-buffer-command switch "Switch to buffer."
   (lambda (buffer)
-    (let ((bufler-window (selected-window)))
-      (ignore-errors
-        ;; Ignoring the error seems like the easiest way to handle
-        ;; this.  There are a surprising number of nuances in getting
-        ;; this to behave exactly as desired in all cases.
-        (delete-window bufler-window))
-      (pop-to-buffer buffer '((display-buffer-reuse-window
-                               display-buffer-same-window)))))
+    (pop-to-buffer buffer bufler-list-switch-buffer-action))
   :refresh-p nil)
 
 (bufler-define-buffer-command peek "Peek at buffer in another window."
@@ -769,6 +768,7 @@ PLIST may be a plist setting the following options:
 (bufler-define-column "Name" (:max-width nil)
   ;; MAYBE: Move indentation back to `bufler-list'.  But this seems to
   ;; work well, and that might be more complicated.
+  (ignore depth)
   (let ((indentation (make-string (* 2 bufler-indent-per-level) ? ))
         (mode-annotation (when (cl-loop for fn in bufler-buffer-mode-annotate-preds
                                         thereis (funcall fn buffer))

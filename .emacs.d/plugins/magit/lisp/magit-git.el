@@ -1972,6 +1972,14 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                (substring it 41))
           (magit-git-lines "ls-remote" remote)))
 
+(defun magit-remote-head (remote)
+  (and-let* ((line (cl-find-if
+                    (lambda (line)
+                      (string-match
+                       "\\`ref: refs/heads/\\([^\s\t]+\\)[\s\t]HEAD\\'" line))
+                    (magit-git-lines "ls-remote" "--symref" remote "HEAD"))))
+    (match-string 1 line)))
+
 (defun magit-list-modified-modules ()
   (--keep (and (string-match "\\`\\+\\([^ ]+\\) \\(.+\\) (.+)\\'" it)
                (match-string 2 it))
@@ -2005,7 +2013,9 @@ PATH has to be relative to the super-repository."
                ;; worktree, then "git worktree" returns the git
                ;; directory instead of the worktree, which isn't
                ;; what it is supposed to do and not what we want.
-               (setq path (magit-toplevel path))
+               ;; However, if the worktree has been removed, then
+               ;; we want to return it anway; instead of nil.
+               (setq path (or (magit-toplevel path) path))
                (setq worktree (list path nil nil nil))
                (push worktree worktrees)))
             ((string-equal line "bare")

@@ -42,14 +42,14 @@
   (defconst ef-summer-palette
     '(;; Basic tones
       (bg-main     "#fff2f3")
-      (fg-main     "#5f456f")
-      (bg-dim      "#fbe3ef")
-      (fg-dim      "#68717f")
-      (bg-alt      "#efd0e4")
-      (fg-alt      "#af506f")
+      (fg-main     "#4f4073")
+      (bg-dim      "#f3e7eb")
+      (fg-dim      "#786e74")
+      (bg-alt      "#efd3e4")
+      (fg-alt      "#af4988")
 
-      (bg-active   "#dfc0d4")
-      (bg-inactive "#f9ecf0")
+      (bg-active   "#dfc3d4")
+      (bg-inactive "#f9eff0")
 
       ;; Basic hues for foreground values
       (red             "#d3303a")
@@ -70,7 +70,7 @@
       (blue-faint      "#6060d0")
       (magenta         "#ba35af")
       (magenta-warmer  "#cb1aaa")
-      (magenta-cooler  "#7450df")
+      (magenta-cooler  "#8e44f3")
       (magenta-faint   "#bf3580")
       (cyan            "#1f6fbf")
       (cyan-warmer     "#3f6faf")
@@ -125,7 +125,7 @@
       (bg-warning    "#ffe5ba") ; check with warning
       (bg-info       "#bbefda") ; check with info
 
-      (border        "#eebfef")
+      (border        "#cabfca")
       (cursor        "#cf0090")
       (fg-intense    "#000000")
 
@@ -134,11 +134,11 @@
       (warning yellow-warmer)
       (info green-cooler)
 
-      (link blue-warmer)
-      (link-alt cyan-warmer)
+      (link blue)
+      (link-alt green-cooler)
       (date cyan-cooler)
       (name magenta-warmer)
-      (keybind blue-cooler)
+      (keybind red-cooler)
 
       (builtin magenta)
       (comment yellow-faint)
@@ -151,6 +151,9 @@
       (type cyan-warmer)
       (variable blue-warmer)
 
+      (rx-escape cyan-cooler) ; compare with `string'
+      (rx-construct red-cooler)
+
       (accent-0 magenta-cooler)
       (accent-1 yellow)
       (accent-2 cyan-cooler)
@@ -161,6 +164,7 @@
       (mail-2 magenta-warmer)
       (mail-3 blue-warmer)
       (mail-4 magenta-cooler)
+      (mail-5 green-warmer)
 
       (rainbow-0 magenta-warmer)
       (rainbow-1 magenta-cooler)

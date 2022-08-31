@@ -389,6 +389,7 @@ is called and a topic object is returned if available."
 (defvar forge-topic-headers-hook
   '(forge-insert-topic-title
     forge-insert-topic-state
+    forge-insert-topic-draft
     forge-insert-topic-refs
     forge-insert-topic-milestone
     forge-insert-topic-labels
@@ -433,11 +434,10 @@ is called and a topic object is returned if available."
      (format "%s: %s" forge-buffer-topic-ident (oref topic title)))
     (magit-insert-section (topicbuf)
       (magit-insert-headers 'forge-topic-headers-hook)
-      (when (and (forge-pullreq-p topic)
-                 (not (oref topic merged)))
+      (when (forge-pullreq-p topic)
         (magit-insert-section (pullreq topic)
           (magit-insert-heading "Commits")
-          (forge--insert-pullreq-commits topic)))
+          (forge--insert-pullreq-commits topic t)))
       (when-let ((note (oref topic note)))
         (magit-insert-section (note)
           (magit-insert-heading "Note")
@@ -499,6 +499,17 @@ is called and a topic object is returned if available."
                   ('(closed) 'forge-topic-closed)
                   ('(open t) 'forge-topic-unmerged)
                   ('(open)   'forge-topic-open))))))))
+
+(defvar forge-topic-draft-section-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [remap magit-edit-thing] #'forge-edit-topic-draft)
+    map))
+
+(cl-defun forge-insert-topic-draft
+    (&optional (topic forge-buffer-topic))
+  (when (forge-pullreq-p topic)
+    (magit-insert-section (topic-draft)
+      (insert (format "%-11s%s\n" "Draft: " (oref topic draft-p))))))
 
 (defvar forge-topic-milestone-section-map
   (let ((map (make-sparse-keymap)))
@@ -658,8 +669,7 @@ Return a value between 0 and 1."
 
 (cl-defun forge-insert-topic-review-requests
     (&optional (topic forge-buffer-topic))
-  (when (and (forge-github-repository-p (forge-get-repository topic))
-             (forge-pullreq-p topic))
+  (when (forge-pullreq-p topic)
     (magit-insert-section (topic-review-requests)
       (insert (format "%-11s" "Review-Requests: "))
       (if-let ((review-requests (closql--iref topic 'review-requests)))

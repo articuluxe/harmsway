@@ -97,7 +97,9 @@
            (data (aio-await (docker-run-docker-async "inspect" id))))
       (docker-utils-with-buffer (format "inspect %s" id)
         (insert data)
-        (js-mode)
+        (if (fboundp 'json-mode)
+            (json-mode)
+          (js-mode))
         (view-mode)))))
 
 (defun docker-read-log-level (prompt &rest _args)

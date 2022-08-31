@@ -54,6 +54,7 @@
  ;; Customize faces
   (
   (border                               (:background black-2 :foreground black))
+  (bookmark-face                        (:foreground red :background black-2))
   (button                               (:foreground green))
   (child-frame		                    (:background black :foreground black-1))
   (child-frame-border                   (:background black-2 :foreground black-1))
@@ -73,21 +74,21 @@
   (lv-separator                         (:foreground gray :background black-2))
   (match                                (:background yellow :foreground black))
   (menu                                 (:background black :foreground rosewater))
-  (mode-line                            (:background black))
-  (mode-line-inactive                   (:background black-1 :foreground black-4 :bold nil))
-  (mode-line-active		                (:background black :foreground rosewater :bold nil))
+  (fill-column-indicator                (:foreground black-3))
+  (mode-line                            (:background black-3))
+  (mode-line-inactive                   (:background black-2 :foreground black-4 :bold nil))
+  (mode-line-active		                (:background black-3 :foreground gray-2 :bold t))
   (mode-line-highlight                  (:foreground flamingo))
   (mode-line-buffer-id                  (:foreground green :bold t))
   (numbers                              (:background green :foreground black))
-  (region                               (:background black-4))
+  (region                               (:background blue :foreground blue-bg))
   (separator-line                       (:background black-2))
   (shadow                               (:background black))
   (success                              (:foreground green))
   (vertical-border                      (:foreground black-3 :background nil))
   (warning                              (:foreground yellow))
-  (window-border                        (:background black-2 :foreground black-2))
-  (window-divider-first-pixel           (:foreground black-2))
-  (window-divider-last-pixel            (:background black-2))
+  (window-border                        (:foreground peach))
+  (window-divider                       (:foreground black-3))
 
   ;; ;; Font lock
   (font-lock-type-face                  (:foreground lavender))
@@ -112,17 +113,15 @@
   (highlight-operators-face             (:foreground red))
   (highlight-quoted-symbol              (:foreground maroon))
   (highlight-numbers-face               (:foreground pink))
-  (highlight-symbol-face                (:background red-bg :foreground red :weight 'semi-bold))
+  (highlight-symbol-face                (:background black-3 :foreground green :weight 'semi-bold))
   (info-xref                            (:foreground yellow))
   
-  (minibuffer-prompt-end                (:background dark :foreground peach))
-  (minibuffer-prompt                    (:foreground peach :background black))
+  (minibuffer-prompt-end                (:foreground red))
+  (minibuffer-prompt                    (:foreground mauve))
   (epa-mark                             (:foreground pink))
   (dired-mark                           (:foreground pink))
 
   (trailing-whitespace                  (:background black-4))
-
-  (mode-line (:background black :foreground rosewater :bold t))
   
   ;; ;; Battery colors
   (doom-modeline-battery-critical       (:inherit 'error))
@@ -149,9 +148,10 @@
   (doom-modeline-error                  (:background red))
   (doom-modeline-info                   (:foreground gray))
   (doom-modeline-project-dir            (:foreground peach))
-  (doom-modeline-bar                    (:background lavender))
+  (doom-modeline-bar                    (:background lavender :foreground black-4))
   (doom-modeline-panel                  (:inherit 'bold :background flamingo :foreground black-2))
   (doom-modeline                        (:foreground gray))
+  (doom-themes-visual-bell              (:background red))
 
   ;;elfeed
   (elfeed-search-feed-face              (:foreground lavender))
@@ -218,40 +218,49 @@
   (xref-match		                    (:foreground peach))
 
   ;; rainbow delimiter
-  (rainbow-delimiters-mismatched-face   (:foreground red))
-  (rainbow-delimiters-unmatched-face    (:foreground green))
-  (rainbow-delimiters-base-error-face   (:foreground red))
+  (rainbow-delimiters-mismatched-face   (:foreground red :background yellow))
+  (rainbow-delimiters-unmatched-face    (:foreground green :background yellow))
+  (rainbow-delimiters-base-error-face   (:foreground red :background yellow))
   (rainbow-delimiters-base-face         (:foreground gray-2))
-  (rainbow-delimiters-depth-1-face      (:foreground lavender))
-  (rainbow-delimiters-depth-2-face      (:foreground peach))
-  (rainbow-delimiters-depth-3-face      (:foreground blue))
-  (rainbow-delimiters-depth-4-face      (:foreground maroon))
-  (rainbow-delimiters-depth-5-face      (:foreground green))
-  (rainbow-delimiters-depth-6-face      (:foreground yellow))
-  (rainbow-delimiters-depth-7-face      (:foreground pink))
+  (rainbow-delimiters-depth-1-face      (:foreground red))
+  (rainbow-delimiters-depth-2-face      (:foreground blue))
+  (rainbow-delimiters-depth-3-face      (:foreground pink))
+  (rainbow-delimiters-depth-4-face      (:foreground green))
+  (rainbow-delimiters-depth-5-face      (:foreground mauve))
+  (rainbow-delimiters-depth-6-face      (:foreground lavender))
+  (rainbow-delimiters-depth-7-face      (:foreground flamingo))
   (rainbow-delimiters-depth-8-face      (:foreground teal))
   (rainbow-delimiters-depth-9-face      (:foreground mauve))
 
   ;; show-paren
-  (show-paren-match								(:background peach :foreground dark :bold t))
-  (show-paren-match-expression					(:background peach :foreground dark :bold t))
-  (show-paren-mismatch							(:background red :foreground white))
+  (show-paren-match						(:background peach :foreground dark :bold t))
+  (show-paren-match-expression			(:background peach :foreground dark :bold t))
+  (show-paren-mismatch					(:background red :foreground white))
 
-  (company-tooltip                          (:background black-3 :foreground white))
-  (company-box                              (:background black-3 :foreground white))
-  (company-tooltip-common                   (:foreground yellow))
-  (company-tooltip-search                   (:background red :foreground black :distant-foreground rosewater))
-  (company-tooltip-selection                (:background black-4 :foreground red :bold t))
-  (company-tooltip-mouse                    (:background red :foreground black :distant-foreground rosewater))
-  (company-tooltip-annotation               (:foreground green))
-  (company-tooltip-scrollbar-track          (:background black-4))
-  (company-tooltip-scrollbar-thumb          (:background flamingo))
-  (company-scrollbar-bg                     (:inherit 'tooltip))
-  (company-scrollbar-fg                     (:background red))
-  (company-preview                          (:foreground yellow))
-  (company-preview-common                   (:background red :foreground black))
-  (company-preview-search                   (:inherit 'company-tooltip-search))
-  (company-template-field                   (:inherit 'match))
+  (company-tooltip                      (:background black :foreground gray-2))
+  (company-tooltip-common               (:foreground red :distant-foreground red :bold t))
+  (company-tooltip-search               (:background peach))
+  (company-tooltip-selection            (:background blue-bg-2 :foreground rosewater :distant-foreground rosewater :bold t))
+  (company-tooltip-mouse                (:background nil :foreground black :distant-foreground rosewater))
+  (company-tooltip-annotation           (:foreground green))
+  (company-tooltip-scrollbar-track      (:background peach))
+  (company-tooltip-scrollbar-thumb      (:background flamingo))
+  (company-tooltip-quick-access         (:foreground blue :distant-foreground blue-bg))
+  (company-scrollbar-bg                 (:inherit 'tooltip))
+  (company-scrollbar-fg                 (:background red))
+  (company-preview                      (:foreground blue))
+  (company-preview-common               (:background red :foreground black))
+  (company-preview-search               (:inherit 'company-tooltip-search))
+  (company-template-field               (:inherit 'match))
+
+  (company-box-annotation               (:foreground red :background red-bg))
+  (company-box-numbers                  (:foreground blue :background blue-bg))
+
+  ;; Eldoc
+  (eldoc-box-body                       (:background black-3 :foreground peach))
+  (eldoc-box-border                     (:background nil :foreground nil))
+
+  (markdown-hr-face (:background nil :foreground black-3))
 
   ;; Flycheck
   (flycheck-posframe-background-face	(:background black))
@@ -293,10 +302,15 @@
   (ivy-posframe                                 (:background black))
   (ivy-posframe-border                          (:inherit 'ivy-posframe))
 
-  (vertico-multiline                            (:background red))
-  (vertico-group-title                          (:background black-4 :foreground maroon :bold t))
-  (vertico-group-separator                      (:background black-4 :foreground maroon :strike-through t))
-  (vertico-current                              (:foreground mauve :bold t :background black-3))
+  (vertico-multiline                            (:background peach))
+  (vertico-group-title                          (:foreground peach :bold t))
+  (vertico-group-separator                      (:foreground peach :strike-through t))
+  (vertico-current                              (:foreground peach :bold t :background yellow-bg-2))
+
+  (vertico-posframe-border                      (:background black-4))
+  (vertico-posframe                             (:background black))
+  
+  (comint-highlight-prompt                      (:background peach :foreground black))
 
   (completions-annotations (:background nil :foreground gray-1 :italic t))
 
@@ -345,7 +359,9 @@
   (all-the-icons-purple							(:foreground mauve))
 
   ;; evil
-  (evil-ex-substitute-replacement (:foreground peach :strike-through nil :inherit 'evil-ex-substitute-matches))
+  (evil-ex-lazy-highlight         (:foreground yellow :background yellow-bg :bold t))
+  (evil-ex-substitute-matches     (:background red-bg :foreground red :strike-through t))
+  (evil-ex-substitute-replacement (:foreground blue :background blue-bg-2 :bold t))
   (evil-search-highlight-persist-highlight-face (:background yellow))
 
   (ansi-color-black (:background black-2))
@@ -370,6 +386,15 @@
   (term-color-bright-magenta (:background mauve :foreground mauve))
   (term-underline (:background mauve :foreground blue))
 
+  (vterm-color-black (:background black-1 :foreground black-1))
+  (vterm-color-blue (:background blue :foreground blue))
+  (vterm-color-cyan (:background sky :foreground sky))
+  (vterm-color-green (:background green :foreground green))
+  (vterm-color-magenta (:background maroon :foreground maroon))
+  (vterm-color-yellow (:background peach :foreground yellow))
+  (vterm-color-red (:background red :foreground red))
+  (vterm-color-white (:background rosewater :foreground rosewater))
+  
   (popup-face (:inherit 'tooltip))
   (popup-selection-face (:inherit 'tooltip))
   (popup-tip-face (:inherit 'tooltip))
@@ -463,7 +488,6 @@
   (tree-sitter-hl-face:variable.synthesized      (:foreground red))
   (tree-sitter-hl-face:keyword.compiler          (:foreground red :bold t :italic t))
 
-  (doom-themes-visual-bell                       (:background red))
  ))
 
 ;;;###autoload

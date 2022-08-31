@@ -125,7 +125,7 @@
       (bg-warning    "#332610") ; check with warning
       (bg-info       "#0f2a10") ; check with info
 
-      (border        "#543f6f")
+      (border        "#4a4955")
       (cursor        "#ff6ff0")
       (fg-intense    "#ffffff")
 
@@ -138,7 +138,7 @@
       (link-alt cyan-warmer)
       (date cyan-cooler)
       (name magenta)
-      (keybind blue-cooler)
+      (keybind cyan-cooler)
 
       (builtin magenta-warmer)
       (comment yellow-faint)
@@ -151,6 +151,9 @@
       (type cyan)
       (variable blue-warmer)
 
+      (rx-escape green) ; compare with `string'
+      (rx-construct blue)
+
       (accent-0 magenta-cooler)
       (accent-1 yellow)
       (accent-2 green-cooler)
@@ -161,6 +164,7 @@
       (mail-2 cyan-cooler)
       (mail-3 magenta)
       (mail-4 blue-warmer)
+      (mail-5 green)
 
       (rainbow-0 magenta)
       (rainbow-1 green-cooler)

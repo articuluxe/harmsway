@@ -39,7 +39,9 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'compat-macs))
+(require 'compat-macs "compat-macs.el")
+
+(compat-declare-version "27.1")
 
 ;;;; Defined in fns.c
 
@@ -144,6 +146,9 @@ Letter-case is significant, but text properties are ignored."
 (defvar json-false)
 (defvar json-null)
 
+;; The function is declared to satisfy the byte compiler while testing
+;; if native JSON parsing is available.;
+(declare-function json-serialize nil (object &rest args))
 (compat-defun json-serialize (object &rest args)
   "Return the JSON representation of OBJECT as a string.
 
@@ -339,6 +344,44 @@ A nil value for either argument stands for the current time."
                  (float-time (or t2 now))))
          1e-5)))))
 
+;;;; Defined in fileio.c
+
+(compat-defun file-name-absolute-p (filename)
+  "Return t if FILENAME is an absolute file name.
+On Unix, absolute file names start with `/'.  In Emacs, an absolute
+file name can also start with an initial `~' or `~USER' component,
+where USER is a valid login name."
+  ;; See definitions in filename.h
+  (let ((seperator
+         (eval-when-compile
+           (if (memq system-type '(cygwin windows-nt ms-dos))
+               "[\\/]" "/")))
+        (drive
+         (eval-when-compile
+           (cond
+            ((memq system-type '(windows-nt ms-dos))
+             "\\`[A-Za-z]:[\\/]")
+            ((eq system-type 'cygwin)
+             "\\`\\([\\/]\\|[A-Za-z]:\\)")
+            ("\\`/"))))
+        (home
+         (eval-when-compile
+           (if (memq system-type '(cygwin windows-nt ms-dos))
+               "\\`~[\\/]" "\\`~/")))
+        (user-home
+         (eval-when-compile
+           (format "\\`\\(~.*?\\)\\(%s.*\\)?$"
+                   (if (memq system-type '(cygwin windows-nt ms-dos))
+                       "[\\/]" "/")))))
+    (or (and (string-match-p drive filename) t)
+        (and (string-match-p home filename) t)
+        (save-excursion
+          (when (string-match user-home filename)
+            (let ((init (match-string 1 filename)))
+              (not (string=
+                    (file-name-base (expand-file-name init))
+                    init))))))))
+
 ;;;; Defined in subr.el
 
 (compat-defmacro setq-local (&rest pairs)
@@ -355,6 +398,29 @@ A nil value for either argument stands for the current time."
         (push `(set (make-local-variable ,sym) ,val)
               body)))
     (cons 'progn (nreverse body))))
+
+(compat-defun provided-mode-derived-p (mode &rest modes)
+  "Non-nil if MODE is derived from one of MODES.
+Uses the `derived-mode-parent' property of the symbol to trace backwards.
+If you just want to check `major-mode', use `derived-mode-p'."
+  :realname compat--provided-mode-derived-p
+  ;; If MODE is an alias, then look up the real mode function first.
+  (let ((alias (symbol-function mode)))
+    (when (and alias (symbolp alias))
+      (setq mode alias)))
+  (while
+      (and
+       (not (memq mode modes))
+       (let* ((parent (get mode 'derived-mode-parent))
+              (parentfn (symbol-function parent)))
+         (setq mode (if (and parentfn (symbolp parentfn)) parentfn parent)))))
+  mode)
+
+;;* UNTESTED
+(defun derived-mode-p (&rest modes)
+  "Non-nil if the current major mode is derived from one of MODES.
+Uses the `derived-mode-parent' property of the symbol to trace backwards."
+  (apply #'compat--provided-mode-derived-p major-mode modes))
 
 ;;* UNTESTED
 (compat-defmacro ignore-error (condition &rest body)
@@ -694,5 +760,239 @@ The return value is a string (or nil in case we can’t find it)."
         31
       30)))
 
-(provide 'compat-27)
+;;;; Defined in text-property-search.el
+
+(compat-defun make-prop-match (&rest attr)
+  "Constructor for objects of type ‘prop-match’."
+  :realname compat--make-prop-match-with-vector
+  :max-version "26.1"
+  (vector
+   'prop-match
+   (plist-get attr :beginning)
+   (plist-get attr :end)
+   (plist-get attr :value)))
+
+(compat-defun make-prop-match (&rest attr)
+  "Constructor for objects of type ‘prop-match’."
+  :realname compat--make-prop-match-with-record
+  :min-version "26.1"
+  (record
+   'prop-match
+   (plist-get attr :beginning)
+   (plist-get attr :end)
+   (plist-get attr :value)))
+
+(compat-defun prop-match-p (match)
+  "Return non-nil if MATCH is a `prop-match' object."
+  :realname compat--prop-match-p-with-vector
+  :max-version "26.1"
+  (and (vectorp match) (eq (aref match 0) 'prop-match)))
+
+(compat-defun prop-match-p (match)
+  "Return non-nil if MATCH is a `prop-match' object."
+  :realname compat--prop-match-p-with-record
+  :min-version "26.1"
+  (eq (type-of match) 'prop-match))
+
+(compat-defun prop-match-beginning (match)
+  "Retrieve the position where MATCH begins."
+  (aref match 1))
+
+(compat-defun prop-match-end (match)
+  "Retrieve the position where MATCH ends."
+  (aref match 2))
+
+(compat-defun prop-match-value (match)
+  "Retrieve the value that MATCH holds."
+  (aref match 3))
+
+(compat-defun text-property-search-forward
+    (property &optional value predicate not-current)
+  "Search for the next region of text where PREDICATE is true.
+PREDICATE is used to decide whether a value of PROPERTY should be
+considered as matching VALUE.
+
+If PREDICATE is a function, it will be called with two arguments:
+VALUE and the value of PROPERTY.  The function should return
+non-nil if these two values are to be considered a match.
+
+Two special values of PREDICATE can also be used:
+If PREDICATE is t, that means a value must `equal' VALUE to be
+considered a match.
+If PREDICATE is nil (which is the default value), a value will
+match if is not `equal' to VALUE.  Furthermore, a nil PREDICATE
+means that the match region is ended if the value changes.  For
+instance, this means that if you loop with
+
+  (while (setq prop (text-property-search-forward \\='face))
+    ...)
+
+you will get all distinct regions with non-nil `face' values in
+the buffer, and the `prop' object will have the details about the
+match.  See the manual for more details and examples about how
+VALUE and PREDICATE interact.
+
+If NOT-CURRENT is non-nil, the function will search for the first
+region that doesn't include point and has a value of PROPERTY
+that matches VALUE.
+
+If no matches can be found, return nil and don't move point.
+If found, move point to the end of the region and return a
+`prop-match' object describing the match.  To access the details
+of the match, use `prop-match-beginning' and `prop-match-end' for
+the buffer positions that limit the region, and
+`prop-match-value' for the value of PROPERTY in the region."
+  (let* ((match-p
+          (lambda (prop-value)
+            (funcall
+             (cond
+              ((eq predicate t)
+               #'equal)
+              ((eq predicate nil)
+               (lambda (val p-val)
+                 (not (equal val p-val))))
+              (predicate))
+             value prop-value)))
+         (find-end
+          (lambda (start)
+            (let (end)
+              (if (and value
+                       (null predicate))
+                  ;; This is the normal case: We're looking for areas where the
+                  ;; values aren't, so we aren't interested in sub-areas where the
+                  ;; property has different values, all non-matching value.
+                  (let ((ended nil))
+                    (while (not ended)
+                      (setq end (next-single-property-change (point) property))
+                      (if (not end)
+                          (progn
+                            (goto-char (point-max))
+                            (setq end (point)
+                                  ended t))
+                        (goto-char end)
+                        (unless (funcall match-p (get-text-property (point) property))
+                          (setq ended t)))))
+                ;; End this at the first place the property changes value.
+                (setq end (next-single-property-change (point) property nil (point-max)))
+                (goto-char end))
+              (make-prop-match
+               :beginning start
+               :end end
+               :value (get-text-property start property))))))
+    (cond
+     ;; No matches at the end of the buffer.
+     ((eobp)
+      nil)
+     ;; We're standing in the property we're looking for, so find the
+     ;; end.
+     ((and (funcall match-p (get-text-property (point) property))
+           (not not-current))
+      (funcall find-end (point)))
+     (t
+      (let ((origin (point))
+            (ended nil)
+            pos)
+        ;; Find the next candidate.
+        (while (not ended)
+          (setq pos (next-single-property-change (point) property))
+          (if (not pos)
+              (progn
+                (goto-char origin)
+                (setq ended t))
+            (goto-char pos)
+            (if (funcall match-p (get-text-property (point) property))
+                (setq ended (funcall find-end (point)))
+              ;; Skip past this section of non-matches.
+              (setq pos (next-single-property-change (point) property))
+              (unless pos
+                (goto-char origin)
+                (setq ended t)))))
+        (and (not (eq ended t))
+             ended))))))
+
+(compat-defun text-property-search-backward
+    (property &optional value predicate not-current)
+  "Search for the previous region of text whose PROPERTY matches VALUE.
+
+Like `text-property-search-forward', which see, but searches backward,
+and if a matching region is found, place point at the start of the region."
+  (let* ((match-p
+          (lambda (prop-value)
+            (funcall
+             (cond
+              ((eq predicate t)
+               #'equal)
+              ((eq predicate nil)
+               (lambda (val p-val)
+                 (not (equal val p-val))))
+              (predicate))
+             value prop-value)))
+         (find-end
+          (lambda (start)
+            (let (end)
+              (if (and value
+                       (null predicate))
+                  ;; This is the normal case: We're looking for areas where the
+                  ;; values aren't, so we aren't interested in sub-areas where the
+                  ;; property has different values, all non-matching value.
+                  (let ((ended nil))
+                    (while (not ended)
+                      (setq end (previous-single-property-change (point) property))
+                      (if (not end)
+                          (progn
+                            (goto-char (point-min))
+                            (setq end (point)
+                                  ended t))
+                        (goto-char (1- end))
+                        (unless (funcall match-p (get-text-property (point) property))
+                          (goto-char end)
+                          (setq ended t)))))
+                ;; End this at the first place the property changes value.
+                (setq end (previous-single-property-change
+                           (point) property nil (point-min)))
+                (goto-char end))
+              (make-prop-match
+               :beginning end
+               :end (1+ start)
+               :value (get-text-property end property))))))
+    (cond
+     ;; We're at the start of the buffer; no previous matches.
+     ((bobp)
+      nil)
+     ;; We're standing in the property we're looking for, so find the
+     ;; end.
+     ((funcall match-p (get-text-property (1- (point)) property))
+      (let ((origin (point))
+            (match (funcall find-end (1- (point)) property value predicate)))
+        ;; When we want to ignore the current element, then repeat the
+        ;; search if we haven't moved out of it yet.
+        (if (and not-current
+                 (equal (get-text-property (point) property)
+                        (get-text-property origin property)))
+            (text-property-search-backward property value predicate)
+          match)))
+     (t
+      (let ((origin (point))
+            (ended nil)
+            pos)
+        ;; Find the previous candidate.
+        (while (not ended)
+          (setq pos (previous-single-property-change (point) property))
+          (if (not pos)
+              (progn
+                (goto-char origin)
+                (setq ended t))
+            (goto-char (1- pos))
+            (if (funcall match-p (get-text-property (point) property))
+                (setq ended
+                      (funcall find-end (point)))
+              ;; Skip past this section of non-matches.
+              (setq pos (previous-single-property-change (point) property))
+              (unless pos
+                (goto-char origin)
+                (setq ended t)))))
+        (and (not (eq ended t))
+             ended))))))
+
+(compat--inhibit-prefixed (provide 'compat-27))
 ;;; compat-27.el ends here

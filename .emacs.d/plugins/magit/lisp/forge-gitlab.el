@@ -172,8 +172,9 @@
              (issue
               (forge-issue
                :id           issue-id
-               :repository   (oref repo id)
+               :their-id     .iid
                :number       .iid
+               :repository   (oref repo id)
                :state        (pcase-exhaustive .state
                                ("closed" 'closed)
                                ("opened" 'open))
@@ -289,8 +290,9 @@
              (pullreq
               (forge-pullreq
                :id           pullreq-id
-               :repository   (oref repo id)
+               :their-id     .iid
                :number       .iid
+               :repository   (oref repo id)
                :state        (pcase-exhaustive .state
                                ("merged" 'merged)
                                ("closed" 'closed)
@@ -307,20 +309,24 @@
                                  (and (member .state '("closed" "merged")) 1))
                :merged       (or .merged_at
                                  (and (equal .state "merged") 1))
+               :draft-p      .draft
                :locked-p     .discussion_locked
                :editable-p   .allow_maintainer_to_push
                :cross-repo-p (not (equal .source_project_id
                                          .target_project_id))
                :base-ref     .target_branch
+               :base-rev     .diff_refs.start_sha
                :base-repo    .target_project.path_with_namespace
                :head-ref     .source_branch
+               :head-rev     .diff_refs.head_sha
                :head-user    .source_project.owner.username
                :head-repo    .source_project.path_with_namespace
                :milestone    .milestone.iid
                :body         (forge--sanitize-string .description))))
         (closql-insert (forge-db) pullreq t)
         (unless (magit-get-boolean "forge.omitExpensive")
-          (forge--set-id-slot repo pullreq 'assignees (list .assignee))
+          (forge--set-id-slot repo pullreq 'assignees .assignees)
+          (forge--set-id-slot repo pullreq 'review-requests .reviewers)
           (forge--set-id-slot repo pullreq 'labels .labels))
         .body .id ; Silence Emacs 25 byte-compiler.
         (dolist (c .notes)
@@ -436,12 +442,16 @@
                   (magit-split-branch-name forge--buffer-head-branch))
                  (head-repo (forge-get-repository 'stub head-remote)))
       (forge--glab-post head-repo "/projects/:project/merge_requests"
-        `(,@(and (not (equal head-remote base-remote))
+        `((title . ,(if (if (local-variable-p 'forge--buffer-draft-p)
+                            forge--buffer-draft-p
+                          .draft)
+                        (concat "Draft: " .title)
+                      .title))
+          (description . , .body)
+          ,@(and (not (equal head-remote base-remote))
                  `((target_project_id . ,(oref base-repo forge-id))))
           (target_branch . ,base-branch)
           (source_branch . ,head-branch)
-          (title         . , .title)
-          (description   . , .body)
           (allow_collaboration . t))
         :callback  (forge--post-submit-callback)
         :errorback (forge--post-submit-errorback)))))
@@ -504,6 +514,28 @@
                             (closed "reopen")
                             (open   "close"))))
 
+(cl-defmethod forge--set-topic-draft
+  ((repo forge-gitlab-repository) topic value)
+  (let ((buffer (current-buffer)))
+    (glab-graphql
+     `(mutation (mergeRequestSetDraft
+                 [(input $input MergeRequestSetDraftInput!)]
+                 (mergeRequest iid draft)))
+     `((input (projectPath . ,(format "%s/%s"
+                                      (oref repo owner)
+                                      (oref repo name)))
+              (iid . ,(number-to-string (oref topic number)))
+              (draft . ,value)))
+     :host (oref (forge-get-repository topic) apihost)
+     :auth 'forge
+     :callback (lambda (data &rest _)
+                 (if (assq 'error data)
+                     (ghub--graphql-pp-response data)
+                   (oset topic draft-p value)
+                   (when (buffer-live-p buffer)
+                     (with-current-buffer buffer
+                       (magit-refresh-buffer))))))))
+
 (cl-defmethod forge--set-topic-labels
   ((repo forge-gitlab-repository) topic labels)
   (forge--set-topic-field repo topic 'labels
@@ -515,10 +547,19 @@
     (cl-typecase topic
       (forge-pullreq ; Can only be assigned to a single user.
        (forge--set-topic-field repo topic 'assignee_id
-                               (caddr (assoc (car assignees) users))))
+                               (or (caddr (assoc (car assignees) users))
+                                   0)))
       (forge-issue
        (forge--set-topic-field repo topic 'assignee_ids
-                               (--map (caddr (assoc it users)) assignees))))))
+                               (or (--map (caddr (assoc it users)) assignees)
+                                   0))))))
+
+(cl-defmethod forge--set-topic-review-requests
+  ((repo forge-gitlab-repository) topic reviewers)
+  (let ((users (mapcar #'cdr (oref repo assignees))))
+    (forge--set-topic-field repo topic 'reviewer_ids
+                            (or (--map (caddr (assoc it users)) reviewers)
+                                0))))
 
 (cl-defmethod forge--delete-comment
   ((_repo forge-gitlab-repository) post)

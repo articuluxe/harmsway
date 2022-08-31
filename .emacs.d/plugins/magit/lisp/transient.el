@@ -260,7 +260,7 @@ for infix argument are highlighted when only a long argument
 In the rare case that a short-hand is specified but does not
 match the key binding, then it is highlighted differently.
 
-The highlighting is done using using `transient-mismatched-key'
+The highlighting is done using `transient-mismatched-key'
 and `transient-nonstandard-key'."
   :package-version '(transient . "0.1.0")
   :group 'transient
@@ -2175,8 +2175,9 @@ value.  Otherwise return CHILDREN as is."
                                   ;; `execute-extended-command' was
                                   ;; used to call another command
                                   ;; that also uses the minibuffer.
-                                  (equal (this-command-keys)
-                                         (format "\M-x%s\r" this-command))))))
+                                  (equal
+                                   (string-to-multibyte (this-command-keys))
+                                   (format "\M-x%s\r" this-command))))))
                 (transient--debug 'post-command-hook "act: %s" act)
                 (when act
                   (remove-hook 'transient--post-command-hook post-command)
@@ -3249,9 +3250,9 @@ have a history of their own.")
         (goto-char (point-min))
         (when transient-enable-popup-navigation
           (transient--goto-button focus))
-        (magit--fit-window-to-buffer transient--window)))))
+        (transient--fit-window-to-buffer transient--window)))))
 
-(defun magit--fit-window-to-buffer (window)
+(defun transient--fit-window-to-buffer (window)
   (let ((window-resize-pixelwise t)
         (window-size-fixed nil))
     (if (eq (car (window-parameter window 'quit-restore)) 'other)

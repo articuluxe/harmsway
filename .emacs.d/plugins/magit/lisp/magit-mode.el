@@ -499,7 +499,7 @@ which visits the thing at point using `browse-url'."
      ["Worktree..."               magit-worktree t])
     "---"
     ["Show command dispatcher..." magit-dispatch t]
-    ["Show manual"                magit-help t]
+    ["Show manual"                magit-info t]
     ["Show another buffer"        magit-display-repository-buffer t]
     "---"
     ("Change buffer arguments"
@@ -1539,6 +1539,8 @@ with the variables' values as arguments, which were recorded by
     (when (bound-and-true-p bmkp-jump-display-function)
       (funcall bmkp-jump-display-function (current-buffer)))
     nil))
+
+(put 'magit--handle-bookmark 'bookmark-handler-type "Magit")
 
 (cl-defgeneric magit-bookmark-name ()
   "Return name for bookmark to current buffer."

@@ -682,6 +682,27 @@ This value is adjusted depending on the `window-width'."
       (ivy-rich-candidate))
      :delimiter "\t")
 
+    counsel-ack
+    (:columns
+     ((all-the-icons-ivy-rich-ag-file-icon)
+      (all-the-icons-ivy-rich-ag-transformer))
+     :delimiter "\t")
+    counsel-ag
+    (:columns
+     ((all-the-icons-ivy-rich-ag-file-icon)
+      (all-the-icons-ivy-rich-ag-transformer))
+     :delimiter "\t")
+    counsel-pt
+    (:columns
+     ((all-the-icons-ivy-rich-ag-file-icon)
+      (all-the-icons-ivy-rich-ag-transformer))
+     :delimiter "\t")
+    counsel-rg
+    (:columns
+     ((all-the-icons-ivy-rich-ag-file-icon)
+      (all-the-icons-ivy-rich-ag-transformer))
+     :delimiter "\t")
+
     ;; Execute command
     execute-extended-command
     (:columns
@@ -1213,7 +1234,8 @@ Display the true name when the file is a symlink."
 ;; Support `counsel-describe-face'
 (defun all-the-icons-ivy-rich-counsel-face-docstring (cand)
   "Return face's documentation for CAND."
-  (all-the-icons-ivy-rich--truncate-docstring (face-doc-string (intern-soft cand))))
+  (all-the-icons-ivy-rich--truncate-docstring
+   (documentation-property (intern-soft cand) 'face-documentation)))
 
 ;; Support `counsel-describe-function'and `counsel-describe-variable'
 (defun all-the-icons-ivy-rich-function-args (cand)
@@ -1525,6 +1547,28 @@ If the buffer is killed, return \"--\"."
   "Return local time of timezone (CAND)."
   (counsel-world-clock--local-time cand))
 
+(defun all-the-icons-ivy-rich-ag-transformer (cand)
+  "Transform `counsel-ag' search results (CAND).
+Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg'."
+  (cond
+   ((string-match "\\(.+\\):\\([0-9]+\\):\\(.+\\)" cand)
+    (let ((file (match-string 1 cand))
+          (line (match-string 2 cand))
+          (result (match-string 3 cand)))
+      (format "%s:%s:%s"
+              (propertize file 'face 'compilation-info)
+              (propertize line 'face 'compilation-info)
+              result)))
+   ((string-match "\\(.+\\):\\(.+\\)(\\(.+\\))" cand)
+    (let ((file (match-string 1 cand))
+          (msg (match-string 2 cand))
+          (err (match-string 3 cand)))
+      (format "%s:%s(%s)"
+              (propertize file 'face 'compilation-info)
+              msg
+              (propertize err 'face 'error))))
+   (t cand)))
+
 ;;
 ;; Icons
 ;;
@@ -1634,8 +1678,11 @@ If the buffer is killed, return \"--\"."
 (defun all-the-icons-ivy-rich-symbol-icon (cand)
   "Display the symbol icon in `ivy-rich'."
   (when (and (display-graphic-p) all-the-icons-ivy-rich-icon)
-    (let ((sym (intern cand)))
+    (let ((sym (intern (all-the-icons-ivy-rich--counsel-imenu-symbol cand))))
       (cond
+       ((string-match-p "Packages?[:)]" cand)
+        (all-the-icons-ivy-rich--format-icon
+         (all-the-icons-faicon "archive" :height 0.9 :v-adjust -0.05 :face 'all-the-icons-silver)))
        ((functionp sym)
         (all-the-icons-ivy-rich-function-icon cand))
        ((facep sym)
@@ -1705,12 +1752,12 @@ If the buffer is killed, return \"--\"."
   "Display the process icon in `ivy-rich'."
   (when (and (display-graphic-p) all-the-icons-ivy-rich-icon)
     (all-the-icons-ivy-rich--format-icon
-     (all-the-icons-octicon "zap" :height 1.0 :v-adjust -0.05 :face 'all-the-icons-lblue))))
+     (all-the-icons-faicon "bolt" :height 1.0 :v-adjust -0.05 :face 'all-the-icons-lblue))))
 
 (defun all-the-icons-ivy-rich-imenu-icon (cand)
   "Display the imenu icon for CAND in `ivy-rich'."
   (if (derived-mode-p 'emacs-lisp-mode)
-      (all-the-icons-ivy-rich-symbol-icon (all-the-icons-ivy-rich--counsel-imenu-symbol cand))
+      (all-the-icons-ivy-rich-symbol-icon cand)
     (when (and (display-graphic-p) all-the-icons-ivy-rich-icon)
       (all-the-icons-ivy-rich--format-icon
        (let ((case-fold-search nil))
@@ -1720,7 +1767,7 @@ If the buffer is killed, return \"--\"."
           ((string-match-p "\\(Variables?\\)\\|\\(Fields?\\)\\|\\(Parameters?\\)[:)]" cand)
            (all-the-icons-octicon "tag" :height 0.95 :v-adjust 0 :face 'all-the-icons-lblue))
           ((string-match-p "Constants?[:)]" cand)
-           (all-the-icons-faicon "square-o" :height 0.95 :v-adjust -0.15))
+           (all-the-icons-faicon "square-o" :height 0.95 :v-adjust -0.05))
           ((string-match-p "Enum\\(erations?\\)?[:)]" cand)
            (all-the-icons-material "storage" :height 0.95 :v-adjust -0.2 :face 'all-the-icons-orange))
           ((string-match-p "References?[:)]" cand)
@@ -1785,6 +1832,12 @@ If the buffer is killed, return \"--\"."
     (all-the-icons-ivy-rich--format-icon
      (all-the-icons-faicon "keyboard-o" :height 0.9 :v-adjust -0.05 :face 'all-the-icons-lblue))))
 
+(defun all-the-icons-ivy-rich-ag-file-icon (cand)
+  "Display `counsel-ag' file icon for CAND in `ivy-rich'.
+Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg'."
+  (when (or (string-match "\\(.+\\):\\([0-9]+\\):\\(.+\\)" cand)
+            (string-match "\\(.+\\):\\(.+\\)(\\(.+\\))" cand))
+    (all-the-icons-ivy-rich-file-icon (match-string 1 cand))))
 
 
 ;;

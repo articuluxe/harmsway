@@ -59,7 +59,7 @@
       (green           "#2fa526")
       (green-warmer    "#64aa0f")
       (green-cooler    "#00b066")
-      (green-faint     "#519068")
+      (green-faint     "#5f9f6f")
       (yellow          "#c48702")
       (yellow-warmer   "#d0730f")
       (yellow-cooler   "#df8f6f")
@@ -125,7 +125,7 @@
       (bg-warning    "#332800") ; check with warning
       (bg-info       "#152800") ; check with info
 
-      (border        "#54444a")
+      (border        "#4f4945")
       (cursor        "#ffaa33")
       (fg-intense    "#ffffff")
 
@@ -135,10 +135,10 @@
       (info green-cooler)
 
       (link yellow)
-      (link-alt red-cooler)
+      (link-alt cyan-cooler)
       (date yellow-cooler)
       (name green-warmer)
-      (keybind red)
+      (keybind red-warmer)
 
       (builtin red-cooler)
       (comment yellow-faint)
@@ -151,6 +151,9 @@
       (type green)
       (variable cyan-warmer)
 
+      (rx-escape green-cooler) ; compare with `string'
+      (rx-construct magenta-cooler)
+
       (accent-0 green-cooler)
       (accent-1 yellow-warmer)
       (accent-2 cyan-cooler)
@@ -161,15 +164,16 @@
       (mail-2 red-warmer)
       (mail-3 magenta)
       (mail-4 green-warmer)
+      (mail-5 cyan)
 
       (rainbow-0 yellow-warmer)
       (rainbow-1 green-warmer)
-      (rainbow-2 magenta)
-      (rainbow-3 blue-warmer)
-      (rainbow-4 red)
-      (rainbow-5 green)
-      (rainbow-6 magenta-warmer)
-      (rainbow-7 cyan)
+      (rainbow-2 red)
+      (rainbow-3 cyan-cooler)
+      (rainbow-4 yellow-cooler)
+      (rainbow-5 blue)
+      (rainbow-6 red-cooler)
+      (rainbow-7 green)
       (rainbow-8 yellow))
     "The `ef-autumn' palette.")
 

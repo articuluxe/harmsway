@@ -110,7 +110,7 @@ to be used like this.  See https://nullprogram.com/blog/2014/02/06/."
      (defclass forge-database (emacsql-sqlite3-connection closql-database)
        ((object-class :initform 'forge-repository))))))
 
-(defconst forge--db-version 7)
+(defconst forge--db-version 9)
 (defconst forge--sqlite-available-p
   (with-demoted-errors "Forge initialization: %S"
     (emacsql-sqlite-ensure-binary)
@@ -229,7 +229,8 @@ to be used like this.  See https://nullprogram.com/blog/2014/02/06/."
       (reactions    :default eieio-unbound)
       (timeline     :default eieio-unbound)
       (marks        :default eieio-unbound)
-      note]
+      note
+      their-id]
      (:foreign-key
       [repository] :references repository [id]
       :on-delete :cascade))
@@ -364,7 +365,11 @@ to be used like this.  See https://nullprogram.com/blog/2014/02/06/."
       (reviews         :default eieio-unbound)
       (timeline        :default eieio-unbound)
       (marks           :default eieio-unbound)
-      note]
+      note
+      base-rev
+      head-rev
+      draft-p
+      their-id]
      (:foreign-key
       [repository] :references repository [id]
       :on-delete :cascade))
@@ -432,12 +437,17 @@ to be used like this.  See https://nullprogram.com/blog/2014/02/06/."
       :on-delete :cascade))))
 
 (cl-defmethod closql--db-init ((db forge-database))
+  (message "Creating Forge database (%s)..." forge-database-file)
   (emacsql-with-transaction db
     (pcase-dolist (`(,table . ,schema) forge--db-table-schemata)
       (emacsql db [:create-table $i1 $S2] table schema))
-    (closql--db-set-version db forge--db-version)))
+    (closql--db-set-version db forge--db-version))
+  (message "Creating Forge database (%s)...done" forge-database-file))
 
 (defun forge--db-maybe-update (db version)
+  (when (and (< version forge--db-version)
+             (yes-or-no-p "Forge database needs to be updated.  Backup first? "))
+    (forge--db-dump version))
   (emacsql-with-transaction db
     (when (= version 2)
       (message "Upgrading Forge database from version 2 to 3...")
@@ -490,10 +500,47 @@ to be used like this.  See https://nullprogram.com/blog/2014/02/06/."
                 (forge--object-id repo-id (cdar milestone)))))
       (closql--db-set-version db (setq version 7))
       (message "Upgrading Forge database from version 6 to 7...done"))
-    ;; Going forward create a backup before upgrading:
-    ;; (message "Upgrading Forge database from version 7 to 8...")
-    ;; (copy-file forge-database-file (concat forge-database-file "-v7"))
+    (when (= version 7)
+      (message "Upgrading Forge database from version 7 to 8...")
+      (emacsql db [:alter-table pullreq :add-column base-rev :default nil])
+      (emacsql db [:alter-table pullreq :add-column head-rev :default nil])
+      (emacsql db [:alter-table pullreq :add-column draft-p  :default nil])
+      (closql--db-set-version db (setq version 8))
+      (message "Upgrading Forge database from version 7 to 8...done"))
+    (when (= version 8)
+      (message "Upgrading Forge database from version 8 to 9...")
+      (emacsql db [:alter-table pullreq :add-column their-id :default nil])
+      (emacsql db [:alter-table issue   :add-column their-id :default nil])
+      (closql--db-set-version db (setq version 9))
+      (message "Upgrading Forge database from version 8 to 9...done"))
     version))
+
+(defun forge--db-dump (&optional version)
+  (let ((dump (format "%s-v%s-%s.sql"
+                      (file-name-sans-extension forge-database-file)
+                      (or version forge--db-version)
+                      (format-time-string "%Y%m%d-%H%M"))))
+    (message "Dumping Forge database to %s..." dump)
+    (with-temp-file dump
+      (unless (zerop (save-excursion
+                       (call-process "sqlite3" nil t nil
+                                     forge-database-file ".dump")))
+        (error "Failed to dump %s" forge-database-file))
+      (insert (format "PRAGMA user_version=%s;\n" forge--db-version))
+      (when (re-search-forward "^PRAGMA foreign_keys=\\(OFF\\);" 1000 t)
+        (replace-match "ON" t t nil 1)))
+    (message "Dumping Forge database to %s...done" dump)))
+
+(defun forge--db-restore (dump)
+  (when (and forge--db-connection (emacsql-live-p forge--db-connection))
+    (emacsql-close forge--db-connection))
+  (forge--db-dump)
+  (with-temp-buffer
+    (unless (zerop (call-process "sqlite3" nil t nil
+                                 forge-database-file
+                                 (format ".read %s" dump)))
+      (error "Failed to read %s: %s" dump (buffer-string))))
+  (forge-db))
 
 ;;; _
 (provide 'forge-db)

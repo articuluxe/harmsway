@@ -382,7 +382,8 @@ number."
       (setq forge--buffer-base-branch target)
       (setq forge--buffer-head-branch source)
       (setq forge--buffer-post-object repo)
-      (setq forge--submit-post-function #'forge--submit-create-pullreq))
+      (setq forge--submit-post-function #'forge--submit-create-pullreq)
+      (run-hooks 'forge-create-pullreq-hook))
     (forge--display-post-buffer buf)))
 
 (defun forge-create-pullreq-from-issue (issue source target)
@@ -522,6 +523,16 @@ TOPIC and modify that instead."
   (let ((topic (forge-get-topic topic)))
     (forge--set-topic-state (forge-get-repository topic) topic)))
 
+(defun forge-edit-topic-draft (pullreq)
+  "Toggle whether the current pull-request is a draft.
+If there is no current topic or with a prefix argument read a
+TOPIC and modify that instead."
+  (interactive (list (forge-read-pullreq "Toggle draft state of")))
+  (let ((pullreq (forge-get-pullreq pullreq)))
+    (forge--set-topic-draft (forge-get-repository pullreq)
+                            pullreq
+                            (not (oref pullreq draft-p)))))
+
 (defun forge-edit-topic-milestone (topic)
   (interactive (list (forge-read-topic "Edit milestone of")))
   (let* ((topic (forge-get-topic topic))
@@ -570,19 +581,12 @@ TOPIC and modify that instead."
          (crm-separator ","))
     (forge--set-topic-assignees
      repo topic
-     (if (and (forge--childp topic 'forge-pullreq)
-              (forge--childp repo  'forge-gitlab-repository))
-         (list ; Gitlab merge-requests can only be assigned to a single user.
-          (magit-completing-read
-           "Assignee" choices nil
-           nil ; Empty input removes assignee.
-           (car value)))
-       (magit-completing-read-multiple*
-        "Assignees: " choices nil
-        (if (forge--childp repo 'forge-gitlab-repository)
-            t ; Selecting something else would fail later on.
-          'confirm)
-        (mapconcat #'car value ","))))))
+     (magit-completing-read-multiple*
+      "Assignees: " choices nil
+      (if (forge--childp repo 'forge-gitlab-repository)
+          t ; Selecting something else would fail later on.
+        'confirm)
+      (mapconcat #'car value ",")))))
 
 (defun forge-edit-topic-review-requests (pullreq)
   "Edit the review-requests of the current pull-request.

@@ -79,11 +79,11 @@
   (glyphless-char                                (:foreground sumiInk-4))
   (header-line                                   (:background sumiInk-0))
   (highlight                                     (:background comet :foreground springViolet1))
-  (hl-line                                       (:background sumiInk-3))
+  (hl-line                                       (:background sumiInk-2))
   (homoglyph                                     (:foreground lightBlue))
   (internal-border                               (:background sumiInk-1b))
   (line-number                                   (:foreground sumiInk-4))
-  (line-number-current-line                      (:foreground springViolet2 :background sumiInk-3 :bold t))
+  (line-number-current-line                      (:foreground springViolet2 :background sumiInk-2 :bold t))
   (lv-separator                                  (:foreground waveBlue-2 :background sumiInk-2))
   (match                                         (:background carpYellow :foreground sumiInk-0))
   (menu                                          (:background sumiInk-0 :foreground fujiWhite))
@@ -100,8 +100,7 @@
   (vertical-border                               (:foreground sumiInk-4))
   (warning                                       (:foreground roninYellow))
   (window-border                                 (:background sumiInk-1b))
-  (window-divider-first-pixel                    (:background sumiInk-1b))
-  (window-divider-last-pixel                     (:background sumiInk-1b))
+  (window-divider                                (:foreground sumiInk-2))
   (hi-yellow                                     (:background carpYellow :foreground sumiInk-1b))
 
   ;; Font lock
@@ -124,8 +123,8 @@
   (elisp-shorthand-font-lock-face                (:foreground fujiWhite))
 
   (info-xref                                     (:foreground carpYellow))
-  (minibuffer-prompt-end                         (:foreground fujiWhite :background sumiInk-0))
-  (minibuffer-prompt                             (:foreground fujiWhite :background sumiInk-0))
+  (minibuffer-prompt-end                         (:foreground autumnRed :background winterRed))
+  (minibuffer-prompt                             (:foreground carpYellow :background winterYellow))
   (epa-mark                                      (:foreground waveRed))
   (dired-mark                                    (:foreground waveRed))
   (trailing-whitespace                           (:background comet))
@@ -158,6 +157,7 @@
   (doom-modeline-project-dir                     (:bold t :foreground surimiOrange))
   (doom-modeline-bar                             (:bold t :background springViolet1))
   (doom-modeline-panel                           (:inherit 'bold :background boatYellow2 :foreground sumiInk-2))
+  (doom-themes-visual-bell                       (:background autumnRed))
 
   ;; elfeed
   (elfeed-search-feed-face                       (:foreground springViolet1))
@@ -246,16 +246,15 @@
   (tooltip                                       (:foreground sumiInk-0 :background carpYellow :bold t))
   
   ;; company-box
-  (company-box                                   (:background sumiInk-0))
-  (company-tooltip                               (:background sumiInk-0))
-  (company-tooltip-common                        (:foreground carpYellow))
+  (company-tooltip                               (:background sumiInk-2))
+  (company-tooltip-common                        (:foreground autumnYellow))
   (company-tooltip-quick-access                  (:foreground springViolet2))
   (company-tooltip-scrollbar-thumb               (:background autumnRed))
   (company-tooltip-scrollbar-track               (:background sumiInk-2))
   (company-tooltip-search                        (:background carpYellow :foreground sumiInk-0 :distant-foreground fujiWhite))
-  (company-tooltip-selection                     (:background winterBlue :foreground lightBlue :bold t))
-  (company-tooltip-mouse                         (:background sumiInk-0 :foreground sumiInk-0 :distant-foreground fujiWhite))
-  (company-tooltip-annotation                    (:foreground crystalBlue))
+  (company-tooltip-selection                     (:background peachRed :foreground winterRed :bold t))
+  (company-tooltip-mouse                         (:background sumiInk-2 :foreground sumiInk-0 :distant-foreground fujiWhite))
+  (company-tooltip-annotation                    (:foreground peachRed :distant-foreground sumiInk-1))
   (company-scrollbar-bg                          (:inherit 'tooltip))
   (company-scrollbar-fg                          (:background peachRed))
   (company-preview                               (:foreground carpYellow))
@@ -277,7 +276,7 @@
   (flycheck-error-list-info                      (:foreground waveAqua1 :bold t))
   (flycheck-inline-error                         (:foreground samuraiRed :background winterRed :italic t :bold t :height 138))
   (flycheck-inline-info                          (:foreground lightBlue :background winterBlue :italic t  :bold t :height 138))
-  (flycheck-inline-warning                       (:foreground roninYellow :background winterYellow :italic t :bold t :height 138))
+  (flycheck-inline-warning                       (:foreground winterYellow :background carpYellow :italic t :bold t :height 138))
 
   ;; indent dots
   (highlight-indent-guides-character-face        (:foreground sumiInk-3))
@@ -351,6 +350,8 @@
   (all-the-icons-purple                          (:foreground springViolet2))
 
   ;; evil
+  (evil-ex-lazy-highlight                        (:foreground winterGreen :background autumnGreen :bold t))
+  (evil-ex-substitute-matches                    (:foreground winterRed :background autumnRed :bold t))
   (evil-ex-substitute-replacement                (:foreground surimiOrange :strike-through nil :inherit 'evil-ex-substitute-matches))
   (evil-search-highlight-persist-highlight-face  (:background carpYellow))
 
@@ -393,7 +394,17 @@
   (ace-jump-face-foreground                      (:foreground peachRed :background sumiInk-0 :bold t))
   
   ;; vertico
-  (vertico-current                               (:background sumiInk-3 :foreground springViolet2 :bold t))
+  (vertico-multiline                             (:background samuraiRed))
+  (vertico-group-title                           (:background winterBlue :foreground lightBlue :bold t))
+  (vertico-group-separator                       (:background winterBlue :foreground lightBlue :strike-through t))
+  (vertico-current                               (:foreground carpYellow :bold t :italic t :background waveBlue-1))
+
+  (vertico-posframe-border                       (:background sumiInk-3))
+  (vertico-posframe                              (:background sumiInk-2))
+  (orderless-match-face-0                        (:foreground crystalBlue :bold t))
+  
+  (comint-highlight-prompt                       (:background springViolet2 :foreground sumiInk-1))
+  (completions-annotations                       (:background nil :foreground dragonBlue :italic t))
   
   ;; hydra
   (hydra-face-amaranth                           (:foreground autumnRed))

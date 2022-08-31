@@ -32,7 +32,9 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'compat-macs))
+(require 'compat-macs "compat-macs.el")
+
+(compat-declare-version "25.1")
 
 ;;;; Defined in alloc.c
 
@@ -316,5 +318,5 @@ recursion."
             (push (concat dir "/" file) files)))))
     (nconc result (nreverse files))))
 
-(provide 'compat-25)
+(compat--inhibit-prefixed (provide 'compat-25))
 ;;; compat-25.el ends here

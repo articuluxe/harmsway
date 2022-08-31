@@ -4,7 +4,7 @@
 
 ;; Author: Akib Azmain Turja <akib@disroot.org>
 ;; Created: 2022-04-11
-;; Version: 0.7
+;; Version: 0.9
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: lisp extensions frames
 ;; Homepage: https://codeberg.org/akib/emacs-popon
@@ -546,7 +546,14 @@ NOTE: This uses `posn-at-point', which is slow.  So try to minimize calls
 to this function."
   (let ((window-start-x-y (posn-col-row (posn-at-point (window-start))))
         (point-x-y (posn-col-row (posn-at-point point))))
-    (cons (- (car point-x-y) (car window-start-x-y))
+    (cons (if (and (or (not truncate-lines) word-wrap)
+                   (if truncate-partial-width-windows
+                       (>= (window-total-width)
+                           truncate-partial-width-windows)
+                     t))
+              (- (car point-x-y) (car window-start-x-y))
+            (- (save-excursion (goto-char point) (current-column))
+               (window-hscroll)))
           (- (cdr point-x-y) (cdr window-start-x-y)))))
 
 ;;;###autoload

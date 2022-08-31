@@ -120,6 +120,11 @@
   :group 'all-the-icons
   :type 'number)
 
+(defcustom all-the-icons-fonts-subdirectory nil
+  "The subdirectory within the system fonts folder where the icons are installed."
+  :group 'all-the-icons
+  :type 'directory)
+
 (defvar all-the-icons-font-families '() "List of defined icon font families.")
 (defvar all-the-icons-font-names '() "List of defined font file names this package was built with.")
 
@@ -205,6 +210,8 @@
     ("rdx"          all-the-icons-fileicon "R"                :face all-the-icons-lblue)
     ("rsx"          all-the-icons-fileicon "R"                :face all-the-icons-lblue)
     ("svelte"       all-the-icons-fileicon "svelte"           :v-adjust 0.0 :face all-the-icons-red)
+    ("gql"          all-the-icons-fileicon "graphql"          :face all-the-icons-dpink)
+    ("graphql"      all-the-icons-fileicon "graphql"          :face all-the-icons-dpink)
     ;; There seems to be a a bug with this font icon which does not
     ;; let you propertise it without it reverting to being a lower
     ;; case phi
@@ -347,6 +354,8 @@
     ("fsscript"     all-the-icons-fileicon "fsharp"           :face all-the-icons-blue-alt)
     ;; zig
     ("zig"          all-the-icons-fileicon "zig"              :face all-the-icons-orange)
+    ;; odin
+    ("odin"         all-the-icons-fileicon "odin"             :height 1.1 :face all-the-icons-lblue)
     ;; File Types
     ("ico"          all-the-icons-octicon "file-media"        :v-adjust 0.0 :face all-the-icons-blue)
     ("png"          all-the-icons-octicon "file-media"        :v-adjust 0.0 :face all-the-icons-orange)
@@ -429,24 +438,24 @@ for performance sake.")
     ("^readme"          all-the-icons-octicon "book"                    :height 1.0 :v-adjust 0.0 :face all-the-icons-lcyan)
 
     ;; Config
-    ("^bower.json$"     all-the-icons-alltheicon "bower"                :height 1.0 :v-adjust 0.0 :face all-the-icons-lorange)
-    ("nginx$"            all-the-icons-fileicon "nginx"                  :height 0.9  :face all-the-icons-dgreen)
-    ("apache$"           all-the-icons-alltheicon "apache"               :height 0.9  :face all-the-icons-dgreen)
+    ("nginx$"            all-the-icons-fileicon "nginx"                 :height 0.9  :face all-the-icons-dgreen)
+    ("apache$"           all-the-icons-alltheicon "apache"              :height 0.9  :face all-the-icons-dgreen)
+
+    ;; C
     ("^Makefile$"       all-the-icons-fileicon "gnu"                    :face all-the-icons-dorange)
     ("^CMakeLists.txt$" all-the-icons-fileicon "cmake"                  :face all-the-icons-red)
     ("^CMakeCache.txt$" all-the-icons-fileicon "cmake"                  :face all-the-icons-blue)
+    ("^meson.build$"    all-the-icons-fileicon "meson"                  :face all-the-icons-purple)
+    ("^meson_options.txt$" all-the-icons-fileicon "meson"               :face all-the-icons-purple)
 
+    ;; Docker
     ("^\\.?Dockerfile"  all-the-icons-fileicon "dockerfile"             :face all-the-icons-blue)
+
+    ;; Homebrew
     ("^Brewfile$"       all-the-icons-faicon "beer"                     :face all-the-icons-lsilver)
-    ("\\.npmignore$"    all-the-icons-fileicon "npm"                    :face all-the-icons-dred)
-    ("^package.json$"   all-the-icons-fileicon "npm"                    :face all-the-icons-red)
-    ("^package.lock.json$" all-the-icons-fileicon "npm"                 :face all-the-icons-dred)
-    ("^yarn\\.lock"     all-the-icons-fileicon "yarn"                   :face all-the-icons-blue-alt)
 
     ;; ;; AWS
     ("^stack.*.json$"   all-the-icons-alltheicon "aws"                  :face all-the-icons-orange)
-
-
     ("^serverless\\.yml$" all-the-icons-faicon "bolt"                   :v-adjust 0.0 :face all-the-icons-yellow)
 
     ;; lock files
@@ -455,11 +464,12 @@ for performance sake.")
     ;; Source Codes
     ("^mix.lock$"       all-the-icons-alltheicon "elixir"               :face all-the-icons-lyellow :v-adjust -0.1 :height 0.9)
 
-    ("^Gemfile\\(\\.lock\\)?$" all-the-icons-alltheicon "ruby-alt"       :face all-the-icons-red)
-    ("_?test\\.rb$"        all-the-icons-fileicon "test-ruby"            :height 1.0 :v-adjust 0.0 :face all-the-icons-red)
-    ("_?test_helper\\.rb$" all-the-icons-fileicon "test-ruby"            :height 1.0 :v-adjust 0.0 :face all-the-icons-dred)
-    ("_?spec\\.rb$"        all-the-icons-fileicon "test-ruby"            :height 1.0 :v-adjust 0.0 :face all-the-icons-red)
-    ("_?spec_helper\\.rb$" all-the-icons-fileicon "test-ruby"            :height 1.0 :v-adjust 0.0 :face all-the-icons-dred)
+    ;; Ruby
+    ("^Gemfile\\(\\.lock\\)?$" all-the-icons-alltheicon "ruby-alt"      :face all-the-icons-red)
+    ("_?test\\.rb$"        all-the-icons-fileicon "test-ruby"           :height 1.0 :v-adjust 0.0 :face all-the-icons-red)
+    ("_?test_helper\\.rb$" all-the-icons-fileicon "test-ruby"           :height 1.0 :v-adjust 0.0 :face all-the-icons-dred)
+    ("_?spec\\.rb$"        all-the-icons-fileicon "test-ruby"           :height 1.0 :v-adjust 0.0 :face all-the-icons-red)
+    ("_?spec_helper\\.rb$" all-the-icons-fileicon "test-ruby"           :height 1.0 :v-adjust 0.0 :face all-the-icons-dred)
 
     ("-?spec\\.ts$"     all-the-icons-fileicon "test-typescript"        :height 1.0 :v-adjust 0.0 :face all-the-icons-blue)
     ("-?test\\.ts$"     all-the-icons-fileicon "test-typescript"        :height 1.0 :v-adjust 0.0 :face all-the-icons-blue)
@@ -474,16 +484,27 @@ for performance sake.")
 
     ;; Stylesheeting
     ("stylelint"        all-the-icons-fileicon "stylelint"              :face all-the-icons-lyellow)
+
     ;; JavaScript
+    ("^package.json$"   all-the-icons-fileicon "npm"                    :face all-the-icons-red)
+    ("^package.lock.json$" all-the-icons-fileicon "npm"                 :face all-the-icons-dred)
+    ("^yarn\\.lock"     all-the-icons-fileicon "yarn"                   :face all-the-icons-blue-alt)
+    ("\\.npmignore$"    all-the-icons-fileicon "npm"                    :face all-the-icons-dred)
+    ("^bower.json$"     all-the-icons-alltheicon "bower"                :height 1.0 :v-adjust 0.0 :face all-the-icons-lorange)
     ("^gulpfile"        all-the-icons-alltheicon "gulp"                 :height 1.0  :face all-the-icons-lred)
     ("^gruntfile"       all-the-icons-alltheicon "grunt"                :height 1.0 :v-adjust -0.1 :face all-the-icons-lyellow)
     ("^webpack"         all-the-icons-fileicon "webpack"                :face all-the-icons-lblue)
 
+    ;; Go
+    ("^go.mod$"         all-the-icons-fileicon "config-go"              :height 1.0 :face all-the-icons-blue-alt)
+    ("^go.work$"        all-the-icons-fileicon "config-go"              :height 1.0 :face all-the-icons-blue-alt)
+
+    ;; Emacs
     ("bookmark"         all-the-icons-octicon "bookmark"                :height 1.1 :v-adjust 0.0 :face all-the-icons-lpink)
 
     ("^\\*scratch\\*$"  all-the-icons-faicon "sticky-note"              :face all-the-icons-lyellow)
     ("^\\*scratch.*"    all-the-icons-faicon "sticky-note"              :face all-the-icons-yellow)
-    ("^\\*new-tab\\*$"  all-the-icons-material "star"                     :face all-the-icons-cyan)
+    ("^\\*new-tab\\*$"  all-the-icons-material "star"                   :face all-the-icons-cyan)
 
     ("^\\."             all-the-icons-octicon "gear"                    :v-adjust 0.0)
     ))
@@ -615,14 +636,18 @@ for performance sake.")
     (docker-compose-mode                all-the-icons-fileicon "dockerfile"       :face all-the-icons-lblue)
     (nxml-mode                          all-the-icons-faicon "file-code-o"        :height 0.95 :face all-the-icons-lorange)
     (json-mode                          all-the-icons-octicon "settings"          :face all-the-icons-yellow)
+    (jsonian-mode                       all-the-icons-octicon "settings"          :face all-the-icons-yellow)
     (yaml-mode                          all-the-icons-octicon "settings"          :v-adjust 0.0 :face all-the-icons-dyellow)
     (elisp-byte-code-mode               all-the-icons-octicon "file-binary"       :v-adjust 0.0 :face all-the-icons-dsilver)
     (archive-mode                       all-the-icons-octicon "file-zip"          :v-adjust 0.0 :face all-the-icons-lmaroon)
     (elm-mode                           all-the-icons-fileicon "elm"              :face all-the-icons-blue)
     (erlang-mode                        all-the-icons-alltheicon "erlang"         :face all-the-icons-red :v-adjust -0.1 :height 0.9)
     (elixir-mode                        all-the-icons-alltheicon "elixir"         :face all-the-icons-lorange :v-adjust -0.1 :height 0.9)
-    (java-mode                          all-the-icons-alltheicon "java"           :height 1.0  :face all-the-icons-purple)
-    (go-mode                            all-the-icons-fileicon "go"               :height 1.0  :face all-the-icons-blue)
+    (java-mode                          all-the-icons-alltheicon "java"           :height 1.0 :face all-the-icons-purple)
+    (go-mode                            all-the-icons-fileicon "go"               :height 1.0 :face all-the-icons-blue)
+    (go-dot-mod-mode                    all-the-icons-fileicon "config-go"        :height 1.0 :face all-the-icons-blue-alt)
+    (go-dot-work-mode                   all-the-icons-fileicon "config-go"        :height 1.0 :face all-the-icons-blue-alt)
+    (graphql-mode                       all-the-icons-fileicon "graphql"          :face all-the-icons-dpink)
     (matlab-mode                        all-the-icons-fileicon "matlab"           :face all-the-icons-orange)
     (nix-mode                           all-the-icons-fileicon "nix"              :face all-the-icons-blue)
     (perl-mode                          all-the-icons-alltheicon "perl"           :face all-the-icons-lorange)
@@ -694,12 +719,14 @@ for performance sake.")
     (hy-mode                            all-the-icons-fileicon "hy"               :face all-the-icons-blue)
     (glsl-mode                          all-the-icons-fileicon "vertex-shader"    :face all-the-icons-green)
     (zig-mode                           all-the-icons-fileicon "zig"              :face all-the-icons-orange)
+    (odin-mode                          all-the-icons-fileicon "odin"             :height 1.1 :face all-the-icons-lblue)
     (pdf-view-mode                      all-the-icons-octicon  "file-pdf"         :v-adjust 0.0 :face all-the-icons-dred)
     (elfeed-search-mode                 all-the-icons-faicon   "rss-square"       :face all-the-icons-orange)
     (elfeed-show-mode                   all-the-icons-faicon   "rss"              :face all-the-icons-orange)
     (lilypond-mode                      all-the-icons-faicon   "music"            :face all-the-icons-green)
     (magik-session-mode                 all-the-icons-alltheicon "terminal"       :face all-the-icons-blue)
-    (magik-cb-mode                      all-the-icons-faicon "book"               :face all-the-icons-blue)))
+    (magik-cb-mode                      all-the-icons-faicon "book"               :face all-the-icons-blue)
+    (meson-mode                         all-the-icons-fileicon "meson"            :face all-the-icons-purple)))
 
 (defvar all-the-icons-url-alist
   '(
@@ -1070,10 +1097,13 @@ When PFX is non-nil, ignore the prompt and just install"
                        ((member system-type '(gnu gnu/linux gnu/kfreebsd))
                         (concat (or (getenv "XDG_DATA_HOME")
                                     (concat (getenv "HOME") "/.local/share"))
-                                "/fonts/"))
+                                "/fonts/"
+                                all-the-icons-fonts-subdirectory))
                        ;; Default MacOS install directory
                        ((eq system-type 'darwin)
-                        (concat (getenv "HOME") "/Library/Fonts/"))))
+                        (concat (getenv "HOME")
+                                "/Library/Fonts/"
+                                all-the-icons-fonts-subdirectory))))
            (known-dest? (stringp font-dest))
            (font-dest (or font-dest (read-directory-name "Font installation directory: " "~/"))))
 
