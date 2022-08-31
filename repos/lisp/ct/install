@@ -1,0 +1,1 @@
+cp src/ct.el ../../../.emacs.d/plugins

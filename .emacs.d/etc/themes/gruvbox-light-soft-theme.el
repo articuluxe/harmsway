@@ -1,19 +1,20 @@
 ;;; gruvbox-light-soft-theme.el --- A retro-groove colour theme for Emacs -*- lexical-binding: t -*-
 
-
 ;; Copyright (c) 2013 Lee Machin
 ;; Copyright (c) 2013-2016 Eduardo Lavaque
-;; Copyright (c) 2016-2017 Jason Milkins
+;; Copyright (c) 2016-2022 Jason Milkins
 ;; Copyright (c) 2017-2018 Martijn Terpstra
 
 ;; Author: Jason Milkins <jasonm23@gmail.com>
 ;; (current maintainer)
 ;;
-;; Author-list: Lee Machin <ljmachin@gmail.com>,
-;;              Eduardo Lavaque <me@greduan.com>
+;; Author-list: Jason Milkins <jasonm23@gmail.com>,
+;;              Martijn Terpstra,
+;;              Eduardo Lavaque <me@greduan.com>,
+;;              Lee Machin <ljmachin@gmail.com>
 ;;
 ;; URL: http://github.com/greduan/emacs-theme-gruvbox
-;; Version: 1.26.0
+;; Version: 1.30.0
 
 ;; Package-Requires: ((autothemer "0.2"))
 
@@ -115,6 +116,23 @@
   (gruvbox-aquamarine4     "#83A598" "#87af87")
   (gruvbox-turquoise4      "#61ACBB" "#5fafaf")
 
+  (gruvbox-accent-00       "#9d0006" "#870000")
+  (gruvbox-accent-01       "#79740e" "#878700")
+  (gruvbox-accent-02       "#b57614" "#af8700")
+  (gruvbox-accent-03       "#076678" "#005f87")
+  (gruvbox-accent-04       "#8f3f71" "#875f87")
+  (gruvbox-accent-05       "#427b58" "#5f8787")
+  (gruvbox-accent-06       "#af3a03" "#af5f00")
+  (gruvbox-accent-07       "#9d0006" "#870000")
+  (gruvbox-accent-08       "#79740e" "#878700")
+  (gruvbox-accent-09       "#b57614" "#af8700")
+  (gruvbox-accent-10       "#076678" "#005f87")
+  (gruvbox-accent-11       "#8f3f71" "#875f87")
+  (gruvbox-accent-12       "#427b58" "#5f8787")
+  (gruvbox-accent-13       "#af3a03" "#af5f00")
+  (gruvbox-accent-14       "#9d0006" "#870000")
+  (gruvbox-accent-15       "#79740e" "#878700")
+
   (gruvbox-ediff-current-diff-A        "#fbc6a3" "#fbc6a3")
   (gruvbox-ediff-current-diff-B        "#e3f3b5" "#e3f3b5")
   (gruvbox-ediff-current-diff-C        "#fadccc" "#fadccc")
@@ -125,8 +143,7 @@
   (gruvbox-ediff-fine-diff-Ancestor    "#b6b0d6" "#b6b0d6")
 
   (gruvbox-bg gruvbox-dark0_soft)
-  (gruvbox-bg_inactive gruvbox-dark1)
-  )
+  (gruvbox-bg_inactive gruvbox-dark1))
 
  (custom-theme-set-variables 'gruvbox-light-soft
                              `(ansi-color-names-vector
@@ -138,7 +155,7 @@
                                 ,gruvbox-bright_purple
                                 ,gruvbox-bright_aqua
                                 ,gruvbox-light1])
-			     `(pdf-view-midnight-colors '(,gruvbox-light0 . ,gruvbox-bg))))
+                             `(pdf-view-midnight-colors '(,gruvbox-light0 . ,gruvbox-bg))))
 
 ;;;###autoload
 (and load-file-name

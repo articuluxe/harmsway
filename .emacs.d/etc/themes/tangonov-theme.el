@@ -7,7 +7,7 @@
 ;; URL: https://sr.ht/~trevdev/tangonov-theme/
 ;; Created: 20th July, 2022
 ;; Keywords: faces, theme, dark, fringe
-;; Version: 1.4.0
+;; Version: 1.4.4
 ;; Package-Requires: ((emacs "25"))
 
 ;; License: GPL3
@@ -71,7 +71,8 @@ Alpha should be a float between 0 and 1."
         ((tangonov-blend color "#FFFFFF" (- 1 alpha)))))
 
 (defgroup tangonov-theme nil
-  "Custom settings for `tangonov-theme'.")
+  "Custom settings for `tangonov-theme'."
+  :group 'faces)
 
 (defcustom tangonov-enable-custom-fringes t
   "Use custom settings from tangonov-theme to set up your fringe area."
@@ -126,7 +127,8 @@ Alpha should be a float between 0 and 1."
   (with-eval-after-load 'flycheck
     (define-fringe-bitmap 'flycheck-fringe-bitmap-caret
       tangonov--fringe-right-triangle)
-    (flycheck-define-error-level
+    (when (functionp 'flycheck-define-error-level)
+      (flycheck-define-error-level
           'error
         :severity 100
         :compilation-level 2
@@ -149,13 +151,16 @@ Alpha should be a float between 0 and 1."
         :overlay-category 'flycheck-info-overlay
         :fringe-bitmap 'flycheck-fringe-bitmap-caret
         :fringe-face 'flycheck-fringe-info
-        :info-list-face 'flycheck-info-list-info))
+        :info-list-face 'flycheck-info-list-info)))
   (with-eval-after-load 'flymake
     (define-fringe-bitmap 'small-right-triangle
       tangonov--fringe-right-triangle)
-    (setq flymake-note-bitmap    '(small-right-triangle compilation-info)
-          flymake-error-bitmap   '(small-right-triangle compilation-error)
-          flymake-warning-bitmap '(small-right-triangle compilation-warning))))
+    (when (and (boundp 'flymake-note-bitmap)
+               (boundp 'flymake-error-bitmap)
+               (boundp 'flymake-warning-bitmap))
+      (setq flymake-note-bitmap    '(small-right-triangle compilation-info)
+            flymake-error-bitmap   '(small-right-triangle compilation-error)
+            flymake-warning-bitmap '(small-right-triangle compilation-warning)))))
 
 (defcustom tangonov-selection-foregrounds t
   "Set a uniform foreground for selected text."
@@ -433,7 +438,7 @@ Alpha should be a float between 0 and 1."
    `(notmuch-tree-no-match-subject-face ((,spec (:foreground ,gray3))))
    `(notmuch-tree-no-match-tag-face ((,spec (:foreground ,yellow))))
    `(notmuch-tree-no-match-tree-face ((,spec (:foreground ,yellow))))
-   `(notmuch-wash-cited-text ((,spec (:foreground ,gray1))))
+   `(notmuch-wash-cited-text ((,spec (:foreground ,fg-alt))))
    `(notmuch-wash-toggle-button ((,spec (:foreground ,fg))))
    `(erc-button ((,spec (:weight bold :underline t))))
    `(erc-default-face ((,spec (:inherit 'default))))
@@ -473,7 +478,7 @@ Alpha should be a float between 0 and 1."
      ((,spec (:foreground ,blue :background
                           ,(tangonov-darken blue 0.5) :weight bold))))
    `(evil-snipe-matches-face
-     ((,spec (:foreground highlight :underline t :weight bold))))
+     ((,spec (:foreground ,cyan :underline t :weight bold))))
    `(evil-goggles-delete-face
      ((,spec (:foreground ,(tangonov-darken red 0.5) :background ,red))))
    `(evil-goggles-paste-face
@@ -535,6 +540,10 @@ Alpha should be a float between 0 and 1."
      ((,spec (:underline (:style wave :color ,yellow) :inherit 'unspecified))))
    `(eglot-highlight-symbol-face ((,spec (:weight bold :background ,gray1))))
    `(eldoc-box-border ((,spec (:background ,fg-alt))))
+   `(meow-search-indicator ((,spec (:foreground ,yellow :weight bold))))
+   `(meow-search-highlight
+     ((,spec (:foregound ,fg :background
+                         ,(tangonov-darken yellow 0.35) :weight bold))))
    `(mode-line
      ((,spec (:foreground ,fg-alt :background ,bg-alt :box
                           (:line-width (2 . 2) :color ,bg-alt)))))
@@ -617,6 +626,14 @@ Alpha should be a float between 0 and 1."
    `(rainbow-delimiters-depth-7-face ((,spec (:foreground ,blue))))
    `(rainbow-delimiters-depth-8-face ((,spec (:foreground ,teal))))
    `(rainbow-delimiters-depth-9-face ((,spec (:foreground ,red))))
+   `(reb-match-0
+     ((,spec (:foreground ,green :background ,(tangonov-darken green 0.5)))))
+   `(reb-match-1
+     ((,spec (:foreground ,cyan :background ,(tangonov-darken cyan 0.5)))))
+   `(reb-match-2
+     ((,spec (:foreground ,yellow :background ,(tangonov-darken yellow 0.5)))))
+   `(reb-match-3
+     ((,spec (:foreground ,magenta :background ,(tangonov-darken magenta 0.5)))))
    `(rjsx-tag ((,spec (:foreground ,red))))
    `(rjsx-attr ((,spec (:foreground ,yellow :slant italic :weight medium))))
    `(rjsx-tag-bracket-face ((,spec (:foreground ,cyan))))

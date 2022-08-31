@@ -67,6 +67,7 @@
 ;; - winum
 ;;
 ;; Supported defaults:
+;; - ansi-term
 ;; - custom (M-x customize)
 ;; - diff-mode
 ;; - dired
@@ -241,7 +242,32 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(window-divider-first-pixel               ((,class :foreground ,hr-black-6)))
    `(window-divider-last-pixel                ((,class :foreground ,hr-black-6)))
 
-;;;;; custom (M-x customize
+;;;;; ansi-term
+   `(ansi-color-black                         ((,class :foreground ,hr-black-3)))
+   `(ansi-color-blue                          ((,class :foreground ,hr-blue+1)))
+   `(ansi-color-bold                          ((,class :inherit bold)))
+   `(ansi-color-bright-black                  ((,class :foreground ,hr-black-6)))
+   `(ansi-color-bright-blue                   ((,class :foreground ,hr-blue)))
+   `(ansi-color-bright-cyan                   ((,class :foreground ,hr-cyan)))
+   `(ansi-color-bright-green                  ((,class :foreground ,hr-green)))
+   `(ansi-color-bright-magenta                ((,class :foreground ,hr-magenta)))
+   `(ansi-color-bright-red                    ((,class :foreground ,hr-red)))
+   `(ansi-color-bright-white                  ((,class :foreground ,hr-fg)))
+   `(ansi-color-bright-yellow                 ((,class :foreground ,hr-yellow)))
+   `(ansi-color-cyan                          ((,class :foreground ,hr-cyan+1)))
+   `(ansi-color-faint                         ((,class :weight light)))
+   `(ansi-color-fast-blink                    ((,class                                                     :box t)))
+   `(ansi-color-green                         ((,class :foreground ,hr-green+1)))
+   `(ansi-color-inverse                       ((,class                           :background ,hr-bg        :inverse-video t)))
+   `(ansi-color-italic                        ((,class :                                                   slant italic)))
+   `(ansi-color-magenta                       ((,class :foreground ,hr-magenta+1)))
+   `(ansi-color-red                           ((,class :foreground ,hr-red+1)))
+   `(ansi-color-slow-blink                    ((,class                                                     :box t)))
+   `(ansi-color-underline                     ((,class :underline t)))
+   `(ansi-color-white                         ((,class :foreground ,hr-white+6)))
+   `(ansi-color-yellow                        ((,class :foreground ,hr-orange)))
+
+;;;;; custom (M-x customize)
    `(custom-button                            ((,class :foreground ,hr-fg        :background ,hr-black-3   :box (:line-width 2 :color ,hr-black-8))))
    `(custom-button-mouse                      ((,class                           :background ,hr-black-6   :inherit custom-button)))
    `(custom-button-pressed                    ((,class                           :background ,hr-black-8   :inherit custom-button)))
@@ -570,14 +596,14 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(deft-title-face                          ((,class :foreground ,hr-blue                                :weight bold)))
 
 ;;;;; diff-hl
-   `(diff-hl-change                           ((,class :foreground ,hr-yellow :background ,hr-yellow)))
-   `(diff-hl-delete                           ((,class :foreground ,hr-red+1 :background ,hr-red+1)))
+   `(diff-hl-change                           ((,class :foreground ,hr-yellow    :background ,hr-yellow)))
+   `(diff-hl-delete                           ((,class :foreground ,hr-red+1     :background ,hr-red+1)))
    `(diff-hl-dired-change                     ((,class                                                     :inherit diff-hl-change)))
    `(diff-hl-dired-delete                     ((,class                                                     :inherit diff-hl-delete)))
    `(diff-hl-dired-ignored                    ((,class :inherit dired-ignored)))
    `(diff-hl-dired-insert                     ((,class                                                     :inherit diff-hl-insert)))
    `(diff-hl-dired-unknown                    ((,class :inherit dired-ignored)))
-   `(diff-hl-insert                           ((,class :foreground ,hr-green+1 :background ,hr-green+1)))
+   `(diff-hl-insert                           ((,class :foreground ,hr-green+1   :background ,hr-green+1)))
    `(diff-hl-reverted-hunk-highlight          ((,class                                                     :inverse-video t)))
 
 ;;;;; doom-modeline
@@ -653,7 +679,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(flyspell-correct-highlight-face          ((,class                                                     :inherit isearch)))
 
 ;;;;; git-commit
-   `(git-commit-comment-action                ((,class :weight bold)))
+   `(git-commit-comment-action                ((,class                                                     :weight bold)))
    `(git-commit-comment-branch-local          ((,class :foreground ,hr-blue)))
    `(git-commit-comment-branch-remote         ((,class :foreground ,hr-cyan)))
    `(git-commit-comment-detached              ((,class                                                     :inherit git-commit-comment-branch-local)))

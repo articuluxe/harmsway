@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 0.3.4
+;; Version: 0.4.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -319,10 +319,7 @@ sequence given SEQ-PRED, using SEQ-DEFAULT as a fallback."
 
 (defun ef-themes--current-theme ()
   "Return first enabled Ef theme."
-  (when-let* ((theme (car custom-enabled-themes)))
-    (if (memq theme (ef-themes--list-enabled-themes))
-        theme
-      (user-error "`%s' is not an Ef theme" theme))))
+  (car (ef-themes--list-enabled-themes)))
 
 (defun ef-themes--palette (theme)
   "Return THEME palette as a symbol."
@@ -526,6 +523,7 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; all basic faces
     `(default ((,c :background ,bg-main :foreground ,fg-main)))
     `(cursor ((,c :background ,cursor)))
+    `(vertical-border ((,c :foreground ,border)))
     `(bold ((,c :weight bold)))
     `(italic ((,c :slant italic)))
     `(bold-italic ((,c :inherit (bold italic))))
@@ -614,6 +612,26 @@ Helper function for `ef-themes-preview-colors'."
     `(ansi-color-red ((,c :background ,red :foreground ,red)))
     `(ansi-color-white ((,c :background "gray65" :foreground "gray65")))
     `(ansi-color-yellow ((,c :background ,yellow :foreground ,yellow)))
+;;;; auctex and tex
+    `(font-latex-bold-face ((,c :inherit bold)))
+    `(font-latex-doctex-documentation-face ((,c :inherit font-lock-doc-face)))
+    `(font-latex-doctex-preprocessor-face ((,c :inherit font-lock-preprocessor-face)))
+    `(font-latex-italic-face ((,c :inherit italic)))
+    `(font-latex-math-face ((,c :inherit font-lock-constant-face)))
+    `(font-latex-script-char-face ((,c :inherit font-lock-builtin-face)))
+    `(font-latex-sectioning-5-face ((,c :inherit (bold ef-themes-variable-pitch) :foreground ,fg-alt)))
+    `(font-latex-sedate-face ((,c :inherit font-lock-keyword-face)))
+    `(font-latex-slide-title-face ((,c :inherit ef-themes-heading-0)))
+    `(font-latex-string-face ((,c :inherit font-lock-string-face)))
+    `(font-latex-underline-face ((,c :inherit underline)))
+    `(font-latex-verbatim-face ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-0)))
+    `(font-latex-warning-face ((,c :inherit font-lock-warning-face)))
+    `(tex-verbatim ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-0)))
+    ;; `(texinfo-heading ((,c :foreground ,magenta)))
+    `(TeX-error-description-error ((,c :inherit error)))
+    `(TeX-error-description-help ((,c :inherit success)))
+    `(TeX-error-description-tex-said ((,c :inherit success)))
+    `(TeX-error-description-warning ((,c :inherit warning)))
 ;;;; bongo
     `(bongo-album-title (( )))
     `(bongo-artist ((,c :foreground ,rainbow-0)))
@@ -653,10 +671,28 @@ Helper function for `ef-themes-preview-colors'."
     `(log-view-commit-body (( )))
     `(log-view-file ((,c :inherit bold)))
     `(log-view-message ((,c :foreground ,fg-dim)))
+;;;; company-mode
+    `(company-echo-common ((,c :inherit bold :foreground ,accent-0)))
+    `(company-preview ((,c :background ,bg-dim :foreground ,fg-dim)))
+    `(company-preview-common ((,c :inherit company-echo-common)))
+    `(company-preview-search ((,c :inherit modus-themes-special-calm)))
+    `(company-scrollbar-bg ((,c :background ,bg-active)))
+    `(company-scrollbar-fg ((,c :background ,fg-main)))
+    `(company-template-field ((,c :background ,bg-active :foreground ,fg-intense)))
+    `(company-tooltip ((,c :background ,bg-dim)))
+    `(company-tooltip-annotation ((,c :inherit completions-annotations)))
+    `(company-tooltip-common ((,c :inherit company-echo-common)))
+    `(company-tooltip-deprecated ((,c :inherit company-tooltip :strike-through t)))
+    `(company-tooltip-mouse ((,c :inherit highlight)))
+    `(company-tooltip-scrollbar-thumb ((,c :background ,fg-alt)))
+    `(company-tooltip-scrollbar-track ((,c :background ,bg-alt)))
+    `(company-tooltip-search ((,c :inherit secondary-selection)))
+    `(company-tooltip-search-selection ((,c :inherit secondary-selection :underline t)))
+    `(company-tooltip-selection ((,c :background ,bg-completion)))
 ;;;; compilation
     `(compilation-column-number ((,c :inherit compilation-line-number)))
     `(compilation-error ((,c :inherit error)))
-    `(compilation-info ((,c :inherit success)))
+    `(compilation-info ((,c :inherit bold :foreground ,name)))
     `(compilation-line-number ((,c :inherit shadow)))
     `(compilation-mode-line-exit ((,c :inherit bold)))
     `(compilation-mode-line-fail ((,c :inherit error)))
@@ -666,6 +702,12 @@ Helper function for `ef-themes-preview-colors'."
     `(completions-annotations ((,c :inherit italic :foreground ,docstring)))
     `(completions-common-part ((,c :inherit bold :foreground ,accent-0)))
     `(completions-first-difference ((,c :inherit bold :foreground ,accent-1)))
+    `(completions-group-title ((,c :inherit bold :foreground ,name)))
+;;;; consult
+    `(consult-async-split ((,c :inherit warning)))
+    `(consult-key ((,c :inherit ef-themes-key-binding)))
+    `(consult-imenu-prefix ((,c :inherit shadow)))
+    `(consult-line-number ((,c :inherit shadow)))
 ;;;; custom (M-x customize)
     `(custom-button ((,c :box ,fg-dim :background ,bg-active :foreground ,fg-intense)))
     `(custom-button-mouse ((,c :inherit (highlight custom-button))))
@@ -767,6 +809,8 @@ Helper function for `ef-themes-preview-colors'."
     `(diredfl-symlink ((,c :inherit dired-symlink)))
     `(diredfl-tagged-autofile-name ((,c :inherit (diredfl-autofile-name dired-marked))))
     `(diredfl-write-priv ((,c :foreground ,rainbow-2)))
+;;;; dirvish
+    `(dirvish-hl-line ((,c :background ,bg-hl-line)))
 ;;;; doom-modeline
     ;; NOTE 2022-08-20: This is the only face that seems necessary.  All
     ;; others inherit from basic faces.
@@ -805,6 +849,11 @@ Helper function for `ef-themes-preview-colors'."
     `(elfeed-search-title-face ((,c :foreground ,fg-dim)))
     `(elfeed-search-unread-count-face (( )))
     `(elfeed-search-unread-title-face ((,c :inherit bold :foreground ,fg-main)))
+;;;; embark
+    `(embark-keybinding ((,c :inherit ef-themes-key-binding)))
+    `(embark-keybinding-repeat ((,c :inherit bold)))
+    `(embark-collect-marked ((,c :inherit success :background ,bg-info)))
+    `(embark-collect-group-title ((,c :inherit bold :foreground ,name)))
 ;;;; epa
     `(epa-field-body (( )))
     `(epa-field-name ((,c :inherit bold :foreground ,fg-dim)))
@@ -846,8 +895,8 @@ Helper function for `ef-themes-preview-colors'."
     `(font-lock-keyword-face ((,c :inherit bold :foreground ,keyword)))
     `(font-lock-negation-char-face ((,c :inherit bold)))
     `(font-lock-preprocessor-face ((,c :foreground ,preprocessor)))
-    `(font-lock-regexp-grouping-backslash ((,c :inherit bold :foreground ,info)))
-    `(font-lock-regexp-grouping-construct ((,c :inherit bold :foreground ,err)))
+    `(font-lock-regexp-grouping-backslash ((,c :inherit bold :foreground ,rx-escape)))
+    `(font-lock-regexp-grouping-construct ((,c :inherit bold :foreground ,rx-construct)))
     `(font-lock-string-face ((,c :foreground ,string)))
     `(font-lock-type-face ((,c :foreground ,type)))
     `(font-lock-variable-name-face ((,c :foreground ,variable)))
@@ -898,7 +947,7 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; line numbers (display-line-numbers-mode and global variant)
     ;; We need to fall back to `default' otherwise line numbers do not
     ;; scale when using `text-scale-adjust'.
-    `(line-number ((,c :inherit (shadow default))))
+    `(line-number ((,c :inherit (ef-themes-fixed-pitch shadow default))))
     `(line-number-current-line ((,c :inherit (bold line-number) :foreground ,fg-intense)))
     `(line-number-major-tick ((,c :inherit line-number :background ,bg-alt :foreground ,info)))
     `(line-number-minor-tick ((,c :inherit line-number :background ,bg-dim :foreground ,warning)))
@@ -1057,7 +1106,7 @@ Helper function for `ef-themes-preview-colors'."
     `(message-header-subject ((,c :inherit bold :foreground ,mail-2)))
     `(message-header-xheader ((,c :foreground ,mail-3)))
     `(message-header-other ((,c :foreground ,mail-4)))
-    `(message-mml ((,c :foreground ,info)))
+    `(message-mml ((,c :foreground ,mail-5)))
     `(message-separator ((,c :background ,bg-alt)))
 ;;;; mode-line
     `(mode-line ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-mode-line :foreground ,fg-mode-line)))
@@ -1106,8 +1155,8 @@ Helper function for `ef-themes-preview-colors'."
     `(mu4e-view-body-face (( )))
     `(mu4e-warning-face ((,c :inherit warning)))
 ;;;; notmuch
-    `(notmuch-crypto-decryption ((,c :inherit (shadow bold))))
-    `(notmuch-crypto-part-header ((,c :foreground ,magenta-cooler)))
+    `(notmuch-crypto-decryption ((,c :inherit bold)))
+    `(notmuch-crypto-part-header ((,c :foreground ,mail-5))) ; like `message-mml'
     `(notmuch-crypto-signature-bad ((,c :inherit error)))
     `(notmuch-crypto-signature-good ((,c :inherit success)))
     `(notmuch-crypto-signature-good-key ((,c :inherit success)))
@@ -1121,8 +1170,8 @@ Helper function for `ef-themes-preview-colors'."
     `(notmuch-search-non-matching-authors ((,c :inherit shadow)))
     `(notmuch-search-subject ((,c :foreground ,fg-main)))
     `(notmuch-search-unread-face ((,c :inherit bold)))
-    `(notmuch-tag-added ((,c :underline t)))
-    `(notmuch-tag-deleted ((,c :strike-through t)))
+    `(notmuch-tag-added ((,c :underline ,info)))
+    `(notmuch-tag-deleted ((,c :strike-through ,err)))
     `(notmuch-tag-face ((,c :foreground ,accent-0)))
     `(notmuch-tag-flagged ((,c :foreground ,err)))
     `(notmuch-tag-unread ((,c :foreground ,accent-1)))
@@ -1185,7 +1234,7 @@ Helper function for `ef-themes-preview-colors'."
     `(org-headline-done ((,c :inherit org-done)))
     `(org-headline-todo ((,c :inherit org-todo)))
     `(org-hide ((,c :foreground ,bg-main)))
-    `(org-indent ((,c :inherit org-hide)))
+    `(org-indent ((,c :inherit (fixed-pitch org-hide))))
     `(org-imminent-deadline ((,c :inherit bold :foreground ,err)))
     `(org-latex-and-related ((,c :foreground ,type)))
     `(org-level-1 ((,c :inherit ef-themes-heading-1)))
@@ -1202,7 +1251,7 @@ Helper function for `ef-themes-preview-colors'."
     `(org-meta-line ((,c :inherit (shadow ef-themes-fixed-pitch))))
     `(org-mode-line-clock (( )))
     `(org-mode-line-clock-overrun ((,c :inherit bold :foreground ,err)))
-    `(org-priority ((,c :foreground ,magenta)))
+    `(org-priority ((,c :foreground ,fg-alt)))
     `(org-property-value ((,c :inherit ef-themes-fixed-pitch :foreground ,fg-alt)))
     `(org-quote ((,c :inherit org-block)))
     `(org-scheduled ((,c :foreground ,warning)))
@@ -1232,14 +1281,14 @@ Helper function for `ef-themes-preview-colors'."
     `(org-habit-ready-face ((,c :background ,green-graph-0-bg :foreground "black"))) ; special case
     `(org-habit-ready-future-face ((,c :background ,green-graph-1-bg)))
 ;;;; org-modern
-    `(org-modern-date-active ((,c :inherit org-modern-label :background ,bg-alt)))
-    `(org-modern-date-inactive ((,c :inherit org-modern-label :background ,bg-dim :foreground ,fg-dim)))
+    `(org-modern-date-active ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-alt)))
+    `(org-modern-date-inactive ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-dim :foreground ,fg-dim)))
     `(org-modern-done ((,c :inherit org-modern-label :background ,bg-info :foreground ,info)))
-    `(org-modern-label ((,c :height 0.9 :width condensed :weight regular :underline nil)))
+    `(org-modern-label (( )))
     `(org-modern-priority ((,c :inherit (org-modern-label org-priority) :background ,bg-dim)))
     `(org-modern-statistics ((,c :inherit org-modern-label :background ,bg-dim)))
     `(org-modern-tag ((,c :inherit (org-modern-label org-tag) :background ,bg-dim)))
-    `(org-modern-time-active ((,c :inherit org-modern-label :background ,bg-active :foreground ,fg-intense)))
+    `(org-modern-time-active ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-active :foreground ,fg-intense)))
     `(org-modern-time-inactive ((,c :inherit (org-modern-label org-modern-date-inactive))))
     `(org-modern-todo ((,c :inherit org-modern-label :background ,bg-err :foreground ,err)))
 ;;;; outline-mode
@@ -1410,6 +1459,7 @@ Helper function for `ef-themes-preview-colors'."
     `(vc-up-to-date-state (( )))
 ;;;; vertico
     `(vertico-current ((,c :background ,bg-completion)))
+    `(vertico-group-title ((,c :inherit bold :foreground ,name)))
 ;;;; wgrep
     `(wgrep-delete-face ((,c :inherit warning)))
     `(wgrep-done-face ((,c :background ,bg-info :foreground ,info)))
@@ -1487,7 +1537,7 @@ Those are stored in `ef-themes-faces' and
          ;; instantiate the actual theme's palette.  We have to do this
          ;; otherwise the macro does not work properly when called from
          ;; inside a function.
-         (colors (mapcar #'car (symbol-value 'ef-light-palette))))
+         (colors (mapcar #'car (ef-themes--current-theme-palette))))
     `(let* ((c '((class color) (min-colors 256)))
             (,sym (ef-themes--current-theme-palette))
             ,@(mapcar (lambda (color)

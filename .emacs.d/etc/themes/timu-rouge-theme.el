@@ -1713,10 +1713,10 @@ Sourced other themes to get information about font faces for packages.")
    `(yas-field-highlight-face ((,class (:foreground ,green :background ,rouge0 :weight bold))))
 
 ;;;; ytel
-   `(ytel-video-published-face ((,class (:foreground ,magenta))))
-   `(ytel-channel-name-face ((,class (:foreground ,orange))))
-   `(ytel-video-length-face ((,class (:foreground ,blue))))
-   `(ytel-video-view-face ((,class (:foreground ,darkcyan))))
+   `(ytel-video-published-face ((,class (:foreground ,blue))))
+   `(ytel-channel-name-face ((,class (:foreground ,red))))
+   `(ytel-video-length-face ((,class (:foreground ,darkred))))
+   `(ytel-video-view-face ((,class (:foreground ,cyan))))
 
    (custom-theme-set-variables
     'timu-rouge

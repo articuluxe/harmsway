@@ -1,9 +1,9 @@
-;;; nude-beach-theme.el --- A light, sunny and calm Emacs theme  -*- lexical-binding: t; -*-
+;;; beach-bar-theme.el --- A light, sunny and calm Emacs theme  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021–2022 Dan Dee
 
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
-;; URL: https://github.com/monkeyjunglejuice/nude-beach-theme-emacs
+;; URL: https://github.com/monkeyjunglejuice/beach-bar-theme-emacs
 ;; Version: 1.0.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
@@ -12,39 +12,42 @@
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
-;; This is not your "angry fruit salad". The light Nude Beach theme draws
-;; inspiration from monochrome eink-like themes. So it appears sunny and calm,
-;; wearing colors sparingly, and only where really really neccessary.
-;;
-;; Other themes:
+;; The light Nude Beach theme draws inspiration from monochrome "eink-like"
+;; themes. It appears sunny and calm, wearing colors sparingly,
+;; and only where really neccessary.
+
+;; My other themes:
 ;; - "The Matrix" https://github.com/monkeyjunglejuice/matrix-emacs-theme
 
 ;;; Code:
 
-(deftheme nude-beach "A light, sunny and calm Emacs theme.")
+(deftheme beach-bar "A light, sunny and calm Emacs theme.")
 
 ;; Colors
 (let* ((color-bg           "#fff8dc")
        (color-bg-alt       "#f4efd2")
        (color-fg           "#43402d")
        (color-fg-alt       "#000000")
-       (color-fg-dim       "#8e8a72")
-       (color-fg-dimmer    "#d7d3b7")
-       (color-light        "#cff7d8")
-       (color-middle       "#56ae9a")
+       (color-fg-dim       "#9d9a7b")
+       (color-fg-dimmer    "#d9d5b5")
+       (color-light        "#cef5d6")
+       (color-middle       "#53b19d")
        (color-dark         "#0e7b6e")
-       (color-bright       "#d6761f")
-       (color-strong       "#9e240a")
-       (color-strong-light "#fcc9be")
-       (color-bright-light "#ffefc2"))
+       (color-bright       "#de8621")
+       (color-strong       "#a93308")
+       (color-strong-light "#fcd3be")
+       (color-bright-light "#ffefc2")
+       (color-dark-soft    "#83c7b9")
+       (color-bright-soft  "#fab360")
+       (color-strong-soft  "#ef845d"))
 
   (custom-theme-set-faces
-   'nude-beach
+   'beach-bar
    `(default ((t (:background ,color-bg :foreground ,color-fg))))
    `(cursor ((t (:background ,color-fg-alt))))
    `(region ((t (:foreground ,color-dark :background ,color-light))))
    `(success ((t (:foreground ,color-dark :background ,color-light :extend t))))
-   `(warning ((t (:foreground ,color-bright :background ,color-bright-light :extend t))))
+   `(warning ((t (:foreground ,color-bright :background ,color-bright-light))))
    `(error ((t (:foreground ,color-strong :background ,color-strong-light :extend t))))
    `(secondary-selection ((t (:background ,color-bg-alt))))
    `(mode-line ((t (:background ,color-fg :foreground ,color-bg :box nil))))
@@ -63,7 +66,9 @@
    `(help-key-binding ((t (:foreground ,color-fg-alt :background ,color-bg-alt :box (:color ,color-fg-dim) :inherit fixed-pitch-serif))))
    `(header-line ((t (:foreground ,color-fg-dim :background ,color-bg-alt))))
    `(shadow ((t (:foreground ,color-fg-dim))))
+   `(widget-inactive ((t (:foreground ,color-fg-dim :background ,color-fg-dimmer))))
    `(show-paren-match ((t (:foreground ,color-fg-alt :background ,color-light :weight bold))))
+   `(show-paren-match-expression ((t (:background ,color-bright-light))))
    `(show-paren-mismatch ((t (:inherit error))))
    `(highlight ((t (:foreground ,color-fg-alt :background ,color-light :weight bold :underline (:color ,color-fg-alt)))))
    `(match ((t (:inherit highlight))))
@@ -74,17 +79,17 @@
    `(escape-glyph ((t (:inverse-video t))))
 
    `(font-lock-face ((t (:foreground ,color-middle))))
-   `(font-lock-builtin-face ((t (:foreground ,color-strong))))
-   `(font-lock-comment-face ((t (:inherit shadow))))
+   `(font-lock-builtin-face ((t (:foreground ,color-strong :slant italic))))
+   `(font-lock-comment-face ((t (:foreground ,color-fg-dim :inherit fixed-pitch-serif))))
    `(font-lock-constant-face ((t (:foreground ,color-fg))))
    `(font-lock-doc-face ((t (:foreground ,color-middle :slant italic :inherit fixed-pitch-serif))))
-   `(font-lock-function-name-face ((t (:foreground ,color-fg :weight bold :slant italic))))
+   `(font-lock-function-name-face ((t (:weight bold :slant italic))))
    `(font-lock-keyword-face ((t (:foreground ,color-bright))))
    `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-bright))))
    `(font-lock-regexp-grouping-construct ((t (:foreground ,color-bright))))
    `(font-lock-string-face ((t (:foreground ,color-dark :inherit fixed-pitch-serif))))
    `(font-lock-type-face ((t (:foreground ,color-fg :weight bold))))
-   `(font-lock-variable-name-face ((t (:foreground ,color-fg :slant italic))))
+   `(font-lock-variable-name-face ((t (:slant italic))))
    `(font-lock-warning-face ((t (:foreground ,color-strong :slant italic))))
 
    ;; shell-mode
@@ -101,6 +106,9 @@
    `(dired-flagged ((t (:foreground ,color-strong :background ,color-strong-light))))
    `(dired-perm-write ((t (:foreground ,color-strong))))
    `(dired-special ((t (:foreground ,color-middle))))
+
+   ;; eldoc
+   `(eldoc-highlight-function-argument ((t (:inherit highlight))))
 
    ;; proced
    `(proced-mark ((t (:inherit dired-mark))))
@@ -141,17 +149,19 @@
    `(package-status-incompat ((t (:slant italic :inherit font-lock-warning-face))))
 
    ;; customization
-   `(custom-group-tag ((t (:inherit bold))))
-   `(custom-variable-tag ((t (:weight bold))))
-   `(custom-variable-obsolete ((t (:foreground ,color-fg-dim :inherit custom-variable-tag))))
-   `(custom-documentation ((t (:inherit fixed-pitch-serif))))
-   `(custom-visibility ((t (:inherit custom-documentation :underline t))))
-   `(custom-state ((t (:foreground ,color-bright :slant italic))))
-   `(custom-button ((t (:foreground ,color-bg :background ,color-fg))))
-   `(custom-button-mouse ((t (:foreground ,color-fg :background ,color-bright-light))))
-   `(custom-button-pressed ((t (:foreground ,color-bright :background ,color-bright-light))))
+   `(custom-button ((t (:foreground ,color-bg :background ,color-middle :box (:color ,color-bg)))))
+   `(custom-button-mouse ((t (:foreground ,color-dark :background ,color-light))))
+   `(custom-button-pressed ((t (:foreground ,color-dark :background ,color-light :box (:color ,color-dark)))))
    `(custom-button-pressed-unraised ((t (:inherit custom-button-pressed))))
    `(custom-button-unraised ((t (:inherit custom-button))))
+   `(custom-comment ((t (:inherit font-lock-doc-face))))
+   `(custom-comment-tag ((t (:inherit default))))
+   `(custom-documentation ((t (:inherit fixed-pitch-serif))))
+   `(custom-group-tag ((t (:inherit bold))))
+   `(custom-state ((t (:foreground ,color-bright :slant italic))))
+   `(custom-variable-tag ((t (:weight bold))))
+   `(custom-variable-obsolete ((t (:foreground ,color-fg-dim :inherit custom-variable-tag))))
+   `(custom-visibility ((t (:inherit custom-documentation :underline t))))
 
    ;; info
    `(info-menu-star ((t (:foreground ,color-bright))))
@@ -194,26 +204,27 @@
    `(outline-8 ((t (:foreground ,color-fg-alt :weight bold))))
 
    ;; org-mode
-   `(org-hide ((t (:foreground ,color-bg))))
-   `(org-table ((t (:foreground ,color-fg :inherit fixed-pitch-serif))))
+   `(org-archived ((t (:foreground ,color-fg-dim))))
+   `(org-block ((t (:foreground ,color-fg :background ,color-bg-alt :inherit fixed-pitch :extend t))))
+   `(org-block-begin-line ((t (:foreground ,color-fg-dim))))
+   `(org-block-end-line ((t (:foreground ,color-fg-dim))))
+   `(org-checkbox ((t (:foreground ,color-fg-alt :weight normal :inherit fixed-pitch))))
    `(org-code ((t (:background ,color-bg-alt :inherit fixed-pitch))))
    `(org-date ((t (:foreground ,color-bright))))
-   `(org-todo ((t (:foreground ,color-bright :box t :weight normal))))
-   `(org-done ((t (:foreground ,color-middle :box t :weight normal))))
-   `(org-headline-done ((t (:foreground ,color-fg-dim))))
-   `(org-latex-and-related ((t (:foreground ,color-dark :italic t))))
-   `(org-checkbox ((t (:foreground ,color-fg-alt :weight normal :inherit fixed-pitch))))
-   `(org-verbatim ((t (:inherit font-lock-string-face))))
-   `(org-mode-line-clock ((t (:background nil))))
+   `(org-document-info ((t (:foreground ,color-middle))))
+   `(org-document-info-keyword ((t (:foreground ,color-fg-dim))))
    `(org-document-title ((t (:foreground ,color-fg-alt :weight bold))))
+   `(org-done ((t (:foreground ,color-middle :box t :weight normal))))
    `(org-drawer ((t (:inherit font-lock-comment-face))))
-   `(org-block ((t (:foreground ,color-fg :background ,color-bg-alt :inherit fixed-pitch :extend t))))
-   `(org-block-begin-line ((t (:inherit font-lock-comment-face))))
-   `(org-block-end-line ((t (:inherit font-lock-comment-face))))
-   `(org-meta-line ((t (:inherit font-lock-comment-face))))
-   `(org-document-info-keyword ((t (:inherit font-lock-comment-face))))
-   `(org-document-info ((t (:foreground ,color-dark))))
-   `(org-archived ((t (:foreground ,color-fg-dim))))
+   `(org-headline-done ((t (:foreground ,color-fg-dim))))
+   `(org-hide ((t (:foreground ,color-bg))))
+   `(org-latex-and-related ((t (:foreground ,color-dark :italic t))))
+   `(org-link ((t (:foreground ,color-bright :underline t))))
+   `(org-meta-line ((t (:foreground ,color-fg-dim))))
+   `(org-mode-line-clock ((t (:background nil))))
+   `(org-table ((t (:foreground ,color-fg :inherit fixed-pitch-serif))))
+   `(org-todo ((t (:foreground ,color-bright :box t :weight normal))))
+   `(org-verbatim ((t (:inherit font-lock-string-face))))
 
    ;; org-tree-slide
    `(org-tree-slide-header-overlay-face ((t (:inherit font-lock-comment-face :foreground nil :background nil))))
@@ -222,9 +233,11 @@
    `(shortdoc-heading ((t (:inherit outline-1))))
 
    ;; compilation
-   `(compilation-error ((t (:inherit error))))
-   `(compilation-warning ((t (:inherit warning))))
+   `(compilation-error ((t (:foreground ,color-strong))))
+   `(compilation-warning ((t (:foreground ,color-bright))))
    `(compilation-info ((t (:foreground ,color-dark))))
+   `(compilation-line-number ((t (:inherit default :underline t))))
+   `(compilation-column-number ((t (:inherit default :underline t))))
 
    ;; whitespace
    `(whitespace-trailing ((t (:background ,color-strong-light))))
@@ -233,23 +246,24 @@
    `(whitespace-newline ((t (:inherit whitespace-space))))
    `(whitespace-empty ((t (:inherit whitespace-line))))
 
-   ;; smart parens
+   ;; smartparens
    `(sp-pair-overlay-face ((t (:background ,color-bright-light))))
+   `(sp-show-pair-match-content ((t (:inherit show-paren-match-expression))))
 
    ;; rainbow delimiters
-   `(rainbow-delimiters-depth-1-face ((t (:foreground ,color-fg :weight light))))
-   `(rainbow-delimiters-depth-2-face ((t (:foreground ,color-fg-dim :weight light))))
-   `(rainbow-delimiters-depth-3-face ((t (:foreground ,color-fg-dim :weight light))))
-   `(rainbow-delimiters-depth-4-face ((t (:foreground ,color-fg-dim :weight light))))
+   `(rainbow-delimiters-depth-1-face ((t (:foreground ,color-fg-dim :weight light))))
+   `(rainbow-delimiters-depth-2-face ((t (:foreground ,color-bright-soft :weight light))))
+   `(rainbow-delimiters-depth-3-face ((t (:foreground ,color-dark-soft :weight light))))
+   `(rainbow-delimiters-depth-4-face ((t (:foreground ,color-strong-soft :weight light))))
    `(rainbow-delimiters-depth-5-face ((t (:foreground ,color-fg-dim :weight light))))
-   `(rainbow-delimiters-depth-6-face ((t (:foreground ,color-fg-dim :weight light))))
-   `(rainbow-delimiters-depth-7-face ((t (:foreground ,color-fg-dim :weight light))))
-   `(rainbow-delimiters-depth-8-face ((t (:foreground ,color-fg-dim :weight light))))
+   `(rainbow-delimiters-depth-6-face ((t (:foreground ,color-bright-soft :weight light))))
+   `(rainbow-delimiters-depth-7-face ((t (:foreground ,color-dark-soft :weight light))))
+   `(rainbow-delimiters-depth-8-face ((t (:foreground ,color-strong-soft :weight light))))
    `(rainbow-delimiters-depth-9-face ((t (:foreground ,color-fg-dim :weight light))))
    `(rainbow-delimiters-unmatched-face ((t (:inherit error))))
 
-   ;; paren face
-   `(parenthesis ((t (:inherit shadow :weight light))))
+   ;; paren-face
+   `(parenthesis ((t (:foreground ,color-fg-dim :weight light))))
 
    ;; git-commit
    `(git-commit-summary ((t (:foreground ,color-fg))))
@@ -303,8 +317,10 @@
    `(company-tooltip-common ((t (:foreground ,color-bright))))
    `(company-tooltip-common-selection ((t (:foreground ,color-bright))))
    `(company-tooltip-selection ((t (:foreground ,color-fg-alt :background ,color-bright-light :weight bold :underline (:color ,color-bright)))))
-   `(company-scrollbar-bg ((t (:background ,color-bright-light))))
-   `(company-scrollbar-fg ((t (:background ,color-bright))))
+   `(company-tooltip-scrollbar-thumb ((t (:background ,color-bright))))
+   `(company-tooltip-scrollbar-track ((t (:background ,color-bright-light))))
+   `(company-scrollbar-fg ((t (:inherit company-tooltip-scrollbar-thumb))))  ; obsolete
+   `(company-scrollbar-bg ((t (:inherit company-tooltip-scrollbar-track))))  ; obsolete
 
    ;; flymake
    `(flymake-error ((t (:underline (:color ,color-strong :style wave)))))
@@ -312,12 +328,14 @@
    `(flymake-note ((t (:underline (:color ,color-middle :style wave)))))
 
    ;; flycheck
-   `(flycheck-error ((t (:underline (:color ,color-strong :style wave)))))
-   `(flycheck-fringe-error ((t (:foreground ,color-strong :background ,color-strong-light))))
-   `(flycheck-warning ((t (:underline (:color ,color-bright :style wave)))))
-   `(flycheck-fringe-warning ((t (:foreground ,color-bright :background ,color-bright-light))))
-   `(flycheck-info ((t (:underline (:color ,color-middle :style wave)))))
-   `(flycheck-fringe-info ((t (:foreground ,color-middle :background ,color-light))))
+   `(flycheck-error ((t (:inherit flymake-error))))
+   `(flycheck-warning ((t (:inherit flymake-warning))))
+   `(flycheck-info ((t (:inherit flymake-note))))
+   `(flycheck-fringe-error ((t (:inherit error))))
+   `(flycheck-fringe-warning ((t (:inherit warning))))
+   `(flycheck-fringe-info ((t (:inherit info))))
+   `(flycheck-error-list-info ((t (:inherit flycheck-info))))
+   `(flycheck-error-list-filename ((t (:foreground ,color-fg))))
 
    ;; lsp
    `(lsp-headerline-breadcrumb-path-face ((t (:foreground ,color-fg))))
@@ -340,27 +358,48 @@
    `(web-mode-html-attr-name-face ((t (:inherit shadow :slant italic))))
    `(web-mode-css-selector-face ((t (:inherit css-selector))))
    `(web-mode-css-property-name-face ((t (:inherit css-property))))
-   `(web-mode-doctype-face ((t (:inherit shadow))))
    `(web-mode-css-color-face ((t (:foreground ,color-fg))))
+   `(web-mode-current-element-highlight-face ((t (:inherit lazy-highlight))))
+   `(web-mode-doctype-face ((t (:inherit shadow))))
 
    ;; slime
+   `(slime-repl-prompt ((t (:inherit minibuffer-prompt))))
+   `(slime-repl-input-face ((t (:foreground ,color-fg))))
    `(slime-repl-inputed-output-face ((t (:foreground ,color-dark))))
    `(slime-repl-output-mouseover-face ((t (:foreground ,color-bright :box nil))))
-   `(slime-repl-input-face ((t (:foreground ,color-fg))))
-   `(slime-repl-prompt ((t (:inherit minibuffer-prompt))))
-   `(slime-highlight-edits-face ((t (:underline (:color ,color-fg-dimmer)))))
    `(slime-highlight-face ((t (:inherit highlight))))
+   `(slime-highlight-edits-face ((t (:underline (:color ,color-fg-dimmer)))))
    `(slime-error-face ((t (:inherit error))))
-   `(slime-warning-face ((t (:inherit warning))))
-   `(slime-style-warning-face ((t (:inherit warning))))
-   `(sldb-section-face ((t (:foreground ,color-fg-dim :weight bold))))
-   `(sldb-restartable-frame-line-face ((t (:inherit link))))
+   `(slime-warning-face ((t (:inherit flymake-warning))))
+   `(slime-style-warning-face ((t (:inherit flymake-warning))))
+   `(slime-reader-conditional-face ((t (:slant italic :inherit fixed-pitch-serif))))
+   `(sldb-section-face ((t (:foreground ,color-fg-dim))))
+   `(sldb-restartable-frame-line-face ((t (:weight bold))))
+
+   ;; sly
+   `(sly-db-topline-face ((t (:weight bold))))
+   `(sly-action-face ((t (:foreground ,color-bright))))
+   `(sly-mode-line ((t (:foreground ,color-bg))))
+   `(sly-mrepl-prompt-face ((t (:inherit minibuffer-prompt))))
+   `(sly-mrepl-output-face ((t (:inherit default))))
+   `(sly-mrepl-note-face ((t (:inherit font-lock-warning-face))))
+   `(sly-style-warning-face ((t (:inherit flymake-warning))))
+   `(sly-db-condition-face ((t (:foreground ,color-strong :background ,color-strong-light :extend t))))
+   `(sly-db-restart-face ((t (:inherit package-description))))
+   `(sly-db-restart-number-face ((t (:foreground ,color-fg-alt :weight bold))))
+   `(sly-db-section-face ((t (:inherit shadow))))
+   `(sly-db-frame-label-face ((t (:inherit shadow))))
+   `(sly-db-frame-line-face ((t (:inherit default))))
+   `(sly-db-restartable-frame-line-face ((t (:weight bold))))
+   `(sly-db-local-name-face ((t (:slant italic))))
 
    ;; geiser
    `(geiser-font-lock-repl-output ((t (:foreground ,color-dark))))
+   `(geiser-font-lock-autodoc-identifier ((t (:inherit font-lock-keyword-face))))
+   `(geiser-font-lock-autodoc-current-arg ((t (:inherit highlight))))
 
    ;; cider
-   `(cider-result-overlay-face ((t (:background ,color-bright-light))))
+   `(cider-result-overlay-face ((t (:background ,color-bg-alt))))
    `(cider-fringe-good-face ((t (:foreground ,color-dark))))
    `(cider-warning-highlight-face ((t (:foreground ,color-bright :background ,color-bright-light :slant italic))))
    `(cider-test-error-face ((t (:inherit font-lock-warning-face))))
@@ -376,18 +415,18 @@
    `(clojure-keyword-face ((t (:inherit font-lock-builtin-face))))
 
    ;; tuareg
-   `(tuareg-font-lock-constructor-face ((t (:foreground ,color-fg))))
+   `(tuareg-font-double-semicolon-face ((t (:foreground ,color-middle))))
+   `(tuareg-font-double-colon-face ((t (:foreground ,color-middle))))
+   `(tuareg-font-lock-constructor-face ((t (:foreground ,color-fg-alt))))
+   `(tuareg-font-lock-error-face ((t (:inherit error))))
+   `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold))))
    `(tuareg-font-lock-interactive-output-face ((t (:foreground ,color-dark))))
    `(tuareg-font-lock-interactive-error-face ((t (:inherit font-lock-warning-face))))
    `(tuareg-font-lock-interactive-directive-face ((t (:foreground ,color-middle))))
-   `(tuareg-font-lock-operator-face ((t (:foreground ,color-fg-alt))))
-   `(tuareg-font-lock-module-face ((t (:inherit shadow))))
-   `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold))))
    `(tuareg-font-lock-label-face ((t (:inherit shadow))))
    `(tuareg-font-lock-line-number-face ((t (:inherit linum))))
-   `(tuareg-font-double-semicolon-face ((t (:inherit tuareg-font-lock-interactive-directive-face))))
-   `(tuareg-font-double-colon-face ((t (:inherit tuareg-font-double-semicolon-face))))
-   `(tuareg-font-lock-error-face ((t (:inherit error))))
+   `(tuareg-font-lock-module-face ((t (:inherit shadow))))
+   `(tuareg-font-lock-operator-face ((t (:foreground ,color-fg-alt))))
 
    ;; merlin
    `(merlin-compilation-error-face ((t (:inherit error :underline (:color ,color-strong :style wave)))))
@@ -525,10 +564,10 @@
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
 
-(provide-theme 'nude-beach)
+(provide-theme 'beach-bar)
 
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; End:
 
-;;; nude-beach-theme.el ends here
+;;; beach-bar-theme.el ends here
