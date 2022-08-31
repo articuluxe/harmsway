@@ -6,7 +6,6 @@ bookmark-files
 bookmarks
 company-statistics-cache.el
 currency-convert-rates.json
-emacs-bmk-bmenu-state
 history
 ido-last
 mc-lists.el

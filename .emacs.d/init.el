@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-08-10 13:03:30 dharms>
+;; Modified Time-stamp: <2022-08-31 11:13:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -343,7 +343,6 @@ not an error if any files do not exist."
          ("C-c p <SPC>" . proviso-dashboard-show)
          ("C-c pg" . proviso-refresh-current-project)
          ("C-c C-f" . proviso-fulledit)
-         ("C-c pb" . proviso-bookmarks-switch-to-bookmark)
          ("C-c pcc" . proviso-compile-choose-compile-command)
          ("C-c <C-return>" . proviso-choose-recompile)
          ("M-' m" . proviso-choose-recompile)
@@ -1535,6 +1534,7 @@ ARGS are the additional arguments."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bookmark+
+  :disabled
   :bind (
          ;; C-x p <left>
          ("<f7>" . bmkp-previous-bookmark)
@@ -1554,7 +1554,6 @@ ARGS are the additional arguments."
          ("C-x x%b" . bmkp-set-autonamed-regexp-buffer)
          ("C-x x%r" . bmkp-set-autonamed-regexp-region)
          )
-  :demand t
   :init
   ;; (setq initial-buffer-choice (lambda ()
   ;;                               (bookmark-bmenu-list)
@@ -1566,11 +1565,11 @@ ARGS are the additional arguments."
   (setq bmkp-crosshairs-flag nil)
   (setq bmkp-last-as-first-bookmark-file nil)
   (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
-  (add-hook 'after-init-hook
-            (lambda ()
-              (unless (> (length command-line-args) 1)
-                (bookmark-bmenu-list)
-                (switch-to-buffer "*Bookmark List*"))))
+  ;; (add-hook 'after-init-hook
+  ;;           (lambda ()
+  ;;             (unless (> (length command-line-args) 1)
+  ;;               (bookmark-bmenu-list)
+  ;;               (switch-to-buffer "*Bookmark List*"))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1813,7 +1812,6 @@ ARGS are the additional arguments."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
-(bind-key "C-c b" 'bmkp-occur-create-autonamed-bookmarks occur-mode-map)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package swiper
