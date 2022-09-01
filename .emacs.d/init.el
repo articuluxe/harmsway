@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-01 11:39:17 dharms>
+;; Modified Time-stamp: <2022-09-01 13:19:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -57,7 +57,6 @@
                      ,(concat my/user-directory "ext/xfer/")
                      ,(concat my/plugins-directory "auctex/")
                      ,(concat my/plugins-directory "auto-complete/")
-                     ,(concat my/plugins-directory "bookmark+/")
                      ,(concat my/plugins-directory "company/")
                      ,(concat my/plugins-directory "ccls/")
                      ,(concat my/plugins-directory "cquery/")
@@ -1550,6 +1549,11 @@ ARGS are the additional arguments."
   (define-key eww-mode-map "f" #'eww-lnum-follow)
   (define-key eww-mode-map "F" #'eww-lnum-universal))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmarks ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq bookmark-default-file (concat my/user-directory "bookmarks"))
+(setq bookmark-save-flag 1)
+(add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bookmark+
   :disabled
@@ -1577,12 +1581,12 @@ ARGS are the additional arguments."
   ;;                               (bookmark-bmenu-list)
   ;;                               "*Bookmark List*"))
   :config
-  (setq bookmark-default-file (concat my/user-directory "bookmarks"))
-  (setq bmkp-bmenu-state-file (concat my/user-directory "emacs-bmk-bmenu-state"))
-  (setq bookmark-save-flag nil)
-  (setq bmkp-crosshairs-flag nil)
-  (setq bmkp-last-as-first-bookmark-file nil)
-  (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
+  ;; (setq bookmark-default-file (concat my/user-directory "bookmarks"))
+  ;; (setq bmkp-bmenu-state-file (concat my/user-directory "emacs-bmk-bmenu-state"))
+  ;; (setq bookmark-save-flag nil)
+  ;; (setq bmkp-crosshairs-flag nil)
+  ;; (setq bmkp-last-as-first-bookmark-file nil)
+  ;; (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
   ;; (add-hook 'after-init-hook
   ;;           (lambda ()
   ;;             (unless (> (length command-line-args) 1)
@@ -2510,9 +2514,9 @@ ARGS are the additional arguments."
     (define-key my/diredp-map "t" 'dired-do-touch)
     (define-key my/diredp-map "T" 'diredp-touch-this-file)
     (define-key my/diredp-map "\M-t" 'diredp-do-touch-recursive)
-    (define-key my/diredp-map "b" 'diredp-do-bookmark-in-bookmark-file)
-    (define-key my/diredp-map "B" 'diredp-do-bookmark-in-bookmark-file-recursive)
-    (define-key my/diredp-map "\M-b" 'diredp-do-bookmark-dirs-recursive)
+    ;; (define-key my/diredp-map "b" 'diredp-do-bookmark-in-bookmark-file)
+    ;; (define-key my/diredp-map "B" 'diredp-do-bookmark-in-bookmark-file-recursive)
+    ;; (define-key my/diredp-map "\M-b" 'diredp-do-bookmark-dirs-recursive)
     (define-key my/diredp-map "R" 'diredp-toggle-find-file-reuse-dir)
     )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
