@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-01 11:13:34 dharms>
+;; Modified Time-stamp: <2022-09-01 11:39:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1322,6 +1322,24 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; blamer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package blamer
   :bind (:map harmsway-git-keymap ("B" . blamer-mode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sideline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(use-package sideline-blame
+  :demand t
+  :init
+  (push #'sideline-blame sideline-backends-right))
+
+(use-package sideline-flycheck
+  :demand t
+  :init
+  (push #'sideline-flycheck sideline-backends-left))
+
+(use-package sideline
+  :bind ("M-s -" . sideline-mode)
+  :init
+  (setq sideline-delay 0.2)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-walktree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-walktree
