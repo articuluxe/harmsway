@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-08-31 11:13:56 dharms>
+;; Modified Time-stamp: <2022-09-01 11:13:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2585,6 +2585,10 @@ ARGS are the additional arguments."
   :after dired
   :bind (:map dired-mode-map
               ("TAB" . dired-subtree-toggle)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired-duplicates ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dired-duplicates
+  :bind ("C-c 0dp" . dired-duplicates))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; disk-usage ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package disk-usage
