@@ -85,6 +85,13 @@
       (bg-magenta  "#ff9fef")
       (bg-cyan     "#88c8ff")
 
+      (bg-red-subtle      "#ffcfbf")
+      (bg-green-subtle    "#b3fabf")
+      (bg-yellow-subtle   "#fff576")
+      (bg-blue-subtle     "#ccdfff")
+      (bg-magenta-subtle  "#ffddff")
+      (bg-cyan-subtle     "#bfefff")
+
       ;; Diffs
       (bg-added          "#d5f8d5")
       (bg-added-faint    "#e5ffe5")
@@ -157,7 +164,7 @@
       (accent-0 blue-warmer)
       (accent-1 magenta-warmer)
       (accent-2 green-cooler)
-      (accent-3 red)
+      (accent-3 yellow-warmer)
 
       (mail-0 blue-warmer)
       (mail-1 magenta)

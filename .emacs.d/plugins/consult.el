@@ -1195,36 +1195,48 @@ ORIG is the original function, HOOKS the arguments."
           (let ((default-directory dir))
             (setq name (abbreviate-file-name (expand-file-name name)))
             (or
-             ;; get-file-buffer is only a small optimization here. It
-             ;; may not find the actual buffer, for directories it
-             ;; returns nil instead of returning the Dired buffer.
-             (get-file-buffer name)
+             ;; Find existing fully initialized buffer (non-previewed). We have
+             ;; to check for fully initialized buffer before accessing the
+             ;; previewed buffers, since `embark-act' can open a buffer which is
+             ;; currently previewed, such that we end up with two buffers for
+             ;; the same file - one previewed and only partially initialized and
+             ;; one fully initialized. In this case we prefer the fully
+             ;; initialized buffer. For directories `get-file-buffer' returns nil,
+             ;; therefore we have to special case Dired.
+             (if (and (fboundp 'dired-find-buffer-nocreate) (file-directory-p name))
+                 (dired-find-buffer-nocreate name)
+               (get-file-buffer name))
+             ;; Find existing previewed buffer. Previewed buffers are not fully
+             ;; initialized (hooks are delayed) in order to ensure fast preview.
              (cdr (assoc name temporary-buffers))
+             ;; Finally, if no existing buffer has been found, open the file for
+             ;; preview.
              (when-let (buf (consult--find-file-temporarily name))
                ;; Only add new buffer if not already in the list
                (unless (or (rassq buf temporary-buffers) (memq buf orig-buffers))
                  (add-hook 'window-selection-change-functions hook)
                  (push (cons name buf) temporary-buffers)
-                 ;; Disassociate buffer from file by setting
-                 ;; `buffer-file-name' to nil and rename the buffer.
-                 ;; This lets us open an already previewed buffer with
-                 ;; the Embark default action C-. RET.
+                 ;; Disassociate buffer from file by setting `buffer-file-name'
+                 ;; and `dired-directory' to nil and rename the buffer. This
+                 ;; lets us open an already previewed buffer with the Embark
+                 ;; default action C-. RET.
                  (with-current-buffer buf
                    (rename-buffer
-                    (format "Preview:%s"
+                    (format " Preview:%s"
                             (file-name-nondirectory (directory-file-name name)))
                     'unique))
-                 ;; The buffer disassociation is delayed to avoid breaking
-                 ;; modes like pdf-view-mode or doc-view-mode which rely on
-                 ;; buffer-file-name. Executing (set-visited-file-name nil)
+                 ;; The buffer disassociation is delayed to avoid breaking modes
+                 ;; like `pdf-view-mode' or `doc-view-mode' which rely on
+                 ;; `buffer-file-name'. Executing (set-visited-file-name nil)
                  ;; early also prevents the major mode initialization.
                  (let ((hook (make-symbol "consult--temporary-files-disassociate")))
                    (fset hook (lambda ()
                                 (when (buffer-live-p buf)
                                   (with-current-buffer buf
                                     (remove-hook 'pre-command-hook hook)
-                                    (setq buffer-read-only t
-                                          buffer-file-name nil)))))
+                                    (setq-local buffer-read-only t
+                                                dired-directory nil
+                                                buffer-file-name nil)))))
                    (add-hook 'pre-command-hook hook))
                  ;; Only keep a few buffers alive
                  (while (length> temporary-buffers consult-preview-max-count)

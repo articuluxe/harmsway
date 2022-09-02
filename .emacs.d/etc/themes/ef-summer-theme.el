@@ -85,6 +85,13 @@
       (bg-magenta  "#ff9fee")
       (bg-cyan     "#88ccff")
 
+      (bg-red-subtle      "#ffc3bf")
+      (bg-green-subtle    "#b9f2c6")
+      (bg-yellow-subtle   "#fff576")
+      (bg-blue-subtle     "#ccdfff")
+      (bg-magenta-subtle  "#ffcdff")
+      (bg-cyan-subtle     "#bfeaff")
+
       ;; Diffs
       (bg-added          "#caf4da")
       (bg-added-faint    "#dff6ea")

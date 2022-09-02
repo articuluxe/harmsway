@@ -640,7 +640,7 @@ Helper function for `ef-themes-preview-colors'."
     `(bongo-filled-seek-bar ((,c :background ,bg-hover)))
     `(bongo-marked-track ((,c :inherit success :background ,bg-info)))
     `(bongo-marked-track-line ((,c :background ,bg-dim)))
-    `(bongo-played-track ((,c :strike-through t)))
+    `(bongo-played-track ((,c :inherit shadow :strike-through t)))
     `(bongo-track-length ((,c :inherit shadow)))
     `(bongo-track-title ((,c :foreground ,rainbow-1)))
     `(bongo-unfilled-seek-bar ((,c :background ,bg-dim)))
@@ -922,6 +922,9 @@ Helper function for `ef-themes-preview-colors'."
     `(gnus-header-name ((,c :inherit message-header-name)))
     `(gnus-header-newsgroups ((,c :inherit message-header-newsgroups)))
     `(gnus-header-subject ((,c :inherit message-header-subject)))
+;;;; image-dired
+    `(image-dired-thumb-flagged ((,c :background ,err)))
+    `(image-dired-thumb-mark ((,c :background ,info)))
 ;;;; info
     `(Info-quoted ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-0))) ; the capitalization is canonical
     `(info-header-node ((,c :inherit (shadow bold))))
@@ -944,6 +947,19 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; keycast
     `(keycast-command ((,c :inherit bold)))
     `(keycast-key ((,c :background ,bg-accent :foreground ,fg-accent)))
+;;;; lin
+    `(lin-blue ((,c :background ,bg-blue-subtle)))
+    `(lin-cyan ((,c :background ,bg-cyan-subtle)))
+    `(lin-green ((,c :background ,bg-green-subtle)))
+    `(lin-magenta ((,c :background ,bg-magenta-subtle)))
+    `(lin-red ((,c :background ,bg-red-subtle)))
+    `(lin-yellow ((,c :background ,bg-yellow-subtle)))
+    `(lin-blue-override-fg ((,c :background ,bg-blue-subtle :foreground ,fg-intense)))
+    `(lin-cyan-override-fg ((,c :background ,bg-cyan-subtle :foreground ,fg-intense)))
+    `(lin-green-override-fg ((,c :background ,bg-green-subtle :foreground ,fg-intense)))
+    `(lin-magenta-override-fg ((,c :background ,bg-magenta-subtle :foreground ,fg-intense)))
+    `(lin-red-override-fg ((,c :background ,bg-red-subtle :foreground ,fg-intense)))
+    `(lin-yellow-override-fg ((,c :background ,bg-yellow-subtle :foreground ,fg-intense)))
 ;;;; line numbers (display-line-numbers-mode and global variant)
     ;; We need to fall back to `default' otherwise line numbers do not
     ;; scale when using `text-scale-adjust'.
@@ -1316,6 +1332,15 @@ Helper function for `ef-themes-preview-colors'."
     `(package-status-installed ((,c :foreground ,fg-alt)))
     `(package-status-new ((,c :inherit success)))
     `(package-status-unsigned ((,c :inherit error)))
+;;;; pulsar
+    `(pulsar-blue ((,c :background ,bg-blue-subtle)))
+    `(pulsar-cyan ((,c :background ,bg-cyan-subtle)))
+    `(pulsar-green ((,c :background ,bg-green-subtle)))
+    `(pulsar-magenta ((,c :background ,bg-magenta-subtle)))
+    `(pulsar-red ((,c :background ,bg-red-subtle)))
+    `(pulsar-yellow ((,c :background ,bg-yellow-subtle)))
+;;;; pulse
+    `(pulse-highlight-start-face ((,c :background ,bg-blue-subtle)))
 ;;;; rainbow-delimiters
     `(rainbow-delimiters-base-error-face ((,c :inherit (bold rainbow-delimiters-mismatched-face))))
     `(rainbow-delimiters-base-face    ((,c :foreground ,rainbow-0)))
@@ -1402,6 +1427,10 @@ Helper function for `ef-themes-preview-colors'."
     `(tab-line-tab-inactive ((,c :box (:line-width -2 :color ,bg-active) :background ,bg-active)))
     `(tab-line-tab-inactive-alternate ((,c :inherit tab-line-tab-inactive :foreground ,fg-alt)))
     `(tab-line-tab-modified ((,c :foreground ,warning)))
+;;;; tempel
+    `(tempel-default ((,c :inherit italic :background ,bg-alt :foreground ,fg-alt)))
+    `(tempel-field ((,c :background ,bg-info :foreground ,info)))
+    `(tempel-form ((,c :background ,bg-err :foreground ,err)))
 ;;;; term
     `(term ((,c :background ,bg-main :foreground ,fg-main)))
     `(term-bold ((,c :inherit bold)))
