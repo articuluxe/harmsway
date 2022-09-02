@@ -61,6 +61,7 @@
                      ,(concat my/plugins-directory "ccls/")
                      ,(concat my/plugins-directory "cquery/")
                      ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "dirvish/")
                      ,(concat my/plugins-directory "docker/")
                      ,(concat my/plugins-directory "elfeed/")
                      ,(concat my/plugins-directory "elnode/")
@@ -2662,6 +2663,12 @@ ARGS are the additional arguments."
   :after treemacs)
 (use-package lsp-treemacs
   :commands (lsp-treemacs-errors-list lsp-treemacs-quick-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dirvish ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dirvish
+  :bind ("C-c 0dv" . dirvish)
+  :config (dirvish-override-dired-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; filetree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package filetree
