@@ -4,7 +4,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, September 14, 2016
 # Version: 1.0
-# Modified Time-stamp: <2022-02-11 10:03:02 dharms>
+# Modified Time-stamp: <2022-09-02 15:15:05 dharms>
 # Modified by: Dan Harms
 # Keywords: pgp gpg
 
@@ -13,7 +13,10 @@ gpg --gen-key
 gpg --full-gen-key [later versions]
 # List keys
 gpg --list-keys
+# Key ID will be: sec rsa4096/<KEY_ID> DATE [SC] [expires:DATE]
 gpg --list-secret-keys --keyid-format LONG <email>
+# Use Key Id to generate armored public key
+gpg --armor --export KEY_ID
 # Edit key
 gpg --edit-key
 ## Assign trust

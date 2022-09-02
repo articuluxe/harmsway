@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-02 12:15:05 dharms>
+;; Modified Time-stamp: <2022-09-02 15:25:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2533,18 +2533,18 @@ ARGS are the additional arguments."
   (setq dired-dwim-target t)
   ;; search only in filenames
   (setq dired-isearch-filenames t)
-  (use-package dired-filter)
-  (define-key dired-mode-map "." dired-filter-mark-map)
+  ;; (use-package dired-filter)
+  ;; (define-key dired-mode-map "." dired-filter-mark-map)
   (use-package dired-git-info)
   (define-key dired-mode-map ")" 'dired-git-info-mode)
   (setq wdired-create-parent-directories t)
   (setq wdired-allow-to-change-permissions t)
   ;; (use-package ivy-dired-history)
   (use-package dired-rsync :config (define-key dired-mode-map "\M-r" #'dired-rsync))
-  (use-package dired-sidebar
-    :init
-    (setq dired-sidebar-use-evil-integration nil)
-    )
+  ;; (use-package dired-sidebar
+  ;;   :init
+  ;;   (setq dired-sidebar-use-evil-integration nil)
+  ;;   )
   ;; sorting
   ;; dired-quick-sort breaks ftp
   ;; (use-package dired-quick-sort
@@ -2668,7 +2668,24 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dirvish ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dirvish
   :bind ("C-c 0dv" . dirvish)
-  :config (dirvish-override-dired-mode)
+  :init
+  :config
+  (use-package dirvish-collapse)
+  (use-package dirvish-emerge)
+  (use-package dirvish-extras)
+  (use-package dirvish-fd)
+  (use-package dirvish-history)
+  (use-package dirvish-icons)
+  (use-package dirvish-layout)
+  (use-package dirvish-ls)
+  (use-package dirvish-narrow)
+  (use-package dirvish-peek)
+  (use-package dirvish-quick-access)
+  (use-package dirvish-side)
+  (use-package dirvish-subtree)
+  (use-package dirvish-vc)
+  (use-package dirvish-yank)
+  ;(dirvish-override-dired-mode)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; filetree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
