@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-08-31 11:43:52 dharms>
+;; Modified Time-stamp: <2022-09-16 13:45:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -56,13 +56,13 @@
                             "Segoe Mono Boot 12"
                             "Aurulent Sans Mono 12"
                             "M+ 2m regular 14"
-                            "JuliaMono 12"
+                            "JuliaMono 13"
                             "Droid Sans Mono 14"
                             "Ricty Diminished 15"
                             "QuickType Mono 14"
                             "BPmono 14"
                             "Courier Prime Code 16"
-                            "Recursive Monospace 15"
+                            "Recursive Monospace 14"
                             "Verily Serif Mono 14"
                             "Sometype Mono 14"
                             "Oxygen Mono 12"
