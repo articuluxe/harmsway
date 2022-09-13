@@ -1,1 +1,1 @@
-cp src/f.el ../../../.emacs.d/elisp
+cp src/*.el ../../../.emacs.d/elisp
