@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-02 15:25:37 dharms>
+;; Modified Time-stamp: <2022-09-13 15:24:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -76,7 +76,6 @@
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
                      ,(concat my/plugins-directory "org/")
-                     ,(concat my/plugins-directory "realgud/")
                      ,(concat my/plugins-directory "smart-jump/")
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
@@ -143,6 +142,7 @@
 (setq switch-to-visible-buffer nil)     ;obsolete in 27.1
 (setq switch-to-prev-buffer-skip 'this)
 (setq enable-recursive-minibuffers t)
+(setq completions-detailed t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
 (bind-key "M-o c" 'canonically-space-region)
@@ -176,6 +176,8 @@ up to 10 times."
 (setq show-paren-context-when-offscreen t)
 (show-paren-mode t)
 (size-indication-mode 1)
+(setq next-error-message-highlight t)
+(setq next-error-found-function #'next-error-quit-window)
 ;; don't add new-lines to end of buffer on scroll
 (setq next-line-add-newlines nil)
 ;; allow converting regions to upper/lower case
@@ -186,7 +188,10 @@ up to 10 times."
 (put 'narrow-to-region 'disabled nil)
 ;; disable nuisances
 (put 'overwrite-mode 'disabled t)
-(fset 'yes-or-no-p 'y-or-n-p)
+(if (version< emacs-version "28.1")
+    (fset 'yes-or-no-p 'y-or-n-p)
+  (setq use-short-answers t))
+
 ;; reuse frames
 (when (version< emacs-version "24.3")
   (setq-default display-buffer-reuse-frames t))
@@ -199,6 +204,7 @@ up to 10 times."
 (setq ring-bell-function 'ignore)
 (when (display-graphic-p)
   (global-unset-key "\C-z"))
+(setq mode-line-compact 'long)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fonts ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-font-lock-mode t)
@@ -332,7 +338,6 @@ not an error if any files do not exist."
          ("C-c 4fd" . proviso-finder-open-dir-other-window)
          ("C-c fr" . proviso-finder-recompute-cache)
          ("C-c dg" . proviso-gud-open-gdb)
-         ("C-c dr" . proviso-gud-open-realgud)
          ("C-c dp" . proviso-gud-open-pdb)
          ("C-c pd" . proviso-dired-open-this-project)
          ("C-c pD" . proviso-dired-open-all-projects)
@@ -377,6 +382,7 @@ not an error if any files do not exist."
   (setq tags-revert-without-query t)
   (define-prefix-command 'proviso-deploy-keymode-map)
   (global-set-key "\C-cpl" 'proviso-deploy-keymode-map)
+  (setq project-list-file (concat my/user-directory "projects"))
   :config
   (use-package proviso-frame-title)
   (setq project-find-functions (list #'proviso-find-project))
@@ -466,8 +472,7 @@ not an error if any files do not exist."
          ))
 
 (use-package custom-buffer-utils
-  :bind (("C-x C-r" . harmsway-revert-buffer)
-         ("C-x K" . kill-other-buffers)
+  :bind (("C-x K" . kill-other-buffers)
          ("\e\ep" . switch-to-most-recent-buffer)
          ("C-x 4z" . window-toggle-split-direction)
          ("C-x 4s" . swap-buffers)
@@ -475,6 +480,7 @@ not an error if any files do not exist."
          ("C-x 5x" . move-buffer-to-new-frame)
          )
   :init
+  (setq revert-buffer-quick-short-answers t)
   (push `(?r ,(lambda (buf)
                 (with-current-buffer buf
                   (harmsway-revert-buffer)))
@@ -1553,6 +1559,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmarks ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq bookmark-default-file (concat my/user-directory "bookmarks"))
 (setq bookmark-save-flag 1)
+(setq bookmark-set-fringe-mark nil)
 (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2494,7 +2501,8 @@ ARGS are the additional arguments."
   (add-hook 'dired-mode-hook 'auto-revert-mode)
   (setq dired-create-destination-dirs t)
   :config
-  (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
+  (when (version< emacs-version "28.1")
+    (use-package dired-x))              ; C-x C-j now runs 'dired-jump
   ;; (use-package dired+
   ;;   :init
   ;;   (setq dired-kill-when-opening-new-dired-buffer t)
@@ -2529,6 +2537,7 @@ ARGS are the additional arguments."
   (setq ls-lisp-dirs-first t)
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
+  (setq dired-do-revert-buffer t)
   ;; next window's dired window used as target for current window operations
   (setq dired-dwim-target t)
   ;; search only in filenames

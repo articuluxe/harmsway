@@ -1,8 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-21 14:21:18 dharms>
+;; Modified Time-stamp: <2022-09-13 14:49:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -69,7 +69,9 @@
 
 ;; default offsets
 (c-set-offset 'case-label            '+)
-(c-set-offset 'arglist-cont-nonempty '+)
+(c-set-offset 'arglist-cont          'c-lineup-ternary-bodies)
+(c-set-offset 'arglist-cont-nonempty '(c-lineup-ternary-bodies +))
+(c-set-offset 'statement-cont        '(c-lineup-ternary-bodies +))
 (c-set-offset 'innamespace           '0)
 (c-set-offset 'substatement-open     '0)
 (c-set-offset 'inline-open           '0)
@@ -117,6 +119,9 @@
     (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
                                       c-semi&comma-no-newlines-for-oneline-inliners
                                       c-semi&comma-inside-parenlist))
+    (c-doc-comment-style       ((java-mode . javadoc)
+                                (c-mode . doxygen)
+                                (c++-mode . doxygen)))
     )
   "The default harmsway c style.")
 

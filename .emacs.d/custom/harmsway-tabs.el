@@ -1,8 +1,8 @@
 ;;; harmsway-tabs.el --- tab customizations
-;; Copyright (C) 2021  Dan Harms (dharms)
+;; Copyright (C) 2021-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, March 19, 2021
-;; Modified Time-stamp: <2021-09-15 10:18:53 dharms>
+;; Modified Time-stamp: <2022-09-13 12:20:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui
 
@@ -26,14 +26,16 @@
 ;;; Code:
 (require 'proviso)
 
-(setq-default tab-bar-show nil)
+(setq-default tab-bar-show 1)
 (setq tab-bar-new-button-show nil)
 (setq tab-bar-tab-name-function #'tab-bar-tab-name-truncated)
+(setq tab-bar-new-tab-to 'rightmost)
 (add-hook 'after-init-hook (lambda()
                              (tab-bar-mode 1)
                              (tab-bar-history-mode 1)))
 (global-set-key "\C-xtu" #'tab-bar-undo-close-tab)
-(global-set-key "\C-xtn" #'harmsway-create-named-tab)
+(global-set-key "\C-xtN" #'harmsway-create-named-tab)
+(global-set-key "\C-xtT" #'toggle-frame-tab-bar)
 (global-set-key (kbd "C-5") #'tab-switcher)
 (global-set-key (kbd "M-' 5") #'tab-switcher)
 (global-set-key (kbd "C-7") #'tab-bar-history-forward)
@@ -44,7 +46,7 @@
 (defun harmsway-create-named-tab (name)
   "Create a new tab named NAME."
   (interactive "sNew tab: ")
-  (tab-new)
+  (tab-duplicate)
   (tab-rename name))
 
 ;; (defun harmsway-tab-name-fn ()

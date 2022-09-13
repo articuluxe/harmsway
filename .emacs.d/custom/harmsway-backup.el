@@ -1,9 +1,9 @@
 ;;; harmsway-backup.el --- customize backups and autosaves
-;; Copyright (C) 2016, 2020  Dan Harms (dharms)
+;; Copyright (C) 2016, 2020, 2022  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, November 29, 2016
-;; Modified Time-stamp: <2020-05-15 12:24:35 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2022-09-13 12:33:30 dharms>
+;; Modified by: Dan Harms
 ;; Keywords: backup autosave tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,13 @@
 (setq auto-save-file-name-transforms
       `((".*" ,(concat harmsway-autosave-dir "\\1") t)))
 (setq tramp-auto-save-directory harmsway-autosave-dir)
+
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lock-files ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar harmsway-lockfile-dir (concat my/user-directory "lockfiles/"))
+(unless (file-directory-p harmsway-lockfile-dir)
+  (make-directory harmsway-lockfile-dir t))
+(setq lock-file-name-transforms
+      `((".*" ,(concat harmsway-lockfile-dir "\\1") t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar harmsway-backup-dir

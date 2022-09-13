@@ -1,9 +1,9 @@
 ;; compiling.el --- utilities concerned with compiling
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2017, 2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-16 20:29:43 dharms>
+;; Modified Time-stamp: <2022-09-13 14:43:59 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,7 @@
 
 ;; automatically scroll compilation window
 (setq compilation-scroll-output t)
+(setq compilation-search-all-directories t)
 
 (defun my/compilation-mode-hook()
   (setq truncate-lines nil) ; is buffer local
