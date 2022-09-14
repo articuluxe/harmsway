@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-13 15:24:42 dharms>
+;; Modified Time-stamp: <2022-09-13 17:30:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -329,6 +329,8 @@ not an error if any files do not exist."
          ("C-c ppa" . proviso-ag-all)
          ("C-c gr" . proviso-rg)
          ("C-c ppr" . proviso-rg-all)
+         ("C-c gu" . proviso-ugrep)
+         ("C-c ppu" . proviso-ugrep-all)
          ("C-c pt" . proviso-gentags-generate-tags)
          ("C-c ff" . proviso-finder-find-file)
          ("C-c 4ff" . proviso-finder-find-file-other-window)
@@ -1333,12 +1335,12 @@ Only one letter is shown, the first that applies."
 
 (use-package sideline-blame
   :demand t
-  :init
+  :config
   (push #'sideline-blame sideline-backends-right))
 
 (use-package sideline-flycheck
   :demand t
-  :init
+  :config
   (push #'sideline-flycheck sideline-backends-left))
 
 (use-package sideline
@@ -2501,8 +2503,7 @@ ARGS are the additional arguments."
   (add-hook 'dired-mode-hook 'auto-revert-mode)
   (setq dired-create-destination-dirs t)
   :config
-  (when (version< emacs-version "28.1")
-    (use-package dired-x))              ; C-x C-j now runs 'dired-jump
+  (use-package dired-x) ; C-x C-j now runs 'dired-jump
   ;; (use-package dired+
   ;;   :init
   ;;   (setq dired-kill-when-opening-new-dired-buffer t)
