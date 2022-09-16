@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-16 14:49:15 dharms>
+;; Modified Time-stamp: <2022-09-16 15:15:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -392,6 +392,13 @@ not an error if any files do not exist."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq tags-revert-without-query t)
+(setq etags-xref-prefer-current-file t)
+(setq etags-table-search-up-depth nil)  ;we store our tags in a specific dir
+(when (> emacs-major-version 27)
+  (setq xref-auto-jump-to-first-definition nil)
+  (setq xref-auto-jump-to-first-xref nil))
+
 (when (> emacs-major-version 24)
 
   (defun harmsway-xref-find-definition-mouse (click)
@@ -426,23 +433,14 @@ not an error if any files do not exist."
   )
 
 ;; select
+(use-package proviso-etags-table)
+
 (use-package proviso-etags-select
   :if (< emacs-major-version 25)
-  :init
-  (setq tags-revert-without-query t)
-  (setq etags-xref-prefer-current-file t)
   :bind ("\e\e." . etags-select-find-tag)
-  :demand t
   :config
   ;; stack
-  (use-package etags-stack :bind ("C-c C-t" . etags-stack-show))
-  ;; table
-  (use-package proviso-etags-table
-    :init
-    ;; we store our tags in a specific directory
-    (setq etags-table-search-up-depth nil)
-    )
-  )
+  (use-package etags-stack :bind ("C-c C-t" . etags-stack-show)))
 
 (use-package install-world
   :bind ("C-c 0qi" . harmsway/install-world))
