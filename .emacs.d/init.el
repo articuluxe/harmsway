@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-16 13:50:17 dharms>
+;; Modified Time-stamp: <2022-09-16 14:49:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1878,6 +1878,7 @@ ARGS are the additional arguments."
   (setq ivy-use-virtual-buffers t)
   (setq ivy-dynamic-exhibit-delay-ms 20)
   (setq ivy-format-functions-alist '((t . ivy-format-function-arrow)))
+  (setq ivy-do-completion-in-region nil)
   (add-to-list 'ivy-re-builders-alist '(counsel-describe-function . ivy--regex-ignore-order))
   (add-to-list 'ivy-re-builders-alist '(counsel-describe-variable . ivy--regex-ignore-order))
   :config
