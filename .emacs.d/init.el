@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-13 17:30:52 dharms>
+;; Modified Time-stamp: <2022-09-16 13:49:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -118,6 +118,7 @@
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 (set-register ?\C-o (cons 'file "~/Documents/org"))
+(set-register ?\C-n (cons 'file "~/.local/cache/eln-cache"))
 (add-hook 'after-init-hook
           (lambda ()
             (set-register ?\C-i (cons 'file user-init-file))))
@@ -1425,7 +1426,6 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-focus-reporting ;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package terminal-focus-reporting
   :if (not (display-graphic-p))
-  :disabled
   :config
   (terminal-focus-reporting-mode)
   ;; following doesn't work on darwin

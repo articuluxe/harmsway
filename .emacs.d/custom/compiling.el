@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2022-09-13 14:43:59 dharms>
+;; Modified Time-stamp: <2022-09-14 17:23:31 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 ;;
 
 ;;; Code:
-
+(require 'compile)
 
 ;; automatically scroll compilation window
 (setq compilation-scroll-output t)
