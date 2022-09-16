@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-16 15:15:47 dharms>
+;; Modified Time-stamp: <2022-09-16 15:31:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3089,10 +3089,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package vlf-setup
   :defines (vlf-tune-enabled vlf-batch-size vlf-batch-size-remote)
   :init
-  ;; for files over 50MB, only open 50MB at a time
-  (setq large-file-warning-threshold 26214400) ;25MB
-  (setq vlf-batch-size 15728640)               ;15MB
-  (setq vlf-batch-size-remote 524288)          ;512k
+  ;; for files over x MB, only open x MB at a time
+  (setq large-file-warning-threshold (* 1024 1024 50)) ;50MB
+  (setq vlf-batch-size (* 1024 1024 15))               ;15MB
+  (setq vlf-batch-size-remote (* 1024 512))            ;512k
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
   )
 
