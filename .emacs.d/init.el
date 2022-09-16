@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-16 13:49:35 dharms>
+;; Modified Time-stamp: <2022-09-16 13:50:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1397,23 +1397,7 @@ ARGS are the additional arguments."
 (use-package shx :config (shx-global-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xterm-color ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun harmsway-compilation-filter (f proc string)
-  "A compilation filter for `xterm-color' to call F for PROC and STRING."
-  (funcall f proc (xterm-color-filter string)))
-
-(use-package xterm-color
-  :demand t
-  :init
-  (setq comint-output-filter-functions
-        (remove 'ansi-color-process-output comint-output-filter-functions))
-  (add-hook 'shell-mode-hook
-            (lambda ()
-              (font-lock-mode -1)       ;disable font lock, prevent re-enabling
-              (make-local-variable 'font-lock-function)
-              (setq font-lock-function (lambda (_) nil))
-              (add-hook 'comint-preoutput-filter-functions
-                        'xterm-color-filter nil t)))
-  (advice-add 'compilation-filter :around #'harmsway-compilation-filter))
+(add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
