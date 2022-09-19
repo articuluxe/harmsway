@@ -10,6 +10,7 @@ TAGS
 
 # Lisp files
 *.elc
+*.eln
 .dir-locals.el
 # bookmark files
 *.bmk

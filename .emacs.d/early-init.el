@@ -2,7 +2,7 @@
 ;; Copyright (C) 2020-2022  Dan.Harms (Dan.Harms)
 ;; Author: Dan.Harms <enniomore@icloud.com>
 ;; Created: Tuesday, January 14, 2020
-;; Modified Time-stamp: <2022-09-14 16:08:43 dharms>
+;; Modified Time-stamp: <2022-09-19 11:15:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,8 +32,9 @@
 (if (fboundp 'startup-redirect-eln-cache)
     (startup-redirect-eln-cache
      (expand-file-name "~/.local/cache/eln-cache/"))
-  (add-to-list 'native-comp-eln-load-path
-               (expand-file-name "~/.local/cache/eln-cache/")))
+  (if (boundp 'native-comp-eln-load-path)
+      (add-to-list 'native-comp-eln-load-path
+                   (expand-file-name "~/.local/cache/eln-cache/"))))
 
 (when (display-graphic-p)
   (tool-bar-mode -1)

@@ -150,6 +150,12 @@ sudo apt install snapd
 snap install rg
 # for perf
 sudo apt install linux-tools-common
+# for emacs
+sudo apt install libgccjit0
+sudo apt install libgccjit-8-dev
+sudo apt install libjansson4
+sudo apt install libjansson-dev
+sudo apt install gnutls-bin
 
 * fonts
 #+BEGIN_SRC sh
