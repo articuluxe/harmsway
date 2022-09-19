@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-19 16:45:13 dharms>
+;; Modified Time-stamp: <2022-09-19 16:49:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2014,12 +2014,6 @@ ARGS are the additional arguments."
   :bind ("C-x M-i" . imenu-list-smart-toggle)
   :commands (imenu-list-smart-toggle imenu-list imenu-list-noselect
                                      imenu-list-show imenu-list-show))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; does not interact with rich-minority mode: try delight.el?
-;; (powerline-default-theme)
-(use-package powerline
- :disabled)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rich-minority
