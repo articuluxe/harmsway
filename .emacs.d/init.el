@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-19 16:49:12 dharms>
+;; Modified Time-stamp: <2022-09-19 16:53:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3080,12 +3080,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar rtags-exec (executable-find "rdm"))
-(use-package rtags
-  :disabled
-  )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package eglot
   :commands eglot
@@ -3357,15 +3351,6 @@ completion at point mechanism does not interfere with `completion-at-point-funct
 
   (ac-flyspell-workaround)
 
-  ;; rtags
-  (when rtags-exec
-    (require 'rtags-ac)
-    (setq rtags-completions-enabled t)
-    (rtags-enable-standard-keybindings c-mode-base-map)
-    (defun my/rtags-complete() (interactive)
-           (auto-complete '(ac-source-rtags)))
-    (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
-    )
   ;; clang
   (defvar clang-exec (executable-find "clang"))
   (when clang-exec
@@ -3407,8 +3392,6 @@ completion at point mechanism does not interfere with `completion-at-point-funct
 
   (add-hook 'c-mode-common-hook
             (lambda()
-              (when rtags-exec
-                (setq ac-sources (cons ac-source-rtags ac-sources)))
               (setq ac-sources (append '(ac-source-etags
                                          ac-source-c-headers
                                          ) ac-sources))
