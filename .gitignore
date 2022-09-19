@@ -2,6 +2,7 @@ site/*
 !site/talbot
 test*
 repos/**/src/
+repos/**/bld/
 *world.tar
 *.so
 .harmsway.*
