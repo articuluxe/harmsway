@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-16 15:31:32 dharms>
+;; Modified Time-stamp: <2022-09-19 16:45:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -878,16 +878,6 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mission-control ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mission-control :bind ("s-\\" . mcon-switch))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; centaur-tabs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package centaur-tabs
-  :disabled
-  :bind (("C-<prior>" . centaur-tabs-backward)
-         ("C-<next>" . centaur-tabs-forward))
-  :init
-  (setq centaur-tabs-style "chamfer")
-  :config
-  (centaur-tabs-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
