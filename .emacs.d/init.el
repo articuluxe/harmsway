@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-19 16:53:28 dharms>
+;; Modified Time-stamp: <2022-09-20 13:58:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -76,7 +76,6 @@
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
                      ,(concat my/plugins-directory "org/")
-                     ,(concat my/plugins-directory "smart-jump/")
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
                      ,(concat my/plugins-directory "treemacs/")
@@ -1723,23 +1722,6 @@ ARGS are the additional arguments."
   (push ".proviso" dumb-jump-project-denoters)
   (setq dumb-jump-max-find-time 5)
   )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package smart-jump
-  :if (> emacs-major-version 24)        ;requires 'xref
-  :bind (("C-c .." . #'smart-jump-jump-key)
-         ("C-c .," . #'smart-jump-pop-key)
-         ("C-c .?" . #'smart-jump-refs-key)
-         ("C-c .p" . #'smart-jump-peek-key))
-  :init
-  (setq smart-jump-bind-keys t)
-  (setq smart-jump-bind-keys-for-evil nil)
-  (setq smart-jump-jump-key "C-c ..")
-  (setq smart-jump-pop-key "C-c .,")
-  (setq smart-jump-refs-key "C-c .?")
-  (setq smart-jump-peek-key "C-c .p")
-  :config
-  (smart-jump-setup-default-registers))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; source-peek ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package source-peek
