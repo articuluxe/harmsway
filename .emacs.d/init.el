@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-20 13:58:05 dharms>
+;; Modified Time-stamp: <2022-09-21 11:04:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1176,10 +1176,24 @@ From `manuel-oberti.github.io' on 20190806."
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
     (magit-status-setup-buffer default-directory)))
 
+(defun harmsway-magit-open-file-dwim ()
+  "Open current file in previously checked-out branch."
+  (interactive)
+  (magit-find-file-other-window (magit-get-previous-branch) (buffer-file-name)))
+
 (defun harmsway-magit-diff-file-dwim ()
   "Open diff with same file in previously checked-out branch."
   (interactive)
-  (magit-find-file-other-window (magit-get-previous-branch) (buffer-file-name)))
+  (diff-buffers (magit-find-file-noselect (magit-get-previous-branch)
+                                          (buffer-file-name))
+                (current-buffer)))
+
+(defun harmsway-magit-ediff-file-dwim ()
+  "Open diff with same file in previously checked-out branch."
+  (interactive)
+  (ediff-buffers (magit-find-file-noselect (magit-get-previous-branch)
+                                           (buffer-file-name))
+                 (current-buffer)))
 
 (use-package magit
   :if (not (version< emacs-version "25.1"))
@@ -1215,15 +1229,15 @@ From `manuel-oberti.github.io' on 20190806."
               ("h" . magit-log-buffer-file) ;; show all commits that touch current file
               ("H" . magit-dired-log)
               ("y" . magit-cherry)
-              ("e" . ediff-merge-revisions-with-ancestor) ;; to see all differences, even those automatically merged
               ("m" . magit-toggle-margin)
               ("b" . magit-blame-addition)
               ("M-b" . magit-blame-reverse)
               ("U" . magit-unstage-all) ;; unstage all changes (like SU but forces HEAD)
               ("s" . magit-stage-file)
               ("u" . magit-unstage-file)
-              ("r" . magit-reset-soft) ;; soft reset; hard reset can use C-u x
+              ("r" . harmsway-magit-open-file-dwim)
               ("d" . harmsway-magit-diff-file-dwim)
+              ("e" . harmsway-magit-ediff-file-dwim)
               ("c" . magit-clone)
               ("x" . magit-clean)
               ("k" . magit-checkout-stage)
@@ -2715,6 +2729,7 @@ ARGS are the additional arguments."
 (global-set-key "\M-sdb" #'ediff-buffers)
 (global-set-key "\M-sdf" #'ediff-files)
 (global-set-key "\M-sdr" #'ediff-revision)
+(global-set-key "\M-sdm" #'ediff-merge-revisions-with-ancestor)
 ;; don't use a separate control frame
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
 ;; toggle between control frame and control window
