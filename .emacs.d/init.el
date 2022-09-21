@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-22 17:05:23 dharms>
+;; Modified Time-stamp: <2022-09-23 07:37:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2838,13 +2838,20 @@ ARGS are the additional arguments."
          ([(meta shift down)] . move-text-down)
          ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; windmove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package windmove
+  :config
+  (global-set-key [(shift up)] #'windmove-up)
+  (global-set-key [(shift down)] #'windmove-down)
+  (global-set-key [(shift right)] #'windmove-right)
+  (global-set-key [(shift left)] #'windmove-left)
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package framemove
-  :config
-  (use-package windmove)
-  (windmove-default-keybindings)
+  :after windmove
+  :init
   (setq framemove-hook-into-windmove t)
-  ;;(setq windmove-wrap-around t)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; buffer-move ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
