@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-22 17:02:44 dharms>
+;; Modified Time-stamp: <2022-09-22 17:05:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2590,16 +2590,6 @@ ARGS are the additional arguments."
 (use-package disk-usage
   :bind (("C-c 0du" . disk-usage)
          ("C-c 0d." . disk-usage-here)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neotree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package neotree
-  :bind ("C-c 0n" . neotree-toggle)
-  :init
-  (setq neo-show-hidden-files t)
-  (setq neo-theme 'arrow)               ;or 'ascii
-  (setq neo-window-width 30)
-  (setq neo-vc-integration '(face char))
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; treemacs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-treemacs-keymap)
