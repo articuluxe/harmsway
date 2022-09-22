@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-21 11:04:54 dharms>
+;; Modified Time-stamp: <2022-09-22 17:02:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -76,7 +76,6 @@
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
                      ,(concat my/plugins-directory "org/")
-                     ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
                      ,(concat my/plugins-directory "treemacs/")
                      ,(concat my/plugins-directory "use-package/")
@@ -2591,16 +2590,6 @@ ARGS are the additional arguments."
 (use-package disk-usage
   :bind (("C-c 0du" . disk-usage)
          ("C-c 0d." . disk-usage-here)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sunrise-commander ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package sunrise-commander
-  :bind ("C-c 0s" . sunrise)
-  :init
-  (setq sr-use-commander-keys nil)
-  :config
-  (use-package sunrise-x-tree)
-  (use-package sunrise-x-w32-addons)
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neotree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package neotree
