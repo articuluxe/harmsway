@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2022-09-02 12:25:32 dharms>
+# Modified Time-stamp: <2022-09-23 15:31:13 dharms>
 # Modified by: Dan Harms
 # Keywords: install
 
@@ -19,8 +19,7 @@ fi
 cd "$dir" || exit 1
 rev=$( git rev-parse --short HEAD )
 
-date > .harmsway.last-tarred
-echo "$rev" >> .harmsway.last-tarred
+echo "$(date) - $rev" >> .harmsway.last-tarred
 
 tar-world.sh
 
@@ -31,8 +30,7 @@ fi
 
 mv world.tar ~ && cd ~ && untar-world.sh world.tar
 
-date > .harmsway.last-installed
-echo "$rev" >> .harmsway.last-installed
+echo "$(date) - $rev" >> .harmsway.last-installed
 
 echo "install-world.sh done; press any key to continue..."
 read -n1 -t5 key
