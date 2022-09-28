@@ -1,8 +1,8 @@
 ;;; custom-coding.el --- custom coding utilities
-;; Copyright (C) 2016-2017, 2021  Dan Harms (dharms)
+;; Copyright (C) 2016-2017, 2021-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
-;; Modified Time-stamp: <2021-10-15 11:32:47 dharms>
+;; Modified Time-stamp: <2022-09-26 13:05:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -24,6 +24,7 @@
 ;;
 
 ;;; Code:
+(require 'cc-defs)
 (require 's)
 
 (defun print-current-function() "Print current function under point."
