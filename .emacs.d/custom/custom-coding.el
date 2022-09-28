@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2017, 2021-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
-;; Modified Time-stamp: <2022-09-26 13:05:33 dharms>
+;; Modified Time-stamp: <2022-09-28 12:40:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -25,7 +25,11 @@
 
 ;;; Code:
 (require 'cc-defs)
+(require 'cc-vars)
+(require 'cc-cmds)
 (require 's)
+(require 'subr-x)
+(require 'which-func)
 
 (defun print-current-function() "Print current function under point."
   (interactive)
