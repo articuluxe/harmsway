@@ -182,16 +182,16 @@ If all functions returns nil, `company-box-icons-unknown' is used.
 - 'left or 'right puts default scrollbars to the left or right
 - nil means draw no scrollbar."
   :type '(choice (const :tag "Custom scrollbar" t)
-                 (const :tag "Inherit scrollbar" 'inherit)
-                 (const :tag "Default scrollbar on left" 'left)
-                 (const :tag "Default scrollbar on right" 'right)
+                 (const :tag "Inherit scrollbar" inherit)
+                 (const :tag "Default scrollbar on left" left)
+                 (const :tag "Default scrollbar on right" right)
                  (const :tag "No scrollbar" nil))
   :group 'company-box)
 
 (defcustom company-box-frame-behavior 'default
   "Change frame position behavior."
-  :type '(choice (const :tag "Default" 'default)
-                 (const :tag "Follow point as you type" 'point))
+  :type '(choice (const :tag "Default" default)
+                 (const :tag "Follow point as you type" point))
   :group 'company-box)
 
 (defcustom company-box-icon-right-margin 0
@@ -268,6 +268,7 @@ Examples:
     (drag-internal-border . t)
     (left-fringe . 0)
     (right-fringe . 0)
+    (tab-bar-lines . 0)
     (no-special-glyphs . t))
   "Frame parameters used to create the frame.")
 
@@ -305,7 +306,8 @@ Examples:
 
 (defun company-box--get-frame (&optional frame)
   "Return the company-box child frame on FRAME."
-  (frame-local-getq company-box-frame frame))
+  (let ((frame (frame-local-getq company-box-frame frame)))
+    (and (frame-live-p frame) frame)))
 
 (defsubst company-box--set-frame (frame)
   "Set the frame symbol ‘company-box-frame’ to FRAME."
@@ -602,7 +604,7 @@ It doesn't nothing if a font icon is used."
           (x (if (eq company-box-frame-behavior 'point)
                  p-x
                (if company-box--with-icons-p
-                   (- p-x (* char-width (if (= company-box--space 2) 2 3)) space-numbers scrollbar-width)
+                   (- p-x (* char-width (+ company-box-icon-right-margin (if (= company-box--space 2) 2 3))) space-numbers scrollbar-width)
                  (- p-x (if (= company-box--space 0) 0 char-width) space-numbers scrollbar-width)))))
     (setq company-box--x (max (+ x left) 0)
           company-box--top (+ y top)
@@ -626,7 +628,7 @@ It doesn't nothing if a font icon is used."
      `((width . (text-pixels . ,width))
        (height . (text-pixels . ,company-box--height))
        (user-size . t)
-       (left . (+ ,(or new-x company-box--x)))
+       (left . (+ ,(round (or new-x company-box--x))))
        (top . (+ ,company-box--top))
        (user-position . t)
        (right-fringe . 0)
@@ -858,7 +860,7 @@ It doesn't nothing if a font icon is used."
              (modify-frame-parameters
               frame
               `((width . (text-pixels . ,width))
-                (left . (+ ,(or new-x company-box--x)))))))))
+                (left . (+ ,(round (or new-x company-box--x))))))))))
 
 (defun company-box--percent (a b)
   (/ (float a) (float b)))
@@ -1107,6 +1109,13 @@ COMMAND: See `company-frontends'."
       (company-box--ensure-full-window-is-rendered)
       (company-box--update-frame-position frame))))
 
+(defun company-box--delete-frame ()
+  "Delete the child frame if it exists."
+  (-when-let (frame (company-box--get-frame))
+    (and (frame-live-p frame)
+         (delete-frame frame))
+    (company-box--set-frame nil)))
+
 (defun company-box--kill-delay (buffer)
   (run-with-idle-timer
    0 nil (lambda nil
@@ -1127,6 +1136,12 @@ COMMAND: See `company-frontends'."
 (defun company-box--dimmer-hide (&rest _)
   (frame-local-setq company-box--dimmer-parent nil))
 
+(defun company-box--handle-theme-change (&rest _)
+  ;; Deleting frames will force to rebuild them from scratch
+  ;; and use the correct new colors
+  (company-box-doc--delete-frame)
+  (company-box--delete-frame))
+
 (defun company-box--tweak-external-packages nil
   (with-eval-after-load 'dimmer
     (when (boundp 'dimmer-prevent-dimming-predicates)
@@ -1137,6 +1152,7 @@ COMMAND: See `company-frontends'."
       (add-to-list
        'dimmer-buffer-exclusion-predicates
        'company-box--is-box-buffer))
+    (advice-add 'load-theme :before 'company-box--handle-theme-change)
     (advice-add 'company-box-show :before 'company-box--dimmer-show)
     (advice-add 'company-box-hide :before 'company-box--dimmer-hide))
   (with-eval-after-load 'golden-ratio

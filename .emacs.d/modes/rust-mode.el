@@ -238,13 +238,13 @@ See `prettify-symbols-compose-predicate'."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-d") #'rust-dbg-wrap-or-unwrap)
     (when rust-load-optional-libraries
-      (define-key map (kbd "C-c C-c C-u") #'rust-compile)
-      (define-key map (kbd "C-c C-c C-k") #'rust-check)
-      (define-key map (kbd "C-c C-c C-t") #'rust-test)
-      (define-key map (kbd "C-c C-c C-r") #'rust-run)
-      (define-key map (kbd "C-c C-c C-l") #'rust-run-clippy)
-      (define-key map (kbd "C-c C-f") #'rust-format-buffer)
-      (define-key map (kbd "C-c C-n") #'rust-goto-format-problem))
+      (define-key map (kbd "C-c C-c C-u") 'rust-compile)
+      (define-key map (kbd "C-c C-c C-k") 'rust-check)
+      (define-key map (kbd "C-c C-c C-t") 'rust-test)
+      (define-key map (kbd "C-c C-c C-r") 'rust-run)
+      (define-key map (kbd "C-c C-c C-l") 'rust-run-clippy)
+      (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+      (define-key map (kbd "C-c C-n") 'rust-goto-format-problem))
     map)
   "Keymap for Rust major mode.")
 
@@ -734,7 +734,7 @@ buffer."
         (while (and (or (rust-in-str-or-cmnt)
                         ;; Only whitespace (or nothing) from the beginning to
                         ;; the end of the line.
-                        (looking-back "^\s*" (point-at-bol)))
+                        (looking-back "^\s*" (line-beginning-position)))
                     (= (rust-paren-level) level))
           (forward-line -1)
           (end-of-line)))

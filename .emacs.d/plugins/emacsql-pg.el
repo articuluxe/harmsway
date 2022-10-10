@@ -1,28 +1,35 @@
-;;; emacsql-pg.el --- back-end for PostgreSQL via pg -*- lexical-binding: t; -*-
+;;; emacsql-pg.el --- EmacSQL back-end for PostgreSQL via pg  -*- lexical-binding:t -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
+;; Author: Christopher Wellons <wellons@nullprogram.com>
+;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Homepage: https://github.com/magit/emacsql
+
+;; Package-Version: 3.0.0-git
+;; Package-Requires: ((emacs "25.1") (emacsql "3.0.0") (pg "0.16"))
+;; SPDX-License-Identifier: Unlicense
+
 ;;; Commentary:
 
-;; Unlike emacsql-psql, this connection type uses Eric Marsden's pg.el
-;; to connect to PostgreSQL. It speaks directly to the database, so
-;; unlike the other EmacSQL connection types, this one requires no
-;; external command line programs.
+;; This package provides an EmacSQL back-end for PostgreSQL, which
+;; uses the `pg' package to directly speak to the database.
 
-;; The only pg functions required are pg:connect, pg:disconnect,
-;; pg:exec, and pg:result. Unfortunately, since pg.el is synchronous
-;; it will not be fully compliant once EmacSQL supports asynchronous
-;; queries. But, on the plus side, this means the implementation below
-;; is dead simple.
+;; (For an alternative back-end for PostgreSQL, see `emacsql-psql'.)
 
 ;;; Code:
 
-(require 'pg)
+(unless (require 'pg nil t)
+  (declare-function pg-connect "pg"
+                    ( dbname user &optional
+                      (password "") (host "localhost") (port 5432) (tls nil)))
+  (declare-function pg-disconnect "pg" (con))
+  (declare-function pg-exec "pg" (connection &rest args))
+  (declare-function pg-result "pg" (result what &rest arg)))
 (require 'eieio)
 (require 'cl-lib)
 (require 'cl-generic)
 (require 'emacsql)
-(require 'emacsql-psql)  ; for reserved words
 
 (defclass emacsql-pg-connection (emacsql-connection)
   ((pgcon :reader emacsql-pg-pgcon :initarg :pgcon)
@@ -39,9 +46,11 @@
 (cl-defun emacsql-pg (dbname user &key
                              (host "localhost") (password "") (port 5432) debug)
   "Connect to a PostgreSQL server using pg.el."
-  (let* ((pgcon (pg:connect dbname user password host port))
+  (require 'pg)
+  (let* ((pgcon (pg-connect dbname user password host port))
          (connection (make-instance 'emacsql-pg-connection
-                                    :process (pgcon-process pgcon)
+                                    :process (and (fboundp 'pgcon-process)
+                                                  (pgcon-process pgcon))
                                     :pgcon pgcon
                                     :dbname dbname)))
     (when debug (emacsql-enable-debugging connection))
@@ -49,20 +58,20 @@
     (emacsql-register connection)))
 
 (cl-defmethod emacsql-close ((connection emacsql-pg-connection))
-  (ignore-errors (pg:disconnect (emacsql-pg-pgcon connection))))
+  (ignore-errors (pg-disconnect (emacsql-pg-pgcon connection))))
 
 (cl-defmethod emacsql-send-message ((connection emacsql-pg-connection) message)
   (condition-case error
       (setf (emacsql-pg-result connection)
-            (pg:exec (emacsql-pg-pgcon connection) message))
+            (pg-exec (emacsql-pg-pgcon connection) message))
     (error (signal 'emacsql-error error))))
 
 (cl-defmethod emacsql-waiting-p ((_connection emacsql-pg-connection))
-  ;; pg:exec will block
+  ;; pg-exec will block
   t)
 
 (cl-defmethod emacsql-parse ((connection emacsql-pg-connection))
-  (let ((tuples (pg:result (emacsql-pg-result connection) :tuples)))
+  (let ((tuples (pg-result (emacsql-pg-result connection) :tuples)))
     (cl-loop for tuple in tuples collect
              (cl-loop for value in tuple
                       when (stringp value) collect (read value)

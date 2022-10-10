@@ -1,11 +1,14 @@
-;;; emacsql.el --- high-level SQL database front-end -*- lexical-binding: t; -*-
+;;; emacsql.el --- High-level SQL database front-end  -*- lexical-binding:t -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Christopher Wellons <wellons@nullprogram.com>
-;; URL: https://github.com/skeeto/emacsql
-;; Version: 3.0.0
+;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Homepage: https://github.com/magit/emacsql
+
+;; Package-Version: 3.0.0-git
 ;; Package-Requires: ((emacs "25.1"))
+;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
@@ -128,11 +131,13 @@ SQL expression.")
 (cl-defmethod emacsql-log ((connection emacsql-connection) message)
   "Log MESSAGE into CONNECTION's log.
 MESSAGE should not have a newline on the end."
-  (let ((log (emacsql-log-buffer connection)))
-    (when log
-      (with-current-buffer log
-        (setf (point) (point-max))
-        (princ (concat message "\n") log)))))
+  (let ((buffer (emacsql-log-buffer connection)))
+    (when buffer
+      (unless (buffer-live-p buffer)
+        (setq buffer (emacsql-enable-debugging connection)))
+      (with-current-buffer buffer
+        (goto-char (point-max))
+        (princ (concat message "\n") buffer)))))
 
 ;;; Sending and receiving
 
@@ -145,8 +150,10 @@ MESSAGE should not have a newline on the end."
 
 (cl-defmethod emacsql-clear ((connection emacsql-connection))
   "Clear the process buffer for CONNECTION-SPEC."
-  (with-current-buffer (emacsql-buffer connection)
-    (erase-buffer)))
+  (let ((buffer (emacsql-buffer connection)))
+    (when (and buffer (buffer-live-p buffer))
+      (with-current-buffer buffer
+        (erase-buffer)))))
 
 (cl-defgeneric emacsql-waiting-p (connection)
   "Return non-nil if CONNECTION is ready for more input.")
@@ -203,12 +210,12 @@ must display as \"nil\".")
   "Signal a specific condition for CODE from CONNECTION.
 Subclasses should override this method in order to provide more
 specific error conditions."
-  (signal 'emacsql-error (list code message)))
+  (signal 'emacsql-error (list message code)))
 
 (cl-defmethod emacsql-parse ((connection emacsql-protocol-mixin))
   "Parse well-formed output into an s-expression."
   (with-current-buffer (emacsql-buffer connection)
-    (setf (point) (point-min))
+    (goto-char (point-min))
     (let* ((standard-input (current-buffer))
            (value (read)))
       (if (eql value 'error)
@@ -296,7 +303,7 @@ Returns the result of the last evaluated BODY.
 All column names must be provided in the query ($ and * are not
 allowed). Hint: all of the bound identifiers must be known at
 compile time. For example, in the expression below the variables
-'name' and 'phone' will be bound for the body.
+`name' and `phone' will be bound for the body.
 
   (emacsql-with-bind db [:select [name phone] :from people]
     (message \"Found %s with %s\" name phone))
@@ -330,7 +337,7 @@ Each column must be a plain symbol, no expressions allowed here."
 (defun emacsql--indent ()
   "Indent and wrap the SQL expression in the current buffer."
   (save-excursion
-    (setf (point) (point-min))
+    (goto-char (point-min))
     (let ((case-fold-search nil))
       (while (search-forward-regexp " [A-Z]+" nil :no-error)
         (when (> (current-column) (* fill-column 0.8))
@@ -398,7 +405,7 @@ A prefix argument causes the SQL to be printed into the current buffer."
       (beginning-of-defun)
       (let ((containing-sexp (elt (parse-partial-sexp (point) start) 1)))
         (when containing-sexp
-          (setf (point) containing-sexp)
+          (goto-char containing-sexp)
           (looking-at "\\["))))))
 
 (defadvice calculate-lisp-indent (around emacsql-vector-indent disable)

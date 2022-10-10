@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 1.9.23
+;; Version: 2.0.53
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -146,9 +146,9 @@ invoke the sort function, SWITCHES is the the sort flags for
                          'face '(:inherit dired-mark :underline t)
                          'display '((height 1.2)))
              (propertize "lowercased switches also work in" 'face 'font-lock-doc-face)
-             (propertize "dired-hide-details-mode" 'face 'font-lock-doc-markup-face)
+             (propertize "dired-hide-details-mode" 'face 'font-lock-constant-face)
              (propertize "C-u RET and C-u M-RET will modify" 'face 'font-lock-doc-face)
-             (propertize "dired-listing-switches" 'face 'font-lock-doc-markup-face)))
+             (propertize "dired-listing-switches" 'face 'font-lock-constant-face)))
    ["options"
     ("a" dirvish-ls--filter-switch)
     ("s" dirvish-ls--sort-switch)

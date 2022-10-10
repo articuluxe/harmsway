@@ -814,12 +814,12 @@ Currently it is used only for testing.")
         (call-process request-curl nil t nil "--version")
         (let ((version
                (progn
-                 (setf (point) (point-min))
+                 (goto-char (point-min))
                  (when (re-search-forward "[.0-9]+" nil t)
                    (match-string 0))))
               (compression
                (progn
-                 (setf (point) (point-min))
+                 (goto-char (point-min))
                  (not (null (re-search-forward "libz\\>" nil t))))))
           (setf (gethash request-curl request--curl-capabilities-cache)
                 `(:version ,version :compression ,compression)))))))
@@ -1057,7 +1057,7 @@ See \"set-cookie-av\" in https://www.ietf.org/rfc/rfc2965.txt")
 
 (defun request--consume-200-connection-established ()
   "Remove \"HTTP/* 200 Connection established\" header at the point."
-  (when (looking-at-p "HTTP/1\\.[0-1] 200 Connection established")
+  (when (looking-at-p "HTTP/1\\.[0-1] 200 Connect")
     (delete-region (point) (progn (request--goto-next-body) (point)))))
 
 (defun request--curl-preprocess (&optional url)

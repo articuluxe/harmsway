@@ -5,7 +5,7 @@
 ;; Author:      Marcin Swieczkowski <marcin.swieczkowski@gmail.com>
 ;;              See README.md for full list of contributors.
 ;; Created:     Thu Mar 2 22:19:19 CET 2017
-;; Version:     1.1.0
+;; Version:     1.2.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; URL:         https://github.com/m-cat/nimbus-theme
 ;; Keywords:    faces
@@ -253,7 +253,7 @@
    ;; avy
    `(avy-background-face ((t (:foreground ,light-gray))))
    `(avy-goto-char-timer-face ((t (:inherit avy-lead-face :background ,green))))
-   `(avy-lead-face ((t (:inherit default :foreground ,black :background ,search))))
+   `(avy-lead-face ((t (:inherit default :foreground ,black :background ,search :bold t))))
    `(avy-lead-face-0 ((t (:inherit avy-lead-face :background ,lazy))))
    `(avy-lead-face-1 ((t (:inherit avy-lead-face :background ,fg))))
    `(avy-lead-face-2 ((t (:inherit avy-lead-face :background ,match))))
@@ -424,6 +424,10 @@
    `(diredp-rare-priv ((t (:foreground ,lighter-green))))
    `(diredp-read-priv ((t (:foreground ,green))))
    `(diredp-write-priv ((t (:foreground ,light-blue))))
+
+   ;; docker
+   `(dockerfile-image-name ((t (:inherit font-lock-type-face))))
+   `(dockerfile-image-alias ((t (:inherit font-lock-constant-face))))
 
    ;; ediff
    `(ediff-current-diff-A ((t (:background "#482828"))))
@@ -848,6 +852,9 @@
    `(magit-commit-mark-unread-face ((t (:inherit magit-hash))))
    `(magit-commit-mark-urgent-face ((t (:foreground ,red))))
 
+   ;; make
+   `(makefile-space ((t (:inherit trailing-whitespace))))
+
    ;; makey
    `(makey-key-mode-button-face ((t (:inherit font-lock-constant-face))))
 
@@ -875,8 +882,8 @@
    `(minibuffer-prompt ((t (:foreground ,bright-yellow :bold nil))))
 
    ;; mode-line
-   `(mode-line ((t (:foreground ,fg :background ,darkerer-gray))))
-   `(mode-line-inactive ((t (:foreground ,light-gray :background ,gray-bg))))
+   `(mode-line ((t (:foreground ,fg :background ,light-purple-bg))))
+   `(mode-line-inactive ((t (:foreground ,lighter-gray :background ,gray-bg))))
 
    ;; multiple-cursors
    `(mc/cursor-face ((t (:foreground ,black :background ,dark-green))))
@@ -947,9 +954,9 @@
    `(org-warning ((t (:inherit font-lock-warning-face :foreground ,red))))
 
    ;; org-agenda
-   `(org-agenda-date ((t (:foreground ,date))))
-   `(org-agenda-date-today ((t (:inherit org-agenda-date :bold t))))
-   `(org-agenda-date-weekend ((t (:inherit org-agenda-date :slant italic))))
+   `(org-agenda-date ((t (:foreground ,date :bold t))))
+   `(org-agenda-date-today ((t (:inherit org-agenda-date :box t))))
+   `(org-agenda-date-weekend ((t (:inherit org-agenda-date :underline t))))
    `(org-agenda-done ((t (:inherit org-done))))
    `(org-agenda-structure ((t (:foreground ,heading))))
 

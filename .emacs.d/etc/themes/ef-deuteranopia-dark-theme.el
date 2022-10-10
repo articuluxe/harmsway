@@ -81,12 +81,12 @@
       (cyan-faint      "#8aa0df")
 
       ;; Basic hues for background values
-      (bg-red      "#8d4f5f")
-      (bg-green    "#4f6f20")
+      (bg-red      "#8d7f00")
+      (bg-green    "#afcf20")
       (bg-yellow   "#5f5f00")
       (bg-blue     "#264fa0")
-      (bg-magenta  "#8040cf")
-      (bg-cyan     "#00709e")
+      (bg-magenta  "#6f6aff")
+      (bg-cyan     "#007fae")
 
       (bg-red-subtle      "#72002a")
       (bg-green-subtle    "#00422a")
@@ -109,35 +109,39 @@
       (bg-removed-refine "#484800")
 
       ;; Graphs
-      (red-graph-0-bg     "#b52c2c")
-      (red-graph-1-bg     "#702020")
-      (green-graph-0-bg   "#4fd100")
-      (green-graph-1-bg   "#007800")
-      (yellow-graph-0-bg  "#f1e00a")
-      (yellow-graph-1-bg  "#b08600")
+      (red-graph-0-bg     "#705c3c")
+      (red-graph-1-bg     "#504420")
+      (green-graph-0-bg   "#4f666f")
+      (green-graph-1-bg   "#204840")
+      (yellow-graph-0-bg  "#c1c00a")
+      (yellow-graph-1-bg  "#6f6f00")
       (blue-graph-0-bg    "#2fafef")
       (blue-graph-1-bg    "#1f2f8f")
-      (magenta-graph-0-bg "#bf94fe")
-      (magenta-graph-1-bg "#5f509f")
-      (cyan-graph-0-bg    "#47dfea")
-      (cyan-graph-1-bg    "#00808f")
+      (magenta-graph-0-bg "#7f7f8e")
+      (magenta-graph-1-bg "#4f4f5f")
+      (cyan-graph-0-bg    "#376f9a")
+      (cyan-graph-1-bg    "#00404f")
 
       ;; Special hues
       (bg-mode-line  "#003f8f") (fg-mode-line  "#ffffff")
       (bg-accent     "#ffaa33") (fg-accent     "#000000")
       (bg-completion "#343420")
       (bg-hover      "#4f4f00")
-      (bg-hover-alt  "#003a7f")
+      (bg-hover-alt  "#00405f")
       (bg-hl-line    "#2e2e1b")
       (bg-region     "#202d3f")
       (bg-paren      "#0f4f9a")
-      (bg-err        "#232d09") ; check with err
-      (bg-warning    "#332600") ; check with warning
-      (bg-info       "#001a4a") ; check with info
+      (bg-err        "#342d09") ; check with err
+      (bg-warning    "#292900") ; check with warning
+      (bg-info       "#00204f") ; check with info
 
       (border        "#40455f")
       (cursor        "#ffff00")
       (fg-intense    "#ffffff")
+
+      (modeline-err     "#ffff00")
+      (modeline-warning "#ddb300")
+      (modeline-info    "#aaaaff")
 
       ;; Mappings
       (err yellow-warmer)
@@ -149,13 +153,14 @@
       (date yellow-cooler)
       (name blue-warmer)
       (keybind yellow-warmer)
+      (prompt yellow)
 
       (builtin blue-warmer)
       (comment yellow-faint)
       (constant blue-cooler)
       (fnname yellow-cooler)
       (keyword yellow-warmer)
-      (preprocessor green-cooler)
+      (preprocessor yellow)
       (docstring cyan-faint)
       (string blue)
       (type magenta-cooler)

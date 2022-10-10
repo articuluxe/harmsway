@@ -32,6 +32,8 @@
 ;; - centaur-tabs
 ;; - column-enforce-mode
 ;; - company-mode
+;; - consult
+;; - consult-project-extra
 ;; - dashboard
 ;; - deft
 ;; - diff-hl
@@ -54,6 +56,7 @@
 ;; - popup
 ;; - powerline
 ;; - powerline-evil
+;; - prescient
 ;; - rainbow-delimiters
 ;; - selectrum
 ;; - smart-mode-line
@@ -62,12 +65,15 @@
 ;; - telephone-line
 ;; - transient
 ;; - treemacs
+;; - vertico
 ;; - vterm
 ;; - which-key
 ;; - winum
 ;;
 ;; Supported defaults:
 ;; - ansi-term
+;; - compile
+;; - completions
 ;; - custom (M-x customize)
 ;; - diff-mode
 ;; - dired
@@ -156,34 +162,34 @@ one present in `hybrid-reverse-theme-default-colors-alist'."
 	  ("_hr-black-1"   . "#1d1f21") ; grey12
 	  ("hr-bg"         . "#1c1c1c") ; grey11
 	  ("hr-black"      . "#000000") ; grey0
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("_hr-red-1"     . "#ffd7d7")
 	  ("hr-red"        . "#cc6666")
 	  ("hr-red+1"      . "#a54242") ; Added
 	  ("_hr-red+2"     . "#5f0000")
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("hr-orange"     . "#de935f")
 	  ("hr-orange+1"   . "#875f00")
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("hr-yellow"     . "#f0c674")
 	  ("_hr-yellow+2"  . "#5f5f00")
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("_hr-green-1"   . "#d7ffd7")
 	  ("hr-green"      . "#b5bd68")
 	  ("hr-green+1"    . "#8c9440") ; Added
 	  ("hr-green+2"    . "#5f875f")
 	  ("_hr-green+3"   . "#005f00")
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("hr-cyan"       . "#8abeb7")
 	  ("hr-cyan+1"     . "#5e8d87") ; Added
 	  ("_hr-cyan+2"    . "#005f5f")
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("hr-blue-1"     . "#d7d7ff")
 	  ("hr-blue"       . "#81a2be")
 	  ("hr-blue+1"     . "#5f819d") ; Added
 	  ("hr-blue+2"     . "#5f5f87")
 	  ("_hr-blue+3"    . "#00005f")
-	  ;; ----------------------
+	  ;; --------------------------
 	  ("hr-magenta"    . "#b294bb")
 	  ("hr-magenta+1"  . "#85678f") ; Added
 	  ("_hr-magenta+2" . "#5f005f"))
@@ -212,7 +218,7 @@ Also bind `class' to ((class color) (min-colors 89))."
 ;;;;; Basic coloring
    `(cursor                                   ((,class                           :background ,hr-white+1)))
    `(default                                  ((,class :foreground ,hr-fg        :background ,hr-bg)))
-   `(error                                    ((,class :foreground ,hr-red       :background ,hr-bg        :weight bold)))
+   `(error                                    ((,class :foreground ,hr-red                                 :weight bold)))
    `(escape-glyph                             ((,class :foreground ,hr-cyan)))
    `(homoglyph                                ((,class :foreground ,hr-cyan)))
    `(nobreak-hyphen                           ((,class :foreground ,hr-cyan)))
@@ -224,20 +230,25 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(border                                   ((,class :foreground ,hr-white+5)))
    `(fill-column-indicator                    ((,class :foreground ,hr-black-3)))
    `(fringe                                   ((,class :foreground ,hr-fg        :background ,hr-black-2)))
-   `(highlight                                ((,class :foreground ,hr-yellow    :background ,hr-bg)))
-   `(highlight-changes                        ((,class :foreground ,hr-red       :background ,hr-bg)))
+   `(highlight                                ((,class :foreground ,hr-yellow)))
+   `(highlight-changes                        ((,class :foreground ,hr-red)))
    `(hl-line                                  ((,class                           :background ,hr-black-3   :extend t)))
-   `(link                                     ((,class :foreground ,hr-blue      :background ,hr-bg)))
-   `(link-visited                             ((,class :foreground ,hr-blue      :background ,hr-bg)))
-   `(minibuffer-prompt                        ((,class :foreground ,hr-blue      :background ,hr-bg)))
-   `(region                                   ((,class                           :background ,hr-black-6)))
+   `(link                                     ((,class :foreground ,hr-blue)))
+   `(link-visited                             ((,class :foreground ,hr-blue)))
+   `(minibuffer-prompt                        ((,class :foreground ,hr-blue)))
+   `(region                                   ((,class                           :background ,hr-black-5)))
    `(secondary-selection                      ((,class                           :background ,hr-black-3)))
+   `(separator-line                           ((,class                           :background ,hr-black-7   :height 0.1)))
+   `(shadow                                   ((,class :foreground ,hr-white+6)))
    `(tooltip                                  ((,class                           :background ,hr-black-3)))
    `(tool-bar                                 ((,class                           :background ,hr-black-3)))
    `(vertical-border                          ((,class :foreground ,hr-white+5)))
-   `(widget-button                            ((,class                                                     :weight normal)))
-   `(widget-button-pressed                    ((,class :foreground ,hr-orange)))
-   `(widget-field                             ((,class :background ,hr-black-6)))
+   `(widget-button                            ((,class                                                     :weight bold)))
+   `(widget-button-pressed                    ((,class :foreground ,hr-orange                              :weight bold)))
+   `(widget-documentation                     ((,class :foreground ,hr-green)))
+   `(widget-field                             ((,class                           :background ,hr-black-6)))
+   `(widget-mouse-face                        ((,class                                                     :inherit highlight)))
+   `(widget-inactive                          ((,class                                                     :inherit shadow)))
    `(window-divider                           ((,class :foreground ,hr-white+5)))
    `(window-divider-first-pixel               ((,class :foreground ,hr-black-6)))
    `(window-divider-last-pixel                ((,class :foreground ,hr-black-6)))
@@ -245,7 +256,7 @@ Also bind `class' to ((class color) (min-colors 89))."
 ;;;;; ansi-term
    `(ansi-color-black                         ((,class :foreground ,hr-black-3)))
    `(ansi-color-blue                          ((,class :foreground ,hr-blue+1)))
-   `(ansi-color-bold                          ((,class :inherit bold)))
+   `(ansi-color-bold                          ((,class                                                     :inherit bold)))
    `(ansi-color-bright-black                  ((,class :foreground ,hr-black-6)))
    `(ansi-color-bright-blue                   ((,class :foreground ,hr-blue)))
    `(ansi-color-bright-cyan                   ((,class :foreground ,hr-cyan)))
@@ -255,17 +266,31 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(ansi-color-bright-white                  ((,class :foreground ,hr-fg)))
    `(ansi-color-bright-yellow                 ((,class :foreground ,hr-yellow)))
    `(ansi-color-cyan                          ((,class :foreground ,hr-cyan+1)))
-   `(ansi-color-faint                         ((,class :weight light)))
+   `(ansi-color-faint                         ((,class                                                     :weight light)))
    `(ansi-color-fast-blink                    ((,class                                                     :box t)))
    `(ansi-color-green                         ((,class :foreground ,hr-green+1)))
    `(ansi-color-inverse                       ((,class                           :background ,hr-bg        :inverse-video t)))
-   `(ansi-color-italic                        ((,class :                                                   slant italic)))
+   `(ansi-color-italic                        ((,class                                                     :slant italic)))
    `(ansi-color-magenta                       ((,class :foreground ,hr-magenta+1)))
    `(ansi-color-red                           ((,class :foreground ,hr-red+1)))
    `(ansi-color-slow-blink                    ((,class                                                     :box t)))
-   `(ansi-color-underline                     ((,class :underline t)))
+   `(ansi-color-underline                     ((,class                                                     :underline t)))
    `(ansi-color-white                         ((,class :foreground ,hr-white+6)))
    `(ansi-color-yellow                        ((,class :foreground ,hr-orange)))
+
+;;;;; compile
+   `(compilation-error                        ((,class                                                     :inherit error :underline nil)))
+   `(compilation-line-number                  ((,class                                                     :inherit font-lock-keyword-face :underline nil)))
+   `(compilation-column-number                ((,class                                                     :inherit font-lock-doc-face :underline nil)))
+   `(compilation-info                         ((,class                                                     :inherit success :underline nil)))
+   `(compilation-warning                      ((,class :foreground ,hr-magenta                             :inherit error :underline nil)))
+
+;;;;; completions
+   `(completions-annotations                  ((,class :foreground ,hr-white+6)))
+   `(completions-common-part                  ((,class :foreground ,hr-blue)))
+   `(completions-first-difference             ((,class :foreground ,hr-yellow                              :weight bold)))
+   `(completions-group-separator              ((,class                                                     :inherit shadow :strike-through t)))
+   `(completions-group-title                  ((,class                                                     :inherit shadow :slant italic)))
 
 ;;;;; custom (M-x customize)
    `(custom-button                            ((,class :foreground ,hr-fg        :background ,hr-black-3   :box (:line-width 2 :color ,hr-black-8))))
@@ -550,12 +575,13 @@ Also bind `class' to ((class color) (min-colors 89))."
 
 ;;;;; centaur-tabs
    `(centaur-tabs-active-bar-face             ((,class :foreground ,hr-bg        :background ,hr-cyan)))
-   `(centaur-tabs-close-mouse-face            ((,class :foreground ,hr-orange                              :weight bold :underline t)))
+   `(centaur-tabs-close-mouse-face            ((,class :foreground ,hr-yellow                              :weight bold :underline t)))
    `(centaur-tabs-close-selected              ((,class                                                     :inherit centaur-tabs-selected)))
    `(centaur-tabs-close-unselected            ((,class                                                     :inherit centaur-tabs-unselected)))
    `(centaur-tabs-default                     ((,class :foreground ,hr-black-3   :background ,hr-black-3)))
    `(centaur-tabs-modified-marker-selected    ((,class :foreground ,hr-white     :background ,hr-black-6)))
    `(centaur-tabs-modified-marker-unselected  ((,class :foreground ,hr-fg        :background ,hr-black-3)))
+   `(centaur-tabs-name-mouse-face             ((,class :foreground ,hr-yellow                              :weight bold)))
    `(centaur-tabs-selected                    ((,class :foreground ,hr-white     :background ,hr-black-6)))
    `(centaur-tabs-selected-modified           ((,class :foreground ,hr-white     :background ,hr-black-6)))
    `(centaur-tabs-unselected                  ((,class :foreground ,hr-fg        :background ,hr-black-3)))
@@ -577,17 +603,19 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(company-tooltip-mouse                    ((,class :foreground ,hr-yellow    :background ,hr-black-6)))
    `(company-tooltip-selection                ((,class :foreground ,hr-yellow    :background ,hr-black-6)))
 
+;;;;; consult
+   `(consult-bookmark                         ((,class)))
+   `(consult-buffer                           ((,class)))
+   `(consult-file                             ((,class)))
+
+;;;;; consult-project-extra
+   `(consult-project-extra-projects           ((,class)))
+
 ;;;;; dashboard
-   `(dashboard-banner-logo-title              ((,class :foreground ,hr-fg)))
-   `(dashboard-footer                         ((,class :foreground ,hr-white+6)))
-   `(dashboard-heading                        ((,class :foreground ,hr-blue)))
-   `(dashboard-items-face                     ((,class                                                     :inherit widget-button)))
-   `(dashboard-navigator                      ((,class :foreground ,hr-blue)))
-   `(dashboard-no-items-face                  ((,class                                                     :inherit widget-button)))
-   `(dashboard-text-banner                    ((,class :foreground ,hr-blue)))
+   `(dashboard-items-face                     ((,class                                                     :inherit widget-button :weight normal)))
 
 ;;;;; deft
-   `(deft-filter-string-error-face            ((,class :inherit error)))
+   `(deft-filter-string-error-face            ((,class                                                     :inherit error)))
    `(deft-filter-string-face                  ((,class :foreground ,hr-green)))
    `(deft-header-face                         ((,class :foreground ,hr-orange                              :weight bold)))
    `(deft-separator-face                      ((,class                                                     :inherit font-lock-comment-delimiter-face)))
@@ -600,9 +628,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(diff-hl-delete                           ((,class :foreground ,hr-red+1     :background ,hr-red+1)))
    `(diff-hl-dired-change                     ((,class                                                     :inherit diff-hl-change)))
    `(diff-hl-dired-delete                     ((,class                                                     :inherit diff-hl-delete)))
-   `(diff-hl-dired-ignored                    ((,class :inherit dired-ignored)))
+   `(diff-hl-dired-ignored                    ((,class                                                     :inherit dired-ignored)))
    `(diff-hl-dired-insert                     ((,class                                                     :inherit diff-hl-insert)))
-   `(diff-hl-dired-unknown                    ((,class :inherit dired-ignored)))
+   `(diff-hl-dired-unknown                    ((,class                                                     :inherit dired-ignored)))
    `(diff-hl-insert                           ((,class :foreground ,hr-green+1   :background ,hr-green+1)))
    `(diff-hl-reverted-hunk-highlight          ((,class                                                     :inverse-video t)))
 
@@ -943,6 +971,10 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(powerline-evil-replace-face              ((,class :foreground ,hr-black     :background ,hr-orange    :inherit powerline-evil-base-face)))
    `(powerline-evil-visual-face               ((,class :foreground ,hr-black     :background ,hr-magenta   :inherit powerline-evil-base-face)))
 
+;;;;; prescient
+   `(prescient-primary-highlight              ((,class :foreground ,hr-blue)))
+   `(prescient-secondary-highlight            ((,class :foreground ,hr-red)))
+
 ;;;;; rainbow-delimiters
    `(rainbow-delimiters-depth-1-face          ((,class :foreground ,hr-fg)))
    `(rainbow-delimiters-depth-2-face          ((,class :foreground ,hr-cyan)))
@@ -957,12 +989,14 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(rainbow-delimiters-unmatched-face        ((,class :foreground ,hr-red)))
 
 ;;;;; selectrum
+   `(selectrum-completion-annotation          ((,class                                                     :inherit completions-annotations)));
+   `(selectrum-completion-docsig              ((,class                                                     :inherit selectrum-completion-annotation)));
    `(selectrum-current-candidate              ((,class :foreground ,hr-orange                              :weight bold)))
-   `(selectrum-mouse-highlight                ((,class :foreground ,hr-yellow)))
-
-;;;;; selectrum-prescient
-   `(selectrum-prescient-primary-highlight    ((,class :foreground ,hr-blue)))
-   `(selectrum-prescient-secondary-highlight  ((,class :foreground ,hr-red)))
+   `(selectrum-group-separator                ((,class                                                     :inherit completions-group-separator)));
+   `(selectrum-group-title                    ((,class                                                     :inherit completions-group-title)));
+   `(selectrum-mouse-highlight                ((,class                                                     :inherit highlight)))
+   `(selectrum-quick-keys-highlight           ((,class :foreground ,hr-bg        :background ,hr-yellow    :weight bold)));
+   `(selectrum-quick-keys-match               ((,class :foreground ,hr-bg        :background ,hr-orange    :weight bold)));
 
 ;;;;; smart-mode-line
    `(sml/charging                             ((,class :foreground ,hr-fg)))
@@ -1031,7 +1065,8 @@ Also bind `class' to ((class color) (min-colors 89))."
 
 ;;;;; transient
    `(transient-active-infix                   ((,class :foreground ,hr-fg        :background ,hr-black-3)))
-   `(transient-argument                       ((,class :foreground ,hr-orange                              :weight bold)))
+   ;; Placate the compiler for what is a spurious warning.
+   (list 'transient-argument                 `((,class :foreground ,hr-orange                              :weight bold)))
    `(transient-disabled-suffix                ((,class :foreground ,hr-bg        :background ,hr-red       :weight bold)))
    `(transient-enabled-suffix                 ((,class :foreground ,hr-bg        :background ,hr-green     :weight bold)))
    `(transient-heading                        ((,class :foreground ,hr-blue)))
@@ -1070,6 +1105,16 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(treemacs-root-unreadable-face            ((,class                                                     :inherit treemacs-root-face :strike-through t)))
    `(treemacs-tags-face                       ((,class :foreground ,hr-blue)))
    `(treemacs-term-node-face                  ((,class :foreground ,hr-green)))
+
+;;;;; vertico
+   `(vertico-current                          ((,class :foreground ,hr-orange                         :weight bold :extend t)))
+   `(vertico-group-separator                  ((,class                                                     :inherit completions-group-separator)))
+   `(vertico-group-title                      ((,class                                                     :inherit completions-group-title)))
+   `(vertico-indexed                          ((,class                                                     :inherit font-lock-comment-face :height 0.75)))
+   `(vertico-mouse                            ((,class                                                     :inherit highlight)))
+   `(vertico-multiline                        ((,class                                                     :inherit shadow)))
+   `(vertico-quick1                           ((,class :foreground ,hr-bg        :background ,hr-yellow    :weight bold)))
+   `(vertico-quick2                           ((,class :foreground ,hr-bg        :background ,hr-yellow    :weight bold)))
 
 ;;;;; vterm
    `(vterm-color-black                        ((,class :foreground ,hr-black-3   :background ,hr-black-6)))

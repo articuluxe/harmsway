@@ -77,7 +77,7 @@ The default style is green text in a green box."
       (font-lock-keyword-face (:foreground ,yellow))
       (font-lock-preprocessor-face (:inherit (font-lock-constant-face)))
       (font-lock-string-face (:foreground ,string))
-      (font-lock-type-face (:foreground "olivedrab3"))
+      (font-lock-type-face (:foreground ,sea-green))
       (font-lock-variable-name-face (:foreground ,sea-green))
       (font-lock-warning-face (:slant italic :foreground ,orange-red))
       (fringe (:background ,bg))
@@ -112,7 +112,7 @@ The default style is green text in a green box."
 
       ;; outline-*, and by extension org-level-*
       (outline-1 (:weight bold :foreground ,fg))
-      (outline-2 (:foreground ,yellow))
+      (outline-2 (:foreground ,gold))
       (outline-3 (:foreground ,cyan))
       (outline-4 (:foreground ,orange))
       (outline-5 (:foreground ,purple))
@@ -275,7 +275,7 @@ The default style is green text in a green box."
       (orange-red "#ff4500")
       (red "#ff1500")
       (whitespace-fg "#555f55")
-      (block "#121212")
+      (block "#060606")
       (block-light "#252525"))
   (apply #'custom-theme-set-faces
          (cons 'naga (create-theme-colors))))

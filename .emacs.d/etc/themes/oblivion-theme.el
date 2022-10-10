@@ -14,6 +14,8 @@
 
 (deftheme oblivion "Dark color scheme based on GEdit's oblivion theme.")
 
+;; See: https://gitlab.gnome.org/GNOME/gtksourceview/-/blob/master/data/styles/oblivion.xml
+;; for the latest reference of colors.
 (let
   (
     (ob-butter1 "#fce94f")
@@ -341,6 +343,10 @@
     ;; highlight-indent-guides (melpa).
     `(highlight-indent-guides-odd-face ((t (:background ,ob-aluminium6+16))))
     `(highlight-indent-guides-even-face ((t (:background ,ob-aluminium6+5))))
+
+    ;; hl-indent-scope (melpa).
+    `(hl-indent-scope-odd-face ((t (:background ,ob-aluminium6+16))))
+    `(hl-indent-scope-even-face ((t (:background ,ob-aluminium6+5))))
 
     ;; highlight-operators (melpa).
     `(highlight-operators-face ((t (:foreground ,ob-white))))

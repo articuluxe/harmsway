@@ -3,10 +3,11 @@
 ;; Copyright (C) 2014-2021 taku0, Chris Barrett, Bozhidar Batsov,
 ;;                         Arthur Evstifeev
 
-;; Author: taku0 (http://github.com/taku0)
+;; Author: taku0 <mxxouy6x3m_github@tatapa.org>
 ;;       Chris Barrett <chris.d.barrett@me.com>
 ;;       Bozhidar Batsov <bozhidar@batsov.com>
 ;;       Arthur Evstifeev <lod@pisem.net>
+;; Maintainer: taku0 <mxxouy6x3m_github@tatapa.org>
 ;;
 ;; Version: 8.6.0
 ;; Package-Requires: ((emacs "24.4") (seq "2.3"))
@@ -48,10 +49,14 @@
   :group 'languages
   :prefix "swift-mode:")
 
-;;;`update-directory-autoloads' does not handle `:group'.
+;; WORKAROUND: `update-directory-autoloads' does not handle `:group'.
+;; Fixed in 29.1 https://debbugs.gnu.org/cgi/bugreport.cgi?bug=58015.
+;; commit: 212e94c3f445ebe1388f6fab134133ebad9316d0
 ;;;###autoload (custom-add-load 'languages 'swift-mode)
 
 ;; WORKAROUND: `cus-load' overrides `custom-loads'
+;; Fixed in 29.1 https://debbugs.gnu.org/cgi/bugreport.cgi?bug=58015.
+;; commit: 75b3f4d0ac00bf47459629615ab2246c8a34b4c6
 ;;;###autoload (with-eval-after-load 'cus-load
 ;;;###autoload   (custom-add-load 'languages 'swift-mode))
 
@@ -149,6 +154,8 @@ Signal `scan-error' if it hits opening parentheses."
 ;;;###autoload
 (defsubst swift-mode:add-supported-extension-for-speedbar ()
   "Register .swift to speedbar."
+  ;; FIXME: Use `with-eval-after-load' when `package-lint' allows it.
+  ;; See also https://github.com/swift-emacs/swift-mode/pull/179
   (if (fboundp 'speedbar-add-supported-extension)
       (speedbar-add-supported-extension ".swift")
     (add-hook 'speedbar-load-hook

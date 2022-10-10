@@ -49,7 +49,7 @@
       (bg-dim      "#e8e8ea")
       (fg-dim      "#70627f")
       (bg-alt      "#d3d3e0")
-      (fg-alt      "#6f6336")
+      (fg-alt      "#196f70")
 
       (bg-active   "#c3c3d0")
       (bg-inactive "#efeff5")
@@ -81,12 +81,12 @@
       (cyan-faint      "#506fa0")
 
       ;; Basic hues for background values
-      (bg-red      "#ff8f88")
-      (bg-green    "#8adf80")
+      (bg-red      "#cac200")
+      (bg-green    "#9aaf80")
       (bg-yellow   "#fac200")
       (bg-blue     "#cbcfff")
-      (bg-magenta  "#ff9fef")
-      (bg-cyan     "#88c8ff")
+      (bg-magenta  "#3fbfff")
+      (bg-cyan     "#98e8ff")
 
       (bg-red-subtle      "#ffcfbf")
       (bg-green-subtle    "#afffbf")
@@ -109,25 +109,25 @@
       (bg-removed-refine "#f0da88")
 
       ;; Graphs
-      (red-graph-0-bg     "#ef7969")
-      (red-graph-1-bg     "#ffaab4")
-      (green-graph-0-bg   "#4faa09")
-      (green-graph-1-bg   "#8fef00")
+      (red-graph-0-bg     "#b0b029")
+      (red-graph-1-bg     "#e0cab4")
+      (green-graph-0-bg   "#90b7c0")
+      (green-graph-1-bg   "#a3dfe5")
       (yellow-graph-0-bg  "#ffcf00")
       (yellow-graph-1-bg  "#f9ff00")
-      (blue-graph-0-bg    "#7090ff")
+      (blue-graph-0-bg    "#7f9fff")
       (blue-graph-1-bg    "#9fc6ff")
-      (magenta-graph-0-bg "#e07fff")
-      (magenta-graph-1-bg "#fad0ff")
-      (cyan-graph-0-bg    "#70d3f0")
-      (cyan-graph-1-bg    "#afefff")
+      (magenta-graph-0-bg "#b0b0d0")
+      (magenta-graph-1-bg "#d0dfdf")
+      (cyan-graph-0-bg    "#6faad9")
+      (cyan-graph-1-bg    "#bfe0ff")
 
       ;; Special hues
       (bg-mode-line  "#99c7ff") (fg-mode-line  "#0a0a1f")
       (bg-accent     "#eecc33") (fg-accent     "#000000")
       (bg-completion "#f0dacf")
       (bg-hover      "#eebb20")
-      (bg-hover-alt  "#afafff")
+      (bg-hover-alt  "#afafef")
       (bg-hl-line    "#f3e0d5")
       (bg-region     "#dadadf")
       (bg-paren      "#8fc0cf")
@@ -139,6 +139,10 @@
       (cursor        "#0000bb")
       (fg-intense    "#000000")
 
+      (modeline-err     "#000000") ; too dark to have red/yellow here
+      (modeline-warning "#0a0a1f")
+      (modeline-info    "#2222c3")
+
       ;; Mappings
       (err yellow-warmer)
       (warning yellow)
@@ -149,13 +153,14 @@
       (date yellow-cooler)
       (name blue-warmer)
       (keybind yellow-warmer)
+      (prompt blue)
 
       (builtin cyan)
       (comment yellow-faint)
       (constant yellow-cooler)
       (fnname blue-cooler)
       (keyword blue-warmer)
-      (preprocessor green-cooler)
+      (preprocessor magenta-cooler)
       (docstring cyan-faint)
       (string yellow-warmer)
       (type yellow)

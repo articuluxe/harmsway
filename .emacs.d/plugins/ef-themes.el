@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 0.4.2
+;; Version: 0.7.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -31,6 +31,14 @@
 ;; Emacs whose goal is to provide colorful ("pretty") yet legible
 ;; options for users who want something with a bit more flair than the
 ;; `modus-themes' (also designed by me).
+;;
+;; "Ef" is a Greek word (ευ), commonly used as a prefix to denote
+;; something good, nice, and/or easy.  For example, eftopia (ευτοπία)
+;; is the opposite of dystopia (δυστοπία): a good place as opposed to
+;; a bad place.
+;;
+;; The backronym of the `ef-themes' is: Extremely Fatigued of Themes
+;; Having Exaggerated Markings, Embellishments, and Sparkles.
 
 ;;; Code:
 
@@ -48,26 +56,17 @@
 
 ;;; User options
 
-(defconst ef-themes-collection
-  '(ef-autumn
-    ef-dark
-    ef-day
-    ef-deuteranopia-dark
-    ef-deuteranopia-light
-    ef-light
-    ef-night
-    ef-spring
-    ef-summer
-    ef-winter)
-  "Symbols of all the Ef themes.")
-
 (defconst ef-themes-light-themes
-  '(ef-day ef-light ef-spring ef-summer ef-deuteranopia-light)
+  '(ef-day ef-deuteranopia-light ef-duo-light ef-frost ef-light ef-spring ef-summer ef-trio-light)
   "List of symbols with the light Ef themes.")
 
 (defconst ef-themes-dark-themes
-  '(ef-autumn ef-dark ef-night ef-winter ef-deuteranopia-dark)
+  '(ef-autumn ef-bio ef-dark ef-deuteranopia-dark ef-duo-dark ef-night ef-trio-dark ef-winter)
   "List of symbols with the dark Ef themes.")
+
+(defconst ef-themes-collection
+  (append ef-themes-light-themes ef-themes-dark-themes)
+  "Symbols of all the Ef themes.")
 
 (defcustom ef-themes-post-load-hook nil
   "Hook that runs after loading an Ef theme.
@@ -334,12 +333,14 @@ sequence given SEQ-PRED, using SEQ-DEFAULT as a fallback."
 
 (defvar ef-themes--select-theme-history nil)
 
-(defun ef-themes--select-prompt ()
-  "Minibuffer prompt for `ef-themes-select'."
-  (completing-read "Select Ef Theme: "
-                   (ef-themes--list-known-themes)
-                   nil t nil
-                   'ef-themes--select-theme-history))
+(defun ef-themes--select-prompt (&optional prompt)
+  "Minibuffer prompt for `ef-themes-select'.
+With optional PROMPT string, use it.  Else use a generic prompt."
+  (intern
+   (completing-read (or prompt "Select Ef Theme: ")
+                    (ef-themes--list-known-themes)
+                    nil t nil
+                    'ef-themes--select-theme-history)))
 
 (defun ef-themes--load-theme (theme)
   "Load THEME while disabling other Ef themes.
@@ -351,8 +352,10 @@ Run `ef-themes-post-load-hook'."
 ;;;###autoload
 (defun ef-themes-select (theme)
   "Load an Ef THEME using minibuffer completion.
-When called from Lisp, THEME is a symbol."
-  (interactive (list (intern (ef-themes--select-prompt))))
+When called from Lisp, THEME is a symbol.
+
+Run `ef-themes-post-load-hook' after loading the theme."
+  (interactive (list (ef-themes--select-prompt)))
   (ef-themes--load-theme theme))
 
 (defun ef-themes--toggle-theme-p ()
@@ -365,16 +368,24 @@ When called from Lisp, THEME is a symbol."
 
 ;;;###autoload
 (defun ef-themes-toggle ()
-  "Toggle between the two `ef-themes-to-toggle'."
+  "Toggle between the two `ef-themes-to-toggle'.
+If `ef-themes-to-toggle' does not specify two Ef themes, inform
+the user about it while prompting with completion for a theme
+among our collection (this is practically the same as the
+`ef-themes-select' command).
+
+Run `ef-themes-post-load-hook' after loading the theme."
   (interactive)
-  (when-let* ((themes (ef-themes--toggle-theme-p))
-              (one (car themes))
-              (two (cadr themes)))
-    (unless (eq (length themes) 2)
-      (user-error "Can only toggle between two themes"))
-    (if (eq (car custom-enabled-themes) one)
-        (ef-themes--load-theme two)
-      (ef-themes--load-theme one))))
+  (if-let* ((themes (ef-themes--toggle-theme-p))
+            (one (car themes))
+            (two (cadr themes)))
+      (if (eq (car custom-enabled-themes) one)
+          (ef-themes--load-theme two)
+        (ef-themes--load-theme one))
+    (ef-themes--load-theme
+     (ef-themes--select-prompt
+      (concat "Set two `ef-themes-to-toggle'; "
+              "switching to theme selection for now: ")))))
 
 (defun ef-themes--minus-current (&optional variant)
   "Return list of Ef themes minus the current one.
@@ -397,12 +408,17 @@ With optional VARIANT as either `light' or `dark', limit the set
 to the relevant themes.
 
 When called interactively, VARIANT is the prefix argument which
-prompts with completion for either `light' or `dark'."
+prompts with completion for either `light' or `dark'.
+
+Run `ef-themes-post-load-hook' after loading the theme."
   (interactive
    (list
     (when current-prefix-arg
-      (intern (completing-read "Random choice of Ef themes VARIANT: "
-                               '(light dark) nil t)))))
+      (intern (cadr (read-multiple-choice
+                     "Variant"
+                     '((?d "dark" "Load a random dark theme")
+                       (?l "light" "Load a random light theme"))
+                     "Limit the variation themes to select."))))))
   (let* ((themes (ef-themes--minus-current variant))
          (n (random (length themes)))
          (pick (nth n themes)))
@@ -521,37 +537,43 @@ Helper function for `ef-themes-preview-colors'."
     `(ef-themes-key-binding ((,c :inherit (bold ef-themes-fixed-pitch) :foreground ,keybind)))
     `(ef-themes-ui-variable-pitch ((,c ,@(ef-themes--variable-pitch-ui))))
 ;;;; all basic faces
-    `(default ((,c :background ,bg-main :foreground ,fg-main)))
-    `(cursor ((,c :background ,cursor)))
-    `(vertical-border ((,c :foreground ,border)))
+;;;;; absolute essentials
     `(bold ((,c :weight bold)))
-    `(italic ((,c :slant italic)))
     `(bold-italic ((,c :inherit (bold italic))))
+    `(cursor ((,c :background ,cursor)))
+    `(default ((,c :background ,bg-main :foreground ,fg-main)))
+    `(italic ((,c :slant italic)))
     `(region ((,c :background ,bg-region)))
+    `(vertical-border ((,c :foreground ,border)))
+;;;;; all other basic faces
+    `(button ((,c :foreground ,link :underline ,border)))
+    `(child-frame-border ((,c :background ,border)))
     `(comint-highlight-input ((,c :inherit bold)))
-    `(comint-highlight-prompt ((,c :foreground ,accent-2)))
-    `(minibuffer-prompt ((,c :foreground ,accent-2)))
+    `(comint-highlight-prompt ((,c :inherit minibuffer-prompt)))
+    `(edmacro-label ((,c :inherit bold)))
     `(elisp-shorthand-font-lock-face ((,c :inherit italic)))
-    `(escape-glyph ((,c :foreground ,warning)))
     `(error ((,c :inherit bold :foreground ,err)))
-    `(success ((,c :inherit bold :foreground ,info)))
-    `(warning ((,c :inherit bold :foreground ,warning)))
+    `(escape-glyph ((,c :foreground ,warning)))
     `(fringe ((,c :background unspecified)))
     `(header-line ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-dim)))
     `(header-line-highlight ((,c :inherit highlight)))
     `(help-argument-name ((,c :foreground ,accent-0)))
     `(help-key-binding ((,c :inherit bold :foreground ,keybind)))
     `(highlight ((,c :background ,bg-hover :foreground ,fg-intense)))
-    `(secondary-selection ((,c :background ,bg-hover-alt :foreground ,fg-intense)))
     `(hl-line ((,c :background ,bg-hl-line)))
-    `(button ((,c :foreground ,link :underline ,border)))
+    `(icon-button ((,c :box ,fg-dim :background ,bg-active :foreground ,fg-intense))) ; same as `custom-button'
     `(link ((,c :foreground ,link :underline ,border)))
     `(link-visited ((,c :foreground ,link-alt :underline ,border)))
+    `(minibuffer-prompt ((,c :foreground ,prompt)))
     `(pgtk-im-0 ((,c :inherit secondary-selection)))
+    `(read-multiple-choice-face ((,c :inherit warning :background ,bg-warning)))
     `(rectangle-preview ((,c :inherit secondary-selection)))
+    `(secondary-selection ((,c :background ,bg-hover-alt :foreground ,fg-intense)))
     `(shadow ((,c :foreground ,fg-dim)))
-    `(trailing-whitespace ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(success ((,c :inherit bold :foreground ,info)))
     `(tooltip ((,c :background ,bg-alt :foreground ,fg-intense)))
+    `(trailing-whitespace ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(warning ((,c :inherit bold :foreground ,warning)))
 ;;;; all-the-icons
     `(all-the-icons-blue ((,c :foreground ,blue-cooler)))
     `(all-the-icons-blue-alt ((,c :foreground ,blue-warmer)))
@@ -658,24 +680,25 @@ Helper function for `ef-themes-preview-colors'."
     `(holiday ((,c :background ,bg-dim :foreground ,accent-2)))
 ;;;; change-log and log-view (`vc-print-log' and `vc-print-root-log')
     `(change-log-acknowledgment ((,c :inherit shadow)))
-    `(change-log-conditionals ((,c :foreground ,preprocessor)))
+    `(change-log-conditionals ((,c :inherit error)))
     `(change-log-date ((,c :foreground ,date)))
-    `(change-log-email ((,c :foreground ,constant)))
+    `(change-log-email ((,c :foreground ,fg-alt)))
     `(change-log-file ((,c :inherit bold)))
-    `(change-log-function ((,c :foreground ,fnname)))
+    `(change-log-function ((,c :inherit warning)))
     `(change-log-list ((,c :inherit bold)))
     `(change-log-name ((,c :foreground ,name)))
     `(log-edit-header ((,c :inherit bold)))
+    `(log-edit-headers-separator ((,c :height 1 :background ,border :extend t)))
     `(log-edit-summary ((,c :inherit bold :foreground ,accent-0)))
     `(log-edit-unknown-header ((,c :inherit shadow)))
     `(log-view-commit-body (( )))
     `(log-view-file ((,c :inherit bold)))
-    `(log-view-message ((,c :foreground ,fg-dim)))
+    `(log-view-message ((,c :inherit shadow)))
 ;;;; company-mode
     `(company-echo-common ((,c :inherit bold :foreground ,accent-0)))
     `(company-preview ((,c :background ,bg-dim :foreground ,fg-dim)))
     `(company-preview-common ((,c :inherit company-echo-common)))
-    `(company-preview-search ((,c :inherit modus-themes-special-calm)))
+    `(company-preview-search ((,c :background ,bg-yellow :foreground ,fg-intense)))
     `(company-scrollbar-bg ((,c :background ,bg-active)))
     `(company-scrollbar-fg ((,c :background ,fg-main)))
     `(company-template-field ((,c :background ,bg-active :foreground ,fg-intense)))
@@ -694,9 +717,9 @@ Helper function for `ef-themes-preview-colors'."
     `(compilation-error ((,c :inherit error)))
     `(compilation-info ((,c :inherit bold :foreground ,name)))
     `(compilation-line-number ((,c :inherit shadow)))
-    `(compilation-mode-line-exit ((,c :inherit bold)))
-    `(compilation-mode-line-fail ((,c :inherit error)))
-    `(compilation-mode-line-run ((,c :inherit warning)))
+    `(compilation-mode-line-exit ((,c :inherit bold :foreground ,modeline-info)))
+    `(compilation-mode-line-fail ((,c :inherit bold :foreground ,modeline-err)))
+    `(compilation-mode-line-run ((,c :inherit bold :foreground ,modeline-warning)))
     `(compilation-warning ((,c :inherit warning)))
 ;;;; completions
     `(completions-annotations ((,c :inherit italic :foreground ,docstring)))
@@ -747,6 +770,7 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; diff-mode
     `(diff-added ((,c :background ,bg-added)))
     `(diff-changed ((,c :background ,bg-changed :extend t)))
+    `(diff-changed-unspecified ((,c :inherit diff-changed)))
     `(diff-removed ((,c :background ,bg-removed)))
     `(diff-refine-added ((,c :background ,bg-added-refine :foreground ,fg-intense)))
     `(diff-refine-changed ((,c :background ,bg-changed-refine :foreground ,fg-intense)))
@@ -811,10 +835,45 @@ Helper function for `ef-themes-preview-colors'."
     `(diredfl-write-priv ((,c :foreground ,rainbow-2)))
 ;;;; dirvish
     `(dirvish-hl-line ((,c :background ,bg-hl-line)))
+;;;; display-fill-column-indicator-mode
+    ;; NOTE 2022-09-14: We use the bg-alt mapping as the border mapping
+    ;; is for the `vertical-border'.  We want this to be more subtle.
+    `(fill-column-indicator ((,c :height 1 :background ,bg-alt :foreground ,bg-alt)))
 ;;;; doom-modeline
-    ;; NOTE 2022-08-20: This is the only face that seems necessary.  All
-    ;; others inherit from basic faces.
     `(doom-modeline-bar ((,c :background ,bg-accent)))
+    `(doom-modeline-bar-inactive ((,c :background ,bg-alt)))
+    `(doom-modeline-battery-charging ((,c :foreground ,modeline-info)))
+    `(doom-modeline-battery-critical ((,c :underline t :foreground ,modeline-err)))
+    `(doom-modeline-battery-error ((,c :underline t :foreground ,modeline-err)))
+    `(doom-modeline-battery-full (( )))
+    `(doom-modeline-battery-warning ((,c :inherit bold :foreground ,modeline-warning)))
+    `(doom-modeline-buffer-file ((,c :inherit bold)))
+    `(doom-modeline-buffer-major-mode (( )))
+    `(doom-modeline-buffer-minor-mode (( )))
+    `(doom-modeline-buffer-modified ((,c :foreground ,modeline-err)))
+    `(doom-modeline-buffer-path (( )))
+    `(doom-modeline-evil-emacs-state ((,c :inherit italic)))
+    `(doom-modeline-evil-insert-state ((,c :foreground ,modeline-info)))
+    `(doom-modeline-evil-motion-state (( )))
+    `(doom-modeline-evil-normal-state (( )))
+    `(doom-modeline-evil-operator-state ((,c :inherit bold)))
+    `(doom-modeline-evil-replace-state ((,c :inherit bold :foreground ,modeline-err)))
+    `(doom-modeline-evil-visual-state ((,c :inherit bold :foreground ,modeline-warning)))
+    `(doom-modeline-info ((,c :inherit bold :foreground ,modeline-info)))
+    `(doom-modeline-input-method (( )))
+    `(doom-modeline-lsp-error ((,c :inherit bold-italic)))
+    `(doom-modeline-lsp-running (( )))
+    `(doom-modeline-lsp-success ((,c :inherit bold :foreground ,modeline-info)))
+    `(doom-modeline-lsp-warning ((,c :inherit bold :foreground ,modeline-warning)))
+    `(doom-modeline-notification ((,c :inherit mode-line-emphasis :foreground ,modeline-err)))
+    `(doom-modeline-project-dir (( )))
+    `(doom-modeline-project-parent-dir (( )))
+    `(doom-modeline-project-root-dir (( )))
+    `(doom-modeline-repl-success ((,c :inherit bold :foreground ,modeline-info)))
+    `(doom-modeline-repl-warning ((,c :inherit bold :foreground ,modeline-warning)))
+    `(doom-modeline-time (( )))
+    `(doom-modeline-urgent ((,c :inherit bold-italic :foreground ,modeline-err)))
+    `(doom-modeline-warning ((,c :inherit bold :foreground ,modeline-warning)))
 ;;;; ediff
     `(ediff-current-diff-A ((,c :inherit diff-removed)))
     `(ediff-current-diff-Ancestor ((,c :background ,bg-region))) ; TODO 2022-08-14: Needs review
@@ -915,13 +974,78 @@ Helper function for `ef-themes-preview-colors'."
     `(git-rebase-comment-heading  ((,c :inherit (bold font-lock-comment-face))))
     `(git-rebase-description ((,c :foreground ,fg-main)))
     `(git-rebase-hash ((,c :foreground ,constant)))
-;;;; gnus WORK-IN-PROGRESS
-    `(gnus-emphasis-highlight-words ((,c :background ,bg-alt :foreground ,warning)))
+;;;; gnus
+    `(gnus-button ((,c :inherit button)))
+    `(gnus-cite-1 ((,c :inherit message-cited-text-1)))
+    `(gnus-cite-2 ((,c :inherit message-cited-text-2)))
+    `(gnus-cite-3 ((,c :inherit message-cited-text-3)))
+    `(gnus-cite-4 ((,c :inherit message-cited-text-4)))
+    `(gnus-cite-5 ((,c :inherit message-cited-text-1)))
+    `(gnus-cite-6 ((,c :inherit message-cited-text-2)))
+    `(gnus-cite-7 ((,c :inherit message-cited-text-3)))
+    `(gnus-cite-8 ((,c :inherit message-cited-text-4)))
+    `(gnus-cite-9 ((,c :inherit message-cited-text-1)))
+    `(gnus-cite-10 ((,c :inherit message-cited-text-2)))
+    `(gnus-cite-11 ((,c :inherit message-cited-text-3)))
+    `(gnus-cite-attribution ((,c :inherit italic)))
+    `(gnus-emphasis-bold ((,c :inherit bold)))
+    `(gnus-emphasis-bold-italic ((,c :inherit bold-italic)))
+    `(gnus-emphasis-highlight-words ((,c :inherit warning)))
+    `(gnus-emphasis-italic ((,c :inherit italic)))
+    `(gnus-emphasis-underline-bold ((,c :inherit gnus-emphasis-bold :underline t)))
+    `(gnus-emphasis-underline-bold-italic ((,c :inherit gnus-emphasis-bold-italic :underline t)))
+    `(gnus-emphasis-underline-italic ((,c :inherit gnus-emphasis-italic :underline t)))
+    `(gnus-group-mail-1 ((,c :inherit bold :foreground ,rainbow-1)))
+    `(gnus-group-mail-1-empty ((,c :foreground ,rainbow-1)))
+    `(gnus-group-mail-2 ((,c :inherit bold :foreground ,rainbow-2)))
+    `(gnus-group-mail-2-empty ((,c :foreground ,rainbow-2)))
+    `(gnus-group-mail-3 ((,c :inherit bold :foreground ,rainbow-3)))
+    `(gnus-group-mail-3-empty ((,c :foreground ,rainbow-3)))
+    `(gnus-group-mail-low ((,c :inherit bold :foreground ,fg-alt)))
+    `(gnus-group-mail-low-empty ((,c :foreground ,fg-alt)))
+    `(gnus-group-news-1 ((,c :inherit bold :foreground ,rainbow-1)))
+    `(gnus-group-news-1-empty ((,c :foreground ,rainbow-1)))
+    `(gnus-group-news-2 ((,c :inherit bold :foreground ,rainbow-2)))
+    `(gnus-group-news-2-empty ((,c :foreground ,rainbow-2)))
+    `(gnus-group-news-3 ((,c :inherit bold :foreground ,rainbow-3)))
+    `(gnus-group-news-3-empty ((,c :foreground ,rainbow-3)))
+    `(gnus-group-news-4 ((,c :inherit bold :foreground ,rainbow-4)))
+    `(gnus-group-news-4-empty ((,c :foreground ,rainbow-4)))
+    `(gnus-group-news-5 ((,c :inherit bold :foreground ,rainbow-5)))
+    `(gnus-group-news-5-empty ((,c :foreground ,rainbow-5)))
+    `(gnus-group-news-6 ((,c :inherit bold :foreground ,rainbow-6)))
+    `(gnus-group-news-6-empty ((,c :foreground ,rainbow-6)))
+    `(gnus-group-news-low ((,c :inherit bold :foreground ,fg-alt)))
+    `(gnus-group-news-low-empty ((,c :foreground ,fg-alt)))
     `(gnus-header-content ((,c :inherit message-header-other)))
     `(gnus-header-from ((,c :inherit message-header-to :underline nil)))
     `(gnus-header-name ((,c :inherit message-header-name)))
     `(gnus-header-newsgroups ((,c :inherit message-header-newsgroups)))
     `(gnus-header-subject ((,c :inherit message-header-subject)))
+    `(gnus-server-agent ((,c :inherit bold)))
+    `(gnus-server-closed ((,c :inherit italic)))
+    `(gnus-server-cloud ((,c :inherit bold :foreground ,fg-alt)))
+    `(gnus-server-cloud-host ((,c :inherit bold :foreground ,fg-alt :underline t)))
+    `(gnus-server-denied ((,c :inherit error)))
+    `(gnus-server-offline ((,c :inherit shadow)))
+    `(gnus-server-opened ((,c :inherit success)))
+    `(gnus-summary-cancelled ((,c :background ,bg-warning :foreground ,warning :extend t)))
+    `(gnus-summary-high-ancient ((,c :inherit bold :foreground ,fg-alt)))
+    `(gnus-summary-high-read ((,c :inherit bold :foreground ,fg-dim)))
+    `(gnus-summary-high-ticked ((,c :inherit bold :foreground ,err)))
+    `(gnus-summary-high-undownloaded ((,c :inherit bold-italic :foreground ,warning)))
+    `(gnus-summary-high-unread ((,c :inherit bold)))
+    `(gnus-summary-low-ancient ((,c :inherit italic)))
+    `(gnus-summary-low-read ((,c :inherit (shadow italic))))
+    `(gnus-summary-low-ticked ((,c :inherit italic :foreground ,err)))
+    `(gnus-summary-low-undownloaded ((,c :inherit italic :foreground ,warning)))
+    `(gnus-summary-low-unread ((,c :inherit italic)))
+    `(gnus-summary-normal-ancient (( )))
+    `(gnus-summary-normal-read ((,c :inherit shadow)))
+    `(gnus-summary-normal-ticked ((,c :foreground ,err)))
+    `(gnus-summary-normal-undownloaded ((,c :foreground ,warning)))
+    `(gnus-summary-normal-unread (( )))
+    `(gnus-summary-selected ((,c :inherit highlight)))
 ;;;; image-dired
     `(image-dired-thumb-flagged ((,c :background ,err)))
     `(image-dired-thumb-mark ((,c :background ,info)))
@@ -939,8 +1063,8 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; isearch, occur, and the like
     `(isearch ((,c :background ,bg-yellow :foreground ,fg-intense)))
     `(isearch-fail ((,c :background ,bg-red :foreground ,fg-intense)))
-    `(isearch-group-1 ((,c :background ,bg-magenta :foreground ,fg-intense)))
-    `(isearch-group-2 ((,c :background ,bg-green :foreground ,fg-intense)))
+    `(isearch-group-1 ((,c :background ,bg-green :foreground ,fg-intense)))
+    `(isearch-group-2 ((,c :background ,bg-magenta :foreground ,fg-intense)))
     `(lazy-highlight ((,c :background ,bg-blue :foreground ,fg-intense)))
     `(match ((,c :background ,bg-alt :foreground ,fg-intense)))
     `(query-replace ((,c :background ,bg-red :foreground ,fg-intense)))
@@ -965,8 +1089,8 @@ Helper function for `ef-themes-preview-colors'."
     ;; scale when using `text-scale-adjust'.
     `(line-number ((,c :inherit (ef-themes-fixed-pitch shadow default))))
     `(line-number-current-line ((,c :inherit (bold line-number) :foreground ,fg-intense)))
-    `(line-number-major-tick ((,c :inherit line-number :background ,bg-alt :foreground ,info)))
-    `(line-number-minor-tick ((,c :inherit line-number :background ,bg-dim :foreground ,warning)))
+    `(line-number-major-tick ((,c :inherit (bold line-number) :foreground ,rainbow-0)))
+    `(line-number-minor-tick ((,c :inherit (bold line-number))))
 ;;;; magit
     `(magit-bisect-bad ((,c :inherit error)))
     `(magit-bisect-good ((,c :inherit success)))
@@ -1015,8 +1139,8 @@ Helper function for `ef-themes-preview-colors'."
     `(magit-log-author ((,c :foreground ,name)))
     `(magit-log-date ((,c :foreground ,date)))
     `(magit-log-graph ((,c :inherit shadow)))
-    `(magit-mode-line-process ((,c :inherit bold)))
-    `(magit-mode-line-process-error ((,c :inherit bold-italic)))
+    `(magit-mode-line-process ((,c :inherit bold :foreground ,modeline-info)))
+    `(magit-mode-line-process-error ((,c :inherit bold :foreground ,modeline-err)))
     `(magit-process-ng ((,c :inherit error)))
     `(magit-process-ok ((,c :inherit success)))
     `(magit-reflog-amend ((,c :inherit warning)))
@@ -1128,7 +1252,7 @@ Helper function for `ef-themes-preview-colors'."
     `(mode-line ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-mode-line :foreground ,fg-mode-line)))
     `(mode-line-active ((,c :inherit mode-line)))
     `(mode-line-buffer-id ((,c :inherit bold)))
-    `(mode-line-emphasis ((,c :inherit bold-italic)))
+    `(mode-line-emphasis ((,c :inherit bold :foreground ,modeline-info)))
     `(mode-line-highlight ((,c :inherit highlight)))
     `(mode-line-inactive ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-alt :foreground ,fg-dim)))
 ;;;; mu4e
@@ -1207,25 +1331,25 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; org
     `(org-agenda-calendar-event ((,c :foreground ,fg-alt)))
     `(org-agenda-calendar-sexp ((,c :inherit (italic org-agenda-calendar-event))))
-    `(org-agenda-clocking ((,c :background ,bg-alt :foreground ,red-warmer)))
+    `(org-agenda-clocking ((,c :background ,bg-warning :foreground ,warning)))
     `(org-agenda-column-dateline ((,c :background ,bg-alt)))
     `(org-agenda-current-time ((,c :foreground ,variable)))
-    `(org-agenda-date ((,c :inherit ef-themes-heading-3)))
+    `(org-agenda-date ((,c :inherit ef-themes-heading-1)))
     `(org-agenda-date-today ((,c :inherit org-agenda-date :underline t)))
     `(org-agenda-date-weekend ((,c :inherit org-agenda-date)))
     `(org-agenda-date-weekend-today ((,c :inherit org-agenda-date-today)))
     `(org-agenda-diary ((,c :inherit org-agenda-calendar-sexp)))
     `(org-agenda-dimmed-todo-face ((,c :inherit shadow)))
     `(org-agenda-done ((,c :inherit success)))
-    `(org-agenda-filter-category ((,c :inherit bold)))
-    `(org-agenda-filter-effort ((,c :inherit bold)))
-    `(org-agenda-filter-regexp ((,c :inherit bold)))
-    `(org-agenda-filter-tags ((,c :inherit bold)))
+    `(org-agenda-filter-category ((,c :inherit bold :foreground ,modeline-err)))
+    `(org-agenda-filter-effort ((,c :inherit bold :foreground ,modeline-err)))
+    `(org-agenda-filter-regexp ((,c :inherit bold :foreground ,modeline-err)))
+    `(org-agenda-filter-tags ((,c :inherit bold :foreground ,modeline-err)))
     `(org-agenda-restriction-lock ((,c :background ,bg-dim :foreground ,fg-dim)))
     `(org-agenda-structure ((,c :inherit ef-themes-heading-0)))
-    `(org-agenda-structure-filter ((,c :inherit (warning org-agenda-structure))))
+    `(org-agenda-structure-filter ((,c :inherit org-agenda-structure :foreground ,rainbow-1)))
     `(org-agenda-structure-secondary ((,c :foreground ,rainbow-1)))
-    `(org-archived ((,c :background ,bg-alt :foreground ,fg-alt)))
+    `(org-archived ((,c :background ,bg-alt :foreground ,fg-main)))
     `(org-block ((,c :inherit ef-themes-fixed-pitch :background ,bg-inactive :extend t)))
     `(org-block-begin-line ((,c :inherit (shadow ef-themes-fixed-pitch) :background ,bg-dim :extend t)))
     `(org-block-end-line ((,c :inherit org-block-begin-line)))
@@ -1266,7 +1390,7 @@ Helper function for `ef-themes-preview-colors'."
     `(org-macro ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-2)))
     `(org-meta-line ((,c :inherit (shadow ef-themes-fixed-pitch))))
     `(org-mode-line-clock (( )))
-    `(org-mode-line-clock-overrun ((,c :inherit bold :foreground ,err)))
+    `(org-mode-line-clock-overrun ((,c :inherit bold :foreground ,modeline-err)))
     `(org-priority ((,c :foreground ,fg-alt)))
     `(org-property-value ((,c :inherit ef-themes-fixed-pitch :foreground ,fg-alt)))
     `(org-quote ((,c :inherit org-block)))
@@ -1300,7 +1424,6 @@ Helper function for `ef-themes-preview-colors'."
     `(org-modern-date-active ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-alt)))
     `(org-modern-date-inactive ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-dim :foreground ,fg-dim)))
     `(org-modern-done ((,c :inherit org-modern-label :background ,bg-info :foreground ,info)))
-    `(org-modern-label (( )))
     `(org-modern-priority ((,c :inherit (org-modern-label org-priority) :background ,bg-dim)))
     `(org-modern-statistics ((,c :inherit org-modern-label :background ,bg-dim)))
     `(org-modern-tag ((,c :inherit (org-modern-label org-tag) :background ,bg-dim)))
@@ -1360,19 +1483,22 @@ Helper function for `ef-themes-preview-colors'."
     `(rcirc-dim-nick ((,c :inherit shadow)))
     `(rcirc-monospace-text ((,c :inherit fixed-pitch)))
     `(rcirc-my-nick ((,c :inherit bold :foreground ,accent-1)))
-    `(rcirc-nick-in-message ((,c :inherit warning)))
-    `(rcirc-nick-in-message-full-line ((,c :inherit italic)))
+    `(rcirc-nick-in-message ((,c :inherit rcirc-my-nick)))
+    `(rcirc-nick-in-message-full-line ((,c :inherit rcirc-my-nick)))
     `(rcirc-other-nick ((,c :inherit bold :foreground ,accent-0)))
     `(rcirc-prompt ((,c :inherit minibuffer-prompt)))
-    `(rcirc-server ((,c :inherit shadow)))
+    `(rcirc-server ((,c :inherit font-lock-comment-face)))
     `(rcirc-timestamp ((,c :foreground ,date)))
-    `(rcirc-track-keyword ((,c :inherit bold)))
-    `(rcirc-track-nick ((,c :inherit warning)))
+    `(rcirc-track-keyword ((,c :inherit bold :foreground ,modeline-warning)))
+    `(rcirc-track-nick ((,c :inherit rcirc-my-nick)))
     `(rcirc-url ((,c :inherit link)))
+;;;; recursion-indicator
+    `(recursion-indicator-general ((,c :foreground ,modeline-err)))
+    `(recursion-indicator-minibuffer ((,c :foreground ,modeline-info)))
 ;;;; regexp-builder (re-builder)
     `(reb-match-0 ((,c :background ,bg-cyan :foreground ,fg-intense)))
-    `(reb-match-1 ((,c :background ,bg-magenta :foreground ,fg-intense)))
-    `(reb-match-2 ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(reb-match-1 ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(reb-match-2 ((,c :background ,bg-magenta :foreground ,fg-intense)))
     `(reb-match-3 ((,c :background ,bg-yellow :foreground ,fg-intense)))
     `(reb-regexp-grouping-backslash ((,c :inherit font-lock-regexp-grouping-backslash)))
     `(reb-regexp-grouping-construct ((,c :inherit font-lock-regexp-grouping-construct)))
@@ -1387,6 +1513,12 @@ Helper function for `ef-themes-preview-colors'."
     `(ruler-mode-margins ((,c :inherit ruler-mode-default :foreground ,bg-main)))
     `(ruler-mode-pad ((,c :inherit ruler-mode-default :background ,bg-alt :foreground ,fg-dim)))
     `(ruler-mode-tab-stop ((,c :inherit ruler-mode-default :foreground ,yellow)))
+;;;; selectrum
+    `(selectrum-completion-annotation ((,c :inherit completions-annotations)))
+    `(selectrum-completion-docsig ((,c :inherit completions-annotations)))
+    `(selectrum-current-candidate ((,c :background ,bg-completion)))
+    `(selectrum-group-title ((,c :inherit bold :foreground ,name)))
+    `(selectrum-mouse-highlight ((,c :inherit highlight)))
 ;;;; show-paren-mode
     `(show-paren-match ((,c :background ,bg-paren :foreground ,fg-intense)))
     `(show-paren-match-expression ((,c :background ,bg-alt)))
@@ -1468,17 +1600,19 @@ Helper function for `ef-themes-preview-colors'."
     `(transient-unreachable-key ((,c :inherit shadow)))
     `(transient-value ((,c :inherit success :background ,bg-info)))
 ;;;; vc (vc-dir.el, vc-hooks.el)
-    `(vc-dir-directory ((,c :foreground ,accent-0)))
+    `(vc-dir-directory (( )))
     `(vc-dir-file ((,c :foreground ,name)))
-    `(vc-dir-header ((,c :foreground ,accent-1)))
-    `(vc-dir-header-value ((,c :foreground ,accent-2)))
-    `(vc-dir-mark-indicator ((,c :inherit success)))
-    `(vc-dir-status-edited ((,c :inherit warning)))
+    `(vc-dir-header ((,c :inherit bold)))
+    `(vc-dir-header-value ((,c :foreground ,string)))
+    `(vc-dir-mark-indicator ((,c :foreground ,fg-intense)))
+    `(vc-dir-status-edited ((,c :inherit italic)))
     `(vc-dir-status-ignored ((,c :inherit shadow)))
-    `(vc-dir-status-up-to-date (( )))
+    `(vc-dir-status-up-to-date ((,c :foreground ,info)))
     `(vc-dir-status-warning ((,c :inherit error)))
     `(vc-conflict-state ((,c :inherit error)))
     `(vc-edited-state ((,c :inherit italic)))
+    `(vc-git-log-edit-summary-max-warning ((,c :background ,bg-err :foreground ,err)))
+    `(vc-git-log-edit-summary-target-warning ((,c :background ,bg-warning :foreground ,warning)))
     `(vc-locally-added-state ((,c :inherit italic)))
     `(vc-locked-state ((,c :inherit success)))
     `(vc-missing-state ((,c :inherit error)))

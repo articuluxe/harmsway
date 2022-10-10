@@ -1,4 +1,4 @@
-;;; ef-night-theme.el --- Legible dark theme -*- lexical-binding:t -*-
+;;; ef-night-theme.el --- Legible dark theme with mostly green, blue, purple colors -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022  Free Software Foundation, Inc.
 
@@ -37,7 +37,7 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-night "Legible dark theme.")
+  (deftheme ef-night "Legible dark theme with mostly green, blue, purple colors.")
 
   (defconst ef-night-palette
     '(;; Basic tones
@@ -82,7 +82,7 @@
       (bg-green    "#20a020")
       (bg-yellow   "#904f30")
       (bg-blue     "#2f439f")
-      (bg-magenta  "#c040cf")
+      (bg-magenta  "#b04fcf")
       (bg-cyan     "#027080")
 
       (bg-red-subtle      "#6a002a")
@@ -124,10 +124,10 @@
       (bg-accent     "#ff9270") (fg-accent     "#000000")
       (bg-completion "#00314f")
       (bg-hover      "#6f345a")
-      (bg-hover-alt  "#664f4a")
+      (bg-hover-alt  "#493737")
       (bg-hl-line    "#002255")
       (bg-region     "#222f40")
-      (bg-paren      "#703350")
+      (bg-paren      "#664950")
       (bg-err        "#331419") ; check with err
       (bg-warning    "#332613") ; check with warning
       (bg-info       "#00251f") ; check with info
@@ -136,16 +136,21 @@
       (cursor        "#00ccff")
       (fg-intense    "#ffffff")
 
+      (modeline-err     "#ff8faf")
+      (modeline-warning "#dfcf00")
+      (modeline-info    "#00e06f")
+
       ;; Mappings
       (err red)
       (warning yellow-warmer)
       (info green-cooler)
 
-      (link cyan)
+      (link cyan-warmer)
       (link-alt magenta)
       (date cyan)
       (name blue-warmer)
       (keybind green-cooler)
+      (prompt cyan-cooler)
 
       (builtin green-cooler)
       (comment yellow-faint)
@@ -156,7 +161,7 @@
       (docstring cyan-faint)
       (string blue-cooler)
       (type magenta-cooler)
-      (variable cyan-warmer)
+      (variable cyan)
 
       (rx-escape green) ; compare with `string'
       (rx-construct magenta-warmer)

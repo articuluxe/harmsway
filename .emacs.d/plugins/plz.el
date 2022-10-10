@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.2
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: comm, network, http
 
@@ -654,9 +654,12 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
                  (`nil (signal 'plz-curl-error err))
                  ((pred functionp) (funcall plz-else err)))))
 
-            ("killed\n"
-             ;; Curl process killed.
-             (let ((err (make-plz-error :message "curl process killed")))
+            ((and (or "killed\n" "interrupt\n") status)
+             ;; Curl process killed or interrupted.
+             (let* ((message (pcase status
+                               ("killed\n" "curl process killed")
+                               ("interrupt\n" "curl process interrupted")))
+                    (err (make-plz-error :message message)))
                (pcase-exhaustive plz-else
                  (`nil (signal 'plz-curl-error err))
                  ((pred functionp) (funcall plz-else err)))))))

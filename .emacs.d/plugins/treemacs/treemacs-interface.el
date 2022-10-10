@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021 Alexander Miller
+;; Copyright (C) 2022 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -122,7 +122,8 @@ them instead."
    :on-tag-node-open    (treemacs--collapse-tag-node btn arg)
    :on-tag-node-closed  (treemacs--expand-tag-node btn arg)
    :on-tag-node-leaf    (progn (other-window 1) (treemacs--goto-tag btn))
-   :on-nil              (treemacs-pulse-on-failure "There is nothing to do here.")))
+   :on-nil              (treemacs-pulse-on-failure "There is nothing to do here.")
+   :fallback            (treemacs-TAB-action)))
 
 (defun treemacs-toggle-node-prefer-tag-visit (&optional arg)
   "Same as `treemacs-toggle-node' but will visit a tag node in some conditions.
@@ -509,7 +510,8 @@ With a prefix ARG substract the increment value multiple times."
        "Path at point is not a file.")
      (when (file-directory-p path)
        (setf path (treemacs--add-trailing-slash path)))
-     (-let [copied (-> path (file-relative-name (treemacs-project->path project)) (kill-new))]
+     (-let [copied (-> path (file-relative-name (treemacs-project->path project)))]
+       (kill-new copied)
        (treemacs-pulse-on-success "Copied relative path: %s" (propertize copied 'face 'font-lock-string-face))))))
 
 (defun treemacs-copy-project-path-at-point ()
@@ -521,7 +523,8 @@ With a prefix ARG substract the increment value multiple times."
        "There is nothing to copy here")
      (treemacs-error-return-if (not (stringp (treemacs-project->path project)))
        "Project at point is not a file.")
-    (-let [copied (-> project (treemacs-project->path) (kill-new))]
+    (-let [copied (-> project (treemacs-project->path))]
+      (kill-new copied)
       (treemacs-pulse-on-success "Copied project path: %s" (propertize copied 'face 'font-lock-string-face))))))
 
 (defun treemacs-delete-other-windows ()
@@ -708,7 +711,7 @@ For slower scrolling see `treemacs-previous-line-other-window'"
            (treemacs--forget-last-highlight)
            ;; after renaming, delete and redisplay the project
            (goto-char (treemacs-button-end project-btn))
-           (delete-region (point-at-bol) (point-at-eol))
+           (delete-region (line-beginning-position) (line-end-position))
            (treemacs--add-root-element project)
            (when (eq state 'root-node-open)
              (treemacs--collapse-root-node (treemacs-project->position project))
@@ -1264,7 +1267,7 @@ visible."
     (save-excursion
       (goto-char (point-min))
       (while (= 0 (forward-line 1))
-        (-let [new-len (- (point-at-eol) (point-at-bol))]
+        (-let [new-len (- (line-end-position) (line-beginning-position))]
           (when (> new-len longest)
             (setf longest new-len
                   depth (treemacs--prop-at-point :depth))))))

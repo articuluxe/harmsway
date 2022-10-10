@@ -1,4 +1,4 @@
-;;; ef-light-theme.el --- Legible light theme -*- lexical-binding:t -*-
+;;; ef-light-theme.el --- Legible light theme with blue, magenta, cyan, purple colors -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022  Free Software Foundation, Inc.
 
@@ -37,7 +37,7 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-light "Legible light theme.")
+  (deftheme ef-light "Legible light theme with blue, magenta, cyan, purple colors.")
 
   (defconst ef-light-palette
     '(;; Basic tones
@@ -82,7 +82,7 @@
       (bg-green    "#8adf80")
       (bg-yellow   "#fac200")
       (bg-blue     "#cbcfff")
-      (bg-magenta  "#ff9fef")
+      (bg-magenta  "#df8fff")
       (bg-cyan     "#88c8ff")
 
       (bg-red-subtle      "#ffcfbf")
@@ -124,10 +124,10 @@
       (bg-accent     "#0000cc") (fg-accent     "#ffffff")
       (bg-completion "#bfe8ff")
       (bg-hover      "#aaeccf")
-      (bg-hover-alt  "#b4cfff")
+      (bg-hover-alt  "#ccbfff")
       (bg-hl-line    "#e4efd8")
       (bg-region     "#bfefff")
-      (bg-paren      "#efa09f")
+      (bg-paren      "#dfa0f3")
       (bg-err        "#ffd5ea") ; check with err
       (bg-warning    "#ffeabb") ; check with warning
       (bg-info       "#d0efda") ; check with info
@@ -136,16 +136,21 @@
       (cursor        "#0033cc")
       (fg-intense    "#000000")
 
+      (modeline-err     "#9f0000")
+      (modeline-warning "#5f0070")
+      (modeline-info    "#002fa0")
+
       ;; Mappings
       (err red-warmer)
       (warning yellow-warmer)
       (info green)
 
-      (link cyan)
+      (link blue)
       (link-alt magenta)
-      (date cyan)
-      (name blue)
+      (date cyan-cooler)
+      (name magenta-cooler)
       (keybind blue-cooler)
+      (prompt green-cooler)
 
       (builtin magenta)
       (comment yellow-faint)

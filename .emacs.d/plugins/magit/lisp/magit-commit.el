@@ -75,7 +75,7 @@ an error while using those is harder to recover from."
   "Hook run after creating a commit without the user editing a message.
 
 This hook is run by `magit-refresh' if `this-command' is a member
-of `magit-post-stage-hook-commands'.  This only includes commands
+of `magit-post-commit-hook-commands'.  This only includes commands
 named `magit-commit-*' that do *not* require that the user edits
 the commit message in a buffer and then finishes by pressing
 \\<with-editor-mode-map>\\[with-editor-finish].
@@ -613,7 +613,7 @@ See `magit-commit-absorb' for an alternative implementation."
              display-buffer-overriding-action))
         (when magit-commit-diff-inhibit-same-window
           (setq display-buffer-overriding-action
-                '(nil (inhibit-same-window t))))
+                '(nil (inhibit-same-window . t))))
         (magit-diff-setup-buffer rev arg (car (magit-diff-arguments)) nil)))))
 
 (add-hook 'server-switch-hook #'magit-commit-diff)

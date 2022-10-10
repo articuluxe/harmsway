@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 1.9.23
+;; Version: 2.0.53
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -22,7 +22,7 @@
 (define-obsolete-function-alias 'dirvish-go-backward-history #'dirvish-history-go-backward "Jun 08, 2022")
 
 (defvar dirvish-history--ring nil)
-(defun dirvish-history-insert-entry-h (_dv entry buffer)
+(defun dirvish-history-insert-entry-h (entry buffer)
   "Add ENTRY name for BUFFER to `dirvish-history--ring'."
   (let ((entry (if (string-prefix-p "🔍" entry)
                    (buffer-name buffer) entry)))
@@ -49,7 +49,7 @@
           (dirvish--append-metadata
            'file (ring-elements dirvish-history--ring)))
          (result (completing-read "Recently visited: " history-w/metadata)))
-      (when result (dirvish-find-entry-ad result))))
+      (when result (dirvish-find-entry-a result))))
 
 ;;;###autoload
 (defun dirvish-history-last ()
@@ -64,7 +64,7 @@
           for entry in entries
           thereis (and (member entry local-entries)
                        (not (equal entry (dired-current-directory))) entry))))
-    (and match (dirvish-find-entry-ad match))))
+    (and match (dirvish-find-entry-a match))))
 
 ;;;###autoload
 (defun dirvish-history-go-forward (arg)
@@ -74,15 +74,15 @@ ARG defaults to 1."
   (let* ((dv (or (dirvish-curr) (user-error "Not in a dirvish session")))
          (dirs (reverse (mapcar #'car (dv-roots dv))))
          (len (length dirs))
-         (idx (cl-position (car (dv-index-dir dv)) dirs :test #'equal))
+         (idx (cl-position (car (dv-index dv)) dirs :test #'equal))
          (new-idx (+ idx arg)))
     (cond ((>= new-idx len)
-           (dirvish-find-entry-ad (nth (- len 1) dirs))
+           (dirvish-find-entry-a (nth (- len 1) dirs))
            (message "Dirvish: reached the end of history"))
           ((< new-idx 0)
-           (dirvish-find-entry-ad (nth 0 dirs))
+           (dirvish-find-entry-a (nth 0 dirs))
            (message "Dirvish: reached the beginning of history"))
-          (t (dirvish-find-entry-ad (nth new-idx dirs))))))
+          (t (dirvish-find-entry-a (nth new-idx dirs))))))
 
 ;;;###autoload
 (defun dirvish-history-go-backward (arg)

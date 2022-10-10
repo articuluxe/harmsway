@@ -1,4 +1,4 @@
-;;; ef-day-theme.el --- Legible light theme -*- lexical-binding:t -*-
+;;; ef-day-theme.el --- Legible light theme with warm, varied colors (yellow, red, green, purple) -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022  Free Software Foundation, Inc.
 
@@ -37,7 +37,7 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-day "Legible light theme.")
+  (deftheme ef-day "Legible light theme with warm, varied colors (yellow, red, green, purple).")
 
   (defconst ef-day-palette
     '(;; Basic tones
@@ -82,7 +82,7 @@
       (bg-green    "#96df80")
       (bg-yellow   "#efbf00")
       (bg-blue     "#cfceff")
-      (bg-magenta  "#ff9fee")
+      (bg-magenta  "#df9fff")
       (bg-cyan     "#88cfd0")
 
       (bg-red-subtle      "#ffc6bf")
@@ -124,7 +124,7 @@
       (bg-accent     "#106246") (fg-accent     "#ffffff")
       (bg-completion "#ffd5d3")
       (bg-hover      "#b0e0df")
-      (bg-hover-alt  "#febcaf")
+      (bg-hover-alt  "#febccf")
       (bg-hl-line    "#f9e2b2")
       (bg-region     "#f0d2df")
       (bg-paren      "#8fcfdf")
@@ -136,6 +136,10 @@
       (cursor        "#cf1f00")
       (fg-intense    "#000000")
 
+      (modeline-err     "#900000")
+      (modeline-warning "#66008f")
+      (modeline-info    "#1f409f")
+
       ;; Mappings
       (err red-warmer)
       (warning yellow-warmer)
@@ -146,6 +150,7 @@
       (date cyan-cooler)
       (name yellow)
       (keybind red-warmer)
+      (prompt yellow)
 
       (builtin red-cooler)
       (comment green-faint)

@@ -1,6 +1,12 @@
-;;; emacsql-compile.el --- s-expression SQL compiler -*- lexical-binding: t; -*-
+;;; emacsql-compile.el --- S-expression SQL compiler  -*- lexical-binding:t -*-
 
 ;; This is free and unencumbered software released into the public domain.
+
+;; Author: Christopher Wellons <wellons@nullprogram.com>
+;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Homepage: https://github.com/magit/emacsql
+
+;; SPDX-License-Identifier: Unlicense
 
 ;;; Code:
 
@@ -9,7 +15,7 @@
 ;;; Error symbols
 
 (defmacro emacsql-deferror (symbol parents message)
-  "Defines a new error symbol  for EmacSQL."
+  "Defines a new error symbol for EmacSQL."
   (declare (indent 2))
   (let ((conditions (cl-remove-duplicates
                      (append parents (list symbol 'emacsql-error 'error)))))
@@ -53,12 +59,12 @@
   "Single-quote (scalar) STRING for use in a SQL expression."
   (with-temp-buffer
     (insert string)
-    (setf (point) (point-min))
+    (goto-char (point-min))
     (while (re-search-forward "'" nil t)
       (replace-match "''"))
-    (setf (point) (point-min))
+    (goto-char (point-min))
     (insert "'")
-    (setf (point) (point-max))
+    (goto-char (point-max))
     (insert "'")
     (buffer-string)))
 
@@ -374,7 +380,8 @@ string returned is wrapped with parentheses."
       (cl-values (cond
                   ((null format-string) nil)
                   ((>= parent-precedence-value
-                       precedence-value) (format "(%s)" expanded-format-string))
+                       precedence-value)
+                   (format "(%s)" expanded-format-string))
                   (t expanded-format-string))
                  precedence-value))))
 
@@ -516,17 +523,19 @@ Only use within `emacsql-with-params'!"
 (defun emacsql-format (expansion &rest args)
   "Fill in the variables EXPANSION with ARGS."
   (cl-destructuring-bind (format . vars) expansion
-    (apply #'format format
-           (cl-loop for (i . kind) in vars collect
-                    (let ((thing (nth i args)))
-                      (cl-case kind
-                        (:identifier (emacsql-escape-identifier thing))
-                        (:scalar (emacsql-escape-scalar thing))
-                        (:vector (emacsql-escape-vector thing))
-                        (:raw (emacsql-escape-raw thing))
-                        (:schema (emacsql-prepare-schema thing))
-                        (otherwise
-                         (emacsql-error "Invalid var type %S" kind))))))))
+    (let ((print-level nil)
+          (print-length nil))
+      (apply #'format format
+             (cl-loop for (i . kind) in vars collect
+                      (let ((thing (nth i args)))
+                        (cl-case kind
+                          (:identifier (emacsql-escape-identifier thing))
+                          (:scalar (emacsql-escape-scalar thing))
+                          (:vector (emacsql-escape-vector thing))
+                          (:raw (emacsql-escape-raw thing))
+                          (:schema (emacsql-prepare-schema thing))
+                          (otherwise
+                           (emacsql-error "Invalid var type %S" kind)))))))))
 
 (provide 'emacsql-compiler)
 

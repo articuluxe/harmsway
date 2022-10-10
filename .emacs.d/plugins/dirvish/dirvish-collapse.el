@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2022 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 1.9.23
+;; Version: 2.0.53
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -58,24 +58,18 @@
 
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."
-  (:if (and (dirvish-prop :root)
-            (not (dirvish-prop :fd-arglist))
-            (not (dirvish-prop :remote))))
+  :when (and (not (dirvish-prop :fd-arglist))
+             (not (dirvish-prop :remote)))
   (when-let* ((cache (dirvish-collapse--cache f-name))
               (head (car cache))
               (tail (cdr cache)))
-    (let* ((emptyp (eq head 'empty))
-           (o (make-overlay (if emptyp f-beg f-end) f-end)))
-      (if emptyp
-          (overlay-put o 'face 'dirvish-collapse-empty-dir-face)
-        (let* ((str (concat head tail))
-               (len (length str))
-               (remain (max (- remain f-wid) 0))
-               (overflow (< remain len)))
-          (and overflow (setq str (substring str 0 remain)))
-          (and hl-face (add-face-text-property 0 (if overflow remain len) hl-face nil str))
-          (overlay-put o 'after-string str)))
-      o)))
+    (if (eq head 'empty)
+        (let ((ov (make-overlay f-beg f-end)))
+          (overlay-put ov 'face 'dirvish-collapse-empty-dir-face)
+          `(ov . ,ov))
+      (let* ((str (concat head tail)))
+        (add-face-text-property 0 (length str) hl-face nil str)
+        `(left . ,str)))))
 
 (provide 'dirvish-collapse)
 ;;; dirvish-collapse.el ends here

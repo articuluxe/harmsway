@@ -54,6 +54,7 @@
 (require 'edebug)
 (require 'trace)
 (require 'imenu)
+(require 'cc-langs)
 
 (defvar-local helpful--sym nil)
 (defvar-local helpful--callable-p nil)
@@ -1247,7 +1248,8 @@ If the source code cannot be found, return the sexp used."
                     (forward-char)
                     (narrow-to-region pos (point)))
                 ;; Narrow to the top-level definition.
-                (narrow-to-defun t))
+                (let ((parse-sexp-ignore-comments t))
+                  (narrow-to-defun t)))
 
               ;; If there was a preceding comment, POS will be
               ;; after that comment. Move the position to include that comment.
@@ -1376,6 +1378,42 @@ interesting forms in BUF."
                   (throw 'found (scan-sexps (point) -1)))))
           (end-of-file nil))))))
 
+(defun helpful--open-if-needed (path)
+  "Return a list (BUF OPENED) where BUF is a buffer visiting PATH.
+If a buffer already exists, return that. If not, open PATH with
+the `emacs-lisp-mode' syntax table active but skip any hooks."
+  (let ((initial-buffers (buffer-list))
+        (buf nil)
+        (opened nil)
+        ;; Skip running hooks that may prompt the user.
+        (find-file-hook nil)
+        ;; If we end up opening a buffer, don't bother with file
+        ;; variables. It prompts the user, and we discard the buffer
+        ;; afterwards anyway.
+        (enable-local-variables nil))
+    ;; Opening large .c files can be slow (e.g. when looking at
+    ;; `defalias'), especially if the user has configured mode hooks.
+    ;;
+    ;; Bind `auto-mode-alist' to nil, so we open the buffer in
+    ;; `fundamental-mode' if it isn't already open.
+    (let ((auto-mode-alist nil))
+      (setq buf (find-file-noselect path)))
+
+    (unless (-contains-p initial-buffers buf)
+      (setq opened t)
+
+      (let ((syntax-table emacs-lisp-mode-syntax-table))
+        (when (s-ends-with-p ".c" path)
+          (setq syntax-table (make-syntax-table))
+          (c-populate-syntax-table syntax-table))
+
+        ;; If it's a freshly opened buffer, we need to set the syntax
+        ;; table so we can search correctly.
+        (with-current-buffer buf
+          (set-syntax-table syntax-table))))
+
+    (list buf opened)))
+
 (defun helpful--definition (sym callable-p)
   "Return a list (BUF POS OPENED) where SYM is defined.
 
@@ -1385,52 +1423,38 @@ the buffer when done.
 
 POS is the position of the start of the definition within the
 buffer."
-  (let ((initial-buffers (buffer-list))
-        (primitive-p (helpful--primitive-p sym callable-p))
+  (let ((primitive-p (helpful--primitive-p sym callable-p))
         (library-name nil)
+        (src-path nil)
         (buf nil)
         (pos nil)
-        (opened nil)
-        ;; Skip running hooks that may prompt the user.
-        (find-file-hook nil)
-        (after-change-major-mode-hook nil)
-        ;; If we end up opening a buffer, don't bother with file
-        ;; variables. It prompts the user, and we discard the buffer
-        ;; afterwards anyway.
-        (enable-local-variables nil))
+        (opened nil))
     ;; We shouldn't be called on primitive functions if we don't have
     ;; a directory of Emacs C sourcecode.
     (cl-assert
      (or find-function-C-source-directory
          (not primitive-p)))
 
-    (when (and (symbolp sym) callable-p)
-      (setq library-name (cdr (find-function-library sym))))
+    (when (symbolp sym)
+      (if callable-p
+          (setq library-name (cdr (find-function-library sym)))
+        ;; Based on `find-variable-noselect'.
+        (setq library-name
+              (or
+               (symbol-file sym 'defvar)
+               (help-C-file-name sym 'var)))))
+
+    (when library-name
+      (setq src-path (helpful--library-path library-name)))
 
     (cond
      ((and (not (symbolp sym)) (functionp sym))
       (list nil nil nil))
      ((and callable-p library-name)
-      (-when-let (src-path (helpful--library-path library-name))
-        ;; Opening large .c files can be slow (e.g. when looking at
-        ;; `defalias'), especially if the user has configured mode hooks.
-        ;;
-        ;; Bind `auto-mode-alist' to nil, so we open the buffer in
-        ;; `fundamental-mode' if it isn't already open.
-        (let ((auto-mode-alist nil))
-          ;; Open `src-path' ourselves, so we can widen before searching.
-          (setq buf (find-file-noselect src-path)))
-
-        (unless (-contains-p initial-buffers buf)
-          (setq opened t))
-
-        ;; If it's a freshly opened buffer, we need to switch to the
-        ;; correct mode so we can search correctly. Enable the mode, but
-        ;; don't bother with mode hooks, because we just need the syntax
-        ;; table for searching.
-        (when opened
-          (with-current-buffer buf
-            (delay-mode-hooks (normal-mode t))))
+      (when src-path
+        (-let [(src-buf src-opened) (helpful--open-if-needed src-path)]
+          (setq buf src-buf)
+          (setq opened src-opened))
 
         ;; Based on `find-function-noselect'.
         (with-current-buffer buf
@@ -1457,19 +1481,24 @@ buffer."
                         edebug-info)]
           (setq buf (marker-buffer marker))
           (setq pos (marker-position marker)))))
-     ((not callable-p)
-      (condition-case _err
-          (-let [(sym-buf . sym-pos) (find-definition-noselect sym 'defvar)]
-            (setq buf sym-buf)
-            (unless (-contains-p initial-buffers buf)
-              (setq opened t))
-            (setq pos sym-pos))
-        (search-failed nil)
-        ;; If your current Emacs instance doesn't match the source
-        ;; code configured in find-function-C-source-directory, we can
-        ;; get an error about not finding source. Try
-        ;; `default-tab-width' against Emacs trunk.
-        (error nil))))
+     ((and (not callable-p) src-path)
+      (-let [(src-buf src-opened) (helpful--open-if-needed src-path)]
+        (setq buf src-buf)
+        (setq opened src-opened)
+
+        (with-current-buffer buf
+          ;; `find-function-search-for-symbol' moves point. Prevent
+          ;; that.
+          (save-excursion
+            (condition-case _err
+                (setq pos (cdr (find-variable-noselect sym 'defvar)))
+              (search-failed nil)
+              ;; If your current Emacs instance doesn't match the source
+              ;; code configured in find-function-C-source-directory, we can
+              ;; get an error about not finding source. Try
+              ;; `default-tab-width' against Emacs trunk.
+              (error nil)))))))
+
     (list buf pos opened)))
 
 (defun helpful--reference-positions (sym callable-p buf)

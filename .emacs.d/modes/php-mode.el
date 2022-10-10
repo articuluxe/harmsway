@@ -1,6 +1,6 @@
 ;;; php-mode.el --- Major mode for editing PHP code  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Friends of Emacs-PHP development
+;; Copyright (C) 2022  Friends of Emacs-PHP development
 ;; Copyright (C) 1999, 2000, 2001, 2003, 2004 Turadg Aleahmad
 ;;               2008 Aaron S. Hawley
 ;;               2011, 2012, 2013, 2014, 2015, 2016, 2017 Eric James Michael Ritz
@@ -9,11 +9,11 @@
 ;; Maintainer: USAMI Kenta <tadsan@zonu.me>
 ;; URL: https://github.com/emacs-php/php-mode
 ;; Keywords: languages php
-;; Version: 1.24.0
+;; Version: 1.24.1
 ;; Package-Requires: ((emacs "25.2"))
 ;; License: GPL-3.0-or-later
 
-(defconst php-mode-version-number "1.24.0"
+(defconst php-mode-version-number "1.24.1"
   "PHP Mode version number.")
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -82,6 +82,7 @@
   (require 'regexp-opt)
   (defvar add-log-current-defun-header-regexp)
   (defvar add-log-current-defun-function)
+  (defvar c-syntactic-context)
   (defvar c-vsemi-status-unknown-p)
   (defvar syntax-propertize-via-font-lock))
 
@@ -410,7 +411,8 @@ In that case set to `NIL'."
         (left-assoc "and")
         (left-assoc "xor")
         (left-assoc "or")
-        (left-assoc ",")))
+        (left-assoc ",")
+        (left-assoc "=>")))
 
 ;; Allow '\' when scanning from open brace back to defining
 ;; construct like class
@@ -572,9 +574,6 @@ might be to handle switch and goto labels differently."
   php (cl-remove-if (lambda (elm) (and (listp elm) (memq 'c-annotation-face elm)))
                     (c-lang-const c-basic-matchers-after php)))
 
-(c-lang-defconst c-opt-<>-sexp-key
-  php nil)
-
 (defconst php-mode--re-return-typed-closure
   (eval-when-compile
     (rx symbol-start "function" symbol-end
@@ -606,11 +605,39 @@ might be to handle switch and goto labels differently."
 (defun php-lineup-cascaded-calls (langelem)
   "Line up chained methods using `c-lineup-cascaded-calls',
 but only if the setting is enabled."
-  (if php-mode-lineup-cascaded-calls
-      (c-lineup-cascaded-calls langelem)
+  (cond
+   (php-mode-lineup-cascaded-calls (c-lineup-cascaded-calls langelem))
+   ((assq 'arglist-cont-nonempty c-syntactic-context) nil)
+   ((assq 'defun-block-intro c-syntactic-context) nil)
+   ((assq 'defun-close c-syntactic-context) nil)
+   ((assq 'statement-cont c-syntactic-context) nil)
+   (t
     (save-excursion
       (beginning-of-line)
-      (if (looking-at-p "\\s-*->") '+ nil))))
+      (let ((beginning-of-langelem (cdr langelem))
+            (beginning-of-current-line (point))
+            start)
+        (skip-chars-forward " 	")
+        (cond
+         ((looking-at-p "->") '+)
+         ((looking-at-p "[:?]") '+)
+         ((looking-at-p "[,;]") nil)
+         ;; Is the previous line terminated with `,' ?
+         ((progn
+            (forward-line -1)
+            (end-of-line)
+            (skip-chars-backward " 	")
+            (backward-char 1)
+            (while (and (< beginning-of-langelem (point))
+                        (setq start (php-in-string-or-comment-p)))
+              (goto-char start)
+              (skip-chars-backward " 	")
+              (backward-char 1))
+            (and (not (eq (point) beginning-of-current-line))
+                 (not (looking-at-p ","))
+                 (not (php-in-string-or-comment-p))))
+          '+)
+         (t nil)))))))
 
 (defun php-c-looking-at-or-maybe-in-bracelist (&optional _containing-sexp lim)
   "Replace `c-looking-at-or-maybe-in-bracelist'.
@@ -898,8 +925,8 @@ This is was done due to the problem reported here:
 (defun php-lineup-string-cont (langelem)
   "Line up string toward equal sign or dot.
 e.g.
-$str = 'some'
-     . 'string';
+$str \= \'some\'
+     . \'string\';
 this ^ lineup"
   (save-excursion
     (goto-char (cdr langelem))

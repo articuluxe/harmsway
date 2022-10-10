@@ -461,7 +461,7 @@ or (NAME val VAL), for values.")
     purecopy copy-sequence copy-alist copy-tree
     flatten-tree
     member-ignore-case
-    last butlast number-sequence
+    last butlast number-sequence take
     plist-get plist-member
     1value
     consp atom stringp symbolp listp nlistp booleanp keywordp
@@ -482,7 +482,8 @@ help in evaluating more regexp strings.")
     (delete   . remove)
     (delq     . remq)
     (nreverse . reverse)
-    (nbutlast . butlast))
+    (nbutlast . butlast)
+    (ntake    . take))
 "Alist mapping non-safe functions to semantically equivalent safe
 alternatives.")
 
@@ -501,7 +502,7 @@ alternatives.")
 alternatives. They may still require wrapping their function arguments.")
 
 (defun relint--rx-safe (rx)
-  "Return RX safe to translate; throw 'relint-eval 'no-value if not."
+  "Return RX safe to translate; throw `relint-eval' `no-value' if not."
   (cond
    ((atom rx) rx)
    ;; These cannot contain rx subforms.
@@ -613,8 +614,15 @@ into something that can be called safely."
         (throw 'relint-eval 'no-value)
       nil)))
 
+(defalias 'relint--take
+  (if (fboundp 'take)
+      #'take
+    (lambda (n list)
+      "The N first elements of LIST."
+      (cl-loop repeat n for x in list collect x))))
+
 (defun relint--eval (form)
-  "Evaluate a form. Throw 'relint-eval 'no-value if something could
+  "Evaluate a form. Throw `relint-eval' `no-value' if something could
 not be evaluated safely."
   (if (atom form)
       (cond
@@ -674,11 +682,11 @@ not be evaluated safely."
        ;; alist-get: wrap the optional fifth argument (testfn).
        ((eq head 'alist-get)
         (let* ((all-args (mapcar #'relint--eval body))
-               (args (if (< (length all-args) 5)
+               (testfn (nth 4 all-args))
+               (args (if testfn
                          all-args
-                       (append (butlast all-args (- (length all-args) 4))
-                               (list (relint--wrap-function
-                                      (nth 4 all-args)))))))
+                       (append (relint--take 4 all-args)
+                               (list (relint--wrap-function testfn))))))
           (condition-case nil
               (apply head args)
             (error (throw 'relint-eval 'no-value)))))
@@ -753,13 +761,18 @@ not be evaluated safely."
                      \` backquote-list*
                      letrec
                      cl-case cl-loop cl-block cl-flet cl-flet* cl-labels))
-        (relint--eval (macroexpand-1 form)))
+        (relint--eval
+         ;; Suppress any warning message arising from macro-expansion;
+         ;; it will just confuse the user and we can't give a good location.
+         (let ((inhibit-message t))
+           (macroexpand-1 form))))
 
        ;; Expanding pcase can fail if it uses user-defined pcase macros.
        ((memq head '(pcase pcase-let pcase-let* pcase--flip))
         (relint--eval
          (condition-case nil
-             (macroexpand-1 form)
+             (let ((inhibit-message t))
+               (macroexpand-1 form))
            (error (throw 'relint-eval 'no-value)))))
 
        ;; catch: as long as nobody throws, this naïve code is fine.
@@ -1047,7 +1060,8 @@ evaluated are nil."
     (relint--eval-list (cadr form)))
 
    ((memq (car form) '(\` backquote-list*))
-    (relint--eval-list (macroexpand-1 form)))
+    (relint--eval-list (let ((inhibit-message t))
+                         (macroexpand-1 form))))
 
    ((assq (car form) relint--safe-alternatives)
     (relint--eval-list (cons (cdr (assq (car form) relint--safe-alternatives))

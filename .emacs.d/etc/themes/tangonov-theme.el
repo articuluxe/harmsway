@@ -7,7 +7,7 @@
 ;; URL: https://sr.ht/~trevdev/tangonov-theme/
 ;; Created: 20th July, 2022
 ;; Keywords: faces, theme, dark, fringe
-;; Version: 1.4.4
+;; Version: 1.4.5
 ;; Package-Requires: ((emacs "25"))
 
 ;; License: GPL3
@@ -206,6 +206,13 @@ Alpha should be a float between 0 and 1."
    `(ansi-color-red ((,spec (:foreground ,red :background ,red))))
    `(ansi-color-white ((,spec (:foreground ,fg :background ,fg))))
    `(ansi-color-yellow ((,spec (:foreground ,yellow :background ,yellow))))
+   `(anzu-mode-line ((,spec (:foreground ,yellow :weight bold))))
+   `(anzu-mode-line-no-match ((,spec (:foreground ,red :weight bold))))
+   `(anzu-replace-highlight
+     ((,spec (:foreground ,yellow :background
+                          ,(tangonov-darken yellow 0.7) :strike-through t))))
+   `(anzu-replace-to ((,spec (:foreground ,cyan :background
+                                          ,(tangonov-darken cyan 0.5)))))
    `(avy-goto-char-timer-face
      ((,spec (:inherit 'isearch))))
    `(avy-background-face ((,spec (:foreground ,(tangonov-darken bg 0.2)))))
@@ -219,14 +226,23 @@ Alpha should be a float between 0 and 1."
      ((,spec (:inherit 'avy-lead-face :foreground
                        ,(tangonov-darken yellow 0.6)))))
    `(company-echo-common ((,spec (:foreground ,cyan))))
+   `(company-preview ((,spec (:inherit 'highlight :foreground ,fg-alt))))
+   `(company-preview-common
+     ((,spec (:inherit 'company-preview :foreground ,magenta))))
+   `(company-preview-search
+     ((,spec (:inherit 'company-preview :foreground ,cyan))))
+   `(company-scrollbar-bg ((,spec (:background ,bg-alt))))
+   `(company-scrollbar-fg ((,spec (:background ,magenta))))
+   `(company-template-field ((,spec (:background ,yellow :foreground ,bg))))
    `(company-tooltip ((,spec (:background ,bg))))
-   `(company-tooltip-annotation ((,spec (:foreground ,fg-alt))))
+   `(company-tooltip-annotation ((,spec (:foreground ,yellow))))
    `(company-tooltip-common ((,spec (:foreground ,cyan))))
    `(company-tooltip-common-selection
-     ((,spec (:foreground ,cyan :weight bold))))
+     ((,spec (:foreground ,green :weight bold))))
    `(company-tooltip-scrollbar-thumb ((,spec (:background ,violet))))
    `(company-tooltip-scrollbar-track ((,spec (:background ,bg-alt))))
    `(company-tooltip-selection ((,spec (:inherit bold :background ,gray1))))
+   `(corfu-current ((,spec (:foreground ,fg :background ,gray1 :weight bold))))
    `(css-proprietary-property ((,spec (:foreground ,orange))))
    `(css-property ((,spec (:foreground ,green))))
    `(css-selector ((,spec (:foreground ,blue))))
@@ -302,16 +318,12 @@ Alpha should be a float between 0 and 1."
    `(highlight ((,spec (:background ,gray1 :weight bold))))
    `(match ((,spec (:foreground
                     ,green :background ,(tangonov-darken green 0.5)))))
-   `(region ((,spec (:foreground
-                  ,(if tangonov-selection-foregrounds
-                       cyan
-                     nil)
-                  :background ,(tangonov-darken cyan 0.5)))))
-   `(secondary-selection ((,spec (:foreground
-                               ,(if tangonov-selection-foregrounds
-                                    fg
-                                  nil)
-                               :background ,gray1))))
+   `(region ((,spec (,@(when tangonov-selection-foregrounds
+                         (list :foreground cyan))
+                     :background ,(tangonov-darken cyan 0.5)))))
+   `(secondary-selection ((,spec (,@(when tangonov-selection-foregrounds
+                                      (list :foreground fg))
+                                  :background ,gray1))))
    `(lazy-highlight ((,spec
                       (:foreground ,blue :background
                                    ,(tangonov-darken blue 0.5)))))
@@ -326,6 +338,7 @@ Alpha should be a float between 0 and 1."
    `(line-number-current-line ((,spec (:foreground ,cyan :background ,gray1))))
    `(completions-common-part ((,spec (:foreground ,cyan))))
    `(completions-first-difference ((,spec (:foreground ,yellow))))
+   `(completions-annotations ((,spec (:foreground ,yellow :weight bold))))
    `(trailing-whitespace ((,spec (:background ,red))))
    `(whitespace-trailing ((,spec (:background ,red))))
    `(bookmark-face ((,spec (:foreground ,orange))))
@@ -416,7 +429,7 @@ Alpha should be a float between 0 and 1."
    `(notmuch-search-count ((,spec (:foreground ,gray2))))
    `(notmuch-search-date ((,spec (:foreground ,orange))))
    `(notmuch-search-flagged-face
-     ((,spec (:foreground ,(tangonov-darken red 0.5)))))
+     ((,spec (:foreground ,magenta :weight bold))))
    `(notmuch-search-matching-authors ((,spec (:foreground ,blue))))
    `(notmuch-search-non-matching-authors ((,spec (:foreground ,fg))))
    `(notmuch-search-subject ((,spec (:foreground ,fg))))
@@ -507,6 +520,11 @@ Alpha should be a float between 0 and 1."
    `(hydra-face-amaranth ((,spec (:foreground ,magenta :weight bold))))
    `(hydra-face-pink ((,spec (:foreground ,violet :weight bold))))
    `(hydra-face-teal ((,spec (:foreground ,teal :weight bold))))
+   `(icomplete-section ((,spec (:foreground ,gray3))))
+   `(icomplete-first-match
+     ((,spec (:foreground ,green :weight bold :underline t))))
+   `(icomplete-selected-match
+     ((,spec (:weight bold :underline t :extend t))))
    `(inf-ruby-result-overlay-face
      ((,spec (:foreground ,cyan :background
                           ,bg-alt :box (:line-width 1 :color ,cyan)))))
@@ -540,6 +558,8 @@ Alpha should be a float between 0 and 1."
      ((,spec (:underline (:style wave :color ,yellow) :inherit 'unspecified))))
    `(eglot-highlight-symbol-face ((,spec (:weight bold :background ,gray1))))
    `(eldoc-box-border ((,spec (:background ,fg-alt))))
+   `(lsp-ui-doc-background ((,spec (:background ,bg-alt))))
+   `(lsp-ui-doc-header ((,spec (:foreground ,green :underline t))))
    `(meow-search-indicator ((,spec (:foreground ,yellow :weight bold))))
    `(meow-search-highlight
      ((,spec (:foregound ,fg :background
@@ -551,6 +571,10 @@ Alpha should be a float between 0 and 1."
      ((,spec (:inherit 'mode-line :foreground ,gray2 :background ,bg))))
    `(mode-line-highlight ((,spec (:box (:line-width (2 . 2) :color ,magenta)))))
    `(mode-line-buffer-id ((,spec (:foreground ,fg :weight bold))))
+   `(orderless-match-face-0 ((,spec (:weight bold :foreground ,blue))))
+   `(orderless-match-face-1 ((,spec (:weight bold :foreground ,yellow))))
+   `(orderless-match-face-2 ((,spec (:weight bold :foreground ,magenta))))
+   `(orderless-match-face-3 ((,spec (:weight bold :foreground ,green))))
    `(org-block ((,spec (:background ,bg-alt))))
    `(org-block-background ((,spec (:background ,bg-alt))))
    `(org-block-begin-line ((,spec (:foreground ,gray2 :background ,bg))))
@@ -678,6 +702,9 @@ Alpha should be a float between 0 and 1."
    `(tab-bar ((,spec (:inherit tab-line))))
    `(tab-bar-tab ((,spec (:inherit tab-line-tab))))
    `(tab-bar-tab-inactive ((,spec (:inherit tab-line-tab-inactive))))
+   `(transpose-mark-region-set-face
+     ((,spec (:background
+              ,(tangonov-darken magenta 0.5) :foreground ,magenta :weight bold))))
    `(typescript-jsdoc-tag ((,spec (:foreground ,magenta))))
    `(typescript-jsdoc-type ((,spec (:foreground ,gray3))))
    `(typescript-jsdoc-value ((,spec (:foreground ,cyan))))

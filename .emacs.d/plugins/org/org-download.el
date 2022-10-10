@@ -506,7 +506,8 @@ It's inserted before the image link and is used to annotate it.")
   (interactive "sUrl: ")
   (let* ((link-and-ext (org-download--parse-link link))
          (filename
-          (cond ((and (eq major-mode 'org-mode) (eq org-download-method 'attach))
+          (cond ((and (derived-mode-p 'org-mode)
+                      (eq org-download-method 'attach))
                  (let ((org-download-image-dir (org-attach-dir t))
                        org-download-heading-lvl)
                    (apply #'org-download--fullname link-and-ext)))
@@ -652,7 +653,9 @@ When TIMES isn't nil, delete only TIMES links."
   (save-excursion
     (goto-char beg)
     (while (and (>= (cl-decf times) 0)
-                (re-search-forward "\\[\\[file:\\([^]]*\\)\\]\\]" end t))
+                (and (string-match "\\[\\[\\(\\w+\\)" org-download-link-format)
+                     (let ((link-name (match-string 1 org-download-link-format)))
+                       (re-search-forward (format "\\[\\[%s:\\([^]]*\\)\\]\\]" link-name) end t))))
       (let ((str (match-string-no-properties 1)))
         (delete-region beg
                        (match-end 0))

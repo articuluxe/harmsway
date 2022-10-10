@@ -1,18 +1,20 @@
-;;; emacsql-psql.el --- EmacSQL back-end for PostgreSQL via psql -*- lexical-binding: t; -*-
+;;; emacsql-psql.el --- EmacSQL back-end for PostgreSQL via psql  -*- lexical-binding:t -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Christopher Wellons <wellons@nullprogram.com>
-;; URL: https://github.com/skeeto/emacsql
-;; Version: 1.0.0
+;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Homepage: https://github.com/magit/emacsql
+;; Version: 3.0.0-git
 ;; Package-Requires: ((emacs "25.1") (emacsql "2.0.0"))
+;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This backend uses the standard "psql" command line program.
+;; This package provides an EmacSQL back-end for PostgreSQL, which
+;; uses the standard `psql' command line program.
 
-;; This package also includes the emacsql-pg backend, which is written
-;; in in pure Emacs Lisp and requires no command line program.
+;; (For an alternative back-end for PostgreSQL, see `emacsql-pg'.)
 
 ;;; Code:
 
@@ -41,18 +43,18 @@
                 nil)))
         (error :cannot-execute)))))
 
-(defvar emacsql-psql-reserved
+(defconst emacsql-psql-reserved
   (emacsql-register-reserved
-   '(ALL ANALYSE ANALYZE AND ANY AS ASC AUTHORIZATION BETWEEN BINARY
-     BOTH CASE CAST CHECK COLLATE COLUMN CONSTRAINT CREATE CROSS
-     CURRENT_DATE CURRENT_TIME CURRENT_TIMESTAMP CURRENT_USER DEFAULT
-     DEFERRABLE DESC DISTINCT DO ELSE END EXCEPT FALSE FOR FOREIGN
-     FREEZE FROM FULL GRANT GROUP HAVING ILIKE IN INITIALLY INNER
-     INTERSECT INTO IS ISNULL JOIN LEADING LEFT LIKE LIMIT LOCALTIME
-     LOCALTIMESTAMP NATURAL NEW NOT NOTNULL NULL OFF OFFSET OLD ON
-     ONLY OR ORDER OUTER OVERLAPS PLACING PRIMARY REFERENCES RIGHT
-     SELECT SESSION_USER SIMILAR SOME TABLE THEN TO TRAILING TRUE
-     UNION UNIQUE USER USING VERBOSE WHEN WHERE))
+   '( ALL ANALYSE ANALYZE AND ANY AS ASC AUTHORIZATION BETWEEN BINARY
+      BOTH CASE CAST CHECK COLLATE COLUMN CONSTRAINT CREATE CROSS
+      CURRENT_DATE CURRENT_TIME CURRENT_TIMESTAMP CURRENT_USER DEFAULT
+      DEFERRABLE DESC DISTINCT DO ELSE END EXCEPT FALSE FOR FOREIGN
+      FREEZE FROM FULL GRANT GROUP HAVING ILIKE IN INITIALLY INNER
+      INTERSECT INTO IS ISNULL JOIN LEADING LEFT LIKE LIMIT LOCALTIME
+      LOCALTIMESTAMP NATURAL NEW NOT NOTNULL NULL OFF OFFSET OLD ON
+      ONLY OR ORDER OUTER OVERLAPS PLACING PRIMARY REFERENCES RIGHT
+      SELECT SESSION_USER SIMILAR SOME TABLE THEN TO TRAILING TRUE
+      UNION UNIQUE USER USING VERBOSE WHEN WHERE))
   "List of all of PostgreSQL's reserved words.
 http://www.postgresql.org/docs/7.3/static/sql-keywords-appendix.html")
 
@@ -124,7 +126,7 @@ http://www.postgresql.org/docs/7.3/static/sql-keywords-appendix.html")
 (cl-defmethod emacsql-check-error ((connection emacsql-psql-connection))
   (with-current-buffer (emacsql-buffer connection)
     (let ((case-fold-search t))
-      (setf (point) (point-min))
+      (goto-char (point-min))
       (when (looking-at "error:")
         (let* ((beg (line-beginning-position))
                (end (line-end-position)))
@@ -134,7 +136,7 @@ http://www.postgresql.org/docs/7.3/static/sql-keywords-appendix.html")
   (emacsql-check-error connection)
   (with-current-buffer (emacsql-buffer connection)
     (let ((standard-input (current-buffer)))
-      (setf (point) (point-min))
+      (goto-char (point-min))
       (cl-loop until (looking-at "]")
                collect (read) into row
                when (looking-at "\n")

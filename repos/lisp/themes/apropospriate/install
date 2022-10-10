@@ -1,2 +1,2 @@
-cp src/apropospriate.el ../../../../.emacs.d/plugins
-cp src/apropospriate*theme.el ../../../../.emacs.d/etc/themes
+cp src/apropospriate-theme.el ../../../../.emacs.d/plugins
+cp src/apropospriate-*-theme.el ../../../../.emacs.d/etc/themes

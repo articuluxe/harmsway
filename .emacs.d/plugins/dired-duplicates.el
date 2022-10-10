@@ -200,6 +200,40 @@ The args ARG and NOCONFIRM are passed through from
     (dired-duplicates--post-process-dired-buffer results))
   (message "Reverting buffer complete."))
 
+(when (< emacs-major-version 29)
+  (defun dired-duplicates--do-delete (&optional arg)
+    "Delete all marked (or next ARG) files.
+
+This is the same as `dired-do-delete', but calls
+`dired-duplicates-dired-revert' afterwards."
+    (interactive)
+    (dired-do-delete arg)
+    (dired-duplicates-dired-revert)))
+
+(when (< emacs-major-version 29)
+  (defun dired-duplicates--do-flagged-delete (&optional nomessage)
+    "Delete flagged files.
+
+If NOMESSAGE is non-nil, we don't display any message
+if there are no flagged files.
+
+This is the same as `dired-do-flagged-delete', but calls
+`dired-duplicates-dired-revert' afterwards."
+    (interactive)
+    (dired-do-flagged-delete nomessage)
+    (dired-duplicates-dired-revert)))
+
+(defvar dired-duplicates-map
+  (let ((map (make-sparse-keymap)))
+    ;; workaround for Emacs bug #57565
+    (when (< emacs-major-version 29)
+      (define-key map (kbd "x") 'dired-duplicates--do-flagged-delete)
+      (define-key map (kbd "D") 'dired-duplicates--do-delete))
+    map)
+  "This keymap overrides the default `dired-mode-map'.
+
+It will be local to the `dired-duplicates' buffer.")
+
 ;;;###autoload
 (defun dired-duplicates (directories)
   "Find a list of duplicate files inside one or more DIRECTORIES.
@@ -222,6 +256,8 @@ The results will be shown in a Dired buffer."
         (progn
           (message "Finding duplicate files in %s completed." truncated-dirs)
           (dired (cons "/" (flatten-list results)))
+          (set-keymap-parent dired-duplicates-map (current-local-map))
+          (setf (current-local-map) dired-duplicates-map)
           (setq-local dired-duplicates-directories directories)
           (setq-local revert-buffer-function 'dired-duplicates-dired-revert)
           (dired-duplicates--post-process-dired-buffer results))
