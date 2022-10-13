@@ -1,7 +1,7 @@
 // time_t_decoder.cpp --- pretty print time_t values
 // Author: Dan Harms <enniomore@icloud.com>
 // Created: Thursday, July  2, 2015
-// Modified Time-stamp: <2022-07-21 14:33:39 dharms>
+// Modified Time-stamp: <2022-10-12 21:56:53 dharms>
 // Modified by: Dan Harms
 
 #include <iostream>
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
              << std::put_time(std::localtime(&when), "%c %Z")
              << std::endl;
 
-   return EXIT_SUCCESS;;
+   return EXIT_SUCCESS;
 }
 
 // code ends here
