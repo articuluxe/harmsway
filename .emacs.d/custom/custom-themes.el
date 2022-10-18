@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2021  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2022  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2021-11-30 10:53:15 dharms>
+;; Modified Time-stamp: <2022-10-17 15:14:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -141,6 +141,8 @@
            (custom-theme-set-faces sym '(show-paren-mismatch ((t (:bold t :foreground "#ffffff" :background "#d73a49"))))))
           ((eq sym 'granger)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
+          ((eq sym 'graphite-dark)
+           (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
           ((eq sym 'grayscale)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow2"))))))
           ((eq sym 'green-is-the-new-black)
