@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-09-23 07:37:03 dharms>
+;; Modified Time-stamp: <2022-10-18 11:38:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -395,7 +395,9 @@ not an error if any files do not exist."
 (setq etags-table-search-up-depth nil)  ;we store our tags in a specific dir
 (when (> emacs-major-version 27)
   (setq xref-auto-jump-to-first-definition nil)
-  (setq xref-auto-jump-to-first-xref nil))
+  (setq xref-auto-jump-to-first-xref nil)
+  (if (executable-find "rg")
+      (setq xref-search-program 'ripgrep)))
 
 (when (> emacs-major-version 24)
 
