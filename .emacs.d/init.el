@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-10-18 11:38:29 dharms>
+;; Modified Time-stamp: <2022-10-24 15:29:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2021,7 +2021,7 @@ ARGS are the additional arguments."
   :config
   (rich-minority-mode 1)
   (setq rm-blacklist
-        '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
+        '(" AC" " yas" " Abbrev" " Guide" " Hi" " $" " ,"
           " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
           " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L" " be"
           " counsel" " ivy" " WK" " company"))
@@ -2108,33 +2108,20 @@ ARGS are the additional arguments."
   (setq warning-suppress-types nil))
 (push '(undo discard-info) warning-suppress-types)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar harmsway-undotree-dir (concat my/user-directory "undotree/"))
-(unless (file-directory-p harmsway-undotree-dir)
-  (make-directory harmsway-undotree-dir t))
-(use-package undo-tree
-  :init
-  (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t)
-  (setq undo-tree-visualizer-relative-timestamps nil)
-  (setq undo-tree-enable-undo-in-region nil)
-  (setq undo-tree-auto-save-history t)
-  (setq undo-tree-history-directory-alist
-        `((".*" . ,harmsway-undotree-dir)))
-  (setq undo-tree-incompatible-major-modes
-        '(bookmark-bmenu-mode term-mode shell-mode vterm-mode))
-  :config
-  ;; unset this key for use in other packages
-  (define-key undo-tree-map "\C-_" nil)
-  ;; reset the undo tree history (useful after reverting buffer)
-  (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
-  (global-undo-tree-mode))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package goto-chg
   :bind (([?\C-.] . goto-last-change)
          ("M-' ." . goto-last-change)
          ))
+
+(defun harmsway-goto-last-chg ()
+  "Jump to last change."
+  (interactive)
+  (ignore-errors
+    (let ((inhibit-message t))
+      (undo-only)
+      (undo-redo))))
+(global-set-key "\C-cu" #'harmsway-goto-last-chg)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun tramp-abort ()
