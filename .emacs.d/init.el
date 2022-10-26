@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-10-24 15:29:20 dharms>
+;; Modified Time-stamp: <2022-10-25 14:10:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -396,8 +396,14 @@ not an error if any files do not exist."
 (when (> emacs-major-version 27)
   (setq xref-auto-jump-to-first-definition nil)
   (setq xref-auto-jump-to-first-xref nil)
-  (if (executable-find "rg")
-      (setq xref-search-program 'ripgrep)))
+  (if (executable-find "ugrep")
+      (progn
+        (with-eval-after-load 'xref
+          (push '(ugrep . "xargs -0 ugrep <C> --null -ns -e <R>")
+                xref-search-program-alist)
+          (setq xref-search-program 'ugrep)))
+    (if (or (executable-find "rg") (executable-find "ripgrep"))
+        (setq xref-search-program 'ripgrep))))
 
 (when (> emacs-major-version 24)
 
