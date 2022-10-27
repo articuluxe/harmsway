@@ -1,0 +1,3 @@
+cd src
+cargo xtask install --server
+rustup component add rust-src
