@@ -1,0 +1,2 @@
+cp src/src/*.el ../../../.emacs.d/plugins/flymake
+cp -rf src/src/checkers ../../../.emacs.d/plugins/flymake

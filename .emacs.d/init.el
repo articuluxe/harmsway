@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-10-25 14:10:40 dharms>
+;; Modified Time-stamp: <2022-10-28 17:28:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -67,6 +67,8 @@
                      ,(concat my/plugins-directory "elnode/")
                      ,(concat my/plugins-directory "emacs-refactor/")
                      ,(concat my/plugins-directory "expand-region/")
+                     ,(concat my/plugins-directory "flymake/")
+                     ,(concat my/plugins-directory "flymake/checkers/")
                      ,(concat my/plugins-directory "http/")
                      ,(concat my/plugins-directory "hydra/")
                      ,(concat my/plugins-directory "icons/")
@@ -1347,11 +1349,6 @@ Only one letter is shown, the first that applies."
   :config
   (push #'sideline-blame sideline-backends-right))
 
-(use-package sideline-flycheck
-  :demand t
-  :config
-  (push #'sideline-flycheck sideline-backends-left))
-
 (use-package sideline
   :bind ("M-s -" . sideline-mode)
   :init
@@ -1935,7 +1932,6 @@ ARGS are the additional arguments."
          ("C-c 0cf" . counsel-faces)
          ("C-c 0ce" . counsel-colors-emacs)
          ("C-c 0cw" . counsel-colors-web)
-         ("M-s !" . counsel-flycheck)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
          )
@@ -2255,6 +2251,9 @@ ARGS are the additional arguments."
   ;; columns
   ;; (to see clocked time add: %10CLOCKSUM %15TIMESTAMP_IA)
   (setq org-columns-default-format "%40ITEM %TODO %PRIORITY %TAGS")
+  (add-hook 'org-mode-hook (lambda()
+                             (require 'flymake-collection-proselint)
+                             (flymake-mode 1)))
   :config
   (bind-key "C-c C-x t" 'org-table-recalculate-buffer-tables)
   (require 'org-crypt)
@@ -3444,87 +3443,44 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package quick-peek)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flymake ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; TODO
-
-;;;;;;;;;;;;;;;;;;;;;;;; flymake-diagnostic-at-point ;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flymake-diagnostic-at-point
-  :after flymake
-  :config
-  (add-hook 'flymake-hook #'flymake-diagnostic-at-point-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flycheck
+(use-package flymake
+  :demand t
+  :bind (:map flymake-mode-map
+              ("M-' M-p" . flymake-goto-prev-error)
+              ("M-' M-n" . flymake-goto-next-error)
+              ("M-' M-l" . flymake-show-buffer-diagnostics)
+              ("M-' M-d" . eldoc-doc-buffer))
   :init
-  (setq flycheck-emacs-lisp-package-user-dir
-        (concat my/user-directory "elpa/"))
-  (defun my/setup-flycheck ()
-    (flycheck-checkbashisms-setup)
-    (flycheck-bashate-setup))
-  (add-hook 'flycheck-mode-hook #'my/setup-flycheck)
-  (add-hook 'after-init-hook #'global-flycheck-mode)
+  (setq flymake-wrap-around t)
+  ;; :config
+  ;; (flymake-mode 1)
+ )
+
+(use-package flymake-collection
+  :after flymake
+  :init
+  ;; (add-hook 'after-init-hook #'flymake-collection-hook-setup))
+  (add-hook 'after-init-hook (lambda()
+                               (require 'flymake-collection)
+                               (require 'flymake-collection-commands)
+                               (flymake-collection-hook-setup)))
   :config
-  (setq flycheck-indication-mode nil)
-  (setq flycheck-global-modes
-        '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode
-                          js2-mode go-mode php-mode phps-mode))
-  (setq-default flycheck-emacs-lisp-load-path 'inherit)
-  (setq-default flycheck-shellcheck-follow-sources nil)
-  (use-package flycheck-package :config (flycheck-package-setup))
-  (use-package flycheck-checkbashisms)
-  (use-package flycheck-bashate)
-  ;; hack because flycheck unreasonably demands package installation
-  (unless (fboundp 'pkg-info-version-info)
-    (defun pkg-info-version-info (_) "unknown"))
+  (require 'flymake-collection-define)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-relint ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flycheck-relint
-  :after flycheck
-  :config
-  (flycheck-relint-setup))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-popup-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flycheck-popup-tip
-  :after flycheck
-  :if (not (display-graphic-p))
-  :disabled
-  :config
-  (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-pos-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flycheck-pos-tip
-  :after flycheck
-  :config
-  (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
-  (setq flycheck-pos-tip-display-errors-tty-function
-        (lambda (errors)
-          (let ((message (mapconcat #'flycheck-error-format-message-and-id
-                                    errors "\n\n")))
-            (popup-tip message)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-inline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flycheck-inline
-  :after flycheck
-  :disabled
-  :config
-  (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-posframe ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package flycheck-posframe
-  :after flycheck
-  :disabled
-  :if (display-graphic-p)
+(use-package flymake-popon
+  :after flymake
   :init
-  (defface flycheck-posframe-background-face
-    '((t :background "yellow"))
-    "Background face used for flycheck posframe popups."
-    :group 'flycheck-posframe)
-  (defface flycheck-posframe-face
-    '((t (:foreground "black" :background "yellow")))
-    "Face used for flycheck posframe popups."
-    :group 'flycheck-posframe)
-  :config
-  (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
+  (setq flymake-popon-method 'popon)
+  (add-hook 'flymake-mode-hook #'flymake-popon-mode)
+  )
+
+(use-package flymake-diagnostic-at-point
+  :after flymake
+  :disabled
+  :init
+  (setq flymake-diagnostic-at-point-display-diagnostic-function #'flymake-diagnostic-at-point-display-popup)
+  (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (setq semantic-default-submodes
@@ -3998,6 +3954,8 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'awk-mode-hook
           (lambda()
+            (require 'flymake-collection-awk-gawk)
+            (flymake-mode 1)
             (setq comment-start "#") (setq comment-end "")
             ))
 
@@ -4100,7 +4058,6 @@ This function's result only has value if it is preceded by any font changes."
   :config
   (add-hook 'dart-mode-hook
             (lambda()
-              ;; (flycheck-mode 1)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; docker ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4285,8 +4242,9 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'json-mode-hook
             (lambda()
+              (require 'flymake-collection-jq)
+              (flymake-mode 1)
               (subword-mode 1)
-              (add-to-list 'flycheck-disabled-checkers 'json-jsonlint)
               ))
   :config
   (use-package json-navigator
@@ -4322,6 +4280,8 @@ This function's result only has value if it is preceded by any font changes."
   (setq lua-indent-string-contents t)
   (add-hook 'lua-mode-hook
             (lambda()
+              (require 'flymake-collection-luacheck)
+              (flymake-mode 1)
               (setq-local company-smart-backend 'company-lua)
               )))
 
@@ -4380,8 +4340,6 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (setq phps-mode-async-process t)
   (setq phps-mode-async-process-using-async-el nil)
-  :config
-  (phps-mode-flycheck-setup)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pip-requirements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4415,6 +4373,8 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'python-mode-hook
             (lambda()
+              (require 'flymake-collection-pycodestyle)
+              (flymake-mode 1)
               (subword-mode 1)
               ;; (highlight-indentation-mode 1)
               (highlight-indent-guides-mode 1)
@@ -4450,43 +4410,7 @@ This function's result only has value if it is preceded by any font changes."
   (define-key python-mode-map (kbd "\C-c RET")
     (lambda()(interactive)
       (compile (concat "python " (buffer-file-name)))))
-  (if (executable-find "flake8")
-      (progn
-        (unless (xfer-util-test-exe-versions '("flake8 --version" .
-                                               (("^\\([[:digit:].]+\\)" . "3.0"))))
-          (flycheck-define-checker python-flake8
-            "A Python syntax and style checker using Flake8.
-
-Requires Flake8 2.0 or newer. See URL
-`https://flake8.readthedocs.io/'."
-            :command ("flake8"
-                      "--format=default"
-                      (config-file "--config" flycheck-flake8rc)
-                      (option "--max-complexity" flycheck-flake8-maximum-complexity nil
-                              flycheck-option-int)
-                      (option "--max-line-length" flycheck-flake8-maximum-line-length nil
-                              flycheck-option-int)
-                      "-")
-            :standard-input t
-            :error-filter (lambda (errors)
-                            (let ((errors (flycheck-sanitize-errors errors)))
-                              (seq-do #'flycheck-flake8-fix-error-level errors)
-                              errors))
-            :error-patterns
-            ((warning line-start
-                      "stdin:" line ":" (optional column ":") " "
-                      (id (one-or-more (any alpha)) (one-or-more digit)) " "
-                      (message (one-or-more not-newline))
-                      line-end))
-            :modes python-mode))
-        (flycheck-add-next-checker 'python-flake8 'python-pycompile)
-        )
-    (use-package flycheck-pyflakes
-     :config
-     (add-to-list 'flycheck-checkers 'python-pyflakes)
-     (flycheck-add-next-checker 'python-pyflakes 'python-pycompile))
-    (add-to-list 'flycheck-disabled-checkers 'python-flake8)
-    ))
+    )
 
 (define-prefix-command 'harmsway-python-prefix)
 (global-set-key "\C-c\M-p" 'harmsway-python-prefix)
@@ -4596,7 +4520,8 @@ Requires Flake8 2.0 or newer. See URL
   :init
   (add-hook 'sh-mode-hook
             (lambda()
-              (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
+              (require 'flymake-collection-shellcheck)
+              (flymake-mode 1)
               (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
               ;; set completion
               (make-local-variable 'company-backends)
@@ -4638,7 +4563,12 @@ Requires Flake8 2.0 or newer. See URL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sql ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sqlup-mode
   :init
-  (add-hook 'sql-mode-hook 'sqlup-mode)
+  (add-hook 'sql-mode-hook
+            (lambda()
+              (require 'flymake-collection-sql-lint)
+              (flymake-mode 1)
+              (sqlup-mode 1)
+              ))
   (add-hook 'sql-interactive-mode-hook 'sqlup-mode)
   (global-set-key "\C-c\M-u" 'sqlup-capitalize-keywords-in-region)
   )
@@ -4687,6 +4617,8 @@ Requires Flake8 2.0 or newer. See URL
 (defun harmsway-nxml-hook ()
   "Hook for `nxml-mode'."
   ;; (idle-highlight-mode 1)
+  (require 'flymake-collection-xmllint)
+  (flymake-mode 1)
   (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
   (make-local-variable 'electric-pair-pairs)
   (push (cons ?< ?>) electric-pair-pairs)
@@ -4716,6 +4648,8 @@ Requires Flake8 2.0 or newer. See URL
          (search-backward-regexp ": *"))
   (add-hook 'yaml-mode-hook
             (lambda()
+              (require 'flymake-collection-yamllint)
+              (flymake-mode 1)
               (define-key yaml-mode-map "\C-m" 'newline-and-indent)
               (define-key yaml-mode-map "\M-\r" 'insert-ts)
               (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)

@@ -116,6 +116,19 @@ sudo bash
 export MANPATH=`manpath`
 /usr/libexec/makewhatis
 
+# language servers
+brew install bash-language-server
+
+brew install rustup
+brew install mcrypt
+rustup-init
+
+brew install luarocks
+luarocks install luacheck
+brew install sql-lint
+brew install proselint
+brew install yamllint
+
 # Local Variables:
 # mode: sh
 # End:
