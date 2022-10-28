@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-10-28 17:28:39 dharms>
+;; Modified Time-stamp: <2022-10-28 17:35:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3481,6 +3481,13 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :init
   (setq flymake-diagnostic-at-point-display-diagnostic-function #'flymake-diagnostic-at-point-display-popup)
   (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode))
+
+(use-package flymake-posframe
+  :after flymake
+  :disabled
+  :init
+  (add-hook 'flymake-mode-hook #'flymake-posframe-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (setq semantic-default-submodes
