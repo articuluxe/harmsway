@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-10-28 17:35:32 dharms>
+;; Modified Time-stamp: <2022-11-02 12:23:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3058,11 +3058,28 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-prefix-command 'harmsway-eglot-keymap)
+(global-set-key "\C-c'" 'harmsway-eglot-keymap)
+(defun harmsway-customize-eglot (&rest _)
+  "Customize `eglot'."
+  (interactive)
+  (when eglot--managed-mode
+    (setq-local company-smart-backend 'company-capf)
+    (setq-local company-backends
+                (list (delq 'company-capf (car company-backends))))
+    (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
+    ))
+(advice-add #'eglot--managed-mode :after #'harmsway-customize-eglot)
+
 (use-package eglot
+             :bind ((:map harmsway-eglot-keymap
+                          ("'" . eglot)
+                          ("a" . eglot-code-actions)
+                          ("r" . eglot-rename)
+                          ))
   :commands eglot
-  :bind ("C-c '" . eglot)
   :init
-  (setq eglot-stay-out-of '(company))
+  (setq eglot-stay-out-of '(company-backends))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lsp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3156,21 +3173,21 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (add-to-list 'completion-styles 'initials t)
 (setq completion-auto-help nil)
 (setq completion-cycle-threshold t)     ;always cycle
-;; Ignore case when completing file names
+;; Don't ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
 
-(defun harmsway-dabbrev-complete-at-point ()
-  "Complete dabbrev at point."
-  (dabbrev--reset-global-variables)
-  (let* ((abbrev (dabbrev--abbrev-at-point))
-         (cands (dabbrev--find-all-expansions abbrev t))
-         (bnd (bounds-of-thing-at-point 'symbol)))
-    (list (car bnd) (cdr bnd) cands)))
-(defun harmsway-add-ivy-completion-at-point ()
-  "Add completion at point for ivy."
-  (require 'dabbrev)
-  (add-hook 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
+;; (defun harmsway-dabbrev-complete-at-point ()
+;;   "Complete dabbrev at point."
+;;   (dabbrev--reset-global-variables)
+;;   (let* ((abbrev (dabbrev--abbrev-at-point))
+;;          (cands (dabbrev--find-all-expansions abbrev t))
+;;          (bnd (bounds-of-thing-at-point 'symbol)))
+;;     (list (car bnd) (cdr bnd) cands)))
+;; (defun harmsway-add-ivy-completion-at-point ()
+;;   "Add completion at point for ivy."
+;;   (require 'dabbrev)
+;;   (add-hook 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3182,15 +3199,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
        company-mode
        #'company-complete-common))
 
-(defun harmsway-company-capf-workaround (completion-functions)
-  "Ensure `harmsway-company-at-point' is not a member of COMPLETION-FUNCTIONS.
-This is a workaround for `company-capf' so that harmsway's
-completion at point mechanism does not interfere with `completion-at-point-functions'."
-  (if (listp completion-functions)
-      (remq 'harmsway-company-at-point completion-functions)
-    completion-functions))
+;; (defun harmsway-company-capf-workaround (completion-functions)
+;;   "Ensure `harmsway-company-at-point' is not a member of COMPLETION-FUNCTIONS.
+;; This is a workaround for `company-capf' so that harmsway's
+;; completion at point mechanism does not interfere with `completion-at-point-functions'."
+;;   (if (listp completion-functions)
+;;       (remq 'harmsway-company-at-point completion-functions)
+;;     completion-functions))
 
-(advice-add 'company--capf-workaround :filter-return 'harmsway-company-capf-workaround)
+;; (advice-add 'company--capf-workaround :filter-return 'harmsway-company-capf-workaround)
 
 ;; Smart completion
 (defvar-local company-smart-backend #'company-etags
@@ -3443,17 +3460,19 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package quick-peek)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flymake ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-prefix-command 'harmsway-flymake-keymap)
+(global-set-key "\C-c!" 'harmsway-flymake-keymap)
 (use-package flymake
   :demand t
-  :bind (:map flymake-mode-map
-              ("M-' M-p" . flymake-goto-prev-error)
-              ("M-' M-n" . flymake-goto-next-error)
-              ("M-' M-l" . flymake-show-buffer-diagnostics)
-              ("M-' M-d" . eldoc-doc-buffer))
+  :bind (:map harmsway-flymake-keymap
+              ("l" . flymake-show-buffer-diagnostics)
+              ("d" . eldoc-doc-buffer)
+         :map flymake-mode-map
+              ("M-p" . flymake-goto-prev-error)
+              ("M-n" . flymake-goto-next-error)
+              )
   :init
   (setq flymake-wrap-around t)
-  ;; :config
-  ;; (flymake-mode 1)
  )
 
 (use-package flymake-collection
@@ -3470,6 +3489,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 (use-package flymake-popon
   :after flymake
+  :disabled
   :init
   (setq flymake-popon-method 'popon)
   (add-hook 'flymake-mode-hook #'flymake-popon-mode)
@@ -3477,17 +3497,19 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 (use-package flymake-diagnostic-at-point
   :after flymake
-  :disabled
   :init
-  (setq flymake-diagnostic-at-point-display-diagnostic-function #'flymake-diagnostic-at-point-display-popup)
-  (add-hook 'flymake-mode-hook #'flymake-diagnostic-at-point-mode))
+  (setq flymake-diagnostic-at-point-display-diagnostic-function
+        #'flymake-diagnostic-at-point-display-popup)
+  (add-hook 'flymake-mode-hook (lambda()
+                                 (unless (display-graphic-p)
+                                   (flymake-diagnostic-at-point-mode 1)))))
 
 (use-package flymake-posframe
   :after flymake
-  :disabled
   :init
-  (add-hook 'flymake-mode-hook #'flymake-posframe-mode)
-  )
+  (add-hook 'flymake-mode-hook (lambda()
+                                 (when (display-graphic-p)
+                                   (flymake-posframe-mode 1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (setq semantic-default-submodes
@@ -4513,7 +4535,10 @@ This function's result only has value if it is preceded by any font changes."
 (use-package rtf-mode :mode "\\.rtf$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package rust-mode :mode "\\.rs$")
+(use-package rust-mode :mode "\\.rs$"
+  :init
+  (add-hook 'rust-mode-hook 'eglot-ensure)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package qt-pro-mode :mode ("\\.pr[oi]$"))
@@ -4538,7 +4563,7 @@ This function's result only has value if it is preceded by any font changes."
                            (copy-tree
                             (car company-backends)))))
               (setq-local company-smart-backend 'company-shell)
-              ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
+              (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
               ))
   :config
   (setq sh-basic-offset 4)
