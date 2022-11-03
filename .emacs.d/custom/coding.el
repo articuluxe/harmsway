@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-09-13 14:49:12 dharms>
+;; Modified Time-stamp: <2022-11-02 14:52:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -162,6 +162,8 @@
   (setq hide-ifdef-lines nil)
   (setq hide-ifdef-shadow nil)
   (hide-ifdef-mode 1)
+  (require 'flymake-collection-clang)
+  (flymake-mode 1)
   (make-local-variable 'company-backends)
   (setq company-backends
         (list
