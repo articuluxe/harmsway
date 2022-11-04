@@ -3475,6 +3475,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
               )
   :init
   (setq flymake-wrap-around t)
+  (add-hook 'emacs-lisp-mode-hook #'flymake-mode)
  )
 
 (use-package flymake-collection
