@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-11-04 09:43:25 dharms>
+;; Modified Time-stamp: <2022-11-07 15:13:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4602,6 +4602,8 @@ This function's result only has value if it is preceded by any font changes."
             (lambda()
               (require 'flymake-collection-sql-lint)
               (flymake-mode 1)
+              (define-key sql-mode-map "\C-c\C-c" nil)
+              (define-key sql-mode-map "\C-c\C-p" #'sql-send-paragraph)
               (sqlup-mode 1)
               ))
   (add-hook 'sql-interactive-mode-hook 'sqlup-mode)
