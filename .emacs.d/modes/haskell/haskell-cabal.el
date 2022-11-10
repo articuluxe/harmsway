@@ -362,8 +362,8 @@ OTHER-WINDOW use `find-file-other-window'."
 
 (defun haskell-cabal-classify-line ()
   "Classify the current line's type.
-Possible results are 'section-header 'subsection-header 'section-data 'comment
-and 'empty '"
+Possible results are \\='section-header \\='subsection-header \\='section-data
+\\='comment and \\='empty"
   (save-excursion
     (beginning-of-line)
     (cond
@@ -702,7 +702,7 @@ Respect the COMMA-STYLE, see
 `haskell-cabal-strip-list-and-detect-style' for the possible
 styles."
   (cl-case comma-style
-    ('before
+    (before
      (goto-char (point-min))
      (while (haskell-cabal-ignore-line-p) (forward-line))
      (indent-to 2)
@@ -710,14 +710,14 @@ styles."
      (haskell-cabal-each-line
       (unless (haskell-cabal-ignore-line-p)
         (insert ", "))))
-    ('after
+    (after
      (goto-char (point-max))
      (while (equal 0 (forward-line -1))
        (unless (haskell-cabal-ignore-line-p)
          (end-of-line)
          (insert ",")
          (beginning-of-line))))
-    ('single
+    (single
      (goto-char (point-min))
      (while (not (eobp))
        (end-of-line)

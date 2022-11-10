@@ -132,13 +132,20 @@
       (bg-warning    "#ffe5bf") ; check with warning
       (bg-info       "#d0efdf") ; check with info
 
-      (border        "#cabfca")
+      (border        "#c6bac5")
       (cursor        "#4f45ff")
       (fg-intense    "#000000")
 
       (modeline-err     "#980000")
       (modeline-warning "#5f4400")
       (modeline-info    "#1042af")
+
+      (underline-err     "#ef0f1f")
+      (underline-warning "#bf5f00")
+      (underline-info    "#02af52")
+
+      ;; Conditional hues
+      (bg-region-intense "#aacacf")
 
       ;; Mappings
       (err red-warmer)
@@ -161,7 +168,7 @@
       (docstring magenta-faint)
       (string green-cooler)
       (type cyan-cooler)
-      (variable blue)
+      (variable cyan-warmer)
 
       (rx-escape blue-warmer) ; compare with `string'
       (rx-construct red)

@@ -210,7 +210,7 @@ input for `dirvish-redisplay-debounce' seconds."
   "Executed after the Dired buffer is showed up."
   :group 'dirvish :type 'hook)
 
-(defcustom dirvish-find-entry-hook nil
+(defcustom dirvish-find-entry-hook '(dirvish-insert-entry-h)
   "Executed after finding a entry."
   :group 'dirvish :type 'hook)
 
@@ -235,6 +235,7 @@ input for `dirvish-redisplay-debounce' seconds."
     (define-key map (kbd "q") 'dirvish-quit) map)
   "Keymap used in dirvish buffers.")
 (defvar dirvish-redisplay-debounce-timer nil)
+(defvar dirvish--history nil)
 (defvar dirvish--reset-keywords '(:free-space :content-begin))
 (defvar dirvish--selected-window nil)
 (defvar dirvish--mode-line-fmt nil)
@@ -735,6 +736,12 @@ When FORCE, ensure the preview get refreshed."
             (when (or force (not (equal last-index filename)))
               (dirvish--preview-update dv filename))))))))
 
+(defun dirvish-insert-entry-h (entry buffer)
+  "Add ENTRY or BUFFER name to `dirvish--history'."
+  (let ((entry (if (string-prefix-p "🔍" entry)
+                   (buffer-name buffer) entry)))
+    (setq dirvish--history (seq-take (push entry dirvish--history) 200))))
+
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
   (when-let ((dv (dirvish-curr)) (buf (current-buffer)))
@@ -774,6 +781,10 @@ When FORCE, ensure the preview get refreshed."
   (let ((win (frame-selected-window frame-or-window)))
     (with-current-buffer (window-buffer win)
       (when-let ((dv (dirvish-curr))) (dirvish--init-session dv)))))
+
+(defun dirvish-tab-new-post-h (_tab)
+  "Do not reuse sessions from other tabs."
+  (setq dirvish--this nil))
 
 ;;;; Preview
 
@@ -992,8 +1003,7 @@ Dirvish sets `revert-buffer-function' to this function."
 (defun dirvish-init-dired-buffer ()
   "Initialize a Dired buffer for dirvish."
   (when (file-remote-p default-directory)
-    (setq-local dirvish--working-preview-dispathchers
-                '(dirvish-tramp-preview-dp)))
+    (setq-local dirvish--working-preview-dispathchers '(dirvish-tramp-dp)))
   (use-local-map dirvish-mode-map)
   (dirvish--hide-cursor)
   (dirvish--hide-dired-header)
@@ -1228,12 +1238,15 @@ the selected window are buried."
                (image-dired-create-thumbnail-buffer dirvish-thumb-buf-a :around)
                (wdired-change-to-wdired-mode dirvish-wdired-enter-a :after)
                (wdired-change-to-dired-mode dirvish-init-dired-buffer :after)))
-        (h-fn #'dirvish-selection-change-h))
+        (sel-ch #'dirvish-selection-change-h)
+        (tab-post #'dirvish-tab-new-post-h))
     (if dirvish-override-dired-mode
         (progn (pcase-dolist (`(,sym ,fn ,how) ads) (advice-add sym how fn))
-               (add-hook 'window-selection-change-functions h-fn))
+               (add-hook 'window-selection-change-functions sel-ch)
+               (add-hook 'tab-bar-tab-post-open-functions tab-post))
       (pcase-dolist (`(,sym ,fn) ads) (advice-remove sym fn))
-      (remove-hook 'window-selection-change-functions h-fn))))
+      (remove-hook 'window-selection-change-functions sel-ch)
+      (remove-hook 'tab-bar-tab-post-open-functions tab-post))))
 
 ;;;###autoload
 (defun dirvish (&optional path)

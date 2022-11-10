@@ -1,19 +1,17 @@
 ;;; beach-bar-theme.el --- A light, sunny and calm Emacs theme  -*- lexical-binding: t; -*-
-
 ;; Copyright (C) 2021–2022 Dan Dee
-
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
 ;; URL: https://github.com/monkeyjunglejuice/beach-bar-theme-emacs
 ;; Version: 1.0.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT
-
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
-;; The light Nude Beach theme draws inspiration from monochrome "eink-like"
-;; themes. It appears sunny and calm, wearing colors sparingly,
+;; Gulp down your happy shake, listen to the trippy tunes and slowly do
+;; "M-x load-theme" ... you deserve it. »Beach Bar« is a sunny theme inspired
+;; by monochromatic themes like "eink". It appears calm, wears colors sparingly,
 ;; and only where really neccessary.
 
 ;; My other themes:
@@ -47,7 +45,7 @@
    `(cursor ((t (:background ,color-fg-alt))))
    `(region ((t (:foreground ,color-dark :background ,color-light))))
    `(success ((t (:foreground ,color-dark :background ,color-light :extend t))))
-   `(warning ((t (:foreground ,color-bright :background ,color-bright-light))))
+   `(warning ((t (:foreground ,color-bright :background ,color-bright-light :extend t))))
    `(error ((t (:foreground ,color-strong :background ,color-strong-light :extend t))))
    `(secondary-selection ((t (:background ,color-bg-alt))))
    `(mode-line ((t (:background ,color-fg :foreground ,color-bg :box nil))))
@@ -63,23 +61,23 @@
    `(link-visited ((t (:foreground ,color-middle :underline t))))
    `(button ((t (:inherit link))))
    `(help-face-button ((t (:inherit button))))
-   `(help-key-binding ((t (:foreground ,color-fg-alt :background ,color-bg-alt :box (:color ,color-fg-dim) :inherit fixed-pitch-serif))))
+   `(help-key-binding ((t (:foreground ,color-fg :weight bold :inherit fixed-pitch-serif))))
    `(header-line ((t (:foreground ,color-fg-dim :background ,color-bg-alt))))
    `(shadow ((t (:foreground ,color-fg-dim))))
    `(widget-inactive ((t (:foreground ,color-fg-dim :background ,color-fg-dimmer))))
    `(show-paren-match ((t (:foreground ,color-fg-alt :background ,color-light :weight bold))))
    `(show-paren-match-expression ((t (:background ,color-bright-light))))
-   `(show-paren-mismatch ((t (:inherit error))))
-   `(highlight ((t (:foreground ,color-fg-alt :background ,color-light :weight bold :underline (:color ,color-fg-alt)))))
-   `(match ((t (:inherit highlight))))
+   `(show-paren-mismatch ((t (:inherit error :weight bold))))
+   `(highlight ((t (:foreground ,color-fg-alt :background ,color-light :underline (:color ,color-fg-alt)))))
+   `(match ((t (:weight bold))))
    `(hl-line ((t (:underline (:color ,color-fg-dim) :extend t))))
    `(separator-line ((t (:height 0.1 :background ,color-fg-dimmer))))
    `(widget-field ((t (:foreground ,color-fg-alt :background ,color-bg-alt))))
    `(trailing-whitespace ((t (:background ,color-strong-light))))
-   `(escape-glyph ((t (:inverse-video t))))
+   `(escape-glyph ((t (:weight bold :inherit font-lock-string-face))))
 
    `(font-lock-face ((t (:foreground ,color-middle))))
-   `(font-lock-builtin-face ((t (:foreground ,color-strong :slant italic))))
+   `(font-lock-builtin-face ((t (:slant italic))))
    `(font-lock-comment-face ((t (:foreground ,color-fg-dim :inherit fixed-pitch-serif))))
    `(font-lock-constant-face ((t (:foreground ,color-fg))))
    `(font-lock-doc-face ((t (:foreground ,color-middle :slant italic :inherit fixed-pitch-serif))))
@@ -140,7 +138,7 @@
    `(diff-file-header ((t (:bold t :background ,color-bright-light :weight bold))))
    `(diff-header ((t (:background ,color-bright-light :foreground ,color-fg))))
 
-   ;; package manager
+   ;; package
    `(package-name ((t (:inherit link))))
    `(package-description ((t (:slant italic :inherit fixed-pitch-serif))))
    `(package-status-installed ((t (:foreground ,color-middle))))
@@ -155,7 +153,7 @@
    `(custom-button-pressed-unraised ((t (:inherit custom-button-pressed))))
    `(custom-button-unraised ((t (:inherit custom-button))))
    `(custom-comment ((t (:inherit font-lock-doc-face))))
-   `(custom-comment-tag ((t (:inherit default))))
+   `(custom-comment-tag ((t (:foreground ,color-fg))))
    `(custom-documentation ((t (:inherit fixed-pitch-serif))))
    `(custom-group-tag ((t (:inherit bold))))
    `(custom-state ((t (:foreground ,color-bright :slant italic))))
@@ -187,6 +185,9 @@
    `(erc-prompt-face ((t (:inherit minibuffer-prompt))))
    `(erc-my-nick-face ((t (:foreground ,color-fg))))
    `(erc-pal-face ((t (:foreground ,color-dark :inherit italic))))
+
+   ;; table
+   `(table-cell ((t (:foreground ,color-fg :background ,color-bg-alt))))
 
    ;; tex
    `(font-latex-sedate-face ((t (:foreground ,color-dark))))
@@ -233,11 +234,11 @@
    `(shortdoc-heading ((t (:inherit outline-1))))
 
    ;; compilation
+   `(compilation-column-number ((t (:foreground ,color-fg :underline t))))
    `(compilation-error ((t (:foreground ,color-strong))))
-   `(compilation-warning ((t (:foreground ,color-bright))))
    `(compilation-info ((t (:foreground ,color-dark))))
-   `(compilation-line-number ((t (:inherit default :underline t))))
-   `(compilation-column-number ((t (:inherit default :underline t))))
+   `(compilation-line-number ((t (:foreground ,color-fg :underline t))))
+   `(compilation-warning ((t (:foreground ,color-bright))))
 
    ;; whitespace
    `(whitespace-trailing ((t (:background ,color-strong-light))))
@@ -343,6 +344,7 @@
    `(lsp-headerline-breadcrumb-separator-face ((t (:foreground ,color-fg))))
 
    ;; eglot
+   `(eglot-mode-line ((t (:foreground ,color-bg :weight bold))))
    `(eglot-highlight-symbol-face ((t (:inherit lazy-highlight))))
 
    ;; csv
@@ -378,10 +380,10 @@
 
    ;; sly
    `(sly-db-topline-face ((t (:weight bold))))
-   `(sly-action-face ((t (:foreground ,color-bright))))
+   `(sly-action-face ((t (:foreground ,color-bright :weight bold))))
    `(sly-mode-line ((t (:foreground ,color-bg))))
    `(sly-mrepl-prompt-face ((t (:inherit minibuffer-prompt))))
-   `(sly-mrepl-output-face ((t (:inherit default))))
+   `(sly-mrepl-output-face ((t (:foreground ,color-fg))))
    `(sly-mrepl-note-face ((t (:inherit font-lock-warning-face))))
    `(sly-style-warning-face ((t (:inherit flymake-warning))))
    `(sly-db-condition-face ((t (:foreground ,color-strong :background ,color-strong-light :extend t))))
@@ -389,7 +391,7 @@
    `(sly-db-restart-number-face ((t (:foreground ,color-fg-alt :weight bold))))
    `(sly-db-section-face ((t (:inherit shadow))))
    `(sly-db-frame-label-face ((t (:inherit shadow))))
-   `(sly-db-frame-line-face ((t (:inherit default))))
+   `(sly-db-frame-line-face ((t (:foreground ,color-fg))))
    `(sly-db-restartable-frame-line-face ((t (:weight bold))))
    `(sly-db-local-name-face ((t (:slant italic))))
 
@@ -440,6 +442,11 @@
    `(utop-prompt ((t (:inherit minibuffer-prompt))))
    `(utop-error  ((t (:inherit error))))
 
+   ;; haskell-mode
+   `(haskell-operator-face ((t (:foreground ,color-fg-alt))))
+   `(haskell-warning-face ((t (:inherit flymake-warning))))
+   `(haskell-interactive-face-compile-warning ((t (:inherit compilation-warning))))
+
    ;; selectrum
    `(selectrum-mouse-highlight ((t (:background nil :underline t :extend t))))
    `(selectrum-prescient-primary-highlight ((t (:inherit completions-common-part))))
@@ -459,8 +466,10 @@
 
    ;; helm
    `(helm-candidate-number ((t (:foreground ,color-fg-dim :background nil))))
+   `(helm-command-active-mode ((t (:foreground ,color-strong))))
    `(helm-source-header ((t (:inherit font-lock-comment-face :background unspecified :foreground unspecified))))
    `(helm-selection ((t (:inherit highlight))))
+   `(helm-selection-line ((t ())))
    `(helm-prefarg ((t (:foreground ,color-dark))))
    `(helm-ff-file ((t (:foreground ,color-fg))))
    `(helm-ff-directory ((t (:inherit dired-directory :foreground unspecified))))
@@ -470,7 +479,12 @@
    `(helm-ff-symlink ((t (:inherit dired-symlink))))
    `(helm-ff-prefix ((t (:background nil))))
    `(helm-ff-dotted-directory ((t (:background nil :foreground ,color-middle))))
-   `(helm-M-x-key ((t (:foreground ,color-bright))))
+   `(helm-grep-cmd-line ((t ())))
+   `(helm-grep-file ((t (:background ,color-bright-light))))
+   `(helm-grep-finish ((t (:inherit helm-grep-file))))
+   `(helm-grep-lineno ((t (:inherit line-number))))
+   `(helm-grep-match ((t (:inherit helm-match))))
+   `(helm-M-x-key ((t (:inherit help-key-binding))))
    `(helm-M-x-short-doc ((t (:inherit font-lock-doc-face))))
    `(helm-buffer-file ((t (:foreground ,color-fg))))
    `(helm-buffer-archive ((t (:inherit eshell-ls-archive))))
@@ -480,35 +494,37 @@
    `(helm-buffer-modified ((t (:foreground ,color-bright :underline (:color ,color-bright :style wave)))))
    `(helm-buffer-process ((t (:foreground ,color-dark))))
    `(helm-buffer-size ((t (:foreground ,color-dark))))
-   `(helm-match ((t (:inherit completions-common-part))))
-   `(helm-bookmark-addressbook ((t (:inherit default))))
+   `(helm-match ((t (:inherit match))))
+   `(helm-match-item ((t (:inherit helm-match))))
+   `(helm-bookmark-addressbook ((t (:foreground ,color-fg))))
    `(helm-bookmark-directory ((t (:inherit dired-directory))))
-   `(helm-bookmark-file ((t (:inherit default))))
-   `(helm-bookmark-file-not-found ((t (:inherit default :slant italic))))
-   `(helm-bookmark-gnus ((t (:inherit default))))
-   `(helm-bookmark-info ((t (:inherit default))))
-   `(helm-bookmark-man ((t (:inherit default))))
-   `(helm-bookmark-w3m ((t (:inherit default))))
+   `(helm-bookmark-file ((t (:foreground ,color-fg))))
+   `(helm-bookmark-file-not-found ((t (:foreground ,color-fg :slant italic))))
+   `(helm-bookmark-gnus ((t (:foreground ,color-fg))))
+   `(helm-bookmark-info ((t (:foreground ,color-fg))))
+   `(helm-bookmark-man ((t (:foreground ,color-fg))))
+   `(helm-bookmark-w3m ((t (:foreground ,color-fg))))
 
    ;; adoc-mode
-   `(markup-meta-hide-face ((t (:height 1.0 :foreground ,color-bright))))
-   `(markup-meta-face ((t (:height 1.0 :foreground ,color-dark :family nil))))
-   `(markup-reference-face ((t (:underline nil :foreground ,color-dark))))
-   `(markup-gen-face ((t (:foreground nil))))
-   `(markup-passthrough-face ((t (:inherit markup-dark))))
-   `(markup-replacement-face ((t (:family nil :foreground ,color-dark))))
-   `(markup-list-face ((t (:weight bold))))
-   `(markup-secondary-text-face ((t (:height 1.0 :foreground ,color-dark))))
-   `(markup-verbatim-face ((t (:foreground ,color-dark))))
    `(markup-code-face ((t (:inherit markup-verbatim-face))))
-   `(markup-typewriter-face ((t (:inherit nil))))
    `(markup-complex-replacement-face ((t (:background ,color-bright-light :foreground ,color-fg))))
+   `(markup-gen-face ((t (:foreground nil))))
+   `(markup-list-face ((t (:weight bold))))
+   `(markup-meta-face ((t (:height 1.0 :foreground ,color-fg-dim))))
+   `(markup-meta-hide-face ((t (:height 1.0 :foreground ,color-bright))))
+   `(markup-passthrough-face ((t (:inherit markup-dark))))
+   `(markup-reference-face ((t (:underline nil :foreground ,color-dark))))
+   `(markup-replacement-face ((t (:family nil :foreground ,color-dark))))
+   `(markup-secondary-text-face ((t (:height 1.0 :foreground ,color-dark))))
+   `(markup-table-cell-face ((t (:inherit table-cell))))
    `(markup-title-0-face ((t (:height 1.2 :inherit markup-gen-face))))
    `(markup-title-1-face ((t (:height 1.0 :inherit markup-gen-face))))
    `(markup-title-2-face ((t (:height 1.0 :inherit markup-gen-face))))
    `(markup-title-3-face ((t (:height 1.0 :inherit markup-gen-face))))
    `(markup-title-4-face ((t (:height 1.0 :inherit markup-gen-face))))
    `(markup-title-5-face ((t (:height 1.0 :inherit markup-gen-face))))
+   `(markup-typewriter-face ((t (:inherit nil))))
+   `(markup-verbatim-face ((t (:foreground ,color-dark))))
 
    ;; highlight-indent-guides
    `(highlight-indent-guides-odd-face ((t (:background ,color-bright))))
@@ -522,6 +538,9 @@
    `(notmuch-tree-match-tag-face ((t (:inherit notmuch-tree-match-author-face))))
    `(notmuch-tag-unread-face ((t (:foreground ,color-fg :background ,color-middle))))
    `(notmuch-message-summary-face ((t (:foreground ,color-dark))))
+
+   ;; switch-window
+   `(switch-window-label ((t (:foreground ,color-bright :height 3.0))))
 
    ;; telega
    `(telega-msg-heading ((t (:foreground ,color-dark :background nil :inherit nil))))
@@ -557,7 +576,20 @@
    `(elfeed-log-debug-level-face ((t (:foreground ,color-middle))))
    `(elfeed-log-error-level-face ((t (:inherit error))))
    `(elfeed-log-info-level-face ((t (:foreground ,color-dark))))
-   `(elfeed-log-warn-level-face ((t (:inherit warning))))))
+   `(elfeed-log-warn-level-face ((t (:inherit warning))))
+
+   ;; rg / ripgrep
+   `(rg-file-tag-face ((t (:foreground ,color-dark))))
+   `(rg-filename-face ((t (:foreground ,color-dark :weight bold))))
+   `(rg-line-number-face ((t (:inherit line-number))))
+   `(rg-match-face ((t (:underline t :inherit match))))
+
+   ;;wgrep
+   `(wgrep-face ((t (:foreground ,color-bright :background ,color-bright-light))))
+   `(wgrep-file-face ((t (:background ,color-bright-light))))
+   `(wgrep-done-face ((t (:inherit wgrep-file-face))))
+
+   ))
 
 ;;;###autoload
 (when load-file-name

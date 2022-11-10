@@ -5,7 +5,7 @@
 ;; Author: Wilfred Hughes <me@wilfred.me.uk>
 ;; URL: https://github.com/Wilfred/deadgrep
 ;; Keywords: tools
-;; Version: 0.12
+;; Version: 0.13
 ;; Package-Requires: ((emacs "25.1") (dash "2.12.0") (s "1.11.0") (spinner "1.7.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -217,7 +217,8 @@ It is used to create `imenu' index.")
                     (s-repeat (log prev-line-num 10) "-")))
             (insert
              (propertize (concat separator "\n")
-                         'face 'deadgrep-meta-face))))
+                         'face 'deadgrep-meta-face
+                         'deadgrep-separator t))))
          ;; If we have a warning or don't have a color code, ripgrep
          ;; must be complaining about something (e.g. zero matches for
          ;; a glob, or permission denied on some directories).
@@ -1230,7 +1231,8 @@ Keys are interned filenames, so they compare with `eq'.")
            (end-pos
             (progn
               (while (and
-                      (get-text-property (point) 'deadgrep-line-number)
+                      (or (get-text-property (point) 'deadgrep-line-number)
+                          (get-text-property (point) 'deadgrep-separator))
                       (not (bobp)))
                 (forward-line))
               ;; Step over the newline.

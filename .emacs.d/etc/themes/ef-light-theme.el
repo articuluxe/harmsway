@@ -132,13 +132,20 @@
       (bg-warning    "#ffeabb") ; check with warning
       (bg-info       "#d0efda") ; check with info
 
-      (border        "#c4cadf")
+      (border        "#bfc4da")
       (cursor        "#0033cc")
       (fg-intense    "#000000")
 
       (modeline-err     "#9f0000")
       (modeline-warning "#5f0070")
       (modeline-info    "#002fa0")
+
+      (underline-err     "#ef0f1f")
+      (underline-warning "#bf5f00")
+      (underline-info    "#02af52")
+
+      ;; Conditional hues
+      (bg-region-intense "#afdfc0")
 
       ;; Mappings
       (err red-warmer)

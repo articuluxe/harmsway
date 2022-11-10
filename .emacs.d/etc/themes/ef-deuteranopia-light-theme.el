@@ -135,13 +135,20 @@
       (bg-warning    "#ffe0aa") ; check with warning
       (bg-info       "#d0dfff") ; check with info
 
-      (border        "#c0c0d4")
+      (border        "#bcbcd0")
       (cursor        "#0000bb")
       (fg-intense    "#000000")
 
       (modeline-err     "#000000") ; too dark to have red/yellow here
       (modeline-warning "#0a0a1f")
       (modeline-info    "#2222c3")
+
+      (underline-err     "#c08f00")
+      (underline-warning "#6f3f00")
+      (underline-info    "#025f92")
+
+      ;; Conditional hues
+      (bg-region-intense "#cfcf9a")
 
       ;; Mappings
       (err yellow-warmer)

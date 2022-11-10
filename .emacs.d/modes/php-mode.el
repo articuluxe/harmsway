@@ -13,8 +13,10 @@
 ;; Package-Requires: ((emacs "25.2"))
 ;; License: GPL-3.0-or-later
 
-(defconst php-mode-version-number "1.24.1"
-  "PHP Mode version number.")
+(eval-and-compile
+  (make-obsolete-variable
+   (defconst php-mode-version-number "1.24.1" "PHP Mode version number.")
+   "Please call (php-mode-version :as-number t) for compatibility." "1.24.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -79,12 +81,37 @@
 (eval-when-compile
   (require 'rx)
   (require 'cl-lib)
+  (require 'flymake)
+  (require 'php-flymake)
   (require 'regexp-opt)
+  (declare-function acm-backend-tabnine-candidate-expand "ext:acm-backend-tabnine"
+                    (candidate-info bound-start))
   (defvar add-log-current-defun-header-regexp)
   (defvar add-log-current-defun-function)
   (defvar c-syntactic-context)
   (defvar c-vsemi-status-unknown-p)
   (defvar syntax-propertize-via-font-lock))
+
+(defconst php-mode-version-id
+  (eval-when-compile
+    (let ((fallback-version (format "%s-non-vcs" (with-no-warnings php-mode-version-number))))
+      (if (locate-dominating-file default-directory ".git")
+          (save-match-data
+            (let ((tag (replace-regexp-in-string
+                        (rx bos "v") ""
+                        (shell-command-to-string "git describe --tags")))
+                  (pattern (rx (group (+ any)) eol)))
+              (if (string-match pattern tag)
+                  (match-string 0 tag)
+                (error "Faild to obtain git tag"))))
+        fallback-version)))
+  "PHP Mode build ID.
+
+The format is follows:
+
+\"1.23.4\": Tagged revision, compiled under Git VCS.
+\"1.23.4-56-xxxxxx\": 56 commits after the last tag release, compiled under Git.
+\"1.23.4-non-vcs\": Compiled in an environment not managed by Git VCS.")
 
 (autoload 'php-mode-debug "php-mode-debug"
   "Display informations useful for debugging PHP Mode." t)
@@ -155,6 +182,15 @@ Turning this on will open it whenever `php-mode' is loaded."
   :group 'php-mode
   :tag "PHP Mode Page Delimiter"
   :type 'regexp)
+
+(defcustom php-mode-replace-flymake-diag-function
+  (eval-when-compile (when (boundp 'flymake-diagnostic-functions)
+                       #'php-flymake))
+  "Flymake function to replace, if NIL do not replace."
+  :group 'php-mode
+  :tag "PHP Mode Replace Flymake Diag Function"
+  :type '(choice 'function
+                 (const :tag "Disable to replace" nil)))
 
 (define-obsolete-variable-alias 'php-do-not-use-semantic-imenu 'php-mode-do-not-use-semantic-imenu "1.20.0")
 (defcustom php-mode-do-not-use-semantic-imenu t
@@ -266,18 +302,13 @@ In that case set to `NIL'."
   :tag "PHP Mode Enable Backup Style Variables"
   :type 'boolean)
 
-(defcustom php-mode-disable-c-auto-align-backslashes t
-  "When set to non-NIL, override `c-auto-align-backslashes' to NIL."
-  :group 'php-mode
-  :tag "PHP Mode Disable c-auto-align-backslashes"
-  :type 'boolean)
-
 (define-obsolete-variable-alias 'php-mode-disable-parent-mode-hooks 'php-mode-disable-c-mode-hook "1.21.0")
 (defcustom php-mode-disable-c-mode-hook t
   "When set to `T', do not run hooks of parent modes (`java-mode', `c-mode')."
   :group 'php-mode
   :tag "PHP Mode Disable C Mode Hook"
   :type 'boolean)
+(make-obsolete-variable 'php-mode-disable-c-mode-hook nil "1.24.2")
 
 (defcustom php-mode-enable-project-local-variable t
   "When set to `T', apply project local variable to buffer local variable."
@@ -288,17 +319,20 @@ In that case set to `NIL'."
 (defconst php-mode-cc-vertion
   (eval-when-compile c-version))
 
-(defun php-mode-version ()
-  "Display string describing the version of PHP Mode."
-  (interactive)
-  (let ((fmt (eval-when-compile (let ((id "$Id$"))
-                                  (concat "PHP Mode %s"
-                                          (if (string= id (concat [?$ ?I ?d ?$]))
-                                              ""
-                                            (concat " " id)))))))
+(cl-defun php-mode-version (&key as-number)
+  "Display string describing the version of PHP Mode.
+
+Although this is an interactive command, it returns a string when called
+as a function.  Call with AS-NUMBER keyword to compare by `version<'.
+
+\(version<= \"1.24.1\" (php-mode-version :as-number t))"
+  (interactive (list :as-number nil))
+  (if as-number
+      (save-match-data (and (string-match (rx (group (+ (in ".0-9")))) php-mode-version-id)
+                            (match-string 0 php-mode-version-id)))
     (funcall
      (if (called-interactively-p 'interactive) #'message #'format)
-     fmt php-mode-version-number)))
+     "PHP Mode v%s" php-mode-version-id)))
 
 ;;;###autoload
 (define-obsolete-variable-alias 'php-available-project-root-files 'php-project-available-root-files "1.19.0")
@@ -878,9 +912,6 @@ reported, even if `c-report-syntactic-errors' is non-nil."
           php-warned-bad-indent
           (php-check-html-for-indentation))
       (let ((here (point))
-            (c-auto-align-backslashes
-             (unless php-mode-disable-c-auto-align-backslashes
-               c-auto-align-backslashes))
             doit)
         (move-beginning-of-line nil)
         ;; Don't indent heredoc end mark
@@ -1121,6 +1152,14 @@ After setting the stylevars run hooks according to STYLENAME
   (php-project-apply-local-variables)
   (remove-hook 'hack-local-variables-hook #'php-mode-set-local-variable-delay))
 
+(defun php-mode-neutralize-cc-mode-effect ()
+  "Reset PHP-irrelevant variables set by Cc Mode initialization."
+  (setq-local c-mode-hook nil)
+  (setq-local java-mode-hook nil)
+  (when (eval-when-compile (boundp 'flymake-diagnostic-functions))
+    (remove-hook 'flymake-diagnostic-functions 'flymake-cc t))
+  t)
+
 (defvar php-mode-syntax-table
   (let ((table (make-syntax-table)))
     (c-populate-syntax-table table)
@@ -1147,12 +1186,16 @@ After setting the stylevars run hooks according to STYLENAME
                     "Please run `M-x package-reinstall php-mode' command."
                   "Please byte recompile PHP Mode files.")))
 
-  (when php-mode-disable-c-mode-hook
-    (setq-local c-mode-hook nil)
-    (setq-local java-mode-hook nil))
+  (if php-mode-disable-c-mode-hook
+      (php-mode-neutralize-cc-mode-effect)
+    (display-warning 'php-mode
+                     "`php-mode-disable-c-mode-hook' will be removed.  Do not depends on this variable."
+                     :warning))
+
   (c-initialize-cc-mode t)
   (c-init-language-vars php-mode)
   (c-common-init 'php-mode)
+  (setq-local c-auto-align-backslashes nil)
 
   (setq-local comment-start "// ")
   (setq-local comment-start-skip
@@ -1223,10 +1266,19 @@ After setting the stylevars run hooks according to STYLENAME
   (setq-local add-log-current-defun-function nil)
   (setq-local add-log-current-defun-header-regexp php-beginning-of-defun-regexp)
 
+  (when (and (eval-when-compile (boundp 'flymake-diagnostic-functions))
+             php-mode-replace-flymake-diag-function)
+    (add-hook 'flymake-diagnostic-functions php-mode-replace-flymake-diag-function nil t))
+
   (when (fboundp 'c-looking-at-or-maybe-in-bracelist)
     (advice-add #'c-looking-at-or-maybe-in-bracelist
                 :override 'php-c-looking-at-or-maybe-in-bracelist '(local)))
   (advice-add #'fixup-whitespace :after #'php-mode--fixup-whitespace-after '(local))
+
+  (when (fboundp #'acm-backend-tabnine-candidate-expand)
+    (advice-add #'acm-backend-tabnine-candidate-expand
+                :filter-args #'php-acm-backend-tabnine-candidate-expand-filter-args
+                '(local)))
 
   (when (>= emacs-major-version 25)
     (with-silent-modifications
@@ -1275,15 +1327,30 @@ for \\[find-tag] (which see)."
       (message "Unknown function: %s" tagname))))
 
 ;; Font Lock
-(defconst php-phpdoc-type-keywords
+(defconst php-phpdoc-type-names
   (list "string" "integer" "int" "boolean" "bool" "float"
         "double" "object" "mixed" "array" "resource"
         "void" "null" "false" "true" "self" "static"
-        "callable" "iterable" "number"))
+        "callable" "iterable" "number"
+        ;; PHPStan and Psalm types
+        "array-key" "associative-array" "callable-array" "callable-object"
+        "callable-string" "class-string" "empty" "enum-string" "list"
+        "literal-string" "negative-int" "non-positive-int" "non-negative-int"
+        "never" "never-return" "never-returns" "no-return" "non-empty-array"
+        "non-empty-list" "non-empty-string" "non-falsy-string"
+        "numeric" "numeric-string" "positive-int" "scalar"
+        "trait-string" "truthy-string" "key-of" "value-of")
+  "A list of type and pseudotype names that can be used in PHPDoc.")
+
+(make-obsolete-variable 'php-phpdoc-type-keywords 'php-phpdoc-type-names "1.24.2")
 
 (defconst php-phpdoc-type-tags
   (list "package" "param" "property" "property-read" "property-write"
-        "return" "throws" "var"))
+        "return" "throws" "var" "self-out" "this-out" "param-out"
+        "type" "extends" "require-extends" "implemtents" "require-implements"
+        "template" "template-covariant" "template-extends" "template-implements"
+        "assert" "assert-if-true" "assert-if-false" "if-this-is")
+  "A list of tags specifying type names.")
 
 (defconst php-phpdoc-font-lock-doc-comments
   `(("{@[-[:alpha:]]+\\s-*\\([^}]*\\)}" ; "{@foo ...}" markup.
@@ -1293,11 +1360,11 @@ for \\[find-tag] (which see)."
      (1 'php-doc-variable-sigil prepend nil)
      (2 'php-variable-name prepend nil))
     ("\\(\\$\\)\\(this\\)\\>" (1 'php-doc-$this-sigil prepend nil) (2 'php-doc-$this prepend nil))
-    (,(concat "\\s-@" (regexp-opt php-phpdoc-type-tags) "\\s-+"
+    (,(concat "\\s-@" (rx (? (or "phan" "phpstan" "psalm") "-")) (regexp-opt php-phpdoc-type-tags) "\\s-+"
               "\\(" (rx (+ (? "?") (? "\\") (+ (in "0-9A-Z_a-z")) (? "[]") (? "|"))) "\\)+")
      1 'php-string prepend nil)
     (,(concat "\\(?:|\\|\\?\\|\\s-\\)\\("
-              (regexp-opt php-phpdoc-type-keywords 'words)
+              (regexp-opt php-phpdoc-type-names 'words)
               "\\)")
      1 font-lock-type-face prepend nil)
     ("https?://[^\n\t ]+"
@@ -1474,12 +1541,10 @@ for \\[find-tag] (which see)."
 (defvar php-font-lock-keywords php-font-lock-keywords-3
   "Default expressions to highlight in PHP Mode.")
 
-(add-to-list
- (eval-when-compile
-   (if (boundp 'flymake-proc-allowed-file-name-masks)
-       'flymake-proc-allowed-file-name-masks
-     'flymake-allowed-file-name-masks))
- '("\\.php[345s]?\\'" php-flymake-php-init))
+(eval-when-compile
+   (unless (boundp 'flymake-proc-allowed-file-name-masks)
+     (add-to-list 'flymake-allowed-file-name-masks
+                  '("\\.php[345s]?\\'" php-flymake-php-init))))
 
 
 (defun php-send-region (start end)
@@ -1518,6 +1583,17 @@ The output will appear in the buffer *PHP*."
               (forward-char -2)
               (looking-at-p "->\\|::")))
     (delete-char 1)))
+
+;; Advice for lsp-bridge' acm-backend-tabnine
+;; see https://github.com/manateelazycat/lsp-bridge/issues/402#issuecomment-1305653058
+(defun php-acm-backend-tabnine-candidate-expand-filter-args (args)
+  "Adjust to replace bound-start ARGS for Tabnine in PHP."
+  (cl-multiple-value-bind (candidate-info bound-start) args
+    (save-excursion
+      (goto-char bound-start)
+      (when (looking-at-p (eval-when-compile (regexp-quote "$")))
+        (setq bound-start (1+ bound-start))))
+    (list candidate-info bound-start)))
 
 ;;;###autoload
 (progn

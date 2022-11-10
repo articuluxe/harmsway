@@ -1986,9 +1986,10 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
           (magit-git-lines "submodule" "status")))
 
 (defun magit-list-module-paths ()
-  (--mapcat (and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" it)
-                 (list (match-string 1 it)))
-            (magit-git-items "ls-files" "-z" "--stage")))
+  (magit-with-toplevel
+    (--mapcat (and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" it)
+                   (list (match-string 1 it)))
+              (magit-git-items "ls-files" "-z" "--stage"))))
 
 (defun magit-list-module-names ()
   (mapcar #'magit-get-submodule-name (magit-list-module-paths)))
@@ -1996,7 +1997,20 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
 (defun magit-get-submodule-name (path)
   "Return the name of the submodule at PATH.
 PATH has to be relative to the super-repository."
-  (magit-git-string "submodule--helper" "name" path))
+  (if (magit-git-version>= "2.38.0")
+      ;; "git submodule--helper name" was removed,
+      ;; but might still come back in another form.
+      (substring
+       (car (split-string
+             (car (or (magit-git-items
+                       "config" "-z"
+                       "-f" (expand-file-name ".gitmodules" (magit-toplevel))
+                       "--get-regexp" "^submodule\\..*\\.path$"
+                       (concat "^" (regexp-quote (directory-file-name path)) "$"))
+                      (error "No such submodule `%s'" path)))
+             "\n"))
+       10 -5)
+    (magit-git-string "submodule--helper" "name" path)))
 
 (defun magit-list-worktrees ()
   (let ((remote (file-remote-p default-directory))

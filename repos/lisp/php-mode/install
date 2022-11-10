@@ -1,1 +1,2 @@
-cp src/lisp/*.el ../../../.emacs.d/modes
+cp src/lisp/php-flymake.el ../../../.emacs.d/plugins/flymake
+find src/lisp -maxdepth 1 -name \*.el | grep -v flymake | xargs -I '{}' cp '{}' ../../../.emacs.d/modes

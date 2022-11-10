@@ -2,7 +2,7 @@
 
 ;; Copyright 2011-2022 François-Xavier Bois
 
-;; Version: 17.3.1
+;; Version: 17.3.3
 ;; Author: François-Xavier Bois
 ;; Maintainer: François-Xavier Bois <fxbois@gmail.com>
 ;; Package-Requires: ((emacs "23.1"))
@@ -23,7 +23,7 @@
 
 ;;---- CONSTS ------------------------------------------------------------------
 
-(defconst web-mode-version "17.3.1"
+(defconst web-mode-version "17.3.3"
   "Web Mode version.")
 
 ;;---- GROUPS ------------------------------------------------------------------
@@ -638,6 +638,11 @@ See web-mode-block-face."
   "Face for element interpolation strings."
   :group 'web-mode-faces)
 
+(defface web-mode-interpolate-color4-face
+  '((t :inherit web-mode-string-face))
+  "Face for element interpolation strings."
+  :group 'web-mode-faces)
+
 (defface web-mode-css-string-face
   '((t :inherit web-mode-string-face))
   "Face for css strings."
@@ -1093,6 +1098,7 @@ Must be used in conjunction with web-mode-enable-block-face."
     (?\> . "&gt;"))
   "XML chars")
 
+;; #1254 : https://html.spec.whatwg.org/entities.json
 (defvar web-mode-html-entities
   ;; #985
   ;; remove ("gt" . 62) ("lt" . 60) ("amp" . 38)
@@ -7305,15 +7311,10 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
 
 (defun web-mode-interpolate-javascript-literal (beg end)
   (save-excursion
-    (goto-char (1+ beg))
     (setq end (1- end))
-    (while (re-search-forward "${.*?}" end t)
-      (put-text-property (match-beginning 0) (match-end 0)
-                           'font-lock-face
-                           'web-mode-variable-name-face)
-      )
+    (goto-char (1+ beg))
     (cond
-     ((web-mode-looking-back "\\(css\\|styled[[:alnum:].]+\\)" beg)
+     ((web-mode-looking-back "\\(css\\|styled[[:alnum:].]+\\|css = \\)" beg)
       (goto-char (1+ beg))
       (while (re-search-forward ".*?:" end t)
         (put-text-property (match-beginning 0) (match-end 0)
@@ -7321,7 +7322,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
                            'web-mode-interpolate-color1-face)
         )
       ) ;case css
-     ((web-mode-looking-back "\\(template\\|html\\)" beg)
+     ((web-mode-looking-back "\\(template\\|html\\|html = \\)" beg)
       (goto-char (1+ beg))
       (while (re-search-forward web-mode-tag-regexp end t)
         (put-text-property (match-beginning 1) (match-end 1)
@@ -7343,8 +7344,20 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
           ) ;t
          ) ;cond
         ) ;while
+      (goto-char (1+ beg))
+      (while (re-search-forward "<\\(script\\|style\\)>\\(.*\\)</\\(script\\|style\\)>" end t)
+        (put-text-property (match-beginning 2) (match-end 2)
+                           'font-lock-face
+                           'web-mode-interpolate-color4-face)
+        )
       ) ;case html
      ) ;cond type of literal
+    (goto-char (1+ beg))
+    (while (re-search-forward "${.*?}" end t)
+      (put-text-property (match-beginning 0) (match-end 0)
+                           'font-lock-face
+                           'web-mode-variable-name-face)
+      ) ;while
     ))
 
 ;; todo : parsing plus compliqué: {$obj->values[3]->name}
@@ -8438,7 +8451,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
                      (not (eq ?\< curr-char))))
         (let (prev)
           (cond
-           ((member language '("html" "xml" "javascript" "jsx" "css"))
+           ((member language '("html" "xml" "javascript" "typescript" "jsx" "css"))
             (when (setq prev (web-mode-part-previous-live-line reg-beg))
               (setq prev-line (nth 0 prev)
                     prev-indentation (nth 1 prev)

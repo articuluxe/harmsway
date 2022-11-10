@@ -60,7 +60,7 @@
       (green-warmer    "#6aad0f")
       (green-cooler    "#00a692")
       (green-faint     "#61a06c")
-      (yellow          "#c48032")
+      (yellow          "#bf9032")
       (yellow-warmer   "#d1843f")
       (yellow-cooler   "#df8a5a")
       (yellow-faint    "#cf9f8f")
@@ -132,7 +132,7 @@
       (bg-warning    "#332600") ; check with warning
       (bg-info       "#002212") ; check with info
 
-      (border        "#4a4a5a")
+      (border        "#4f4f5f")
       (cursor        "#ff76ff")
       (fg-intense    "#ffffff")
 
@@ -140,9 +140,16 @@
       (modeline-warning "#dfcf33")
       (modeline-info    "#2fc82f")
 
+      (underline-err     "#df2f2f")
+      (underline-warning "#c0b000")
+      (underline-info    "#22b022")
+
+      ;; Conditional hues
+      (bg-region-intense "#3a3465")
+
       ;; Mappings
       (err red-warmer)
-      (warning yellow-warmer)
+      (warning yellow)
       (info green)
 
       (link cyan)

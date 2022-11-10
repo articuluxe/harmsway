@@ -4,8 +4,8 @@
 ;; Maintainer: Jose A Ortega Ruiz <jao@gnu.org>
 ;; Keywords: docs, convenience
 ;; License: GPL-3.0-or-later
-;; Version: 0.7
-;; Package-Requires: ((emacs "26.1") (consult "0.18"))
+;; Version: 0.8
+;; Package-Requires: ((emacs "26.1") (consult "0.19"))
 ;; Homepage: https://codeberg.org/jao/consult-recoll
 
 ;; Copyright (C) 2021-2022  Free Software Foundation, Inc.
@@ -40,6 +40,8 @@
 
 (require 'seq)
 (require 'subr-x)
+(require 'files)
+
 (eval-when-compile (require 'cl-lib))
 
 (require 'consult)
@@ -96,7 +98,7 @@ number), otherwise just with one."
 
 (defcustom consult-recoll-format-candidate nil
   "A function taking title, path and mime type, and formatting them for display.
-Set to nil to use the default 'title (path)' format."
+Set to nil to use the default `title (path)' format."
   :type '(choice (const nil) function))
 
 (defface consult-recoll-url-face '((t :inherit link))
@@ -111,6 +113,7 @@ Set to nil to use the default 'title (path)' format."
 (defvar consult-recoll-history nil "History for `consult-recoll'.")
 (defvar consult-recoll--current nil)
 (defvar consult-recoll--index 0)
+(defvar consult-recoll--snippets nil)
 
 (defun consult-recoll--search-flags ()
   "Compute search flags according to `consult-recoll-search-flags'."
@@ -128,6 +131,7 @@ Set to nil to use the default 'title (path)' format."
   "Command used to perform queries for TEXT."
   (setq consult-recoll--current nil)
   (setq consult-recoll--index 0)
+  (setq consult-recoll--snippets nil)
   `("recollq" ,@(consult-recoll--search-flags) ,text))
 
 (defun consult-recoll--format (title urln mime)
@@ -155,10 +159,15 @@ Set to nil to use the default 'title (path)' format."
 (defsubst consult-recoll--candidate-index (candidate)
   (get-text-property 0 'index candidate))
 
-(defsubst consult-recoll--snippets (&optional candidate)
-  (get-text-property 0 'snippets (or candidate consult-recoll--current "")))
+(defsubst consult-recoll--snippets (candidate)
+  (let* ((len (length consult-recoll--snippets))
+         (idx (or (consult-recoll--candidate-index candidate) 0))
+         (pos (- len idx)))
+    (if (>= pos len)
+        ""
+      (mapconcat 'identity (reverse (elt consult-recoll--snippets pos)) "\n"))))
 
-(defun consult-recoll--search-snippet (candidate mime)
+(defun consult-recoll--search-snippet (candidate _mime)
   "When CANDIDATE is the text of a snippet, search for it in current buffer."
   (when (string-match "^\s+0 : " candidate)
     (let ((txt (replace-match "" nil nil candidate)))
@@ -220,14 +229,9 @@ Set to nil to use the default 'title (path)' format."
                                   'title title
                                   'index idx
                                   'size size)))
-           (prog1 (and (not (consult-recoll--snippets)) consult-recoll--current)
-             (setq consult-recoll--current cand))))
-        ((string= "/SNIPPETS" str)
-         (and (not consult-recoll-inline-snippets) consult-recoll--current))
-        ((string= "SNIPPETS" str)
-         (and consult-recoll-inline-snippets
-              (setq consult-recoll--current
-                    (propertize consult-recoll--current 'snippets t))))
+           (push () consult-recoll--snippets)
+           (setq consult-recoll--current cand)))
+        ((string-match-p "^/?SNIPPETS$" str) nil)
         ((and consult-recoll-inline-snippets consult-recoll--current)
          (when-let* ((page (and (string-match "^\\([0-9]+\\) :" str)
                                 (match-string 1 str)))
@@ -235,9 +239,7 @@ Set to nil to use the default 'title (path)' format."
                      (props (text-properties-at 0 consult-recoll--current)))
            (apply #'propertize (concat "    " str) 'page pageno props)))
         (consult-recoll--current
-         (let ((snippets (concat (consult-recoll--snippets) "\n" str)))
-           (setq consult-recoll--current
-                 (propertize consult-recoll--current 'snippets snippets)))
+         (push str (car consult-recoll--snippets))
          nil)))
 
 (defvar consult-recoll--preview-buffer "*consult-recoll preview*")
@@ -258,7 +260,8 @@ Set to nil to use the default 'title (path)' format."
              (insert (propertize url 'face 'consult-recoll-url-face) "\n")
              (insert (propertize (consult-recoll--candidate-mime candidate)
                                  'face 'consult-recoll-mime-face))
-             (when-let (s (consult-recoll--snippets candidate)) (insert "\n" s))
+             (when-let (s (consult-recoll--snippets candidate))
+               (insert "\n\n" s))
              (goto-char (point-min)))
            (pop-to-buffer buff)))
         ((eq action 'exit)
@@ -269,14 +272,15 @@ Set to nil to use the default 'title (path)' format."
   "If TRANSFORM return candidate, othewise extract mime-type."
   (if transform candidate (consult-recoll--candidate-mime candidate)))
 
+(defun consult-recoll--format-size (bytes)
+  "Format the given size with adaptive units."
+  (file-size-human-readable (string-to-number bytes) nil " " "B"))
+
 (defun consult-recoll--annotation (candidate)
   "Annotation for the given CANDIDATE (its size by default)"
-  (let* ((head (not (consult-recoll--candidate-page candidate)))
-         (size (consult-recoll--candidate-size candidate))
-         (mime (if head
-                   ""
-                 (format ", %s" (consult-recoll--candidate-mime candidate)))))
-    (format "     (%s bytes%s)" size mime)))
+  (and (not (consult-recoll--candidate-page candidate))
+       (format " (%s)" (consult-recoll--format-size
+                        (consult-recoll--candidate-size candidate)))))
 
 (defun consult-recoll--search (&optional initial)
   "Perform an asynchronous recoll search via `consult--read'.

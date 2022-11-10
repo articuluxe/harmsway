@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-11-07 15:13:58 dharms>
+;; Modified Time-stamp: <2022-11-09 21:19:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4360,6 +4360,8 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'php-mode-hook
             (lambda()
+              (require 'php-flymake)
+              (flymake-mode 1)
               (require 'semantic/symref/grep)
               (add-to-list 'semantic-symref-filepattern-alist '(php-mode "*.php" "*.inc"))))
   :config

@@ -140,9 +140,16 @@
       (modeline-warning "#edbf00")
       (modeline-info    "#5fd0bf")
 
+      (underline-err     "#df2f2f")
+      (underline-warning "#c0b000")
+      (underline-info    "#22b022")
+
+      ;; Conditional hues
+      (bg-region-intense "#5d336c")
+
       ;; Mappings
       (err red-warmer)
-      (warning yellow-warmer)
+      (warning yellow)
       (info green)
 
       (link cyan)
@@ -161,7 +168,7 @@
       (docstring magenta-faint)
       (string green-cooler)
       (type cyan-cooler)
-      (variable blue)
+      (variable cyan-warmer)
 
       (rx-escape blue-warmer) ; compare with `string'
       (rx-construct red)

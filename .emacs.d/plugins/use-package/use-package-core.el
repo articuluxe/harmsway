@@ -1,12 +1,12 @@
 ;;; use-package-core.el --- A configuration macro for simplifying your .emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2012-2017 John Wiegley
+;; Copyright (C) 2012-2022 Free Software Foundation, Inc.
 
 ;; Author: John Wiegley <johnw@newartisans.com>
 ;; Maintainer: John Wiegley <johnw@newartisans.com>
 ;; Created: 17 Jun 2012
 ;; Modified: 29 Nov 2017
-;; Version: 2.4.1
+;; Version: 2.4.3
 ;; Package-Requires: ((emacs "24.3"))
 ;; Keywords: dotemacs startup speed config package
 ;; URL: https://github.com/jwiegley/use-package
@@ -66,7 +66,7 @@
   "A use-package declaration for simplifying your `.emacs'."
   :group 'startup)
 
-(defconst use-package-version "2.4.1"
+(defconst use-package-version "2.4.3"
   "This version of use-package.")
 
 (defcustom use-package-keywords
@@ -94,6 +94,7 @@
     ;; Any other keyword that also declares commands to be autoloaded (such as
     ;; :bind) must appear before this keyword.
     :commands
+    :autoload
     :init
     :defer
     :demand
@@ -119,7 +120,8 @@ declaration is incorrect."
 (defcustom use-package-deferring-keywords
   '(:bind-keymap
     :bind-keymap*
-    :commands)
+    :commands
+    :autoload)
   "Unless `:demand' is used, keywords in this list imply deferred loading.
 The reason keywords like `:hook' are not in this list is that
 they only imply deferred loading if they reference actual
@@ -1347,6 +1349,28 @@ meaning:
       (delete-dups arg)))
    (use-package-process-keywords name rest state)))
 
+;;;; :autoload
+
+(defalias 'use-package-normalize/:autoload 'use-package-normalize/:commands)
+
+(defun use-package-handler/:autoload (name _keyword arg rest state)
+  (use-package-concat
+   ;; Since we deferring load, establish any necessary autoloads, and also
+   ;; keep the byte-compiler happy.
+   (let ((name-string (use-package-as-string name)))
+     (cl-mapcan
+      #'(lambda (command)
+          (when (symbolp command)
+            (append
+             (unless (plist-get state :demand)
+               `((unless (fboundp ',command)
+                   (autoload #',command ,name-string))))
+             (when (bound-and-true-p byte-compile-current-file)
+               `((eval-when-compile
+                   (declare-function ,command ,name-string)))))))
+      (delete-dups arg)))
+   (use-package-process-keywords name rest state)))
+
 ;;;; :defer
 
 (defalias 'use-package-normalize/:defer 'use-package-normalize-predicate)
@@ -1477,7 +1501,7 @@ no keyword implies `:all'."
 (defun use-package-normalize/:custom-face (name-symbol _keyword arg)
   "Normalize use-package custom-face keyword."
   (let ((error-msg
-         (format "%s wants a (<symbol> <face-spec>) or list of these"
+         (format "%s wants a (<symbol> <face-spec> [spec-type]) or list of these"
                  name-symbol)))
     (unless (listp arg)
       (use-package-error error-msg))
@@ -1488,13 +1512,13 @@ no keyword implies `:all'."
             (spec (nth 1 def)))
         (when (or (not face)
                   (not spec)
-                  (> (length def) 2))
+                  (> (length def) 3))
           (use-package-error error-msg))))))
 
 (defun use-package-handler/:custom-face (name _keyword args rest state)
   "Generate use-package custom-face keyword code."
   (use-package-concat
-   (mapcar #'(lambda (def) `(custom-set-faces (backquote ,def))) args)
+   (mapcar #'(lambda (def) `(apply #'face-spec-set (backquote ,def))) args)
    (use-package-process-keywords name rest state)))
 
 ;;;; :init
@@ -1633,6 +1657,7 @@ this file.  Usage:
                  package.  This is useful if the package is being lazily
                  loaded, and you wish to conditionally call functions in your
                  `:init' block that are defined in the package.
+:autoload        Similar to :commands, but it for no-interactive one.
 :hook            Specify hook(s) to attach this package to.
 
 :bind            Bind keys, and define autoloads for the bound commands.

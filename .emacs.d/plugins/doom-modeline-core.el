@@ -455,6 +455,13 @@ It requires `ghub' and `async' packages."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-modal t
+  "Whether display the modal state.
+
+Including `evil', `overwrite', `god', `ryo' and `xah-fly-keys', etc."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-modal-icon t
   "Whether display the modal state icon.
 
@@ -532,6 +539,12 @@ If nil, display only if the mode line is active."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-always-visible-segments nil
+  "A list of segments that should be visible even in
+inactive windows."
+  :type '(repeat symbol)
+  :group 'doom-modeline)
+
 
 ;;
 ;; Faces
@@ -564,7 +577,7 @@ If nil, display only if the mode line is active."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-modified
-  '((t (:inherit (error bold) :background nil)))
+  '((t (:inherit (error bold) :background unspecified)))
   "Face used for the \\='unsaved\\=' symbol in the mode-line."
   :group 'doom-modeline-faces)
 
@@ -663,37 +676,82 @@ Also see the face `doom-modeline-unread-number'."
 
 (defface doom-modeline-evil-emacs-state
   '((t (:inherit (font-lock-builtin-face bold))))
-  "Face for the Emacs state tag in evil state indicator."
+  "Face for the Emacs state tag in evil indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-insert-state
   '((t (:inherit (font-lock-keyword-face bold))))
-  "Face for the insert state tag in evil state indicator."
+  "Face for the insert state tag in evil indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-motion-state
-  '((t :inherit (font-lock-doc-face bold) :slant normal))
-  "Face for the motion state tag in evil state indicator."
+  '((t (:inherit (font-lock-doc-face bold) :slant normal)))
+  "Face for the motion state tag in evil indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-normal-state
   '((t (:inherit doom-modeline-info)))
-  "Face for the normal state tag in evil state indicator."
+  "Face for the normal state tag in evil indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-operator-state
   '((t (:inherit doom-modeline-buffer-file)))
-  "Face for the operator state tag in evil state indicator."
+  "Face for the operator state tag in evil indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-visual-state
   '((t (:inherit doom-modeline-warning)))
-  "Face for the visual state tag in evil state indicator."
+  "Face for the visual state tag in evil indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-replace-state
   '((t (:inherit doom-modeline-urgent)))
-  "Face for the replace state tag in evil state indicator."
+  "Face for the replace state tag in evil indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-overwrite
+  '((t (:inherit doom-modeline-urgent)))
+  "Face for overwrite indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-god
+  '((t (:inherit doom-modeline-info)))
+  "Face for god-mode indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-ryo
+  '((t (:inherit doom-modeline-ryo)))
+  "Face for RYO indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-fly-insert-state
+  '((t (:inherit (font-lock-keyword-face bold))))
+  "Face for the insert state in xah-fly-keys indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-fly-normal-state
+  '((t (:inherit doom-modeline-info)))
+  "Face for the normal state in xah-fly-keys indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-boon-command-state
+  '((t (:inherit doom-modeline-info)))
+  "Face for the command state tag in boon indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-boon-insert-state
+  '((t (:inherit (font-lock-keyword-face bold))))
+  "Face for the insert state tag in boon indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-boon-special-state
+  '((t (:inherit (font-lock-builtin-face bold))))
+  "Face for the special state tag in boon indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-boon-off-state
+  '((t (:inherit doom-modeline-buffer-file)))
+  "Face for the off state tag in boon indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-persp-name
@@ -881,6 +939,15 @@ If FRAME is nil, it means the current frame."
     (and doom-modeline-current-window
          (eq (doom-modeline--get-current-window) doom-modeline-current-window))))
 
+(defvar-local doom-modeline--limited-width-p nil)
+
+(defun doom-modeline--segment-visible (name)
+  "Whether a segment should be displayed"
+  (and
+   (or (doom-modeline--active)
+       (member name doom-modeline-always-visible-segments))
+   (not doom-modeline--limited-width-p)))
+
 (defun doom-modeline-set-selected-window (&rest _)
   "Set `doom-modeline-current-window' appropriately."
   (let ((win (doom-modeline--get-current-window)))
@@ -898,6 +965,9 @@ If FRAME is nil, it means the current frame."
 ;; Ensure modeline is inactive when Emacs is unfocused
 (defvar doom-modeline--remap-faces '(mode-line
                                      mode-line-active
+                                     mode-line-emphasis
+                                     mode-line-highlight
+                                     mode-line-buffer-id
                                      solaire-mode-line-face
                                      solaire-mode-line-active-face
                                      paradox-mode-line-face
@@ -1168,7 +1238,7 @@ Use FACE for the bar, WIDTH and HEIGHT are the image size in pixels."
           (concat (format "P1\n%i %i\n" width height)
                   (make-string (* width height) ?1)
                   "\n")
-          'pbm t :foreground color :ascent 'center))))))
+          'pbm t :scale 1 :foreground color :ascent 'center))))))
 
 (defun doom-modeline--create-hud-image
     (face1 face2 width height top-margin bottom-margin)
@@ -1201,7 +1271,6 @@ respectively."
         'pbm t :foreground color1 :background color2 :ascent 'center)))))
 
 ;; Check whether `window-total-width' is smaller than the limit
-(defvar-local doom-modeline--limited-width-p nil)
 (defun doom-modeline-window-size-change-function (&rest _)
   "Function for `window-size-change-functions'."
   (setq doom-modeline--limited-width-p

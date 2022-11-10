@@ -144,9 +144,16 @@
       (modeline-warning "#6f008f")
       (modeline-info    "#00409f")
 
+      (underline-err     "#ef0f1f")
+      (underline-warning "#bf5f00")
+      (underline-info    "#02af52")
+
+      ;; Conditional hues
+      (bg-region-intense "#dfc2b0")
+
       ;; Mappings
       (err red)
-      (warning yellow-warmer)
+      (warning yellow)
       (info green)
 
       (link cyan)
@@ -178,7 +185,7 @@
       (mail-0 blue)
       (mail-1 yellow-cooler)
       (mail-2 cyan-cooler)
-      (mail-3 yellow)
+      (mail-3 red-cooler)
       (mail-4 blue-warmer)
       (mail-5 green-warmer)
 

@@ -132,7 +132,7 @@
       (bg-warning    "#ffe0aa") ; check with warning
       (bg-info       "#ddf5cc") ; check with info
 
-      (border        "#cdc2bb")
+      (border        "#c8bdb6")
       (cursor        "#cf1f00")
       (fg-intense    "#000000")
 
@@ -140,9 +140,16 @@
       (modeline-warning "#66008f")
       (modeline-info    "#1f409f")
 
+      (underline-err     "#ef0f1f")
+      (underline-warning "#bf5f00")
+      (underline-info    "#02af52")
+
+      ;; Conditional hues
+      (bg-region-intense "#dfc39a")
+
       ;; Mappings
       (err red-warmer)
-      (warning yellow-warmer)
+      (warning yellow)
       (info green)
 
       (link cyan-warmer)
@@ -174,7 +181,7 @@
       (mail-0 red)
       (mail-1 green)
       (mail-2 yellow)
-      (mail-3 green-cooler)
+      (mail-3 cyan)
       (mail-4 yellow-cooler)
       (mail-5 blue)
 
