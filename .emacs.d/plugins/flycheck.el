@@ -8878,7 +8878,7 @@ the BUFFER that was checked respectively."
   :command ("ember-template-lint"
             (config-file "--config-path" flycheck-ember-template-lintrc)
             "--filename" source-original
-            "--json")
+            "--format=json")
   :standard-input t
   :error-parser flycheck-ember-template--parse-error
   :modes web-mode
@@ -10828,11 +10828,12 @@ See URL https://github.com/microsoft/pyright."
   :package-version '(flycheck . "32"))
 
 (flycheck-define-checker python-mypy
-  "Mypy syntax and type checker.  Requires mypy>=0.580.
+  "Mypy syntax and type checker.  Requires mypy>=0.730.
 
 See URL `http://mypy-lang.org/'."
   :command ("mypy"
             "--show-column-numbers"
+            "--no-pretty"
             (config-file "--config-file" flycheck-python-mypy-config)
             (option "--cache-dir" flycheck-python-mypy-cache-dir)
             source-original)

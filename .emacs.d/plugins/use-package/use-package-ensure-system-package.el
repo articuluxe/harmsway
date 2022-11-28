@@ -8,8 +8,19 @@
 ;; Version: 0.2
 ;; Package-Requires: ((use-package "2.1") (system-packages "1.0.4"))
 ;; Filename: use-package-ensure-system-package.el
-;; License: GNU General Public License version 3, or (at your option) any later version
-;;
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 ;;
@@ -29,7 +40,7 @@
   "List of custom packages installed.")
 
 (defun use-package-ensure-system-package-consify (arg)
-  "Turn `arg' into a cons of (`package-name' . `install-command')."
+  "Turn ARG into a cons of (`package-name' . `install-command')."
   (cond
    ((stringp arg)
     (cons arg `(system-packages-install ,arg)))
@@ -54,7 +65,7 @@
 
 ;;;###autoload
 (defun use-package-normalize/:ensure-system-package (_name-symbol keyword args)
-  "Turn `arg' into a list of cons-es of (`package-name' . `install-command')."
+  "Turn ARGS into a list of conses of (`package-name' . `install-command')."
   (use-package-as-one (symbol-name keyword) args
     (lambda (_label arg)
       (cond

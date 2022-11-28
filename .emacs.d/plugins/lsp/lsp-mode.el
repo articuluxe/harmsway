@@ -4,7 +4,7 @@
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "26.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
+;; Package-Requires: ((emacs "26.3") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
 ;; Version: 8.0.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
@@ -174,7 +174,7 @@ As defined by the Language Server Protocol 3.16."
   :package-version '(lsp-mode . "6.1"))
 
 (defcustom lsp-client-packages
-  '(ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-bash lsp-beancount lsp-clangd lsp-clojure
+  '(ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-astro lsp-bash lsp-beancount lsp-clangd lsp-clojure
          lsp-cmake lsp-crystal lsp-csharp lsp-css lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile
          lsp-elm lsp-elixir lsp-emmet lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go
          lsp-gleam lsp-graphql lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-idris lsp-java lsp-javascript
@@ -357,6 +357,8 @@ the server has requested that."
     "[/\\\\]\\.reference\\'"
     ;; Bazel
     "bazel-[^/\\\\]+\\'"
+    ;; CSharp
+    "[/\\\\]\\.meta\\'"
     ;; Clojure
     "[/\\\\]\\.lsp\\'"
     "[/\\\\]\\.clj-kondo\\'"
@@ -607,10 +609,7 @@ The hook will receive two parameters list of added and removed folders."
   :type 'hook
   :group 'lsp-mode)
 
-(defcustom lsp-eldoc-hook '(lsp-hover)
-  "Hooks to run for eldoc."
-  :type 'hook
-  :group 'lsp-mode)
+(define-obsolete-variable-alias 'lsp-eldoc-hook 'eldoc-documentation-functions "lsp-mode 8.0.1")
 
 (defcustom lsp-before-apply-edits-hook nil
   "Hooks to run before applying edits."
@@ -749,6 +748,7 @@ Changes take effect only when a new session is started."
                                         (".*/PKGBUILD$" . "shellscript")
                                         (".*\\.ttcn3$" . "ttcn3")
                                         (".*\\ya?ml$" . "yaml")
+                                        (".*\\.astro$" . "astro")
                                         (ada-mode . "ada")
                                         (nxml-mode . "xml")
                                         (sql-mode . "sql")
@@ -762,15 +762,18 @@ Changes take effect only when a new session is started."
                                         (clojurec-mode . "clojure")
                                         (clojurescript-mode . "clojurescript")
                                         (java-mode . "java")
+                                        (java-ts-mode . "java")
                                         (jdee-mode . "java")
                                         (groovy-mode . "groovy")
                                         (python-mode . "python")
+                                        (python-ts-mode . "python")
                                         (cython-mode . "python")
                                         (lsp--render-markdown . "markdown")
                                         (rust-mode . "rust")
                                         (rustic-mode . "rust")
                                         (kotlin-mode . "kotlin")
                                         (css-mode . "css")
+                                        (css-ts-mode . "css")
                                         (less-mode . "less")
                                         (less-css-mode . "less")
                                         (lua-mode . "lua")
@@ -780,7 +783,9 @@ Changes take effect only when a new session is started."
                                         (scad-mode . "openscad")
                                         (xml-mode . "xml")
                                         (c-mode . "c")
+                                        (c-ts-mode . "c")
                                         (c++-mode . "cpp")
+                                        (c++-ts-mode . "cpp")
                                         (cuda-mode . "cuda")
                                         (objc-mode . "objective-c")
                                         (html-mode . "html")
@@ -796,11 +801,14 @@ Changes take effect only when a new session is started."
                                         (powershell-mode . "powershell")
                                         (powershell-mode . "PowerShell")
                                         (json-mode . "json")
+                                        (json-ts-mode . "json")
                                         (jsonc-mode . "jsonc")
                                         (rjsx-mode . "javascript")
                                         (js2-mode . "javascript")
                                         (js-mode . "javascript")
+                                        (js-ts-mode . "javascript")
                                         (typescript-mode . "typescript")
+                                        (typescript-ts-mode . "typescript")
                                         (fsharp-mode . "fsharp")
                                         (reason-mode . "reason")
                                         (caml-mode . "ocaml")
@@ -819,6 +827,7 @@ Changes take effect only when a new session is started."
                                         (dockerfile-mode . "dockerfile")
                                         (csharp-mode . "csharp")
                                         (csharp-tree-sitter-mode . "csharp")
+                                        (csharp-ts-mode . "csharp")
                                         (plain-tex-mode . "plaintex")
                                         (latex-mode . "latex")
                                         (v-mode . "v")
@@ -1188,17 +1197,6 @@ See #2049"
 (defun lsp--error (format &rest args)
   "Display lsp error message with FORMAT with ARGS."
   (lsp--message "%s :: %s" (propertize "LSP" 'face 'error) (apply #'format format args)))
-
-(defun lsp--eldoc-message (&optional msg)
-  "Show MSG in eldoc."
-  (setq lsp--eldoc-saved-message msg)
-  (run-with-idle-timer 0 nil (lambda ()
-                               ;; XXX: new eldoc in Emacs 28
-                               ;; recommends running the hook variable
-                               ;; `eldoc-documentation-functions'
-                               ;; instead of using eldoc-message
-                               (with-no-warnings
-                                 (eldoc-message msg)))))
 
 (defun lsp-log (format &rest args)
   "Log message to the ’*lsp-log*’ buffer.
@@ -1942,7 +1940,7 @@ regex in IGNORED-FILES."
     lsp-python-ms lsp-rescript lsp-sonarlint lsp-sourcekit lsp-tailwindcss lsp-treemacs
     lsp-ui swift-helpful
     ;; clients
-    lsp-actionscript lsp-ada lsp-angular lsp-bash lsp-beancount lsp-clangd
+    lsp-actionscript lsp-ada lsp-angular lsp-astro lsp-bash lsp-beancount lsp-clangd
     lsp-clojure lsp-cmake lsp-crystal lsp-csharp lsp-css lsp-d lsp-dhall
     lsp-dockerfile lsp-elixir lsp-elm lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript
     lsp-go lsp-gleam lsp-graphql lsp-groovy lsp-hack lsp-haxe lsp-html lsp-idris lsp-javascript lsp-json lsp-kotlin lsp-lua
@@ -3212,7 +3210,7 @@ workspace->result.
 If NO-WAIT is non-nil send the request as notification."
   (if no-wait
       (lsp-notify method params)
-    (let* ((send-time (time-to-seconds (current-time)))
+    (let* ((send-time (float-time))
            ;; max time by which we must get a response
            (expected-time
             (and
@@ -3234,7 +3232,7 @@ If NO-WAIT is non-nil send the request as notification."
                   (accept-process-output
                    nil
                    (if expected-time (- expected-time send-time) 1))))
-              (setq send-time (time-to-seconds (current-time)))
+              (setq send-time (float-time))
               (when (and expected-time (< expected-time send-time))
                 (error "Timeout while waiting for response.  Method: %s" method)))
             (setq done? t)
@@ -3251,7 +3249,7 @@ If NO-WAIT is non-nil send the request as notification."
   "Send request METHOD with PARAMS and waits until there is no input.
 Return same value as `lsp--while-no-input' and respecting `non-essential'."
   (if non-essential
-    (let* ((send-time (time-to-seconds (current-time)))
+    (let* ((send-time (float-time))
            ;; max time by which we must get a response
            (expected-time
             (and
@@ -3269,7 +3267,7 @@ Return same value as `lsp--while-no-input' and respecting `non-essential'."
                 (catch 'lsp-done
                   (sit-for
                    (if expected-time (- expected-time send-time) 1)))
-                (setq send-time (time-to-seconds (current-time)))
+                (setq send-time (float-time))
                 (when (and expected-time (< expected-time send-time))
                   (error "Timeout while waiting for response.  Method: %s" method)))
               (setq done? (or resp-error resp-result))
@@ -3971,13 +3969,23 @@ yet."
   (lsp-disconnect)
   (lsp))
 
+;; TODO remove those eldoc workarounds when dropping support for Emacs 27
+;; https://github.com/emacs-lsp/lsp-mode/issues/3295#issuecomment-1308994099
+(defvar eldoc-documentation-default) ; CI
+(when (< emacs-major-version 28)
+  (unless (boundp 'eldoc-documentation-functions)
+    (load "eldoc"))
+  (when (memq (default-value 'eldoc-documentation-function) '(nil ignore))
+    ;; actually `eldoc-documentation-strategy', but CI was failing
+    (setq-default eldoc-documentation-function 'eldoc-documentation-default)))
+
 (define-minor-mode lsp-managed-mode
   "Mode for source buffers managed by lsp-mode."
   :lighter nil
   (cond
    (lsp-managed-mode
     (when (lsp-feature? "textDocument/hover")
-      (add-function :before-until (local 'eldoc-documentation-function) #'lsp-eldoc-function)
+      (add-hook 'eldoc-documentation-functions #'lsp-eldoc-function nil t)
       (eldoc-mode 1))
 
     (add-hook 'after-change-functions #'lsp-on-change nil t)
@@ -4012,8 +4020,8 @@ yet."
              (lsp--on-idle buffer)))))))
    (t
     (lsp-unconfig-buffer)
-    (remove-function (local 'eldoc-documentation-function) #'lsp-eldoc-function)
 
+    (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function t)
     (remove-hook 'post-command-hook #'lsp--post-command t)
     (remove-hook 'after-change-functions #'lsp-on-change t)
     (remove-hook 'after-revert-hook #'lsp-on-revert t)
@@ -4050,6 +4058,8 @@ yet."
                                  (lsp--cur-workspace (list lsp--cur-workspace))))
         lsp--cur-workspace)
     (when lsp-auto-configure
+      (lsp--auto-configure)
+
       (when (and lsp-enable-text-document-color
                  (lsp-feature? "textDocument/documentColor"))
         (add-hook 'lsp-on-change-hook #'lsp--document-color nil t))
@@ -4761,6 +4771,21 @@ Added to `after-change-functions'."
   (lsp--idle-reschedule buffer))
 
 
+(defcustom lsp-trim-trailing-whitespace t
+  "Trim trailing whitespace on a line."
+  :group 'lsp-mode
+  :type 'boolean)
+
+(defcustom lsp-insert-final-newline t
+  "Insert a newline character at the end of the file if one does not exist."
+  :group 'lsp-mode
+  :type 'boolean)
+
+(defcustom lsp-trim-final-newlines t
+  "Trim all newlines after the final newline at the end of the file."
+  :group 'lsp-mode
+  :type 'boolean)
+
 
 (defun lsp--on-type-formatting (first-trigger-characters more-trigger-characters)
   "Self insert handling.
@@ -4773,7 +4798,10 @@ Applies on type formatting."
                           :text-document (lsp--text-document-identifier)
                           :options (lsp-make-formatting-options
                                     :tab-size (symbol-value (lsp--get-indent-width major-mode))
-                                    :insert-spaces (if indent-tabs-mode :json-false t))
+                                    :insert-spaces (lsp-json-bool (not indent-tabs-mode))
+                                    :trim-trailing-whitespace? (lsp-json-bool lsp-trim-trailing-whitespace)
+                                    :insert-final-newline? (lsp-json-bool lsp-insert-final-newline)
+                                    :trim-final-newlines? (lsp-json-bool lsp-trim-final-newlines))
                           :ch (char-to-string ch)
                           :position (lsp--cur-position))
                          (lambda (data) (lsp--apply-text-edits data 'format))
@@ -5057,10 +5085,32 @@ If EXCLUDE-DECLARATION is non-nil, request the server to include declarations."
    (->> lsp--cur-workspace lsp--workspace-client lsp--client-response-handlers (remhash id))
    (lsp-notify "$/cancelRequest" `(:id ,id))))
 
-(defun lsp-eldoc-function ()
-  "`lsp-mode' eldoc function."
-  (run-hooks 'lsp-eldoc-hook)
-  eldoc-last-message)
+(defvar-local lsp--hover-saved-bounds nil)
+
+(defun lsp-eldoc-function (cb &rest _ignored)
+  "`lsp-mode' eldoc function to display hover info (based on `textDocument/hover')."
+  (if (and lsp--hover-saved-bounds
+           (lsp--point-in-bounds-p lsp--hover-saved-bounds))
+      lsp--eldoc-saved-message
+    (setq lsp--hover-saved-bounds nil
+          lsp--eldoc-saved-message nil)
+    (if (looking-at "[[:space:]\n]")
+        (setq lsp--eldoc-saved-message nil) ; And returns nil.
+      (when (and lsp-eldoc-enable-hover (lsp--capability :hoverProvider))
+        (lsp-request-async
+         "textDocument/hover"
+         (lsp--text-document-position-params)
+         (-lambda ((hover &as &Hover? :range? :contents))
+           (setq lsp--hover-saved-bounds (when range?
+                                           (lsp--range-to-region range?)))
+           (funcall cb (setq lsp--eldoc-saved-message
+                             (when contents
+                               (lsp--render-on-hover-content
+                                contents
+                                lsp-eldoc-render-all)))))
+         :error-handler #'ignore
+         :mode 'tick
+         :cancel-token :eldoc-hover)))))
 
 (defun lsp--point-on-highlight? ()
   (-some? (lambda (overlay)
@@ -5655,36 +5705,6 @@ It will show up only if current point has signature help."
      :cancel-token :document-color-token)))
 
 
-;; hover
-
-(defvar-local lsp--hover-saved-bounds nil)
-
-(defun lsp-hover ()
-  "Display hover info (based on `textDocument/signatureHelp')."
-  (if (and lsp--hover-saved-bounds
-           (lsp--point-in-bounds-p lsp--hover-saved-bounds))
-      (lsp--eldoc-message lsp--eldoc-saved-message)
-    (setq lsp--hover-saved-bounds nil
-          lsp--eldoc-saved-message nil)
-    (if (looking-at "[[:space:]\n]")
-        (lsp--eldoc-message nil)
-      (when (and lsp-eldoc-enable-hover (lsp-feature? "textDocument/hover"))
-        (lsp-request-async
-         "textDocument/hover"
-         (lsp--text-document-position-params)
-         (-lambda ((hover &as &Hover? :range? :contents))
-           (when hover
-             (when range?
-               (setq lsp--hover-saved-bounds (lsp--range-to-region range?)))
-             (lsp--eldoc-message (and contents
-                                      (lsp--render-on-hover-content
-                                       contents
-                                       lsp-eldoc-render-all)))))
-         :error-handler #'ignore
-         :mode 'tick
-         :cancel-token :eldoc-hover)))))
-
-
 
 (defun lsp--action-trigger-parameter-hints (_command)
   "Handler for editor.action.triggerParameterHints."
@@ -5787,6 +5807,7 @@ Request codeAction/resolve for more info if server supports."
     (c++-mode                   . c-basic-offset)                   ; C++
     (csharp-mode                . c-basic-offset)                   ; C#
     (csharp-tree-sitter-mode    . csharp-tree-sitter-indent-offset) ; C#
+    (csharp-ts-mode             . csharp-ts-mode-indent-offset)     ; C# (tree-sitter, Emacs29)
     (d-mode                     . c-basic-offset)                   ; D
     (java-mode                  . c-basic-offset)                   ; Java
     (jde-mode                   . c-basic-offset)                   ; Java (JDE)
@@ -5806,6 +5827,7 @@ Request codeAction/resolve for more info if server supports."
     (nxml-mode                  . nxml-child-indent)                ; XML
     (pascal-mode                . pascal-indent-level)              ; Pascal
     (typescript-mode            . typescript-indent-level)          ; Typescript
+    (typescript-ts-mode         . typescript-ts-mode-indent-offset) ; Typescript (tree-sitter, Emacs29)
     (sh-mode                    . sh-basic-offset)                  ; Shell Script
     (ruby-mode                  . ruby-indent-level)                ; Ruby
     (enh-ruby-mode              . enh-ruby-indent-level)            ; Ruby
@@ -5833,7 +5855,10 @@ Request codeAction/resolve for more info if server supports."
    :text-document (lsp--text-document-identifier)
    :options (lsp-make-formatting-options
              :tab-size (symbol-value (lsp--get-indent-width major-mode))
-             :insert-spaces (if indent-tabs-mode :json-false t))))
+             :insert-spaces (lsp-json-bool (not indent-tabs-mode))
+             :trim-trailing-whitespace? (lsp-json-bool lsp-trim-trailing-whitespace)
+             :insert-final-newline? (lsp-json-bool lsp-insert-final-newline)
+             :trim-final-newlines? (lsp-json-bool lsp-trim-final-newlines))))
 
 (defun lsp-format-buffer ()
   "Ask the server to format this document."
@@ -6450,6 +6475,10 @@ PARAMS are the `workspace/configuration' request params"
                      section))))))
        (apply #'vector)))
 
+(defun lsp--ms-since (timestamp)
+  "Integer number of milliseconds since TIMESTAMP.  Fractions discarded."
+  (floor (* 1000 (float-time (time-since timestamp)))))
+
 (defun lsp--send-request-response (workspace recv-time request response)
   "Send the RESPONSE for REQUEST in WORKSPACE and log if needed."
   (-let* (((&JSONResponse :params :method :id) request)
@@ -6459,7 +6488,7 @@ PARAMS are the `workspace/configuration' request params"
                           (lsp--make-log-entry method id params 'incoming-req)))
           (resp-entry (and lsp-log-io
                            (lsp--make-log-entry method id response 'outgoing-resp
-                                                (/ (nth 2 (time-since recv-time)) 1000)))))
+                                                (lsp--ms-since recv-time)))))
     ;; Send response to the server.
     (when (lsp--log-io-p method)
       (lsp--log-entry-new req-entry workspace)
@@ -6638,7 +6667,7 @@ server. WORKSPACE is the active workspace."
              (when (lsp--log-io-p method)
                (lsp--log-entry-new
                 (lsp--make-log-entry method id data 'incoming-resp
-                                     (/ (nth 2 (time-since before-send)) 1000))
+                                     (lsp--ms-since before-send))
                 workspace))
              (when callback
                (remhash id (lsp--client-response-handlers client))
@@ -6649,7 +6678,7 @@ server. WORKSPACE is the active workspace."
              (when (lsp--log-io-p method)
                (lsp--log-entry-new
                 (lsp--make-log-entry method id (lsp:json-response-error-error json-data)
-                                     'incoming-resp (/ (nth 2 (time-since before-send)) 1000))
+                                     'incoming-resp (lsp--ms-since before-send))
                 workspace))
              (when callback
                (remhash id (lsp--client-response-handlers client))
@@ -7348,18 +7377,24 @@ returns the command to execute."
   (when (functionp 'lsp-ui-mode)
     (lsp-ui-mode))
 
-  (when lsp-headerline-breadcrumb-enable
-    (add-hook 'lsp-configure-hook 'lsp-headerline-breadcrumb-mode))
-  (when lsp-modeline-code-actions-enable
-    (add-hook 'lsp-configure-hook 'lsp-modeline-code-actions-mode))
-  (when lsp-modeline-diagnostics-enable
-    (add-hook 'lsp-configure-hook 'lsp-modeline-diagnostics-mode))
-  (when lsp-modeline-workspace-status-enable
-    (add-hook 'lsp-configure-hook 'lsp-modeline-workspace-status-mode))
-  (when lsp-lens-enable
-    (add-hook 'lsp-configure-hook 'lsp-lens--enable))
-  (when lsp-semantic-tokens-enable
-    (add-hook 'lsp-configure-hook 'lsp-semantic-tokens--enable))
+  (if lsp-headerline-breadcrumb-enable
+      (add-hook 'lsp-configure-hook 'lsp-headerline-breadcrumb-mode)
+    (remove-hook 'lsp-configure-hook 'lsp-headerline-breadcrumb-mode))
+  (if lsp-modeline-code-actions-enable
+      (add-hook 'lsp-configure-hook 'lsp-modeline-code-actions-mode)
+    (remove-hook 'lsp-configure-hook 'lsp-modeline-code-actions-mode))
+  (if lsp-modeline-diagnostics-enable
+      (add-hook 'lsp-configure-hook 'lsp-modeline-diagnostics-mode)
+    (remove-hook 'lsp-configure-hook 'lsp-modeline-diagnostics-mode))
+  (if lsp-modeline-workspace-status-enable
+      (add-hook 'lsp-configure-hook 'lsp-modeline-workspace-status-mode)
+    (remove-hook 'lsp-configure-hook 'lsp-modeline-workspace-status-mode))
+  (if lsp-lens-enable
+      (add-hook 'lsp-configure-hook 'lsp-lens--enable)
+    (remove-hook 'lsp-configure-hook 'lsp-lens--enable))
+  (if lsp-semantic-tokens-enable
+      (add-hook 'lsp-configure-hook 'lsp-semantic-tokens--enable)
+    (remove-hook 'lsp-configure-hook 'lsp-semantic-tokens--enable))
 
   ;; yas-snippet config
   (setq-local yas-inhibit-overlay-modification-protection t))
@@ -7477,7 +7512,8 @@ SESSION is the active session."
       (lsp-request-async
        "initialize"
        (append
-        (list :processId nil
+        (list :processId (unless (file-remote-p (buffer-file-name))
+                           (emacs-pid))
               :rootPath (lsp-file-local-name (expand-file-name root))
               :clientInfo (list :name "emacs"
                                 :version (emacs-version))
@@ -7998,7 +8034,7 @@ archieve(e. g. when the archieve has multiple files)"
 ;; unzip
 
 (defconst lsp-ext-pwsh-script "powershell -noprofile -noninteractive \
--nologo -ex bypass Expand-Archive -path '%s' -dest '%s'"
+-nologo -ex bypass -command Expand-Archive -path '%s' -dest '%s'"
   "Powershell script to unzip file.")
 
 (defconst lsp-ext-unzip-script "bash -c 'mkdir -p %2$s && unzip -qq -o %1$s -d %2$s'"
@@ -8905,6 +8941,9 @@ The server(s) will be started in the buffer when it has finished."
                        t)))
           (cl-pushnew (current-buffer) (lsp--client-buffers client))
           (lsp--install-server-internal client)))
+       ;; ignore other warnings
+       ((not lsp-warn-no-matched-clients)
+        nil)
        ;; automatic installation disabled
        ((setq clients (unless matching-clients
                         (lsp--filter-clients (-andfn #'lsp--supports-buffer?
@@ -8929,8 +8968,7 @@ You may find the installation instructions at https://emacs-lsp.github.io/lsp-mo
                               clients
                               " ")))
        ;; no matches
-       ((and lsp-warn-no-matched-clients
-             (-> #'lsp--supports-buffer? lsp--filter-clients not))
+       ((-> #'lsp--supports-buffer? lsp--filter-clients not)
         (lsp--error "There are no language servers supporting current mode `%s' registered with `lsp-mode'.
 This issue might be caused by:
 1. The language you are trying to use does not have built-in support in `lsp-mode'. You must install the required support manually. Examples of this are `lsp-java' or `lsp-metals'.

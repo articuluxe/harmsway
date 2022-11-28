@@ -5,31 +5,29 @@
 ;; Author: John Wiegley <johnw@newartisans.com>
 ;; Maintainer: John Wiegley <johnw@newartisans.com>
 ;; Created: 16 Jun 2012
-;; Modified: 29 Nov 2017
 ;; Version: 2.4.1
-;; Keywords: keys keybinding config dotemacs
+;; Package-Requires: ((emacs "24.3"))
+;; Keywords: keys keybinding config dotemacs extensions
 ;; URL: https://github.com/jwiegley/use-package
 
-;; This program is free software; you can redistribute it and/or
-;; modify it under the terms of the gnu general public license as
-;; published by the free software foundation; either version 3, or (at
-;; your option) any later version.
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 
-;; This program is distributed in the hope that it will be useful, but
-;; without any warranty; without even the implied warranty of
-;; merchantability or fitness for a particular purpose.  see the gnu
-;; general public license for more details.
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 
-;; You should have received a copy of the gnu general public license
-;; along with gnu emacs; see the file copying.  if not, write to the
-;; free software foundation, inc., 59 temple place - suite 330,
-;; boston, ma 02111-1307, usa.
-
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 
 ;; If you have lots of keybindings set in your .emacs file, it can be hard to
 ;; know which ones you haven't set yet, and which may now be overriding some
-;; new default in a new emacs version.  This module aims to solve that
+;; new default in a new Emacs version.  This module aims to solve that
 ;; problem.
 ;;
 ;; Bind keys as follows in your .emacs:
@@ -104,7 +102,7 @@
 (require 'easy-mmode)
 
 (defgroup bind-key nil
-  "A simple way to manage personal keybindings"
+  "A simple way to manage personal keybindings."
   :group 'emacs)
 
 (defcustom bind-key-column-widths '(18 . 40)
@@ -127,7 +125,7 @@
 ;; Create override-global-mode to force key remappings
 
 (defvar override-global-map (make-keymap)
-  "override-global-mode keymap")
+  "Keymap for `override-global-mode'.")
 
 (define-minor-mode override-global-mode
   "A minor mode so that keymap settings override other modes."
@@ -150,7 +148,7 @@ Elements have the form ((KEY . [MAP]) CMD ORIGINAL-CMD)")
 
 KEY-NAME may be a vector, in which case it is passed straight to
 `define-key'. Or it may be a string to be interpreted as
-spelled-out keystrokes, e.g., \"C-c C-z\". See documentation of
+spelled-out keystrokes, e.g., `C-c C-z'. See documentation of
 `edmacro-mode' for details.
 
 COMMAND must be an interactive function or lambda form.
@@ -223,11 +221,11 @@ See `bind-key' for more details."
 In contrast to `define-key', this function removes the binding from the keymap."
   (define-key keymap key nil)
   ;; Split M-key in ESC key
-  (setq key (mapcan (lambda (k)
-                      (if (and (integerp k) (/= (logand k ?\M-\0) 0))
-                          (list ?\e (logxor k ?\M-\0))
-                        (list k)))
-                    key))
+  (setq key (cl-mapcan (lambda (k)
+                         (if (and (integerp k) (/= (logand k ?\M-\0) 0))
+                             (list ?\e (logxor k ?\M-\0))
+                           (list k)))
+                       key))
   ;; Delete single keys directly
   (if (= (length key) 1)
       (delete key keymap)
@@ -241,7 +239,7 @@ In contrast to `define-key', this function removes the binding from the keymap."
       (delete (last key) submap)
       ;; Delete submap if it is empty
       (when (= 1 (length submap))
-          (bind-key--remove prefix keymap)))))
+        (bind-key--remove prefix keymap)))))
 
 ;;;###autoload
 (defmacro bind-key* (key-name command &optional predicate)
@@ -519,8 +517,7 @@ function symbol (unquoted)."
                (command-desc (get-binding-description command))
                (was-command-desc (and was-command
                                       (get-binding-description was-command)))
-               (at-present-desc (get-binding-description at-present))
-               )
+               (at-present-desc (get-binding-description at-present)))
           (let ((line
                  (format
                   (format "%%-%ds%%-%ds%%s\n" (car bind-key-column-widths)
@@ -542,7 +539,6 @@ function symbol (unquoted)."
 
 ;; Local Variables:
 ;; outline-regexp: ";;;\\(;* [^\s\t\n]\\|###autoload\\)\\|("
-;; indent-tabs-mode: nil
 ;; End:
 
 ;;; bind-key.el ends here

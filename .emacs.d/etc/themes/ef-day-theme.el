@@ -37,19 +37,23 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-day "Legible light theme with warm, varied colors (yellow, red, green, purple).")
+  (deftheme ef-day
+    "Legible light theme with warm, varied colors (yellow, red, green, purple)."
+    :background-mode 'light
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-day-palette
     '(;; Basic tones
       (bg-main     "#fff5ea")
       (fg-main     "#584141")
-      (bg-dim      "#f3ebdc")
+      (bg-dim      "#f2e9db")
       (fg-dim      "#63728f")
       (bg-alt      "#e9e0d8")
       (fg-alt      "#8f5f4a")
 
       (bg-active   "#d9d0c8")
-      (bg-inactive "#f9f1e8")
+      (bg-inactive "#f7efe6")
 
       ;; Basic hues for foreground values
       (red             "#ba2d2f")
@@ -128,7 +132,7 @@
       (bg-hl-line    "#f9e2b2")
       (bg-region     "#f0d2df")
       (bg-paren      "#8fcfdf")
-      (bg-err        "#ffddee") ; check with err
+      (bg-err        "#ffdde5") ; check with err
       (bg-warning    "#ffe0aa") ; check with warning
       (bg-info       "#ddf5cc") ; check with info
 

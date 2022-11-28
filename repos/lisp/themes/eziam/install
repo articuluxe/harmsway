@@ -1,2 +1,2 @@
-cp src/eziam-common.el ../../../../.emacs.d/plugins
+cp src/eziam-themes.el ../../../../.emacs.d/plugins
 cp src/eziam-*-theme.el ../../../../.emacs.d/etc/themes

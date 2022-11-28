@@ -39,7 +39,8 @@
      flymake-collection-pycodestyle
      (flymake-mypy :disabled t)
      (flymake-collection-pylint :disabled t)
-     (flymake-collection-flake8 :disabled t))
+     (flymake-collection-flake8 :disabled t)
+     (flymake-collection-ruff :disabled t))
     (awk-mode flymake-collection-awk-gawk)
     (c-mode
      flymake-collection-clang
@@ -73,7 +74,19 @@
     (notmuch-message-mode flymake-collection-proselint)
     (nxml-mode flymake-collection-xmllint))
   "Configuration mapping major-modes to `flymake' backends."
-  :type 'list
+  :type '(alist
+          :key-type (symbol :tag "Mode")
+          :value-type
+          (repeat
+           :tag "Backends"
+           (choice
+            (symbol :tag "Backend")
+            (cons :tag "Backend with properties"
+                  (symbol :tag "Backend")
+                  (plist :tag "Properties"
+                         :options ((:disabled boolean)
+                                   (:depth integer)
+                                   (:predicate function)))))))
   :group 'flymake-collection)
 
 (defcustom flymake-collection-config-inherit nil
@@ -109,7 +122,7 @@
 
 (defcustom flymake-collection-hook-ignore-modes nil
   "List of modes in which `flymake-collection-hook' is inhibited."
-  :type '(list symbol)
+  :type '(repeat :tag "Modes" (symbol :tag "Mode"))
   :group 'flymake-collection)
 
 (defun flymake-collection-hook-set-backends ()

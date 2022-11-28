@@ -9,13 +9,13 @@
 ;; Maintainer: USAMI Kenta <tadsan@zonu.me>
 ;; URL: https://github.com/emacs-php/php-mode
 ;; Keywords: languages php
-;; Version: 1.24.1
+;; Version: 1.24.2
 ;; Package-Requires: ((emacs "25.2"))
 ;; License: GPL-3.0-or-later
 
 (eval-and-compile
   (make-obsolete-variable
-   (defconst php-mode-version-number "1.24.1" "PHP Mode version number.")
+   (defconst php-mode-version-number "1.24.2" "PHP Mode version number.")
    "Please call (php-mode-version :as-number t) for compatibility." "1.24.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -115,6 +115,13 @@ The format is follows:
 
 (autoload 'php-mode-debug "php-mode-debug"
   "Display informations useful for debugging PHP Mode." t)
+
+(autoload 'php-mode-debug-reinstall "php-mode-debug"
+  "Reinstall PHP Mode to solve Cc Mode version mismatch.
+
+When FORCE, try to reinstall without interactively asking.
+When CALLED-INTERACTIVE then message the result." t)
+
 
 ;; Local variables
 
@@ -316,7 +323,7 @@ In that case set to `NIL'."
   :tag "PHP Mode Enable Project Local Variable"
   :type 'boolean)
 
-(defconst php-mode-cc-vertion
+(defconst php-mode-cc-version
   (eval-when-compile c-version))
 
 (cl-defun php-mode-version (&key as-number)
@@ -1180,11 +1187,8 @@ After setting the stylevars run hooks according to STYLENAME
   ;; :after-hook (c-update-modeline)
   ;; (setq abbrev-mode t)
 
-  (unless (string= php-mode-cc-vertion c-version)
-    (user-error "CC Mode has been updated.  %s"
-                (if (package-installed-p 'php-mode)
-                    "Please run `M-x package-reinstall php-mode' command."
-                  "Please byte recompile PHP Mode files.")))
+  (unless (string= php-mode-cc-version c-version)
+    (php-mode-debug-reinstall))
 
   (if php-mode-disable-c-mode-hook
       (php-mode-neutralize-cc-mode-effect)

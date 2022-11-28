@@ -350,6 +350,13 @@ Can be either a string, or a list of strings or expressions."
 Each element of the list must have the form \\='(char name handler)."
   :type '(repeat (list character string function)))
 
+(defcustom consult-yank-rotate
+  (if (boundp 'yank-from-kill-ring-rotate)
+      yank-from-kill-ring-rotate
+    t)
+  "Rotate the `kill-ring' in the `consult-yank' commands."
+  :type 'boolean)
+
 ;;;; Faces
 
 (defgroup consult-faces nil
@@ -930,12 +937,10 @@ Otherwise the `default-directory' is returned."
          ;; Bind default-directory in order to find the project
          (pdir (let ((default-directory edir)) (consult--project-root))))
     (cons
-     (cond
-      ((equal edir pdir)
-       (format "%s (Project %s): " prompt (consult--project-name pdir)))
-      ((equal edir (file-name-as-directory (expand-file-name default-directory)))
-       (concat prompt ": "))
-      (t (format "%s (%s): " prompt (consult--abbreviate-directory dir))))
+     (format "%s (%s): " prompt
+             (if (equal edir pdir)
+                 (concat "Project " (consult--project-name pdir))
+               (consult--abbreviate-directory dir)))
      edir)))
 
 (defun consult--default-project-function (may-prompt)
@@ -1049,7 +1054,9 @@ selection change to full Emacs markers."
   "Lookup SELECTED in CANDIDATES list of `consult-location' category.
 Return the location marker."
   (when-let (found (member selected candidates))
-    (car (consult--get-location (car found)))))
+    (setq found (car (consult--get-location (car found))))
+    ;; Check that marker is alive
+    (and (or (not (markerp found)) (marker-buffer found)) found)))
 
 (defun consult--lookup-prop (prop selected candidates &rest _)
   "Lookup SELECTED in CANDIDATES list and return PROP value."
@@ -1537,11 +1544,11 @@ PREVIEW-KEY, STATE, TRANSFORM and CANDIDATE."
                     (lambda ()
                       (when-let ((cand (funcall candidate)))
                         (with-selected-window (active-minibuffer-window)
-                          (let* ((input (minibuffer-contents-no-properties))
-                                 (transformed (funcall transform narrow input cand))
-                                 (new-preview (cons input cand)))
+                          (let ((input (minibuffer-contents-no-properties))
+                                (new-preview (cons input cand)))
                             (with-selected-window (or (minibuffer-selected-window) (next-window))
-                              (when-let (debounce (consult--preview-key-debounce preview-key transformed))
+                              (when-let* ((transformed (funcall transform narrow input cand))
+                                          (debounce (consult--preview-key-debounce preview-key transformed)))
                                 (when timer
                                   (cancel-timer timer)
                                   (setq timer nil))
@@ -2339,22 +2346,32 @@ PREVIEW-KEY are the preview keys."
                                     state preview-key sort lookup group inherit-input-method)
   "Enhanced completing read function selecting from CANDIDATES.
 
+The function is a thin wrapper around `completing-read'. On top
+of `completing-read' it additionally supports asynchronous
+completion list computations, candidate preview and narrowing.
+
 Keyword OPTIONS:
 
 PROMPT is the string which is shown as prompt message in the minibuffer.
-PREDICATE is a filter function called for each candidate.
+PREDICATE is a filter function called for each candidate, returns nil or t.
 REQUIRE-MATCH equals t means that an exact match is required.
 HISTORY is the symbol of the history variable.
 DEFAULT is the default selected value.
 ADD-HISTORY is a list of items to add to the history.
 CATEGORY is the completion category.
 SORT should be set to nil if the candidates are already sorted.
-LOOKUP is a lookup function passed selected, candidates, input and narrow.
-ANNOTATE is a function passed a candidate string to return an annotation.
-INITIAL is the initial input.
+LOOKUP is a lookup function passed the selected candidate string,
+the list of candidates, the current input string and the current
+narrowing value.
+ANNOTATE is a function passed a candidate string. The function
+should either return an annotation string or a list of three
+strings (candidate prefix postfix).
+INITIAL is the initial input string.
 STATE is the state function, see `consult--with-preview'.
-GROUP is a completion metadata `group-function'.
-PREVIEW-KEY are the preview keys (nil, \\='any, a single key or a list of keys).
+GROUP is a completion metadata `group-function' as documented in
+the Elisp manual.
+PREVIEW-KEY are the preview keys. Can be nil, \\='any, a single
+key or a list of keys.
 NARROW is an alist of narrowing prefix strings and description.
 KEYMAP is a command-specific keymap.
 INHERIT-INPUT-METHOD, if non-nil the minibuffer inherits the input method."
@@ -2991,31 +3008,23 @@ SELECTED is the currently selected candidate.
 CANDIDATES is the list of candidates.
 INPUT is the input string entered by the user."
   (when-let (pos (consult--lookup-location selected candidates))
-    (if (string-blank-p input)
-        pos
-      (let* ((highlighted (consult--completion-filter
-                           input
-                           (list (substring-no-properties selected))
-                           'consult-location 'highlight))
-             (matches (and highlighted
-                           ;; Ignore `completions-first-difference' when
-                           ;; matching, since this face doesn't yield a
-                           ;; meaningful jump position.
-                           (consult--point-placement (car highlighted) 0
-                                                     'completions-first-difference))))
-        ;; Marker can be dead, therefore ignore errors. Create a new marker
-        ;; instead of an integer, since the location may be in another buffer,
-        ;; e.g., for `consult-line-multi'.
-        (ignore-errors
-          (let ((dest (+ pos (car matches))))
-            ;; Only create a new marker when jumping across buffers, to avoid
-            ;; creating unnecessary markers, when scrolling through candidates.
-            ;; Creating markers is not free.
-            (when (and (markerp pos)
-                       (not (eq (marker-buffer pos)
-                                (window-buffer (or (minibuffer-selected-window) (next-window))))))
-              (setq dest (move-marker (make-marker) dest (marker-buffer pos))))
-            (cons dest (cdr matches))))))))
+    (if-let* (((not (string-blank-p input)))
+              (highlighted (consult--completion-filter
+                            input
+                            (list (substring-no-properties selected))
+                            'consult-location 'highlight)))
+        ;; Ignore `completions-first-difference' when matching, since
+        ;; this face doesn't yield a meaningful jump position.
+        (let* ((matches (consult--point-placement (car highlighted) 0
+                                                  'completions-first-difference))
+               (dest (+ pos (car matches))))
+          ;; Only create a new marker when jumping across buffers (for example
+          ;; `consult-line-multi'). Avoid creating unnecessary markers, when
+          ;; scrolling through candidates, since creating markers is not free.
+          (when (and (markerp pos) (not (eq (marker-buffer pos) (current-buffer))))
+            (setq dest (move-marker (make-marker) dest (marker-buffer pos))))
+          (cons dest (cdr matches)))
+      pos)))
 
 (cl-defun consult--line (candidates &key curr-line prompt initial group)
   "Select from from line CANDIDATES and jump to the match.
@@ -3539,7 +3548,11 @@ If no MODES are specified, use currently active major and minor modes."
   (consult--lookup-member
    (consult--read
     (consult--remove-dups
-     (or kill-ring (user-error "Kill ring is empty")))
+     (or (if consult-yank-rotate
+             (append kill-ring-yank-pointer
+                     (butlast kill-ring (length kill-ring-yank-pointer)))
+           kill-ring)
+         (user-error "Kill ring is empty")))
     :prompt "Yank from kill-ring: "
     :history t ;; disable history
     :sort nil
@@ -3567,6 +3580,10 @@ version supports preview of the selected string."
     (push-mark)
     (insert-for-yank string)
     (setq this-command 'yank)
+    (when consult-yank-rotate
+      (if-let (pos (seq-position kill-ring string))
+          (setq kill-ring-yank-pointer (nthcdr pos kill-ring))
+        (kill-new string)))
     (when (consp arg)
       ;; Swap point and mark like in `yank'.
       (goto-char (prog1 (mark t)

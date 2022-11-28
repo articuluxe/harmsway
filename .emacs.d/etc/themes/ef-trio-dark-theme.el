@@ -37,19 +37,23 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-trio-dark "Legible dark theme with magenta, blue, teal colors.")
+  (deftheme ef-trio-dark
+    "Legible dark theme with magenta, blue, teal colors."
+    :background-mode 'dark
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-trio-dark-palette
     '(;; Basic tones
       (bg-main      "#160f0f")
       (fg-main      "#d8cfd5")
-      (bg-dim       "#251a23")
+      (bg-dim       "#2a2228")
       (fg-dim       "#908890")
-      (bg-alt       "#33252d")
+      (bg-alt       "#362f35")
       (fg-alt       "#afdacf")
 
-      (bg-active    "#43353d")
-      (bg-inactive  "#1c1416")
+      (bg-active    "#463f45")
+      (bg-inactive  "#1c1719")
 
       ;; Basic hues for foreground values
       (red             "#f48359")
@@ -93,17 +97,17 @@
       (bg-cyan-subtle     "#004065")
 
       ;; Diffs
-      (bg-added          "#00301f")
-      (bg-added-faint    "#002110")
-      (bg-added-refine   "#03462f")
+      (bg-added          "#00371f")
+      (bg-added-faint    "#002918")
+      (bg-added-refine   "#004c2f")
 
-      (bg-changed        "#323200")
-      (bg-changed-faint  "#281a00")
-      (bg-changed-refine "#484800")
+      (bg-changed        "#363300")
+      (bg-changed-faint  "#2a1f00")
+      (bg-changed-refine "#4a4a00")
 
-      (bg-removed        "#4a1119")
-      (bg-removed-faint  "#320a0f")
-      (bg-removed-refine "#751a1f")
+      (bg-removed        "#450f1f")
+      (bg-removed-faint  "#2f060f")
+      (bg-removed-refine "#641426")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -128,9 +132,9 @@
       (bg-hl-line    "#34223f")
       (bg-region     "#16304f")
       (bg-paren      "#2f605e")
-      (bg-err        "#300f06") ; check with err
+      (bg-err        "#3a0f06") ; check with err
       (bg-warning    "#332910") ; check with warning
-      (bg-info       "#1f2a00") ; check with info
+      (bg-info       "#1f2c00") ; check with info
 
       (border        "#605760")
       (cursor        "#ff99ff")

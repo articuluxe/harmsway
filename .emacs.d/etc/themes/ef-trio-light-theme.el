@@ -37,19 +37,23 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-trio-light "Legible light theme with magenta, blue, and teal colors.")
+  (deftheme ef-trio-light
+    "Legible light theme with magenta, blue, and teal colors."
+    :background-mode 'light
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-trio-light-palette
     '(;; Basic tones
       (bg-main     "#f8f5ff")
       (fg-main     "#4f3363")
-      (bg-dim      "#f0ecf4")
+      (bg-dim      "#ebe7f1")
       (fg-dim      "#786e74")
       (bg-alt      "#e3e0e9")
       (fg-alt      "#3f7668")
 
       (bg-active   "#d3d0d9")
-      (bg-inactive "#f3f1fa")
+      (bg-inactive "#efeef7")
 
       ;; Basic hues for foreground values
       (red             "#c3303a")

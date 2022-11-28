@@ -149,8 +149,7 @@ will force opening in right side window."
   :type 'function
   :group 'go-translate)
 
-(defvar-local gts-buffer-source-text nil)
-(defvar-local gts-buffer-version nil)
+(defvar-local gts-buffer-translator nil)
 (defvar-local gts-buffer-keybinding-messages nil)
 (defvar-local gts-buffer-local-map nil)
 
@@ -167,7 +166,7 @@ will force opening in right side window."
 (defun gts-buffer-init-header-line (path &optional desc)
   "Setup header line format.
 It will show the basic information of the translation,
-including FROM/TO and other DESC."
+including PATH and other DESC."
   (setq header-line-format
         (list
          " "
@@ -219,28 +218,55 @@ including FROM/TO and other DESC."
   (with-current-buffer (get-buffer-create buffer)
     (let ((inhibit-read-only t)
           (engines (gts-get translator 'engines)))
-      (with-slots (text path version) translator
+      (with-slots (text path) translator
         ;; setup
         (deactivate-mark)
         (visual-line-mode -1)
+        (font-lock-mode 1)
         (setq-local cursor-type 'hbar)
         (setq-local cursor-in-non-selected-windows nil)
-        (setq-local gts-buffer-version version)
+        (setq-local gts-buffer-translator translator)
         ;; headline
         (gts-buffer-init-header-line path (unless (cdr engines) (oref (car engines) tag)))
         ;; source text
         (erase-buffer)
         (unless (gts-childframe-of-buffer (current-buffer)) (insert "\n")) ; except childframe
         (insert text)
-        (setq-local gts-buffer-source-text text)
-        ;; keybinds.
-        ;;  q for quit and kill the window.
-        ;;  x for switch sl and tl.
-        ;;  M-n and M-p, translate with next/prev direction.
-        ;;  g for refresh.
-        ;;  y to speak the current selection or word.
+        ;; keybinds
         (setq gts-buffer-local-map (make-sparse-keymap))
-        (gts-buffer-set-key ("C-x C-q" "Toggle-Readonly")
+        (gts-buffer-set-key ("x" "Reverse Path")
+          (gts-translate translator text (cons (cdr path) (car path))))
+        (gts-buffer-set-key ("M-p" "Prev Path")
+          (gts-translate translator text (gts-next-path (gts-get translator 'picker) text path t)))
+        (gts-buffer-set-key ("M-n" "Next Path")
+          (gts-translate translator text (gts-next-path (gts-get translator 'picker) text path)))
+        (gts-buffer-set-key ("g" "Refresh")
+          (gts-translate translator text path))
+        (gts-buffer-set-key ("y" "TTS")
+          (if-let ((task (get-text-property (point) 'task)))
+              (gts-do-tts text (car path) (oref task engine))
+            (message "[TTS] No engine found at point")))
+        (gts-buffer-set-key ("O" "Open Externally")
+          (when-let ((task (get-text-property (point) 'task)))
+            (let* ((meta (oref task meta)) (url (plist-get meta :url)))
+              (cond (url (browse-url url) (message "Opening %s... Done!" url))
+                    (t (message "Don't know how to open externally for this."))))))
+        (gts-buffer-set-key ("C" "Clean Cache")
+          (gts-clear-all gts-default-cacher))
+        (gts-buffer-set-key ("t" "Toggle-Follow")
+          (let ((state (if (setq gts-buffer-follow-p (not gts-buffer-follow-p)) "allowed" "disabled")))
+            (message "Now, buffer following %s." state)))
+        (gts-buffer-set-key ("q" "Quit") #'kill-buffer-and-window)
+        (gts-buffer-set-key ("p") #'previous-line)
+        (gts-buffer-set-key ("n") #'next-line)
+        (gts-buffer-set-key ("C-g")
+          (unwind-protect (gts-tts-try-interrupt-playing-process)
+            (keyboard-quit)))
+        (gts-buffer-set-key ("h")
+          (message (mapconcat
+                    (lambda (kd) (concat (propertize (car kd) 'face 'font-lock-keyword-face) ": " (cdr kd)))
+                    (reverse gts-buffer-keybinding-messages) " ")))
+        (gts-buffer-set-key ("C-x C-q")
           (progn (read-only-mode -1)
                  (use-local-map nil)
                  (local-set-key (kbd "C-x C-q")
@@ -248,34 +274,6 @@ including FROM/TO and other DESC."
                                   (interactive)
                                   (read-only-mode 1)
                                   (use-local-map gts-buffer-local-map)))))
-        (gts-buffer-set-key ("M-n" "Next direction")
-          (gts-translate translator text (gts-next-path (gts-get translator 'picker) text path)))
-        (gts-buffer-set-key ("M-p" "Prev direction")
-          (gts-translate translator text (gts-next-path (gts-get translator 'picker) text path t)))
-        (gts-buffer-set-key ("y" "TTS")
-          (if-let ((engine (if (cdr engines)
-                               (when-let ((task (get-text-property (point) 'task)))
-                                 (oref task engine))
-                             (car engines))))
-              (gts-do-tts text (car path) (lambda () (gts-tts engine text (car path))))
-            (message "[TTS] No engine found at point")))
-        (gts-buffer-set-key ("g" "Refresh")           (gts-translate translator text path))
-        (gts-buffer-set-key ("x" "Reverse-Translate") (gts-translate translator text (cons (cdr path) (car path))))
-        (gts-buffer-set-key ("C" "Clean Cache")       (gts-clear-all gts-default-cacher))
-        (gts-buffer-set-key ("q" "Quit") #'kill-buffer-and-window)
-        (gts-buffer-set-key ("p") #'previous-line)
-        (gts-buffer-set-key ("n") #'next-line)
-        (gts-buffer-set-key ("C-g")
-          (unwind-protect
-              (gts-tts-try-interrupt-playing-process)
-            (keyboard-quit)))
-        (gts-buffer-set-key ("t" "Toggle-Follow")
-          (message "Now, buffer following %s."
-                   (if (setq gts-buffer-follow-p (not gts-buffer-follow-p)) "allowed" "disabled")))
-        (gts-buffer-set-key ("h")
-          (message (mapconcat
-                    (lambda (kd) (concat (propertize (car kd) 'face 'font-lock-keyword-face) ": " (cdr kd)))
-                    (reverse gts-buffer-keybinding-messages) " ")))
         (read-only-mode 1)
         (use-local-map gts-buffer-local-map)
         ;; execute the hook if exists
@@ -287,32 +285,35 @@ including FROM/TO and other DESC."
              (buf (get-buffer buffer)))
     (with-current-buffer buf
       (with-slots (err parsed meta engine translator) task
-        (erase-buffer)
+        ;; error
         (if err
-            (progn ;; error display
+            (progn
               (goto-char (point-max))
-              (insert (propertize (format "\n%s" err) 'face 'gts-render-buffer-error-face)))
-          ;; content
-          (if (stringp parsed)
-              (let ((tbeg (plist-get meta :tbeg))
-                    (tend (plist-get meta :tend)))
-                (insert parsed)
-                ;; try set mark in beginning of the translate result,
-                ;; and set currsor position in end of the translate result,
-                ;; so you can quick select the translate result with C-x C-x.
-                (when (and tbeg tend (stringp parsed)
-                           (not (gts-childframe-of-buffer buf))) ; when not childframe
-                  (push-mark tbeg 'nomsg)
-                  (goto-char tend)
-                  (set-window-point (get-buffer-window buf t) tend)))
-            (cl-loop with ft = (plist-get meta :ft) ; cut off the source if necessary
-                     for idx from 0
-                     for src in (gts-get translator 'sptext)
-                     for tar in parsed
-                     concat (concat (propertize src 'face 'gts-render-buffer-source-face) "\n\n"
-                                    (if (and ft (= idx 0)) (cl-subseq tar (1- ft)) tar) "\n\n")
-                     into res
-                     finally (insert res))))
+              (insert (propertize (format "\n\n%s" err) 'face 'gts-render-buffer-error-face)))
+          (erase-buffer)
+          (cond
+           ;; content (non-split)
+           ((stringp parsed)
+            (let ((tbeg (plist-get meta :tbeg))
+                  (tend (plist-get meta :tend)))
+              (unless tbeg
+                (insert (propertize (oref translator text) 'face 'gts-render-buffer-source-face) "\n\n"))
+              (unless tbeg (setq tbeg (point)))
+              (insert parsed)
+              (unless tend (setq tend (point)))
+              ;; try set mark in beginning of the translate result,
+              ;; and set currsor position in end of the translate result,
+              ;; so you can quick select the translate result with C-x C-x.
+              (when (not (gts-childframe-of-buffer buf)) ; when not childframe
+                (push-mark tend 'nomsg)
+                (goto-char tbeg)
+                (set-window-point (get-buffer-window buf t) tbeg))))
+           ;; content (split)
+           (t (cl-loop for idx from 0
+                       for src in (gts-get translator 'sptext)
+                       for tar in parsed
+                       concat (concat (propertize src 'face 'gts-render-buffer-source-face) "\n\n" tar "\n\n") into res
+                       finally (insert res)))))
         ;; update states
         (set-buffer-modified-p nil)
         (gts-buffer-change-header-line-state 'done)
@@ -328,7 +329,7 @@ including FROM/TO and other DESC."
     (with-slots (from to translator) task
       (with-slots (text task-queue version) translator
         (with-current-buffer buf
-          (when (equal gts-buffer-version version)
+          (when (equal (oref gts-buffer-translator version) version)
             (erase-buffer)
             (insert (propertize (format "\n%s\n\n" text) 'face 'gts-render-buffer-source-face))
             ;; content
@@ -345,12 +346,7 @@ including FROM/TO and other DESC."
                                     (concat header (propertize (format "\n%s\n\n" err) 'face 'gts-render-buffer-error-face)))
                                    ((string-empty-p result)
                                     (concat header "\nLoading...\n\n"))
-                                   (t (let ((ft (plist-get meta :ft)))
-                                        (concat header "\n"
-                                                (if ft
-                                                    (cl-subseq result (1- ft))
-                                                  result) ; hide source text in me output
-                                                "\n\n"))))))
+                                   (t (concat header "\n" (string-trim result) "\n\n")))))
                     (put-text-property 0 (length content) 'task task content)
                     (insert content)))))
             ;; states

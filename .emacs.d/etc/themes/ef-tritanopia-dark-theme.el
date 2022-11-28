@@ -40,19 +40,23 @@
   ;; Most of the colors here, like the blue and green hues, are defined
   ;; simply to preserve compatibility with the rest of the project.  We
   ;; don't actually rely on them for anything critical.
-  (deftheme ef-tritanopia-dark "Legible dark theme, optimized for blue-yellow color deficiency.")
+  (deftheme ef-tritanopia-dark
+    "Legible dark theme, optimized for blue-yellow color deficiency."
+    :background-mode 'dark
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-tritanopia-dark-palette
     '(;; Basic tones
       (bg-main      "#15050f")
       (fg-main      "#dfd0d5")
-      (bg-dim       "#221a20")
+      (bg-dim       "#282026")
       (fg-dim       "#908890")
-      (bg-alt       "#30252a")
+      (bg-alt       "#352f2f")
       (fg-alt       "#afdaef")
 
-      (bg-active    "#40353a")
-      (bg-inactive  "#1a1315")
+      (bg-active    "#453f3f")
+      (bg-inactive  "#1a1517")
 
       ;; Basic hues for foreground values
       (red             "#cf4f5f")
@@ -96,17 +100,17 @@
       (bg-cyan-subtle     "#004065")
 
       ;; Diffs
-      (bg-added          "#002d2f")
-      (bg-added-faint    "#001f28")
-      (bg-added-refine   "#003b3f")
+      (bg-added          "#002d3f")
+      (bg-added-faint    "#001f38")
+      (bg-added-refine   "#003b4f")
 
-      (bg-changed        "#30234f")
-      (bg-changed-faint  "#30143f")
-      (bg-changed-refine "#33395f")
+      (bg-changed        "#352354")
+      (bg-changed-faint  "#351444")
+      (bg-changed-refine "#383964")
 
-      (bg-removed        "#3d091f")
-      (bg-removed-faint  "#27040f")
-      (bg-removed-refine "#5b0f26")
+      (bg-removed        "#4d091f")
+      (bg-removed-faint  "#37040f")
+      (bg-removed-refine "#6b0f26")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -131,7 +135,7 @@
       (bg-hl-line    "#3f1515")
       (bg-region     "#202d3f")
       (bg-paren      "#2f5f7a")
-      (bg-err        "#340f0f") ; check with err
+      (bg-err        "#3a0f0f") ; check with err
       (bg-warning    "#371430") ; check with warning
       (bg-info       "#00253a") ; check with info
 

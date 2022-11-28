@@ -37,25 +37,29 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-autumn "Legible dark theme with warm, varied colors (red, yellow, green, teal).")
+  (deftheme ef-autumn
+    "Legible dark theme with warm, varied colors (red, yellow, green, teal)."
+    :background-mode 'dark
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-autumn-palette
     '(;; Basic tones
       (bg-main     "#0f0e06")
       (fg-main     "#cfbcba")
-      (bg-dim      "#1f1b19")
+      (bg-dim      "#26211d")
       (fg-dim      "#887c8a")
       (bg-alt      "#36322f")
       (fg-alt      "#70a89f")
 
       (bg-active   "#46423f")
-      (bg-inactive "#14130a")
+      (bg-inactive "#15140d")
 
       ;; Basic hues for foreground values
       (red             "#ef656a")
       (red-warmer      "#f06a3f")
       (red-cooler      "#ff7a7f")
-      (red-faint       "#d08f72")
+      (red-faint       "#df7f7f")
       (green           "#2fa526")
       (green-warmer    "#64aa0f")
       (green-cooler    "#00b066")
@@ -93,17 +97,17 @@
       (bg-cyan-subtle     "#004065")
 
       ;; Diffs
-      (bg-added          "#172c0f")
-      (bg-added-faint    "#0a1f00")
-      (bg-added-refine   "#203f10")
+      (bg-added          "#17360f")
+      (bg-added-faint    "#0a2900")
+      (bg-added-refine   "#204810")
 
-      (bg-changed        "#323200")
-      (bg-changed-faint  "#281a00")
-      (bg-changed-refine "#484800")
+      (bg-changed        "#363300")
+      (bg-changed-faint  "#2a1f00")
+      (bg-changed-refine "#4a4a00")
 
-      (bg-removed        "#46120a")
-      (bg-removed-faint  "#330a00")
-      (bg-removed-refine "#6a1a16")
+      (bg-removed        "#4b120a")
+      (bg-removed-faint  "#3a0a00")
+      (bg-removed-refine "#6f1a16")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -128,9 +132,9 @@
       (bg-hl-line    "#302a3a")
       (bg-region     "#3f1020")
       (bg-paren      "#2f6c4a")
-      (bg-err        "#361400") ; check with err
+      (bg-err        "#391400") ; check with err
       (bg-warning    "#332800") ; check with warning
-      (bg-info       "#152800") ; check with info
+      (bg-info       "#152a00") ; check with info
 
       (border        "#58514f")
       (cursor        "#ffaa33")

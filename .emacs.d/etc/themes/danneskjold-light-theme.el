@@ -8,16 +8,19 @@
 
    `(ivy-current-match ((t (:weight bold :background "#ffd600"))))
    `(ivy-minibuffer-match-face-1 ((t (:foreground "black"))))
-   `(ivy-minibuffer-match-face-2 ((t (:height ,zoom-in-factor))))
-   `(ivy-minibuffer-match-face-3 ((t (:height ,zoom-in-factor))))
-   `(ivy-minibuffer-match-face-4 ((t (:height ,zoom-in-factor))))
+   ;; `(ivy-minibuffer-match-face-2 ((t (:height ,zoom-in-factor))))
+   ;; `(ivy-minibuffer-match-face-3 ((t (:height ,zoom-in-factor))))
+   ;; `(ivy-minibuffer-match-face-4 ((t (:height ,zoom-in-factor))))
+
+   ;; company
+   `(company-tooltip-selection ((t (:background "#ffd600"))))
 
    `(swiper-match-face-1 ((t (:foreground "black"))))
-   `(swiper-match-face-2 ((t (:height ,zoom-in-factor))))
-   `(swiper-match-face-3 ((t (:height ,zoom-in-factor))))
-   `(swiper-match-face-4 ((t (:height ,zoom-in-factor))))
+   ;; `(swiper-match-face-2 ((t (:height ,zoom-in-factor))))
+   ;; `(swiper-match-face-3 ((t (:height ,zoom-in-factor))))
+   ;; `(swiper-match-face-4 ((t (:height ,zoom-in-factor))))
 
-   `(tooltip ((t (:foreground "black" :background "white" :family "JetBrains Mono"))))
+   `(tooltip ((t (:foreground "black" :background "white"))))
 
    `(line-number ((t (:foreground "grey"))))
    `(line-number-current-line ((t (:foreground "#749AF7"))))

@@ -37,7 +37,11 @@
 (eval-and-compile
   (require 'ef-themes)
 
-  (deftheme ef-cherie "Legible dark theme with warm colors (mostly pink, magenta, gold)")
+  (deftheme ef-cherie
+    "Legible dark theme with warm colors (mostly pink, magenta, gold)"
+    :background-mode 'dark
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-cherie-palette
     '(;; Basic tones
@@ -60,7 +64,7 @@
       (green-warmer    "#80b25f")
       (green-cooler    "#60bf88")
       (green-faint     "#61a06c")
-      (yellow          "#d59c6f")
+      (yellow          "#e5b76f")
       (yellow-warmer   "#ea9955")
       (yellow-cooler   "#f59280")
       (yellow-faint    "#bf9f8f")
@@ -93,17 +97,17 @@
       (bg-cyan-subtle     "#004065")
 
       ;; Diffs
-      (bg-added          "#00301f")
-      (bg-added-faint    "#002110")
-      (bg-added-refine   "#03462f")
+      (bg-added          "#00351f")
+      (bg-added-faint    "#002410")
+      (bg-added-refine   "#034d2f")
 
-      (bg-changed        "#323200")
-      (bg-changed-faint  "#281a00")
-      (bg-changed-refine "#484800")
+      (bg-changed        "#363300")
+      (bg-changed-faint  "#2a1f00")
+      (bg-changed-refine "#4a4a00")
 
-      (bg-removed        "#4f0c28")
-      (bg-removed-faint  "#320a14")
-      (bg-removed-refine "#6f1a35")
+      (bg-removed        "#510c28")
+      (bg-removed-faint  "#340a14")
+      (bg-removed-refine "#701a35")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -128,9 +132,9 @@
       (bg-hl-line    "#401f33")
       (bg-region     "#232f3f")
       (bg-paren      "#3f5f75")
-      (bg-err        "#370f12") ; check with err
+      (bg-err        "#3c0f12") ; check with err
       (bg-warning    "#352905") ; check with warning
-      (bg-info       "#1c2b00") ; check with info
+      (bg-info       "#1a2e00") ; check with info
 
       (border        "#695960")
       (cursor        "#ff5aaf")

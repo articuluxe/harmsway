@@ -44,7 +44,7 @@
   (if (listp object) object (list object)))
 
 (defun gts-ensure-plain (o)
-  "Make sure O if not executable."
+  "Return O or the result of its execution."
   (if (functionp o) (funcall o) o))
 
 
@@ -68,24 +68,24 @@
 ;; translator/task
 
 (defclass gts-translator ()
-  ((picker     :initarg :picker  :documentation "`gts-picker' object or a function return it" :initform nil)
-   (engines    :initarg :engines :documentation "a list of `gts-engine' objects or a function return them" :initform nil)
-   (render     :initarg :render  :documentation "`gts-render' object or a function return it" :initform nil)
+  ((picker     :initarg :picker   :documentation "`gts-picker' object or a function return it" :initform nil)
+   (engines    :initarg :engines  :documentation "a list of `gts-engine' objects or a function return them" :initform nil)
+   (render     :initarg :render   :documentation "`gts-render' object or a function return it" :initform nil)
    (splitter   :initarg :splitter :documentation "`gts-splitter' object or a function return it" :initform nil)
 
-   (text       :initarg :text    :documentation "Text to be translated")
-   (sptext     :initarg :sptext  :documentation "List of strings splitted according `gts-splitter'")
-   (path       :initarg :path    :documentation "From/To language cons")
+   (text       :initarg :text     :documentation "Text to be translated")
+   (sptext     :initarg :sptext   :documentation "List of strings splitted according `gts-splitter'")
+   (path       :initarg :path     :documentation "From/To language cons")
 
-   (plan-cnt   :initform 0       :documentation "count of tasks in a translation")
-   (task-queue :initform nil     :documentation "translation tasks.")
-   (state      :initform 0       :documentation "Inner state of the translator:
+   (plan-cnt   :initform 0        :documentation "count of tasks in a translation")
+   (task-queue :initform nil      :documentation "translation tasks.")
+   (state      :initform 0        :documentation "Inner state of the translator:
 0: new translator without any tasks,
 1: tasks add finished, but not running,
 2: prepare render finished, and begin to running,
 3: all tasks running finished,
 4: rendered done, all over.")
-   (version    :initform nil     :documentation "Used to distinguish between different translations")))
+   (version    :initform nil      :documentation "Used to distinguish between different translations")))
 
 (defclass gts-task ()
   ((id         :initform (gensym))
@@ -97,10 +97,10 @@
    (raw        :initform nil :documentation "raw result responsed by the http-client")
    (parsed     :initform nil :initarg :parsed :documentation "result parsed by parser, string or list")
    (err        :initform nil :initarg :err    :documentation "error info")
-   (meta       :initform nil :initarg :meta   :documentation "extra info passed from parser to render. tbeg/tend/ft")
+   (meta       :initform nil :initarg :meta   :documentation "extra info passed from parser to render. tbeg/tend")
 
-   (engine     :initarg :engine :initform nil)
-   (render     :initarg :render :initform nil)
+   (engine     :initarg :engine     :initform nil)
+   (render     :initarg :render     :initform nil)
    (translator :initarg :translator :initform nil)))
 
 ;; picker/texter
@@ -108,8 +108,7 @@
 (defclass gts-picker ()
   ((single   :initarg :single :initform nil)
    (texter   :initarg :texter))
-  "Used to pick the translation source text and translation from/to path.
-No inner state, use return value of methods."
+  "Used to pick the translation source text and from/to lang."
   :abstract t)
 
 (defclass gts-texter () ()
@@ -126,10 +125,8 @@ You can implements your rules.")
 ;; engine/parser
 
 (defclass gts-engine ()
-  ((tag       :initarg :tag :documentation "Used to display as name")
-   (base-url  :initarg :url)
-   (sub-url)
-   (parser    :initarg :parser))
+  ((tag       :initarg :tag    :documentation "Used to display as name")
+   (parser    :initarg :parser :documentation "Used to parse the response result"))
   :abstract t)
 
 (defclass gts-parser ()
@@ -142,7 +139,7 @@ You can implements your rules.")
 ;; generic methods
 
 (cl-defgeneric gts-translate (translator-or-engine &rest args)
-  "Do the translation for TRANSLATOR-OR-ENGINE.
+  "Start a translation for TRANSLATOR-OR-ENGINE.
 ARGS should be text/path or task/callback.")
 
 ;; silence byte-compiler
@@ -178,7 +175,7 @@ ARGS should be text/path or task/callback.")
   :group 'go-translate)
 
 (defcustom gts-cache-expired-factor (* 30 60)
-  "Cache alive time  based on this.
+  "Cache alive time based on this.
 Make word live longer time than sentence."
   :type 'integer
   :group 'go-translate)
@@ -210,7 +207,7 @@ Make word live longer time than sentence."
 (cl-defgeneric gts-request (http-client url &key done fail data headers)
   "Use HTTP-CLIENT to request a URL with DATA.
 When success execute CALLBACK, or execute ERRORBACK."
-  (:method (&rest _) (user-error "Method `gts-request' not implement")))
+  (:method (&rest _) (user-error "Method `gts-request' is not implement")))
 
 (defvar gts-default-http-client nil
   "The default http client used to send a request.")
@@ -218,7 +215,7 @@ When success execute CALLBACK, or execute ERRORBACK."
 (cl-defun gts-do-request (url &key done fail data headers)
   "Helper for `gts-request'.
 DONE is a callback based on the responsed result buffer.
-FAIL is the callback for any error occured in request or DONE."
+FAIL is the callback for any error occured in request or parse."
   (if (and gts-default-http-client
            (eieio-object-p gts-default-http-client)
            (object-of-class-p gts-default-http-client 'gts-http-client))
@@ -284,7 +281,7 @@ The picker will give the translate from/to pair according this."
 
 Used to pick the right language for current translate text.
 
-Key should be the language, and value should be a regexp string or function."
+Key should be the language, value should be a regexp string or function."
   :type 'alist
   :group 'go-translate)
 
@@ -292,7 +289,7 @@ Key should be the language, and value should be a regexp string or function."
 
 (defun gts-picker-lang-matcher (lang)
   "Judge source, sure case, yes:no:unknown.
-choose path, from main, then extra path match"
+choose path, from main, then extra path match."
   (let ((p (cdr (cl-find-if
                  (lambda (item) (string-match-p (format "^%s$" (car item)) lang))
                  gts-picker-lang-match-alist))))
@@ -329,8 +326,7 @@ choose path, from main, then extra path match"
                collect path))))
 
 (cl-defmethod gts-path ((picker gts-picker) text)
-  "Get translate from/to path via PICKER.
-TEXT for auto match, TYPE give all."
+  "Get translate path according TEXT using PICKER."
   (let ((paths (gts-matched-paths picker text)))
     (if paths (car paths)
       (or gts-picker-last-path
@@ -351,21 +347,15 @@ TEXT for auto match, TYPE give all."
 
 (cl-defgeneric gts-split (gts-splitter text)
   "Split TEXT to several parts.
-Return list of string, return nil if only one element.")
+Return list of string, or nil if split failed.")
 
 
 ;;; Engine/Parser
 
-(cl-defmethod gts-translate ((engine gts-engine) task callback)
-  "Do the translation for TASK by ENGINE.
-It's an asynchronous request with a CALLBACK that should accept the parsed task."
-  (gts-do-request (format "%s%s" (oref engine base-url) (oref engine sub-url))
-                  :done (lambda ()
-                          (gts-update-raw task (buffer-string))
-                          (gts-parse (oref engine parser) task)
-                          (funcall callback))
-                  :fail (lambda (err)
-                          (gts-render-fail task err))))
+(cl-defmethod gts-translate ((engine gts-engine) _task _callback)
+  "Translate and update TASK with parsed result using ENGINE.
+The CALLBACK should contain the render logic."
+  (user-error "Method `gts-translate' of %s is not implement" (eieio-object-class-name engine)))
 
 (cl-defmethod gts-translate :around ((engine gts-engine) task callback)
   "Add cache and log support."
@@ -396,17 +386,12 @@ It's an asynchronous request with a CALLBACK that should accept the parsed task.
   (declare (indent 1)))
 
 (cl-defgeneric gts-tts (engine text lang)
-  "TTS, do the speak for TEXT with LANG."
+  "TTS, speak TEXT with LANG."
   (:method ((e gts-engine) &rest _)
            (user-error "No TTS service found on engine `%s'" (oref e tag))))
 
 (cl-defgeneric gts-parse (parser task)
-  (:documentation "Parse RESPONSE for TASK, update the results into TASK.
-The RESPONSE is the raw content returned from the http request.
-The result can be a string with some properties, or an error cons.
-
-Some properties in string will provide more information to the render,
-Eg, beg/end for result position.")
+  (:documentation "Parse the raw result and update the parsed result into TASK.")
   (:method ((_o gts-parser) task)
            ;; do nothing
            (gts-update-parsed task (oref task raw))))
@@ -512,14 +497,15 @@ when this is set to t."
     (ignore-errors (kill-process gts-tts-playing-process))
     (setq gts-tts-playing-process nil)))
 
-(defun gts-do-tts (text _lang handler)
-  "TTS TEXT in LANG with possible tts service.
-If HANDLER speak failed, then try using locally TTS
-if `gts-tts-try-speak-locally' is set."
+(defun gts-do-tts (text lang &optional engine)
+  "Speak TEXT in LANG with possible tts service by ENGINE.
+If engine failed, then try locally TTS if `gts-tts-try-speak-locally' is set."
   (condition-case err
-      (if gts-tts-speaker
-          (funcall handler)
-        (user-error "No mpv/mplayer found"))
+      (if engine
+          (if gts-tts-speaker
+              (gts-tts engine text lang)
+            (user-error "No mpv/mplayer found"))
+        (user-error "No engine TTS service provided"))
     (error (if gts-tts-try-speak-locally
                (cond ((executable-find "powershell")
                       (let ((cmd (format "$w = New-Object -ComObject SAPI.SpVoice; $w.speak(\\\"%s\\\")" text)))
@@ -535,18 +521,6 @@ if `gts-tts-try-speak-locally' is set."
 (defvar gts-text-delimiter "34587612321123")
 
 (defvar gts-current-command nil "The command invoked by `gts-translate'.")
-
-(defun gts-render-fail (task err)
-  (declare (indent 1))
-  (gts-do-log 'translator (format "error? %s" err))
-  (if task
-      (with-slots (translator render) task
-        (let ((engines (gts-get translator 'engines)))
-          (gts-update-raw task nil err)
-          (if (cdr engines)
-              (gts-me-out render task)
-            (gts-out render task))))
-    (signal 'error err)))
 
 (cl-defmethod initialize-instance :after ((this gts-translator) &rest _)
   (unless (gts-ensure-plain (oref this render))
@@ -573,9 +547,9 @@ if `gts-tts-try-speak-locally' is set."
   (unless (and text path)
     (let ((input (gts-pick (gts-get this 'picker))))
       (setq text (cl-nth-value 0 input))
-      (setq path (cl-nth-value 1 input))
-      (oset this text text)
-      (oset this path path)))
+      (setq path (cl-nth-value 1 input))))
+  (oset this text text)
+  (oset this path path)
   (setq gts-picker-last-path path)
   (gts-do-log 'translator (format "\nBegin to translate %s" path))
   (gts-do-log 'text text)
@@ -586,17 +560,15 @@ if `gts-tts-try-speak-locally' is set."
     (oset this plan-cnt (length engines))
     (oset this version (time-to-seconds))
     ;; tasks
-    (let* ((splitted (if splitter (gts-split splitter text)))
-           (rtext (if splitted
-                      (string-join splitted (concat "\n" gts-text-delimiter "\n"))
-                    text)))
+    (let ((splitted (if splitter (gts-split splitter text))))
       (oset this sptext splitted)
-      (dolist (engine engines)
-        (let ((task (gts-task :translator this
-                              :engine engine
-                              :render render
-                              :text rtext :from (car path) :to (cdr path))))
-          (gts-add-task this task)))
+      (cl-loop for engine in engines
+               for task = (gts-task :translator this
+                                    :engine engine
+                                    :render render
+                                    :from (car path) :to (cdr path)
+                                    :text (if splitted (string-join splitted (concat "\n" gts-text-delimiter "\n")) text))
+               do (gts-add-task this task))
       (gts-do-log 'text (format "splitted? %s!" (if splitted "Yes" "No"))))))
 
 (cl-defmethod gts-add-task ((this gts-translator) task)
@@ -612,13 +584,15 @@ if `gts-tts-try-speak-locally' is set."
         (setf state 1)))))
 
 (cl-defmethod gts-done-tasks ((this gts-translator))
-  "Return the tasks finished in THIS translator."
+  "Return the finished tasks in THIS translator."
   (with-slots (task-queue) this
     (cl-remove-if-not
      (lambda (task) (or (oref task err) (oref task raw))) task-queue)))
 
-(cl-defmethod gts-update-raw (task resp &optional error)
-  "Update non-parsed RESP result to TASK, update ERROR if not null."
+(defun gts-update-raw (task resp &optional error)
+  "Update non-parsed RESP result to TASK.
+If ERROR is not nil, then update task with failure."
+  (declare (indent 1))
   (with-slots (id raw err translator) task
     (with-slots (task-queue plan-cnt state) translator
       (setf raw resp)
@@ -627,26 +601,39 @@ if `gts-tts-try-speak-locally' is set."
         (setf state 3))
       (gts-do-log 'translator (format "%s: **responsed** %s" id (or error "success!"))))))
 
-(cl-defmethod gts-update-parsed ((task gts-task) result &optional metadata)
-  "Update TASK with parsed RESULT, update METADATA if exists."
+(defun gts-update-parsed (task result &optional metadata filter)
+  "Update TASK with parsed RESULT, update METADATA if exists.
+FILTER the parsed result if necessary, it's a function take parsed result as argument."
+  (declare (indent 1))
   (with-slots (id raw parsed err meta translator) task
     (if raw
         (condition-case er
-            (progn
-              (setf parsed
-                    (if (or (listp result) (not (gts-get translator 'sptext)))
-                        result
-                      (gts-do-log 'translator
-                        (format "%s: result contains delimiter, so split to list" id))
-                      (split-string result gts-text-delimiter nil "[ \t\n\r]+")))
+            (let ((r (if (or (listp result) (not (gts-get translator 'sptext)))
+                         result
+                       (gts-do-log 'translator
+                         (format "%s: result contains delimiter, so split to list" id))
+                       (split-string result gts-text-delimiter nil "[ \t\n\r]+"))))
+              (setf parsed (if filter (funcall filter r) r))
               (if metadata (setf meta metadata)))
           (error (setf err er)))
       (gts-update-raw task t "Mybe Null Response"))))
 
+(defun gts-render-fail (task error)
+  "Directly render the ERROR message and finish the TASK."
+  (declare (indent 1))
+  (gts-do-log 'translator (format "error? %s" error))
+  (if task
+      (with-slots (translator render) task
+        (let ((engines (gts-get translator 'engines)))
+          (gts-update-raw task nil error)
+          (if (cdr engines)
+              (gts-me-out render task)
+            (gts-out render task))))
+    (signal 'error error)))
+
 (cl-defmethod gts-translate ((this gts-translator) &optional text path)
   "Fire a translation for THIS translator instance.
-If KEEP-PICK is t, then don't invoke `gts-pick' for text and path, use
-the ones already saved in the translator."
+When TEXT and PATH is nil then pick them via `gts-pick'."
   ;; record this, so can fixup issue in posframe-pop etc. Weird?
   (setq gts-current-command this-command)
   ;; initialize

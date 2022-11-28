@@ -40,19 +40,23 @@
   ;; Most of the colors here are defined simply to preserve
   ;; compatibility with the rest of the project.  We don't actually rely
   ;; on them for anything critical.
-  (deftheme ef-duo-dark "Legible dark theme with mostly blue and orange colors.")
+  (deftheme ef-duo-dark
+    "Legible dark theme with mostly blue and orange colors."
+    :background-mode 'dark
+    :kind 'color-scheme
+    :family 'ef)
 
   (defconst ef-duo-dark-palette
     '(;; Basic tones
       (bg-main     "#070019")
       (fg-main     "#d0d0d0")
-      (bg-dim      "#1c1926")
+      (bg-dim      "#1d1a26")
       (fg-dim      "#857f8f")
-      (bg-alt      "#262230")
+      (bg-alt      "#2a2739")
       (fg-alt      "#89afef")
 
-      (bg-active   "#363240")
-      (bg-inactive "#140e1c")
+      (bg-active   "#3a3749")
+      (bg-inactive "#13101f")
 
       ;; Basic hues for foreground values
       (red             "#ef656a")
@@ -131,9 +135,9 @@
       (bg-hl-line    "#301a4f")
       (bg-region     "#042a50")
       (bg-paren      "#2f608e")
-      (bg-err        "#330d09") ; check with err
+      (bg-err        "#360d09") ; check with err
       (bg-warning    "#332600") ; check with warning
-      (bg-info       "#002212") ; check with info
+      (bg-info       "#002d12") ; check with info
 
       (border        "#545f6f")
       (cursor        "#ef6f11")
