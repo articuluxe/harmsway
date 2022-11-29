@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2022  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2022-10-17 15:14:31 dharms>
+;; Modified Time-stamp: <2022-11-29 15:08:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -64,6 +64,7 @@
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
   (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
   (set-face-attribute 'comint-highlight-prompt nil :inherit nil) ;shell mode prompt
+  (set-face-attribute 'region nil :extend nil)
   (let ((sym (intern x)))
     (when (or (eq (face-attribute 'diff-hl-insert :background nil t) 'unspecified)
               (eq (frame-parameter nil 'background-mode) 'light))
