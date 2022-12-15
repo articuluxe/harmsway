@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2022  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-11-09 21:19:49 dharms>
+;; Modified Time-stamp: <2022-12-02 14:52:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1535,7 +1535,7 @@ ARGS are the additional arguments."
 
 (use-package eww
   :init
-  (setq browse-url-browser-function
+  (setq browse-url-handlers
         '(("google.*maps" . browse-url-generic)
           ("maps.*google" . browse-url-generic)
           ("." . eww-browse-url)
