@@ -1,0 +1,2 @@
+cp src/standard-themes.el ../../../../.emacs.d/plugins
+cp src/standard*-theme.el ../../../../.emacs.d/etc/themes
