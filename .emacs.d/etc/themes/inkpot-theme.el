@@ -3,17 +3,20 @@
 ;; SPDX-License-Identifier: GPL-2.0-or-later
 ;; Author: Sarah Iovan <sarah@hwaetageek.com>
 ;;         Campbell Barton <ideasman42@gmail.com>
-;; URL: https://gitlab.com/ideasman42/emacs-inkpot-theme
+;; URL: https://codeberg.org/ideasman42/emacs-inkpot-theme
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.1"))
 
 ;;; Commentary:
 
-;; This file is based on Per Vognsen's port of the original vim theme.
+;; A dark color scheme with bright easily identifiable colors,
+;; without being garish.  Based on VIM's InkPot theme.
 
 ;;; Code:
 
 (deftheme inkpot "Dark color scheme with bright easily identifiable colors.")
+
+(defgroup inkpot nil "InkPot theme and it's settings." :group 'inkpot)
 
 (defcustom inkpot-theme-use-box t "Show outline around mode-line and header." :type 'boolean)
 
@@ -95,8 +98,8 @@
     ;;                        bg:cFormat
     (ip-grey+73 "#b9b9b9") ;; fg:StatusLine fg:StatusLineNC fg:VertSplit
     ;; (ip-grey+81 "#cfcfcd") ;; fg:MBEVisibleNormal
-    ;; (ip-grey+93 "#eeeeee") ;; fg:WildMenu fg:MBEChanged fg:MBEVisibleChanged fg:Visual
-    ;;                           fg:Pmenu fg:PmenuSel fg:PmenuSbar fg:PmenuThumb
+    (ip-grey+93 "#eeeeee") ;; fg:WildMenu fg:MBEChanged fg:MBEVisibleChanged fg:Visual
+    ;;                        fg:Pmenu fg:PmenuSel fg:PmenuSbar fg:PmenuThumb
 
     (ip-black "#000000") ;; bg:Normal
     (ip-white "#ffffff") ;; fg:ErrorMsg fg:WarningMsg
@@ -193,9 +196,9 @@
       ((t (:foreground ,ip-yellow-bright :background ,ip-slate-dark :bold t))))
 
     ;; white-space.
-    '(whitespace-trailing ((nil (:foreground nil :background "#343443"))))
-    '(whitespace-space ((nil (:foreground "#434357" :background nil))))
-    '(whitespace-tab ((nil (:foreground "#434357" :background nil))))
+    '(whitespace-trailing ((nil (:background "#343443"))))
+    '(whitespace-space ((nil (:foreground "#434357"))))
+    '(whitespace-tab ((nil (:foreground "#434357"))))
 
     ;; xref mode.
     `(xref-line-number ((t (:foreground ,ip-slate-lite+17.7 :background ,ip-grey+18))))
@@ -381,6 +384,9 @@
 
     ;; Colors for popular plugins.
 
+    ;; anzu (melpa)
+    `(anzu-mode-line ((t (:foreground ,ip-grey+93))))
+
     ;; highlight-numbers (melpa).
     `(highlight-numbers-number ((t (:foreground ,ip-brown-bright))))
 
@@ -403,6 +409,9 @@
     `(lsp-face-semhl-variable ((t (:foreground ,ip-cream-light))))
     `(lsp-face-semhl-constant ((t (:foreground ,ip-cream-light))))
     `(lsp-face-semhl-function ((t (:foreground ,ip-pink-dark))))
+
+    ;; `dap-mode' (melpa).
+    `(dap-ui-marker-face ((t (:background ,ip-slate-dark+7.6))))
 
     ;; magit-commit-mark (melpa).
     `(magit-commit-mark-read-face ((t (:foreground ,ip-slate-light))))
@@ -448,6 +457,10 @@
     `(highlight-indent-guides-odd-face ((t (:background ,ip-slate-dark+15.7))))
     `(highlight-indent-guides-even-face ((t (:background ,ip-slate-dark+7.9))))
 
+    ;; hl-indent-scope (melpa).
+    `(hl-indent-scope-odd-face ((t (:background ,ip-slate-dark+15.7))))
+    `(hl-indent-scope-even-face ((t (:background ,ip-slate-dark+7.9))))
+
     ;; highlight-operators (melpa).
     `(highlight-operators-face ((t (:foreground ,ip-blue-bright))))
 
@@ -467,7 +480,8 @@
 
 ;;;###autoload
 (when load-file-name
-  (add-to-list 'custom-theme-load-path
+  (add-to-list
+    'custom-theme-load-path
     (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'inkpot)
