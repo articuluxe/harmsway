@@ -41,10 +41,7 @@
   ;; simply to preserve compatibility with the rest of the project.  We
   ;; don't actually rely on them for anything critical.
   (deftheme ef-tritanopia-light
-    "Legible light theme, optimized for blue-yellow color deficiency."
-    :background-mode 'light
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible light theme, optimized for blue-yellow color deficiency.")
 
   (defconst ef-tritanopia-light-palette
     '(;; Basic tones
@@ -55,7 +52,7 @@
       (bg-alt      "#ddd9d9")
       (fg-alt      "#194f90")
 
-      (bg-active   "#cdc9c9")
+      (bg-active   "#bdb9b9")
       (bg-inactive "#f7f2f2")
 
       ;; Basic hues for foreground values
@@ -103,14 +100,17 @@
       (bg-added          "#c9efea")
       (bg-added-faint    "#d7eff5")
       (bg-added-refine   "#b3dfdf")
+      (fg-added          "#004840")
 
       (bg-changed        "#dbdbff")
       (bg-changed-faint  "#e4e4ff")
       (bg-changed-refine "#c0c0ef")
+      (fg-changed        "#333399")
 
       (bg-removed        "#ffd6e0")
       (bg-removed-faint  "#ffe9e6")
       (bg-removed-refine "#f5bfc8")
+      (fg-removed        "#8f1313")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -162,8 +162,10 @@
       (link cyan)
       (link-alt magenta-cooler)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name magenta)
       (keybind red-cooler)
+      (identifier magenta-faint)
       (prompt cyan)
 
       (builtin magenta)
@@ -201,10 +203,28 @@
       (rainbow-6 cyan-faint)
       (rainbow-7 magenta-faint)
       (rainbow-8 red-faint))
-    "The `ef-tritanopia-light' palette.")
+    "The `ef-tritanopia-light' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-tritanopia-light ef-tritanopia-light-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-tritanopia-light-palette-overrides nil
+    "Overrides for `ef-tritanopia-light-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-tritanopia-light ef-tritanopia-light-palette ef-tritanopia-light-palette-overrides)
 
   (provide-theme 'ef-tritanopia-light))
+
+;;;###theme-autoload
+(put 'ef-tritanopia-light 'theme-properties '(:background-mode light :kind color-scheme :family ef))
 
 ;;; ef-tritanopia-light-theme.el ends here

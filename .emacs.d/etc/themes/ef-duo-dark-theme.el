@@ -41,10 +41,7 @@
   ;; compatibility with the rest of the project.  We don't actually rely
   ;; on them for anything critical.
   (deftheme ef-duo-dark
-    "Legible dark theme with mostly blue and orange colors."
-    :background-mode 'dark
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible dark theme with mostly blue and orange colors.")
 
   (defconst ef-duo-dark-palette
     '(;; Basic tones
@@ -55,7 +52,7 @@
       (bg-alt      "#2a2739")
       (fg-alt      "#89afef")
 
-      (bg-active   "#3a3749")
+      (bg-active   "#4a4759")
       (bg-inactive "#13101f")
 
       ;; Basic hues for foreground values
@@ -103,14 +100,17 @@
       (bg-added          "#002d1f")
       (bg-added-faint    "#001f18")
       (bg-added-refine   "#003b2f")
+      (fg-added          "#a0e0a0")
 
       (bg-changed        "#323200")
       (bg-changed-faint  "#2a2000")
       (bg-changed-refine "#444000")
+      (fg-changed        "#efef80")
 
       (bg-removed        "#3d091f")
       (bg-removed-faint  "#27040f")
       (bg-removed-refine "#5b0f26")
+      (fg-removed        "#ffbfbf")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -162,8 +162,10 @@
       (link cyan-warmer)
       (link-alt green-cooler)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name blue)
       (keybind blue-cooler)
+      (identifier red-faint)
       (prompt yellow)
 
       (builtin cyan)
@@ -201,10 +203,28 @@
       (rainbow-6 blue-cooler)
       (rainbow-7 red-cooler)
       (rainbow-8 green-cooler))
-    "The `ef-duo-dark' palette.")
+    "The `ef-duo-dark' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-duo-dark ef-duo-dark-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-duo-dark-palette-overrides nil
+    "Overrides for `ef-duo-dark-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-duo-dark ef-duo-dark-palette ef-duo-dark-palette-overrides)
 
   (provide-theme 'ef-duo-dark))
+
+;;;###theme-autoload
+(put 'ef-duo-dark 'theme-properties '(:background-mode dark :kind color-scheme :family ef))
 
 ;;; ef-duo-dark-theme.el ends here

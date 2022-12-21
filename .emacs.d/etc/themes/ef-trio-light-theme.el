@@ -38,10 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-trio-light
-    "Legible light theme with magenta, blue, and teal colors."
-    :background-mode 'light
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible light theme with magenta, blue, and teal colors.")
 
   (defconst ef-trio-light-palette
     '(;; Basic tones
@@ -52,18 +49,18 @@
       (bg-alt      "#e3e0e9")
       (fg-alt      "#3f7668")
 
-      (bg-active   "#d3d0d9")
+      (bg-active   "#c3c0c9")
       (bg-inactive "#efeef7")
 
       ;; Basic hues for foreground values
       (red             "#c3303a")
       (red-warmer      "#d03033")
       (red-cooler      "#c01f5f")
-      (red-faint       "#c24552")
+      (red-faint       "#a24568")
       (green           "#057800")
       (green-warmer    "#4f7d0f")
       (green-cooler    "#007f6f")
-      (green-faint     "#61756c")
+      (green-faint     "#41754c")
       (yellow          "#a45f22")
       (yellow-warmer   "#b8532f")
       (yellow-cooler   "#b65050")
@@ -100,14 +97,17 @@
       (bg-added          "#caf4da")
       (bg-added-faint    "#dff6ea")
       (bg-added-refine   "#bae9cf")
+      (fg-added          "#005000")
 
       (bg-changed        "#ffdfb9")
       (bg-changed-faint  "#ffefcb")
       (bg-changed-refine "#ffcfa0")
+      (fg-changed        "#553d00")
 
       (bg-removed        "#ffcee0")
       (bg-removed-faint  "#ffdfe6")
       (bg-removed-refine "#f5b6c8")
+      (fg-removed        "#8f1313")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -159,8 +159,10 @@
       (link cyan)
       (link-alt magenta)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name blue)
       (keybind magenta-warmer)
+      (identifier red-faint)
       (prompt blue-cooler)
 
       (builtin magenta-cooler)
@@ -198,10 +200,28 @@
       (rainbow-6 magenta-cooler)
       (rainbow-7 cyan-warmer)
       (rainbow-8 yellow-cooler))
-    "The `ef-trio-light' palette.")
+    "The `ef-trio-light' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-trio-light ef-trio-light-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-trio-light-palette-overrides nil
+    "Overrides for `ef-trio-light-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-trio-light ef-trio-light-palette ef-trio-light-palette-overrides)
 
   (provide-theme 'ef-trio-light))
+
+;;;###theme-autoload
+(put 'ef-trio-light 'theme-properties '(:background-mode light :kind color-scheme :family ef))
 
 ;;; ef-trio-light-theme.el ends here

@@ -980,7 +980,8 @@ vector suitable for `key-description', and COMMAND is a smbol."
    ;; Text of the form \\[foo-command]
    (rx "\\[" (group (+ (not (in "]")))) "]")
    (lambda (it)
-     (let* ((symbol-name (match-string 1 it))
+     (let* ((button-face (if (>= emacs-major-version 28) 'help-key-binding 'button))
+            (symbol-name (match-string 1 it))
             (symbol (intern symbol-name))
             (key (where-is-internal symbol keymap t))
             (key-description
@@ -991,7 +992,8 @@ vector suitable for `key-description', and COMMAND is a smbol."
         key-description
         'helpful-describe-exactly-button
         'symbol symbol
-        'callable-p t)))
+        'callable-p t
+        'face button-face)))
    str
    t
    t))
@@ -1632,7 +1634,9 @@ Includes keybindings for aliases, unlike
           (push
            (format "%s %s"
                    (propertize map 'face 'font-lock-variable-name-face)
-                   key)
+                   (if (>= emacs-major-version 28)
+                       (propertize key 'face 'help-key-binding)
+                     key))
            (if (eq map 'global-map) global-lines mode-lines)))))
     (setq global-lines (-sort #'string< global-lines))
     (setq mode-lines (-sort #'string< mode-lines))
@@ -2962,6 +2966,39 @@ See also `helpful-max-buffers'."
 ;; TODO: find a cleaner solution.
 (defvar bookmark-make-record-function)
 
+(defun helpful--add-support-for-org-links ()
+  "Improve support for org \"help\" links through helpful."
+  (helpful--support-storing-org-links)
+  (helpful--prefer-helpful-when-following-org-link))
+
+(defun helpful--support-storing-org-links ()
+  "Make `org-store-link' in a helpful buffer return a \"help\" link."
+  (when (and (fboundp 'org-link-set-parameters)
+             (not (-contains-p (org-link-types) "helpful")))
+    (org-link-set-parameters "helpful"
+                             :store #'helpful--org-link-store)))
+
+(defun helpful--org-link-store ()
+  "Store \"help\" type link when in a helpful buffer."
+  (when (derived-mode-p 'helpful-mode)
+    ;; Create a "help" link instead of a dedicated "helpful" link: the
+    ;; author of the Org document uses helful, but this is not
+    ;; necessarily the case of the reader of the document.
+    (org-link-store-props :type "help"
+                          :link (format "help:%s" helpful--sym)
+                          :description nil)))
+
+(defun helpful--prefer-helpful-when-following-org-link ()
+  "Prefer helpful when using `org-open-at-point' on a \"help\" link."
+  (when (fboundp 'org-link-set-parameters)
+    (let ((follow-function (org-link-get-parameter "help" :follow)))
+      (when (not (equal follow-function #'helpful--org-link-follow))
+        (org-link-set-parameters "help"
+                                 :follow #'helpful--org-link-follow)))))
+
+(defun helpful--org-link-follow (link _)
+  (helpful-symbol (intern link)))
+
 (define-derived-mode helpful-mode special-mode "Helpful"
   "Major mode for *Helpful* buffers."
   (add-hook 'xref-backend-functions #'elisp--xref-backend nil t)
@@ -2972,7 +3009,13 @@ See also `helpful-max-buffers'."
 
   ;; Enable users to bookmark helpful buffers.
   (set (make-local-variable 'bookmark-make-record-function)
-       #'helpful--bookmark-make-record))
+       #'helpful--bookmark-make-record)
+
+  ;; This function should normally only be called once after Org and
+  ;; helpful are loaded. To avoid using `eval-after-load' (which is
+  ;; only recommended in user init files), the function is called each
+  ;; time the major mode is used.
+  (helpful--add-support-for-org-links))
 
 (provide 'helpful)
 ;;; helpful.el ends here

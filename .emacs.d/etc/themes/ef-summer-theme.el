@@ -38,10 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-summer
-    "Legible light theme with magenta, purple, gold, cyan colors."
-    :background-mode 'light
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible light theme with magenta, purple, gold, cyan colors.")
 
   (defconst ef-summer-palette
     '(;; Basic tones
@@ -52,7 +49,7 @@
       (bg-alt      "#efd3e4")
       (fg-alt      "#af4988")
 
-      (bg-active   "#dfc3d4")
+      (bg-active   "#cfb3c4")
       (bg-inactive "#f7ebee")
 
       ;; Basic hues for foreground values
@@ -75,7 +72,7 @@
       (magenta         "#ba35af")
       (magenta-warmer  "#cb1aaa")
       (magenta-cooler  "#8e44f3")
-      (magenta-faint   "#bf3580")
+      (magenta-faint   "#a45392")
       (cyan            "#1f6fbf")
       (cyan-warmer     "#3f6faf")
       (cyan-cooler     "#0f7b8f")
@@ -100,14 +97,17 @@
       (bg-added          "#caf4da")
       (bg-added-faint    "#dff6ea")
       (bg-added-refine   "#bae9cf")
+      (fg-added          "#005000")
 
       (bg-changed        "#ffdfb9")
       (bg-changed-faint  "#ffefcb")
       (bg-changed-refine "#ffcfa0")
+      (fg-changed        "#553d00")
 
       (bg-removed        "#ffcee0")
       (bg-removed-faint  "#ffdfe6")
       (bg-removed-refine "#f5b6c8")
+      (fg-removed        "#8f1313")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -159,8 +159,10 @@
       (link blue)
       (link-alt green-cooler)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name magenta-warmer)
       (keybind red-cooler)
+      (identifier magenta-faint)
       (prompt magenta-warmer)
 
       (builtin magenta)
@@ -195,13 +197,31 @@
       (rainbow-3 cyan)
       (rainbow-4 magenta)
       (rainbow-5 blue-warmer)
-      (rainbow-6 red-warmer)
+      (rainbow-6 red-cooler)
       (rainbow-7 cyan-cooler)
       (rainbow-8 yellow-cooler))
-    "The `ef-summer' palette.")
+    "The `ef-summer' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-summer ef-summer-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-summer-palette-overrides nil
+    "Overrides for `ef-summer-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-summer ef-summer-palette ef-summer-palette-overrides)
 
   (provide-theme 'ef-summer))
+
+;;;###theme-autoload
+(put 'ef-summer 'theme-properties '(:background-mode light :kind color-scheme :family ef))
 
 ;;; ef-summer-theme.el ends here

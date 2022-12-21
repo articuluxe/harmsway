@@ -84,6 +84,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    'chyla
 ;;;; Built-in
 ;;;;; basic coloring
+   '(default ((t (:family '("Ubuntu Mono" monospace)))))
+   '(fixed-pitch ((t nil)))
    '(button ((t (:underline t))))
    `(link ((t (:foreground ,chyla-keyword :underline t :weight bold))))
    `(link-visited ((t (:foreground ,chyla-text :underline t :weight normal))))
@@ -142,7 +144,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(region ((,class (:background ,chyla-selection))
              (t :inverse-video t)))
    `(secondary-selection ((t (:background ,chyla-white))))
-   `(trailing-whitespace ((t (:background ,chyla-string))))
+   `(trailing-whitespace ((t (:background ,chyla-diff-removed-highlight))))
    `(vertical-border ((t (:foreground ,chyla-border))))
 ;;;;; font lock
    `(font-lock-builtin-face ((t (:foreground ,chyla-keyword))))

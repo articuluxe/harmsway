@@ -5,7 +5,7 @@
 ;; Author: Alex Bennée <alex@bennee.com>
 ;; Maintainer: Alex Bennée <alex@bennee.com>
 ;; Version: 0.6
-;; Package-Requires: ((s "1.12.0") (dash "2.0.0") (emacs "24"))
+;; Package-Requires: ((s "1.12.0") (dash "2.0.0") (emacs "25.1"))
 ;; Homepage: https://github.com/stsquad/dired-rsync
 ;;
 ;; This file is not part of GNU Emacs.
@@ -108,7 +108,7 @@ It is run in the context of the failed process buffer."
   (rx (** 1 3 digit) "%")
   "A regex to extract the % complete from a file.")
 
-(defvar dired-remote-portfwd
+(defvar dired-rsync-remote-portfwd
   "ssh -p %d -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
   "An explicit ssh command for rsync to use port forwarded proxy.
 The string is treated as a format string where %d is replaced with the
@@ -120,7 +120,7 @@ results of `dired-rsync--get-remote-port'.")
   (+ 50000 (length (dired-rsync--get-active-buffers))))
 
 (defun dired-rsync--get-remote-portfwd ()
-  (format dired-remote-portfwd (dired-rsync--get-remote-port)))
+  (format dired-rsync-remote-portfwd (dired-rsync--get-remote-port)))
 
 (defun dired-rsync--quote-and-maybe-convert-from-tramp (file-or-path)
   "Reformat a tramp FILE-OR-PATH to one usable for rsync."
@@ -233,13 +233,12 @@ This gets called whenever the inferior `PROC' changes state as
         (run-hooks 'dired-rsync-failed-hook)))))
 
 
-(defun dired-rsync--filter (proc string details)
-  "`PROC' rsync process filter, insert `STRING' into buffer with `DETAILS'.
+(defun dired-rsync--filter (proc string)
+  "`PROC' rsync process filter, insert `STRING' into buffer.
 
 This gets called with string whenever there is new data to
 display in the process buffer.  We scan the string to extract useful
-information and can use `DETAILS' to find and update the original
-dired-buffer modeline."
+information and update the dired-rsync-modeline-status."
 
   ;; scan the new string
   (let ((err nil) (indicator nil))
@@ -269,17 +268,21 @@ dired-buffer modeline."
 
 (defun dired-rsync--do-run (command details)
   "Run rsync COMMAND in a unique buffer, passing DETAILS to sentinel."
-  (let* ((buf (format "%s @ %s" dired-rsync-proc-buffer-prefix (current-time-string)))
-         (proc (start-process-shell-command "*rsync*" buf command)))
-    (set-process-sentinel
-     proc
-     #'(lambda (proc desc)
-         (dired-rsync--sentinel proc desc details)))
-    (set-process-filter
-     proc
-     #'(lambda (proc string)
-         (dired-rsync--filter proc string details)))
-    (dired-rsync--update-modeline)))
+  (apply #'make-process
+	 (append (list :name "*rsync*"
+		       :buffer (format "%s @ %s"
+				       dired-rsync-proc-buffer-prefix
+				       (current-time-string))
+		       :command (list shell-file-name
+				      shell-command-switch
+				      command)
+		       :sentinel (lambda (proc desc)
+				   (dired-rsync--sentinel proc desc details))
+		       :filter (lambda (proc string)
+				 (dired-rsync--filter proc string)))
+		 (when (eq window-system 'ns)
+		   (list :coding 'mac))))
+  (dired-rsync--update-modeline))
 
 (defun dired-rsync--remote-to-from-local-cmd (sfiles dest)
   "Construct a rsync command for SFILES to DEST copy.
@@ -320,6 +323,18 @@ there."
                       duser
                       dpath)))))
 
+(defun dired-rsync--build-cmd (sfiles dest)
+  "Construct a rsync command for SFILES to DEST copy."
+  (if (and (tramp-tramp-file-p dest)
+           (tramp-tramp-file-p (-first-item sfiles)))
+      (let ((shost (dired-rsync--extract-host-from-tramp (-first-item sfiles)))
+            (src-files (dired-rsync--extract-paths-from-tramp sfiles))
+            (dhost (dired-rsync--extract-host-from-tramp dest t))
+            (duser (dired-rsync--extract-user-from-tramp dest))
+            (dpath (-first-item (dired-rsync--extract-paths-from-tramp (list dest)))))
+        (dired-rsync--remote-to-remote-cmd shost src-files
+                                           duser dhost dpath))
+    (dired-rsync--remote-to-from-local-cmd sfiles dest)))
 
 ;;;###autoload
 (defun dired-rsync (dest)
@@ -338,19 +353,8 @@ ssh/scp tramp connections."
 
   (setq dest (expand-file-name dest))
 
-  (let ((sfiles (funcall dired-rsync-source-files))
-        (cmd))
-    (setq cmd
-          (if (and (tramp-tramp-file-p dest)
-                   (tramp-tramp-file-p (-first-item sfiles)))
-              (let ((shost (dired-rsync--extract-host-from-tramp (-first-item sfiles)))
-                    (src-files (dired-rsync--extract-paths-from-tramp sfiles))
-                    (dhost (dired-rsync--extract-host-from-tramp dest t))
-                    (duser (dired-rsync--extract-user-from-tramp dest))
-                    (dpath (-first-item (dired-rsync--extract-paths-from-tramp (list dest)))))
-                (dired-rsync--remote-to-remote-cmd shost src-files
-                                                   duser dhost dpath))
-            (dired-rsync--remote-to-from-local-cmd sfiles dest)))
+  (let* ((sfiles (funcall dired-rsync-source-files))
+         (cmd (dired-rsync--build-cmd sfiles dest)))
     (dired-rsync--do-run cmd
                          (list :marked-files sfiles
                                :dired-buffer (current-buffer)))))

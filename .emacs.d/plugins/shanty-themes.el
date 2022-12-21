@@ -113,7 +113,7 @@ or 'shanty-dark"
      ;; `(button ((t (:foreground ,fg :background ,green))))
      `(isearch ((t (:background ,magenta+1 :foreground ,bg-2))))
      `(isearch-fail ((t (:background ,red :foreground ,bg-2))))
-     `(lazy-highlight ((t (:background ,green+2 :foreground ,bg))))
+     `(lazy-highlight ((t (:background ,blue+1 :foreground ,bg))))
      `(query-replace ((t (:background ,magenta+1 :foreground ,bg-2))))
      `(highlight ((t (:foreground ,magenta :underline t))))
      `(completions-common-part ((t (:background ,blue+1 :foreground ,bg :weight bold))))
@@ -671,6 +671,9 @@ or 'shanty-dark"
      `(straight-process-command ((t (:foreground ,fg :weight bold))))
      `(straight-process-error ((t (:foreground ,red :weight bold))))
 
+     ;; fic-mode
+     `(fic-face ((t (:foreground ,red+1))))
+     `(fic-author-face ((t (:foreground ,orange+1))))
 
      ;;;; stuff I am not sure what is does
      `(lv-separator ((t (:foreground ,fg-2))))

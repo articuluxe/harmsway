@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 0.9.0
+;; Version: 0.10.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -141,24 +141,29 @@ themes that form part of this collection."
 This is a helper variable intended for internal use.")
 
 (defcustom ef-themes-headings nil
-  "Heading styles with optional list of values for levels 0-8.
+  "Heading styles with optional list of values per heading level.
 
-This is an alist that accepts a (key . list-of-values)
-combination.  The key is either a number, representing the
+This is an alist that accepts a (KEY . LIST-OF-VALUES)
+combination.  The KEY is either a number, representing the
 heading's level (0-8) or t, which pertains to the fallback style.
+The named keys `agenda-date' and `agenda-structure' apply to the
+Org agenda.
 
-Level 0 is a special heading: it is used for what counts as a
-document title or equivalent, such as the #+title construct we
-find in Org files.  Levels 1-8 are regular headings.
+Level 0 is used for what counts as a document title or
+equivalent, such as the #+title construct we find in Org files.
+Levels 1-8 are regular headings.
 
-The list of values covers symbols that refer to properties, as
-described below.  Here is a complete sample, followed by a
-presentation of all available properties:
+The LIST-OF-VALUES covers symbols that refer to properties, as
+described below.  Here is a complete sample with various
+stylistic combinations, followed by a presentation of all
+available properties:
 
     (setq ef-themes-headings
           (quote ((1 . (light variable-pitch 1.5))
                   (2 . (regular 1.3))
                   (3 . (1.1))
+                  (agenda-date . (1.3))
+                  (agenda-structure . (variable-pitch light 1.8))
                   (t . (variable-pitch)))))
 
 By default (a nil value for this variable), all headings have a
@@ -217,11 +222,11 @@ will retain the original aesthetic for that level.  For example:
                   (2 . (1.3))
                   (t . t)))) ; default style for all other levels"
   :group 'ef-themes
-  :package-version '(ef-themes . "0.3.0")
+  :package-version '(ef-themes . "0.10.0")
   :type `(alist
           :options ,(mapcar (lambda (el)
                               (list el ef-themes--headings-choice))
-                            '(0 1 2 3 4 5 6 7 8 t))
+                            '(0 1 2 3 4 5 6 7 8 t agenda-date agenda-structure))
           :key-type symbol
           :value-type ,ef-themes--headings-choice)
   :link '(info-link "(ef-themes) Option for headings"))
@@ -319,10 +324,6 @@ Other examples:
   (when ef-themes-variable-pitch-ui
     (list :inherit 'variable-pitch)))
 
-(defun ef-themes--key-cdr (key alist)
-  "Get cdr of KEY in ALIST."
-  (cdr (assoc key alist)))
-
 (defun ef-themes--alist-or-seq (properties alist-key seq-pred seq-default)
   "Return value from alist or sequence.
 Check PROPERTIES for an alist value that corresponds to
@@ -343,19 +344,17 @@ sequence given SEQ-PRED, using SEQ-DEFAULT as a fallback."
 
 (defun ef-themes--heading (level)
   "Conditional styles for `ef-themes-headings' per LEVEL heading."
-  (let* ((key (ef-themes--key-cdr level ef-themes-headings))
-         (style (or key (ef-themes--key-cdr t ef-themes-headings)))
+  (let* ((key (alist-get level ef-themes-headings))
+         (style (or key (alist-get t ef-themes-headings)))
          (style-listp (listp style))
          (properties style)
          (var (when (memq 'variable-pitch properties) 'variable-pitch))
-         (varbold (if var
-                      (append (list 'bold) (list var))
-                    'bold))
          (weight (when style-listp (ef-themes--weight style))))
     (list :inherit
           (cond
            (weight var)
-           (varbold))
+           (var (append (list 'bold) (list var)))
+           ('bold))
           :height
           (ef-themes--alist-or-seq properties 'height #'floatp 'unspecified)
           :weight
@@ -416,15 +415,32 @@ foreground that is used with any of the intense backgrounds."
   "Return first enabled Ef theme."
   (car (ef-themes--list-enabled-themes)))
 
-(defun ef-themes--palette (theme)
-  "Return THEME palette as a symbol."
-  (when theme
-    (intern (format "%s-palette" theme))))
+(defun ef-themes--palette-symbol (theme &optional overrides)
+  "Return THEME palette as a symbol.
+With optional OVERRIDES, return THEME palette overrides as a
+symbol."
+  (when-let ((suffix (cond
+                      ((and theme overrides)
+                       "palette-overrides")
+                      (theme
+                       "palette"))))
+    (intern (format "%s-%s" theme suffix))))
 
-(defun ef-themes--current-theme-palette ()
-  "Return palette of active Ef theme, else produce `user-error'."
-  (if-let* ((palette (ef-themes--palette (ef-themes--current-theme))))
-      (symbol-value palette)
+(defun ef-themes--palette-value (theme &optional overrides)
+  "Return palette value of THEME with optional OVERRIDES."
+  (let ((base-value (symbol-value (ef-themes--palette-symbol theme))))
+    (if overrides
+        (append (symbol-value (ef-themes--palette-symbol theme :overrides)) base-value)
+      base-value)))
+
+(defun ef-themes--current-theme-palette (&optional overrides)
+  "Return palette value of active Ef theme, else produce `user-error'.
+With optional OVERRIDES return palette value plus whatever
+overrides."
+  (if-let ((theme (ef-themes--current-theme)))
+      (if overrides
+          (ef-themes--palette-value theme :overrides)
+        (ef-themes--palette-value theme))
     (user-error "No enabled Ef theme could be found")))
 
 (defun ef-themes--choose-subset ()
@@ -488,7 +504,8 @@ is ignored in this scenario."
 (defun ef-themes--toggle-theme-p ()
   "Return non-nil if `ef-themes-to-toggle' are valid."
   (mapc (lambda (theme)
-          (if (memq theme ef-themes-collection)
+          (if (or (memq theme ef-themes-collection)
+                  (memq theme (ef-themes--list-known-themes)))
               theme
             (user-error "`%s' is not part of `ef-themes-collection'" theme)))
         ef-themes-to-toggle))
@@ -552,7 +569,7 @@ symbol."
 Routine for `ef-themes-preview-colors'."
   (let ((palette (seq-remove (lambda (cell)
                                (symbolp (cadr cell)))
-                             (symbol-value (ef-themes--palette theme))))
+                             (ef-themes--palette-value theme :overrides)))
         (current-buffer buffer)
         (current-theme theme))
     (with-help-window buffer
@@ -693,7 +710,7 @@ Helper function for `ef-themes-preview-colors'."
     `(child-frame-border ((,c :background ,border)))
     `(comint-highlight-input ((,c :inherit bold)))
     `(comint-highlight-prompt ((,c :inherit minibuffer-prompt)))
-    `(edmacro-label ((,c :inherit bold)))
+    `(edmacro-label ((,c :inherit bold :foreground ,accent-0)))
     `(elisp-shorthand-font-lock-face ((,c :inherit italic)))
     `(error ((,c :inherit bold :foreground ,err)))
     `(escape-glyph ((,c :foreground ,warning)))
@@ -818,8 +835,8 @@ Helper function for `ef-themes-preview-colors'."
 ;;;; calendar and diary
     `(calendar-month-header ((,c :inherit bold)))
     `(calendar-today ((,c :inherit bold :underline t)))
-    `(calendar-weekday-header ((,c :foreground ,fg-alt)))
-    `(calendar-weekend-header ((,c :inherit calendar-weekday-header)))
+    `(calendar-weekday-header ((,c :foreground ,date)))
+    `(calendar-weekend-header ((,c :foreground ,weekend)))
     `(diary ((,c :background ,bg-dim :foreground ,accent-0)))
     `(diary-anniversary ((,c :foreground ,accent-1)))
     `(diary-time ((,c :foreground ,date)))
@@ -837,7 +854,7 @@ Helper function for `ef-themes-preview-colors'."
     `(cider-repl-stdout-face ((,c :foreground ,info)))
     `(cider-warning-highlight-face ((,c :inherit ef-themes-underline-warning)))
 ;;;; change-log and log-view (`vc-print-log' and `vc-print-root-log')
-    `(change-log-acknowledgment ((,c :inherit shadow)))
+    `(change-log-acknowledgment ((,c :foreground ,identifier)))
     `(change-log-conditionals ((,c :inherit error)))
     `(change-log-date ((,c :foreground ,date)))
     `(change-log-email ((,c :foreground ,fg-alt)))
@@ -851,7 +868,7 @@ Helper function for `ef-themes-preview-colors'."
     `(log-edit-unknown-header ((,c :inherit shadow)))
     `(log-view-commit-body (( )))
     `(log-view-file ((,c :inherit bold)))
-    `(log-view-message ((,c :inherit shadow)))
+    `(log-view-message ((,c :foreground ,identifier)))
 ;;;; clojure-mode
     `(clojure-keyword-face ((,c :inherit font-lock-builtin-face)))
 ;;;; company-mode
@@ -1095,7 +1112,7 @@ Helper function for `ef-themes-preview-colors'."
     `(eshell-ls-missing ((,c :inherit error)))
     `(eshell-ls-product ((,c :inherit shadow)))
     `(eshell-ls-readonly ((,c :foreground ,warning)))
-    `(eshell-ls-special ((,c :foreground ,magenta)))
+    `(eshell-ls-special ((,c :foreground ,accent-3)))
     `(eshell-ls-symlink ((,c :inherit link)))
     `(eshell-ls-unreadable ((,c :inherit shadow)))
     `(eshell-prompt ((,c :inherit minibuffer-prompt)))
@@ -1149,10 +1166,10 @@ Helper function for `ef-themes-preview-colors'."
     `(git-commit-overlong-summary ((,c :background ,bg-warning :foreground ,warning)))
     `(git-commit-summary ((,c :inherit bold :foreground ,accent-0)))
 ;;;; git-rebase
-    `(git-rebase-comment-hash ((,c :inherit font-lock-comment-face :foreground ,constant)))
+    `(git-rebase-comment-hash ((,c :inherit (bold font-lock-comment-face) :foreground ,identifier)))
     `(git-rebase-comment-heading  ((,c :inherit (bold font-lock-comment-face))))
     `(git-rebase-description ((,c :foreground ,fg-main)))
-    `(git-rebase-hash ((,c :foreground ,constant)))
+    `(git-rebase-hash ((,c :foreground ,identifier)))
 ;;;; gnus
     `(gnus-button ((,c :inherit button)))
     `(gnus-cite-1 ((,c :inherit message-cited-text-1)))
@@ -1319,39 +1336,38 @@ Helper function for `ef-themes-preview-colors'."
     `(magit-bisect-skip ((,c :inherit warning)))
     `(magit-blame-date (( )))
     `(magit-blame-dimmed ((,c :inherit shadow)))
-    `(magit-blame-hash ((,c :inherit shadow)))
-    `(magit-blame-heading ((,c :background ,bg-dim :extend t)))
+    `(magit-blame-hash (( )))
     `(magit-blame-highlight ((,c :background ,bg-active :foreground ,fg-intense)))
     `(magit-blame-name (( )))
-    `(magit-blame-summary (( )))
+    `(magit-blame-summary ((  )))
     `(magit-branch-local ((,c :foreground ,accent-0)))
     `(magit-branch-remote ((,c :foreground ,accent-1)))
     `(magit-branch-upstream ((,c :inherit italic)))
     `(magit-branch-warning ((,c :inherit warning)))
     `(magit-cherry-equivalent ((,c :foreground ,magenta)))
     `(magit-cherry-unmatched ((,c :foreground ,cyan)))
-    `(magit-diff-added ((,c :background ,bg-added-faint)))
-    `(magit-diff-added-highlight ((,c :background ,bg-added)))
-    `(magit-diff-base ((,c :background ,bg-changed-faint)))
-    `(magit-diff-base-highlight ((,c :background ,bg-changed)))
+    `(magit-diff-added ((,c :background ,bg-added-faint :foreground ,fg-added)))
+    `(magit-diff-added-highlight ((,c :background ,bg-added :foreground ,fg-added)))
+    `(magit-diff-base ((,c :background ,bg-changed-faint :foreground ,fg-changed)))
+    `(magit-diff-base-highlight ((,c :background ,bg-changed :foreground ,fg-changed)))
     `(magit-diff-context ((,c :inherit shadow)))
     `(magit-diff-context-highlight ((,c :background ,bg-dim)))
     `(magit-diff-file-heading ((,c :inherit bold :foreground ,accent-0)))
     `(magit-diff-file-heading-highlight ((,c :inherit magit-diff-file-heading :background ,bg-alt)))
     `(magit-diff-file-heading-selection ((,c :inherit bold :background ,bg-hover-alt :foreground ,fg-intense)))
-    `(magit-diff-hunk-heading ((,c :inherit bold :background ,bg-dim)))
+    `(magit-diff-hunk-heading ((,c :background ,bg-alt)))
     `(magit-diff-hunk-heading-highlight ((,c :inherit bold :background ,bg-active :foreground ,fg-intense)))
     `(magit-diff-hunk-heading-selection ((,c :inherit bold :background ,bg-hover-alt :foreground ,fg-intense)))
     `(magit-diff-hunk-region ((,c :inherit bold)))
     `(magit-diff-lines-boundary ((,c :background ,fg-intense)))
     `(magit-diff-lines-heading ((,c :background ,fg-alt :foreground ,bg-alt)))
-    `(magit-diff-removed ((,c :background ,bg-removed-faint)))
-    `(magit-diff-removed-highlight ((,c :background ,bg-removed)))
+    `(magit-diff-removed ((,c :background ,bg-removed-faint :foreground ,fg-removed)))
+    `(magit-diff-removed-highlight ((,c :background ,bg-removed :foreground ,fg-removed)))
     `(magit-diffstat-added ((,c :inherit success)))
     `(magit-diffstat-removed ((,c :inherit error)))
     `(magit-dimmed ((,c :inherit shadow)))
     `(magit-filename ((,c :foreground ,name)))
-    `(magit-hash ((,c :inherit shadow)))
+    `(magit-hash ((,c :foreground ,identifier)))
     `(magit-head ((,c :inherit magit-branch-local)))
     `(magit-header-line ((,c :inherit bold)))
     `(magit-header-line-key ((,c :inherit ef-themes-key-binding)))
@@ -1544,7 +1560,7 @@ Helper function for `ef-themes-preview-colors'."
     `(notmuch-crypto-signature-good-key ((,c :inherit success)))
     `(notmuch-crypto-signature-unknown ((,c :inherit warning)))
     `(notmuch-jump-key ((,c :inherit ef-themes-key-binding)))
-    `(notmuch-message-summary-face ((,c :inherit bold :background ,bg-dim)))
+    `(notmuch-message-summary-face ((,c :inherit bold :background ,bg-alt)))
     `(notmuch-search-count ((,c :foreground ,fg-dim)))
     `(notmuch-search-date ((,c :foreground ,date)))
     `(notmuch-search-flagged-face ((,c :foreground ,err)))
@@ -1578,10 +1594,10 @@ Helper function for `ef-themes-preview-colors'."
     `(org-agenda-clocking ((,c :background ,bg-warning :foreground ,warning)))
     `(org-agenda-column-dateline ((,c :background ,bg-alt)))
     `(org-agenda-current-time ((,c :foreground ,fg-main)))
-    `(org-agenda-date ((,c :inherit ef-themes-heading-1)))
+    `(org-agenda-date ((,c ,@(ef-themes--heading 'agenda-date) :foreground ,date)))
     `(org-agenda-date-today ((,c :inherit org-agenda-date :underline t)))
-    `(org-agenda-date-weekend ((,c :inherit org-agenda-date)))
-    `(org-agenda-date-weekend-today ((,c :inherit org-agenda-date-today)))
+    `(org-agenda-date-weekend ((,c :inherit org-agenda-date :foreground ,weekend)))
+    `(org-agenda-date-weekend-today ((,c :inherit org-agenda-date-today :foreground ,weekend)))
     `(org-agenda-diary ((,c :inherit org-agenda-calendar-sexp)))
     `(org-agenda-dimmed-todo-face ((,c :inherit shadow)))
     `(org-agenda-done ((,c :inherit success)))
@@ -1590,9 +1606,9 @@ Helper function for `ef-themes-preview-colors'."
     `(org-agenda-filter-regexp ((,c :inherit bold :foreground ,modeline-err)))
     `(org-agenda-filter-tags ((,c :inherit bold :foreground ,modeline-err)))
     `(org-agenda-restriction-lock ((,c :background ,bg-dim :foreground ,fg-dim)))
-    `(org-agenda-structure ((,c :inherit ef-themes-heading-0)))
-    `(org-agenda-structure-filter ((,c :inherit org-agenda-structure :foreground ,rainbow-1)))
-    `(org-agenda-structure-secondary ((,c :foreground ,rainbow-1)))
+    `(org-agenda-structure ((,c ,@(ef-themes--heading 'agenda-structure) :foreground ,fg-alt)))
+    `(org-agenda-structure-filter ((,c :inherit org-agenda-structure :foreground ,warning)))
+    `(org-agenda-structure-secondary ((,c :inherit font-lock-doc-face)))
     `(org-archived ((,c :background ,bg-alt :foreground ,fg-main)))
     `(org-block ((,c :inherit ef-themes-fixed-pitch :background ,bg-inactive :extend t)))
     `(org-block-begin-line ((,c :inherit (shadow ef-themes-fixed-pitch) :background ,bg-dim :extend t)))
@@ -1600,7 +1616,7 @@ Helper function for `ef-themes-preview-colors'."
     `(org-checkbox ((,c :foreground ,warning)))
     `(org-checkbox-statistics-done ((,c :inherit org-done)))
     `(org-checkbox-statistics-todo ((,c :inherit org-todo)))
-    `(org-clock-overlay ((,c :background ,bg-alt :foreground ,red-cooler)))
+    `(org-clock-overlay ((,c :background ,bg-hover-alt)))
     `(org-code ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-1)))
     `(org-column ((,c :inherit default :background ,bg-alt)))
     `(org-column-title ((,c :inherit (bold default) :underline t :background ,bg-alt)))
@@ -1694,6 +1710,7 @@ Helper function for `ef-themes-preview-colors'."
     `(package-status-built-in ((,c :foreground ,builtin)))
     `(package-status-dependency ((,c :foreground ,warning)))
     `(package-status-disabled ((,c :inherit error :strike-through t)))
+    `(package-status-from-source ((,c :foreground ,type)))
     `(package-status-held ((,c :foreground ,warning)))
     `(package-status-incompat ((,c :inherit warning)))
     `(package-status-installed ((,c :foreground ,fg-alt)))
@@ -1701,6 +1718,13 @@ Helper function for `ef-themes-preview-colors'."
     `(package-status-unsigned ((,c :inherit error)))
 ;;;; perspective
     `(persp-selected-face ((,c :inherit mode-line-emphasis)))
+;;;; powerline
+    `(powerline-active0 ((,c :background ,fg-dim :foreground ,bg-main)))
+    `(powerline-active1 ((,c :inherit mode-line-active)))
+    `(powerline-active2 ((,c :inherit mode-line-inactive)))
+    `(powerline-inactive0 ((,c :background ,bg-active :foreground ,fg-dim)))
+    `(powerline-inactive1 ((,c :background ,bg-main :foreground ,fg-dim)))
+    `(powerline-inactive2 ((,c :inherit mode-line-inactive)))
 ;;;; pulsar
     `(pulsar-blue ((,c :background ,bg-blue-subtle)))
     `(pulsar-cyan ((,c :background ,bg-cyan-subtle)))
@@ -1759,12 +1783,6 @@ Helper function for `ef-themes-preview-colors'."
     `(ruler-mode-margins ((,c :inherit ruler-mode-default :foreground ,bg-main)))
     `(ruler-mode-pad ((,c :inherit ruler-mode-default :background ,bg-alt :foreground ,fg-dim)))
     `(ruler-mode-tab-stop ((,c :inherit ruler-mode-default :foreground ,yellow)))
-;;;; selectrum
-    `(selectrum-completion-annotation ((,c :inherit completions-annotations)))
-    `(selectrum-completion-docsig ((,c :inherit completions-annotations)))
-    `(selectrum-current-candidate ((,c :background ,bg-completion)))
-    `(selectrum-group-title ((,c :inherit bold :foreground ,name)))
-    `(selectrum-mouse-highlight ((,c :inherit highlight)))
 ;;;; show-paren-mode
     `(show-paren-match ((,c :background ,bg-paren :foreground ,fg-intense)))
     `(show-paren-match-expression ((,c :background ,bg-alt)))
@@ -1950,18 +1968,34 @@ Helper function for `ef-themes-preview-colors'."
 
 ;;; Theme macros
 
+;;;; Instantiate an Ef theme
+
+(defvar ef-themes-common-palette-overrides nil
+  "Set palette overrides for all the Ef themes.
+
+Mirror the elements of a theme's palette, overriding their value.
+The palette variables are named THEME-NAME-palette, while
+individual theme overrides are THEME-NAME-palette-overrides.  The
+THEME-NAME is one of the symbols in `ef-themes-collection'.
+
+Individual theme overrides take precedence over these common
+overrides.")
+
 ;;;###autoload
-(defmacro ef-themes-theme (name palette)
+(defmacro ef-themes-theme (name palette &optional overrides)
   "Bind NAME's color PALETTE around face specs and variables.
 Face specifications are passed to `custom-theme-set-faces'.
 While variables are handled by `custom-theme-set-variables'.
 Those are stored in `ef-themes-faces' and
-`ef-themes-custom-variables' respectively."
+`ef-themes-custom-variables' respectively.
+
+Optional OVERRIDES are appended to PALETTE, overriding
+corresponding entries."
   (declare (indent 0))
   (let ((sym (gensym))
         (colors (mapcar #'car (symbol-value palette))))
     `(let* ((c '((class color) (min-colors 256)))
-            (,sym ,palette)
+            (,sym (append ,overrides ef-themes-common-palette-overrides ,palette))
             ,@(mapcar (lambda (color)
                         (list color
                               `(let* ((value (car (alist-get ',color ,sym))))
@@ -1972,7 +2006,7 @@ Those are stored in `ef-themes-faces' and
        (custom-theme-set-faces ',name ,@ef-themes-faces)
        (custom-theme-set-variables ',name ,@ef-themes-custom-variables))))
 
-;;; Use theme colors
+;;;; Use theme colors
 
 (defmacro ef-themes-with-colors (&rest body)
   "Evaluate BODY with colors from current palette bound."
@@ -1985,7 +2019,7 @@ Those are stored in `ef-themes-faces' and
          ;; inside a function.
          (colors (mapcar #'car (ef-themes--current-theme-palette))))
     `(let* ((c '((class color) (min-colors 256)))
-            (,sym (ef-themes--current-theme-palette))
+            (,sym (ef-themes--current-theme-palette :overrides))
             ,@(mapcar (lambda (color)
                         (list color
                               `(let* ((value (car (alist-get ',color ,sym))))
@@ -1995,6 +2029,8 @@ Those are stored in `ef-themes-faces' and
                       colors))
        (ignore c ,@colors)            ; Silence unused variable warnings
        ,@body)))
+
+;;;; Add themes from package to path
 
 ;;;###autoload
 (when load-file-name

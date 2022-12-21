@@ -38,10 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-winter
-    "Legible dark theme with magenta, purple, fawn, teal colors."
-    :background-mode 'dark
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible dark theme with magenta, purple, fawn, teal colors.")
 
   (defconst ef-winter-palette
     '(;; Basic tones
@@ -52,7 +49,7 @@
       (bg-alt       "#2a2f42")
       (fg-alt       "#bf8f8f")
 
-      (bg-active    "#3a3f52")
+      (bg-active    "#4a4f62")
       (bg-inactive  "#19181f")
 
       ;; Basic hues for foreground values
@@ -100,14 +97,17 @@
       (bg-added          "#00371f")
       (bg-added-faint    "#002918")
       (bg-added-refine   "#004c2f")
+      (fg-added          "#a0e0a0")
 
       (bg-changed        "#363300")
       (bg-changed-faint  "#2a1f00")
       (bg-changed-refine "#4a4a00")
+      (fg-changed        "#efef80")
 
       (bg-removed        "#450f1f")
       (bg-removed-faint  "#2f060f")
       (bg-removed-refine "#641426")
+      (fg-removed        "#ffbfbf")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -159,8 +159,10 @@
       (link magenta)
       (link-alt cyan-warmer)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name magenta)
       (keybind cyan-cooler)
+      (identifier magenta-faint)
       (prompt magenta-warmer)
 
       (builtin magenta-warmer)
@@ -198,10 +200,28 @@
       (rainbow-6 green-cooler)
       (rainbow-7 yellow-cooler)
       (rainbow-8 cyan-warmer))
-    "The `ef-winter' palette.")
+    "The `ef-winter' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-winter ef-winter-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-winter-palette-overrides nil
+    "Overrides for `ef-winter-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-winter ef-winter-palette ef-winter-palette-overrides)
 
   (provide-theme 'ef-winter))
+
+;;;###theme-autoload
+(put 'ef-winter 'theme-properties '(:background-mode dark :kind color-scheme :family ef))
 
 ;;; ef-winter-theme.el ends here

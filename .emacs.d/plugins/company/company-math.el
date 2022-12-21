@@ -4,7 +4,7 @@
 ;; Author: Vitalie Spinu <spinuvit@gmail.com>
 ;; URL: https://github.com/vspinu/company-math
 ;; Keywords:  Unicode, symbols, completion
-;; Version: 1.4
+;; Version: 1.5
 ;; Package-Requires: ((company "0.8.0") (math-symbol-lists "1.3"))
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -158,9 +158,13 @@ various faces to allow or disallow completion on."
           (save-match-data
             (when (and bounds
                        (save-excursion
-                         (goto-char (car bounds))
-                         (or (looking-at regexp) ;; symbol might contain prefix (like in org)
-                             (looking-back regexp min-point 'greedy))))
+                         (or
+                          ;; start is internal to the symbol (e.g. org symbols contain \)
+                          (re-search-backward regexp (car bounds) 'no-error)
+                          (progn
+                            (goto-char (car bounds))
+                            (or (looking-at regexp) ;; symbol might contain prefix (like in org)
+                                (looking-back regexp min-point 'greedy))))))
               (buffer-substring-no-properties (match-beginning 0) (point)))))))))
 
 (defun company-math--substitute-unicode (symbol)

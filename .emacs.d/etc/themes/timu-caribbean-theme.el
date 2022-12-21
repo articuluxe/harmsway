@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 2022-11-13
 ;; Keywords: faces themes
-;; Version: 1.3
+;; Version: 1.4
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-caribbean-theme
 
@@ -90,13 +90,20 @@
 ;;         (customize-set-variable 'timu-caribbean-scale-org-level-2 1.4)
 ;;         (customize-set-variable 'timu-caribbean-scale-org-level-3 1.2)
 ;;
-;;   B. "Intense" colors for org-mode
-;;     To emphasize some elements in org-mode.
+;;   B. "Intense" colors for `org-mode'
+;;     To emphasize some elements in `org-mode'.
 ;;     You can set a variable to make some faces more "intense".
 ;;
 ;;     By default the intense colors are turned off.
 ;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
-;;       (customize-set-variable 'timu-caribbean-org-insense-colors t)
+;;       (customize-set-variable 'timu-caribbean-org-intense-colors t)
+;;
+;;   C. Border for the `mode-line'
+;;     You can set a variable to add a border to the `mode-line'.
+;;
+;;     By default the border is turned off.
+;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;       (customize-set-variable 'timu-caribbean-mode-line-border t)
 
 
 ;;; Code:
@@ -216,7 +223,7 @@
 
 (defcustom timu-caribbean-scale-org-document-info nil
   "Variable to control the scale of the `org-document-info' faces.
-Possible Values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil. When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -225,7 +232,7 @@ Possible Values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-caribbean-scale-org-document-title nil
   "Variable to control the scale of the `org-document-title' faces.
-Possible Values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil. When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -234,7 +241,7 @@ Possible Values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-caribbean-scale-org-level-1 nil
   "Variable to control the scale of the `org-level-1' faces.
-Possible Values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil. When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -243,7 +250,7 @@ Possible Values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-caribbean-scale-org-level-2 nil
   "Variable to control the scale of the `org-level-2' faces.
-Possible Values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil. When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -252,32 +259,51 @@ Possible Values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-caribbean-scale-org-level-3 nil
   "Variable to control the scale of the `org-level-3' faces.
-Possible Values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil. When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
           (number :tag "Your custom scaling"))
   :group 'timu-caribbean-theme)
 
-(defun timu-caribbean-do-scale (control default-height)
-  "Function for scaling the face to the FACE-HEIGHT.
-Uses `timu-caribbean-scale-faces' for the value of CONTROL."
+(defun timu-caribbean-do-scale (custom-height default-height)
+  "Function for scaling the face to the DEFAULT-HEIGHT or CUSTOM-HEIGHT.
+Uses `timu-caribbean-scale-faces' for the value of CUSTOM-HEIGHT."
   (cond
-   ((numberp control) (list :height control))
-   ((eq t control) (list :height default-height))
-   ((eq nil control) (list :height 1.0))
+   ((numberp custom-height) (list :height custom-height))
+   ((eq t custom-height) (list :height default-height))
+   ((eq nil custom-height) (list :height 1.0))
    (t nil)))
 
-(defcustom timu-caribbean-org-insense-colors nil
-  "Variable to control \"intensity\" of `org-mode' colors."
+(defcustom timu-caribbean-org-intense-colors nil
+  "Variable to control \"intensity\" of `org-mode' header colors."
   :type 'boolean
   :group 'timu-caribbean-theme)
 
-(defun timu-caribbean-set-intense-org-colors (olcolor bgcolor)
+(defun timu-caribbean-set-intense-org-colors (overline-color background-color)
   "Function Adding intense colors to `org-mode'.
-OLCOLOR changes the `overline' color and BGCOLOR changes the `background' color."
-  (if (eq t timu-caribbean-org-insense-colors)
-      (list :overline olcolor :background bgcolor)))
+OVERLINE-COLOR changes the `overline' color.
+BACKGROUND-COLOR changes the `background' color."
+  (if (eq t timu-caribbean-org-intense-colors)
+      (list :overline overline-color :background background-color)))
+
+(defcustom timu-caribbean-mode-line-border nil
+  "Variable to control the border of `mode-line'.
+With a value of t the mode-line has a border."
+  :type 'boolean
+  :group 'timu-caribbean-theme)
+
+(defun timu-caribbean-set-mode-line-active-border (boxcolor)
+  "Function adding a border to the `mode-line' of the active window.
+BOXCOLOR supplies the border color."
+  (if (eq t timu-caribbean-mode-line-border)
+        (list :box boxcolor)))
+
+(defun timu-caribbean-set-mode-line-inactive-border (boxcolor)
+  "Function adding a border to the `mode-line' of the inactive window.
+BOXCOLOR supplies the border color."
+  (if (eq t timu-caribbean-mode-line-border)
+        (list :box boxcolor)))
 
 (deftheme timu-caribbean
   "Color theme with cyan as a dominant color.
@@ -1340,11 +1366,11 @@ Sourced other themes to get information about font faces for packages.")
    `(mmm-special-submode-face ((,class (:background ,green))))
 
 ;;;; mode-line
-   `(mode-line ((,class (:background ,bg-other :foreground ,fg :distant-foreground ,bg))))
+   `(mode-line ((,class (,@(timu-caribbean-set-mode-line-active-border caribbean4) :background ,bg-other :foreground ,fg :distant-foreground ,bg))))
    `(mode-line-buffer-id ((,class (:weight bold))))
    `(mode-line-emphasis ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
    `(mode-line-highlight ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
-   `(mode-line-inactive ((,class (:background ,bg-other :foreground ,caribbean3 :distant-foreground ,bg-other))))
+   `(mode-line-inactive ((,class (,@(timu-caribbean-set-mode-line-inactive-border caribbean2) :background ,bg-other :foreground ,caribbean3 :distant-foreground ,bg-other))))
 
 ;;;; mu4e
    `(mu4e-forwarded-face ((,class (:foreground ,darkblue))))

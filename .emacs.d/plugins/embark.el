@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.17
+;; Version: 0.18
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -2141,7 +2141,7 @@ Return a plist with keys `:type', `:orig-type', `:candidates', and
                       candidates))))
     (append
      (list :orig-type type :orig-candidates candidates)
-     (or (unless (null candidates)
+     (or (when candidates
            (when-let ((transformer (alist-get type embark-transformer-alist)))
              (pcase-let* ((`(,new-type . ,first-cand)
                            (funcall transformer type (car candidates))))
@@ -2291,8 +2291,11 @@ See `embark-act' for the meaning of the prefix ARG."
                        0
                      (mod (prefix-numeric-value arg) (length targets)))
                    targets)))
-             (default-action (embark--default-action (plist-get target :type)))
+             (type (plist-get target :type))
+             (default-action (embark--default-action type))
              (action (or (command-remapping default-action) default-action)))
+        (unless action
+          (user-error "No default action for %s targets" type))
         (when (and arg (minibufferp)) (setq embark--toggle-quit t))
         (embark--act action
                      (if (and (eq default-action embark--command)
@@ -2567,7 +2570,7 @@ all buffers."
            ;; distinguished from the "single marked file" case by
            ;; returning (list t marked-file) in the latter
            (let ((marked (dired-get-marked-files t nil nil t)))
-             (and (not (null (cdr marked)))
+             (and (cdr marked)
                   (if (eq (car marked) t) (cdr marked) marked)))
            (save-excursion
              (goto-char (point-min))
@@ -3165,9 +3168,11 @@ PRED is a predicate function used to filter the items."
   "Create apropos buffer listing SYMBOLS."
   (embark--export-rename "*Apropos*" "Apropos"
     (apropos-parse-pattern "") ;; Initialize apropos pattern
-    (apropos-symbols-internal
-     (delq nil (mapcar #'intern-soft symbols))
-     (bound-and-true-p apropos-do-all))))
+    ;; HACK: Ensure that order of exported symbols is kept.
+    (cl-letf (((symbol-function #'sort) (lambda (list _pred) (nreverse list))))
+      (apropos-symbols-internal
+       (delq nil (mapcar #'intern-soft symbols))
+       (bound-and-true-p apropos-do-all)))))
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
@@ -3592,6 +3597,19 @@ with command output.  For replacement behaviour see
                              command
                              (and replace (current-buffer)))))
 
+(defun embark-open-externally (file)
+  "Open FILE using system's default application."
+  (interactive "fOpen: ")
+  (if (and (eq system-type 'windows-nt)
+           (fboundp 'w32-shell-execute))
+      (w32-shell-execute "open" file)
+    (call-process (pcase system-type
+                    ('darwin "open")
+                    ('cygwin "cygstart")
+                    (_ "xdg-open"))
+                  nil 0 nil
+                  (expand-file-name file))))
+
 (defun embark-bury-buffer (buf)
   "Bury buffer BUF."
   (interactive "bBuffer: ")
@@ -3818,7 +3836,7 @@ The advice is self-removing so it only affects ACTION once."
 
 (defun embark--allow-edit (&rest _)
   "Allow editing the target."
-  (remove-hook 'post-command-hook 'exit-minibuffer t)
+  (remove-hook 'post-command-hook #'exit-minibuffer t)
   (remove-hook 'post-command-hook 'ivy-immediate-done t))
 
 (defun embark--ignore-target (&rest _)
@@ -4015,6 +4033,7 @@ library, which have an obvious notion of associated directory."
   ("\\" embark-recentf-remove)
   ("I" embark-insert-relative-path)
   ("W" embark-save-relative-path)
+  ("x" embark-open-externally)
   ("e" eww-open-file)
   ("l" load-file)
   ("b" byte-compile-file)
@@ -4182,6 +4201,7 @@ library, which have an obvious notion of associated directory."
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."
+  ("RET" describe-package)
   ("h" describe-package)
   ("i" package-install)
   ("I" embark-insert)
@@ -4298,5 +4318,8 @@ library, which have an obvious notion of associated directory."
 (with-eval-after-load 'consult
   (unless (require 'embark-consult nil 'noerror)
     (warn "The package embark-consult should be installed if you use both Embark and Consult")))
+
+(with-eval-after-load 'org
+  (require 'embark-org))
 
 ;;; embark.el ends here

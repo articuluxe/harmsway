@@ -38,10 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-autumn
-    "Legible dark theme with warm, varied colors (red, yellow, green, teal)."
-    :background-mode 'dark
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible dark theme with warm, varied colors (red, yellow, green, teal).")
 
   (defconst ef-autumn-palette
     '(;; Basic tones
@@ -52,7 +49,7 @@
       (bg-alt      "#36322f")
       (fg-alt      "#70a89f")
 
-      (bg-active   "#46423f")
+      (bg-active   "#56524f")
       (bg-inactive "#15140d")
 
       ;; Basic hues for foreground values
@@ -100,14 +97,17 @@
       (bg-added          "#17360f")
       (bg-added-faint    "#0a2900")
       (bg-added-refine   "#204810")
+      (fg-added          "#a0e0a0")
 
       (bg-changed        "#363300")
       (bg-changed-faint  "#2a1f00")
       (bg-changed-refine "#4a4a00")
+      (fg-changed        "#efef80")
 
       (bg-removed        "#4b120a")
       (bg-removed-faint  "#3a0a00")
       (bg-removed-refine "#6f1a16")
+      (fg-removed        "#ffbfbf")
 
       ;; Graphs
       (red-graph-0-bg     "#b52c2c")
@@ -159,8 +159,10 @@
       (link yellow)
       (link-alt cyan-cooler)
       (date yellow-cooler)
+      (weekend red) ; for M-x calendar and Org agenda
       (name green-warmer)
       (keybind red-warmer)
+      (identifier magenta-faint)
       (prompt cyan-cooler)
 
       (builtin red-cooler)
@@ -198,10 +200,28 @@
       (rainbow-6 red-cooler)
       (rainbow-7 green)
       (rainbow-8 yellow))
-    "The `ef-autumn' palette.")
+    "The `ef-autumn' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-autumn ef-autumn-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-autumn-palette-overrides nil
+    "Overrides for `ef-autumn-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-autumn ef-autumn-palette ef-autumn-palette-overrides)
 
   (provide-theme 'ef-autumn))
+
+;;;###theme-autoload
+(put 'ef-autumn 'theme-properties '(:background-mode dark :kind color-scheme :family ef))
 
 ;;; ef-autumn-theme.el ends here

@@ -4,9 +4,9 @@
 ;;
 ;; Author: Steve Purcell <steve@sanityinc.com>
 ;; Keywords: convenience
-;; Package-Requires: ((emacs "24.1") (cl-lib "0.2"))
+;; Package-Requires: ((emacs "25.1"))
 ;; URL: https://github.com/purcell/ibuffer-vc
-;; Version: DEV
+;; Version: 0
 ;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -146,7 +146,7 @@ If the file is not under version control, nil is returned instead."
     "Toggle current view to buffers with vc root dir QUALIFIER."
   (:description "vc root dir"
                 :reader (ibuffer-vc-read-filter))
-  (ibuffer-awhen (ibuffer-vc-root buf)
+  (when-let ((it (ibuffer-vc-root buf)))
     (equal qualifier it)))
 
 ;;;###autoload

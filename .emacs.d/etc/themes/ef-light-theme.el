@@ -38,10 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-light
-    "Legible light theme with blue, magenta, cyan, purple colors."
-    :background-mode 'light
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible light theme with blue, magenta, cyan, purple colors.")
 
   (defconst ef-light-palette
     '(;; Basic tones
@@ -52,7 +49,7 @@
       (bg-alt      "#dbdbdb")
       (fg-alt      "#196f70")
 
-      (bg-active   "#cbcbcb")
+      (bg-active   "#b3b3b3")
       (bg-inactive "#f9f9f9")
 
       ;; Basic hues for foreground values
@@ -75,7 +72,7 @@
       (magenta         "#ba35af")
       (magenta-warmer  "#cf25aa")
       (magenta-cooler  "#6052cf")
-      (magenta-faint   "#bf3580")
+      (magenta-faint   "#af5a80")
       (cyan            "#1f6fbf")
       (cyan-warmer     "#3f6faf")
       (cyan-cooler     "#1f77bb")
@@ -100,14 +97,17 @@
       (bg-added          "#d5f8d5")
       (bg-added-faint    "#e5ffe5")
       (bg-added-refine   "#c6e8c6")
+      (fg-added          "#005000")
 
       (bg-changed        "#ffdfa9")
       (bg-changed-faint  "#ffefbf")
       (bg-changed-refine "#fac090")
+      (fg-changed        "#553d00")
 
       (bg-removed        "#ffd8d5")
       (bg-removed-faint  "#ffe9e9")
       (bg-removed-refine "#f3b5af")
+      (fg-removed        "#8f1313")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -159,8 +159,10 @@
       (link blue)
       (link-alt magenta)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name magenta-cooler)
       (keybind blue-cooler)
+      (identifier magenta-faint)
       (prompt green-cooler)
 
       (builtin magenta)
@@ -198,10 +200,28 @@
       (rainbow-6 red-cooler)
       (rainbow-7 green-cooler)
       (rainbow-8 yellow))
-    "The `ef-light' palette.")
+    "The `ef-light' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-light ef-light-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-light-palette-overrides nil
+    "Overrides for `ef-light-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-light ef-light-palette ef-light-palette-overrides)
 
   (provide-theme 'ef-light))
+
+;;;###theme-autoload
+(put 'ef-light 'theme-properties '(:background-mode light :kind color-scheme :family ef))
 
 ;;; ef-light-theme.el ends here

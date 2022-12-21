@@ -232,6 +232,11 @@ It respects variable `doom-modeline-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-highlight-modified-buffer-name t
+  "Whether highlight the modified buffer name."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-minor-modes nil
   "Whether display the minor modes in the mode-line."
   :type 'boolean
@@ -577,7 +582,7 @@ inactive windows."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-modified
-  '((t (:inherit (error bold) :background unspecified)))
+  '((t (:inherit (warning bold) :background unspecified)))
   "Face used for the \\='unsaved\\=' symbol in the mode-line."
   :group 'doom-modeline-faces)
 

@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 20 Oct 2021
 ;; Keywords: faces themes
-;; Version: 1.4
+;; Version: 1.7
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-rouge-theme
 
@@ -57,19 +57,47 @@
 ;;         (load-theme 'timu-rouge t))
 ;;
 ;; II. Configuration
-;;   You can now scale (up) some faces (in `org-mode' for now):
+;;   A. Scaling
+;;     You can now scale some faces (in `org-mode' for now):
 ;;
-;;   - `org-document-info'
-;;   - `org-document-title'
-;;   - `org-level-1'
-;;   - `org-level-2'
-;;   - `org-level-3'
+;;     - `org-document-info'
+;;     - `org-document-title'
+;;     - `org-level-1'
+;;     - `org-level-2'
+;;     - `org-level-3'
 ;;
-;;   More to follow in the future.
+;;     More to follow in the future.
 ;;
-;;   By default the scaling is turned off.
-;;   To setup the scaling add the following to your `~/.emacs.d/init.el' or `~/.emacs':
-;;     (customize-set-variable 'timu-rouge-scale-faces t)
+;;     By default the scaling is turned off.
+;;     To setup the scaling add the following to your `~/.emacs.d/init.el' or `~/.emacs':
+;;
+;;     1. Default scaling
+;;       This will turn on default values of scaling in the theme.
+;;
+;;         (customize-set-variable 'timu-rouge-scale-org-document-title t)
+;;         (customize-set-variable 'timu-rouge-scale-org-document-info t)
+;;         (customize-set-variable 'timu-rouge-scale-org-level-1 t)
+;;         (customize-set-variable 'timu-rouge-scale-org-level-2 t)
+;;         (customize-set-variable 'timu-rouge-scale-org-level-3 t)
+;;
+;;     2. Custom scaling
+;;       You can choose your own scaling values as well.
+;;       The following is a somewhat exaggerated example.
+;;
+;;         (customize-set-variable 'timu-rouge-scale-org-document-title 1.8)
+;;         (customize-set-variable 'timu-rouge-scale-org-document-info 1.4)
+;;         (customize-set-variable 'timu-rouge-scale-org-level-1 1.8)
+;;         (customize-set-variable 'timu-rouge-scale-org-level-2 1.4)
+;;         (customize-set-variable 'timu-rouge-scale-org-level-3 1.2)
+;;
+;;   B. "Intense" colors for org-mode
+;;     To emphasize some elements in org-mode.
+;;     You can set a variable to make some faces more "intense".
+;;
+;;     By default the intense colors are turned off.
+;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;       (customize-set-variable 'timu-rouge-org-intense-colors t)
+
 
 ;;; Code:
 
@@ -111,19 +139,89 @@
   "Custom basic strike-through `timu-rouge-theme' face."
   :group 'timu-rouge-theme)
 
-(defcustom timu-rouge-scale-faces nil
-  "Variable to control the scale of select faces."
+(defcustom timu-rouge-scale-org-document-info nil
+  "Variable to control the scale of the `org-document-info' faces.
+Possible values: t, number or nil. When t, use theme default height."
+  :type '(choice
+          (boolean :tag "No scaling" nil)
+          (boolean :tag "Theme default scaling" t)
+          (number :tag "Your custom scaling"))
+  :group 'timu-rouge-theme)
+
+(defcustom timu-rouge-scale-org-document-title nil
+  "Variable to control the scale of the `org-document-title' faces.
+Possible values: t, number or nil. When t, use theme default height."
+  :type '(choice
+          (boolean :tag "No scaling" nil)
+          (boolean :tag "Theme default scaling" t)
+          (number :tag "Your custom scaling"))
+  :group 'timu-rouge-theme)
+
+(defcustom timu-rouge-scale-org-level-1 nil
+  "Variable to control the scale of the `org-level-1' faces.
+Possible values: t, number or nil. When t, use theme default height."
+  :type '(choice
+          (boolean :tag "No scaling" nil)
+          (boolean :tag "Theme default scaling" t)
+          (number :tag "Your custom scaling"))
+  :group 'timu-rouge-theme)
+
+(defcustom timu-rouge-scale-org-level-2 nil
+  "Variable to control the scale of the `org-level-2' faces.
+Possible values: t, number or nil. When t, use theme default height."
+  :type '(choice
+          (boolean :tag "No scaling" nil)
+          (boolean :tag "Theme default scaling" t)
+          (number :tag "Your custom scaling"))
+  :group 'timu-rouge-theme)
+
+(defcustom timu-rouge-scale-org-level-3 nil
+  "Variable to control the scale of the `org-level-3' faces.
+Possible values: t, number or nil. When t, use theme default height."
+  :type '(choice
+          (boolean :tag "No scaling" nil)
+          (boolean :tag "Theme default scaling" t)
+          (number :tag "Your custom scaling"))
+  :group 'timu-rouge-theme)
+
+(defun timu-rouge-do-scale (custom-height default-height)
+  "Function for scaling the face to the DEFAULT-HEIGHT or CUSTOM-HEIGHT.
+Uses `timu-rouge-scale-faces' for the value of CUSTOM-HEIGHT."
+  (cond
+   ((numberp custom-height) (list :height custom-height))
+   ((eq t custom-height) (list :height default-height))
+   ((eq nil custom-height) (list :height 1.0))
+   (t nil)))
+
+(defcustom timu-rouge-org-intense-colors nil
+  "Variable to control \"intensity\" of `org-mode' header colors."
   :type 'boolean
   :group 'timu-rouge-theme)
 
-(defun timu-rouge-do-scale (face-height)
-  "Function for scaling the face to the FACE-HEIGHT.
-Uses `timu-rouge-scale-faces' for conditional."
-  (cond
-   ((eq t timu-rouge-scale-faces)
-    (list :height face-height))
-   ((eq nil timu-rouge-scale-faces)
-    (list :height 1.0))))
+(defun timu-rouge-set-intense-org-colors (overline-color background-color)
+  "Function Adding intense colors to `org-mode'.
+OVERLINE-COLOR changes the `overline' color.
+BACKGROUND-COLOR changes the `background' color."
+  (if (eq t timu-rouge-org-intense-colors)
+      (list :overline overline-color :background background-color)))
+
+(defcustom timu-rouge-mode-line-border nil
+  "Variable to control the border of `mode-line'.
+With a value of t the mode-line has a border."
+  :type 'boolean
+  :group 'timu-rouge-theme)
+
+(defun timu-rouge-set-mode-line-active-border (boxcolor)
+  "Function adding a border to the `mode-line' of the active window.
+BOXCOLOR supplies the border color."
+  (if (eq t timu-rouge-mode-line-border)
+        (list :box boxcolor)))
+
+(defun timu-rouge-set-mode-line-inactive-border (boxcolor)
+  "Function adding a border to the `mode-line' of the inactive window.
+BOXCOLOR supplies the border color."
+  (if (eq t timu-rouge-mode-line-border)
+        (list :box boxcolor)))
 
 (deftheme timu-rouge
   "Color theme inspired by the Rouge Theme for VSCode.
@@ -752,7 +850,7 @@ Sourced other themes to get information about font faces for packages.")
    `(git-commit-nonempty-second-line ((,class (:foreground ,red))))
    `(git-commit-overlong-summary ((,class (:foreground ,red :slant italic :weight bold))))
    `(git-commit-pseudo-header ((,class (:foreground ,rouge5 :slant italic))))
-   `(git-commit-summary ((,class (:foreground ,darkcyan))))
+   `(git-commit-summary ((,class (:foreground ,blue))))
 
 ;;;; git-gutter
    `(git-gutter:added ((,class (:foreground ,green))))
@@ -1153,11 +1251,11 @@ Sourced other themes to get information about font faces for packages.")
    `(mmm-special-submode-face ((,class (:background ,green))))
 
 ;;;; mode-line
-   `(mode-line ((,class (:background ,rouge1 :foreground ,fg :distant-foreground ,bg))))
+   `(mode-line ((,class (,@(timu-rouge-set-mode-line-active-border red) :background ,rouge3 :foreground ,fg :distant-foreground ,bg))))
    `(mode-line-buffer-id ((,class (:weight bold))))
    `(mode-line-emphasis ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
    `(mode-line-highlight ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
-   `(mode-line-inactive ((,class (:background ,rouge2 :foreground ,rouge5 :distant-foreground ,bg-other))))
+   `(mode-line-inactive ((,class (,@(timu-rouge-set-mode-line-inactive-border rouge4) :background ,rouge3 :foreground ,rouge5 :distant-foreground ,bg-other))))
 
 ;;;; mu4e
    `(mu4e-forwarded-face ((,class (:foreground ,cyan))))
@@ -1291,19 +1389,19 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; org-mode
    `(org-archived ((,class (:foreground ,rouge5))))
-   `(org-block ((,class (:foreground ,rouge8 :background ,bg-org :extend t))))
+   `(org-block ((,class (:foreground ,rouge8 :background ,bg-org :extend t ,@(timu-rouge-set-intense-org-colors rouge2 rouge2)))))
    `(org-block-background ((,class (:background ,bg-org :extend t))))
    `(org-block-begin-line ((,class (:foreground ,rouge5 :slant italic :background ,bg-org :extend t))))
    `(org-block-end-line ((,class (:foreground ,rouge5 :slant italic :background ,bg-org :extend t))))
    `(org-checkbox ((,class (:foreground ,green :background ,bg-org :weight bold))))
    `(org-checkbox-statistics-done ((,class (:foreground ,rouge5 :background ,bg-org :weight bold))))
    `(org-checkbox-statistics-todo ((,class (:foreground ,green :background ,bg-org :weight bold))))
-   `(org-code ((,class (:foreground ,darkred))))
+   `(org-code ((,class (:foreground ,darkred ,@(timu-rouge-set-intense-org-colors bg bg-org)))))
    `(org-date ((,class (:foreground ,yellow :background ,bg-org))))
    `(org-default ((,class (:background ,bg :foreground ,fg))))
-   `(org-document-info ((,class (:foreground ,darkred ,@(timu-rouge-do-scale 1.2)))))
+   `(org-document-info ((,class (:foreground ,darkred ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.2) ,@(timu-rouge-set-intense-org-colors bg bg-org)))))
    `(org-document-info-keyword ((,class (:foreground ,rouge5))))
-   `(org-document-title ((,class (:foreground ,darkred :weight bold ,@(timu-rouge-do-scale 1.3)))))
+   `(org-document-title ((,class (:foreground ,darkred :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-title 1.3) ,@(timu-rouge-set-intense-org-colors darkred bg-org)))))
    `(org-done ((,class (:foreground ,rouge5 :weight bold))))
    `(org-ellipsis ((,class (:foreground ,grey))))
    `(org-footnote ((,class (:foreground ,darkred))))
@@ -1311,14 +1409,14 @@ Sourced other themes to get information about font faces for packages.")
    `(org-headline-done ((,class (:foreground ,rouge5))))
    `(org-hide ((,class (:foreground ,bg))))
    `(org-latex-and-related ((,class (:foreground ,rouge8 :weight bold))))
-   `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-rouge-do-scale 1.3)))))
-   `(org-level-2 ((,class (:foreground ,red :weight bold ,@(timu-rouge-do-scale 1.2)))))
-   `(org-level-3 ((,class (:foreground ,orange :weight bold ,@(timu-rouge-do-scale 1.1)))))
-   `(org-level-4 ((,class (:foreground ,darkred))))
-   `(org-level-5 ((,class (:foreground ,green))))
-   `(org-level-6 ((,class (:foreground ,teal))))
-   `(org-level-7 ((,class (:foreground ,purple))))
-   `(org-level-8 ((,class (:foreground ,fg))))
+   `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-1 1.3) ,@(timu-rouge-set-intense-org-colors blue bg-org)))))
+   `(org-level-2 ((,class (:foreground ,red :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-2 1.2) ,@(timu-rouge-set-intense-org-colors red bg-org)))))
+   `(org-level-3 ((,class (:foreground ,orange :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-3 1.1) ,@(timu-rouge-set-intense-org-colors orange bg-org)))))
+   `(org-level-4 ((,class (:foreground ,darkred ,@(timu-rouge-set-intense-org-colors darkred bg-org)))))
+   `(org-level-5 ((,class (:foreground ,green ,@(timu-rouge-set-intense-org-colors green bg-org)))))
+   `(org-level-6 ((,class (:foreground ,teal ,@(timu-rouge-set-intense-org-colors teal bg-org)))))
+   `(org-level-7 ((,class (:foreground ,purple ,@(timu-rouge-set-intense-org-colors purple bg-org)))))
+   `(org-level-8 ((,class (:foreground ,fg ,@(timu-rouge-set-intense-org-colors fg bg-org)))))
    `(org-link ((,class (:foreground ,red :underline t))))
    `(org-list-dt ((,class (:foreground ,darkred))))
    `(org-meta-line ((,class (:foreground ,rouge5))))
@@ -1329,7 +1427,7 @@ Sourced other themes to get information about font faces for packages.")
    `(org-table ((,class (:foreground ,red))))
    `(org-tag ((,class (:foreground ,rouge5 :weight normal))))
    `(org-todo ((,class (:foreground ,green :weight bold))))
-   `(org-verbatim ((,class (:foreground ,darkred))))
+   `(org-verbatim ((,class (:foreground ,darkred ,@(timu-rouge-set-intense-org-colors bg bg-org)))))
    `(org-warning ((,class (:foreground ,yellow))))
 
 ;;;; org-pomodoro

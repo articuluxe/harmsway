@@ -41,10 +41,7 @@
   ;; compatibility with the rest of the project.  We don't actually rely
   ;; on them for anything critical.
   (deftheme ef-duo-light
-    "Legible light theme with mostly blue and yellow colors."
-    :background-mode 'light
-    :kind 'color-scheme
-    :family 'ef)
+    "Legible light theme with mostly blue and yellow colors.")
 
   (defconst ef-duo-light-palette
     '(;; Basic tones
@@ -55,7 +52,7 @@
       (bg-alt      "#e7e0da")
       (fg-alt      "#856f4a")
 
-      (bg-active   "#d7d0ca")
+      (bg-active   "#c7c0ba")
       (bg-inactive "#f9f2ef")
 
       ;; Basic hues for foreground values
@@ -78,7 +75,7 @@
       (magenta         "#ba35af")
       (magenta-warmer  "#cf25aa")
       (magenta-cooler  "#6052cf")
-      (magenta-faint   "#bf3580")
+      (magenta-faint   "#af569f")
       (cyan            "#1f6fbf")
       (cyan-warmer     "#3f6faf")
       (cyan-cooler     "#1f77bb")
@@ -103,14 +100,17 @@
       (bg-added          "#ccefcf")
       (bg-added-faint    "#e0f3e0")
       (bg-added-refine   "#bae0c0")
+      (fg-added          "#005000")
 
       (bg-changed        "#ffe5b9")
       (bg-changed-faint  "#ffefc5")
       (bg-changed-refine "#ffd09f")
+      (fg-changed        "#553d00")
 
       (bg-removed        "#ffd4d8")
       (bg-removed-faint  "#ffe3e3")
       (bg-removed-refine "#ffc0ca")
+      (fg-removed        "#8f1313")
 
       ;; Graphs
       (red-graph-0-bg     "#ef7969")
@@ -163,8 +163,10 @@
       (link cyan)
       (link-alt green-cooler)
       (date cyan-cooler)
+      (weekend red-faint) ; for M-x calendar and Org agenda
       (name blue)
       (keybind blue-cooler)
+      (identifier red-faint)
       (prompt blue)
 
       (builtin cyan-cooler)
@@ -202,10 +204,28 @@
       (rainbow-6 cyan-warmer)
       (rainbow-7 yellow)
       (rainbow-8 green-cooler))
-    "The `ef-duo-light' palette.")
+    "The `ef-duo-light' palette.
+Color values have the form (COLOR-NAME HEX-VALUE) with the former
+as a symbol and the latter as a string.
 
-  (ef-themes-theme ef-duo-light ef-duo-light-palette)
+Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
+with both as symbols.  The latter is a color that already exists
+in the palette and is associated with a HEX-VALUE.")
+
+  (defvar ef-duo-light-palette-overrides nil
+    "Overrides for `ef-duo-light-palette'.
+
+Mirror the elements of the aforementioned palette, overriding
+their value.
+
+For overrides that are shared across all of the Ef themes,
+refer to `ef-themes-common-palette-overrides'.")
+
+  (ef-themes-theme ef-duo-light ef-duo-light-palette ef-duo-light-palette-overrides)
 
   (provide-theme 'ef-duo-light))
+
+;;;###theme-autoload
+(put 'ef-duo-light 'theme-properties '(:background-mode light :kind color-scheme :family ef))
 
 ;;; ef-duo-light-theme.el ends here

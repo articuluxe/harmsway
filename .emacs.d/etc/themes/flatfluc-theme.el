@@ -32,7 +32,7 @@
 ;;; Code:
 
 (defconst fui-hint-ice "#c7ecee")
-(defconst fuit-soaring-eagle "#95afc0")
+(defconst fui-soaring-eagle "#4d687c")
 (defconst fui-turquoise "#1abc9c")
 (defconst fui-emerald "#2ecc71")
 (defconst fui-river "#3498db")
