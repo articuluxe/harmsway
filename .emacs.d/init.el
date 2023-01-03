@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2022  Dan Harms (dharms)
+;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2022-12-02 14:52:16 dharms>
+;; Modified Time-stamp: <2023-01-03 13:13:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3539,7 +3539,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   "Update the line that indicates the file name."
   (beginning-of-line)
   ;; Verify looking at a file name for this mode.
-  (when (looking-at (concat (regexp-quote (header-prefix-string)) " *\\([^ ]+\\) +\\-\\-"))
+  (when (looking-at (concat (regexp-quote (header-prefix-string)) " *\\([^ ]+\\) +\\-\\-\\-"))
     (goto-char (match-beginning 1))
     (delete-region (match-beginning 1) (match-end 1))
     (insert (file-name-nondirectory (buffer-file-name)))))
@@ -3551,7 +3551,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   ;; use my own function, because delete-trailing-whitespace prevents a
   ;; space after the colon
   (register-file-header-action "Modified by[ \t]*:" 'my/update-last-modifier)
-  (register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-" 'my/update-file-name)
+  (register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-\\-" 'my/update-file-name)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sysctl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
