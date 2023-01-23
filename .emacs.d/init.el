@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-01-03 13:13:16 dharms>
+;; Modified Time-stamp: <2023-01-23 11:27:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2317,6 +2317,11 @@ ARGS are the additional arguments."
     (require 'ob-shell))
   (require 'ox-md)                      ;markdown export
   )
+
+(use-package ob-plantuml
+  :defer t
+  :config
+  (setq org-plantuml-jar-path (expand-file-name "~/bin/plantuml-1.2023.0.jar")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; orgtbl-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package orgtbl-edit)

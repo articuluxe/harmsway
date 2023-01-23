@@ -1,0 +1,22 @@
+#+TITLE:plantuml and json
+
+#+NAME: simple-json
+#+begin_src json
+{
+    "example": {
+        "using": "yaml",
+        "nested": {
+            "object": true
+        }
+    }
+}
+#+end_src
+
+#+begin_src plantuml :noweb yes :file /tmp/example.png
+@startjson
+<<simple-json>>
+@endjson
+#+end_src
+
+#+RESULTS:
+[[file:/tmp/example.png]]
