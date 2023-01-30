@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # emacscomp.sh --- byte-compile emacs lisp files
-# Copyright (C) 2015-2017, 2020-2021  Dan Harms (dan.harms)
+# Copyright (C) 2015-2017, 2020-2021, 2023  Dan Harms (dan.harms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2021-03-10 14:43:20 dharms>
+# Modified Time-stamp: <2023-01-30 16:35:02 dharms>
 # Keywords: emacs configuration
 
 exe=$EMACS_BIN
@@ -19,6 +19,11 @@ log="$logdir/$logname"
 if [ $# -gt 0 ] ; then
     dir="$1"
     shift
+fi
+
+if [ -z "$exe" ]; then
+    echo "!!! Missing emacs executable; skipping compile..."
+    return 1
 fi
 
 mkdir -p "$logdir"

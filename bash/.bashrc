@@ -111,7 +111,7 @@ user=$(id -nu)
 os=$(uname)
 # use $HOSTNAME if available (which works on windows);
 # if a FQDN, just take the device.
-domain=$(echo $HOSTNAME | sed -e 's/\..*$//')
+domain=$(echo "$HOSTNAME" | sed -e 's/\..*$//')
 host=${domain:-$(hostname -s)}
 
 # load any user settings
