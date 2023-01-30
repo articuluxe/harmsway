@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # manage-repo.sh --- clone and update a repo
-# Copyright (C) 2021  Dan Harms (dharms)
+# Copyright (C) 2021, 2023  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, November  5, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-12-10 13:56:55 dharms>
+# Modified Time-stamp: <2023-01-30 13:41:09 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -60,7 +60,7 @@ if [ -d "$parent/src/.git" ] \
         echo "--- Updating $repo due to the following differences:"
         echo "$res"
         echo -e
-        git pull --no-rebase
+        git pull --no-rebase -X theirs
     fi
 elif [ -d "$parent/src/.hg" ]; then
     if [ -f "update" ]; then
