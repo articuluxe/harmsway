@@ -1,6 +1,6 @@
 ;;; consult-icomplete.el --- Icomplete integration for Consult -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021, 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 
@@ -19,7 +19,7 @@
 
 ;;; Commentary:
 
-;; Integration code for the Icomplete completion system. This package
+;; Integration code for the Icomplete completion system.  This package
 ;; is automatically loaded by Consult.
 
 ;;; Code:
@@ -27,14 +27,14 @@
 (require 'consult)
 (require 'icomplete)
 
-(defun consult-icomplete--refresh (&optional reset)
-  "Refresh icomplete view, keep current candidate unless RESET is non-nil."
+(defun consult-icomplete--refresh ()
+  "Refresh icomplete view."
   (when icomplete-mode
     (let ((top (car completion-all-sorted-completions)))
       (completion--flush-all-sorted-completions)
       ;; force flushing, otherwise narrowing is broken!
       (setq completion-all-sorted-completions nil)
-      (when (and top (not reset))
+      (when top
         (let* ((completions (completion-all-sorted-completions))
                (last (last completions))
                (before)) ;; completions before top

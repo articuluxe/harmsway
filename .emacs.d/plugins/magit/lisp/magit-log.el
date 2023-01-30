@@ -826,7 +826,7 @@ https://github.com/mhagger/git-when-merged."
              (list commit
                    (magit-read-other-branch "Merged into" commit)))
            (magit-log-arguments)))
-  (unless (magit-git-executable-find "git-when-merged")
+  (unless (compat-executable-find "git-when-merged" t)
     (user-error "This command requires git-when-merged (%s)"
                 "https://github.com/mhagger/git-when-merged"))
   (let (exit m)

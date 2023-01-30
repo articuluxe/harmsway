@@ -670,6 +670,11 @@ Exceptions are defined by `vterm-keymap-exceptions'."
        (let ((font-height (expt text-scale-mode-step text-scale-mode-amount)))
          (setq vterm--linenum-remapping
                (face-remap-add-relative 'line-number :height font-height))))
+  (hack-dir-local-variables)
+  (let ((vterm-env (assq 'vterm-environment dir-local-variables-alist)))
+    (when vterm-env
+      (make-local-variable 'vterm-environment)
+      (setq vterm-environment (cdr vterm-env))))
   (let ((process-environment (append vterm-environment
                                      `(,(concat "TERM="
                                                 vterm-term-environment-variable)
@@ -755,6 +760,7 @@ Exceptions are defined by `vterm-keymap-exceptions'."
   (if (ignore-errors (file-remote-p default-directory))
       (with-parsed-tramp-file-name default-directory nil
         (or (cadr (assoc method vterm-tramp-shells))
+            (with-connection-local-variables shell-file-name)
             vterm-shell))
     vterm-shell))
 
@@ -1702,7 +1708,7 @@ More information see `vterm--prompt-tracking-enabled-p' and
 Move the point to the first character after the shell prompt on this line.
 If the point is already there, move to the beginning of the line.
 Effectively toggle between the two positions."
-  (interactive)
+  (interactive "^")
   (if (vterm--at-prompt-p)
       (goto-char (vterm--get-beginning-of-line))
     (goto-char (max (or (vterm--get-prompt-point) 0)
@@ -1710,7 +1716,7 @@ Effectively toggle between the two positions."
 
 (defun vterm-end-of-line ()
   "Move point to the end of the line, bypassing line wraps."
-  (interactive)
+  (interactive "^")
   (goto-char (vterm--get-end-of-line)))
 
 (defun vterm-reset-cursor-point ()

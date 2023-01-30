@@ -582,19 +582,6 @@ call function WASHER with ARGS as its sole argument."
         (magit-cancel-section))
       (magit-maybe-make-margin-overlay))))
 
-(defun magit-git-executable-find (command)
-  "Search for COMMAND in Git's exec path, falling back to `exec-path'.
-Like `executable-find', return the absolute file name of the
-executable."
-  (or (locate-file command
-                   (list (concat
-                          (file-remote-p default-directory)
-                          (or (magit-git-string "--exec-path")
-                              (error "`git --exec-path' failed"))))
-                   exec-suffixes
-                   #'file-executable-p)
-      (compat-executable-find command t)))
-
 ;;; Git Version
 
 (defconst magit--git-version-regexp
@@ -2041,7 +2028,7 @@ PATH has to be relative to the super-repository."
                ;; directory instead of the worktree, which isn't
                ;; what it is supposed to do and not what we want.
                ;; However, if the worktree has been removed, then
-               ;; we want to return it anyway; instead of nil.
+               ;; we want to return it anway; instead of nil.
                (setq path (or (magit-toplevel path) path))
                (setq worktree (list path nil nil nil))
                (push worktree worktrees)))
@@ -2092,14 +2079,9 @@ PATH has to be relative to the super-repository."
   (car (member string (magit-list-remotes))))
 
 (defvar magit-main-branch-names
-  '("main" "master" "trunk" "development")
-  "Branch names reserved for use by the primary branch.
-Use function `magit-main-branch' to get the name actually used in
-the current repository.")
-
-(defvar magit-long-lived-branches
-  (append magit-main-branch-names (list "maint" "next"))
-  "Branch names reserved for use by long lived branches.")
+  ;; These are the names that Git suggests
+  ;; if `init.defaultBranch' is undefined.
+  '("main" "master" "trunk" "development"))
 
 (defun magit-main-branch ()
   "Return the main branch.
@@ -2183,8 +2165,8 @@ Return a list of two integers: (A>B B>A)."
                                (concat "--format=" format) args
                                (if rev (magit--rev-dereference rev) "HEAD")
                                "--")))
-    (and (not (string-equal str ""))
-         str)))
+    (unless (string-equal str "")
+      str)))
 
 (defun magit-rev-insert-format (format &optional rev args)
   ;; Prefer `git log --no-walk' to `git show --no-patch' because it

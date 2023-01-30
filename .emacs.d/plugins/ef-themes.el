@@ -1,6 +1,6 @@
 ;;; ef-themes.el --- Colorful and legible themes -*- lexical-binding:t -*-
 
-;; Copyright (C) 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2022-2023  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
@@ -93,6 +93,26 @@ This is used by the commands `ef-themes-select' and
   :type 'hook
   :package-version '(ef-themes . "0.2.0")
   :group 'ef-themes)
+
+(defcustom ef-themes-disable-other-themes t
+  "Disable all other themes when loading a Ef theme.
+
+When the value is non-nil, the commands `ef-themes-toggle' and
+`ef-themes-select' will disable all other themes while loading
+the specified Ef theme.  This is done to ensure that Emacs does
+not blend two or more themes: such blends lead to awkward results
+that undermine the work of the designer.
+
+When the value is nil, the aforementioned commands will only
+disable other themes within the Ef collection.
+
+This option is provided because Emacs themes are not necessarily
+limited to colors/faces: they can consist of an arbitrary set of
+customizations.  Users who use such customization bundles must
+set this variable to a nil value."
+  :group 'ef-themes
+  :package-version '(ef-themes . "0.11.0")
+  :type 'boolean)
 
 (defcustom ef-themes-to-toggle nil
   "Specify two `ef-themes' for `ef-themes-toggle' command.
@@ -297,6 +317,18 @@ Other examples:
               (const :tag "More intense background (also override text color)" accented))
   :link '(info-link "(ef-themes) Style of region highlight"))
 
+;; TODO 2022-12-30: Make the palette overrides a `defcustom'
+(defvar ef-themes-common-palette-overrides nil
+  "Set palette overrides for all the Ef themes.
+
+Mirror the elements of a theme's palette, overriding their value.
+The palette variables are named THEME-NAME-palette, while
+individual theme overrides are THEME-NAME-palette-overrides.  The
+THEME-NAME is one of the symbols in `ef-themes-collection'.
+
+Individual theme overrides take precedence over these common
+overrides.")
+
 ;;; Helpers for user options
 
 (defun ef-themes--warn (option)
@@ -430,7 +462,9 @@ symbol."
   "Return palette value of THEME with optional OVERRIDES."
   (let ((base-value (symbol-value (ef-themes--palette-symbol theme))))
     (if overrides
-        (append (symbol-value (ef-themes--palette-symbol theme :overrides)) base-value)
+        (append (symbol-value (ef-themes--palette-symbol theme :overrides))
+                ef-themes-common-palette-overrides
+                base-value)
       base-value)))
 
 (defun ef-themes--current-theme-palette (&optional overrides)
@@ -480,10 +514,21 @@ accordingly."
       nil t nil
       'ef-themes--select-theme-history))))
 
+(defun ef-themes--disable-themes ()
+  "Disable themes per `ef-themes-disable-other-themes'."
+  (mapc #'disable-theme
+        (if ef-themes-disable-other-themes
+            custom-enabled-themes
+          (ef-themes--list-known-themes))))
+
 (defun ef-themes--load-theme (theme)
   "Load THEME while disabling other Ef themes.
-Run `ef-themes-post-load-hook'."
-  (mapc #'disable-theme (ef-themes--list-known-themes))
+Which themes are disabled is determined by the user option
+`ef-themes-disable-other-themes'.
+
+Run the `ef-themes-post-load-hook' as the final step after
+loading the THEME."
+  (ef-themes--disable-themes)
   (load-theme theme :no-confirm)
   (run-hooks 'ef-themes-post-load-hook))
 
@@ -1600,7 +1645,7 @@ Helper function for `ef-themes-preview-colors'."
     `(org-agenda-date-weekend-today ((,c :inherit org-agenda-date-today :foreground ,weekend)))
     `(org-agenda-diary ((,c :inherit org-agenda-calendar-sexp)))
     `(org-agenda-dimmed-todo-face ((,c :inherit shadow)))
-    `(org-agenda-done ((,c :inherit success)))
+    `(org-agenda-done ((,c :inherit org-done)))
     `(org-agenda-filter-category ((,c :inherit bold :foreground ,modeline-err)))
     `(org-agenda-filter-effort ((,c :inherit bold :foreground ,modeline-err)))
     `(org-agenda-filter-regexp ((,c :inherit bold :foreground ,modeline-err)))
@@ -1968,18 +2013,28 @@ Helper function for `ef-themes-preview-colors'."
 
 ;;; Theme macros
 
+(defun ef-themes--retrieve-palette-value (color palette)
+  "Return COLOR from PALETTE.
+Use recursion until COLOR is retrieved as a string.  Refrain from
+doing so if the value of COLOR is not a key in the PALETTE.
+
+Return `unspecified' if the value of COLOR cannot be determined.
+This symbol is accepted by faces and is thus harmless.
+
+This function is used in the macros `ef-themes-theme',
+`ef-themes-with-colors'."
+  (let ((value (car (alist-get color palette))))
+    (cond
+     ((or (stringp value)
+          (eq value 'unspecified))
+      value)
+     ((and (symbolp value)
+           (memq value (mapcar #'car palette)))
+      (ef-themes--retrieve-palette-value value palette))
+     (t
+      'unspecified))))
+
 ;;;; Instantiate an Ef theme
-
-(defvar ef-themes-common-palette-overrides nil
-  "Set palette overrides for all the Ef themes.
-
-Mirror the elements of a theme's palette, overriding their value.
-The palette variables are named THEME-NAME-palette, while
-individual theme overrides are THEME-NAME-palette-overrides.  The
-THEME-NAME is one of the symbols in `ef-themes-collection'.
-
-Individual theme overrides take precedence over these common
-overrides.")
 
 ;;;###autoload
 (defmacro ef-themes-theme (name palette &optional overrides)
@@ -1998,10 +2053,7 @@ corresponding entries."
             (,sym (append ,overrides ef-themes-common-palette-overrides ,palette))
             ,@(mapcar (lambda (color)
                         (list color
-                              `(let* ((value (car (alist-get ',color ,sym))))
-                                 (if (stringp value)
-                                     value
-                                   (car (alist-get value ,sym))))))
+                              `(ef-themes--retrieve-palette-value ',color ,sym)))
                       colors))
        (custom-theme-set-faces ',name ,@ef-themes-faces)
        (custom-theme-set-variables ',name ,@ef-themes-custom-variables))))
@@ -2022,10 +2074,7 @@ corresponding entries."
             (,sym (ef-themes--current-theme-palette :overrides))
             ,@(mapcar (lambda (color)
                         (list color
-                              `(let* ((value (car (alist-get ',color ,sym))))
-                                 (if (stringp value)
-                                     value
-                                   (car (alist-get value ,sym))))))
+                              `(ef-themes--retrieve-palette-value ',color ,sym)))
                       colors))
        (ignore c ,@colors)            ; Silence unused variable warnings
        ,@body)))

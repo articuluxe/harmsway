@@ -198,8 +198,12 @@ RANGE can be `buffer', `session', `all'."
 (defun dirvish-yank-proc-filter (proc string)
   "Filter for yank task PROC's STRING."
   (let ((proc-buf (process-buffer proc)))
-    (when (string-match dirvish-passphrase-stall-regex string) ; check for prompt
+    ;; check for passphrase prompt
+    (when (string-match dirvish-passphrase-stall-regex string)
       (process-send-string proc (concat (read-passwd string) "\n")))
+    ;; Answer yes for `large file' prompt
+    (when (string-match "File .* is large\\(.*\\), really copy" string)
+      (process-send-string proc "y\n"))
     (let ((old-process-mark (process-mark proc)))
       (when (buffer-live-p proc-buf)
         (with-current-buffer proc-buf
@@ -222,7 +226,7 @@ When BATCH, execute the command using `emacs -q -batch'."
                (`(,_ ,_ ,dest ,_) details)
                (proc (if batch
                          (let* ((q (if (file-remote-p dest) "-q" "-Q"))
-                                (c (list "emacs" q "-batch" "--eval" cmd)))
+                                (c (list dirvish-emacs-bin q "-batch" "--eval" cmd)))
                            (make-process :name name :buffer buf :command c))
                        (start-process-shell-command name buf cmd))))
     (with-current-buffer buf (dirvish-prop :yank-details details))

@@ -642,13 +642,10 @@ Please see the manual for more information."
     (if-let ((branch (forge--pullreq-branch-active pullreq)))
         (progn (message "Branch %S already exists and is configured" branch)
                branch)
-      (forge--branch-pullreq (forge-get-repository pullreq) pullreq)
-      (magit-refresh))))
+      (forge--branch-pullreq (forge-get-repository pullreq) pullreq))))
 
-(cl-defmethod forge--branch-pullreq ((pullreq forge-pullreq))
-  (forge--branch-pullreq (forge-get-repository pullreq) pullreq))
-
-(cl-defmethod forge--branch-pullreq ((_repo forge-unusedapi-repository) pullreq)
+(cl-defmethod forge--branch-pullreq ((_repo forge-unusedapi-repository)
+                                     (pullreq forge-pullreq))
   ;; We don't know enough to do a good job.
   (let* ((number (oref pullreq number))
          (branch (format "pr-%s" number)))
@@ -658,111 +655,98 @@ Please see the manual for more information."
     ;; More often than not this is the correct target branch.
     (magit-call-git "branch" branch "--set-upstream-to=master")
     (magit-set (number-to-string number) "branch" branch "pullRequest")
+    (magit-refresh)
     branch))
 
-(cl-defmethod forge--branch-pullreq ((repo forge-repository) pullreq)
-  (let* ((number (oref pullreq number))
-         (branch-n (format "pr-%s" number))
-         (branch (or (forge--pullreq-branch-internal pullreq) branch-n)))
-    (cond ((string-search ":" (oref pullreq head-ref))
-           ;; Such a branch name would be invalid.  If we encounter
-           ;; it anyway, then that means that the source branch and
-           ;; the merge-request ref are missing.  Luckily Gitlab no
-           ;; longer does this, but we nevertheless have to deal
-           ;; with merge-requests that have been lost in time.
-           (error "Cannot check out this merge-request because %s"
-                  "on old Gitlab version discared the source branch"))
-          ((not (eq (oref pullreq state) 'open))
-           (magit-git "branch" "--force" branch
-                      (format "refs/pullreqs/%s" number)))
-          (t
-           (let ((upstream  (oref repo remote))
-                 (pr-remote (oref pullreq head-user))
-                 (pr-branch (oref pullreq head-ref)))
-             (cond ((not (oref pullreq cross-repo-p))
-                    (let ((tracking (concat upstream "/" pr-branch)))
-                      (unless (magit-branch-p tracking)
-                        (magit-call-git "fetch" upstream))
-                      (forge--setup-pullreq-branch branch tracking)
-                      (magit-branch-maybe-adjust-upstream branch tracking)
-                      (magit-set upstream "branch" branch "pushRemote")
-                      (magit-set upstream "branch" branch "pullRequestRemote")))
-                   (t
-                    ;; For prs within the upstream we are more permissive,
-                    ;; but any request to merge a branch with a well known
-                    ;; name from fork, is highly suspicious and likely the
-                    ;; result of a contributor not bothering to name their
-                    ;; feature branch.
-                    (when (and (member branch magit-main-branch-names)
-                               (magit-branch-p branch))
-                      (setq branch branch-n))
-                    (forge--setup-pullreq-remote pullreq)
-                    (forge--setup-pullreq-branch
-                     branch (concat pr-remote "/" pr-branch))
-                    (if (and (oref pullreq editable-p)
-                             (equal branch pr-branch))
-                        (magit-set pr-remote "branch" branch "pushRemote")
-                      (magit-set upstream "branch" branch "pushRemote"))))
-             (magit-set pr-remote "branch" branch "pullRequestRemote")
-             (magit-set "true" "branch" branch "rebase")
-             (magit-git "branch" branch
-                        (let ((base-ref (oref pullreq base-ref)))
-                          (concat "--set-upstream-to="
-                                  (if (or magit-branch-prefer-remote-upstream
-                                          (not (magit-branch-p base-ref)))
-                                      (concat upstream "/" base-ref)
-                                    base-ref)))))))
-    (magit-set (number-to-string number) "branch" branch "pullRequest")
-    (magit-set (oref pullreq title) "branch" branch "description")
-    branch))
-
-(defun forge--setup-pullreq-branch (branch tracking)
-  (if (magit-branch-p branch)
-      (unless (magit-rev-equal branch tracking)
-        (message "Existing branch %s diverged from %s" branch tracking))
-    (magit-git "branch" branch tracking)))
-
-(defun forge--setup-pullreq-remote (pullreq)
-  (let* ((pr-remote (oref pullreq head-user))
-         (pr-branch (oref pullreq head-ref))
-         (repo (forge-get-repository pullreq))
-         (host (oref repo githost))
-         (fork (oref pullreq head-repo)))
-    (if (magit-remote-p pr-remote)
-        (let ((url (magit-git-string "remote" "get-url" pr-remote))
-              (fetch (magit-get-all "remote" pr-remote "fetch")))
-          (unless (forge--url-equal url (format "git@%s:%s.git" host fork))
-            (user-error "Remote `%s' already exists but does not point to %s"
-                        pr-remote url))
-          (unless (or (member (format "+refs/heads/*:refs/remotes/%s/*"
-                                      pr-remote)
-                              fetch)
-                      (member (format "+refs/heads/%s:refs/remotes/%s/%s"
-                                      pr-branch pr-remote pr-branch)
-                              fetch))
-            (magit-git "remote" "set-branches" "--add" pr-remote pr-branch)
-            (magit-git "fetch" pr-remote)))
-      (let ((url (magit-git-string "remote" "get-url" (oref repo remote))))
-        (magit-git
-         "remote" "add" "-f" "--no-tags"
-         "-t" pr-branch pr-remote
-         (cond ((or (string-prefix-p "git@" url)
-                    (string-prefix-p "ssh://git@" url))
-                (format "git@%s:%s.git" host fork))
-               ((string-prefix-p "https://" url)
-                (format "https://%s/%s.git" host fork))
-               ((string-prefix-p "git://" url)
-                (format "git://%s/%s.git" host fork))
-               ((string-prefix-p "http://" url)
-                (format "http://%s/%s.git" host fork))
-               ((error "%s has an unexpected format" url))))))))
+(cl-defmethod forge--branch-pullreq ((repo forge-repository)
+                                     (pullreq forge-pullreq))
+  (with-slots (number title editable-p cross-repo-p state
+                      base-ref base-repo
+                      head-ref head-repo head-user)
+      pullreq
+    (let* ((host (oref repo githost))
+           (upstream (oref repo remote))
+           (upstream-url (magit-git-string "remote" "get-url" upstream))
+           (remote head-user)
+           (branch (forge--pullreq-branch-select pullreq))
+           (pr-branch head-ref))
+      (when (string-search ":" pr-branch)
+        ;; Such a branch name would be invalid.  If we encounter
+        ;; it anyway, then that means that the source branch and
+        ;; the merge-request ref are missing.
+        (error "Cannot check out this Gitlab merge-request %s"
+               "because the source branch has been deleted"))
+      (if (not (eq state 'open))
+          (magit-git "branch" "--force" branch
+                     (format "refs/pullreqs/%s" number))
+        (if (not cross-repo-p)
+            (let ((tracking (concat upstream "/" pr-branch)))
+              (unless (magit-branch-p tracking)
+                (magit-call-git "fetch" upstream))
+              (magit-call-git "branch" branch tracking)
+              (magit-branch-maybe-adjust-upstream branch tracking)
+              (magit-set upstream "branch" branch "pushRemote")
+              (magit-set upstream "branch" branch "pullRequestRemote"))
+          (if (magit-remote-p remote)
+              (let ((url   (magit-git-string "remote" "get-url" remote))
+                    (fetch (magit-get-all "remote" remote "fetch")))
+                (unless (forge--url-equal
+                         url (format "git@%s:%s.git" host head-repo))
+                  (user-error
+                   "Remote `%s' already exists but does not point to %s"
+                   remote url))
+                (unless (or (member (format "+refs/heads/*:refs/remotes/%s/*"
+                                            remote)
+                                    fetch)
+                            (member (format "+refs/heads/%s:refs/remotes/%s/%s"
+                                            pr-branch remote pr-branch)
+                                    fetch))
+                  (magit-git "remote" "set-branches" "--add" remote pr-branch)
+                  (magit-git "fetch" remote)))
+            (magit-git
+             "remote" "add" "-f" "--no-tags"
+             "-t" pr-branch remote
+             (cond ((or (string-prefix-p "git@" upstream-url)
+                        (string-prefix-p "ssh://git@" upstream-url))
+                    (format "git@%s:%s.git" host head-repo))
+                   ((string-prefix-p "https://" upstream-url)
+                    (format "https://%s/%s.git" host head-repo))
+                   ((string-prefix-p "git://" upstream-url)
+                    (format "git://%s/%s.git" host head-repo))
+                   ((string-prefix-p "http://" upstream-url)
+                    (format "http://%s/%s.git" host head-repo))
+                   (t (error "%s has an unexpected format" upstream-url)))))
+          (magit-git "branch" "--force" branch (concat remote "/" pr-branch))
+          (if (and editable-p
+                   (equal branch pr-branch))
+              (magit-set remote "branch" branch "pushRemote")
+            (magit-set upstream "branch" branch "pushRemote")))
+        (magit-set remote "branch" branch "pullRequestRemote")
+        (magit-set "true" "branch" branch "rebase")
+        (magit-git "branch" branch
+                   (concat "--set-upstream-to="
+                           (if (or magit-branch-prefer-remote-upstream
+                                   (not (magit-branch-p base-ref)))
+                               (concat upstream "/" base-ref)
+                             base-ref))))
+      (magit-set (number-to-string number) "branch" branch "pullRequest")
+      (magit-set title                     "branch" branch "description")
+      (magit-refresh)
+      branch)))
 
 ;;;###autoload
 (defun forge-checkout-pullreq (pullreq)
   "Create, configure and checkout a new branch from a pull-request.
 Please see the manual for more information."
   (interactive (list (forge-read-pullreq "Checkout pull request" t)))
-  (magit-checkout (forge--branch-pullreq (forge-get-pullreq pullreq))))
+  (let ((pullreq (forge-get-pullreq pullreq)))
+    (magit-checkout
+     (or (if (not (eq (oref pullreq state) 'open))
+             (magit-ref-p (format "refs/pullreqs/%s"
+                                  (oref pullreq number)))
+           (forge--pullreq-branch-active pullreq))
+         (let ((magit-inhibit-refresh t))
+           (forge-branch-pullreq pullreq))))))
 
 ;;;###autoload
 (defun forge-checkout-worktree (path pullreq)
@@ -777,10 +761,12 @@ information."
            id)))
   (when (and (file-exists-p path)
              (not (and (file-directory-p path)
-                       (length= (directory-files path) 2))))
+                       (length= (directory-files "/tmp/testing/") 2))))
     (user-error "%s already exists and isn't empty" path))
   (magit-worktree-checkout path
-                           (forge--branch-pullreq (forge-get-pullreq pullreq))))
+                           (let ((magit-inhibit-refresh t))
+                             (forge-branch-pullreq
+                              (forge-get-pullreq pullreq)))))
 
 (defun forge-checkout-worktree-default-read-directory-function (pullreq)
   (with-slots (number head-ref) pullreq

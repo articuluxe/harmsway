@@ -70,7 +70,8 @@
 (defcustom ccls-initialization-options
   nil
   "initializationOptions"
-  :group 'ccls)
+  :group 'ccls
+  :type 'alist)
 (put 'ccls-initialization-options 'safe-local-variable 'listp)
 
 (defcustom ccls-root-files
@@ -149,14 +150,14 @@ DIRECTION can be \"D\", \"L\", \"R\" or \"U\"."
   ((_server (eql ccls)) (command (eql ccls.xref)) arguments)
   (when-let ((xrefs (lsp--locations-to-xref-items
                      (lsp--send-execute-command "ccls.xref" arguments))))
-    (xref--show-xrefs xrefs nil)))
+    (lsp-show-xrefs xrefs nil t)))
 
 (advice-add 'lsp--suggest-project-root :before-until #'ccls--suggest-project-root)
 
 (lsp-register-client
  (make-lsp-client
   :new-connection (lsp-stdio-connection (lambda () (cons ccls-executable ccls-args)))
-  :major-modes '(c-mode c++-mode cuda-mode objc-mode)
+  :activation-fn (lsp-activate-on "c" "cpp" "objective-c" "cuda")
   :server-id 'ccls
   :multi-root nil
   :notification-handlers

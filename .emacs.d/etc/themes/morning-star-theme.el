@@ -129,6 +129,7 @@
    `(secondary-selection        ((,class (nil))))
    `(match                      ((,class (:background ,red3 :foreground ,fg))))
    `(tooltip                    ((,class (:background ,bg2  :foreground ,brown1))))
+   `(bookmark-face              ((,class (:foreground ,orange2))))
    `(help-key-binding           ((,class (:foreground ,orange2 :bold t))))
    `(variable-pitch             ((,class (:family "Iosevka Aile"))))
 
@@ -741,9 +742,9 @@
    `(org-agenda-clocking           ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-column-dateline    ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-current-time       ((,class (:foreground ,brown1 :bold t))))
-   `(org-agenda-date               ((,class (:foreground ,brown1 :bold t))))
-   `(org-agenda-date-weekend       ((,class (:foreground ,brown2 :bold t))))
-   `(org-agenda-date-today         ((,class (:foreground ,red3 :bold t :italic t :height 1.5))))
+   `(org-agenda-date               ((,class (:background ,brown1 :foreground ,black1 :box (:color ,black1 :line-width -1) :bold t :extend t))))
+   `(org-agenda-date-weekend       ((,class (:background ,brown2 :foreground ,black2 :box (:color ,black1 :line-width -1) :bold t :extend t))))
+   `(org-agenda-date-today         ((,class (:background ,red3   :foreground ,black2 :box (:color ,black1 :line-width -1) :bold t :italic t :extend t ))))
    `(org-agenda-diary              ((,class (:foreground ,red2 :bold t))))
    `(org-agenda-dimmed-todo-face   ((,class (:foreground ,grey1))))
    `(org-agenda-done               ((,class (:foreground ,green1))))

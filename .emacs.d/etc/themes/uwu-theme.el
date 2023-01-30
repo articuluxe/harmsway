@@ -206,6 +206,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(secondary-selection ((t (:background ,uwu-bright-black))))
                           `(trailing-whitespace ((t (:background ,uwu-red))))
                           `(border ((t (:background ,uwu-bright-black :foreground ,uwu-white))))
+                          `(internal-border ((t (:background ,uwu-bg :foreground ,uwu-fg))))
                           `(vertical-border ((t (:foreground ,uwu-bright-black))))
                           `(mode-line ((t (:foreground ,uwu-white :background ,uwu-black :weight normal
                                                        :box (:line-width 1 :color ,uwu-black)))))
@@ -372,6 +373,77 @@ Also bind `class' to ((class color) (min-colors 89))."
                                                               :background ,uwu-fg))))
                           '(term-default-fg-color ((t (:inherit uwu-fg))))
                           '(term-default-bg-color ((t (:inherit uwu-bg))))
+                          ;; eshell
+                          `(eshell-prompt ((t (:foreground ,uwu-cyan :weight bold))))
+                          `(eshell-ls-archive ((t (:foreground ,uwu-red :weight bold))))
+                          `(eshell-ls-backup ((t (:inherit font-lock-comment-face))))
+                          `(eshell-ls-clutter ((t (:inherit font-lock-comment-face))))
+                          `(eshell-ls-directory ((t (:foreground ,uwu-cyan :weight bold))))
+                          `(eshell-ls-executable ((t (:foreground ,uwu-red :weight bold))))
+                          `(eshell-ls-unreadable ((t (:foreground ,uwu-fg))))
+                          `(eshell-ls-missing ((t (:inherit font-lock-warning-face))))
+                          `(eshell-ls-product ((t (:inherit font-lock-doc-face))))
+                          `(eshell-ls-special ((t (:foreground ,uwu-yellow :weight bold))))
+                          `(eshell-ls-symlink ((t (:foreground ,uwu-blue :weight bold))))
+                          ;; slime
+                          `(slime-repl-output-face ((t (:foreground ,uwu-red))))
+                          `(slime-repl-inputed-output-face ((t (:foreground ,uwu-green))))
+                          `(slime-error-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-error)))
+                             (t
+                              (:underline ,uwu-error))))
+                          `(slime-warning-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-warning)))
+                             (t
+                              (:underline ,uwu-warning))))
+                          `(slime-style-warning-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-yellow)))
+                             (t
+                              (:underline ,uwu-yellow))))
+                          `(slime-note-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-green)))
+                             (t
+                              (:underline ,uwu-green))))
+                          `(slime-highlight-face ((t (:inherit highlight))))
+                          ;; sly
+                          `(sly-mrepl-prompt-face ((t (:foreground ,uwu-blue :weight bold))))
+                          `(sly-db-condition-face ((t (:foreground ,uwu-red))))
+                          `(sly-mrepl-output-face ((t (:foreground ,uwu-red))))
+                          `(sly-apropos-label ((t (:foreground ,uwu-magenta :slant italic))))
+                          `(sly-apropos-symbol ((t (:foreground ,uwu-green))))
+                          `(sly-reader-conditional-face ((t (:foreground ,uwu-comment :slant italic))))
+                          `(sly-db-restart-number-face ((t (:foreground ,uwu-comment))))
+                          `(sly-db-frame-label-face ((t (:foreground ,uwu-comment))))
+                          `(sly-action-face ((t (:foreground ,uwu-warning :weight bold))))
+                          `(sly-error-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-error)))
+                             (t
+                              (:underline ,uwu-error))))
+                          `(sly-warning-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-warning)))
+                             (t
+                              (:underline ,uwu-warning))))
+                          `(sly-style-warning-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-yellow)))
+                             (t
+                              (:underline ,uwu-yellow))))
+                          `(sly-note-face
+                            ((((supports :underline (:style wave)))
+                              (:underline (:style wave :color ,uwu-green)))
+                             (t
+                              (:underline ,uwu-green))))
+                          `(sly-stickers-placed-face ((t (:foreground ,uwu-fg :background ,uwu-black))))
+                          `(sly-stickers-empty-face ((t (:foreground ,uwu-bg :background ,uwu-red))))
+                          `(sly-stickers-exited-non-locally-face ((t (:foreground ,uwu-bg :background ,uwu-red :strike-through t))))
+                          `(sly-stickers-armed-face ((t (:foreground ,uwu-bg :background ,uwu-blue))))
+                          `(sly-stickers-recordings-face ((t (:foreground ,uwu-bg :background ,uwu-green))))
                           ;; diff-mode
                           `(diff-added ((t (:foreground ,uwu-bright-green :background: ,uwu-black :extend t))))
                           `(diff-changed ((t  (:foreground ,uwu-warning :background: ,uwu-black :extend t))))
@@ -422,8 +494,8 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(consult-async-split ((t (:inherit warning))))
                           `(consult-key ((t (:inherit uwu-magenta))))
                           `(consult-line-number ((t (:foreground ,(if uwu-distinct-line-numbers uwu-white uwu-comment)
-                                                         ,@(when uwu-distinct-line-numbers
-                                                             (list :background uwu-black))))))
+                                                                 ,@(when uwu-distinct-line-numbers
+                                                                     (list :background uwu-black))))))
                           `(consult-separator ((t (:foreground ,uwu-bright-black))))
                           ;; embark
                           `(embark-keybinding ((t (:foreground ,uwu-magenta))))
@@ -666,7 +738,30 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(mu4e-view-header-key-face ((t (:inherit message-header-name :weight normal))))
                           `(mu4e-view-header-value-face ((t (:foreground ,uwu-cyan :weight normal :slant normal))))
                           `(mu4e-view-link-face ((t (:inherit link))))
-                          `(mu4e-view-special-header-value-face ((t (:foreground ,uwu-blue :weight normal :underline nil))))))
+                          `(mu4e-view-special-header-value-face ((t (:foreground ,uwu-blue :weight normal :underline nil))))
+                          ;; nano emacs
+                          `(nano-face-default ((t (:foreground ,uwu-white, :background ,uwu-black))))
+                          `(nano-face-header-default ((t (:foreground ,uwu-white, :background ,uwu-black))))
+                          `(nano-face-tag-default ((t (:height 0.85 :foreground ,uwu-white, :background ,uwu-black))))
+                          `(nano-face-header-strong ((t (:foreground ,uwu-white, :background ,uwu-black :weight bold))))
+                          `(nano-face-strong ((t (:foreground ,uwu-white, :background ,uwu-black :weight bold))))
+                          `(nano-face-header-filler ((t (:foreground ,uwu-white, :background ,uwu-black))))
+                          `(nano-face-header-separator ((t (:background ,uwu-bg))))
+                          `(nano-face-header-popout ((t (:foreground ,uwu-black :background ,uwu-yellow))))
+                          `(nano-face-tag-popout ((t (:height 0.85 :foreground ,uwu-black :background ,uwu-yellow))))
+                          `(nano-face-header-highlight ((t (:foreground ,uwu-black :background ,uwu-green))))
+                          `(nano-face-header-faded ((t (:foreground ,uwu-black, :background ,uwu-comment))))
+                          `(nano-face-tag-faded ((t (:height 0.85 :foreground ,uwu-black, :background ,uwu-comment))))
+                          `(nano-face-header-critical ((t (:foreground ,uwu-black, :background ,uwu-error))))
+                          `(nano-face-critical ((t (:foreground ,uwu-black, :background ,uwu-error))))
+                          `(nano-face-tag-critical ((t (:height 0.85 :foreground ,uwu-black, :background ,uwu-error))))
+                          `(nano-face-header-subtle ((t (:foreground ,uwu-comment, :background ,uwu-bg))))
+                          `(nano-face-subtle ((t (:foreground ,uwu-comment, :background ,uwu-bg))))
+                          `(nano-face-header-salient ((t (:foreground ,uwu-black, :background ,uwu-magenta))))
+                          `(nano-face-salient ((t (:foreground ,uwu-magenta, :background ,uwu-bg))))
+                          `(nano-face-tag-salient ((t (:height 0.85 :foreground ,uwu-black, :background ,uwu-magenta))))
+                          `(nano-face-tag-strong ((t (:height 0.85 :foreground ,uwu-fg :background ,uwu-bg))))
+                          `(nano-face-variable-pitch ((t (:foreground ,uwu-fg :background ,uwu-bg))))))
 
 ;;;###autoload
 (and load-file-name

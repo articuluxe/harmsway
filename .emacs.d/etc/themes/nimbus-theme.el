@@ -7,7 +7,7 @@
 ;; Created:     Thu Mar 2 22:19:19 CET 2017
 ;; Version:     1.3.0
 ;; Package-Requires: ((emacs "24.1"))
-;; URL:         https://github.com/m-cat/nimbus-theme
+;; URL:         https://github.com/mrcnski/nimbus-theme
 ;; Keywords:    faces
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -45,7 +45,7 @@
 ;;
 ;;; Code:
 
-(deftheme nimbus "An awesome dark theme.")
+(deftheme nimbus "Beautiful, slightly retro dark theme.")
 
 (let* (
        ;; Define the palette.
@@ -56,14 +56,15 @@
        (dark-green     "#1d9a79")
        (darker-green   "#058945")
        (lighter-blue   "#86b5e8")
-       (light-blue     "#68a5e9")
+       (light-blue     "#70a5e1")
        (blue           "#598bc1")
        (dark-blue      "#267E99")
+       (blue-purple    "#7f7dca")
        (light-orange   "#eaaa0c")
-       (orange         "#df9522")
+       (orange         "#db931f")
        (dark-tan       "#7d7c61")
        (bright-yellow  "#fffe0a")
-       (yellow         "#baba36")
+       (yellow         "#b6b635")
        (pink           "#cd9595")
        (purple         "#ab75c3")
        (brown          "#987654")
@@ -103,29 +104,32 @@
        (cursor         nimbus-warn)
        (fringe         "#212121")
 
-       (archive        orange)
-       (code           orange)
+       (archive        blue-purple)
+       (code           blue-purple)
        (current        yellow)
        (date           light-blue)
        (executable     red)
        (file           blue)
        (file-suffix    light-gray)
-       (hash           dark-tan)
+       (hash           blue-gray)
        (heading        purple)
        (hl-line        blue-bg)
        (ignore         blue-gray)
-       (indent         darker-gray)
+       (indent         darkest-gray)
        (key            blue)
        (line           blue-gray)
        (line-current   green)
        (name           dark-green)
-       (number         orange)
+       (number         purple)
+       (operator       orange)
+       (property       blue-purple)
        (selection      purple-bg)
        (separator      brown)
        (special        blue-gray)
        (strike         brown)
        (summary        red)
        (tag            dark-blue)
+       (value          green)
 
        (lazy           light-blue)
        (match          light-green)
@@ -172,7 +176,7 @@
 
    ;;; Font lock
 
-   `(font-lock-builtin-face ((t (:foreground ,blue))))
+   `(font-lock-builtin-face ((t (:foreground ,blue-purple))))
    `(font-lock-comment-face ((t (:foreground ,light-gray :slant italic))))
    `(font-lock-comment-delimiter-face ((t (:inherit font-lock-comment-face))))
    `(font-lock-function-name-face ((t (:foreground ,dark-green))))
@@ -258,6 +262,9 @@
    `(avy-lead-face-0 ((t (:inherit avy-lead-face :background ,lazy))))
    `(avy-lead-face-1 ((t (:inherit avy-lead-face :background ,fg))))
    `(avy-lead-face-2 ((t (:inherit avy-lead-face :background ,match))))
+
+   ;; benchmark-init
+   `(benchmark-init/header-face ((t (:foreground ,heading))))
 
    ;; bm
    `(bm-face ((t (:foreground unspecified :background ,teal-bg))))
@@ -480,7 +487,7 @@
    `(erc-direct-msg-face ((t (:foreground ,red))))
    `(erc-fool-face ((t (:foreground ,hash))))
    `(erc-input-face ((t (:foreground ,current))))
-   `(erc-keyword-face ((t (:foreground, light-green :bold t))))
+   `(erc-keyword-face ((t (:foreground ,match :bold t))))
    `(erc-my-nick-face ((t (:foreground ,orange))))
    `(erc-nick-default-face ((t (:foreground ,blue))))
    `(erc-nick-msg-face ((t (:inherit erc-direct-msg-face :bold t))))
@@ -542,6 +549,11 @@
    `(git-gutter:modified ((t (:foreground ,orange :bold t))))
    `(git-gutter:separator ((t (:foreground ,separator :bold t))))
    `(git-gutter:unchanged ((t (:foreground ,yellow))))
+
+   ;; goggles
+   `(goggles-added ((t (:background ,green-bg))))
+   `(goggles-changed ((t (:background ,purple-bg))))
+   `(goggles-removed ((t (:background ,red-bg))))
 
    ;; gnus
    `(gnus-button ((t (:bold t))))
@@ -613,7 +625,7 @@
 
    ;; guide-key
    `(guide-key/prefix-command-face ((t (:foreground ,heading))))
-   `(guide-key/highlight-command-face ((t (:foreground ,dark-green))))
+   `(guide-key/highlight-command-face ((t (:foreground ,value))))
    `(guide-key/key-face ((t (:foreground ,key))))
 
    ;; helm
@@ -665,8 +677,8 @@
 
    ;; highlight-indent-guides
    `(highlight-indent-guides-character-face ((t (:foreground ,indent))))
-   `(highlight-indent-guides-odd-face ((t (:background ,darkest-gray))))
-   `(highlight-indent-guides-even-face ((t (:background ,darkest-gray))))
+   `(highlight-indent-guides-odd-face ((t (:background ,indent))))
+   `(highlight-indent-guides-even-face ((t (:background ,indent))))
    `(highlight-indent-guides-top-odd-face ((t (:background ,teal-bg))))
    `(highlight-indent-guides-top-even-face ((t (:background ,teal-bg))))
 
@@ -674,7 +686,7 @@
    `(highlight-numbers-number ((t (:foreground ,number))))
 
    ;; highlight-operators
-   `(highlight-operators-face ((t (:foreground ,orange))))
+   `(highlight-operators-face ((t (:foreground ,operator))))
 
    ;; highlight-quoted
    `(highlight-quoted-symbol ((t (:foreground ,purple))))
@@ -690,6 +702,9 @@
 
    ;; hl-todo
    `(hl-todo ((t (:foreground ,pink :bold nil :slant italic))))
+
+   ;; idle-highlight-mode
+   `(idle-highlight ((t (:inherit highlight))))
 
    ;; ido
    `(flx-highlight-face ((t (:foreground ,light-blue :underline nil :bold t))))
@@ -779,7 +794,7 @@
    `(magit-branch-local ((t (:foreground ,orange))))
    `(magit-branch-remote ((t (:foreground ,yellow))))
    `(magit-filename ((t (:foreground ,file))))
-   `(magit-hash ((t (:foreground ,blue-gray))))
+   `(magit-hash ((t (:foreground ,hash))))
    `(magit-refname ((t (:foreground ,dark-green))))
    `(magit-section-heading ((t (:foreground ,heading))))
    `(magit-section-heading-selection ((t (:foreground ,red))))
@@ -919,12 +934,13 @@
    `(nswbuff-separator-face ((t (:foreground ,separator))))
    `(nswbuff-special-buffers-face ((t (:foreground ,special))))
 
-   ;; org
+   ;; org-mode
    `(org-block-begin-line ((t (:inherit org-meta-line :underline ,indent))))
    `(org-block-end-line ((t (:inherit org-meta-line :overline ,indent))))
    `(org-checkbox ((t (:foreground ,dark-tan :bold t))))
    `(org-checkbox-statistics-done ((t (:foreground ,dark-green))))
    `(org-checkbox-statistics-todo ((t (:foreground ,red))))
+   `(org-code ((t (:foreground ,code))))
    `(org-date ((t (:inherit link))))
    `(org-date-selected ((t (:inherit highlight :foreground ,current))))
    `(org-document-info ((t (:foreground ,lighter-green))))
@@ -1113,6 +1129,14 @@
    ;; transient
    `(transient-heading ((t (:foreground ,heading))))
    `(transient-key ((t (:foreground ,key))))
+   `(transient-value ((t (:foreground ,value))))
+
+   ;; tree-sitter
+   `(tree-sitter-hl-face:constant.builtin ((t (:foreground ,number))))
+   `(tree-sitter-hl-face:function.call ((t (:foreground ,dark-green))))
+   `(tree-sitter-hl-face:number ((t (:foreground ,number))))
+   `(tree-sitter-hl-face:operator ((t (:foreground ,operator))))
+   `(tree-sitter-hl-face:property ((t (:foreground ,property))))
 
    ;; twittering
    `(twittering-timeline-footer-face ((t (:foreground ,heading))))
@@ -1152,7 +1176,7 @@
    `(web-mode-css-comment-face ((t (:inherit font-lock-comment-face))))
    `(web-mode-css-function-face ((t (:foreground ,blue))))
    `(web-mode-css-priority-face ((t (:foreground ,blue))))
-   `(web-mode-css-property-name-face ((t (:inherit font-lock-variable-name-face))))
+   `(web-mode-css-property-name-face ((t (:foreground ,property))))
    `(web-mode-css-pseudo-class-face ((t (:foreground ,blue))))
    `(web-mode-css-selector-face ((t (:foreground ,blue))))
    `(web-mode-css-string-face ((t (:foreground ,yellow))))
@@ -1199,7 +1223,7 @@
    `(which-key-special-key-face ((t (:foreground ,special))))
    `(which-key-group-description-face ((t (:foreground ,heading))))
    `(which-key-highlighted-command-face ((t (:inherit which-key-command-description-face :underline t))))
-   `(which-key-command-description-face ((t (:foreground ,dark-green))))
+   `(which-key-command-description-face ((t (:foreground ,value))))
    `(which-key-local-map-description-face ((t (:inherit font-lock-variable-name-face))))
 
    ;; whitespace

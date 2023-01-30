@@ -1,6 +1,6 @@
 ;;; standard-themes.el --- Like the default theme but more consistent -*- lexical-binding:t -*-
 
-;; Copyright (C) 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2022-2023  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Standard-Themes Development <~protesilaos/standard-themes@lists.sr.ht>
@@ -52,6 +52,27 @@
 
 (defconst standard-themes-items '(standard-dark standard-light)
   "Symbols of the Standard themes.")
+
+(defcustom standard-themes-disable-other-themes t
+  "Disable all other themes when loading a Standard theme.
+
+When the value is non-nil, the command `standard-themes-toggle'
+as well as the functions `standard-themes-load-dark' and
+`standard-themes-load-light', will disable all other themes while
+loading the specified Standard theme.  This is done to ensure
+that Emacs does not blend two or more themes: such blends lead to
+awkward results that undermine the work of the designer.
+
+When the value is nil, the aforementioned command and functions
+will only disable the other Standard theme.
+
+This option is provided because Emacs themes are not necessarily
+limited to colors/faces: they can consist of an arbitrary set of
+customizations.  Users who use such customization bundles must
+set this variable to a nil value."
+  :group 'standard-themes
+  :package-version '(standard-themes . "1.2.0")
+  :type 'boolean)
 
 (defcustom standard-themes-post-load-hook nil
   "Hook that runs after loading a Standard theme.
@@ -372,6 +393,28 @@ The default is a gray background color."
   :type 'boolean
   :link '(info-link "(standard-themes) Accented mode line"))
 
+;; TODO 2022-12-30: Make the palette overrides a `defcustom'
+(defvar standard-themes-common-palette-overrides nil
+  "Set palette overrides for all the Standard themes.
+
+Mirror the elements of a theme's palette, overriding their value.
+The palette variables are named THEME-NAME-palette, while
+individual theme overrides are THEME-NAME-palette-overrides:
+
+- `standard-dark-palette'
+- `standard-dark-palette-overrides'
+- `standard-light-palette'
+- `standard-light-palette-overrides'
+
+Individual theme overrides take precedence over these common
+overrides.
+
+The idea of common overrides is to change semantic color
+mappings, such as to make the cursor red.  Wherea theme-specific
+overrides can also be used to change the value of a named color,
+such as what hexadecimal RGB value the red-warmer symbol
+represents.")
+
 ;;; Helpers for user options
 
 (defun standard-themes--warn (option)
@@ -575,7 +618,9 @@ symbol."
   "Return palette value of THEME with optional OVERRIDES."
   (let ((base-value (symbol-value (standard-themes--palette-symbol theme))))
     (if overrides
-        (append (symbol-value (standard-themes--palette-symbol theme :overrides)) base-value)
+        (append (symbol-value (standard-themes--palette-symbol theme :overrides))
+                standard-themes-common-palette-overrides
+                base-value)
       base-value)))
 
 (defun standard-themes--current-theme-palette (&optional overrides)
@@ -588,10 +633,17 @@ overrides."
         (standard-themes--palette-value theme))
     (user-error "No enabled Ef theme could be found")))
 
+(defun standard-themes--disable-themes ()
+  "Disable themes per `standard-themes-disable-other-themes'."
+  (mapc #'disable-theme
+        (if standard-themes-disable-other-themes
+            custom-enabled-themes
+          (standard-themes--list-known-themes))))
+
 (defun standard-themes--load-theme (theme)
   "Load THEME while disabling other Standard themes.
 Run `standard-themes-post-load-hook'."
-  (mapc #'disable-theme (standard-themes--list-known-themes))
+  (standard-themes--disable-themes)
   (load-theme theme :no-confirm)
   (run-hooks 'standard-themes-post-load-hook))
 
@@ -613,7 +665,7 @@ Run `standard-themes-post-load-hook'."
          (intern
           (completing-read "Load Standard theme (will disable all others): "
                            standard-themes-items nil t))))
-    (mapc #'disable-theme (standard-themes--list-known-themes))
+    (standard-themes--disable-themes)
     (pcase theme
       ('standard-light (standard-themes-load-light))
       ('standard-dark (standard-themes-load-dark)))))
@@ -1984,16 +2036,26 @@ Helper function for `standard-themes-preview-colors'."
 
 ;;; Theme macros
 
-(defvar standard-themes-common-palette-overrides nil
-  "Set palette overrides for all the Standard themes.
+(defun standard-themes--retrieve-palette-value (color palette)
+  "Return COLOR from PALETTE.
+Use recursion until COLOR is retrieved as a string.  Refrain from
+doing so if the value of COLOR is not a key in the PALETTE.
 
-Mirror the elements of a theme's palette, overriding their value.
-The palette variables are named THEME-NAME-palette, while
-individual theme overrides are THEME-NAME-palette-overrides.  The
-THEME-NAME is one of the symbols in `standard-themes-items'.
+Return `unspecified' if the value of COLOR cannot be determined.
+This symbol is accepted by faces and is thus harmless.
 
-Individual theme overrides take precedence over these common
-overrides.")
+This function is used in the macros `standard-themes-theme',
+`standard-themes-with-colors'."
+  (let ((value (car (alist-get color palette))))
+    (cond
+     ((or (stringp value)
+          (eq value 'unspecified))
+      value)
+     ((and (symbolp value)
+           (memq value (mapcar #'car palette)))
+      (standard-themes--retrieve-palette-value value palette))
+     (t
+      'unspecified))))
 
 ;;;###autoload
 (defmacro standard-themes-theme (name palette &optional overrides)
@@ -2012,10 +2074,7 @@ corresponding entries."
             (,sym (append ,overrides standard-themes-common-palette-overrides ,palette))
             ,@(mapcar (lambda (color)
                         (list color
-                              `(let* ((value (car (alist-get ',color ,sym))))
-                                 (if (stringp value)
-                                     value
-                                   (car (alist-get value ,sym))))))
+                              `(standard-themes--retrieve-palette-value ',color ,sym)))
                       colors))
        (custom-theme-set-faces ',name ,@standard-themes-faces)
        (custom-theme-set-variables ',name ,@standard-themes-custom-variables))))
@@ -2036,10 +2095,7 @@ corresponding entries."
             (,sym (standard-themes--current-theme-palette :overrides))
             ,@(mapcar (lambda (color)
                         (list color
-                              `(let* ((value (car (alist-get ',color ,sym))))
-                                 (if (stringp value)
-                                     value
-                                   (car (alist-get value ,sym))))))
+                              `(standard-themes--retrieve-palette-value ',color ,sym)))
                       colors))
        (ignore c ,@colors)            ; Silence unused variable warnings
        ,@body)))

@@ -1,6 +1,6 @@
 ;;; consult-flymake.el --- Provides the command `consult-flymake' -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021, 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 
@@ -19,8 +19,8 @@
 
 ;;; Commentary:
 
-;; Provides the command `consult-flymake'. This is an extra package,
-;; to allow lazy loading of flymake.el. The `consult-flymake' command
+;; Provides the command `consult-flymake'.  This is an extra package,
+;; to allow lazy loading of flymake.el.  The `consult-flymake' command
 ;; is autoloaded.
 
 ;;; Code:
@@ -56,7 +56,9 @@ DIAGS should be a list of diagnostics as returned from `flymake-diagnostics'."
                               ('flymake-error ?e)
                               ('flymake-warning ?w)
                               (_ ?n))))))))
-           diags))
+           (seq-filter (lambda (diag)
+                         (buffer-live-p (flymake-diagnostic-buffer diag)))
+                       diags)))
          (buffer-width (apply #'max (mapcar (lambda (x) (length (nth 0 x))) diags)))
          (line-width (apply #'max (mapcar (lambda (x) (length (number-to-string (nth 1 x)))) diags)))
          (fmt (format "%%-%ds %%-%dd %%-7s %%s" buffer-width line-width)))

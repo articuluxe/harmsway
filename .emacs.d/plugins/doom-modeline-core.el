@@ -530,6 +530,13 @@ It requires `circe' or `erc' package."
   :type 'function
   :group 'doom-modeline)
 
+(defcustom doom-modeline-battery t
+  "Whether display the battery status.
+
+It respects `display-battery-mode'."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-time t
   "Whether display the time.
 
@@ -925,15 +932,11 @@ used as an advice to window creation functions."
        (featurep 'all-the-icons)))
 
 ;; Keep `doom-modeline-current-window' up-to-date
-(defun doom-modeline--get-current-window (&optional frame)
-  "Get the current window but should exclude the child windows.
+(defun doom-modeline--selected-window ()
+  "Get the selected window."
+  (frame-selected-window))
 
-If FRAME is nil, it means the current frame."
-  (if (and (fboundp 'frame-parent) (frame-parent frame))
-      (frame-selected-window (frame-parent frame))
-    (frame-selected-window frame)))
-
-(defvar doom-modeline-current-window (doom-modeline--get-current-window)
+(defvar doom-modeline-current-window (doom-modeline--selected-window)
   "Current window.")
 
 (defun doom-modeline--active ()
@@ -942,7 +945,7 @@ If FRAME is nil, it means the current frame."
                (and (frame-live-p mini-frame-frame)
                     (frame-visible-p mini-frame-frame)))
     (and doom-modeline-current-window
-         (eq (doom-modeline--get-current-window) doom-modeline-current-window))))
+         (eq (doom-modeline--selected-window) doom-modeline-current-window))))
 
 (defvar-local doom-modeline--limited-width-p nil)
 
@@ -955,7 +958,7 @@ If FRAME is nil, it means the current frame."
 
 (defun doom-modeline-set-selected-window (&rest _)
   "Set `doom-modeline-current-window' appropriately."
-  (let ((win (doom-modeline--get-current-window)))
+  (let ((win (doom-modeline--selected-window)))
     (setq doom-modeline-current-window
           (if (minibuffer-window-active-p win)
               (minibuffer-selected-window)
@@ -973,6 +976,7 @@ If FRAME is nil, it means the current frame."
                                      mode-line-emphasis
                                      mode-line-highlight
                                      mode-line-buffer-id
+                                     success warning error
                                      solaire-mode-line-face
                                      solaire-mode-line-active-face
                                      paradox-mode-line-face
@@ -1072,22 +1076,25 @@ Example:
         (rhs-forms (doom-modeline--prepare-segments rhs)))
     (defalias sym
       (lambda ()
-        (list lhs-forms
-              (propertize
-               " "
-               'display `(space
-                          :align-to
-                          (- (+ right right-fringe right-margin scroll-bar)
-                             ,(let ((rhs-str (format-mode-line (cons "" rhs-forms))))
-                                (if (fboundp 'string-pixel-width)
-                                    (/ (string-pixel-width rhs-str)
-                                       (doom-modeline--font-width)
-                                       1.0)
-                                  (* (string-width rhs-str)
-                                     (if (display-graphic-p)
-                                         (/ (doom-modeline--font-width) (frame-char-width) 0.95)
-                                       1.0)))))))
-              rhs-forms))
+        (if rhs-forms
+            (let ((rhs-str (format-mode-line (cons "" rhs-forms))))
+              (list lhs-forms
+                    (propertize
+                     " "
+                     'display `(space
+                                :align-to
+                                (- (+ right right-fringe right-margin scroll-bar)
+                                   ,(if (and (>= emacs-major-version 29)
+                                             (fboundp 'string-pixel-width))
+                                        (/ (string-pixel-width rhs-str)
+                                           (doom-modeline--font-width)
+                                           1.0)
+                                      (* (string-width rhs-str)
+                                         (if (display-graphic-p)
+                                             (/ (doom-modeline--font-width) (frame-char-width) 0.95)
+                                           1.0))))))
+                    rhs-str))
+          lhs-forms))
       (concat "Modeline:\n"
               (format "  %s\n  %s"
                       (prin1-to-string lhs)

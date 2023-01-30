@@ -1,6 +1,6 @@
 ;;; phps-mode-test.el --- Commons for tests -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2023  Free Software Foundation, Inc.
 
 
 ;;; Commentary:
@@ -180,7 +180,12 @@ Each element is a list: (list key value), optionally UN-SORTED."
            hash-table)
           (if un-sorted
               (nreverse result)
-            (sort (nreverse result) (lambda (a b) (< (car a) (car b))))))
+            (sort
+             (nreverse result)
+             (lambda (a b)
+               (if (listp (car a))
+                   (< (car (car a)) (car (car b)))
+                 (< (car a) (car b)))))))
       nil)))
 
 (transient-mark-mode t)

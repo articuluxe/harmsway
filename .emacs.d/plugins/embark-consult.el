@@ -273,6 +273,26 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       #'embark-consult--target-strip)
 
+;;; Support for consult-man and consult-info
+
+(defun embark-consult-man (cand)
+  (man (get-text-property 0 'consult-man cand)))
+
+(setf (alist-get 'consult-man embark-default-action-overrides)
+      #'embark-consult-man)
+
+(declare-function consult-info--action "ext:consult-info")
+
+(defun embark-consult-info (cand)
+  (consult-info--action cand)
+  (pulse-momentary-highlight-one-line (point)))
+
+(setf (alist-get 'consult-info embark-default-action-overrides)
+      #'embark-consult-info)
+
+(setf (alist-get 'consult-info embark-transformer-alist)
+      #'embark-consult--target-strip)
+
 ;;; Bindings for consult commands in embark keymaps
 
 (define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
@@ -359,7 +379,7 @@ for any action that is a Consult async command."
 
 (map-keymap
  (lambda (_key cmd)
-   (cl-pushnew #'embark--cd (alist-get cmd embark-pre-action-hooks))
+   (cl-pushnew #'embark--cd (alist-get cmd embark-around-action-hooks))
    (cl-pushnew #'embark-consult--prep-async
                (alist-get cmd embark-target-injection-hooks)))
  embark-consult-async-search-map)

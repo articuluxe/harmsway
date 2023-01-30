@@ -1,6 +1,6 @@
 ;;; consult-vertico.el --- Vertico integration for Consult -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021, 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 
@@ -19,7 +19,7 @@
 
 ;;; Commentary:
 
-;; Integration code for the Vertico completion system. This package
+;; Integration code for the Vertico completion system.  This package
 ;; is automatically loaded by Consult.
 
 ;;; Code:
@@ -28,8 +28,6 @@
 
 ;; NOTE: It is not guaranteed that Vertico is available during compilation!
 (defvar vertico--input)
-(defvar vertico--history-hash)
-(defvar vertico--lock-candidate)
 (declare-function vertico--exhibit "ext:vertico")
 (declare-function vertico--candidate "ext:vertico")
 (declare-function vertico--all-completions "ext:vertico")
@@ -38,13 +36,10 @@
   "Return current candidate for Consult preview."
   (and vertico--input (vertico--candidate 'highlight)))
 
-(defun consult-vertico--refresh (&optional reset)
-  "Refresh completion UI, keep current candidate unless RESET is non-nil."
+(defun consult-vertico--refresh ()
+  "Refresh completion UI."
   (when vertico--input
     (setq vertico--input t)
-    (when reset
-      (setq vertico--history-hash nil
-            vertico--lock-candidate nil))
     (vertico--exhibit)))
 
 (defun consult-vertico--filter-adv (orig pattern cands category highlight)
@@ -53,7 +48,7 @@ See `consult--completion-filter' for arguments PATTERN, CANDS, CATEGORY
 and HIGHLIGHT."
   (if (and (bound-and-true-p vertico-mode) (not highlight))
       ;; Optimize `consult--completion-filter' using the deferred highlighting
-      ;; from Vertico. The advice is not necessary - it is a pure optimization.
+      ;; from Vertico.  The advice is not necessary - it is a pure optimization.
       (nconc (car (vertico--all-completions pattern cands nil (length pattern)
                                             `(metadata (category . ,category))))
              nil)

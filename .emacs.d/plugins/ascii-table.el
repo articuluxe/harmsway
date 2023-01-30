@@ -53,6 +53,7 @@ Otherwise their names NUL .. DEL are shown.")
   (cl-case class
     (control font-lock-keyword-face)
     (punct font-lock-preprocessor-face)
+    (space font-lock-string-face)
     (digit font-lock-function-name-face)
     (upper font-lock-variable-name-face)
     (lower font-lock-variable-name-face)
@@ -61,6 +62,8 @@ Otherwise their names NUL .. DEL are shown.")
 (defun ascii-table--character-class (codepoint)
   "Internal helper to classify CODEPOINT."
   (cond ((< codepoint #x00) nil)
+        ((< codepoint #x09) 'control)
+        ((< codepoint #x0e) 'space)
         ((< codepoint #x20) 'control)
         ((= codepoint #x20) 'space)
         ((< codepoint #x30) 'punct)
@@ -77,13 +80,15 @@ Otherwise their names NUL .. DEL are shown.")
 
 (defun ascii-table--control-caret (codepoint)
   "Internal helper to format CODEPOINT in caret notation."
-  (cond ((< codepoint #x20) (string ?^ (+ ?@ codepoint)))
+  (cond ((< codepoint #x00) nil)
+        ((< codepoint #x20) (string ?^ (+ ?@ codepoint)))
         ((= codepoint #x7F) "^?")
         (t nil)))
 
 (defun ascii-table--control-name (codepoint)
   "Internal helper to get the control character name of CODEPOINT."
-  (cond ((< codepoint #x20)
+  (cond ((< codepoint #x00) nil)
+        ((< codepoint #x20)
          (elt ["NUL" "SOH" "STX" "ETX" "EOT" "ENQ" "ACK" "BEL"
                "BS" "HT" "LF" "VT" "FF" "CR" "SO" "SI"
                "DLE" "DC1" "DC2" "DC3" "DC4" "NAK" "SYN" "ETB"

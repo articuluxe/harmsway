@@ -1,6 +1,6 @@
 ;;; consult-compile.el --- Provides the command `consult-compile-error' -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021, 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 
@@ -19,8 +19,8 @@
 
 ;;; Commentary:
 
-;; Provides the command `consult-compile-error'. This is an extra
-;; package, to allow lazy loading of compile.el. The
+;; Provides the command `consult-compile-error'.  This is an extra
+;; package, to allow lazy loading of compile.el.  The
 ;; `consult-compile-error' command is autoloaded.
 
 ;;; Code:
@@ -55,7 +55,7 @@
           (when-let (msg (get-text-property pos 'compilation-message))
             (goto-char pos)
             (push (propertize
-                   (consult-compile--font-lock (consult--buffer-substring pos (line-end-position)))
+                   (consult-compile--font-lock (consult--buffer-substring pos (pos-eol)))
                    'consult--type (pcase (compilation--message->type msg)
                                     (0 ?i)
                                     (1 ?w)

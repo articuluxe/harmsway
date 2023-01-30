@@ -275,7 +275,7 @@ cause lag when typing on slower machines."
 
 (defcustom markdown-uri-types
   '("acap" "cid" "data" "dav" "fax" "file" "ftp"
-    "gopher" "http" "https" "imap" "ldap" "mailto"
+    "geo" "gopher" "http" "https" "imap" "ldap" "mailto"
     "mid" "message" "modem" "news" "nfs" "nntp"
     "pop" "prospero" "rtsp" "service" "sip" "tel"
     "telnet" "tip" "urn" "vemmi" "wais")
@@ -6408,7 +6408,7 @@ following section."
       (while (and (not found)
                   (not (bobp))
                   (re-search-backward markdown-regex-header nil 'move))
-        (when (not (markdown-code-block-at-pos (match-beginning 0))))
+        (markdown-code-block-at-pos (match-beginning 0))
         (setq found (match-beginning 0)))
       (setq arg (1- arg)))
     ;; Move forward with negative argument.
@@ -6417,7 +6417,7 @@ following section."
       (while (and (not found)
                   (not (eobp))
                   (re-search-forward markdown-regex-header nil 'move))
-        (when (not (markdown-code-block-at-pos (match-beginning 0))))
+        (markdown-code-block-at-pos (match-beginning 0))
         (setq found (match-beginning 0)))
       (setq arg (1+ arg)))
     (when found
@@ -8605,7 +8605,8 @@ This can be toggled with `markdown-toggle-inline-images'
 or \\[markdown-toggle-inline-images]."
   (interactive)
   (mapc #'delete-overlay markdown-inline-image-overlays)
-  (setq markdown-inline-image-overlays nil))
+  (setq markdown-inline-image-overlays nil)
+  (when (fboundp 'clear-image-cache) (clear-image-cache)))
 
 (defcustom markdown-display-remote-images nil
   "If non-nil, download and display remote images.
@@ -8754,10 +8755,16 @@ mode to use is `tuareg-mode'."
 LANG is a string, and the returned major mode is a symbol."
   (cl-find-if
    'fboundp
-   (list (cdr (assoc lang markdown-code-lang-modes))
-         (cdr (assoc (downcase lang) markdown-code-lang-modes))
-         (intern (concat lang "-mode"))
-         (intern (concat (downcase lang) "-mode")))))
+   (nconc (list (cdr (assoc lang markdown-code-lang-modes))
+                (cdr (assoc (downcase lang) markdown-code-lang-modes)))
+          (and (fboundp 'treesit-language-available-p)
+               (list (and (treesit-language-available-p (intern lang))
+                          (intern (concat lang "-ts-mode")))
+                     (and (treesit-language-available-p (intern (downcase lang)))
+                          (intern (concat (downcase lang) "-ts-mode")))))
+          (list
+           (intern (concat lang "-mode"))
+           (intern (concat (downcase lang) "-mode"))))))
 
 (defun markdown-fontify-code-blocks-generic (matcher last)
   "Add text properties to next code block from point to LAST.

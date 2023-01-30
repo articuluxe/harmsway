@@ -256,6 +256,8 @@ FAIL is the callback for any error occured in request or parse."
 (cl-defgeneric gts-text (texter)
   "Get the init translation source text via TEXTER.")
 
+(defvar gts-picker-last-path nil)
+
 (defcustom gts-translate-list nil
   "Setup your translate languages. Just like:
 
@@ -273,68 +275,62 @@ The picker will give the translate from/to pair according this."
 
 (defcustom gts-picker-lang-match-alist
   (list
-   (cons "en"  "^[-a-zA-Z0-9,.;_ ]+$")
    (cons "zh"  "\\cc")
    (cons "ja"  (lambda (text) (string-match-p "\\cj" text)))
    (cons "ru" "\\cy"))
   "Setup language match rules.
-
 Used to pick the right language for current translate text.
-
-Key should be the language, value should be a regexp string or function."
+Key should be the language, value should be a regexp string or function.
+Picker choose path according this first. If non-match, choose other paths."
   :type 'alist
   :group 'go-translate)
 
-(defvar gts-picker-last-path nil)
+(defun gts-picker-filter-paths (paths text)
+  "Filter PATHS according TEXT.
+The rules are provided by `gts-picker-lang-match-alist'."
+  (when text
+    (cl-loop with text = (with-temp-buffer ; clear punctuations
+                           (insert text)
+                           (goto-char (point-min))
+                           (while (re-search-forward "\\s.\\|\n" nil t) (replace-match ""))
+                           (buffer-string))
+             for path in paths
+             for matcher = (let ((p (cdr (cl-find-if ; get match rule
+                                          (lambda (item) (string-match-p (format "^%s$" (car item)) (car path)))
+                                          gts-picker-lang-match-alist))))
+                             (if (stringp p) (lambda (text) (string-match-p p text)) p))
+             when (and matcher (funcall matcher text))
+             collect path)))
 
-(defun gts-picker-lang-matcher (lang)
-  "Judge source, sure case, yes:no:unknown.
-choose path, from main, then extra path match."
-  (let ((p (cdr (cl-find-if
-                 (lambda (item) (string-match-p (format "^%s$" (car item)) lang))
-                 gts-picker-lang-match-alist))))
-    (if (stringp p) (lambda (text) (string-match-p p text)) p)))
-
-(cl-defmethod gts-all-paths ((picker gts-picker))
+(cl-defmethod gts-paths ((picker gts-picker))
+  "All paths can be picked by PICKER."
   (when (or (null gts-translate-list) (not (consp (car gts-translate-list))))
     (user-error "Please make sure you set the avaiable `gts-translate-list'. eg:\n
  (setq gts-translate-list '((\"en\" \"zh\") (\"en\" \"ja\"))\n\n"))
   (let (paths)
-    (when gts-picker-last-path
-      (cl-pushnew gts-picker-last-path paths))
-    (cl-loop with candidates = (if (oref picker single)
-                                   (list (car gts-translate-list))
-                                 gts-translate-list)
-             for (lang1 . lang2) in candidates
-             for lang2 = (if (consp lang2) (car lang2) lang2)
-             do (progn
-                  (cl-pushnew (cons lang1 lang2) paths :test 'equal)
-                  (cl-pushnew (cons lang2 lang1) paths :test 'equal)))
-    (reverse paths)))
-
-(cl-defmethod gts-matched-paths ((picker gts-picker) text)
-  (when text
-    (let ((paths (gts-all-paths picker))
-          (text (with-temp-buffer ; clear punctuations
-                  (insert text)
-                  (goto-char (point-min))
-                  (while (re-search-forward "\\s.\\|\n" nil t) (replace-match ""))
-                  (buffer-string))))
-      (cl-loop for path in paths
-               for matcher = (gts-picker-lang-matcher (car path))
-               when (and matcher (funcall matcher text))
-               collect path))))
+    (cl-loop for (lang1 . lang2) in gts-translate-list
+             do (let ((lang2 (if (consp lang2) (car lang2) lang2)))
+                  (cl-pushnew (cons lang1 lang2) paths :test #'equal)
+                  (unless (oref picker single) (cl-pushnew (cons lang2 lang1) paths :test #'equal))))
+    (setq paths (nreverse paths))
+    (if (and gts-picker-last-path (member gts-picker-last-path paths))
+        (cons gts-picker-last-path (remove gts-picker-last-path paths))
+      paths)))
 
 (cl-defmethod gts-path ((picker gts-picker) text)
-  "Get translate path according TEXT using PICKER."
-  (let ((paths (gts-matched-paths picker text)))
-    (if paths (car paths)
-      (or gts-picker-last-path
-          (car (gts-all-paths picker))))))
+  "Default path for TEXT used by PICKER.
+Return the first path matching TEXT. If no path matches, return the non-nil
+`gts-picker-last-path', then the first available path."
+  (if-let* ((paths (gts-paths picker))
+            (matched (gts-picker-filter-paths paths text)))
+      (car matched)
+    (or (let ((langs (mapcar #'car gts-picker-lang-match-alist)))
+          (cl-find-if (lambda (p) (not (member (car p) langs))) paths))
+        (car paths))))
 
 (cl-defmethod gts-next-path ((picker gts-picker) text path &optional backwardp)
-  (let (candidates idx)
-    (cl-loop for path in (append (gts-matched-paths picker text) (gts-all-paths picker))
+  (let (candidates idx (paths (gts-paths picker)))
+    (cl-loop for path in (append (gts-picker-filter-paths paths text) paths)
              do (cl-pushnew path candidates :test 'equal))
     (setq candidates (reverse candidates))
     (setq idx (cl-position path candidates :test 'equal))
@@ -521,6 +517,9 @@ If engine failed, then try locally TTS if `gts-tts-try-speak-locally' is set."
 (defvar gts-text-delimiter "34587612321123")
 
 (defvar gts-current-command nil "The command invoked by `gts-translate'.")
+(defvar gts-current-picker nil "Picker used in current translate.")
+(defvar gts-current-engines nil "Engines used in current translate.")
+(defvar gts-current-render nil "Render used in current translate.")
 
 (cl-defmethod initialize-instance :after ((this gts-translator) &rest _)
   (unless (gts-ensure-plain (oref this render))
@@ -534,10 +533,11 @@ If engine failed, then try locally TTS if `gts-tts-try-speak-locally' is set."
            for value =
            (cl-flet ((ensure (v) (or v (user-error "No %s found in current translator" slot))))
              (pcase slot
-               ((or 'picker 'render) (ensure (gts-ensure-plain (slot-value this slot))))
-               ('splitter            (gts-ensure-plain (slot-value this slot)))
-               ('engines             (ensure (gts-ensure-list (gts-ensure-plain (slot-value this slot)))))
-               (_                    (slot-value this slot))))
+               ('splitter   (gts-ensure-plain (slot-value this slot)))
+               ('picker     (ensure (gts-ensure-plain (or gts-current-picker (slot-value this slot)))))
+               ('engines    (ensure (gts-ensure-list (gts-ensure-plain (or gts-current-engines (slot-value this slot))))))
+               ('render     (ensure (gts-ensure-plain (or gts-current-render (slot-value this slot)))))
+               (_           (slot-value this slot))))
            collect value into values
            finally (return (if (cadr slots) (apply #'cl-values values) (car values)))))
 
@@ -603,7 +603,8 @@ If ERROR is not nil, then update task with failure."
 
 (defun gts-update-parsed (task result &optional metadata filter)
   "Update TASK with parsed RESULT, update METADATA if exists.
-FILTER the parsed result if necessary, it's a function take parsed result as argument."
+FILTER the parsed result if necessary, it's a function take parsed result
+as argument."
   (declare (indent 1))
   (with-slots (id raw parsed err meta translator) task
     (if raw
@@ -634,8 +635,11 @@ FILTER the parsed result if necessary, it's a function take parsed result as arg
 (cl-defmethod gts-translate ((this gts-translator) &optional text path)
   "Fire a translation for THIS translator instance.
 When TEXT and PATH is nil then pick them via `gts-pick'."
-  ;; record this, so can fixup issue in posframe-pop etc. Weird?
+  ;; dynamic
   (setq gts-current-command this-command)
+  (setq gts-current-picker (oref this picker))
+  (setq gts-current-engines (oref this engines))
+  (setq gts-current-render (oref this render))
   ;; initialize
   (gts-init this text path)
   (cl-multiple-value-bind (engines render tasks text path)

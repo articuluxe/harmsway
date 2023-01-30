@@ -1,6 +1,6 @@
 ;;; consult-xref.el --- Xref integration for Consult -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021, 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 
@@ -19,8 +19,8 @@
 
 ;;; Commentary:
 
-;; Provides Xref integration for Consult. This is an extra package, to
-;; allow lazy loading of xref.el. The `consult-xref' function is
+;; Provides Xref integration for Consult.  This is an extra package, to
+;; allow lazy loading of xref.el.  The `consult-xref' function is
 ;; autoloaded.
 
 ;;; Code:
@@ -29,7 +29,11 @@
 (require 'xref)
 
 (defvar consult-xref--history nil)
-(defvar consult-xref--fetcher nil)
+
+(defvar consult-xref--fetcher nil
+  "The current xref fetcher.
+The fetch is stored globally such that it can be accessed by
+ Embark for `embark-export'.")
 
 (defun consult-xref--candidates ()
   "Return xref candidate list."
@@ -46,7 +50,7 @@
                             (or (xref-location-line loc) 0)
                             (xref-item-summary xref))))
                 (add-text-properties
-                 0 1 `(consult-xref ,xref consult-xref--group ,group) cand)
+                 0 1 `(consult-xref ,xref consult--prefix-group ,group) cand)
                 cand))
             (funcall consult-xref--fetcher))))
 
@@ -77,12 +81,6 @@
                              (xref-file-location-column loc)
                            0)))))))))))
 
-(defun consult-xref--group (cand transform)
-  "Return title for CAND or TRANSFORM the candidate."
-  (if transform
-      (substring cand (1+ (length (get-text-property 0 'consult-xref--group cand))))
-    (get-text-property 0 'consult-xref--group cand)))
-
 ;;;###autoload
 (defun consult-xref (fetcher &optional alist)
   "Show xrefs with preview in the minibuffer.
@@ -106,7 +104,7 @@ FETCHER and ALIST arguments."
             :require-match t
             :sort nil
             :category 'consult-xref
-            :group #'consult-xref--group
+            :group #'consult--prefix-group
             :state
             ;; do not preview other frame
             (when-let (fun (pcase-exhaustive display

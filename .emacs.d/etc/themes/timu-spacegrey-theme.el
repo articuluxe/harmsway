@@ -6,8 +6,8 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 06 Jun 2021
 ;; Keywords: faces themes
-;; Version: 2.4
-;; Package-Requires: ((emacs "25.1"))
+;; Version: 2.6
+;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-spacegrey-theme
 
 ;; This file is not part of GNU Emacs.
@@ -57,7 +57,7 @@
 ;;         (load-theme 'timu-spacegrey t))
 ;;
 ;; II. Configuration
-;;   A. Dark and light fravour
+;;   A. Dark and light flavour
 ;;     By default the theme is `dark', to setup the `light' flavour:
 ;;
 ;;     - Change the variable `timu-spacegrey-flavour' in the Customization Interface.
@@ -109,12 +109,29 @@
 ;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
 ;;       (customize-set-variable 'timu-spacegrey-org-intense-colors t)
 ;;
-;;   D. Border for the `mode-line'
+;;   D. Muted colors for the dark flavour
+;;     You can set muted colors for the dark flavour of the theme.
+;;
+;;     By default muted colors are turned off.
+;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;       (customize-set-variable 'timu-spacegrey-muted-colors t)
+;;
+;;   E. Border for the `mode-line'
 ;;     You can set a variable to add a border to the mode-line.
 ;;
 ;;     By default the border is turned off.
 ;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
 ;;       (customize-set-variable 'timu-spacegrey-mode-line-border t)
+;;
+;; III. Utility functions
+;;   A. Toggle dark and light flavour of the theme
+;;       M-x timu-spacegrey-toggle-dark-light RET.
+;;
+;;   B. Toggle between intense and non intense colors for `org-mode'
+;;       M-x timu-spacegrey-toggle-org-colors-intensity RET.
+;;
+;;   C. Toggle between borders and no borders for the `mode-line'
+;;       M-x timu-spacegrey-toggle-mode-line-border RET.
 
 
 ;;; Code:
@@ -229,6 +246,11 @@ BACKGROUND-COLOR changes the `background' color."
   (if (eq t timu-spacegrey-org-intense-colors)
       (list :overline overline-color :background background-color)))
 
+(defcustom timu-spacegrey-muted-colors nil
+  "Variable to set muted colors for the \"dark\" flavour of the theme."
+  :type 'boolean
+  :group 'timu-spacegrey-theme)
+
 (defcustom timu-spacegrey-mode-line-border nil
   "Variable to control the border of `mode-line'.
 With a value of t the mode-line has a border."
@@ -253,6 +275,35 @@ LBOX supplies the border color of the light `timu-spacegrey-flavour'."
           (list :box dbox)
         (list :box lbox))))
 
+;;;###autoload
+(defun timu-spacegrey-toggle-dark-light ()
+  "Toggle between \"dark\" and \"light\" `timu-spacegrey-flavour'."
+  (interactive)
+  (if (equal "dark" timu-spacegrey-flavour)
+      (customize-set-variable 'timu-spacegrey-flavour "light")
+    (customize-set-variable 'timu-spacegrey-flavour "dark"))
+  (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-spacegrey-toggle-org-colors-intensity ()
+  "Toggle between intense and non intense colors for `org-mode'.
+Customize `timu-spacegrey-org-intense-colors' the to achieve this. "
+  (interactive)
+  (if (eq t timu-spacegrey-org-intense-colors)
+      (customize-set-variable 'timu-spacegrey-org-intense-colors nil)
+    (customize-set-variable 'timu-spacegrey-org-intense-colors t))
+  (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-spacegrey-toggle-mode-line-border ()
+  "Toggle between borders and no borders for the `mode-line'.
+Customize `timu-spacegrey-mode-line-border' the to achieve this. "
+  (interactive)
+  (if (eq t timu-spacegrey-mode-line-border)
+      (customize-set-variable 'timu-spacegrey-mode-line-border nil)
+    (customize-set-variable 'timu-spacegrey-mode-line-border t))
+  (load-theme (car custom-enabled-themes) t))
+
 (deftheme timu-spacegrey
   "Custom theme inspired by the spacegray theme in Sublime Text.
 Sourced other themes to get information about font faces for packages.")
@@ -275,33 +326,19 @@ Sourced other themes to get information about font faces for packages.")
         (fg          "#c0c5ce")
         (fg-other    "#c0c5ce")
 
-        (grey        "#4f5b66")
-        (red         "#bf616a")
-        (orange      "#d08770")
-        (green       "#a3be8c")
-        (blue        "#8fa1b3")
-        (magenta     "#b48ead")
-        (teal        "#4db5bd")
-        (yellow      "#ecbe7b")
-        (darkblue    "#2257a0")
-        (purple      "#c678dd")
-        (cyan        "#46d9ff")
-        (lightcyan   "#88c0d0")
-        (darkcyan    "#5699af")
-
-        (l-grey      "#f3f3f3")
-        (l-red       "#ffbbc4")
-        (l-orange    "#ffe1ca")
-        (l-green     "#fdffe6")
-        (l-blue      "#e9fbff")
-        (l-magenta   "#ffe8ff")
-        (l-teal      "#a7ffff")
-        (l-yellow    "#ffffd5")
-        (l-darkblue  "#7cb1fa")
-        (l-purple    "#ffd2ff")
-        (l-cyan      "#a0ffff")
-        (l-lightcyan "#e2ffff")
-        (l-darkcyan  "#b0f3ff")
+        (grey      (if timu-spacegrey-muted-colors "#95a1ac" "#4f5b66"))
+        (red       (if timu-spacegrey-muted-colors "#ffa7b0" "#bf616a"))
+        (orange    (if timu-spacegrey-muted-colors "#ffcdb6" "#d08770"))
+        (green     (if timu-spacegrey-muted-colors "#e9ffd2" "#a3be8c"))
+        (blue      (if timu-spacegrey-muted-colors "#d5e7f9" "#8fa1b3"))
+        (magenta   (if timu-spacegrey-muted-colors "#fad4f3" "#b48ead"))
+        (teal      (if timu-spacegrey-muted-colors "#93fbff" "#4db5bd"))
+        (yellow    (if timu-spacegrey-muted-colors "#ffffc1" "#ecbe7b"))
+        (darkblue  (if timu-spacegrey-muted-colors "#689de6" "#2257a0"))
+        (purple    (if timu-spacegrey-muted-colors "#ffbeff" "#c678dd"))
+        (cyan      (if timu-spacegrey-muted-colors "#8cffff" "#46d9ff"))
+        (lightcyan (if timu-spacegrey-muted-colors "#ceffff" "#88c0d0"))
+        (darkcyan  (if timu-spacegrey-muted-colors "#9cdff5" "#5699af"))
 
         (black       "#000000")
         (white       "#ffffff"))
@@ -760,6 +797,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; doom-modeline - dark
      `(doom-modeline-bar-inactive ((,class (:background nil))))
+     `(doom-modeline-buffer-modified ((,class (:foreground ,red :weight bold))))
      `(doom-modeline-eldoc-bar ((,class (:background ,green))))
      `(doom-modeline-evil-emacs-state ((,class (:foreground ,cyan :weight bold))))
      `(doom-modeline-evil-insert-state ((,class (:foreground ,red :weight bold))))
@@ -1172,9 +1210,9 @@ Sourced other themes to get information about font faces for packages.")
      `(linum-relative-current-face ((,class (:foreground ,fg))))
 
 ;;;; lsp-mode - dark
-     `(lsp-face-highlight-read ((,class (:foreground ,yellow :weight bold :underline ,yellow))))
-     `(lsp-face-highlight-textual ((,class (:foreground ,yellow :weight bold :underline ,yellow))))
-     `(lsp-face-highlight-write ((,class (:foreground ,yellow :weight bold :underline ,yellow))))
+     `(lsp-face-highlight-read ((,class (:foreground ,yellow :weight bold :underline ,yellow ))))
+     `(lsp-face-highlight-textual ((,class (:foreground ,yellow :weight bold))))
+     `(lsp-face-highlight-write ((,class (:foreground ,yellow :weight bold :underline ,yellow ))))
      `(lsp-headerline-breadcrumb-separator-face ((,class (:foreground ,fg-other))))
      `(lsp-ui-doc-background ((,class (:background ,bg-other :foreground ,fg))))
      `(lsp-ui-peek-filename ((,class (:weight bold))))
@@ -1960,7 +1998,7 @@ Sourced other themes to get information about font faces for packages.")
      `(fringe ((,class (:background ,bg :foreground ,spacegrey4))))
      `(highlight ((,class (:foreground ,magenta  :weight bold :underline ,darkcyan))))
      `(italic ((,class (:slant  italic))))
-     `(lazy-highlight ((,class (:background ,darkblue  :foreground ,spacegrey8 :distant-foreground ,spacegrey0 :weight bold))))
+     `(lazy-highlight ((,class (:background ,blue  :foreground ,spacegrey8 :distant-foreground ,spacegrey0 :weight bold))))
      `(link ((,class (:foreground ,orange :underline t :weight bold))))
      `(match ((,class (:foreground ,green :background ,spacegrey0 :weight bold))))
      `(minibuffer-prompt ((,class (:foreground ,orange))))
@@ -1980,7 +2018,7 @@ Sourced other themes to get information about font faces for packages.")
      `(font-lock-comment-face ((,class (:foreground ,spacegrey5 :slant italic))))
      `(font-lock-constant-face ((,class (:foreground ,magenta))))
      `(font-lock-doc-face ((,class (:foreground ,spacegrey5 :slant italic))))
-     `(font-lock-function-name-face ((,class (:foreground ,blue))))
+     `(font-lock-function-name-face ((,class (:foreground ,darkblue))))
      `(font-lock-keyword-face ((,class (:foreground ,orange))))
      `(font-lock-negation-char-face ((,class (:foreground ,fg :weigth bold))))
      `(font-lock-preprocessor-char-face ((,class (:foreground ,fg :weight bold))))
@@ -2003,11 +2041,11 @@ Sourced other themes to get information about font faces for packages.")
      `(agda2-highlight-dotted-face ((,class (:foreground ,red))))
      `(agda2-highlight-error-face ((,class (:foreground ,yellow))))
      `(agda2-highlight-field-face ((,class (:foreground ,yellow))))
-     `(agda2-highlight-function-face ((,class (:foreground ,blue))))
+     `(agda2-highlight-function-face ((,class (:foreground ,darkblue))))
      `(agda2-highlight-incomplete-pattern-face ((,class (:foreground ,yellow))))
      `(agda2-highlight-inductive-constructor-face ((,class (:foreground ,yellow))))
      `(agda2-highlight-keyword-face ((,class (:foreground ,magenta))))
-     `(agda2-highlight-macro-face ((,class (:foreground ,blue))))
+     `(agda2-highlight-macro-face ((,class (:foreground ,darkblue))))
      `(agda2-highlight-module-face ((,class (:foreground ,red))))
      `(agda2-highlight-number-face ((,class (:foreground ,green))))
      `(agda2-highlight-positivity-problem-face ((,class (:foreground ,yellow))))
@@ -2030,7 +2068,7 @@ Sourced other themes to get information about font faces for packages.")
      `(alert-urgent-face ((,class (:weight bold :foreground ,red))))
 
 ;;;; all-the-icons - light
-     `(all-the-icons-blue ((,class (:foreground ,blue))))
+     `(all-the-icons-blue ((,class (:foreground ,darkblue))))
      `(all-the-icons-blue-alt ((,class (:foreground ,teal))))
      `(all-the-icons-cyan ((,class (:foreground ,cyan))))
      `(all-the-icons-cyan-alt ((,class (:foreground ,cyan))))
@@ -2045,7 +2083,7 @@ Sourced other themes to get information about font faces for packages.")
      `(all-the-icons-dsilver ((,class (:foreground ,grey))))
      `(all-the-icons-dyellow ((,class (:foreground ,yellow))))
      `(all-the-icons-green ((,class (:foreground ,green))))
-     `(all-the-icons-lblue ((,class (:foreground ,blue))))
+     `(all-the-icons-lblue ((,class (:foreground ,darkblue))))
      `(all-the-icons-lcyan ((,class (:foreground ,cyan))))
      `(all-the-icons-lgreen ((,class (:foreground ,green))))
      `(all-the-icons-lmagenta ((,class (:foreground ,red))))
@@ -2069,10 +2107,10 @@ Sourced other themes to get information about font faces for packages.")
      `(all-the-icons-dired-dir-face ((,class (:foreground ,fg-other))))
 
 ;;;; all-the-icons-ivy-rich - light
-     `(all-the-icons-ivy-rich-doc-face ((,class (:foreground ,blue))))
-     `(all-the-icons-ivy-rich-path-face ((,class (:foreground ,blue))))
-     `(all-the-icons-ivy-rich-size-face ((,class (:foreground ,blue))))
-     `(all-the-icons-ivy-rich-time-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-doc-face ((,class (:foreground ,darkblue))))
+     `(all-the-icons-ivy-rich-path-face ((,class (:foreground ,darkblue))))
+     `(all-the-icons-ivy-rich-size-face ((,class (:foreground ,darkblue))))
+     `(all-the-icons-ivy-rich-time-face ((,class (:foreground ,darkblue))))
 
 ;;;; annotate - light
      `(annotate-annotation ((,class (:background ,orange :foreground ,spacegrey5))))
@@ -2082,7 +2120,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; ansi - light
      `(ansi-color-black ((,class (:foreground ,spacegrey0))))
-     `(ansi-color-blue ((,class (:foreground ,blue))))
+     `(ansi-color-blue ((,class (:foreground ,darkblue))))
      `(ansi-color-cyan ((,class (:foreground ,cyan))))
      `(ansi-color-green ((,class (:foreground ,green))))
      `(ansi-color-magenta ((,class (:foreground ,magenta))))
@@ -2091,7 +2129,7 @@ Sourced other themes to get information about font faces for packages.")
      `(ansi-color-white ((,class (:foreground ,spacegrey8))))
      `(ansi-color-yellow ((,class (:foreground ,yellow))))
      `(ansi-color-bright-black ((,class (:foreground ,spacegrey0))))
-     `(ansi-color-bright-blue ((,class (:foreground ,blue))))
+     `(ansi-color-bright-blue ((,class (:foreground ,darkblue))))
      `(ansi-color-bright-cyan ((,class (:foreground ,cyan))))
      `(ansi-color-bright-green ((,class (:foreground ,green))))
      `(ansi-color-bright-magenta ((,class (:foreground ,magenta))))
@@ -2110,12 +2148,12 @@ Sourced other themes to get information about font faces for packages.")
      `(TeX-error-description-warning ((,class (:foreground ,yellow :weight bold))))
      `(font-latex-bold-face ((,class (:weight bold))))
      `(font-latex-italic-face ((,class (:slant italic))))
-     `(font-latex-math-face ((,class (:foreground ,blue))))
-     `(font-latex-script-char-face ((,class (:foreground ,darkblue))))
-     `(font-latex-sectioning-0-face ((,class (:foreground ,blue :weight ultra-bold))))
+     `(font-latex-math-face ((,class (:foreground ,darkblue))))
+     `(font-latex-script-char-face ((,class (:foreground ,blue))))
+     `(font-latex-sectioning-0-face ((,class (:foreground ,darkblue :weight ultra-bold))))
      `(font-latex-sectioning-1-face ((,class (:foreground ,purple :weight semi-bold))))
      `(font-latex-sectioning-2-face ((,class (:foreground ,magenta :weight semi-bold))))
-     `(font-latex-sectioning-3-face ((,class (:foreground ,blue :weight semi-bold))))
+     `(font-latex-sectioning-3-face ((,class (:foreground ,darkblue :weight semi-bold))))
      `(font-latex-sectioning-4-face ((,class (:foreground ,purple :weight semi-bold))))
      `(font-latex-sectioning-5-face ((,class (:foreground ,magenta :weight semi-bold))))
      `(font-latex-string-face ((,class (:foreground ,green))))
@@ -2138,7 +2176,7 @@ Sourced other themes to get information about font faces for packages.")
      `(bmkp-bad-bookmark ((,class (:foreground ,bg :background ,yellow))))
      `(bmkp-bookmark-file ((,class (:foreground ,magenta :background ,bg-other))))
      `(bmkp-bookmark-list ((,class (:background ,bg-other))))
-     `(bmkp-buffer ((,class (:foreground ,blue))))
+     `(bmkp-buffer ((,class (:foreground ,darkblue))))
      `(bmkp-desktop ((,class (:foreground ,bg :background ,magenta))))
      `(bmkp-file-handler ((,class (:background ,red))))
      `(bmkp-function ((,class (:foreground ,green))))
@@ -2160,10 +2198,10 @@ Sourced other themes to get information about font faces for packages.")
      `(bmkp-no-local ((,class (:foreground ,yellow))))
      `(bmkp-non-file ((,class (:foreground ,green))))
      `(bmkp-remote-file ((,class (:foreground ,orange))))
-     `(bmkp-sequence ((,class (:foreground ,blue))))
+     `(bmkp-sequence ((,class (:foreground ,darkblue))))
      `(bmkp-su-or-sudo ((,class (:foreground ,red))))
      `(bmkp-t-mark ((,class (:foreground ,magenta))))
-     `(bmkp-url ((,class (:foreground ,blue :underline t))))
+     `(bmkp-url ((,class (:foreground ,darkblue :underline t))))
      `(bmkp-variable-list ((,class (:foreground ,green))))
 
 ;;;; calfw - light
@@ -2173,18 +2211,18 @@ Sourced other themes to get information about font faces for packages.")
      `(cfw:face-default-day ((,class (:weight bold))))
      `(cfw:face-disable ((,class (:foreground ,grey))))
      `(cfw:face-grid ((,class (:foreground ,bg))))
-     `(cfw:face-header ((,class (:foreground ,blue :weight bold))))
+     `(cfw:face-header ((,class (:foreground ,darkblue :weight bold))))
      `(cfw:face-holiday ((,class (:foreground nil :background ,bg-other :weight bold))))
      `(cfw:face-periods ((,class (:foreground ,yellow))))
      `(cfw:face-saturday ((,class (:foreground ,red :weight bold))))
      `(cfw:face-select ((,class (:background ,grey))))
      `(cfw:face-sunday ((,class (:foreground ,red :weight bold))))
-     `(cfw:face-title ((,class (:foreground ,blue :weight bold :height 2.0))))
+     `(cfw:face-title ((,class (:foreground ,darkblue :weight bold :height 2.0))))
      `(cfw:face-today ((,class (:foreground nil :background nil :weight bold))))
-     `(cfw:face-today-title ((,class (:foreground ,bg :background ,blue :weight bold))))
+     `(cfw:face-today-title ((,class (:foreground ,bg :background ,darkblue :weight bold))))
      `(cfw:face-toolbar ((,class (:foreground nil :background nil))))
      `(cfw:face-toolbar-button-off ((,class (:foreground ,spacegrey6 :weight bold))))
-     `(cfw:face-toolbar-button-on ((,class (:foreground ,blue :weight bold))))
+     `(cfw:face-toolbar-button-on ((,class (:foreground ,darkblue :weight bold))))
 
 ;;;; centaur-tabs - light
      `(centaur-tabs-active-bar-face ((,class (:background ,bg :foreground ,orange))))
@@ -2243,7 +2281,7 @@ Sourced other themes to get information about font faces for packages.")
      `(corfu-annotations ((,class (:foreground ,magenta))))
 
 ;;;; counsel - light
-     `(counsel-variable-documentation ((,class (:foreground ,blue))))
+     `(counsel-variable-documentation ((,class (:foreground ,darkblue))))
 
 ;;;; cperl - light
      `(cperl-array-face ((,class (:weight bold :foreground ,red))))
@@ -2256,18 +2294,18 @@ Sourced other themes to get information about font faces for packages.")
      `(custom-button-pressed ((,class (:foreground ,fg :background ,bg-other :box (:line-width 3 :style pressed-button)))))
      `(custom-button-pressed-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 3 :style pressed-button)))))
      `(custom-button-unraised ((,class (:foreground ,magenta :background ,bg :box (:line-width 3 :style pressed-button)))))
-     `(custom-changed ((,class (:foreground ,blue :background ,bg))))
+     `(custom-changed ((,class (:foreground ,darkblue :background ,bg))))
      `(custom-comment ((,class (:foreground ,fg :background ,grey))))
      `(custom-comment-tag ((,class (:foreground ,grey))))
      `(custom-documentation ((,class (:foreground ,fg))))
-     `(custom-face-tag ((,class (:foreground ,blue :weight bold)))) ; done
+     `(custom-face-tag ((,class (:foreground ,darkblue :weight bold)))) ; done
      `(custom-group-subtitle ((,class (:foreground ,red :weight bold))))
      `(custom-group-tag ((,class (:foreground ,red :weight bold)))) ; done
-     `(custom-group-tag-1 ((,class (:foreground ,blue :weight bold))))
+     `(custom-group-tag-1 ((,class (:foreground ,darkblue :weight bold))))
      `(custom-invalid ((,class (:foreground ,red))))
      `(custom-link ((,class (:foreground ,orange :underline t :weight bold)))) ; done
-     `(custom-modified ((,class (:foreground ,blue))))
-     `(custom-rogue ((,class (:foreground ,blue :box (:line-width 3 :style none)))))
+     `(custom-modified ((,class (:foreground ,darkblue))))
+     `(custom-rogue ((,class (:foreground ,darkblue :box (:line-width 3 :style none)))))
      `(custom-saved ((,class (:foreground ,green :weight bold))))
      `(custom-set ((,class (:foreground ,yellow :background ,bg))))
      `(custom-state ((,class (:foreground ,green :weight bold))))
@@ -2322,7 +2360,7 @@ Sourced other themes to get information about font faces for packages.")
      `(dired-filetype-js ((,class (:foreground ,yellow))))
      `(dired-filetype-link ((,class (:foreground ,magenta))))
      `(dired-filetype-music ((,class (:foreground ,magenta))))
-     `(dired-filetype-omit ((,class (:foreground ,blue))))
+     `(dired-filetype-omit ((,class (:foreground ,darkblue))))
      `(dired-filetype-plain ((,class (:foreground ,fg))))
      `(dired-filetype-program ((,class (:foreground ,red))))
      `(dired-filetype-source ((,class (:foreground ,green))))
@@ -2331,10 +2369,10 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; dired+ - light
      `(diredp-compressed-file-suffix ((,class (:foreground ,spacegrey5))))
-     `(diredp-date-time ((,class (:foreground ,blue))))
-     `(diredp-dir-heading ((,class (:foreground ,blue :weight bold))))
+     `(diredp-date-time ((,class (:foreground ,darkblue))))
+     `(diredp-dir-heading ((,class (:foreground ,darkblue :weight bold))))
      `(diredp-dir-name ((,class (:foreground ,spacegrey8 :weight bold))))
-     `(diredp-dir-priv ((,class (:foreground ,blue :weight bold))))
+     `(diredp-dir-priv ((,class (:foreground ,darkblue :weight bold))))
      `(diredp-exec-priv ((,class (:foreground ,yellow))))
      `(diredp-file-name ((,class (:foreground ,spacegrey8))))
      `(diredp-file-suffix ((,class (:foreground ,magenta))))
@@ -2349,7 +2387,7 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; dired-k - light
      `(dired-k-added ((,class (:foreground ,green :weight bold))))
      `(dired-k-commited ((,class (:foreground ,green :weight bold))))
-     `(dired-k-directory ((,class (:foreground ,blue :weight bold))))
+     `(dired-k-directory ((,class (:foreground ,darkblue :weight bold))))
      `(dired-k-ignored ((,class (:foreground ,spacegrey5 :weight bold))))
      `(dired-k-modified ((,class (:foreground ,orange :weight bold))))
      `(dired-k-untracked ((,class (:foreground ,teal :weight bold))))
@@ -2369,9 +2407,9 @@ Sourced other themes to get information about font faces for packages.")
      `(diredfl-date-time ((,class (:foreground ,cyan :weight light))))
      `(diredfl-deletion ((,class (:foreground ,red :weight bold))))
      `(diredfl-deletion-file-name ((,class (:foreground ,red))))
-     `(diredfl-dir-heading ((,class (:foreground ,blue :weight bold))))
+     `(diredfl-dir-heading ((,class (:foreground ,darkblue :weight bold))))
      `(diredfl-dir-name ((,class (:foreground ,darkcyan))))
-     `(diredfl-dir-priv ((,class (:foreground ,blue))))
+     `(diredfl-dir-priv ((,class (:foreground ,darkblue))))
      `(diredfl-exec-priv ((,class (:foreground ,red))))
      `(diredfl-executable-tag ((,class (:foreground ,red))))
      `(diredfl-file-name ((,class (:foreground ,fg))))
@@ -2391,10 +2429,11 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; doom-modeline - light
      `(doom-modeline-bar-inactive ((,class (:background nil))))
+     `(doom-modeline-buffer-modified ((,class (:foreground ,red :weight bold))))
      `(doom-modeline-eldoc-bar ((,class (:background ,green))))
      `(doom-modeline-evil-emacs-state ((,class (:foreground ,cyan :weight bold))))
      `(doom-modeline-evil-insert-state ((,class (:foreground ,red :weight bold))))
-     `(doom-modeline-evil-motion-state ((,class (:foreground ,blue :weight bold))))
+     `(doom-modeline-evil-motion-state ((,class (:foreground ,darkblue :weight bold))))
      `(doom-modeline-evil-normal-state ((,class (:foreground ,green :weight bold))))
      `(doom-modeline-evil-operator-state ((,class (:foreground ,magenta :weight bold))))
      `(doom-modeline-evil-replace-state ((,class (:foreground ,purple :weight bold))))
@@ -2420,7 +2459,7 @@ Sourced other themes to get information about font faces for packages.")
      `(elfeed-log-info-level-face ((,class (:foreground ,green))))
      `(elfeed-log-warn-level-face ((,class (:foreground ,yellow))))
      `(elfeed-search-date-face ((,class (:foreground ,magenta))))
-     `(elfeed-search-feed-face ((,class (:foreground ,blue))))
+     `(elfeed-search-feed-face ((,class (:foreground ,darkblue))))
      `(elfeed-search-filter-face ((,class (:foreground ,magenta))))
      `(elfeed-search-tag-face ((,class (:foreground ,spacegrey5))))
      `(elfeed-search-title-face ((,class (:foreground ,spacegrey5))))
@@ -2463,7 +2502,7 @@ Sourced other themes to get information about font faces for packages.")
      `(erc-nick-prefix-face ((,class (:weight bold))))
      `(erc-notice-face ((,class (:foreground ,spacegrey5))))
      `(erc-prompt-face ((,class (:foreground ,orange :weight bold))))
-     `(erc-timestamp-face ((,class (:foreground ,blue :weight bold))))
+     `(erc-timestamp-face ((,class (:foreground ,darkblue :weight bold))))
 
 ;;;; eshell - light
      `(eshell-ls-archive ((,class (:foreground ,yellow))))
@@ -2484,7 +2523,7 @@ Sourced other themes to get information about font faces for packages.")
      `(evil-ex-search ((,class (:background ,orange :foreground ,spacegrey0 :weight bold))))
      `(evil-ex-substitute-matches ((,class (:background ,spacegrey0 :foreground ,red :weight bold :strike-through t))))
      `(evil-ex-substitute-replacement ((,class (:background ,spacegrey0 :foreground ,green :weight bold))))
-     `(evil-search-highlight-persist-highlight-face ((,class (:background ,darkblue  :foreground ,spacegrey8 :distant-foreground ,spacegrey0 :weight bold))))
+     `(evil-search-highlight-persist-highlight-face ((,class (:background ,blue  :foreground ,spacegrey8 :distant-foreground ,spacegrey0 :weight bold))))
 
 ;;;; evil-googles - light
      `(evil-goggles-default-face ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
@@ -2496,7 +2535,7 @@ Sourced other themes to get information about font faces for packages.")
      `(evil-mc-region-face ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
 
 ;;;; evil-snipe - light
-     `(evil-snipe-first-match-face ((,class (:foreground ,orange :background ,darkblue :weight bold))))
+     `(evil-snipe-first-match-face ((,class (:foreground ,orange :background ,blue :weight bold))))
      `(evil-snipe-matches-face ((,class (:foreground ,orange :underline t :weight bold))))
 
 ;;;; expenses - light
@@ -2616,7 +2655,7 @@ Sourced other themes to get information about font faces for packages.")
      `(gnus-summary-normal-read ((,class (:foreground ,fg))))
      `(gnus-summary-normal-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-normal-unread ((,class (:foreground ,green :weight bold))))
-     `(gnus-summary-selected ((,class (:foreground ,blue :weight bold))))
+     `(gnus-summary-selected ((,class (:foreground ,darkblue :weight bold))))
      `(gnus-x-face ((,class (:background ,spacegrey5 :foreground ,fg))))
 
 ;;;; goggles - light
@@ -2633,7 +2672,7 @@ Sourced other themes to get information about font faces for packages.")
      `(helm-ff-executable ((,class (:foreground ,spacegrey8 :slant italic))))
      `(helm-ff-file ((,class (:foreground ,fg))))
      `(helm-ff-prefix ((,class (:foreground ,magenta))))
-     `(helm-grep-file ((,class (:foreground ,blue))))
+     `(helm-grep-file ((,class (:foreground ,darkblue))))
      `(helm-grep-finish ((,class (:foreground ,green))))
      `(helm-grep-lineno ((,class (:foreground ,spacegrey5))))
      `(helm-grep-match ((,class (:foreground ,orange :distant-foreground ,red))))
@@ -2652,8 +2691,8 @@ Sourced other themes to get information about font faces for packages.")
      `(helpful-heading ((,class (:weight bold :height 1.2))))
 
 ;;;; hi-lock - light
-     `(hi-blue ((,class (:background ,blue))))
-     `(hi-blue-b ((,class (:foreground ,blue :weight bold))))
+     `(hi-blue ((,class (:background ,darkblue))))
+     `(hi-blue-b ((,class (:foreground ,darkblue :weight bold))))
      `(hi-green ((,class (:background ,green))))
      `(hi-green-b ((,class (:foreground ,green :weight bold))))
      `(hi-magenta ((,class (:background ,purple))))
@@ -2693,7 +2732,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; hydra - light
      `(hydra-face-amaranth ((,class (:foreground ,purple :weight bold))))
-     `(hydra-face-blue ((,class (:foreground ,blue :weight bold))))
+     `(hydra-face-blue ((,class (:foreground ,darkblue :weight bold))))
      `(hydra-face-magenta ((,class (:foreground ,magenta :weight bold))))
      `(hydra-face-red ((,class (:foreground ,red :weight bold))))
      `(hydra-face-teal ((,class (:foreground ,teal :weight bold))))
@@ -2721,7 +2760,7 @@ Sourced other themes to get information about font faces for packages.")
      `(indent-guide-face ((,class (:background ,bg-other :extend t))))
 
 ;;;; isearch - light
-     `(isearch ((,class (:background ,darkblue  :foreground ,spacegrey8 :distant-foreground ,spacegrey0 :weight bold))))
+     `(isearch ((,class (:background ,blue  :foreground ,spacegrey8 :distant-foreground ,spacegrey0 :weight bold))))
      `(isearch-fail ((,class (:background ,red :foreground ,spacegrey0 :weight bold))))
 
 ;;;; ivy - light
@@ -2743,10 +2782,10 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; jabber - light
      `(jabber-activity-face ((,class (:foreground ,red :weight bold))))
-     `(jabber-activity-personal-face ((,class (:foreground ,blue :weight bold))))
+     `(jabber-activity-personal-face ((,class (:foreground ,darkblue :weight bold))))
      `(jabber-chat-error ((,class (:foreground ,red :weight bold))))
      `(jabber-chat-prompt-foreign ((,class (:foreground ,red :weight bold))))
-     `(jabber-chat-prompt-local ((,class (:foreground ,blue :weight bold))))
+     `(jabber-chat-prompt-local ((,class (:foreground ,darkblue :weight bold))))
      `(jabber-chat-prompt-system ((,class (:foreground ,green :weight bold))))
      `(jabber-chat-text-foreign ((,class (:foreground ,fg))))
      `(jabber-chat-text-local ((,class (:foreground ,fg))))
@@ -2762,10 +2801,10 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; jdee - light
      `(jdee-font-lock-bold-face ((,class (:weight bold))))
      `(jdee-font-lock-constant-face ((,class (:foreground ,orange))))
-     `(jdee-font-lock-constructor-face ((,class (:foreground ,blue))))
+     `(jdee-font-lock-constructor-face ((,class (:foreground ,darkblue))))
      `(jdee-font-lock-doc-tag-face ((,class (:foreground ,magenta))))
      `(jdee-font-lock-italic-face ((,class (:slant italic))))
-     `(jdee-font-lock-link-face ((,class (:foreground ,blue :italic nil :underline t))))
+     `(jdee-font-lock-link-face ((,class (:foreground ,darkblue :italic nil :underline t))))
      `(jdee-font-lock-modifier-face ((,class (:foreground ,yellow))))
      `(jdee-font-lock-number-face ((,class (:foreground ,orange))))
      `(jdee-font-lock-operator-face ((,class (:foreground ,fg))))
@@ -2775,7 +2814,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; js2-mode - light
      `(js2-external-variable ((,class (:foreground ,fg))))
-     `(js2-function-call ((,class (:foreground ,blue))))
+     `(js2-function-call ((,class (:foreground ,darkblue))))
      `(js2-function-param ((,class (:foreground ,red))))
      `(js2-jsdoc-tag ((,class (:foreground ,spacegrey5))))
      `(js2-object-property ((,class (:foreground ,magenta))))
@@ -2789,7 +2828,7 @@ Sourced other themes to get information about font faces for packages.")
      `(ledger-font-payee-uncleared-face ((,class (:foreground ,spacegrey5  :weight bold))))
      `(ledger-font-posting-account-face ((,class (:foreground ,spacegrey8))))
      `(ledger-font-posting-amount-face ((,class (:foreground ,yellow))))
-     `(ledger-font-posting-date-face ((,class (:foreground ,blue))))
+     `(ledger-font-posting-date-face ((,class (:foreground ,darkblue))))
      `(ledger-font-xact-highlight-face ((,class (:background ,spacegrey0))))
 
 ;;;; line numbers - light
@@ -2803,9 +2842,9 @@ Sourced other themes to get information about font faces for packages.")
      `(linum-relative-current-face ((,class (:foreground ,fg))))
 
 ;;;; lsp-mode - light
-     `(lsp-face-highlight-read ((,class (:foreground ,fg :background ,yellow :weight bold))))
-     `(lsp-face-highlight-textual ((,class (::foreground ,fg background ,yellow :weight bold))))
-     `(lsp-face-highlight-write ((,class (::foreground ,fg background ,yellow :weight bold))))
+     `(lsp-face-highlight-read ((,class (:foreground ,darkcyan :weight bold :underline ,darkcyan))))
+     `(lsp-face-highlight-textual ((,class (:foreground ,darkcyan :weight bold))))
+     `(lsp-face-highlight-write ((,class (:foreground ,darkcyan :weight bold :underline ,darkcyan))))
      `(lsp-headerline-breadcrumb-separator-face ((,class (:foreground ,fg-other))))
      `(lsp-ui-doc-background ((,class (:background ,bg-other :foreground ,fg))))
      `(lsp-ui-peek-filename ((,class (:foreground ,fg :weight bold))))
@@ -2814,7 +2853,7 @@ Sourced other themes to get information about font faces for packages.")
      `(lsp-ui-peek-line-number ((,class (:foreground ,green))))
      `(lsp-ui-peek-list ((,class (:background ,bg))))
      `(lsp-ui-peek-peek ((,class (:background ,bg))))
-     `(lsp-ui-peek-selection ((,class (:foreground ,bg :background ,blue :bold bold))))
+     `(lsp-ui-peek-selection ((,class (:foreground ,bg :background ,darkblue :bold bold))))
      `(lsp-ui-sideline-code-action ((,class (:foreground ,orange))))
      `(lsp-ui-sideline-current-symbol ((,class (:foreground ,orange))))
      `(lsp-ui-sideline-symbol-info ((,class (:foreground ,spacegrey5 :background ,bg-other :extend t))))
@@ -2843,7 +2882,7 @@ Sourced other themes to get information about font faces for packages.")
      `(magit-diff-context ((,class (:foreground ,fg :background ,bg :extend t))))
      `(magit-diff-context-highlight ((,class (:foreground ,fg :background ,bg-other :extend t))))
      `(magit-diff-file-heading ((,class (:foreground ,fg :weight bold :extend t))))
-     `(magit-diff-file-heading-selection ((,class (:foreground ,orange :background ,darkblue :weight bold :extend t))))
+     `(magit-diff-file-heading-selection ((,class (:foreground ,orange :background ,blue :weight bold :extend t))))
      `(magit-diff-hunk-heading ((,class (:foreground ,bg :background ,magenta :extend t))))
      `(magit-diff-hunk-heading-highlight ((,class (:foreground ,bg :background ,magenta :weight bold :extend t))))
      `(magit-diff-lines-heading ((,class (:foreground ,yellow :background ,red :extend t :extend t))))
@@ -2853,15 +2892,15 @@ Sourced other themes to get information about font faces for packages.")
      `(magit-diffstat-removed ((,class (:foreground ,red))))
      `(magit-dimmed ((,class (:foreground ,spacegrey5))))
      `(magit-filename ((,class (:foreground ,magenta))))
-     `(magit-hash ((,class (:foreground ,blue))))
+     `(magit-hash ((,class (:foreground ,darkblue))))
      `(magit-header-line ((,class (:background ,bg-other :foreground ,darkcyan :weight bold :box (:line-width 3 :color ,bg-other)))))
      `(magit-log-author ((,class (:foreground ,orange))))
-     `(magit-log-date ((,class (:foreground ,blue))))
+     `(magit-log-date ((,class (:foreground ,darkblue))))
      `(magit-log-graph ((,class (:foreground ,spacegrey5))))
      `(magit-process-ng ((,class (:foreground ,red))))
      `(magit-process-ok ((,class (:foreground ,green))))
      `(magit-reflog-amend ((,class (:foreground ,purple))))
-     `(magit-reflog-checkout ((,class (:foreground ,blue))))
+     `(magit-reflog-checkout ((,class (:foreground ,darkblue))))
      `(magit-reflog-cherry-pick ((,class (:foreground ,green))))
      `(magit-reflog-commit ((,class (:foreground ,green))))
      `(magit-reflog-merge ((,class (:foreground ,green))))
@@ -2875,7 +2914,7 @@ Sourced other themes to get information about font faces for packages.")
      `(magit-section-highlight ((,class (:background ,bg-other :extend t))))
      `(magit-section-secondary-heading ((,class (:foreground ,magenta :weight bold :extend t))))
      `(magit-sequence-drop ((,class (:foreground ,red))))
-     `(magit-sequence-head ((,class (:foreground ,blue))))
+     `(magit-sequence-head ((,class (:foreground ,darkblue))))
      `(magit-sequence-part ((,class (:foreground ,orange))))
      `(magit-sequence-stop ((,class (:foreground ,green))))
      `(magit-signature-bad ((,class (:foreground ,red))))
@@ -2887,11 +2926,11 @@ Sourced other themes to get information about font faces for packages.")
      `(magit-tag ((,class (:foreground ,yellow))))
 
 ;;;; make-mode - light
-     `(makefile-targets ((,class (:foreground ,blue))))
+     `(makefile-targets ((,class (:foreground ,darkblue))))
 
 ;;;; marginalia - light
-     `(marginalia-documentation ((,class (:foreground ,blue))))
-     `(marginalia-file-name ((,class (:foreground ,blue))))
+     `(marginalia-documentation ((,class (:foreground ,darkblue))))
+     `(marginalia-file-name ((,class (:foreground ,darkblue))))
 
 ;;;; markdown-mode - light
      `(markdown-blockquote-face ((,class (:slant italic :foreground ,spacegrey5))))
@@ -2901,7 +2940,7 @@ Sourced other themes to get information about font faces for packages.")
      `(markdown-header-face-1 ((,class (:weight bold :foreground ,red))))
      `(markdown-header-face-2 ((,class (:weight bold :foreground ,darkcyan))))
      `(markdown-header-face-3 ((,class (:weight bold :foreground ,magenta))))
-     `(markdown-header-face-4 ((,class (:weight bold :foreground ,blue))))
+     `(markdown-header-face-4 ((,class (:weight bold :foreground ,darkblue))))
      `(markdown-header-face-5 ((,class (:weight bold :foreground ,yellow))))
      `(markdown-html-attr-name-face ((,class (:foreground ,red))))
      `(markdown-html-attr-value-face ((,class (:foreground ,green))))
@@ -2942,7 +2981,7 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; mmm-mode - light
      `(mmm-cleanup-submode-face ((,class (:background ,yellow))))
      `(mmm-code-submode-face ((,class (:background ,bg-other))))
-     `(mmm-comment-submode-face ((,class (:background ,blue))))
+     `(mmm-comment-submode-face ((,class (:background ,darkblue))))
      `(mmm-declaration-submode-face ((,class (:background ,cyan))))
      `(mmm-default-submode-face ((,class (:background nil))))
      `(mmm-init-submode-face ((,class (:background ,red))))
@@ -2965,7 +3004,7 @@ Sourced other themes to get information about font faces for packages.")
      `(mu4e-title-face ((,class (:foreground ,magenta))))
 
 ;;;; mu4e-column-faces - light
-     `(mu4e-column-faces-date ((,class (:foreground ,blue))))
+     `(mu4e-column-faces-date ((,class (:foreground ,darkblue))))
      `(mu4e-column-faces-to-from ((,class (:foreground ,green))))
 
 ;;;; mu4e-thread-folding - light
@@ -3018,7 +3057,7 @@ Sourced other themes to get information about font faces for packages.")
      `(notmuch-search-count ((,class (:foreground ,spacegrey5))))
      `(notmuch-search-date ((,class (:foreground ,orange))))
      `(notmuch-search-flagged-face ((,class (:foreground ,red))))
-     `(notmuch-search-matching-authors ((,class (:foreground ,blue))))
+     `(notmuch-search-matching-authors ((,class (:foreground ,darkblue))))
      `(notmuch-search-non-matching-authors ((,class (:foreground ,fg))))
      `(notmuch-search-subject ((,class (:foreground ,fg))))
      `(notmuch-search-unread-face ((,class (:weight bold))))
@@ -3027,13 +3066,13 @@ Sourced other themes to get information about font faces for packages.")
      `(notmuch-tag-face ((,class (:foreground ,yellow :weight normal))))
      `(notmuch-tag-flagged ((,class (:foreground ,yellow :weight normal))))
      `(notmuch-tag-unread ((,class (:foreground ,yellow :weight normal))))
-     `(notmuch-tree-match-author-face ((,class (:foreground ,blue :weight bold))))
+     `(notmuch-tree-match-author-face ((,class (:foreground ,darkblue :weight bold))))
      `(notmuch-tree-match-date-face ((,class (:foreground ,orange :weight bold))))
      `(notmuch-tree-match-face ((,class (:foreground ,fg))))
      `(notmuch-tree-match-subject-face ((,class (:foreground ,fg))))
      `(notmuch-tree-match-tag-face ((,class (:foreground ,yellow))))
      `(notmuch-tree-match-tree-face ((,class (:foreground ,spacegrey5))))
-     `(notmuch-tree-no-match-author-face ((,class (:foreground ,blue))))
+     `(notmuch-tree-no-match-author-face ((,class (:foreground ,darkblue))))
      `(notmuch-tree-no-match-date-face ((,class (:foreground ,orange))))
      `(notmuch-tree-no-match-face ((,class (:foreground ,spacegrey5))))
      `(notmuch-tree-no-match-subject-face ((,class (:foreground ,spacegrey5))))
@@ -3053,7 +3092,7 @@ Sourced other themes to get information about font faces for packages.")
      `(objed-mode-line ((,class (:foreground ,yellow :weight bold))))
 
 ;;;; org-agenda - light
-     `(org-agenda-clocking ((,class (:background ,blue))))
+     `(org-agenda-clocking ((,class (:background ,darkblue))))
      `(org-agenda-date ((,class (:foreground ,magenta :weight ultra-bold))))
      `(org-agenda-date-today ((,class (:foreground ,magenta :weight ultra-bold))))
      `(org-agenda-date-weekend ((,class (:foreground ,magenta :weight ultra-bold))))
@@ -3075,8 +3114,8 @@ Sourced other themes to get information about font faces for packages.")
      `(org-habit-clear-future-face ((,class (:weight bold :background ,spacegrey3))))
      `(org-habit-overdue-face ((,class (:weight bold :background ,red))))
      `(org-habit-overdue-future-face ((,class (:weight bold :background ,red))))
-     `(org-habit-ready-face ((,class (:weight bold :background ,blue))))
-     `(org-habit-ready-future-face ((,class (:weight bold :background ,blue))))
+     `(org-habit-ready-face ((,class (:weight bold :background ,darkblue))))
+     `(org-habit-ready-future-face ((,class (:weight bold :background ,darkblue))))
 
 ;;;; org-journal - light
      `(org-journal-calendar-entry-face ((,class (:foreground ,purple :slant italic))))
@@ -3104,7 +3143,7 @@ Sourced other themes to get information about font faces for packages.")
      `(org-headline-done ((,class (:foreground ,spacegrey5))))
      `(org-hide ((,class (:foreground ,bg))))
      `(org-latex-and-related ((,class (:foreground ,spacegrey8 :weight bold))))
-     `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.3) ,@(timu-spacegrey-set-intense-org-colors blue l-blue)))))
+     `(org-level-1 ((,class (:foreground ,darkblue :weight ultra-bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.3) ,@(timu-spacegrey-set-intense-org-colors blue l-blue)))))
      `(org-level-2 ((,class (:foreground ,magenta :weight bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.2) ,@(timu-spacegrey-set-intense-org-colors magenta l-magenta)))))
      `(org-level-3 ((,class (:foreground ,darkcyan :weight bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.1) ,@(timu-spacegrey-set-intense-org-colors darkcyan l-lightcyan)))))
      `(org-level-4 ((,class (:foreground ,orange ,@(timu-spacegrey-set-intense-org-colors orange l-orange)))))
@@ -3133,11 +3172,11 @@ Sourced other themes to get information about font faces for packages.")
      `(org-ref-acronym-face ((,class (:foreground ,magenta))))
      `(org-ref-cite-face ((,class (:foreground ,yellow :weight light :underline t))))
      `(org-ref-glossary-face ((,class (:foreground ,purple))))
-     `(org-ref-label-face ((,class (:foreground ,blue))))
+     `(org-ref-label-face ((,class (:foreground ,darkblue))))
      `(org-ref-ref-face ((,class (:foreground ,teal :underline t :weight bold))))
 
 ;;;; outline - light
-     `(outline-1 ((,class (:foreground ,blue :weight ultra-bold))))
+     `(outline-1 ((,class (:foreground ,darkblue :weight ultra-bold))))
      `(outline-2 ((,class (:foreground ,magenta :weight bold))))
      `(outline-3 ((,class (:foreground ,green :weight bold))))
      `(outline-4 ((,class (:foreground ,orange))))
@@ -3159,7 +3198,7 @@ Sourced other themes to get information about font faces for packages.")
      `(persp-face-lighter-nil-persp ((,class (:foreground ,spacegrey5))))
 
 ;;;; perspective - light
-     `(persp-selected-face ((,class (:foreground ,blue :weight bold))))
+     `(persp-selected-face ((,class (:foreground ,darkblue :weight bold))))
 
 ;;;; pkgbuild-mode - light
      `(pkgbuild-error-face ((,class (:underline (:style wave :color ,red)))))
@@ -3178,7 +3217,7 @@ Sourced other themes to get information about font faces for packages.")
      `(powerline-inactive2 ((,class (:background ,spacegrey8 :foreground ,spacegrey5 :distant-foreground ,bg-other))))
 
 ;;;; rainbow-delimiters - light
-     `(rainbow-delimiters-depth-1-face ((,class (:foreground ,blue))))
+     `(rainbow-delimiters-depth-1-face ((,class (:foreground ,darkblue))))
      `(rainbow-delimiters-depth-2-face ((,class (:foreground ,purple))))
      `(rainbow-delimiters-depth-3-face ((,class (:foreground ,green))))
      `(rainbow-delimiters-depth-4-face ((,class (:foreground ,orange))))
@@ -3195,7 +3234,7 @@ Sourced other themes to get information about font faces for packages.")
      `(reb-match-3 ((,class (:foreground ,yellow :inverse-video t))))
 
 ;;;; rjsx-mode - light
-     `(rjsx-attr ((,class (:foreground ,blue))))
+     `(rjsx-attr ((,class (:foreground ,darkblue))))
      `(rjsx-tag ((,class (:foreground ,yellow))))
 
 ;;;; rpm-spec-mode - light
@@ -3206,7 +3245,7 @@ Sourced other themes to get information about font faces for packages.")
      `(rpm-spec-obsolete-tag-face ((,class (:foreground ,red))))
      `(rpm-spec-package-face ((,class (:foreground ,orange))))
      `(rpm-spec-section-face ((,class (:foreground ,purple))))
-     `(rpm-spec-tag-face ((,class (:foreground ,blue))))
+     `(rpm-spec-tag-face ((,class (:foreground ,darkblue))))
      `(rpm-spec-var-face ((,class (:foreground ,magenta))))
 
 ;;;; rst - light
@@ -3233,7 +3272,7 @@ Sourced other themes to get information about font faces for packages.")
      `(sml/charging ((,class (:foreground ,green))))
      `(sml/discharging ((,class (:foreground ,yellow :weight bold))))
      `(sml/filename ((,class (:foreground ,magenta :weight bold))))
-     `(sml/git ((,class (:foreground ,blue))))
+     `(sml/git ((,class (:foreground ,darkblue))))
      `(sml/modified ((,class (:foreground ,cyan))))
      `(sml/outside-modified ((,class (:foreground ,cyan))))
      `(sml/process ((,class (:weight bold))))
@@ -3247,7 +3286,7 @@ Sourced other themes to get information about font faces for packages.")
      `(sp-show-pair-mismatch-face ((,class (:foreground ,spacegrey0 :background ,red :weight ultra-bold))))
 
 ;;;; smerge-tool - light
-     `(smerge-base ((,class (:background ,blue))))
+     `(smerge-base ((,class (:background ,darkblue))))
      `(smerge-lower ((,class (:background ,green))))
      `(smerge-markers ((,class (:background ,spacegrey5 :foreground ,bg :distant-foreground ,fg :weight bold))))
      `(smerge-mine ((,class (:background ,red))))
@@ -3267,7 +3306,7 @@ Sourced other themes to get information about font faces for packages.")
      `(spaceline-evil-emacs ((,class (:background ,cyan))))
      `(spaceline-evil-insert ((,class (:background ,green))))
      `(spaceline-evil-motion ((,class (:background ,purple))))
-     `(spaceline-evil-normal ((,class (:background ,blue))))
+     `(spaceline-evil-normal ((,class (:background ,darkblue))))
      `(spaceline-evil-replace ((,class (:background ,orange))))
      `(spaceline-evil-visual ((,class (:background ,grey))))
      `(spaceline-flycheck-error ((,class (:foreground ,red :distant-background ,spacegrey0))))
@@ -3282,7 +3321,7 @@ Sourced other themes to get information about font faces for packages.")
      `(stripe-highlight ((,class (:background ,spacegrey3))))
 
 ;;;; swiper - light
-     `(swiper-line-face ((,class (:background ,blue :foreground ,spacegrey0))))
+     `(swiper-line-face ((,class (:background ,darkblue :foreground ,spacegrey0))))
      `(swiper-match-face-1 ((,class (:background ,spacegrey0 :foreground ,spacegrey5))))
      `(swiper-match-face-2 ((,class (:background ,orange :foreground ,spacegrey0 :weight bold))))
      `(swiper-match-face-3 ((,class (:background ,purple :foreground ,spacegrey0 :weight bold))))
@@ -3318,7 +3357,7 @@ Sourced other themes to get information about font faces for packages.")
      `(telephone-line-evil ((,class (:foreground ,fg :weight bold))))
      `(telephone-line-evil-emacs ((,class (:background ,purple :weight bold))))
      `(telephone-line-evil-insert ((,class (:background ,green :weight bold))))
-     `(telephone-line-evil-motion ((,class (:background ,blue :weight bold))))
+     `(telephone-line-evil-motion ((,class (:background ,darkblue :weight bold))))
      `(telephone-line-evil-normal ((,class (:background ,red :weight bold))))
      `(telephone-line-evil-operator ((,class (:background ,magenta :weight bold))))
      `(telephone-line-evil-replace ((,class (:background ,bg-other :weight bold))))
@@ -3329,7 +3368,7 @@ Sourced other themes to get information about font faces for packages.")
      `(term ((,class (:foreground ,fg))))
      `(term-bold ((,class (:weight bold))))
      `(term-color-black ((,class (:foreground ,spacegrey0))))
-     `(term-color-blue ((,class (:foreground ,blue))))
+     `(term-color-blue ((,class (:foreground ,darkblue))))
      `(term-color-cyan ((,class (:foreground ,cyan))))
      `(term-color-green ((,class (:foreground ,green))))
      `(term-color-magenta ((,class (:foreground ,magenta))))
@@ -3338,7 +3377,7 @@ Sourced other themes to get information about font faces for packages.")
      `(term-color-white ((,class (:foreground ,spacegrey8))))
      `(term-color-yellow ((,class (:foreground ,yellow))))
      `(term-color-bright-black ((,class (:foreground ,spacegrey0))))
-     `(term-color-bright-blue ((,class (:foreground ,blue))))
+     `(term-color-bright-blue ((,class (:foreground ,darkblue))))
      `(term-color-bright-cyan ((,class (:foreground ,cyan))))
      `(term-color-bright-green ((,class (:foreground ,green))))
      `(term-color-bright-magenta ((,class (:foreground ,magenta))))
@@ -3352,7 +3391,7 @@ Sourced other themes to get information about font faces for packages.")
      `(tldr-command-argument ((,class (:foreground ,fg :background ,grey))))
      `(tldr-command-itself ((,class (:foreground ,bg :background ,green :weight semi-bold))))
      `(tldr-description ((,class (:foreground ,fg :weight semi-bold))))
-     `(tldr-introduction ((,class (:foreground ,blue :weight semi-bold))))
+     `(tldr-introduction ((,class (:foreground ,darkblue :weight semi-bold))))
      `(tldr-title ((,class (:foreground ,yellow :bold t :height 1.4))))
 
 ;;;; treemacs - light
@@ -3366,16 +3405,16 @@ Sourced other themes to get information about font faces for packages.")
      `(treemacs-tags-face ((,class (:foreground ,orange))))
 
 ;;;; treemacs-all-the-icons - light
-     `(treemacs-all-the-icons-file-face ((,class (:foreground ,blue))))
+     `(treemacs-all-the-icons-file-face ((,class (:foreground ,darkblue))))
      `(treemacs-all-the-icons-root-face ((,class (:foreground ,fg))))
 
 ;;;; tree-sitter-hl - light
-     `(tree-sitter-hl-face:function ((,class (:foreground ,blue))))
-     `(tree-sitter-hl-face:function.call ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:function ((,class (:foreground ,darkblue))))
+     `(tree-sitter-hl-face:function.call ((,class (:foreground ,darkblue))))
      `(tree-sitter-hl-face:function.builtin ((,class (:foreground ,orange))))
      `(tree-sitter-hl-face:function.special ((,class (:foreground ,fg :weight bold))))
      `(tree-sitter-hl-face:function.macro ((,class (:foreground ,fg :weight bold))))
-     `(tree-sitter-hl-face:method ((,class (:foreground ,blue))))
+     `(tree-sitter-hl-face:method ((,class (:foreground ,darkblue))))
      `(tree-sitter-hl-face:method.call ((,class (:foreground ,red))))
      `(tree-sitter-hl-face:type ((,class (:foreground ,yellow))))
      `(tree-sitter-hl-face:type.parameter ((,class (:foreground ,darkcyan))))
@@ -3414,7 +3453,7 @@ Sourced other themes to get information about font faces for packages.")
      `(typescript-jsdoc-value ((,class (:foreground ,spacegrey5))))
 
 ;;;; undo-tree - light
-     `(undo-tree-visualizer-active-branch-face ((,class (:foreground ,blue))))
+     `(undo-tree-visualizer-active-branch-face ((,class (:foreground ,darkblue))))
      `(undo-tree-visualizer-current-face ((,class (:foreground ,green :weight bold))))
      `(undo-tree-visualizer-default-face ((,class (:foreground ,spacegrey5))))
      `(undo-tree-visualizer-register-face ((,class (:foreground ,yellow))))
@@ -3430,7 +3469,7 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; vterm - light
      `(vterm ((,class (:foreground ,fg))))
      `(vterm-color-black ((,class (:background ,spacegrey0 :foreground ,spacegrey0))))
-     `(vterm-color-blue ((,class (:background ,blue :foreground ,blue))))
+     `(vterm-color-blue ((,class (:background ,darkblue :foreground ,darkblue))))
      `(vterm-color-cyan ((,class (:background ,cyan :foreground ,cyan))))
      `(vterm-color-default ((,class (:foreground ,fg))))
      `(vterm-color-green ((,class (:background ,green :foreground ,green))))
@@ -3449,9 +3488,9 @@ Sourced other themes to get information about font faces for packages.")
      `(web-mode-html-attr-name-face ((,class (:foreground ,yellow))))
      `(web-mode-html-attr-value-face ((,class (:foreground ,green))))
      `(web-mode-html-entity-face ((,class (:foreground ,cyan :slant italic))))
-     `(web-mode-html-tag-bracket-face ((,class (:foreground ,blue))))
+     `(web-mode-html-tag-bracket-face ((,class (:foreground ,darkblue))))
      `(web-mode-html-tag-bracket-face ((,class (:foreground ,fg))))
-     `(web-mode-html-tag-face ((,class (:foreground ,blue))))
+     `(web-mode-html-tag-face ((,class (:foreground ,darkblue))))
      `(web-mode-json-context-face ((,class (:foreground ,green))))
      `(web-mode-json-key-face ((,class (:foreground ,green))))
      `(web-mode-keyword-face ((,class (:foreground ,magenta))))
@@ -3460,16 +3499,16 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; wgrep - light
      `(wgrep-delete-face ((,class (:foreground ,spacegrey3 :background ,red))))
-     `(wgrep-done-face ((,class (:foreground ,blue))))
+     `(wgrep-done-face ((,class (:foreground ,darkblue))))
      `(wgrep-face ((,class (:weight bold :foreground ,green :background ,spacegrey5))))
      `(wgrep-file-face ((,class (:foreground ,spacegrey5))))
      `(wgrep-reject-face ((,class (:foreground ,red :weight bold))))
 
 ;;;; which-func - light
-     `(which-func ((,class (:foreground ,blue))))
+     `(which-func ((,class (:foreground ,darkblue))))
 
 ;;;; which-key - light
-     `(which-key-command-description-face ((,class (:foreground ,blue))))
+     `(which-key-command-description-face ((,class (:foreground ,darkblue))))
      `(which-key-group-description-face ((,class (:foreground ,magenta))))
      `(which-key-key-face ((,class (:foreground ,green))))
      `(which-key-local-map-description-face ((,class (:foreground ,purple))))
@@ -3512,7 +3551,7 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; ytel - light
      `(ytel-video-published-face ((,class (:foreground ,magenta))))
      `(ytel-channel-name-face ((,class (:foreground ,orange))))
-     `(ytel-video-length-face ((,class (:foreground ,blue))))
+     `(ytel-video-length-face ((,class (:foreground ,darkblue))))
      `(ytel-video-view-face ((,class (:foreground ,darkcyan))))
 
      (custom-theme-set-variables

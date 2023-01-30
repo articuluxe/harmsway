@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 20 Oct 2021
 ;; Keywords: faces themes
-;; Version: 1.7
+;; Version: 1.9
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-rouge-theme
 
@@ -97,6 +97,27 @@
 ;;     By default the intense colors are turned off.
 ;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
 ;;       (customize-set-variable 'timu-rouge-org-intense-colors t)
+;;
+;;   C. Muted colors for the theme
+;;     You can set muted colors for the theme.
+;;
+;;     By default muted colors are turned off.
+;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;       (customize-set-variable 'timu-rouge-muted-colors t)
+;;
+;;   D. Border for the `mode-line'
+;;     You can set a variable to add a border to the mode-line.
+;;
+;;     By default the border is turned off.
+;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;       (customize-set-variable 'timu-rouge-mode-line-border t)
+
+;; III. Utility functions
+;;   A. Toggle between intense and non intense colors for `org-mode'
+;;       M-x timu-rouge-toggle-org-colors-intensity RET.
+;;
+;;   B. Toggle between borders and no borders for the `mode-line'
+;;       M-x timu-rouge-toggle-mode-line-border RET.
 
 
 ;;; Code:
@@ -205,6 +226,11 @@ BACKGROUND-COLOR changes the `background' color."
   (if (eq t timu-rouge-org-intense-colors)
       (list :overline overline-color :background background-color)))
 
+(defcustom timu-rouge-muted-colors nil
+  "Variable to set muted colors for the theme."
+  :type 'boolean
+  :group 'timu-rouge-theme)
+
 (defcustom timu-rouge-mode-line-border nil
   "Variable to control the border of `mode-line'.
 With a value of t the mode-line has a border."
@@ -222,6 +248,26 @@ BOXCOLOR supplies the border color."
 BOXCOLOR supplies the border color."
   (if (eq t timu-rouge-mode-line-border)
         (list :box boxcolor)))
+
+;;;###autoload
+(defun timu-rouge-toggle-org-colors-intensity ()
+  "Toggle between intense and non intense colors for `org-mode'.
+Customize `timu-rouge-org-intense-colors' the to achieve this."
+  (interactive)
+  (if (eq t timu-rouge-org-intense-colors)
+      (customize-set-variable 'timu-rouge-org-intense-colors nil)
+    (customize-set-variable 'timu-rouge-org-intense-colors t))
+  (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-rouge-toggle-mode-line-border ()
+  "Toggle between borders and no borders for the `mode-line'.
+Customize `timu-rouge-mode-line-border' the to achieve this."
+  (interactive)
+  (if (eq t timu-rouge-mode-line-border)
+      (customize-set-variable 'timu-rouge-mode-line-border nil)
+    (customize-set-variable 'timu-rouge-mode-line-border t))
+  (load-theme (car custom-enabled-themes) t))
 
 (deftheme timu-rouge
   "Color theme inspired by the Rouge Theme for VSCode.
@@ -243,19 +289,20 @@ Sourced other themes to get information about font faces for packages.")
       (fg        "#fafff6")
       (fg-other  "#a7acb9")
 
-      (grey      "#64727d")
-      (red       "#c6797e")
-      (darkred   "#db6e8f")
-      (orange    "#eabe9a")
-      (green     "#a3b09a")
-      (blue      "#6e94b9")
-      (magenta   "#b18bb1")
-      (teal      "#7ea9a9")
-      (yellow    "#f7e3af")
-      (darkblue  "#1e6378")
-      (purple    "#5d80ae")
-      (cyan      "#88c0d0")
-      (darkcyan  "#507681")
+      (grey     (if timu-rouge-muted-colors "#aab8c3" "#64727d"))
+      (red      (if timu-rouge-muted-colors "#ffbfc4" "#c6797e"))
+      (darkred  (if timu-rouge-muted-colors "#ffb4d5" "#db6e8f"))
+      (orange   (if timu-rouge-muted-colors "#ffffe0" "#eabe9a"))
+      (green    (if timu-rouge-muted-colors "#e9f6e0" "#a3b09a"))
+      (blue     (if timu-rouge-muted-colors "#b4daff" "#6e94b9"))
+      (magenta  (if timu-rouge-muted-colors "#f7d1f7" "#b18bb1"))
+      (teal     (if timu-rouge-muted-colors "#c4efef" "#7ea9a9"))
+      (yellow   (if timu-rouge-muted-colors "#fffff5" "#f7e3af"))
+      (darkblue (if timu-rouge-muted-colors "#64a9be" "#1e6378"))
+      (purple   (if timu-rouge-muted-colors "#a3c6f4" "#5d80ae"))
+      (cyan     (if timu-rouge-muted-colors "#ceffff" "#88c0d0"))
+      (darkcyan (if timu-rouge-muted-colors "#96bcc7" "#507681"))
+
       (black     "#000000")
       (white     "#ffffff"))
 

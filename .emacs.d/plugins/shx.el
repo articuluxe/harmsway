@@ -60,7 +60,8 @@
   :type 'integer)
 
 (defcustom shx-use-magic-insert t
-  "Whether to dynamically modify input using `shx-magic-insert'."
+  "Whether to dynamically modify input using `shx-magic-insert'.
+If you change this you'll have to reload shx or restart Emacs."
   :link '(function-link shx-magic-insert)
   :type 'boolean)
 
@@ -853,7 +854,7 @@ See `header-line-format' for formatting options.
   :header
 \nOr, adding <header ...> in markup form to your prompt:\n
   export PS1=\"<header \\$(git rev-parse --abbrev-ref HEAD)>\\\\n$PS1\"
-  export PS1=\"<header \\$(git status -s 2>/dev/null|paste -s -d \\\" \\\" - )>\\\\n$PS1\""
+  export PS1=\"<header \\$(git status -s 2>/dev/null|paste -sd \\\" \\\" - )>\\\\n$PS1\""
   (setq header-line-format (and (not (string-empty-p header)) header)))
 
 (defun shx-cmd-help (shx-command)
@@ -1064,8 +1065,8 @@ Use \":plotrug FILENAME\" where the contents of that file might be:
 ;;;###autoload
 (define-minor-mode shx-mode
   "Toggle shx-mode on or off.
-\nThis minor mode provides extra functionality to shell-mode and
-comint-mode in general.  Use `shx-global-mode' to enable
+\nThis minor mode provides extra functionality to `shell-mode' and
+`comint-mode' in general.  Use `shx-global-mode' to enable
 `shx-mode' in all buffers that support it.
 \nProvides the following key bindings: \n\\{shx-mode-map}"
   :lighter shx-mode-lighter
@@ -1074,7 +1075,7 @@ comint-mode in general.  Use `shx-global-mode' to enable
 
 (defun shx--activate ()
   "Add font-locks, tweak defaults, add hooks/advice."
-  (if (not (derived-mode-p 'comint-mode))
+  (if (not (shx--compatible-p))
       (error "WARNING: shx is incompatible with `%s'" major-mode)
     (when (derived-mode-p 'shell-mode)
       (font-lock-add-keywords nil shx-shell-mode-font-locks))
@@ -1109,11 +1110,16 @@ comint-mode in general.  Use `shx-global-mode' to enable
 
 (defun shx--global-on ()
   "Call the function `shx-mode' if appropriate for the buffer."
-  (when (and
-         (derived-mode-p 'comint-mode)
-         ;; modes requiring RET are currently incompatible (#25)
-         (eq (local-key-binding (kbd "RET")) 'comint-send-input))
-    (shx-mode +1)))
+  (when (shx--compatible-p) (shx-mode +1)))
+
+(defun shx--compatible-p ()
+  "Return non-nil if shx can be activated in the current buffer."
+  (and
+   (derived-mode-p 'comint-mode)
+   ;; modes that override comint-input-sender are incompatible (#32)
+   (eq comint-input-sender (default-value 'comint-input-sender))
+   ;; modes that override the RET binding are incompatible (#25)
+   (eq (local-key-binding (kbd "RET")) 'comint-send-input)))
 
 ;;;###autoload
 (defun shx (&optional name directory)

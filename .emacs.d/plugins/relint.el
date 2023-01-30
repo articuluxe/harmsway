@@ -1,9 +1,9 @@
 ;;; relint.el --- Elisp regexp mistake finder   -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019-2020 Free Software Foundation, Inc.
+;; Copyright (C) 2019-2023 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.20
+;; Version: 1.21
 ;; Package-Requires: ((xr "1.22") (emacs "26.1"))
 ;; URL: https://github.com/mattiase/relint
 ;; Keywords: lisp, regexps
@@ -29,6 +29,9 @@
 
 ;;; News:
 
+;; Version 1.21
+;; - Check for duplicates in rx or-forms
+;; - Robustness improvements
 ;; Version 1.20
 ;; - More compact distribution
 ;; Version 1.19
@@ -111,6 +114,7 @@
 (require 'xr)
 (require 'compile)
 (require 'cl-lib)
+(require 'subr-x)
 
 (defun relint--get-error-buffer ()
   "Buffer to which errors are printed, or nil if noninteractive."
@@ -145,6 +149,13 @@ and PATH is (3 0 1 2), then the returned position is right before G."
       (relint--skip-whitespace)
       (let ((skip (car p)))
         ;; Enter next sexp and skip past the `skip' first sexps inside.
+        (when (looking-at (rx "."))
+          ;; Skip `. (' since it represents zero sexps.
+          (forward-char)
+          (relint--skip-whitespace)
+          (when (looking-at (rx "("))
+            (forward-char)
+            (relint--skip-whitespace)))
         (cond
          ((looking-at (rx (or "'" "#'" "`" ",@" ",")))
           (goto-char (match-end 0))
@@ -684,9 +695,9 @@ not be evaluated safely."
         (let* ((all-args (mapcar #'relint--eval body))
                (testfn (nth 4 all-args))
                (args (if testfn
-                         all-args
-                       (append (relint--take 4 all-args)
-                               (list (relint--wrap-function testfn))))))
+                         (append (relint--take 4 all-args)
+                                 (list (relint--wrap-function testfn)))
+                       all-args)))
           (condition-case nil
               (apply head args)
             (error (throw 'relint-eval 'no-value)))))
@@ -1463,6 +1474,23 @@ than just to a surrounding or producing expression."
             'group 'submatch
             'group-n 'submatch-n)
        . ,args)
+     (when (memq (car item) '(| or))
+       ;; Check or-patterns for duplicates, because if rx runs `regexp-opt'
+       ;; on them then they are effectively deduplicated and we'd never
+       ;; know about it.
+       (let ((i 1)
+             (tail args))
+         (while (consp tail)
+           (when (member (car tail) (cdr tail))
+             (relint--warn pos (if exact-path (cons i path) path)
+                           (format-message
+                            "Duplicated rx form in or-pattern: %s"
+                             (replace-regexp-in-string
+                              (rx (+ (in " \n"))) " "
+                              (string-trim (xr-pp-rx-to-str (car tail)))
+                              t t))))
+           (setq i (1+ i))
+           (setq tail (cdr tail)))))
      ;; Form with subforms: recurse.
      (let ((i 1))
        (dolist (arg args)
@@ -2262,7 +2290,7 @@ Return a list of (FORM . STARTING-POSITION)."
                                 ;; Specific to cc-mode
                                 "c-lang-defconst"))))
        (and (= steps 4)
-            (looking-at (rx (or "define-derived-mode"))))))))
+            (looking-at (rx "define-derived-mode")))))))
 
 (defun relint--suspicious-backslash (string-start)
   "With point at an ineffective backslash, emit an warning unless filtered out.

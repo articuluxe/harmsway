@@ -4,7 +4,7 @@
 ;; Author: Vitalie Spinu <spinuvit@gmail.com>
 ;; URL: https://github.com/vspinu/company-math
 ;; Keywords:  Unicode, symbols, completion
-;; Version: 1.5
+;; Version: 1.5.1
 ;; Package-Requires: ((company "0.8.0") (math-symbol-lists "1.3"))
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,7 +68,7 @@ in a new Emacs session."
   (regexp-quote company-math-symbol-prefix))
 (defvar company-math--unicode-prefix-regex
   (let ((psym (regexp-quote company-math-symbol-prefix))
-        (psub (when company-math-symbol-prefix
+        (psub (when company-math-subscript-prefix
                 (concat "\\|" (regexp-quote company-math-subscript-prefix))))
         (psup (when company-math-superscript-prefix
                 (concat "\\|" (regexp-quote company-math-superscript-prefix)))))

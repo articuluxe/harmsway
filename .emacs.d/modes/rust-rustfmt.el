@@ -69,7 +69,10 @@
                         (with-current-buffer buf
                           (replace-buffer-contents rust-rustfmt-buffername))
                       (copy-to-buffer buf (point-min) (point-max))))
-                (kill-buffer-and-window))
+	        (let ((win (get-buffer-window rust-rustfmt-buffername)))
+		  (if win
+		      (quit-window t win)
+		    (kill-buffer rust-rustfmt-buffername))))
                ((= ret 3)
                 (if (not (string= (buffer-string)
                                   (with-current-buffer buf (buffer-string))))
@@ -149,7 +152,8 @@ rustfmt complain in the echo area."
           (goto-char (point-min))
           (forward-line (1- (car target-point)))
           (forward-char (1- (cdr target-point))))
-        (message target-problem)))))
+        (unless rust-format-show-buffer
+          (message target-problem))))))
 
 (defconst rust--format-word "\
 \\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|\

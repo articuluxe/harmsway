@@ -46,6 +46,7 @@ brew install keychain
 brew install xz
 brew install cppcheck
 brew install bison
+brew install xld
 
 brew install coreutils
 (setq insert-directory-program "gls")

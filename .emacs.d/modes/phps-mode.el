@@ -1,12 +1,12 @@
 ;;; phps-mode.el --- Major mode for PHP with code intelligence -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2023  Free Software Foundation, Inc.
 
 ;; Author: Christian Johansson <christian@cvj.se>
 ;; Maintainer: Christian Johansson <christian@cvj.se>
 ;; Created: 3 Mar 2018
-;; Modified: 4 Nov 2022
-;; Version: 0.4.30
+;; Modified: 29 Feb 2023
+;; Version: 0.4.32
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-phps-mode
 

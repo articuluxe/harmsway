@@ -573,14 +573,12 @@ This value is adjusted depending on the `window-width'."
     counsel-find-library
     (:columns
      ((all-the-icons-ivy-rich-library-icon)
-      (all-the-icons-ivy-rich-library-transformer (:width 0.3))
-      (all-the-icons-ivy-rich-library-path (:face all-the-icons-ivy-rich-path-face)))
+      (all-the-icons-ivy-rich-library-transformer))
      :delimiter "\t")
     counsel-load-library
     (:columns
      ((all-the-icons-ivy-rich-library-icon)
-      (all-the-icons-ivy-rich-library-transformer (:width 0.3))
-      (all-the-icons-ivy-rich-library-path (:face all-the-icons-ivy-rich-path-face)))
+      (all-the-icons-ivy-rich-library-transformer))
      :delimiter "\t")
     counsel-load-theme
     (:columns
@@ -815,6 +813,51 @@ This value is adjusted depending on the `window-width'."
       (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face all-the-icons-ivy-rich-archive-face))
       (all-the-icons-ivy-rich-package-install-summary (:face all-the-icons-ivy-rich-pacage-desc-face)))
      :delimiter "\t")
+    package-recompile
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 0.25))
+      (all-the-icons-ivy-rich-package-version (:width 16 :face all-the-icons-ivy-rich-version-face))
+      (all-the-icons-ivy-rich-package-status (:width 12))
+      (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face all-the-icons-ivy-rich-archive-face))
+      (all-the-icons-ivy-rich-package-install-summary (:face all-the-icons-ivy-rich-pacage-desc-face)))
+     :delimiter "\t")
+    package-update
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 0.25))
+      (all-the-icons-ivy-rich-package-version (:width 16 :face all-the-icons-ivy-rich-version-face))
+      (all-the-icons-ivy-rich-package-status (:width 12))
+      (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face all-the-icons-ivy-rich-archive-face))
+      (all-the-icons-ivy-rich-package-install-summary (:face all-the-icons-ivy-rich-pacage-desc-face)))
+     :delimiter "\t")
+    package-vc-checkout
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 0.25))
+      (all-the-icons-ivy-rich-package-version (:width 16 :face all-the-icons-ivy-rich-version-face))
+      (all-the-icons-ivy-rich-package-status (:width 12))
+      (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face all-the-icons-ivy-rich-archive-face))
+      (all-the-icons-ivy-rich-package-install-summary (:face all-the-icons-ivy-rich-pacage-desc-face)))
+     :delimiter "\t")
+    package-vc-install
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 0.25))
+      (all-the-icons-ivy-rich-package-version (:width 16 :face all-the-icons-ivy-rich-version-face))
+      (all-the-icons-ivy-rich-package-status (:width 12))
+      (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face all-the-icons-ivy-rich-archive-face))
+      (all-the-icons-ivy-rich-package-install-summary (:face all-the-icons-ivy-rich-pacage-desc-face)))
+     :delimiter "\t")
+    package-vc-update
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 0.25))
+      (all-the-icons-ivy-rich-package-version (:width 16 :face all-the-icons-ivy-rich-version-face))
+      (all-the-icons-ivy-rich-package-status (:width 12))
+      (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face all-the-icons-ivy-rich-archive-face))
+      (all-the-icons-ivy-rich-package-install-summary (:face all-the-icons-ivy-rich-pacage-desc-face)))
+     :delimiter "\t")
 
     ;; persp
     persp-switch-to-buffer
@@ -929,9 +972,39 @@ This value is adjusted depending on the `window-width'."
 
     customize-group
     (:columns
-     ((all-the-icons-ivy-rich-settings-icon)
+     ((all-the-icons-ivy-rich-group-settings-icon)
       (ivy-rich-candidate (:width 0.3))
       (all-the-icons-ivy-rich-custom-group-docstring (:face all-the-icons-ivy-rich-doc-face)))
+     :delimiter "\t")
+    customize-group-other-window
+    (:columns
+     ((all-the-icons-ivy-rich-group-settings-icon)
+      (ivy-rich-candidate (:width 0.3))
+      (all-the-icons-ivy-rich-custom-group-docstring (:face all-the-icons-ivy-rich-doc-face)))
+     :delimiter "\t")
+    customize-option
+    (:columns
+     ((all-the-icons-ivy-rich-variable-settings-icon)
+      (ivy-rich-candidate (:width 0.3))
+      (all-the-icons-ivy-rich-custom-variable-docstring (:face all-the-icons-ivy-rich-doc-face)))
+     :delimiter "\t")
+    customize-option-other-window
+    (:columns
+     ((all-the-icons-ivy-rich-variable-settings-icon)
+      (ivy-rich-candidate (:width 0.3))
+      (all-the-icons-ivy-rich-custom-variable-docstring (:face all-the-icons-ivy-rich-doc-face)))
+     :delimiter "\t")
+    customize-variable
+    (:columns
+     ((all-the-icons-ivy-rich-variable-settings-icon)
+      (ivy-rich-candidate (:width 0.3))
+      (all-the-icons-ivy-rich-custom-variable-docstring (:face all-the-icons-ivy-rich-doc-face)))
+     :delimiter "\t")
+    customize-variable-other-window
+    (:columns
+     ((all-the-icons-ivy-rich-variable-settings-icon)
+      (ivy-rich-candidate (:width 0.3))
+      (all-the-icons-ivy-rich-custom-variable-docstring (:face all-the-icons-ivy-rich-doc-face)))
      :delimiter "\t")
 
     describe-character-set
@@ -991,6 +1064,21 @@ This value is adjusted depending on the `window-width'."
       (ivy-rich-candidate (:face all-the-icons-ivy-rich-string-face)))
      :delimiter "\t")
 
+    lsp-install-server
+    (:columns
+     ((all-the-icons-ivy-rich-lsp-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    lsp-update-server
+    (:columns
+     ((all-the-icons-ivy-rich-lsp-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    lsp-uninstall-server
+    (:columns
+     ((all-the-icons-ivy-rich-lsp-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
     lsp-ivy-workspace-folders-remove
     (:columns
      ((all-the-icons-ivy-rich-dir-icon)
@@ -999,6 +1087,12 @@ This value is adjusted depending on the `window-width'."
       (all-the-icons-ivy-rich-project-file-modes (:width 12))
       (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
       (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+
+    ivy-magit-todos
+    (:columns
+     ((all-the-icons-ivy-rich-magit-todos-icon)
+      (all-the-icons-ivy-rich-magit-todos-transformer))
      :delimiter "\t")
 
     treemacs-projectile
@@ -1467,11 +1561,18 @@ Only available in `emacs-lisp-mode'."
         (all-the-icons-ivy-rich-symbol-docstring sym))
     ""))
 
-;; Support `customize-group'
+;; Support `customize-group' and `customize-group-other-window'
 (defun all-the-icons-ivy-rich-custom-group-docstring (cand)
   "Return custom group's documentation for CAND."
   (all-the-icons-ivy-rich--truncate-docstring
    (or (documentation-property (intern cand) 'group-documentation) "")))
+
+;; Support `customize-variable' and `customize-variable-other-window'
+;; `customize-variable' ia an alias of `customize-option'
+(defun all-the-icons-ivy-rich-custom-variable-docstring (cand)
+  "Return custom variable's documentation for CAND."
+  (all-the-icons-ivy-rich--truncate-docstring
+   (or (documentation-property (intern cand) 'variable-documentation) "")))
 
 ;; Support `describe-character-set'
 (defun all-the-icons-ivy-rich-charset-docstring (cand)
@@ -1582,11 +1683,6 @@ If the buffer is killed, return \"--\"."
       cand
     (propertize cand 'face 'all-the-icons-ivy-rich-off-face)))
 
-(defun all-the-icons-ivy-rich-library-path (cand)
-  "Return library path for CAND."
-  (abbreviate-file-name
-   (or (ignore-errors (find-library-name cand)) "")))
-
 ;; Support `counsel-world-clock'
 (defun all-the-icons-ivy-rich-world-clock (cand)
   "Return local time of timezone (CAND)."
@@ -1613,6 +1709,15 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
               msg
               (propertize err 'face 'error))))
    (t cand)))
+
+(defun all-the-icons-ivy-rich-magit-todos-transformer (cand)
+  "Transform `magit-todos' result (CAND)."
+  (let* ((strs (split-string cand " "))
+         (file (car strs))
+         (desc (cdr strs)))
+    (format "%s %s"
+            (propertize file 'face 'ivy-grep-info)
+            (string-join desc " "))))
 
 ;;
 ;; Icons
@@ -1667,6 +1772,11 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
        (if (or (null icon) (symbolp icon))
            (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :height 0.9 :v-adjust 0.0)
          (propertize icon 'display '(raise 0.0)))))))
+
+(defun all-the-icons-ivy-rich-magit-todos-icon (cand)
+  "Display file icon in `magit-todos'."
+  (when (all-the-icons-ivy-rich-icon-displayable)
+    (all-the-icons-ivy-rich-file-icon (nth 0 (split-string cand " ")))))
 
 (defun all-the-icons-ivy-rich-dir-icon (_cand)
   "Display project icon in `ivy-rich'."
@@ -1847,11 +1957,17 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
          (all-the-icons-octicon "file-directory" :height 0.9 :v-adjust 0.01))
         (t (all-the-icons-icon-for-file (file-name-nondirectory file) :height 0.9 :v-adjust 0.0)))))))
 
-(defun all-the-icons-ivy-rich-settings-icon (_cand)
-  "Display settings icon for CAND in `ivy-rich'."
+(defun all-the-icons-ivy-rich-group-settings-icon (_cand)
+  "Display group settings icon for CAND in `ivy-rich'."
   (when (all-the-icons-ivy-rich-icon-displayable)
     (all-the-icons-ivy-rich--format-icon
      (all-the-icons-octicon "settings" :height 0.9 :v-adjust -0.01 :face 'all-the-icons-lblue))))
+
+(defun all-the-icons-ivy-rich-variable-settings-icon (_cand)
+  "Display variable settings icon for CAND in `ivy-rich'."
+  (when (all-the-icons-ivy-rich-icon-displayable)
+    (all-the-icons-ivy-rich--format-icon
+     (all-the-icons-octicon "settings" :height 0.9 :v-adjust -0.01 :face 'all-the-icons-lgreen))))
 
 (defun all-the-icons-ivy-rich-charset-icon (_cand)
   "Display charset icon for CAND in `ivy-rich'."
@@ -1895,6 +2011,12 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
   (when (all-the-icons-ivy-rich-icon-displayable)
     (all-the-icons-ivy-rich--format-icon
      (all-the-icons-octicon "key" :height 0.8 :v-adjust -0.05))))
+
+(defun all-the-icons-ivy-rich-lsp-icon (_cand)
+  "Display lsp icon in `ivy-rich'."
+  (when (all-the-icons-ivy-rich-icon-displayable)
+    (all-the-icons-ivy-rich--format-icon
+     (all-the-icons-faicon "rocket" :height 0.8 :v-adjust -0.05 :face 'all-the-icons-lgreen))))
 
 
 ;;
