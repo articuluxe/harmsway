@@ -1,6 +1,6 @@
 ;;; magit-git.el --- Git functionality  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -50,6 +50,7 @@
 
 ;; From `magit-process'.
 (declare-function magit-call-git "magit-process" (&rest args))
+(declare-function magit-git "magit-process" (&rest args))
 (declare-function magit-process-buffer "magit-process" (&optional nodisplay))
 (declare-function magit-process-file "magit-process"
                   (process &optional infile buffer display &rest args))
@@ -314,7 +315,7 @@ Emacs to edit commit messages but would like to do so to edit
 rebase sequences.")
 
 (defmacro magit-with-editor (&rest body)
-  "Like `with-editor' but let-bind some more variables.
+  "Like `with-editor*' but let-bind some more variables.
 Also respect the value of `magit-with-editor-envvar'."
   (declare (indent 0) (debug (body)))
   `(let ((magit-process-popup-time -1)
@@ -593,7 +594,7 @@ executable."
                               (error "`git --exec-path' failed"))))
                    exec-suffixes
                    #'file-executable-p)
-      (compat-executable-find command t)))
+      (compat-call executable-find command t)))
 
 ;;; Git Version
 
@@ -946,7 +947,7 @@ returning the truename."
   "Git executable cannot be found (see https://magit.vc/goto/e6a78ed2)")
 
 (defun magit--assert-usable-git ()
-  (if (not (compat-executable-find (magit-git-executable) t))
+  (if (not (compat-call executable-find (magit-git-executable) t))
       (signal 'magit-git-executable-not-found (magit-git-executable))
     (let ((magit-git-debug
            (lambda (err)
@@ -1528,7 +1529,7 @@ to, or to some other symbolic-ref that points to the same ref."
       (magit-thing-at-point 'git-revision t)
       (and-let* ((chunk (and (bound-and-true-p magit-blame-mode)
                              (fboundp 'magit-current-blame-chunk)
-                             (magit-current-blame-chunk 'addition t))))
+                             (magit-current-blame-chunk))))
         (oref chunk orig-rev))
       (and (derived-mode-p 'magit-stash-mode
                            'magit-merge-preview-mode
@@ -1550,7 +1551,7 @@ to, or to some other symbolic-ref that points to the same ref."
       (magit-thing-at-point 'git-revision t)
       (and-let* ((chunk (and (bound-and-true-p magit-blame-mode)
                              (fboundp 'magit-current-blame-chunk)
-                             (magit-current-blame-chunk 'addition t))))
+                             (magit-current-blame-chunk))))
         (oref chunk orig-rev))
       (and magit-buffer-file-name
            magit-buffer-refname)
@@ -1604,6 +1605,42 @@ The amount of time spent searching is limited by
                       (equal prev current))))
       (cl-incf i))
     prev))
+
+(defun magit--set-default-branch (newname oldname)
+  (let ((remote (or (magit-primary-remote)
+                    (user-error "Cannot determine primary remote")))
+        (branches (mapcar (lambda (line) (split-string line "\t"))
+                          (magit-git-lines
+                           "for-each-ref" "refs/heads"
+                           "--format=%(refname:short)\t%(upstream:short)"))))
+    (when-let ((old (assoc oldname branches)))
+      (unless (assoc newname branches)
+        (magit-call-git "branch" "-m" oldname newname)
+        (setcar old newname)))
+    (let ((new (if (magit-branch-p newname)
+                   newname
+                 (concat remote "/" newname))))
+      (pcase-dolist (`(,branch ,upstream) branches)
+        (cond
+         ((equal upstream oldname)
+          (magit-set-upstream-branch branch new))
+         ((equal upstream (concat remote "/" oldname))
+          (magit-set-upstream-branch branch (concat remote "/" newname))))))))
+
+(defun magit--get-default-branch (&optional update)
+  (let ((remote (magit-primary-remote)))
+    (when update
+      (if (not remote)
+          (user-error "Cannot determine primary remote")
+        (message "Determining default branch...")
+        (magit-git "fetch" "--prune")
+        (magit-git "remote" "set-head" "--auto" remote)
+        (message "Determining default branch...done")))
+    (let ((branch (magit-git-string "symbolic-ref" "--short"
+                                    (format "refs/remotes/%s/HEAD" remote))))
+      (when (and update (not branch))
+        (error "Cannot determine new default branch"))
+      (list remote (and branch (cdr (magit-split-branch-name branch)))))))
 
 (defun magit-set-upstream-branch (branch upstream)
   "Set UPSTREAM as the upstream of BRANCH.
@@ -2117,12 +2154,15 @@ exists in the current repository is considered its main branch."
                      (cons (magit-get "init.defaultBranch")
                            magit-main-branch-names))))))
 
-(defun magit-rev-diff-count (a b)
+(defun magit-rev-diff-count (a b &optional first-parent)
   "Return the commits in A but not B and vice versa.
-Return a list of two integers: (A>B B>A)."
+Return a list of two integers: (A>B B>A).
+
+If `first-parent' is set, traverse only first parents."
   (mapcar #'string-to-number
           (split-string (magit-git-string "rev-list"
                                           "--count" "--left-right"
+                                          (and first-parent "--first-parent")
                                           (concat a "..." b))
                         "\t")))
 

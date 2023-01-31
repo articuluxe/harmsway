@@ -1,6 +1,6 @@
 ;;; magit-clone.el --- Clone a repository  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -228,7 +228,7 @@ Then show the status buffer for the new repository."
                         'sparse))
 
 (defun magit-clone-internal (repository directory args &optional sparse)
-  (let* ((checkout (not (memq (car args) '("--bare" "--mirror"))))
+  (let* ((checkout (not (member (car args) '("--bare" "--mirror"))))
          (remote (or (transient-arg-value "--origin" args)
                      (magit-get "clone.defaultRemote")
                      "origin"))

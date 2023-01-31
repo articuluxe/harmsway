@@ -1,6 +1,6 @@
 ;;; magit-process.el --- Process functionality  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -596,7 +596,12 @@ Magit status buffer."
     (when input
       (with-current-buffer input
         (process-send-region process (point-min) (point-max))
-        (process-send-eof    process)))
+        ;; `process-send-eof' appears to be broken over
+        ;;  Tramp from Windows. See #3624 and bug#43226.
+        (if (and (eq system-type 'windows-nt)
+                 (file-remote-p (process-get process 'default-dir) nil t))
+            (process-send-string process "")
+          (process-send-eof process))))
     (setq magit-this-process process)
     (oset section value process)
     (magit-process-display-buffer process)
@@ -750,6 +755,7 @@ Magit status buffer."
       (when-let ((ret-pos (cl-position ?\r string :from-end t)))
         (cl-callf substring string (1+ ret-pos))
         (delete-region (line-beginning-position) (point)))
+      (setq string (magit-process-remove-bogus-errors string))
       (insert (propertize string 'magit-section
                           (process-get proc 'section)))
       (set-marker (process-mark proc) (point))
@@ -774,6 +780,17 @@ Magit status buffer."
            (abort-recursive-edit)))
        (let ((minibuffer-local-map ,map))
          ,@body))))
+
+(defun magit-process-remove-bogus-errors (str)
+  (save-match-data
+    (when (string-match "^\\(\\*ERROR\\*: \\)Canceled by user" str)
+      (setq str (replace-match "" nil nil str 1)))
+    (when (string-match "^error: There was a problem with the editor.*\n" str)
+      (setq str (replace-match "" nil nil str)))
+    (when (string-match
+           "^Please supply the message using either -m or -F option\\.\n" str)
+      (setq str (replace-match "" nil nil str))))
+  str)
 
 (defun magit-process-yes-or-no-prompt (process string)
   "Forward Yes-or-No prompts to the user."

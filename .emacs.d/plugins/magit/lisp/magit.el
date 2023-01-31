@@ -1,6 +1,6 @@
 ;;; magit.el --- A Git porcelain inside Emacs  -*- lexical-binding:t; coding:utf-8 -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Marius Vollmer <marius.vollmer@gmail.com>
 ;;     Jonas Bernoulli <jonas@bernoul.li>
@@ -20,7 +20,7 @@
 ;; Package-Version: 3.3.0.50-git
 ;; Package-Requires: (
 ;;     (emacs "25.1")
-;;     (compat "28.1.1.2")
+;;     (compat "29.1.1.0")
 ;;     (dash "2.19.1")
 ;;     (git-commit "3.3.0")
 ;;     (magit-section "3.3.0")
@@ -75,6 +75,7 @@
 ;; For `magit:--gpg-sign'
 (declare-function epg-list-keys "epg" (context &optional name mode))
 (declare-function epg-decode-dn "epg" (alist))
+(defvar epa-protocol)
 
 ;;; Options
 

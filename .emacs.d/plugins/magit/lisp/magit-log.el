@@ -1,6 +1,6 @@
 ;;; magit-log.el --- Inspect Git history  -*- lexical-binding:t; coding:utf-8 -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -845,7 +845,7 @@ https://github.com/mhagger/git-when-merged."
       (if (equal m "Commit is directly on this branch.")
           (let* ((from (format "%s~%d" commit
                                (/ magit-log-merged-commit-count 2)))
-                 (to (- (car (magit-rev-diff-count branch commit))
+                 (to (- (car (magit-rev-diff-count branch commit t))
                         (/ magit-log-merged-commit-count 2)))
                  (to (if (<= to 0)
                          branch

@@ -1,6 +1,6 @@
 ;;; magit-section.el --- Sections for read-only buffers  -*- lexical-binding:t; coding:utf-8 -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -40,8 +40,6 @@
 
 (require 'cl-lib)
 (require 'compat)
-(require 'compat-26)
-(require 'compat-27)
 (require 'dash)
 (require 'eieio)
 (require 'format-spec)
@@ -1776,9 +1774,10 @@ invisible."
 
 (cl-defun magit-section-cache-visibility
     (&optional (section magit-insert-section--current))
-  (setf (compat-alist-get (magit-section-ident section)
-                          magit-section-visibility-cache
-                          nil nil #'equal)
+  (setf (compat-call alist-get
+                     (magit-section-ident section)
+                     magit-section-visibility-cache
+                     nil nil #'equal)
         (if (oref section hidden) 'hide 'show)))
 
 (cl-defun magit-section-maybe-cache-visibility

@@ -1,6 +1,6 @@
 ;;; magit-mode.el --- Create and refresh Magit buffers  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2022 The Magit Project Contributors
+;; Copyright (C) 2008-2023 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -34,6 +34,8 @@
 (require 'format-spec)
 (require 'help-mode)
 (require 'transient)
+
+(defvar bookmark-make-record-function)
 
 ;;; Options
 
@@ -1371,7 +1373,7 @@ Unless specified, REPOSITORY is the current buffer's repository."
   (when-let ((cache (assoc (or repository
                                (magit-repository-local-repository))
                            magit-repository-local-cache)))
-    (setf cache (compat-assoc-delete-all key cache))))
+    (setf cache (compat-call assoc-delete-all key cache))))
 
 (defmacro magit--with-repository-local-cache (key &rest body)
   (declare (indent 1) (debug (form body)))
