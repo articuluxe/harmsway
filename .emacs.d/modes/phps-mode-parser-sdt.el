@@ -1601,11 +1601,19 @@
              (symbol-uri (car symbol-uri-object))
              (symbol-object-operator
               (nth 13 (nth 1 symbol-uri-object)))
+             (symbol-static-member
+              (nth 15 (nth 1 symbol-uri-object)))
              (symbol-hit 0))
 
-        (unless (and
-                 symbol-object-operator
-                 (not (string= (downcase symbol-object-operator) "$this")))
+        (unless (or
+                 (and
+                  symbol-object-operator
+                  (not (string= (downcase symbol-object-operator) "$this")))
+                 (and
+                  symbol-static-member
+                  (not
+                   (or (string= (downcase symbol-static-member) "self")
+                       (string= (downcase symbol-static-member) "static")))))
           (cond
 
            ;; Super-global variable
@@ -4548,11 +4556,11 @@
           ((and function-start function-end)
            (if phps-mode-parser-sdt-symbol-imenu--stack
                (push
-                (list (list 'function function-name function-start function-end))
+                (list (list 'function function-name function-index function-end))
                 phps-mode-parser-sdt-symbol-imenu--stack)
              (setq
               phps-mode-parser-sdt-symbol-imenu--stack
-              (list (list (list 'function function-name function-start function-end))))))
+              (list (list (list 'function function-name function-index function-end))))))
           (function-index
            (if phps-mode-parser-sdt-symbol-imenu--stack
                (push
@@ -5280,43 +5288,66 @@
  360
  (lambda(args terminals)
    ;; Save variable declaration in bookkeeping buffer
-   (let ((variable-type (plist-get (nth 0 args) 'ast-type)))
+   (let ((variable-type1 (plist-get (nth 0 args) 'ast-type))
+         (variable-type2 (plist-get (nth 3 args) 'ast-type)))
      (cond
-      ((equal variable-type 'variable-callable-variable)
-       (let* ((callable-variable (plist-get (nth 0 args) 'callable-variable))
-              (callable-variable-type (plist-get callable-variable 'ast-type)))
+      ((and
+        (equal variable-type1 'variable-callable-variable)
+        (equal variable-type2 'variable-callable-variable))
+       (let* ((callable-variable1 (plist-get (nth 0 args) 'callable-variable))
+              (callable-variable-type1 (plist-get callable-variable1 'ast-type))
+              (callable-variable2 (plist-get (nth 3 args) 'callable-variable))
+              (callable-variable-type2 (plist-get callable-variable2 'ast-type)))
          (cond
-          ((equal callable-variable-type 'callable-variable-simple-variable)
-           (let ((callable-variable-simple-variable (plist-get callable-variable 'simple-variable)))
-             (let ((callable-variable-simple-variable-type
-                    (plist-get
-                     callable-variable-simple-variable
-                     'ast-type)))
-               (cond
-                ((equal
-                  callable-variable-simple-variable-type
-                  'simple-variable-variable)
-                 (let* ((variable-name
-                         (plist-get
-                          callable-variable-simple-variable
-                          'variable))
-                        (symbol-name
-                          variable-name)
-                        (symbol-start
-                         (car (cdr (car terminals))))
-                        (symbol-end
-                         (cdr (cdr (car terminals))))
-                        (symbol-scope
-                         phps-mode-parser-sdt--bookkeeping-namespace))
-
-                   ;; (message "declared variable from terminals: %S" terminals)
-                   (push
-                    (list
-                     symbol-name
-                     symbol-scope
-                     symbol-start
-                     symbol-end)
-                    phps-mode-parser-sdt--bookkeeping-symbol-assignment-stack))))))))))))
+          ((and
+            (equal callable-variable-type1 'callable-variable-simple-variable)
+            (equal callable-variable-type2 'callable-variable-simple-variable))
+           (let* ((callable-variable-simple-variable1
+                   (plist-get callable-variable1 'simple-variable))
+                  (callable-variable-simple-variable-type1
+                   (plist-get
+                    callable-variable-simple-variable1
+                    'ast-type))
+                  (callable-variable-simple-variable2
+                   (plist-get callable-variable2 'simple-variable))
+                  (callable-variable-simple-variable-type2
+                   (plist-get
+                    callable-variable-simple-variable2
+                    'ast-type)))
+             (cond
+              ((and
+                (equal
+                 callable-variable-simple-variable-type1
+                 'simple-variable-variable)
+                (equal
+                 callable-variable-simple-variable-type2
+                 'simple-variable-variable))
+               (let* ((variable-name1
+                       (plist-get
+                        callable-variable-simple-variable1
+                        'variable))
+                      (variable-name2
+                       (plist-get
+                        callable-variable-simple-variable2
+                        'variable))
+                      (symbol-name1
+                       variable-name1)
+                      (symbol-name2
+                       variable-name2)
+                      (symbol-start
+                       (car (cdr (car terminals))))
+                      (symbol-end
+                       (cdr (cdr (car terminals))))
+                      (symbol-scope
+                       phps-mode-parser-sdt--bookkeeping-namespace))
+                 (push `(reference ,symbol-name2) symbol-scope)
+                 (push
+                  (list
+                   symbol-name1
+                   symbol-scope
+                   symbol-start
+                   symbol-end)
+                  phps-mode-parser-sdt--bookkeeping-symbol-assignment-stack)))))))))))
 
    `(
      ast-type

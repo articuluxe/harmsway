@@ -49,6 +49,10 @@
 (require 'crm)
 
 (eval-when-compile (require 'ido))
+(declare-function ido-completing-read+ "ido-completing-read+"
+                  (prompt collection &optional predicate
+                          require-match initial-input
+                          hist def inherit-input-method))
 (declare-function Info-get-token "info" (pos start all &optional errorstring))
 
 (eval-when-compile (require 'vc-git))
@@ -659,8 +663,7 @@ Unfortunately `ido-completing-read' is not suitable as a
 drop-in replacement for `completing-read', instead we use
 `ido-completing-read+' from the third-party package by the
 same name."
-  (if (and (require 'ido-completing-read+ nil t)
-           (fboundp 'ido-completing-read+))
+  (if (require 'ido-completing-read+ nil t)
       (ido-completing-read+ prompt choices predicate require-match
                             initial-input hist
                             (or def (and require-match (car choices))))

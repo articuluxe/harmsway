@@ -1148,7 +1148,7 @@ This function is used in the macros `modus-themes-theme',
      (t
       'unspecified))))
 
-(defun modus-themes-get-color-value (color &optional overrides)
+(defun modus-themes-get-color-value (color &optional overrides theme)
   "Return color value of named COLOR for current Modus theme.
 
 COLOR is a symbol that represents a named color entry in the
@@ -1161,9 +1161,14 @@ value.
 With optional OVERRIDES as a non-nil value, account for palette
 overrides.  Else use the default palette.
 
+With optional THEME as a symbol among `modus-themes-items', use
+the palette of that item.  Else use the current Modus theme.
+
 If COLOR is not present in the palette, return the `unspecified'
 symbol, which is safe when used as a face attribute's value."
-  (if-let* ((palette (modus-themes--current-theme-palette overrides))
+  (if-let* ((palette (if theme
+                         (modus-themes--palette-value theme overrides)
+                       (modus-themes--current-theme-palette overrides)))
             (value (modus-themes--retrieve-palette-value color palette)))
       value
     'unspecified))
@@ -1244,11 +1249,11 @@ color mappings of the palette, instead of its named colors."
         (insert " ")
         (dolist (cell palette)
           (let* ((name (car cell))
-                 (color (modus-themes-get-color-value name mappings))
+                 (color (modus-themes-get-color-value name mappings theme))
                  (pad (make-string 10 ?\s))
                  (fg (if (eq color 'unspecified)
                          (progn
-                           (readable-foreground-color (modus-themes-get-color-value 'bg-main))
+                           (readable-foreground-color (modus-themes-get-color-value 'bg-main nil theme))
                            (setq pad (make-string 6 ?\s)))
                        (readable-foreground-color color))))
             (let ((old-point (point)))
@@ -3906,7 +3911,7 @@ corresponding entries."
   (let ((sym (gensym))
         (colors (mapcar #'car (symbol-value palette))))
     `(let* ((c '((class color) (min-colors 256)))
-            (,sym (append ,overrides modus-themes-common-palette-overrides ,palette))
+            (,sym (modus-themes--palette-value ',name ',overrides))
             ,@(mapcar (lambda (color)
                         (list color
                               `(modus-themes--retrieve-palette-value ',color ,sym)))

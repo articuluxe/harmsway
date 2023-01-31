@@ -1,4 +1,4 @@
-;;; tok-theme.el --- Minimal theme with dark and yellow color scheme  -*- lexical-binding: t; -*-
+;;; tok-theme.el --- Minimal, calm and dark theme for Emacs -*- lexical-binding: t; -*-
 
 ;; Author: Topi Kettunen <topi@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
@@ -6,12 +6,12 @@
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; This is free and unencumbered software released into the public domain.
-;; 
+;;
 ;; Anyone is free to copy, modify, publish, use, compile, sell, or
 ;; distribute this software, either in source code form or as a compiled
 ;; binary, for any purpose, commercial or non-commercial, and by any
 ;; means.
-;; 
+;;
 ;; In jurisdictions that recognize copyright laws, the author or authors
 ;; of this software dedicate any and all copyright interest in the
 ;; software to the public domain. We make this dedication for the benefit
@@ -19,7 +19,7 @@
 ;; successors. We intend this dedication to be an overt act of
 ;; relinquishment in perpetuity of all present and future rights to this
 ;; software under copyright law.
-;; 
+;;
 ;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 ;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 ;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -27,46 +27,93 @@
 ;; OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ;; ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 ;; OTHER DEALINGS IN THE SOFTWARE.
-;; 
+;;
 ;; For more information, please refer to <https://unlicense.org>
 
 ;; This file is not part of Emacs.
 
 ;;; Commentary:
 
-;; Tok is a simple and minimal Emacs theme with dark and yellow color scheme.
+;; Tok is a minimal, calm and dark theme for Emacs.
 
 ;;; Code:
 
 (deftheme tok
-  "Minimal Emacs theme with dark and yellow color scheme")
+  "Minimal, calm and dark theme for Emacs")
 
-(let* ((class '((class color) (min-colors 89)))
-       ;; Color palette
-       (sun-0 "#cc9900") (sun-1 "#ffcc33") (sun-2 "#fcd765")
-       (sun-3 "#ffe699") (sun-4 "#fff3cc") (sun-5 "#fffbf5")
-       (earth-0 "#8b572a") (earth-1 "#bf8f00")
-       (grey-0 "#151515") (grey-1 "#252525") (grey-2 "#353535")
-       (fg "#ffffff") (bg "#000000")
-       (error "Red1") (warning "DarkOrange2") (success "ForestGreen"))
+(let ((class '((class color) (min-colors 89)))
+      (dark-grey "#141414") (grey "#525252") (light-grey "#a3a3a3")
+      (fg "#cccccc") (bg "#000"))
   (custom-theme-set-faces
    'tok
+   ;; In case you're using this theme in terminal, let the terminal
+   ;; emulator define these.
+   (when (display-graphic-p)
+     `(cursor ((,class (:background "red")))))
+   (when (display-graphic-p) ; Have to call `when' here due to reasons.
+     `(default ((,class (:foreground ,fg :background ,bg)))))
+
    ;; Basic faces
-   `(default ((,class (:foreground ,fg :background ,bg))))
-   `(fringe ((,class (:inherit default))))
-   `(cursor ((,class (:background ,sun-0))))
-   `(region ((,class (:background ,grey-2))))
-   `(show-paren-match ((,class (:foreground ,bg :background ,sun-3))))
-   `(hl-line ((,class (:background ,grey-0))))
-   `(isearch ((,class (:foreground ,bg :background ,sun-2))))
-   `(lazy-highlight ((,class (:foreground ,bg :background ,sun-4))))
-   `(link ((,class (:underline t :foreground ,sun-0))))
-   `(link-visited ((,class (:inherit link))))
-   `(vertical-border ((,class (:foreground ,sun-0))))
-   `(error ((,class (:foreground ,error))))
-   `(warning ((,class (:foreground ,warning))))
-   `(success ((,class (:foreground ,success))))
-   `(outline-1 ((,class (:foreground ,sun-3))))
+   `(highlight ((,class (:background ,dark-grey))))
+   `(region ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
+                      :background ,grey))))
+   `(secondary-selection ((,class (:inherit region))))
+   `(trailing-whitespace ((,class (:inherit error))))
+   `(error ((,class (:weight bold :foreground "firebrick1"))))
+   `(warning ((,class (:weight bold :foreground "DarkOrange"))))
+   `(success ((,class (:weight bold :foreground "Green1"))))
+   `(minibuffer-prompt ((,class (:foreground ,light-grey))))
+   `(fringe ((t (nil))))
+   `(button ((,class (:underline t))))
+
+   ;; Line-numbes
+   `(line-number ((,class (:foreground ,grey))))
+   `(line-number-current-line ((,class (:inherit highlight))))
+
+   ;; Mode-line
+   `(mode-line ((,class (:foreground "#fff" :background "grey5" :box (:line-width -1 :style released-button)))))
+   (when (>= emacs-major-version 29)
+     `(mode-line-active ((,class (:inherit mode-line)))))
+   `(mode-line-inactive ((,class (:weight light :foreground "grey90" :background "grey10"))))
+   `(mode-line-highlight ((t (nil))))
+   `(mode-line-emphasis ((,class (:weight bold))))
+   `(mode-line-buffer-id ((,class (:weight bold))))
+
+   ;; Header
+   `(header-line ((,class (:inherit mode-line-inactive :box nil))))
+
+   ;; Font-lock
+   `(font-lock-comment-face ((,class (:foreground "#fff" :weight bold))))
+   `(font-lock-comment-delimiter-face ((,class (:inherit font-lock-comment-face))))
+   `(font-lock-string-face ((,class (:foreground "#fff"))))
+   `(font-lock-doc-face ((, class(:inherit font-lock-comment-face))))
+   `(font-lock-doc-markup-face ((t (nil))))
+   `(font-lock-keyword-face ((t (nil))))
+   `(font-lock-builtin-face ((t (nil))))
+   `(font-lock-function-name-face ((t (nil))))
+   `(font-lock-variable-name-face ((t (nil))))
+   `(font-lock-type-face ((t (nil))))
+   `(font-lock-constant-face ((t (nil))))
+   `(font-lock-warning-face ((t (nil))))
+   `(font-lock-negation-char-face ((t (nil))))
+   `(font-lock-preprocessor-face ((,class (:inherit font-lock-comment-face))))
+   `(font-lock-regexp-grouping-backslash ((t (nil))))
+   `(font-lock-regexp-grouping-construct ((t (nil))))
+
+   ;; Dired
+   `(dired-directory ((,class (:foreground "cyan"))))
+   `(dired-symlink ((,class (:foreground "magenta"))))
+   `(dired-broken-symlink ((,class (:foreground "red"))))
+
+   ;; ERC
+   `(erc-timestamp-face ((,class (:foreground nil))))
+
+   ;; sh
+   `(sh-heredoc ((t (nil))))
+   `(sh-quoted-exec ((t (nil))))
+
+   ;; Outline
+   `(outline-1 ((,class (:foreground ,light-grey))))
    `(outline-2 ((,class (:inherit outline-1))))
    `(outline-3 ((,class (:inherit outline-1))))
    `(outline-4 ((,class (:inherit outline-1))))
@@ -74,41 +121,22 @@
    `(outline-6 ((,class (:inherit outline-1))))
    `(outline-7 ((,class (:inherit outline-1))))
    `(outline-8 ((,class (:inherit outline-1))))
-   `(minibuffer-prompt ((,class (:foreground ,sun-1))))
-   ;; Mode-line faces
-   `(mode-line ((,class (:foreground ,sun-1 :background ,bg :box (:line-width -1 :color ,sun-1)))))
-   `(mode-line-inactive ((,class (:foreground ,sun-0 :background ,grey-1 :box (:line-width -1 :color ,sun-0)))))
-   ;; Line number faces
-   `(line-number ((,class (:foreground ,grey-2))))
-   `(line-number-current-line ((,class (:foreground ,sun-1 :background ,grey-0))))
-   `(linum ((,class (:inherit line-number))))
-   ;; Font lock faces
-   `(font-lock-keyword-face ((,class (:foreground ,sun-1))))
-   `(font-lock-function-name-face ((,class (:foreground ,sun-3))))
-   `(font-lock-warning-face ((,class (:foreground ,fg :underline (:color ,warning :style wave)))))
-   `(font-lock-builtin-face ((,class (:foreground ,sun-4))))
-   `(font-lock-variable-name-face ((,class (:foreground ,sun-3))))
-   `(font-lock-constant-face ((,class (:foreground ,fg))))
-   `(font-lock-type-face ((,class (:foreground ,sun-1))))
-   `(font-lock-preprocessor-face ((,class (:foreground ,sun-1))))
-   `(font-lock-comment-face ((,class (:foreground ,earth-1))))
-   `(font-lock-string-face ((,class (:foreground ,sun-4))))
-   `(font-lock-doc-face ((,class (:inherit font-lock-comment-face))))
-   ;; Shell script faces
-   `(sh-heredoc ((t nil)))
-   ;; Org faces
-   `(org-block ((,class (:foreground ,fg :extend t :inherit (fixed-pitch shadow)))))
-   `(org-block-begin-line ((,class (:foreground ,sun-0))))
-   `(org-block-end-line ((,class (:inherit org-block-begin-line))))
-   `(org-code ((,class (:foreground ,sun-0))))
-   `(org-headline-done ((,class (:foreground ,sun-1))))
-   `(org-document-title ((,class (:foreground ,sun-0))))
-   `(org-drawer ((,class (:foreground ,sun-3))))
-   `(org-link ((,class (:inherit link))))
-   `(org-date ((,class (:inherit (fixed-pitch link)))))
-   ;; Terraform faces
-   `(terraform--resource-name-face ((,class (:foreground ,sun-3))))
-   `(terraform--resource-type-face ((,class (:foreground ,sun-1))))))
+
+   ;; Terraform
+   `(terraform--resource-name-face ((t (nil))))
+   `(terraform--resource-type-face ((t (nil))))
+
+   ;; Markdown
+   `(markdown-header-face ((,class (:inherit outline-1))))
+   `(markdown-header-delimiter-face ((t (nil))))
+   `(markdown-metadata-key-face ((,class (:inherit font-lock-comment-face))))
+   `(markdown-metadata-value-face ((,class (:inherit font-lock-comment-face))))
+   `(markdown-blockquote-face ((,class (:foreground ,light-grey))))))
+
+;;;###autoload
+(when (and (boundp 'custom-theme-load-path) load-file-name)
+  (add-to-list 'custom-theme-load-path
+               (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'tok)
 
