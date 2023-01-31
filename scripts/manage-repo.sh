@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, November  5, 2021
 # Version: 1.0
-# Modified Time-stamp: <2023-01-30 13:41:09 dharms>
+# Modified Time-stamp: <2023-01-31 12:22:10 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -60,7 +60,7 @@ if [ -d "$parent/src/.git" ] \
         echo "--- Updating $repo due to the following differences:"
         echo "$res"
         echo -e
-        git pull --no-rebase -X theirs
+        git rebase -X theirs
     fi
 elif [ -d "$parent/src/.hg" ]; then
     if [ -f "update" ]; then
