@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2023-01-30 16:35:02 dharms>
+# Modified Time-stamp: <2023-02-01 13:48:45 dharms>
 # Keywords: emacs configuration
 
 exe=$EMACS_BIN
@@ -23,7 +23,7 @@ fi
 
 if [ -z "$exe" ]; then
     echo "!!! Missing emacs executable; skipping compile..."
-    return 1
+    exit 1
 fi
 
 mkdir -p "$logdir"
