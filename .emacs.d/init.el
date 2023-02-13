@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-01-23 11:27:30 dharms>
+;; Modified Time-stamp: <2023-02-09 07:48:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2253,9 +2253,6 @@ ARGS are the additional arguments."
   ;; columns
   ;; (to see clocked time add: %10CLOCKSUM %15TIMESTAMP_IA)
   (setq org-columns-default-format "%40ITEM %TODO %PRIORITY %TAGS")
-  (add-hook 'org-mode-hook (lambda()
-                             (require 'flymake-collection-proselint)
-                             (flymake-mode 1)))
   :config
   (bind-key "C-c C-x t" 'org-table-recalculate-buffer-tables)
   (require 'org-crypt)

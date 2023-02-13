@@ -1,9 +1,9 @@
 ;;; good-word.el --- utilities for word processing
-;; Copyright (C) 2016, 2018-2019, 2021  Dan Harms (dharms)
+;; Copyright (C) 2016, 2018-2019, 2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-03-10 09:07:21 dharms>
+;; Modified Time-stamp: <2023-02-12 23:09:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -44,6 +44,8 @@
             (lambda()
               (adaptive-wrap-prefix-mode)))
   (visual-line-mode 1)
+  (require 'flymake-collection-proselint)
+  (flymake-mode 1)
   ;; (wc-goal-mode 1)
   ;; uncomment to move by logical lines, not visual lines
   ;; (setq line-move-visual nil)
