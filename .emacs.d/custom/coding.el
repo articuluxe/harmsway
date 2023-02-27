@@ -1,8 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2022  Dan Harms (dharms)
+;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-11-02 14:52:45 dharms>
+;; Modified Time-stamp: <2023-02-24 13:35:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -80,9 +80,7 @@
 (c-set-offset 'access-label          '-2)
 (c-set-offset 'comment-intro         'c-lineup-comment)
 (c-set-offset 'member-init-intro     '+)
-(c-set-offset 'arglist-cont-nonempty '+)
 (c-set-offset 'comment-intro         '0)
-;; TODO add c-lineup-ternary-bodies
 
 ;; default cleanups
 (setq c-cleanup-list
