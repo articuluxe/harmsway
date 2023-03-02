@@ -22,6 +22,9 @@
 ;; Reece Hart, http://www.in-machina.com/~reece/, PGP:0xD178AAF9
 ;; Do not send unsolicited bulk email.  Boycott companies which do so.
 ;;
+;; Modified 03/02/23 12:31 PM
+;; by
+;; Dan Harms
 
 (defvar shebang-file "ask"
   "See shebang-chmod.")
@@ -75,7 +78,7 @@ shebang-file is \"ask\", the user will be prompted."
   (save-excursion                   ; file is shebang'd
     (goto-char 1)
     (if
-        (re-search-forward "^#![ ]?\\([a-zA-Z_./]+\\)" 50 t) ; int. < 50-2 chars
+        (re-search-forward "^#![ ]?\\([a-zA-Z0-9_./]+\\)" 50 t) ; int. < 50-2 chars
         (let
             ((interpreter (buffer-substring (match-beginning 1) (match-end 1)))
              (prefix (file-remote-p buffer-file-name)))
