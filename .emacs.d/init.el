@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-03-09 11:59:19 dharms>
+;; Modified Time-stamp: <2023-03-10 09:16:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4074,6 +4074,16 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; csproj-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package csproj-mode :mode "\\.[^.]*proj$")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; csharp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package csharp-mode
+  :mode ("\\.cs$")
+  :disabled
+  :init
+  (add-to-list 'eglot-server-programs
+               '(csharp-mode . ("csharp-ls")))
+  (add-hook 'csharp-mode-hook 'eglot-ensure)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'css-mode-hook
