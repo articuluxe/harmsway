@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-03-10 09:16:15 dharms>
+;; Modified Time-stamp: <2023-03-10 09:26:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1979,6 +1979,9 @@ ARGS are the additional arguments."
          ("." . counsel-web-thing-at-point)
          ("c" . counsel-search)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; luwak ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package luwak :commands (luwak-open luwak-search))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frog-jump-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package frog-jump-buffer
