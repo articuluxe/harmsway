@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-03-10 09:52:11 dharms>
+;; Modified Time-stamp: <2023-03-10 11:01:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -150,6 +150,8 @@
 (bind-key "C-x c" 'capitalize-region)
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
+(global-set-key (kbd "s-<left>") #'previous-buffer)
+(global-set-key (kbd "s-<right>") #'next-buffer)
 ;; enable repeatedly popping mark without prefix
 (setq set-mark-command-repeat-pop t)
 (setq auto-revert-verbose nil)
