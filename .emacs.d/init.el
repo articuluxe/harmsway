@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-03-10 09:26:43 dharms>
+;; Modified Time-stamp: <2023-03-10 09:52:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4632,6 +4632,8 @@ This function's result only has value if it is preceded by any font changes."
 (use-package sql-indent
   :init
   (add-hook 'sql-mode-hook #'sqlind-minor-mode))
+
+(use-package dbcnx-mode :mode "\\.dbcnx$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package strace-mode :mode "\\.strace$")
