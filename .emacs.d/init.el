@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-02-09 07:48:40 dharms>
+;; Modified Time-stamp: <2023-03-09 11:59:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2658,6 +2658,7 @@ ARGS are the additional arguments."
   (setq deft-extensions '("org" "md" "txt"))
   (setq deft-default-extension "org")
   (setq deft-recursive t)
+  (setq deft-auto-save-interval 4)
   (setq deft-use-filename-as-title nil)
   (setq deft-use-filter-string-for-filename t)
   (setq deft-org-mode-title-prefix t)
@@ -2665,6 +2666,7 @@ ARGS are the additional arguments."
         '((case-fn . capitalize)
           (noslash . "")
           (nospace . "")))
+  (setq deft-new-file-format "%Y%m%d-%H%M")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compare-windows ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
