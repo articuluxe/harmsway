@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # manage-repos.sh --- clone and update repos
-# Copyright (C) 2017, 2019-2021  Dan Harms (dharms)
+# Copyright (C) 2017, 2019-2021, 2023  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2021-11-05 12:15:44 dharms>
+# Modified Time-stamp: <2023-03-10 12:01:25 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -18,8 +18,9 @@ fi
 
 cd "$dir" || exit 1
 
-find "$dir" -type f -name clone | sort | while read -r fname; do
-    parent=$( dirname "$fname" )
+find "$dir" -type f -ipath "*local/clone" | sort | while read -r fname; do
+    subparent=$( dirname "$fname" ) # local
+    parent=$( dirname "$subparent" )
     manage-repo.sh "$parent"
 done
 
