@@ -79,10 +79,10 @@ _completemarks() {
 }
 complete -F _completemarks jump unmark
 # alternate
-export CDPATH=.:~/.marks/
-function bookmark {
-    ln -sr "$(pwd)" ~/.marks/"$1"
-}
+# export CDPATH=.:~/.marks/
+# function bookmark {
+#     ln -sr "$(pwd)" ~/.marks/"$1"
+# }
 # end marks
 
 # git helpers
