@@ -1,10 +1,11 @@
 set -e
-rm -rf src/build
-mkdir -p src/build
-cd src/build
+
+cd src
+rm -rf bld
+mkdir -p bld
+cd bld
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 make
-cd ../..
-cp src/vterm.el ../../../.emacs.d/plugins
-mkdir -p ../../../.emacs.d/etc/modules/$(uname)
-cp src/vterm-module.so ../../../.emacs.d/etc/modules/$(uname)
+cd ..
+mkdir -p ../../../.emacs.d/etc/modules/$(uname -s)
+cp src/vterm-module.so ../../../.emacs.d/etc/modules/$(uname -s)
