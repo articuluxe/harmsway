@@ -1,0 +1,2 @@
+cd src
+cp time_t_decoder ~/bin

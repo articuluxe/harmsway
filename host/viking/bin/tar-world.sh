@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2023-03-10 14:44:03 dharms>
+# Modified Time-stamp: <2023-03-13 14:39:30 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -57,6 +57,7 @@ deploys=(
     repos/cpp/universal-ctags
     repos/rust/ripgrep
     repos/rust/fd
+    src/samples/time_t_decoder
 )
 tar-deployments.sh "$dest" "${deploys[@]}"
 
