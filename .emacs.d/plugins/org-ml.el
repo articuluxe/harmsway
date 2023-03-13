@@ -6,7 +6,7 @@
 ;; Keywords: org-mode, outlines
 ;; Homepage: https://github.com/ndwarshuis/org-ml
 ;; Package-Requires: ((emacs "27.1") (org "9.3") (dash "2.17") (s "1.12"))
-;; Version: 5.8.4
+;; Version: 5.8.6
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -394,7 +394,7 @@ non-nil)."
      ((<= 0 n upper) n)
      ((>= -1 n lower) (+ N n))
      ((and use-oor (< upper n)) upper)
-     ((and use-oor (< n lower)) lower)
+     ((and use-oor (< n lower)) 0)
      (t (org-ml--arg-error
          "Index (%s) out of range; must be between %s and %s"
          n lower upper)))))
@@ -2341,8 +2341,8 @@ create a rule-typed table-row."
 (org-ml--defun-kw org-ml-build-table! (&key tblfm post-blank &rest row-lists)
   "Return a new table node.
 
-ROW-LISTS is a list of lists where each member list will be converted
-to a table-row node via `org-ml-build-table-row!' (see that function for
+Each member of ROW-LISTS will be converted to a table-row node
+via `org-ml-build-table-row!' (see that function for
 restrictions).
 
 All other arguments follow the same rules as `org-ml-build-table'."

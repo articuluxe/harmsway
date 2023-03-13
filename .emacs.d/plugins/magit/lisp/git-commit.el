@@ -14,7 +14,7 @@
 ;; Package-Version: 3.3.0.50-git
 ;; Package-Requires: (
 ;;     (emacs "25.1")
-;;     (compat "28.1.1.2")
+;;     (compat "29.1.3.4")
 ;;     (transient "0.3.6")
 ;;     (with-editor "3.0.5"))
 
@@ -117,9 +117,8 @@
 
 ;;; Code:
 
-(require 'seq)
+(require 'compat)
 (require 'subr-x)
-
 (require 'log-edit)
 (require 'ring)
 (require 'rx)
@@ -128,15 +127,15 @@
 (require 'with-editor)
 
 ;; For historic reasons Magit isn't a hard dependency.
-(unless (and (require 'magit-base nil t)
-             (require 'magit-git nil t))
-  (declare-function magit-completing-read "magit-base"
-                    ( prompt collection &optional predicate require-match
-                      initial-input hist def fallback))
-  (declare-function magit-expand-git-file-name "magit-git" (filename))
-  (declare-function magit-git-lines "magit-git" (&rest args))
-  (declare-function magit-hook-custom-get "magit-base" (symbol))
-  (declare-function magit-list-local-branch-names "magit-git" ()))
+(require 'magit-base nil t)
+(require 'magit-git nil t)
+(declare-function magit-completing-read "magit-base"
+                  ( prompt collection &optional predicate require-match
+                    initial-input hist def fallback))
+(declare-function magit-expand-git-file-name "magit-git" (filename))
+(declare-function magit-git-lines "magit-git" (&rest args))
+(declare-function magit-hook-custom-get "magit-base" (symbol))
+(declare-function magit-list-local-branch-names "magit-git" ())
 
 (defvar diff-default-read-only)
 (defvar flyspell-generic-check-word-predicate)
@@ -411,24 +410,22 @@ This is only used if Magit is available."
 
 ;;; Keymap
 
-(defvar git-commit-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "M-p")     #'git-commit-prev-message)
-    (define-key map (kbd "M-n")     #'git-commit-next-message)
-    (define-key map (kbd "C-c M-p") #'git-commit-search-message-backward)
-    (define-key map (kbd "C-c M-n") #'git-commit-search-message-forward)
-    (define-key map (kbd "C-c C-i") #'git-commit-insert-pseudo-header)
-    (define-key map (kbd "C-c C-a") #'git-commit-ack)
-    (define-key map (kbd "C-c M-i") #'git-commit-suggested)
-    (define-key map (kbd "C-c C-m") #'git-commit-modified)
-    (define-key map (kbd "C-c C-o") #'git-commit-cc)
-    (define-key map (kbd "C-c C-p") #'git-commit-reported)
-    (define-key map (kbd "C-c C-r") #'git-commit-review)
-    (define-key map (kbd "C-c C-s") #'git-commit-signoff)
-    (define-key map (kbd "C-c C-t") #'git-commit-test)
-    (define-key map (kbd "C-c M-s") #'git-commit-save-message)
-    map)
-  "Key map used by `git-commit-mode'.")
+(defvar-keymap git-commit-mode-map
+  :doc "Key map used by `git-commit-mode'."
+  "M-p"     #'git-commit-prev-message
+  "M-n"     #'git-commit-next-message
+  "C-c M-p" #'git-commit-search-message-backward
+  "C-c M-n" #'git-commit-search-message-forward
+  "C-c C-i" #'git-commit-insert-pseudo-header
+  "C-c C-a" #'git-commit-ack
+  "C-c M-i" #'git-commit-suggested
+  "C-c C-m" #'git-commit-modified
+  "C-c C-o" #'git-commit-cc
+  "C-c C-p" #'git-commit-reported
+  "C-c C-r" #'git-commit-review
+  "C-c C-s" #'git-commit-signoff
+  "C-c C-t" #'git-commit-test
+  "C-c M-s" #'git-commit-save-message)
 
 ;;; Menu
 
@@ -530,17 +527,6 @@ to recover older messages")
     ;; That library declares this functions without loading
     ;; magit-process.el, which defines it.
     (require 'magit-process nil t))
-  (when git-commit-major-mode
-    (let ((auto-mode-alist (list (cons (concat "\\`"
-                                               (regexp-quote buffer-file-name)
-                                               "\\'")
-                                       git-commit-major-mode)))
-          ;; The major-mode hook might want to consult these minor
-          ;; modes, while the minor-mode hooks might want to consider
-          ;; the major mode.
-          (git-commit-mode t)
-          (with-editor-mode t))
-      (normal-mode t)))
   ;; Pretend that git-commit-mode is a major-mode,
   ;; so that directory-local settings can be used.
   (let ((default-directory
@@ -557,6 +543,17 @@ to recover older messages")
           (major-mode 'git-commit-mode)) ; trick dir-locals-collect-variables
       (hack-dir-local-variables)
       (hack-local-variables-apply)))
+  (when git-commit-major-mode
+    (let ((auto-mode-alist (list (cons (concat "\\`"
+                                               (regexp-quote buffer-file-name)
+                                               "\\'")
+                                       git-commit-major-mode)))
+          ;; The major-mode hook might want to consult these minor
+          ;; modes, while the minor-mode hooks might want to consider
+          ;; the major mode.
+          (git-commit-mode t)
+          (with-editor-mode t))
+      (normal-mode t)))
   ;; Show our own message using our hook.
   (setq with-editor-show-usage nil)
   (setq with-editor-usage-message git-commit-usage-message)

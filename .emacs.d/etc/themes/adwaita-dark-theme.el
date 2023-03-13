@@ -151,8 +151,9 @@
 
        ;; Background colors
        ;; [True color | 256-compatible]
-       (bg (if true-color-available-p "#1e1e1e" "gray12"))               ; #1f1f1f
+       (bg (if true-color-available-p "#1c1c1c" "gray11"))               ; #1c1c1c
        (bg-alt (if true-color-available-p "#242424" "gray14"))           ; #242424
+       (bg-osd (if true-color-available-p "#101010" "gray6"))            ; #0f0f0f
        (base-0 (if true-color-available-p "#202020" "gray13"))           ; #212121
        (base-1 (if true-color-available-p "#262626" "gray15"))           ; #262626
        (base-2 (if true-color-available-p "#292929" "gray16"))           ; #292929
@@ -202,7 +203,7 @@
    `(cursor ((,class (:background ,fg))))
    `(shadow ((,class (:foreground ,base-5))))
    `(minibuffer-prompt ((,class (:foreground ,base-7))))
-   `(tooltip ((,class (:background ,base-3 :foreground ,fg))))
+   `(tooltip ((,class (:background ,bg-osd :foreground ,fg))))
    `(secondary-selection ((,class (:background ,gray))))
    `(fill-column-indicator ((,class (:foreground ,base-3))))
    `(match ((,class (:foreground ,green :weight bold))))
@@ -230,7 +231,6 @@
    `(font-lock-string-face ((,class (:foreground ,teal))))
    `(font-lock-warning-face ((,class (:inherit warning))))
    `(font-lock-preprocessor-face ((,class (:foreground ,dark-orange))))
-   `(font-lock-preprocessor-char-face ((,class (:foreground ,violet :weight bold))))
    `(font-lock-negation-char-face ((,class (:foreground unspecified :weight bold))))
    `(font-lock-regexp-grouping-backslash ((,class (:foreground ,teal :weight bold))))
    `(font-lock-regexp-grouping-construct ((,class (:foreground ,teal :weight bold))))
@@ -415,12 +415,8 @@
    `(isearch-fail ((,class (:foreground ,base-7 :strike-through t))))
 
    ;; line-number
-   `(line-number ((,class (:inherit default
-                                    :foreground ,base-5 :distant-foreground nil
-                                    :weight normal :italic nil :underline nil :strike-through nil))))
-   `(line-number-current-line ((,class (:inherit hl-line default
-                                                 :foreground ,fg :distant-foreground nil
-                                                 :weight normal :italic nil :underline nil :strike-through nil))))
+   `(line-number ((,class (:inherit default :foreground ,base-5))))
+   `(line-number-current-line ((,class (:inherit (hl-line default) :foreground ,base-7))))
 
    ;; linum
    `(linum ((,class (:inherit line-number))))
@@ -516,16 +512,34 @@
    `(bufler-path ((,class (:inherit font-lock-string-face))))
    `(bufler-buffer-special ((,class (:inherit font-lock-builtin-face))))
 
+   ;; cider
+   `(cider-fringe-good-face ((,class (:foreground ,green))))
+   `(cider-result-overlay-face ((,class (:foreground ,base-4))))
+   `(cider-error-overlay-face ((,class (:foreground ,red))))
+   `(cider-error-highlight-face ((,class (:underline (:color ,red)))))
+   `(cider-warning-highlight-face ((,class (:underline (:color ,yellow)))))
+   `(cider-deprecated-face ((,class (:inherit shadow :strike-through t))))
+   `(cider-repl-stdout-face ((,class (:inherit font-lock-doc-face))))
+   `(cider-repl-stderr-face ((,class (:inherit error))))
+   `(cider-test-error-face ((,class (:foreground ,dark-orange))))
+   `(cider-test-failure-face ((,class (:foreground ,red))))
+   `(cider-test-success-face ((,class (:foreground ,green))))
+   `(cider-stacktrace-fn-face ((,class (:foreground ,fg :weight bold))))
+   `(cider-stacktrace-error-class-face ((,class (:foreground ,red :weight bold))))
+   `(cider-stacktrace-error-message-face ((,class (:foreground ,fg))))
+   `(cider-stacktrace-filter-active-face ((,class (:inherit link))))
+   `(cider-stacktrace-filter-inactive-face ((,class (:inherit (shadow link)))))
+
    ;; company
-   `(company-tooltip ((,class (:inherit tooltip))))
+   `(company-tooltip ((,class (:background ,base-3 :foreground ,base-8))))
    `(company-tooltip-common ((,class (:foreground ,blue :distant-foreground ,base-0 :weight bold))))
    `(company-tooltip-search ((,class (:background ,blue :foreground ,bg :distant-foreground ,fg :weight bold))))
    `(company-tooltip-search-selection ((,class (:background ,cyan :weight bold))))
    `(company-tooltip-selection ((,class (:background ,dark-blue :weight bold))))
    `(company-tooltip-mouse ((,class (:background ,magenta :foreground ,bg :distant-foreground ,fg))))
    `(company-tooltip-annotation ((,class (:foreground ,violet :distant-foreground ,bg))))
-   `(company-scrollbar-bg ((,class (:inherit tooltip))))
-   `(company-scrollbar-fg ((,class (:background ,blue))))
+   `(company-scrollbar-bg ((,class (:background ,base-3))))
+   `(company-scrollbar-fg ((,class (:background ,base-5))))
    `(company-preview ((,class (:foreground ,base-5))))
    `(company-preview-common ((,class (:background ,base-3 :foreground ,blue))))
    `(company-preview-search ((,class (:inherit company-tooltip-search))))
@@ -772,8 +786,8 @@
    `(nlinum-relative-current-face ((,class (:inherit line-number-current-line))))
 
    ;; popup
-   `(popup-face ((,class (:inherit tooltip))))
-   `(popup-tip-face ((,class (:inherit popup-face :foreground ,base-7))))
+   `(popup-face ((,class (:background ,base-3 :foreground ,base-8))))
+   `(popup-tip-face ((,class (:inherit tooltip))))
    `(popup-selection-face ((,class (:background ,base-4))))
 
    ;; rainbow-delimiters
@@ -788,6 +802,13 @@
    `(rainbow-delimiters-depth-9-face ((,class (:foreground ,(if adwaita-dark-theme-gray-rainbow-delimiters base-7 violet)))))
    `(rainbow-delimiters-unmatched-face ((,class (:foreground ,red :weight ultra-bold))))
    `(rainbow-delimiters-mismatched-face ((,class (:inherit rainbow-delimiters-unmatched-face))))
+
+   ;; sly
+   `(sly-action-face ((,class (:inherit link))))
+   `(sly-mrepl-prompt-face ((,class (:inherit font-lock-type-face))))
+   `(sly-mrepl-output-face ((,class (:inherit font-lock-doc-face))))
+   `(sly-mrepl-note-face ((,class (:inherit font-lock-comment-face))))
+   `(sly-db-section-face ((,class (:foreground ,base-8 :weight bold :box ,(when flat-button-available-p '(:line-width 4 :style flat-button))))))
 
    ;; smartparens
    `(sp-pair-overlay-face ((,class (:background ,base-4))))

@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016-2020  Wilfred Hughes <me@wilfred.me.uk>
 
 ;; Author: Wilfred Hughes <me@wilfred.me.uk>
-;; Version: 1.5
+;; Version: 1.6
 ;; Keywords: lisp
 ;; Package-Requires: ((dash "2.12.0") (s "1.11.0"))
 
@@ -65,7 +65,7 @@ in the current buffer."
 between START-POS and END-POS (inclusive) in BUFFER.
 
 Positions exclude quote characters, so given 'foo or `foo, we
-report the position of the f.
+report the position of the symbol foo.
 
 Not recursive, so we don't consider subelements of nested sexps."
   (let ((positions nil))
@@ -87,18 +87,25 @@ Not recursive, so we don't consider subelements of nested sexps."
         (scan-error nil)))
     (nreverse positions)))
 
-(defun elisp-refs--read-buffer-form ()
+(defun elisp-refs--read-buffer-form (symbols-with-pos)
   "Read a form from the current buffer, starting at point.
 Returns a list:
 \(form form-start-pos form-end-pos symbol-positions read-start-pos)
 
-SYMBOL-POSITIONS are 0-indexed, relative to READ-START-POS."
+In Emacs 28 and earlier, SYMBOL-POSITIONS is a list of 0-indexed
+symbol positions relative to READ-START-POS, according to
+`read-symbol-positions-list'.
+
+In Emacs 29+, SYMBOL-POSITIONS is nil. If SYMBOLS-WITH-POS is
+non-nil, forms are read with `read-positioning-symbols'."
   (let* ((read-with-symbol-positions t)
          (read-start-pos (point))
-         (form (read (current-buffer)))
+         (form (if (and symbols-with-pos (fboundp 'read-positioning-symbols))
+                   (read-positioning-symbols (current-buffer))
+                 (read (current-buffer))))
          (symbols (if (boundp 'read-symbol-positions-list)
                       read-symbol-positions-list
-                    (read-positioning-symbols (current-buffer))))
+                    nil))
          (end-pos (point))
          (start-pos (elisp-refs--start-pos end-pos)))
     (list form start-pos end-pos symbols read-start-pos)))
@@ -107,14 +114,14 @@ SYMBOL-POSITIONS are 0-indexed, relative to READ-START-POS."
   "A buffer-local variable used by `elisp-refs--contents-buffer'.
 Internal implementation detail.")
 
-(defun elisp-refs--read-all-buffer-forms (buffer)
+(defun elisp-refs--read-all-buffer-forms (buffer symbols-with-pos)
   "Read all the forms in BUFFER, along with their positions."
   (with-current-buffer buffer
     (goto-char (point-min))
     (let ((forms nil))
       (condition-case err
           (while t
-            (push (elisp-refs--read-buffer-form) forms))
+            (push (elisp-refs--read-buffer-form symbols-with-pos) forms))
         (error
          (if (or (equal (car err) 'end-of-file)
                  ;; TODO: this shouldn't occur in valid elisp files,
@@ -128,12 +135,12 @@ Internal implementation detail.")
 
 (defun elisp-refs--proper-list-p (val)
   "Is VAL a proper list?"
-  (if (fboundp 'format-proper-list-p)
-      ;; Emacs stable.
-      (with-no-warnings (format-proper-list-p val))
-    ;; Function was renamed in Emacs master:
-    ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=2fde6275b69fd113e78243790bf112bbdd2fe2bf
-    (with-no-warnings (proper-list-p val))))
+  (if (fboundp 'proper-list-p)
+      ;; `proper-list-p' was added in Emacs 27.1.
+      ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=2fde6275b69fd113e78243790bf112bbdd2fe2bf
+      (with-no-warnings (proper-list-p val))
+    ;; Earlier Emacs versions only had format-proper-list-p.
+    (with-no-warnings (format-proper-list-p val))))
 
 (defun elisp-refs--walk (buffer form start-pos end-pos symbol match-p &optional path)
   "Walk FORM, a nested list, and return a list of sublists (with
@@ -306,27 +313,52 @@ with its start and end position."
   (-non-nil
    (--mapcat
     (-let [(form start-pos end-pos symbol-positions _read-start-pos) it]
-      ;; Optimisation: don't bother walking a form if contains no
-      ;; references to the symbol we're looking for.
-      (when (assq symbol symbol-positions)
+      ;; Optimisation: if we have a list of positions for the current
+      ;; form (Emacs 28 and earlier), and it doesn't contain the
+      ;; symbol we're looking for, don't bother walking the form.
+      (when (or (null symbol-positions) (assq symbol symbol-positions))
         (elisp-refs--walk buffer form start-pos end-pos symbol match-p)))
-    (elisp-refs--read-all-buffer-forms buffer))))
+    (elisp-refs--read-all-buffer-forms buffer nil))))
+
+(defun elisp-refs--walk-positioned-symbols (forms symbol)
+  "Given a nested list of FORMS, return a list of all positions of SYMBOL.
+Assumes `symbol-with-pos-pos' is defined (Emacs 29+)."
+  (cond
+   ((symbol-with-pos-p forms)
+    (let ((symbols-with-pos-enabled t))
+      (if (eq forms symbol)
+          (list (list symbol
+                      (symbol-with-pos-pos forms)
+                      (+ (symbol-with-pos-pos forms) (length (symbol-name symbol))))))))
+   ((elisp-refs--proper-list-p forms)
+    ;; Proper list, use `--mapcat` to reduce how much we recurse.
+    (--mapcat (elisp-refs--walk-positioned-symbols it symbol) forms))
+   ((consp forms)
+    ;; Improper list, we have to recurse on head and tail.
+    (append (elisp-refs--walk-positioned-symbols (car forms) symbol)
+            (elisp-refs--walk-positioned-symbols (cdr forms) symbol)))
+   ((vectorp forms)
+    (--mapcat (elisp-refs--walk-positioned-symbols it symbol) forms))))
 
 (defun elisp-refs--read-and-find-symbol (buffer symbol)
   "Read all the forms in BUFFER, and return a list of all
 positions of SYMBOL."
-  (-non-nil
-   (--mapcat
-    (-let [(_ _ _ symbol-positions read-start-pos) it]
-      (--map
-       (-let [(sym . offset) it]
-         (when (eq sym symbol)
-           (-let* ((start-pos (+ read-start-pos offset))
-                   (end-pos (+ start-pos (length (symbol-name sym)))))
-             (list sym start-pos end-pos))))
-       symbol-positions))
+  (let* ((symbols-with-pos (fboundp 'symbol-with-pos-pos))
+         (forms (elisp-refs--read-all-buffer-forms buffer symbols-with-pos)))
 
-    (elisp-refs--read-all-buffer-forms buffer))))
+    (if symbols-with-pos
+        (elisp-refs--walk-positioned-symbols forms symbol)
+      (-non-nil
+       (--mapcat
+        (-let [(_ _ _ symbol-positions read-start-pos) it]
+          (--map
+           (-let [(sym . offset) it]
+             (when (eq sym symbol)
+               (-let* ((start-pos (+ read-start-pos offset))
+                       (end-pos (+ start-pos (length (symbol-name sym)))))
+                 (list sym start-pos end-pos))))
+           symbol-positions))
+        forms)))))
 
 (defun elisp-refs--filter-obarray (pred)
   "Return a list of all the items in `obarray' where PRED returns t."

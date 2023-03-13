@@ -5,7 +5,7 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.9.0
+;; Version: 0.9.1
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -193,6 +193,7 @@ NAME and VARIANT should be symbols."
       (custom-theme-set-faces
        name
        `(default ((,class (:background ,bg-prim :foreground ,fg1))))
+       `(shadow ((,class (:foreground ,discrete))))
        `(match ((,class (:foreground ,match :weight semi-bold))))
 
        ;;
@@ -309,7 +310,7 @@ NAME and VARIANT should be symbols."
        `(undo-tree-visualizer-register-face ((,class :foreground ,sec)))
 
        `(slime-repl-inputed-output-face ((,class (:foreground ,sec))))
-       `(trailing-whitespace ((,class :foreground nil :background ,warning)))
+       `(trailing-whitespace ((,class :background ,warning)))
        ;;
        ;; ansi-term/term/vterm
        ;;
@@ -797,7 +798,18 @@ NAME and VARIANT should be symbols."
        `(keycast-key ((,class (:foreground ,warning :weight bold :height 1.1))))
        ;; face for the last command
        `(keycast-command ((,class (:foreground ,warning :weight bold :slant italic :height 1.1))))
-       ))))
+
+       ;;
+       ;; projtree
+       ;;
+       `(projtree-highlight ((,class (:inherit highlight))))
+       `(projtree-file ((,class (:inherit default))))
+       `(projtree-dir ((,class (:foreground ,sec-lo))))
+       `(projtree-git-modified ((,class (:background ,diff-changed :box (:line-width 1 :color ,diff-changed-refined :style nil)))))
+       `(projtree-git-added ((,class (:background ,diff-added :box (:line-width 1 :color ,diff-added-refined :style nil)))))
+       `(projtree-git-ignored ((,class (:foreground ,discrete :strike-through t))))
+       `(projtree-git-untracked ((,class (:foreground ,discrete))))
+       `(projtree-git-conflict ((,class (:background ,diff-removed :box (:line-width 1 :color ,diff-removed-refined :style nil) :italic t))))))))
 
 
 (defun immaterial-linear-rgb-component (col)

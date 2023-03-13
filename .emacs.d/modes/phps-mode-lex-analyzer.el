@@ -101,6 +101,9 @@
 (defvar-local phps-mode-lex-analyzer--lexer-max-index nil
   "Max-index of lex-analyzer.")
 
+(defvar phps-mode-lex-analyzer--show-profiling-information nil
+  "Show profiling information.")
+
 
 ;; FUNCTIONS
 
@@ -218,163 +221,274 @@ ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
   (require 'phps-mode-macros)
   (phps-mode-debug-message (message "Lexer run"))
 
-  (let ((buffer-name (buffer-name))
-        (buffer-contents (buffer-substring-no-properties (point-min) (point-max)))
-        (async (and (boundp 'phps-mode-async-process)
-                    phps-mode-async-process))
-        (async-by-process (and (boundp 'phps-mode-async-process-using-async-el)
-                               phps-mode-async-process-using-async-el)))
-    (when force-synchronous
-      (setq async nil))
+  (let ((buffer-contents))
+    (save-restriction
+      (widen)
+      (setq
+       buffer-contents
+       (buffer-substring-no-properties
+        (point-min)
+        (point-max))))
+    (let ((buffer-name (buffer-name))
+          (async (and (boundp 'phps-mode-async-process)
+                      phps-mode-async-process))
+          (async-by-process (and (boundp 'phps-mode-async-process-using-async-el)
+                                 phps-mode-async-process-using-async-el))
+          (timer-start)
+          (timer-elapsed-lexer)
+          (timer-elapsed-parser)
+          (timer-start-syntax-coloring)
+          (timer-finished-syntax-coloring)
+          (timer-elapsed-syntax-coloring)
+          (timer-elapsed)
+          (timer-end)
+          (narrowed-point-min (point-min))
+          (narrowed-point-max (point-max)))
+      (when force-synchronous
+        (setq async nil))
+      (let ((current-time (current-time)))
+        (setq
+         timer-start
+         (+
+          (car current-time)
+          (car (cdr current-time))
+          (* (car (cdr (cdr current-time))) 0.000001))))
 
-    (phps-mode-serial-commands
+      (phps-mode-serial-commands
 
-     buffer-name
+       buffer-name
 
-     (lambda()
-       (phps-mode-lex-analyzer--lex-string
-        buffer-contents
-        nil
-        nil
-        nil
-        nil
-        nil
-        nil
-        nil
-        nil
-        nil
-        buffer-file-name
-        allow-cache-read
-        allow-cache-write))
+       ;; Potentially asynchronous thread
+       (lambda()
+         (phps-mode-lex-analyzer--lex-string
+          buffer-contents
+          nil
+          nil
+          nil
+          nil
+          nil
+          nil
+          nil
+          nil
+          nil
+          buffer-file-name
+          allow-cache-read
+          allow-cache-write))
 
-     (lambda(lex-result)
-       (when (get-buffer buffer-name)
-         (with-current-buffer buffer-name
+       ;; Main thread - successful operation
+       (lambda(lex-result)
+         (when (get-buffer buffer-name)
+           (with-current-buffer buffer-name
 
-           ;; Move variables into this buffers local variables
-           (setq phps-mode-lex-analyzer--tokens (nth 0 lex-result))
-           (setq phps-mode-lex-analyzer--states (nth 1 lex-result))
-           (setq phps-mode-lex-analyzer--state (nth 2 lex-result))
-           (setq phps-mode-lex-analyzer--state-stack (nth 3 lex-result))
-           (setq phps-mode-lex-analyzer--heredoc-label (nth 4 lex-result))
-           (setq phps-mode-lex-analyzer--heredoc-label-stack (nth 5 lex-result))
-           (setq phps-mode-lex-analyzer--nest-location-stack (nth 6 lex-result))
-           (setq phps-mode-lex-analyzer--parse-trail (nth 7 lex-result))
-           (setq phps-mode-lex-analyzer--parse-error (nth 8 lex-result))
-           (setq phps-mode-lex-analyzer--ast (nth 9 lex-result))
-           (setq phps-mode-lex-analyzer--bookkeeping (nth 10 lex-result))
-           (setq phps-mode-lex-analyzer--imenu (nth 11 lex-result))
-           (setq phps-mode-lex-analyzer--symbol-table (nth 12 lex-result))
+             ;; Move variables into this buffers local variables
+             (setq phps-mode-lex-analyzer--tokens (nth 0 lex-result))
+             (setq phps-mode-lex-analyzer--states (nth 1 lex-result))
+             (setq phps-mode-lex-analyzer--state (nth 2 lex-result))
+             (setq phps-mode-lex-analyzer--state-stack (nth 3 lex-result))
+             (setq phps-mode-lex-analyzer--heredoc-label (nth 4 lex-result))
+             (setq phps-mode-lex-analyzer--heredoc-label-stack (nth 5 lex-result))
+             (setq phps-mode-lex-analyzer--nest-location-stack (nth 6 lex-result))
+             (setq phps-mode-lex-analyzer--parse-trail (nth 7 lex-result))
+             (setq phps-mode-lex-analyzer--parse-error (nth 8 lex-result))
+             (setq phps-mode-lex-analyzer--ast (nth 9 lex-result))
+             (setq phps-mode-lex-analyzer--bookkeeping (nth 10 lex-result))
+             (setq phps-mode-lex-analyzer--imenu (nth 11 lex-result))
+             (setq phps-mode-lex-analyzer--symbol-table (nth 12 lex-result))
+             (setq timer-elapsed-lexer (nth 13 lex-result))
+             (setq timer-elapsed-parser (nth 14 lex-result))
 
-           (setq phps-mode-lex-analyzer--processed-buffer-p t)
-           (phps-mode-lex-analyzer--reset-imenu)
+             (setq phps-mode-lex-analyzer--processed-buffer-p t)
+             (phps-mode-lex-analyzer--reset-imenu)
 
-           ;; Apply syntax color
-           (phps-mode-lex-analyzer--clear-region-syntax-color
-            (point-min)
-            (point-max))
-           (dolist (token phps-mode-lex-analyzer--tokens)
-             (let ((start (car (cdr token)))
-                   (end (cdr (cdr token))))
-               (let ((token-syntax-color
-                      (phps-mode-lex-analyzer--get-token-syntax-color token)))
-                 (when token-syntax-color
-                     (phps-mode-lex-analyzer--set-region-syntax-color
-                      start
-                      end
-                      (list 'font-lock-face token-syntax-color))))))
+             (let ((current-time (current-time)))
+               (setq
+                timer-start-syntax-coloring
+                (+
+                 (car current-time)
+                 (car (cdr current-time))
+                 (* (car (cdr (cdr current-time))) 0.000001))))
 
-           ;; Reset buffer changes minimum index
-           (phps-mode-lex-analyzer--reset-changes)
-
-           ;; Signal parser error (if any)
-           (if phps-mode-lex-analyzer--parse-error
-               (progn
-
-                 ;; Paint error
-                 (phps-mode-lex-analyzer--set-region-syntax-color
-                  (nth 4 phps-mode-lex-analyzer--parse-error)
-                  (point-max)
-                  (list 'font-lock-face 'font-lock-warning-face))
-
-                 ;; Set error
-                 (setq phps-mode-lex-analyzer--error-end nil)
-                 (setq phps-mode-lex-analyzer--error-message (nth 1 phps-mode-lex-analyzer--parse-error))
-                 (setq phps-mode-lex-analyzer--error-start (nth 4 phps-mode-lex-analyzer--parse-error))
-
-                 ;; Signal that causes updated mode-line status
-                 (signal
-                  'phps-parser-error
-                  (list
-                   (nth 1 phps-mode-lex-analyzer--parse-error)
-                   (nth 4 phps-mode-lex-analyzer--parse-error))))
-
-             ;; Reset error
-             (setq phps-mode-lex-analyzer--error-end nil)
-             (setq phps-mode-lex-analyzer--error-message nil)
-             (setq phps-mode-lex-analyzer--error-start nil)))))
-
-     (lambda(result)
-       (when (get-buffer buffer-name)
-         (with-current-buffer buffer-name
-           (let ((error-type (nth 0 result))
-                 (error-message (nth 1 result))
-                 (error-start (nth 2 result))
-                 (error-end (nth 3 result)))
-             (phps-mode-lex-analyzer--reset-local-variables)
-
-             (when error-message
-               (cond
-
-                ((equal error-type 'phps-lexer-error)
-                 (when error-start
-                   (if error-end
+             ;; Apply syntax color
+             (phps-mode-lex-analyzer--clear-region-syntax-color
+              (point-min)
+              (point-max))
+             (dolist (token phps-mode-lex-analyzer--tokens)
+               (let ((start (car (cdr token)))
+                     (end (cdr (cdr token))))
+                 (when (and
+                        (>= start narrowed-point-min)
+                        (<= end narrowed-point-max))
+                   (let ((token-syntax-color
+                          (phps-mode-lex-analyzer--get-token-syntax-color token)))
+                     (when token-syntax-color
                        (phps-mode-lex-analyzer--set-region-syntax-color
-                        error-start
-                        error-end
-                        (list 'font-lock-face 'font-lock-warning-face))
-                     (phps-mode-lex-analyzer--set-region-syntax-color
-                      error-start
-                      (point-max)
-                      (list 'font-lock-face 'font-lock-warning-face)))
+                        start
+                        end
+                        (list 'font-lock-face token-syntax-color)))))))
 
-                   ;; Set error
-                   (setq phps-mode-lex-analyzer--error-end (if error-end error-end nil))
-                   (setq phps-mode-lex-analyzer--error-message error-message)
-                   (setq phps-mode-lex-analyzer--error-start error-start)))
+             (let ((current-time (current-time)))
+               (setq
+                timer-finished-syntax-coloring
+                (+
+                 (car current-time)
+                 (car (cdr current-time))
+                 (* (car (cdr (cdr current-time))) 0.000001)))
+               (setq
+                timer-elapsed-syntax-coloring
+                (-
+                 timer-finished-syntax-coloring
+                 timer-start-syntax-coloring)))
 
-                (t
+             ;; Reset buffer changes minimum index
+             (phps-mode-lex-analyzer--reset-changes)
+
+             ;; Signal parser error (if any)
+             (if phps-mode-lex-analyzer--parse-error
                  (progn
 
-                   ;; Reset error
+                   ;; Paint error
+                   (phps-mode-lex-analyzer--set-region-syntax-color
+                    (nth 4 phps-mode-lex-analyzer--parse-error)
+                    (point-max)
+                    (list 'font-lock-face 'font-lock-warning-face))
+
+                   ;; Set error
                    (setq phps-mode-lex-analyzer--error-end nil)
-                   (setq phps-mode-lex-analyzer--error-message nil)
-                   (setq phps-mode-lex-analyzer--error-start nil)
+                   (setq phps-mode-lex-analyzer--error-message (nth 1 phps-mode-lex-analyzer--parse-error))
+                   (setq phps-mode-lex-analyzer--error-start (nth 4 phps-mode-lex-analyzer--parse-error))
 
-                   (display-warning
-                    error-type
-                    error-message
-                    :warning)))))))))
+                   ;; Signal that causes updated mode-line status
+                   (signal
+                    'phps-parser-error
+                    (list
+                     (nth 1 phps-mode-lex-analyzer--parse-error)
+                     (nth 4 phps-mode-lex-analyzer--parse-error))))
 
-     nil
-     async
-     async-by-process)))
+               ;; Reset error
+               (setq phps-mode-lex-analyzer--error-end nil)
+               (setq phps-mode-lex-analyzer--error-message nil)
+               (setq phps-mode-lex-analyzer--error-start nil))))
+
+         (let ((current-time (current-time)))
+           (setq
+            timer-end
+            (+
+             (car current-time)
+             (car (cdr current-time))
+             (* (car (cdr (cdr current-time))) 0.000001)))
+           (setq
+            timer-elapsed
+            (-
+             timer-end
+             timer-start)))
+
+         (when phps-mode-lex-analyzer--show-profiling-information
+           (let ((lexer-percentage
+                  (/ timer-elapsed-lexer timer-elapsed))
+                 (parser-percentage
+                  (/ timer-elapsed-parser timer-elapsed))
+                 (syntax-coloring-percentage
+                  (/ timer-elapsed-syntax-coloring timer-elapsed)))
+             (message
+              "Total: %d.2s (lex: %d.2%%, parse: %d.2%%, color: %d.2%%)"
+              timer-elapsed
+              lexer-percentage
+              parser-percentage
+              syntax-coloring-percentage)))
+
+         )
+
+       ;; Main thread - error handling
+       (lambda(result)
+         (when (get-buffer buffer-name)
+           (with-current-buffer buffer-name
+             (let ((error-type (nth 0 result))
+                   (error-message (nth 1 result))
+                   (error-start (nth 2 result))
+                   (error-end (nth 3 result)))
+               (phps-mode-lex-analyzer--reset-local-variables)
+
+               (when error-message
+                 (cond
+
+                  ((equal error-type 'phps-lexer-error)
+                   (when error-start
+                     (if error-end
+                         (phps-mode-lex-analyzer--set-region-syntax-color
+                          error-start
+                          error-end
+                          (list 'font-lock-face 'font-lock-warning-face))
+                       (phps-mode-lex-analyzer--set-region-syntax-color
+                        error-start
+                        (point-max)
+                        (list 'font-lock-face 'font-lock-warning-face)))
+
+                     ;; Set error
+                     (setq phps-mode-lex-analyzer--error-end (if error-end error-end nil))
+                     (setq phps-mode-lex-analyzer--error-message error-message)
+                     (setq phps-mode-lex-analyzer--error-start error-start)))
+
+                  (t
+                   (progn
+
+                     ;; Reset error
+                     (setq phps-mode-lex-analyzer--error-end nil)
+                     (setq phps-mode-lex-analyzer--error-message nil)
+                     (setq phps-mode-lex-analyzer--error-start nil)
+
+                     (display-warning
+                      error-type
+                      error-message
+                      :warning)))))))))
+
+       nil
+       async
+       async-by-process))))
 
 (defun phps-mode-lex-analyzer--incremental-lex-string
-    (buffer-name buffer-contents incremental-start-new-buffer point-max
-                 head-states incremental-state incremental-state-stack incremental-heredoc-label incremental-heredoc-label-stack incremental-nest-location-stack head-tokens &optional force-synchronous filename allow-cache-write)
+    (buffer-name
+     buffer-contents
+     incremental-start-new-buffer
+     point-max
+     head-states
+     incremental-state
+     incremental-state-stack
+     incremental-heredoc-label
+     incremental-heredoc-label-stack
+     incremental-nest-location-stack
+     head-tokens
+     &optional
+     force-synchronous
+     filename
+     allow-cache-write)
   "Incremental lex region."
-  (let ((async (and (boundp 'phps-mode-async-process)
+  (let* ((async (and (boundp 'phps-mode-async-process)
                     phps-mode-async-process))
         (async-by-process (and (boundp 'phps-mode-async-process-using-async-el)
-                               phps-mode-async-process-using-async-el)))
+                               phps-mode-async-process-using-async-el))
+        (timer-start)
+        (timer-elapsed-lexer)
+        (timer-elapsed-parser)
+        (timer-start-syntax-coloring)
+        (timer-finished-syntax-coloring)
+        (timer-elapsed-syntax-coloring)
+        (timer-elapsed)
+        (timer-end))
     (when force-synchronous
       (setq async nil))
+    (let ((current-time (current-time)))
+      (setq
+       timer-start
+       (+
+        (car current-time)
+        (car (cdr current-time))
+        (* (car (cdr (cdr current-time))) 0.000001))))
 
     (phps-mode-serial-commands
 
      buffer-name
 
+     ;; Potentially asynchronous thread
      (lambda()
        (phps-mode-lex-analyzer--lex-string
         buffer-contents
@@ -391,12 +505,10 @@ ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
         nil
         allow-cache-write))
 
+     ;; Main thread - successful operation
      (lambda(lex-result)
        (when (get-buffer buffer-name)
          (with-current-buffer buffer-name
-
-           (phps-mode-debug-message
-            (message "Incrementally-lexed-string: %s" result))
 
            (setq phps-mode-lex-analyzer--tokens (nth 0 lex-result))
            (setq phps-mode-lex-analyzer--states (nth 1 lex-result))
@@ -411,6 +523,8 @@ ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
            (setq phps-mode-lex-analyzer--bookkeeping (nth 10 lex-result))
            (setq phps-mode-lex-analyzer--imenu (nth 11 lex-result))
            (setq phps-mode-lex-analyzer--symbol-table (nth 12 lex-result))
+           (setq timer-elapsed-lexer (nth 13 lex-result))
+           (setq timer-elapsed-parser (nth 14 lex-result))
 
            (phps-mode-debug-message
             (message
@@ -421,6 +535,14 @@ ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
            (setq phps-mode-lex-analyzer--processed-buffer-p t)
            (phps-mode-lex-analyzer--reset-imenu)
 
+           (let ((current-time (current-time)))
+             (setq
+              timer-start-syntax-coloring
+              (+
+               (car current-time)
+               (car (cdr current-time))
+               (* (car (cdr (cdr current-time))) 0.000001))))
+
            ;; Apply syntax color on tokens
            (phps-mode-lex-analyzer--clear-region-syntax-color
             incremental-start-new-buffer
@@ -428,11 +550,30 @@ ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
            (dolist (token phps-mode-lex-analyzer--tokens)
              (let ((start (car (cdr token)))
                    (end (cdr (cdr token))))
+               (when (and
+                      (>= start incremental-start-new-buffer)
+                      (<= end point-max))
 
                ;; Apply syntax color on token
                (let ((token-syntax-color (phps-mode-lex-analyzer--get-token-syntax-color token)))
                  (when token-syntax-color
-                     (phps-mode-lex-analyzer--set-region-syntax-color start end (list 'font-lock-face token-syntax-color))))))
+                   (phps-mode-lex-analyzer--set-region-syntax-color
+                    start
+                    end
+                    (list 'font-lock-face token-syntax-color)))))))
+
+           (let ((current-time (current-time)))
+             (setq
+              timer-finished-syntax-coloring
+              (+
+               (car current-time)
+               (car (cdr current-time))
+               (* (car (cdr (cdr current-time))) 0.000001)))
+             (setq
+              timer-elapsed-syntax-coloring
+              (-
+               timer-finished-syntax-coloring
+               timer-start-syntax-coloring)))
 
            ;; Reset buffer changes minimum index
            (phps-mode-lex-analyzer--reset-changes)
@@ -462,8 +603,38 @@ ALLOW-CACHE-READ and ALLOW-CACHE-WRITE."
              ;; Reset error
              (setq phps-mode-lex-analyzer--error-end nil)
              (setq phps-mode-lex-analyzer--error-message nil)
-             (setq phps-mode-lex-analyzer--error-start nil)))))
+             (setq phps-mode-lex-analyzer--error-start nil))))
 
+           (let ((current-time (current-time)))
+             (setq
+              timer-end
+              (+
+               (car current-time)
+               (car (cdr current-time))
+               (* (car (cdr (cdr current-time))) 0.000001)))
+             (setq
+              timer-elapsed
+              (-
+               timer-end
+               timer-start)))
+
+           (when phps-mode-lex-analyzer--show-profiling-information
+             (let ((lexer-percentage
+                    (/ timer-elapsed-lexer timer-elapsed))
+                   (parser-percentage
+                    (/ timer-elapsed-parser timer-elapsed))
+                   (syntax-coloring-percentage
+                    (/ timer-elapsed-syntax-coloring timer-elapsed)))
+               (message
+                "Total: %d.2s (lex: %d.2%%, parse: %d.2%%, color: %d.2%%)"
+                timer-elapsed
+                lexer-percentage
+                parser-percentage
+               syntax-coloring-percentage)))
+
+       )
+
+     ;; Main thread - error handling
      (lambda(result)
        (when (get-buffer buffer-name)
          (with-current-buffer buffer-name
@@ -625,7 +796,6 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
                     (incremental-heredoc-label nil)
                     (incremental-heredoc-label-stack nil)
                     (incremental-nest-location-stack nil)
-                    (incremental-tokens nil)
                     (head-states '())
                     (head-tokens '())
                     (change-start phps-mode-lex-analyzer--change-min)
@@ -716,24 +886,33 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
 
                             ;; Do partial lex from previous-token-end to change-stop
 
-                            (phps-mode-lex-analyzer--incremental-lex-string
-                             (buffer-name)
-                             (buffer-substring-no-properties (point-min) (point-max))
-                             incremental-start-new-buffer
-                             (point-max)
-                             head-states
-                             incremental-state
-                             incremental-state-stack
-                             incremental-heredoc-label
-                             incremental-heredoc-label-stack
-                             incremental-nest-location-stack
-                             head-tokens
-                             force-synchronous
-                             (if (buffer-modified-p) nil buffer-file-name)
-                             (not (buffer-modified-p)))
-
-                            (phps-mode-debug-message
-                             (message "Incremental tokens: %s" incremental-tokens)))
+                            (let ((buffer-contents)
+                                  (buffer-max))
+                              (save-restriction
+                                (widen)
+                                (setq
+                                 buffer-contents
+                                 (buffer-substring-no-properties
+                                  (point-min)
+                                  (point-max)))
+                                (setq
+                                 buffer-max
+                                 (point-max)))
+                              (phps-mode-lex-analyzer--incremental-lex-string
+                               (buffer-name)
+                               buffer-contents
+                               incremental-start-new-buffer
+                               buffer-max
+                               head-states
+                               incremental-state
+                               incremental-state-stack
+                               incremental-heredoc-label
+                               incremental-heredoc-label-stack
+                               incremental-nest-location-stack
+                               head-tokens
+                               force-synchronous
+                               (if (buffer-modified-p) nil buffer-file-name)
+                               (not (buffer-modified-p)))))
 
                         (push (list 'FOUND-NO-HEAD-STATES incremental-start-new-buffer) log)
                         (phps-mode-debug-message
@@ -1035,14 +1214,18 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
                   (cond
 
                    ((string=
-                     (buffer-substring-no-properties offset-comment-start (+ offset-comment-start 1))
+                     (buffer-substring-no-properties
+                      offset-comment-start
+                      (+ offset-comment-start 1))
                      "#")
                     (save-excursion
                       (goto-char offset-comment-start)
                       (delete-char 1))
                     (setq offset (- offset 1)))
                    ((string=
-                     (buffer-substring-no-properties offset-comment-start (+ offset-comment-start 2))
+                     (buffer-substring-no-properties
+                      offset-comment-start
+                      (+ offset-comment-start 2))
                      "//")
                     (save-excursion
                       (goto-char offset-comment-start)
@@ -1057,7 +1240,9 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
                   
                   (setq offset-comment-end (+ token-end offset))
                   (if (string=
-                       (buffer-substring-no-properties (- offset-comment-end 3) offset-comment-end)
+                       (buffer-substring-no-properties
+                        (- offset-comment-end 3)
+                        offset-comment-end)
                        " */")
                       (progn
                         (phps-mode-debug-message
@@ -1128,8 +1313,24 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
   ;; to enable nice presentation
   (require 'phps-mode-macros)
 
-  (let ((loaded-from-cache)
-        (cache-key))
+  (let* ((loaded-from-cache)
+         (cache-key)
+         (timer-start-lexer)
+         (timer-finished-lexer)
+         (timer-elapsed-lexer)
+         (timer-start-parser)
+         (timer-finished-parser)
+         (timer-elapsed-parser))
+
+    (let* ((current-time (current-time))
+           (start-time
+            (+
+             (car current-time)
+             (car (cdr current-time))
+             (* (car (cdr (cdr current-time))) 0.000001))))
+      (setq
+       timer-start-lexer
+       start-time))
 
     ;; Build cache key if possible
     (when (and
@@ -1231,6 +1432,22 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
             (setq heredoc-label-stack phps-mode-lexer--heredoc-label-stack)
             (setq nest-location-stack phps-mode-lexer--nest-location-stack)
 
+            (let* ((current-time (current-time))
+                   (end-time
+                    (+
+                     (car current-time)
+                     (car (cdr current-time))
+                     (* (car (cdr (cdr current-time))) 0.000001))))
+              (setq
+               timer-finished-lexer
+               end-time)
+              (setq
+               timer-start-parser
+               end-time)
+              (setq
+               timer-elapsed-lexer
+               (- timer-finished-lexer timer-start-lexer)))
+
             ;; Error-free parse here
             (condition-case conditions
                 (progn
@@ -1246,6 +1463,20 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
             (setq bookkeeping phps-mode-parser-sdt-bookkeeping)
             (setq imenu phps-mode-parser-sdt-symbol-imenu)
             (setq symbol-table phps-mode-parser-sdt-symbol-table)
+
+            (let* ((current-time
+                    (current-time))
+                   (end-time
+                    (+
+                     (car current-time)
+                     (car (cdr current-time))
+                     (* (car (cdr (cdr current-time))) 0.000001))))
+              (setq
+               timer-finished-parser
+               end-time)
+              (setq
+               timer-elapsed-parser
+               (- timer-finished-parser timer-start-parser)))
 
             (kill-buffer)))
 
@@ -1263,7 +1494,9 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
                 ast-tree
                 bookkeeping
                 imenu
-                symbol-table)))
+                symbol-table
+                timer-elapsed-lexer
+                timer-elapsed-parser)))
 
           ;; Save cache if possible and permitted
           (when (and
@@ -1276,6 +1509,135 @@ of performed operations.  Optionally do it FORCE-SYNCHRONOUS."
              cache-key))
 
           data)))))
+
+(defun phps-mode-lex-analyzer--beginning-of-defun (&optional arg)
+  "Custom implementation of `beginning-of-defun'."
+  (let ((iterations (if arg (abs arg) 1))
+        (forward-p (and arg (< arg 0)))
+        (index 0)
+        (found-index t))
+    (save-excursion
+      (while (and found-index (< index iterations))
+        (setq found-index nil)
+        (setq index (1+ index))
+        (if forward-p
+            (when
+                (search-forward-regexp
+                 "[\n\t ]+function\\([\t\n ]+\\|(\\)"
+                 nil
+                 t)
+              (move-beginning-of-line nil)
+              (setq found-index (point)))
+            (when
+                (search-backward-regexp
+                 "[\n\t ]+function\\([\t\n ]+\\|(\\)"
+                 nil
+                 t)
+              (search-forward-regexp "[\n]*")
+              (move-beginning-of-line nil)
+              (setq found-index (point))))))
+    (if found-index
+        (progn
+          (goto-char found-index)
+          t)
+      nil)))
+
+(defun phps-mode-lex-analyzer--end-of-defun (&optional arg _interactive)
+  "Custom implementation of `end-of-defun'."
+  (let ((found-index t)
+        (index 0)
+        (iterations (if arg arg 1)))
+    (save-excursion
+      (while (and
+              found-index
+              (< index iterations))
+        (setq found-index nil)
+        (setq index (1+ index))
+        (move-end-of-line nil)
+        (when (phps-mode-lex-analyzer--beginning-of-defun)
+          (let ((bracket-level 0)
+                (found-initial-bracket)
+                (failed-to-find-ending-quote))
+            (while (and
+                    (not failed-to-find-ending-quote)
+                    (or
+                     (not found-initial-bracket)
+                     (not (= bracket-level 0)))
+                    (search-forward-regexp "\\(/\\*\\|[{}\"'#]\\|//\\)" nil t))
+              (let ((match-string (match-string-no-properties 0)))
+                (cond
+                 ((string= match-string "{")
+                  (unless found-initial-bracket
+                    (setq found-initial-bracket t))
+                  (setq bracket-level (1+ bracket-level)))
+                 ((string= match-string "}")
+                  (setq bracket-level (1- bracket-level)))
+                 ((string= match-string "\"")
+                  (let ((is-escaped)
+                        (quote-ending-at))
+                    (save-excursion
+                      (backward-char 2)
+                      (while (looking-at-p "\\\\")
+                        (setq is-escaped (not is-escaped))
+                        (backward-char)))
+                    (unless is-escaped
+                      (save-excursion
+                        (while (and
+                                (not quote-ending-at)
+                                (search-forward-regexp "\"" nil t))
+                          (let ((is-escaped-ending))
+                            (save-excursion
+                              (backward-char 2)
+                              (while (looking-at-p "\\\\")
+                                (setq is-escaped-ending (not is-escaped-ending))
+                                (backward-char)))
+                            (unless is-escaped-ending
+                              (setq quote-ending-at (point)))))))
+                    (if quote-ending-at
+                        (goto-char quote-ending-at)
+                      (setq failed-to-find-ending-quote t))))
+                 ((string= match-string "'")
+                  (let ((is-escaped)
+                        (quote-ending-at))
+                    (save-excursion
+                      (backward-char 2)
+                      (while (looking-at-p "\\\\")
+                        (setq is-escaped (not is-escaped))
+                        (backward-char)))
+                    (unless is-escaped
+                      (save-excursion
+                        (while (and
+                                (not quote-ending-at)
+                                (search-forward-regexp "'" nil t))
+                          (let ((is-escaped-ending))
+                            (save-excursion
+                              (backward-char 2)
+                              (while (looking-at-p "\\\\")
+                                (setq is-escaped-ending (not is-escaped-ending))
+                                (backward-char)))
+                            (unless is-escaped-ending
+                              (setq quote-ending-at (point)))))))
+                    (if quote-ending-at
+                        (goto-char quote-ending-at)
+                      (setq failed-to-find-ending-quote t))))
+                 ((or
+                   (string= match-string "#")
+                   (string= match-string "//"))
+                  (forward-line)
+                  )
+                 ((string= match-string "/*")
+                  (search-forward-regexp "\\*/" nil t)))))
+            (when (and
+                   (= bracket-level 0)
+                   found-initial-bracket)
+              (setq
+               found-index
+               (point)))))))
+    (if found-index
+        (progn
+          (goto-char found-index)
+          t)
+      nil)))
 
 (provide 'phps-mode-lex-analyzer)
 

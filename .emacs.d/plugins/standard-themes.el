@@ -6,7 +6,7 @@
 ;; Maintainer: Standard-Themes Development <~protesilaos/standard-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/standard-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/standard-themes
-;; Version: 1.1.0
+;; Version: 1.2.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -393,8 +393,7 @@ The default is a gray background color."
   :type 'boolean
   :link '(info-link "(standard-themes) Accented mode line"))
 
-;; TODO 2022-12-30: Make the palette overrides a `defcustom'
-(defvar standard-themes-common-palette-overrides nil
+(defcustom standard-themes-common-palette-overrides nil
   "Set palette overrides for all the Standard themes.
 
 Mirror the elements of a theme's palette, overriding their value.
@@ -413,7 +412,11 @@ The idea of common overrides is to change semantic color
 mappings, such as to make the cursor red.  Wherea theme-specific
 overrides can also be used to change the value of a named color,
 such as what hexadecimal RGB value the red-warmer symbol
-represents.")
+represents."
+  :group 'standard-themes
+  :package-version '(standard-themes . "1.2.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(standard-themes) Palette overrides"))
 
 ;;; Helpers for user options
 
@@ -575,6 +578,53 @@ color that is combined with FG-FOR-BG."
 
 ;;; Commands and their helper functions
 
+(defun standard-themes--retrieve-palette-value (color palette)
+  "Return COLOR from PALETTE.
+Use recursion until COLOR is retrieved as a string.  Refrain from
+doing so if the value of COLOR is not a key in the PALETTE.
+
+Return `unspecified' if the value of COLOR cannot be determined.
+This symbol is accepted by faces and is thus harmless.
+
+This function is used in the macros `standard-themes-theme',
+`standard-themes-with-colors'."
+  (let ((value (car (alist-get color palette))))
+    (cond
+     ((or (stringp value)
+          (eq value 'unspecified))
+      value)
+     ((and (symbolp value)
+           (memq value (mapcar #'car palette)))
+      (standard-themes--retrieve-palette-value value palette))
+     (t
+      'unspecified))))
+
+(defun standard-themes-get-color-value (color &optional overrides theme)
+  "Return color value of named COLOR for current Standard theme.
+
+COLOR is a symbol that represents a named color entry in the
+palette.
+
+If the value is the name of another color entry in the
+palette (so a mapping), recur until you find the underlying color
+value.
+
+With optional OVERRIDES as a non-nil value, account for palette
+overrides.  Else use the default palette.
+
+With optional THEME as a symbol among `standard-themes-items',
+use the palette of that item.  Else use the current Standard
+theme.
+
+If COLOR is not present in the palette, return the `unspecified'
+symbol, which is safe when used as a face attribute's value."
+  (if-let* ((palette (if theme
+                         (standard-themes--palette-value theme overrides)
+                       (standard-themes--current-theme-palette overrides)))
+            (value (standard-themes--retrieve-palette-value color palette)))
+      value
+    'unspecified))
+
 (declare-function cl-remove-if-not "cl-seq" (cl-pred cl-list &rest cl-keys))
 
 (defun standard-themes--list-enabled-themes ()
@@ -624,14 +674,14 @@ symbol."
       base-value)))
 
 (defun standard-themes--current-theme-palette (&optional overrides)
-  "Return palette value of active Ef theme, else produce `user-error'.
+  "Return palette value of active Standard theme, else produce `user-error'.
 With optional OVERRIDES return palette value plus whatever
 overrides."
   (if-let ((theme (standard-themes--current-theme)))
       (if overrides
           (standard-themes--palette-value theme :overrides)
         (standard-themes--palette-value theme))
-    (user-error "No enabled Ef theme could be found")))
+    (user-error "No enabled Standard theme could be found")))
 
 (defun standard-themes--disable-themes ()
   "Disable themes per `standard-themes-disable-other-themes'."
@@ -680,14 +730,18 @@ Run `standard-themes-post-load-hook' after loading the theme."
     ('standard-dark (standard-themes-load-light))
     (_ (standard-themes--load-prompt))))
 
-(defun standard-themes--preview-colors-render (buffer theme &rest _)
-  "Render colors in BUFFER from THEME.
-Routine for `standard-themes-preview-colors'."
-  (let ((palette (seq-remove (lambda (cell)
-                               (symbolp (cadr cell)))
-                             (standard-themes--palette-value theme :overrides)))
-        (current-buffer buffer)
-        (current-theme theme))
+(defun standard-themes--preview-colors-render (buffer theme &optional mappings &rest _)
+  "Render colors in BUFFER from THEME for `standard-themes-preview-colors'.
+Optional MAPPINGS changes the output to only list the semantic
+color mappings of the palette, instead of its named colors."
+  (let* ((current-palette (standard-themes--palette-value theme mappings))
+         (palette (if mappings
+                      (seq-remove (lambda (cell)
+                                    (stringp (cadr cell)))
+                                  current-palette)
+                    current-palette))
+         (current-buffer buffer)
+         (current-theme theme))
     (with-help-window buffer
       (with-current-buffer standard-output
         (erase-buffer)
@@ -699,9 +753,13 @@ Routine for `standard-themes-preview-colors'."
         (insert " ")
         (dolist (cell palette)
           (let* ((name (car cell))
-                 (color (cadr cell))
-                 (fg (readable-foreground-color color))
-                 (pad (make-string 5 ?\s)))
+                 (color (standard-themes-get-color-value name mappings theme))
+                 (pad (make-string 10 ?\s))
+                 (fg (if (eq color 'unspecified)
+                         (progn
+                           (readable-foreground-color (standard-themes-get-color-value 'bg-main nil theme))
+                           (setq pad (make-string 6 ?\s)))
+                       (readable-foreground-color color))))
             (let ((old-point (point)))
               (insert (format "%s %s" color pad))
               (put-text-property old-point (point) 'face `( :foreground ,color)))
@@ -715,7 +773,7 @@ Routine for `standard-themes-preview-colors'."
             (insert " ")))
         (setq-local revert-buffer-function
                     (lambda (_ignore-auto _noconfirm)
-                      (standard-themes--preview-colors-render current-buffer current-theme)))))))
+                      (standard-themes--preview-colors-render current-buffer current-theme mappings)))))))
 
 (defvar standard-themes--preview-colors-prompt-history '()
   "Minibuffer history for `standard-themes--preview-colors-prompt'.")
@@ -729,19 +787,28 @@ Helper function for `standard-themes-preview-colors'."
      (standard-themes--list-known-themes) nil t nil
      'standard-themes--preview-colors-prompt-history def)))
 
-;;;###autoload
-(defun standard-themes-preview-colors (theme)
-  "Preview palette of the Standard THEME of choice."
-  (interactive (list (intern (standard-themes--preview-colors-prompt))))
+(defun standard-themes-preview-colors (theme &optional mappings)
+  "Preview named colors of the Standard THEME of choice.
+With optional prefix argument for MAPPINGS preview the semantic
+color mappings instead of the named colors."
+  (interactive (list (intern (standard-themes--preview-colors-prompt)) current-prefix-arg))
   (standard-themes--preview-colors-render
-   (format "*%s-preview-colors*" theme)
-   theme))
+   (format (if mappings "*%s-preview-mappings*" "*%s-preview-colors*") theme)
+   theme
+   mappings))
 
-;;;###autoload
-(defun standard-themes-preview-colors-current ()
-  "Call `standard-themes-preview-colors' for the current Standard theme."
-  (interactive)
-  (standard-themes-preview-colors (standard-themes--current-theme)))
+(defalias 'standard-themes-list-colors 'standard-themes-preview-colors
+  "Alias of `standard-themes-preview-colors'.")
+
+(defun standard-themes-preview-colors-current (&optional mappings)
+  "Call `standard-themes-list-colors' for the current Standard theme.
+Optional prefix argument MAPPINGS has the same meaning as for
+`standard-themes-list-colors'."
+  (interactive "P")
+  (standard-themes-list-colors (standard-themes--current-theme) mappings))
+
+(defalias 'standard-themes-list-colors-current 'standard-themes-preview-colors-current
+  "Alias of `standard-themes-preview-colors-current'.")
 
 ;;; Faces and variables
 
@@ -983,14 +1050,14 @@ Helper function for `standard-themes-preview-colors'."
     `(cider-deprecated-face ((,c :background ,bg-warning :foreground ,warning)))
     `(cider-enlightened-face ((,c :box ,warning)))
     `(cider-enlightened-local-face ((,c :inherit warning)))
-    `(cider-error-highlight-face ((,c :inherit ef-themes-underline-error)))
-    `(cider-fringe-good-face ((,c :inherit ef-themes-mark-select)))
+    `(cider-error-highlight-face ((,c :inherit standard-themes-underline-error)))
+    `(cider-fringe-good-face ((,c :inherit standard-themes-mark-select)))
     `(cider-instrumented-face ((,c :box ,err)))
     `(cider-reader-conditional-face ((,c :inherit font-lock-type-face)))
     `(cider-repl-prompt-face ((,c :inherit minibuffer-prompt)))
     `(cider-repl-stderr-face ((,c :foreground ,err)))
     `(cider-repl-stdout-face ((,c :foreground ,info)))
-    `(cider-warning-highlight-face ((,c :inherit ef-themes-underline-warning)))
+    `(cider-warning-highlight-face ((,c :inherit standard-themes-underline-warning)))
 ;;;; change-log and log-view (`vc-print-log' and `vc-print-root-log')
     `(change-log-acknowledgment ((,c :inherit shadow)))
     `(change-log-conditionals ((,c :inherit error)))
@@ -1046,6 +1113,7 @@ Helper function for `standard-themes-preview-colors'."
     `(consult-key ((,c :inherit standard-themes-key-binding)))
     `(consult-imenu-prefix ((,c :inherit shadow)))
     `(consult-line-number ((,c :inherit shadow)))
+    `(consult-preview-cursor ((,c :background ,cursor :foreground ,bg-main)))
     `(consult-separator ((,c :foreground ,border)))
 ;;;; corfu
     `(corfu-current ((,c :background ,bg-completion)))
@@ -1407,6 +1475,8 @@ Helper function for `standard-themes-preview-colors'."
     `(lazy-highlight ((,c :background ,bg-cyan :foreground ,fg-main)))
     `(match ((,c :background ,bg-warning)))
     `(query-replace ((,c :background ,bg-red :foreground ,fg-main)))
+;;;; jit-spell
+    `(jit-spell-misspelling ((,c :inherit standard-themes-underline-error)))
 ;;;; keycast
     `(keycast-command ((,c :inherit bold :foreground ,bg-accent)))
     `(keycast-key ((,c :background ,bg-accent :foreground ,bg-main)))
@@ -1802,7 +1872,7 @@ Helper function for `standard-themes-preview-colors'."
     `(persp-selected-face ((,c :inherit mode-line-emphasis)))
 ;;;; powerline
     `(powerline-active0 ((,c :background ,fg-dim :foreground ,bg-main)))
-    `(powerline-active1 ((,c :inherit mode-line-active)))
+    `(powerline-active1 ((,c :inherit mode-line)))
     `(powerline-active2 ((,c :inherit mode-line-inactive)))
     `(powerline-inactive0 ((,c :background ,bg-active :foreground ,fg-dim)))
     `(powerline-inactive1 ((,c :background ,bg-main :foreground ,fg-dim)))
@@ -2036,27 +2106,6 @@ Helper function for `standard-themes-preview-colors'."
 
 ;;; Theme macros
 
-(defun standard-themes--retrieve-palette-value (color palette)
-  "Return COLOR from PALETTE.
-Use recursion until COLOR is retrieved as a string.  Refrain from
-doing so if the value of COLOR is not a key in the PALETTE.
-
-Return `unspecified' if the value of COLOR cannot be determined.
-This symbol is accepted by faces and is thus harmless.
-
-This function is used in the macros `standard-themes-theme',
-`standard-themes-with-colors'."
-  (let ((value (car (alist-get color palette))))
-    (cond
-     ((or (stringp value)
-          (eq value 'unspecified))
-      value)
-     ((and (symbolp value)
-           (memq value (mapcar #'car palette)))
-      (standard-themes--retrieve-palette-value value palette))
-     (t
-      'unspecified))))
-
 ;;;###autoload
 (defmacro standard-themes-theme (name palette &optional overrides)
   "Bind NAME's color PALETTE around face specs and variables.
@@ -2071,7 +2120,7 @@ corresponding entries."
   (let ((sym (gensym))
         (colors (mapcar #'car (symbol-value palette))))
     `(let* ((c '((class color) (min-colors 256)))
-            (,sym (append ,overrides standard-themes-common-palette-overrides ,palette))
+            (,sym (standard-themes--palette-value ',name ',overrides))
             ,@(mapcar (lambda (color)
                         (list color
                               `(standard-themes--retrieve-palette-value ',color ,sym)))

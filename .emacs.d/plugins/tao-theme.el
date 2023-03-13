@@ -60,7 +60,7 @@
   :type 'boolean
   :group 'tao-theme)
 
-(defcustom tao-theme-use-sepia t
+(defcustom tao-theme-use-sepia nil
   "Non-nil means tao-theme should use sepia tones for grayscale"
   :type 'boolean
   :group 'tao-theme)
@@ -253,6 +253,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(newsticker-treeview-old-face                     ((t (:foreground ,color-8))))
    `(newsticker-treeview-selection-face               ((t (:background ,color-3 :foreground ,color-13))))
    ;; Third-party
+   ;; treemacs
+   `(treemacs-directory-face                          ((t (:background ,color-4 :foreground ,color-13 :box nil))))
    ;; highlight-symbol
    `(highlight-symbol-face                            ((t (:background ,color-4))))
    ;; ace-jump
@@ -310,9 +312,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(ctbl:face-continue-bar                           ((t (:background ,color-4 :foreground ,color-5))))
    `(ctbl:face-row-select                             ((t (:background ,color-12 :foreground ,color-5))))
    ;; diff
-   `(diff-added                                       ((,class (:foreground ,color-13 :background nil)) (t (:foreground ,color-8 :background nil))))
+   `(diff-added                                       ((,class (:foreground ,color-13)) (t (:foreground ,color-8))))
    `(diff-changed                                     ((t (:foreground ,color-13))))
-   `(diff-removed                                     ((,class (:foreground ,color-10 :background nil)) (t (:foreground ,color-8 :background nil))))
+   `(diff-removed                                     ((,class (:foreground ,color-10)) (t (:foreground ,color-8))))
    `(diff-refine-added                                ((t :inherit diff-added :weight bold)))
    `(diff-refine-change                               ((t :inherit diff-changed :weight bold)))
    `(diff-refine-removed                              ((t :inherit diff-removed :weight bold)))
@@ -899,10 +901,30 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(speedbar-selected-face                           ((t (:foreground ,color-10))))
    `(speedbar-separator-face                          ((t (:foreground ,color-5 :background ,color-10))))
    `(speedbar-tag-face                                ((t (:foreground ,color-13))))
-   ;; tabbar
+   ;; top tabs bar
+   `(tab-bar                                          ((t (:background ,color-8))))
+   `(tab-bar-tab                                      ((t (:background ,color-4 :foreground ,color-10 :height 1.0))))
+   `(tab-bar-tab-inactive                             ((t (:foreground ,color-9 :background ,color-7 ))))
+
+   ;; tab-line
+   `(tab-line                                         ((t (:background ,color-6))))
+   `(tab-line-tab                                     ((t (:background ,color-4 :foreground ,color-13))))
+   `(tab-line-tab-current                             ((t (:background ,color-4 :foreground ,color-10))))
+   `(tab-line-tab-inactive                            ((t (:background ,color-5 :foreground ,color-8))))
+   `(tab-line-highlight                               ((t (:background ,color-4 :foreground ,color-10))))
+
+   ;; tabbar (deprecated)
+   `(tabbar-default                                   ((t ( :background ,color-4 ))))
    `(tabbar-button                                    ((t (:foreground ,color-13 :background ,color-4))))
-   `(tabbar-selected                                  ((t (:foreground ,color-13 :background ,color-4 :box (:line-width -1 :style pressed-button)))))
-   `(tabbar-unselected                                ((t (:foreground ,color-13 :background ,color-6 :box (:line-width -1 :style released-button)))))
+   `(tabbar-selected                                  ((t (:inherit default))))
+   `(tabbar-unselected                                ((t (:foreground ,color-8 :background ,color-5 ))))
+
+
+   ;;centaur-tabs
+   `(centaur-tabs-default                             ((t (:foreground ,color-13 :background ,color-4))))
+   `(centaur-tabs-selected                            ((t (:foreground ,color-13 :background ,color-4 :underline nil))))
+   `(centaur-tabs-unselected                          ((t (:foreground ,color-8 :background ,color-5))))
+   
    ;; term
    `(term-color-black                                 ((t (:foreground "#000000" :background "#000000"))))
    `(term-color-red                                   ((t (:foreground ,color-7 :background ,color-7))))
@@ -1211,6 +1233,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(vc-annotate-background ,color-3)
    )
   )
+
 
 (provide 'tao-theme)
 

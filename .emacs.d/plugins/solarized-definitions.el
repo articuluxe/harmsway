@@ -1,32 +1,38 @@
+;;; solarized-definitions.el --- Solarized theme color assignments -*- lexical-binding: t -*-
+
 (eval-when-compile
   (unless (require 'cl-lib nil t)
     (require 'cl)
-    (defalias 'cl-case 'case))
-  )
+    (defalias 'cl-case 'case)))
 
 (defconst solarized-description
   "Color theme by Ethan Schoonover, created 2011-03-24.
 Ported to Emacs by Greg Pfeil, http://ethanschoonover.com/solarized.")
 
+(defgroup solarized nil
+  "Customizations for the Solarized theme."
+  :group 'faces
+  :prefix "solarized-")
+
 (defcustom solarized-termcolors 16
-  "This is set to 16 by default, meaning that Solarized will attempt to use the
+  "The number of colors to use on 256-color terminals.
+This is set to 16 by default, meaning that Solarized will attempt to use the
 standard 16 colors of your terminal emulator. You will need to set those colors
 to the correct Solarized values either manually or by importing one of the many
-colorscheme available for popular terminal emulators and Xdefaults."
-  :type 'integer
-  :options '(16 256)
+colorschemes available for popular terminal emulators and Xdefaults."
+  :type '(choice (const 16) (const 256))
   :group 'solarized)
 
 (defcustom solarized-degrade nil
-  "For test purposes only; when in GUI mode, forces Solarized to use the 256
+  "Use only 256 colors on graphic displays.
+For test purposes only; when in GUI mode, forces Solarized to use the 256
 degraded color mode to test the approximate color values for accuracy."
   :type 'boolean
   :group 'solarized)
 
 (defcustom solarized-diff-mode 'normal
   "Sets the level of highlighting to use in diff-like modes."
-  :type 'symbol
-  :options '(high normal low)
+  :type '(choice (const high) (const normal) (const low))
   :group 'solarized)
 
 (defcustom solarized-bold t
@@ -45,11 +51,11 @@ degraded color mode to test the approximate color values for accuracy."
   :group 'solarized)
 
 (defcustom solarized-contrast 'normal
-  "Stick with normal! It's been carefully tested. Setting this option to high or
-low does use the same Solarized palette but simply shifts some values up or
-down in order to expand or compress the tonal range displayed."
-  :type 'symbol
-  :options '(high normal low)
+  "Adjust the contrast level of Solarized.
+Stick with normal! It's been carefully tested. Setting this option to high or
+low does use the same Solarized palette but simply shifts some values up or down
+in order to expand or compress the tonal range displayed."
+  :type '(choice (const high) (const normal) (const low))
   :group 'solarized)
 
 (defcustom solarized-broken-srgb
@@ -57,10 +63,12 @@ down in order to expand or compress the tonal range displayed."
       (not (and (boundp 'ns-use-srgb-colorspace)
                 ns-use-srgb-colorspace))
     nil)
-  "Emacs bug #8402 results in incorrect color handling on Macs. If this is t
-\(the default on Macs), Solarized works around it with alternative colors.
-However, these colors are not totally portable, so you may be able to edit
-the \"Gen RGB\" column in solarized-definitions.el to improve them further."
+  "Whether sRGB is broken on your system.
+If you are on a Mac and have either Emacs prior to 24.4 or Mac OS prior to 10.7
+this should be t (the default is usually correct). Solarized works around this
+issue by using with alternative colors. However, these colors are not totally
+portable, so you may be able to edit the “Gen RGB” column in
+solarized-definitions.el to improve them further."
   :type 'boolean
   :group 'solarized)
 
@@ -85,91 +93,120 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
     (blue    "#268bd2" "#2075c7" "#0087ff" "blue"          "blue")
     (cyan    "#2aa198" "#259185" "#00afaf" "cyan"          "cyan")
     (green   "#859900" "#728a05" "#5f8700" "green"         "green"))
-  "This is a table of all the colors used by the Solarized color theme. Each
-   column is a different set, one of which will be chosen based on term
-   capabilities, etc.")
+  "This is a table of all the colors used by the Solarized color theme.
+Each column is a different set, one of which will be chosen based on term
+capabilities, etc.")
+
+(defun solarized--current-colors (light)
+  "Attempt to mimic the Vim version’s color configuration.
+If LIGHT is non-nil, invert the base faces."
+  (let ((current-colors
+         (cons
+          (cons 'back (copy-sequence (cdr (assoc 'base03 solarized-colors))))
+          (mapcar #'copy-sequence (copy-sequence solarized-colors)))))
+    (if light
+        (setf (cdr (assoc 'base03 current-colors)) (cdr (assoc 'base3 solarized-colors))
+              (cdr (assoc 'base02 current-colors)) (cdr (assoc 'base2 solarized-colors))
+              (cdr (assoc 'base01 current-colors)) (cdr (assoc 'base1 solarized-colors))
+              (cdr (assoc 'base00 current-colors)) (cdr (assoc 'base0 solarized-colors))
+              (cdr (assoc 'base0 current-colors)) (cdr (assoc 'base00 solarized-colors))
+              (cdr (assoc 'base1 current-colors)) (cdr (assoc 'base01 solarized-colors))
+              (cdr (assoc 'base2 current-colors)) (cdr (assoc 'base02 solarized-colors))
+              (cdr (assoc 'base3 current-colors)) (cdr (assoc 'base03 solarized-colors))
+              (cdr (assoc 'back current-colors)) (cdr (assoc 'base03 current-colors))))
+    (cond ((eq 'high solarized-contrast)
+           (setf (cdr (assoc 'base01 current-colors)) (cdr (assoc 'base00 current-colors))
+                 (cdr (assoc 'base00 current-colors)) (cdr (assoc 'base0 current-colors))
+                 (cdr (assoc 'base0 current-colors)) (cdr (assoc 'base1 current-colors))
+                 (cdr (assoc 'base1 current-colors)) (cdr (assoc 'base2 current-colors))
+                 (cdr (assoc 'base2 current-colors)) (cdr (assoc 'base3 current-colors))
+                 (cdr (assoc 'back current-colors)) (cdr (assoc 'back current-colors))))
+          ((eq 'low solarized-contrast)
+           (setf (cdr (assoc 'back current-colors)) (cdr (assoc 'base02 current-colors)))))
+    current-colors))
 
 (defun solarized-face-for-index (facespec index &optional light)
-  "Creates a face from facespec where the colors use the names from
-  `solarized-colors`."
+  "Replace the Solarized symbols in FACESPEC with the colors in column INDEX.
+The colors are looked up in ‘solarized-colors’, and base colors are inverted if
+LIGHT is non-nil."
   (let ((new-fontspec (copy-sequence facespec)))
     (dolist (property '(:foreground :background :color))
       (let ((color-name (plist-get new-fontspec property)))
-        (when color-name
-          ;; NOTE: We try to turn an 8-color term into a 10-color term by not
-          ;;       using default background and foreground colors, expecting the
-          ;;       user to have the right colors set for them.
-          (when (and (= index 5)
-                     (or (and (eq property :background)
-                              (eq color-name 'back))
-                         (and (eq property :foreground)
-                              (member color-name '(base0 base1)))))
-            (setf color-name nil))
-          (when (eq color-name 'back)
-            (setf color-name 'base03))
-          (when light
-            (setf color-name
-                  (cl-case color-name
-                    (base03 'base3)
-                    (base02 'base2)
-                    (base01 'base1)
-                    (base00 'base0)
-                    (base0 'base00)
-                    (base1 'base01)
-                    (base2 'base02)
-                    (base3 'base03)
-                    (otherwise color-name))))
+        (when (and color-name (symbolp color-name))
           (plist-put new-fontspec
                      property
-                     (nth index (assoc color-name solarized-colors))))))
-    (when (plist-get new-fontspec :box)
+                     ;; NOTE: We try to turn an 8-color term into a 10-color term by not
+                     ;;       using default background and foreground colors, expecting the
+                     ;;       user to have the right colors set for them.
+                     (unless (and (= index 5)
+                                  (or (and (eq property :background)
+                                           (eq color-name 'back))
+                                      (and (eq property :foreground)
+                                           (member color-name '(base0 base1)))))
+                       (nth index
+                            (assoc color-name
+                                   (solarized--current-colors light))))))))
+    (when (consp (plist-get new-fontspec :box))
       (plist-put new-fontspec
                  :box
-                 (solarized-face-for-index (plist-get new-fontspec :box) index
+                 (solarized-face-for-index (plist-get new-fontspec :box)
+                                           index
+                                           light)))
+    (when (consp (plist-get new-fontspec :underline))
+      (plist-put new-fontspec
+                 :underline
+                 (solarized-face-for-index (plist-get new-fontspec :underline)
+                                           index
                                            light)))
     new-fontspec))
 
+(defun dark-and-light (display plist index)
+  "Return a list of faces, distinguishing between dark and light if necessary."
+  (let ((dark (solarized-face-for-index plist index))
+        (light (solarized-face-for-index plist index t)))
+    (if (equal dark light)
+        (list (list display dark))
+      (list (list (cons '(background dark) display) dark)
+            (list (cons '(background light) display) light)))))
+
+(defun 8-and-16 (plist)
+  "Return a list of faces, distinguishing between dark and light if necessary."
+  (let ((eight (dark-and-light '() plist 5))
+        (sixteen (dark-and-light '() plist 4)))
+    (append
+     (unless (equal eight sixteen)
+       (mapcar (lambda (spec)
+                 (setf (car spec)
+                       (append '((type tty) (min-colors 16)) (car spec)))
+                 spec)
+               sixteen))
+     (mapcar (lambda (spec)
+               (setf (car spec)
+                     (append '((type tty) (min-colors 8)) (car spec)))
+               spec)
+             eight))))
+
 (defun create-face-spec (name facespec)
-  `(,name ((((background dark) (type graphic))
-            ,(solarized-face-for-index facespec
-                                       (cond (solarized-degrade     3)
-                                             (solarized-broken-srgb 2)
-                                             (t                     1))))
-           (((background dark) (type tty) (min-colors 256))
-            ,(solarized-face-for-index facespec
-                                       (if (= solarized-termcolors 16) 4 3)))
-           (((background dark) (type tty) (min-colors  16))
-            ,(solarized-face-for-index facespec 4))
-           (((background dark) (type tty) (min-colors   8))
-            ,(solarized-face-for-index facespec 5))
-           (((background light) (type graphic))
-            ,(solarized-face-for-index facespec
-                                       (cond (solarized-degrade     3)
-                                             (solarized-broken-srgb 2)
-                                             (t                     1))
-                                       t))
-           (((background light) (type tty) (min-colors 256))
-            ,(solarized-face-for-index facespec
-                                       (if (= solarized-termcolors 16) 4 3)
-                                       t))
-           (((background light) (type tty) (min-colors  16))
-            ,(solarized-face-for-index facespec 4 t))
-           (((background light) (type tty) (min-colors   8))
-            ,(solarized-face-for-index facespec 5 t)))))
+  "Generate a full face-spec for face NAME from the Solarized FACESPEC.
+This generates the spec across a variety of displays from the FACESPEC, which
+contains Solarized symbols."
+  `(,name (,@(dark-and-light '((type graphic))
+                             facespec
+                             (cond (solarized-degrade     3)
+                                   (solarized-broken-srgb 2)
+                                   (t                     1)))
+           ;; only produce 256-color term-specific settings if ‘solarized-termcolors’ is 256
+           ,@(when (= solarized-termcolors 256)
+               (dark-and-light '((type tty) (min-colors 256)) facespec 3))
+           ,@(8-and-16 facespec))))
 
 (defun solarized-color-definitions ()
+  "Produces the set of face-specs for all faces defined by this theme."
   (let ((bold        (if solarized-bold 'bold        'unspecified))
         (bright-bold (if solarized-bold 'unspecified 'bold))
         (underline   (if solarized-underline t 'unspecified))
-        (opt-under   'unspecified)
+        (opt-under   (if (eq solarized-contrast 'low) t 'unspecified))
         (italic      (if solarized-italic 'italic 'unspecified)))
-    (cond ((eq 'high solarized-contrast)
-           (let ((orig-base3 base3))
-             (rotatef base01 base00 base0 base1 base2 base3)
-             (setf base3 orig-base3)))
-          ((eq 'low solarized-contrast)
-           (setf back      base02
-                 opt-under t)))
     (let ((bg-back   '(:background back))
           (bg-base03 '(:background base03))
           (bg-base02 '(:background base02))
@@ -212,11 +249,10 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
           (fmt-undb   `(:weight ,bold                :underline ,underline))
           (fmt-undi   `(              :slant ,italic :underline ,underline))
           (fmt-uopt   `(                             :underline ,opt-under))
-          ;; FIXME: don’t hardcode the SRGB color names
-          (fmt-curl-red    `(                        :underline (:color "#dc322f" :style wave)))
-          (fmt-curl-yellow `(                        :underline (:color "#b58900" :style wave)))
-          (fmt-curl-magenta `(                       :underline (:color "#d33682" :style wave)))
-          (fmt-curl-cyan `(                          :underline (:color "#2aa198" :style wave)))
+          (fmt-curl-red    '(                        :underline (:color red :style wave)))
+          (fmt-curl-violet '(                        :underline (:color violet :style wave)))
+          (fmt-curl-cyan   '(                        :underline (:color cyan :style wave)))
+          (fmt-curl-yellow '(                        :underline (:color yellow :style wave)))
           (fmt-ital   `(              :slant ,italic))
           ;; FIXME: not quite the same
           (fmt-stnd   `(                                                   :inverse-video t))
@@ -224,8 +260,6 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
           (fmt-revb   `(:weight ,bold                                      :inverse-video t))
           (fmt-revbb  `(:weight ,bright-bold                               :inverse-video t))
           (fmt-revbbu `(:weight ,bright-bold         :underline ,underline :inverse-video t)))
-      (eval-after-load 'ansi-color
-        '(setf ansi-color-names-vector [,base02 ,red ,green ,yellow ,blue ,magenta ,cyan ,base00]))
       (mapcar (lambda (face) (apply 'create-face-spec face))
               `(;; basic
                 (default (,@fg-base0 ,@bg-back))   ; Normal
@@ -237,7 +271,7 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                 (error (,@fmt-revr ,@fg-red))      ; ErrorMsg
                 (warning (,@fmt-bold ,@fg-red))    ; WarningMsg
                 (success (,@fg-blue))              ; MoreMsg
-                (escape-glyph-face (,@fg-red))
+                (escape-glyph (,@fg-red))
                 (fringe (,@fg-base01 ,@bg-base02))
                 (linum (,@fg-base01 ,@bg-base02))
                 (header-line (,@fg-base0 ,@bg-base02 ,@fmt-revbb)) ; Pmenu
@@ -252,6 +286,8 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                  (,@fg-base1 ,@bg-base02 ,@fmt-revbb :box nil))
                 (mode-line-inactive    ; StatusLineNC
                  (,@fg-base00 ,@bg-base02 ,@fmt-revbb :box nil))
+                (mode-line-buffer-id (,@fmt-bold :inherit mode-line))
+                (mode-line-buffer-id-inactive (,@fmt-bold :inherit mode-line-inactive))
                 (region (,@fg-base01 ,@bg-base03 ,@fmt-revbb)) ; Visual
                 (secondary-selection (,@bg-base02))
                 (shadow (,@fg-base01))
@@ -287,23 +323,22 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                      `((diff-added (,@fmt-revr ,@fg-green))
                        (diff-changed (,@fmt-revr ,@fg-yellow))
                        (diff-removed (,@fmt-revr ,@fg-red))
-                       (diff-refine-change
-                        (,@fmt-revr ,@fg-blue ,@bg-back))))
+                       (diff-refine-changed (,@fmt-revr ,@fg-blue ,@bg-back))))
                     (low
                      `((diff-added (,@fmt-undr ,@fg-green))
                        (diff-changed (,@fmt-undr ,@fg-yellow))
                        (diff-removed (,@fmt-bold ,@fg-red))
-                       (diff-refine-change (,@fmt-undr ,@fg-blue ,@bg-back))))
+                       (diff-refine-changed (,@fmt-undr ,@fg-blue ,@bg-back))))
                     (normal
                      (if window-system
                          `((diff-added (,@fmt-bold ,@fg-green ,@bg-base02))
                            (diff-changed (,@fmt-bold ,@fg-yellow ,@bg-base02))
                            (diff-removed (,@fmt-bold ,@fg-red ,@bg-base02))
-                           (diff-refine-change (,@fmt-bold ,@fg-blue ,@bg-base02)))
+                           (diff-refine-changed (,@fmt-bold ,@fg-blue ,@bg-base02)))
                        `((diff-added (,@fg-green ,@bg-base02))
                          (diff-changed (,@fg-yellow ,@bg-base02))
                          (diff-removed (,@fg-red ,@bg-base02))
-                         (diff-refine-change (,@fg-blue ,@bg-base02))))))
+                         (diff-refine-changed (,@fg-blue ,@bg-base02))))))
                 (diff-refine-added (:inherit diff-added ,@fmt-revr))
                 (diff-refine-removed (:inherit diff-removed ,@fmt-revr))
                 (diff-file-header (:inherit default ,@fg-blue))
@@ -405,6 +440,7 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                 (org-formula (:weight bold :slant italic ,@fg-red))
                 (org-code (,@fg-base01))
                 (org-document-title (,@fmt-bold ,@fg-cyan))
+                (org-document-info (,@fg-cyan))
                 (org-document-info-keyword (,@fg-base01))
                 (org-block (,@fg-base01))
                 (org-verbatim (,@fmt-undr ,@fg-base01))
@@ -468,8 +504,10 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                 (ace-jump-face-background (,@fmt-none ,@fg-base01))
                 (ace-jump-face-foreground (,@fmt-bold ,@fg-red))
                 ;; bm visual bookmarks
-                (bm-fringe-face (,@bg-orange ,@fg-base03))
-                (bm-fringe-persistent-face (,@bg-blue ,@fg-base03))
+                (bm-face ((t (,@bg-orange ,@fg-base03))))
+                (bm-fringe-face ((t (,@bg-orange ,@fg-base03))))
+                (bm-fringe-persistent-face ((t (,@bg-blue ,@fg-base03))))
+                (bm-persistent-face ((t (,@bg-blue ,@fg-base03))))
                 ;; Flymake
                 (flymake-errline (,@fmt-bold ,@fg-red)) ; Error
                 (flymake-warnline (,@fmt-bold ,@fg-red))
@@ -728,15 +766,23 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                 (rst-level-4 (:inherit outline-4))
                 (rst-level-5 (:inherit outline-5))
                 (rst-level-6 (:inherit outline-6))
-                ;;ansi-term
-                (term-color-black (,@fg-base02 ,@bg-base02))
-                (term-color-red (,@fg-red ,@bg-red))
-                (term-color-green (,@fg-green ,@bg-green))
-                (term-color-yellow (,@fg-yellow ,@bg-yellow))
-                (term-color-blue (,@fg-blue ,@bg-blue))
-                (term-color-magenta (,@fg-magenta ,@bg-magenta))
-                (term-color-cyan (,@fg-cyan ,@bg-cyan))
-                (term-color-white (,@fg-base00 ,@bg-base00))
+                ;;ansi-color
+                (ansi-color-cyan (,@fg-cyan ,@bg-cyan))
+                (ansi-color-blue (,@fg-blue ,@bg-blue))
+                (ansi-color-magenta (,@fg-magenta ,@bg-magenta))
+                (ansi-color-red (,@fg-red ,@bg-red))
+                (ansi-color-yellow (,@fg-yellow ,@bg-yellow))
+                (ansi-color-green (,@fg-green ,@bg-green))
+                (ansi-color-black (,@fg-base02 ,@bg-base02))
+                (ansi-color-white (,@fg-base2 ,@bg-base2))
+                (ansi-color-bright-cyan (,@fg-base1 ,@bg-base1))
+                (ansi-color-bright-blue (,@fg-base0 ,@bg-base0))
+                (ansi-color-bright-magenta (,@fg-violet ,@bg-violet))
+                (ansi-color-bright-red (,@fg-orange ,@bg-orange))
+                (ansi-color-bright-yellow (,@fg-base00 ,@bg-base00))
+                (ansi-color-bright-green (,@fg-base01 ,@bg-base01))
+                (ansi-color-bright-black (,@fg-base03 ,@bg-base03))
+                (ansi-color-bright-white (,@fg-base3 ,@bg-base3))
                 ;; company
                 (company-tooltip (,@fg-base00 ,@bg-base02))
                 (company-tooltip-selection (,@fg-green ,@bg-base02))
@@ -747,7 +793,7 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                 (company-scrollbar-fg (,@bg-base0))
                 (company-scrollbar-bg (,@bg-base02))
                 (company-preview (,@bg-green))
-                (company-preview-common (,@bg-base02))
+                (company-preview-common (,@fg-base01 ,@bg-base02))
                 (company-template-field (,@fg-base03 ,@bg-yellow))
                 ;; hydra
                 (hydra-face-red (,@fmt-bold ,@fg-red))
@@ -779,16 +825,5 @@ the \"Gen RGB\" column in solarized-definitions.el to improve them further."
                 ;; haskell
                 (haskell-keyword-face (,@fg-cyan)))))))
 
-;;;###autoload
-(when (boundp 'custom-theme-load-path)
-  (add-to-list 'custom-theme-load-path
-               (file-name-as-directory (file-name-directory load-file-name))))
-
-(defmacro create-solarized-theme (name description color-definitions)
-  `(progn
-     (deftheme ,name ,description)
-     (apply 'custom-theme-set-faces
-            ',name ,color-definitions)
-     (provide-theme ',name)))
-
 (provide 'solarized-definitions)
+;;; solarized-definitions.el ends here

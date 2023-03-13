@@ -880,8 +880,9 @@ Group 6 matches the closing square brackets.")
   (concat "\\(" (regexp-opt markdown-uri-types) ":[^]\t\n\r<>; ]+\\)")
   "Regular expression for matching inline URIs.")
 
+;; CommanMark specification says scheme length is 2-32 characters
 (defconst markdown-regex-angle-uri
-  (concat "\\(<\\)\\(" (regexp-opt markdown-uri-types) ":[^]\t\n\r<>,;()]+\\)\\(>\\)")
+  (concat "\\(<\\)\\([a-z][a-z0-9.+-]\\{1,31\\}:[^]\t\n\r<>,;()]+\\)\\(>\\)")
   "Regular expression for matching inline URIs in angle brackets.")
 
 (defconst markdown-regex-email
@@ -3506,14 +3507,14 @@ SEQ may be an atom or a sequence."
 (defun markdown-fontify-hrs (last)
   "Add text properties to horizontal rules from point to LAST."
   (when (markdown-match-hr last)
-    (let ((hr-char (markdown--first-displayable markdown-hr-display-char)))
+    (let* ((hr-char (markdown--first-displayable markdown-hr-display-char))
+           (hr-len (and hr-char (/ (window-max-chars-per-line) (char-width hr-char)))))
       (add-text-properties
        (match-beginning 0) (match-end 0)
        `(face markdown-hr-face
               font-lock-multiline t
               ,@(when (and markdown-hide-markup hr-char)
-                  `(display ,(make-string
-                              (1- (window-body-width)) hr-char)))))
+                  `(display ,(make-string hr-len hr-char)))))
       t)))
 
 (defun markdown-fontify-sub-superscripts (last)
@@ -9202,6 +9203,11 @@ This function assumes point is on a table."
         (push (buffer-substring-no-properties cur (point-max)) ret))
       (nreverse ret))))
 
+(defsubst markdown--is-delimiter-row (line)
+  (and (string-match-p "\\`[ \t]*|[ \t]*[-:]" line)
+       (cl-loop for c across line
+                always (member c '(?| ?- ?: ?\t ? )))))
+
 (defun markdown-table-align ()
   "Align table at point.
 This function assumes point is on a table."
@@ -9214,9 +9220,10 @@ This function assumes point is on a table."
             ;; Store table indent
             (indent (progn (looking-at "[ \t]*") (match-string 0)))
             ;; Split table in lines and save column format specifier
-            (lines (mapcar (lambda (l)
-                             (if (string-match-p "\\`[ \t]*|[ \t]*[-:]" l)
-                                 (progn (setq fmtspec (or fmtspec l)) nil) l))
+            (lines (mapcar (lambda (line)
+                             (if (markdown--is-delimiter-row line)
+                                 (progn (setq fmtspec (or fmtspec line)) nil)
+                               line))
                            (markdown--split-string (buffer-substring begin end) "\n")))
             ;; Split lines in cells
             (cells (mapcar (lambda (l) (markdown--table-line-to-columns l))

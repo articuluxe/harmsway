@@ -144,6 +144,9 @@ is an hints in symbols range."
   "Holds the current breadcrumb path-up-to-project segments for
 caching purposes.")
 
+(defvar-local lsp-headerline--cached-workspace-root nil
+  "Holds the current value of lsp-workspace-root for caching purposes")
+
 ;; Redefine local vars of `all-the-icons' to avoid bytecode compilation errors.
 (defvar all-the-icons-default-adjust)
 (defvar all-the-icons-scale-factor)
@@ -310,13 +313,12 @@ PATH is the current folder to be checked."
 (defun lsp-headerline--build-path-up-to-project-string ()
   "Build the path-up-to-project segment for the breadcrumb."
   (if-let ((root (lsp-headerline--workspace-root)))
-      (let ((segments (progn
-                        (unless lsp-headerline--path-up-to-project-segments
-                          (setq lsp-headerline--path-up-to-project-segments
-                                (list (lsp-headerline--path-up-to-project-root
-                                       root
-                                       (file-name-directory (file-truename (buffer-file-name)))))))
-                        (car lsp-headerline--path-up-to-project-segments))))
+      (let ((segments (or
+                       lsp-headerline--path-up-to-project-segments
+                       (setq lsp-headerline--path-up-to-project-segments
+                             (lsp-headerline--path-up-to-project-root
+                              root
+                              (lsp-f-parent (buffer-file-name)))))))
         (mapconcat (lambda (next-dir)
                      (propertize next-dir
                                  'font-lock-face
@@ -420,8 +422,8 @@ PATH is the current folder to be checked."
   (lsp-headerline-breadcrumb-mode -1))
 
 (defun lsp-headerline--workspace-root ()
-  (--when-let (car lsp--buffer-workspaces)
-    (lsp--workspace-root it)))
+  (or lsp-headerline--cached-workspace-root
+      (setq lsp-headerline--cached-workspace-root (lsp-workspace-root))))
 
 ;;;###autoload
 (define-minor-mode lsp-headerline-breadcrumb-mode

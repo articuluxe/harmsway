@@ -4,8 +4,8 @@
 
 ;; Author: Akib Azmain Turja <akib@disroot.org>
 ;; Created: 2022-04-28
-;; Version: 0.5
-;; Package-Requires: ((emacs "26.1") (flymake "1.2.2") (popon "0.1") (posframe "1.1.7"))
+;; Version: 0.5.1
+;; Package-Requires: ((emacs "26.1") (flymake "1.2.2") (popon "0.1") (posframe "1.3.2"))
 ;; Keywords: convenience
 ;; Homepage: https://codeberg.org/akib/emacs-flymake-popon
 
@@ -63,7 +63,7 @@ newlines."
   :type 'function)
 
 (defcustom flymake-popon-posframe-extra-arguments
-  '(:poshandler posframe-poshandler-p0p1-to-p0p1)
+  '(:poshandler posframe-poshandler-point-bottom-left-corner-upward)
   "Extra arguments to pass to `posframe-show'."
   :type '(plist :key-type (symbol :tag "Argument")
                 :value-type (sexp :tag "Value")))

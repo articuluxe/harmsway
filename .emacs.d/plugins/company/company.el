@@ -1448,7 +1448,9 @@ update if FORCE-UPDATE."
   (and candidates
        (not (cdr candidates))
        (eq t (compare-strings (car candidates) nil nil
-                              prefix nil nil ignore-case))))
+                              prefix nil nil ignore-case))
+       (not (eq (company-call-backend 'kind (car candidates))
+                'snippet))))
 
 (defun company--fetch-candidates (prefix)
   (let* ((non-essential (not (company-explicit-action-p)))
@@ -3740,6 +3742,10 @@ Delay is determined by `company-tooltip-idle-delay'."
                                               'keep-prefix))
                          (company-strip-prefix completion)
                        completion))
+
+    (when (string-prefix-p "\n" completion)
+      (setq completion (concat (propertize " " 'face 'company-preview) "\n"
+                               (substring completion 1))))
 
     (and (equal pos (point))
          (not (equal completion ""))

@@ -1,6 +1,6 @@
 ;;; verb.el --- Organize and send HTTP requests  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021  Federico Tedin
+;; Copyright (C) 2023  Federico Tedin
 
 ;; Author: Federico Tedin <federicotedin@gmail.com>
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
@@ -391,7 +391,7 @@ other buffers without actually expanding the embedded code tags.")
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-s") #'verb-send-request-on-point-other-window)
     (define-key map (kbd "C-r") #'verb-send-request-on-point-other-window-stay)
-    (define-key map (kbd "C-m") #'verb-send-request-on-point-no-window)
+    (define-key map (kbd "C-<return>") #'verb-send-request-on-point-no-window)
     (define-key map (kbd "C-f") #'verb-send-request-on-point)
     (define-key map (kbd "C-k") #'verb-kill-all-response-buffers)
     (define-key map (kbd "C-e") #'verb-export-request-on-point)
@@ -841,12 +841,17 @@ Return t if there was a heading to move towards to and nil otherwise."
 Does not use property inheritance.  Matching is case-insensitive."
   (verb--back-to-heading)
   (thread-last
-    (org-buffer-property-keys)
-    ;; 1) Get all doc properties and filter them by prefix
-    (seq-filter (lambda (s) (string-prefix-p prefix s t)))
+    ;; 1) Get all doc properties and filter them by prefix. This will push the
+    ;; property already `upcase''d, but only if there is no `string=' the
+    ;; `upcase''d value
+    (seq-reduce (lambda (properties property)
+                 (if (string-prefix-p prefix property t)
+                     (cl-pushnew (upcase property) properties :test #'string=)
+                   properties))
+                (org-buffer-property-keys)
+                '())
     ;; 2) Get the value for each of those properties and return an alist
-    (mapcar (lambda (key)
-              (cons (upcase key) (org-entry-get (point) key 'selective))))
+    (mapcar (lambda (key) (cons key (org-entry-get (point) key 'selective))))
     ;; 3) Discard all (key . nil) elements in the list
     (seq-filter #'cdr)))
 
@@ -946,6 +951,11 @@ CLASS must be an EIEIO class."
   (ignore-errors
     (object-of-class-p obj class)))
 
+(defun verb--try-read-fn-form (form)
+  "Try `read'ing FORM and throw error if failed."
+  (condition-case _err (read form)
+    (end-of-file (user-error "`%s' is a malformed expression" form))))
+
 (defun verb--request-spec-post-process (rs)
   "Validate and prepare request spec RS to be used.
 
@@ -961,17 +971,19 @@ After that, return RS."
               (verb-request-spec :headers verb-base-headers)
               rs)))
   ;; Apply the request mapping function, if present
-  (when-let ((fn-name (cdr (assoc-string "verb-map-request"
-                                         (oref rs metadata) t)))
-             (fn-sym (intern fn-name)))
-    (if (fboundp fn-sym)
-        (setq rs (funcall (symbol-function fn-sym) rs))
-      (user-error "No request mapping function with name \"%s\" exists"
-                  fn-name))
+  (when-let ((form (thread-first
+                     (concat verb--metadata-prefix "map-request")
+                     (assoc-string (oref rs metadata) t)
+                     cdr
+                     verb--nonempty-string))
+             (fn (verb--try-read-fn-form form)))
+    (if (functionp fn)
+        (setq rs (funcall fn rs))
+      (user-error "`%s' is not a valid function" fn))
     (unless (verb--object-of-class-p rs 'verb-request-spec)
-      (user-error (concat "Request mapping function \"%s\" must return a "
+      (user-error (concat "Request mapping function `%s' must return a "
                           "`verb-request-spec' value")
-                  fn-name)))
+                  fn)))
   ;; Validate and return
   (verb-request-spec-validate rs))
 
@@ -1074,14 +1086,20 @@ Delete the window only if it isn't the only window in the frame."
   "Return value of Verb variable VAR.
 If VAR is has no value yet, use `read-string' to set its value first,
 unless DEFAULT is non-nil, in which case that value is used instead."
-  `(let ((val (assoc-string ',var verb--vars)))
-     (unless val
-       (setq val (cons ',var
-                       (or ,default
-                           (read-string (format "[verb-var] Set value for %s: "
-                                                ',var)))))
-       (push val verb--vars))
-     (cdr val)))
+  `(progn
+     (when (stringp ',var)
+       (user-error "%s (got: \"%s\")"
+                   "[verb-var] Variable name must be a symbol, not a string"
+                   ',var))
+     (let ((val (assq ',var verb--vars)))
+       (unless val
+         (setq val (cons ',var
+                         (or ,default
+                             (read-string
+                              (format "[verb-var] Set value for %s: "
+                                      ',var)))))
+         (push val verb--vars))
+       (cdr val))))
 
 (defun verb-set-var (&optional var value)
   "Set new value for variable VAR previously set with `verb-var'.
@@ -1091,7 +1109,7 @@ use string VAR and value VALUE."
   (interactive)
   (verb--ensure-verb-mode)
   (let* ((name (or (and (stringp var) var)
-                   (and (symbolp var) (symbol-name var))
+                   (and (symbolp var) var (symbol-name var))
                    (completing-read "Variable: "
                                     (mapcar (lambda (e)
                                               (symbol-name (car e)))
@@ -1135,7 +1153,7 @@ buffer used to show the values."
                 (format "%s" (cdr elem)))
         (newline))
       (unless (zerop (buffer-size))
-        (backward-delete-char 1))
+        (delete-char -1))
       (current-buffer))))
 
 (defun verb-read-file (file &optional coding-system)
@@ -1158,7 +1176,7 @@ Set the buffer's `verb-kill-this-buffer' variable locally to t."
             (value (cdr key-value)))
         (insert key ": " value "\n")))
     (unless (zerop (buffer-size))
-      (backward-delete-char 1))))
+      (delete-char -1))))
 
 (defun verb-show-request ()
   "Show the corresponding HTTP request for a received response.
@@ -1555,9 +1573,11 @@ CONTENT-TYPE must be the value returned by `verb--headers-content-type'."
 See `verb--stored-responses' for more details."
   (when-let ((req (oref response request))
              (metadata (oref req metadata))
-             (val (verb--nonempty-string (cdr (assoc-string
-                                               "verb-store"
-                                               metadata t)))))
+             (val (thread-first
+                    (concat verb--metadata-prefix "store")
+                    (assoc-string metadata t)
+                    cdr
+                    verb--nonempty-string)))
     (setq verb--stored-responses (cl-delete val verb--stored-responses
                                             :key #'car
                                             :test #'equal))

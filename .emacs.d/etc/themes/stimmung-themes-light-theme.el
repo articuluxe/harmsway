@@ -84,7 +84,7 @@ ITALIC? and BOLD? control font variant."
 	 'stimmung-themes-light
 
 	 `(default  ((t (:background ,bg1 :foreground ,fg1))))
-	 `(shadow   ((t (:background ,bg2))))
+	 `(shadow   ((t (:background ,bg1))))
 	 `(hl-line  ((t (:background ,bg2 :extend t))))
 
 	 `(region              ((t (:background ,bg4))))
@@ -93,14 +93,14 @@ ITALIC? and BOLD? control font variant."
 	 `(highlight           ((t (:foreground ,fg1 :background ,bg3 :bold t))))
 	 `(default             ((t (:foreground ,fg1 :background ,bg1))))
 	 `(fringe              ((t (:foreground ,fg1 :background ,bg1))))
-	 `(match               ((t (:foreground ,ok :bold t))))
-	 `(scroll-bar          ((t (:foreground ,fg5 :backgorund ,bg1))))
+	 `(match               ((t (:foreground ,ok  :bold t))))
+	 `(scroll-bar          ((t (:foreground ,fg5 :background ,bg1))))
 
 	 `(link                ((t (:underline t))))
 	 `(link-visited        ((t (:underline t :italic t))))
 	 `(button              ((t (:underline t))))
 	 `(header-line         ((t (:bold t))))
-	 `(tooltip             ((t (:foreground ,fg1  :background ,bg3))))
+	 `(tooltip             ((t (:foreground ,fg1 :background ,bg3))))
 	 `(vertical-border     ((t (:foreground ,bg2 :background ,bg2))))
 	 `(info-string         ((t (:background ,stimmung-themes-light-highlight-color))))
 	 `(default-italic      ((t (:slant italic))))
@@ -124,7 +124,7 @@ ITALIC? and BOLD? control font variant."
 	 `(homoglyph                   ((t (:foreground ,red))))
 
 	 `(line-number              ((t (:foreground ,fg5 :background ,bg1))))
-	 `(line-number-current-line ((t (:foreground ,fg1  :background ,bg1))))
+	 `(line-number-current-line ((t (:foreground ,fg1 :background ,bg1))))
 	 `(linum                    ((t (:inherit 'line-number))))
 
 	 ;; syntax, user customizable
@@ -159,7 +159,7 @@ ITALIC? and BOLD? control font variant."
 	 `(custom-state			((t (:background ,bg1 :foreground ,fg1 :italic t))))
 	 `(custom-link			((t (:background ,str :foreground ,fg1 :underline nil))))
 	 `(custom-visibility	((t (:background ,bg1 :foreground ,fg5 :height 0.8))))
-	 `(custom-comment		((t (:background ,bg1 :foregorund ,fg1 :italic t))))
+	 `(custom-comment		((t (:background ,bg1 :foreground ,fg1 :italic t))))
 	 `(custom-comment-tag	((t (:background ,bg1 :foreground ,fg1 :italic t))))
 
 	 `(custom-group-tag-1		((t (:background ,bg1 :foreground ,fg1 :bold t :height 1.1 :inherit variable-pitch))))
@@ -201,7 +201,7 @@ ITALIC? and BOLD? control font variant."
 	 `(eshell-prompt        ((t (:foreground ,fg1 :bold t))))
 	 `(eshell-ls-executable ((t (:foreground ,fg1 :bold t))))
 	 `(eshell-ls-symlink    ((t (:foreground ,fg1 :italic t))))
-	 `(eshell-ls-special    ((t (:foreground ,ok :italic t))))
+	 `(eshell-ls-special    ((t (:foreground ,ok  :italic t))))
 	 `(eshell-ls-backup     ((t (:foreground ,fg1 :italic t))))
 	 `(eshell-ls-readonly   ((t (:foreground ,red))))
 	 `(eshell-ls-unreadable ((t (:foreground ,red))))
@@ -257,9 +257,6 @@ ITALIC? and BOLD? control font variant."
 	 `(company-preview							((t (:background ,stimmung-themes-light-highlight-color :foreground ,fg1))))
 	 `(company-echo-common						((t (:background ,fg1 :foreground ,bg1))))
 
-	 ;; corfu
-	 `(corfu-current ((t (:background ,bg3 :foreground ,fg1))))
-
 	 ;; compilation
 	 `(compilation-line-number    ((t (:bold t))))
 	 `(compilation-column-number  ((t (:inherit 'font-lock-comment-face))))
@@ -269,9 +266,23 @@ ITALIC? and BOLD? control font variant."
 	 `(compilation-mode-line-exit ((t (:inherit 'compilation-info))))
 	 `(compilation-mode-line-fail ((t (:inherit 'compilation-error))))
 
+	 ;; corfu
+	 `(corfu-current ((t (:background ,bg4 :foreground ,fg1))))
+	 `(corfu-echo    ((t (:background ,bg1 :foreground ,fg1 :italic t))))
+
+	 ;; consult
+	 `(consult-project-extra-projects ((t (:foreground ,str-fg :italic t))))
+	 `(consult-file               ((t (:foreground ,fg1))))
+	 `(consult-grep-context       ((t (:foreground ,fg1))))
+	 `(consult-grep-help          ((t (:foreground ,ok))))
+	 `(consult-highlight-match    ((t (:background ,search))))
+	 `(consult-preview-insertion  ((t (:foreground ,fg1))))
+	 `(consult-preview-line       ((t (:foreground ,fg1))))
+	 `(consult-separator          ((t (:foreground ,fg5))))
+
 	 ;; modeline
 	 `(header-line         ((t (:inherit 'mode-line :distant-foreground ,bg1))))
-	 `(mode-line           ((t (:foreground ,fg1  :background ,bg5 :box (:line-width 1 :color ,fg5 :style nil)))))
+	 `(mode-line           ((t (:foreground ,fg1 :background ,bg5 :box (:line-width 1 :color ,fg5 :style nil)))))
 	 `(mode-line-inactive  ((t (:foreground ,fg5 :background ,bg1 :box (:line-width 1 :color ,bg3 :style nil)))))
 	 `(mode-line-buffer-id ((t (:foreground ,fg1 :bold t :distant-foreground ,bg1))))
 	 `(mode-line-emphasis  ((t (:foreground ,fg1 :bold t))))
@@ -294,12 +305,12 @@ ITALIC? and BOLD? control font variant."
 
 	 ;; doom-modeline
 	 `(doom-modeline-buffer-path        ((t (:foreground ,fg1))))
-	 `(doom-modeline-buffer-file        ((t (:foreground ,fg1  :weight bold))))
+	 `(doom-modeline-buffer-file        ((t (:foreground ,fg1 :weight bold))))
 	 `(doom-modeline-buffer-modified    ((t (:foreground ,red :weight bold))))
-	 `(doom-modeline-project-dir        ((t (:foreground ,fg1  :weight bold))))
-	 `(doom-modeline-project-root-dir   ((t (:foreground ,fg1  :weight normal))))
-	 `(doom-modeline-project-parent-dir ((t (:foreground ,fg1  :weight normal))))
-	 `(doom-modeline-bar-inactive       ((t (:foreground ,fg1  :background ,bg1))))
+	 `(doom-modeline-project-dir        ((t (:foreground ,fg1 :weight bold))))
+	 `(doom-modeline-project-root-dir   ((t (:foreground ,fg1 :weight normal))))
+	 `(doom-modeline-project-parent-dir ((t (:foreground ,fg1 :weight normal))))
+	 `(doom-modeline-bar-inactive       ((t (:foreground ,fg1 :background ,bg1))))
 	 `(doom-modeline-bar                ((t (:background ,bg5)))) ; the leftmost bar
 	 `(doom-modeline-evil-insert-state  ((t (:foreground ,fg1))))
 	 `(doom-modeline-evil-visual-state  ((t (:foreground ,fg1))))
@@ -392,8 +403,8 @@ ITALIC? and BOLD? control font variant."
 	 `(helm-time-zone-current			((t (:foreground ,fg1 :background ,bg1))))
 	 `(helm-time-zone-home				((t (:foreground ,fg1 :background ,bg1))))
 	 `(helm-bookmark-addressbook		((t (:foreground ,fg5 :background ,bg1))))
-	 `(helm-bookmark-directory			((t (:foreground nil :background nil :inherit helm-ff-directory))))
-	 `(helm-bookmark-file				((t (:foreground nil :background nil :inherit helm-ff-file))))
+	 `(helm-bookmark-directory			((t (:foreground nil  :background nil :inherit helm-ff-directory))))
+	 `(helm-bookmark-file				((t (:foreground nil  :background nil :inherit helm-ff-file))))
 	 `(helm-bookmark-gnus				((t (:foreground ,fg1 :background ,bg1))))
 	 `(helm-bookmark-info				((t (:foreground ,fg5 :background ,bg1))))
 	 `(helm-bookmark-man				((t (:foreground ,fg1 :background ,bg1))))
@@ -413,7 +424,7 @@ ITALIC? and BOLD? control font variant."
 	 `(helm-grep-file					((t (:foreground ,fg5 :background ,bg1))))
 	 `(helm-grep-finish					((t (:foreground ,fg5 :background ,bg1))))
 	 `(helm-grep-lineno					((t (:foreground ,fg5 :background ,bg1))))
-	 `(helm-grep-match					((t (:foreground nil :background nil :inherit helm-match))))
+	 `(helm-grep-match					((t (:foreground nil  :background nil :inherit helm-match))))
 	 `(helm-grep-running				((t (:foreground ,fg1 :background ,bg1))))
 	 `(helm-lisp-show-completion		((t (:background ,bg2))))
 	 `(helm-match						((t (:background ,search))))
@@ -438,7 +449,7 @@ ITALIC? and BOLD? control font variant."
 	 `(magit-diff-file-heading ((t (:foreground ,fg1 :bold nil))))
 	 `(magit-diff-whitespace-warning ((t (:background ,red))))
 
-	 `(magit-branch-remote-head	  ((t (:foreground ,fg5 :background ,bg5 :box (:line-width 1 :color ,fg5)))))
+	 `(magit-branch-remote-head	    ((t (:foreground ,fg5 :background ,bg5 :box (:line-width 1 :color ,fg5)))))
 	 `(magit-branch-current         ((t (:foreground ,fg1 :background ,bg5 :box (:line-width 1 :color ,fg5)))))
 	 `(magit-diff-context-highlight ((t (:foreground ,fg1 :background ,bg3))))
 	 `(magit-diff-file-header       ((t (:foreground ,fg1 :background ,bg3))))
@@ -456,12 +467,12 @@ ITALIC? and BOLD? control font variant."
 	 `(magit-section-highlight      ((t (:background ,bg3))))
 
 	 ;; diff-hl
-	 `(diff-hl-insert         ((t (:foreground ,fg1 :background ,ok :bold nil :italic nil))))
-	 `(diff-hl-delete         ((t (:foreground ,fg1 :background ,red :bold nil :italic nil))))
+	 `(diff-hl-insert         ((t (:foreground ,fg1 :background ,ok     :bold nil :italic nil))))
+	 `(diff-hl-delete         ((t (:foreground ,fg1 :background ,red    :bold nil :italic nil))))
 	 `(diff-hl-change         ((t (:foreground ,fg1 :background ,search :bold nil :italic nil))))
-	 `(diff-hl-ignore         ((t (:foreground ,fg1 :background ,bg1 :bold nil :italic nil))))
-	 `(diff-hl-margin-ignore  ((t (:foreground ,fg1 :background ,bg1 :bold nil :italic nil))))
-	 `(diff-hl-margin-unknown ((t (:foreground ,fg1 :background ,bg1 :bold nil :italic nil))))
+	 `(diff-hl-ignore         ((t (:foreground ,fg1 :background ,bg1    :bold nil :italic nil))))
+	 `(diff-hl-margin-ignore  ((t (:foreground ,fg1 :background ,bg1    :bold nil :italic nil))))
+	 `(diff-hl-margin-unknown ((t (:foreground ,fg1 :background ,bg1    :bold nil :italic nil))))
 
 	 ;; git-gutter-fringe
 	 `(git-gutter-fr:added    ((t (:foreground ,ok :bold nil :italic nil))))
@@ -644,9 +655,21 @@ ITALIC? and BOLD? control font variant."
 	 `(font-latex-string-face       ((t (:foreground ,fg1))))
 	 `(font-latex-warning-face      ((t (:foreground ,fg5))))
 	 `(font-latex-math-face         ((t (:foreground ,fg1))))
-	 `(font-latex-script-char-face  ((t (:foregroudn ,fg1))))
+	 `(font-latex-script-char-face  ((t (:foreground ,fg1))))
 
-	 ;; LSP
+	 ;; eglot
+
+	 `(eglot-highlight-symbol-face           ((t (:foregroud ,fg1 :background ,bg1))))
+	 `(eglot-mode-line                       ((t (:foregroud ,fg1 :background ,bg5))))
+	 `(eglot-diagnostic-tag-unnecessary-face ((t (:foregroud ,str-fg))))
+	 `(eglot-diagnostic-tag-deprecated-face  ((t (:foregroud ,str-fg :strike-through t))))
+
+	 ;; eldoc-box
+
+	 `(eldoc-box-border ((t (:background ,fg5))))
+	 `(eldoc-box-body   ((t (:foreground ,fg1 background ,bg5))))
+
+	 ;; lsp-mode
 
 	 `(lsp-dired-path-face			((t (:foreground ,fg1))))
 	 `(lsp-dired-path-error-face	((t (:foreground ,fg1 :underline (:style wave :color ,red)))))
@@ -697,6 +720,50 @@ ITALIC? and BOLD? control font variant."
 	 `(lsp-ui-sideline-code-action		((t (:foreground ,fg1 :background ,str))))
 	 `(lsp-ui-sideline-symbol-info		((t (:foreground ,fg1 :background ,search2))))
 	 `(lsp-ui-sideline-global			((t (:foreground ,fg1 :background ,bg1))))
+
+	 ;; tree-sitter
+
+	 `(tree-sitter-hl-face:attribute             ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:comment               ((t (:inherit 'font-lock-comment-face))))
+	 `(tree-sitter-hl-face:constant              ((t (:inherit 'font-lock-constant-face))))
+	 `(tree-sitter-hl-face:constant.builtin      ((t (:inherit 'font-lock-constant-face))))
+	 `(tree-sitter-hl-face:constructor           ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:doc                   ((t (:inherit 'font-lock-comment-face))))
+	 `(tree-sitter-hl-face:embedded              ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:escape                ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:function              ((t (:inherit 'font-lock-function-name-face))))
+	 `(tree-sitter-hl-face:function.builtin      ((t (:inherit 'font-lock-function-name-face))))
+	 `(tree-sitter-hl-face:function.call         ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:function.macro        ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:function.special      ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:keyword               ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:label                 ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:method                ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:method.call           ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:number                ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:operator              ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:property              ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:property.definition   ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:punctuation           ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:punctuation.bracket   ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:punctuation.special   ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:punctuation.delimiter ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:string                ((t (:inherit 'font-lock-string-face))))
+	 `(tree-sitter-hl-face:string.special        ((t (:inherit 'font-lock-string-face))))
+	 `(tree-sitter-hl-face:tag                   ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:type                  ((t (:inherit font-lock-type-face))))
+	 `(tree-sitter-hl-face:type.argument         ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.builtin          ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.parameter        ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.super            ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.variable         ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:variable.builtin      ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:variable.parameter    ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:variable.special      ((t (:foreground ,fg1 :background ,bg1))))
+
+	 ;; Typescript
+
+	 `(typescript-jsdoc-value ((t (:foreground ,fg1 :background ,stimmung-themes-light-highlight-color))))
 
 	 ;; DAP
 

@@ -20,7 +20,7 @@
 ;; Package-Version: 3.3.0.50-git
 ;; Package-Requires: (
 ;;     (emacs "25.1")
-;;     (compat "29.1.1.0")
+;;     (compat "29.1.3.4")
 ;;     (dash "2.19.1")
 ;;     (git-commit "3.3.0")
 ;;     (magit-section "3.3.0")
@@ -85,7 +85,7 @@ If the specified primary key has signing capacity then it is used
 as the value of the `--gpg-sign' argument without prompting, even
 when other such keys exist.  To be able to select another key you
 must then use a prefix argument."
-  :package-version '(magit . "3.4.0")
+  :package-version '(magit . "4.0.0")
   :group 'magit-commands
   :type 'string)
 
@@ -298,20 +298,21 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
   :group 'magit-essentials
   :type 'boolean)
 
+;; This is autoloaded and thus is used before `compat' is
+;; loaded, so we cannot use `keymap-lookup' and `keymap-set'.
 ;;;###autoload
 (progn
   (defun magit-maybe-define-global-key-bindings (&optional force)
     (when magit-define-global-key-bindings
       (let ((map (current-global-map)))
-        (dolist (elt '(("C-x g"   . magit-status)
-                       ("C-x M-g" . magit-dispatch)
-                       ("C-c M-g" . magit-file-dispatch)))
-          (let ((key (kbd (car elt)))
-                (def (cdr elt)))
-            (when (or force
-                      (not (or (lookup-key map key)
-                               (where-is-internal def (make-sparse-keymap) t))))
-              (define-key map key def)))))))
+        (pcase-dolist (`(,key . ,def)
+                       '(("C-x g"   . magit-status)
+                         ("C-x M-g" . magit-dispatch)
+                         ("C-c M-g" . magit-file-dispatch)))
+          (when (or force
+                    (not (or (lookup-key map (kbd key))
+                             (where-is-internal def (make-sparse-keymap) t))))
+            (define-key map (kbd key) def))))))
   (if after-init-time
       (magit-maybe-define-global-key-bindings)
     (add-hook 'after-init-hook #'magit-maybe-define-global-key-bindings t)))

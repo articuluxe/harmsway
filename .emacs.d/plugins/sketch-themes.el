@@ -35,18 +35,18 @@
 (defconst sketch-themes-colors
   '((white . ((fg        . "#212121")
               (bg        . "#FAFAFA")
+              (bg-alt    . "#efefef")
               (weak      . "#888888")
               (weaker    . "#dddddd")
-              (weakest   . "#efefef")
               (highlight . "#fee761")
               (success   . "#63c74d")
               (warning   . "#e43b44")))
 
     (black . ((fg        . "#f0f6f0")
               (bg        . "#222323")
+              (bg-alt    . "#2F302F")
               (weak      . "#6E706E")
               (weaker    . "#555755")
-              (weakest   . "#2F302F")
               (highlight . "#7D5DC1")
               ;; (highlight . "#CC7F22")   ; An alternative highlighting color
               (success   . "#63c74d")
@@ -61,7 +61,7 @@ VARIANT is bound."
           (fg         (cdr (assoc 'fg colors)))
           (weak	      (cdr (assoc 'weak colors)))
           (weaker     (cdr (assoc 'weaker colors)))
-          (weakest    (cdr (assoc 'weakest colors)))
+          (bg-alt     (cdr (assoc 'bg-alt colors)))
           (highlight  (cdr (assoc 'highlight colors)))
           (warning    (cdr (assoc 'warning colors)))
           (success    (cdr (assoc 'success colors)))
@@ -77,26 +77,26 @@ VARIANT is bound."
       ;; default
       (default (:background ,bg :foreground ,fg))
       (fringe (:background ,bg :foreground ,weak))
-      (shadow (:background ,weakest))
+      (shadow (:inherit fixed-pitch))
       (highlight (:foreground ,fg :background ,highlight))
       (region (:foreground ,fg :background ,highlight))
       (show-paren-match (:background ,highlight :bold t))
       (show-paren-mismatch (:background ,warning :bold t))
       (minibuffer-prompt (:bold t :foreground ,fg))
-      (isearch (:bold t :foreground ,fg :background ,weak :bold t))
+      (isearch (:bold t :foreground ,fg :background ,highlight :bold t))
       (lazy-highlight (:foreground ,fg :background ,weaker))
       (link (:underline t))
       (parenthesis (:foreground ,weak))
       (trailing-whitespace (:foreground nil :background ,warning))
       (cursor (:background ,fg :foreground ,bg))
-      (vertical-border (:foreground ,weaker))
+      (vertical-border (:foreground ,fg))
       (default-italic (:italic t))
-      (line-number (:background ,bg :foreground ,weaker))
+      (line-number (:background ,bg :foreground ,weak))
       (line-number-current-line (:background ,bg :foreground ,fg))
 
       ;; mode line
-      (mode-line (:foreground ,fg :background ,weakest))
-      (mode-line-inactive (:foreground ,weaker :background ,weakest))
+      (mode-line (:foreground ,fg :box t))
+      (mode-line-inactive (:foreground ,weak :weight light :box t))
 
       ;; font lock
       (font-lock-builtin-face (:foreground ,fg))
@@ -111,16 +111,16 @@ VARIANT is bound."
       (font-lock-type-face (:foreground ,fg))
       (font-lock-variable-name-face (:foreground ,fg :bold t))
       (font-lock-warning-face (:underline (:color ,warning :style wave)))
-      (fill-column-indicator (:foreground ,weakest))
+      (fill-column-indicator (:foreground ,weak))
 
       ;; clojure mode
       (clojure-keyword-face (:foreground ,fg))
 
       ;; hl line
-      (hl-line (:background ,weakest))
+      (hl-line (:background ,weaker))
 
       ;; hl fill column
-      (hl-fill-column-face (:background ,weaker))))))
+      (hl-fill-column-face (:background ,bg-alt))))))
 
 
 (defun sketch-themes--variant-name (variant)

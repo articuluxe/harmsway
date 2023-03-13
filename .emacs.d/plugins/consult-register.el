@@ -66,8 +66,8 @@ Each element of the list must have the form (char . name).")
 (cl-defmethod consult-register--describe ((val marker))
   "Describe marker register VAL."
   (with-current-buffer (marker-buffer val)
-    (save-restriction
-      (save-excursion
+    (save-excursion
+      (save-restriction
         (widen)
         (goto-char val)
         (let* ((line (line-number-at-pos))
@@ -77,9 +77,11 @@ Each element of the list must have the form (char . name).")
                 'multi-category `(consult-location . ,str)
                 'consult--type ?p))))))
 
-(cl-defmethod consult-register--describe ((val kmacro-register))
-  "Describe kmacro register VAL."
-  (list (consult-register--format-value val) 'consult--type ?k))
+(defmacro consult-register--describe-kmacro ()
+  "Generate method which describes kmacro register."
+  `(cl-defmethod consult-register--describe ((val ,(if (< emacs-major-version 30) 'kmacro-register 'kmacro)))
+     (list (consult-register--format-value val) 'consult--type ?k)))
+(consult-register--describe-kmacro)
 
 (cl-defmethod consult-register--describe ((val (head file)))
   "Describe file register VAL."

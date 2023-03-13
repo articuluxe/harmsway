@@ -6,7 +6,7 @@
 ;; Maintainer: Modus-Themes Development <~protesilaos/modus-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/modus-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/modus-themes
-;; Version: 4.0.1
+;; Version: 4.1.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -1076,7 +1076,8 @@ C1 and C2 are color values written in hexadecimal RGB."
 
 (defun modus-themes--current-theme ()
   "Return first enabled Modus theme."
-  (car (modus-themes--list-enabled-themes)))
+  (car (or (modus-themes--list-enabled-themes)
+           (modus-themes--list-known-themes))))
 
 (defun modus-themes--palette-symbol (theme &optional overrides)
   "Return THEME palette as a symbol.
@@ -1639,7 +1640,7 @@ FG and BG are the main colors."
     `(button ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
     `(link ((,c :inherit button)))
     `(link-visited ((,c :background ,bg-link-visited :foreground ,fg-link-visited :underline ,underline-link-visited)))
-    `(tooltip ((,c :background ,bg-active)))
+    `(tooltip ((,c :background ,bg-active :foreground ,fg-main)))
 ;;;;; agda2-mode
     `(agda2-highlight-bound-variable-face ((,c :inherit font-lock-variable-name-face)))
     `(agda2-highlight-catchall-clause-face ((,c :background ,bg-inactive)))
@@ -1923,9 +1924,12 @@ FG and BG are the main colors."
     `(completions-first-difference ((,c :inherit modus-themes-completion-match-1)))
 ;;;;; consult
     `(consult-async-split ((,c :inherit error)))
+    `(consult-file ((,c :inherit modus-themes-bold :foreground ,info)))
     `(consult-key ((,c :inherit modus-themes-key-binding)))
     `(consult-imenu-prefix ((,c :inherit shadow)))
     `(consult-line-number ((,c :inherit shadow)))
+    `(consult-line-number-prefix ((,c :inherit shadow)))
+    `(consult-preview-cursor ((,c :background ,cursor :foreground ,bg-main)))
 ;;;;; corfu
     `(corfu-current ((,c :inherit modus-themes-completion-selected)))
     `(corfu-bar ((,c :background ,fg-dim)))
@@ -1978,6 +1982,9 @@ FG and BG are the main colors."
     `(custom-group-tag ((,c :inherit bold :foreground ,builtin)))
     `(custom-group-tag-1 ((,c :inherit bold :foreground ,constant)))
     `(custom-variable-tag ((,c :inherit bold :foreground ,variable)))
+;;;;; dashboard
+    `(dashboard-heading ((,c :foreground ,name)))
+    `(dashboard-items-face (( ))) ; use the underlying style of all-the-icons
 ;;;;; deadgrep
     `(deadgrep-filename-face ((,c :inherit bold :foreground ,name)))
     `(deadgrep-match-face ((,c :inherit match)))
@@ -1999,18 +2006,18 @@ FG and BG are the main colors."
     `(dictionary-word-definition-face (( )))
     `(dictionary-word-entry-face ((,c :inherit font-lock-comment-face)))
 ;;;;; diff-hl
-    `(diff-hl-change ((,c :background ,bg-changed-intense)))
-    `(diff-hl-delete ((,c :background ,bg-removed-intense)))
-    `(diff-hl-insert ((,c :background ,bg-added-intense)))
+    `(diff-hl-change ((,c :background ,bg-changed-fringe)))
+    `(diff-hl-delete ((,c :background ,bg-removed-fringe)))
+    `(diff-hl-insert ((,c :background ,bg-added-fringe)))
     `(diff-hl-reverted-hunk-highlight ((,c :background ,fg-main :foreground ,bg-main)))
 ;;;;; diff-mode
-    `(diff-added ((,c :background ,bg-added)))
-    `(diff-changed ((,c :background ,bg-changed :extend t)))
+    `(diff-added ((,c :background ,bg-added :foreground ,fg-added)))
+    `(diff-changed ((,c :background ,bg-changed :foreground ,fg-changed :extend t)))
     `(diff-changed-unspecified ((,c :inherit diff-changed)))
-    `(diff-removed ((,c :background ,bg-removed)))
-    `(diff-refine-added ((,c :background ,bg-added-refine)))
-    `(diff-refine-changed ((,c :background ,bg-changed-refine)))
-    `(diff-refine-removed ((,c :background ,bg-removed-refine)))
+    `(diff-removed ((,c :background ,bg-removed :foreground ,fg-removed)))
+    `(diff-refine-added ((,c :background ,bg-added-refine :foreground ,fg-added)))
+    `(diff-refine-changed ((,c :background ,bg-changed-refine :foreground ,fg-changed)))
+    `(diff-refine-removed ((,c :background ,bg-removed-refine :foreground ,fg-removed)))
     `(diff-indicator-added ((,c :inherit diff-added :foreground ,fg-added-intense)))
     `(diff-indicator-changed ((,c :inherit diff-changed :foreground ,fg-changed-intense)))
     `(diff-indicator-removed ((,c :inherit diff-removed :foreground ,fg-removed-intense)))
@@ -2121,18 +2128,18 @@ FG and BG are the main colors."
     `(doom-modeline-urgent ((,c :inherit bold-italic :foreground ,modeline-err)))
     `(doom-modeline-warning ((,c :inherit warning)))
 ;;;;; ediff
-    `(ediff-current-diff-A ((,c :inherit diff-removed)))
+    `(ediff-current-diff-A ((,c :background ,bg-removed :foreground ,fg-removed)))
     `(ediff-current-diff-Ancestor ((,c :background ,bg-region))) ; TODO 2022-11-29: Needs review
-    `(ediff-current-diff-B ((,c :inherit diff-added)))
-    `(ediff-current-diff-C ((,c :inherit diff-changed)))
-    `(ediff-even-diff-A ((,c :background ,bg-dim)))
-    `(ediff-even-diff-Ancestor ((,c :background ,bg-dim)))
-    `(ediff-even-diff-B ((,c :background ,bg-dim)))
-    `(ediff-even-diff-C ((,c :background ,bg-dim)))
-    `(ediff-fine-diff-A ((,c :inherit diff-refine-removed)))
-    `(ediff-fine-diff-Ancestor ((,c :inherit diff-refine-cyan)))
-    `(ediff-fine-diff-B ((,c :inherit diff-refine-added)))
-    `(ediff-fine-diff-C ((,c :inherit diff-refine-changed)))
+    `(ediff-current-diff-B ((,c :background ,bg-added :foreground ,fg-added)))
+    `(ediff-current-diff-C ((,c :background ,bg-changed :foreground ,fg-changed)))
+    `(ediff-even-diff-A ((,c :background ,bg-diff-context)))
+    `(ediff-even-diff-Ancestor ((,c :background ,bg-diff-context)))
+    `(ediff-even-diff-B ((,c :background ,bg-diff-context)))
+    `(ediff-even-diff-C ((,c :background ,bg-diff-context)))
+    `(ediff-fine-diff-A ((,c :background ,bg-removed-refine :foreground ,fg-removed)))
+    `(ediff-fine-diff-Ancestor ((,c :inherit modus-themes-subtle-cyan)))
+    `(ediff-fine-diff-B ((,c :background ,bg-added-refine :foreground ,fg-added)))
+    `(ediff-fine-diff-C ((,c :background ,bg-changed-refine :foreground ,fg-changed)))
     `(ediff-odd-diff-A ((,c :inherit ediff-even-diff-A)))
     `(ediff-odd-diff-Ancestor ((,c :inherit ediff-even-diff-Ancestor)))
     `(ediff-odd-diff-B ((,c :inherit ediff-even-diff-B)))
@@ -2356,15 +2363,15 @@ FG and BG are the main colors."
     `(git-commit-overlong-summary ((,c :inherit warning)))
     `(git-commit-summary ((,c :inherit bold :foreground ,blue)))
 ;;;;; git-gutter
-    `(git-gutter:added ((,c :background ,bg-added-intense)))
-    `(git-gutter:deleted ((,c :background ,bg-removed-intense)))
-    `(git-gutter:modified ((,c :background ,bg-changed-intense)))
+    `(git-gutter:added ((,c :background ,bg-added-fringe)))
+    `(git-gutter:deleted ((,c :background ,bg-removed-fringe)))
+    `(git-gutter:modified ((,c :background ,bg-changed-fringe)))
     `(git-gutter:separator ((,c :inherit modus-themes-intense-cyan)))
     `(git-gutter:unchanged ((,c :inherit modus-themes-intense-magenta)))
 ;;;;; git-gutter-fr
-    `(git-gutter-fr:added ((,c :background ,bg-added-intense)))
-    `(git-gutter-fr:deleted ((,c :background ,bg-removed-intense)))
-    `(git-gutter-fr:modified ((,c :background ,bg-changed-intense)))
+    `(git-gutter-fr:added ((,c :background ,bg-added-fringe)))
+    `(git-gutter-fr:deleted ((,c :background ,bg-removed-fringe)))
+    `(git-gutter-fr:modified ((,c :background ,bg-changed-fringe)))
 ;;;;; git-rebase
     `(git-rebase-comment-hash ((,c :inherit (bold font-lock-comment-face) :foreground ,identifier)))
     `(git-rebase-comment-heading  ((,c :inherit (bold font-lock-comment-face))))
@@ -2638,6 +2645,8 @@ FG and BG are the main colors."
     `(jiralib-link-filter-face ((,c :underline t)))
     `(jiralib-link-issue-face ((,c :underline t)))
     `(jiralib-link-project-face ((,c :underline t)))
+;;;;; jit-spell
+    `(jit-spell-misspelling ((,c :inherit modus-themes-lang-error)))
 ;;;;; journalctl-mode
     `(journalctl-error-face ((,c :inherit error)))
     `(journalctl-finished-face ((,c :inherit success)))
@@ -2714,7 +2723,7 @@ FG and BG are the main colors."
     `(magit-diff-base ((,c :background ,bg-changed-faint :foreground ,fg-changed)))
     `(magit-diff-base-highlight ((,c :background ,bg-changed :foreground ,fg-changed)))
     `(magit-diff-context ((,c :inherit shadow)))
-    `(magit-diff-context-highlight ((,c :background ,bg-dim)))
+    `(magit-diff-context-highlight ((,c :background ,bg-diff-context)))
     `(magit-diff-file-heading ((,c :inherit bold :foreground ,accent-0)))
     `(magit-diff-file-heading-highlight ((,c :inherit magit-diff-file-heading :background ,bg-inactive)))
     `(magit-diff-file-heading-selection ((,c :inherit bold :background ,bg-hover-secondary)))
@@ -3647,17 +3656,17 @@ FG and BG are the main colors."
     `(vr/match-1 ((,c :inherit modus-themes-intense-yellow)))
     `(vr/match-separator-face ((,c :inherit bold :background ,bg-active)))
 ;;;;; vterm
-    `(vterm-color-black ((,c :background "gray35" :foreground "gray35")))
-    `(vterm-color-blue ((,c :background ,blue :foreground ,blue)))
-    `(vterm-color-cyan ((,c :background ,cyan :foreground ,cyan)))
+    `(vterm-color-black ((,c :background "gray35" :foreground "black")))
+    `(vterm-color-blue ((,c :background ,blue-warmer :foreground ,blue)))
+    `(vterm-color-cyan ((,c :background ,cyan-cooler :foreground ,cyan)))
     `(vterm-color-default ((,c :background ,bg-main :foreground ,fg-main)))
-    `(vterm-color-green ((,c :background ,green :foreground ,green)))
+    `(vterm-color-green ((,c :background ,green-cooler :foreground ,green)))
     `(vterm-color-inverse-video ((,c :background ,bg-main :inverse-video t)))
-    `(vterm-color-magenta ((,c :background ,magenta :foreground ,magenta)))
-    `(vterm-color-red ((,c :background ,red :foreground ,red)))
+    `(vterm-color-magenta ((,c :background ,magenta-cooler :foreground ,magenta)))
+    `(vterm-color-red ((,c :background ,red-warmer :foreground ,red)))
     `(vterm-color-underline ((,c :underline t)))
-    `(vterm-color-white ((,c :background "gray65" :foreground "gray65")))
-    `(vterm-color-yellow ((,c :background ,yellow :foreground ,yellow)))
+    `(vterm-color-white ((,c :background "white" :foreground "gray65")))
+    `(vterm-color-yellow ((,c :background ,yellow-warmer :foreground ,yellow)))
 ;;;;; vundo
     `(vundo-highlight ((,c :inherit (bold vundo-node) :foreground ,red-intense)))
 ;;;;; wcheck-mode

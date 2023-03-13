@@ -75,10 +75,11 @@
 ;; `nswbuff-exclude-buffer-regexps', `nswbuff-exclude-mode-regexp' and
 ;; `nswbuff-include-buffer-regexps'.
 ;;
-;; One function already provided that makes use of this option is
-;; `nswbuff-projectile-buffer-list', which returns the buffers of the current
-;; [Projectile](http://batsov.com/projectile/) project plus any buffers in
-;; `(buffer-list)' that match `nswbuff-include-buffer-regexps'.
+;; Two functions already provided that makes use of this option are
+;; `nswbuff-project-buffer-list' and `nswbuff-projectile-buffer-list', which
+;; return the buffers of the current project according to the built-in
+;; `project.el' or [Projectile](http://batsov.com/projectile/),
+;; respectively.
 
 ;;; History:
 ;;
@@ -87,6 +88,8 @@
 (require 'timer)
 (require 'seq)
 (require 'subr-x)
+
+(declare-function projectile-project-buffers "ext:projectile.el" (&optional project))
 
 ;;; Options
 
@@ -265,12 +268,12 @@ windows can be deleted before switching:
 
 \(defun my-vm-mode-hook ()
   \"Delete other windows before a switch.\"
-  (make-local-hook 'swbuff-pre-switch-hook)
-  (add-hook 'swbuff-pre-switch-hook #'delete-other-windows t t))
+  (make-local-hook \\='swbuff-pre-switch-hook)
+  (add-hook \\='swbuff-pre-switch-hook #\\='delete-other-windows t t))
 
-\(add-hook 'vm-mode-hook              #'my-vm-mode-hook)
-\(add-hook 'vm-summary-mode-hook      #'my-vm-mode-hook)
-\(add-hook 'vm-presentation-mode-hook #'my-vm-mode-hook)"
+\(add-hook \\='vm-mode-hook              #\\='my-vm-mode-hook)
+\(add-hook \\='vm-summary-mode-hook      #\\='my-vm-mode-hook)
+\(add-hook \\='vm-presentation-mode-hook #\\='my-vm-mode-hook)"
   :group 'nswbuff
   :type 'hook)
 
@@ -352,7 +355,7 @@ timer changes the current window.")
 (defvar nswbuff-status-buffer nil
   "The status buffer.")
 
-(defvar nswbuff-display-timer nil "The timer used to remove the status window after 'nswbuff-clear-delay'.")
+(defvar nswbuff-display-timer nil "The timer used to remove the status window after `nswbuff-clear-delay'.")
 
 (defvar nswbuff-override-map
   (let ((map (make-sparse-keymap)))

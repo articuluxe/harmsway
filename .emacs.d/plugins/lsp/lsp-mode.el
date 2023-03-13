@@ -180,10 +180,10 @@ As defined by the Language Server Protocol 3.16."
          lsp-gleam lsp-graphql lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-idris lsp-java lsp-javascript
          lsp-json lsp-kotlin lsp-latex lsp-ltex lsp-lua lsp-markdown lsp-marksman lsp-mint lsp-nginx lsp-nim lsp-nix lsp-magik
          lsp-metals lsp-mssql lsp-ocaml lsp-openscad lsp-pascal lsp-perl lsp-perlnavigator lsp-pls lsp-php lsp-pwsh lsp-pyls lsp-pylsp
-         lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-racket lsp-remark lsp-rf lsp-rust lsp-solargraph
+         lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-racket lsp-remark lsp-ruff-lsp lsp-rf lsp-rust lsp-solargraph
          lsp-sorbet lsp-sourcekit lsp-sonarlint lsp-tailwindcss lsp-tex lsp-terraform lsp-toml
          lsp-ttcn3 lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-volar lsp-vhdl lsp-vimscript
-         lsp-xml lsp-yaml lsp-ruby-syntax-tree lsp-sqls lsp-svelte lsp-steep lsp-zig)
+         lsp-xml lsp-yaml lsp-ruby-lsp lsp-ruby-syntax-tree lsp-sqls lsp-svelte lsp-steep lsp-zig)
   "List of the clients to be automatically required."
   :group 'lsp-mode
   :type '(repeat symbol))
@@ -380,6 +380,9 @@ the server has requested that."
     "[/\\\\]_build\\'"
     ;; Elixir
     "[/\\\\]\\.elixir_ls\\'"
+    ;; terraform and terragrunt
+    "[/\\\\]\\.terraform\\'"
+    "[/\\\\]\\.terragrunt-cache\\'"
     ;; nix-direnv
     "[/\\\\]\\.direnv\\'")
   "List of regexps matching directory paths which won't be monitored when
@@ -764,6 +767,7 @@ Changes take effect only when a new session is started."
                                         (sql-mode . "sql")
                                         (vimrc-mode . "vim")
                                         (sh-mode . "shellscript")
+                                        (bash-ts-mode . "shellscript")
                                         (ebuild-mode . "shellscript")
                                         (pkgbuild-mode . "shellscript")
                                         (scala-mode . "scala")
@@ -836,6 +840,7 @@ Changes take effect only when a new session is started."
                                         (yaml-ts-mode . "yaml")
                                         (ruby-mode . "ruby")
                                         (enh-ruby-mode . "ruby")
+                                        (ruby-ts-mode . "ruby")
                                         (fortran-mode . "fortran")
                                         (f90-mode . "fortran")
                                         (elm-mode . "elm")
@@ -847,6 +852,7 @@ Changes take effect only when a new session is started."
                                         (csharp-tree-sitter-mode . "csharp")
                                         (csharp-ts-mode . "csharp")
                                         (plain-tex-mode . "plaintex")
+                                        (context-mode . "context")
                                         (latex-mode . "latex")
                                         (v-mode . "v")
                                         (vhdl-mode . "vhdl")
@@ -978,6 +984,11 @@ must be used for handling a particular message.")
 (defface lsp-face-highlight-write
   '((t :inherit highlight :weight bold))
   "Face used for highlighting symbols being written to."
+  :group 'lsp-mode)
+
+(defface lsp-face-xref-items
+  '((t :inherit highlight))
+  "Face used for highlighting xref items."
   :group 'lsp-mode)
 
 (define-obsolete-variable-alias 'lsp-lens-auto-enable
@@ -3548,7 +3559,8 @@ disappearing, unset all the variables related to it."
 (defun lsp--client-capabilities (&optional custom-capabilities)
   "Return the client capabilities appending CUSTOM-CAPABILITIES."
   (append
-   `((workspace . ((workspaceEdit . ((documentChanges . t)
+   `((general . ((positionEncodings . ["utf-32", "utf-16"])))
+     (workspace . ((workspaceEdit . ((documentChanges . t)
                                      (resourceOperations . ["create" "rename" "delete"])))
                    (applyEdit . t)
                    (symbol . ((symbolKind . ((valueSet . ,(apply 'vector (number-sequence 1 26)))))))
@@ -5032,7 +5044,7 @@ identifier and the position respectively."
          (len (length line)))
     (add-face-text-property (max (min start-char len) 0)
                             (max (min end-char len) 0)
-                            'highlight t line)
+                            'lsp-face-xref-items t line)
     ;; LINE is nil when FILENAME is not being current visited by any buffer.
     (xref-make (or line filename)
                (xref-make-file-location

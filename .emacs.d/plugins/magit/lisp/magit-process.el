@@ -269,11 +269,9 @@ Used when `magit-process-display-mode-line-error' is non-nil."
 
 ;;; Process Mode
 
-(defvar magit-process-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map magit-mode-map)
-    map)
-  "Keymap for `magit-process-mode'.")
+(defvar-keymap magit-process-mode-map
+  :doc "Keymap for `magit-process-mode'."
+  :parent magit-mode-map)
 
 (define-derived-mode magit-process-mode magit-mode "Magit Process"
   "Mode for looking at Git process output."
@@ -773,11 +771,11 @@ Magit status buffer."
        (set-keymap-parent ,map minibuffer-local-map)
        ;; Note: Leaving (kbd ...) unevaluated leads to the
        ;; magit-process:password-prompt test failing.
-       (define-key ,map ,(kbd "C-g")
-         (lambda ()
-           (interactive)
-           (ignore-errors (kill-process ,proc))
-           (abort-recursive-edit)))
+       (keymap-set ,map "C-g"
+                   (lambda ()
+                     (interactive)
+                     (ignore-errors (kill-process ,proc))
+                     (abort-recursive-edit)))
        (let ((minibuffer-local-map ,map))
          ,@body))))
 
@@ -979,12 +977,9 @@ as argument."
 (advice-add 'tramp-sh-handle-process-file :around
             #'tramp-sh-handle-process-file--magit-tramp-process-environment)
 
-(defvar magit-mode-line-process-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "<mode-line> <mouse-1>")
-      'magit-process-buffer)
-    map)
-  "Keymap for `mode-line-process'.")
+(defvar-keymap magit-mode-line-process-map
+  :doc "Keymap for `mode-line-process'."
+  "<mode-line> <mouse-1>" ''magit-process-buffer)
 
 (defun magit-process-set-mode-line (program args)
   "Display the git command (sans arguments) in the mode line."

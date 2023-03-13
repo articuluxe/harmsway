@@ -69,7 +69,9 @@ compare incremental values with initial values."
      (setq incremental-states phps-mode-lex-analyzer--states)
      (setq incremental-tokens phps-mode-lex-analyzer--tokens)
      (setq incremental-imenu phps-mode-lex-analyzer--imenu)
-     (setq incremental-buffer (buffer-substring (point-min) (point-max)))
+     (save-restriction
+       (widen)
+       (setq incremental-buffer (buffer-substring (point-min) (point-max))))
      (setq incremental-bookkeeping (phps-mode-test--hash-to-list phps-mode-lex-analyzer--bookkeeping t))
      (setq incremental-nest-location-stack phps-mode-lex-analyzer--nest-location-stack)
 
@@ -187,6 +189,20 @@ Each element is a list: (list key value), optionally UN-SORTED."
                    (< (car (car a)) (car (car b)))
                  (< (car a) (car b)))))))
       nil)))
+
+(defun phps-mode-test--output-parse-productions (parse)
+  "Output productions by PARSE trail."
+  (message "Left-to-right with right-most derivation in reverse:\n%S\n" parse)
+  (dolist (production-number parse)
+    (let ((production
+           (phps-mode-parser--get-grammar-production-by-number
+            production-number)))
+      (message
+       "%d: %S -> %S"
+       production-number
+       (car (car production))
+       (car (cdr production)))))
+  (message "\n"))
 
 (transient-mark-mode t)
 (electric-pair-mode t)

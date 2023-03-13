@@ -1,11 +1,11 @@
 ;;; dtrt-indent.el --- Adapt to foreign indentation offsets
 
 ;; Copyright (C) 2003, 2007, 2008 Julian Scheid
-;; Copyright (C) 2014-2022 Reuben Thomas
+;; Copyright (C) 2014-2023 Reuben Thomas
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.8
+;; Version: 1.9
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -858,6 +858,8 @@ merged with offset %s (%.2f%% deviation, limit %.2f%%)"
                   (nth 1 best-guess)
                 0))
              (total-lines (nth 1 histogram-and-total-lines))
+             (enough-relevant-lines
+              (>= total-lines dtrt-indent-min-relevant-lines))
              (hard-tab-percentage (if (> total-lines 0)
                                       (/ (float (nth 2 histogram-and-total-lines))
                                          total-lines)
@@ -876,10 +878,13 @@ merged with offset %s (%.2f%% deviation, limit %.2f%%)"
                   dtrt-indent-min-quality)
                (format "best guess below minimum quality (%f < %f)"
                        (* 100.0 (nth 1 best-guess))
-                       dtrt-indent-min-quality)))))
+                       dtrt-indent-min-quality))
+              ((not enough-relevant-lines)
+               (format "not enough relevant lines (%d required)"
+                       dtrt-indent-min-relevant-lines)))))
 
         (cond
-         (rejected)
+         ((not enough-relevant-lines))
          ((or (= 0 hard-tab-percentage)
               (>= (/ soft-tab-percentage
                      hard-tab-percentage)

@@ -1,13 +1,10 @@
 ;;; eldoc-box.el --- Display documentation in childframe      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2018 Sebastien Chapuis, 2018 Yuan Fu
+;; Copyright (C) 2018 Yuan Fu
 
-;; Version: 1.8
+;; Version: 1.10
 
-;; Author: Sebastien Chapuis <sebastien@chapu.is>
-;; Maintainer: Yuan Fu <casouri@gmail.com>
-;; Contributors:
-;;   João Távora <joaotavora@gmail.com>
+;; Author: Yuan Fu <casouri@gmail.com>
 ;; URL: https://github.com/casouri/eldoc-box
 ;; Package-Requires: ((emacs "27.1"))
 
@@ -32,13 +29,46 @@
 
 ;;; Commentary:
 ;;
-;; See documentation in README.org or visit homepage
+;; Usage:
+;;
+;; There are three ways to use this package:
+;;
+;; 1. Enable ‘eldoc-box-hover-mode’. Emacs will show the documentation
+;; of symbol at point in a children on the upper left or right corner.
+;;
+;; 2. Enable ‘eldoc-box-hover-at-point-mode’. Similar to
+;; ‘eldoc-box-hover-mode’, but displays the childframe at point. (This
+;; mode feels slower comparing to ‘eldoc-box-hover-mode’.)
+;;
+;; 3. Bind ‘eldoc-box-help-at-point’ to a key and bring up the
+;; documentation childframe on-demand. This command requires Emacs 28
+;; to work.
+;;
+;; Customization faces:
+;;
+;; - ‘eldoc-box-border’
+;; - ‘eldoc-box-body’
+;;
+;; Hooks:
+;;
+;; - ‘eldoc-box-buffer-hook’
+;; - ‘eldoc-box-frame-hook’
+;;
+;; Customize options:
+;;
+;; - ‘eldoc-box-max-pixel-width’
+;; - ‘eldoc-box-max-pixel-height’
+;; - ‘eldoc-box-only-multi-line’
+;; - ‘eldoc-box-cleanup-interval’
+;; - ‘eldoc-box-fringe-use-same-bg’
+;; - ‘eldoc-box-self-insert-command-list’
 
 ;;; Code:
-;;
 
-(require 'cl-lib)
-(require 'seq)
+(eval-when-compile
+  (require 'cl-lib)
+  (require 'pcase)
+  (require 'seq))
 
 ;;;; Userland
 ;;;;; Variable
@@ -69,6 +99,17 @@ in that mode the childframe is cleared as soon as point moves."
 (defcustom eldoc-box-clear-with-C-g nil
   "If set to non-nil, eldoc-box clears childframe on \\[keyboard-quit]."
   :type 'boolean)
+
+(defcustom eldoc-box-doc-separator "\n\n"
+  "The separator between documentation from different sources.
+
+Since Emacs 28, Eldoc can combine documentation from different
+sources, this separator is used to separate documentation from
+different sources.
+
+This separator is used for the documentation shown in
+‘eldoc-box-bover-mode’ but not ‘eldoc-box-help-at-point’."
+  :type 'string)
 
 (defvar eldoc-box-frame-parameters
   '(;; make the childframe unseen when first created
@@ -133,9 +174,14 @@ It will be passes with two arguments: WIDTH and HEIGHT of the childframe.")
   "T means fringe's background color is set to as same as that of default."
   :type 'boolean)
 
-(defvar eldoc-box-buffer-hook nil
+(defvar eldoc-box-buffer-hook '(eldoc-box--prettify-markdown-separator
+                                eldoc-box--replace-en-space
+                                eldoc-box--remove-linked-images
+                                eldoc-box--fontify-html
+                                eldoc-box--condense-large-newline-gaps)
   "Hook run after buffer for doc is setup.
-Run inside the new buffer.")
+Run inside the new buffer. By default, it contains some Markdown
+prettifiers, which see.")
 
 (defvar eldoc-box-frame-hook nil
   "Hook run after doc frame is setup but just before it is made visible.
@@ -162,18 +208,31 @@ See `eldoc-box-inhibit-display-when-moving'."
 (defun eldoc-box--enable ()
   "Enable eldoc-box hover.
 Intended for internal use."
-  (add-function :before-while (local 'eldoc-message-function)
-                #'eldoc-box--eldoc-message-function)
+  (if (not (boundp 'eldoc-display-functions))
+      (add-function :before-while (local 'eldoc-message-function)
+                    #'eldoc-box--eldoc-message-function)
+
+    (setq-local eldoc-display-functions
+                (cons 'eldoc-box--eldoc-display-function
+                      (remq 'eldoc-display-in-echo-area
+                            eldoc-display-functions))))
+
   (when eldoc-box-clear-with-C-g
     (advice-add #'keyboard-quit :before #'eldoc-box-quit-frame)))
 
 (defun eldoc-box--disable ()
   "Disable eldoc-box hover.
 Intended for internal use."
-  (remove-function (local 'eldoc-message-function) #'eldoc-box--eldoc-message-function)
+  (if (not (boundp 'eldoc-display-functions))
+      (remove-function (local 'eldoc-message-function) #'eldoc-box--eldoc-message-function)
+
+    (setq-local eldoc-display-functions
+                (cons 'eldoc-display-in-echo-area
+                      (remq 'eldoc-box--eldoc-display-function
+                            eldoc-display-functions))))
+
   (advice-remove #'keyboard-quit #'eldoc-box-quit-frame)
-  ;; if minor mode is turned off when childframe is visible
-  ;; hide it
+  ;; If minor mode is turned off when childframe is visible, hide it.
   (when eldoc-box--frame
     (delete-frame eldoc-box--frame)
     (setq eldoc-box--frame nil)))
@@ -193,16 +252,18 @@ If (point) != last point, cleanup frame.")
     (eldoc-box-quit-frame)
     (kill-local-variable 'eldoc-display-functions)))
 
+;;;###autoload
 (defun eldoc-box-help-at-point ()
   "Display documentation of the symbol at point."
   (interactive)
-  (let ((eldoc-box-position-function
-         #'eldoc-box--default-at-point-position-function))
-    (eldoc-box--display
-     (with-current-buffer eldoc--doc-buffer
-       (buffer-string))))
-  (setq eldoc-box--help-at-point-last-point (point))
-  (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup))
+  (when (boundp 'eldoc--doc-buffer)
+    (let ((eldoc-box-position-function
+           #'eldoc-box--default-at-point-position-function))
+      (eldoc-box--display
+       (with-current-buffer eldoc--doc-buffer
+         (buffer-string))))
+    (setq eldoc-box--help-at-point-last-point (point))
+    (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup)))
 
 ;;;; Backstage
 ;;;;; Variable
@@ -235,9 +296,11 @@ STR has to be a proper documentation, not empty string, not nil, etc."
 
 (defun eldoc-box--window-side ()
   "Return the side of the selected window.
-Symbol 'left if the selected window is on the left,'right if on the right.
-Return 'left if there is only one window."
-  (let ((left-window(window-at 0 0)))
+Symbol ‘left’ if the selected window is on the left, ‘right’ if
+on the right. Return ‘left’ if there is only one window."
+  (let ((left-window (if tab-bar-mode
+                         (window-at-x-y 5 (+ 5 (tab-bar-height nil t)))
+                       (window-at 0 0))))
     (if (eq left-window (selected-window))
         'left
       'right)))
@@ -418,26 +481,92 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
     (setq eldoc-box--cleanup-timer
           (run-with-timer eldoc-box-cleanup-interval nil #'eldoc-box--maybe-cleanup))))
 
+(defun eldoc-box--count-newlines (str)
+  "Count the number of newlines in STR, excluding invisible ones.
+Trailing newlines doesn’t count."
+  (let ((idx 0)
+        (count 0)
+        (last-visible-newline nil)
+        (len (length str))
+        ;; Is the last visible newline a trailing newline?
+        (last-newline-trailing-p nil))
+
+    ;; Count visible newlines in STR.
+    (while (and (not (eq idx len))
+                (setq idx (string-search "\n" str
+                                         (if (eq idx 0) 0 (1+ idx)))))
+      (unless (memq 'invisible (text-properties-at idx str))
+        (setq last-visible-newline idx)
+        (cl-incf count)))
+
+    ;; If there is any visible character after the last newline, it is
+    ;; not a trailing newline.
+    (when last-visible-newline
+      (setq last-newline-trailing-p t)
+      (let ((idx (1+ last-visible-newline)))
+        (while (< idx len)
+          (when (not (memq 'invisible (text-properties-at idx str)))
+            (setq last-newline-trailing-p nil))
+          (cl-incf idx))))
+
+    (if last-newline-trailing-p
+        (1- count)
+      count)))
+
 (defun eldoc-box--eldoc-message-function (str &rest args)
   "Front-end for eldoc.
 Display STR in childframe and ARGS works like `message'."
-  (when (and (stringp str) (not (equal str "")))
+  (when (stringp str)
     (let* ((doc (string-trim-right (apply #'format str args)))
            (single-line-p (and eldoc-box-only-multi-line
-                               (eq (cl-count ?\n doc) 0))))
-      (unless single-line-p
+                               (eq (eldoc-box--count-newlines doc) 0))))
+      (when (and (not (equal doc ""))
+                 (not single-line-p))
         (eldoc-box--display doc)
         (setq eldoc-box--last-point (point))
         ;; Why a timer? ElDoc is mainly used in minibuffer,
         ;; where the text is constantly being flushed by other commands
         ;; so ElDoc doesn't try very hard to cleanup
-        (when eldoc-box--cleanup-timer (cancel-timer eldoc-box--cleanup-timer))
-        ;; this function is also called by `eldoc-pre-command-refresh-echo-area'
-        ;; in `pre-command-hook', which means the timer is reset before every
-        ;; command if `eldoc-box-hover-mode' is on and `eldoc-last-message' is not nil.
+        (when eldoc-box--cleanup-timer
+          (cancel-timer eldoc-box--cleanup-timer))
+        ;; This function is also called by
+        ;; `eldoc-pre-command-refresh-echo-area' in
+        ;; `pre-command-hook', which means the timer is reset before
+        ;; every command if `eldoc-box-hover-mode' is on and
+        ;; `eldoc-last-message' is not nil.
         (setq eldoc-box--cleanup-timer
-              (run-with-timer eldoc-box-cleanup-interval nil #'eldoc-box--maybe-cleanup)))
+              (run-with-timer eldoc-box-cleanup-interval
+                              nil #'eldoc-box--maybe-cleanup)))
+      ;; Return nil to stop ‘eldoc--message’ from running, because
+      ;; this function is added as a ‘:before-while’ advice.
       single-line-p)))
+
+(defun eldoc-box--compose-doc (doc)
+  "Compose a doc passed from eldoc.
+
+DOC has the form of (TEXT :KEY VAL...), and KEY can be ‘:thing’
+and ‘:face’, among other things. If ‘:thing’ exists, it is put at
+the start of the doc followed by a colon. If ‘:face’ exists, it
+is applied to the thing.
+
+Return the composed string."
+  (let ((thing (plist-get (cdr doc) :thing))
+        (face (plist-get (cdr doc) :face)))
+    (concat (if thing
+                (concat (propertize (format "%s" thing) 'face face) ": ")
+              "")
+            (car doc))))
+
+(defun eldoc-box--eldoc-display-function (docs interactive)
+  "Display DOCS in childframe.
+For DOCS and INTERACTIVE see ‘eldoc-display-functions’. Maybe
+display the docs in echo area depending on
+‘eldoc-box-only-multi-line’."
+  (let ((doc (string-trim (string-join
+                           (mapcar #'eldoc-box--compose-doc docs)
+                           eldoc-box-doc-separator))))
+    (when (eldoc-box--eldoc-message-function "%s" doc)
+      (eldoc-display-in-echo-area docs interactive))))
 
 ;;;###autoload
 (define-minor-mode eldoc-box-hover-mode
@@ -518,6 +647,101 @@ You can use \[keyboard-quit] to hide the doc."
                (overlay-get company-pseudo-tooltip-overlay 'company-column)))
          (or (line-number-display-width t) 0))
     nil))
+
+;;;; Markdown compatibility
+
+(defun eldoc-box--prettify-markdown-separator ()
+  "Prettify the markdown separator in doc returned by Eglot.
+Refontify the separator so they span exactly the width of the
+childframe."
+  (save-excursion
+    (goto-char (point-min))
+    (let (prop)
+      (while (setq prop (text-property-search-forward 'markdown-hr))
+        (add-text-properties (prop-match-beginning prop)
+                             (prop-match-end prop)
+                             '( display (space :width text)
+                                face ( :strike-through t
+                                       :height 0.4)))))))
+
+(defun eldoc-box--replace-en-space ()
+  "Display the en spaces in documentation as regular spaces."
+  (face-remap-set-base 'nobreak-space '(:inherit default))
+  (face-remap-set-base 'markdown-line-break-face '(:inherit default)))
+
+(defun eldoc-box--condense-large-newline-gaps ()
+  "Condense exceedingly large gaps made of consecutive newlines.
+
+These gaps are usually made of hidden \"```\" and/or consecutive
+newlines. Replace those gaps with a single empty line at 0.5 line
+height."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward
+            (rx (>= 2 (or "\n"
+                          (seq bol "```" (* (syntax word)) "\n")
+                          (seq (+ "<br>") "\n")
+                          (seq bol (+ (or " " "\t" " ")) "\n"))))
+            nil t)
+      (if (or (eq (match-beginning 0) (point-min))
+              (eq (match-end 0) (point-max)))
+          (replace-match "")
+        (replace-match "\n\n")
+        (add-text-properties (1- (point)) (point)
+                             '( font-lock-face (:height 0.4)
+                                face (:height 0.4)))))))
+
+(defun eldoc-box--remove-linked-images ()
+  "Some documentation embed image links in the doc...remove them."
+  (save-excursion
+    (goto-char (point-min))
+    ;; Find every Markdown image link, and remove them.
+    (while (re-search-forward
+            (rx "[" (seq "![" (+? anychar) "](" (+? anychar) ")") "]"
+                "(" (+? anychar) ")")
+            nil t)
+      (replace-match ""))))
+
+(defun eldoc-box--fontify-html ()
+  "Fontify HTML tags and special entities."
+  (save-excursion
+    ;; <h1> tags.
+    (goto-char (point-min))
+    (while (re-search-forward
+            (rx bol
+                (group "<h" digit ">")
+                (group (*? anychar))
+                (group "</h" digit ">")
+                eol)
+            nil t)
+      (add-text-properties (match-beginning 2)
+                           (match-end 2)
+                           '( face (:weight bold)
+                              font-lock-face (:weight bold)))
+      (put-text-property (match-beginning 1) (match-end 1)
+                         'invisible t)
+      (put-text-property (match-beginning 3) (match-end 3)
+                         'invisible t))
+    ;; Special entities.
+    (goto-char (point-min))
+    (while (re-search-forward (rx (or "&lt;" "&gt;" "&nbsp;")) nil t)
+      (put-text-property (match-beginning 0) (match-end 0)
+                         'display
+                         (pcase (match-string 0)
+                           ("&lt;" "<")
+                           ("&gt;" ">")
+                           ("&nbsp;" " "))))))
+
+;;;; Tab-bar compatibility
+
+(defun eldoc-box-reset-frame ()
+  "Discard the current childframe and regenerate one.
+This allows any change in childframe parameter to take effect."
+  (interactive)
+  (setq eldoc-box--frame nil))
+
+(with-eval-after-load 'tab-bar-mode
+  (add-hook 'tab-bar-mode-hook #'eldoc-box-reset-frame))
 
 (provide 'eldoc-box)
 

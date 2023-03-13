@@ -117,7 +117,10 @@
                end (1- end))
       collect `(,(intern (format "org-%s" (car elt))) ,target ,begin . ,end))))
 
-(add-to-list 'embark-target-finders 'embark-org-target-element-context)
+(if-let (((not (memq 'embark-org-target-element-context embark-target-finders)))
+         (tail (memq 'embark-target-active-region embark-target-finders)))
+    (push 'embark-org-target-element-context (cdr tail))
+  (push 'embark-org-target-element-context embark-target-finders))
 
 ;;; Custom Org actions
 
@@ -318,11 +321,10 @@ bound to i."
 
 ;; The reason for this is left as an exercise to the reader.
 ;; Solution: Na ryvfc gnetrg znl cebzcg gur hfre sbe fbzrguvat!
-(push 'embark--ignore-target
-      (alist-get 'org-open-at-point embark-target-injection-hooks))
-
-(push 'embark--ignore-target
-      (alist-get 'org-insert-link embark-target-injection-hooks))
+(cl-pushnew 'embark--ignore-target
+            (alist-get 'org-open-at-point embark-target-injection-hooks))
+(cl-pushnew 'embark--ignore-target
+            (alist-get 'org-insert-link embark-target-injection-hooks))
 
 (add-to-list 'embark-keymap-alist
              '(org-link embark-org-link-map))
@@ -334,6 +336,38 @@ bound to i."
              '(org-file-link embark-org-link-map embark-file-map))
 (add-to-list 'embark-keymap-alist
              '(org-expression-link embark-org-link-map embark-expression-map))
+
+;;; Org headings
+
+(defun embark-org--refine-heading (_type target)
+  "Refine type of heading TARGET in Org buffers."
+  (cons 'org-heading target))
+
+(add-to-list 'embark-transformer-alist '(heading . embark-org--refine-heading))
+
+(defvar-keymap embark-org-heading-map
+  :doc "Keymap for actions on Org headings."
+  :parent embark-heading-map
+  "RET" #'org-todo
+  "t" #'org-todo
+  "," #'org-priority
+  ":" #'org-set-tags-command
+  "k" #'org-cut-subtree
+  "N" #'org-narrow-to-subtree
+  "l" #'org-metaleft
+  "r" #'org-metaright
+  "S" #'org-sort
+  "R" #'org-refile
+  "a" #'org-archive-subtree-default-with-confirmation
+  "h" #'org-insert-heading-respect-content
+  "H" #'org-insert-todo-heading-respect-content
+  "L" #'org-store-link)
+
+(dolist (cmd '(org-todo org-metaright org-metaleft org-metaup org-metadown
+               org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
+  (cl-pushnew cmd embark-repeat-actions))
+
+(cl-pushnew '(org-heading . embark-org-heading-map) embark-keymap-alist)
 
 ;;; Source blocks and babel calls
 
@@ -348,9 +382,10 @@ bound to i."
   "t" #'org-babel-tangle
   "s" #'org-babel-switch-to-session
   "l" #'org-babel-load-in-session
-  "'" #'org-edit-special)
+  "'" #'org-edit-special
+  "N" #'org-narrow-to-block)
 
-(dolist (motion '(org-babel-next-src-blockorg-babel-previous-src-block))
+(dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
 
 (add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))

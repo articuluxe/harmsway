@@ -9,7 +9,10 @@
 ;; Keywords: tools
 
 ;; Package-Version: 3.3.0.50-git
-;; Package-Requires: ((emacs "25.1") (compat "28.1.1.2") (dash "2.19.1"))
+;; Package-Requires: (
+;;     (emacs "25.1")
+;;     (compat "29.1.3.4")
+;;     (dash "2.19.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -43,7 +46,6 @@
 (require 'dash)
 (require 'eieio)
 (require 'format-spec)
-(require 'seq)
 (require 'subr-x)
 
 (eval-when-compile (require 'benchmark))
@@ -187,7 +189,7 @@ Otherwise the value has to have one of these two forms:
                                 (const :tag "No (kinda ugly)" nil)))))
 
 (define-obsolete-variable-alias 'magit-keep-region-overlay
-  'magit-section-keep-region-overlay "Magit-Section 3.4.0")
+  'magit-section-keep-region-overlay "Magit-Section 4.0.0")
 (defcustom magit-section-keep-region-overlay nil
   "Whether to keep the region overlay when there is a valid selection.
 
@@ -254,7 +256,7 @@ but that ship has sailed, thus this option."
 This has to be set before loading `magit-section' or it has
 no effect.  This also has no effect for Emacs >= 28, where
 `context-menu-mode' should be enabled instead."
-  :package-version '(magit-section . "3.4.0")
+  :package-version '(magit-section . "4.0.0")
   :group 'magit-section
   :type 'boolean)
 
@@ -342,24 +344,22 @@ no effect.  This also has no effect for Emacs >= 28, where
 
 (defvar symbol-overlay-inhibit-map)
 
-(defvar magit-section-heading-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [double-down-mouse-1] #'ignore)
-    (define-key map [double-mouse-1] #'magit-mouse-toggle-section)
-    (define-key map [double-mouse-2] #'magit-mouse-toggle-section)
-    map)
-  "Keymap used in the heading line of all expandable sections.
+(defvar-keymap magit-section-heading-map
+  :doc "Keymap used in the heading line of all expandable sections.
 This keymap is used in addition to the section-specific keymap,
-if any.")
+if any."
+  "<double-down-mouse-1>" #'ignore
+  "<double-mouse-1>" #'magit-mouse-toggle-section
+  "<double-mouse-2>" #'magit-mouse-toggle-section)
 
 (defvar magit-section-mode-map
   (let ((map (make-keymap)))
     (suppress-keymap map t)
     (when (and magit-section-show-context-menu-for-emacs<28
                (< emacs-major-version 28))
-      (define-key map [mouse-3] nil)
-      (define-key
-       map [down-mouse-3]
+      (keymap-set map "<mouse-3>" nil)
+      (keymap-set
+       map "<down-mouse-3>"
        `( menu-item "" ,(make-sparse-keymap)
           :filter ,(lambda (_)
                      (let ((menu (make-sparse-keymap)))
@@ -368,26 +368,26 @@ if any.")
                          (magit--context-menu-local menu last-input-event))
                        (magit-section-context-menu menu last-input-event)
                        menu)))))
-    (define-key map [left-fringe mouse-1] #'magit-mouse-toggle-section)
-    (define-key map [left-fringe mouse-2] #'magit-mouse-toggle-section)
-    (define-key map (kbd "TAB") #'magit-section-toggle)
-    (define-key map [C-tab]     #'magit-section-cycle)
-    (define-key map [M-tab]     #'magit-section-cycle)
-    ;; [backtab] is the most portable binding for Shift+Tab.
-    (define-key map [backtab]   #'magit-section-cycle-global)
-    (define-key map (kbd   "^") #'magit-section-up)
-    (define-key map (kbd   "p") #'magit-section-backward)
-    (define-key map (kbd   "n") #'magit-section-forward)
-    (define-key map (kbd "M-p") #'magit-section-backward-sibling)
-    (define-key map (kbd "M-n") #'magit-section-forward-sibling)
-    (define-key map (kbd   "1") #'magit-section-show-level-1)
-    (define-key map (kbd   "2") #'magit-section-show-level-2)
-    (define-key map (kbd   "3") #'magit-section-show-level-3)
-    (define-key map (kbd   "4") #'magit-section-show-level-4)
-    (define-key map (kbd "M-1") #'magit-section-show-level-1-all)
-    (define-key map (kbd "M-2") #'magit-section-show-level-2-all)
-    (define-key map (kbd "M-3") #'magit-section-show-level-3-all)
-    (define-key map (kbd "M-4") #'magit-section-show-level-4-all)
+    (keymap-set map "<left-fringe> <mouse-1>" #'magit-mouse-toggle-section)
+    (keymap-set map "<left-fringe> <mouse-2>" #'magit-mouse-toggle-section)
+    (keymap-set map "TAB"       #'magit-section-toggle)
+    (keymap-set map "C-<tab>"   #'magit-section-cycle)
+    (keymap-set map "M-<tab>"   #'magit-section-cycle)
+    ;; <backtab> is the most portable binding for Shift+Tab.
+    (keymap-set map "<backtab>" #'magit-section-cycle-global)
+    (keymap-set map   "^" #'magit-section-up)
+    (keymap-set map   "p" #'magit-section-backward)
+    (keymap-set map   "n" #'magit-section-forward)
+    (keymap-set map "M-p" #'magit-section-backward-sibling)
+    (keymap-set map "M-n" #'magit-section-forward-sibling)
+    (keymap-set map   "1" #'magit-section-show-level-1)
+    (keymap-set map   "2" #'magit-section-show-level-2)
+    (keymap-set map   "3" #'magit-section-show-level-3)
+    (keymap-set map   "4" #'magit-section-show-level-4)
+    (keymap-set map "M-1" #'magit-section-show-level-1-all)
+    (keymap-set map "M-2" #'magit-section-show-level-2-all)
+    (keymap-set map "M-3" #'magit-section-show-level-3-all)
+    (keymap-set map "M-4" #'magit-section-show-level-4-all)
     map)
   "Parent keymap for all keymaps of modes derived from `magit-section-mode'.")
 
@@ -566,7 +566,7 @@ The return value has the form (TYPE...)."
         (setq magit--context-menu-section section)
         (magit-section-update-highlight t)))
     (when (magit-section-content-p section)
-      (define-key-after menu [magit-section-toggle]
+      (keymap-set-after menu "<magit-section-toggle>"
         `(menu-item
           ,(if (oref section hidden) "Expand section" "Collapse section")
           magit-section-toggle))
@@ -574,18 +574,18 @@ The return value has the form (TYPE...)."
         (when-let ((children (oref section children)))
           (when (seq-some #'magit-section-content-p children)
             (when (seq-some (lambda (c) (oref c hidden)) children)
-              (define-key-after menu [magit-section-show-children]
+              (keymap-set-after menu "<magit-section-show-children>"
                 `(menu-item "Expand children"
                             magit-section-show-children)))
             (when (seq-some (lambda (c) (not (oref c hidden))) children)
-              (define-key-after menu [magit-section-hide-children]
+              (keymap-set-after menu "<magit-section-hide-children>"
                 `(menu-item "Collapse children"
                             magit-section-hide-children))))))
-      (define-key-after menu [separator-magit-1] menu-bar-separator))
-    (define-key-after menu [magit-describe-section]
+      (keymap-set-after menu "<separator-magit-1>" menu-bar-separator))
+    (keymap-set-after menu "<magit-describe-section>"
       `(menu-item "Describe section" magit-describe-section))
     (when-let ((map (oref section keymap)))
-      (define-key-after menu [separator-magit-2] menu-bar-separator)
+      (keymap-set-after menu "<separator-magit-2>" menu-bar-separator)
       (when (symbolp map)
         (setq map (symbol-value map)))
       (setq magit-menu-common-value (magit-menu-common-value section))
@@ -599,55 +599,33 @@ The return value has the form (TYPE...)."
                     (magit--menu-bar-keymap map)))))
   menu)
 
-(defun magit-menu-set (keymap key def desc &optional props after)
-  "In KEYMAP, define KEY and a menu entry for DEF.
+(defun magit-menu-item (desc def &optional props)
+  "Return a menu item named DESC binding DEF and using PROPS.
 
-Add the menu item (menu-item DESC DEF . PROPS) at the end of
-KEYMAP, or if optional AFTER is non-nil, then after that.
+If DESC contains a supported %-spec, substitute the
+expression (magit-menu-format-desc DESC) for that.
+See `magit-menu-format-desc'."
+  `(menu-item
+    ,(if (and (stringp desc) (string-match-p "%[tTvsmMx]" desc))
+         (list 'magit-menu-format-desc desc)
+       desc)
+    ,def
+    ;; Without this, the keys for point would be shown instead
+    ;; of the relevant ones from where the click occurred.
+    :keys ,(apply-partially #'magit--menu-position-keys def)
+    ,@props))
 
-Because it is so common, and would otherwise result in overlong
-lines or else unsightly line wrapping, a definition [remap CMD]
-can be written as just [CMD].  As a result KEY might have to be
-a string when otherwise a vector would have worked.
-
-If DESC is a string that contains a support %-spec, substitute
-the expression (magit-menu-format-desc DESC) for that.  See
-`magit-menu-format-desc'."
-  (declare (indent defun))
-  (when (vectorp key)
-    ;; Expand the short-hand.
-    (unless (eq (aref key 0) 'remap)
-      (setq key (vconcat [remap] key)))
-    ;; The default binding is RET, but in my configuration it
-    ;; is <return>.  In that case the displayed binding would
-    ;; be <CMD> instead of <return>, for unknown reasons. The
-    ;; same does not happen for similar events, such as <tab>.
-    (when (and (equal key [remap magit-visit-thing])
-               (boundp 'magit-mode-map)
-               (ignore-errors (eq (lookup-key magit-mode-map [return])
-                                  'magit-visit-thing)))
-      (setq key [return]))
-    ;; `define-key-after' cannot deal with [remap CMD],
-    ;; so we have to add the key binding separately.
-    (define-key keymap key def)
-    (unless (symbolp def)
-      (error "When KEY is a remapping, then DEF must be a symbol: %s" def))
-    (setq key (vector def)))
-  (when (and (stringp desc) (string-match-p "%[tTvsmMx]" desc))
-    (setq desc (list 'magit-menu-format-desc desc)))
-  (define-key-after keymap key
-    `( menu-item ,desc ,def ,@props
-       ;; Without this, the keys for point would be shown instead
-       ;; of the relevant ones from where the click occurred.
-       ,@(and (not (region-active-p))
-              (list :keys
-                    (lambda ()
-                      (or (ignore-errors
-                            (save-excursion
-                              (goto-char (magit-menu-position))
-                              (key-description (where-is-internal def nil t))))
-                          "")))))
-    after))
+(defun magit--menu-position-keys (def)
+  (or (ignore-errors
+        (save-excursion
+          (goto-char (magit-menu-position))
+          (and-let* ((key (cl-find-if-not
+                           (lambda (key)
+                             (string-match-p "\\`<[0-9]+>\\'"
+                                             (key-description key)))
+                           (where-is-internal def))))
+            (key-description key))))
+      ""))
 
 (defun magit-menu-position ()
   "Return the position where the context-menu was invoked.
@@ -724,7 +702,7 @@ Slight trimmed down."
 (defun magit--context-menu-local (menu _click)
   "Backport of `context-menu-local' for Emacs < 28."
   (run-hooks 'activate-menubar-hook 'menu-bar-update-hook)
-  (define-key-after menu [separator-local] menu-bar-separator)
+  (keymap-set-after menu "<separator-local>" menu-bar-separator)
   (let ((keymap (local-key-binding [menu-bar])))
     (when keymap
       (map-keymap (lambda (key binding)
@@ -1992,11 +1970,12 @@ current section."
     (setq section (magit-current-section)))
   (unless pos
     (setq pos (point)))
-  (and section
-       (>= pos (oref section start))
-       (<  pos (or (oref section content)
-                   (oref section end)))
-       t))
+  (ignore-errors ; Allow navigating broken sections.
+    (and section
+         (>= pos (oref section start))
+         (<  pos (or (oref section content)
+                     (oref section end)))
+         t)))
 
 (defun magit-section-internal-region-p (&optional section)
   "Return t if the region is active and inside SECTION's body.

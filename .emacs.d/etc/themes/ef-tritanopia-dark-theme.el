@@ -44,7 +44,9 @@
     "Legible dark theme, optimized for blue-yellow color deficiency.")
 
   (defconst ef-tritanopia-dark-palette
-    '(;; Basic tones
+    '(
+;;; Basic values
+
       (bg-main      "#15050f")
       (fg-main      "#dfd0d5")
       (bg-dim       "#282026")
@@ -55,7 +57,8 @@
       (bg-active    "#554f4f")
       (bg-inactive  "#1a1517")
 
-      ;; Basic hues for foreground values
+;;; Basic hues for foreground values
+
       (red             "#cf4f5f")
       (red-warmer      "#df4f4f")
       (red-cooler      "#d24f7f")
@@ -81,7 +84,8 @@
       (cyan-cooler     "#4fafaf")
       (cyan-faint      "#82a0af")
 
-      ;; Basic hues for background values
+;;; Basic hues for background values
+
       (bg-red      "#aa0010")
       (bg-green    "#5f806f")
       (bg-yellow   "#950f4f")
@@ -96,7 +100,8 @@
       (bg-magenta-subtle  "#5a105f")
       (bg-cyan-subtle     "#004065")
 
-      ;; Diffs
+;;; Diffs
+
       (bg-added          "#002d3f")
       (bg-added-faint    "#001f38")
       (bg-added-refine   "#003b4f")
@@ -112,7 +117,8 @@
       (bg-removed-refine "#6b0f26")
       (fg-removed        "#ffbfbf")
 
-      ;; Graphs
+;;; Graphs
+
       (red-graph-0-bg     "#b52c2c")
       (red-graph-1-bg     "#702020")
       (green-graph-0-bg   "#afd1c0")
@@ -126,18 +132,20 @@
       (cyan-graph-0-bg    "#57dfea")
       (cyan-graph-1-bg    "#00808f")
 
-      ;; Special hues
-      (bg-mode-line  "#671822") (fg-mode-line  "#ffffff")
-      (bg-accent     "#7fccee") (fg-accent     "#000000")
-      (bg-completion "#441824")
-      (bg-hover      "#00405f")
-      (bg-hover-alt  "#5e3e5b")
-      (bg-hl-line    "#3f1515")
-      (bg-region     "#202d3f")
-      (bg-paren      "#2f5f7a")
-      (bg-err        "#3a0f0f") ; check with err
-      (bg-warning    "#371430") ; check with warning
-      (bg-info       "#00253a") ; check with info
+;;; Special hues
+
+      (bg-mode-line       "#671822")
+      (fg-mode-line       "#ffffff")
+      (bg-accent          "#7fccee")
+      (bg-completion      "#441824")
+      (bg-hover           "#00405f")
+      (bg-hover-secondary "#5e3e5b")
+      (bg-hl-line         "#3f1515")
+      (bg-region          "#202d3f")
+      (bg-paren           "#2f5f7a")
+      (bg-err             "#3a0f0f") ; check with err
+      (bg-warning         "#371430") ; check with warning
+      (bg-info            "#00253a") ; check with info
 
       (border        "#555564")
       (cursor        "#fd3333")
@@ -151,22 +159,26 @@
       (underline-warning "#ffafa0")
       (underline-info    "#22ffd2")
 
-      ;; Conditional hues
+;;; Conditional hues
+
       (bg-region-intense "#5f303f")
 
-      ;; Mappings
+;;; Mappings
+
+;;;; General mappings
+
       (err red-warmer)
       (warning magenta)
       (info cyan)
 
       (link cyan)
       (link-alt magenta-cooler)
-      (date cyan-cooler)
-      (weekend red-faint) ; for M-x calendar and Org agenda
       (name magenta)
       (keybind red-cooler)
       (identifier magenta-faint)
       (prompt cyan)
+
+;;;; Code mappings
 
       (builtin magenta)
       (comment red-faint)
@@ -178,21 +190,49 @@
       (string cyan)
       (type cyan-warmer)
       (variable cyan-cooler)
-
       (rx-escape cyan-cooler) ; compare with `string'
       (rx-construct red)
+
+;;;; Accent mappings
 
       (accent-0 cyan)
       (accent-1 red)
       (accent-2 cyan-warmer)
       (accent-3 magenta)
 
-      (mail-0 cyan)
-      (mail-1 red-cooler)
-      (mail-2 cyan-cooler)
-      (mail-3 red-faint)
-      (mail-4 cyan-warmer)
-      (mail-5 red-warmer)
+;;;; Date mappings
+
+      (date-common cyan-cooler)
+      (date-deadline red-warmer)
+      (date-event fg-alt)
+      (date-holiday cyan-warmer)
+      (date-now fg-main)
+      (date-scheduled magenta)
+      (date-weekday cyan)
+      (date-weekend red-faint)
+
+;;;; Prose mappings
+
+      (prose-code red)
+      (prose-done cyan)
+      (prose-macro cyan-warmer)
+      (prose-metadata fg-dim)
+      (prose-metadata-value fg-alt)
+      (prose-table fg-alt)
+      (prose-tag fg-alt)
+      (prose-todo red-warmer)
+      (prose-verbatim cyan)
+
+;;;; Mail mappings
+
+      (mail-cite-0 cyan)
+      (mail-cite-1 red-cooler)
+      (mail-cite-2 cyan-cooler)
+      (mail-cite-3 red-faint)
+      (mail-part cyan-warmer)
+      (mail-recipient magenta)
+      (mail-subject red-warmer)
+      (mail-other magenta-cooler)
 
       (rainbow-0 cyan)
       (rainbow-1 red)

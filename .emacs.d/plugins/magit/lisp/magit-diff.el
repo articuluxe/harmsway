@@ -377,13 +377,41 @@ subject to option `magit-revision-insert-related-refs'."
 `nil'   Don't show any related branches.
 `t'     Show related local branches.
 `all'   Show related local and remote branches.
-`mixed' Show all containing branches and local merged branches."
+`mixed' Show all containing branches and local merged branches.
+
+See user option `magit-revision-insert-related-refs-display-alist'
+to hide specific sets of related branches."
   :package-version '(magit . "2.1.0")
   :group 'magit-revision
   :type '(choice (const :tag "don't" nil)
                  (const :tag "local only" t)
                  (const :tag "all related" all)
                  (const :tag "all containing, local merged" mixed)))
+
+(defcustom magit-revision-insert-related-refs-display-alist nil
+  "How `magit-insert-revision-headers' displays related branch types.
+
+This is an alist, with recognised keys being the symbols
+`parents', `merged', `contained', `follows', and `precedes';
+and the supported values for each key being:
+
+`nil'   Hide these related branches.
+`t'     Show these related branches.
+
+Keys which are not present in the alist have an implicit value `t'
+\(so the default alist value of nil means all related branch types
+will be shown.)
+
+The types to be shown are additionally subject to user option
+`magit-revision-insert-related-refs'."
+  :package-version '(magit . "3.3.1")
+  :group 'magit-revision
+  :type '(alist :key-type (symbol :tag "Type of related branch")
+                :value-type (boolean :tag "Display"))
+  :options (mapcar (lambda (sym)
+                     `(,sym (choice (const :tag "Hide" nil)
+                                    (const :tag "Show" t))))
+                   '(parents merged contained follows precedes)))
 
 (defcustom magit-revision-use-hash-sections 'quicker
   "Whether to turn hashes inside the commit message into sections.
@@ -426,13 +454,16 @@ same column.  The cdr specifies where to insert the committer's
 image, accordingly.  Either the car or the cdr may be nil."
   :package-version '(magit . "2.3.0")
   :group 'magit-revision
-  :type '(choice (const :tag "Don't show gravatars" nil)
-                 (const :tag "Show gravatars" t)
-                 (const :tag "Show author gravatar" author)
-                 (const :tag "Show committer gravatar" committer)
-                 (cons  :tag "Show gravatars using custom pattern."
-                        (regexp :tag "Author regexp"    "^Author:     ")
-                        (regexp :tag "Committer regexp" "^Commit:     "))))
+  :type '(choice
+          (const :tag "Don't show gravatars" nil)
+          (const :tag "Show gravatars" t)
+          (const :tag "Show author gravatar" author)
+          (const :tag "Show committer gravatar" committer)
+          (cons  :tag "Show gravatars using custom regexps"
+                 (choice (const  :tag "No author image" nil)
+                         (regexp :tag "Author regexp"    "^Author:     "))
+                 (choice (const  :tag "No committer image" nil)
+                         (regexp :tag "Committer regexp" "^Commit:     ")))))
 
 (defcustom magit-revision-use-gravatar-kludge nil
   "Whether to work around a bug which affects display of gravatars.
@@ -1240,8 +1271,7 @@ be committed."
     (user-error "No commit in progress"))
   (magit-commit-diff-1))
 
-(define-key git-commit-mode-map
-  (kbd "C-c C-d") #'magit-diff-while-committing)
+(keymap-set git-commit-mode-map "C-c C-d" #'magit-diff-while-committing)
 
 ;;;###autoload
 (defun magit-diff-buffer-file ()
@@ -1658,7 +1688,7 @@ the Magit-Status buffer for DIRECTORY."
 
 (defun magit-diff-visit--hunk ()
   (when-let* ((scope (magit-diff-scope)) ;debbugs#31840
-             (section (magit-current-section)))
+              (section (magit-current-section)))
     (cl-case scope
       ((file files)
        (setq section (car (oref section children))))
@@ -1866,18 +1896,16 @@ commit or stash at point, then prompt for a commit."
 
 ;;; Diff Mode
 
-(defvar magit-diff-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map magit-mode-map)
-    (define-key map (kbd "C-c C-d") #'magit-diff-while-committing)
-    (define-key map (kbd "C-c C-b") #'magit-go-backward)
-    (define-key map (kbd "C-c C-f") #'magit-go-forward)
-    (define-key map (kbd "SPC")     #'scroll-up)
-    (define-key map (kbd "DEL")     #'scroll-down)
-    (define-key map (kbd "j")       #'magit-jump-to-diffstat-or-diff)
-    (define-key map [remap write-file] #'magit-patch-save)
-    map)
-  "Keymap for `magit-diff-mode'.")
+(defvar-keymap magit-diff-mode-map
+  :doc "Keymap for `magit-diff-mode'."
+  :parent magit-mode-map
+  "C-c C-d" #'magit-diff-while-committing
+  "C-c C-b" #'magit-go-backward
+  "C-c C-f" #'magit-go-forward
+  "SPC"     #'scroll-up
+  "DEL"     #'scroll-down
+  "j"       #'magit-jump-to-diffstat-or-diff
+  "<remap> <write-file>" #'magit-patch-save)
 
 (define-derived-mode magit-diff-mode magit-mode "Magit Diff"
   "Mode for looking at a Git diff.
@@ -1961,65 +1989,62 @@ Staging and applying changes is documented in info node
   (magit-diff-scope))
 
 (define-obsolete-variable-alias 'magit-diff-section-base-map
-  'magit-diff-section-map "Magit-Section 3.4.0")
-(defvar magit-diff-section-map
-  (let ((map (make-sparse-keymap)))
-    (magit-menu-set map [magit-cherry-apply]
-      #'magit-apply "Apply %x"
-      '(:enable (not (memq (magit-diff-type) '(unstaged staged)))))
-    (magit-menu-set map [magit-stage-file]
-      #'magit-stage "Stage %x"
-      '(:enable (eq (magit-diff-type) 'unstaged)))
-    (magit-menu-set map [magit-unstage-file]
-      #'magit-unstage "Unstage %x"
-      '(:enable (eq (magit-diff-type) 'staged)))
-    (magit-menu-set map [magit-delete-thing]
-      #'magit-discard "Discard %x"
-      '(:enable (not (memq (magit-diff-type) '(committed undefined)))))
-    (magit-menu-set map [magit-revert-no-commit]
-      #'magit-reverse "Reverse %x"
-      '(:enable (not (memq (magit-diff-type) '(untracked unstaged)))))
-    (magit-menu-set map [magit-visit-thing]
-      #'magit-diff-visit-file "Visit file")
-    (magit-menu-set map [magit-file-untrack]
-      #'magit-file-untrack "Untrack %x"
-      '(:enable (memq (magit-diff-scope) '(file files))))
-    (magit-menu-set map [magit-file-rename]
-      #'magit-file-rename "Rename file"
-      '(:enable (eq (magit-diff-scope) 'file)))
-    (define-key map (kbd "C-j")            #'magit-diff-visit-worktree-file)
-    (define-key map (kbd "C-<return>")     #'magit-diff-visit-worktree-file)
-    (define-key map (kbd "C-x 4 <return>") #'magit-diff-visit-file-other-window)
-    (define-key map (kbd "C-x 5 <return>") #'magit-diff-visit-file-other-frame)
-    (define-key map "&"             #'magit-do-async-shell-command)
-    (define-key map "C"             #'magit-commit-add-log)
-    (define-key map (kbd "C-x a")   #'magit-add-change-log-entry)
-    (define-key map (kbd "C-x 4 a") #'magit-add-change-log-entry-other-window)
-    (define-key map (kbd "C-c C-t") #'magit-diff-trace-definition)
-    (define-key map (kbd "C-c C-e") #'magit-diff-edit-hunk-commit)
-    map)
-  "Keymap for diff sections.
+  'magit-diff-section-map "Magit-Section 4.0.0")
+
+
+(defvar-keymap magit-diff-section-map
+  :doc "Keymap for diff sections.
 The classes `magit-file-section' and `magit-hunk-section' derive
 from the abstract `magit-diff-section' class.  Accordingly this
-keymap is the parent of their keymaps.")
+keymap is the parent of their keymaps."
+  "C-j"            #'magit-diff-visit-worktree-file
+  "C-<return>"     #'magit-diff-visit-worktree-file
+  "C-x 4 <return>" #'magit-diff-visit-file-other-window
+  "C-x 5 <return>" #'magit-diff-visit-file-other-frame
+  "&"              #'magit-do-async-shell-command
+  "C"              #'magit-commit-add-log
+  "C-x a"          #'magit-add-change-log-entry
+  "C-x 4 a"        #'magit-add-change-log-entry-other-window
+  "C-c C-t"        #'magit-diff-trace-definition
+  "C-c C-e"        #'magit-diff-edit-hunk-commit
+  "<remap> <magit-file-rename>"      #'magit-file-rename
+  "<remap> <magit-file-untrack>"     #'magit-file-untrack
+  "<remap> <magit-visit-thing>"      #'magit-diff-visit-file
+  "<remap> <magit-revert-no-commit>" #'magit-reverse
+  "<remap> <magit-delete-thing>"     #'magit-discard
+  "<remap> <magit-unstage-file>"     #'magit-unstage
+  "<remap> <magit-stage-file>"       #'magit-stage
+  "<remap> <magit-cherry-apply>"     #'magit-apply
+  "<8>" (magit-menu-item "Rename file" #'magit-file-rename
+                         '(:enable (eq (magit-diff-scope) 'file)))
+  "<7>" (magit-menu-item "Untrack %x" #'magit-file-untrack)
+  "<6>" (magit-menu-item "Visit file" #'magit-diff-visit-file
+                         '(:enable (memq (magit-diff-scope) '(file files))))
+  "<5>" (magit-menu-item "Reverse %x" #'magit-reverse
+                         '(:enable (not (memq (magit-diff-type)
+                                              '(untracked unstaged)))))
+  "<4>" (magit-menu-item "Discard %x" #'magit-discard
+                         '(:enable (not (memq (magit-diff-type)
+                                              '(committed undefined)))))
+  "<3>" (magit-menu-item "Unstage %x" #'magit-unstage
+                         '(:enable (eq (magit-diff-type) 'staged)))
+  "<2>" (magit-menu-item "Stage %x"   #'magit-stage
+                         '(:enable (eq (magit-diff-type) 'unstaged)))
+  "<1>" (magit-menu-item "Apply %x" #'magit-apply
+                         '(:enable (not (memq (magit-diff-type)
+                                              '(unstaged staged))))))
 
-(defvar magit-file-section-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map magit-diff-section-base-map)
-    map)
-  "Keymap for `file' sections.")
+(defvar-keymap magit-file-section-map
+  :doc "Keymap for `file' sections."
+  :parent magit-diff-section-base-map)
 
-(defvar magit-hunk-section-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map magit-diff-section-base-map)
-    (let ((m (make-sparse-keymap)))
-      (define-key m (kbd "RET") #'magit-smerge-keep-current)
-      (define-key m (kbd "u")   #'magit-smerge-keep-upper)
-      (define-key m (kbd "b")   #'magit-smerge-keep-base)
-      (define-key m (kbd "l")   #'magit-smerge-keep-lower)
-      (define-key map smerge-command-prefix m))
-    map)
-  "Keymap for `hunk' sections.")
+(defvar-keymap magit-hunk-section-map
+  :doc "Keymap for `hunk' sections."
+  :parent magit-diff-section-base-map
+  "C-c ^ RET" #'magit-smerge-keep-current
+  "C-c ^ u"   #'magit-smerge-keep-upper
+  "C-c ^ b"   #'magit-smerge-keep-base
+  "C-c ^ l"   #'magit-smerge-keep-lower)
 
 (defconst magit-diff-conflict-headline-re
   (concat "^" (regexp-opt
@@ -2577,12 +2602,11 @@ or a ref which is not a branch, then it inserts nothing."
         (goto-char (point-max)))
       (insert ?\n))))
 
-(defvar magit-commit-message-section-map
-  (let ((map (make-sparse-keymap)))
-    (magit-menu-set map [magit-visit-thing] #'magit-show-commit "Visit %t"
-      '(:enable (magit-thing-at-point 'git-revision t)))
-    map)
-  "Keymap for `commit-message' sections.")
+(defvar-keymap magit-commit-message-section-map
+  :doc "Keymap for `commit-message' sections."
+  "<remap> <magit-visit-thing>"  #'magit-show-commit
+  "<1>" (magit-menu-item "Visit %t" #'magit-show-commit
+                         '(:enable (magit-thing-at-point 'git-revision t))))
 
 (defun magit-insert-revision-message ()
   "Insert the commit message into a revision buffer."
@@ -2594,7 +2618,7 @@ or a ref which is not a branch, then it inserts nothing."
                 (magit-rev-insert-format "%B" rev)
                 (magit-revision--wash-message)))
       (if (= (point) (+ beg 2))
-          (progn (backward-delete-char 2)
+          (progn (delete-char -2)
                  (insert "(no message)\n"))
         (goto-char beg)
         (save-excursion
@@ -2602,7 +2626,7 @@ or a ref which is not a branch, then it inserts nothing."
             (delete-region (match-beginning 0) (1+ (match-beginning 0)))))
         (when magit-revision-fill-summary-line
           (let ((fill-column (min magit-revision-fill-summary-line
-                                  (window-width))))
+                                  (window-width (get-buffer-window nil t)))))
             (fill-region (point) (line-end-position))))
         (when magit-revision-use-hash-sections
           (save-excursion
@@ -2704,38 +2728,50 @@ or a ref which is not a branch, then it inserts nothing."
                                magit-buffer-revision)
       (magit-insert-revision-gravatars magit-buffer-revision beg))
     (when magit-revision-insert-related-refs
-      (dolist (parent (magit-commit-parents magit-buffer-revision))
-        (magit-insert-section (commit parent)
-          (let ((line (magit-rev-format "%h %s" parent)))
-            (string-match "^\\([^ ]+\\) \\(.*\\)" line)
-            (magit-bind-match-strings (hash msg) line
-              (insert "Parent:     ")
-              (insert (propertize hash 'font-lock-face 'magit-hash))
-              (insert " " msg "\n")))))
-      (magit--insert-related-refs
-       magit-buffer-revision "--merged" "Merged"
-       (eq magit-revision-insert-related-refs 'all))
-      (magit--insert-related-refs
-       magit-buffer-revision "--contains" "Contained"
-       (memq magit-revision-insert-related-refs '(all mixed)))
-      (when-let ((follows (magit-get-current-tag magit-buffer-revision t)))
-        (let ((tag (car  follows))
-              (cnt (cadr follows)))
-          (magit-insert-section (tag tag)
-            (insert
-             (format "Follows:    %s (%s)\n"
-                     (propertize tag 'font-lock-face 'magit-tag)
-                     (propertize (number-to-string cnt)
-                                 'font-lock-face 'magit-branch-local))))))
-      (when-let ((precedes (magit-get-next-tag magit-buffer-revision t)))
-        (let ((tag (car  precedes))
-              (cnt (cadr precedes)))
-          (magit-insert-section (tag tag)
-            (insert (format "Precedes:   %s (%s)\n"
-                            (propertize tag 'font-lock-face 'magit-tag)
-                            (propertize (number-to-string cnt)
-                                        'font-lock-face 'magit-tag))))))
+      (when (magit-revision-insert-related-refs-display-p 'parents)
+        (dolist (parent (magit-commit-parents magit-buffer-revision))
+          (magit-insert-section (commit parent)
+            (let ((line (magit-rev-format "%h %s" parent)))
+              (string-match "^\\([^ ]+\\) \\(.*\\)" line)
+              (magit-bind-match-strings (hash msg) line
+                (insert "Parent:     ")
+                (insert (propertize hash 'font-lock-face 'magit-hash))
+                (insert " " msg "\n"))))))
+      (when (magit-revision-insert-related-refs-display-p 'merged)
+        (magit--insert-related-refs
+         magit-buffer-revision "--merged" "Merged"
+         (eq magit-revision-insert-related-refs 'all)))
+      (when (magit-revision-insert-related-refs-display-p 'contained)
+        (magit--insert-related-refs
+         magit-buffer-revision "--contains" "Contained"
+         (memq magit-revision-insert-related-refs '(all mixed))))
+      (when (magit-revision-insert-related-refs-display-p 'follows)
+        (when-let ((follows (magit-get-current-tag magit-buffer-revision t)))
+          (let ((tag (car  follows))
+                (cnt (cadr follows)))
+            (magit-insert-section (tag tag)
+              (insert
+               (format "Follows:    %s (%s)\n"
+                       (propertize tag 'font-lock-face 'magit-tag)
+                       (propertize (number-to-string cnt)
+                                   'font-lock-face 'magit-branch-local)))))))
+      (when (magit-revision-insert-related-refs-display-p 'precedes)
+        (when-let ((precedes (magit-get-next-tag magit-buffer-revision t)))
+          (let ((tag (car  precedes))
+                (cnt (cadr precedes)))
+            (magit-insert-section (tag tag)
+              (insert (format "Precedes:   %s (%s)\n"
+                              (propertize tag 'font-lock-face 'magit-tag)
+                              (propertize (number-to-string cnt)
+                                          'font-lock-face 'magit-tag)))))))
       (insert ?\n))))
+
+(defun magit-revision-insert-related-refs-display-p (sym)
+  "Whether to display related branches of type SYM.
+Refer to user option `magit-revision-insert-related-refs-display-alist'."
+  (if-let ((elt (assq sym magit-revision-insert-related-refs-display-alist)))
+      (cdr elt)
+    t))
 
 (defun magit--insert-related-refs (rev arg title remote)
   (when-let ((refs (magit-list-related-branches arg rev (and remote "-a"))))
@@ -2901,13 +2937,14 @@ It the SECTION has a different type, then do nothing."
 
 ;;; Diff Sections
 
-(defvar magit-unstaged-section-map
-  (let ((map (make-sparse-keymap)))
-    (magit-menu-set map [magit-visit-thing]  #'magit-diff-unstaged "Visit diff")
-    (magit-menu-set map [magit-stage-file]   #'magit-stage         "Stage all")
-    (magit-menu-set map [magit-delete-thing] #'magit-discard       "Discard all")
-    map)
-  "Keymap for the `unstaged' section.")
+(defvar-keymap magit-unstaged-section-map
+  :doc "Keymap for the `unstaged' section."
+  "<remap> <magit-visit-thing>"  #'magit-diff-unstaged
+  "<remap> <magit-stage-file>"   #'magit-stage
+  "<remap> <magit-delete-thing>" #'magit-discard
+  "<3>" (magit-menu-item "Discard all" #'magit-discard)
+  "<2>" (magit-menu-item "Stage all"   #'magit-stage)
+  "<1>" (magit-menu-item "Visit diff"  #'magit-diff-unstaged))
 
 (magit-define-section-jumper magit-jump-to-unstaged "Unstaged changes" unstaged)
 
@@ -2919,14 +2956,16 @@ It the SECTION has a different type, then do nothing."
       "diff" magit-buffer-diff-args "--no-prefix"
       "--" magit-buffer-diff-files)))
 
-(defvar magit-staged-section-map
-  (let ((map (make-sparse-keymap)))
-    (magit-menu-set map [magit-visit-thing]  #'magit-diff-staged "Visit diff")
-    (magit-menu-set map [magit-unstage-file]     #'magit-unstage "Unstage all")
-    (magit-menu-set map [magit-delete-thing]     #'magit-discard "Discard all")
-    (magit-menu-set map [magit-revert-no-commit] #'magit-reverse "Reverse all")
-    map)
-  "Keymap for the `staged' section.")
+(defvar-keymap magit-staged-section-map
+  :doc "Keymap for the `staged' section."
+  "<remap> <magit-revert-no-commit>" #'magit-reverse
+  "<remap> <magit-delete-thing>"     #'magit-discard
+  "<remap> <magit-unstage-file>"     #'magit-unstage
+  "<remap> <magit-visit-thing>"      #'magit-diff-staged
+  "<4>" (magit-menu-item "Reverse all" #'magit-reverse)
+  "<3>" (magit-menu-item "Discard all" #'magit-discard)
+  "<2>" (magit-menu-item "Unstage all" #'magit-unstage)
+  "<1>" (magit-menu-item "Visit diff"  #'magit-diff-staged))
 
 (magit-define-section-jumper magit-jump-to-staged "Staged changes" staged)
 

@@ -976,7 +976,6 @@ used as an advice to window creation functions."
                                      mode-line-emphasis
                                      mode-line-highlight
                                      mode-line-buffer-id
-                                     success warning error
                                      solaire-mode-line-face
                                      solaire-mode-line-active-face
                                      paradox-mode-line-face
@@ -1007,7 +1006,12 @@ used as an advice to window creation functions."
       (progn
         (defun doom-modeline-focus-change (&rest _)
           (if (frame-focus-state (frame-parent))
-              (doom-modeline-focus)
+              (progn
+                (doom-modeline-focus)
+                ;; HACK: pulse after focusing in the frame to refresh the buffer name.
+                ;; @see https://github.com/seagle0128/doom-modeline/issues/591
+                (when (fboundp 'pulse-momentary-highlight-region)
+                  (pulse-momentary-highlight-region 0 0)))
             (doom-modeline-unfocus)))
         (advice-add #'handle-switch-frame :after #'doom-modeline-focus-change)
         (add-function :after after-focus-change-function #'doom-modeline-focus-change))
@@ -1076,25 +1080,24 @@ Example:
         (rhs-forms (doom-modeline--prepare-segments rhs)))
     (defalias sym
       (lambda ()
-        (if rhs-forms
-            (let ((rhs-str (format-mode-line (cons "" rhs-forms))))
-              (list lhs-forms
-                    (propertize
-                     " "
-                     'display `(space
-                                :align-to
-                                (- (+ right right-fringe right-margin scroll-bar)
-                                   ,(if (and (>= emacs-major-version 29)
-                                             (fboundp 'string-pixel-width))
-                                        (/ (string-pixel-width rhs-str)
-                                           (doom-modeline--font-width)
-                                           1.0)
-                                      (* (string-width rhs-str)
-                                         (if (display-graphic-p)
-                                             (/ (doom-modeline--font-width) (frame-char-width) 0.95)
-                                           1.0))))))
-                    rhs-str))
-          lhs-forms))
+        (list lhs-forms
+              (propertize
+               " "
+               'face (doom-modeline-face)
+               'display `(space
+                          :align-to
+                          (- (+ right right-fringe right-margin scroll-bar)
+                             ,(let ((rhs-str (format-mode-line (cons "" rhs-forms))))
+                                (if (and (>= emacs-major-version 29)
+                                         (fboundp 'string-pixel-width))
+                                    (/ (string-pixel-width rhs-str)
+                                       (doom-modeline--font-width)
+                                       1.0)
+                                  (* (string-width rhs-str)
+                                     (if (display-graphic-p)
+                                         (/ (doom-modeline--font-width) (frame-char-width) 0.95)
+                                       1.0)))))))
+              rhs-forms))
       (concat "Modeline:\n"
               (format "  %s\n  %s"
                       (prin1-to-string lhs)
@@ -1122,15 +1125,23 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 ;; Helpers
 ;;
 
-(defconst doom-modeline-spc " " "Whitespace.")
-(defconst doom-modeline-wspc "  " "Wide whitespace.")
-(defconst doom-modeline-vspc
-  (propertize " " 'display '((space :relative-width 0.5)))
-  "Thin whitespace.")
-
 (defconst doom-modeline-ellipsis
   (if (char-displayable-p ?…) "…" "...")
   "Ellipsis.")
+
+(defsubst doom-modeline-spc ()
+  "Whitespace."
+  (propertize " " 'face (doom-modeline-face)))
+
+(defsubst doom-modeline-wspc ()
+  "Wide Whitespace."
+  (propertize "  " 'face (doom-modeline-face)))
+
+(defsubst doom-modeline-vspc ()
+  "Thin whitespace."
+  (propertize " "
+              'face (doom-modeline-face)
+              'display '((space :relative-width 0.5))))
 
 (defun doom-modeline-face (&optional face inactive-face)
   "Display FACE in active window, and INACTIVE-FACE in inactive window.
