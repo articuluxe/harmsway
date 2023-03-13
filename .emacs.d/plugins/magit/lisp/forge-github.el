@@ -1,6 +1,6 @@
 ;;; forge-github.el --- Github support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022 Jonas Bernoulli
+;; Copyright (C) 2018-2023 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -51,7 +51,10 @@
                            &optional callback)
   (let ((buf (current-buffer))
         (dir default-directory)
-        (selective-p (oref repo selective-p)))
+        (selective-p (oref repo selective-p))
+        (ghub-graphql-items-per-request
+         (string-to-number
+          (or (magit-get "forge.graphqlItemLimit") "100"))))
     (ghub-fetch-repository
      (oref repo owner)
      (oref repo name)
@@ -687,6 +690,17 @@
         ;; but due to this limitation I doubt many people use them,
         ;; so Forge doesn't support them either.
         ))))
+
+(cl-defmethod forge--set-default-branch ((repo forge-github-repository)
+                                         newname oldname)
+  (forge--ghub-post repo
+    (format "/repos/:owner/:name/branches/%s/rename" oldname)
+    `((new_name . ,newname)))
+  (message "Waiting 5 seconds for GitHub to complete rename...")
+  (sleep-for 5)
+  (message "Waiting 5 seconds for GitHub to complete rename...done")
+  (magit-call-git "fetch" "--prune" (oref repo remote))
+  (magit--set-default-branch newname oldname))
 
 (cl-defmethod forge--fork-repository ((repo forge-github-repository) fork)
   (with-slots (owner name) repo

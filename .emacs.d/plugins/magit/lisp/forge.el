@@ -1,6 +1,6 @@
 ;;; forge.el --- Access Git forges from Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022 Jonas Bernoulli
+;; Copyright (C) 2018-2023 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -75,9 +75,15 @@ If you want to disable this, then you must set this to nil before
 ;;;###autoload
 (defvar forge-add-default-bindings t
   "Whether to add Forge's bindings to various Magit keymaps.
+
 If you want to disable this, then you must set this to nil before
 `magit' is loaded.  If you do it before `forge' but after `magit'
-is loaded, then `magit-mode-map' ends up being modified anyway.")
+is loaded, then `magit-mode-map' ends up being modified anyway.
+
+If this is nil, then `forge-toggle-display-in-status-buffer' can
+no longer do its job.  It might be better to set the global value
+of `forge-display-in-status-buffer' to nil instead.  That way you
+can still display topics on demand in the status buffer.")
 
 ;;;###autoload
 (with-eval-after-load 'git-commit
@@ -115,6 +121,10 @@ is loaded, then `magit-mode-map' ends up being modified anyway.")
     '("f" "pull-request" forge-checkout-pullreq))
   (transient-append-suffix 'magit-branch "W"
     '("F" "from pull-request" forge-branch-pullreq))
+
+  (transient-suffix-put 'magit-remote 'magit-update-default-branch :key "b u")
+  (transient-append-suffix 'magit-remote "b u"
+    '("b r" "Rename default branch" forge-rename-default-branch))
 
   (transient-append-suffix 'magit-worktree "c"
     '("n" "pull-request worktree" forge-checkout-worktree))
