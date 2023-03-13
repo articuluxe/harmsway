@@ -6,21 +6,18 @@
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/magit/emacsql
 ;; Package-Version: 3.1.1.50-git
-;; Package-Requires: ((emacs "25.1") (emacsql "3.1.1"))
+;; Package-Requires: ((emacs "25.1") (emacsql "20230220"))
 ;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This package provides an EmacSQL back-end for PostgreSQL, which
+;; This library provides an EmacSQL back-end for PostgreSQL, which
 ;; uses the standard `psql' command line program.
 
 ;; (For an alternative back-end for PostgreSQL, see `emacsql-pg'.)
 
 ;;; Code:
 
-(require 'cl-lib)
-(require 'cl-generic)
-(require 'eieio)
 (require 'emacsql)
 
 (defvar emacsql-psql-executable "psql"
@@ -66,7 +63,7 @@ http://www.postgresql.org/docs/7.3/static/sql-keywords-appendix.html")
                       (float "DOUBLE PRECISION")
                       (object "TEXT")
                       (nil "TEXT"))))
-  (:documentation "A connection to a PostgreSQL database via psql."))
+  "A connection to a PostgreSQL database via psql.")
 
 (cl-defun emacsql-psql (dbname &key username hostname port debug)
   "Connect to a PostgreSQL server using the psql command line program."
@@ -87,10 +84,11 @@ http://www.postgresql.org/docs/7.3/static/sql-keywords-appendix.html")
            (process (start-process-shell-command
                      "emacsql-psql" buffer (concat "stty raw && " command)))
            (connection (make-instance 'emacsql-psql-connection
-                                      :process process
+                                      :handle process
                                       :dbname dbname)))
       (setf (process-sentinel process)
             (lambda (proc _) (kill-buffer (process-buffer proc))))
+      (set-process-query-on-exit-flag (oref connection handle) nil)
       (when debug (emacsql-enable-debugging connection))
       (mapc (apply-partially #'emacsql-send-message connection)
             '("\\pset pager off"
@@ -107,12 +105,12 @@ http://www.postgresql.org/docs/7.3/static/sql-keywords-appendix.html")
       (emacsql-register connection))))
 
 (cl-defmethod emacsql-close ((connection emacsql-psql-connection))
-  (let ((process (emacsql-process connection)))
+  (let ((process (oref connection handle)))
     (when (process-live-p process)
       (process-send-string process "\\q\n"))))
 
 (cl-defmethod emacsql-send-message ((connection emacsql-psql-connection) message)
-  (let ((process (emacsql-process connection)))
+  (let ((process (oref connection handle)))
     (process-send-string process message)
     (process-send-string process "\n")))
 

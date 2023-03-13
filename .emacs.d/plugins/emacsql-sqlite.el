@@ -7,22 +7,20 @@
 ;; Homepage: https://github.com/magit/emacsql
 
 ;; Package-Version: 3.1.1.50-git
-;; Package-Requires: ((emacs "25.1") (emacsql "3.1.1"))
+;; Package-Requires: ((emacs "25.1") (emacsql "20230220"))
 ;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This package provides the original EmacSQL back-end for SQLite,
+;; This library provides the original EmacSQL back-end for SQLite,
 ;; which uses a custom binary for communicating with a SQLite database.
 
 ;; During package installation an attempt is made to compile the binary.
 
 ;;; Code:
 
-(require 'cl-lib)
-(require 'cl-generic)
-(require 'eieio)
 (require 'emacsql)
+(require 'emacsql-sqlite-common)
 
 (emacsql-register-reserved emacsql-sqlite-reserved)
 
@@ -57,32 +55,27 @@ Each is queried using `executable-find', so full paths are
 allowed. Only the first compiler which is successfully found will
 used.")
 
-(defclass emacsql-sqlite-connection (emacsql-connection emacsql-protocol-mixin)
-  ((file :initarg :file
-         :type (or null string)
-         :documentation "Database file name.")
-   (types :allocation :class
-          :reader emacsql-types
-          :initform '((integer "INTEGER")
-                      (float "REAL")
-                      (object "TEXT")
-                      (nil nil))))
-  (:documentation "A connection to a SQLite database."))
+(defclass emacsql-sqlite-connection
+  (emacsql--sqlite-base emacsql-protocol-mixin) ()
+  "A connection to a SQLite database.")
 
 (cl-defmethod initialize-instance :after
   ((connection emacsql-sqlite-connection) &rest _rest)
   (emacsql-sqlite-ensure-binary)
   (let* ((process-connection-type nil)  ; use a pipe
-         (coding-system-for-write 'utf-8-auto)
-         (coding-system-for-read 'utf-8-auto)
+         ;; See https://debbugs.gnu.org/cgi/bugreport.cgi?bug=60872#11.
+         (coding-system-for-write 'utf-8)
+         (coding-system-for-read 'utf-8)
          (file (slot-value connection 'file))
          (buffer (generate-new-buffer " *emacsql-sqlite*"))
          (fullfile (if file (expand-file-name file) ":memory:"))
          (process (start-process
                    "emacsql-sqlite" buffer emacsql-sqlite-executable fullfile)))
-    (setf (slot-value connection 'process) process)
-    (setf (process-sentinel process)
-          (lambda (proc _) (kill-buffer (process-buffer proc))))
+    (oset connection handle process)
+    (set-process-sentinel process
+                          (lambda (proc _) (kill-buffer (process-buffer proc))))
+    (when (memq (process-status process) '(exit signal))
+      (error "%s has failed immediately" emacsql-sqlite-executable))
     (emacsql-wait connection)
     (emacsql connection [:pragma (= busy-timeout $s1)]
              (/ (* emacsql-global-timeout 1000) 2))
@@ -95,18 +88,19 @@ If FILE is nil use an in-memory database.
 :debug LOG -- When non-nil, log all SQLite commands to a log
 buffer. This is for debugging purposes."
   (let ((connection (make-instance 'emacsql-sqlite-connection :file file)))
+    (set-process-query-on-exit-flag (oref connection handle) nil)
     (when debug
       (emacsql-enable-debugging connection))
     connection))
 
 (cl-defmethod emacsql-close ((connection emacsql-sqlite-connection))
   "Gracefully exits the SQLite subprocess."
-  (let ((process (emacsql-process connection)))
+  (let ((process (oref connection handle)))
     (when (process-live-p process)
       (process-send-eof process))))
 
 (cl-defmethod emacsql-send-message ((connection emacsql-sqlite-connection) message)
-  (let ((process (emacsql-process connection)))
+  (let ((process (oref connection handle)))
     (process-send-string process (format "%d " (string-bytes message)))
     (process-send-string process message)
     (process-send-string process "\n")))
@@ -130,9 +124,10 @@ buffer. This is for debugging purposes."
       (cl-loop while (re-search-forward "-D[A-Z0-9_=]+" nil :no-error)
                collect (match-string 0)))))
 
-(defun emacsql-sqlite-compile (&optional o-level async)
+(defun emacsql-sqlite-compile (&optional o-level async error)
   "Compile the SQLite back-end for EmacSQL, returning non-nil on success.
-If called with non-nil ASYNC the return value is meaningless."
+If called with non-nil ASYNC, the return value is meaningless.
+If called with non-nil ERROR, signal an error on failure."
   (let* ((cc (cl-loop for option in emacsql-sqlite-c-compilers
                       for path = (executable-find option)
                       if path return it))
@@ -147,26 +142,41 @@ If called with non-nil ASYNC the return value is meaningless."
          (options (emacsql-sqlite-compile-switches))
          (output (list "-o" emacsql-sqlite-executable))
          (arguments (nconc cflags options files ldlibs output)))
-    (cond ((not cc)
-           (prog1 nil
-             (message "Could not find C compiler, skipping SQLite build")))
-          (t (message "Compiling EmacSQL SQLite binary ...")
-             (mkdir (file-name-directory emacsql-sqlite-executable) t)
-             (let ((log (get-buffer-create byte-compile-log-buffer)))
-               (with-current-buffer log
-                 (let ((inhibit-read-only t))
-                   (insert (mapconcat #'identity (cons cc arguments) " ") "\n")
-                   (eql 0 (apply #'call-process cc nil (if async 0 t) t
-                                 arguments)))))))))
+    (cond
+     ((not cc)
+      (funcall (if error #'error #'message)
+               "Could not find C compiler, skipping SQLite build")
+      nil)
+     (t
+      (message "Compiling EmacSQL SQLite binary...")
+      (mkdir (file-name-directory emacsql-sqlite-executable) t)
+      (let ((log (get-buffer-create byte-compile-log-buffer)))
+        (with-current-buffer log
+          (let ((inhibit-read-only t))
+            (insert (mapconcat #'identity (cons cc arguments) " ") "\n")
+            (let ((pos (point))
+                  (ret (apply #'call-process cc nil (if async 0 t) t
+                              arguments)))
+              (cond
+               ((zerop ret)
+                (message "Compiling EmacSQL SQLite binary...done")
+                t)
+               ((and error (not async))
+                (error "Cannot compile EmacSQL SQLite binary: %S"
+                       (replace-regexp-in-string
+                        "\n" " "
+                        (buffer-substring-no-properties
+                         pos (point-max))))))))))))))
 
 ;;; Ensure the SQLite binary is available
 
 (defun emacsql-sqlite-ensure-binary ()
   "Ensure the EmacSQL SQLite binary is available, signaling an error if not."
   (unless (file-exists-p emacsql-sqlite-executable)
-    ;; try compiling at the last minute
-    (unless (ignore-errors (emacsql-sqlite-compile 2))
-      (error "No EmacSQL SQLite binary available, aborting"))))
+    ;; Try compiling at the last minute.
+    (condition-case err
+        (emacsql-sqlite-compile 2 nil t)
+      (error (error "No EmacSQL SQLite binary available: %s" (cdr err))))))
 
 (provide 'emacsql-sqlite)
 

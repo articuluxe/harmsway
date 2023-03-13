@@ -6,36 +6,32 @@
 ;; Homepage: https://github.com/magit/emacsql
 
 ;; Package-Version: 3.1.1.50-git
-;; Package-Requires: ((emacs "29") (emacsql "3.1.1"))
+;; Package-Requires: ((emacs "29") (emacsql "20230220"))
 ;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This package provides an EmacSQL back-end for SQLite, which uses
+;; This library provides an EmacSQL back-end for SQLite, which uses
 ;; the built-in SQLite support in Emacs 29 an later.
 
 ;;; Code:
 
-(require 'sqlite)
 (require 'emacsql)
+(require 'emacsql-sqlite-common)
+
+(require 'sqlite nil t)
+(declare-function sqlite-open "sqlite")
+(declare-function sqlite-select "sqlite")
+(declare-function sqlite-close "sqlite")
 
 (emacsql-register-reserved emacsql-sqlite-reserved)
 
-(defclass emacsql-sqlite-builtin-connection (emacsql-connection)
-  ((file :initarg :file
-         :type (or null string)
-         :documentation "Database file name.")
-   (types :allocation :class
-          :reader emacsql-types
-          :initform '((integer "INTEGER")
-                      (float "REAL")
-                      (object "TEXT")
-                      (nil nil))))
-  (:documentation "A connection to a SQLite database using builtin support."))
+(defclass emacsql-sqlite-builtin-connection (emacsql--sqlite-base) ()
+  "A connection to a SQLite database using builtin support.")
 
 (cl-defmethod initialize-instance :after
   ((connection emacsql-sqlite-builtin-connection) &rest _)
-  (setf (emacsql-process connection)
+  (oset connection handle
         (sqlite-open (slot-value connection 'file)))
   (when emacsql-global-timeout
     (emacsql connection [:pragma (= busy-timeout $s1)]
@@ -56,11 +52,11 @@ buffer. This is for debugging purposes."
     connection))
 
 (cl-defmethod emacsql-live-p ((connection emacsql-sqlite-builtin-connection))
-  (and (emacsql-process connection) t))
+  (and (oref connection handle) t))
 
 (cl-defmethod emacsql-close ((connection emacsql-sqlite-builtin-connection))
-  (sqlite-close (emacsql-process connection))
-  (setf (emacsql-process connection) nil))
+  (sqlite-close (oref connection handle))
+  (oset connection handle nil))
 
 (cl-defmethod emacsql-send-message
   ((connection emacsql-sqlite-builtin-connection) message)
@@ -72,7 +68,7 @@ buffer. This is for debugging purposes."
                                 ((numberp col) col)
                                 (t (read col))))
                         row))
-              (sqlite-select (emacsql-process connection) message nil nil))
+              (sqlite-select (oref connection handle) message nil nil))
     ((sqlite-error sqlite-locked-error)
      (if (stringp (cdr err))
          (signal 'emacsql-error (list (cdr err)))

@@ -7,29 +7,27 @@
 ;; Homepage: https://github.com/magit/emacsql
 
 ;; Package-Version: 3.1.1.50-git
-;; Package-Requires: ((emacs "25.1") (emacsql "3.1.1") (pg "0.16"))
+;; Package-Requires: ((emacs "25.1") (emacsql "20230220") (pg "0.16"))
 ;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This package provides an EmacSQL back-end for PostgreSQL, which
+;; This library provides an EmacSQL back-end for PostgreSQL, which
 ;; uses the `pg' package to directly speak to the database.
 
 ;; (For an alternative back-end for PostgreSQL, see `emacsql-psql'.)
 
 ;;; Code:
 
-(unless (require 'pg nil t)
-  (declare-function pg-connect "pg"
-                    ( dbname user &optional
-                      (password "") (host "localhost") (port 5432) (tls nil)))
-  (declare-function pg-disconnect "pg" (con))
-  (declare-function pg-exec "pg" (connection &rest args))
-  (declare-function pg-result "pg" (result what &rest arg)))
-(require 'eieio)
-(require 'cl-lib)
-(require 'cl-generic)
 (require 'emacsql)
+
+(require 'pg nil t)
+(declare-function pg-connect "pg"
+                  ( dbname user &optional
+                    (password "") (host "localhost") (port 5432) (tls nil)))
+(declare-function pg-disconnect "pg" (con))
+(declare-function pg-exec "pg" (connection &rest args))
+(declare-function pg-result "pg" (result what &rest arg))
 
 (defclass emacsql-pg-connection (emacsql-connection)
   ((pgcon :reader emacsql-pg-pgcon :initarg :pgcon)
@@ -41,7 +39,7 @@
                       (float "DOUBLE PRECISION")
                       (object "TEXT")
                       (nil "TEXT"))))
-  (:documentation "A connection to a PostgreSQL database via pg.el."))
+  "A connection to a PostgreSQL database via pg.el.")
 
 (cl-defun emacsql-pg (dbname user &key
                              (host "localhost") (password "") (port 5432) debug)
@@ -49,8 +47,8 @@
   (require 'pg)
   (let* ((pgcon (pg-connect dbname user password host port))
          (connection (make-instance 'emacsql-pg-connection
-                                    :process (and (fboundp 'pgcon-process)
-                                                  (pgcon-process pgcon))
+                                    :handle (and (fboundp 'pgcon-process)
+                                                 (pgcon-process pgcon))
                                     :pgcon pgcon
                                     :dbname dbname)))
     (when debug (emacsql-enable-debugging connection))

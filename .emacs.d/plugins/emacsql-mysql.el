@@ -7,19 +7,16 @@
 ;; Homepage: https://github.com/magit/emacsql
 
 ;; Package-Version: 3.1.1.50-git
-;; Package-Requires: ((emacs "25.1") (emacsql "3.1.1"))
+;; Package-Requires: ((emacs "25.1") (emacsql "20230220"))
 ;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This package provides an EmacSQL back-end for MySQL, which uses
+;; This library provides an EmacSQL back-end for MySQL, which uses
 ;; the standard `msql' command line program.
 
 ;;; Code:
 
-(require 'cl-lib)
-(require 'cl-generic)
-(require 'eieio)
 (require 'emacsql)
 
 (defvar emacsql-mysql-executable "mysql"
@@ -70,7 +67,8 @@ http://dev.mysql.com/doc/refman/5.5/en/reserved-words.html")
           :initform '((integer "BIGINT")
                       (float "DOUBLE")
                       (object "LONGTEXT")
-                      (nil "LONGTEXT")))))
+                      (nil "LONGTEXT"))))
+  "A connection to a MySQL database.")
 
 (cl-defun emacsql-mysql (database &key user password host port debug)
   "Connect to a MySQL server using the mysql command line program."
@@ -87,10 +85,11 @@ http://dev.mysql.com/doc/refman/5.5/en/reserved-words.html")
            (process (start-process-shell-command
                      "emacsql-mysql" buffer (concat "stty raw &&" command)))
            (connection (make-instance 'emacsql-mysql-connection
-                                      :process process
+                                      :handle process
                                       :dbname database)))
-      (setf (process-sentinel process)
-            (lambda (proc _) (kill-buffer (process-buffer proc))))
+      (set-process-sentinel process
+                            (lambda (proc _) (kill-buffer (process-buffer proc))))
+      (set-process-query-on-exit-flag (oref connection handle) nil)
       (when debug (emacsql-enable-debugging connection))
       (emacsql connection
                [:set-session (= sql-mode 'NO_BACKSLASH_ESCAPES\,ANSI_QUOTES)])
@@ -99,12 +98,12 @@ http://dev.mysql.com/doc/refman/5.5/en/reserved-words.html")
       (emacsql-register connection))))
 
 (cl-defmethod emacsql-close ((connection emacsql-mysql-connection))
-  (let ((process (emacsql-process connection)))
+  (let ((process (oref connection handle)))
     (when (process-live-p process)
       (process-send-eof process))))
 
 (cl-defmethod emacsql-send-message ((connection emacsql-mysql-connection) message)
-  (let ((process (emacsql-process connection)))
+  (let ((process (oref connection handle)))
     (process-send-string process message)
     (process-send-string process "\\c\\p\n")))
 

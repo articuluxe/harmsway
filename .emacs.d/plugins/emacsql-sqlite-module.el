@@ -6,36 +6,34 @@
 ;; Homepage: https://github.com/magit/emacsql
 
 ;; Package-Version: 3.1.1.50-git
-;; Package-Requires: ((emacs "25") (emacsql "3.1.1") (sqlite3 "0.16"))
+;; Package-Requires: ((emacs "25") (emacsql "20230220") (sqlite3 "0.16"))
 ;; SPDX-License-Identifier: Unlicense
 
 ;;; Commentary:
 
-;; This package provides an EmacSQL back-end for SQLite, which uses
+;; This library provides an EmacSQL back-end for SQLite, which uses
 ;; the Emacs module provided by the `sqlite3' package.
 
 ;;; Code:
 
-(require 'sqlite3)
 (require 'emacsql)
+(require 'emacsql-sqlite-common)
+
+(require 'sqlite3 nil t)
+(declare-function sqlite3-open "sqlite3-api")
+(declare-function sqlite3-exec "sqlite3-api")
+(declare-function sqlite3-close "sqlite3-api")
+(defvar sqlite-open-readwrite)
+(defvar sqlite-open-create)
 
 (emacsql-register-reserved emacsql-sqlite-reserved)
 
-(defclass emacsql-sqlite-module-connection (emacsql-connection)
-  ((file :initarg :file
-         :type (or null string)
-         :documentation "Database file name.")
-   (types :allocation :class
-          :reader emacsql-types
-          :initform '((integer "INTEGER")
-                      (float "REAL")
-                      (object "TEXT")
-                      (nil nil))))
-  (:documentation "A connection to a SQLite database using a module."))
+(defclass emacsql-sqlite-module-connection (emacsql--sqlite-base) ()
+  "A connection to a SQLite database using a module.")
 
 (cl-defmethod initialize-instance :after
   ((connection emacsql-sqlite-module-connection) &rest _)
-  (setf (emacsql-process connection)
+  (oset connection handle
         (sqlite3-open (or (slot-value connection 'file) ":memory:")
                       sqlite-open-readwrite
                       sqlite-open-create))
@@ -58,17 +56,17 @@ buffer. This is for debugging purposes."
     connection))
 
 (cl-defmethod emacsql-live-p ((connection emacsql-sqlite-module-connection))
-  (and (emacsql-process connection) t))
+  (and (oref connection handle) t))
 
 (cl-defmethod emacsql-close ((connection emacsql-sqlite-module-connection))
-  (sqlite3-close (emacsql-process connection))
-  (setf (emacsql-process connection) nil))
+  (sqlite3-close (oref connection handle))
+  (oset connection handle nil))
 
 (cl-defmethod emacsql-send-message
   ((connection emacsql-sqlite-module-connection) message)
   (condition-case err
       (let (rows)
-        (sqlite3-exec (emacsql-process connection)
+        (sqlite3-exec (oref connection handle)
                       message
                       (lambda (_ row __)
                         (push (mapcar (lambda (col)
