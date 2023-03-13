@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-03-10 11:01:49 dharms>
+;; Modified Time-stamp: <2023-03-13 11:27:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1344,7 +1344,9 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; blamer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package blamer
-  :bind (:map harmsway-git-keymap ("B" . blamer-mode)))
+  :bind (:map harmsway-git-keymap ("B" . blamer-mode))
+  :init (setq blamer-type 'both)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sideline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1997,6 +1999,7 @@ ARGS are the additional arguments."
       (eldoc-box-hover-mode -1)
     (eldoc-box-hover-mode 1)))
 (bind-key "C-c 0b" #'harmsway-toggle-eldoc-box-mode)
+(bind-key "C-c 0?" #'eldoc-box-help-at-point)
 (use-package eldoc-box
   :if (version<= "26.1" emacs-version)
   )
