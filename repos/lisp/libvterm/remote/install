@@ -6,6 +6,6 @@ mkdir -p bld
 cd bld
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 make
-cd ..
-mkdir -p ../../../.emacs.d/etc/modules/$(uname -s)
-cp src/vterm-module.so ../../../.emacs.d/etc/modules/$(uname -s)
+cd ../..
+mkdir -p ../../.emacs.d/etc/modules/$(uname -s)
+cp src/vterm-module.so ../../.emacs.d/etc/modules/$(uname -s)
