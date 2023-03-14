@@ -1,12 +1,12 @@
 ;;; hl-todo.el --- Highlight TODO and similar keywords  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2013-2022 Jonas Bernoulli
+;; Copyright (C) 2013-2023 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/hl-todo
 ;; Keywords: convenience
 
-;; Package-Requires: ((emacs "25.1") (compat "28.1.1.0"))
+;; Package-Requires: ((emacs "25.1") (compat "29.1.3.4"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -259,8 +259,8 @@ including alphanumeric characters, cannot be used here."
             face)
     face))
 
-(defvar hl-todo-mode-map (make-sparse-keymap)
-  "Keymap for `hl-todo-mode'.")
+(defvar-keymap hl-todo-mode-map
+  :doc "Keymap for `hl-todo-mode'.")
 
 ;;;###autoload
 (define-minor-mode hl-todo-mode

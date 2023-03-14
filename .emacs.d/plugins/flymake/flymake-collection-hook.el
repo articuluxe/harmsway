@@ -32,29 +32,32 @@
 (define-obsolete-variable-alias 'flymake-rest-config 'flymake-collection-config "2.0.0")
 (define-obsolete-variable-alias 'flymake-rest-config-inherit 'flymake-collection-config-inherit "2.0.0")
 (define-obsolete-variable-alias 'flymake-rest-hook-ignore-modes 'flymake-collection-hook-ignore-modes "2.0.0")
+(define-obsolete-function-alias 'flymake-collection-configured-checkers 'flymake-collection-hook-checkers "2.0.1")
+;;;###autoload
+(define-obsolete-variable-alias 'flymake-collection-config 'flymake-collection-hook-config "2.0.2")
+(define-obsolete-variable-alias 'flymake-collection-config-inherit 'flymake-collection-hook-inherit-config "2.0.2")
 
 ;;;###autoload
-(defcustom flymake-collection-config
-  '((python-mode
-     flymake-collection-pycodestyle
-     (flymake-mypy :disabled t)
-     (flymake-collection-pylint :disabled t)
-     (flymake-collection-flake8 :disabled t)
-     (flymake-collection-ruff :disabled t))
-    (awk-mode flymake-collection-awk-gawk)
-    (c-mode
-     flymake-collection-clang
-     (flymake-collection-gcc :disabled t))
-    (c++-mode
-     flymake-collection-clang
-     (flymake-collection-gcc :disabled t))
-    (haskell-mode flymake-collection-hlint)
-    (js-mode flymake-collection-eslint)
-    (js2-mode flymake-collection-eslint)
-    (typescript-mode flymake-collection-eslint)
-    (json-mode
-     flymake-collection-jq
-     (flymake-collection-jsonlint :disabled t))
+(defcustom flymake-collection-hook-config
+  '(((python-mode python-ts-mode) .
+     (flymake-collection-pycodestyle
+      (flymake-mypy :disabled t)
+      (flymake-collection-pylint :disabled t)
+      (flymake-collection-flake8 :disabled t)
+      (flymake-collection-ruff :disabled t)))
+    (awk-mode . (flymake-collection-awk-gawk))
+    ((c-mode c-ts-mode) .
+     (flymake-collection-clang
+      (flymake-collection-gcc :disabled t)))
+    ((c++-mode c++-ts-mode) .
+     (flymake-collection-clang
+      (flymake-collection-gcc :disabled t)))
+    (haskell-mode . (flymake-collection-hlint))
+    ((js-mode js2-mode typescript-mode typescript-ts-mode) .
+     (flymake-collection-eslint))
+    ((json-mode json-ts-mode) .
+     (flymake-collection-jq
+      (flymake-collection-jsonlint :disabled t)))
     (less-mode flymake-collection-less)
     (markdown-mode
      flymake-collection-markdownlint
@@ -67,17 +70,24 @@
     (sql-mode
      flymake-collection-sql-lint
      (flymake-collection-sqlint :disabled t))
-    (ruby-mode flymake-collection-rubocop)
+    ((ruby-mode ruby-ts-mode) .
+     (flymake-collection-rubocop))
     ;; (hledger-mode flymake-collection-hledger)
-    (sh-mode flymake-collection-shellcheck)
-    (yaml-mode flymake-collection-yamllint)
-    (web-mode flymake-collection-html-tidy)
+    ((sh-mode bash-ts-mode) .
+     (flymake-collection-shellcheck))
+    ((yaml-mode yaml-ts-mode) .
+     flymake-collection-yamllint)
+    ((web-mode html-ts-mode) .
+     (flymake-collection-html-tidy))
     (org-mode flymake-collection-proselint)
     (notmuch-message-mode flymake-collection-proselint)
     (nxml-mode flymake-collection-xmllint))
   "Configuration mapping major-modes to `flymake' backends."
   :type '(alist
-          :key-type (symbol :tag "Mode")
+          :key-type
+          (choice
+           (symbol :tag "Mode")
+           (repeat (symbol :tag "Mode")))
           :value-type
           (repeat
            :tag "Backends"
@@ -85,42 +95,78 @@
             (symbol :tag "Backend")
             (cons :tag "Backend with properties"
                   (symbol :tag "Backend")
-                  (plist :tag "Properties"
-                         :options ((:disabled boolean)
-                                   (:depth integer)
-                                   (:predicate function)))))))
+                  (choice
+                   (number :tag "Depth")
+                   (plist :tag "Properties"
+                          :options ((:disabled boolean)
+                                    (:depth integer)
+                                    (:predicate function))))))))
   :group 'flymake-collection)
 
-(defcustom flymake-collection-config-inherit nil
+(defcustom flymake-collection-hook-inherit-config nil
   "When true diagnostic hooks inherit parent-mode hooks."
   :type 'boolean
   :group 'flymake-collection)
 
-(defun flymake-collection-configured-checkers (mode)
-  "Fetch the list of diagnostic functions configured for MODE."
+(defun flymake-collection-hook--configured-checkers-for-mode (mode)
+  "Return all checkers configured for MODE in `flymake-collection-hook-config'."
+  (cl-dolist (it flymake-collection-hook-config)
+    (let ((it-mode (car it))
+          (it-conf (cdr it)))
+      (cond ((symbolp it-mode)
+             (when (equal it-mode mode)
+               (cl-return it-conf)))
+            ((consp it)
+             (when (member mode it-mode)
+               (cl-return it-conf)))
+            (t
+             (user-error
+              "Unknown hook predicate=%s in `flymake-collection-hook-config'"
+              it))))))
+
+(defun flymake-collection-hook--resolve-configured-checkers (checkers)
+  "Resolve all the checkers in CHECKERS.
+Resolving converts each checker in CHECKERS, which should be the value-type in
+`flymake-collection-hook-config', into a list of (checker . depth) values. This
+function will also remove any disabled checkers or checkers with predicates
+that are not true."
+  (cl-loop
+   for conf in checkers
+   with predicated-result = nil
+
+   if (symbolp conf)
+     collect (cons conf nil)
+   else if (consp conf)
+     if (numberp (cdr conf))
+       collect conf
+     else
+       do (cl-destructuring-bind (checker &optional &key depth predicate disabled &allow-other-keys)
+              conf
+            (when (and (not disabled)
+                       (or (not predicate)
+                           (funcall predicate)))
+              (setq predicated-result (cons checker depth))))
+       and if predicated-result
+         collect predicated-result))
+
+(defun flymake-collection-hook-checkers (mode)
+  "Fetch the list of diagnostic functions for MODE as (checker . depth)."
   (let (checkers
         (modes (list mode)))
     ;; Consider all the parent modes as well.
-    (when flymake-collection-config-inherit
+    (when flymake-collection-hook-inherit-config
       (while (setq mode (get mode 'derived-mode-parent))
         (push mode modes)))
     ;; For each mode populate the checkers alist with (checker . depth).
     (dolist (mode modes)
-      (dolist (conf (alist-get mode flymake-collection-config))
-        (cond ((symbolp conf)
-               (push (cons conf nil) checkers))
-              ((consp conf)
-               (cl-destructuring-bind (checker &optional &key depth predicate disabled &allow-other-keys)
-                   (if (numberp conf)
-                       `(,(car conf) :depth ,(cdr conf))
-                     conf)
-                 (when (and (not disabled)
-                            (or (not predicate)
-                                (funcall predicate)))
-                   (push (cons checker depth) checkers))))
-              (t
-               (warn "Unknown checker config in `flymake-collection-config': %s" conf)))))
-    (nreverse checkers)))
+      (setq checkers (append
+                      checkers
+                      (flymake-collection-hook--resolve-configured-checkers
+                       (flymake-collection-hook--configured-checkers-for-mode
+                        mode)))))
+    checkers))
+
+
 
 (defcustom flymake-collection-hook-ignore-modes nil
   "List of modes in which `flymake-collection-hook' is inhibited."
@@ -134,11 +180,12 @@
                             (and (boundp mode)
                                  (eval mode))))
                       flymake-collection-hook-ignore-modes)
-    (dolist (it (flymake-collection-configured-checkers major-mode))
+    (dolist (it (flymake-collection-hook-checkers major-mode))
       (add-hook 'flymake-diagnostic-functions (car it) (cdr it) t))))
 
 ;;;###autoload
 (define-obsolete-function-alias 'flymake-rest-hook-setup 'flymake-collection-hook-setup "2.0.0")
+;;;###autoload
 (define-obsolete-function-alias 'flymake-rest-hook-teardown 'flymake-collection-hook-teardown "2.0.0")
 
 ;;;###autoload
@@ -155,7 +202,7 @@
 
 ;;;###autoload
 (with-eval-after-load 'use-package-core
-  (defvar flymake-collection-config)
+  (defvar flymake-collection-hook-config)
 
   (declare-function use-package-concat "use-package-core")
   (declare-function use-package-process-keywords "use-package-core")
@@ -175,7 +222,7 @@
     (let ((body (use-package-process-keywords name-symbol rest state)))
       (use-package-concat
        (cl-loop for it in hooks
-                collect `(push (quote ,it) flymake-collection-config))
+                collect `(push (quote ,it) flymake-collection-hook-config))
        body))))
 
 (provide 'flymake-collection-hook)

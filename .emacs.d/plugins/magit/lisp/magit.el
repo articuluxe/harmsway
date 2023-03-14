@@ -249,10 +249,6 @@ and/or `magit-branch-remote-head'."
 ;;; Global Bindings
 
 ;;;###autoload
-(define-obsolete-variable-alias 'global-magit-file-mode
-  'magit-define-global-key-bindings "Magit 3.0.0")
-
-;;;###autoload
 (defcustom magit-define-global-key-bindings t
   "Whether to bind some Magit commands in the global keymap.
 
@@ -728,7 +724,6 @@ For X11 something like ~/.xinitrc should work.\n"
   (require 'magit-bisect)
   (require 'magit-stash)
   (require 'magit-blame)
-  (require 'magit-obsolete)
   (require 'magit-submodule)
   (unless (load "magit-autoloads" t t)
     (require 'magit-patch)

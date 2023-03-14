@@ -1064,11 +1064,12 @@ silently ignored."
 
 ;;;; Auxiliary
 
-(defun magit-describe-section-briefly (section &optional ident)
+(defun magit-describe-section-briefly (section &optional ident interactive)
   "Show information about the section at point.
 With a prefix argument show the section identity instead of the
-section lineage.  This command is intended for debugging purposes."
-  (interactive (list (magit-current-section) current-prefix-arg))
+section lineage.  This command is intended for debugging purposes.
+\n(fn SECTION &optional IDENT)"
+  (interactive (list (magit-current-section) current-prefix-arg t))
   (let ((str (format "#<%s %S %S %s-%s%s>"
                      (eieio-object-class section)
                      (let ((val (oref section value)))
@@ -1089,9 +1090,9 @@ section lineage.  This command is intended for debugging purposes."
                        "")
                      (and-let* ((m (oref section end)))
                        (marker-position m)))))
-    (if (called-interactively-p 'any)
-        (message "%s" str)
-      str)))
+    (when interactive
+      (message "%s" str))
+    str))
 
 (cl-defmethod cl-print-object ((section magit-section) stream)
   "Print `magit-describe-section' result of SECTION."
@@ -1211,30 +1212,6 @@ See `magit-section-match' for the forms CONDITION can take."
   (and-let* ((section (or section (magit-current-section))))
     (and (magit-section-match condition section)
          (oref section value))))
-
-(defmacro magit-section-when (condition &rest body)
-  "If the section at point matches CONDITION, evaluate BODY.
-
-If the section matches, then evaluate BODY forms sequentially
-with `it' bound to the section and return the value of the last
-form.  If there are no BODY forms, then return the value of the
-section.  If the section does not match or if there is no section
-at point, then return nil.
-
-See `magit-section-match' for the forms CONDITION can take."
-  (declare (obsolete
-            "instead use `magit-section-match' or `magit-section-value-if'."
-            "Magit 2.90.0")
-           (indent 1)
-           (debug (sexp body)))
-  `(--when-let (magit-current-section)
-     ;; Quoting CONDITION here often leads to double-quotes, which
-     ;; isn't an issue because `magit-section-match-1' implicitly
-     ;; deals with that.  We shouldn't force users of this function
-     ;; to not quote CONDITION because that would needlessly break
-     ;; backward compatibility.
-     (when (magit-section-match ',condition it)
-       ,@(or body '((oref it value))))))
 
 (defmacro magit-section-case (&rest clauses)
   "Choose among clauses on the type of the section at point.

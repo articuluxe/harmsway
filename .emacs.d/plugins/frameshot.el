@@ -1,12 +1,12 @@
 ;;; frameshot.el --- Take screenshots of a frame  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2022 Jonas Bernoulli
+;; Copyright (C) 2018-2023 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/frameshot
 ;; Keywords: multimedia
 
-;; Package-Requires: ((emacs "25.3") (compat "28.1.1.0"))
+;; Package-Requires: ((emacs "25.3") (compat "29.1.3.4"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 

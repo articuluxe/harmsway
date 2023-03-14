@@ -308,8 +308,12 @@ exit status %d\nStderr: %s"
                    (plist-put flymake-collection-define--procs ',name ,proc-symb))
              ;; If piping, send data to the process.
              ,@(when (eq write-type 'pipe)
-                 `((process-send-region ,proc-symb (point-min) (point-max))
-                   (process-send-eof ,proc-symb)))
+                 `((when (process-live-p ,proc-symb)
+                     (condition-case-unless-debug error
+                         (progn
+                           (process-send-region ,proc-symb (point-min) (point-max))
+                           (process-send-eof ,proc-symb))
+                       (error (flymake-log :error "Could not send stdin to checker %s" error))))))
              ;; Return value of syntax-checker is checker function.
              ,proc-symb))))))
 

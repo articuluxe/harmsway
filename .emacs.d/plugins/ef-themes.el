@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 0.10.0
+;; Version: 0.11.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -1061,17 +1061,16 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(diff-hl-delete ((,c :background ,bg-removed-refine)))
     `(diff-hl-insert ((,c :background ,bg-added-refine)))
     `(diff-hl-reverted-hunk-highlight ((,c :background ,fg-main :foreground ,bg-main)))
-;;;; diff-mode
-    `(diff-added ((,c :background ,bg-added)))
-    `(diff-changed ((,c :background ,bg-changed :extend t)))
+    `(diff-added ((,c :background ,bg-added :foreground ,fg-added)))
+    `(diff-changed ((,c :background ,bg-changed :foreground ,fg-changed :extend t)))
     `(diff-changed-unspecified ((,c :inherit diff-changed)))
-    `(diff-removed ((,c :background ,bg-removed)))
-    `(diff-refine-added ((,c :background ,bg-added-refine :foreground ,fg-intense)))
-    `(diff-refine-changed ((,c :background ,bg-changed-refine :foreground ,fg-intense)))
-    `(diff-refine-removed ((,c :background ,bg-removed-refine :foreground ,fg-intense)))
-    `(diff-indicator-added ((,c :inherit success :background ,bg-added)))
-    `(diff-indicator-changed ((,c :inherit warning :background ,bg-changed)))
-    `(diff-indicator-removed ((,c :inherit error :background ,bg-removed)))
+    `(diff-removed ((,c :background ,bg-removed :foreground ,fg-removed)))
+    `(diff-refine-added ((,c :background ,bg-added-refine :foreground ,fg-added)))
+    `(diff-refine-changed ((,c :background ,bg-changed-refine :foreground ,fg-changed)))
+    `(diff-refine-removed ((,c :background ,bg-removed-refine :foreground ,fg-removed)))
+    `(diff-indicator-added ((,c :inherit diff-added :foreground ,fg-added)))
+    `(diff-indicator-changed ((,c :inherit diff-changed :foreground ,fg-changed)))
+    `(diff-indicator-removed ((,c :inherit diff-removed :foreground ,fg-removed)))
     `(diff-context (( )))
     `(diff-error ((,c :inherit error)))
     `(diff-file-header ((,c :inherit bold)))
@@ -1187,6 +1186,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(ediff-odd-diff-C ((,c :inherit ediff-even-diff-C)))
 ;;;; eglot
     `(eglot-mode-line ((,c :inherit bold :foreground ,modeline-info)))
+    `(eglot-diagnostic-tag-unnecessary-face ((,c :inherit ef-themes-underline-info)))
 ;;;; eldoc
     ;; NOTE: see https://github.com/purcell/package-lint/issues/187
     (list 'eldoc-highlight-function-argument `((,c :inherit warning :background ,bg-warning)))
@@ -1265,8 +1265,8 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(font-lock-keyword-face ((,c :inherit bold :foreground ,keyword)))
     `(font-lock-negation-char-face ((,c :inherit bold)))
     `(font-lock-preprocessor-face ((,c :foreground ,preprocessor)))
-    `(font-lock-regexp-grouping-backslash ((,c :inherit bold :foreground ,rx-escape)))
-    `(font-lock-regexp-grouping-construct ((,c :inherit bold :foreground ,rx-construct)))
+    `(font-lock-regexp-grouping-backslash ((,c :foreground ,rx-escape)))
+    `(font-lock-regexp-grouping-construct ((,c :foreground ,rx-construct)))
     `(font-lock-string-face ((,c :foreground ,string)))
     `(font-lock-type-face ((,c :foreground ,type)))
     `(font-lock-variable-name-face ((,c :foreground ,variable)))

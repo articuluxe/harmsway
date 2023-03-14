@@ -73,11 +73,6 @@
   :prefix "company-box-"
   :group 'company)
 
-(define-obsolete-face-alias 'company-box-annotation 'company-tooltip-annotation nil)
-(define-obsolete-face-alias 'company-box-selection 'company-tooltip-selection nil)
-(define-obsolete-face-alias 'company-box-background 'company-tooltip nil)
-(define-obsolete-face-alias 'company-box-candidate 'company-tooltip nil)
-(define-obsolete-face-alias 'company-box-numbers 'company-tooltip nil)
 (make-obsolete-variable 'company-box-max-candidates nil "")
 (make-obsolete-variable 'company-box-tooltip-minimum-width 'company-tooltip-minimum-width nil "")
 (make-obsolete-variable 'company-box-tooltip-maximum-width 'company-tooltip-maximum-width nil "")
@@ -114,6 +109,12 @@ Only the 'background' color is used in this face."
   '((t :inherit company-box-candidate))
   "Face used for numbers when `company-show-quick-access' is used."
   :group 'company-box)
+
+(define-obsolete-face-alias 'company-box-annotation 'company-tooltip-annotation nil)
+(define-obsolete-face-alias 'company-box-selection 'company-tooltip-selection nil)
+(define-obsolete-face-alias 'company-box-background 'company-tooltip nil)
+(define-obsolete-face-alias 'company-box-candidate 'company-tooltip nil)
+(define-obsolete-face-alias 'company-box-numbers 'company-tooltip nil)
 
 (defcustom company-box-color-icon t
   "Whether or not to color icons.
@@ -995,7 +996,7 @@ It doesn't nothing if a font icon is used."
              (set-window-start nil it))))
     (unless first-render
       (company-box--update-scrollbar (company-box--get-frame) first-render))
-    (run-with-idle-timer 0 nil (lambda nil (run-hook-with-args 'company-box-selection-hook selection
+    (run-with-timer 0 nil (lambda nil (run-hook-with-args 'company-box-selection-hook selection
                                                                (or (frame-parent) (selected-frame)))))))
 
 (defun company-box--prevent-changes (&rest _)

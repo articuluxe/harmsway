@@ -1,6 +1,6 @@
 ;;; closql.el --- Store EIEIO objects using EmacSQL  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2016-2022 Jonas Bernoulli
+;; Copyright (C) 2016-2023 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/emacscollective/closql
@@ -8,8 +8,8 @@
 
 ;; Package-Requires: (
 ;;     (emacs "25.1")
-;;     (compat "28.1.1.0")
-;;     (emacsql-sqlite "3.0.0"))
+;;     (compat "29.1.3.4")
+;;     (emacsql "20230220"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -292,9 +292,9 @@
              (prog1 db (emacsql db [:pragma (= foreign-keys on)]))))
       (let ((db-init (not (and file (file-exists-p file))))
             (db (make-instance class :file file)))
-        (when (and (slot-boundp db 'process)
-                   (processp (oref db process)))
-          (set-process-query-on-exit-flag (oref db process) nil))
+        (when (and (slot-boundp db 'handle)
+                   (processp (oref db handle)))
+          (set-process-query-on-exit-flag (oref db handle) nil))
         (when debug
           (emacsql-enable-debugging db))
         (emacsql db [:pragma (= foreign-keys on)])
