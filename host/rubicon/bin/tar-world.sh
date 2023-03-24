@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # tar-world.sh --- tar up important configuration files
-# Copyright (C) 2015-2020  Dan Harms (dharms)
+# Copyright (C) 2015-2020, 2023  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2020-09-19 17:02:08 dharms>
+# Modified Time-stamp: <2023-03-16 14:52:20 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -60,6 +60,12 @@ $tar u"$verbose"f "$dest" --transform=s%site/"$site"\\/%% site/"$site"
 #     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/xr.bmk
 #     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.proviso.d
 # fi
+
+deploys=(
+    repos/cpp/universal-ctags
+    src/samples/time_t_decoder
+)
+tar-deployments.sh "$dest" "${deploys[@]}"
 
 echo ...done generating "$dest"
 
