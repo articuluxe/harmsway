@@ -181,7 +181,10 @@ symbol such as `variable-added'.")
     "org-babel-prep-session:"
     "org-babel-variable-assignments:"
     "org-babel-default-header-args:"
-    "pcomplete/"))
+    "pcomplete/"
+    "use-package-normalize/"
+    "use-package-handler/"
+    "use-package-autoloads/"))
   "A regexp matching whitelisted non-standard symbol prefixes.")
 
 (defvar package-lint--allowed-prefix-mappings
@@ -934,7 +937,7 @@ Valid definition names are:
       (when position
         (goto-char position)
         (looking-at-p (rx (*? space) "(" (*? space)
-                          (or "defadvice" "cl-defmethod" "define-advice")
+                          (or "defadvice" "cl-defmethod" "define-advice" "defalias" "defvaralias" (seq "define-obsolete-" (or "face" "function" "variable") "-alias"))
                           symbol-end)))))
 
 (defun package-lint--check-defs-prefix (prefix definitions)

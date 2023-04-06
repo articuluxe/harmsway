@@ -104,8 +104,9 @@
      for elt = (org-element-lineage (org-element-context) embark-org--types t)
      then (org-element-lineage elt embark-org--types)
      while elt
-     for begin = (org-element-property :begin elt)
-     for end = (org-element-property :end elt)
+     ;; clip bounds to narrowed portion of buffer
+     for begin = (max (org-element-property :begin elt) (point-min))
+     for end = (min (org-element-property :end elt) (point-max))
      for target = (buffer-substring begin end)
       ;; Adjust table-cell to exclude final |. (Why is that there?)
       ;; Note: We are not doing this is an embark transformer because we
@@ -339,9 +340,11 @@ bound to i."
 
 ;;; Org headings
 
-(defun embark-org--refine-heading (_type target)
-  "Refine type of heading TARGET in Org buffers."
-  (cons 'org-heading target))
+(defun embark-org--refine-heading (type target)
+  "Refine TYPE of heading TARGET in Org buffers."
+  (cons
+   (if (derived-mode-p 'org-mode) 'org-heading type)
+   target))
 
 (add-to-list 'embark-transformer-alist '(heading . embark-org--refine-heading))
 
@@ -366,6 +369,9 @@ bound to i."
 (dolist (cmd '(org-todo org-metaright org-metaleft org-metaup org-metadown
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
   (cl-pushnew cmd embark-repeat-actions))
+
+(cl-pushnew 'embark--ignore-target
+            (alist-get 'org-set-tags-command embark-target-injection-hooks))
 
 (cl-pushnew '(org-heading . embark-org-heading-map) embark-keymap-alist)
 

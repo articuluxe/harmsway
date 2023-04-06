@@ -3,7 +3,7 @@
 ;; Copyright (C) 2023 David Goudou
 
 ;; Author: David Goudou <david.goudou@gmail.com>
-;; Version: 1.0.0
+;; Version: 2.0.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://github.com/seamacs/yabaki-theme
 
@@ -123,7 +123,7 @@
    `(org-todo ((t (:foreground ,red-3))))
    `(region ((t (:foreground ,fg :background ,black-2))))
    `(trailing-whitespace ((t (:background ,red-1))))
-   `(vertical-border ((t (:foreground ,grey-1 :foreground ,grey-1))))
+   `(vertical-border ((t (:foreground ,black-2 :foreground ,black-2))))
    `(warning ((t (:foreground ,orange-0))))
    `(whitespace-trailing ((t (:background ,red-1))))
    `(cursor ((t (:foreground unspecified :background ,red-2))))

@@ -178,10 +178,7 @@ When t, then rename the branch named OLD on the remote specified
 
 When `forge-only' and the `forge' package is available, then
   behave like `t' if the remote points to a repository on a forge
-  (currently Github or Gitlab), otherwise like `local-only'.
-
-Another supported but obsolete value is `github-only'.  It is a
-  misnomer because it now treated as an alias for `forge-only'."
+  (currently Github or Gitlab), otherwise like `local-only'."
   :package-version '(magit . "2.90.0")
   :group 'magit-commands
   :type '(choice
@@ -546,9 +543,16 @@ that is being reset."
 ;;;###autoload
 (defun magit-branch-delete (branches &optional force)
   "Delete one or multiple branches.
+
 If the region marks multiple branches, then offer to delete
 those, otherwise prompt for a single branch to be deleted,
-defaulting to the branch at point."
+defaulting to the branch at point.
+
+Require confirmation when deleting branches is dangerous in some
+way.  Option `magit-no-confirm' can be customized to not require
+confirmation in certain cases.  See its docstring to learn why
+confirmation is required by default in certain cases or if a
+prompt is confusing."
   ;; One would expect this to be a command as simple as, for example,
   ;; `magit-branch-rename'; but it turns out everyone wants to squeeze
   ;; a bit of extra functionality into this one, including myself.
@@ -589,7 +593,9 @@ defaulting to the branch at point."
              (offset (1+ (length remote))))
         (cond
          ((magit-confirm 'delete-branch-on-remote
-            "Delete %s on the remote (not just locally)"
+            (format "Deleting local %s.  Also delete on %s"
+                    (magit-ref-fullname (car branches))
+                    remote)
             "Delete %i branches on the remote (not just locally)"
             'noabort branches)
           ;; The ref may actually point at another rev on the remote,
@@ -743,8 +749,7 @@ the remote."
       (when (and (equal (magit-get-push-remote new) remote)
                  ;; ...and if it does not, then we must abort.
                  (not (eq magit-branch-rename-push-target 'local-only))
-                 (or (not (memq magit-branch-rename-push-target
-                                '(forge-only github-only)))
+                 (or (not (eq magit-branch-rename-push-target 'forge-only))
                      (and (require (quote forge) nil t)
                           (fboundp 'forge--forge-remote-p)
                           (forge--forge-remote-p remote))))
@@ -798,8 +803,9 @@ and also rename the respective reflog file."
     (magit-run-git "update-ref" "-d" old)))
 
 (defun magit--rename-reflog-file (old new)
-  (let ((old (magit-git-dir (concat "logs/" old)))
-        (new (magit-git-dir (concat "logs/" new))))
+  (let* ((dir (magit-gitdir))
+         (old (expand-file-name (concat "logs/" old) dir))
+         (new (expand-file-name (concat "logs/" new) dir)))
     (when (file-exists-p old)
       (make-directory (file-name-directory new) t)
       (rename-file old new t))))
@@ -849,12 +855,6 @@ and also rename the respective reflog file."
   :variable "branch.%s.description"
   (interactive (list (oref transient-current-prefix scope)))
   (magit-run-git-with-editor "branch" "--edit-description" branch))
-
-(add-hook 'find-file-hook #'magit-branch-description-check-buffers)
-
-(defun magit-branch-description-check-buffers ()
-  (and buffer-file-name
-       (string-match-p "/\\(BRANCH\\|EDIT\\)_DESCRIPTION\\'" buffer-file-name)))
 
 (defclass magit--git-branch:upstream (magit--git-variable)
   ((format :initform " %k %m %M\n   %r %R")))

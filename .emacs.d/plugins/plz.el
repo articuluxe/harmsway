@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.4-pre
+;; Version: 0.4
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: comm, network, http
 
@@ -313,11 +313,12 @@ above with AS.  Or THEN may be `sync' to make a synchronous
 request, in which case the result is returned directly.
 
 ELSE is an optional callback function called when the request
-fails with one argument, a `plz-error' structure.  If ELSE is
-nil, an error is signaled when the request fails, either
-`plz-curl-error' or `plz-http-error' as appropriate, with a
-`plz-error' structure as the error data.  For synchronous
-requests, this argument is ignored.
+fails (i.e. if curl fails, or if the HTTP response has a non-2xx
+status code).  It is called with one argument, a `plz-error'
+structure.  If ELSE is nil, an error is signaled when the request
+fails, either `plz-curl-error' or `plz-http-error' as
+appropriate, with a `plz-error' structure as the error data.  For
+synchronous requests, this argument is ignored.
 
 FINALLY is an optional function called without argument after
 THEN or ELSE, as appropriate.  For synchronous requests, this

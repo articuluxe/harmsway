@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.8.1
+;; Version: 1.9.0
 ;; Package-Requires: ((emacs "25.1") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
@@ -131,7 +131,7 @@
   :group 'all-the-icons-ivy-rich)
 
 (defface all-the-icons-ivy-rich-size-face
-  '((t (:inherit shadow)))
+  '((t (:inherit font-lock-constant-face)))
   "Face used for buffer size."
   :group 'all-the-icons-ivy-rich)
 
@@ -1027,6 +1027,13 @@ This value is adjusted depending on the `window-width'."
       (ivy-rich-candidate))
      :delimiter "\t")
 
+    describe-input-method
+    (:columns
+     ((all-the-icons-ivy-rich-input-method-icon)
+      (ivy-rich-candidate (:width 0.3))
+      (all-the-icons-ivy-rich-input-method-docstring (:face all-the-icons-ivy-rich-doc-face)))
+     :delimiter "\t")
+
     set-input-method
     (:columns
      ((all-the-icons-ivy-rich-input-method-icon)
@@ -1151,9 +1158,10 @@ Return `default-directory' if no project was found."
       (projectile-project-root))
      ((fboundp 'project-current)
       (when-let ((project (project-current)))
-        (expand-file-name (if (fboundp 'project-root)
-                              (project-root project)
-                            (cdr project)))))
+        (expand-file-name
+         (if (fboundp 'project-root)
+             (project-root project)
+           (car (with-no-warnings (project-roots project)))))))
      (t default-directory))))
 
 (defun all-the-icons-ivy-rich--file-path (cand)

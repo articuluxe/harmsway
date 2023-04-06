@@ -183,7 +183,7 @@ As defined by the Language Server Protocol 3.16."
          lsp-pyright lsp-python-ms lsp-purescript lsp-r lsp-racket lsp-remark lsp-ruff-lsp lsp-rf lsp-rust lsp-solargraph
          lsp-sorbet lsp-sourcekit lsp-sonarlint lsp-tailwindcss lsp-tex lsp-terraform lsp-toml
          lsp-ttcn3 lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-volar lsp-vhdl lsp-vimscript
-         lsp-xml lsp-yaml lsp-ruby-lsp lsp-ruby-syntax-tree lsp-sqls lsp-svelte lsp-steep lsp-zig)
+         lsp-xml lsp-yaml lsp-ruby-lsp lsp-ruby-syntax-tree lsp-sqls lsp-svelte lsp-steep lsp-tilt lsp-zig)
   "List of the clients to be automatically required."
   :group 'lsp-mode
   :type '(repeat symbol))
@@ -340,6 +340,7 @@ the server has requested that."
     "[/\\\\]\\.yarn\\'"
     "[/\\\\]\\.fslckout\\'"
     "[/\\\\]\\.tox\\'"
+    "[/\\\\]\\.nox\\'"
     "[/\\\\]dist\\'"
     "[/\\\\]dist-newstyle\\'"
     "[/\\\\]\\.stack-work\\'"
@@ -775,6 +776,7 @@ Changes take effect only when a new session is started."
                                         (clojure-mode . "clojure")
                                         (clojurec-mode . "clojure")
                                         (clojurescript-mode . "clojurescript")
+                                        (clojure-ts-mode . "clojure")
                                         (java-mode . "java")
                                         (java-ts-mode . "java")
                                         (jdee-mode . "java")
@@ -890,7 +892,8 @@ Changes take effect only when a new session is started."
                                         (idris-mode . "idris")
                                         (idris2-mode . "idris2")
                                         (gleam-mode . "gleam")
-                                        (graphviz-dot-mode . "dot"))
+                                        (graphviz-dot-mode . "dot")
+                                        (tiltfile-mode . "tiltfile"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -984,11 +987,6 @@ must be used for handling a particular message.")
 (defface lsp-face-highlight-write
   '((t :inherit highlight :weight bold))
   "Face used for highlighting symbols being written to."
-  :group 'lsp-mode)
-
-(defface lsp-face-xref-items
-  '((t :inherit highlight))
-  "Face used for highlighting xref items."
   :group 'lsp-mode)
 
 (define-obsolete-variable-alias 'lsp-lens-auto-enable
@@ -1773,7 +1771,12 @@ On other systems, returns path without change."
          (file
           (concat (decode-coding-string (url-filename url)
                                         (or locale-coding-system 'utf-8))
-                  (when target
+                  (when (and target
+                             (not (s-match
+                                   (rx "#" (group (1+ num)) (or "," "#")
+                                       (group (1+ num))
+                                       string-end)
+                                   uri)))
                     (concat "#" target))))
          (file-name (if (and type (not (string= type "file")))
                         (if-let ((handler (lsp--get-uri-handler type)))
@@ -1878,7 +1881,7 @@ IGNORED-DIRECTORIES is a list of regexes to filter out directories we don't
 want to watch."
   (let
       ((full-path (f-join dir path)))
-    (and (f-dir-p full-path)
+    (and (file-accessible-directory-p full-path)
          (not (equal path "."))
          (not (equal path ".."))
          (not (lsp--string-match-any ignored-directories full-path)))))
@@ -4868,7 +4871,7 @@ Applies on type formatting."
     (pcase type
       ("file"
        (find-file (lsp--uri-to-path url))
-       (-when-let ((_ line column) (s-match (rx "#" (group (1+ num)) "," (group (1+ num))) url))
+       (-when-let ((_ line column) (s-match (rx "#" (group (1+ num)) (or "," "#") (group (1+ num))) url))
          (goto-char (lsp--position-to-point
                      (lsp-make-position :character (1- (string-to-number column))
                                         :line (1- (string-to-number line)))))))
@@ -5044,7 +5047,7 @@ identifier and the position respectively."
          (len (length line)))
     (add-face-text-property (max (min start-char len) 0)
                             (max (min end-char len) 0)
-                            'lsp-face-xref-items t line)
+                            'xref-match t line)
     ;; LINE is nil when FILENAME is not being current visited by any buffer.
     (xref-make (or line filename)
                (xref-make-file-location

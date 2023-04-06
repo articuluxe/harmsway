@@ -466,6 +466,9 @@ ITALIC? and BOLD? control font variant."
 	 `(magit-process-ok             ((t (:foreground ,ok  :bold t))))
 	 `(magit-section-heading        ((t (:foreground ,fg1 :bold t))))
 	 `(magit-section-highlight      ((t (:background ,bg3))))
+	 `(magit-tag                    ((t ,(user-controlled-with stimmung-themes-constant :italic? t))))
+
+	 `(git-commit-comment-action    ((t ((:inherit 'font-lock-comment-face) :bold t))))
 
 	 ;; diff-hl
 	 `(diff-hl-insert         ((t (:foreground ,fg1 :background ,ok     :bold nil :italic nil))))
@@ -665,7 +668,7 @@ ITALIC? and BOLD? control font variant."
 	 ;; eldoc-box
 
 	 `(eldoc-box-border ((t (:background ,fg5))))
-	 `(eldoc-box-body   ((t (:foreground ,fg1 background ,bg5))))
+	 `(eldoc-box-body   ((t (:foreground ,fg1 :background ,bg1))))
 
 	 ;; lsp-mode
 
@@ -721,7 +724,7 @@ ITALIC? and BOLD? control font variant."
 
 	 ;; tree-sitter
 
-	 `(tree-sitter-hl-face:attribute             ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:attribute             ((t (:inherit 'font-lock-constant-face))))
 	 `(tree-sitter-hl-face:comment               ((t (:inherit 'font-lock-comment-face))))
 	 `(tree-sitter-hl-face:constant              ((t (:inherit 'font-lock-constant-face))))
 	 `(tree-sitter-hl-face:constant.builtin      ((t (:inherit 'font-lock-constant-face))))
@@ -748,20 +751,36 @@ ITALIC? and BOLD? control font variant."
 	 `(tree-sitter-hl-face:punctuation.delimiter ((t (:foreground ,fg1 :background ,bg1))))
 	 `(tree-sitter-hl-face:string                ((t (:inherit 'font-lock-string-face))))
 	 `(tree-sitter-hl-face:string.special        ((t (:inherit 'font-lock-string-face))))
-	 `(tree-sitter-hl-face:tag                   ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:type                  ((t (:inherit 'font-lock-type-face))))
-	 `(tree-sitter-hl-face:type.argument         ((t (:inherit 'font-lock-type-face))))
-	 `(tree-sitter-hl-face:type.builtin          ((t (:inherit 'font-lock-type-face))))
-	 `(tree-sitter-hl-face:type.parameter        ((t (:inherit 'font-lock-type-face))))
-	 `(tree-sitter-hl-face:type.super            ((t (:inherit 'font-lock-type-face))))
-	 `(tree-sitter-hl-face:type.variable         ((t (:inherit 'font-lock-type-face))))
+	 `(tree-sitter-hl-face:tag                   ((t (:foreground ,fg1 :background ,bg1 :bold t))))
+	 `(tree-sitter-hl-face:type                  ((t (:inherit font-lock-type-face))))
+	 `(tree-sitter-hl-face:type.argument         ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.builtin          ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.parameter        ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.super            ((t (:foreground ,fg1 :background ,bg1 :italic t))))
+	 `(tree-sitter-hl-face:type.variable         ((t (:foreground ,fg1 :background ,bg1 :italic t))))
 	 `(tree-sitter-hl-face:variable.builtin      ((t (:foreground ,fg1 :background ,bg1))))
 	 `(tree-sitter-hl-face:variable.parameter    ((t (:foreground ,fg1 :background ,bg1))))
 	 `(tree-sitter-hl-face:variable.special      ((t (:foreground ,fg1 :background ,bg1))))
 
 	 ;; Typescript
 
-	 `(typescript-jsdoc-value ((t (:inherit org-block))))
+	 `(typescript-jsdoc-value ((t (:foreground ,fg1 :background ,stimmung-themes-dark-highlight-color))))
+	 `(typescript-jsdoc-type  ((t (:inherit font-lock-type-face))))
+	 `(typescript-jsdoc-tag   ((t (:foreground ,fg1 :bold t))))
+
+	 ;; rg.el
+
+	 `(rg-match-face          ((t (:foreground ,fg1 :background ,search2))))
+	 `(rg-error-face          ((t (:inherit error))))
+	 `(rg-warning-face        ((t (:inherit warning))))
+	 `(rg-context-face        ((t (:foreground ,fg5))))
+	 `(rg-filename-face       ((t (:foreground ,fg1 :bold t))))
+	 `(rg-info-face           ((t (:foreground ,fg1))))
+	 `(rg-tag-face            ((t ,(user-controlled-with stimmung-themes-constant :italic? t))))
+	 `(rg-file-tag-face       ((t ,(user-controlled-with stimmung-themes-constant :italic? t))))
+	 `(rg-line-number-face    ((t (:inherit 'line-number))))
+	 `(rg-column-number-face  ((t (:inherit 'line-number))))
+	 `(rg-match-position-face ((t (:inherit 'line-number))))
 
 	 ;; DAP
 
@@ -867,6 +886,12 @@ ITALIC? and BOLD? control font variant."
 	 ;; yasnippet
 	 `(yas-field-highlight-face ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
 
+	 ;; xref
+
+	 `(next-error-message ((t (:background ,search2))))
+	 `(xref-file-header ((t (:foreground ,fg1 :bold t))))
+	 `(xref-match       ((t (:foreground ,fg1))))
+	 `(xref-line-number ((t (:inherit 'line-number))))
 	 )))
 
 (custom-theme-set-variables

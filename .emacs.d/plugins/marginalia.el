@@ -148,7 +148,8 @@ hold sensitive data, e.g., passwords."
   '((imenu . imenu)
     (recentf-open . file)
     (where-is . command))
-  "Associate commands with a completion category."
+  "Associate commands with a completion category.
+The value of `this-command' is used as key for the lookup."
   :type '(alist :key-type symbol :value-type symbol))
 
 (defgroup marginalia-faces nil
@@ -451,7 +452,7 @@ FACE is the name of the face, with which the field should be propertized."
   "Return symbol class characters for symbol S.
 
 This function is an extension of `help--symbol-class'.  It returns
-more fine-grained and more detailled symbol information.
+more fine-grained and more detailed symbol information.
 
 Function:
 f function
@@ -1113,7 +1114,10 @@ These annotations are skipped for remote paths."
 (defun marginalia-classify-by-command-name ()
   "Lookup category for current command."
   (and marginalia--command
-       (alist-get marginalia--command marginalia-command-categories)))
+       (or (alist-get marginalia--command marginalia-command-categories)
+           ;; The command can be an alias, e.g., `recentf' -> `recentf-open'.
+           (when-let ((chain (function-alias-p marginalia--command)))
+             (alist-get (car (last chain)) marginalia-command-categories)))))
 
 (defun marginalia-classify-original-category ()
   "Return original category reported by completion metadata."

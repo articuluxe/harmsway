@@ -1183,14 +1183,19 @@ symbol, which is safe when used as a face attribute's value."
 (defvar modus-themes--select-theme-history nil
   "Minibuffer history of `modus-themes--select-prompt'.")
 
+(defun modus-themes--annotate-theme (theme)
+  "Return completion annotation for THEME."
+  (format " -- %s" (car (split-string (get (intern theme) 'theme-documentation) "\\."))))
+
 (defun modus-themes--select-prompt ()
   "Minibuffer prompt to select a Modus theme."
-  (intern
-   (completing-read
-    "Select Modus theme: "
-    (modus-themes--list-known-themes)
-    nil t nil
-    'modus-themes--select-theme-history)))
+  (let ((completion-extra-properties `(:annotation-function ,#'modus-themes--annotate-theme)))
+    (intern
+     (completing-read
+      "Select Modus theme: "
+      (modus-themes--list-known-themes)
+      nil t nil
+      'modus-themes--select-theme-history))))
 
 ;;;###autoload
 (defun modus-themes-select (theme)
@@ -1278,7 +1283,8 @@ color mappings of the palette, instead of its named colors."
 (defun modus-themes--list-colors-prompt ()
   "Prompt for Modus theme.
 Helper function for `modus-themes-list-colors'."
-  (let ((def (format "%s" (modus-themes--current-theme))))
+  (let ((def (format "%s" (modus-themes--current-theme)))
+        (completion-extra-properties `(:annotation-function ,#'modus-themes--annotate-theme)))
     (completing-read
      (format "Use palette from theme [%s]: " def)
      (modus-themes--list-known-themes) nil t nil
@@ -1581,7 +1587,10 @@ FG and BG are the main colors."
     `(modus-themes-slant ((,c ,@(modus-themes--slant))))
     `(modus-themes-ui-variable-pitch ((,c ,@(modus-themes--variable-pitch-ui))))
 ;;;;; other custom faces
-    `(modus-themes-button ((,c :inherit variable-pitch :box ,border :background ,bg-button-active :foreground ,fg-button-active)))
+    `(modus-themes-button ((,c :inherit variable-pitch
+                               :box (:line-width 1 :color ,border :style released-button)
+                               :background ,bg-button-active
+                               :foreground ,fg-button-active)))
     `(modus-themes-key-binding ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,keybind)))
     `(modus-themes-prompt ((,c ,@(modus-themes--prompt fg-prompt bg-prompt))))
     `(modus-themes-reset-soft ((,c :background ,bg-main :foreground ,fg-main
@@ -1592,9 +1601,9 @@ FG and BG are the main colors."
     `(default ((,c :background ,bg-main :foreground ,fg-main)))
     `(cursor ((,c :background ,cursor)))
     `(fringe ((,c :background ,fringe :foreground ,fg-main)))
-    `(menu ((,c :background ,bg-tab-bar :foreground ,fg-main)))
-    `(scroll-bar ((,c :background ,fringe :foreground ,fg-dim)))
-    `(tool-bar ((,c :background ,bg-tab-bar :foreground ,fg-main)))
+    `(menu ((,c :background ,bg-dim :foreground ,fg-main)))
+    `(scroll-bar ((,c :background ,bg-dim :foreground ,fg-dim)))
+    `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; basic and/or ungrouped styles
     `(bold ((,c :weight bold)))
@@ -2090,6 +2099,12 @@ FG and BG are the main colors."
     `(diredfl-symlink ((,c :inherit dired-symlink)))
     `(diredfl-tagged-autofile-name ((,c :inherit (diredfl-autofile-name dired-marked))))
     `(diredfl-write-priv ((,c :foreground ,accent-0)))
+;;;;; disk-usage
+    `(disk-usage-inaccessible ((,c :inherit error)))
+    `(disk-usage-percent ((,c :foreground ,accent-0)))
+    `(disk-usage-size ((,c :foreground ,accent-1)))
+    `(disk-usage-symlink ((,c :inherit dired-symlink)))
+    `(disk-usage-symlink-directory ((,c :inherit dired-symlink)))
 ;;;;; display-fill-column-indicator-mode
     `(fill-column-indicator ((,c :height 1 :background ,bg-active :foreground ,bg-active)))
 ;;;;; doom-modeline
@@ -2648,6 +2663,8 @@ FG and BG are the main colors."
     `(jiralib-link-project-face ((,c :underline t)))
 ;;;;; jit-spell
     `(jit-spell-misspelling ((,c :inherit modus-themes-lang-error)))
+;;;;; jinx
+    `(jinx-misspelled ((,c :inherit modus-themes-lang-error)))
 ;;;;; journalctl-mode
     `(journalctl-error-face ((,c :inherit error)))
     `(journalctl-finished-face ((,c :inherit success)))
@@ -3751,7 +3768,7 @@ FG and BG are the main colors."
     `(which-func ((,c :inherit bold :foreground ,modeline-info)))
 ;;;;; which-key
     `(which-key-command-description-face ((,c :foreground ,fg-main)))
-    `(which-key-group-description-face ((,c :foreground ,err)))
+    `(which-key-group-description-face ((,c :foreground ,keyword)))
     `(which-key-highlighted-command-face ((,c :foreground ,warning :underline t)))
     `(which-key-key-face ((,c :inherit modus-themes-key-binding)))
     `(which-key-local-map-description-face ((,c :foreground ,fg-main)))
@@ -3776,7 +3793,7 @@ FG and BG are the main colors."
     `(window-divider-last-pixel ((,c :foreground ,bg-inactive)))
 ;;;;; widget
     `(widget-button ((,c :inherit bold :foreground ,fg-link)))
-    `(widget-button-pressed ((,c :inherit widget-buton :foreground ,fg-link-visited)))
+    `(widget-button-pressed ((,c :inherit widget-button :foreground ,fg-link-visited)))
     `(widget-documentation ((,c :inherit font-lock-doc-face)))
     `(widget-field ((,c :background ,bg-inactive :foreground ,fg-main :extend nil)))
     `(widget-inactive ((,c :background ,bg-button-inactive :foreground ,fg-button-inactive)))

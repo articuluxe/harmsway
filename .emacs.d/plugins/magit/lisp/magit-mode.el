@@ -36,6 +36,10 @@
 (require 'transient)
 
 (defvar bookmark-make-record-function)
+(defvar magit--wip-inhibit-autosave)
+(defvar magit-wip-after-save-local-mode)
+(declare-function magit-wip-get-ref "magit-wip" ())
+(declare-function magit-wip-commit-worktree "magit-wip" (ref files msg))
 
 ;;; Options
 
@@ -163,15 +167,9 @@ The following %-sequences are supported:
      empty string.  Due to limitations of the `uniquify' package,
      buffer names must end with the path.
 
-`%T' Obsolete, use \"%t%x\" instead.  Like \"%t\", but append an
-     asterisk if and only if `magit-uniquify-buffer-names' is nil.
-
-The value should always contain \"%m\" or \"%M\", \"%v\" or
-\"%V\", and \"%t\" (or the obsolete \"%T\").
-
-If `magit-uniquify-buffer-names' is non-nil, then the value must
-end with \"%t\" or \"%t%x\" (or the obsolete \"%T\").  See issue
-#2841.
+The value should always contain \"%m\" or \"%M\", \"%v\" or \"%V\", and
+\"%t\".  If `magit-uniquify-buffer-names' is non-nil, then the
+value must end with \"%t\" or \"%t%x\".  See issue #2841.
 
 This is used by `magit-generate-buffer-name-default-function'.
 If another `magit-generate-buffer-name-function' is used, then
@@ -532,7 +530,10 @@ Magit is documented in info node `(magit)'."
 
 ;;; Local Variables
 
+(defvar-local magit-buffer-gitdir nil)
+(defvar-local magit-buffer-topdir nil)
 (defvar-local magit-buffer-arguments nil)
+(defvar-local magit-buffer-diff-type nil)
 (defvar-local magit-buffer-diff-args nil)
 (defvar-local magit-buffer-diff-files nil)
 (defvar-local magit-buffer-diff-files-suspended nil)
@@ -599,6 +600,8 @@ The buffer's major-mode should derive from `magit-section-mode'."
       (setq magit-previous-section section)
       (funcall mode)
       (magit-xref-setup #'magit-setup-buffer-internal bindings)
+      (setq magit-buffer-gitdir (magit-gitdir))
+      (setq magit-buffer-topdir (magit-toplevel))
       (pcase-dolist (`(,var ,val) bindings)
         (set (make-local-variable var) val))
       (when created
@@ -802,7 +805,7 @@ If `visible', then only consider buffers on all visible frames.
 If `selected' or t, then only consider buffers on the selected
   frame.
 If a frame, then only consider buffers on that frame."
-  (let ((topdir (magit--toplevel-safe)))
+  (let ((topdir (magit--toplevel-safe 'nocache)))
     (cl-flet* ((b (buffer)
                  (with-current-buffer buffer
                    (and (eq major-mode mode)
@@ -824,7 +827,7 @@ If a frame, then only consider buffers on that frame."
         ((guard (framep frame)) (seq-some #'w (window-list frame)))))))
 
 (defun magit-generate-new-buffer (mode &optional value directory)
-  (let* ((default-directory (or directory (magit--toplevel-safe)))
+  (let* ((default-directory (or directory (magit--toplevel-safe 'nocache)))
          (name (funcall magit-generate-buffer-name-function mode value))
          (buffer (generate-new-buffer name)))
     (with-current-buffer buffer
@@ -862,8 +865,7 @@ account."
        (?v . ,(or v ""))
        (?V . ,(if v (concat " " v) ""))
        (?t . ,n)
-       (?x . ,(if magit-uniquify-buffer-names "" "*"))
-       (?T . ,(if magit-uniquify-buffer-names n (concat n "*")))))))
+       (?x . ,(if magit-uniquify-buffer-names "" "*"))))))
 
 ;;; Buffer Lock
 
@@ -905,19 +907,18 @@ latter is displayed in its place."
 ;;; Bury Buffer
 
 (defun magit-mode-bury-buffer (&optional kill-buffer)
-  "Bury the current buffer.
-With a prefix argument, kill the buffer instead.
-With two prefix arguments, also kill all Magit buffers associated
-with this repository.
-This is done using `magit-bury-buffer-function'."
+  "Bury or kill the current buffer.
+
+Use `magit-bury-buffer-function' to bury the buffer when called
+without a prefix argument or to kill it when called with a single
+prefix argument.
+
+With two prefix arguments, always kill the current and all other
+Magit buffers, associated with this repository."
   (interactive "P")
-  ;; Kill all associated Magit buffers when a double prefix arg is given.
-  (when (>= (prefix-numeric-value kill-buffer) 16)
-    (let ((current (current-buffer)))
-      (dolist (buf (magit-mode-get-buffers))
-        (unless (eq buf current)
-          (kill-buffer buf)))))
-  (funcall magit-bury-buffer-function kill-buffer))
+  (if (>= (prefix-numeric-value kill-buffer) 16)
+      (mapc #'kill-buffer (magit-mode-get-buffers))
+    (funcall magit-bury-buffer-function kill-buffer)))
 
 (defun magit-mode-quit-window (kill-buffer)
   "Quit the selected window and bury its buffer.
@@ -1123,34 +1124,54 @@ argument (the prefix) non-nil means save all with no questions."
                    (with-current-buffer buffer
                      (setq magit-inhibit-refresh-save t)))
                  "to skip the current buffer and remember choice")
-             ,@save-some-buffers-action-alist)))
-      (save-some-buffers
-       arg (lambda ()
-             (and buffer-file-name
-                  ;; If the current file is modified and resides inside
-                  ;; a repository, and a let-binding is in effect, which
-                  ;; places us in another repository, then the below
-                  ;; let-binding is needed to prevent that file from
-                  ;; being saved.
-                  (let ((default-directory
-                         (file-name-directory buffer-file-name)))
-                    (and
-                     ;; - Check whether the repository still exists
-                     ;;   Necessary because  we call git inside of it.
-                     default-directory
-                     (file-exists-p default-directory)
-                     ;; - Check whether refreshing is disabled.
-                     (not magit-inhibit-refresh-save)
-                     ;; - Check whether the visited file is either on the
-                     ;;   same remote as the repository, or both are on
-                     ;;   the local system.
-                     (equal (file-remote-p buffer-file-name) remote)
-                     ;; Delayed checks that are more expensive for remote
-                     ;; repositories, due to the required network access.
-                     ;; - Check whether the file is inside the repository.
-                     (equal (magit-rev-parse-safe "--show-toplevel") topdir)
-                     ;; - Check whether the file is actually writable.
-                     (file-writable-p buffer-file-name)))))))))
+             ,@save-some-buffers-action-alist))
+          (topdirs nil)
+          (unwiped nil)
+          (magit--wip-inhibit-autosave t))
+      (unwind-protect
+          (save-some-buffers
+           arg
+           (lambda ()
+             ;; If the current file is modified and resides inside
+             ;; a repository, and a let-binding is in effect, which
+             ;; places us in another repository, then this binding
+             ;; is needed to prevent that file from being saved.
+             (and-let* ((default-directory
+                         (and buffer-file-name
+                              (file-name-directory buffer-file-name))))
+               (and
+                ;; Check whether the repository still exists.
+                (file-exists-p default-directory)
+                ;; Check whether refreshing is disabled.
+                (not magit-inhibit-refresh-save)
+                ;; Check whether the visited file is either on the
+                ;; same remote as the repository, or both are on
+                ;; the local system.
+                (equal (file-remote-p buffer-file-name) remote)
+                ;; Delayed checks that are more expensive for remote
+                ;; repositories, due to the required network access.
+                ;;
+                ;; Check whether the file is inside the repository.
+                (equal (or (cdr (assoc default-directory topdirs))
+                           (let ((top (magit-rev-parse-safe "--show-toplevel")))
+                             (push (cons default-directory top) topdirs)
+                             top))
+                       topdir)
+                ;; Check whether the file is actually writable.
+                (file-writable-p buffer-file-name)
+                (prog1 t
+                  ;; Schedule for wip commit, if appropriate.
+                  (when magit-wip-after-save-local-mode
+                    (push (expand-file-name buffer-file-name) unwiped)))))))
+        (when unwiped
+          (let ((default-directory topdir))
+            (magit-wip-commit-worktree
+             (magit-wip-get-ref)
+             unwiped
+             (if (cdr unwiped)
+                 (format "autosave %s files after save" (length unwiped))
+               (format "autosave %s after save"
+                       (file-relative-name (car unwiped)))))))))))
 
 ;;; Restore Window Configuration
 

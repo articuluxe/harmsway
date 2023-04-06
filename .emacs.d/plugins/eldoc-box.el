@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Yuan Fu
 
-;; Version: 1.10
+;; Version: 1.10.1
 
 ;; Author: Yuan Fu <casouri@gmail.com>
 ;; URL: https://github.com/casouri/eldoc-box
@@ -177,6 +177,7 @@ It will be passes with two arguments: WIDTH and HEIGHT of the childframe.")
 (defvar eldoc-box-buffer-hook '(eldoc-box--prettify-markdown-separator
                                 eldoc-box--replace-en-space
                                 eldoc-box--remove-linked-images
+                                eldoc-box--remove-noise-chars
                                 eldoc-box--fontify-html
                                 eldoc-box--condense-large-newline-gaps)
   "Hook run after buffer for doc is setup.
@@ -280,6 +281,9 @@ STR has to be a proper documentation, not empty string, not nil, etc."
   (let ((doc-buffer (get-buffer-create eldoc-box--buffer)))
     (with-current-buffer doc-buffer
       (setq mode-line-format nil)
+      ;; WORKAROUND: (issue#66) If cursor-type is ‘box’, sometimes the
+      ;; cursor is still shown for some reason.
+      (setq-local cursor-type t)
       (when (bound-and-true-p global-tab-line-mode)
         (setq tab-line-format nil))
       ;; without this, clicking childframe will make doc buffer the current buffer
@@ -700,6 +704,13 @@ height."
             (rx "[" (seq "![" (+? anychar) "](" (+? anychar) ")") "]"
                 "(" (+? anychar) ")")
             nil t)
+      (replace-match ""))))
+
+(defun eldoc-box--remove-noise-chars ()
+  "Remove some noise characters like carriage return."
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward "\r" nil t)
       (replace-match ""))))
 
 (defun eldoc-box--fontify-html ()

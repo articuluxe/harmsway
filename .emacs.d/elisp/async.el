@@ -238,12 +238,13 @@ marker position to the end of this next line."
                 ;; of this line since there won't be anything
                 ;; interesting.
                 (while (setq msg (read (current-buffer)))
-                  (when-let ((msg-decoded (ignore-errors (base64-decode-string msg))))
-                    (setq msg-decoded (car (read-from-string msg-decoded)))
-                    (when (and (listp msg-decoded)
-                               (async-message-p msg-decoded)
-                               async-callback)
-                      (funcall async-callback msg-decoded))))
+                  (let ((msg-decoded (ignore-errors (base64-decode-string msg))))
+                    (when msg-decoded
+                      (setq msg-decoded (car (read-from-string msg-decoded)))
+                      (when (and (listp msg-decoded)
+                                 (async-message-p msg-decoded)
+                                 async-callback)
+                        (funcall async-callback msg-decoded)))))
               ;; This is OK, we reached the end of the chunk subprocess sent
               ;; at this time.
               (invalid-read-syntax t)
@@ -400,16 +401,20 @@ object will return the process object when the program is
 finished.  Set DEFAULT-DIRECTORY to change PROGRAM's current
 working directory."
   (let* ((buf (generate-new-buffer (concat "*" name "*")))
-         (buf-err (generate-new-buffer (concat "*" name "*:err")))
+         (buf-err (generate-new-buffer (concat "*" name ":err*")))
          (proc (let ((process-connection-type nil))
                  (make-process
                   :name name
                   :buffer buf
                   :stderr buf-err
                   :command (cons program program-args)))))
+    (set-process-sentinel
+     (get-buffer-process buf-err)
+     (lambda (proc _change)
+       (unless (or async-debug (process-live-p proc))
+         (kill-buffer (process-buffer proc)))))
     (with-current-buffer buf
       (set (make-local-variable 'async-callback) finish-func)
-
       (set (make-local-variable 'async-read-marker)
            (set-marker (make-marker) (point-min) buf))
       (set-marker-insertion-type async-read-marker nil)
