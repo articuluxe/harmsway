@@ -62,6 +62,7 @@ notes:
          '((?t  . toml:read-boolean)
            (?f  . toml:read-boolean)
            (?\[ . toml:read-array)
+	   (?{  . toml:read-inline-table)
            (?\" . toml:read-string))))
     (mapc (lambda (char)
             (push (cons char 'toml:read-start-with-number) table))
@@ -306,6 +307,26 @@ Move point to the end of read string."
     (forward-char)
     (nreverse elements)))
 
+(defun toml:read-inline-table ()
+  (unless (eq ?{ (toml:get-char-at-point))
+    (signal 'toml-inline-table-error (list (point))))
+  (forward-char)
+  (let (elements char-after-read)
+    (while (not (char-equal (toml:get-char-at-point) ?}))
+      (let ((key (toml:read-key))
+	    (value (toml:read-value)))
+	(push `(,key . ,value) elements))
+      (toml:seek-readable-point)
+      (setq char-after-read (toml:get-char-at-point))
+      (unless (char-equal char-after-read ?})
+        (if (char-equal char-after-read ?,)
+            (progn
+              (forward-char)
+              (toml:seek-readable-point))
+          (signal 'toml-array-error (list (point))))))
+    (forward-char)
+    (nreverse elements)))
+
 (defun toml:read-value ()
   (toml:seek-readable-point)
   (if (toml:end-of-buffer-p) nil
@@ -319,7 +340,7 @@ Move point to the end of read string."
   (let (keygroup)
     (while (and (not (toml:end-of-buffer-p))
                 (char-equal (toml:get-char-at-point) ?\[))
-      (if (toml:search-forward "\\[\\([a-zA-Z][a-zA-Z0-9_\\.]*\\)\\]")
+      (if (toml:search-forward "\\[\\([a-zA-Z][a-zA-Z0-9_\\.-]*\\)\\]")
           (let ((keygroup-string (match-string-no-properties 1)))
             (when (string-match "\\(_\\|\\.\\)\\'" keygroup-string)
               (signal 'toml-keygroup-error (list (point))))
@@ -331,7 +352,7 @@ Move point to the end of read string."
 (defun toml:read-key ()
   (toml:seek-readable-point)
   (if (toml:end-of-buffer-p) nil
-    (if (toml:search-forward "\\([a-zA-Z][a-zA-Z0-9_]*\\) *= *")
+    (if (toml:search-forward "\\([a-zA-Z][a-zA-Z0-9_-]*\\) *= *")
         (let ((key (match-string-no-properties 1)))
           (when (string-match "_\\'" key)
             (signal 'toml-key-error (list (point))))
@@ -383,11 +404,10 @@ Move point to the end of read string."
         (signal 'toml-redefine-key-error (list (point))))
 
       (setq current-value (toml:read-value))
-      (when current-value
-        (setq hashes (toml:make-hashes current-keygroup
+      (setq hashes (toml:make-hashes current-keygroup
                                        current-key
                                        current-value
-                                       hashes)))
+                                       hashes))
 
       (toml:seek-readable-point))
     hashes))

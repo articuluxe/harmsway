@@ -69,7 +69,8 @@
 
    `(mode-line ((t (:background "#444444" :foreground ,fg))))
    `(highlight ((t (:background ,highlight-bg))))
-   ))
+
+   `(lsp-rust-analyzer-inlay-face ((t :height 0.8 :background "#202020")))))
 
 
 ;;;###autoload
