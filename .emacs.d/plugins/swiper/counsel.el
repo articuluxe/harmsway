@@ -1,11 +1,11 @@
 ;;; counsel.el --- Various completion functions using Ivy -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2021 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2023 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.13.4
-;; Package-Requires: ((emacs "24.5") (ivy "0.13.4") (swiper "0.13.4"))
+;; Version: 0.14.0
+;; Package-Requires: ((emacs "24.5") (ivy "0.14.0") (swiper "0.14.0"))
 ;; Keywords: convenience, matching, tools
 
 ;; This file is part of GNU Emacs.

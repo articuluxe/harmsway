@@ -8,6 +8,7 @@
 ;; Version: 1.1
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 ;; Homepage: https://github.com/minad/marginalia
+;; Keywords: docs, help, matching, completion
 
 ;; This file is part of GNU Emacs.
 
@@ -138,7 +139,7 @@ determine it."
   :type '(alist :key-type regexp :value-type symbol))
 
 (defcustom marginalia-censor-variables
-  '("pass\\|auth-source-netrc-cache\\|auth-source-.*-nonce")
+  '("pass\\|auth-source-netrc-cache\\|auth-source-.*-nonce\\|api-?key")
   "The value of variables matching any of these regular expressions is not shown.
 This configuration variable is useful to hide variables which may
 hold sensitive data, e.g., passwords."

@@ -541,7 +541,7 @@ in the source file, or the last line of the hunk above it."
             (let ((to-go (1+ (- line hunk-line))))
               (while (cl-plusp to-go)
                 (forward-line 1)
-                (unless (looking-at "^-")
+                (unless (looking-at "^[-\\]")
                   (cl-decf to-go))))))))))
 
 (defface diff-hl-reverted-hunk-highlight
@@ -609,6 +609,7 @@ in the source file, or the last line of the hunk above it."
                     (unless (yes-or-no-p (format "Revert current hunk in %s? "
                                                  file))
                       (user-error "Revert canceled")))
+                (widen)
                 (let ((diff-advance-after-apply-hunk nil))
                   (save-window-excursion
                     (diff-apply-hunk t)))
@@ -628,7 +629,7 @@ Move point to the beginning of the delineated hunk and return
 its end position."
   (let (end-marker)
     (save-excursion
-      (while (looking-at "[-+]") (forward-line 1))
+      (while (looking-at "[-+\\]") (forward-line 1))
       (dotimes (_i max-context)
         (unless (looking-at "@\\|[-+]")
           (forward-line 1)))
@@ -637,7 +638,7 @@ its end position."
                   (looking-at "@"))
         (diff-split-hunk)))
     (unless (looking-at "[-+]") (forward-line -1))
-    (while (looking-at "[-+]") (forward-line -1))
+    (while (looking-at "[-+\\]") (forward-line -1))
     (dotimes (_i max-context)
       (unless (looking-at "@\\|[-+]")
         (forward-line -1)))

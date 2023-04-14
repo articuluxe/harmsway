@@ -56,30 +56,6 @@ A prefix argument causes the SQL to be printed into the current buffer.
 
 ;;;***
 
-;;;### (autoloads nil "emacsql-sqlite-builtin" "emacsql-sqlite-builtin.el"
-;;;;;;  (0 0 0 0))
-;;; Generated autoloads from emacsql-sqlite-builtin.el
-
-(register-definition-prefixes "emacsql-sqlite-builtin" '("emacsql-sqlite-builtin-connection"))
-
-;;;***
-
-;;;### (autoloads nil "emacsql-sqlite-common" "emacsql-sqlite-common.el"
-;;;;;;  (0 0 0 0))
-;;; Generated autoloads from emacsql-sqlite-common.el
-
-(register-definition-prefixes "emacsql-sqlite-common" '("emacsql-"))
-
-;;;***
-
-;;;### (autoloads nil "emacsql-sqlite-module" "emacsql-sqlite-module.el"
-;;;;;;  (0 0 0 0))
-;;; Generated autoloads from emacsql-sqlite-module.el
-
-(register-definition-prefixes "emacsql-sqlite-module" '("emacsql-sqlite-module-connection"))
-
-;;;***
-
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t

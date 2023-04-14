@@ -598,7 +598,7 @@ This value is adjusted depending on the `window-width'."
      :delimiter "\t")
     counsel-git-checkout
     (:columns
-     ((all-the-icons-ivy-rich-git-branch-icon)
+     ((all-the-icons-ivy-rich-git-commit-icon)
       (ivy-rich-candidate))
      :delimiter "\t")
     counsel-list-processes
@@ -1096,6 +1096,33 @@ This value is adjusted depending on the `window-width'."
       (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
      :delimiter "\t")
 
+    magit-find-file
+    (:columns
+     ((all-the-icons-ivy-rich-magit-file-icon)
+      (all-the-icons-ivy-rich-file-name (:width 0.4))
+      (all-the-icons-ivy-rich-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
+      (all-the-icons-ivy-rich-file-modes (:width 12))
+      (all-the-icons-ivy-rich-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+    magit-find-file-other-frame
+    (:columns
+     ((all-the-icons-ivy-rich-magit-file-icon)
+      (all-the-icons-ivy-rich-file-name (:width 0.4))
+      (all-the-icons-ivy-rich-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
+      (all-the-icons-ivy-rich-file-modes (:width 12))
+      (all-the-icons-ivy-rich-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
+    magit-find-file-other-window
+    (:columns
+     ((all-the-icons-ivy-rich-magit-file-icon)
+      (all-the-icons-ivy-rich-file-name (:width 0.4))
+      (all-the-icons-ivy-rich-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
+      (all-the-icons-ivy-rich-file-modes (:width 12))
+      (all-the-icons-ivy-rich-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
+      (all-the-icons-ivy-rich-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     :delimiter "\t")
     ivy-magit-todos
     (:columns
      ((all-the-icons-ivy-rich-magit-todos-icon)
@@ -1754,7 +1781,9 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
          (new-face `(:inherit ,face
                      :family ,family
                      :height ,all-the-icons-ivy-rich-icon-size)))
-    (format " %s" (propertize icon 'face new-face))))
+    (format "%s%s"
+            (propertize " " 'display '((space :relative-width 0.5)))
+            (propertize icon 'face new-face))))
 
 (defun all-the-icons-ivy-rich-buffer-icon (cand)
   "Display buffer icon for CAND in `ivy-rich'."
@@ -1780,6 +1809,12 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
        (if (or (null icon) (symbolp icon))
            (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :height 0.9 :v-adjust 0.0)
          (propertize icon 'display '(raise 0.0)))))))
+
+(defun all-the-icons-ivy-rich-magit-file-icon (cand)
+  "Display file icon for CAND."
+  (if (string-suffix-p "Find file from revision: " ivy--prompt)
+      (all-the-icons-ivy-rich-git-branch-icon cand)
+    (all-the-icons-ivy-rich-file-icon cand)))
 
 (defun all-the-icons-ivy-rich-magit-todos-icon (cand)
   "Display file icon in `magit-todos'."
@@ -1911,6 +1946,12 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
     (all-the-icons-ivy-rich--format-icon
      (all-the-icons-octicon "git-branch" :height 1.0 :v-adjust -0.05 :face 'all-the-icons-green))))
 
+(defun all-the-icons-ivy-rich-git-commit-icon (_cand)
+  "Display the git branch icon in `ivy-rich'."
+  (when (all-the-icons-ivy-rich-icon-displayable)
+    (all-the-icons-ivy-rich--format-icon
+     (all-the-icons-octicon "git-commit" :height 1.0 :v-adjust -0.05 :face 'all-the-icons-green))))
+
 (defun all-the-icons-ivy-rich-process-icon (_cand)
   "Display the process icon in `ivy-rich'."
   (when (all-the-icons-ivy-rich-icon-displayable)
@@ -2010,9 +2051,11 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
 
 (defun all-the-icons-ivy-rich-link-icon (cand)
   "Display link icon in `ivy-rich'."
-  (if (string-prefix-p "#" cand)
-      (all-the-icons-faicon "anchor" :height 0.8 :v-adjust -0.05 :face 'all-the-icons-green)
-    (all-the-icons-material "link" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-blue)))
+  (when (all-the-icons-ivy-rich-icon-displayable)
+    (all-the-icons-ivy-rich--format-icon
+     (if (string-prefix-p "#" cand)
+         (all-the-icons-faicon "anchor" :height 0.8 :v-adjust -0.05 :face 'all-the-icons-green)
+       (all-the-icons-material "link" :height 1.0 :v-adjust -0.2 :face 'all-the-icons-blue)))))
 
 (defun all-the-icons-ivy-rich-key-icon (_cand)
   "Display key icon in `ivy-rich'."
