@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; rubicon --- host file
-;; Copyright (C) 2015-2022  Dan Harms (dharms)
+;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-11-03 09:46:46 dharms>
+;; Modified Time-stamp: <2023-05-08 16:59:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -48,6 +48,7 @@
                             "NanumGothicCoding 14"
                             "Iosevka 16"
                             "Iosevka Comfy 15"
+                            "ProggyVector 14"
                             "Go Mono 14"
                             "Anka/Coder 14"
                             "League Mono Variable 14"
@@ -70,6 +71,7 @@
                             "NotoMono Nerd Font Mono 14"
                             "Code New Roman 14"
                             "LiterationMono Nerd Font Mono 14"
+                            "DinaRemasterII 16"
                             "Hermit 12"
                             "Excalibur Monospace 12"
                             "agave 16"
