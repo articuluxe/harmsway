@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; viking --- host file
-;; Copyright (C) 2015-2022  Dan Harms (dharms)
+;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2022-11-03 14:22:56 dharms>
+;; Modified Time-stamp: <2023-05-09 12:21:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -58,6 +58,7 @@
                             "League Mono Variable 14"
                             "QuickType Mono 13"
                             "Ubuntu Mono 14"
+                            "ProggyVector 14"
                             "Andale Mono 12"
                             "M+ 2m regular 12"
                             "Droid Sans Mono 12"

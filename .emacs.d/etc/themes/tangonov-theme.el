@@ -7,7 +7,7 @@
 ;; URL: https://sr.ht/~trevdev/tangonov-theme/
 ;; Created: 20th July, 2022
 ;; Keywords: faces, theme, dark, fringe
-;; Version: 1.4.5
+;; Version: 1.5.0
 ;; Package-Requires: ((emacs "25"))
 
 ;; License: GPL3
@@ -173,8 +173,8 @@ Alpha should be a float between 0 and 1."
 (let ((spec '((class color) (min-colors 256)))
       (fg        "#EEFFFF")
       (fg-alt    "#BFC7D5")
-      (bg        "#191919")
-      (bg-alt    "#232323")
+      (bg        "#151515")
+      (bg-alt    "#202020")
       (red       "#FF7B85")
       (green     "#ABDC88")
       (yellow    "#FFCA41")

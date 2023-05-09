@@ -1598,7 +1598,10 @@ to, or to some other symbolic-ref that points to the same ref."
                           (magit-branch-p
                            (forge--pullreq-branch (oref it value))))
                      (magit-ref-p (format "refs/pullreqs/%s"
-                                          (oref (oref it value) number))))))
+                                          (oref (oref it value) number)))))
+        ((unpulled unpushed)
+         (magit-ref-abbrev
+          (replace-regexp-in-string "\\.\\.\\.?" "" (oref it value)))))
       (magit-thing-at-point 'git-revision t)
       (and-let* ((chunk (and (bound-and-true-p magit-blame-mode)
                              (fboundp 'magit-current-blame-chunk)
@@ -2114,12 +2117,25 @@ PATH has to be relative to the super-repository."
     (magit-git-string "submodule--helper" "name" path)))
 
 (defun magit-list-worktrees ()
+  "Return list of the worktrees of this repository.
+
+The returned list has the form (PATH COMMIT BRANCH BARE DETACHED
+LOCKED PRUNABLE).  The last four elements are booleans, with the
+exception of LOCKED and PRUNABLE, which may also be strings.
+See git-worktree(1) manpage for the meaning of the various parts.
+
+This function corrects a situation where \"git worktree list\"
+would claim a worktree is bare, even though the working tree is
+specified using `core.worktree'."
   (let ((remote (file-remote-p default-directory))
         worktrees worktree)
     (dolist (line (let ((magit-git-global-arguments
-                         ;; KLUDGE At least in v2.8.3 this triggers a segfault.
+                         ;; KLUDGE At least in Git v2.8.3 this argument
+                         ;; would trigger a segfault.
                          (remove "--no-pager" magit-git-global-arguments)))
-                    (magit-git-lines "worktree" "list" "--porcelain")))
+                    (if (magit-git-version>= "2.36")
+                        (magit-git-items "worktree" "list" "--porcelain" "-z")
+                      (magit-git-lines "worktree" "list" "--porcelain"))))
       (cond ((string-prefix-p "worktree" line)
              (let ((path (substring line 9)))
                (when remote
@@ -2131,8 +2147,12 @@ PATH has to be relative to the super-repository."
                ;; However, if the worktree has been removed, then
                ;; we want to return it anyway; instead of nil.
                (setq path (or (magit-toplevel path) path))
-               (setq worktree (list path nil nil nil))
+               (setq worktree (list path nil nil nil nil nil nil))
                (push worktree worktrees)))
+            ((string-prefix-p "HEAD" line)
+             (setf (nth 1 worktree) (substring line 5)))
+            ((string-prefix-p "branch" line)
+             (setf (nth 2 worktree) (substring line 18)))
             ((string-equal line "bare")
              (let* ((default-directory (car worktree))
                     (wt (and (not (magit-get-boolean "core.bare"))
@@ -2141,12 +2161,15 @@ PATH has to be relative to the super-repository."
                    (progn (setf (nth 0 worktree) (expand-file-name wt))
                           (setf (nth 2 worktree) (magit-rev-parse "HEAD"))
                           (setf (nth 3 worktree) (magit-get-current-branch)))
-                 (setf (nth 1 worktree) t))))
-            ((string-prefix-p "HEAD" line)
-             (setf (nth 2 worktree) (substring line 5)))
-            ((string-prefix-p "branch" line)
-             (setf (nth 3 worktree) (substring line 18)))
-            ((string-equal line "detached"))))
+                 (setf (nth 3 worktree) t))))
+            ((string-equal line "detached")
+             (setf (nth 4 worktree) t))
+            ((string-prefix-p line "locked")
+             (setf (nth 5 worktree)
+                   (if (> (length line) 6) (substring line 7) t)))
+            ((string-prefix-p line "prunable")
+             (setf (nth 6 worktree)
+                   (if (> (length line) 8) (substring line 9) t)))))
     (nreverse worktrees)))
 
 (defun magit-symbolic-ref-p (name)

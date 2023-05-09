@@ -2,7 +2,7 @@
 ;; Copyright © 2019
 
 ;; Author: Love Lagerkvist
-;; URL: https://github.com/motform/stimmung
+;; URL: https://github.com/motform/stimmung-themes
 ;; Created: 2019-12-20
 ;; Version: 2022-03-26
 ;; Keywords: faces
@@ -49,7 +49,7 @@
 	  (bg2 "gray95")
 	  (bg3 "gray90")
 	  (bg4 "gray85")
-	  (bg5 "gray98")
+	  (bg5 "gray95")
 	  (bg6 "gray99")
 	  (bg7 "gray80")
 
@@ -84,14 +84,13 @@ ITALIC? and BOLD? control font variant."
 	 'stimmung-themes-light
 
 	 `(default  ((t (:background ,bg1 :foreground ,fg1))))
-	 `(shadow   ((t (:background ,bg1))))
+	 ;; `(shadow   ((t (:background ,bg1))))
 	 `(hl-line  ((t (:background ,bg2 :extend t))))
 
 	 `(region              ((t (:background ,bg4))))
 	 `(lazy-highlight      ((t (:foreground ,fg1 :background ,search2))))
 	 `(secondary-selection ((t (:foreground ,fg1 :background ,search2))))
 	 `(highlight           ((t (:foreground ,fg1 :background ,bg3 :bold t))))
-	 `(default             ((t (:foreground ,fg1 :background ,bg1))))
 	 `(fringe              ((t (:foreground ,fg1 :background ,bg1))))
 	 `(match               ((t (:foreground ,ok  :bold t))))
 	 `(scroll-bar          ((t (:foreground ,fg5 :background ,bg1))))
@@ -99,7 +98,6 @@ ITALIC? and BOLD? control font variant."
 	 `(link                ((t (:underline t))))
 	 `(link-visited        ((t (:underline t :italic t))))
 	 `(button              ((t (:underline t))))
-	 `(header-line         ((t (:bold t))))
 	 `(tooltip             ((t (:foreground ,fg1 :background ,bg3))))
 	 `(vertical-border     ((t (:foreground ,bg2 :background ,bg2))))
 	 `(info-string         ((t (:background ,stimmung-themes-light-highlight-color))))
@@ -120,7 +118,7 @@ ITALIC? and BOLD? control font variant."
 
 	 `(paren-matched               ((t (:foreground ,ok  :background ,bg1))))
 	 `(paren-unmatched             ((t (:foreground ,red :background ,bg1))))
-	 `(escape-glyph                ((t (:foreground ,fg5)))) ; TODO move into an fg1 color?
+	 `(escape-glyph                ((t (:foreground ,red :bold t))))
 	 `(homoglyph                   ((t (:foreground ,red))))
 
 	 `(line-number              ((t (:foreground ,fg5 :background ,bg1))))
@@ -311,7 +309,7 @@ ITALIC? and BOLD? control font variant."
 	 `(doom-modeline-project-root-dir   ((t (:foreground ,fg1 :weight normal))))
 	 `(doom-modeline-project-parent-dir ((t (:foreground ,fg1 :weight normal))))
 	 `(doom-modeline-bar-inactive       ((t (:foreground ,fg1 :background ,bg1))))
-	 `(doom-modeline-bar                ((t (:background ,bg5)))) ; the leftmost bar
+	 `(doom-modeline-bar                ((t (:background ,stimmung-themes-light-highlight-color)))) ; the leftmost bar
 	 `(doom-modeline-evil-insert-state  ((t (:foreground ,fg1))))
 	 `(doom-modeline-evil-visual-state  ((t (:foreground ,fg1))))
 	 `(doom-modeline-evil-normal-state  ((t (:foreground ,fg1))))
@@ -370,6 +368,10 @@ ITALIC? and BOLD? control font variant."
 	 ;; info
 	 `(info-quoted    ((t (:inherit 'default :bold t))))
 	 `(info-menu-star ((t (:bold t))))
+
+	 ;; Mini-frame
+
+	 `(mini-frame-mode ((t (:bold t))))
 
 	 ;; ivy
 	 `(ivy-current-match              ((t (:background ,bg1 :bold t))))
@@ -666,6 +668,10 @@ ITALIC? and BOLD? control font variant."
 	 `(font-latex-math-face         ((t (:foreground ,fg1))))
 	 `(font-latex-script-char-face  ((t (:foreground ,fg1))))
 
+	 ;; copilot
+
+	 `(copilot-overlay-face         ((t (:foreground ,fg5 :italic t))))
+
 	 ;; eglot
 
 	 `(eglot-highlight-symbol-face           ((t (:foregroud ,fg1 :background ,search))))
@@ -736,39 +742,39 @@ ITALIC? and BOLD? control font variant."
 	 `(tree-sitter-hl-face:comment               ((t (:inherit 'font-lock-comment-face))))
 	 `(tree-sitter-hl-face:constant              ((t (:inherit 'font-lock-constant-face))))
 	 `(tree-sitter-hl-face:constant.builtin      ((t (:inherit 'font-lock-constant-face))))
-	 `(tree-sitter-hl-face:constructor           ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:constructor           ((t (:foreground ,fg1 :background nil))))
 	 `(tree-sitter-hl-face:doc                   ((t (:inherit 'font-lock-comment-face))))
-	 `(tree-sitter-hl-face:embedded              ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:escape                ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:embedded              ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:escape                ((t (:foreground ,fg1 :background nil))))
 	 `(tree-sitter-hl-face:function              ((t (:inherit 'font-lock-function-name-face))))
 	 `(tree-sitter-hl-face:function.builtin      ((t (:inherit 'font-lock-function-name-face))))
-	 `(tree-sitter-hl-face:function.call         ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:function.macro        ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:function.special      ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:keyword               ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:label                 ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:method                ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:method.call           ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:number                ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:operator              ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:property              ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:property.definition   ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:punctuation           ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:punctuation.bracket   ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:punctuation.special   ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:punctuation.delimiter ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:function.call         ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:function.macro        ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:function.special      ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:keyword               ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:label                 ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:method                ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:method.call           ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:number                ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:operator              ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:property              ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:property.definition   ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:punctuation           ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:punctuation.bracket   ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:punctuation.special   ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:punctuation.delimiter ((t (:foreground ,fg1 :background nil))))
 	 `(tree-sitter-hl-face:string                ((t (:inherit 'font-lock-string-face))))
 	 `(tree-sitter-hl-face:string.special        ((t (:inherit 'font-lock-string-face))))
-	 `(tree-sitter-hl-face:tag                   ((t (:foreground ,fg1 :background ,bg1 :bold t))))
+	 `(tree-sitter-hl-face:tag                   ((t (:foreground ,fg1 :background nil :bold t))))
 	 `(tree-sitter-hl-face:type                  ((t (:inherit font-lock-type-face))))
-	 `(tree-sitter-hl-face:type.argument         ((t (:foreground ,fg1 :background ,bg1 :italic t))))
-	 `(tree-sitter-hl-face:type.builtin          ((t (:foreground ,fg1 :background ,bg1 :italic t))))
-	 `(tree-sitter-hl-face:type.parameter        ((t (:foreground ,fg1 :background ,bg1 :italic t))))
-	 `(tree-sitter-hl-face:type.super            ((t (:foreground ,fg1 :background ,bg1 :italic t))))
-	 `(tree-sitter-hl-face:type.variable         ((t (:foreground ,fg1 :background ,bg1 :italic t))))
-	 `(tree-sitter-hl-face:variable.builtin      ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:variable.parameter    ((t (:foreground ,fg1 :background ,bg1))))
-	 `(tree-sitter-hl-face:variable.special      ((t (:foreground ,fg1 :background ,bg1))))
+	 `(tree-sitter-hl-face:type.argument         ((t (:foreground ,fg1 :background nil :italic t))))
+	 `(tree-sitter-hl-face:type.builtin          ((t (:foreground ,fg1 :background nil :italic t))))
+	 `(tree-sitter-hl-face:type.parameter        ((t (:foreground ,fg1 :background nil :italic t))))
+	 `(tree-sitter-hl-face:type.super            ((t (:foreground ,fg1 :background nil :italic t))))
+	 `(tree-sitter-hl-face:type.variable         ((t (:foreground ,fg1 :background nil :italic t))))
+	 `(tree-sitter-hl-face:variable.builtin      ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:variable.parameter    ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:variable.special      ((t (:foreground ,fg1 :background nil))))
 
 	 ;; Typescript
 
@@ -829,11 +835,11 @@ ITALIC? and BOLD? control font variant."
 	 `(web-mode-html-tag-bracket-face  ((t (:foreground ,fg1 :bold t))))
 
 	 ;; visual-regexp
-	 `(vr/match-0 ((t (:background ,bg3 :foreground ,red :bold t))))
-	 `(vr/match-1 ((t (:background ,bg2 :foreground ,red))))
-	 `(vr/group-0 ((t (:background ,bg3 :foreground ,red :bold t))))
-	 `(vr/group-1 ((t (:background ,bg2 :foreground ,red))))
-	 `(vr/group-2 ((t (:background ,bg2 :foreground ,fg1))))
+	 `(vr/match-0 ((t (:background ,search2 :foreground ,fg1))))
+	 `(vr/match-1 ((t (:background ,search2 :foreground ,fg1))))
+	 `(vr/group-0 ((t (:background ,search2 :foreground ,fg1))))
+	 `(vr/group-1 ((t (:background ,search2 :foreground ,fg1))))
+	 `(vr/group-2 ((t (:background ,search2 :foreground ,fg1))))
 
 	 ;; elfeed
 	 `(elfeed-search-date-face         ((t (:foreground ,fg5 :inherit bold))))

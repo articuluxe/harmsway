@@ -5,14 +5,17 @@
 ;; Title: Nordic-Night Theme
 ;; Author: Ashton Wiersdorf <mail@wiersdorf.dev>
 ;; Created: 2023
-;; Version: 0.2.0
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; SPDX-License-Identifier: MIT
 ;; Homepage: https://sr.ht/~ashton314/nordic-night/
 
 ;;; Commentary:
 
-;; Nordic-Night is a modification of the lovely Nord theme.
+;; Nordic-Night is a modification of the lovely Nord theme. It features a much
+;; darker background and more liberal use of the color palliate to make your
+;; buffer both more colorful as well as easier to read, whilst still retaining
+;; the calm, harmonious tones of the Nord theme.
 
 ;;; Code:
 
@@ -30,7 +33,7 @@ The theme has to be reloaded after changing anything in this group."
   "Return whether the display can display nordic-night colors."
   (or (>= (display-color-cells) 16777216) (display-graphic-p)))
 
-;;;; Color Constants
+;;; - Color Constants
 (let ((class '((class color) (min-colors 89)))
       (nordic-night-nearblack    (if (nordic-night--fullcolorp) "#121212" "black"))
       (nordic-night-lighterblack (if (nordic-night--fullcolorp) "#181818" "black"))
@@ -40,7 +43,7 @@ The theme has to be reloaded after changing anything in this group."
       (nordic-night-dark3        (if (nordic-night--fullcolorp) "#4C566A" "brightblack"))
       (nordic-night-lessdark3-1  (if (nordic-night--fullcolorp) "#6B7386" "#6B7386"))
       (nordic-night-lessdark3-2  (if (nordic-night--fullcolorp) "#8892A4" "#8892A4"))
-      ;(nordic-night-lessdark3-3  (if (nordic-night--fullcolorp) "#B5BDCC" "#B5BDCC")) ; available for future use
+      (nordic-night-lessdark3-3  (if (nordic-night--fullcolorp) "#B5BDCC" "#B5BDCC"))
       (nordic-night-snowy4       (if (nordic-night--fullcolorp) "#D8DEE9" "#D8DEE9"))
       (nordic-night-snowy5       (if (nordic-night--fullcolorp) "#E5E9F0" "white"))
       (nordic-night-snowy6       (if (nordic-night--fullcolorp) "#ECEFF4" "brightwhite"))
@@ -68,12 +71,10 @@ The theme has to be reloaded after changing anything in this group."
       (nordic-night-tag          (if (nordic-night--fullcolorp) "#81A1C1" "blue"))
       (nordic-night-variable     (if (nordic-night--fullcolorp) "#D8DEE9" "#D8DEE9")))
 
-;;;; +------------+
-;;;; + Core Faces +
-;;;; +------------+
+;;; - Core Faces
   (custom-theme-set-faces
    'nordic-night
-   ;; +--- Base ---+
+;;; -- Base
    `(bold ((,class (:weight bold))))
    `(bold-italic ((,class (:weight bold :slant italic))))
    `(default ((,class (:foreground ,nordic-night-snowy4 :background ,nordic-night-nearblack))))
@@ -101,11 +102,11 @@ The theme has to be reloaded after changing anything in this group."
    `(underline ((,class (:underline t))))
    `(warning ((,class (:foreground ,nordic-night-yellow13 :weight bold))))
 
-   ;; +--- Syntax ---+
-   ;; > C
+;;; -- Syntax
+;;; --- C
    `(c-annotation-face ((,class (:foreground ,nordic-night-annotation))))
 
-   ;; > diff
+;;; --- diff
    `(diff-added ((,class (:foreground ,nordic-night-green14))))
    `(diff-changed ((,class (:foreground ,nordic-night-yellow13))))
    `(diff-context ((,class (:inherit default))))
@@ -122,7 +123,7 @@ The theme has to be reloaded after changing anything in this group."
    `(diff-refine-removed ((,class (:foreground ,nordic-night-red11))))
    `(diff-removed ((,class (:foreground ,nordic-night-red11))))
 
-   ;; +--- UI ---+
+;;; -- UI
    `(border ((,class (:foreground ,nordic-night-snowy4))))
    `(buffer-menu-buffer ((,class (:foreground ,nordic-night-snowy4 :weight bold))))
    `(button ((,class (:background ,nordic-night-dark0 :foreground ,nordic-night-brightblue8 :box (:line-width 2 :color ,nordic-night-snowy4 :style sunken-button)))))
@@ -162,7 +163,11 @@ The theme has to be reloaded after changing anything in this group."
    `(linum ((,class (:foreground ,nordic-night-dark3 :background ,nordic-night-dark0))))
    `(linum-relative-current-face ((,class (:foreground ,nordic-night-dark3 :background ,nordic-night-dark0))))
    `(match ((,class (:inherit isearch))))
-   `(message-cited-text ((,class (:foreground ,nordic-night-snowy4))))
+   `(message-cited-text ((,class (:foreground ,nordic-night-green14))))
+   `(message-cited-text-1 ((,class (:foreground ,nordic-night-green14))))
+   `(message-cited-text-2 ((,class (:foreground ,nordic-night-blue10))))
+   `(message-cited-text-3 ((,class (:foreground ,nordic-night-purple15))))
+   `(message-cited-text-4 ((,class (:foreground ,nordic-night-red11))))
    `(message-header-cc ((,class (:foreground ,nordic-night-lapis9))))
    `(message-header-name ((,class (:foreground ,nordic-night-bluegreen7))))
    `(message-header-newsgroup ((,class (:foreground ,nordic-night-green14))))
@@ -218,9 +223,9 @@ The theme has to be reloaded after changing anything in this group."
    `(show-paren-match ((,class (:background ,nordic-night-dark0))))
    `(show-paren-mismatch ((,class (:background ,nordic-night-red11))))
    `(success ((,class (:foreground ,nordic-night-green14))))
-   `(tab-bar ((t (:background ,nordic-night-dark0 :foreground ,nordic-night-snowy4 :box nil))))
-   `(tab-bar-tab ((t (:inherit tab-bar :background ,nordic-night-dark3))))
-   `(tab-bar-tab-inactive ((t (:foreground ,nordic-night-blue10))))
+   `(tab-bar ((,class (:background ,nordic-night-dark0 :foreground ,nordic-night-snowy4 :box (:line-width (1 . 2) :color ,nordic-night-dark0)))))
+   `(tab-bar-tab ((,class (:inherit tab-bar :background ,nordic-night-dark3 :box (:color ,nordic-night-dark3)))))
+   `(tab-bar-tab-inactive ((,class (:foreground ,nordic-night-blue10))))
    `(term ((,class (:foreground ,nordic-night-snowy4 :background ,nordic-night-dark0))))
    `(term-color-black ((,class (:foreground ,nordic-night-dark1 :background ,nordic-night-dark1))))
    `(term-color-white ((,class (:foreground ,nordic-night-snowy5 :background ,nordic-night-snowy5))))
@@ -270,11 +275,10 @@ The theme has to be reloaded after changing anything in this group."
    `(window-divider-first-pixel ((,class (:background ,nordic-night-dark3))))
    `(window-divider-last-pixel ((,class (:background ,nordic-night-dark3))))
 
-    ;;;; +-----------------+
-    ;;;; + Package Support +
-    ;;;; +-----------------+
-   ;; +--- Syntax ---+
-   ;; > Auctex
+;;; - Package Support
+
+;;; -- Syntax
+;;; --- Auctex
    `(font-latex-bold-face ((,class (:inherit bold))))
    `(font-latex-italic-face ((,class (:inherit italic))))
    `(font-latex-math-face ((,class (:foreground ,nordic-night-brightblue8))))
@@ -288,11 +292,11 @@ The theme has to be reloaded after changing anything in this group."
    `(font-latex-string-face ((,class (:inherit font-lock-string-face))))
    `(font-latex-warning-face ((,class (:inherit font-lock-warning-face))))
 
-   ;; > Elixir
+;;; --- Elixir
    `(elixir-attribute-face ((,class (:foreground ,nordic-night-annotation))))
    `(elixir-atom-face ((,class (:foreground ,nordic-night-lapis9))))
 
-   ;; > Enhanced Ruby
+;;; --- Enhanced Ruby
    `(enh-ruby-heredoc-delimiter-face ((,class (:foreground ,nordic-night-green14))))
    `(enh-ruby-op-face ((,class (:foreground ,nordic-night-lapis9))))
    `(enh-ruby-regexp-delimiter-face ((,class (:foreground ,nordic-night-yellow13))))
@@ -301,7 +305,7 @@ The theme has to be reloaded after changing anything in this group."
    `(erm-syn-errline ((,class (:foreground ,nordic-night-red11 :underline t))))
    `(erm-syn-warnline ((,class (:foreground ,nordic-night-yellow13 :underline t))))
 
-   ;; > Java Development Environment for Emacs
+;;; --- Java Development Environment for Emacs
    `(jdee-db-active-breakpoint-face ((,class (:background ,nordic-night-dark2 :weight bold))))
    `(jdee-bug-breakpoint-cursor ((,class (:background ,nordic-night-dark2))))
    `(jdee-db-requested-breakpoint-face ((,class (:foreground ,nordic-night-yellow13 :background ,nordic-night-dark2 :weight bold))))
@@ -321,7 +325,7 @@ The theme has to be reloaded after changing anything in this group."
    `(jdee-font-lock-public-face ((,class (:foreground ,nordic-night-keyword))))
    `(jdee-font-lock-variable-face ((,class (:foreground ,nordic-night-variable))))
 
-   ;; > JavaScript 2
+;;; --- JavaScript 2
    `(js2-function-call ((,class (:foreground ,nordic-night-brightblue8))))
    `(js2-private-function-call ((,class (:foreground ,nordic-night-brightblue8))))
    `(js2-jsdoc-html-tag-delimiter ((,class (:foreground ,nordic-night-snowy6))))
@@ -337,7 +341,7 @@ The theme has to be reloaded after changing anything in this group."
    `(js2-warning ((,class (:foreground ,nordic-night-yellow13))))
    `(js2-instance-member ((,class (:foreground ,nordic-night-snowy4))))
 
-   ;; > JavaScript 3
+;;; --- JavaScript 3
    `(js3-error-face ((,class (:foreground ,nordic-night-red11))))
    `(js3-external-variable-face ((,class (:foreground ,nordic-night-snowy4))))
    `(js3-function-param-face ((,class (:foreground ,nordic-night-snowy4))))
@@ -352,8 +356,8 @@ The theme has to be reloaded after changing anything in this group."
    `(js3-private-member-face ((,class (:foreground ,nordic-night-snowy4))))
    `(js3-warning-face ((,class (:foreground ,nordic-night-yellow13))))
 
-   ;; > Markdown
-   `(markdown-blockquote-face ((,class (:foreground ,nordic-night-comment))))
+;;; --- Markdown
+   `(markdown-blockquote-face ((,class (:inherit org-quote))))
    `(markdown-bold-face ((,class (:inherit bold))))
    `(markdown-header-face-1 ((,class (:inherit org-level-1))))
    `(markdown-header-face-2 ((,class (:inherit org-level-2))))
@@ -368,7 +372,19 @@ The theme has to be reloaded after changing anything in this group."
    `(markdown-reference-face ((,class (:inherit markdown-link-face))))
    `(markdown-url-face ((,class (:foreground ,nordic-night-snowy4 :underline t))))
 
-   ;; > Rainbow Delimeters
+;;; --- Proof General and Coq
+   `(proof-locked-face ((,class (:background "#182316"))))
+   `(proof-error-face ((,class (:foreground ,nordic-night-orange12))))
+   `(proof-queue-face ((,class (:foreground ,nordic-night-yellow13))))
+   `(proof-tactics-name-face ((,class (:foreground ,nordic-night-lapis9))))
+   `(proof-tacticals-name-face ((,class (:foreground ,nordic-night-orange12))))
+   `(proof-queue-face ((,class (:foreground ,nordic-night-yellow13))))
+   `(proof-declaration-name-face ((,class (:foreground ,nordic-night-green14))))
+
+   `(coq-solve-tactics-face ((,class (:foreground ,nordic-night-red11))))
+   `(coq-cheat-face ((,class (:background ,nordic-night-red11 :box (:line-width -1 :color ,nordic-night-red11 :style nil)))))
+
+;;; --- Rainbow Delimeters
    `(rainbow-delimiters-depth-1-face ((,class :foreground ,nordic-night-bluegreen7)))
    `(rainbow-delimiters-depth-2-face ((,class :foreground ,nordic-night-brightblue8)))
    `(rainbow-delimiters-depth-3-face ((,class :foreground ,nordic-night-lapis9)))
@@ -379,7 +395,7 @@ The theme has to be reloaded after changing anything in this group."
    `(rainbow-delimiters-depth-8-face ((,class :foreground ,nordic-night-purple15)))
    `(rainbow-delimiters-unmatched-face ((,class :foreground ,nordic-night-red11)))
 
-   ;; > Web Mode
+;;; --- Web Mode
    `(web-mode-attr-tag-custom-face ((,class (:foreground ,nordic-night-attribute))))
    `(web-mode-builtin-face ((,class (:foreground ,nordic-night-keyword))))
    `(web-mode-comment-face ((,class (:foreground ,nordic-night-comment))))
@@ -412,24 +428,24 @@ The theme has to be reloaded after changing anything in this group."
    `(web-mode-warning-face ((,class (:inherit ,font-lock-warning-face))))
    `(web-mode-variable-name-face ((,class (:foreground ,nordic-night-variable))))
 
-   ;; > Racket
+;;; --- Racket
    `(racket-xp-unused-face ((,class (:strike-through nil :underline (:color ,nordic-night-yellow13 :style wave)))))
 
-   ;; +--- UI ---+
-   ;; > Anzu
+;;; -- UI
+;;; --- Anzu
    `(anzu-mode-line ((,class (:foreground, nordic-night-brightblue8))))
    `(anzu-mode-line-no-match ((,class (:foreground, nordic-night-red11))))
 
-   ;; > Avy
+;;; --- Avy
    `(avy-lead-face ((,class (:background ,nordic-night-red11 :foreground ,nordic-night-snowy5))))
    `(avy-lead-face-0 ((,class (:background ,nordic-night-blue10 :foreground ,nordic-night-snowy5))))
    `(avy-lead-face-1 ((,class (:background ,nordic-night-dark3 :foreground ,nordic-night-snowy5))))
    `(avy-lead-face-2 ((,class (:background ,nordic-night-purple15 :foreground ,nordic-night-snowy5))))
 
-   ;; > Blamer
+;;; --- Blamer
    `(blamer-face ((,class (:italic t :foreground ,nordic-night-dark1))))
 
-   ;; > Company
+;;; --- Company
    `(company-echo-common ((,class (:foreground ,nordic-night-dark0 :background ,nordic-night-snowy4))))
    `(company-preview ((,class (:foreground ,nordic-night-snowy4 :background ,nordic-night-blue10))))
    `(company-preview-common ((,class (:foreground ,nordic-night-dark0 :background ,nordic-night-brightblue8))))
@@ -445,24 +461,24 @@ The theme has to be reloaded after changing anything in this group."
    `(company-tooltip-mouse ((,class (:inherit highlight))))
    `(company-tooltip-selection ((,class (:background ,nordic-night-dark3 :weight bold))))
 
-   ;; > Corfu
-   `(corfu-border ((,class (:background ,nordic-night-dark1))))
+;;; --- Corfu
+   `(corfu-border ((,class (:background ,nordic-night-dark3))))
    `(corfu-default ((,class (:background ,nordic-night-lighterblack))))
 
-   ;; > diff-hl
+;;; --- diff-hl
    `(diff-hl-change ((,class (:background ,nordic-night-yellow13))))
    `(diff-hl-insert ((,class (:background ,nordic-night-green14))))
    `(diff-hl-delete ((,class (:background ,nordic-night-red11))))
 
-   ;; > Eglot
+;;; --- Eglot
    `(eglot-highlight-symbol-face ((,class (:background ,nordic-night-dark3))))
 
-   ;; > Evil
+;;; --- Evil
    `(evil-ex-info ((,class (:foreground ,nordic-night-brightblue8))))
    `(evil-ex-substitute-replacement ((,class (:foreground ,nordic-night-lapis9))))
    `(evil-ex-substitute-matches ((,class (:inherit isearch))))
 
-   ;; > Flycheck
+;;; --- Flycheck
    `(flycheck-error ((,class (:underline (:style wave :color ,nordic-night-red11)))))
    `(flycheck-fringe-error ((,class (:foreground ,nordic-night-red11 :weight bold))))
    `(flycheck-fringe-info ((,class (:foreground ,nordic-night-brightblue8 :weight bold))))
@@ -470,17 +486,30 @@ The theme has to be reloaded after changing anything in this group."
    `(flycheck-info ((,class (:underline (:style wave :color ,nordic-night-brightblue8)))))
    `(flycheck-warning ((,class (:underline (:style wave :color ,nordic-night-yellow13)))))
 
-   ;; > Git Gutter
+;;; --- Git Gutter
    `(git-gutter:modified ((,class (:foreground ,nordic-night-yellow13))))
    `(git-gutter:added ((,class (:foreground ,nordic-night-green14))))
    `(git-gutter:deleted ((,class (:foreground ,nordic-night-red11))))
 
-   ;; > Git Gutter Plus
+;;; --- Git Gutter Plus
    `(git-gutter+-modified ((,class (:foreground ,nordic-night-yellow13))))
    `(git-gutter+-added ((,class (:foreground ,nordic-night-green14))))
    `(git-gutter+-deleted ((,class (:foreground ,nordic-night-red11))))
 
-   ;; > Helm
+;;; --- Gnus
+   `(gnus-cite-1 ((,class (:foreground ,nordic-night-green14))))
+   `(gnus-cite-2 ((,class (:foreground ,nordic-night-blue10))))
+   `(gnus-cite-3 ((,class (:foreground ,nordic-night-purple15))))
+   `(gnus-cite-4 ((,class (:foreground ,nordic-night-red11))))
+   `(gnus-cite-5 ((,class (:foreground ,nordic-night-orange12))))
+   `(gnus-cite-6 ((,class (:foreground ,nordic-night-yellow13))))
+   `(gnus-cite-7 ((,class (:foreground ,nordic-night-green14))))
+   `(gnus-cite-8 ((,class (:foreground ,nordic-night-blue10))))
+   `(gnus-cite-9 ((,class (:foreground ,nordic-night-purple15))))
+   `(gnus-cite-10 ((,class (:foreground ,nordic-night-red11))))
+   `(gnus-cite-11 ((,class (:foreground ,nordic-night-orange12))))
+
+;;; --- Helm
    `(helm-bookmark-addressbook ((,class (:foreground ,nordic-night-bluegreen7))))
    `(helm-bookmark-directory ((,class (:foreground ,nordic-night-lapis9))))
    `(helm-bookmark-file ((,class (:foreground ,nordic-night-brightblue8))))
@@ -530,7 +559,7 @@ The theme has to be reloaded after changing anything in this group."
    `(helm-separator ((,class (:background ,nordic-night-dark2))))
    `(helm-visible-mark ((,class (:background ,nordic-night-dark2))))
 
-   ;; > Magit
+;;; --- Magit
    `(magit-branch ((,class (:foreground ,nordic-night-bluegreen7 :weight bold))))
    `(magit-diff-context-highlight ((,class (:background ,nordic-night-dark2))))
    `(magit-diff-file-header ((,class (:foreground ,nordic-night-brightblue8 :box (:color ,nordic-night-brightblue8)))))
@@ -546,7 +575,10 @@ The theme has to be reloaded after changing anything in this group."
    `(magit-section-heading ((,class (:foreground ,nordic-night-bluegreen7 :weight bold))))
    `(magit-section-highlight ((,class (:background ,nordic-night-lighterblack))))
 
-   ;; > MU4E
+;;; --- Minimap
+   `(minimap-active-region-background ((,class (:background ,nordic-night-dark0))))
+
+;;; --- MU4E
    `(mu4e-header-marks-face ((,class (:foreground ,nordic-night-lapis9))))
    `(mu4e-title-face ((,class (:foreground ,nordic-night-brightblue8))))
    `(mu4e-header-key-face ((,class (:foreground ,nordic-night-brightblue8))))
@@ -555,20 +587,20 @@ The theme has to be reloaded after changing anything in this group."
    `(mu4e-unread-face ((,class (:foreground ,nordic-night-green14 :weight bold))))
    `(mu4e-link-face ((,class (:underline t))))
 
-   ;; > Powerline
+;;; --- Powerline
    `(powerline-active1 ((,class (:foreground ,nordic-night-snowy4 :background ,nordic-night-dark1))))
    `(powerline-active2 ((,class (:foreground ,nordic-night-snowy4 :background ,nordic-night-dark3))))
    `(powerline-inactive1 ((,class (:background ,nordic-night-dark2))))
    `(powerline-inactive2 ((,class (:background ,nordic-night-dark2))))
 
-   ;; > Powerline Evil
+;;; --- Powerline Evil
    `(powerline-evil-base-face ((,class (:foreground ,nordic-night-snowy4))))
    `(powerline-evil-normal-face ((,class (:background ,nordic-night-brightblue8))))
    `(powerline-evil-insert-face ((,class (:foreground ,nordic-night-dark0 :background ,nordic-night-snowy4))))
    `(powerline-evil-visual-face ((,class (:foreground ,nordic-night-dark0 :background ,nordic-night-bluegreen7))))
    `(powerline-evil-replace-face ((,class (:foreground ,nordic-night-dark0 :background ,nordic-night-lapis9))))
 
-   ;; > NeoTree
+;;; --- NeoTree
    `(neo-banner-face ((,class (:foreground ,nordic-night-blue10))))
    `(neo-dir-link-face ((,class (:foreground ,nordic-night-lapis9))))
    `(neo-expand-btn-face ((,class (:foreground ,nordic-night-snowy6 :bold t))))
@@ -586,10 +618,10 @@ The theme has to be reloaded after changing anything in this group."
    `(neo-vc-up-to-date-face ((,class (:foreground ,nordic-night-snowy4))))
    `(neo-vc-user-face ((,class (:foreground ,nordic-night-snowy4))))
 
-   ;; > Cider
+;;; --- Cider
    `(cider-result-overlay-face ((t (:background unspecified))))
 
-   ;; > Org
+;;; --- Org
    `(org-level-1 ((,class (:foreground ,nordic-night-brightblue8 :weight extra-bold))))
    `(org-level-2 ((,class (:foreground ,nordic-night-lapis9 :weight bold))))
    `(org-level-3 ((,class (:foreground ,nordic-night-blue10 :weight semi-bold))))
@@ -650,7 +682,7 @@ The theme has to be reloaded after changing anything in this group."
    `(ido-first-match ((,class (:foreground ,nordic-night-brightblue8 :weight bold))))
    `(ido-subdir ((,class (:foreground ,nordic-night-lapis9))))
 
-   ;; > ivy-mode
+;;; --- ivy-mode
    `(ivy-current-match ((,class (:inherit region))))
    `(ivy-minibuffer-match-face-1 ((,class (:inherit default))))
    `(ivy-minibuffer-match-face-2 ((,class (:background ,nordic-night-bluegreen7 :foreground ,nordic-night-dark0))))
@@ -661,7 +693,7 @@ The theme has to be reloaded after changing anything in this group."
    `(ivy-posframe-border ((,class (:background ,nordic-night-dark1))))
    `(ivy-remote ((,class (:foreground ,nordic-night-green14))))
 
-   ;; > perspective
+;;; --- perspective
    `(persp-selected-face ((,class (:foreground ,nordic-night-brightblue8 :weight bold))))))
 
 ;;;###autoload

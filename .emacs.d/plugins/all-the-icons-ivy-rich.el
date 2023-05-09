@@ -733,15 +733,10 @@ This value is adjusted depending on the `window-width'."
      ((all-the-icons-ivy-rich-function-icon)
       (counsel-M-x-transformer (:width 0.3))
       (ivy-rich-counsel-function-docstring (:face all-the-icons-ivy-rich-doc-face))))
-
     project-switch-project
     (:columns
-     ((all-the-icons-ivy-rich-file-icon)
-      (all-the-icons-ivy-rich-project-name (:width 0.4))
-      (all-the-icons-ivy-rich-project-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
-      (all-the-icons-ivy-rich-project-file-modes (:width 12))
-      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
-      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+     ((all-the-icons-ivy-rich-project-icon)
+      (all-the-icons-ivy-rich-project-name))
      :delimiter "\t")
     project-find-file
     (:columns
@@ -764,16 +759,7 @@ This value is adjusted depending on the `window-width'."
     project-dired
     (:columns
      ((all-the-icons-ivy-rich-file-icon)
-      (all-the-icons-ivy-rich-project-name (:width 0.4))
-      (all-the-icons-ivy-rich-project-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
-      (all-the-icons-ivy-rich-project-file-modes (:width 12))
-      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
-      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
-     :delimiter "\t")
-    project-vc-dir
-    (:columns
-     ((all-the-icons-ivy-rich-file-icon)
-      (all-the-icons-ivy-rich-project-name (:width 0.4))
+      (ivy-rich-candidate (:width 0.4))
       (all-the-icons-ivy-rich-project-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
       (all-the-icons-ivy-rich-project-file-modes (:width 12))
       (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
@@ -944,7 +930,7 @@ This value is adjusted depending on the `window-width'."
      (lambda (cand) (get-buffer cand))
      :delimiter "\t")
 
-    all-the-icons-ivy-rich-kill-buffer
+    kill-buffer
     (:columns
      ((all-the-icons-ivy-rich-buffer-icon)
       (ivy-switch-buffer-transformer (:width 0.3))
@@ -1089,7 +1075,7 @@ This value is adjusted depending on the `window-width'."
     lsp-ivy-workspace-folders-remove
     (:columns
      ((all-the-icons-ivy-rich-dir-icon)
-      (all-the-icons-ivy-rich-project-name (:width 0.4))
+      (ivy-rich-candidate (:width 0.4))
       (all-the-icons-ivy-rich-project-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
       (all-the-icons-ivy-rich-project-file-modes (:width 12))
       (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
@@ -1132,11 +1118,7 @@ This value is adjusted depending on the `window-width'."
     treemacs-projectile
     (:columns
      ((all-the-icons-ivy-rich-project-icon)
-      (all-the-icons-ivy-rich-project-name (:width 0.4))
-      (all-the-icons-ivy-rich-project-file-id (:width 15 :face all-the-icons-ivy-rich-file-owner-face :align right))
-      (all-the-icons-ivy-rich-project-file-modes (:width 12))
-      (all-the-icons-ivy-rich-project-file-size (:width 7 :face all-the-icons-ivy-rich-size-face))
-      (all-the-icons-ivy-rich-project-file-modification-time (:face all-the-icons-ivy-rich-time-face)))
+      (all-the-icons-ivy-rich-project-name))
      :delimiter "\t"))
   "Definitions for ivy-rich transformers.
 
@@ -1159,7 +1141,7 @@ See `ivy-rich-display-transformers-list' for details."
   (format-mode-line (ivy-rich--local-values cand 'mode-name)))
 
 ;; Support `kill-buffer'
-(defun all-the-icons-ivy-rich-kill-buffer (&optional buffer-or-name)
+(defun all-the-icons-ivy-rich-kill-buffer (fn &optional buffer-or-name)
   "Kill the buffer specified by BUFFER-OR-NAME."
   (interactive
    (list (completing-read (format "Kill buffer (default %s): " (buffer-name))
@@ -1168,7 +1150,7 @@ See `ivy-rich-display-transformers-list' for details."
                                   (buffer-list))
                           nil t nil nil
                           (buffer-name))))
-  (kill-buffer buffer-or-name))
+  (funcall fn buffer-or-name))
 
 (defun all-the-icons-ivy-rich--project-root ()
   "Get the path to the root of your project.
@@ -1267,7 +1249,7 @@ Return `default-directory' if no project was found."
    ((file-remote-p file) "")
    ((not (file-exists-p file)) "")
    (t (format-time-string
-       "%b %d %H:%M"
+       "%b %d %R"
        (file-attribute-modification-time (file-attributes file))))))
 
 ;; Support `counsel-find-file', `counsel-dired', etc.
@@ -1310,8 +1292,8 @@ Display the true name when the file is a symlink."
   "Return project name for CAND."
   (if (or (ivy--dirname-p cand)
           (file-directory-p (all-the-icons-ivy-rich--file-path cand)))
-      (propertize cand 'face 'ivy-subdir)
-    cand))
+      (propertize (abbreviate-file-name cand) 'face 'ivy-subdir)
+    (abbreviate-file-name cand)))
 
 (defun all-the-icons-ivy-rich-project-file-modes (cand)
   "Return file modes for CAND."
@@ -1709,7 +1691,7 @@ If the buffer is killed, return \"--\"."
 				          (if speed
 					          (format " at %s b/s" speed)
 				            "")))))
-		  (mapconcat 'identity (process-command p) " "))))))
+		  (mapconcat #'identity (process-command p) " "))))))
 
 ;; Support `counsel-find-library' and `counsel-load-library'
 (defun all-the-icons-ivy-rich-library-transformer (cand)
@@ -1782,7 +1764,7 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
                      :family ,family
                      :height ,all-the-icons-ivy-rich-icon-size)))
     (format "%s%s"
-            (propertize " " 'display '((space :relative-width 0.5)))
+            (propertize " " 'display '((space :relative-width 0.1)))
             (propertize icon 'face new-face))))
 
 (defun all-the-icons-ivy-rich-buffer-icon (cand)
@@ -2085,12 +2067,12 @@ Support`counsel-ack', `counsel-ag', `counsel-pt' and `counsel-rg', etc."
       (progn
         (add-hook 'minibuffer-setup-hook #'all-the-icons-ivy-rich-minibuffer-align-icons)
         (advice-add #'ivy-posframe--display :after #'all-the-icons-ivy-rich-ivy-posframe-align-icons)
-        (global-set-key [remap kill-buffer] #'all-the-icons-ivy-rich-kill-buffer)
+        (advice-add #'kill-buffer :around #'all-the-icons-ivy-rich-kill-buffer)
         (setq ivy-rich-display-transformers-list all-the-icons-ivy-rich-display-transformers-list))
     (progn
       (remove-hook 'minibuffer-setup-hook #'all-the-icons-ivy-rich-minibuffer-align-icons)
       (advice-remove #'ivy-posframe--display #'all-the-icons-ivy-rich-ivy-posframe-align-icons)
-      (global-unset-key [remap kill-buffer])
+      (advice-remove #'kill-buffer #'all-the-icons-ivy-rich-kill-buffer)
       (setq ivy-rich-display-transformers-list all-the-icons-ivy-rich-display-transformers-old-list)))
   (ivy-rich-reload))
 

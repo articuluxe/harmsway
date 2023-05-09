@@ -1113,7 +1113,6 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(consult-key ((,c :inherit standard-themes-key-binding)))
     `(consult-imenu-prefix ((,c :inherit shadow)))
     `(consult-line-number ((,c :inherit shadow)))
-    `(consult-preview-cursor ((,c :background ,cursor :foreground ,bg-main)))
     `(consult-separator ((,c :foreground ,border)))
 ;;;; corfu
     `(corfu-current ((,c :background ,bg-completion)))
@@ -1341,8 +1340,11 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(flycheck-warning ((,c :inherit standard-themes-underline-warning)))
 ;;;; flymake
     `(flymake-error ((,c :inherit standard-themes-underline-error)))
+    `(flymake-error-echo ((,c :inherit error)))
     `(flymake-note ((,c :inherit standard-themes-underline-info)))
+    `(flymake-note-echo ((,c :inherit success)))
     `(flymake-warning ((,c :inherit standard-themes-underline-warning)))
+    `(flymake-warning-echo ((,c :inherit warning)))
 ;;;; flyspell
     `(flyspell-duplicate ((,c :inherit standard-themes-underline-warning)))
     `(flyspell-incorrect ((,c :inherit standard-themes-underline-error)))

@@ -148,6 +148,7 @@ sudo apt-get install silversearcher-ag
 sudo apt install xsel
 sudo apt install snapd
 snap install rg
+sudo apt install trash-cli
 # for perf
 sudo apt install linux-tools-common
 # for emacs

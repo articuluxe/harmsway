@@ -397,7 +397,7 @@
    ;; dired
    `(dired-header ((t (:foreground ,heading))))
    `(dired-flagged ((t (:foreground ,dark-red))))
-   `(dired-symlink ((t (:foreground ,yellow))))
+   `(dired-symlink ((t (:foreground ,yellow :slant italic))))
 
    ;; diredfl
    `(diredfl-compressed-file-name ((t (:foreground ,archive))))
@@ -414,7 +414,7 @@
    `(diredfl-file-suffix ((t (:foreground ,file-suffix))))
    `(diredfl-ignored-file-name ((t (:foreground ,ignore))))
    `(diredfl-number ((t (:foreground ,number))))
-   `(diredfl-symlink ((t (:inherit dired-symlink :slant italic))))
+   `(diredfl-symlink ((t (:inherit dired-symlink))))
 
    `(diredfl-dir-priv ((t (:foreground ,purple))))
    `(diredfl-exec-priv ((t (:foreground ,red))))
@@ -442,7 +442,7 @@
    `(diredp-mode-line-flagged ((t (:inherit dired-flagged))))
    `(diredp-mode-line-marked ((t (:inherit dired-mark))))
    `(diredp-number ((t (:foreground ,number))))
-   `(diredp-symlink ((t (:inherit dired-symlink :slant italic))))
+   `(diredp-symlink ((t (:inherit dired-symlink))))
    `(diredp-tagged-autofile-name ((t (:inherit diredp-autofile-name))))
 
    `(diredp-dir-priv ((t (:foreground ,purple))))
@@ -522,8 +522,10 @@
    `(eshell-ls-directory ((t (:inherit dired-directory))))
    `(eshell-ls-executable ((t (:foreground ,executable))))
    `(eshell-ls-product ((t (:foreground ,orange))))
+   `(eshell-ls-symlink ((t (:inherit dired-symlink))))
    `(eshell-prompt ((t (:foreground ,heading))))
 
+   ;; eshell-syntax-highlighting
    `(eshell-syntax-highlighting-option-face ((t (:foreground ,blue-purple))))
 
    ;; evil-search-highlight-persist
@@ -693,6 +695,10 @@
    `(helm-swoop-target-word-face ((t (:inherit match))))
    `(helm-swoop-target-line-face ((t (:inherit highlight))))
    `(helm-swoop-target-line-block-face ((t (:inherit helm-swoop-target-line-face :foreground ,white))))
+
+   ;; highlight-changes
+   `(highlight-changes ((t (:underline (:color ,nimbus-success)))))
+   `(highlight-changes-delete ((t (:foreground ,nimbus-err :underline t))))
 
    ;; highlight-indentation
    `(highlight-indentation-current-column-face ((t (:background ,gray))))
@@ -959,6 +965,7 @@
    `(nswbuff-special-buffers-face ((t (:foreground ,special))))
 
    ;; org-mode
+   `(org-block ((t (:foreground ,fg))))
    `(org-block-begin-line ((t (:inherit org-meta-line :underline ,indent))))
    `(org-block-end-line ((t (:inherit org-meta-line :overline ,indent))))
    `(org-checkbox ((t (:foreground ,checkbox t))))

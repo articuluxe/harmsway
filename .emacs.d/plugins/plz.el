@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.5
+;; Version: 0.5.4
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: comm, network, http
 
@@ -502,10 +502,10 @@ default, it's FIFO).  Use functions `plz-queue', `plz-run', and
             :documentation "Queued requests.")
   (canceled-p nil
               :documentation "Non-nil when queue has been canceled.")
-  (finally nil
-           :documentation "Function called after queue has been emptied or canceled.")
   first-active last-active
-  first-request last-request)
+  first-request last-request
+  (finally nil
+           :documentation "Function called after queue has been emptied or canceled."))
 
 (defun plz-queue (queue &rest args)
   "Enqueue request for ARGS on QUEUE and return QUEUE.
@@ -620,7 +620,10 @@ QUEUE should be a `plz-queue' structure."
           (setf args (plist-put args :timeout timeout)))
         (setf (plz-queued-request-process request) (apply #'plz args))
         (push request (plz-queue-active queue))))
-    (funcall (plz-queue-finally queue))
+    (when (and (plz-queue-finally queue)
+               (zerop (length (plz-queue-active queue)))
+               (zerop (length (plz-queue-requests queue))))
+      (funcall (plz-queue-finally queue)))
     queue))
 
 (defun plz-clear (queue)
@@ -639,7 +642,8 @@ with the corresponding data."
     (funcall (plz-queued-request-else request)
              (make-plz-error :message "`plz' queue cleared; request canceled."))
     (setf (plz-queue-requests queue) (delq request (plz-queue-requests queue))))
-  (funcall (plz-queue-finally queue))
+  (when (plz-queue-finally queue)
+    (funcall (plz-queue-finally queue)))
   (setf (plz-queue-first-active queue) nil
         (plz-queue-last-active queue) nil
         (plz-queue-first-request queue) nil

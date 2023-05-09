@@ -245,6 +245,15 @@ implement such functions."
   :group 'magit-process
   :type 'boolean)
 
+(defcustom magit-process-timestamp-format nil
+  "Format of timestamp for each process in the process buffer.
+If non-nil, pass this to `format-time-string' when creating a
+process section in the process buffer, and insert the returned
+string in the heading of its section."
+  :package-version '(magit . "4.0.0")
+  :group 'magit-process
+  :type '(choice (const :tag "none" nil) string))
+
 (defface magit-process-ok
   '((t :inherit magit-section-heading :foreground "green"))
   "Face for zero exit-status."
@@ -271,7 +280,8 @@ Used when `magit-process-display-mode-line-error' is non-nil."
 
 (defvar-keymap magit-process-mode-map
   :doc "Keymap for `magit-process-mode'."
-  :parent magit-mode-map)
+  :parent magit-mode-map
+  "<remap> <magit-delete-thing>" #'magit-process-kill)
 
 (define-derived-mode magit-process-mode magit-mode "Magit Process"
   "Mode for looking at Git process output."
@@ -644,6 +654,8 @@ Magit status buffer."
                   (format "%3s " (propertize (number-to-string errcode)
                                              'font-lock-face 'magit-process-ng))
                 "run "))
+      (when magit-process-timestamp-format
+        (insert (format-time-string magit-process-timestamp-format) " "))
       (unless (equal (expand-file-name pwd)
                      (expand-file-name default-directory))
         (insert (file-relative-name pwd default-directory) ?\s))

@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 0.33
+;; Version: 0.34
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.1"))
 ;; Homepage: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -378,15 +378,17 @@ Each element of the list must have the form (char name handler)."
 (defface consult-highlight-match
   '((t :inherit match))
   "Face used to highlight matches in the completion candidates.
-Used for example in `consult-grep'.")
+Used for example by `consult-grep'.")
+
+(defface consult-highlight-mark
+  '((t :inherit consult-highlight-match))
+  "Face used for mark positions in completion candidates.
+Used for example by `consult-mark'.  The face should be different
+than the `cursor' face to avoid confusion.")
 
 (defface consult-preview-match
   '((t :inherit isearch))
   "Face used for match previews, e.g., in `consult-line'.")
-
-(defface consult-preview-cursor
-  '((t :inherit cursor))
-  "Face used for cursor previews and marks, e.g., in `consult-mark'.")
 
 (defface consult-preview-insertion
   '((t :inherit region))
@@ -892,7 +894,10 @@ When no project is found and MAY-PROMPT is non-nil ask the user."
   "Show delayed MESSAGE if BODY takes too long.
 Also temporarily increase the GC limit via `consult--with-increased-gc'."
   (declare (indent 1))
-  `(with-delayed-message (1 ,message)
+  ;; FIXME `with-delayed-message' is broken in combination with
+  ;; `inhibit-message'. Report this as a bug.
+  (ignore message)
+  `(progn ;; with-delayed-message (1 ,message)
      (consult--with-increased-gc
       ,@body)))
 
@@ -967,22 +972,16 @@ region has been fontified."
         str)
     (buffer-substring-no-properties beg end)))
 
-(defun consult--region-with-cursor (beg end marker)
-  "Return region string with a marking at the cursor position.
-
-BEG is the begin position.
-END is the end position.
-MARKER is the cursor position."
-  (let ((str (consult--buffer-substring beg end 'fontify)))
+(defun consult--line-with-mark (marker)
+  "Current line string where the MARKER position is highlighted."
+  (let* ((beg (pos-bol))
+         (end (pos-eol))
+         (str (consult--buffer-substring beg end 'fontify)))
     (if (>= marker end)
-        (concat str #(" " 0 1 (face consult-preview-cursor)))
+        (concat str #(" " 0 1 (face consult-highlight-mark)))
       (put-text-property (- marker beg) (- (1+ marker) beg)
-                         'face 'consult-preview-cursor str)
+                         'face 'consult-highlight-mark str)
       str)))
-
-(defun consult--line-with-cursor (marker)
-  "Return current line where the cursor MARKER is highlighted."
-  (consult--region-with-cursor (pos-bol) (pos-eol) marker))
 
 ;;;; Tofu cooks
 
@@ -1255,13 +1254,16 @@ ORIG is the original function, HOOKS the arguments."
                 name (file-size-human-readable size))
       (let ((buf (find-file-noselect name 'nowarn (>= size consult-preview-raw-size))))
         (cond
-         ((and (>= size consult-preview-raw-size)
-               (with-current-buffer buf
-                 (save-excursion
-                   (goto-char (point-min))
-                   (search-forward "\0" nil 'noerror))))
-          (kill-buffer buf)
-          (format "Binary file `%s' not previewed literally" name))
+         ((>= size consult-preview-raw-size)
+          (with-current-buffer buf
+            (if (save-excursion
+                  (goto-char (point-min))
+                  (search-forward "\0" nil 'noerror))
+                (progn
+                  (kill-buffer buf)
+                  (format "Binary file `%s' not previewed literally" name))
+              (set-buffer-multibyte t)
+              buf)))
          ((ignore-errors (buffer-local-value 'so-long-detected-p buf))
           (kill-buffer buf)
           (format "File `%s' with long lines not previewed" name))
@@ -1385,7 +1387,8 @@ ORIG is the original function, HOOKS the arguments."
 See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
   (if (and (derived-mode-p #'org-mode) (fboundp 'org-fold-show-set-visibility))
       ;; New Org 9.6 fold-core API
-      (org-fold-show-set-visibility 'canonical)
+      (let ((inhibit-redisplay t)) ;; HACK: Prevent flicker due to premature redisplay
+        (org-fold-show-set-visibility 'canonical))
     (dolist (ov (overlays-in (pos-bol) (pos-eol)))
       (when-let (fun (overlay-get ov 'isearch-open-invisible))
         (when (invisible-p (overlay-get ov 'invisible))
@@ -1423,7 +1426,8 @@ See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
                                  (when (markerp end) (set-marker end nil)))
                                (kill-local-variable 'consult--org-fold-regions))))))))
               (add-hook 'minibuffer-exit-hook hook))))
-        (org-fold-show-set-visibility 'canonical)
+        (let ((inhibit-redisplay t)) ;; HACK: Prevent flicker due to premature redisplay
+          (org-fold-show-set-visibility 'canonical))
         (list (lambda ()
                 (pcase-dolist (`(,beg ,end ,spec) consult--org-fold-regions)
                   (org-fold-core-region beg end t spec)))))
@@ -1479,13 +1483,12 @@ The function can be used as the `:state' argument of `consult--read'."
   (let ((saved-min (point-min-marker))
         (saved-max (point-max-marker))
         (saved-pos (point-marker))
-        overlays invisible)
+        restore)
     (set-marker-insertion-type saved-max t) ;; Grow when text is inserted
     (lambda (action cand)
       (when (eq action 'preview)
-        (mapc #'funcall invisible)
-        (mapc #'delete-overlay overlays)
-        (setq invisible nil overlays nil)
+        (mapc #'funcall restore)
+        (setq restore nil)
         (if (not cand)
             ;; If position cannot be previewed, return to saved position
             (let ((saved-buffer (marker-buffer saved-pos)))
@@ -1494,29 +1497,43 @@ The function can be used as the `:state' argument of `consult--read'."
                 (set-buffer saved-buffer)
                 (narrow-to-region saved-min saved-max)
                 (goto-char saved-pos)))
-          ;; Handle positions with overlay information
+          ;; Candidate can be previewed
           (consult--jump-1 (or (car-safe cand) cand))
-          (setq invisible (consult--invisible-open-temporarily)
-                overlays
-                (list (save-excursion
-                        (let ((vbeg (progn (beginning-of-visual-line) (point)))
-                              (vend (progn (end-of-visual-line) (point)))
-                              (end (pos-eol)))
-                          (consult--make-overlay vbeg (if (= vend end) (1+ end) vend)
-                                                 'face 'consult-preview-line
-                                                 'window (selected-window)
-                                                 'priority 1)))
-                      (consult--make-overlay (point) (1+ (point))
-                                             'face 'consult-preview-cursor
-                                             'window (selected-window)
-                                             'priority 3)))
-          (dolist (match (cdr-safe cand))
-            (push (consult--make-overlay (+ (point) (car match))
-                                         (+ (point) (cdr match))
-                                         'face 'consult-preview-match
-                                         'window (selected-window)
-                                         'priority 2)
-                  overlays))
+          (setq restore (consult--invisible-open-temporarily))
+          ;; Ensure that cursor is properly previewed (gh:minad/consult#764)
+          (unless (eq cursor-in-non-selected-windows 'box)
+            (let ((orig cursor-in-non-selected-windows)
+                  (buf (current-buffer)))
+              (push
+               (if (local-variable-p 'cursor-in-non-selected-windows)
+                   (lambda ()
+                     (when (buffer-live-p buf)
+                       (with-current-buffer buf
+                         (setq-local cursor-in-non-selected-windows orig))))
+                 (lambda ()
+                   (when (buffer-live-p buf)
+                     (with-current-buffer buf
+                       (kill-local-variable 'cursor-in-non-selected-windows)))))
+               restore)
+              (setq-local cursor-in-non-selected-windows 'box)))
+          ;; Match previews
+          (let ((overlays
+                 (list (save-excursion
+                         (let ((vbeg (progn (beginning-of-visual-line) (point)))
+                               (vend (progn (end-of-visual-line) (point)))
+                               (end (pos-eol)))
+                           (consult--make-overlay vbeg (if (= vend end) (1+ end) vend)
+                                                  'face 'consult-preview-line
+                                                  'window (selected-window)
+                                                  'priority 1))))))
+            (dolist (match (cdr-safe cand))
+              (push (consult--make-overlay (+ (point) (car match))
+                                           (+ (point) (cdr match))
+                                           'face 'consult-preview-match
+                                           'window (selected-window)
+                                           'priority 2)
+                    overlays))
+            (push (lambda () (mapc #'delete-overlay overlays)) restore))
           (run-hooks 'consult-after-jump-hook))))))
 
 (defun consult--jump-state ()
@@ -1931,6 +1948,13 @@ PLIST is the splitter configuration, including the separator."
 
 ;;;; Asynchronous filtering functions
 
+(defun consult--async-p (fun)
+  "Return t if FUN is an asynchronous completion function."
+  (and (functionp fun)
+       (condition-case nil
+           (progn (funcall fun "" nil 'metadata) nil)
+         (wrong-number-of-arguments t))))
+
 (defmacro consult--with-async (bind &rest body)
   "Setup asynchronous completion in BODY.
 
@@ -1946,7 +1970,7 @@ BIND is the asynchronous function binding."
            ;; `consult--split-setup'.
            (:append
             (lambda ()
-              (when (functionp ,async)
+              (when (consult--async-p ,async)
                 (setq orig-chunk read-process-output-max
                       read-process-output-max new-chunk)
                 (funcall ,async 'setup)
@@ -1968,7 +1992,7 @@ BIND is the asynchronous function binding."
                   (fset hook (lambda (&rest _) (run-at-time 0 nil fun)))
                   (add-hook 'after-change-functions hook nil 'local)
                   (funcall hook)))))
-         (let ((,async (if (functionp ,async) ,async (lambda (_) ,async))))
+         (let ((,async (if (consult--async-p ,async) ,async (lambda (_) ,async))))
            (unwind-protect
                ,(macroexp-progn body)
              (funcall ,async 'destroy)
@@ -2005,7 +2029,7 @@ string   Update with the current user input string.  Return nil."
            (when (eq (window-buffer win) buffer)
              (with-selected-window win
                (run-hooks 'consult--completion-refresh-hook)
-               ;; Interaction between asynchronous completion tables and
+               ;; Interaction between asynchronous completion functions and
                ;; preview: We have to trigger preview immediately when
                ;; candidates arrive (gh:minad/consult#436).
                (when (and consult--preview-function candidates)
@@ -2049,18 +2073,12 @@ SPLIT is the splitting function."
                      (funcall split action))
                     (async-len (length async-str))
                     (input-len (length action))
-                    (prompt (minibuffer-prompt-end))
-                    (field-beg prompt)
-                    (field-idx 0))
+                    (end (minibuffer-prompt-end)))
          ;; Highlight punctuation characters
-         (remove-list-of-text-properties prompt (+ prompt input-len) '(face field))
+         (remove-list-of-text-properties end (+ end input-len) '(face))
          (dolist (hl highlights)
-           (put-text-property field-beg (+ prompt (cdr hl))
-                              'field field-idx)
-           (put-text-property (+ prompt (car hl)) (+ prompt (cdr hl))
-                              'face 'consult-async-split)
-           (setq field-beg (+ prompt (cdr hl))
-                 field-idx (1+ field-idx)))
+           (put-text-property (+ end (car hl)) (+ end (cdr hl))
+                              'face 'consult-async-split))
          (funcall async
                   ;; Pass through if the input is long enough!
                   (if (or force (>= async-len consult-async-min-input))
@@ -2193,7 +2211,7 @@ PROPS are optional properties passed to `make-process'."
         (_ (funcall async action))))))
 
 (defun consult--async-highlight (async builder)
-  "Return ASYNC function which highlights the candidates.
+  "Return a new ASYNC function with candidate highlighting.
 BUILDER is the command line builder function."
   (let (highlight)
     (lambda (action)
@@ -2472,18 +2490,18 @@ PREVIEW-KEY are the preview keys."
                         (propertize ann 'face 'completions-annotations))))))
           cands))
 
-(cl-defun consult--read-1 (candidates &key
-                                      prompt predicate require-match history default
-                                      keymap category initial narrow add-history annotate
-                                      state preview-key sort lookup group inherit-input-method)
+(cl-defun consult--read-1 (table &key
+                                 prompt predicate require-match history default
+                                 keymap category initial narrow add-history annotate
+                                 state preview-key sort lookup group inherit-input-method)
   "See `consult--read' for the documentation of the arguments."
   (consult--minibuffer-with-setup-hook
       (:append (lambda ()
                  (add-hook 'after-change-functions #'consult--tofu-hide-in-minibuffer nil 'local)
-                 (consult--setup-keymap keymap (functionp candidates) narrow preview-key)
+                 (consult--setup-keymap keymap (consult--async-p table) narrow preview-key)
                  (setq-local minibuffer-default-add-function
-                             (apply-partially #'consult--add-history (functionp candidates) add-history))))
-    (consult--with-async (async candidates)
+                             (apply-partially #'consult--add-history (consult--async-p table) add-history))))
+    (consult--with-async (async table)
       ;; NOTE: Do not unnecessarily let-bind the lambdas to avoid over-capturing
       ;; in the interpreter.  This will make closures and the lambda string
       ;; representation larger, which makes debugging much worse.  Fortunately
@@ -2509,9 +2527,13 @@ PREVIEW-KEY are the preview keys."
                                    'consult--completion-candidate-hook)
                 (completing-read prompt
                                  (lambda (str pred action)
-                                   (if (eq action 'metadata)
-                                       metadata
-                                     (complete-with-action action (funcall async nil) str pred)))
+                                   (let ((result (complete-with-action action (funcall async nil) str pred)))
+                                     (if (eq action 'metadata)
+                                         (if (and (eq (car result) 'metadata) (cdr result))
+                                             ;; Merge metadata
+                                             `(metadata ,@(cdr metadata) ,@(cdr result))
+                                           metadata)
+                                       result)))
                                  predicate require-match initial
                                  (if (symbolp history) history (cadr history))
                                  default
@@ -2523,11 +2545,11 @@ PREVIEW-KEY are the preview keys."
           ((pred symbolp)))
         (car result)))))
 
-(cl-defun consult--read (candidates &rest options &key
-                                    prompt predicate require-match history default
-                                    keymap category initial narrow add-history annotate
-                                    state preview-key sort lookup group inherit-input-method)
-  "Enhanced completing read function to select from CANDIDATES.
+(cl-defun consult--read (table &rest options &key
+                               prompt predicate require-match history default
+                               keymap category initial narrow add-history annotate
+                               state preview-key sort lookup group inherit-input-method)
+  "Enhanced completing read function to select from TABLE.
 
 The function is a thin wrapper around `completing-read'.  Keyword
 arguments are used instead of positional arguments for code
@@ -2564,17 +2586,17 @@ KEYMAP is a command-specific keymap.
 INHERIT-INPUT-METHOD, if non-nil the minibuffer inherits the
 input method."
   ;; supported types
-  (cl-assert (or (functionp candidates)     ;; async table
-                 (obarrayp candidates)      ;; obarray
-                 (hash-table-p candidates)  ;; hash table
-                 (not candidates)           ;; empty list
-                 (stringp (car candidates)) ;; string list
-                 (and (consp (car candidates)) (stringp (caar candidates)))   ;; string alist
-                 (and (consp (car candidates)) (symbolp (caar candidates))))) ;; symbol alist
+  (cl-assert (or (functionp table)     ;; dynamic table or asynchronous function
+                 (obarrayp table)      ;; obarray
+                 (hash-table-p table)  ;; hash table
+                 (not table)           ;; empty list
+                 (stringp (car table)) ;; string list
+                 (and (consp (car table)) (stringp (caar table)))   ;; string alist
+                 (and (consp (car table)) (symbolp (caar table))))) ;; symbol alist
   (ignore prompt predicate require-match history default
           keymap category initial narrow add-history annotate
           state preview-key sort lookup group inherit-input-method)
-  (apply #'consult--read-1 candidates
+  (apply #'consult--read-1 table
          (append
           (consult--customize-get)
           options
@@ -3120,7 +3142,7 @@ The symbol at point is added to the future history."
             ;; line-number-at-pos does not hurt much, since the mark ring is
             ;; usually small since it is limited by `mark-ring-max'.
             (push (consult--location-candidate
-                   (consult--line-with-cursor marker) marker
+                   (consult--line-with-mark marker) marker
                    (line-number-at-pos pos consult-line-numbers-widen)
                    marker)
                   candidates)))))
@@ -3169,7 +3191,7 @@ The symbol at point is added to the future history."
                           (consult--format-file-line-match (buffer-name buf) line "")
                           'consult-location (cons marker line)
                           'consult-strip t)
-                         (consult--line-with-cursor marker)
+                         (consult--line-with-mark marker)
                          (consult--tofu-encode marker))
                         candidates))))))))
     (unless candidates
@@ -3921,10 +3943,9 @@ There exists no equivalent of this command in Emacs 28."
        preview action
        ;; Only preview bookmarks with the default handler.
        (when-let ((bm (and cand (eq action 'preview) (assoc cand bookmark-alist)))
-                  (handler (bookmark-get-handler bm))
-                  (file (and (or (not handler)
-                                 (eq handler #'bookmark-default-handler))
-                             (bookmark-get-filename bm)))
+                  (handler (or (bookmark-get-handler bm) #'bookmark-default-handler))
+                  ((eq handler #'bookmark-default-handler))
+                  (file (bookmark-get-filename bm))
                   (pos (bookmark-get-position bm))
                   (buf (funcall open file)))
          (set-marker (make-marker) pos buf))))))
@@ -4150,7 +4171,7 @@ starts a new Isearch session otherwise."
            (consult--read
             candidates
             :prompt "I-search: "
-            :category 'consult-isearch
+            :category 'consult-isearch-history
             :history t ;; disable history
             :sort nil
             :initial isearch-string

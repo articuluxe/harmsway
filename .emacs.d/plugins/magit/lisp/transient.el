@@ -1071,7 +1071,8 @@ example, sets a variable, use `transient-define-infix' instead.
                               (if (and desc (or (stringp desc) (symbolp desc)))
                                   desc
                                 (plist-get args :key)))))))
-          (setq args (plist-put args :command `(defalias ',sym ,cmd)))))
+          (setq args (plist-put args :command
+                                `(defalias ',sym ,(macroexp-quote cmd))))))
        ((or (stringp car)
             (and car (listp car)))
         (let ((arg pop))
@@ -3933,8 +3934,13 @@ search instead."
 (defun transient-isearch-abort ()
   "Like `isearch-abort' but adapted for `transient'."
   (interactive)
-  (condition-case nil (isearch-abort) (quit))
-  (transient--isearch-exit))
+  (let ((around (lambda (fn)
+                  (condition-case nil (funcall fn) (quit))
+                  (transient--isearch-exit))))
+    (advice-add 'isearch-cancel :around around)
+    (unwind-protect
+        (isearch-abort)
+      (advice-remove 'isearch-cancel around))))
 
 (defun transient--isearch-setup ()
   (select-window transient--window)

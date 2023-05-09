@@ -106,7 +106,7 @@
   (if (= (count-lines (point) (point-max)) 2)
       (beep)
     (forward-line 2)
-    (move-overlay pandoc--@-overlay (point) (point-at-eol))))
+    (move-overlay pandoc--@-overlay (point) (line-end-position))))
 
 (defun pandoc-prev-@ ()
   "Highlight previous (@)-definition."
@@ -114,20 +114,20 @@
   (if (= (point) (point-min))
       (beep)
     (forward-line -2)
-    (move-overlay pandoc--@-overlay (point) (point-at-eol))))
+    (move-overlay pandoc--@-overlay (point) (line-end-position))))
 
 (defun pandoc-goto-first-@ ()
   "Highlight the first (@)-definition."
   (interactive)
   (goto-char (point-min))
-  (move-overlay pandoc--@-overlay (point) (point-at-eol)))
+  (move-overlay pandoc--@-overlay (point) (line-end-position)))
 
 (defun pandoc-goto-last-@ ()
   "Highlight the last (@)-definition."
   (interactive)
   (goto-char (point-max))
   (forward-line -2)
-  (move-overlay pandoc--@-overlay (point) (point-at-eol)))
+  (move-overlay pandoc--@-overlay (point) (line-end-position)))
 
 (defun pandoc-select-current-@ ()
   "Leave pandoc--@-select-buffer and insert selected (@)-label at point."
@@ -207,7 +207,7 @@ N is the index of the extension in `pandoc--extensions'."
 
 (defun pandoc--create-settings-filename (type filename output-format)
   "Create a settings filename.
-TYPE is the type of settings file, either 'local or 'project.
+TYPE is the type of settings file, either `local' or `project'.
 FILENAME is name of the file for which the settings file is to be
 created, OUTPUT-FORMAT the output format of the settings file,
 which is recorded in its name.  The return value is an absolute
@@ -559,7 +559,7 @@ the buffer."
 
 (defvar-local pandoc--output-format-for-pdf nil
   "Output format used to for pdf conversion.
-  Set the first time the user converts to pdf.  Unset when the
+Set the first time the user converts to pdf.  Unset when the
 user changes output format.")
 
 (defun pandoc-convert-to-pdf (&optional prefix)
@@ -880,7 +880,7 @@ file exists, display the *Pandoc output* buffer."
               (insert (concat " " definition "\n\n")))
             definitions)
       (goto-char (point-min))
-      (setq pandoc--@-overlay (make-overlay (point-min) (point-at-eol)))
+      (setq pandoc--@-overlay (make-overlay (point-min) (line-end-position)))
       (overlay-put pandoc--@-overlay 'face 'highlight))
     (select-window (display-buffer pandoc--@-buffer))))
 
@@ -1017,7 +1017,7 @@ argument, the option is toggled."
                                                                          "set"
                                                                        "unset"))))
 
-(easy-menu-define pandoc-mode-menu pandoc-mode-map "Pandoc menu"
+(easy-menu-define pandoc-mode-menu pandoc-mode-map "Pandoc menu."
   `("Pandoc"
     ["Run Pandoc" pandoc-run-pandoc :active t]
     ["Create PDF" pandoc-convert-to-pdf :active t]

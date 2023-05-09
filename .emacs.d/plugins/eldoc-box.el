@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Yuan Fu
 
-;; Version: 1.10.1
+;; Version: 1.11.1
 
 ;; Author: Yuan Fu <casouri@gmail.com>
 ;; URL: https://github.com/casouri/eldoc-box
@@ -85,7 +85,7 @@
   "Body face used in documentation childframe.")
 
 (defcustom eldoc-box-lighter " ELDOC-BOX"
-  "Mod-line lighter for all eldoc-box modes.
+  "Mode line lighter for all eldoc-box modes.
 If the value is nil, no lighter is displayed."
   :type '(choice string
                  (const :tag "None" nil)))
@@ -287,6 +287,7 @@ STR has to be a proper documentation, not empty string, not nil, etc."
   (let ((doc-buffer (get-buffer-create eldoc-box--buffer)))
     (with-current-buffer doc-buffer
       (setq mode-line-format nil)
+      (setq header-line-format nil)
       ;; WORKAROUND: (issue#66) If cursor-type is ‘box’, sometimes the
       ;; cursor is still shown for some reason.
       (setq-local cursor-type t)
@@ -375,6 +376,17 @@ base on WIDTH and HEIGHT of childframe text window."
 (defun eldoc-box--update-childframe-geometry (frame window)
   "Update the size and the position of childframe.
 FRAME is the childframe, WINDOW is the primary window."
+  ;; WORKAROUND: See issue#68. If there’s some text with a display
+  ;; property of (space :width text) -- which is what we apply onto
+  ;; markdown separators -- ‘window-text-pixel-size’ wouldn’t return
+  ;; the correct value. Instead, it returns the current window width.
+  ;; So now the childram only grows in size and never shrinks. For
+  ;; whatever reason, if we set the frame size very small before
+  ;; calculating window’s text size, it can return the right value.
+  ;; (My guess is that the function takes (space :width text) at face
+  ;; value, but that can’t be the whole picture because it works fine
+  ;; when I manually evaluate the function in the childframe...)
+  (set-frame-size frame 1 1 t)
   (let* ((size
           (window-text-pixel-size
            window nil nil
@@ -436,7 +448,7 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
       ;; (set-frame-parameter frame 'left-fringe (alist-get 'left-fringe eldoc-box-frame-parameters))
       ;; (set-frame-parameter frame 'right-fringe (alist-get 'right-fringe eldoc-box-frame-parameters))
 
-      (set-face-attribute 'fringe frame :background nil :inherit 'eldoc-box-body)
+      (set-face-attribute 'fringe frame :background 'unspecified :inherit 'eldoc-box-body)
       (set-window-dedicated-p window t)
       (redirect-frame-focus frame (frame-parent frame))
       (set-face-attribute 'internal-border frame :inherit 'eldoc-box-border)
@@ -611,35 +623,15 @@ You can use \[keyboard-quit] to hide the doc."
 
 ;;;; Eglot helper
 
-(eval-and-compile
-  (require 'jsonrpc)
-  (when (require 'eglot nil t)
+(make-obsolete 'eldoc-box-eglot-help-at-point 'eldoc-box-help-at-point
+               "v1.11.1")
 
-    (defvar eglot--managed-mode)
-    (declare-function eglot--dbind "eglot.el")
-    (declare-function eglot--hover-info "eglot.el")
-    (declare-function eglot--current-server-or-lose "eglot.el")
-    (declare-function eglot--TextDocumentPositionParams "eglot.el")
-    (declare-function eglot--error "eglot.el")
-    (declare-function jsonrpc-request "jsonrpc")
-
-
-    (defun eldoc-box-eglot-help-at-point ()
-      "Display documentation of the symbol at point."
-      (interactive)
-      (when eglot--managed-mode
-        (let ((eldoc-box-position-function #'eldoc-box--default-at-point-position-function))
-          (let ((hover-info
-                 (eglot--dbind ((Hover) contents range)
-                     (jsonrpc-request (eglot--current-server-or-lose) :textDocument/hover
-                                      (eglot--TextDocumentPositionParams))
-                   (when (seq-empty-p contents) (eglot--error "No hover info here"))
-                   (eglot--hover-info contents range))))
-            (if hover-info
-                (eldoc-box--display hover-info)
-              (eglot--error "No hover info here"))))
-        (setq eldoc-box--help-at-point-last-point (point))
-        (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup)))))
+(defun eldoc-box-eglot-help-at-point ()
+  "Display documentation of the symbol at point.
+This is now obsolete, you should use ‘eldoc-box-help-at-point’
+instead."
+  (interactive)
+  (eldoc-box-help-at-point))
 
 ;;;; Comany compatibility
 ;;
@@ -757,8 +749,11 @@ This allows any change in childframe parameter to take effect."
   (interactive)
   (setq eldoc-box--frame nil))
 
-(with-eval-after-load 'tab-bar-mode
+(with-eval-after-load 'tab-bar
   (add-hook 'tab-bar-mode-hook #'eldoc-box-reset-frame))
+
+(with-eval-after-load 'tab-line
+  (add-hook 'tab-line-mode-hook #'eldoc-box-reset-frame))
 
 (provide 'eldoc-box)
 

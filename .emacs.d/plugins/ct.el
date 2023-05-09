@@ -42,6 +42,7 @@
 (defcustom ct-interactive-step-interval 3
   "Interval to use for the ct-point-* interactive functions.
 If set to nil the smallest amount needed to affect a change is used."
+  :type '(restricted-sexp :match-alternatives (integerp 'nil))
   :group 'ct)
 
 ;;;
@@ -71,7 +72,7 @@ If set to nil the smallest amount needed to affect a change is used."
 (defun ct--replace-current (fn &rest args)
   "Get the current unspaced string at point.
 Replace with the return value of the function FN with ARGS"
-  (let (pos1 pos2 len replacement excerpt change)
+  (let (pos1 pos2 replacement excerpt change)
     (if (and transient-mark-mode mark-active)
       (setq pos1 (region-beginning) pos2 (region-end))
       (progn
@@ -510,28 +511,35 @@ Optionally override SCALE comparison value."
         color (funcall op color)))
     color))
 
-(defun ct-contrast-min (foreground background ratio &optional darken-fn lighten-fn)
-  "Increase contrast of FOREGROUND against BACKGROUND until minimum contrast RATIO is reached."
-  (ct-iterate foreground
-    (if (ct-light-p background)
-      (or darken-fn #'ct-edit-lab-l-dec)
-      (or lighten-fn #'ct-edit-lab-l-inc))
-    (lambda (step)
-      (> (ct-contrast-ratio step background) ratio))))
+(defun ct-contrast-min (foreground background contrast-ratio &optional color-property)
+  "Edit FOREGROUND to have a minimum CONTRAST-RATIO on BACKGROUND.
 
-(defun ct-contrast-max (foreground background ratio &optional darken-fn lighten-fn)
-  "Decrease contrast of FOREGROUND against BACKGROUND until within contrast RATIO threshold."
-  (ct-iterate foreground
-    (if (ct-light-p background)
-      (or lighten-fn #'ct-edit-lab-l-inc)
-      (or darken-fn #'ct-edit-lab-l-dec))
-    (lambda (step) (< (ct-contrast-ratio step background) ratio))))
+Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
+  (-let* ((color-property (or color-property 'lab-l))
+           (darken-fn (intern (format "ct-edit-%s-dec" color-property)))
+           (lighten-fn (intern (format "ct-edit-%s-inc" color-property))))
+    (ct-iterate foreground
+      (if (ct-light-p background) darken-fn lighten-fn)
+      (lambda (step) (> (ct-contrast-ratio step background) contrast-ratio)))))
 
-(defun ct-contrast-clamp (foreground background ratio &optional darken-fn lighten-fn)
-  "Conform FOREGROUND to be contrast RATIO against BACKGROUND."
-  (if (< ratio (ct-contrast-ratio foreground background))
-    (ct-contrast-max foreground background ratio darken-fn lighten-fn)
-    (ct-contrast-min foreground background ratio darken-fn lighten-fn)))
+(defun ct-contrast-max (foreground background contrast-ratio &optional color-property)
+  "Edit FOREGROUND to have a maximum CONTRAST-RATIO on BACKGROUND.
+
+Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
+  (-let* ((color-property (or color-property 'lab-l))
+           (darken-fn (intern (format "ct-edit-%s-dec" color-property)))
+           (lighten-fn (intern (format "ct-edit-%s-inc" color-property))))
+    (ct-iterate foreground
+      (if (ct-light-p background) lighten-fn darken-fn)
+      (lambda (step) (< (ct-contrast-ratio step background) contrast-ratio)))))
+
+(defun ct-contrast-clamp (foreground background contrast-ratio &optional color-property)
+  "Conform FOREGROUND to be CONTRAST-RATIO against BACKGROUND.
+
+Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
+  (if (< contrast-ratio (ct-contrast-ratio foreground background))
+    (ct-contrast-max foreground background contrast-ratio color-property)
+    (ct-contrast-min foreground background contrast-ratio color-property)))
 
 (defun ct-mix-opacity (top bottom opacity)
   "Get resulting color of TOP color with OPACITY overlayed against BOTTOM. Opacity is expected to be 0.0-1.0."
@@ -579,6 +587,16 @@ results."
 (defun ct-complement (c)
   "Return a complement color of C in the HSLUV space."
   (ct-edit-hsluv-h-inc c 180))
+
+(defun ct-greaten (c &optional percent)
+  "Make a light color C lighter, a dark color C darker (by PERCENT)."
+  (ct-edit-lab-l-inc c
+    (* percent (if (ct-light-p c) 1 -1))))
+
+(defun ct-lessen (c &optional percent)
+  "Make a light color C darker, a dark color C lighter (by PERCENT)."
+  (ct-edit-lab-l-inc c
+    (* percent (if (ct-light-p c) -1 1))))
 
 (define-obsolete-function-alias 'ct-name-distance 'ct-distance "2022-06-03")
 (define-obsolete-function-alias 'ct-lab-lighten 'ct-edit-lab-l-inc "2022-06-03")

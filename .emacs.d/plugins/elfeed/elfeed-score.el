@@ -1,9 +1,9 @@
 ;;; elfeed-score.el --- Gnus-style scoring for Elfeed  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2019-2022 Michael Herstine <sp1ff@pobox.com>
+;; Copyright (C) 2019-2023 Michael Herstine <sp1ff@pobox.com>
 
 ;; Author: Michael Herstine <sp1ff@pobox.com>
-;; Version: 1.2.4
+;; Version: 1.2.6
 ;; Package-Requires: ((emacs "26.1") (elfeed "3.3.0"))
 ;; Keywords: news
 ;; URL: https://github.com/sp1ff/elfeed-score
@@ -44,7 +44,7 @@
 (require 'elfeed-score-scoring)
 (require 'elfeed-score-maint)
 
-(defconst elfeed-score-version "1.2.4")
+(defconst elfeed-score-version "1.2.6")
 
 (defgroup elfeed-score nil
   "Gnus-style scoring for Elfeed entries."
@@ -143,8 +143,10 @@ point will be explained.  If the region is not active, only the
 entry under point will be explained."
   (interactive)
   (let ((entries (elfeed-search-selected ignore-region)))
-    (dolist (entry entries)
-      (elfeed-score-scoring-explain-entry entry))
+    (with-help-window elfeed-score-scoring-explanation-buffer-name
+      (with-current-buffer elfeed-score-scoring-explanation-buffer-name
+        (dolist (entry entries)
+          (elfeed-score-scoring-explain-entry entry (current-buffer)))))
     (elfeed-search-update t)))
 
 (defun elfeed-score-load-score-file (score-file)
@@ -239,13 +241,15 @@ This implementation is derived from `elfeed-search-print-entry--default'."
       (insert "(" tags-str ")"))))
 
 ;;;###autoload
-(defun elfeed-score-enable (&optional arg)
-  "Enable `elfeed-score'.  With prefix ARG do not install a custom sort function."
+(defun elfeed-score-enable (&optional arg depth)
+  "Enable `elfeed-score'.  With prefix ARG do not install a custom sort function.
+
+Add the score function at DEPTH (default 0)."
 
   (interactive "P")
 
   ;; Begin scoring on every new entry...
-  (add-hook 'elfeed-new-entry-hook #'elfeed-score-scoring-score-entry)
+  (add-hook 'elfeed-new-entry-hook #'elfeed-score-scoring-score-entry (or depth 0))
   ;; sort based on score...
   (unless arg
     (setq elfeed-score--old-sort-function        elfeed-search-sort-function

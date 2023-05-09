@@ -360,6 +360,9 @@ set this variable to a nil value."
   :type 'boolean
   :link '(info-link "(modus-themes) Disable other themes"))
 
+(defvaralias 'modus-themes-collection 'modus-themes-items
+  "Alias of `modus-themes-items'.")
+
 (defconst modus-themes-items
   '( modus-operandi modus-vivendi
      modus-operandi-tinted modus-vivendi-tinted
@@ -928,11 +931,16 @@ colorful/intense.  Grays are toned down, gray backgrounds are
 removed from some contexts, and almost all accent colors are
 desaturated.
 
+All the preset overrides the themes provide (including this one):
+
+- `modus-themes-preset-overrides-faint'
+- `modus-themes-preset-overrides-intense'
+- `modus-themes-preset-overrides-cooler'
+- `modus-themes-preset-overrides-warmer'
+
 To set a preset, assign its symbol without a quote as the value
 of the `modus-themes-common-palette-overrides' or as the value of
 theme-specific options such as `modus-operandi-palette-overrides'.
-
-Also see `modus-themes-preset-overrides-intense'.
 
 For overriding named colors and/or semantic color mappings read
 Info node `(modus-themes) Option for palette overrides'.")
@@ -957,6 +965,7 @@ Info node `(modus-themes) Option for palette overrides'.")
     (date-event blue)
     (date-holiday magenta-warmer)
     (date-now blue-faint)
+    (date-range blue)
     (date-scheduled yellow-warmer)
     (date-weekday fg-main)
     (date-weekend red-faint)
@@ -1016,11 +1025,124 @@ This changes many parts of the theme to make them look more
 colorful/intense.  Many background colors are accented and
 coloration is increased to pop out more.
 
+All the preset overrides the themes provide (including this one):
+
+- `modus-themes-preset-overrides-faint'
+- `modus-themes-preset-overrides-intense'
+- `modus-themes-preset-overrides-cooler'
+- `modus-themes-preset-overrides-warmer'
+
 To set a preset, assign its symbol without a quote as the value
 of the `modus-themes-common-palette-overrides' or as the value of
 theme-specific options such as `modus-operandi-palette-overrides'.
 
-Also see `modus-themes-preset-overrides-faint'.
+For overriding named colors and/or semantic color mappings read
+Info node `(modus-themes) Option for palette overrides'.")
+
+(defvar modus-themes-preset-overrides-cooler
+  '((fg-prompt blue-cooler)
+
+    (builtin magenta-faint)
+    (constant blue-cooler)
+    (fnname cyan-cooler)
+    (keyword magenta-cooler)
+    (preprocessor blue)
+    (string blue-warmer)
+    (type green-cooler)
+    (variable cyan)
+    (rx-construct blue-cooler)
+    (rx-backslash red)
+
+    (name blue-warmer)
+    (identifier magenta-faint)
+
+    (date-deadline magenta-cooler)
+    (date-scheduled yellow-cooler)
+    (date-weekday blue-faint)
+    (date-weekend red-faint)
+
+    (mail-cite-0 blue-faint)
+    (mail-cite-1 cyan-cooler)
+    (mail-cite-2 magenta-faint)
+    (mail-cite-3 yellow-cooler)
+    (mail-part cyan)
+    (mail-recipient blue-warmer)
+    (mail-subject magenta-cooler)
+    (mail-other blue)
+
+    (prose-tag fg-dim)
+    (prose-verbatim blue-cooler))
+  "Preset of palette overrides with cooler colors.
+
+This changes parts of the palette to use more blue and
+blue-tinted colors.
+
+All the preset overrides the themes provide (including this one):
+
+- `modus-themes-preset-overrides-faint'
+- `modus-themes-preset-overrides-intense'
+- `modus-themes-preset-overrides-cooler'
+- `modus-themes-preset-overrides-warmer'
+
+To set a preset, assign its symbol without a quote as the value
+of the `modus-themes-common-palette-overrides' or as the value of
+theme-specific options such as `modus-operandi-palette-overrides'.
+
+For overriding named colors and/or semantic color mappings read
+Info node `(modus-themes) Option for palette overrides'.")
+
+(defvar modus-themes-preset-overrides-warmer
+  '((fg-prompt magenta-warmer)
+
+    (builtin magenta)
+    (constant blue-warmer)
+    (fnname magenta-cooler)
+    (keyword magenta-warmer)
+    (preprocessor red-cooler)
+    (string olive)
+    (type cyan-cooler)
+    (variable cyan)
+    (rx-construct blue-cooler)
+    (rx-backslash red-warmer)
+
+    (name blue-warmer)
+    (identifier magenta)
+    (keybind magenta-warmer)
+
+    (accent-0 magenta-warmer)
+    (accent-1 cyan)
+    (accent-2 blue-warmer)
+    (accent-3 red-cooler)
+
+    (date-common cyan-cooler)
+    (date-holiday magenta-warmer)
+
+    (mail-cite-0 magenta-faint)
+    (mail-cite-1 cyan-cooler)
+    (mail-cite-2 green-warmer)
+    (mail-cite-3 red-faint)
+    (mail-part cyan)
+    (mail-recipient magenta)
+    (mail-subject blue-warmer)
+    (mail-other magenta-warmer)
+
+    (prose-macro red-cooler)
+    (prose-tag fg-dim))
+  "Preset of palette overrides with warmer colors.
+
+This changes many parts of the theme to use warmer colors,
+including green and yellow.
+
+All the preset overrides the themes provide (including this one):
+
+- `modus-themes-preset-overrides-faint'
+- `modus-themes-preset-overrides-intense'
+- `modus-themes-preset-overrides-cooler'
+- `modus-themes-preset-overrides-warmer'
+
+To set a preset, assign its symbol without a quote as the value
+of the `modus-themes-common-palette-overrides' or as the value of
+theme-specific options such as `modus-operandi-palette-overrides'.
 
 For overriding named colors and/or semantic color mappings read
 Info node `(modus-themes) Option for palette overrides'.")
@@ -1938,7 +2060,6 @@ FG and BG are the main colors."
     `(consult-imenu-prefix ((,c :inherit shadow)))
     `(consult-line-number ((,c :inherit shadow)))
     `(consult-line-number-prefix ((,c :inherit shadow)))
-    `(consult-preview-cursor ((,c :background ,cursor :foreground ,bg-main)))
 ;;;;; corfu
     `(corfu-current ((,c :inherit modus-themes-completion-selected)))
     `(corfu-bar ((,c :background ,fg-dim)))
@@ -2328,8 +2449,11 @@ FG and BG are the main colors."
     `(flycheck-indicator-warning ((,c :inherit warning)))
 ;;;;; flymake
     `(flymake-error ((,c :inherit modus-themes-lang-error)))
+    `(flymake-error-echo ((,c :inherit error)))
     `(flymake-note ((,c :inherit modus-themes-lang-note)))
+    `(flymake-note-echo ((,c :inherit success)))
     `(flymake-warning ((,c :inherit modus-themes-lang-warning)))
+    `(flymake-warning-echo ((,c :inherit warning)))
 ;;;;; flyspell
     `(flyspell-duplicate ((,c :inherit modus-themes-lang-warning)))
     `(flyspell-incorrect ((,c :inherit modus-themes-lang-error)))
@@ -2664,7 +2788,7 @@ FG and BG are the main colors."
 ;;;;; jit-spell
     `(jit-spell-misspelling ((,c :inherit modus-themes-lang-error)))
 ;;;;; jinx
-    `(jinx-misspelled ((,c :inherit modus-themes-lang-error)))
+    `(jinx-misspelled ((,c :inherit modus-themes-lang-warning)))
 ;;;;; journalctl-mode
     `(journalctl-error-face ((,c :inherit error)))
     `(journalctl-finished-face ((,c :inherit success)))
@@ -3065,6 +3189,7 @@ FG and BG are the main colors."
     `(orderless-match-face-2 ((,c :inherit modus-themes-completion-match-2)))
     `(orderless-match-face-3 ((,c :inherit modus-themes-completion-match-3)))
 ;;;;; org
+    `(org-agenda-calendar-daterange ((,c :foreground ,date-range)))
     `(org-agenda-calendar-event ((,c :foreground ,date-event)))
     `(org-agenda-calendar-sexp ((,c :inherit (modus-themes-slant org-agenda-calendar-event))))
     `(org-agenda-clocking ((,c :inherit modus-themes-mark-alt)))
@@ -3232,6 +3357,24 @@ FG and BG are the main colors."
     `(persp-face-lighter-nil-persp ((,c :inherit bold)))
 ;;;;; perspective
     `(persp-selected-face ((,c :inherit bold :foreground ,name)))
+;;;;; proced
+    `(proced-cpu ((,c :foreground ,keyword)))
+    `(proced-emacs-pid ((,c :foreground ,identifier :underline t)))
+    `(proced-executable ((,c :foreground ,name)))
+    `(proced-interruptible-sleep-status-code ((,c :inherit shadow)))
+    `(proced-mem ((,c :foreground ,type)))
+    `(proced-memory-high-usage ((,c :foreground ,err)))
+    `(proced-memory-low-usage ((,c :foreground ,info)))
+    `(proced-memory-medium-usage ((,c :foreground ,warning)))
+    `(proced-pgrp ((,c :inherit proced-pid)))
+    `(proced-pid ((,c :foreground ,identifier)))
+    `(proced-ppid ((,c :inherit proced-pid)))
+    `(proced-run-status-code ((,c :inherit success)))
+    `(proced-sess ((,c :inherit proced-pid)))
+    `(proced-session-leader-pid ((,c :inherit bold :foreground ,identifier)))
+    `(proced-time-colon (( )))
+    `(proced-uninterruptible-sleep-status-code ((,c :inherit error)))
+    `(proced-user (( )))
 ;;;;; popup
     `(popup-face ((,c :background ,bg-inactive :foreground ,fg-main)))
     `(popup-isearch-match ((,c :inherit modus-themes-search-current)))
@@ -3337,6 +3480,13 @@ FG and BG are the main colors."
 ;;;;; rmail
     `(rmail-header-name ((,c :inherit bold)))
     `(rmail-highlight ((,c :inherit bold :foreground ,mail-other)))
+;;;;; rst-mode
+    `(rst-level-1 ((,c :inherit modus-themes-heading-1)))
+    `(rst-level-2 ((,c :inherit modus-themes-heading-2)))
+    `(rst-level-3 ((,c :inherit modus-themes-heading-3)))
+    `(rst-level-4 ((,c :inherit modus-themes-heading-4)))
+    `(rst-level-5 ((,c :inherit modus-themes-heading-5)))
+    `(rst-level-6 ((,c :inherit modus-themes-heading-6)))
 ;;;;; ruler-mode
     `(ruler-mode-column-number ((,c :inherit ruler-mode-default)))
     `(ruler-mode-comment-column ((,c :inherit ruler-mode-default :foreground ,red)))
@@ -3686,7 +3836,10 @@ FG and BG are the main colors."
     `(vterm-color-white ((,c :background "white" :foreground "gray65")))
     `(vterm-color-yellow ((,c :background ,yellow-warmer :foreground ,yellow)))
 ;;;;; vundo
-    `(vundo-highlight ((,c :inherit (bold vundo-node) :foreground ,red-intense)))
+    `(vundo-default ((,c :inherit shadow)))
+    `(vundo-highlight ((,c :inherit (bold vundo-node) :foreground ,red)))
+    `(vundo-last-saved ((,c :inherit (bold vundo-node) :foreground ,blue)))
+    `(vundo-saved ((,c :inherit vundo-node :foreground ,blue-intense)))
 ;;;;; wcheck-mode
     `(wcheck-default-face ((,c :foreground ,red :underline t)))
 ;;;;; web-mode

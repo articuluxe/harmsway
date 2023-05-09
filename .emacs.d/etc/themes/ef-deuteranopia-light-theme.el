@@ -8,7 +8,7 @@
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
 ;; Keywords: faces, theme, accessibility
 
-;; This file is part of GNU Emacs.
+;; This file is NOT part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -119,24 +119,23 @@
 
 ;;; Graphs
 
-      (red-graph-0-bg     "#b0b029")
-      (red-graph-1-bg     "#e0cab4")
-      (green-graph-0-bg   "#90b7c0")
-      (green-graph-1-bg   "#a3dfe5")
-      (yellow-graph-0-bg  "#ffcf00")
-      (yellow-graph-1-bg  "#f9ff00")
-      (blue-graph-0-bg    "#7f9fff")
-      (blue-graph-1-bg    "#9fc6ff")
-      (magenta-graph-0-bg "#b0b0d0")
-      (magenta-graph-1-bg "#d0dfdf")
-      (cyan-graph-0-bg    "#6faad9")
-      (cyan-graph-1-bg    "#bfe0ff")
+      (bg-graph-red-0     "#d0b029")
+      (bg-graph-red-1     "#e0cab4")
+      (bg-graph-green-0   "#8ad080")
+      (bg-graph-green-1   "#afdfa5")
+      (bg-graph-yellow-0  "#ffcf00")
+      (bg-graph-yellow-1  "#f9ff00")
+      (bg-graph-blue-0    "#7f9fff")
+      (bg-graph-blue-1    "#9fc6ff")
+      (bg-graph-magenta-0 "#b0b0d0")
+      (bg-graph-magenta-1 "#d0dfdf")
+      (bg-graph-cyan-0    "#6faad9")
+      (bg-graph-cyan-1    "#bfe0ff")
 
 ;;; Special hues
 
       (bg-mode-line       "#99c7ff")
       (fg-mode-line       "#0a0a1f")
-      (bg-accent          "#eecc33")
       (bg-completion      "#f0dacf")
       (bg-hover           "#eebb20")
       (bg-hover-secondary "#afafef")
@@ -207,6 +206,7 @@
       (date-event fg-alt)
       (date-holiday cyan)
       (date-now fg-main)
+      (date-range fg-alt)
       (date-scheduled yellow-cooler)
       (date-weekday cyan)
       (date-weekend magenta-faint)

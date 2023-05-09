@@ -1,6 +1,6 @@
 ;;; elfeed-score-scoring.el --- Logic for scoring (and explaining) `elfeed' entries  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2022 Michael Herstine <sp1ff@pobox.com>
+;; Copyright (C) 2021-2023 Michael Herstine <sp1ff@pobox.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -707,8 +707,8 @@ This function is used in `elfeed-new-entry-hook'."
     (t
      (error "Don't know how to evaluate %S" match))))
 
-(defun elfeed-score-scoring-explain-entry (entry)
-  "Explain an Elfeed ENTRY.
+(defun elfeed-score-scoring-explain-entry (entry buffer-or-name)
+  "Explain an Elfeed ENTRY in BUFFER-OR-NAME.
 
 This function will apply all scoring rules to an entry, but will
 not change anything (e.g.  update ENTRY's meta-data, or the
@@ -736,9 +736,7 @@ understanding of scoring rules."
            :initial-value elfeed-score-scoring-default-score))
          (sticky (and elfeed-score-scoring-manual-is-sticky
                       (elfeed-score-scoring-entry-is-sticky entry))))
-    (with-current-buffer-window
-        elfeed-score-scoring-explanation-buffer-name
-        nil nil
+    (with-current-buffer (get-buffer-create buffer-or-name)
       (goto-char (point-max))
       (insert
        (if sticky
@@ -777,20 +775,20 @@ to the rules currently in-memory)\n")
                   (format "    %d. %s\n" (1+ idx)
                           (elfeed-score-scoring--pp-rule-match-to-string match)))))
             (cl-loop
-                 for match being the elements of matches using (index idx)
-                 do
-                 (insert
-                  (format "    %d. " (1+ idx)))
-                 (insert-text-button
-                  (elfeed-score-scoring--pp-rule-match-to-string match)
-                  'tag (elfeed-score-serde-tag-for-explanation match)
-                  'index (elfeed-score-rules-index-for-explanation match)
-                  'action
-                  (lambda (btn)
-                    (elfeed-score-scoring-visit-rule
-                     (button-get btn 'tag)
-                     (button-get btn 'index))))
-                 (insert "\n"))))))))
+             for match being the elements of matches using (index idx)
+             do
+             (insert
+              (format "    %d. " (1+ idx)))
+             (insert-text-button
+              (elfeed-score-scoring--pp-rule-match-to-string match)
+              'tag (elfeed-score-serde-tag-for-explanation match)
+              'index (elfeed-score-rules-index-for-explanation match)
+              'action
+              (lambda (btn)
+                (elfeed-score-scoring-visit-rule
+                 (button-get btn 'tag)
+                 (button-get btn 'index))))
+             (insert "\n"))))))))
 
 (defun elfeed-score-scoring-visit-rule (tag index)
   "Visit rule TAG, INDEX in the score file.

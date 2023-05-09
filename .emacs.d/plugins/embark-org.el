@@ -62,7 +62,7 @@
     ;; headline ; the bounds include the entire subtree!
     ;; horizontal-rule
     ;; inline-babel-call
-    ;; inline-src-block
+    inline-src-block
     ;; inlinetask
     ;; italic
     item
@@ -180,9 +180,9 @@
 (push 'embark--ignore-target            ; prompts for file name
       (alist-get 'org-table-export embark-target-injection-hooks))
 
-(add-to-list 'embark-keymap-alist '(org-table . embark-org-table-map))
+(add-to-list 'embark-keymap-alist '(org-table embark-org-table-map))
 
-(add-to-list 'embark-keymap-alist '(org-table-cell . embark-org-table-cell-map))
+(add-to-list 'embark-keymap-alist '(org-table-cell embark-org-table-cell-map))
 
 ;;; Links
 
@@ -373,7 +373,7 @@ bound to i."
 (cl-pushnew 'embark--ignore-target
             (alist-get 'org-set-tags-command embark-target-injection-hooks))
 
-(cl-pushnew '(org-heading . embark-org-heading-map) embark-keymap-alist)
+(add-to-list 'embark-keymap-alist '(org-heading embark-org-heading-map))
 
 ;;; Source blocks and babel calls
 
@@ -391,7 +391,7 @@ bound to i."
   :doc "Keymap for actions on Org source blocks."
   :parent embark-general-map
   "RET" #'org-babel-execute-src-block
-  "SPC" #'org-babel-mark-block
+  "C-SPC" #'org-babel-mark-block
   "TAB" #'org-indent-block
   "c" #'embark-org-copy-block-contents
   "h" #'org-babel-check-src-block
@@ -405,10 +405,14 @@ bound to i."
   "/" #'org-babel-demarcate-block
   "N" #'org-narrow-to-block)
 
-(cl-defun embark-org--at-block-head (&rest rest &key run &allow-other-keys)
+(cl-defun embark-org--at-block-head
+    (&rest rest &key run bounds &allow-other-keys)
   "Save excursion and RUN the action at the head of the current block.
-Applies RUN to the REST of the arguments."
+If BOUNDS are given, use them to locate the block (useful for
+when acting on a selection of blocks).  Applies RUN to the REST
+of the arguments."
   (save-excursion
+    (when bounds (goto-char (car bounds)))
     (org-babel-goto-src-block-head)
     (apply run rest)))
 
@@ -418,7 +422,19 @@ Applies RUN to the REST of the arguments."
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
 
-(add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
+(add-to-list 'embark-keymap-alist '(org-src-block embark-org-src-block-map))
+
+;;; Inline source blocks
+
+(defvar-keymap embark-org-inline-src-block-map
+  :doc "Keymap for actions on Org inline source blocks."
+  :parent embark-general-map
+  "RET" #'org-babel-execute-src-block
+  "'" #'org-edit-inline-src-code
+  "k" #'org-babel-remove-inline-result)
+
+(add-to-list 'embark-keymap-alist
+             '(org-inline-src-block embark-org-inline-src-block-map))
 
 ;;; List items
 
@@ -449,7 +465,7 @@ Applies RUN to the REST of the arguments."
                org-outdent-item-tree))
   (add-to-list 'embark-repeat-actions cmd))
 
-(add-to-list 'embark-keymap-alist '(org-item . embark-org-item-map))
+(add-to-list 'embark-keymap-alist '(org-item embark-org-item-map))
 
 ;;; Org plain lists
 
@@ -465,7 +481,7 @@ Applies RUN to the REST of the arguments."
 
 (add-to-list 'embark-repeat-actions 'org-cycle-list-bullet)
 
-(add-to-list 'embark-keymap-alist '(org-plain-list . embark-org-plain-list-map))
+(add-to-list 'embark-keymap-alist '(org-plain-list embark-org-plain-list-map))
 
 (cl-defun embark-org--toggle-checkboxes
     (&rest rest &key run type &allow-other-keys)

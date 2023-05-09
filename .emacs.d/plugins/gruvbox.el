@@ -67,6 +67,9 @@
                   (file-name-as-directory
                    (file-name-directory load-file-name))))
 
+(defvar gruvbox-bold-constructs nil
+  "If non-nil, bold constructs")
+
 (defvar gruvbox-screenshot-command "scrot -u %s%s.png"
   "Command used to take automated screenshots for gruvbox.
 Should contain 2 %s constructs to allow for theme name and directory/prefix")
@@ -111,10 +114,12 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (font-lock-constant-face                           (:foreground gruvbox-bright_purple))
      (font-lock-comment-face                            (:foreground gruvbox-dark4))
      (font-lock-function-name-face                      (:foreground gruvbox-bright_yellow))
-     (font-lock-keyword-face                            (:foreground gruvbox-bright_red))
+     (font-lock-keyword-face                            (:foreground gruvbox-bright_red :bold '(if gruvbox-bold-constructs t nil)))
      (font-lock-string-face                             (:foreground gruvbox-bright_green))
+     (font-lock-number-face                             (:foreground gruvbox-bright_purple))
      (font-lock-variable-name-face                      (:foreground gruvbox-bright_blue))
      (font-lock-type-face                               (:foreground gruvbox-bright_purple))
+     (font-lock-property-face                           (:foreground gruvbox-bright_blue))
      (font-lock-warning-face                            (:foreground gruvbox-bright_red :bold t))
 
      ;;; Basic faces
@@ -145,7 +150,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (whitespace-line                           (:background gruvbox-dark1 :foreground gruvbox-bright_red))
      (whitespace-space-before-tab               (:background gruvbox-bg :foreground gruvbox-dark4))
      (whitespace-indentation                    (:background gruvbox-bg :foreground gruvbox-dark4))
-     (whitespace-empty                          (:background nil :foreground nil))
+     (whitespace-empty                          (:background 'unspecified :foreground 'unspecified))
      (whitespace-space-after-tab                (:background gruvbox-bg :foreground gruvbox-dark4))
 
      ;;; RainbowDelimiters
@@ -162,7 +167,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (rainbow-delimiters-depth-10-face          (:foreground gruvbox-delimiter-two))
      (rainbow-delimiters-depth-11-face          (:foreground gruvbox-delimiter-three))
      (rainbow-delimiters-depth-12-face          (:foreground gruvbox-delimiter-four))
-     (rainbow-delimiters-unmatched-face         (:background nil :foreground gruvbox-light0))
+     (rainbow-delimiters-unmatched-face         (:background 'unspecified  :foreground gruvbox-light0))
 
      ;;; line numbers
 
@@ -201,10 +206,10 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (diff-file-header                          (:background gruvbox-dark2))
      (diff-hunk-header                          (:background gruvbox-dark2))
      (diff-context                              (:background gruvbox-dark1 :foreground gruvbox-light1))
-     (diff-added                                (:background nil :foreground gruvbox-neutral_green))
-     (diff-refine-added                         (:background nil :foreground gruvbox-bright_green))
-     (diff-removed                              (:background nil :foreground gruvbox-neutral_red))
-     (diff-refine-removed                       (:background nil :foreground gruvbox-bright_red))
+     (diff-added                                (:background 'unspecified  :foreground gruvbox-neutral_green))
+     (diff-refine-added                         (:background 'unspecified  :foreground gruvbox-bright_green))
+     (diff-removed                              (:background 'unspecified  :foreground gruvbox-neutral_red))
+     (diff-refine-removed                       (:background 'unspecified  :foreground gruvbox-bright_red))
      (diff-indicator-changed                    (:inherit 'diff-changed))
      (diff-indicator-added                      (:inherit 'diff-added))
      (diff-indicator-removed                    (:inherit 'diff-removed))
@@ -232,16 +237,16 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (js2-warning                               (:underline (:color gruvbox-bright_yellow :style 'wave)))
      (js2-error                                 (:underline (:color gruvbox-bright_red :style 'wave)))
      (js2-external-variable                     (:underline (:color gruvbox-bright_aqua :style 'wave)))
-     (js2-jsdoc-tag                             (:background nil :foreground gruvbox-gray))
-     (js2-jsdoc-type                            (:background nil :foreground gruvbox-light4))
-     (js2-jsdoc-value                           (:background nil :foreground gruvbox-light3))
-     (js2-function-param                        (:background nil :foreground gruvbox-bright_aqua))
-     (js2-function-call                         (:background nil :foreground gruvbox-bright_blue))
-     (js2-instance-member                       (:background nil :foreground gruvbox-bright_orange))
-     (js2-private-member                        (:background nil :foreground gruvbox-faded_yellow))
-     (js2-private-function-call                 (:background nil :foreground gruvbox-faded_aqua))
-     (js2-jsdoc-html-tag-name                   (:background nil :foreground gruvbox-light4))
-     (js2-jsdoc-html-tag-delimiter              (:background nil :foreground gruvbox-light3))
+     (js2-jsdoc-tag                             (:background 'unspecified  :foreground gruvbox-gray))
+     (js2-jsdoc-type                            (:background 'unspecified  :foreground gruvbox-light4))
+     (js2-jsdoc-value                           (:background 'unspecified  :foreground gruvbox-light3))
+     (js2-function-param                        (:background 'unspecified  :foreground gruvbox-bright_aqua))
+     (js2-function-call                         (:background 'unspecified  :foreground gruvbox-bright_blue))
+     (js2-instance-member                       (:background 'unspecified  :foreground gruvbox-bright_orange))
+     (js2-private-member                        (:background 'unspecified  :foreground gruvbox-faded_yellow))
+     (js2-private-function-call                 (:background 'unspecified  :foreground gruvbox-faded_aqua))
+     (js2-jsdoc-html-tag-name                   (:background 'unspecified  :foreground gruvbox-light4))
+     (js2-jsdoc-html-tag-delimiter              (:background 'unspecified  :foreground gruvbox-light3))
 
      ;;; popup
 
@@ -469,9 +474,9 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
 
      ;;; isearch
 
-     (isearch                                   (:foreground gruvbox-black :background gruvbox-bright_orange))
-     (lazy-highlight                            (:foreground gruvbox-black :background gruvbox-bright_yellow))
-     (isearch-fail                              (:foreground gruvbox-light0 :background gruvbox-bright_red))
+     (isearch                                   (:foreground gruvbox-bg :background gruvbox-bright_orange))
+     (lazy-highlight                            (:foreground gruvbox-bg :background gruvbox-bright_yellow))
+     (isearch-fail                              (:foreground gruvbox-bg :background gruvbox-bright_red))
 
      ;;; markdown-mode
 
@@ -947,7 +952,8 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (avy-lead-face-1             (:foreground gruvbox-dark0 :background gruvbox-neutral_aqua))
      (avy-lead-face-2             (:foreground gruvbox-dark0 :background gruvbox-neutral_purple))
 
-     ;; ansi-color <built-in>
+     ;;; ansi-color <built-in>
+
      (ansi-color-black          (:foreground gruvbox-dark2 :background gruvbox-dark1))
      (ansi-color-red            (:foreground gruvbox-bright_red :background gruvbox-bright_red))
      (ansi-color-green          (:foreground gruvbox-bright_green :background gruvbox-bright_green))
@@ -963,7 +969,22 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (ansi-color-bright-blue    (:foreground gruvbox-bright_blue :background gruvbox-bright_blue))
      (ansi-color-bright-magenta (:foreground gruvbox-bright_purple :background gruvbox-bright_purple))
      (ansi-color-bright-cyan    (:foreground gruvbox-bright_aqua :background gruvbox-bright_aqua))
-     (ansi-color-bright-white   (:foreground gruvbox-light1 :background gruvbox-light1)))
+     (ansi-color-bright-white   (:foreground gruvbox-light1 :background gruvbox-light1))
+
+     ;;; Elpaca
+
+     (elpaca-finished           (:foreground gruvbox-bright_green :bold t))
+     (elpaca-blocked            (:foreground gruvbox-bright_yellow :bold t))
+     (elpaca-busy               (:foreground gruvbox-bright_orange :bold t))
+     (elpaca-failed             (:foreground gruvbox-bright_red :bold t))
+
+     (elpaca-ui-marked-delete   (:foreground gruvbox-bright_red :bold t))
+     (elpaca-ui-marked-fetch    (:foreground gruvbox-bright_aqua :bold t))
+     (elpaca-ui-marked-install  (:foreground gruvbox-bright_blue :bold t))
+     (elpaca-ui-marked-rebuild  (:foreground gruvbox-bright_purple :bold t))
+     (elpaca-ui-marked-update   (:foreground gruvbox-bright_orange :bold t))
+
+     ) ;;; END
 
     ,@body))
 

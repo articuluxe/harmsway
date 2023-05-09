@@ -961,6 +961,8 @@ and `:slant'."
     ("r" "switch range type"        magit-diff-switch-range-type)
     ("f" "flip revisions"           magit-diff-flip-revs)]]
   (interactive)
+  (when (derived-mode-p 'magit-merge-preview-mode)
+    (user-error "Cannot use %s in %s" this-command major-mode))
   (if (not (eq transient-current-command 'magit-diff-refresh))
       (transient-setup 'magit-diff-refresh)
     (pcase-let ((`(,args ,files) (magit-diff-arguments)))
@@ -1470,6 +1472,8 @@ instead."
   (magit-diff-set-context #'ignore))
 
 (defun magit-diff-set-context (fn)
+  (when (derived-mode-p 'magit-merge-preview-mode)
+    (user-error "Cannot use %s in %s" this-command major-mode))
   (let* ((def (--if-let (magit-get "diff.context") (string-to-number it) 3))
          (val magit-buffer-diff-args)
          (arg (--first (string-match "^-U\\([0-9]+\\)?$" it) val))
@@ -1550,7 +1554,7 @@ to the line that point is on in the diff.
 
 Note that this command only works if point is inside a diff.
 In other cases `magit-find-file' (which see) has to be used."
-  (interactive (list (magit-file-at-point t t) current-prefix-arg))
+  (interactive (list (magit-diff--file-at-point t t) current-prefix-arg))
   (magit-diff-visit-file--internal file nil
                                    (if other-window
                                        #'switch-to-buffer-other-window
@@ -1560,14 +1564,14 @@ In other cases `magit-find-file' (which see) has to be used."
   "From a diff visit the appropriate version of FILE in another window.
 Like `magit-diff-visit-file' but use
 `switch-to-buffer-other-window'."
-  (interactive (list (magit-file-at-point t t)))
+  (interactive (list (magit-diff--file-at-point t t)))
   (magit-diff-visit-file--internal file nil #'switch-to-buffer-other-window))
 
 (defun magit-diff-visit-file-other-frame (file)
   "From a diff visit the appropriate version of FILE in another frame.
 Like `magit-diff-visit-file' but use
 `switch-to-buffer-other-frame'."
-  (interactive (list (magit-file-at-point t t)))
+  (interactive (list (magit-diff--file-at-point t t)))
   (magit-diff-visit-file--internal file nil #'switch-to-buffer-other-frame))
 
 ;;;;; Worktree Variants
@@ -1655,7 +1659,7 @@ the Magit-Status buffer for DIRECTORY."
 
 (defun magit-diff-visit-file--noselect (&optional file goto-worktree)
   (unless file
-    (setq file (magit-file-at-point t t)))
+    (setq file (magit-diff--file-at-point t t)))
   (let* ((hunk (magit-diff-visit--hunk))
          (goto-from (and hunk
                          (magit-diff-visit--goto-from-p hunk goto-worktree)))
@@ -1687,6 +1691,22 @@ the Magit-Status buffer for DIRECTORY."
                       (move-to-column col)
                       (point))))
       (list buf nil))))
+
+(defun magit-diff--file-at-point (&optional expand assert)
+  ;; This is a variation of magit-file-at-point.
+  (if-let* ((file-section (magit-section-case
+                            (file it)
+                            (hunk (oref it parent))))
+            (file (or (and (magit-section-match 'hunk)
+                           (magit-diff-visit--goto-from-p
+                            (magit-current-section) nil)
+                           (oref file-section source))
+                      (oref file-section value))))
+      (if expand
+          (expand-file-name file (magit-toplevel))
+        file)
+    (when assert
+      (user-error "No file at point"))))
 
 (defun magit-diff-visit--hunk ()
   (when-let* ((scope (magit-diff-scope)) ;debbugs#31840
@@ -1840,6 +1860,10 @@ commit or stash at point, then prompt for a commit."
          (setq buf (magit-get-mode-buffer 'magit-revision-mode)))
         (commit
          (setq rev (oref it value))
+         (setq cmd #'magit-show-commit)
+         (setq buf (magit-get-mode-buffer 'magit-revision-mode)))
+        (tag
+         (setq rev (magit-rev-hash (oref it value)))
          (setq cmd #'magit-show-commit)
          (setq buf (magit-get-mode-buffer 'magit-revision-mode)))
         (stash
@@ -2160,7 +2184,10 @@ section or a child thereof."
     (user-error "No diffstat in this buffer")))
 
 (defun magit-diff-wash-signature (object)
-  (when (looking-at "^gpg: ")
+  (cond
+   ((looking-at "^No signature")
+    (delete-line))
+   ((looking-at "^gpg: ")
     (let (title end)
       (save-excursion
         (while (looking-at "^gpg: ")
@@ -2180,7 +2207,7 @@ section or a child thereof."
           (magit-insert-heading title))
         (goto-char end)
         (set-marker end nil)
-        (insert "\n")))))
+        (insert "\n"))))))
 
 (defun magit-diff-wash-diffstat ()
   (let (heading (beg (point)))

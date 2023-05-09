@@ -37,8 +37,8 @@
 ;; is the opposite of dystopia (δυστοπία): a good place as opposed to
 ;; a bad place.
 ;;
-;; The backronym of the `ef-themes' is: Extremely Fatigued of Themes
-;; Having Exaggerated Markings, Embellishments, and Sparkles.
+;; The backronym of the `ef-themes' is: Eclectic Fashion in Themes
+;; Hides Exaggerated Markings, Embellishments, and Sparkles.
 
 ;;; Code:
 
@@ -62,6 +62,7 @@
     ef-deuteranopia-light
     ef-duo-light
     ef-frost
+    ef-kassio
     ef-light
     ef-spring
     ef-summer
@@ -77,10 +78,14 @@
     ef-deuteranopia-dark
     ef-duo-dark
     ef-night
+    ef-symbiosis
     ef-trio-dark
     ef-tritanopia-dark
     ef-winter)
   "List of symbols with the dark Ef themes.")
+
+(defvaralias 'ef-themes-items 'ef-themes-collection
+  "Alias of `ef-themes-collection'.")
 
 (defconst ef-themes-collection
   (append ef-themes-light-themes ef-themes-dark-themes)
@@ -541,23 +546,35 @@ overrides."
 (defvar ef-themes--select-theme-history nil
   "Minibuffer history of `ef-themes--select-prompt'.")
 
+(defun ef-themes--load-subset (subset)
+  "Return the `light' or `dark' SUBSET of the Ef themes.
+If SUBSET is neither `light' nor `dark', return all the known Ef themes."
+  (pcase subset
+    ('dark ef-themes-dark-themes)
+    ('light ef-themes-light-themes)
+    (_ (ef-themes--list-known-themes))))
+
+(defun ef-themes--maybe-prompt-subset (variant)
+  "Helper function for `ef-themes--select-prompt' VARIANT argument."
+  (cond
+   ((null variant))
+   ((or (eq variant 'light) (eq variant 'dark)) variant)
+   (t (ef-themes--choose-subset))))
+
 (defun ef-themes--select-prompt (&optional prompt variant)
   "Minibuffer prompt for `ef-themes-select'.
 With optional PROMPT string, use it.  Else use a generic prompt.
 
-With optional VARIANT, prompt for a subset of themes divided into
-light and dark variants.  Then limit the completion candidates
-accordingly."
-  (let* ((subset (when variant (ef-themes--choose-subset)))
-         (themes (pcase subset
-                   ('dark ef-themes-dark-themes)
-                   ('light ef-themes-light-themes)
-                   ;; NOTE 2022-11-02: This condition made sense when
-                   ;; the code now in `ef-themes--choose-subset' used
-                   ;; `completing-read'.  With `read-multiple-choice'
-                   ;; we never meet this condition, as far as I can
-                   ;; tell.  But it does no harm to keep it here.
-                   (_ (ef-themes--list-known-themes))))
+With optional VARIANT as a non-nil value, prompt for a subset of
+themes divided into light and dark variants.  Then limit the
+completion candidates accordingly.
+
+If VARIANT is either `light' or `dark' then use it directly
+instead of prompting the user for a choice.
+
+When VARIANT is nil, all Ef themes are candidates for completion."
+  (let* ((subset (ef-themes--maybe-prompt-subset variant))
+         (themes (ef-themes--load-subset subset))
          (completion-extra-properties `(:annotation-function ,#'ef-themes--annotate-theme)))
     (intern
      (completing-read
@@ -596,6 +613,40 @@ Run `ef-themes-post-load-hook' after loading the theme.
 When called from Lisp, THEME is the symbol of a theme.  VARIANT
 is ignored in this scenario."
   (interactive (list (ef-themes--select-prompt nil current-prefix-arg)))
+  (ef-themes--load-theme theme))
+
+;;;###autoload
+(defun ef-themes-select-light (theme)
+  "Load a light Ef THEME.
+Run `ef-themes-post-load-hook' after loading the theme.
+
+Also see `ef-themes-select-dark'.
+
+This command is the same as `ef-themes-select' except it only
+prompts for light themes when called interactively.  Calling it
+from Lisp behaves the same as `ef-themes-select' for the THEME
+argument, meaning that it loads the Ef THEME regardless of
+whether it is light or dark."
+  (interactive
+   (list
+    (ef-themes--select-prompt "Select light Ef theme: " 'light)))
+  (ef-themes--load-theme theme))
+
+;;;###autoload
+(defun ef-themes-select-dark (theme)
+  "Load a dark Ef THEME.
+Run `ef-themes-post-load-hook' after loading the theme.
+
+Also see `ef-themes-select-light'.
+
+This command is the same as `ef-themes-select' except it only
+prompts for light themes when called interactively.  Calling it
+from Lisp behaves the same as `ef-themes-select' for the THEME
+argument, meaning that it loads the Ef THEME regardless of
+whether it is light or dark."
+  (interactive
+   (list
+    (ef-themes--select-prompt "Select light Ef theme: " 'dark)))
   (ef-themes--load-theme theme))
 
 (defun ef-themes--toggle-theme-p ()
@@ -1029,7 +1080,6 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(consult-imenu-prefix ((,c :inherit shadow)))
     `(consult-line-number ((,c :inherit shadow)))
     `(consult-line-number-prefix ((,c :inherit shadow)))
-    `(consult-preview-cursor ((,c :background ,cursor :foreground ,bg-main)))
     `(consult-separator ((,c :foreground ,border)))
 ;;;; corfu
     `(corfu-current ((,c :background ,bg-completion)))
@@ -1143,7 +1193,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     ;; is for the `vertical-border'.  We want this to be more subtle.
     `(fill-column-indicator ((,c :height 1 :background ,bg-alt :foreground ,bg-alt)))
 ;;;; doom-modeline
-    `(doom-modeline-bar ((,c :background ,bg-accent)))
+    `(doom-modeline-bar ((,c :background ,keybind)))
     `(doom-modeline-bar-inactive ((,c :background ,bg-alt)))
     `(doom-modeline-battery-charging ((,c :foreground ,modeline-info)))
     `(doom-modeline-battery-critical ((,c :underline t :foreground ,modeline-err)))
@@ -1260,8 +1310,11 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(flycheck-warning ((,c :inherit ef-themes-underline-warning)))
 ;;;; flymake
     `(flymake-error ((,c :inherit ef-themes-underline-error)))
+    `(flymake-error-echo ((,c :inherit error)))
     `(flymake-note ((,c :inherit ef-themes-underline-info)))
+    `(flymake-note-echo ((,c :inherit success)))
     `(flymake-warning ((,c :inherit ef-themes-underline-warning)))
+    `(flymake-warning-echo ((,c :inherit warning)))
 ;;;; flyspell
     `(flyspell-duplicate ((,c :inherit ef-themes-underline-warning)))
     `(flyspell-incorrect ((,c :inherit ef-themes-underline-error)))
@@ -1415,7 +1468,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(image-dired-thumb-header-file-size ((,c :foreground ,info)))
     `(image-dired-thumb-mark ((,c :background ,info)))
 ;;;; info
-    `(Info-quoted ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-0))) ; the capitalization is canonical
+    `(Info-quoted ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-verbatim))) ; the capitalization is canonical
     `(info-header-node ((,c :inherit (shadow bold))))
     `(info-index-match ((,c :inherit match)))
     `(info-menu-header ((,c :inherit bold)))
@@ -1435,6 +1488,8 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(query-replace ((,c :background ,bg-red :foreground ,fg-intense)))
 ;;;; jit-spell
     `(jit-spell-misspelling ((,c :inherit ef-themes-underline-error)))
+;;;;; jinx
+    `(jinx-misspelled ((,c :inherit ef-themes-underline-warning)))
 ;;;; keycast
     `(keycast-command ((,c :inherit bold)))
     `(keycast-key ((,c :inherit bold :background ,bg-hover :foreground ,fg-intense :box (:line-width -1 :color ,fg-dim))))
@@ -1717,6 +1772,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(orderless-match-face-2 ((,c :inherit bold :foreground ,accent-2)))
     `(orderless-match-face-3 ((,c :inherit bold :foreground ,accent-3)))
 ;;;; org
+    `(org-agenda-calendar-daterange ((,c :foreground ,date-range)))
     `(org-agenda-calendar-event ((,c :foreground ,date-event)))
     `(org-agenda-calendar-sexp ((,c :inherit (italic org-agenda-calendar-event))))
     `(org-agenda-clocking ((,c :background ,bg-warning :foreground ,warning)))
@@ -1745,7 +1801,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(org-checkbox-statistics-done ((,c :inherit org-done)))
     `(org-checkbox-statistics-todo ((,c :inherit org-todo)))
     `(org-clock-overlay ((,c :background ,bg-hover-secondary)))
-    `(org-code ((,c :inherit ef-themes-fixed-pitch :foreground ,accent-1)))
+    `(org-code ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-code)))
     `(org-column ((,c :inherit default :background ,bg-alt)))
     `(org-column-title ((,c :inherit (bold default) :underline t :background ,bg-alt)))
     `(org-date ((,c :inherit ef-themes-fixed-pitch :foreground ,date-common)))
@@ -1800,14 +1856,14 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(org-verse ((,c :inherit org-block)))
     `(org-warning ((,c :inherit warning)))
 ;;;; org-habit
-    `(org-habit-alert-face ((,c :background ,yellow-graph-0-bg :foreground "black"))) ; special case
-    `(org-habit-alert-future-face ((,c :background ,yellow-graph-1-bg)))
-    `(org-habit-clear-face ((,c :background ,blue-graph-0-bg :foreground "black"))) ; special case
-    `(org-habit-clear-future-face ((,c :background ,blue-graph-1-bg)))
-    `(org-habit-overdue-face ((,c :background ,red-graph-0-bg)))
-    `(org-habit-overdue-future-face ((,c :background ,red-graph-1-bg)))
-    `(org-habit-ready-face ((,c :background ,green-graph-0-bg :foreground "black"))) ; special case
-    `(org-habit-ready-future-face ((,c :background ,green-graph-1-bg)))
+    `(org-habit-alert-face ((,c :background ,bg-graph-yellow-0 :foreground "black"))) ; special case
+    `(org-habit-alert-future-face ((,c :background ,bg-graph-yellow-1)))
+    `(org-habit-clear-face ((,c :background ,bg-graph-blue-0 :foreground "black"))) ; special case
+    `(org-habit-clear-future-face ((,c :background ,bg-graph-blue-1)))
+    `(org-habit-overdue-face ((,c :background ,bg-graph-red-0)))
+    `(org-habit-overdue-future-face ((,c :background ,bg-graph-red-1)))
+    `(org-habit-ready-face ((,c :background ,bg-graph-green-0 :foreground "black"))) ; special case
+    `(org-habit-ready-future-face ((,c :background ,bg-graph-green-1)))
 ;;;; org-modern
     `(org-modern-date-active ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-alt)))
     `(org-modern-date-inactive ((,c :inherit (ef-themes-fixed-pitch org-modern-label) :background ,bg-dim :foreground ,fg-dim)))
@@ -1846,6 +1902,24 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(package-status-unsigned ((,c :inherit error)))
 ;;;; perspective
     `(persp-selected-face ((,c :inherit mode-line-emphasis)))
+;;;;; proced
+    `(proced-cpu ((,c :foreground ,keyword)))
+    `(proced-emacs-pid ((,c :foreground ,identifier :underline t)))
+    `(proced-executable ((,c :foreground ,name)))
+    `(proced-interruptible-sleep-status-code ((,c :inherit shadow)))
+    `(proced-mem ((,c :foreground ,type)))
+    `(proced-memory-high-usage ((,c :foreground ,err)))
+    `(proced-memory-low-usage ((,c :foreground ,info)))
+    `(proced-memory-medium-usage ((,c :foreground ,warning)))
+    `(proced-pgrp ((,c :inherit proced-pid)))
+    `(proced-pid ((,c :foreground ,identifier)))
+    `(proced-ppid ((,c :inherit proced-pid)))
+    `(proced-run-status-code ((,c :inherit success)))
+    `(proced-sess ((,c :inherit proced-pid)))
+    `(proced-session-leader-pid ((,c :inherit bold :foreground ,identifier)))
+    `(proced-time-colon (( )))
+    `(proced-uninterruptible-sleep-status-code ((,c :inherit error)))
+    `(proced-user (( )))
 ;;;; powerline
     `(powerline-active0 ((,c :background ,fg-dim :foreground ,bg-main)))
     `(powerline-active1 ((,c :inherit mode-line)))
@@ -1900,6 +1974,13 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(reb-match-3 ((,c :background ,bg-yellow :foreground ,fg-intense)))
     `(reb-regexp-grouping-backslash ((,c :inherit font-lock-regexp-grouping-backslash)))
     `(reb-regexp-grouping-construct ((,c :inherit font-lock-regexp-grouping-construct)))
+;;;;; rst-mode
+    `(rst-level-1 ((,c :inherit ef-themes-heading-1)))
+    `(rst-level-2 ((,c :inherit ef-themes-heading-2)))
+    `(rst-level-3 ((,c :inherit ef-themes-heading-3)))
+    `(rst-level-4 ((,c :inherit ef-themes-heading-4)))
+    `(rst-level-5 ((,c :inherit ef-themes-heading-5)))
+    `(rst-level-6 ((,c :inherit ef-themes-heading-6)))
 ;;;; ruler-mode
     `(ruler-mode-column-number ((,c :inherit ruler-mode-default)))
     `(ruler-mode-comment-column ((,c :inherit ruler-mode-default :foreground ,red)))
@@ -2081,8 +2162,8 @@ Optional prefix argument MAPPINGS has the same meaning as for
   '(
 ;;;; chart
     `(chart-face-color-list
-      '( ,red-graph-0-bg ,green-graph-0-bg ,yellow-graph-0-bg ,blue-graph-0-bg ,magenta-graph-0-bg ,cyan-graph-0-bg
-         ,red-graph-1-bg ,green-graph-1-bg ,yellow-graph-1-bg ,blue-graph-1-bg ,magenta-graph-1-bg ,cyan-graph-1-bg))
+      '( ,bg-graph-red-0 ,bg-graph-green-0 ,bg-graph-yellow-0 ,bg-graph-blue-0 ,bg-graph-magenta-0 ,bg-graph-cyan-0
+         ,bg-graph-red-1 ,bg-graph-green-1 ,bg-graph-yellow-1 ,bg-graph-blue-1 ,bg-graph-magenta-1 ,bg-graph-cyan-1))
 ;;;; flymake fringe indicators
     `(flymake-error-bitmap '(flymake-double-exclamation-mark ef-themes-mark-delete))
     `(flymake-warning-bitmap '(exclamation-mark ef-themes-mark-other))
