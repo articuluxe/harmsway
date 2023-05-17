@@ -1,8 +1,8 @@
 ;; darwin.el --- os settings file
-;; Copyright (C) 2015-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-09-13 09:43:21 dharms>
+;; Modified Time-stamp: <2023-05-17 09:58:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -72,7 +72,7 @@
     (if result (string-trim result) "")))
 
 (defun harmsway-dired-finder-path ()
-  "Open Finder's foremost window in dired."
+  "Open Finder's foremost window in DIRED."
   (interactive)
   (let ((path (harmsway-finder-path)))
     (if (and path (not (string-empty-p path)))
@@ -81,5 +81,13 @@
   )
 
 (global-set-key "\C-c\M-E" #'harmsway-dired-finder-path)
+
+;; mdfind extraneous output fix for counsel
+(defun harmsway-counsel-locate-cmd-mdfind (input)
+  "Find INPUT.  Hack for `mdfind' that prints out extra debug info."
+  (counsel-require-program locate-command)
+  (format "mdfind -name %s 2>/dev/null" (shell-quote-argument input)))
+
+(setq counsel-locate-cmd #'harmsway-counsel-locate-cmd-mdfind)
 
 ;; darwin.el ends here
