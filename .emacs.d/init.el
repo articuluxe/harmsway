@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-03-13 11:27:39 dharms>
+;; Modified Time-stamp: <2023-05-19 12:32:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -263,6 +263,11 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 (when (< emacs-major-version 27)
   (push (concat my/elisp-directory "compat/27/0/-/") load-path))
+
+(when (< emacs-major-version 29)
+  (push (concat my/elisp-directory "compat/29/0/-/") load-path)
+  (require 'eglot)
+  )
 
 ;; (when (version< "24.3" emacs-version)
 ;;   (require 's))
