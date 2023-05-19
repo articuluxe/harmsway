@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-05-08 16:59:47 dharms>
+;; Modified Time-stamp: <2023-05-19 13:04:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -113,16 +113,6 @@
              '(width . 80))
 
 (setq python-shell-interpreter "python3")
-
-(with-eval-after-load 'jedi-core
-  (setq jedi:environment-root (concat my/user-directory ".python-environments/default"))
-  (setq jedi:server-command `(,python-shell-interpreter
-                              ,(concat my/elisp-directory "emacs-jedi/jediepcserver.py")))
-  (setq jedi:server-args `("--sys-path" ,(substitute-env-vars "$PYTHON_INC")))
-  (unless (file-exists-p (expand-file-name "jediepcserver.py"
-                                           (concat jedi:environment-root
-                                                   "/lib/python3.10/site-packages")))
-    (jedi:install-server)))
 
 (setq epg-gpg-program "gpg2")
 

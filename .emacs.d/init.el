@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-05-19 12:32:35 dharms>
+;; Modified Time-stamp: <2023-05-19 13:17:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -84,7 +84,6 @@
                      ,(concat my/plugins-directory "vc-msg/")
                      ,(concat my/plugins-directory "vlf/")
                      ,(concat my/plugins-directory "yasnippet/")
-                     ,(concat my/elisp-directory "emacs-jedi/")
                      ,(concat my/scratch-directory "modules/"
                               (string-trim (shell-command-to-string
                                             "uname")))
@@ -3091,14 +3090,25 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (advice-add #'eglot--managed-mode :after #'harmsway-customize-eglot)
 
 (use-package eglot
-             :bind ((:map harmsway-eglot-keymap
-                          ("'" . eglot)
-                          ("a" . eglot-code-actions)
-                          ("r" . eglot-rename)
-                          ))
-  :commands eglot
+   :commands (eglot eglot-ensure)
+   :bind ((:map harmsway-eglot-keymap
+                ("'" . eglot)
+                ("a" . eglot-code-actions)
+                ("r" . eglot-rename)
+                ("f" . eglot-format-buffer)
+                ))
   :init
   (setq eglot-stay-out-of '(company-backends))
+  :config
+  (setq-default eglot-workspace-configuration
+                '((:pylsp
+                   . (:configurationSources
+                      ["flake8"]
+                      :plugins
+                      (:pycodestyle
+                       (:enabled nil)
+                       :mccabe (:enabled nil)
+                       :flake8 (:enabled t))))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lsp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4434,8 +4444,10 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'python-mode-hook
             (lambda()
-              (require 'flymake-collection-pycodestyle)
-              (flymake-mode 1)
+              (if (executable-find "pylsp")
+                  (eglot-ensure)
+                (require 'flymake-collection-pycodestyle)
+                (flymake-mode 1))
               (subword-mode 1)
               ;; (highlight-indentation-mode 1)
               (highlight-indent-guides-mode 1)
@@ -4447,21 +4459,8 @@ This function's result only has value if it is preceded by any font changes."
               (local-unset-key [backtab]) ;save backtab for yasnippet
                                         ; S-TAB ran dedent-line in python,
                                         ; we can just use TAB instead
-              (when (featurep 'jedi-core)
-                (jedi-mode 1))
-              ;; fine-tune company
-              (make-local-variable 'company-backends)
-              (setq company-backends
-                    (list
-                     (cons 'company-jedi
-                           (copy-tree
-                            (car company-backends)))))
-              (setq-local company-smart-backend 'company-jedi)))
+              ))
   :config
-  ;; add jedi if installed
-  (when (eq 0 (call-process python-shell-interpreter nil nil nil "-c" "import jedi"))
-    (require 'jedi-core)
-    (setq jedi:tooltip-method nil))
   (define-key python-mode-map "\C-j" 'newline-and-indent)
   ;; remap 'python-shell-send-buffer
   (define-key python-mode-map "\C-c\C-c" nil)
@@ -4483,6 +4482,7 @@ This function's result only has value if it is preceded by any font changes."
               ("cd" . conda-env-deactivate)
               ("cb" . conda-env-activate-for-buffer)
               ("cl" . conda-env-list))
+  :disabled
   :config
   (put 'conda-project-env-name 'safe-local-variable 'stringp)
   (conda-env-initialize-interactive-shells)
@@ -4495,6 +4495,7 @@ This function's result only has value if it is preceded by any font changes."
               ("vw" . pyvenv-workon)
               ("vc" . pyvenv-create)
               ("vd" . pyvenv-deactivate))
+  :disabled
   :config
   (add-hook 'pyvenv-post-activate-hooks #'pyvenv-restart-python))
 
@@ -4503,6 +4504,7 @@ This function's result only has value if it is preceded by any font changes."
   :bind (:map harmsway-python-prefix
               ("pa" . pipenv-activate)
               ("pd" . pipenv-deactivate))
+  :disabled
   :config
   (add-hook 'python-mode-hook 'pipenv-mode))
 
@@ -4516,11 +4518,13 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pyinspect ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pyinspect
+  :disabled
   :bind (:map harmsway-python-prefix
               ("i" . pyinspect-inspect-at-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; py-isort ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package py-isort
+  :disabled
   :commands (py-isort-region py-isort-buffer)
   :bind (:map python-mode-map
               ("C-c isb" . py-isort-buffer)
@@ -4537,6 +4541,7 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; importmagic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package importmagic
   :after python
+  :disabled
   :init
   (add-hook 'python-mode-hook 'importmagic-mode)
   :config
@@ -4549,15 +4554,17 @@ This function's result only has value if it is preceded by any font changes."
 (use-package python-switch-quotes
   :after python
   :config
-  (define-key python-mode-map "\C-c'" #'python-switch-quotes))
+  (define-key python-mode-map "\C-c\"" #'python-switch-quotes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; blacken ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package blacken
+  :disabled
   :bind ("C-c M-b" . blacken-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sphinx-doc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sphinx-doc
   :after python
+  :disabled
   :init
   (add-hook 'python-mode-hook
             (lambda ()

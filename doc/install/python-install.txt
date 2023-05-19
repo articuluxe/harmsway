@@ -1,3 +1,7 @@
+lsp:
+pip3 install "python-lsp-server[all]"
+pip3 install pylsp-rope pylsp-mypy
+# python-lsp-ruff
 
 pip install epc jedi isort importmagic flake8 black sphinx virtualenv
 
