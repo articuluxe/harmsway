@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-05-19 13:17:39 dharms>
+;; Modified Time-stamp: <2023-05-20 12:06:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1995,19 +1995,6 @@ ARGS are the additional arguments."
 (use-package frog-jump-buffer
   :bind ("M-i" . frog-jump-buffer))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc-box ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun harmsway-toggle-eldoc-box-mode ()
-  "Toggle `eldoc-box-hover-mode' in current buffer."
-  (interactive)
-  (if eldoc-box-hover-mode
-      (eldoc-box-hover-mode -1)
-    (eldoc-box-hover-mode 1)))
-(bind-key "C-c 0b" #'harmsway-toggle-eldoc-box-mode)
-(bind-key "C-c 0?" #'eldoc-box-help-at-point)
-(use-package eldoc-box
-  :if (version<= "26.1" emacs-version)
-  )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smex
   :if (<= 24 emacs-major-version)
@@ -3109,6 +3096,21 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                        (:enabled nil)
                        :mccabe (:enabled nil)
                        :flake8 (:enabled t))))))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc-box ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-toggle-eldoc-box-mode ()
+  "Toggle `eldoc-box-hover-mode' in current buffer."
+  (interactive)
+  (if eldoc-box-hover-mode
+      (eldoc-box-hover-mode -1)
+    (eldoc-box-hover-mode 1)))
+
+(use-package eldoc-box
+  :if (version<= "26.1" emacs-version)
+  :bind ((:map harmsway-eglot-keymap
+               ("b" . harmsway-toggle-eldoc-box-mode)
+               ("?" . eldoc-box-help-at-point)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lsp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
