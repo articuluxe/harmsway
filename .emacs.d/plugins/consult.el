@@ -207,8 +207,9 @@ for navigation commands like `consult-line'."
     "\\`\\*tramp/.*\\*\\'")
   "Filter regexps for `consult-buffer'.
 
-The default setting is to filter ephemeral buffer names beginning with a space
-character, the *Completions* buffer and a few log buffers."
+The default setting is to filter ephemeral buffer names beginning
+with a space character, the *Completions* buffer and a few log
+buffers.  The regular expressions are matched case sensitively."
   :type '(repeat regexp))
 
 (defcustom consult-buffer-sources
@@ -237,7 +238,7 @@ See `consult--multi' for a description of the source data structure."
   '(;; Filter commands
     "-mode\\'" "--"
     ;; Filter whole features
-    simple mwheel time so-long recentf)
+    simple mwheel time so-long recentf tab-bar tab-line)
   "Filter commands for `consult-mode-command'."
   :type '(repeat (choice symbol regexp)))
 
@@ -320,7 +321,8 @@ individual keys must be strings accepted by `key-valid-p'."
   "Number of files to keep open at once during preview."
   :type 'natnum)
 
-(defcustom consult-preview-excluded-files nil
+(defcustom consult-preview-excluded-files
+  '("\\`/[^/|:]+:") ;; Do not preview remote files
   "List of regexps matched against names of files, which are not previewed."
   :type '(repeat regexp))
 
@@ -572,14 +574,20 @@ We use invalid characters outside the Unicode range.")
   (if (functionp table)
       (consult--in-buffer
        (lambda (str pred action)
-         (if (eq action 'metadata)
-             (mapcar
-              (lambda (x)
-                (if (and (string-suffix-p (symbol-name (car-safe x)) "-function") (cdr x))
-                    (cons (car x) (consult--in-buffer (cdr x)))
-                  x))
-              (funcall table str pred action))
-           (funcall table str pred action)))
+         (let ((result (funcall table str pred action)))
+           (pcase action
+             ('metadata
+              (setq result
+                    (mapcar
+                     (lambda (x)
+                       (if (and (string-suffix-p (symbol-name (car-safe x)) "-function") (cdr x))
+                           (cons (car x) (consult--in-buffer (cdr x)))
+                         x))
+                     result)))
+             ((and 'completion--unquote (guard (functionp (cadr result))))
+              (cl-callf consult--in-buffer (cadr result) buffer)
+              (cl-callf consult--in-buffer (cadddr result) buffer)))
+           result))
        buffer)
     table))
 
@@ -894,12 +902,10 @@ When no project is found and MAY-PROMPT is non-nil ask the user."
   "Show delayed MESSAGE if BODY takes too long.
 Also temporarily increase the GC limit via `consult--with-increased-gc'."
   (declare (indent 1))
-  ;; FIXME `with-delayed-message' is broken in combination with
-  ;; `inhibit-message'. Report this as a bug.
-  (ignore message)
-  `(progn ;; with-delayed-message (1 ,message)
-     (consult--with-increased-gc
-      ,@body)))
+  `(let (set-message-function) ;; bug#63253: Broken `with-delayed-message'
+     (with-delayed-message (1 ,message)
+       (consult--with-increased-gc
+        ,@body))))
 
 (defun consult--count-lines (pos)
   "Move to position POS and return number of lines."
@@ -2966,8 +2972,8 @@ These configuration options are supported:
                               (plist-get config :preview-key)
                             consult-preview-key))
              (initial (buffer-substring-no-properties start end))
-             (metadata (completion-metadata initial collection predicate))
-             (threshold (or (plist-get config :cycle-threshold) (completion--cycle-threshold metadata)))
+             (threshold (or (plist-get config :cycle-threshold)
+                            (completion--cycle-threshold (completion-metadata initial collection predicate))))
              (all (completion-all-completions initial collection predicate (length initial)))
              ;; Wrap all annotation functions to ensure that they are executed
              ;; in the original buffer.
@@ -2991,7 +2997,6 @@ These configuration options are supported:
                  (and completion-cycling completion-all-sorted-completions)))
         (completion--in-region start end collection predicate)
       (let* ((limit (car (completion-boundaries initial collection predicate "")))
-             (category (completion-metadata-get metadata 'category))
              (completion
               (cond
                ((atom all) nil)
@@ -3003,44 +3008,18 @@ These configuration options are supported:
                        ;; preview state
                        (consult--insertion-preview start end)
                        ;; transformation function
-                       (if (eq category 'file)
-                           (cond
-                            ;; Transform absolute file names
-                            ((file-name-absolute-p initial)
-                             (lambda (_narrow _inp cand)
-                               (substitute-in-file-name cand)))
-                            ;; Ensure that ./ prefix is kept for the shell
-                            ;; (gh:minad/consult#356).
-                            ((string-match-p "\\`\\.\\.?/" initial)
-                             (lambda (_narrow _inp cand)
-                               (setq cand (file-relative-name (substitute-in-file-name cand)))
-                               (if (string-match-p "\\`\\.\\.?/" cand) cand (concat "./" cand))))
-                            ;; Simplify relative file names
-                            (t
-                             (lambda (_narrow _inp cand)
-                               (file-relative-name (substitute-in-file-name cand)))))
-                         (lambda (_narrow _inp cand) cand))
+                       (lambda (_narrow _inp cand) cand)
                        ;; candidate function
                        (apply-partially #'run-hook-with-args-until-success
                                         'consult--completion-candidate-hook)
                      (consult--local-let ((enable-recursive-minibuffers t))
-                       (if (eq category 'file)
-                           ;; We use read-file-name, since many completion UIs make it nicer to
-                           ;; navigate the file system this way; and we insert the initial text
-                           ;; directly into the minibuffer to allow the user's completion
-                           ;; styles to expand it as appropriate (particularly useful for the
-                           ;; partial-completion and initials styles, which allow for very
-                           ;; condensed path specification).
-                           (consult--minibuffer-with-setup-hook
-                               (lambda () (insert initial))
-                             (read-file-name prompt nil initial require-match nil predicate))
-                         ;; Evaluate completion table in the original buffer.
-                         ;; This is a reasonable thing to do and required by
-                         ;; some completion tables in particular by lsp-mode.
-                         ;; See gh:minad/vertico#61.
-                         (completing-read prompt
-                                          (consult--completion-table-in-buffer collection)
-                                          predicate require-match initial)))))))))
+                       ;; Evaluate completion table in the original buffer.
+                       ;; This is a reasonable thing to do and required by
+                       ;; some completion tables in particular by lsp-mode.
+                       ;; See gh:minad/vertico#61.
+                       (completing-read prompt
+                                        (consult--completion-table-in-buffer collection)
+                                        predicate require-match initial))))))))
         (if completion
             (progn
               ;; bug#55205: completion--replace removes properties!
@@ -3489,7 +3468,7 @@ to `consult--buffer-query'."
         (when font-lock-orig (font-lock-mode 1))))))
 
 ;;;###autoload
-(defun consult-keep-lines (&optional filter initial)
+(defun consult-keep-lines (filter &optional initial)
   "Select a subset of the lines in the current buffer with live preview.
 
 The selected lines are kept and the other lines are deleted.  When called
@@ -3591,7 +3570,7 @@ INITIAL is the initial input."
           (mapc #'delete-overlay overlays)
           (goto-char pt-orig))
          ((equal input "")
-          (consult-focus-lines 'show)
+          (consult-focus-lines nil 'show)
           (goto-char pt-orig))
          (t
           ;; Successfully terminated -> Remember invisible overlays
@@ -3605,7 +3584,7 @@ INITIAL is the initial input."
                        pt-orig))))))))
 
 ;;;###autoload
-(defun consult-focus-lines (&optional show filter initial)
+(defun consult-focus-lines (filter &optional show initial)
   "Hide or show lines using overlays.
 
 The selected lines are shown and the other lines hidden.  When called
@@ -3618,11 +3597,11 @@ filtering is performed by a FILTER function.  This command obeys narrowing.
 FILTER is the filter function.
 INITIAL is the initial input."
   (interactive
-   (list current-prefix-arg
-         (lambda (pattern cands)
+   (list (lambda (pattern cands)
            ;; Use consult-location completion category when filtering lines
            (consult--completion-filter-dispatch
-            pattern cands 'consult-location nil))))
+            pattern cands 'consult-location nil))
+         current-prefix-arg))
   (if show
       (progn
         (mapc #'delete-overlay consult--focus-lines-overlays)
@@ -3744,7 +3723,8 @@ narrowing and the settings `consult-goto-line-numbers' and
 
 The list of features is searched for files belonging to the modes.
 From these files, the commands are extracted."
-  (let* ((buffer (current-buffer))
+  (let* ((case-fold-search)
+         (buffer (current-buffer))
          (command-filter (consult--regexp-filter (seq-filter #'stringp consult-mode-command-filter)))
          (feature-filter (seq-filter #'symbolp consult-mode-command-filter))
          (minor-hash (consult--string-hash minor-mode-list))
@@ -4387,7 +4367,8 @@ AS is a conversion function."
     (when (or filter mode as root)
       (let ((mode (ensure-list mode))
             (exclude-re (consult--regexp-filter exclude))
-            (include-re (consult--regexp-filter include)))
+            (include-re (consult--regexp-filter include))
+            (case-fold-search))
         (consult--keep! buffers
           (and
            (or (not mode)

@@ -45,7 +45,7 @@
 ;; actually passing it a message.  Git then invokes the `$GIT_EDITOR'
 ;; (or if that is undefined `$EDITOR') asking the user to provide the
 ;; message by editing the file ".git/COMMIT_EDITMSG" (or another file
-;; in that directory, e.g. ".git/MERGE_MSG" for merge commits).
+;; in that directory, e.g., ".git/MERGE_MSG" for merge commits).
 
 ;; When `global-git-commit-mode' is enabled, which it is by default,
 ;; then opening such a file causes the features described below, to
@@ -76,7 +76,7 @@
 ;; Aborting the commit does not cause the message to be lost, but
 ;; relying solely on the file not being tampered with is risky.  This
 ;; package additionally stores all aborted messages for the duration
-;; of the current session (i.e. until you close Emacs).  To get back
+;; of the current session (i.e., until you close Emacs).  To get back
 ;; an aborted message use M-p and M-n while editing a message.
 ;;
 ;;   M-p      Replace the buffer contents with the previous message
@@ -204,8 +204,7 @@ The major mode configured here is turned on by the minor mode
     git-commit-setup-changelog-support
     git-commit-turn-on-auto-fill
     git-commit-propertize-diff
-    bug-reference-mode
-    with-editor-usage-message)
+    bug-reference-mode)
   "Hook run at the end of `git-commit-setup'."
   :group 'git-commit
   :type 'hook
@@ -217,8 +216,7 @@ The major mode configured here is turned on by the minor mode
              git-commit-turn-on-orglink
              git-commit-turn-on-flyspell
              git-commit-propertize-diff
-             bug-reference-mode
-             with-editor-usage-message))
+             bug-reference-mode))
 
 (defcustom git-commit-post-finish-hook nil
   "Hook run after the user finished writing a commit message.
@@ -490,11 +488,28 @@ This is only used if Magit is available."
 (when (eq system-type 'windows-nt)
   (add-hook 'find-file-not-found-functions #'git-commit-file-not-found))
 
-(defconst git-commit-usage-message "\
+(defconst git-commit-default-usage-message "\
 Type \\[with-editor-finish] to finish, \
 \\[with-editor-cancel] to cancel, and \
 \\[git-commit-prev-message] and \\[git-commit-next-message] \
 to recover older messages")
+
+(defvar git-commit-usage-message git-commit-default-usage-message
+  "Message displayed when editing a commit message.
+When this is nil, then `with-editor-usage-message' is displayed
+instead.  One of these messages has to be displayed; otherwise
+the user gets to see the message displayed by `server-execute'.
+That message is misleading and because we cannot prevent it from
+being displayed, we have to immediately show another message to
+prevent the user from seeing it.")
+
+(defvar git-commit-header-line-format nil
+  "If non-nil, header line format used by `git-commit-mode'.
+Used as the local value of `header-line-format', in buffer using
+`git-commit-mode'.  If it is a string, then it is passed through
+`substitute-command-keys' first.  A useful setting may be:
+  (setq git-commit-header-line-format git-commit-default-usage-message)
+  (setq git-commit-usage-message nil) ; show a shorter message")
 
 (defun git-commit-setup ()
   (when (fboundp 'magit-toplevel)
@@ -529,9 +544,8 @@ to recover older messages")
           (git-commit-mode t)
           (with-editor-mode t))
       (normal-mode t)))
-  ;; Show our own message using our hook.
+  ;; Below we instead explicitly show a message.
   (setq with-editor-show-usage nil)
-  (setq with-editor-usage-message git-commit-usage-message)
   (unless with-editor-mode
     ;; Maybe already enabled when using `shell-command' or an Emacs shell.
     (with-editor-mode 1))
@@ -571,6 +585,12 @@ to recover older messages")
       (open-line 1)))
   (with-demoted-errors "Error running git-commit-setup-hook: %S"
     (run-hooks 'git-commit-setup-hook))
+  (when git-commit-usage-message
+    (setq with-editor-usage-message git-commit-usage-message))
+  (with-editor-usage-message)
+  (when-let ((format git-commit-header-line-format))
+    (setq header-line-format
+          (if (stringp format) (substitute-command-keys format) format)))
   (set-buffer-modified-p nil))
 
 (defun git-commit-run-post-finish-hook (previous)
@@ -1109,7 +1129,7 @@ Added to `font-lock-extend-region-functions'."
 (define-derived-mode git-commit-elisp-text-mode text-mode "ElText"
   "Major mode for editing commit messages of elisp projects.
 This is intended for use as `git-commit-major-mode' for projects
-that expect `symbols' to look like this.  I.e. like they look in
+that expect `symbols' to look like this.  I.e., like they look in
 Elisp doc-strings, including this one.  Unlike in doc-strings,
 \"strings\" also look different than the other text."
   (setq font-lock-defaults '(git-commit-elisp-text-mode-keywords)))

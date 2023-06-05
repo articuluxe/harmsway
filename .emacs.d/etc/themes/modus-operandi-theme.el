@@ -228,6 +228,13 @@ which corresponds to a minimum contrast in relative luminance of
       (underline-warning yellow-intense)
       (underline-note cyan-intense)
 
+      (bg-prominent-err bg-red-intense)
+      (fg-prominent-err fg-main)
+      (bg-prominent-warning bg-yellow-intense)
+      (fg-prominent-warning fg-main)
+      (bg-prominent-note bg-cyan-intense)
+      (fg-prominent-note fg-main)
+
 ;;;; Code mappings
 
       (builtin magenta-warmer)
@@ -274,7 +281,7 @@ which corresponds to a minimum contrast in relative luminance of
       (date-common cyan)
       (date-deadline red)
       (date-event fg-alt)
-      (date-holiday magenta)
+      (date-holiday red-cooler)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled yellow-warmer)
@@ -313,6 +320,15 @@ which corresponds to a minimum contrast in relative luminance of
       (mail-subject magenta-warmer)
       (mail-other magenta-faint)
 
+;;;; Mark mappings
+
+      (bg-mark-delete bg-red-subtle)
+      (fg-mark-delete red)
+      (bg-mark-select bg-cyan-subtle)
+      (fg-mark-select cyan)
+      (bg-mark-other bg-yellow-subtle)
+      (fg-mark-other yellow)
+
 ;;;; Prompt mappings
 
       (fg-prompt cyan-cooler)
@@ -342,6 +358,12 @@ which corresponds to a minimum contrast in relative luminance of
       (rainbow-6 green-intense)
       (rainbow-7 blue-warmer)
       (rainbow-8 magenta-warmer)
+
+;;;; Space mappings
+
+      (bg-space unspecified)
+      (fg-space border)
+      (bg-space-err bg-red-intense)
 
 ;;;; Heading mappings
 

@@ -77,9 +77,9 @@ standard).")
       (green-cooler    "#00663f")
       (green-faint     "#2a5045")
       (green-intense   "#008900")
-      (yellow          "#7b5000")
-      (yellow-warmer   "#884900")
-      (yellow-cooler   "#7a4f2f")
+      (yellow          "#695500")
+      (yellow-warmer   "#973300")
+      (yellow-cooler   "#77492f")
       (yellow-faint    "#624416")
       (yellow-intense  "#808000")
       (blue            "#0031a9")
@@ -223,17 +223,24 @@ standard).")
       (identifier yellow-faint)
 
       (err yellow-warmer)
-      (warning yellow-cooler)
+      (warning yellow)
       (info blue)
 
       (underline-err yellow-intense)
       (underline-warning magenta-faint)
       (underline-note cyan)
 
+      (bg-prominent-err bg-yellow-intense)
+      (fg-prominent-err fg-main)
+      (bg-prominent-warning bg-magenta-intense)
+      (fg-prominent-warning fg-main)
+      (bg-prominent-note bg-cyan-intense)
+      (fg-prominent-note fg-main)
+
 ;;;; Code mappings
 
       (builtin magenta-warmer)
-      (comment yellow)
+      (comment yellow-cooler)
       (constant blue-cooler)
       (docstring green-faint)
       (docmarkup magenta-faint)
@@ -308,12 +315,21 @@ standard).")
 
       (mail-cite-0 blue-warmer)
       (mail-cite-1 yellow)
-      (mail-cite-2 blue-cooler)
+      (mail-cite-2 cyan-faint)
       (mail-cite-3 yellow-faint)
       (mail-part blue)
       (mail-recipient blue)
-      (mail-subject yellow-warmer)
+      (mail-subject yellow-cooler)
       (mail-other cyan-faint)
+
+;;;; Mark mappings
+
+      (bg-mark-delete bg-yellow-subtle)
+      (fg-mark-delete yellow)
+      (bg-mark-select bg-cyan-subtle)
+      (fg-mark-select cyan)
+      (bg-mark-other bg-magenta-subtle)
+      (fg-mark-other magenta)
 
 ;;;; Prompt mappings
 
@@ -344,6 +360,12 @@ standard).")
       (rainbow-6 blue-faint)
       (rainbow-7 yellow-faint)
       (rainbow-8 cyan)
+
+;;;; Space mappings
+
+      (bg-space unspecified)
+      (fg-space border)
+      (bg-space-err bg-yellow-intense)
 
 ;;;; Heading mappings
 

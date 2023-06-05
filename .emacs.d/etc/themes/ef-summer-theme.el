@@ -83,12 +83,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#ff7f88")
-      (bg-green    "#86df80")
-      (bg-yellow   "#ffc200")
-      (bg-blue     "#cbcfff")
-      (bg-magenta  "#df8fff")
-      (bg-cyan     "#88ccff")
+      (bg-red-intense     "#ff7f88")
+      (bg-green-intense   "#86df80")
+      (bg-yellow-intense  "#ffc200")
+      (bg-blue-intense    "#cbcfff")
+      (bg-magenta-intense "#df8fff")
+      (bg-cyan-intense    "#88ccff")
 
       (bg-red-subtle      "#ffc3bf")
       (bg-green-subtle    "#b9f2c6")
@@ -201,7 +201,7 @@
       (date-common cyan-cooler)
       (date-deadline red-warmer)
       (date-event fg-alt)
-      (date-holiday cyan-cooler)
+      (date-holiday magenta-warmer)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled yellow)
@@ -231,6 +231,12 @@
       (mail-subject magenta-cooler)
       (mail-other magenta)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 magenta-warmer)
@@ -250,14 +256,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-summer-palette-overrides nil
+  (defcustom ef-summer-palette-overrides nil
     "Overrides for `ef-summer-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-summer ef-summer-palette ef-summer-palette-overrides)
 

@@ -49,7 +49,9 @@
     "disableConcurrentBuilds" "overrideIndexTriggers"
     "skipDefaultCheckout" "nextgroup=jenkinsfileOptionParams" "contained"
     "skipStagesAfterUnstable" "checkoutToSubdirectory" "timeout" "retry"
-    "timestamps" "nextgroup=jenkinsfileOptionParams"))
+    "timestamps" "nextgroup=jenkinsfileOptionParams" "contained"
+    "disableResume" "newContainerPerStage" "preserveStashes" "quietPeriod"
+    "parallelsAlwaysFailFast" "nextgroup=jenkinsfileOptionParams"))
 
 (defvar jenkinsfile-mode--core-step-keywords
   '("checkout" "docker"
@@ -197,7 +199,7 @@
     "writeJSON" "writeMavenPom" "writeProperties" "writeXml" "writeYaml"
     "ws" "xUnitImporter" "xUnitUploader" "xunit" "xldCreatePackage"
     "xldDeploy" "xldPublishPackage" "xlrCreateRelease" "xrayScanBuild"
-    "zip"))
+    "zip" "matrix" "axes" "axis"))
 
 
 (defun jenkinsfile-mode--fetch-keywords-from-jenkinsfile-vim ()
@@ -223,11 +225,11 @@ Run this manually when editing this file to get an updated the list of keywords.
         (erase-buffer)
         (emacs-lisp-mode)
         (insert ";; copy the contents of this buffer into jenkinsfile-mode.el\n\n")
-        (insert (format "(setq jenkinsfile-mode--file-section-keywords '%S)\n\n" file-sections))
-        (insert (format "(setq jenkinsfile-mode--directive-keywords '%S)\n\n" directives))
-        (insert (format "(setq jenkinsfile-mode--option-keywords '%S)\n\n" options))
-        (insert (format "(setq jenkinsfile-mode--core-step-keywords '%S)\n\n" core-steps))
-        (insert (format "(setq jenkinsfile-mode--pipeline-step-keywords '%S)\n\n" pipeline-steps))
+        (insert (format "(defvar jenkinsfile-mode--file-section-keywords\n  '%S)\n\n" file-sections))
+        (insert (format "(defvar jenkinsfile-mode--directive-keywords\n  '%S)\n\n" directives))
+        (insert (format "(defvar jenkinsfile-mode--option-keywords\n  '%S)\n\n" options))
+        (insert (format "(defvar jenkinsfile-mode--core-step-keywords\n  '%S)\n\n" core-steps))
+        (insert (format "(defvar jenkinsfile-mode--pipeline-step-keywords\n  '%S)\n\n" pipeline-steps))
         (fill-region 0 (point)))
       (switch-to-buffer buf))))
 
@@ -300,7 +302,7 @@ Run this manually when editing this file to get an updated the list of keywords.
   (add-hook 'completion-at-point-functions 'jenkinsfile-mode--option-compeletion-at-point nil 'local)
   (add-hook 'completion-at-point-functions 'jenkinsfile-mode--pipeline-step-compeletion-at-point nil 'local)
   (add-hook 'completion-at-point-functions 'jenkinsfile-mode--core-step-compeletion-at-point nil 'local)
-  (setq-local groovy-indent-offset jenkinsfile-mode-indent-offset)
+  (setq groovy-indent-offset jenkinsfile-mode-indent-offset)
   (with-eval-after-load 'company-keywords
     (add-to-list 'company-keywords-alist
                  `(jenkinsfile-mode . ,(append jenkinsfile-mode--file-section-keywords

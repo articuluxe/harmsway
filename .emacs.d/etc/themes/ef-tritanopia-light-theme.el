@@ -86,12 +86,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#ffa2a0")
-      (bg-green    "#8aefef")
-      (bg-yellow   "#ff7f78")
-      (bg-blue     "#a8c8ef")
-      (bg-magenta  "#e09fc0")
-      (bg-cyan     "#7bcfcf")
+      (bg-red-intense     "#ffa2a0")
+      (bg-green-intense   "#8aefef")
+      (bg-yellow-intense  "#ff7f78")
+      (bg-blue-intense    "#a8c8ef")
+      (bg-magenta-intense "#e09fc0")
+      (bg-cyan-intense    "#7bcfcf")
 
       (bg-red-subtle      "#ffcfbf")
       (bg-green-subtle    "#b3fabf")
@@ -204,7 +204,7 @@
       (date-common cyan-cooler)
       (date-deadline red-warmer)
       (date-event fg-alt)
-      (date-holiday cyan-warmer)
+      (date-holiday red-warmer)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled magenta)
@@ -234,6 +234,12 @@
       (mail-subject red-warmer)
       (mail-other magenta-cooler)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 cyan)
@@ -253,14 +259,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-tritanopia-light-palette-overrides nil
+  (defcustom ef-tritanopia-light-palette-overrides nil
     "Overrides for `ef-tritanopia-light-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-tritanopia-light ef-tritanopia-light-palette ef-tritanopia-light-palette-overrides)
 

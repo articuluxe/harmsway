@@ -83,12 +83,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#cd2f30")
-      (bg-green    "#20a020")
-      (bg-yellow   "#9a4f20")
-      (bg-blue     "#3f43af")
-      (bg-magenta  "#b04fcf")
-      (bg-cyan     "#027080")
+      (bg-red-intense     "#cd2f30")
+      (bg-green-intense   "#20a020")
+      (bg-yellow-intense  "#9a4f20")
+      (bg-blue-intense    "#3f43af")
+      (bg-magenta-intense "#b04fcf")
+      (bg-cyan-intense    "#027080")
 
       (bg-red-subtle      "#77002a")
       (bg-green-subtle    "#00422a")
@@ -231,6 +231,12 @@
       (mail-subject green-cooler)
       (mail-other yellow)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 yellow-warmer)
@@ -250,14 +256,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-autumn-palette-overrides nil
+  (defcustom ef-autumn-palette-overrides nil
     "Overrides for `ef-autumn-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-autumn ef-autumn-palette ef-autumn-palette-overrides)
 

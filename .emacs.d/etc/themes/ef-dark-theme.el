@@ -83,12 +83,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#cd2f30")
-      (bg-green    "#20a020")
-      (bg-yellow   "#8f5040")
-      (bg-blue     "#4648d0")
-      (bg-magenta  "#a050cf")
-      (bg-cyan     "#2270be")
+      (bg-red-intense     "#cd2f30")
+      (bg-green-intense   "#20a020")
+      (bg-yellow-intense  "#8f5040")
+      (bg-blue-intense    "#4648d0")
+      (bg-magenta-intense "#a050cf")
+      (bg-cyan-intense    "#2270be")
 
       (bg-red-subtle      "#72002a")
       (bg-green-subtle    "#00422a")
@@ -201,7 +201,7 @@
       (date-common green-cooler)
       (date-deadline red-warmer)
       (date-event fg-alt)
-      (date-holiday green-cooler)
+      (date-holiday magenta)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled yellow)
@@ -231,6 +231,12 @@
       (mail-subject blue-cooler)
       (mail-other cyan)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 green-cooler)
@@ -250,14 +256,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-dark-palette-overrides nil
+  (defcustom ef-dark-palette-overrides nil
     "Overrides for `ef-dark-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-dark ef-dark-palette ef-dark-palette-overrides)
 

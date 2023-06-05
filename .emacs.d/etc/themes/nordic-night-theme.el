@@ -165,7 +165,7 @@ The theme has to be reloaded after changing anything in this group."
    `(match ((,class (:inherit isearch))))
    `(message-cited-text ((,class (:foreground ,nordic-night-green14))))
    `(message-cited-text-1 ((,class (:foreground ,nordic-night-green14))))
-   `(message-cited-text-2 ((,class (:foreground ,nordic-night-blue10))))
+   `(message-cited-text-2 ((,class (:foreground ,nordic-night-brightblue8))))
    `(message-cited-text-3 ((,class (:foreground ,nordic-night-purple15))))
    `(message-cited-text-4 ((,class (:foreground ,nordic-night-red11))))
    `(message-header-cc ((,class (:foreground ,nordic-night-lapis9))))
@@ -498,7 +498,7 @@ The theme has to be reloaded after changing anything in this group."
 
 ;;; --- Gnus
    `(gnus-cite-1 ((,class (:foreground ,nordic-night-green14))))
-   `(gnus-cite-2 ((,class (:foreground ,nordic-night-blue10))))
+   `(gnus-cite-2 ((,class (:foreground ,nordic-night-brightblue8))))
    `(gnus-cite-3 ((,class (:foreground ,nordic-night-purple15))))
    `(gnus-cite-4 ((,class (:foreground ,nordic-night-red11))))
    `(gnus-cite-5 ((,class (:foreground ,nordic-night-orange12))))

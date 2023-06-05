@@ -28,9 +28,7 @@
             :strong 7)
       (-partition 2)
       (-map (-lambda ((label distance))
-              (list label
-                (ct-iterate background 'ct-edit-lab-l-dec
-                  (fn (> (ct-distance <> background) distance))))))
+              (list label (myron-cdist background distance 'ct-edit-lab-l-dec))))
       (append `((:normal ,background)))
       (-mapcat (-lambda ((label bg)) (list label (myron-grayscale-colors bg))))
       (ht<-plist))))

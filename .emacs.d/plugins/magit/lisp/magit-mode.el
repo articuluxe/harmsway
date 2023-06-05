@@ -231,7 +231,7 @@ and Buffer Variables'."
 
 This affects certain commands such as `magit-show-commit' that
 are suffixes of the diff or log transient prefix commands, but
-only if they are invoked directly, i.e. *not* as a suffix.
+only if they are invoked directly, i.e., *not* as a suffix.
 
 Valid values are:
 
@@ -1202,7 +1202,9 @@ Later, when the buffer is buried, it may be restored by
       (set-window-configuration winconf)
       (when (buffer-live-p buffer)
         (with-current-buffer buffer
-          (setq magit-previous-window-configuration nil))))))
+          (setq magit-previous-window-configuration nil)))
+      (set-buffer (with-selected-window (selected-window)
+                    (current-buffer))))))
 
 ;;; Buffer History
 

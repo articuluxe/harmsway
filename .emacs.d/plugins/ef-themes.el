@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 0.11.0
+;; Version: 1.0.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -51,6 +51,8 @@
   "Colorful and legible themes."
   :group 'faces
   :link '(info-link "(ef-themes) Top")
+  :link '(url-link :tag "Homepage" "https://protesilaos.com/emacs/ef-themes")
+  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/ef-themes-pictures")
   :prefix "ef-themes-"
   :tag "Ef Themes")
 
@@ -322,8 +324,7 @@ Other examples:
               (const :tag "More intense background (also override text color)" accented))
   :link '(info-link "(ef-themes) Style of region highlight"))
 
-;; TODO 2022-12-30: Make the palette overrides a `defcustom'
-(defvar ef-themes-common-palette-overrides nil
+(defcustom ef-themes-common-palette-overrides nil
   "Set palette overrides for all the Ef themes.
 
 Mirror the elements of a theme's palette, overriding their value.
@@ -332,7 +333,15 @@ individual theme overrides are THEME-NAME-palette-overrides.  The
 THEME-NAME is one of the symbols in `ef-themes-collection'.
 
 Individual theme overrides take precedence over these common
-overrides.")
+overrides.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
 ;;; Helpers for user options
 
@@ -596,10 +605,13 @@ Which themes are disabled is determined by the user option
 `ef-themes-disable-other-themes'.
 
 Run the `ef-themes-post-load-hook' as the final step after
-loading the THEME."
+loading the THEME.
+
+Return THEME."
   (ef-themes--disable-themes)
   (load-theme theme :no-confirm)
-  (run-hooks 'ef-themes-post-load-hook))
+  (run-hooks 'ef-themes-post-load-hook)
+  theme)
 
 ;;;###autoload
 (defun ef-themes-select (theme &optional _variant)
@@ -799,6 +811,8 @@ Optional prefix argument MAPPINGS has the same meaning as for
   "Faces defined by the Ef themes."
   :group 'ef-themes
   :link '(info-link "(ef-themes) Top")
+  :link '(url-link :tag "Homepage" "https://protesilaos.com/emacs/ef-themes")
+  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/ef-themes-pictures")
   :prefix "ef-themes-"
   :tag "Ef Themes Faces")
 
@@ -903,7 +917,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(shadow ((,c :foreground ,fg-dim)))
     `(success ((,c :inherit bold :foreground ,info)))
     `(tooltip ((,c :background ,bg-alt :foreground ,fg-intense)))
-    `(trailing-whitespace ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(trailing-whitespace ((,c :background ,bg-red-intense :foreground ,fg-intense)))
     `(warning ((,c :inherit bold :foreground ,warning)))
 ;;;; all-the-icons
     `(all-the-icons-blue ((,c :foreground ,blue-cooler)))
@@ -916,8 +930,8 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(all-the-icons-dmaroon ((,c :foreground ,magenta-faint)))
     `(all-the-icons-dorange ((,c :foreground ,red-faint)))
     `(all-the-icons-dpink ((,c :foreground ,magenta-faint)))
-    `(all-the-icons-dpurple ((,c :foreground ,blue-faint)))
-    `(all-the-icons-dred ((,c :foreground ,red-faint)))
+    `(all-the-icons-dpurple ((,c :foreground ,magenta-cooler)))
+    `(all-the-icons-dred ((,c :foreground ,red)))
     `(all-the-icons-dsilver ((,c :foreground ,cyan-faint)))
     `(all-the-icons-dyellow ((,c :foreground ,yellow-faint)))
     `(all-the-icons-green ((,c :foreground ,green)))
@@ -928,17 +942,17 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(all-the-icons-lorange ((,c :foreground ,red-warmer)))
     `(all-the-icons-lpink ((,c :foreground ,magenta)))
     `(all-the-icons-lpurple ((,c :foreground ,magenta-faint)))
-    `(all-the-icons-lred ((,c :foreground ,red)))
-    `(all-the-icons-lsilver ((,c :foreground ,fg-dim)))
+    `(all-the-icons-lred ((,c :foreground ,red-faint)))
+    `(all-the-icons-lsilver ((,c :foreground "gray50")))
     `(all-the-icons-lyellow ((,c :foreground ,yellow-warmer)))
     `(all-the-icons-maroon ((,c :foreground ,magenta)))
-    `(all-the-icons-orange ((,c :foreground ,red-warmer)))
-    `(all-the-icons-pink ((,c :foreground ,magenta)))
+    `(all-the-icons-orange ((,c :foreground ,yellow-warmer)))
+    `(all-the-icons-pink ((,c :foreground ,magenta-warmer)))
     `(all-the-icons-purple ((,c :foreground ,magenta-cooler)))
-    `(all-the-icons-purple-alt ((,c :foreground ,magenta-cooler)))
-    `(all-the-icons-red ((,c :foreground ,red-warmer)))
+    `(all-the-icons-purple-alt ((,c :foreground ,blue-warmer)))
+    `(all-the-icons-red ((,c :foreground ,red)))
     `(all-the-icons-red-alt ((,c :foreground ,red-cooler)))
-    `(all-the-icons-silver ((,c :foreground ,cyan-faint)))
+    `(all-the-icons-silver ((,c :foreground "gray50")))
     `(all-the-icons-yellow ((,c :foreground ,yellow)))
 ;;;; all-the-icons-dired
     `(all-the-icons-dired-dir-face ((,c :foreground ,accent-0)))
@@ -1007,10 +1021,22 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(calendar-today ((,c :inherit bold :underline t)))
     `(calendar-weekday-header ((,c :foreground ,date-weekday)))
     `(calendar-weekend-header ((,c :foreground ,date-weekend)))
-    `(diary ((,c :background ,bg-dim :foreground ,accent-0)))
-    `(diary-anniversary ((,c :foreground ,accent-1)))
+    `(diary ((,c :foreground ,date-common)))
+    `(diary-anniversary ((,c :foreground ,date-holiday)))
     `(diary-time ((,c :foreground ,date-common)))
-    `(holiday ((,c :background ,bg-dim :foreground ,date-holiday)))
+    `(holiday ((,c :foreground ,date-holiday)))
+;;;; centaur-tabs
+    `(centaur-tabs-active-bar-face ((,c :background ,keybind)))
+    `(centaur-tabs-close-mouse-face ((,c :inherit bold :foreground ,err :underline t)))
+    `(centaur-tabs-close-selected ((,c :inherit centaur-tabs-selected)))
+    `(centaur-tabs-close-unselected ((,c :inherit centaur-tabs-unselected)))
+    `(centaur-tabs-modified-marker-selected ((,c :inherit centaur-tabs-selected)))
+    `(centaur-tabs-modified-marker-unselected ((,c :inherit centaur-tabs-unselected)))
+    `(centaur-tabs-default ((,c :background ,bg-main)))
+    `(centaur-tabs-selected ((,c :inherit bold :box (:line-width -2 :color ,bg-tab-current) :background ,bg-tab-current)))
+    `(centaur-tabs-selected-modified ((,c :inherit (italic centaur-tabs-selected))))
+    `(centaur-tabs-unselected ((,c :box (:line-width -2 :color ,bg-tab-other) :background ,bg-tab-other)))
+    `(centaur-tabs-unselected-modified ((,c :inherit (italic centaur-tabs-unselected))))
 ;;;; cider
     `(cider-deprecated-face ((,c :background ,bg-warning :foreground ,warning)))
     `(cider-enlightened-face ((,c :box ,warning)))
@@ -1045,7 +1071,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(company-echo-common ((,c :inherit bold :foreground ,accent-0)))
     `(company-preview ((,c :background ,bg-dim :foreground ,fg-dim)))
     `(company-preview-common ((,c :inherit company-echo-common)))
-    `(company-preview-search ((,c :background ,bg-yellow :foreground ,fg-intense)))
+    `(company-preview-search ((,c :background ,bg-yellow-intense :foreground ,fg-intense)))
     `(company-scrollbar-bg ((,c :background ,bg-active)))
     `(company-scrollbar-fg ((,c :background ,fg-main)))
     `(company-template-field ((,c :background ,bg-active :foreground ,fg-intense)))
@@ -1228,18 +1254,18 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(doom-modeline-urgent ((,c :inherit bold-italic :foreground ,modeline-err)))
     `(doom-modeline-warning ((,c :inherit bold :foreground ,modeline-warning)))
 ;;;; ediff
-    `(ediff-current-diff-A ((,c :inherit diff-removed)))
-    `(ediff-current-diff-Ancestor ((,c :background ,bg-region))) ; TODO 2022-08-14: Needs review
-    `(ediff-current-diff-B ((,c :inherit diff-added)))
-    `(ediff-current-diff-C ((,c :inherit diff-changed)))
+    `(ediff-current-diff-A ((,c :background ,bg-removed :foreground ,fg-removed)))
+    `(ediff-current-diff-Ancestor ((,c :background ,bg-region)))
+    `(ediff-current-diff-B ((,c :background ,bg-added :foreground ,fg-added)))
+    `(ediff-current-diff-C ((,c :background ,bg-changed :foreground ,fg-changed)))
     `(ediff-even-diff-A ((,c :background ,bg-dim)))
     `(ediff-even-diff-Ancestor ((,c :background ,bg-dim)))
     `(ediff-even-diff-B ((,c :background ,bg-dim)))
     `(ediff-even-diff-C ((,c :background ,bg-dim)))
-    `(ediff-fine-diff-A ((,c :inherit diff-refine-removed)))
-    `(ediff-fine-diff-Ancestor ((,c :inherit diff-refine-cyan)))
-    `(ediff-fine-diff-B ((,c :inherit diff-refine-added)))
-    `(ediff-fine-diff-C ((,c :inherit diff-refine-changed)))
+    `(ediff-fine-diff-A ((,c :background ,bg-removed-refine :foreground ,fg-removed)))
+    `(ediff-fine-diff-Ancestor ((,c :inherit modus-themes-subtle-cyan)))
+    `(ediff-fine-diff-B ((,c :background ,bg-added-refine :foreground ,fg-added)))
+    `(ediff-fine-diff-C ((,c :background ,bg-changed-refine :foreground ,fg-changed)))
     `(ediff-odd-diff-A ((,c :inherit ediff-even-diff-A)))
     `(ediff-odd-diff-Ancestor ((,c :inherit ediff-even-diff-Ancestor)))
     `(ediff-odd-diff-B ((,c :inherit ediff-even-diff-B)))
@@ -1279,6 +1305,9 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(epa-validity-high ((,c :inherit success)))
     `(epa-validity-low ((,c :inherit shadow)))
     `(epa-validity-medium ((,c :foreground ,info)))
+;;;;; ert
+    `(ert-test-result-expected ((,c :background ,bg-info :foreground ,info)))
+    `(ert-test-result-unexpected ((,c :background ,bg-err :foreground ,err)))
 ;;;; eshell
     `(eshell-ls-archive ((,c :foreground ,accent-2)))
     `(eshell-ls-backup ((,c :inherit shadow)))
@@ -1309,12 +1338,16 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(flycheck-info ((,c :inherit ef-themes-underline-info)))
     `(flycheck-warning ((,c :inherit ef-themes-underline-warning)))
 ;;;; flymake
+    `(flymake-end-of-line-diagnostics-face ((,c :inherit italic :height 0.85 :box ,border)))
     `(flymake-error ((,c :inherit ef-themes-underline-error)))
     `(flymake-error-echo ((,c :inherit error)))
+    `(flymake-error-echo-at-eol ((,c :inherit flymake-end-of-line-diagnostics-face :foreground ,err)))
     `(flymake-note ((,c :inherit ef-themes-underline-info)))
     `(flymake-note-echo ((,c :inherit success)))
+    `(flymake-note-echo-at-eol ((,c :inherit flymake-end-of-line-diagnostics-face :foreground ,info)))
     `(flymake-warning ((,c :inherit ef-themes-underline-warning)))
     `(flymake-warning-echo ((,c :inherit warning)))
+    `(flymake-note-echo-at-eol ((,c :inherit flymake-end-of-line-diagnostics-face :foreground ,warning)))
 ;;;; flyspell
     `(flyspell-duplicate ((,c :inherit ef-themes-underline-warning)))
     `(flyspell-incorrect ((,c :inherit ef-themes-underline-error)))
@@ -1463,10 +1496,10 @@ Optional prefix argument MAPPINGS has the same meaning as for
 ;;;; ibuffer
     `(ibuffer-locked-buffer ((,c :foreground ,warning)))
 ;;;; image-dired
-    `(image-dired-thumb-flagged ((,c :background ,err)))
+    `(image-dired-thumb-flagged ((,c :background ,err :box (:line-width -3))))
     `(image-dired-thumb-header-file-name ((,c :inherit bold)))
     `(image-dired-thumb-header-file-size ((,c :foreground ,info)))
-    `(image-dired-thumb-mark ((,c :background ,info)))
+    `(image-dired-thumb-mark ((,c :background ,info :box (:line-width -3))))
 ;;;; info
     `(Info-quoted ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-verbatim))) ; the capitalization is canonical
     `(info-header-node ((,c :inherit (shadow bold))))
@@ -1479,13 +1512,13 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(info-title-3 ((,c :inherit ef-themes-heading-3)))
     `(info-title-4 ((,c :inherit ef-themes-heading-4)))
 ;;;; isearch, occur, and the like
-    `(isearch ((,c :background ,bg-yellow :foreground ,fg-intense)))
-    `(isearch-fail ((,c :background ,bg-red :foreground ,fg-intense)))
-    `(isearch-group-1 ((,c :background ,bg-green :foreground ,fg-intense)))
-    `(isearch-group-2 ((,c :background ,bg-magenta :foreground ,fg-intense)))
-    `(lazy-highlight ((,c :background ,bg-blue :foreground ,fg-intense)))
+    `(isearch ((,c :background ,bg-yellow-intense :foreground ,fg-intense)))
+    `(isearch-fail ((,c :background ,bg-red-intense :foreground ,fg-intense)))
+    `(isearch-group-1 ((,c :background ,bg-green-intense :foreground ,fg-intense)))
+    `(isearch-group-2 ((,c :background ,bg-magenta-intense :foreground ,fg-intense)))
+    `(lazy-highlight ((,c :background ,bg-blue-intense :foreground ,fg-intense)))
     `(match ((,c :background ,bg-warning)))
-    `(query-replace ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(query-replace ((,c :background ,bg-red-intense :foreground ,fg-intense)))
 ;;;; jit-spell
     `(jit-spell-misspelling ((,c :inherit ef-themes-underline-error)))
 ;;;;; jinx
@@ -1715,6 +1748,48 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(mu4e-url-number-face ((,c :inherit shadow)))
     `(mu4e-view-body-face (( )))
     `(mu4e-warning-face ((,c :inherit warning)))
+;;;;; nerd-icons
+    `(nerd-icons-blue ((,c :foreground ,blue-cooler)))
+    `(nerd-icons-blue-alt ((,c :foreground ,blue-warmer)))
+    `(nerd-icons-cyan ((,c :foreground ,cyan)))
+    `(nerd-icons-cyan-alt ((,c :foreground ,cyan-warmer)))
+    `(nerd-icons-dblue ((,c :foreground ,blue-faint)))
+    `(nerd-icons-dcyan ((,c :foreground ,cyan-faint)))
+    `(nerd-icons-dgreen ((,c :foreground ,green-faint)))
+    `(nerd-icons-dmaroon ((,c :foreground ,magenta-faint)))
+    `(nerd-icons-dorange ((,c :foreground ,red-faint)))
+    `(nerd-icons-dpink ((,c :foreground ,magenta-faint)))
+    `(nerd-icons-dpurple ((,c :foreground ,magenta-cooler)))
+    `(nerd-icons-dred ((,c :foreground ,red)))
+    `(nerd-icons-dsilver ((,c :foreground ,cyan-faint)))
+    `(nerd-icons-dyellow ((,c :foreground ,yellow-faint)))
+    `(nerd-icons-green ((,c :foreground ,green)))
+    `(nerd-icons-lblue ((,c :foreground ,blue-cooler)))
+    `(nerd-icons-lcyan ((,c :foreground ,cyan)))
+    `(nerd-icons-lgreen ((,c :foreground ,green-warmer)))
+    `(nerd-icons-lmaroon ((,c :foreground ,magenta-warmer)))
+    `(nerd-icons-lorange ((,c :foreground ,red-warmer)))
+    `(nerd-icons-lpink ((,c :foreground ,magenta)))
+    `(nerd-icons-lpurple ((,c :foreground ,magenta-faint)))
+    `(nerd-icons-lred ((,c :foreground ,red-faint)))
+    `(nerd-icons-lsilver ((,c :foreground "gray50")))
+    `(nerd-icons-lyellow ((,c :foreground ,yellow-warmer)))
+    `(nerd-icons-maroon ((,c :foreground ,magenta)))
+    `(nerd-icons-orange ((,c :foreground ,yellow-warmer)))
+    `(nerd-icons-pink ((,c :foreground ,magenta-warmer)))
+    `(nerd-icons-purple ((,c :foreground ,magenta-cooler)))
+    `(nerd-icons-purple-alt ((,c :foreground ,blue-warmer)))
+    `(nerd-icons-red ((,c :foreground ,red)))
+    `(nerd-icons-red-alt ((,c :foreground ,red-cooler)))
+    `(nerd-icons-silver ((,c :foreground "gray50")))
+    `(nerd-icons-yellow ((,c :foreground ,yellow)))
+;;;; nerd-icons-dired
+    `(nerd-icons-dired-dir-face ((,c :foreground ,accent-0)))
+;;;; nerd-icons-ibuffer
+    `(nerd-icons-ibuffer-dir-face ((,c :foreground ,accent-0)))
+    `(nerd-icons-ibuffer-file-face ((,c :foreground ,name)))
+    `(nerd-icons-ibuffer-mode-face ((,c :foreground ,constant)))
+    `(nerd-icons-ibuffer-size-face ((,c :foreground ,variable)))
 ;;;; neotree
     `(neo-banner-face ((,c :foreground ,accent-0)))
     `(neo-button-face ((,c :inherit button)))
@@ -1948,7 +2023,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(rainbow-delimiters-depth-7-face ((,c :foreground ,rainbow-6)))
     `(rainbow-delimiters-depth-8-face ((,c :foreground ,rainbow-7)))
     `(rainbow-delimiters-depth-9-face ((,c :foreground ,rainbow-8)))
-    `(rainbow-delimiters-mismatched-face ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(rainbow-delimiters-mismatched-face ((,c :background ,bg-red-intense :foreground ,fg-intense)))
     `(rainbow-delimiters-unmatched-face ((,c :inherit (bold rainbow-delimiters-mismatched-face))))
 ;;;; rcirc
     `(rcirc-bright-nick ((,c :inherit bold :foreground ,fg-intense)))
@@ -1968,10 +2043,10 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(recursion-indicator-general ((,c :foreground ,modeline-err)))
     `(recursion-indicator-minibuffer ((,c :foreground ,modeline-info)))
 ;;;; regexp-builder (re-builder)
-    `(reb-match-0 ((,c :background ,bg-cyan :foreground ,fg-intense)))
-    `(reb-match-1 ((,c :background ,bg-red :foreground ,fg-intense)))
-    `(reb-match-2 ((,c :background ,bg-magenta :foreground ,fg-intense)))
-    `(reb-match-3 ((,c :background ,bg-yellow :foreground ,fg-intense)))
+    `(reb-match-0 ((,c :background ,bg-cyan-intense :foreground ,fg-intense)))
+    `(reb-match-1 ((,c :background ,bg-red-intense :foreground ,fg-intense)))
+    `(reb-match-2 ((,c :background ,bg-magenta-intense :foreground ,fg-intense)))
+    `(reb-match-3 ((,c :background ,bg-yellow-intense :foreground ,fg-intense)))
     `(reb-regexp-grouping-backslash ((,c :inherit font-lock-regexp-grouping-backslash)))
     `(reb-regexp-grouping-construct ((,c :inherit font-lock-regexp-grouping-construct)))
 ;;;;; rst-mode
@@ -1995,7 +2070,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
 ;;;; show-paren-mode
     `(show-paren-match ((,c :background ,bg-paren :foreground ,fg-intense)))
     `(show-paren-match-expression ((,c :background ,bg-alt)))
-    `(show-paren-mismatch ((,c :background ,bg-red :foreground ,fg-intense)))
+    `(show-paren-mismatch ((,c :background ,bg-red-intense :foreground ,fg-intense)))
 ;;;; shell-script-mode (sh-mode)
     `(sh-heredoc ((,c :inherit font-lock-doc-face)))
     `(sh-quoted-exec ((,c :inherit font-lock-builtin-face)))
@@ -2017,19 +2092,19 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(smerge-refined-removed ((,c :inherit diff-refine-removed)))
     `(smerge-upper ((,c :inherit diff-removed)))
 ;;;; tab-bar-mode
-    `(tab-bar ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-alt)))
-    `(tab-bar-tab-group-current ((,c :inherit bold :background ,bg-main :box (:line-width -2 :color ,bg-main) :foreground ,fg-alt)))
-    `(tab-bar-tab-group-inactive ((,c :background ,bg-alt :box (:line-width -2 :color ,bg-alt) :foreground ,fg-alt)))
-    `(tab-bar-tab ((,c :inherit bold :box (:line-width -2 :color ,bg-main) :background ,bg-main)))
-    `(tab-bar-tab-inactive ((,c :box (:line-width -2 :color ,bg-active) :background ,bg-active)))
+    `(tab-bar ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar)))
+    `(tab-bar-tab-group-current ((,c :inherit bold :background ,bg-tab-current :box (:line-width -2 :color ,bg-tab-current) :foreground ,fg-alt)))
+    `(tab-bar-tab-group-inactive ((,c :background ,bg-tab-bar :box (:line-width -2 :color ,bg-tab-bar) :foreground ,fg-alt)))
+    `(tab-bar-tab ((,c :inherit bold :box (:line-width -2 :color ,bg-tab-current) :background ,bg-tab-current)))
+    `(tab-bar-tab-inactive ((,c :box (:line-width -2 :color ,bg-tab-other) :background ,bg-tab-other)))
     `(tab-bar-tab-ungrouped ((,c :inherit tab-bar-tab-inactive)))
 ;;;; tab-line-mode
-    `(tab-line ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-alt :height 0.95)))
+    `(tab-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar :height 0.95)))
     `(tab-line-close-highlight ((,c :foreground ,err)))
     `(tab-line-highlight ((,c :inherit highlight)))
     `(tab-line-tab (( )))
-    `(tab-line-tab-current ((,c :inherit bold :box (:line-width -2 :color ,bg-main) :background ,bg-main)))
-    `(tab-line-tab-inactive ((,c :box (:line-width -2 :color ,bg-active) :background ,bg-active)))
+    `(tab-line-tab-current ((,c :inherit bold :box (:line-width -2 :color ,bg-tab-current) :background ,bg-tab-current)))
+    `(tab-line-tab-inactive ((,c :box (:line-width -2 :color ,bg-tab-other) :background ,bg-tab-other)))
     `(tab-line-tab-inactive-alternate ((,c :inherit tab-line-tab-inactive :foreground ,fg-alt)))
     `(tab-line-tab-modified ((,c :foreground ,warning)))
 ;;;; tempel
@@ -2120,6 +2195,23 @@ Optional prefix argument MAPPINGS has the same meaning as for
 ;;;; vertico
     `(vertico-current ((,c :background ,bg-completion)))
     `(vertico-group-title ((,c :inherit bold :foreground ,name)))
+;;;;; vterm
+    `(vterm-color-black ((,c :background "gray35" :foreground "black")))
+    `(vterm-color-blue ((,c :background ,blue-warmer :foreground ,blue)))
+    `(vterm-color-cyan ((,c :background ,cyan-cooler :foreground ,cyan)))
+    `(vterm-color-default ((,c :background ,bg-main :foreground ,fg-main)))
+    `(vterm-color-green ((,c :background ,green-cooler :foreground ,green)))
+    `(vterm-color-inverse-video ((,c :background ,bg-main :inverse-video t)))
+    `(vterm-color-magenta ((,c :background ,magenta-cooler :foreground ,magenta)))
+    `(vterm-color-red ((,c :background ,red-warmer :foreground ,red)))
+    `(vterm-color-underline ((,c :underline t)))
+    `(vterm-color-white ((,c :background "white" :foreground "gray65")))
+    `(vterm-color-yellow ((,c :background ,yellow-warmer :foreground ,yellow)))
+;;;; vundo
+    `(vundo-default ((,c :inherit shadow)))
+    `(vundo-highlight ((,c :inherit (bold vundo-node) :foreground ,err)))
+    `(vundo-last-saved ((,c :inherit (bold vundo-node) :foreground ,fg-intense)))
+    `(vundo-saved ((,c :inherit vundo-node :foreground ,fg-intense)))
 ;;;; wgrep
     `(wgrep-delete-face ((,c :inherit warning)))
     `(wgrep-done-face ((,c :background ,bg-info :foreground ,info)))
@@ -2137,7 +2229,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(whitespace-newline ((,c :inherit whitespace-indentation)))
     `(whitespace-space ((,c :inherit whitespace-indentation)))
     `(whitespace-space-after-tab ((,c :inherit whitespace-space-before-tab)))
-    `(whitespace-space-before-tab ((,c :background ,bg-red)))
+    `(whitespace-space-before-tab ((,c :background ,bg-red-intense)))
     `(whitespace-tab ((,c :inherit whitespace-indentation)))
     `(whitespace-trailing ((,c :inherit whitespace-space-before-tab)))
 ;;;; widget

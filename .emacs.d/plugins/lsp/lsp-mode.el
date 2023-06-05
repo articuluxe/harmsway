@@ -183,7 +183,7 @@ As defined by the Language Server Protocol 3.16."
      lsp-lua lsp-markdown lsp-marksman lsp-mint lsp-nginx lsp-nim lsp-nix lsp-magik
      lsp-metals lsp-mssql lsp-ocaml lsp-openscad lsp-pascal lsp-perl lsp-perlnavigator
      lsp-pls lsp-php lsp-pwsh lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms lsp-purescript
-     lsp-r lsp-racket lsp-remark lsp-ruff-lsp lsp-rf lsp-rust lsp-shader lsp-solargraph
+     lsp-r lsp-racket lsp-remark lsp-ruff-lsp lsp-rf lsp-rust lsp-semgrep lsp-shader lsp-solargraph
      lsp-sorbet lsp-sourcekit lsp-sonarlint lsp-tailwindcss lsp-tex lsp-terraform
      lsp-toml lsp-ttcn3 lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-volar
      lsp-vhdl lsp-vimscript lsp-xml lsp-yaml lsp-ruby-lsp lsp-ruby-syntax-tree
@@ -366,6 +366,8 @@ the server has requested that."
     "[/\\\\]\\.venv\\'"
     "[/\\\\]\\.mypy_cache\\'"
     "[/\\\\]\\.pytest_cache\\'"
+    ;; Swift Package Manager
+    "[/\\\\]\\.build\\'"
     ;; Python
     "[/\\\\]__pycache__\\'"
     ;; Autotools output
@@ -2145,6 +2147,11 @@ PARAMS - the data sent from WORKSPACE."
           (function :tag "Other function"))
   :package-version '(lsp-mode . "8.0.0"))
 
+(defcustom lsp-request-while-no-input-may-block nil
+  "Have `lsp-request-while-no-input` block unless `non-essential` is t."
+  :group 'lsp-mode
+  :type 'boolean)
+
 (defun lsp--progress-status ()
   "Returns the status of the progress for the current workspaces."
   (-let ((progress-status
@@ -3310,14 +3317,14 @@ If NO-WAIT is non-nil send the request as notification."
 (cl-defun lsp-request-while-no-input (method params)
   "Send request METHOD with PARAMS and waits until there is no input.
 Return same value as `lsp--while-no-input' and respecting `non-essential'."
-  (if non-essential
-    (let* ((send-time (float-time))
-           ;; max time by which we must get a response
-           (expected-time
-            (and
-             lsp-response-timeout
-             (+ send-time lsp-response-timeout)))
-           resp-result resp-error done?)
+  (if (or non-essential (not lsp-request-while-no-input-may-block))
+      (let* ((send-time (float-time))
+             ;; max time by which we must get a response
+             (expected-time
+              (and
+               lsp-response-timeout
+               (+ send-time lsp-response-timeout)))
+             resp-result resp-error done?)
         (unwind-protect
             (progn
               (lsp-request-async method params
@@ -6371,7 +6378,10 @@ to check if server wants to apply any workspaceEdits after renamed."
         (funcall (if references? xref-show-xrefs-function xref-show-definitions-function)
                  (-const xrefs)
                  `((window . ,(selected-window))
-                   (display-action . ,display-action))))
+                   (display-action . ,display-action)
+                   ,(if references?
+                        `(auto-jump . ,xref-auto-jump-to-first-xref)
+                      `(auto-jump . ,xref-auto-jump-to-first-definition)))))
     (xref--show-xrefs xrefs display-action)))
 
 (cl-defmethod seq-empty-p ((ht hash-table))

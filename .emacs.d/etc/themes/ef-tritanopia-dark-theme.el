@@ -86,12 +86,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#aa0010")
-      (bg-green    "#5f806f")
-      (bg-yellow   "#950f4f")
-      (bg-blue     "#165f70")
-      (bg-magenta  "#b07faf")
-      (bg-cyan     "#007faa")
+      (bg-red-intense     "#aa0010")
+      (bg-green-intense   "#5f806f")
+      (bg-yellow-intense  "#950f4f")
+      (bg-blue-intense    "#165f70")
+      (bg-magenta-intense "#b07faf")
+      (bg-cyan-intense    "#007faa")
 
       (bg-red-subtle      "#72002a")
       (bg-green-subtle    "#00422a")
@@ -204,7 +204,7 @@
       (date-common cyan-cooler)
       (date-deadline red-warmer)
       (date-event fg-alt)
-      (date-holiday cyan-warmer)
+      (date-holiday red-warmer)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled magenta)
@@ -234,6 +234,12 @@
       (mail-subject red-warmer)
       (mail-other magenta-cooler)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 cyan)
@@ -253,14 +259,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-tritanopia-dark-palette-overrides nil
+  (defcustom ef-tritanopia-dark-palette-overrides nil
     "Overrides for `ef-tritanopia-dark-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-tritanopia-dark ef-tritanopia-dark-palette ef-tritanopia-dark-palette-overrides)
 

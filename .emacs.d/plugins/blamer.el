@@ -5,7 +5,7 @@
 ;; Author: Artur Yaroshenko <artawower@protonmail.com>
 ;; URL: https://github.com/artawower/blamer.el
 ;; Package-Requires: ((emacs "27.1") (posframe "1.1.7"))
-;; Version: 0.7.0
+;; Version: 0.7.2
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -39,9 +39,9 @@
   (require 'subr-x))
 
 (defconst blamer--regexp-info
-  (concat "^(?\\(?1:[^ ]*\\).*[[:blank:]]?\(\\(?2:[^\n]+\\)"
-          "\s\\(?3:[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)"
-          "\s\\(?4:[0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\}\\)")
+  (concat "^\\(?1:[^ ]*\\) \\(?5:[^ ]* \\)?(\\(?2:.*\\)"
+	        "\s\\(?3:[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\}\\)"
+	        "\s\\(?4:[0-9]\\{2\\}:[0-9]\\{2\\}:[0-9]\\{2\\}\\)")
 
   "Regexp for extract data from blame message.
 1 - commit hash
@@ -992,6 +992,11 @@ LOCAL-TYPE is force replacement of current `blamer-type' for handle rendering."
   (remove-hook 'post-command-hook #'blamer--try-render t)
   (remove-hook 'window-state-change-hook #'blamer--try-render t))
 
+(defun blamer--get-user-name ()
+  "Query git config for user name."
+  (when-let ((command-output (apply #'vc-git--run-command-string nil blamer--git-author-cmd)))
+    (replace-regexp-in-string "\n\\'" "" command-output)))
+
 ;;;###autoload
 (define-minor-mode blamer-mode
   "Blamer mode.
@@ -1014,7 +1019,7 @@ will appear after BLAMER-IDLE-TIME.  It works only inside git repo"
     (when (and (not blamer--current-author)
                blamer-author-formatter
                is-git-repo)
-      (setq-local blamer--current-author (replace-regexp-in-string "\n\\'" "" (apply #'vc-git--run-command-string nil blamer--git-author-cmd))))
+      (setq-local blamer--current-author (blamer--get-user-name)))
     (when (and (buffer-file-name) is-git-repo)
       (if blamer-mode
           (progn

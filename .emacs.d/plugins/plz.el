@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.5.4
+;; Version: 0.6-pre
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: comm, network, http
 
@@ -278,6 +278,9 @@ selected result.
 HEADERS may be an alist of extra headers to send with the
 request.
 
+BODY may be a string, a buffer, or a list like `(file FILENAME)'
+to upload a file from disk.
+
 BODY-TYPE may be `text' to send BODY as text, or `binary' to send
 it as binary.
 
@@ -369,7 +372,12 @@ NOQUERY is passed to `make-process', which see."
                                             (cons "--request" (upcase (symbol-name method)))
                                             ;; It appears that this must be the last argument
                                             ;; in order to pass data on the rest of STDIN.
-                                            (cons data-arg "@-")))
+                                            (pcase body
+                                              (`(file ,filename)
+                                               ;; Use `expand-file-name' because curl doesn't
+                                               ;; expand, e.g. "~" into "/home/...".
+                                               (cons "--upload-file" (expand-file-name filename)))
+                                              (_ (cons data-arg "@-")))))
                                      ('delete
                                       (list (cons "--dump-header" "-")
                                             (cons "--request" (upcase (symbol-name method)))))
@@ -678,6 +686,7 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
              ;; Curl exited normally: check HTTP status code.
              (goto-char (point-min))
              (plz--skip-proxy-headers)
+             (while (plz--skip-redirect-headers))
              (pcase (plz--http-status)
                ((and status (guard (<= 200 status 299)))
                 ;; Any 2xx response is considered successful.
@@ -732,6 +741,15 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
         ;; them).
         (unless (re-search-forward "\r\n\r\n" nil t)
           (signal 'plz-http-error '("plz--response: End of proxy headers not found")))))))
+
+(defun plz--skip-redirect-headers ()
+  "Skip HTTP redirect headers in current buffer."
+  (when (and (looking-at plz-http-response-status-line-regexp)
+             (member (string-to-number (match-string 2)) '(301 302 307 308)))
+    ;; Skip redirect headers ("--dump-header" forces redirect headers to be included
+    ;; even when used with "--location").
+    (or (re-search-forward "\r\n\r\n" nil t)
+        (signal 'plz-http-error '("plz--response: End of redirect headers not found")))))
 
 (cl-defun plz--response (&key (decode-p t))
   "Return response structure for HTTP response in current buffer.

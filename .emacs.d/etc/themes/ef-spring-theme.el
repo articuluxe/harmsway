@@ -83,12 +83,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#ff8f88")
-      (bg-green    "#6fdf30")
-      (bg-yellow   "#efcf00")
-      (bg-blue     "#afdfff")
-      (bg-magenta  "#df8fff")
-      (bg-cyan     "#88cfe0")
+      (bg-red-intense     "#ff8f88")
+      (bg-green-intense   "#6fdf30")
+      (bg-yellow-intense  "#efcf00")
+      (bg-blue-intense    "#afdfff")
+      (bg-magenta-intense "#df8fff")
+      (bg-cyan-intense    "#88cfe0")
 
       (bg-red-subtle      "#ffcfbf")
       (bg-green-subtle    "#afffbf")
@@ -201,7 +201,7 @@
       (date-common cyan)
       (date-deadline red-warmer)
       (date-event fg-alt)
-      (date-holiday blue)
+      (date-holiday magenta-warmer)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled yellow)
@@ -231,6 +231,12 @@
       (mail-subject cyan)
       (mail-other cyan-cooler)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 red-cooler)
@@ -250,14 +256,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-spring-palette-overrides nil
+  (defcustom ef-spring-palette-overrides nil
     "Overrides for `ef-spring-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-spring ef-spring-palette ef-spring-palette-overrides)
 

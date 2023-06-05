@@ -468,7 +468,7 @@ points at it) otherwise."
         (if rebase
             (let ((magit--rebase-published-symbol 'edit-published))
               (magit-rebase-edit-commit rev (magit-rebase-arguments)))
-          (magit-checkout (or (magit-rev-branch rev) rev)))
+          (magit--checkout (or (magit-rev-branch rev) rev)))
         (unless (and buffer-file-name
                      (file-equal-p file buffer-file-name))
           (let ((blame-type (and magit-blame-mode magit-blame-type)))
@@ -684,8 +684,8 @@ stack.
 
 When reading the revision from the minibuffer, then it might not
 be possible to guess the correct repository.  When this command
-is called inside a repository (e.g. while composing a commit
-message), then that repository is used.  Otherwise (e.g. while
+is called inside a repository (e.g., while composing a commit
+message), then that repository is used.  Otherwise (e.g., while
 composing an email) then the repository recorded for the top
 element of the stack is used (even though we insert another
 revision).  If not called inside a repository and with an empty
@@ -859,7 +859,7 @@ abbreviated revision to the `kill-ring' and the
 The buffer is displayed using `magit-display-buffer', which see."
   (interactive (list (magit--read-repository-buffer
                       "Display magit buffer: ")))
-  (magit-display-buffer buffer))
+  (magit-display-buffer (get-buffer buffer)))
 
 ;;;###autoload
 (defun magit-switch-to-repository-buffer (buffer)

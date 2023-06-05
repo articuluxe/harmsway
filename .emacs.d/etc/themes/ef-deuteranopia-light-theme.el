@@ -86,12 +86,12 @@
 
 ;;; Basic hues for background values
 
-      (bg-red      "#cac200")
-      (bg-green    "#9aaf80")
-      (bg-yellow   "#fac200")
-      (bg-blue     "#cbcfff")
-      (bg-magenta  "#3fbfff")
-      (bg-cyan     "#98e8ff")
+      (bg-red-intense     "#cac200")
+      (bg-green-intense   "#9aaf80")
+      (bg-yellow-intense  "#fac200")
+      (bg-blue-intense    "#cbcfff")
+      (bg-magenta-intense "#3fbfff")
+      (bg-cyan-intense    "#98e8ff")
 
       (bg-red-subtle      "#ffcfbf")
       (bg-green-subtle    "#afffbf")
@@ -234,6 +234,12 @@
       (mail-subject blue-cooler)
       (mail-other cyan)
 
+;;;; Tab mappings
+
+      (bg-tab-bar      bg-alt)
+      (bg-tab-current  bg-main)
+      (bg-tab-other    bg-active)
+
 ;;;; Rainbow mappings
 
       (rainbow-0 blue)
@@ -253,14 +259,22 @@ Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-  (defvar ef-deuteranopia-light-palette-overrides nil
+  (defcustom ef-deuteranopia-light-palette-overrides nil
     "Overrides for `ef-deuteranopia-light-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
 
 For overrides that are shared across all of the Ef themes,
-refer to `ef-themes-common-palette-overrides'.")
+refer to `ef-themes-common-palette-overrides'.
+
+To preview the palette entries, use `ef-themes-preview-colors' or
+`ef-themes-preview-colors-current' (read the documentation for
+further details)."
+  :group 'ef-themes
+  :package-version '(ef-themes . "1.0.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :link '(info-link "(ef-themes) Palette overrides"))
 
   (ef-themes-theme ef-deuteranopia-light ef-deuteranopia-light-palette ef-deuteranopia-light-palette-overrides)
 
