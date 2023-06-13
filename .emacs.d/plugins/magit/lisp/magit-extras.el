@@ -298,8 +298,7 @@ for a repository."
   "Open FILE with `dired-do-async-shell-command'.
 Interactively, open the file at point."
   (interactive (list (or (magit-file-at-point)
-                         (completing-read "Act on file: "
-                                          (magit-list-files)))))
+                         (magit-read-file "Act on file"))))
   (require 'dired-aux)
   (dired-do-async-shell-command
    (dired-read-shell-command "& on %s: " current-prefix-arg (list file))
@@ -883,7 +882,7 @@ The buffer is displayed using `magit-display-buffer', which see."
   (switch-to-buffer-other-frame buffer))
 
 (defun magit--read-repository-buffer (prompt)
-  (if-let ((topdir (magit-toplevel)))
+  (if-let ((topdir (magit-rev-parse-safe "--show-toplevel")))
       (read-buffer
        prompt (magit-get-mode-buffer 'magit-status-mode) t
        (pcase-lambda (`(,_ . ,buf))
@@ -896,7 +895,8 @@ The buffer is displayed using `magit-display-buffer', which see."
                          (and buffer-file-name
                               (string-match-p git-commit-filename-regexp
                                               buffer-file-name)))
-                     (equal magit-buffer-topdir topdir))))))
+                     (equal (magit-rev-parse-safe "--show-toplevel")
+                            topdir))))))
     (user-error "Not inside a Git repository")))
 
 ;;; Miscellaneous

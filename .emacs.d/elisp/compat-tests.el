@@ -2713,6 +2713,11 @@
                  ))
     (should-not (string-match-p regexp-unmatchable str))))
 
+(declare-function dired-get-marked-files "dired")
+(ert-deftest dired-get-marked-files ()
+  (require 'dired)
+  (should-error (compat-call dired-get-marked-files nil nil nil nil t)))
+
 (ert-deftest use-region ()
   (with-temp-buffer
     (insert "abc\ndef\n")
@@ -2869,15 +2874,6 @@
   (should-equal 'result (with-delayed-message (1 "timeout") 'result))
   (should-equal 'result (funcall-with-delayed-message
                          1 "timeout" (lambda () 'result))))
-
-(ert-deftest set-transient-map ()
-  (let (overriding-terminal-local-map)
-    ;; TODO Implement a proper test.  Interactive features like
-    ;; `set-transient-map' are hard to test and Emacs itself is lacking tests.
-    ;; For now only test the calling convention here.
-    (set-transient-map (define-keymap "x" #'ignore))
-    (compat-call set-transient-map (define-keymap "x" #'ignore))
-    (compat-call set-transient-map (define-keymap "x" #'ignore) nil nil "msg" 1)))
 
 (ert-deftest ert-with-temp-file ()
   (ert-with-temp-file file

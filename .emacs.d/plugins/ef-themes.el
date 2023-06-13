@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 1.0.2
+;; Version: 1.1.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -550,7 +550,9 @@ overrides."
 
 (defun ef-themes--annotate-theme (theme)
   "Return completion annotation for THEME."
-  (format " -- %s" (car (split-string (get (intern theme) 'theme-documentation) "\\."))))
+  (let ((doc (get (intern theme) 'theme-documentation)))
+    (when doc ;; A completion annotation function may return nil
+      (concat " -- " (car (split-string doc "\\."))))))
 
 (defvar ef-themes--select-theme-history nil
   "Minibuffer history of `ef-themes--select-prompt'.")
@@ -652,13 +654,13 @@ Run `ef-themes-post-load-hook' after loading the theme.
 Also see `ef-themes-select-light'.
 
 This command is the same as `ef-themes-select' except it only
-prompts for light themes when called interactively.  Calling it
+prompts for dark themes when called interactively.  Calling it
 from Lisp behaves the same as `ef-themes-select' for the THEME
 argument, meaning that it loads the Ef THEME regardless of
 whether it is light or dark."
   (interactive
    (list
-    (ef-themes--select-prompt "Select light Ef theme: " 'dark)))
+    (ef-themes--select-prompt "Select dark Ef theme: " 'dark)))
   (ef-themes--load-theme theme))
 
 (defun ef-themes--toggle-theme-p ()
@@ -1131,7 +1133,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(custom-group-tag ((,c :inherit bold :foreground ,builtin)))
     `(custom-group-tag-1 ((,c :inherit bold :foreground ,constant)))
     `(custom-variable-tag ((,c :inherit bold :foreground ,variable)))
-;;;;; dashboard
+;;;; dashboard
     `(dashboard-heading ((,c :foreground ,name)))
     `(dashboard-items-face (( ))) ; use the underlying style of all-the-icons
 ;;;; denote
@@ -1305,7 +1307,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(epa-validity-high ((,c :inherit success)))
     `(epa-validity-low ((,c :inherit shadow)))
     `(epa-validity-medium ((,c :foreground ,info)))
-;;;;; ert
+;;;; ert
     `(ert-test-result-expected ((,c :background ,bg-info :foreground ,info)))
     `(ert-test-result-unexpected ((,c :background ,bg-err :foreground ,err)))
 ;;;; eshell
@@ -1377,6 +1379,16 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(git-commit-nonempty-second-line ((,c :background ,bg-err :foreground ,err)))
     `(git-commit-overlong-summary ((,c :background ,bg-warning :foreground ,warning)))
     `(git-commit-summary ((,c :inherit bold :foreground ,accent-0)))
+;;;; git-gutter
+    `(git-gutter:added ((,c :background ,bg-added :foreground ,fg-added)))
+    `(git-gutter:deleted ((,c :background ,bg-removed :foreground ,fg-removed)))
+    `(git-gutter:modified ((,c :background ,bg-changed :foreground ,fg-changed)))
+    `(git-gutter:separator ((,c :inherit success)))
+    `(git-gutter:unchanged ((,c :inherit bold)))
+;;;; git-gutter-fr
+    `(git-gutter-fr:added ((,c :background ,bg-added :foreground ,fg-added)))
+    `(git-gutter-fr:deleted ((,c :background ,bg-removed :foreground ,fg-removed)))
+    `(git-gutter-fr:modified ((,c :background ,bg-changed :foreground ,fg-changed)))
 ;;;; git-rebase
     `(git-rebase-comment-hash ((,c :inherit (bold font-lock-comment-face) :foreground ,identifier)))
     `(git-rebase-comment-heading  ((,c :inherit (bold font-lock-comment-face))))
@@ -1521,7 +1533,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(query-replace ((,c :background ,bg-red-intense :foreground ,fg-intense)))
 ;;;; jit-spell
     `(jit-spell-misspelling ((,c :inherit ef-themes-underline-error)))
-;;;;; jinx
+;;;; jinx
     `(jinx-misspelled ((,c :inherit ef-themes-underline-warning)))
 ;;;; keycast
     `(keycast-command ((,c :inherit bold)))
@@ -1709,6 +1721,14 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(mode-line-emphasis ((,c :inherit bold :foreground ,modeline-info)))
     `(mode-line-highlight ((,c :inherit highlight)))
     `(mode-line-inactive ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-alt :foreground ,fg-dim)))
+;;;; mood-line
+    `(mood-line-modified ((,c :inherit italic)))
+    `(mood-line-status-error ((,c :inherit error)))
+    `(mood-line-status-info ((,c :foreground ,info)))
+    `(mood-line-status-neutral (( )))
+    `(mood-line-status-success ((,c :inherit success)))
+    `(mood-line-status-warning ((,c :inherit warning)))
+    `(mood-line-unimportant ((,c :inherit shadow)))
 ;;;; mu4e
     `(mu4e-attach-number-face ((,c :inherit bold :foreground ,fg-dim)))
     `(mu4e-cited-1-face ((,c :inherit message-cited-text-1)))
@@ -1748,7 +1768,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(mu4e-url-number-face ((,c :inherit shadow)))
     `(mu4e-view-body-face (( )))
     `(mu4e-warning-face ((,c :inherit warning)))
-;;;;; nerd-icons
+;;;; nerd-icons
     `(nerd-icons-blue ((,c :foreground ,blue-cooler)))
     `(nerd-icons-blue-alt ((,c :foreground ,blue-warmer)))
     `(nerd-icons-cyan ((,c :foreground ,cyan)))
@@ -1977,7 +1997,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(package-status-unsigned ((,c :inherit error)))
 ;;;; perspective
     `(persp-selected-face ((,c :inherit mode-line-emphasis)))
-;;;;; proced
+;;;; proced
     `(proced-cpu ((,c :foreground ,keyword)))
     `(proced-emacs-pid ((,c :foreground ,identifier :underline t)))
     `(proced-executable ((,c :foreground ,name)))
@@ -2049,7 +2069,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(reb-match-3 ((,c :background ,bg-yellow-intense :foreground ,fg-intense)))
     `(reb-regexp-grouping-backslash ((,c :inherit font-lock-regexp-grouping-backslash)))
     `(reb-regexp-grouping-construct ((,c :inherit font-lock-regexp-grouping-construct)))
-;;;;; rst-mode
+;;;; rst-mode
     `(rst-level-1 ((,c :inherit ef-themes-heading-1)))
     `(rst-level-2 ((,c :inherit ef-themes-heading-2)))
     `(rst-level-3 ((,c :inherit ef-themes-heading-3)))
@@ -2195,7 +2215,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
 ;;;; vertico
     `(vertico-current ((,c :background ,bg-completion)))
     `(vertico-group-title ((,c :inherit bold :foreground ,name)))
-;;;;; vterm
+;;;; vterm
     `(vterm-color-black ((,c :background "gray35" :foreground "black")))
     `(vterm-color-blue ((,c :background ,blue-warmer :foreground ,blue)))
     `(vterm-color-cyan ((,c :background ,cyan-cooler :foreground ,cyan)))
@@ -2221,17 +2241,17 @@ Optional prefix argument MAPPINGS has the same meaning as for
 ;;;; which-function-mode
     `(which-func ((,c :inherit bold :foreground ,fg-intense)))
 ;;;; whitespace-mode
-    `(whitespace-big-indent ((,c :background ,bg-err :foreground ,err)))
-    `(whitespace-empty ((,c :inherit whitespace-big-indent)))
-    `(whitespace-hspace ((,c :inherit whitespace-indentation)))
-    `(whitespace-indentation ((,c :background ,bg-dim :foreground ,fg-dim)))
-    `(whitespace-line ((,c :background ,bg-dim :foreground ,warning)))
-    `(whitespace-newline ((,c :inherit whitespace-indentation)))
-    `(whitespace-space ((,c :inherit whitespace-indentation)))
-    `(whitespace-space-after-tab ((,c :inherit whitespace-space-before-tab)))
-    `(whitespace-space-before-tab ((,c :background ,bg-red-intense)))
-    `(whitespace-tab ((,c :inherit whitespace-indentation)))
-    `(whitespace-trailing ((,c :inherit whitespace-space-before-tab)))
+    `(whitespace-big-indent ((,c :background ,bg-space-err)))
+    `(whitespace-empty ((,c :inherit modus-themes-intense-magenta)))
+    `(whitespace-hspace ((,c :background ,bg-space :foreground ,fg-space)))
+    `(whitespace-indentation ((,c :background ,bg-space :foreground ,fg-space)))
+    `(whitespace-line ((,c :background ,bg-space :foreground ,warning)))
+    `(whitespace-newline ((,c :background ,bg-space :foreground ,fg-space)))
+    `(whitespace-space ((,c :background ,bg-space :foreground ,fg-space)))
+    `(whitespace-space-after-tab ((,c :inherit modus-themes-subtle-magenta)))
+    `(whitespace-space-before-tab ((,c :inherit modus-themes-subtle-cyan)))
+    `(whitespace-tab ((,c :background ,bg-space :foreground ,fg-space)))
+    `(whitespace-trailing ((,c :background ,bg-space-err)))
 ;;;; widget
     `(widget-button ((,c :inherit bold :foreground ,link)))
     `(widget-button-pressed ((,c :inherit widget-button :foreground ,link-alt)))

@@ -5,7 +5,7 @@
 ;; Title: Nordic-Night Theme
 ;; Author: Ashton Wiersdorf <mail@wiersdorf.dev>
 ;; Created: 2023
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; SPDX-License-Identifier: MIT
 ;; Homepage: https://sr.ht/~ashton314/nordic-night/
@@ -36,7 +36,8 @@ The theme has to be reloaded after changing anything in this group."
 ;;; - Color Constants
 (let ((class '((class color) (min-colors 89)))
       (nordic-night-nearblack    (if (nordic-night--fullcolorp) "#121212" "black"))
-      (nordic-night-lighterblack (if (nordic-night--fullcolorp) "#181818" "black"))
+      (nordic-night-brightblack1 (if (nordic-night--fullcolorp) "#181818" "black"))
+      (nordic-night-brightblack2 (if (nordic-night--fullcolorp) "#202024" "black"))
       (nordic-night-dark0        (if (nordic-night--fullcolorp) "#2E3440" "black"))
       (nordic-night-dark1        (if (nordic-night--fullcolorp) "#3B4252" "black"))
       (nordic-night-dark2        (if (nordic-night--fullcolorp) "#434C5E" "#434C5E"))
@@ -149,12 +150,12 @@ The theme has to be reloaded after changing anything in this group."
    `(custom-state ((,class (:foreground ,nordic-night-green14))))
    `(custom-themed ((,class (:foreground ,nordic-night-brightblue8 :background ,nordic-night-dark2))))
    `(cursor ((,class (:background ,nordic-night-snowy4))))
-   `(fringe ((,class (:foreground ,nordic-night-dark3 :background ,nordic-night-lighterblack))))
+   `(fringe ((,class (:foreground ,nordic-night-dark3 :background ,nordic-night-nearblack))))
    `(file-name-shadow ((,class (:inherit shadow))))
    `(header-line ((,class (:foreground ,nordic-night-snowy4 :background ,nordic-night-dark2))))
    `(help-argument-name ((,class (:foreground ,nordic-night-brightblue8))))
    `(highlight ((,class (:foreground ,nordic-night-brightblue8 :background ,nordic-night-dark2))))
-   `(hl-line ((,class (:background ,nordic-night-lighterblack))))
+   `(hl-line ((,class (:background ,nordic-night-brightblack2))))
    `(info-menu-star ((,class (:foreground ,nordic-night-lapis9))))
    `(isearch ((,class (:foreground ,nordic-night-dark0 :background ,nordic-night-brightblue8))))
    `(isearch-fail ((,class (:foreground ,nordic-night-red11))))
@@ -207,6 +208,7 @@ The theme has to be reloaded after changing anything in this group."
    `(package-status-incompat ((,class (:foreground ,nordic-night-red11))))
    `(package-status-installed ((,class (:foreground ,nordic-night-bluegreen7 :weight bold))))
    `(package-status-unsigned ((,class (:underline ,nordic-night-yellow13))))
+   ;; `(pulse-highlight-start-face ((,class (:background ,nordic-night-yellow13))))
    `(query-replace ((,class (:foreground ,nordic-night-brightblue8 :background ,nordic-night-dark2))))
    `(region ((,class (:extend t :background ,nordic-night-dark0))))
    `(scroll-bar ((,class (:background ,nordic-night-dark3))))
@@ -463,7 +465,7 @@ The theme has to be reloaded after changing anything in this group."
 
 ;;; --- Corfu
    `(corfu-border ((,class (:background ,nordic-night-dark3))))
-   `(corfu-default ((,class (:background ,nordic-night-lighterblack))))
+   `(corfu-default ((,class (:background ,nordic-night-brightblack1))))
 
 ;;; --- diff-hl
    `(diff-hl-change ((,class (:background ,nordic-night-yellow13))))
@@ -573,7 +575,7 @@ The theme has to be reloaded after changing anything in this group."
    `(magit-process-ng ((,class (:foreground ,nordic-night-yellow13 :weight bold))))
    `(magit-process-ok ((,class (:foreground ,nordic-night-green14 :weight bold))))
    `(magit-section-heading ((,class (:foreground ,nordic-night-bluegreen7 :weight bold))))
-   `(magit-section-highlight ((,class (:background ,nordic-night-lighterblack))))
+   `(magit-section-highlight ((,class (:background ,nordic-night-brightblack1))))
 
 ;;; --- Minimap
    `(minimap-active-region-background ((,class (:background ,nordic-night-dark0))))
@@ -582,6 +584,7 @@ The theme has to be reloaded after changing anything in this group."
    `(mu4e-header-marks-face ((,class (:foreground ,nordic-night-lapis9))))
    `(mu4e-title-face ((,class (:foreground ,nordic-night-brightblue8))))
    `(mu4e-header-key-face ((,class (:foreground ,nordic-night-brightblue8))))
+   `(mu4e-related-face ((,class (:foreground ,nordic-night-lessdark3-1 :slant italic))))
    `(mu4e-highlight-face ((,class (:highlight))))
    `(mu4e-flagged-face ((,class (:foreground ,nordic-night-yellow13))))
    `(mu4e-unread-face ((,class (:foreground ,nordic-night-green14 :weight bold))))
@@ -619,7 +622,10 @@ The theme has to be reloaded after changing anything in this group."
    `(neo-vc-user-face ((,class (:foreground ,nordic-night-snowy4))))
 
 ;;; --- Cider
-   `(cider-result-overlay-face ((t (:background unspecified))))
+   `(cider-result-overlay-face ((,class (:background unspecified))))
+
+;;; --- Olivetti
+   `(olivetti-fringe ((,class (:background ,nordic-night-brightblack1))))
 
 ;;; --- Org
    `(org-level-1 ((,class (:foreground ,nordic-night-brightblue8 :weight extra-bold))))
@@ -694,7 +700,11 @@ The theme has to be reloaded after changing anything in this group."
    `(ivy-remote ((,class (:foreground ,nordic-night-green14))))
 
 ;;; --- perspective
-   `(persp-selected-face ((,class (:foreground ,nordic-night-brightblue8 :weight bold))))))
+   `(persp-selected-face ((,class (:foreground ,nordic-night-brightblue8 :weight bold))))
+
+;;; --- xref
+   `(xref-match ((,class (:background ,nordic-night-lessdark3-1 :inherit nil))))
+   ))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)
