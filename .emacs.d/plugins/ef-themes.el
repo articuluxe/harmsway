@@ -63,6 +63,7 @@
     ef-day
     ef-deuteranopia-light
     ef-duo-light
+    ef-elea-light
     ef-frost
     ef-kassio
     ef-light
@@ -79,6 +80,7 @@
     ef-dark
     ef-deuteranopia-dark
     ef-duo-dark
+    ef-elea-dark
     ef-night
     ef-symbiosis
     ef-trio-dark
@@ -186,12 +188,12 @@ stylistic combinations, followed by a presentation of all
 available properties:
 
     (setq ef-themes-headings
-          (quote ((1 . (light variable-pitch 1.5))
-                  (2 . (regular 1.3))
-                  (3 . (1.1))
-                  (agenda-date . (1.3))
-                  (agenda-structure . (variable-pitch light 1.8))
-                  (t . (variable-pitch)))))
+          (quote ((1 light variable-pitch 1.5)
+                  (2 regular 1.3)
+                  (3 1.1)
+                  (agenda-date 1.3)
+                  (agenda-structure variable-pitch light 1.8)
+                  (t variable-pitch))))
 
 By default (a nil value for this variable), all headings have a
 bold typographic weight, a font family that is the same as the
@@ -230,23 +232,24 @@ The order in which the properties are set is not significant.
 In user configuration files the form may look like this:
 
     (setq ef-themes-headings
-          (quote ((1 . (light variable-pitch 1.5))
-                  (2 . (regular 1.3))
-                  (3 . (1.1))
-                  (t . (variable-pitch)))))
+          (quote ((1 light variable-pitch 1.5)
+                  (2 regular 1.3)
+                  (3 1.1)
+                  (t variable-pitch))))
 
 When defining the styles per heading level, it is possible to
-pass a non-nil value (t) instead of a list of properties.  This
-will retain the original aesthetic for that level.  For example:
+pass a non-nil non-list value (e.g. t) instead of a list of
+properties.  This will retain the original aesthetic for that
+level.  For example:
 
     (setq ef-themes-headings
           (quote ((1 . t)           ; keep the default style
-                  (2 . (variable-pitch 1.2))
-                  (t . (variable-pitch))))) ; style for all other headings
+                  (2 variable-pitch 1.2)
+                  (t variable-pitch)))) ; style for all other headings
 
     (setq ef-themes-headings
-          (quote ((1 . (variable-pitch 1.6))
-                  (2 . (1.3))
+          (quote ((1 variable-pitch 1.6)
+                  (2 1.3)
                   (t . t)))) ; default style for all other levels"
   :group 'ef-themes
   :package-version '(ef-themes . "0.10.0")
@@ -2240,6 +2243,15 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(wgrep-reject-face ((,c :background ,bg-err :foreground ,err)))
 ;;;; which-function-mode
     `(which-func ((,c :inherit bold :foreground ,fg-intense)))
+;;;; which-key
+    `(which-key-command-description-face ((,c :foreground ,fg-main)))
+    `(which-key-group-description-face ((,c :foreground ,keyword)))
+    `(which-key-highlighted-command-face ((,c :foreground ,warning :underline t)))
+    `(which-key-key-face ((,c :inherit ef-themes-key-binding)))
+    `(which-key-local-map-description-face ((,c :foreground ,fg-main)))
+    `(which-key-note-face ((,c :inherit shadow)))
+    `(which-key-separator-face ((,c :inherit shadow)))
+    `(which-key-special-key-face ((,c :inherit error)))
 ;;;; whitespace-mode
     `(whitespace-big-indent ((,c :background ,bg-space-err)))
     `(whitespace-empty ((,c :inherit modus-themes-intense-magenta)))

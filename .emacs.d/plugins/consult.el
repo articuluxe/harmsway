@@ -156,13 +156,14 @@ of the line after the prompt."
 nil shows all `custom-available-themes'."
   :type '(repeat (choice symbol regexp)))
 
-(defcustom consult-after-jump-hook '(recenter)
+(defcustom consult-after-jump-hook (list #'consult--maybe-recenter)
   "Function called after jumping to a location.
 
-Commonly used functions for this hook are `recenter' and
-`reposition-window'.  You may want to add a function which pulses the
-current line, e.g., `pulse-momentary-highlight-one-line' is supported on
-Emacs 28 and newer.  The hook called during preview and for the jump
+Commonly used functions for this hook are
+`consult--maybe-recenter', `recenter' and `reposition-window'.
+You may want to add a function which pulses the current line,
+e.g., `pulse-momentary-highlight-one-line' is supported on Emacs
+28 and newer.  The hook called during preview and for the jump
 after selection."
   :type 'hook)
 
@@ -556,6 +557,11 @@ We use invalid characters outside the Unicode range.")
 
 ;;;; Miscellaneous helper functions
 
+(defun consult--maybe-recenter ()
+  "Maybe recenter current window if point is outside of visible region."
+  (when (or (< (point) (window-start)) (> (point) (window-end nil t)))
+    (recenter)))
+
 (defun consult--key-parse (key)
   "Parse KEY or signal error if invalid."
   (unless (key-valid-p key)
@@ -928,7 +934,7 @@ Also temporarily increase the GC limit via `consult--with-increased-gc'."
           ;; Location data might be invalid by now!
           (ignore-errors
             (forward-line (1- line))
-            (forward-char column))
+            (goto-char (min (+ (point) column) (pos-eol))))
           (point-marker))))))
 
 (defun consult--line-prefix (&optional curr-line)
@@ -1451,7 +1457,7 @@ See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
       restore)))
 
 (defun consult--jump-1 (pos)
-  "Go to POS and recenter."
+  "Go to POS, switch buffer and widen if necessary."
   (if (and (markerp pos) (not (marker-buffer pos)))
       ;; Only print a message, no error in order to not mess
       ;; with the minibuffer update hook.
@@ -1466,7 +1472,9 @@ See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
       (goto-char pos))))
 
 (defun consult--jump (pos)
-  "Push current position to mark ring, go to POS and recenter."
+  "Jump to POS.
+First push current position to mark ring, then move to new
+position and run `consult-after-jump-hook'."
   (when pos
     ;; Extract marker from list with with overlay positions, see `consult--line-match'
     (when (consp pos) (setq pos (car pos)))
@@ -3628,31 +3636,31 @@ INITIAL is the initial input."
 (defun consult--goto-line-position (str msg)
   "Transform input STR to line number.
 Print an error message with MSG function."
-  (if-let (line (and str
-                     (string-match-p "\\`[[:digit:]]+\\'" str)
-                     (string-to-number str)))
-      (let ((pos (save-excursion
-                   (save-restriction
-                     (when consult-line-numbers-widen
-                       (widen))
-                     (goto-char (point-min))
-                     (forward-line (1- line))
-                     (point)))))
-        (if (consult--in-range-p pos)
-            pos
-          (funcall msg "Line number out of range.")
-          nil))
-    (when (and str (not (equal str "")))
-      (funcall msg "Please enter a number."))
-    nil))
+  (save-match-data
+    (if (and str (string-match "\\`\\([[:digit:]]+\\):?\\([[:digit:]]*\\)\\'" str))
+        (let ((line (string-to-number (match-string 1 str)))
+              (col (string-to-number (match-string 2 str))))
+          (save-excursion
+            (save-restriction
+              (when consult-line-numbers-widen
+                (widen))
+              (goto-char (point-min))
+              (forward-line (1- line))
+              (goto-char (min (+ (point) col) (pos-eol)))
+              (point))))
+      (when (and str (not (equal str "")))
+        (funcall msg "Please enter a number."))
+      nil)))
 
 ;;;###autoload
 (defun consult-goto-line (&optional arg)
   "Read line number and jump to the line with preview.
 
-Jump directly if a line number is given as prefix ARG.  The command respects
-narrowing and the settings `consult-goto-line-numbers' and
-`consult-line-numbers-widen'."
+Enter either a line number to jump to the first column of the
+given line or line:column in order to jump to a specific column.
+Jump directly if a line number is given as prefix ARG.  The
+command respects narrowing and the settings
+`consult-goto-line-numbers' and `consult-line-numbers-widen'."
   (interactive "P")
   (if arg
       (call-interactively #'goto-line)

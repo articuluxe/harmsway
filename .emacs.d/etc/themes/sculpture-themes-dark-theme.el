@@ -53,6 +53,8 @@
 (defface sculpture-themes-dark-head-outline-8        nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-modeline-percent      nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-modeline-line         nil nil :group 'sculpture-themes-dark)
+(defface sculpture-themes-dark-modeline-percent-i    nil nil :group 'sculpture-themes-dark)
+(defface sculpture-themes-dark-modeline-line-i       nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-modeline-mode         nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-modeline-workspace    nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-variable-pitch-italic nil nil :group 'sculpture-themes-dark)
@@ -65,6 +67,10 @@
 (defface sculpture-themes-dark-elfeed-title-7        nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-elfeed-title-8        nil nil :group 'sculpture-themes-dark)
 (defface sculpture-themes-dark-elfeed-star-face      nil nil :group 'sculpture-themes-dark)
+(defface doom-modeline-buffer-active                 nil nil :group 'sculpture-themes-dark)
+(defface doom-modeline-buffer-modified               nil nil :group 'sculpture-themes-dark)
+(defface doom-modeline-buffer-active-i               nil nil :group 'sculpture-themes-dark)
+(defface doom-modeline-buffer-modified-i             nil nil :group 'sculpture-themes-dark)
 
 ;;;; definition
 (deftheme sculpture-themes-dark
@@ -101,7 +107,7 @@
       (ha09 "#080808")
       (ha10 "#2B1B26")
       (ha11 "#3D1717")
-      (ha12 "#34274B")
+      (ha12 "#635B83")
 
       (cs00 "#B2280E")
       (cs01 "#F2D5C3")
@@ -129,14 +135,14 @@
       (ot18 "#96A880")
       (ot19 "#F61E2F")
       (ot20 "#FD8000")
-      ;; (ot21 "#31666A")
-      ;; (ot22 "#31666A")
       (ot21 "#31666A")
       (ot22 "#EEC8B1")
       (ot23 "#E6B18F")
       (ot24 "#ED235C")
       (ot25 "#AD0E3B")
-      )
+      (ot26 "#1C1C0D")
+      (ot27 "#0A0A04")
+      (ot28 "#B22744"))
 ;;;;; definitions
 ;;;;;; base
   (custom-theme-set-faces
@@ -151,9 +157,9 @@
    `(sculpture-themes-dark-variable-pitch-italic      ((,class (:inherit variable-pitch :slant italic))))
    `(fringe                     ((,class (:background ,bg))))
    `(vertical-border            ((,class (:foreground ,bw03))))
-   `(window-divider             ((,class (:foreground ,bw01))))
-   `(window-divider-first-pixel ((,class (:foreground ,bw02))))
-   `(window-divider-last-pixel  ((,class (:foreground ,bw02))))
+   `(window-divider             ((,class (:foreground ,bg))))
+   `(window-divider-first-pixel ((,class (:foreground ,bg))))
+   `(window-divider-last-pixel  ((,class (:foreground ,bg))))
    `(hl-line                    ((,class (:background ,ot06))))
    `(button                     ((,class (:foreground ,fg :background ,ot06 :box (:line-width 2 :color ,bw06 :style released-button)))))
 
@@ -164,7 +170,8 @@
    `(menu                 ((,class (:foreground ,fg :background ,bg))))
    `(minibuffer-prompt    ((,class (:foreground ,fg :slant italic))))
    `(read-multiple-choice ((,class (:foreground ,fg :slant italic))))
-   `(region               ((,class (:background ,bw02))))
+   `(region               ((,class (:background ,ot26))))
+   ;; `(region               ((,class (:background ,bw02))))
    `(secondary-selection  ((,class (:background ,ot13))))
    `(shadow               ((,class (:foreground ,bw11))))
    `(success              ((,class (:foreground ,ot02))))
@@ -191,30 +198,51 @@
    `(font-lock-keyword-face              ((,class (:foreground ,ot04 :inherit (bold)))))
    `(font-lock-string-face               ((,class (:foreground ,ha00 :background ,bg))))
    `(font-lock-type-face                 ((,class (:foreground ,ha07))))
-   `(font-lock-variable-name-face        ((,class (:foreground ,cs01))))
+   `(font-lock-variable-name-face        ((,class (:foreground ,ot04))))
+   `(font-lock-variable-use-face         ((,class (:foreground ,ot01))))
+   `(font-lock-property-name-face        ((,class (:foreground ,ot08))))
+   `(font-lock-property-use-face         ((,class (:foreground ,ot07))))
+   `(font-lock-punctuation-face          ((,class (:foreground ,ot22))))
+   `(font-lock-misc-punctuation-face     ((,class (:foreground ,ot23))))
+   `(font-lock-escape-face               ((,class (:foreground ,cs00))))
+   `(font-lock-regexp-face               ((,class (:foreground ,ot28))))
+   `(font-lock-bracket-face              ((,class (:inherit font-lock-builtin-face))))
+   `(font-lock-operator-face             ((,class (:foreground ,ot19))))
+   `(font-lock-delimiter-face            ((,class (:foreground ,ot22))))
    `(font-lock-doc-face                  ((,class (:foreground ,ot19))))
+   `(font-lock-doc-markup-face           ((,class (:foreground ,ot24))))
    `(font-lock-warning-face              ((,class (:foreground ,cs00))))
    `(font-lock-preprocessor-face         ((,class (:background ,ha01))))
    `(font-lock-negation-char-face        ((,class (:foreground ,ha04))))
-   `(font-lock-regexp-grouping-construct ((,class (:foreground ,cs01))))
-   `(font-lock-regexp-grouping-backslash ((,class (:foreground ,cs01))))
+   `(font-lock-number-face               ((,class (:inherit highlight-numbers-number))))
+   `(font-lock-regexp-grouping-construct ((,class (:foreground ,ot10))))
+   `(font-lock-regexp-grouping-backslash ((,class (:foreground ,ot19))))
 
 ;;;;;; Header line and mode line
-   `(mode-line                  ((,class (:foreground ,cs01 :background ,bw00 :box (:line-width 1 :color ,bw04)))))
-   `(mode-line-buffer-id        ((,class (:foreground ,ot05 :background ,bw00))))
-   `(mode-line-emphasis         ((,class (:foreground ,ha05 :background ,bw00))))
-   `(mode-line-highlight        ((,class (:foreground ,ha05 :background ,bw00))))
-   `(mode-line-inactive         ((,class (:foreground ,bw08 :background ,bw00 :box (:line-width 1 :color ,bw00)))))
-   `(header-line                ((,class (:inherit mode-line))))
-   `(header-line-highlight      ((,class (:inherit mode-line-highlight))))
+   `(mode-line                  ((,class (:inherit variable-pitch :foreground ,cs01 :background ,bw00))))
+   `(mode-line-buffer-id        ((,class (:inherit variable-pitch :foreground ,ot05 :background ,bw00))))
+   `(mode-line-emphasis         ((,class (:inherit variable-pitch :foreground ,ha05 :background ,bw00))))
+   `(mode-line-highlight        ((,class (:inherit variable-pitch :foreground ,ha05 :background ,bw00))))
+   `(mode-line-inactive         ((,class (:inherit variable-pitch :foreground ,bw08 :background ,bw00 :box (:line-width 1 :color ,bw00)))))
+   `(header-line                ((,class (:inherit (variable-pitch mode-line)))))
+   `(header-line-highlight      ((,class (:inherit (variable-pitch mode-line-highlight)))))
+;;;;;;; doom-modeline
+   `(doom-modeline-bar           ((,class (:background ,ot04))))
+   ;; `(doom-modeline-bar-inactive  ((,class (:inherit (variable-pitch mode-line-highlight)))))
 
 ;;;;;;; custom
-   `(sculpture-themes-dark-modeline-line                     ((,class (:inherit (cursor variable-pitch) :foreground ,bg))))
-   `(sculpture-themes-dark-modeline-percent                  ((,class (:inherit (cursor variable-pitch) :foreground ,fg :background ,ot03))))
+   `(sculpture-themes-dark-modeline-line                     ((,class (:inherit (bold variable-pitch) :foreground ,bg :background ,cs02))))
+   `(sculpture-themes-dark-modeline-line-i                   ((,class (:inherit (bold variable-pitch) :foreground ,cs02 :background ,bg))))
+   `(sculpture-themes-dark-modeline-percent                  ((,class (:inherit (bold cursor variable-pitch) :foreground ,fg :background ,ot03))))
+   `(sculpture-themes-dark-modeline-percent-i                ((,class (:inherit (bold cursor variable-pitch) :foreground ,ot03 :background ,bg))))
    `(sculpture-themes-dark-modeline-mode                     ((,class (:inherit variable-pitch :foreground ,ot05 :weight bold))))
    `(sculpture-themes-dark-modeline-workspace                ((,class (:inherit variable-pitch :foreground ,cs02))))
-   `(doom-modeline-highlight           ((,class (:inherit (bold variable-pitch) :foreground ,ot04))))
+   `(doom-modeline-highlight           ((,class (:foreground ,ot04))))
    `(doom-modeline-alternate-highlight ((,class (:inherit variable-pitch :foreground ,cs02))))
+   `(doom-modeline-buffer-active     ((,class (:inherit (bold variable-pitch) :background ,ot04 :foreground ,bg))))
+   `(doom-modeline-buffer-modified   ((,class (:inherit (bold variable-pitch) :background ,ot16 :foreground ,bg))))
+   `(doom-modeline-buffer-active-i   ((,class (:inherit (bold variable-pitch) :foreground ,ot04 :background ,bg))))
+   `(doom-modeline-buffer-modified-i ((,class (:inherit (bold variable-pitch) :foreground ,ot16 :background ,bg))))
 
 ;;;;;; Info mode
    `(Info-quoted       ((,class (:foreground ,ha02 :background ,bg))))
@@ -500,7 +528,7 @@
 ;;;;;; paren
    `(show-paren-match            ((,class (:underline (:color ,ha02 :line-width -1)))))
    `(show-paren-mismatch         ((,class (:underline (:color ,ha11 :line-width -1)))))
-   `(show-paren-match-expression ((,class (:underline (:color ,ot06 :line-width -1)))))
+   `(show-paren-match-expression ((,class (:background ,ot27))))
 
 ;;;;;; shr
    `(shr-link ((,class (:inherit org-link))))
@@ -515,6 +543,17 @@
    `(git-gutter-fr:added    ((,class (:background ,ot04))))
    `(git-gutter-fr:deleted  ((,class (:background ,cs00))))
    `(git-gutter-fr:modified ((,class (:background ,ha04))))
+
+;;;;;; diff-hl
+   `(diff-hl-insert ((,class (:background ,ot04 :foreground ,ot04))))
+   `(diff-hl-delete ((,class (:background ,cs00 :foreground ,cs00))))
+   `(diff-hl-change ((,class (:background ,ha04 :foreground ,ha04))))
+   `(diff-hl-dired-insert ((,class (:background ,ot04 :foreground ,ot04))))
+   `(diff-hl-dired-change ((,class (:background ,cs00 :foreground ,cs00))))
+   `(diff-hl-dired-delete ((,class (:background ,ha04 :foreground ,ha04))))
+   ;; `(diff-hl-dired-ignored ((,class (:inherit ))))
+   ;; `(diff-hl-dired-unknown ((,class (:inherit ))))
+   ;; `(diff-hl-reverted-hunk-highlight ((,class (:inherit ))))
 
 ;;;;;; company
    `(company-tooltip-selection  ((,class (:foreground ,fg :underline (:color ,bw07) :inherit (semibold)))))
@@ -623,6 +662,18 @@
    `(flycheck-posframe-border-face     ((,class (:inherit popup-tip-face))))
    `(flycheck-posframe-warning-face    ((,class (:inherit (popup-tip-face variable-pitch flycheck-warning) :foreground ,ot17))))
    `(flycheck-posframe-background-face ((,class (:inherit popup-tip-face))))
+
+;;;;;; flymake
+   `(flymake-note    ((,class (:underline (:line-width -1 :color ,ot15)))))
+   `(flymake-error   ((,class (:underline (:line-width -1 :color ,ot16)))))
+   `(flymake-warning ((,class (:underline (:line-width -1 :color ,ot17)))))
+   `(flymake-note-echo    ((,class (:inherit flymake-note))))
+   `(flymake-error-echo   ((,class (:inherit flymake-error))))
+   `(flymake-warning-echo ((,class (:inherit flymake-warning))))
+   `(flymake-note-echo-at-eol    ((,class (:inherit flymake-note))))
+   `(flymake-error-echo-at-eol   ((,class (:inherit flymake-error))))
+   `(flymake-warning-echo-at-eol ((,class (:inherit flymake-warning))))
+   `(flymake-end-of-line-diagnostics-face ((,class (:inherit region font-lock-keyword-face))))
 
 ;;;;;; tree-sitter
    `(tree-sitter-hl-face:embedded ((,class (:foreground ,bw13))))
@@ -761,8 +812,23 @@
    ;; `(lsp-face-semhl-deprecated ((,class :inherit )))
    ;; `(lsp-face-rename ((,class :inherit )))
 
+;;;;;; rjsx
+   `(rjsx-tag-bracket-face ((,class :inherit font-lock-keyword-face)))
+
+;;;;;; web-mode
+   `(web-mode-html-tag-bracket-face ((,class :inherit font-lock-keyword-face)))
+
 ;;;;;; pulsar
-   `(pulsar-generic ((:inherit highlight)))))
+   ;; `(pulsar-generic ((:inherit highlight)))))
+
+;;;;;; corfu
+   ;; `(corfu-deprecated ((,class (:background ,bw02))))
+   ;; `(corfu-annotations ((,class (:background ,bw02))))
+   `(corfu-bar ((,class (:background ,fg))))
+   `(corfu-border ((,class (:background ,ot04))))
+   `(corfu-current ((,class (:inherit region))))
+   `(corfu-default ((,class (:background ,bg :foreground ,fg))))
+   `(corfu-popupinfo ((,class (:inherit corfu-default))))))
 
 (provide-theme 'sculpture-themes-dark)
 

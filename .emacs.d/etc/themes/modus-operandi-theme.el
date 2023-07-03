@@ -55,7 +55,7 @@ which corresponds to a minimum contrast in relative luminance of
 ;;; Basic values
 
       (bg-main          "#ffffff")
-      (bg-dim           "#f0f0f0")
+      (bg-dim           "#f2f2f2")
       (fg-main          "#000000")
       (fg-dim           "#595959")
       (fg-alt           "#193668")
@@ -282,6 +282,7 @@ which corresponds to a minimum contrast in relative luminance of
       (date-deadline red)
       (date-event fg-alt)
       (date-holiday red-cooler)
+      (date-holiday-other blue)
       (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled yellow-warmer)

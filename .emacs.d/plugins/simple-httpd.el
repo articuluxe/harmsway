@@ -221,6 +221,7 @@
     ("pdf"  . "application/pdf")
     ("tar"  . "application/x-tar")
     ("zip"  . "application/zip")
+    ("wasm" . "application/wasm")
     ("mp3"  . "audio/mpeg")
     ("wav"  . "audio/x-wav")
     ("flac" . "audio/flac")
