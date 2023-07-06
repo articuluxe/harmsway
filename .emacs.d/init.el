@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-05-20 12:06:50 dharms>
+;; Modified Time-stamp: <2023-07-06 07:42:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4042,7 +4042,7 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bazel-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bazel-mode
-  :mode ("\\.bazel$" "\\.bzl$" "WORKSPACE$" "BUILD$")
+  :mode ("\\.bazel$" "\\.bzl$" "WORKSPACE$") ;"BUILD$"
   :config
   (add-hook 'bazel-mode-hook
             (lambda()
