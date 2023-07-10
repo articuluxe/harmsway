@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-07-06 07:42:45 dharms>
+;; Modified Time-stamp: <2023-07-10 13:43:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1740,9 +1740,9 @@ ARGS are the additional arguments."
          ("M-o m" . dumb-jump-go-prefer-external-other-window)
          )
   :init
-  (setq dump-jump-disable-obsolete-warnings t)
-  :config
+  (setq dumb-jump-disable-obsolete-warnings t)
   (setq dumb-jump-selector 'ivy)
+  :config
   (cond ((executable-find "rg")
          (setq dumb-jump-prefer-searcher 'rg))
         ((executable-find "ag")
