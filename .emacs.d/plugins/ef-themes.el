@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 1.1.1
+;; Version: 1.2.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -844,6 +844,15 @@ Optional prefix argument MAPPINGS has the same meaning as for
   :package-version '(ef-themes . "0.4.0")
   :group 'ef-themes-faces)
 
+(defface ef-themes-reset-soft nil
+  "Generic face to set most face properties to nil.
+
+This is intended to be inherited by faces that should not retain
+properties from their context (e.g. an overlay over an underlined
+text should not be underlined as well) yet still blend in."
+  :package-version '(ef-themes . "1.2.0")
+  :group 'ef-themes-faces)
+
 ;; This produces `ef-themes-mark-delete' and the like.
 (dolist (scope '(delete select other))
   (custom-declare-face
@@ -881,6 +890,9 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(ef-themes-underline-error ((,c :underline (:style wave :color ,underline-err))))
     `(ef-themes-underline-info ((,c :underline (:style wave :color ,underline-info))))
     `(ef-themes-underline-warning ((,c :underline (:style wave :color ,underline-warning))))
+    `(ef-themes-reset-soft ((,c :background ,bg-main :foreground ,fg-main
+                                :weight normal :slant normal :strike-through nil
+                                :box nil :underline nil :overline nil :extend nil)))
 ;;;; all basic faces
 ;;;;; absolute essentials
     `(bold ((,c :weight bold)))
@@ -1006,6 +1018,13 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(TeX-error-description-warning ((,c :inherit warning)))
 ;;;; auto-dim-other-buffers
     `(auto-dim-other-buffers-face ((,c :background ,bg-inactive)))
+;;;; avy
+    `(avy-background-face ((,c :background ,bg-dim :foreground ,fg-dim :extend t)))
+    `(avy-goto-char-timer-face ((,c :inherit bold :background ,bg-active)))
+    `(avy-lead-face ((,c :inherit (bold ef-themes-reset-soft) :background ,bg-char-0)))
+    `(avy-lead-face-0 ((,c :inherit (bold ef-themes-reset-soft) :background ,bg-char-1)))
+    `(avy-lead-face-1 ((,c :inherit ef-themes-reset-soft :background ,bg-inactive)))
+    `(avy-lead-face-2 ((,c :inherit (bold ef-themes-reset-soft) :background ,bg-char-2)))
 ;;;; bongo
     `(bongo-album-title (( )))
     `(bongo-artist ((,c :foreground ,rainbow-0)))
@@ -1065,7 +1084,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(change-log-name ((,c :foreground ,name)))
     `(log-edit-header ((,c :inherit bold)))
     `(log-edit-headers-separator ((,c :height 1 :background ,border :extend t)))
-    `(log-edit-summary ((,c :inherit bold :foreground ,accent-0)))
+    `(log-edit-summary ((,c :inherit success)))
     `(log-edit-unknown-header ((,c :inherit shadow)))
     `(log-view-commit-body (( )))
     `(log-view-file ((,c :inherit bold)))
@@ -1117,6 +1136,11 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(corfu-bar ((,c :background ,fg-main)))
     `(corfu-border ((,c :background ,bg-active)))
     `(corfu-default ((,c :background ,bg-inactive)))
+;;;; corfu-quick
+    `(corfu-quick1 ((,c :inherit bold :background ,bg-char-0)))
+    `(corfu-quick2 ((,c :inherit bold :background ,bg-char-1)))
+;;;; csv-mode
+    `(csv-separator-face ((,c :foreground ,err)))
 ;;;; custom (M-x customize)
     `(custom-button ((,c :box (:color ,border :style released-button)
                          :background ,bg-active :foreground ,fg-intense)))
@@ -1381,7 +1405,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(git-commit-keyword ((,c :foreground ,keyword)))
     `(git-commit-nonempty-second-line ((,c :background ,bg-err :foreground ,err)))
     `(git-commit-overlong-summary ((,c :background ,bg-warning :foreground ,warning)))
-    `(git-commit-summary ((,c :inherit bold :foreground ,accent-0)))
+    `(git-commit-summary ((,c :inherit success)))
 ;;;; git-gutter
     `(git-gutter:added ((,c :background ,bg-added :foreground ,fg-added)))
     `(git-gutter:deleted ((,c :background ,bg-removed :foreground ,fg-removed)))
@@ -2218,6 +2242,9 @@ Optional prefix argument MAPPINGS has the same meaning as for
 ;;;; vertico
     `(vertico-current ((,c :background ,bg-completion)))
     `(vertico-group-title ((,c :inherit bold :foreground ,name)))
+;;;; vertico-quick
+    `(vertico-quick1 ((,c :inherit bold :background ,bg-char-0)))
+    `(vertico-quick2 ((,c :inherit bold :background ,bg-char-1)))
 ;;;; vterm
     `(vterm-color-black ((,c :background "gray35" :foreground "black")))
     `(vterm-color-blue ((,c :background ,blue-warmer :foreground ,blue)))

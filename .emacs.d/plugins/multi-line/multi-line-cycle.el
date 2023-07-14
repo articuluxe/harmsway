@@ -1,6 +1,6 @@
 ;;; multi-line-cycle.el --- multi-line statements -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2016 Ivan Malison
+;; Copyright (C) 2015-2023 Ivan Malison
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@
    (check-last-command :initform nil :initarg check-last-command)))
 
 (cl-defmethod multi-line-respace ((cycler multi-line-cycle-respacer) candidates
-                               &optional context)
+                                  &optional context)
   (let* ((respacer-name (plist-get context :respacer-name))
          (respacer-index (plist-get context :respacer-index))
          (respacer
@@ -78,7 +78,7 @@
   (setq multi-line-last-cycler cycler))
 
 (cl-defmethod multi-line-increment-cycle-index ((cycler multi-line-cycle-respacer)
-                                             &optional amount)
+                                                &optional amount)
   (unless amount (setq amount 1))
   (oset cycler cycle-index
         (% (+ (oref cycler cycle-index) amount)

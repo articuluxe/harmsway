@@ -1,6 +1,6 @@
 ;;; multi-line-highlight.el --- multi-line statements -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2016 Ivan Malison
+;; Copyright (C) 2015-2023 Ivan Malison
 
 ;; Author: Ivan Malison <IvanMalison@gmail.com>
 ;; Keywords: multi line length whitespace programming tools
@@ -36,7 +36,7 @@
   "Remove any existing multi-line highlight overlays."
   (interactive)
   (cl-loop for overlay in multi-line-overlays-to-remove
-            do (delete-overlay overlay)))
+           do (delete-overlay overlay)))
 
 ;;;###autoload
 (defun multi-line-highlight-current-candidates ()

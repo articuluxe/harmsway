@@ -1,11 +1,11 @@
 ;;; plz.el --- HTTP library                         -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2019-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2019-2023  Free Software Foundation, Inc.
 
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.7-pre
+;; Version: 0.8-pre
 ;; Package-Requires: ((emacs "26.3"))
 ;; Keywords: comm, network, http
 
@@ -46,7 +46,7 @@
 
 ;;;; Usage:
 
-;; FIXME: Remove the following note in v0.8.
+;; FIXME(v0.8): Remove the following note.
 
 ;; NOTE: In v0.8 of plz, only one error will be signaled: `plz-error'.
 ;; The existing errors, `plz-curl-error' and `plz-http-error', inherit
@@ -331,8 +331,8 @@ from a host, respectively.
 NOQUERY is passed to `make-process', which see.
 
 \(To silence checkdoc, we mention the internal argument REST.)"
-  ;; FIXME: Remove the note about error changes from the docstring in v0.8.
-  ;; FIXME: Update error signals in docstring in v0.8.
+  ;; FIXME(v0.8): Remove the note about error changes from the docstring.
+  ;; FIXME(v0.8): Update error signals in docstring.
   (declare (indent defun))
   (setf decode (if (and decode-s (not decode))
                    nil decode))
@@ -519,7 +519,7 @@ NOQUERY is passed to `make-process', which see.
                  ;; into a `plz-error' struct: re-signal the error here,
                  ;; outside of the sentinel.
                  (if (plz-error-response data)
-                     ;; FIXME: Signal only plz-error in v0.8.
+                     ;; FIXME(v0.8): Signal only plz-error.
                      (signal 'plz-http-error (list "HTTP error" data))
                    (signal 'plz-curl-error (list "Curl error" data))))
                 (else
@@ -546,7 +546,7 @@ For more details on these slots, see arguments to the function
 
 (cl-defstruct plz-queue
   "Structure forming a queue for `plz' requests.
-The queue may be appended to (the default) and prepended to, and
+The queue may be appended to (the default) and pre-pended to, and
 items may be removed from the front of the queue (i.e. by
 default, it's FIFO).  Use functions `plz-queue', `plz-run', and
 `plz-clear' to queue, run, and clear requests, respectively."
@@ -564,8 +564,8 @@ default, it's FIFO).  Use functions `plz-queue', `plz-run', and
            :documentation "Function called with no arguments after queue has been emptied or canceled."))
 
 (defun plz-queue (queue &rest args)
-  "Enqueue request for ARGS on QUEUE and return QUEUE.
-To prepend to QUEUE rather than append, it may be a list of the
+  "Queue request for ARGS on QUEUE and return QUEUE.
+To pre-pend to QUEUE rather than append, it may be a list of the
 form (`prepend' QUEUE).  QUEUE is a `plz-request' queue.  ARGS
 are those passed to `plz', which see.  Use `plz-run' to start
 making QUEUE's requests."
@@ -581,7 +581,7 @@ making QUEUE's requests."
   queue)
 
 (defun plz--queue-append (request queue)
-  "Append REQUEST to QUEUE and return QUEUE."
+  "Add REQUEST to end of QUEUE and return QUEUE."
   (cl-check-type request plz-queued-request
                  "REQUEST must be a `plz-queued-request' structure.")
   (cl-check-type queue plz-queue
@@ -598,7 +598,7 @@ making QUEUE's requests."
   queue)
 
 (defun plz--queue-prepend (request queue)
-  "Prepend REQUEST to QUEUE and return QUEUE."
+  "Add REQUEST to front of QUEUE and return QUEUE."
   (cl-check-type request plz-queued-request
                  "REQUEST must be a `plz-queued-request' structure.")
   (cl-check-type queue plz-queue
@@ -649,6 +649,9 @@ QUEUE should be a `plz-queue' structure."
                              (setf (plz-queue-active queue) (delq request (plz-queue-active queue)))
                              (plz-run queue))))
                    (else (lambda (arg)
+                           ;; FIXME(v0.8): This should be done in `plz-queue' because
+                           ;; `plz-clear' will call the second queued-request's ELSE
+                           ;; before it can be set by `plz-run'.
                            (unwind-protect
                                ;; Ensure any errors in the THEN function don't abort the queue.
                                (when orig-else
@@ -692,7 +695,8 @@ have their curl processes killed and their ELSE functions called
 with the corresponding data."
   (setf (plz-queue-canceled-p queue) t)
   (dolist (request (plz-queue-active queue))
-    (kill-process (plz-queued-request-process request))
+    (when (process-live-p (plz-queued-request-process request))
+      (kill-process (plz-queued-request-process request)))
     (setf (plz-queue-active queue) (delq request (plz-queue-active queue))))
   (dolist (request (plz-queue-requests queue))
     (funcall (plz-queued-request-else request)

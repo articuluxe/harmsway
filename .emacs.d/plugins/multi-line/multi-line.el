@@ -1,6 +1,6 @@
 ;;; multi-line.el --- multi-line statements -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2016 Ivan Malison
+;; Copyright (C) 2015-2023 Ivan Malison
 
 ;; Author: Ivan Malison <IvanMalison@gmail.com>
 ;; Keywords: multi line length whitespace programming tools convenience files
@@ -95,8 +95,9 @@
             :initform (multi-line-get-default-respacer))))
 
 (cl-defmethod multi-line-candidates ((strategy multi-line-strategy)
-                                  &optional context)
-  "Get the multi-line candidates at point."
+                                     &optional context)
+  "Get the multi-line candidates at point using the find attribute of STRATEGY.
+CONTEXT is passed to the find strategy."
   (let ((enter-strategy (oref strategy enter))
         (find-strategy (oref strategy find)))
     (multi-line-enter enter-strategy context)
@@ -166,11 +167,12 @@
 
 (defvar multi-line-add-trailing-comma-strategy
   (make-instance 'multi-line-strategy
-   :respace (multi-line-respacers-with-single-line
-             (mapcar 'multi-line-trailing-comma-respacer
-                     multi-line-default-respacer-list)
-             (multi-line-trailing-comma-respacer
-              multi-line-default-single-line-respacer))))
+                 :respace
+                 (multi-line-respacers-with-single-line
+                  (mapcar 'multi-line-trailing-comma-respacer
+                          multi-line-default-respacer-list)
+                  (multi-line-trailing-comma-respacer
+                   multi-line-default-single-line-respacer))))
 
 (multi-line-defhook python multi-line-add-trailing-comma-strategy t)
 (multi-line-defhook go multi-line-add-trailing-comma-strategy t)

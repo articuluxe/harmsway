@@ -155,7 +155,7 @@ standard).")
 ;;; Special purpose
 
       (bg-completion       "#c0deff")
-      (bg-hover            "#97dfed")
+      (bg-hover            "#b2e4dc")
       (bg-hover-secondary  "#f5d0a0")
       (bg-hl-line          "#dae5ec")
       (bg-region           "#bdbdbd")
@@ -198,7 +198,7 @@ standard).")
 
       (bg-removed         "#f4f099")
       (bg-removed-faint   "#f6f6b7")
-      (bg-removed-refine  "#f0e56f")
+      (bg-removed-refine  "#ede06f")
       (bg-removed-fringe  "#c0b200")
       (fg-removed         "#553d00")
       (fg-removed-intense "#7f6f00")

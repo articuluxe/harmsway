@@ -1,6 +1,6 @@
 ;;; multi-line-decorator.el --- multi-line statements -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2016 Ivan Malison
+;; Copyright (C) 2015-2023 Ivan Malison
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@
    (decorator :initarg :decorator)))
 
 (cl-defmethod multi-line-respace-one ((decorator multi-line-each-decorator)
-                                   index candidates)
+                                      index candidates)
   (funcall (oref decorator decorator) (oref decorator respacer) index
            candidates))
 
@@ -101,15 +101,29 @@ appropriately populated by the executor."
     (indent-region (multi-line-candidate-position (car candidates))
                    (multi-line-candidate-position (car (last candidates))))))
 
+(multi-line-post-decorator
+  multi-line-per-line-reindenting-respacer
+  (shut-up
+    (let ((start-position (multi-line-candidate-position (car candidates)))
+          (end-position (multi-line-candidate-position (car (last candidates))))
+          last-reindent)
+      (save-excursion
+        (goto-char start-position)
+        (while (and (<= (point) end-position) (or (not last-reindent) (> (point) last-reindent)))
+          (setq last-reindent (point))
+          (funcall indent-line-function)
+          (forward-line)
+          (move-beginning-of-line nil))))))
+
 (multi-line-compose multi-line-clearing-reindenting-respacer
-                    'multi-line-reindenting-respacer
+                    'multi-line-per-line-reindenting-respacer
                     'multi-line-space-clearing-respacer)
 
 (defclass multi-line-space-restoring-respacer ()
   ((respacer :initarg :respacer)))
 
 (cl-defmethod multi-line-respace-one ((respacer multi-line-space-restoring-respacer)
-                                   index candidates)
+                                      index candidates)
   (cl-destructuring-bind (startm . endm) (multi-line-space-markers)
     (let* ((start (marker-position startm))
            (end (marker-position endm))

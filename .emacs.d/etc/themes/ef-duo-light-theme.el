@@ -158,6 +158,10 @@
       (underline-warning "#bf5f00")
       (underline-info    "#02af52")
 
+      (bg-char-0 "#7feaff")
+      (bg-char-1 "#ffaaff")
+      (bg-char-2 "#dff000")
+
 ;;; Conditional hues
 
       (bg-region-intense "#dfc2b0")
@@ -175,7 +179,7 @@
       (name blue)
       (keybind blue-cooler)
       (identifier red-faint)
-      (prompt blue)
+      (prompt blue-warmer)
 
 ;;;; Code mappings
 

@@ -155,6 +155,10 @@
       (underline-warning "#bf5f00")
       (underline-info    "#02af5f")
 
+      (bg-char-0 "#7feaff")
+      (bg-char-1 "#f0a0f0")
+      (bg-char-2 "#d0e000")
+
 ;;; Conditional hues
 
       (bg-region-intense "#c6b2d3")
@@ -172,7 +176,7 @@
       (name green-warmer)
       (keybind magenta)
       (identifier magenta-faint)
-      (prompt magenta)
+      (prompt magenta-warmer)
 
 ;;;; Code mappings
 

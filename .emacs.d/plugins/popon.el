@@ -4,7 +4,7 @@
 
 ;; Author: Akib Azmain Turja <akib@disroot.org>
 ;; Created: 2022-04-11
-;; Version: 0.12
+;; Version: 0.13
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: lisp extensions frames
 ;; Homepage: https://codeberg.org/akib/emacs-popon
@@ -592,6 +592,39 @@ When FORCE is non-nil, update all overlays."
   (popon-update))
 
 ;;;###autoload
+(defun popon-x-y-at-posn (posn)
+  "Return the (X, Y) coodinate at position POSN as a cons.
+
+Return nil if a popon can't be shown at position POSN.
+
+NOTE: This uses `posn-at-point', which is slow.  So try to minimize
+calls to this function."
+  (when (and posn (posn-point posn))
+    (let* ((window-start-x-y
+            (if (>= emacs-major-version 29)
+                (posn-col-row (posn-at-point (window-start))
+                              'use-window)
+              (posn-col-row (posn-at-point (window-start)))))
+           (point-x-y
+            (if (>= emacs-major-version 29)
+                (posn-col-row posn 'use-window)
+              (posn-col-row posn)))
+           (x-y (cons (if (and (or (not truncate-lines) word-wrap)
+                               (if truncate-partial-width-windows
+                                   (>= (window-total-width)
+                                       truncate-partial-width-windows)
+                                 t))
+                          (- (car point-x-y) (car window-start-x-y))
+                        (- (save-excursion
+                             (goto-char (posn-point posn))
+                             (current-column))
+                           (window-hscroll)))
+                      (- (cdr point-x-y) (cdr window-start-x-y)))))
+      (when (and (>= (car x-y) 0)
+                 (>= (cdr x-y) 0))
+        x-y))))
+
+;;;###autoload
 (defun popon-x-y-at-pos (point)
   "Return the (X, Y) coodinate of POINT in selected window as a cons.
 
@@ -599,23 +632,7 @@ Return nil if POINT is not in visible text area.
 
 NOTE: This uses `posn-at-point', which is slow.  So try to minimize
 calls to this function."
-  (let ((window-start-x-y
-         (if (>= emacs-major-version 29)
-             (posn-col-row (posn-at-point (window-start)) 'use-window)
-           (posn-col-row (posn-at-point (window-start)))))
-        (point-x-y
-         (if (>= emacs-major-version 29)
-             (posn-col-row (posn-at-point point) 'use-window)
-           (posn-col-row (posn-at-point point)))))
-    (cons (if (and (or (not truncate-lines) word-wrap)
-                   (if truncate-partial-width-windows
-                       (>= (window-total-width)
-                           truncate-partial-width-windows)
-                     t))
-              (- (car point-x-y) (car window-start-x-y))
-            (- (save-excursion (goto-char point) (current-column))
-               (window-hscroll)))
-          (- (cdr point-x-y) (cdr window-start-x-y)))))
+  (popon-x-y-at-posn (posn-at-point point)))
 
 ;;;###autoload
 (defun popon-kill-all ()

@@ -128,7 +128,7 @@
       (ot11 "#201F0E")
       (ot12 "#D0CA62")
       (ot13 "#313020")
-      (ot14 "#020202")
+      ;; (ot14 "#020202")
       (ot15 "#161F14")
       (ot16 "#5F1416")
       (ot17 "#2E2C0A")
@@ -142,7 +142,12 @@
       (ot25 "#AD0E3B")
       (ot26 "#1C1C0D")
       (ot27 "#0A0A04")
-      (ot28 "#B22744"))
+      (ot28 "#B22744")
+      (ot29 "#3E0F07")
+      (ot30 "#03141E")
+      (ot31 "#7E7400")
+      (ot32 "#1F3603")
+      (ot33 "#1D1B3D"))
 ;;;;; definitions
 ;;;;;; base
   (custom-theme-set-faces
@@ -458,7 +463,7 @@
    `(org-indent                    ((,class (:foreground ,bg))))
    `(org-latex-and-related         ((,class (:foreground ,ha00))))
    `(org-link                      ((,class (:foreground ,ot07 :underline t))))
-   `(org-list-dt                   ((,class (:foreground ,ot05))))
+   `(org-list-dt                   ((,class (:foreground ,ot05 :inherit bold))))
    `(org-macro                     ((,class (:foreground ,ha00))))
    `(org-meta-line                 ((,class (:foreground ,fg :background ,ha11))))
    `(org-mode-line-clock           ((,class (:foreground ,ha00))))
@@ -555,6 +560,12 @@
    ;; `(diff-hl-dired-unknown ((,class (:inherit ))))
    ;; `(diff-hl-reverted-hunk-highlight ((,class (:inherit ))))
 
+;;;;;; which-key
+   `(which-key-key-face ((,class (:foreground ,cs01 :weight bold))))
+   `(which-key-group-description-face ((,class (:foreground ,cs02))))
+   `(which-key-command-description-face ((,class (:foreground ,ha04))))
+   `(which-key-separator-face ((,class (:foreground ,bw11 :background ,bg))))
+
 ;;;;;; company
    `(company-tooltip-selection  ((,class (:foreground ,fg :underline (:color ,bw07) :inherit (semibold)))))
    `(company-tooltip-common     ((,class (:foreground ,fg))))
@@ -647,9 +658,11 @@
 ;;;;;; vertico
    `(vertico-current     ((,class (:underline (:line-width -1 :color ,ot04) :inherit (bold)))))
    `(vertico-group-title ((,class (:inherit (sculpture-themes-dark-head-outline-7 variable-pitch)))))
+   `(vertico-quick1      ((,class (:background ,ot25))))
+   `(vertico-quick2      ((,class (:background ,ot24))))
 
 ;;;;;; olivetti
-   `(olivetti-fringe ((,class (:background ,ot14))))
+   `(olivetti-fringe ((,class (:background ,bg))))
 
 ;;;;;; flycheck
    `(flycheck-info    ((,class (:underline (:line-width -1 :color ,ot15)))))
@@ -828,7 +841,28 @@
    `(corfu-border ((,class (:background ,ot04))))
    `(corfu-current ((,class (:inherit region))))
    `(corfu-default ((,class (:background ,bg :foreground ,fg))))
-   `(corfu-popupinfo ((,class (:inherit corfu-default))))))
+   `(corfu-popupinfo ((,class (:inherit corfu-default))))
+   `(corfu-candidate-overlay-face ((,class (:inherit bold :background ,cs01 :foreground ,bg))))
+   `(corfu-candidate-overlay-face-exact-match ((,class (:inherit (bold underline) :background ,cs01 :foreground ,bg))))
+
+;;;;;; evil-goggles
+   `(evil-goggles-join-face                  ((,class (:background ,ot30))))
+   `(evil-goggles-yank-face                  ((,class (:background ,ot31))))
+   `(evil-goggles-paste-face                 ((,class (:background ,ot32))))
+   `(evil-goggles-change-face                ((,class (:background ,ot30))))
+   `(evil-goggles-delete-face                ((,class (:background ,ot29))))
+   `(evil-goggles-surround-face              ((,class (:background ,ot30))))
+   `(evil-goggles-commentary-face            ((,class (:background ,ot33))))
+   `(evil-goggles-nerd-commenter-face        ((,class (:inherit evil-goggles-commentary-face))))
+
+;;;;;; vundo
+   `(vundo-node        ((,class (:foreground ,ot05))))
+   `(vundo-stem        ((,class (:foreground ,ot05))))
+   `(vundo-saved       ((,class (:foreground ,ot04))))
+   `(vundo-default     ((,class (:foreground ,fg))))
+   `(vundo-highlight   ((,class (:foreground ,cs02))))
+   `(vundo-last-saved  ((,class (:foreground ,ot01))))
+   `(vundo-branch-stem ((,class (:foreground ,ot08))))))
 
 (provide-theme 'sculpture-themes-dark)
 

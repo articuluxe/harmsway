@@ -290,7 +290,7 @@ the current version of the file)."
                      (listp vc-git-diff-switches)
                      (cl-remove-if-not
                       (lambda (arg)
-                        (member arg '("--histogram" "--patience" "--minimal")))
+                        (member arg '("--histogram" "--patience" "--minimal" "--textconv")))
                       vc-git-diff-switches))))
          (vc-hg-diff-switches nil)
          (vc-svn-diff-switches nil)
@@ -755,7 +755,7 @@ Only supported with Git."
     (when success
       (if diff-hl-show-staged-changes
           (message (concat "Hunk staged; customize `diff-hl-show-staged-changes'"
-                           " to highlight only unstages changes"))
+                           " to highlight only unstaged changes"))
         (message "Hunk staged"))
       (unless diff-hl-show-staged-changes
         (diff-hl-update)))))

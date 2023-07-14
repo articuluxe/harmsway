@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.2
+;; Version: 1.3
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 ;; Homepage: https://github.com/minad/marginalia
 ;; Keywords: docs, help, matching, completion
@@ -623,7 +623,9 @@ keybinding since CAND includes it."
                     thereis (if (symbolp r)
                                 (eq r sym)
                               (string-match-p r name)))))
-    (propertize "*****" 'face 'marginalia-null))
+    (propertize "*****"
+                'face 'marginalia-null
+                'help-echo "Hidden due to `marginalia-censor-variables'"))
    (t
     (let ((val (symbol-value sym)))
       (pcase val

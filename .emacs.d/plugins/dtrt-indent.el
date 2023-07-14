@@ -5,7 +5,7 @@
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.11
+;; Version: 1.12
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -377,6 +377,7 @@ quote, for example.")
     (c-ts-mode       c/c++/java    c-ts-mode-indent-offset)
     (c++-ts-mode     c/c++/java    c-ts-mode-indent-offset)
     (go-ts-mode      c/c++/java    go-ts-mode-indent-offset)
+    (gpr-ts-mode     ada           gpr-ts-mode-indent-offset)
     (java-ts-mode    c/c++/java    java-ts-mode-indent-offset)
     (rust-ts-mode    c/c++/java    rust-ts-mode-indent-offset)
     (json-ts-mode    javascript    json-ts-mode-indent-offset)

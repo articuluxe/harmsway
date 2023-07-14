@@ -4876,6 +4876,7 @@ Applies on type formatting."
          (type (url-type parsed-url)))
     (pcase type
       ("file"
+       (xref-push-marker-stack)
        (find-file (lsp--uri-to-path url))
        (-when-let ((_ line column) (s-match (rx "#" (group (1+ num)) (or "," "#") (group (1+ num))) url))
          (goto-char (lsp--position-to-point
@@ -5872,7 +5873,9 @@ It will filter by KIND if non nil."
          (lsp-send-execute-command command arguments?))))))
 
 (lsp-defun lsp-execute-code-action ((action &as &CodeAction :command? :edit?))
-  "Execute code action ACTION.
+  "Execute code action ACTION. For example, when text under the
+caret has a suggestion to apply a fix from an lsp-server, calling
+this function will do so.
 If ACTION is not set it will be selected from `lsp-code-actions-at-point'.
 Request codeAction/resolve for more info if server supports."
   (interactive (list (lsp--select-action (lsp-code-actions-at-point))))

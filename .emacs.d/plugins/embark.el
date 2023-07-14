@@ -416,9 +416,7 @@ the key :always are executed always."
     (mark embark--mark-target)
     ;; shells in new buffers
     (shell embark--universal-argument)
-    (eshell embark--universal-argument)
-    ;; do the actual work of selecting & deselecting targets
-    (embark-select embark--select))
+    (eshell embark--universal-argument))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
@@ -480,7 +478,9 @@ arguments and more details."
     (append-to-file embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (embark-eval-replace embark--mark-target)
-    (delete-indentation embark--mark-target))
+    (delete-indentation embark--mark-target)
+    ;; do the actual work of selecting & deselecting targets
+    (embark-select embark--select))
   "Alist associating commands with post-action hooks.
 The hooks are run instead of the embarked upon action.  The hook
 can decide whether or not to run the action or it can run it
@@ -2343,9 +2343,12 @@ Return a plist with keys `:type', `:orig-type', `:candidates', and
 ;;;###autoload
 (defun embark-act-all (&optional arg)
   "Prompt the user for an action and perform it on each candidate.
-The candidates are chosen by `embark-candidate-collectors'.
-By default, if called from a minibuffer the candidates are the
-completion candidates.
+The candidates are chosen by `embark-candidate-collectors'.  By
+default, if `embark-select' has been used to select some
+candidates, then `embark-act-all' will act on those candidates;
+otherwise, if the selection is empty and `embark-act-all' is
+called from a minibuffer, then the candidates are the completion
+candidates.
 
 This command uses `embark-prompter' to ask the user to specify an
 action, and calls it injecting the target at the first minibuffer
@@ -2529,11 +2532,12 @@ point."
   (interactive "P")
   (unless (minibufferp)
     (user-error "Not in a minibuffer"))
-  (let* ((target (if full
-                     (minibuffer-contents)
-                   (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-                     (substring (minibuffer-contents) beg
-                                (+ end (embark--minibuffer-point))))))
+  (let* ((target (embark--display-string ; remove invisible portions
+                  (if full
+                      (minibuffer-contents)
+                    (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+                      (substring (minibuffer-contents) beg
+                                 (+ end (embark--minibuffer-point)))))))
          (keymap (embark--become-keymap))
          (targets `((:type embark-become :target ,target)))
          (indicators (mapcar #'funcall embark-indicators))
@@ -2732,9 +2736,11 @@ This makes `embark-export' work in Embark Collect buffers."
           (save-excursion
             (goto-char (point-min))
             (let (all)
-              (push (cdr (embark-target-collect-candidate)) all)
+              (when-let ((cand (embark-target-collect-candidate)))
+                (push (cdr cand) all))
               (while (forward-button 1 nil nil t)
-                (push (cdr (embark-target-collect-candidate)) all))
+                (when-let ((cand (embark-target-collect-candidate)))
+                  (push (cdr cand) all)))
               (nreverse all))))))
 
 (defun embark-completions-buffer-candidates ()
@@ -3369,9 +3375,16 @@ If BOUNDS are given, also highlight the target when selecting it."
     (add-to-list 'mode-line-misc-info '(:eval (embark--selection-indicator)))
     (force-mode-line-update t)))
 
-(defalias 'embark-select #'ignore
+;;;###autoload
+(defun embark-select ()
   "Add or remove the target from the current buffer's selection.
-You can act on all selected targets at once with `embark-act-all'.")
+You can act on all selected targets at once with `embark-act-all'.
+When called from outside `embark-act' this command will select
+the first target at point."
+  (interactive)
+  (if-let ((target (car (embark--targets))))
+      (apply #'embark--select target)
+    (user-error "No target to select")))
 
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
