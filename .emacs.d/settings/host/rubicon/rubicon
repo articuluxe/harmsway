@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-05-19 13:04:23 dharms>
+;; Modified Time-stamp: <2023-07-17 12:11:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -54,7 +54,7 @@
                             "League Mono Variable 14"
                             "Ubuntu Mono 16"
                             "Andale Mono 14"
-                            "Segoe Mono Boot 12"
+                            "Segoe Mono Boot 14"
                             "Aurulent Sans Mono 12"
                             "M+ 2m regular 14"
                             "JuliaMono 13"
