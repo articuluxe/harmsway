@@ -1322,7 +1322,20 @@ symbol, which is safe when used as a face attribute's value."
 
 (defun modus-themes--annotate-theme (theme)
   "Return completion annotation for THEME."
-  (format " -- %s" (car (split-string (get (intern theme) 'theme-documentation) "\\."))))
+  (when-let ((symbol (intern-soft theme))
+             (doc-string (get symbol 'theme-documentation)))
+    (format " -- %s" (car (split-string doc-string "\\.")))))
+
+(defun modus-themes--completion-table (category candidates)
+  "Pass appropriate metadata CATEGORY to completion CANDIDATES."
+  (lambda (string pred action)
+    (if (eq action 'metadata)
+        `(metadata (category . ,category))
+      (complete-with-action action candidates string pred))))
+
+(defun modus-themes--completion-table-candidates ()
+  "Render `modus-themes--list-known-themes' as completion with theme category."
+  (modus-themes--completion-table 'theme (modus-themes--list-known-themes)))
 
 (defun modus-themes--select-prompt ()
   "Minibuffer prompt to select a Modus theme."
@@ -1330,7 +1343,7 @@ symbol, which is safe when used as a face attribute's value."
     (intern
      (completing-read
       "Select Modus theme: "
-      (modus-themes--list-known-themes)
+      (modus-themes--completion-table-candidates)
       nil t nil
       'modus-themes--select-theme-history))))
 
@@ -1344,12 +1357,13 @@ Disable other themes per `modus-themes-disable-other-themes'."
 
 (defun modus-themes--toggle-theme-p ()
   "Return non-nil if `modus-themes-to-toggle' are valid."
-  (mapc (lambda (theme)
-          (if (or (memq theme modus-themes-items)
-                  (memq theme (modus-themes--list-known-themes)))
-              theme
-            (user-error "`%s' is not part of `modus-themes-items'" theme)))
-        modus-themes-to-toggle))
+  (mapc
+   (lambda (theme)
+     (if (or (memq theme modus-themes-items)
+             (memq theme (modus-themes--list-known-themes)))
+         theme
+       (user-error "`%s' is not part of `modus-themes-items'" theme)))
+   modus-themes-to-toggle))
 
 ;;;###autoload
 (defun modus-themes-toggle ()
@@ -1364,9 +1378,7 @@ Disable other themes per `modus-themes-disable-other-themes'."
   (if-let* ((themes (modus-themes--toggle-theme-p))
             (one (car themes))
             (two (cadr themes)))
-      (if (eq (car custom-enabled-themes) one)
-          (modus-themes-load-theme two)
-        (modus-themes-load-theme one))
+      (modus-themes-load-theme (if (eq (car custom-enabled-themes) one) two one))
     (modus-themes-load-theme (modus-themes--select-prompt))))
 
 (defun modus-themes--list-colors-render (buffer theme &optional mappings &rest _)
@@ -1424,7 +1436,8 @@ Helper function for `modus-themes-list-colors'."
         (completion-extra-properties `(:annotation-function ,#'modus-themes--annotate-theme)))
     (completing-read
      (format "Use palette from theme [%s]: " def)
-     (modus-themes--list-known-themes) nil t nil
+     (modus-themes--completion-table-candidates)
+     nil t nil
      'modus-themes--list-colors-prompt-history def)))
 
 (defun modus-themes-list-colors (theme &optional mappings)

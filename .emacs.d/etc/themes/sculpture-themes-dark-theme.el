@@ -147,7 +147,8 @@
       (ot30 "#03141E")
       (ot31 "#7E7400")
       (ot32 "#1F3603")
-      (ot33 "#1D1B3D"))
+      (ot33 "#1D1B3D")
+      (ot34 "#071E03"))
 ;;;;; definitions
 ;;;;;; base
   (custom-theme-set-faces
@@ -189,6 +190,8 @@
    `(highlight-quoted-symbol  ((,class (:foreground ,ot12))))
    `(highlight-quoted-quote   ((,class (:foreground ,ot01))))
 
+   `(custom-button         ((,class (:foreground ,fg :background ,bw02 :box (:line-width 2 :color ,bw08 :style released-button)))))
+   `(custom-button-pressed ((,class (:foreground ,fg :background ,bw02 :box (:line-width 2 :color ,bw08 :style pressed-button)))))
 ;;;;;; popup
    `(popup-face               ((,class (:inherit (button) :foreground ,ot05))))
    `(popup-menu-face          ((,class (:inherit (popup-face)))))
@@ -454,11 +457,11 @@
    `(org-done                      ((,class (:underline (:color ,ot02 :line-width -1)))))
    ;; `(org-drawer                    ((,class (:inherit fixed-pitch :foreground ,ha10 :background ,cs02))))
    `(org-drawer                    ((,class (:inherit fixed-pitch :foreground ,cs02 :background ,bw01 :box (:line-width 2 :style pressed-button)))))
-   `(org-ellipsis                  ((,class (:foreground ,ha00))))
+   `(org-ellipsis                  ((,class (:inherit font-lock-builtin-face))))
    `(org-footnote                  ((,class (:foreground ,ha00))))
    `(org-formula                   ((,class (:foreground ,ha00))))
-   `(org-headline-done             nil)
-   `(org-headline-todo             nil)
+   `(org-headline-todo             ((,class (:background ,ot30 :weight bold))))
+   `(org-headline-done             ((,class (:background ,ot34 :weight bold))))
    `(org-hide                      ((,class (:foreground ,bg))))
    `(org-indent                    ((,class (:foreground ,bg))))
    `(org-latex-and-related         ((,class (:foreground ,ha00))))

@@ -895,7 +895,7 @@ See also `pos-tip-show-no-propertize'."
 	 (w-h (pos-tip-string-width-height string))
          (fg (pos-tip-compute-foreground-color tip-color))
          (bg (pos-tip-compute-background-color tip-color))
-         (frame-font (find-font (font-spec :name (frame-parameter frame 'font))))
+         (frame-font (face-attribute 'default :font frame))
          (tip-face-attrs (list :font frame-font :foreground fg :background bg)))
     (cond
      ((and width
