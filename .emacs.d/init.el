@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-07-10 13:43:06 dharms>
+;; Modified Time-stamp: <2023-08-04 16:52:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3092,10 +3092,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                    . (:configurationSources
                       ["flake8"]
                       :plugins
-                      (:pycodestyle
-                       (:enabled nil)
+                      (:pycodestyle (:enabled nil)
                        :mccabe (:enabled nil)
-                       :flake8 (:enabled t))))))
+                       :flake8 (:enabled t :maxLineLength 95))))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc-box ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
