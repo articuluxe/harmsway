@@ -3,8 +3,8 @@
 ;; Copyright (C) 2019-2023 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.22
-;; Package-Requires: ((xr "1.22") (emacs "26.1"))
+;; Version: 1.23
+;; Package-Requires: ((xr "1.24") (emacs "26.1"))
 ;; URL: https://github.com/mattiase/relint
 ;; Keywords: lisp, regexps
 
@@ -29,6 +29,10 @@
 
 ;;; News:
 
+;; Version 1.23
+;; - New defcustom `relint-xr-checks' that enables optional xr checks.
+;; - Add regexp detection in uses of the treesit API.
+;; - Better backquote expansion inside rx forms.
 ;; Version 1.22
 ;; - String char escape check now detects \8, \9, and \x without hex digit
 ;; Version 1.21
@@ -117,6 +121,15 @@
 (require 'compile)
 (require 'cl-lib)
 (require 'subr-x)
+
+(defcustom relint-xr-checks nil
+  "Extra checks to be performed by `xr' for each regexp.
+This is the CHECKS argument passed to `xr-lint' (q.v.).
+It is either nil, meaning the standard set of checks with minimal
+false positives, or `all', enabling all checks."
+  :group 'relint
+  :type '(choice (const :tag "Standard checks only" nil)
+                 (const :tag "All checks" all)))
 
 (defun relint--get-error-buffer ()
   "Buffer to which errors are printed, or nil if noninteractive."
@@ -351,10 +364,12 @@ or nil if no position could be determined."
   (relint--check-string skip-set-string #'xr-skip-set-lint name pos path))
 
 (defun relint--check-re-string (re name pos path)
-  (relint--check-string re #'xr-lint name pos path))
+  (relint--check-string re (lambda (x) (xr-lint x nil relint-xr-checks))
+                        name pos path))
   
 (defun relint--check-file-re-string (re name pos path)
-  (relint--check-string re (lambda (x) (xr-lint x 'file)) name pos path))
+  (relint--check-string re (lambda (x) (xr-lint x 'file relint-xr-checks))
+                        name pos path))
   
 (defun relint--check-syntax-string (syntax name pos path)
   (relint--check-string syntax #'relint--syntax-string-lint name pos path))
@@ -1551,12 +1566,63 @@ RANGES is a list of (X . Y) representing the interval [X,Y]."
     (setq ranges (cdr ranges)))
   (car ranges))
 
+(defun relint--expand-rx-args (items)
+  "Expand unquotes and `eval' and `literal' forms in ITEMS recursively."
+  (if (atom items)
+      items
+    (let ((acc nil)
+          (tail items))
+      (while (consp tail)
+        (let* ((item (car tail))
+               (head (car-safe item)))
+          ;; Evaluate unquote and unquote-splicing forms as if inside a
+          ;; (single) backquote.
+          (cond ((memq head '(eval \,))
+                 (let ((val (relint--eval-or-nil (cadr item))))
+                   (pop tail)
+                   (if val
+                       (push val tail)
+                     (push item acc))))
+                ((eq head 'literal)
+                 (let ((val (relint--eval-or-nil (cadr item))))
+                   (pop tail)
+                   (push (if (stringp val)
+                             (regexp-quote val)
+                           item)
+                         acc)))
+                ((eq head '\,@)
+                 (let ((vals (relint--eval-or-nil (cadr item))))
+                   (pop tail)
+                   (if vals
+                       (setq tail (append vals tail))
+                     (push item acc))))
+                ((eq item '\,)            ; (... . ,TAIL) = (... , TAIL)
+                 (let ((vals (relint--eval-or-nil (cadr tail))))
+                   (pop tail)
+                   (if vals
+                       (setq tail vals)
+                     (push item acc))))
+                ((and (consp item) (listp (cdr item)))
+                 (push (relint--expand-rx-args item) acc)
+                 (pop tail))
+                (t (push item acc)
+                   (pop tail)))))
+      (setq acc (nreverse acc))
+      (if (equal acc items)
+          items
+        acc))))
+
 (defun relint--check-rx (item pos path exact-path)
   "Check the `rx' expression ITEM.
 EXACT-PATH indicates whether PATH leads to ITEM exactly, rather
 than just to a surrounding or producing expression."
+  (let ((expanded (relint--expand-rx-args item)))
+    (relint--check-rx-1 expanded pos path
+                        (and exact-path (eq expanded item)))))
+
+(defun relint--check-rx-1 (item pos path exact-path)
   (pcase item
-    (`(,(or ': 'seq 'sequence 'and 'or '|
+    (`(,(or 'rx ': 'seq 'sequence 'and 'or '|   ; pretend that `rx' is `seq'
             'not 'intersection 'repeat '= '>= '**
             'zero-or-more '0+ '* '*?
             'one-or-more '1+ '+ '+?
@@ -1585,8 +1651,8 @@ than just to a surrounding or producing expression."
      ;; Form with subforms: recurse.
      (let ((i 1))
        (dolist (arg args)
-         (relint--check-rx arg pos (if exact-path (cons i path) path)
-                           exact-path)
+         (relint--check-rx-1 arg pos (if exact-path (cons i path) path)
+                             exact-path)
          (setq i (1+ i)))))
 
     (`(,(or 'any 'in 'char 'not-char) . ,args)
@@ -1721,19 +1787,7 @@ than just to a surrounding or producing expression."
 
     (`(,(or 'regexp 'regex) ,expr)
      (relint--check-re expr (format-message "rx `%s' form" (car item))
-                       pos (if exact-path (cons 1 path) path)))
-
-    ;; Evaluate unquote and unquote-splicing forms as if inside a
-    ;; (single) backquote.
-    (`(,(or 'eval '\,) ,expr)
-     (let ((val (relint--eval-or-nil expr)))
-       (when val
-         (relint--check-rx val pos (if exact-path (cons 1 path) path) nil))))
-
-    (`(\,@ ,expr)
-     (let ((items (relint--eval-list expr)))
-       (dolist (form items)
-         (relint--check-rx form pos (if exact-path (cons 1 path) path) nil))))))
+                       pos (if exact-path (cons 1 path) path)))))
 
 (defun relint--regexp-args-from-doc (doc-string)
   "Extract regexp arguments (as a list of symbols) from DOC-STRING."
@@ -2240,12 +2294,8 @@ directly."
                                     (cons 'val val))))
                         (list 'expr re-arg))))
               (push (cons name new) relint--variables)))))
-       (`(rx . ,items)
-        (let ((i 1))
-          (while (consp items)
-            (relint--check-rx (car items) pos (cons i path) t)
-            (setq items (cdr items))
-            (setq i (1+ i)))))
+       (`(rx . ,_)
+        (relint--check-rx form pos path t))
        (`(rx-to-string (,(or 'quote '\`) ,arg) . ,_)
         (relint--check-rx arg pos (cons 1 (cons 1 path)) t))
        (`(font-lock-add-keywords ,_ ,keywords . ,_)

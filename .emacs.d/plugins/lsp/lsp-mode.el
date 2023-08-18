@@ -4,7 +4,7 @@
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "26.3") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
+;; Package-Requires: ((emacs "27.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
 ;; Version: 8.0.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
@@ -680,7 +680,7 @@ are determined by the index of the element."
                          (const :tag "Method" Method)
                          (const :tag "Property" Property)
                          (const :tag "Field" Field)
-                         (const :tag "Constructor" Constuctor)
+                         (const :tag "Constructor" Constructor)
                          (const :tag "Enum" Enum)
                          (const :tag "Interface" Interface)
                          (const :tag "Function" Function)
@@ -795,6 +795,7 @@ Changes take effect only when a new session is started."
     (ebuild-mode . "shellscript")
     (pkgbuild-mode . "shellscript")
     (scala-mode . "scala")
+    (scala-ts-mode . "scala")
     (julia-mode . "julia")
     (clojure-mode . "clojure")
     (clojurec-mode . "clojure")
@@ -818,6 +819,7 @@ Changes take effect only when a new session is started."
     (less-mode . "less")
     (less-css-mode . "less")
     (lua-mode . "lua")
+    (lua-ts-mode . "lua")
     (sass-mode . "sass")
     (ssass-mode . "sass")
     (scss-mode . "scss")
@@ -893,6 +895,7 @@ Changes take effect only when a new session is started."
     (cmake-ts-mode . "cmake")
     (purescript-mode . "purescript")
     (gdscript-mode . "gdscript")
+    (gdscript-ts-mode . "gdscript")
     (perl-mode . "perl")
     (cperl-mode . "perl")
     (robot-mode . "robot")
@@ -913,6 +916,7 @@ Changes take effect only when a new session is started."
     (org-journal-mode . "org")
     (nginx-mode . "nginx")
     (magik-mode . "magik")
+    (magik-ts-mode . "magik")
     (idris-mode . "idris")
     (idris2-mode . "idris2")
     (gleam-mode . "gleam")
@@ -5924,6 +5928,7 @@ Request codeAction/resolve for more info if server supports."
     (json-mode                  . js-indent-level)                  ; JSON
     (json-ts-mode               . json-ts-mode-indent-offset)
     (lua-mode                   . lua-indent-level)                 ; Lua
+    (lua-ts-mode                . lua-ts-mode-indent-offset)
     (nxml-mode                  . nxml-child-indent)                ; XML
     (objc-mode                  . c-basic-offset)                   ; Objective C
     (pascal-mode                . pascal-indent-level)              ; Pascal
@@ -6881,7 +6886,7 @@ information, for example if it doesn't support DocumentSymbols."
   :type 'boolean)
 
 (defface lsp-details-face '((t :height 0.8 :inherit shadow))
-  "Used to display additional information troughout `lsp'.
+  "Used to display additional information throughout `lsp'.
 Things like line numbers, signatures, ... are considered
 additional information. Often, additional faces are defined that
 inherit from this face by default, like `lsp-signature-face', and
@@ -8148,7 +8153,7 @@ nil."
 SET-EXECUTABLE? when non-nil change the executable flags of
 STORE-PATH to make it executable. BINARY-PATH can be specified
 when the binary to start does not match the name of the
-archieve(e. g. when the archieve has multiple files)"
+archive (e.g. when the archive has multiple files)"
   (let ((store-path (or (lsp-resolve-value binary-path)
                         (lsp-resolve-value store-path))))
     (cond
@@ -8615,7 +8620,7 @@ When ALL is t, erase all log buffers of the running session."
              (lambda ()
                (cond
                 (result (lsp--parser-on-message result workspace))
-                (err (warn "Json parsing failed with the following erorr: %s" err))
+                (err (warn "Json parsing failed with the following error: %s" err))
                 (done (lsp--handle-process-exit workspace ""))))))
           :object-type object-type
           :null-object nil
@@ -9332,7 +9337,7 @@ This avoids overloading the server with many files when starting Emacs."
     (flycheck-add-mode 'lsp mode)))
 
 (defun lsp-progress-spinner-type ()
-  "Retrive the spinner type value, if value is not a symbol of `spinner-types
+  "Retrieve the spinner type value, if value is not a symbol of `spinner-types
 defaults to `progress-bar."
   (or (car (assoc lsp-progress-spinner-type spinner-types)) 'progress-bar))
 
@@ -9615,7 +9620,7 @@ string."
 
 ;;;###autoload
 (defun lsp-start-plain ()
-  "Start `lsp-mode' using mininal configuration using the latest `melpa' version
+  "Start `lsp-mode' using minimal configuration using the latest `melpa' version
 of the packages.
 
 In case the major-mode that you are using for "

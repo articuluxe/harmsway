@@ -3,7 +3,7 @@
 ;; Copyright (C) 2019-2023 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.23
+;; Version: 1.24
 ;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/mattiase/xr
 ;; Keywords: lisp, regexps
@@ -29,6 +29,17 @@
 
 ;;; News:
 
+;; Version 1.24:
+;; - \w and \W are now translated to (syntax word) and (not (syntax word)),
+;;   instead of [[:word:]] and [^[:word:]] which are not exact equivalents.
+;; - Repetition operators are now literals after \`. For example,
+;;   \`* is now (seq bos "*"), not (* bos), because this is how Emacs works.
+;; - New lint check: find [A-z] (range between upper and lower case)
+;; - New `checks' argument to xr-lint, used to enable these new checks:
+;;   - Detect [+-X] and [X-+] (range to/from '+')
+;;   - Detect [\\t] etc (escape sequences in character alternative)
+;;   - Detect \(:?...\), as a possible typo for \(?:...\)
+;;   - Detect a\|b that could be [ab] which is more efficient
 ;; Version 1.23:
 ;; - Represent explicitly the gap in ranges from ASCII to raw bytes:
 ;;   "[A-\xbb]" becomes (any "A-\x7f\x80-\xbb") because that is how
@@ -103,7 +114,7 @@
   (when warnings
     (push (cons (1- position) message) (car warnings))))
 
-(defun xr--parse-char-alt (negated warnings)
+(defun xr--parse-char-alt (negated warnings checks)
   (let ((start-pos (point))
         (intervals nil)
         (classes nil)
@@ -166,7 +177,18 @@
              warnings (point)
              (format-message
               "Range `%c-%c' between upper and lower case includes symbols"
-              start end))))
+              start end)))
+           ;; Ranges on the form +-X and X-+ are likely to be a
+           ;; mistake because matching both + and - is common.
+           ((and (eq checks 'all)
+                 (or (eq start ?+) (eq end ?+)))
+            (xr--report
+             warnings (point)
+             (xr--escape-string
+              (format-message
+               "Suspect character range `%c-%c': should `-' be literal?"
+               start end)
+              nil))))
 
           (forward-char 3)))
        ;; single character (including ], ^ and -)
@@ -193,6 +215,19 @@
            warnings (point)
            (format-message
             "Literal `-' not first or last in character alternative")))
+        (when (eq checks 'all)
+          (let ((last (car-safe intervals)))
+            (when (and last
+                       (eq (aref last 1) ?\\)
+                       (or (memq ch '( ?t ?n ?r ?f ?x ?e ?b  ; char escapes
+                                       ?s ?S ?d ?D ?w ?W))   ; PCRE sequences
+                           (and (<= ?0 ch ?7)))              ; octal escapes
+                       ;; Suppress some common false positives, eg [\\nrt]
+                       (not (looking-at-p (rx (= 2 (in "tnrfeb"))))))
+              (xr--report
+               warnings (- (point) 1)
+               (format-message
+                "Possibly erroneous `\\%c' in character alternative" ch)))))
         (push (vector ch ch (point)) intervals)
         (forward-char))))
 
@@ -516,7 +551,7 @@ like (* (* X) ... (* X))."
                  "First item in repetition subsumes last item (wrapped)"
                "Last item in repetition subsumes first item (wrapped)"))))))))
 
-(defun xr--parse-seq (warnings purpose)
+(defun xr--parse-seq (warnings purpose checks)
   (let ((sequence nil)                 ; reversed
         (at-end nil))
     (while (not at-end)
@@ -570,14 +605,14 @@ like (* (* X) ... (* X))."
           (forward-char)
           (let ((negated (eq (following-char) ?^)))
             (when negated (forward-char))
-            (push (xr--parse-char-alt negated warnings) sequence)))
+            (push (xr--parse-char-alt negated warnings checks) sequence)))
 
          ;; * ? + (and non-greedy variants)
          ((memq next-char '(?* ?? ?+))
-          ;; - not special at beginning of sequence or after ^
+          ;; - not special at beginning of sequence or after ^ or \`
           (if (and sequence
-                   (not (and (eq (car sequence) 'bol)
-                             (eq (preceding-char) ?^))))
+                   (not (and (memq (car sequence) '(bol bos))
+                             (memq (preceding-char) '(?^ ?`)))))
               (let ((operator-char next-char)
                     (lazy (eq (char-after (1+ item-start)) ??))
                     (operand (car sequence)))
@@ -624,7 +659,24 @@ like (* (* X) ... (* X))."
                         (if (eq operator-char ??)
                             "Optional expression"
                           "Repetition of expression")
-                        " matching an empty string")))))
+                        " matching an empty string")))
+                     ((and (eq checks 'all)
+                           (memq operator-char '(?* ?+))
+                           (consp operand)
+                           (eq (car operand) 'seq)
+                           (let ((nonzero-items
+                                  (mapcan
+                                   (lambda (item)
+                                     (and (not (xr--matches-empty-p item))
+                                          (list item)))
+                                   (cdr operand))))
+                             (and (= (length nonzero-items) 1)
+                                  (consp (car nonzero-items))
+                                  (memq (caar nonzero-items)
+                                        '( opt zero-or-more one-or-more
+                                           +? *? ?? >=)))))
+                      (xr--report warnings item-start
+                                  "Repetition of effective repetition"))))
                   ;; (* (* X) ... (* X)) etc: wrap-around subsumption
                   (unless (eq operator-char ??)
                     (xr--check-wrap-around-repetition
@@ -662,8 +714,17 @@ like (* (* X) ... (* X))."
                             (goto-char (match-end 0))
                             (string-to-number (match-string 1)))
                            (t (error "Invalid \\(? syntax"))))
+                      (when (and (eq checks 'all)
+                                 (eq (following-char) ?:)
+                                 (eq (char-after (1+ (point))) ??)
+                                 ;; suppress if the group ends after the :?
+                                 (not (looking-at-p (rx ":?\\)"))))
+                        (xr--report
+                         warnings (point)
+                         (format-message
+                          "Possibly mistyped `:?' at start of group")))
                       'unnumbered))
-                   (group (xr--parse-alt warnings purpose))
+                   (group (xr--parse-alt warnings purpose checks))
                    ;; simplify - group has an implicit seq
                    (operand (if (and (listp group) (eq (car group) 'seq))
                                 (cdr group)
@@ -679,11 +740,11 @@ like (* (* X) ... (* X))."
                                 (t group))))
                 (push item sequence))))
 
-           ;; \{..\} - not special at beginning of sequence or after ^
+           ;; \{..\} - not special at beginning of sequence or after ^ or \`
            ((eq next-char ?\{)
             (if (and sequence
-                     (not (and (eq (car sequence) 'bol)
-                               (eq (char-after (1- item-start)) ?^))))
+                     (not (and (memq (car sequence) '(bol bos))
+                               (memq (char-after (1- item-start)) '(?^ ?`)))))
                 (progn
                   (forward-char)
                   (let ((operand (car sequence)))
@@ -765,7 +826,13 @@ like (* (* X) ... (* X))."
             (forward-char)
             (let ((sym (cdr (assq
                              next-char
-                             '((?w . wordchar) (?W . not-wordchar)
+                             ;; Note that translating \w to wordchar isn't
+                             ;; right, since `wordchar' yields [[:word:]] which
+                             ;; does not respect syntax properties.
+                             ;; We translate \W to (not (syntax word)) for
+                             ;; consistency, rather than the confusingly
+                             ;; named legacy `not-wordchar'.
+                             '((?w . (syntax word)) (?W . (not (syntax word)))
                                (?` . bos) (?\' . eos)
                                (?= . point)
                                (?b . word-boundary) (?B . not-word-boundary)
@@ -880,24 +947,51 @@ like (* (* X) ... (* X))."
             (t 
              (cons 'seq item-seq))))))
 
+;; Our tristate logic: {nil, sometimes, always}
+;; ┌─────────┬─────────┬─────────┬─────────┐
+;; │A        │B        │A OR B   │A AND* B │
+;; ├─────────┼─────────┼─────────┼─────────┤
+;; │nil      │nil      │nil      │nil      │
+;; │sometimes│nil      │sometimes│sometimes│ <- not nil!
+;; │sometimes│sometimes│sometimes│sometimes│
+;; │always   │nil      │always   │sometimes│ <- not nil!
+;; │always   │sometimes│always   │sometimes│
+;; │always   │always   │always   │always   │
+;; └─────────┴─────────┴─────────┴─────────┘
+
 (defun xr--tristate-some (f list)
   "Whether F is true for some element in LIST.
 Return `always' if F returns `always' for at least one element,
 nil if F returns nil for all elements,
 `sometimes' otherwise."
-  (let ((result (mapcar f list)))
-    (cond ((memq 'always result) 'always)
-          ((memq 'sometimes result) 'sometimes))))
+  ;; This is the n-ary OR operator in the table above.
+  (let ((ret nil))
+    (while (and list
+                (let ((val (funcall f (car list))))
+                  (when val
+                    (setq ret val))
+                  (not (eq val 'always))))
+      (setq list (cdr list)))
+    ret))
 
 (defun xr--tristate-all (f list)
   "Whether F is true for all elements in LIST.
 Return `always' if F returns `always' for all elements,
-nil if F returns nil for all elements,
+otherwise nil if F returns nil for all elements,
 `sometimes' otherwise."
-  (let ((results (mapcar f list)))
-    (cond ((memq nil results) (and (delq nil results) 'sometimes))
-          ((memq 'sometimes results) 'sometimes)
-          (t 'always))))
+  ;; This is the n-ary AND* operator in the table above.
+  (if list
+      (let ((ret (funcall f (car list))))
+        (unless (eq ret 'sometimes)
+          (setq list (cdr list))
+          (while (and list
+                      (or (eq (funcall f (car list)) ret)
+                          (progn
+                            (setq ret 'sometimes)
+                            nil)))
+            (setq list (cdr list))))
+        ret)
+    'always))
 
 (defun xr--matches-nonempty (rx)
   "Whether RX matches non-empty strings. Return `always', `sometimes' or nil.
@@ -956,7 +1050,7 @@ nil if RX only matches the empty string."
                            (cdr item)))))
 
 (defun xr--starts-with-nonl (item)
-  "Whether ITEM starts with a non-newline. Return `always', `maybe' or nil."
+  "Whether ITEM starts with a non-newline. Return `always', `sometimes' or nil."
   (pcase item
     ((pred stringp)
      (and (> (length item) 0) (not (eq (aref item 0) ?\n)) 'always))
@@ -981,7 +1075,7 @@ nil if RX only matches the empty string."
      'always)))
 
 (defun xr--ends-with-nonl (item)
-  "Whether ITEM ends with a non-newline. Return `always', `maybe' or nil."
+  "Whether ITEM ends with a non-newline. Return `always', `sometimes' or nil."
   (pcase item
     ((pred stringp)
      (and (> (length item) 0) (not (eq (aref item (1- (length item))) ?\n))
@@ -1180,7 +1274,7 @@ a range (pair of chars), or a class (symbol). If in doubt, return t."
       (cond
        ;; Some reasonably conservative subsets of `space' and `word'.
        ((eq a 'space)
-        (not (string-match-p (rx (any (33 . 126))) (char-to-string b))))
+        (not (<= 33 b 126)))
        ((eq a 'word)
         (not (memq b '(?\s ?\t ?\f ?\r))))
        (t
@@ -1415,13 +1509,34 @@ A-SETS and B-SETS are arguments to `any'."
 
        (_ (equal a b))))))
 
-(defun xr--parse-alt (warnings purpose)
+(defun xr--char-alt-equivalent-p (x)
+  "Whether X could be expressed as a combinable character alternative."
+  ;; We exclude `nonl' because it is either something we warn about anyway
+  ;; because of subsumption or patterns like (or nonl "\n") which is just
+  ;; a way of expressing `anychar' in a slightly less efficient way.
+  ;; We also exclude `not'-forms because they usually don't combine in an
+  ;; `or'-expressions to make an `any' form.
+  (pcase x
+    ((pred stringp) (= (length x) 1))
+    ((or 'ascii 'alnum 'alpha 'blank 'cntrl 'digit 'graph
+         'lower 'multibyte 'nonascii 'print 'punct 'space
+         'unibyte 'upper 'word 'xdigit
+         'anything)
+     t)
+    (`(any . ,_) t)
+    ;; Assume for this purpose that \sw and \s- are equivalent to
+    ;; [[:word:]] and [[:space:]] even though they differ in whether syntax
+    ;; properties are respected, because for most uses this doesn't matter.
+    (`(syntax ,(or 'word 'whitespace)) t)
+    (`(or . ,ys) (cl-every #'xr--char-alt-equivalent-p ys))))
+
+(defun xr--parse-alt (warnings purpose checks)
   (let ((alternatives nil))             ; reversed
-    (push (xr--parse-seq warnings purpose) alternatives)
+    (push (xr--parse-seq warnings purpose checks) alternatives)
     (while (not (looking-at (rx (or "\\)" eos))))
       (forward-char 2)                  ; skip \|
       (let ((pos (point))
-            (seq (xr--parse-seq warnings purpose)))
+            (seq (xr--parse-seq warnings purpose checks)))
         (when warnings
           (cond
            ((member seq alternatives)
@@ -1433,7 +1548,14 @@ A-SETS and B-SETS are arguments to `any'."
            ((cl-some (lambda (branch) (xr--superset-p branch seq))
                      alternatives)
             (xr--report warnings pos
-                        "Branch matches subset of a previous branch"))))
+                        "Branch matches subset of a previous branch"))
+           ((and (eq checks 'all)
+                 (xr--char-alt-equivalent-p (car alternatives))
+                 (xr--char-alt-equivalent-p seq))
+            (xr--report
+             warnings pos
+             "Or-pattern more efficiently expressed as character alternative"))
+           ))
         (push seq alternatives)))
     (if (cdr alternatives)
         ;; Simplify (or nonl "\n") to anything
@@ -1442,13 +1564,13 @@ A-SETS and B-SETS are arguments to `any'."
           (cons 'or (nreverse alternatives)))
       (car alternatives))))
 
-(defun xr--parse (re-string warnings purpose)
+(defun xr--parse (re-string warnings purpose checks)
   (with-temp-buffer
     (set-buffer-multibyte t)
     (insert re-string)
     (goto-char (point-min))
     (let* ((case-fold-search nil)
-           (rx (xr--parse-alt warnings purpose)))
+           (rx (xr--parse-alt warnings purpose checks)))
       (when (looking-at (rx "\\)"))
         (error "Unbalanced \\)"))
       rx)))
@@ -1724,10 +1846,10 @@ Passing the returned value to `rx' (or `rx-to-string') yields a regexp string
 equivalent to RE-STRING.  DIALECT controls the choice of keywords,
 and is one of:
 `verbose'       -- verbose keywords
+`medium' or nil -- somewhat verbose keywords (the default)
 `brief'         -- short keywords
-`terse'         -- very short keywords
-`medium' or nil -- a compromise (the default)"
-  (xr--in-dialect (xr--parse re-string nil nil) dialect))
+`terse'         -- very short keywords"
+  (xr--in-dialect (xr--parse re-string nil nil nil) dialect))
 
 ;;;###autoload
 (defun xr-skip-set (skip-set-string &optional dialect)
@@ -1741,16 +1863,24 @@ See `xr' for a description of the DIALECT argument."
   (xr--in-dialect (xr--parse-skip-set skip-set-string nil) dialect))
 
 ;;;###autoload
-(defun xr-lint (re-string &optional purpose)
+(defun xr-lint (re-string &optional purpose checks)
   "Detect dubious practices and possible mistakes in RE-STRING.
 This includes uses of tolerated but discouraged constructs.
 Outright regexp syntax violations are signalled as errors.
+
 If PURPOSE is `file', perform additional checks assuming that RE-STRING
 is used to match a file name.
+
+If CHECKS is absent or nil, only perform checks that are very
+likely to indicate mistakes; if `all', include all checks,
+including ones more likely to generate false alarms.
+
 Return a list of (OFFSET . COMMENT) where COMMENT applies at OFFSET
 in RE-STRING."
+  (unless (memq checks '(nil all))
+    (error "Bad xr-lint CHECKS argument: %S" checks))
   (let ((warnings (list nil)))
-    (xr--parse re-string warnings purpose)
+    (xr--parse re-string warnings purpose checks)
     (sort (car warnings) #'car-less-than-car)))
 
 ;;;###autoload

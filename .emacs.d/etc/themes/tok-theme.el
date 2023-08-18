@@ -1,9 +1,9 @@
-;;; tok-theme.el --- Minimal light monochromatic theme for Emacs in the spirit of Zmacs and Smalltalk-80-*- lexical-binding: t; -*-
+;;; tok-theme.el --- Minimal monochromatic theme for Emacs in the spirit of Zmacs and Smalltalk-80. -*- lexical-binding: t; -*-
 
 ;; Author: Topi Kettunen <topi@topikettunen.com>
 ;; URL: https://github.com/topikettunen/tok-theme
 ;; Version: 0.1
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "27.0"))
 
 ;; This is free and unencumbered software released into the public domain.
 ;;
@@ -34,61 +34,73 @@
 
 ;;; Commentary:
 
-;; Tok is a minimal light monochromatic theme for Emacs in the spirit
+;; Tok is a minimal monochromatic theme for Emacs in the spirit
 ;; of Zmacs and Smalltalk-80.
 
 ;;; Code:
 
+(defgroup tok-theme nil
+  "Options for tok-theme."
+  :group 'faces)
+
+(defcustom tok-theme-dark nil
+  "If non-nil, make the theme dark."
+  :group 'tok-theme
+  :type 'boolean)
+
 (deftheme tok
-  "Minimal light monochromatic theme for Emacs in the spirit of
+  "Minimal monochromatic theme for Emacs in the spirit of
 Zmacs and Smalltalk-80"
-  :background-mode 'light
   :kind 'color-scheme)
 
-(let ((class '((class color) (min-colors 89))))
+(let ((class '((class color) (min-colors 89)))
+      (bg    (if tok-theme-dark "black" "white"))
+      (fg    (if tok-theme-dark "white" "black"))
+      (dim-1 (if tok-theme-dark "grey15" "grey90"))
+      (dim-2 (if tok-theme-dark "grey25" "grey80"))
+      (dim-3 (if tok-theme-dark "grey35" "grey70"))
+      (dim-4 (if tok-theme-dark "grey45" "grey60"))
+      (dim-5 (if tok-theme-dark "grey55" "grey50")))
   (custom-theme-set-faces
    'tok
-   ;; In case you're using this theme in terminal, let the terminal
-   ;; emulator define these.
-   (when (display-graphic-p)
-     `(cursor ((,class (:background "black")))))
-   (when (display-graphic-p) ; Have to call `when' here due to reasons.
-     `(default ((,class (:foreground "black" :background "white")))))
 
    ;; Basic faces
-   `(highlight ((,class (:background "grey95"))))
-   `(region ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
-                      :background "grey90"))))
+
+   ;; Let terminal to define these.
+   (when (display-graphic-p)
+     `(default ((,class (:foreground ,fg :background ,bg)))))
+   (when (display-graphic-p) ; Have to call `when' here due to reasons...
+     `(cursor ((,class (:background ,fg)))))
+
+   `(highlight ((,class (:background ,dim-1))))
+   `(region ((,class (:extend t :background ,dim-2))))
    `(secondary-selection ((,class (:inherit region))))
-   `(trailing-whitespace ((,class (:background "hotpink"))))
+   `(trailing-whitespace ((,class (:underline t))))
    `(error ((,class (:weight bold :foreground "red"))))
    `(warning ((,class (:weight bold :foreground "orange"))))
    `(success ((,class (:weight bold :foreground "green"))))
    `(fringe ((,class (nil))))
-   `(button ((,class (:underline t))))
-   `(vertical-border ((,class (:foreground "black"))))
+   `(button ((,class (:box 1))))
+   `(vertical-border ((,class (:foreground ,fg))))
    `(minibuffer-prompt ((,class (nil))))
+   `(link ((,class (:underline t))))
 
    ;; Line-numbes
-   `(line-number ((,class (:foreground "grey75"))))
-   `(line-number-current-line ((,class (:foreground "black" :background "grey95"))))
+   `(line-number ((,class (:foreground ,dim-2))))
+   `(line-number-current-line ((,class (:foreground ,fg :background ,dim-1))))
 
    ;; Mode-line
-   `(mode-line ((,class (:foreground "black" :background "white" :box 1))))
-   (when (>= emacs-major-version 29)
-     `(mode-line-active ((,class (:inherit mode-line)))))
-   `(mode-line-inactive ((,class (:weight light
-                                          :foreground "grey20"
-                                          :background "grey90"
-                                          :box 1))))
+   `(mode-line ((,class (:foreground ,fg :background ,bg :box ,fg))))
+   `(mode-line-active ((,class (:inherit mode-line))))
+   `(mode-line-inactive ((,class (:weight light :foreground ,dim-5 :background ,dim-1 :box ,dim-5))))
    `(mode-line-highlight ((t (nil))))
    `(mode-line-emphasis ((,class (:weight bold))))
    `(mode-line-buffer-id ((,class (:weight bold))))
 
    ;; Font-lock
-   `(font-lock-comment-face ((,class (:weight bold))))
+   `(font-lock-comment-face ((,class (:foreground ,dim-4))))
    `(font-lock-comment-delimiter-face ((,class (:inherit font-lock-comment-face))))
-   `(font-lock-string-face ((,class (:italic t :weight light))))
+   `(font-lock-string-face ((,class (:background ,dim-1))))
    `(font-lock-doc-face ((,class (:inherit font-lock-comment-face))))
    `(font-lock-doc-markup-face ((,class (nil))))
    `(font-lock-keyword-face ((,class (nil))))
@@ -99,9 +111,15 @@ Zmacs and Smalltalk-80"
    `(font-lock-constant-face ((,class (nil))))
    `(font-lock-warning-face ((,class (nil))))
    `(font-lock-negation-char-face ((,class (nil))))
-   `(font-lock-preprocessor-face ((,class (:inherit font-lock-comment-face))))
+   `(font-lock-preprocessor-face ((,class (:weight bold))))
    `(font-lock-regexp-grouping-backslash ((,class (nil))))
    `(font-lock-regexp-grouping-construct ((,class (nil))))
+
+   ;; isearch
+   `(isearch ((,class (:foreground ,bg :background ,fg))))
+   `(isearch-group-1 ((,class (:background ,dim-5))))
+   `(isearch-group-2 ((,class (:background ,dim-4))))
+   `(lazy-highlight ((,class (:background ,dim-1))))
 
    ;; Dired
    `(dired-directory ((,class (:weight bold))))
@@ -128,7 +146,7 @@ Zmacs and Smalltalk-80"
    `(outline-8 ((,class (:inherit outline-1))))
 
    ;; Show paren
-   `(show-paren-match ((,class (:background "grey80"))))
+   `(show-paren-match ((,class (:weight bold :background ,dim-2))))
    `(show-paren-match-expression ((,class (:inherit show-paren-match))))
    `(show-paren-mismatch ((,class (:inherit error))))
 
@@ -147,23 +165,23 @@ Zmacs and Smalltalk-80"
    ;; Magit
    `(magit-diff-file-heading ((,class (nil))))
    `(magit-section-heading ((,class (:weight bold))))
-   `(magit-diff-added ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
-                                :background "#ddffdd"))))
-   `(magit-diff-added-highlight ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
-                                          :background "#cceecc"))))
-   `(magit-diff-removed ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
-                                  :background "#ffdddd"))))
-   `(magit-diff-removed-highlight ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
-                                          :background "#eecccc"))))
+   ;;
+   ;; Let Magit decide based on whether the `background-mode' is light or
+   ;; dark.
+   ;;
+   ;; `(magit-diff-added ((,class (:extend t :background "#ddffdd"))))
+   ;; `(magit-diff-added-highlight ((,class (:extend t :background "#cceecc"))))
+   ;; `(magit-diff-removed ((,class (:extend t :background "#ffdddd"))))
+   ;; `(magit-diff-removed-highlight ((,class (:extend t :background "#eecccc"))))
 
    ;; Completions
    `(completions-common-part ((,class (:weight bold))))
    `(completions-first-difference ((,class (nil))))
 
    ;; Corfu
-   `(corfu-default ((,class (:background "white"))))
-   `(corfu-bar ((,class (:background "black"))))
-   `(corfu-border ((,class (:background "black"))))
+   `(corfu-default ((,class (:background ,bg))))
+   `(corfu-bar ((,class (:background ,fg))))
+   `(corfu-border ((,class (:background ,fg))))
    `(corfu-current ((,class (:inherit highlight))))))
 
 ;;;###autoload
@@ -172,9 +190,5 @@ Zmacs and Smalltalk-80"
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'tok)
-
-;; Local Variables:
-;; no-byte-compile: t
-;; End:
 
 ;;; tok-theme.el ends here

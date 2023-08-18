@@ -69,6 +69,11 @@
 
 
 ;;; History:
+;; 2023-07-21
+;;         * Various bug fixes
+;;         * Settings were changed to use defcustom.
+;;         * Version 0.4.7
+;;
 ;; 2013-07-16  P. Kalinowski
 ;;         * Adjusted `pos-tip-show' to correctly set tooltip text foreground
 ;;           color when using custom color themes.
@@ -641,10 +646,16 @@ Example:
 			       (x-display-pixel-width frame))))
 			 border)
 		      (frame-char-width frame)))
-		(/ (- (or pixel-height
-			  (x-display-pixel-height frame))
-		      border)
-		   (frame-char-height frame))))
+		;; In case of non-zero line spacing, pixel-height will include some
+		;; extra space, as required to display the tooltip, but char height
+		;; will not. However, it seems that x-show-tip will use char height
+		;; to convert maximum row count into maximum tooltip height, so we
+		;; need to round up the row count to allow the last line to be
+		;; shown.
+		(ceiling (/ (- (or pixel-height
+				   (x-display-pixel-height frame))
+			       border)
+			    (float (frame-char-height frame))))))
 	 (x-gtk-use-system-tooltips nil) ; Don't use Gtk+ tooltip in Emacs 24
 	 (mpos (with-selected-window window (mouse-pixel-position)))
 	 (mframe (car mpos))

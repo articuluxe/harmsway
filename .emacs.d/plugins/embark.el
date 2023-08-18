@@ -470,6 +470,7 @@ arguments and more details."
     (capitalize-region embark--mark-target)
     (count-words-region embark--mark-target)
     (count-words embark--mark-target)
+    (delete-duplicate-lines embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (delete-region embark--mark-target)
     (format-encode-region embark--mark-target)
@@ -1815,21 +1816,22 @@ user for a KEYMAP variable."
     (call-interactively command)))
 
 ;;;###autoload
-(defun embark-bindings (no-global)
-  "Explore all current command key bindings with `completing-read'.
+(defun embark-bindings (global)
+  "Explore current command key bindings with `completing-read'.
 The selected command will be executed.
 
-If NO-GLOBAL is non-nil (interactively, if called with a prefix
-argument) omit global key bindings; this leaves key bindings from
-minor mode maps and the local map (usually set by the major
-mode), but also less common keymaps such as those from a text
-property or overlay, or the overriding maps:
-`overriding-terminal-local-map' and `overriding-local-map'."
+This shows key bindings from minor mode maps and the local
+map (usually set by the major mode), but also less common keymaps
+such as those from a text property or overlay, or the overriding
+maps: `overriding-terminal-local-map' and `overriding-local-map'.
+
+Additionally, if GLOBAL is non-nil (interactively, if called with
+a prefix argument), this command includes global key bindings."
   (interactive "P")
   (embark-bindings-in-keymap
    (make-composed-keymap
     (let ((all-maps (current-active-maps t)))
-      (if no-global (remq global-map all-maps) all-maps)))))
+      (if global all-maps (remq global-map all-maps))))))
 
 ;;;###autoload
 (defun embark-bindings-at-point ()
@@ -2132,7 +2134,7 @@ target bounds.
 
 In the minibuffer only the first target finder returning non-nil
 is taken into account.  When finding targets at point in other
-buffers, all target finder function is executed.
+buffers, all target finder functions are executed.
 
 For each target, the type is then looked up as a key in the
 variable `embark-transformer-alist'.  If there is a transformer
@@ -2319,8 +2321,10 @@ Return a plist with keys `:type', `:orig-type', `:candidates', and
       (let ((dir (embark--default-directory)))
         (setq candidates
               (mapcar (lambda (cand)
-                        (abbreviate-file-name (expand-file-name cand dir)))
+                        (abbreviate-file-name
+                         (expand-file-name (substitute-in-file-name cand) dir)))
                       candidates))))
+    ;; TODO more systematic approach to applying substitute-in-file-name
     (append
      (list :orig-type type :orig-candidates candidates :bounds bounds)
      (or (when candidates

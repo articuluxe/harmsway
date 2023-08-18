@@ -85,7 +85,7 @@
       (bw02 "#222222")
       (bw03 "#333333")
       (bw04 "#444444")
-      (bw05 "#555555")
+      ;; (bw05 "#555555")
       (bw06 "#666666")
       (bw07 "#777777")
       (bw08 "#888888")
@@ -162,10 +162,10 @@
    `(variable-pitch             ((,class (:height 1.0))))
    `(sculpture-themes-dark-variable-pitch-italic      ((,class (:inherit variable-pitch :slant italic))))
    `(fringe                     ((,class (:background ,bg))))
-   `(vertical-border            ((,class (:foreground ,bw03))))
-   `(window-divider             ((,class (:foreground ,bg))))
-   `(window-divider-first-pixel ((,class (:foreground ,bg))))
-   `(window-divider-last-pixel  ((,class (:foreground ,bg))))
+   `(vertical-border            ((,class (:background ,bg :foreground ,bg))))
+   `(window-divider             ((,class (:background ,bg :foreground ,bg))))
+   `(window-divider-first-pixel ((,class (:background ,bg :foreground ,bg))))
+   `(window-divider-last-pixel  ((,class (:background ,bg :foreground ,bg))))
    `(hl-line                    ((,class (:background ,ot06))))
    `(button                     ((,class (:foreground ,fg :background ,ot06 :box (:line-width 2 :color ,bw06 :style released-button)))))
 
@@ -376,6 +376,12 @@
 ;;;;;; workspace, doom
    `(+workspace-tab-face          ((,class (:inherit variable-pitch :foreground ,fg))))
    `(+workspace-tab-selected-face ((,class (:inherit variable-pitch :foreground ,ha04 :background ,ot05))))
+
+;;;;;; xref
+   `(xref-file-header  ((,class (:foreground ,ot24 :weight bold :height 1.15 :inherit variable-pitch))))
+   `(xref-match        ((,class (:underline (:color ,ot04)))))
+   `(xref-line-number  ((,class (:foreground ,ot00))))
+   `(info-xref-visited ((,class (:underline (:color ,ot05)))))
 
 ;;;;;; +org-todo, custom
    `(+org-todo-cancel  ((,class (:inherit (bold fixed-pitch) :underline (:color ,cs00 :line-width -1)))))
@@ -762,13 +768,13 @@
 ;;;;;; highlight-indent-guides
    `(highlight-indent-guides-odd-face             ((,class (:foreground ,bw02))))
    `(highlight-indent-guides-even-face            ((,class (:foreground ,bw02))))
-   `(highlight-indent-guides-character-face       ((,class (:foreground ,bw03))))
+   `(highlight-indent-guides-character-face       ((,class (:foreground ,ha09))))
    `(highlight-indent-guides-stack-odd-face       ((,class (:foreground ,bw04))))
    `(highlight-indent-guides-stack-even-face      ((,class (:foreground ,bw04))))
-   `(highlight-indent-guides-stack-character-face ((,class (:foreground ,bw05))))
+   `(highlight-indent-guides-stack-character-face ((,class (:foreground ,ot06))))
    `(highlight-indent-guides-top-odd-face         ((,class (:foreground ,bw08))))
    `(highlight-indent-guides-top-even-face        ((,class (:foreground ,bw08))))
-   `(highlight-indent-guides-top-character-face   ((,class (:foreground ,bw09))))
+   `(highlight-indent-guides-top-character-face   ((,class (:foreground ,cs01))))
 
 ;;;;;; highlight-indentation
    `(highlight-indentation-face                ((,class (:background ,bw02))))
@@ -782,7 +788,7 @@
    `(writegood-passive-voice-face ((,class (:underline (:line-width -1 :color ,ot08)))))
 
 ;;;;;; eglot
-   `(eglot-highlight-symbol-face  ((,class (:underline (:line-width -1 :color ,fg) :inherit (bold)))))
+   `(eglot-highlight-symbol-face  ((,class (:background ,ot33 :inherit (bold)))))
 
 ;;;;;; lsp-mode
    `(lsp-ui-peek-list ((,class :background ,bw01)))

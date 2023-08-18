@@ -76,7 +76,7 @@
  `(link-visited ((t (:foreground ,fui-amethyst :underline t :weight normal))))
  `(escape-glyph ((t (:foreground ,fui-sunflower :bold t))))
  `(highlight ((t (:background ,fui-deep-clouds))))
- `(hl-line ((t (:inverse-video nil :background ,fui-deep-clouds))))
+ `(hl-line ((t (:inverse-video unspecified :background ,fui-deep-clouds))))
  `(shadow ((t (:foreground ,fui-concrete))))
  `(success ((t (:foreground ,fui-dark-emerald :weight bold))))
  `(warning ((t (:foreground ,fui-dark-carrot :weight bold))))
@@ -141,11 +141,11 @@
  `(mode-line-inactive ((t (:background ,fui-dark-clouds :foreground ,fui-fg :box (:line-width 1) :family "Inconsolata-11" :height 0.8))))
 
  ;; ==== Main pages
- `(set-face-attribute 'Man-overstrike nil :weight bold :foreground ,fui-dark-carrot)
- `(set-face-attribute 'Man-underline nil  :weight underline :foreground ,fui-dark-river)
+ `(set-face-attribute 'Man-overstrike unspecified :weight bold :foreground ,fui-dark-carrot)
+ `(set-face-attribute 'Man-underline unspecified  :weight underline :foreground ,fui-dark-river)
 
  ;; ==== Face for specific prog modes
- `(sh-heredoc ((t (:foreground nil :inherit font-lock-string-face))))
+ `(sh-heredoc ((t (:foreground unspecified :inherit font-lock-string-face))))
 
  ;; ==== Dired
  `(dired-directory ((t (:foreground ,fui-river))))
@@ -169,7 +169,7 @@
  `(erc-timestamp-face ((t (:foreground ,fui-concrete :weight unspecified))))
  `(erc-current-nick-face ((t (:foreground ,fui-dark-carrot :weight unspecified))))
  `(erc-input-face ((t (:foreground ,fui-amethyst))))
- `(erc-prompt-face ((t (:foreground ,fui-dark-concrete :background nil :slant italic :weight unspecified))))
+ `(erc-prompt-face ((t (:foreground ,fui-dark-concrete :background unspecified :slant italic :weight unspecified))))
  `(erc-my-nick-face ((t (:foreground ,fui-dark-carrot))))
  `(erc-pal-face ((t (:foreground ,fui-dark-amethyst))))
 
@@ -251,7 +251,7 @@
  `(helm-ff-invalid-symlink ((t (:foreground ,fui-bg :background ,fui-dark-alizarin))))
  `(helm-ff-symlink ((t (:foreground ,fui-amethyst))))
  `(helm-ff-prefix ((t (:background ,fui-sunflower))))
- `(helm-ff-dotted-directory ((t (:background nil :foreground ,fui-dark-clouds))))
+ `(helm-ff-dotted-directory ((t (:background unspecified :foreground ,fui-dark-clouds))))
  `(helm-M-x-key ((t (:foreground ,fui-dark-emerald))))
  `(helm-buffer-file ((t (:foreground ,fui-fg))))
  `(helm-buffer-archive ((t (:inherit helm-buffer-file))))
@@ -270,10 +270,10 @@
  ;; ==== adoc-mode
  `(markup-meta-hide-face ((t (:height 1.0 :foreground ,fui-fg))))
  `(markup-meta-face ((t (:height 1.0 :foreground ,fui-fg :family nil))))
- `(markup-reference-face ((t (:underline nil :foreground ,fui-dark-river))))
+ `(markup-reference-face ((t (:underline unspecified :foreground ,fui-dark-river))))
  `(markup-gen-face ((t (:foreground ,fui-dark-river))))
  `(markup-passthrough-face ((t (:inherit markup-gen-face))))
- `(markup-replacement-face ((t (:family nil :foreground ,fui-amethyst))))
+ `(markup-replacement-face ((t (:family unspecified :foreground ,fui-amethyst))))
  `(markup-list-face ((t (:weight bold))))
  `(markup-secondary-text-face ((t (:height 1.0 :foreground ,fui-dark-emerald))))
  `(markup-verbatim-face ((t (:foreground ,fui-dark-concrete))))
@@ -351,7 +351,7 @@
 
  ;; ==== Highlight-indent-guides
  `(highlight-indent-guides-odd-face ((t (:background ,fui-deep-clouds))))
- `(highlight-indent-guides-even-face ((t (:background nil)))))
+ `(highlight-indent-guides-even-face ((t (:background unspecified)))))
 
 
 ;;;###autoload

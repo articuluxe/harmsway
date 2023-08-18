@@ -125,6 +125,11 @@ If you are a macOS user, \"ppm\" should be specified."
   :group 'gif-screencast
   :type 'string)
 
+(defcustom gif-screencast-output-format "gif"
+  "File format to use for the resulting GIF."
+  :group 'gif-screencast
+  :type 'string)
+
 (defcustom gif-screencast-title-bar-pixel-height (cdr (alist-get 'title-bar-size (frame-geometry)))
   "Height of title bar for cropping screenshots."
   :group 'gif-screencast
@@ -231,7 +236,9 @@ Return the process."
     (gif-screencast-print-status process event))
   (message "Compiling GIF with %s..." gif-screencast-convert-program)
   (let* ((output-filename (expand-file-name
-                           (format-time-string "output-%F-%T.gif" (current-time))
+                           (format-time-string
+                            (concat "output-%F-%T." gif-screencast-output-format)
+                            (current-time))
                            (or (and (file-writable-p gif-screencast-output-directory)
                                     gif-screencast-output-directory)
                                (read-directory-name "Save output to directory: "))))

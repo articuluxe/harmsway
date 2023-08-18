@@ -5,7 +5,7 @@
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.12
+;; Version: 1.14
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -362,7 +362,7 @@ quote, for example.")
                                     tab-width))          ; Groovy
     (yaml-mode       default       (yaml-indent-offset
                                     tab-width))          ; YAML
-    (swift-mode       c/c++/java   swift-mode:basic-offset) ; Swift
+    (swift-mode      c/c++/java   swift-mode:basic-offset) ; Swift
 
     ;; Modes that use SMIE if available
     (sh-mode         default       sh-basic-offset)      ; Shell Script
@@ -383,6 +383,8 @@ quote, for example.")
     (rust-ts-mode    c/c++/java    rust-ts-mode-indent-offset)
     (json-ts-mode    javascript    json-ts-mode-indent-offset)
     (cmake-ts-mode   cmake         cmake-ts-mode-indent-offset)
+    (typescript-ts-mode javascript typescript-ts-mode-indent-offset)
+    (ursa-ts-mode    c/c++/java    ursa-ts-mode-indent-offet)
 
     (default         default       standard-indent))     ; default fallback
   "A mapping from hook variables to language types.")

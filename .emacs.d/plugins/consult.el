@@ -928,8 +928,7 @@ Also temporarily increase the GC limit via `consult--with-increased-gc'."
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       (save-excursion
-        (save-restriction
-          (widen)
+        (without-restriction
           (goto-char (point-min))
           ;; Location data might be invalid by now!
           (ignore-errors
@@ -2147,51 +2146,7 @@ PROPS are optional properties passed to `make-process'."
          (setq last-args nil))
         ((pred stringp)
          (funcall async action)
-         (let* ((flush t)
-                (rest "")
-                (proc-filter
-                 (lambda (_ out)
-                   (when flush
-                     (setq flush nil)
-                     (funcall async 'flush))
-                   (let ((lines (split-string out "[\r\n]+")))
-                     (if (not (cdr lines))
-                         (setq rest (concat rest (car lines)))
-                       (setcar lines (concat rest (car lines)))
-                       (let* ((len (length lines))
-                              (last (nthcdr (- len 2) lines)))
-                         (setq rest (cadr last)
-                               count (+ count len -1))
-                         (setcdr last nil)
-                         (funcall async lines))))))
-                (proc-sentinel
-                 (lambda (_ event)
-                   (when flush
-                     (setq flush nil)
-                     (funcall async 'flush))
-                   (funcall async 'indicator
-                            (cond
-                             ((string-prefix-p "killed" event)   'killed)
-                             ((string-prefix-p "finished" event) 'finished)
-                             (t 'failed)))
-                   (when (and (string-prefix-p "finished" event) (not (equal rest "")))
-                     (cl-incf count)
-                     (funcall async (list rest)))
-                   (consult--async-log
-                    "consult--async-process sentinel: event=%s lines=%d\n"
-                    (string-trim event) count)
-                   (when (> (buffer-size proc-buf) 0)
-                     (with-current-buffer (get-buffer-create consult--async-log)
-                       (goto-char (point-max))
-                       (insert ">>>>> stderr >>>>>\n")
-                       (let ((beg (point)))
-                         (insert-buffer-substring proc-buf)
-                         (save-excursion
-                           (goto-char beg)
-                           (message #("%s" 0 2 (face error))
-                                    (buffer-substring-no-properties (pos-bol) (pos-eol)))))
-                       (insert "<<<<< stderr <<<<<\n")))))
-                (args (funcall builder action)))
+         (let* ((args (funcall builder action)))
            (unless (stringp (car args))
              (setq args (car args)))
            (unless (equal args last-args)
@@ -2201,20 +2156,65 @@ PROPS are optional properties passed to `make-process'."
                (kill-buffer proc-buf)
                (setq proc nil proc-buf nil))
              (when args
-               (funcall async 'indicator 'running)
-               (consult--async-log "consult--async-process started %S\n" args)
-               (setq count 0
-                     proc-buf (generate-new-buffer " *consult-async-stderr*")
-                     proc (apply #'make-process
-                                 `(,@props
-                                   :connection-type pipe
-                                   :name ,(car args)
-                                   ;;; XXX tramp bug, the stderr buffer must be empty
-                                   :stderr ,proc-buf
-                                   :noquery t
-                                   :command ,args
-                                   :filter ,proc-filter
-                                   :sentinel ,proc-sentinel))))))
+               (let* ((flush t)
+                      (rest "")
+                      (proc-filter
+                       (lambda (_ out)
+                         (when flush
+                           (setq flush nil)
+                           (funcall async 'flush))
+                         (let ((lines (split-string out "[\r\n]+")))
+                           (if (not (cdr lines))
+                               (setq rest (concat rest (car lines)))
+                             (setcar lines (concat rest (car lines)))
+                             (let* ((len (length lines))
+                                    (last (nthcdr (- len 2) lines)))
+                               (setq rest (cadr last)
+                                     count (+ count len -1))
+                               (setcdr last nil)
+                               (funcall async lines))))))
+                      (proc-sentinel
+                       (lambda (_ event)
+                         (when flush
+                           (setq flush nil)
+                           (funcall async 'flush))
+                         (funcall async 'indicator
+                                  (cond
+                                   ((string-prefix-p "killed" event)   'killed)
+                                   ((string-prefix-p "finished" event) 'finished)
+                                   (t 'failed)))
+                         (when (and (string-prefix-p "finished" event) (not (equal rest "")))
+                           (cl-incf count)
+                           (funcall async (list rest)))
+                         (consult--async-log
+                          "consult--async-process sentinel: event=%s lines=%d\n"
+                          (string-trim event) count)
+                         (when (> (buffer-size proc-buf) 0)
+                           (with-current-buffer (get-buffer-create consult--async-log)
+                             (goto-char (point-max))
+                             (insert ">>>>> stderr >>>>>\n")
+                             (let ((beg (point)))
+                               (insert-buffer-substring proc-buf)
+                               (save-excursion
+                                 (goto-char beg)
+                                 (message #("%s" 0 2 (face error))
+                                          (buffer-substring-no-properties (pos-bol) (pos-eol)))))
+                             (insert "<<<<< stderr <<<<<\n")))))
+                      (process-adaptive-read-buffering nil))
+                 (funcall async 'indicator 'running)
+                 (consult--async-log "consult--async-process started %S\n" args)
+                 (setq count 0
+                       proc-buf (generate-new-buffer " *consult-async-stderr*")
+                       proc (apply #'make-process
+                                   `(,@props
+                                     :connection-type pipe
+                                     :name ,(car args)
+                                     ;;; XXX tramp bug, the stderr buffer must be empty
+                                     :stderr ,proc-buf
+                                     :noquery t
+                                     :command ,args
+                                     :filter ,proc-filter
+                                     :sentinel ,proc-sentinel)))))))
          nil)
         ('destroy
          (when proc
@@ -3092,10 +3092,8 @@ The symbol at point is added to the future history."
   (let* ((candidates (consult--slow-operation
                          "Collecting headings..."
                        (consult--outline-candidates)))
-         (min-level (- (apply #'min (mapcar
-                                     (lambda (cand)
-                                       (get-text-property 0 'consult--outline-level cand))
-                                     candidates))
+         (min-level (- (cl-loop for cand in candidates minimize
+                                (get-text-property 0 'consult--outline-level cand))
                        ?1))
          (narrow-pred (lambda (cand)
                         (<= (get-text-property 0 'consult--outline-level cand)
@@ -3366,7 +3364,7 @@ BUFFERS is the list of buffers."
 By default search across all project buffers.  If the prefix
 argument QUERY is non-nil, all buffers are searched.  Optional
 INITIAL input can be provided.  The symbol at point and the last
-`isearch-string' is added to the future history.In order to
+`isearch-string' is added to the future history.  In order to
 search a subset of buffers, QUERY can be set to a plist according
 to `consult--buffer-query'."
   (interactive "P")
@@ -4343,9 +4341,10 @@ DIR can be project, nil or a path."
    (dir (expand-file-name dir))))
 
 (defun consult--buffer-query-prompt (prompt query)
-  "Buffer query function returning a scope description.
-PROMPT is the prompt format string.
-QUERY is passed to `consult--buffer-query'."
+  "Return a list of buffers and create an appropriate prompt string.
+Return a pair of a prompt string and a list of buffers.  PROMPT
+is the prefix of the prompt string.  QUERY specifies the buffers
+to search and is passed to `consult--buffer-query'."
   (let* ((dir (plist-get query :directory))
          (ndir (consult--normalize-directory dir))
          (buffers (apply #'consult--buffer-query :directory ndir query))
@@ -4362,7 +4361,7 @@ QUERY is passed to `consult--buffer-query'."
 (cl-defun consult--buffer-query (&key sort directory mode as predicate (filter t)
                                       include (exclude consult-buffer-filter))
   "Buffer query function.
-DIRECTORY can either be project or a path.
+DIRECTORY can either be the symbol project or a file name.
 SORT can be visibility, alpha or nil.
 FILTER can be either t, nil or invert.
 EXCLUDE is a list of regexps.
@@ -4704,7 +4703,7 @@ BUILDER is the command line builder function."
 
 (defun consult--grep-position (cand &optional find-file)
   "Return the grep position marker for CAND.
-FIND-FILE is the file open function, defaulting to `find-file'."
+FIND-FILE is the file open function, defaulting to `find-file-noselect'."
   (when cand
     (let* ((file-end (next-single-property-change 0 'face cand))
            (line-end (next-single-property-change (1+ file-end) 'face cand))
@@ -4712,7 +4711,7 @@ FIND-FILE is the file open function, defaulting to `find-file'."
            (file (substring-no-properties cand 0 file-end))
            (line (string-to-number (substring-no-properties cand (+ 1 file-end) line-end))))
       (when-let (pos (consult--marker-from-line-column
-                      (funcall (or find-file #'find-file) file)
+                      (funcall (or find-file #'find-file-noselect) file)
                       line (or (car matches) 0)))
         (cons pos (cdr matches))))))
 

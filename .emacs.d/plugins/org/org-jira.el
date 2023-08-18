@@ -1086,8 +1086,8 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
   (let ((elem (org-element-at-point)))
     (and (eq 'headline (car elem))
          (equal (format "%s-Tickets" proj-key)
-                (plist-get (cadr elem) :title))
-         (= 1 (plist-get (cadr elem) :level)))))
+                (org-element-property :title elem))
+         (= 1 (org-element-property :level elem)))))
 
 (defun org-jira--maybe-render-top-heading (proj-key)
   "Ensure that there is a headline for PROJ-KEY at the top of the file."
@@ -2218,7 +2218,7 @@ otherwise it should return:
       ;; update, why not?  This is better to fire first, because it
       ;; doesn't auto-refresh any areas, while the end of the main
       ;; update does a callback that reloads the worklog entries (so,
-      ;; we hope that wont occur until after this successfully syncs
+      ;; we hope that won't occur until after this successfully syncs
       ;; up).  Only do this sync if the user defcustom defines it as such.
       (when org-jira-worklog-sync-p
         (org-jira-update-worklogs-from-org-clocks))
@@ -2541,7 +2541,7 @@ boards -  list of `org-jira-sdk-board' records."
 
 ;;;###autoload
 (defun org-jira-get-boards ()
-  "Get list of boards and their properies."
+  "Get list of boards and their properties."
   (interactive)
   (let* ((datalist (jiralib-get-boards))
          (boards (org-jira-sdk-create-boards-from-data-list datalist)))

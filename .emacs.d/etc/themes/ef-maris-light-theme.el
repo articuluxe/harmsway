@@ -1,4 +1,4 @@
-;;; ef-maris-light-theme.el --- Legible light theme with blue, cyan, and teal colors -*- lexical-binding:t -*-
+;;; ef-maris-light-theme.el --- Legible light theme with blue, cyan, and green colors -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2023  Free Software Foundation, Inc.
 
@@ -38,7 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-maris-light
-    "Legible light theme with blue, cyan, and teal colors.")
+    "Legible light theme with blue, cyan, and green colors.")
 
   (defconst ef-maris-light-palette
     '(
@@ -46,12 +46,12 @@
 
       (bg-main     "#edf4f8")
       (fg-main     "#151a27")
-      (bg-dim      "#dce2ef")
+      (bg-dim      "#e0e7ef")
       (fg-dim      "#676470")
-      (bg-alt      "#cdd4de")
+      (bg-alt      "#cfd8e3")
       (fg-alt      "#3f4f99")
 
-      (bg-active   "#adb4be")
+      (bg-active   "#afb8c3")
       (bg-inactive "#e6ecf2")
 
 ;;; Basic hues for foreground values
@@ -59,7 +59,7 @@
       (red             "#c3303a")
       (red-warmer      "#d00000")
       (red-cooler      "#b02440")
-      (red-faint       "#9b4052")
+      (red-faint       "#8b4052")
       (green           "#007010")
       (green-warmer    "#3a6f00")
       (green-cooler    "#007047")
@@ -136,8 +136,8 @@
       (bg-completion      "#cddbfa")
       (bg-hover           "#d2b4cf")
       (bg-hover-secondary "#b7bbea")
-      (bg-hl-line         "#d4e2f0")
-      (bg-region          "#c7d8f5")
+      (bg-hl-line         "#dae5f0")
+      (bg-region          "#c8dcff")
       (bg-paren           "#cab3b2")
       (bg-err             "#f2c2b5") ; check with err
       (bg-warning         "#e8df9a") ; check with warning
@@ -161,7 +161,7 @@
 
 ;;; Conditional hues
 
-      (bg-region-intense "#c6b2d3")
+      (bg-region-intense "#a6bfd3")
 
 ;;; Mappings
 
@@ -198,7 +198,7 @@
       (accent-0 blue-cooler)
       (accent-1 green)
       (accent-2 cyan)
-      (accent-3 magenta)
+      (accent-3 red-cooler)
 
 ;;;; Date mappings
 
@@ -228,11 +228,11 @@
 
       (mail-cite-0 cyan)
       (mail-cite-1 magenta)
-      (mail-cite-2 green-warmer)
+      (mail-cite-2 blue-faint)
       (mail-cite-3 yellow-cooler)
-      (mail-part magenta-cooler)
+      (mail-part green-cooler)
       (mail-recipient blue-warmer)
-      (mail-subject green)
+      (mail-subject green-warmer)
       (mail-other blue)
 
 ;;;; Space mappings

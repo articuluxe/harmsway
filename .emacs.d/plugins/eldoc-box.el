@@ -173,8 +173,17 @@ Its value should be a list: (left right top)"
 
 (defvar eldoc-box-position-function #'eldoc-box--default-upper-corner-position-function
   "Eldoc-box uses this function to set childframe's position.
-This should be a function that returns a (X . Y) cons cell.
-It will be passes with two arguments: WIDTH and HEIGHT of the childframe.")
+
+The function is passed two arguments, WIDTH and HEIGHT of the
+childframe, and should return a (X . Y) cons cell.")
+
+(defvar eldoc-box-at-point-position-function #'eldoc-box--default-at-point-position-function
+  "Eldoc-box uses this function to set childframe's position.
+This function is used in ‘eldoc-box-help-at-point’ and in
+‘eldoc-box-hover-at-point-mode’.
+
+The function is passed two arguments, WIDTH and HEIGHT of the
+childframe, and should return a (X . Y) cons cell.")
 
 (defcustom eldoc-box-fringe-use-same-bg t
   "T means fringe's background color is set to as same as that of default."
@@ -276,7 +285,7 @@ If point != last point, hide the childframe.")
   (interactive)
   (when (boundp 'eldoc--doc-buffer)
     (let ((eldoc-box-position-function
-           #'eldoc-box--default-at-point-position-function))
+           eldoc-box-at-point-position-function))
       (eldoc-box--display
        (with-current-buffer eldoc--doc-buffer
          (buffer-string))))
@@ -395,6 +404,8 @@ base on WIDTH and HEIGHT of childframe text window."
     (cons (or (eldoc-box--at-point-x-by-company) x)
           y)))
 
+(defvar eldoc-box--markdown-separator-display-props)
+
 (defun eldoc-box--update-childframe-geometry (frame window)
   "Update the size and the position of childframe.
 FRAME is the childframe, WINDOW is the primary window."
@@ -402,13 +413,18 @@ FRAME is the childframe, WINDOW is the primary window."
   ;; property of (space :width text) -- which is what we apply onto
   ;; markdown separators -- ‘window-text-pixel-size’ wouldn’t return
   ;; the correct value. Instead, it returns the current window width.
-  ;; So now the childram only grows in size and never shrinks. For
-  ;; whatever reason, if we set the frame size very small before
-  ;; calculating window’s text size, it can return the right value.
+  ;; So now the childram only grows in size and never shrinks.
+  ;;
   ;; (My guess is that the function takes (space :width text) at face
   ;; value, but that can’t be the whole picture because it works fine
   ;; when I manually evaluate the function in the childframe...)
-  (set-frame-size frame 1 1 t)
+  ;;
+  ;; The original workaround of setting the frame size to something
+  ;; small before calling ‘window-text-pixel-size’ works, but brings
+  ;; other problems. Now we just set the display property to nil
+  ;; before calling ‘window-text-pixel-size’, and set them back after.
+  (setcdr eldoc-box--markdown-separator-display-props nil)
+
   (let* ((size
           (window-text-pixel-size
            window nil nil
@@ -421,6 +437,11 @@ FRAME is the childframe, WINDOW is the primary window."
          (frame-resize-pixelwise t)
          (pos (funcall eldoc-box-position-function width height)))
     (set-frame-size frame width height t)
+
+    ;; Set the display property back.
+    (setcdr eldoc-box--markdown-separator-display-props
+            '(:width text))
+
     ;; move position
     (set-frame-position frame (car pos) (cdr pos))))
 
@@ -476,7 +497,7 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
       (set-face-attribute 'internal-border frame :inherit 'eldoc-box-border)
       (when (facep 'child-frame-border)
         (set-face-background 'child-frame-border
-                             (face-attribute 'eldoc-box-border :background)
+                             (face-attribute 'eldoc-box-border :background nil t)
                              frame))
       (eldoc-box--update-childframe-geometry frame window)
       (setq eldoc-box--frame frame)
@@ -630,7 +651,7 @@ You can use \\[keyboard-quit] to hide the doc."
       (progn (when eldoc-box-hover-mode
                (eldoc-box-hover-mode -1))
              (setq-local eldoc-box-position-function
-                         #'eldoc-box--default-at-point-position-function)
+                         eldoc-box-at-point-position-function)
              (setq-local  eldoc-box-clear-with-C-g t)
              (remove-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
              (add-hook 'post-command-hook #'eldoc-box--follow-cursor t t)
@@ -660,17 +681,32 @@ instead."
 
 ;; please compiler
 (defvar company-pseudo-tooltip-overlay)
+(declare-function company-box--get-frame "company-box")
 
 (defun eldoc-box--at-point-x-by-company ()
   "Return the x position that accommodates company's popup."
-  (if (and (featurep 'company) company-pseudo-tooltip-overlay)
-      (+ (* (frame-char-width)
-            (+ (overlay-get company-pseudo-tooltip-overlay 'company-width)
-               (overlay-get company-pseudo-tooltip-overlay 'company-column)))
-         (or (line-number-display-width t) 0))
-    nil))
+  (cond
+   ((and (boundp 'company-pseudo-tooltip-overlay)
+         company-pseudo-tooltip-overlay)
+    (+ (* (frame-char-width)
+          (+ (overlay-get company-pseudo-tooltip-overlay
+                          'company-width)
+             (overlay-get company-pseudo-tooltip-overlay
+                          'company-column)))
+       (or (line-number-display-width t) 0)))
+   ((and (boundp 'company-box--x) (numberp company-box--x))
+	(+ company-box--x
+       (frame-pixel-width (company-box--get-frame))))
+   (t nil)))
 
 ;;;; Markdown compatibility
+
+(defvar-local eldoc-box--markdown-separator-display-props
+    '(space :width text)
+  "Stores the display text property applied to markdown separators.
+
+Due to a bug, in ‘eldoc-box--update-childframe-geometry’, we
+modify the display property temporarily and then set it back.")
 
 (defun eldoc-box--prettify-markdown-separator ()
   "Prettify the markdown separator in doc returned by Eglot.
@@ -680,11 +716,12 @@ childframe."
     (goto-char (point-min))
     (let (prop)
       (while (setq prop (text-property-search-forward 'markdown-hr))
-        (add-text-properties (prop-match-beginning prop)
-                             (prop-match-end prop)
-                             '( display (space :width text)
-                                face ( :strike-through t
-                                       :height 0.4)))))))
+        (add-text-properties
+         (prop-match-beginning prop)
+         (prop-match-end prop)
+         `( display ,eldoc-box--markdown-separator-display-props
+            face ( :strike-through t
+                   :height 0.4)))))))
 
 (defun eldoc-box--replace-en-space ()
   "Display the en spaces in documentation as regular spaces."

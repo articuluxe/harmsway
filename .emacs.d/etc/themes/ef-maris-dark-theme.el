@@ -1,4 +1,4 @@
-;;; ef-maris-dark-theme.el --- Legible dark theme with blue, cyan, and teal colors -*- lexical-binding:t -*-
+;;; ef-maris-dark-theme.el --- Legible dark theme with blue, cyan, and green colors -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022-2023  Free Software Foundation, Inc.
 
@@ -38,7 +38,7 @@
   (require 'ef-themes)
 
   (deftheme ef-maris-dark
-    "Legible dark theme with blue, cyan, and teal colors.")
+    "Legible dark theme with blue, cyan, and green colors.")
 
   (defconst ef-maris-dark-palette
     '(
@@ -48,10 +48,10 @@
       (fg-main      "#eaedef")
       (bg-dim       "#1d2c39")
       (fg-dim       "#969faf")
-      (bg-alt       "#2f3943")
+      (bg-alt       "#2a3644")
       (fg-alt       "#90a0dc")
 
-      (bg-active    "#4f5963")
+      (bg-active    "#4a5664")
       (bg-inactive  "#1a2331")
 
 ;;; Basic hues for foreground values
@@ -59,8 +59,8 @@
       (red             "#ff6f6f")
       (red-warmer      "#ff7a5f")
       (red-cooler      "#ff7788")
-      (red-faint       "#fca4a4")
-      (green           "#30ba3f")
+      (red-faint       "#eaa4a4")
+      (green           "#41bf4f")
       (green-warmer    "#7fce5f")
       (green-cooler    "#30c489")
       (green-faint     "#a9c99f")
@@ -136,8 +136,8 @@
       (bg-completion      "#204358")
       (bg-hover           "#684d54")
       (bg-hover-secondary "#49516a")
-      (bg-hl-line         "#313044")
-      (bg-region          "#243760")
+      (bg-hl-line         "#243242")
+      (bg-region          "#183c65")
       (bg-paren           "#6c5d54")
       (bg-err             "#551525") ; check with err
       (bg-warning         "#403f20") ; check with warning
@@ -161,7 +161,7 @@
 
 ;;; Conditional hues
 
-      (bg-region-intense "#3f4f99")
+      (bg-region-intense "#3f4f7e")
 
 ;;; Mappings
 
@@ -196,9 +196,9 @@
 ;;;; Accent mappings
 
       (accent-0 blue-cooler)
-      (accent-1 green)
+      (accent-1 green-warmer)
       (accent-2 cyan)
-      (accent-3 magenta)
+      (accent-3 red-cooler)
 
 ;;;; Date mappings
 
@@ -228,11 +228,11 @@
 
       (mail-cite-0 cyan-cooler)
       (mail-cite-1 magenta)
-      (mail-cite-2 green-warmer)
+      (mail-cite-2 blue-faint)
       (mail-cite-3 yellow-cooler)
-      (mail-part magenta-cooler)
+      (mail-part cyan)
       (mail-recipient blue-warmer)
-      (mail-subject green)
+      (mail-subject green-warmer)
       (mail-other blue)
 
 ;;;; Space mappings

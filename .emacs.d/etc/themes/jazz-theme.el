@@ -50,47 +50,50 @@
 (let ((class '((class color) (min-colors 89)))
       ;; Jazz palette
       ;; colors with +x are lighter, colors with -x are darker
-      (jazz-fg        "#c6a57b")
+      (jazz-fg         "#c6a57b")
 
-      (jazz-bg+3      "#606060")
-      (jazz-bg+2      "#505050")
-      (jazz-bg+1      "#202020")
-      (jazz-bg        "#151515")
-      (jazz-bg-1      "#101010")
+      (jazz-bg+3       "#606060")
+      (jazz-bg+2       "#505050")
+      (jazz-bg+1       "#202020")
+      (jazz-bg         "#151515")
+      (jazz-bg-1       "#101010")
 
-      (jazz-bg-blue   "#272A36")
+      (jazz-bg-blue    "#272A36")
+      (jazz-bg-green   "#121c16")
+      (jazz-bg-green+1 "#253529")
+      (jazz-bg-red     "#3e2022")
 
-      (jazz-red+1     "#a43836")
-      (jazz-red       "#953331")
-      (jazz-red-1     "#862e2c")
+      (jazz-red+1      "#a43836")
+      (jazz-red        "#953331")
+      (jazz-red-1      "#862e2c")
 
-      (jazz-orange+1  "#c36a44")
-      (jazz-orange    "#ba5b34")
-      (jazz-orange-1  "#a54500")
+      (jazz-orange+1   "#c36a44")
+      (jazz-orange     "#ba5b34")
+      (jazz-orange-1   "#a54500")
 
-      (jazz-yellow+1  "#96a62d")
-      (jazz-yellow    "#909737")
-      (jazz-yellow-1  "#828932")
+      (jazz-yellow+1   "#96a62d")
+      (jazz-yellow     "#909737")
+      (jazz-yellow-1   "#828932")
 
-      (jazz-green+1   "#7e9960")
-      (jazz-green     "#5e7531")
-      (jazz-green-1   "#546a29")
+      (jazz-green+1    "#7e9960")
+      (jazz-green      "#5e7531")
+      (jazz-green-1    "#546a29")
 
-      (jazz-cyan+1    "#3a737c")
-      (jazz-cyan      "#34676f")
-      (jazz-cyan-1    "#2e5b62")
+      (jazz-cyan+1     "#3a737c")
+      (jazz-cyan       "#34676f")
+      (jazz-cyan-1     "#2e5b62")
 
-      (jazz-blue+1    "#5c737c")
-      (jazz-blue      "#385e6b")
-      (jazz-blue-1    "#31535e")
+      (jazz-blue+1     "#5c737c")
+      (jazz-blue       "#385e6b")
+      (jazz-blue-1     "#31535e")
 
-      (jazz-violet+1  "#6c6c8c")
-      (jazz-violet    "#5e5e7a")
-      (jazz-violet-1  "#515169")
+      (jazz-violet+1   "#6c6c8c")
+      (jazz-violet     "#5e5e7a")
+      (jazz-violet-1   "#515169")
 
-      (jazz-magenta+1 "#8d3b68")
-      (jazz-magenta   "#7f355e")
-      (jazz-magenta-1 "#712f54"))
+      (jazz-magenta+1  "#8d3b68")
+      (jazz-magenta    "#7f355e")
+      (jazz-magenta-1  "#712f54"))
 
   (custom-theme-set-faces
    'jazz
@@ -114,6 +117,33 @@
    `(success ((,class (:foreground ,jazz-green))))
    `(warning ((,class (:foreground ,jazz-orange))))
    `(shadow ((,class (:foreground ,jazz-cyan))))
+
+   ;;ansi-color
+   `(ansi-color-black ((,class (:foreground ,jazz-bg :background ,jazz-bg))))
+   `(ansi-color-blue ((,class (:foreground ,jazz-blue :background ,jazz-blue))))
+   `(ansi-color-bright-black ((,class (:foreground ,jazz-bg+2 :background ,jazz-bg+2))))
+   `(ansi-color-bright-blue ((,class (:foreground ,jazz-blue+1 :background ,jazz-blue+1))))
+   `(ansi-color-bright-cyan ((,class (:foreground ,jazz-cyan+1 :background ,jazz-cyan+1))))
+   `(ansi-color-bright-green ((,class (:foreground ,jazz-green+1 :background ,jazz-green+1))))
+   `(ansi-color-bright-magenta ((,class (:foreground ,jazz-magenta+1 :background ,jazz-magenta+1))))
+   `(ansi-color-bright-red ((,class (:foreground ,jazz-red+1 :background ,jazz-red+1))))
+   `(ansi-color-bright-white ((,class (:foreground ,jazz-fg :background ,jazz-fg))))
+   `(ansi-color-bright-yellow ((,class (:foreground ,jazz-yellow+1 :background ,jazz-yellow+1))))
+   `(ansi-color-cyan ((,class (:foreground ,jazz-cyan :background ,jazz-cyan))))
+   `(ansi-color-green ((,class (:foreground ,jazz-green :background ,jazz-green))))
+   `(ansi-color-magenta ((,class (:foreground ,jazz-magenta :background ,jazz-magenta))))
+   `(ansi-color-red ((,class (:foreground ,jazz-red :background ,jazz-red))))
+   `(ansi-color-white ((,class (:foreground ,jazz-fg :background ,jazz-fg))))
+   `(ansi-color-yellow ((,class (:foreground ,jazz-yellow :background ,jazz-yellow))))
+
+   ;; bookmark
+   `(bookmark-face ((,class (:foreground ,jazz-orange))))
+   `(bookmark-menu-bookmark ((,class (:weight normal))))
+
+   ;; change-log
+   `(change-log-date ((,class (:inherit font-lock-keyword-face))))
+   `(change-log-name ((,class (:inherit font-lock-builtin-face))))
+   `(change-log-email ((,class (:inherit default))))
 
    ;;; compilation
    `(compilation-column-face ((,class (:foreground ,jazz-yellow))))
@@ -178,9 +208,33 @@
 
    `(c-annotation-face ((,class (:inherit font-lock-constant-face))))
 
+   ;; help
+   `(help-key-binding ((,class (:foreground ,jazz-blue+1 :background ,jazz-bg :box nil))))
+
    ;; line-number-mode
    `(line-number ((,class (:foreground ,jazz-bg+2 :background ,jazz-bg-1))))
    `(line-number-current-line ((,class (:foreground ,jazz-blue :background ,jazz-bg-1))))
+
+   ;; vc
+   `(vc-annotate-face-3F3FFF ((,class (:foreground ,jazz-violet+1))))
+   `(vc-annotate-face-3F6CFF ((,class (:foreground ,jazz-magenta+1))))
+   `(vc-annotate-face-3F99FF ((,class (:foreground ,jazz-blue-1))))
+   `(vc-annotate-face-3FC6FF ((,class (:foreground ,jazz-blue))))
+   `(vc-annotate-face-3FF3FF ((,class (:foreground ,jazz-blue+1))))
+   `(vc-annotate-face-3FFF56 ((,class (:foreground ,jazz-green-1))))
+   `(vc-annotate-face-3FFF83 ((,class (:foreground ,jazz-cyan+1))))
+   `(vc-annotate-face-3FFFB0 ((,class (:foreground ,jazz-cyan))))
+   `(vc-annotate-face-3FFFDD ((,class (:foreground ,jazz-cyan-1))))
+   `(vc-annotate-face-56FF3F ((,class (:foreground ,jazz-green))))
+   `(vc-annotate-face-83FF3F ((,class (:foreground ,jazz-green+1))))
+   `(vc-annotate-face-B0FF3F ((,class (:foreground ,jazz-yellow-1))))
+   `(vc-annotate-face-DDFF3F ((,class (:foreground ,jazz-yellow))))
+   `(vc-annotate-face-F6FFCC ((,class (:foreground ,jazz-bg))))
+   `(vc-annotate-face-FF3F3F ((,class (:foreground ,jazz-red+1))))
+   `(vc-annotate-face-FF6C3F ((,class (:foreground ,jazz-orange-1))))
+   `(vc-annotate-face-FF993F ((,class (:foreground ,jazz-orange))))
+   `(vc-annotate-face-FFC63F ((,class (:foreground ,jazz-orange+1))))
+   `(vc-annotate-face-FFF33F ((,class (:foreground ,jazz-yellow+1))))
 
    ;;; Third-party (first level support)
 
@@ -239,7 +293,7 @@
    `(company-scrollbar-bg ((,class (:background ,jazz-bg+2))))
    `(company-template-field ((,class (:background ,jazz-yellow :foreground ,jazz-bg))))
    `(company-tooltip ((,class (:background ,jazz-bg+1 :foreground ,jazz-fg))))
-   `(company-tooltip-annotation ((,class (:background nil :foreground ,jazz-yellow))))
+   `(company-tooltip-annotation ((,class (:background unspecified :foreground ,jazz-yellow))))
    `(company-tooltip-common ((,class (:foreground ,jazz-bg+3 :underline t))))
    `(company-tooltip-common-selection ((,class (:background ,jazz-blue-1 :foreground ,jazz-fg :underline t))))
    `(company-tooltip-selection ((,class (:background ,jazz-blue-1 :foreground ,jazz-fg))))
@@ -379,15 +433,21 @@
    ;; diff
    `(diff-added ((,class (:foreground ,jazz-green+1))))
    `(diff-changed ((,class (:foreground ,jazz-yellow))))
-   `(diff-removed ((,class (:foreground ,jazz-red))))
-   `(diff-header ((,class (:background ,jazz-bg+1))))
    `(diff-file-header
      ((,class (:background ,jazz-bg+2 :foreground ,jazz-fg :bold t))))
+   `(diff-header ((,class (:background ,jazz-bg+1))))
+   `(diff-removed ((,class (:foreground ,jazz-red))))
+   `(diff-refine-added ((,class (:background ,jazz-bg-green+1))))
+   `(diff-refine-removed ((,class (:background ,jazz-red-1))))
 
    ;; diff-hl
    `(diff-hl-insert ((,class (:foreground ,jazz-green))))
    `(diff-hl-delete ((,class (:foreground ,jazz-red))))
    `(diff-hl-change ((,class (:foreground ,jazz-blue))))
+
+   ;; dockerfile-mode
+   `(dockerfile-image-alias ((,class (:inherit font-lock-constant-face))))
+   `(dockerfile-image-name ((,class (:inherit font-lock-builtin-face))))
 
    ;; ein
    `(ein:cell-input-area ((,class (:background ,jazz-bg+1))))
@@ -572,9 +632,50 @@
    `(linum ((,class (:foreground ,jazz-bg+2 :background ,jazz-bg-1))))
 
    ;; magit
-   `(magit-section-title ((,class (:foreground ,jazz-yellow :weight bold :box nil :background ,jazz-bg))))
-   `(magit-branch ((,class (:foreground ,jazz-orange :weight bold :box nil :background ,jazz-bg))))
-   `(magit-item-highlight ((t (:background ,jazz-bg+1))))
+   `(magit-blame-highlight ((,class (:foreground ,jazz-bg :background ,jazz-blue+1))))
+   `(magit-branch-local ((,class (:foreground ,jazz-blue+1))))
+   `(magit-branch-current ((,class (:inherit magit-branch-local :box 1))))
+   `(magit-branch-remote ((,class (:foreground ,jazz-green+1))))
+   `(magit-branch-remote-head ((,class (:inherit magit-branch-remote :box 1))))
+   `(magit-cherry-equivalent ((,class (:foreground ,jazz-magenta))))
+   `(magit-cherry-unmatched ((,class (:foreground ,jazz-cyan))))
+   `(magit-diff-added ((,class (:background ,jazz-bg-green :extend t))))
+   `(magit-diff-added-highlight ((,class (:background ,jazz-bg-green :extend t))))
+   `(magit-diff-context ((,class (:foreground ,jazz-fg :extend t))))
+   `(magit-diff-context-highlight ((,class (:inherit magit-diff-context :background ,jazz-bg+1))))
+   `(magit-diff-file-heading ((,class (:weight normal :extend t))))
+   `(magit-diff-file-heading-highlight ((,class (:inherit magit-section-highlight))))
+   `(magit-diff-file-heading-selection ((,class (:inherit region :extend t))))
+   `(magit-diff-hunk-heading ((,class (:foreground ,jazz-bg+2 :background ,jazz-bg :extend t))))
+   `(magit-diff-hunk-heading-highlight ((,class (:background ,jazz-bg+1 :extend t))))
+   `(magit-diff-hunk-heading-selection ((,class (:inherit region :extend t))))
+   `(magit-diff-lines-heading ((,class (:foreground ,jazz-fg :background ,jazz-blue :extend t))))
+   `(magit-diff-our ((,class (:background ,jazz-bg-red :extend t))))
+   `(magit-diff-our-highlight ((,class (:background ,jazz-bg-red :extend t))))
+   `(magit-diff-removed ((,class (:background ,jazz-bg-red :extend t))))
+   `(magit-diff-removed-highlight ((,class (:background ,jazz-bg-red :extend t))))
+   `(magit-diff-their ((,class (:background ,jazz-bg-green :extend t))))
+   `(magit-diff-their-highlight ((,class (:background ,jazz-bg-green :extend t))))
+   `(magit-diffstat-added ((,class (:foreground ,jazz-green))))
+   `(magit-diffstat-removed ((,class (:foreground ,jazz-red))))
+   `(magit-log-author ((,class (:foreground ,jazz-blue))))
+   `(magit-log-date ((,class (:foreground ,jazz-bg+3))))
+   `(magit-log-graph ((,class (:foreground ,jazz-bg+3))))
+   `(magit-process-ng ((,class (:inherit magit-section-heading :foreground ,jazz-red))))
+   `(magit-process-ok ((,class (:inherit magit-section-heading :foreground ,jazz-green))))
+   `(magit-reflog-amend ((,class (:foreground ,jazz-magenta))))
+   `(magit-reflog-checkout ((,class (:foreground ,jazz-blue))))
+   `(magit-reflog-cherry-pick ((,class (:foreground ,jazz-yellow))))
+   `(magit-reflog-commit ((,class (:foreground ,jazz-yellow))))
+   `(magit-reflog-merge ((,class (:foreground ,jazz-yellow))))
+   `(magit-reflog-other ((,class (:foreground ,jazz-violet))))
+   `(magit-reflog-rebase ((,class (:foreground ,jazz-magenta+1))))
+   `(magit-reflog-remote ((,class (:foreground ,jazz-cyan))))
+   `(magit-reflog-reset ((,class (:foreground ,jazz-red))))
+   `(magit-section-heading ((,class (:weight normal :foreground ,jazz-yellow :extend t))))
+   `(magit-section-highlight ((,class (:background ,jazz-bg+1 :extend t :weight normal))))
+   `(magit-section-heading-selection ((,class (:inherit region :extend t))))
+   `(magit-tag ((,class (:foreground ,jazz-orange+1))))
 
    ;; markdown
    `(markdown-header-face ((,class (:inherit variable-pitch))))
@@ -818,11 +919,11 @@
    ;; ensime
    `(ensime-errline-highlight ((,class (:background ,jazz-red :foreground ,jazz-fg))))
    `(ensime-warnline ((,class (:background ,jazz-bg+1))))
-   
+
    ;; coffee-mode
    `(coffee-mode-function-param ((,class (:foreground ,jazz-blue+1))))
    `(coffee-mode-class-name ((,class (:foreground ,jazz-blue))))
-   
+
    ;; which-func-mode
    `(which-func ((,class (:foreground ,jazz-green+1)))))
 

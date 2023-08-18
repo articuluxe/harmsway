@@ -4,7 +4,7 @@
 
 ;; Author: Tom Willemse <tom@ryuslash.org>
 ;; Keywords: faces
-;; Version: 6.2.0
+;; Version: 7.0.0
 ;; URL: http://projects.ryuslash.org/yoshi-theme/
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -31,20 +31,6 @@
 
 (deftheme yoshi
   "Created 2012-09-24")
-
-(defun yoshi-theme-add-space-to-first-arg (args)
-  "Return ARGS with the car modified to contain 2 spaces."
-  (cons (format " %s " (car args)) (cdr args)))
-
-(defun yoshi-theme-add-spaces-around-current-info-node (func &rest args)
-  (let ((Info-current-node (format " %s " Info-current-node)))
-    (apply func args)))
-
-(advice-add 'propertized-buffer-identification
-            :filter-args #'yoshi-theme-add-space-to-first-arg)
-
-(advice-add 'Info-set-mode-line
-            :around #'yoshi-theme-add-spaces-around-current-info-node)
 
 (defun yoshi-theme--make-inline-box (border-color)
   "Return a list representing a box specification using BORDER-COLOR."
@@ -152,7 +138,7 @@
    `(diff-indicator-changed ((t (:foreground ,fgyellow :weight bold :inherit unspecified ))))
    `(diff-indicator-removed ((t (:foreground ,fgred :weight bold :inherit unspecified))))
    `(diff-refine-added ((t (:foreground ,fggreen :background unspecified :inherit unspecified))))
-   `(diff-refine-change ((t (:foreground ,fgyellow :background unspecified))))
+   `(diff-refine-changed ((t (:foreground ,fgyellow :background unspecified))))
    `(diff-refine-removed ((t (:foreground ,fgred :background unspecified :inherit unspecified))))
    `(diff-removed ((t (:background ,bgred :inherit unspecified))))
 
@@ -170,7 +156,7 @@
    `(ediff-even-diff-B ((t (:background ,bgyellow))))
    `(ediff-fine-diff-A ((t (:inherit diff-refine-removed))))
    `(ediff-fine-diff-B ((t (:inherit diff-refine-added))))
-   `(ediff-fine-diff-C ((t (:inherit diff-refine-change))))
+   `(ediff-fine-diff-C ((t (:inherit diff-refine-changed))))
    `(ediff-odd-diff-A ((t (:background ,bgyellow))))
    `(ediff-odd-diff-B ((t (:background ,bgyellow))))
 
@@ -429,6 +415,7 @@
    `(org-checkbox-statistics-todo ((t (:foreground ,fgcyan))))
    `(org-code ((t (:background ,yoshi-1 :box ,(yoshi-theme--make-inline-box yoshi-1) :inherit fixed-pitch))))
    `(org-date ((t (:foreground ,fgpink :underline unspecified))))
+   `(org-document-info ((t (:foreground ,brpurple))))
    `(org-document-info-keyword ((t (:foreground ,yoshi-4 :inherit fixed-pitch))))
    `(org-document-title ((t (:foreground ,fgorange :height 1.5))))
    `(org-headline-done ((t (:foreground ,yoshi-4))))
@@ -444,6 +431,7 @@
    `(org-scheduled ((t (:foreground ,yoshi-4))))
    `(org-scheduled-previously ((t (:weight bold))))
    `(org-scheduled-today ((t (:foreground ,yoshi-6))))
+   `(org-table ((t (:foreground ,fgcyan :inherit fixed-pitch))))
    `(org-time-grid ((t (:foreground ,fgorange))))
    `(org-verbatim ((t (:foreground ,fgcyan :inherit fixed-pitch))))
 
@@ -458,7 +446,7 @@
    `(outline-8 ((t (:inherit org-level-8))))
 
    ;; Package
-   `(package-status-avail-obso ((t (:foreground ,bggreen))))
+   `(package-status-avail-obso ((t (:foreground ,yoshi-5))))
    `(package-status-available ((t (:foreground ,fggreen))))
    `(package-status-dependency ((t (:foreground ,yoshi-4))))
    `(package-status-installed ((t (:foreground ,yoshi-6))))
@@ -510,7 +498,7 @@
    `(smerge-mine ((t (:background ,bgblue))))
    `(smerge-other ((t (:background ,bgred))))
    `(smerge-refined-added ((t (:inherit diff-refine-added))))
-   `(smerge-refined-change ((t (:inherit diff-refine-change))))
+   `(smerge-refined-change ((t (:inherit diff-refine-changed))))
    `(smerge-refined-removed ((t (:inherit diff-refine-removed))))
 
    ;; Tab bar

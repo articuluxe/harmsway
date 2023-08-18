@@ -26,12 +26,92 @@
 
 ;;; Code:
 
-(require 'cl-lib)
-(require 'subr-x)
-
 (require 'compat)
+(eval-when-compile
+  (require 'cl-lib)
+  (require 'subr-x))
 (require 'nerd-icons)
 (require 'shrink-path)
+
+
+;;
+;; Compatibility
+;;
+
+;; Backport from 30
+(unless (fboundp 'mode--line-format-right-align)
+  (defcustom mode-line-right-align-edge 'window
+    "Where function `mode-line-format-right-align' should align to.
+Internally, that function uses `:align-to' in a display property,
+so aligns to the left edge of the given area.  See info node
+`(elisp)Pixel Specification'.
+
+Must be set to a symbol.  Acceptable values are:
+- `window': align to extreme right of window, regardless of margins
+  or fringes
+- `right-fringe': align to right-fringe
+- `right-margin': align to right-margin"
+    :type '(choice (const right-margin)
+                   (const right-fringe)
+                   (const window))
+    :group 'mode-line)
+
+  (defun doom-modeline-string-pixel-width (str)
+    "Return the width of STR in pixels."
+    (if (fboundp 'string-pixel-width)
+        (string-pixel-width str)
+      (* (string-width str) (window-font-width nil 'mode-line)
+         (if (display-graphic-p) 1.05 1.0))))
+
+  (defun mode--line-format-right-align ()
+    "Right-align all following mode-line constructs.
+
+When the symbol `mode-line-format-right-align' appears in
+`mode-line-format', return a string of one space, with a display
+property to make it appear long enough to align anything after
+that symbol to the right of the rendered mode line.  Exactly how
+far to the right is controlled by `mode-line-right-align-edge'.
+
+It is important that the symbol `mode-line-format-right-align' be
+included in `mode-line-format' (and not another similar construct
+such as `(:eval (mode-line-format-right-align)').  This is because
+the symbol `mode-line-format-right-align' is processed by
+`format-mode-line' as a variable."
+    (let* ((rest (cdr (memq 'mode-line-format-right-align
+			                mode-line-format)))
+	       (rest-str (format-mode-line `("" ,@rest)))
+	       (rest-width (progn
+                         (add-face-text-property
+                          0 (length rest-str) 'mode-line t rest-str)
+                         (doom-modeline-string-pixel-width rest-str))))
+      (propertize " " 'display
+		          ;; The `right' spec doesn't work on TTY frames
+		          ;; when windows are split horizontally (bug#59620)
+		          (if (and (display-graphic-p)
+                           (not (eq mode-line-right-align-edge 'window)))
+		              `(space :align-to (- ,mode-line-right-align-edge
+                                           (,rest-width)))
+		            `(space :align-to (,(- (window-pixel-width)
+                                           (window-scroll-bar-width)
+                                           (window-right-divider-width)
+                                           (* (or (cdr (window-margins)) 1)
+                                              (frame-char-width))
+                                           ;; Manually account for value of
+                                           ;; `mode-line-right-align-edge' even
+                                           ;; when display is non-graphical
+                                           (pcase mode-line-right-align-edge
+                                             ('right-margin
+                                              (or (cdr (window-margins)) 0))
+                                             ('right-fringe
+                                              ;; what here?
+                                              (or (cadr (window-fringes)) 0))
+                                             (_ 0))
+                                           rest-width)))))))
+
+  (defvar mode-line-format-right-align '(:eval (mode--line-format-right-align))
+    "Mode line construct to right align all following constructs.")
+  ;;;###autoload
+  (put 'mode-line-format-right-align 'risky-local-variable t))
 
 
 ;;
@@ -41,30 +121,6 @@
 ;; Don’t compact font caches during GC.
 (when (eq system-type 'windows-nt)
   (setq inhibit-compacting-font-caches t))
-
-;; For better performance, because `window-font-width' consumes a lot.
-(defvar doom-modeline--font-width-cache nil)
-(defun doom-modeline--font-width ()
-  "Cache the font width for better performance."
-  (if (display-graphic-p)
-      (let ((attributes (face-all-attributes 'mode-line)))
-        (or (cdr (assoc attributes doom-modeline--font-width-cache))
-            (let ((width (window-font-width nil 'mode-line)))
-              (push (cons attributes width) doom-modeline--font-width-cache)
-              width)))
-    1))
-
-;; Refresh the font width after setting frame parameters
-;; to ensure the font width is correct.
-(defun doom-modeline-refresh-font-width-cache (&rest _)
-  "Refresh the font width cache."
-  (setq doom-modeline--font-width-cache nil)
-  (doom-modeline--font-width))
-
-(add-hook 'window-setup-hook #'doom-modeline-refresh-font-width-cache)
-(add-hook 'after-make-frame-functions #'doom-modeline-refresh-font-width-cache)
-(add-hook 'after-setting-font-hook #'doom-modeline-refresh-font-width-cache)
-(add-hook 'server-after-make-frame-hook #'doom-modeline-refresh-font-width-cache)
 
 
 ;;
@@ -89,7 +145,7 @@ Must be set before loading `doom-modeline'."
            (remove-hook 'emacs-lisp-mode-hook #'doom-modeline-add-imenu)))
   :group 'doom-modeline)
 
-(defcustom doom-modeline-height 23
+(defcustom doom-modeline-height (+ (frame-char-height) 4)
   "How tall the mode-line should be. It's only respected in GUI.
 If the actual char height is larger, it respects the actual char height."
   :type 'integer
@@ -170,6 +226,14 @@ Given ~/Projects/FOSS/emacs/lisp/comint.el
                  (const relative-to-project)
                  (const file-name)
                  (const buffer-name))
+  :group'doom-modeline)
+
+(defcustom doom-modeline-buffer-file-true-name nil
+  "Use `file-truename' on buffer file name.
+
+Project detection(projectile.el) may uses `file-truename' on directory path.
+Turn on this to provide right relative path for buffer file name."
+  :type 'boolean
   :group'doom-modeline)
 
 (defcustom doom-modeline-icon t
@@ -672,7 +736,7 @@ Also see the face `doom-modeline-unread-number'."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-bar-inactive
-  `((t (:background ,(face-foreground 'mode-line-inactive))))
+  `((t (:inherit doom-modeline)))
   "The face used for the left-most bar in the mode-line of an inactive window."
   :group 'doom-modeline-faces)
 
@@ -897,8 +961,9 @@ Also see the face `doom-modeline-unread-number'."
 ;; @see https://github.com/seagle0128/doom-modeline/issues/183
 ;; @see https://github.com/seagle0128/doom-modeline/issues/483
 (unless (>= emacs-major-version 29)
-  (defun doom-modeline-redisplay (&rest _)
-    "Call `redisplay' to trigger mode-line height calculations.
+  (eval-and-compile
+    (defun doom-modeline-redisplay (&rest _)
+      "Call `redisplay' to trigger mode-line height calculations.
 
 Certain functions, including e.g. `fit-window-to-buffer', base
 their size calculations on values which are incorrect if the
@@ -915,10 +980,10 @@ but it will only trigger a redisplay when there is a non nil
 `mode-line-format' and the height of the mode-line is different
 from that of the `default' face. This function is intended to be
 used as an advice to window creation functions."
-    (when (and (bound-and-true-p doom-modeline-mode)
-               mode-line-format
-               (/= (frame-char-height) (window-mode-line-height)))
-      (redisplay t)))
+      (when (and (bound-and-true-p doom-modeline-mode)
+                 mode-line-format
+                 (/= (frame-char-height) (window-mode-line-height)))
+        (redisplay t))))
   (advice-add #'fit-window-to-buffer :before #'doom-modeline-redisplay))
 
 ;; For `flychecker-color-mode-line'
@@ -1034,10 +1099,8 @@ used as an advice to window creation functions."
                      (format "%s modeline segment" name))))
     (cond ((and (symbolp (car body))
                 (not (cdr body)))
-           (add-to-list 'doom-modeline-var-alist (cons name (car body)))
            `(add-to-list 'doom-modeline-var-alist (cons ',name ',(car body))))
           (t
-           (add-to-list 'doom-modeline-fn-alist (cons name sym))
            `(progn
               (defun ,sym () ,docstring ,@body)
               (add-to-list 'doom-modeline-fn-alist (cons ',name ',sym))
@@ -1054,9 +1117,9 @@ used as an advice to window creation functions."
       (cond ((stringp seg)
              (push seg forms))
             ((symbolp seg)
-             (cond ((setq it (cdr (assq seg doom-modeline-fn-alist)))
+             (cond ((setq it (alist-get seg doom-modeline-fn-alist))
                     (push (list :eval (list it)) forms))
-                   ((setq it (cdr (assq seg doom-modeline-var-alist)))
+                   ((setq it (alist-get seg doom-modeline-var-alist))
                     (push it forms))
                    ((error "%s is not a defined segment" seg))))
             ((error "%s is not a valid segment" seg))))
@@ -1078,24 +1141,7 @@ Example:
         (rhs-forms (doom-modeline--prepare-segments rhs)))
     (defalias sym
       (lambda ()
-        (list lhs-forms
-              (propertize
-               " "
-               'face (doom-modeline-face)
-               'display `(space
-                          :align-to
-                          (- (+ right right-fringe right-margin scroll-bar)
-                             ,(let ((rhs-str (format-mode-line (cons "" rhs-forms))))
-                                (if (and (>= emacs-major-version 29)
-                                         (fboundp 'string-pixel-width))
-                                    (/ (string-pixel-width rhs-str)
-                                       (doom-modeline--font-width)
-                                       1.0)
-                                  (* (string-width rhs-str)
-                                     (if (display-graphic-p)
-                                         (/ (doom-modeline--font-width) (frame-char-width) 0.95)
-                                       1.0)))))))
-              rhs-forms))
+        `(,lhs-forms ,rhs-forms))
       (concat "Modeline:\n"
               (format "  %s\n  %s"
                       (prin1-to-string lhs)
@@ -1107,7 +1153,10 @@ Example:
 Throws an error if it doesn't exist."
   (let ((fn (intern-soft (format "doom-modeline-format--%s" key))))
     (when (functionp fn)
-      `(:eval (,fn)))))
+      (let* ((modeline (funcall fn))
+             (lhs (car modeline))
+             (rhs (cdr modeline)))
+        `(,lhs mode-line-format-right-align ,rhs)))))
 
 (defun doom-modeline-set-modeline (key &optional default)
   "Set the modeline format. Does nothing if the modeline KEY doesn't exist.
@@ -1116,7 +1165,7 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
     (setf (if default
               (default-value 'mode-line-format)
             mode-line-format)
-          (list "%e" modeline))))
+          modeline)))
 
 
 ;;
@@ -1412,12 +1461,12 @@ If INCLUDE-PROJECT is non-nil, the project path will be included."
                             'face 'doom-modeline-buffer-file))))))
 
 (defun doom-modeline--buffer-file-name (file-path
-                                        _true-file-path
+                                        true-file-path
                                         &optional
                                         truncate-project-root-parent
                                         truncate-project-relative-path
                                         hide-project-root-parent)
-  "Propertize buffer name given by FILE-PATH.
+  "Propertize buffer name given by FILE-PATH or TRUE-FILE-PATH.
 
 If TRUNCATE-PROJECT-ROOT-PARENT is non-nil will be saved by truncating project
 root parent down fish-shell style.
@@ -1455,7 +1504,10 @@ Example:
      ;; relative path
      (propertize
       (when-let (relative-path (file-relative-name
-                                (or (file-name-directory file-path) "./")
+                                (or (file-name-directory
+                                     (if doom-modeline-buffer-file-true-name
+                                         true-file-path file-path))
+                                    "./")
                                 project-root))
         (if (string= relative-path "./")
             ""

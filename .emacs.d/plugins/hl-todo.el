@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/tarsius/hl-todo
 ;; Keywords: convenience
 
-;; Package-Requires: ((emacs "25.1") (compat "29.1.3.4"))
+;; Package-Requires: ((emacs "25.1") (compat "29.1.4.2"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -39,24 +39,20 @@
 ;; known keywords, and to insert a keyword.  If you want to use these
 ;; commands, then you should bind them in `hl-todo-mode-map', e.g.:
 ;;
-;;   (define-key hl-todo-mode-map (kbd "C-c p") #'hl-todo-previous)
-;;   (define-key hl-todo-mode-map (kbd "C-c n") #'hl-todo-next)
-;;   (define-key hl-todo-mode-map (kbd "C-c o") #'hl-todo-occur)
-;;   (define-key hl-todo-mode-map (kbd "C-c i") #'hl-todo-insert)
-
-;; See [[https://www.emacswiki.org/emacs/FixmeMode][this list]] on the Emacswiki for other packages that implement
-;; the same basic features, but which might also provide additional
-;; features that you might like, but which I don't deem necessary.
+;;   (keymap-set hl-todo-mode-map "C-c p" #'hl-todo-previous)
+;;   (keymap-set hl-todo-mode-map "C-c n" #'hl-todo-next)
+;;   (keymap-set hl-todo-mode-map "C-c o" #'hl-todo-occur)
+;;   (keymap-set hl-todo-mode-map "C-c i" #'hl-todo-insert)
 
 ;;; Code:
 
-(require 'cl-lib)
 (require 'compat)
-
 (eval-when-compile (require 'subr-x))
+(eval-when-compile (require 'cl-lib))
 
 (defvar grep-find-template)
 (declare-function grep-read-files "grep" (regexp))
+(declare-function flymake-make-diagnostic "flymake")
 
 (defgroup hl-todo nil
   "Highlight TODO and similar keywords in comments and strings."
@@ -196,10 +192,13 @@ including alphanumeric characters, cannot be used here."
 (defvar-local hl-todo--regexp nil)
 (defvar-local hl-todo--keywords nil)
 
-(defun hl-todo--regexp ()
+(defsubst hl-todo--regexp ()
+  "Return regular expression matching TODO or similar keyword."
   (or hl-todo--regexp (hl-todo--setup-regexp)))
 
 (defun hl-todo--setup-regexp ()
+  "Setup keyword regular expression.
+See the function `hl-todo--regexp'."
   (when-let ((bomb (assoc "???" hl-todo-keyword-faces)))
     ;; If the user customized this variable before we started to
     ;; treat the strings as regexps, then the string "???" might
@@ -216,7 +215,6 @@ including alphanumeric characters, cannot be used here."
                 "\\)")))
 
 (defun hl-todo--setup ()
-  (hl-todo--setup-regexp)
   (setq hl-todo--keywords
         `((,(lambda (bound) (hl-todo--search nil bound))
            (1 (hl-todo--get-face) prepend t))))
@@ -227,8 +225,11 @@ including alphanumeric characters, cannot be used here."
 (defvar syntax-ppss-table) ; Silence Emacs 25's byte-compiler.
 
 (defun hl-todo--search (&optional regexp bound backward)
+  "Search for keyword REGEXP, optionally up to BOUND and BACKWARD.
+If REGEXP is not given, it defaults to the return value of the
+function `hl-todo--regexp'."
   (unless regexp
-    (setq regexp hl-todo--regexp))
+    (setq regexp (hl-todo--regexp)))
   (cl-block nil
     (while (let ((case-fold-search nil)
                  (syntax-ppss-table (syntax-table)))
@@ -242,22 +243,29 @@ including alphanumeric characters, cannot be used here."
              (cl-return nil))))))
 
 (defun hl-todo--inside-comment-or-string-p ()
+  "Check syntax state if point is located inside comment or string literal."
   (nth 8 (syntax-ppss)))
 
 (defun hl-todo--get-face ()
+  "Return face for current keyword during font locking."
   (let ((keyword (match-string 2)))
     (hl-todo--combine-face
-     (cdr (cl-find-if (lambda (elt)
-                        (string-match-p (format "\\`%s\\'" (car elt))
-                                        keyword))
-                      hl-todo-keyword-faces)))))
+     (cdr (or
+           ;; Fast allocation free lookup for literal keywords
+           (assoc keyword hl-todo-keyword-faces)
+           ;; Slower regexp lookup
+           (compat-call assoc keyword hl-todo-keyword-faces
+                        (lambda (a b)
+                          (string-match-p (format "\\`%s\\'" a) b))))))))
 
-(defun hl-todo--combine-face (face)
-  (if (stringp face)
+(defun hl-todo--combine-face (color)
+  "Combine COLOR string with `hl-todo' default face.
+If COLOR is a face symbol, do not combine, return COLOR instead."
+  (if (stringp color)
       `((,(if hl-todo-color-background :background :foreground)
-         ,face)
+         ,color)
         hl-todo)
-    face))
+    color))
 
 (defvar-keymap hl-todo-mode-map
   :doc "Keymap for `hl-todo-mode'.")
@@ -279,6 +287,8 @@ including alphanumeric characters, cannot be used here."
   hl-todo-mode hl-todo--turn-on-mode-if-desired)
 
 (defun hl-todo--turn-on-mode-if-desired ()
+  "Enable local minor mode `hl-todo-mode' if test succeeds.
+Depends on `hl-todo-include-modes' and `hl-todo-exclude-modes'."
   (when (and (apply #'derived-mode-p hl-todo-include-modes)
              (not (apply #'derived-mode-p hl-todo-exclude-modes))
              (not (bound-and-true-p enriched-mode)))
@@ -374,20 +384,57 @@ Also see option `hl-todo-keyword-faces'."
   (rgrep regexp files dir confirm))
 
 ;;;###autoload
+(defun hl-todo-flymake (report-fn &rest _plist)
+  "Flymake backend for `hl-todo-mode'.
+Diagnostics are reported to REPORT-FN.  Use `add-hook' to
+register this function in `flymake-diagnostic-functions' before
+enabling `flymake-mode'."
+  (let ((diags nil)
+        (buf (current-buffer))
+        (comment (concat (regexp-quote comment-start) "\\s-+")))
+    (when hl-todo-mode
+      (save-excursion
+        (save-restriction
+          (save-match-data
+            (goto-char (point-min))
+            (while (hl-todo--search)
+              (let ((beg (match-beginning 0))
+                    (end (pos-eol))
+                    (bol (pos-bol)))
+                ;; Take whole line when keyword is not at the start of comment
+                (save-excursion
+                  (goto-char beg)
+                  (unless (looking-back comment bol)
+                    (goto-char bol)
+                    ;; Skip whitespace at the beginning of line
+                    (when (and (not (looking-at-p "\\S-"))
+                               (re-search-forward "\\S-" beg t))
+                      (forward-char -1))
+                    ;; Skip comment
+                    (re-search-forward comment beg t)
+                    (setq beg (point))))
+                (push (flymake-make-diagnostic
+                       buf beg end :note
+                       (buffer-substring-no-properties beg end))
+                      diags)))))))
+    (funcall report-fn (nreverse diags))))
+
+;;;###autoload
 (defun hl-todo-insert (keyword)
   "Insert TODO or similar keyword.
 If point is not inside a string or comment, then insert a new
 comment.  If point is at the end of the line, then insert the
 comment there, otherwise insert it as a new line before the
-current line."
+current line.  When called interactively the KEYWORD is read via
+`completing-read'."
   (interactive
    (list (completing-read
           "Insert keyword: "
-          (cl-mapcan (pcase-lambda (`(,keyword . ,face))
-                       (and (equal (regexp-quote keyword) keyword)
-                            (list (propertize keyword 'face
-                                              (hl-todo--combine-face face)))))
-                     hl-todo-keyword-faces))))
+          (mapcan (pcase-lambda (`(,keyword . ,face))
+                    (and (equal (regexp-quote keyword) keyword)
+                         (list (propertize keyword 'face
+                                           (hl-todo--combine-face face)))))
+                  hl-todo-keyword-faces))))
   (cond
    ((hl-todo--inside-comment-or-string-p)
     (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")

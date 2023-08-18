@@ -6,7 +6,7 @@
 ;;         Fanael Linithien <fanael4@gmail.com>
 ;; URL: https://github.com/purcell/package-lint
 ;; Keywords: lisp
-;; Version: 0
+;; Version: 0.19
 ;; Package-Requires: ((cl-lib "0.5") (emacs "24.1") (let-alist "1.0.6"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -86,7 +86,7 @@ The path can be absolute or relative to that of the linted file.")
   "List of errors and warnings for the current buffer.
 This is bound dynamically while the checks run.")
 
-(defconst package-lint-emacs-head-version '(29)
+(defconst package-lint-emacs-head-version '(30)
   "Version of Emacs HEAD.")
 
 (defconst package-lint-backport-libraries
