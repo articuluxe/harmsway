@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-08-04 16:52:36 dharms>
+;; Modified Time-stamp: <2023-08-22 17:54:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1820,7 +1820,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deadgrep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deadgrep
   :if (version<= "25.1" emacs-version)
-  :bind ("C-c 0gd" . deadgrep)
+  :bind ("C-c gd" . deadgrep)
   :init
   (setq deadgrep-project-root-function #'proviso-current-project-root))
 
