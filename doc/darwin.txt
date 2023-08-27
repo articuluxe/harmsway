@@ -1,10 +1,10 @@
 #! /usr/bin/sh
 # darwin.txt --- helpful notes for mac os x
-# Copyright (C) 2016-2021  Dan Harms (dharms)
+# Copyright (C) 2016-2021, 2023  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-02-08 10:57:56 dharms>
+# Modified Time-stamp: <2023-08-26 20:21:56 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
 
@@ -34,6 +34,12 @@ export COPYFILE_DISABLE
 
 # convert documents
 textutil -convert <txt|html|rtf|rtfd|doc|wordml|webarchive> file
+
+# verify a plist is correct
+plutil -lint <file>.plist
+# convert plist xml to/from json
+plutil -convert json -r <file>.plist
+plutil -convert xml1 <file>.plist
 
 # burn .iso image to USB
 diskutil list

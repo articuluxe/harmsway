@@ -1,16 +1,17 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # populate_notes.sh --- populate notes
-# Copyright (C) 2020  Dan Harms (dharms)
+# Copyright (C) 2020, 2023  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, July 31, 2020
 # Version: 1.0
-# Modified Time-stamp: <2020-07-31 08:53:46 dharms>
+# Modified Time-stamp: <2023-08-26 20:24:13 dharms>
 # Modified by: Dan Harms
 # Keywords: tools darwin cron
 
-# commands: load, unload
-# launchctl load com.harmsway.populate_notes.plist
+# launchctl load -w com.harmsway.populate_notes.plist
+# launchctl unload com.harmsway.populate_notes.plist
+# launchctl list
 
 source=$HOME/Dropbox/notes
 target=$HOME/Documents/notes
