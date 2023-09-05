@@ -1,2 +1,2 @@
-cp src/themes/myron*theme.el ../../../../.emacs.d/etc/themes
+cp src/themes/myron-*-theme.el ../../../../.emacs.d/etc/themes
 cp src/myron-themes.el ../../../../.emacs.d/plugins
