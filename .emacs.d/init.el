@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-08-22 17:54:41 dharms>
+;; Modified Time-stamp: <2023-09-05 16:06:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -175,7 +175,7 @@ up to 10 times."
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
 (setq auto-window-vscroll nil)
-(setq show-paren-context-when-offscreen t)
+(setq show-paren-context-when-offscreen 'overlay)
 (show-paren-mode t)
 (size-indication-mode 1)
 (setq next-error-message-highlight t)
@@ -203,9 +203,16 @@ up to 10 times."
 (setq mouse-yank-at-point t)
 (blink-cursor-mode 1)
 (setq blink-cursor-blinks 0)
+(setq copy-region-blink-predicate 'always)
 (setq ring-bell-function 'ignore)
 (when (display-graphic-p)
-  (global-unset-key "\C-z"))
+  (global-unset-key "\C-z")
+  (global-unset-key "\C-x\C-z")
+  (setq mouse-drag-mode-line-buffer t)
+  (setq mouse-drag-and-drop-region-cross-program t)
+  (setq mouse-drag-and-drop-region-scroll-margin t)
+  (setq mouse-drag-copy-region 'non-empty)
+  )
 (setq mode-line-compact 'long)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fonts ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -240,12 +247,15 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [(prior)] #'scroll-down-line)
 (when (< emacs-major-version 28)
   (global-set-key "\C-xx\C-t" #'toggle-truncate-lines))
+(when (> emacs-major-version 28)
+  (global-set-key "\C-xj" #'duplicate-dwim))
 (global-set-key "\C-c " #'whitespace-mode)
 (global-set-key "\C-c0fb" #'font-lock-fontify-buffer)
 (global-set-key "\M-sf" #'ff-find-other-file)
 (global-set-key (kbd "M-#") #'sort-lines)
 (global-set-key (kbd "C-#") #'sort-paragraphs)
-(global-set-key "\C-xw" #'write-region)
+(global-set-key "\C-xxw" #'write-region)
+(global-set-key "\M-g " #'ensure-empty-lines)
 
 ;; This horrible hack gets around a "reference to free variable" warning,
 ;; I believe due to a defadvice referring to `filename' in the original
@@ -687,6 +697,7 @@ line."
 (transient-mark-mode 1)
 ;; Insertion while text is selected deletes the selected text
 (delete-selection-mode 1)
+(setq delete-selection-temporary-region nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
@@ -757,7 +768,9 @@ line."
 (use-package pos-tip
   :defer t
   :init
-  (setq x-gtk-use-system-tooltips nil)
+  (if (> emacs-major-version 28)
+      (setq use-system-tooltips nil)
+    (setq x-gtk-use-system-tooltips nil))
   (setq pos-tip-border-width 1)
   (setq pos-tip-internal-border-width 2))
 
@@ -1372,6 +1385,7 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default comint-input-ignoredups t)
 (setq comint-terminfo-terminal "ansi")
+(setq tty-select-active-regions t)
 (add-hook 'comint-output-filter-functions 'comint-truncate-buffer)
 (setq comint-buffer-maximum-size 1024)
 
@@ -2143,6 +2157,7 @@ ARGS are the additional arguments."
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (setq remote-file-name-inhibit-cache 10)
   (setq tramp-completion-reread-directory-timeout 10)
+  (setq tramp-use-scp-direct-remote-copying t)
   ;; (setq vc-ignore-dir-regexp
   ;;       (format "\\(%s\\)\\|\\(%s\\)"
   ;;               vc-ignore-dir-regexp tramp-file-name-regexp))
@@ -2461,6 +2476,11 @@ ARGS are the additional arguments."
   ;;             ))
   (add-hook 'dired-mode-hook 'auto-revert-mode)
   (setq dired-create-destination-dirs t)
+  (setq dired-clean-up-buffers-too t)
+  (setq dired-clean-confirm-killing-deleted-buffers nil)
+  (setq dired-mouse-drag-files 'move)
+  (setq dired-free-space 'first)
+  (setq dired-make-directory-clickable t)
   :config
   (use-package dired-x) ; C-x C-j now runs 'dired-jump
   ;; (use-package dired+
@@ -3503,6 +3523,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
               )
   :init
   (setq flymake-wrap-around t)
+  (setq flymake-mode-line-lighter "Fly")
   (add-hook 'emacs-lisp-mode-hook #'flymake-mode)
  )
 
@@ -4590,6 +4611,7 @@ This function's result only has value if it is preceded by any font changes."
 (use-package sh-script
   :defer t
   :init
+  (setq sh-indent-statement-after-and t)
   (add-hook 'sh-mode-hook
             (lambda()
               (require 'flymake-collection-shellcheck)

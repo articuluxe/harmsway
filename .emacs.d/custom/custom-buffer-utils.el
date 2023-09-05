@@ -1,9 +1,9 @@
 ;;; custom-buffer-utils.el --- custom buffer utilities
-;; Copyright (C) 2016, 2019  Dan Harms (dharms)
+;; Copyright (C) 2016, 2019, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2019-01-07 14:39:51 dan.harms>
+;; Modified Time-stamp: <2023-09-05 15:04:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: buffer utilities
 
@@ -98,20 +98,21 @@
      "Window '%s' is not dedicated.")
    (current-buffer)))
 
-(defun rename-file-and-buffer(new-name)
-  "Renames both current buffer and file it's visiting."
-  (interactive "sNew name: ")
-  (let ((name (buffer-name))
-        (filename (buffer-file-name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file" name)
-      (if (get-buffer new-name)
-          (message "A buffer named '%s' already exists" new-name)
-        (progn
-          (rename-file name new-name 1)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
+(when (< emacs-major-version 29)
+  (defun rename-file-and-buffer(new-name)
+    "Renames both current buffer and file it's visiting."
+    (interactive "sNew name: ")
+    (let ((name (buffer-name))
+          (filename (buffer-file-name)))
+      (if (not filename)
+          (message "Buffer '%s' is not visiting a file" name)
+        (if (get-buffer new-name)
+            (message "A buffer named '%s' already exists" new-name)
+          (progn
+            (rename-file name new-name 1)
+            (rename-buffer new-name)
+            (set-visited-file-name new-name)
+            (set-buffer-modified-p nil)))))))
 
 (defun move-buffer-file(dir)
   "Moves both current buffer and file it's visiting."
