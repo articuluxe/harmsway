@@ -1,1 +1,1 @@
-find src -maxdepth 1 -name \*.el | grep -v test | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/use-package
+find src -maxdepth 1 -name \*.el | grep -v test | xargs -I '{}' cp '{}' ../../../.emacs.d/elisp/compat/29/1/-

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-02-24 13:35:38 dharms>
+;; Modified Time-stamp: <2023-09-05 16:57:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,9 +25,7 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (setq use-package-verbose t)
-  (require 'use-package))
+(require 'use-package)
 
 (defvar harmsway-c-mode-init-hooks '()
   "Hooks run once as c-mode-common is initialized.")

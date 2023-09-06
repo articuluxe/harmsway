@@ -1,8 +1,8 @@
 ;; linux.el --- linux os settings file
-;; Copyright (C) 2015-2017, 2019, 2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2017, 2019, 2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-02-10 14:01:58 dharms>
+;; Modified Time-stamp: <2023-09-05 16:58:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,9 +25,7 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (setq use-package-verbose t)
-  (require 'use-package))
+(require 'use-package)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))

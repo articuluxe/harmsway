@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-05 16:06:05 dharms>
+;; Modified Time-stamp: <2023-09-05 16:58:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -80,7 +80,6 @@
                      ,(concat my/plugins-directory "org/")
                      ,(concat my/plugins-directory "swiper/")
                      ,(concat my/plugins-directory "treemacs/")
-                     ,(concat my/plugins-directory "use-package/")
                      ,(concat my/plugins-directory "vc-msg/")
                      ,(concat my/plugins-directory "vlf/")
                      ,(concat my/plugins-directory "yasnippet/")
@@ -90,6 +89,20 @@
                      ) load-path))
   )
 (setq load-prefer-newer t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (< emacs-major-version 27)
+  (push (concat my/elisp-directory "compat/27/0/-/") load-path))
+
+(when (< emacs-major-version 29)
+  (push (concat my/elisp-directory "compat/29/0/-/") load-path)
+  (require 'eglot)
+  )
+
+(when (version< emacs-version "29.1")
+  (push (concat my/elisp-directory "compat/29/1/-/") load-path)
+  )
+
 (defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings t)
@@ -103,11 +116,7 @@
   (concat my/user-directory "settings/gui/")
   "A path to a directory containing window-system-specific settings.")
 
-(eval-when-compile
-  (defvar use-package-verbose)          ;silence warning
-  (setq use-package-verbose t)
-  (require 'use-package))
-(require 'bind-key)
+(require 'use-package)
 
 (set-register ?~ (cons 'file "~/"))
 (set-register ?\C-d (cons 'file "~/Documents"))
@@ -269,22 +278,6 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (when (version< "24.3" emacs-version)
     (require 'dash)
     (eval-after-load "dash" '(dash-enable-font-lock))))
-
-(when (< emacs-major-version 27)
-  (push (concat my/elisp-directory "compat/27/0/-/") load-path))
-
-(when (< emacs-major-version 29)
-  (push (concat my/elisp-directory "compat/29/0/-/") load-path)
-  (require 'eglot)
-  )
-
-;; (when (version< "24.3" emacs-version)
-;;   (require 's))
-;; (require 'f)
-;; (require 'deferred)
-;; (require 'concurrent)
-;; (require 'epc)
-;; (require 'epcs)
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups

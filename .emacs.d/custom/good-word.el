@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2023-02-12 23:09:20 dharms>
+;; Modified Time-stamp: <2023-09-05 16:57:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -27,9 +27,7 @@
 ;;; Code:
 
 (require 'hydra)
-(eval-when-compile
-  (setq use-package-verbose t)
-  (require 'use-package))
+(require 'use-package)
 
 (use-package wc-goal-mode :commands wc-goal-mode)
 

@@ -1,8 +1,8 @@
 ;; windows-nt.el --- windows os settings file
-;; Copyright (C) 2015-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-10 15:43:06 dharms>
+;; Modified Time-stamp: <2023-09-05 16:58:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,9 +25,7 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (setq use-package-verbose t)
-  (require 'use-package))
+(require 'use-package)
 
 (setq w32-use-visible-system-caret nil)
 
