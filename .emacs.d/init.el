@@ -243,7 +243,7 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; this removes the binding for "M-'" to 'abbrev-prefix-mark, without which we
 ;; can use "M-'" as a prefix binding (one which happens to work in the
 ;; terminal as well).
-(define-key esc-map "'" nil)
+(define-key esc-map "'" nil t)
 (global-unset-key (kbd "<f1>"))
 (global-unset-key (kbd "C-\\"))
 ;; add shortcut for terminals where C-S-DEL doesn't work
@@ -551,11 +551,11 @@ not an error if any files do not exist."
   :init
   (setq annotate-file (concat my/user-directory "annotations"))
   :config
-  (define-key annotate-mode-map (kbd "C-c C-a") nil)
-  (define-key annotate-mode-map (kbd "C-c C-s") nil)
-  (define-key annotate-mode-map (kbd "C-c C-d") nil)
-  (define-key annotate-mode-map (kbd "C-c ]") nil)
-  (define-key annotate-mode-map (kbd "C-c [") nil)
+  (define-key annotate-mode-map (kbd "C-c C-a") nil t)
+  (define-key annotate-mode-map (kbd "C-c C-s") nil t)
+  (define-key annotate-mode-map (kbd "C-c C-d") nil t)
+  (define-key annotate-mode-map (kbd "C-c ]") nil t)
+  (define-key annotate-mode-map (kbd "C-c [") nil t)
   (annotate-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1183,9 +1183,9 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package makefile-executor
   :hook (makefile-mode . makefile-executor-mode)
   :config
-  (define-key makefile-executor-mode-map "\C-c\C-c" nil)
+  (define-key makefile-executor-mode-map "\C-c\C-c" nil t)
   (define-key makefile-executor-mode-map "\C-c\C-l" 'makefile-executor-execute-last)
-  (define-key makefile-mode-map "\C-c\C-c" nil))
+  (define-key makefile-mode-map "\C-c\C-c" nil t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar harmsway-git-keymap)
@@ -2483,12 +2483,12 @@ ARGS are the additional arguments."
   ;;   (setq diredp-hide-details-propagate-flag t)
   ;;   ;; dired+'s default chord for chmod conflicts with arrow keys in terminal;
   ;;   ;; the alternative to this is to unbind the key like so:
-  ;;   ;; (define-key dired-mode-map [(meta shift ?o)] nil)
+  ;;   ;; (define-key dired-mode-map [(meta shift ?o)] nil t)
   ;;   (setq diredp-bind-problematic-terminal-keys nil)
   ;;   (setq dired-create-destination-dirs t)
   ;;   :config
   ;;   ;; make a prefix
-  ;;   (define-key dired-mode-map [(meta shift ?m)] nil)
+  ;;   (define-key dired-mode-map [(meta shift ?m)] nil t)
   ;;   (define-prefix-command 'my/diredp-map)
   ;;   (global-set-key [(meta shift ?m)] 'my/diredp-map)
   ;;   (define-key my/diredp-map "m" 'diredp-chmod-this-file)
@@ -2503,7 +2503,7 @@ ARGS are the additional arguments."
   ;;   (define-key my/diredp-map "R" 'diredp-toggle-find-file-reuse-dir)
   ;;   )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
-  (define-key dired-mode-map "\M-p" nil)                 ;unbind
+  (define-key dired-mode-map "\M-p" nil t)               ;unbind
   (use-package ls-lisp+)
   ;; omit dot-files in dired-omit-mode (C-x M-o)
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
@@ -3168,10 +3168,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
         '(text-mode-hook markdown-mode-hook org-mode-hook))
   (setq flyspell-issue-message-flag nil)
   :config
-  (define-key flyspell-mode-map [?\C-,] nil)
-  (define-key flyspell-mode-map [?\C-\;] nil)
-  (define-key flyspell-mode-map [?\C-\.] nil)
-  (define-key flyspell-mode-map [?\C-\M-i] nil)
+  (define-key flyspell-mode-map [?\C-,] nil t)
+  (define-key flyspell-mode-map [?\C-\;] nil t)
+  (define-key flyspell-mode-map [?\C-\.] nil t)
+  (define-key flyspell-mode-map [?\C-\M-i] nil t)
   (bind-keys
    :map flyspell-mode-map
    ("C-c \\c" . flyspell-auto-correct-word)
@@ -3297,8 +3297,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   ;; Use Ctrl-[N,P] rather than Meta to cycle
   (define-key company-active-map "\C-n" #'company-select-next-if-tooltip-visible-or-complete-selection)
   (define-key company-active-map "\C-p" #'company-select-previous)
-  (define-key company-active-map "\M-n" nil)
-  (define-key company-active-map "\M-p" nil)
+  (define-key company-active-map "\M-n" nil t)
+  (define-key company-active-map "\M-p" nil t)
   (define-key company-active-map "\M-." #'company-show-location)
   ;; cycle back and forth with TAB and S-TAB
   (define-key company-active-map [tab] #'company-complete-common-or-cycle)
@@ -3973,7 +3973,7 @@ This function's result only has value if it is preceded by any font changes."
   ;;           (lambda ()
   ;;             ))
   ;; remap 'as-execute-buffer
-  (define-key as-mode-map "\C-c\C-c" nil)
+  (define-key as-mode-map "\C-c\C-c" nil t)
   (define-key as-mode-map "\C-c\C-ce" #'as-execute-buffer)
   )
 
@@ -4050,7 +4050,7 @@ This function's result only has value if it is preceded by any font changes."
               (setq-local company-smart-backend 'company-cmd)
               ))
   ;; remap 'bat-run
-  (define-key bat-mode-map "\C-c\C-c" nil)
+  (define-key bat-mode-map "\C-c\C-c" nil t)
   (define-key bat-mode-map "\C-c\C-cr" 'bat-run))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bazel-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4154,7 +4154,7 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (setq dockerfile-mode-command "docker")
   :config
-  (define-key dockerfile-mode-map "\C-c\C-c" nil)
+  (define-key dockerfile-mode-map "\C-c\C-c" nil t)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dotenv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4296,7 +4296,7 @@ This function's result only has value if it is preceded by any font changes."
   :config
   (setq js2-basic-offset 2)
   (setq js2-include-node-externs t)
-  (define-key js2-mode-map (kbd "M-.") nil)
+  (define-key js2-mode-map (kbd "M-.") nil t)
   (define-key js2-mode-map "\C-c." 'js2-jump-to-definition))
 (use-package js2-imenu-extras
   :after js2-mode
@@ -4335,7 +4335,7 @@ This function's result only has value if it is preceded by any font changes."
     :if (< 24 emacs-major-version)
     :after json-mode
     :config
-    (define-key json-mode-map "\C-c\C-f" nil) ;use this for jq-format
+    (define-key json-mode-map "\C-c\C-f" nil t) ;use this for jq-format
     (define-key json-mode-map "\C-c\C-b" #'json-mode-beautify)
     (define-key json-mode-map [?\C-c?\C-\.] #'json-navigator-navigate-after-point)
     (define-key json-mode-map "\C-c\C-n" #'json-navigator-navigate-region))
@@ -4417,7 +4417,7 @@ This function's result only has value if it is preceded by any font changes."
               (require 'semantic/symref/grep)
               (add-to-list 'semantic-symref-filepattern-alist '(php-mode "*.php" "*.inc"))))
   :config
-  (define-key php-mode-map "\C-c\C-c" nil)
+  (define-key php-mode-map "\C-c\C-c" nil t)
   )
 
 (use-package phps-mode
@@ -4478,7 +4478,7 @@ This function's result only has value if it is preceded by any font changes."
   :config
   (define-key python-mode-map "\C-j" 'newline-and-indent)
   ;; remap 'python-shell-send-buffer
-  (define-key python-mode-map "\C-c\C-c" nil)
+  (define-key python-mode-map "\C-c\C-c" nil t)
   (define-key python-mode-map "\C-c\C-b" #'python-shell-send-buffer)
   (define-key python-mode-map "\C-c\C-r" #'python-shell-send-region-or-line)
   (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
@@ -4560,7 +4560,7 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'python-mode-hook 'importmagic-mode)
   :config
-  (define-key importmagic-mode-map "\C-c\C-l" nil)
+  (define-key importmagic-mode-map "\C-c\C-l" nil t)
   (define-key python-mode-map "\C-cimm" 'importmagic-mode)
   (define-key python-mode-map "\C-cimf" 'importmagic-fix-imports)
   (define-key python-mode-map "\C-cim." 'importmagic-fix-symbol-at-point))
@@ -4624,7 +4624,7 @@ This function's result only has value if it is preceded by any font changes."
   (setq sh-basic-offset 4)
   (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
   ;; remap 'sh-case
-  (define-key sh-mode-map "\C-c\C-c" nil)
+  (define-key sh-mode-map "\C-c\C-c" nil t)
   (define-key sh-mode-map "\C-c\C-cc" 'sh-case)
   )
 
@@ -4654,7 +4654,7 @@ This function's result only has value if it is preceded by any font changes."
             (lambda()
               (require 'flymake-collection-sql-lint)
               (flymake-mode 1)
-              (define-key sql-mode-map "\C-c\C-c" nil)
+              (define-key sql-mode-map "\C-c\C-c" nil t)
               (define-key sql-mode-map "\C-c\C-p" #'sql-send-paragraph)
               (sqlup-mode 1)
               ))
