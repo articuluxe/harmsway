@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2023-03-13 14:39:30 dharms>
+# Modified Time-stamp: <2023-09-07 11:14:26 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -54,6 +54,7 @@ $tar u"$verbose"f "$dest" --transform=s%host/"$host"\\/%% host/"$host"
 $tar u"$verbose"f "$dest" --transform=s%site/"$site"\\/%% site/"$site"
 
 deploys=(
+    repos/cpp/tree-sitter
     repos/cpp/universal-ctags
     repos/rust/ripgrep
     repos/rust/fd

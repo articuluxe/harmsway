@@ -1,10 +1,11 @@
 test -e
-cd src/emacs-28.2
+mkdir -p $HOME/opt/stow
+cd src/emacs-29.1
 mkdir -p bld
 cd bld
-../configure --with-modules --with-native-compilation --with-imagemagick --prefix=$HOME/opt/stow/emacs
+export LD_LIBRARY_PATH=/usr/local/lib:$HOME/opt/lib
+../configure --with-modules --with-native-compilation=aot --with-imagemagick --with-tree-sitter=ifavailable --prefix=$HOME/opt/stow/emacs
 make
 make install
-mkdir -p $HOME/opt/stow
 cd $HOME/opt/stow
 stow -R emacs

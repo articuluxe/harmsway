@@ -1,0 +1,13 @@
+set -e
+
+cd src
+make
+PREFIX="$HOME"/opt/stow/tree-sitter make install
+
+mkdir -p "$HOME"/opt/stow
+cd "$HOME"/opt/stow
+stow -R tree-sitter
+
+## Local Variables:
+## mode: sh
+## End:
