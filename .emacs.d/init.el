@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-05 16:58:55 dharms>
+;; Modified Time-stamp: <2023-09-06 19:18:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -48,6 +48,14 @@
                             ,(concat my/user-directory "modes/haskell/")
                             ,(concat my/user-directory "custom/"))
                           load-path))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (when (< emacs-major-version 27)
+    (push (concat my/elisp-directory "compat/27/0/-/") load-path))
+  (when (< emacs-major-version 29)
+    (push (concat my/elisp-directory "compat/29/0/-/") load-path)
+    (require 'eglot))
+  (when (version< emacs-version "29.1")
+    (push (concat my/elisp-directory "compat/29/1/-/") load-path))
   (setq load-path (append
                    `(
                      ,(concat my/user-directory "ext/gridlock/")
@@ -90,19 +98,6 @@
   )
 (setq load-prefer-newer t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (< emacs-major-version 27)
-  (push (concat my/elisp-directory "compat/27/0/-/") load-path))
-
-(when (< emacs-major-version 29)
-  (push (concat my/elisp-directory "compat/29/0/-/") load-path)
-  (require 'eglot)
-  )
-
-(when (version< emacs-version "29.1")
-  (push (concat my/elisp-directory "compat/29/1/-/") load-path)
-  )
-
 (defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings t)
@@ -112,9 +107,6 @@
 (defconst my/os-dir
   (concat my/user-directory "settings/os/" my/system-name "/")
   "Directory in which os-specific settings reside.")
-(defconst harmsway-gui-dir
-  (concat my/user-directory "settings/gui/")
-  "A path to a directory containing window-system-specific settings.")
 
 (require 'use-package)
 
@@ -3844,10 +3836,7 @@ This function's result only has value if it is preceded by any font changes."
   (load system-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package harmsway-gui
-  :config
-  (harmsway-gui-load (selected-frame)))
-(use-package harmsway-tabs)
+(require 'harmsway-tabs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; choose-font ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package choose-font

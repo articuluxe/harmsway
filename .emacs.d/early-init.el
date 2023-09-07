@@ -1,8 +1,8 @@
 ;;; early-init.el --- Early initialization options for Emacs
-;; Copyright (C) 2020-2022  Dan.Harms (Dan.Harms)
+;; Copyright (C) 2020-2023  Dan.Harms (Dan.Harms)
 ;; Author: Dan.Harms <enniomore@icloud.com>
 ;; Created: Tuesday, January 14, 2020
-;; Modified Time-stamp: <2022-09-19 11:15:38 dharms>
+;; Modified Time-stamp: <2023-09-06 17:31:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -24,6 +24,18 @@
 ;;
 
 ;;; Code:
+
+(eval-and-compile
+  (push
+   (concat (expand-file-name user-emacs-directory) "settings/gui/")
+   load-path)
+  (push
+   (concat (expand-file-name user-emacs-directory) "custom/")
+   load-path)
+
+  (require 'harmsway-gui)
+  (harmsway-gui-load (selected-frame))
+  )
 
 (setq package-enable-at-startup nil)
 (setq frame-inhibit-implied-resize t)

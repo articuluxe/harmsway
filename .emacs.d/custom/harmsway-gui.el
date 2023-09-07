@@ -1,8 +1,8 @@
 ;;; harmsway-gui.el --- gui settings
-;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
+;; Copyright (C) 2018, 2020-2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2021-09-30 14:01:29 dharms>
+;; Modified Time-stamp: <2023-09-06 17:29:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -38,15 +38,15 @@
 
 (defun harmsway-gui-load (&optional frame)
   "Load GUI settings for frame FRAME."
-  (when window-system
-    (let ((file (concat harmsway-gui-dir (symbol-name window-system))))
+  (if window-system
+    (let ((file (symbol-name window-system)))
       (message "harmsway-gui loading %s" file)
-      (load file t)))
+      (load file t))
+    (message "harmsway-gui lacks a window system, skipping"))
   (harmsway-gui-disable-scrollbar frame)
   (harmsway-gui-disable-toolbar frame))
 
 (add-hook 'after-init-hook #'harmsway-gui-load)
-
 (add-hook 'after-make-frame-functions #'harmsway-gui-load)
 
 (provide 'harmsway-gui)

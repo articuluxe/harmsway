@@ -1,8 +1,8 @@
 ;; ns.el --- mac gui settings
-;; Copyright (C) 2015-2016, 2018, 2020-2021  Dan Harms (dharms)
+;; Copyright (C) 2015-2016, 2018, 2020-2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-09-30 14:02:07 dharms>
+;; Modified Time-stamp: <2023-09-06 15:19:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -44,21 +44,21 @@
 (global-set-key [f11] 'ns-toggle-full-screen)
 (global-set-key "\C-c0q11" 'ns-toggle-full-screen)
 
-;; frame manipulation
-(defun ns-raise-emacs ()
-  "Raise Emacs."
-  (ns-do-applescript "tell application \"Emacs\" to activate"))
+;; ;; frame manipulation
+;; (defun ns-raise-emacs ()
+;;   "Raise Emacs."
+;;   (ns-do-applescript "tell application \"Emacs\" to activate"))
 
-(defun ns-raise-emacs-with-frame (frame)
-  "Raise Emacs and select FRAME."
-  (with-selected-frame frame
-    (when (display-graphic-p)
-      (ns-raise-emacs))))
+;; (defun ns-raise-emacs-with-frame (frame)
+;;   "Raise Emacs and select FRAME."
+;;   (with-selected-frame frame
+;;     (when (display-graphic-p)
+;;       (ns-raise-emacs))))
 
-(add-hook 'after-make-frame-functions 'ns-raise-emacs-with-frame)
+;; (add-hook 'after-make-frame-functions 'ns-raise-emacs-with-frame)
 
-(when (display-graphic-p)
-  (ns-raise-emacs))
+;; (when (display-graphic-p)
+;;   (ns-raise-emacs))
 
 (add-to-list 'initial-frame-alist '(ns-transparent-titlebar . t))
 (add-to-list 'initial-frame-alist '(ns-appearance . dark))

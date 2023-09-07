@@ -1,8 +1,8 @@
 ;;; harmsway-tabs.el --- tab customizations
-;; Copyright (C) 2021-2022  Dan Harms (dharms)
+;; Copyright (C) 2021-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, March 19, 2021
-;; Modified Time-stamp: <2022-09-13 12:20:23 dharms>
+;; Modified Time-stamp: <2023-09-06 17:29:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui
 
@@ -24,7 +24,6 @@
 ;;
 
 ;;; Code:
-(require 'proviso)
 
 (setq-default tab-bar-show 1)
 (setq tab-bar-new-button-show nil)
@@ -37,11 +36,11 @@
 (global-set-key "\C-xtN" #'harmsway-create-named-tab)
 (global-set-key "\C-xtT" #'toggle-frame-tab-bar)
 (global-set-key (kbd "C-5") #'tab-switcher)
-(global-set-key (kbd "M-' 5") #'tab-switcher)
+;; (global-set-key (kbd "M-' 5") #'tab-switcher)
 (global-set-key (kbd "C-7") #'tab-bar-history-forward)
-(global-set-key (kbd "M-' 7") #'tab-bar-history-forward)
+;; (global-set-key (kbd "M-' 7") #'tab-bar-history-forward)
 (global-set-key (kbd "C-6") #'tab-bar-history-back)
-(global-set-key (kbd "M-' 6") #'tab-bar-history-back)
+;; (global-set-key (kbd "M-' 6") #'tab-bar-history-back)
 
 (defun harmsway-create-named-tab (name)
   "Create a new tab named NAME."
