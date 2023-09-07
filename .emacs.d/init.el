@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-07 14:00:19 dharms>
+;; Modified Time-stamp: <2023-09-07 15:00:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1140,6 +1140,7 @@ From `manuel-oberti.github.io' on 20190806."
   :bind (("C-c 0T" . gts-do-translate))
   :init
   (setq gts-translate-list '(("fr" "en") ("it" "en")))
+  :config
   (setq gts-default-translator
         (gts-translator
          :picker (gts-prompt-picker)
