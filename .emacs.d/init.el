@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-07 15:00:37 dharms>
+;; Modified Time-stamp: <2023-09-07 15:19:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -139,9 +139,10 @@
 (setq gc-cons-threshold 20000000)
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
-(setq switch-to-visible-buffer nil)     ;obsolete in 27.1
+;; (setq switch-to-visible-buffer nil)     ;obsolete in 27.1
 (setq switch-to-prev-buffer-skip 'this)
 (setq enable-recursive-minibuffers t)
+(minibuffer-depth-indicate-mode 1)
 (setq completions-detailed t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
