@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-06 19:18:36 dharms>
+;; Modified Time-stamp: <2023-09-07 14:00:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -73,7 +73,6 @@
                      ,(concat my/plugins-directory "docker/")
                      ,(concat my/plugins-directory "elfeed/")
                      ,(concat my/plugins-directory "elnode/")
-                     ,(concat my/plugins-directory "emacs-refactor/")
                      ,(concat my/plugins-directory "expand-region/")
                      ,(concat my/plugins-directory "flymake/")
                      ,(concat my/plugins-directory "flymake/checkers/")
@@ -696,18 +695,6 @@ line."
   (add-hook 'prog-mode-hook
             (lambda()
               (local-set-key "\C-c`" #'fill-function-arguments-dwim))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package emr
-  :defer t
-  :init
-  (with-eval-after-load 'prog-mode
-    (require 'emr)
-    (bind-key "C-c b" 'emr-show-refactor-menu)
-    )
-  :config
-  (emr-initialize)
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sudo-edit
