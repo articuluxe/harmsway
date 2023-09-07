@@ -1,1 +1,1 @@
-cp src/*.el ../../../.emacs.d/plugins/docker
+cp src/*.el ../../../.emacs.d/elisp/compat/29/1/-
