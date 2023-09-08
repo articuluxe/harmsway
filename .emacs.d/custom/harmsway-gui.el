@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2023-09-06 17:29:08 dharms>
+;; Modified Time-stamp: <2023-09-11 10:36:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -38,11 +38,10 @@
 
 (defun harmsway-gui-load (&optional frame)
   "Load GUI settings for frame FRAME."
-  (if window-system
+  (when window-system
     (let ((file (symbol-name window-system)))
       (message "harmsway-gui loading %s" file)
       (load file t))
-    (message "harmsway-gui lacks a window system, skipping"))
   (harmsway-gui-disable-scrollbar frame)
   (harmsway-gui-disable-toolbar frame))
 

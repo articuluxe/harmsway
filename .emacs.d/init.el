@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-07 15:19:33 dharms>
+;; Modified Time-stamp: <2023-09-11 10:37:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -171,8 +171,8 @@ up to 10 times."
 ;; winner mode
 (winner-mode 1)
 ;; don't try to create "other files"
-(defvar ff-always-try-to-create)        ;silence warning
 (setq ff-always-try-to-create nil)
+(setq ff-quiet-mode t)
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
 (setq auto-window-vscroll nil)
