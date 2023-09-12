@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-11 10:37:09 dharms>
+;; Modified Time-stamp: <2023-09-12 08:34:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1210,6 +1210,7 @@ From `manuel-oberti.github.io' on 20190806."
   (setq magit-revision-filter-files-on-follow t)
   (setq magit-log-show-refname-after-summary nil)
   (setq magit-no-confirm '())
+  (setq magit-version "unknown")
   (setq magit-process-find-password-functions 'magit-process-password-auth-source)
   (setq magit-auto-revert-tracked-only t)
   (setq magit-prefer-remote-upstream t)
