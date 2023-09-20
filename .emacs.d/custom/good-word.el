@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2023-09-05 16:57:01 dharms>
+;; Modified Time-stamp: <2023-09-17 08:32:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -38,6 +38,9 @@
 
 (defun good-word/init-word-processor()
   (setq indent-tabs-mode nil)
+  (setq-local company-backends '((
+                                  company-dabbrev
+                                  )))
   (add-hook 'visual-line-mode-hook
             (lambda()
               (adaptive-wrap-prefix-mode)))

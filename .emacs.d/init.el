@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-12 08:34:16 dharms>
+;; Modified Time-stamp: <2023-09-22 16:24:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -143,7 +143,6 @@
 (setq switch-to-prev-buffer-skip 'this)
 (setq enable-recursive-minibuffers t)
 (minibuffer-depth-indicate-mode 1)
-(setq completions-detailed t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
 (bind-key "M-o c" 'canonically-space-region)
@@ -3063,12 +3062,15 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (defun harmsway-customize-eglot (&rest _)
   "Customize `eglot'."
   (interactive)
-  (when eglot--managed-mode
-    (setq-local company-smart-backend 'company-capf)
-    (setq-local company-backends
-                (list (delq 'company-capf (car company-backends))))
-    (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
-    ))
+  (if (eglot-managed-p)
+      (progn
+        (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
+        (setq-local company-alt-backend 'company-capf)
+        (setq-local company-backends
+                    (copy-tree (remq 'company-capf (car company-backends))))
+        )
+    )
+  )
 (advice-add #'eglot--managed-mode :after #'harmsway-customize-eglot)
 
 (use-package eglot
@@ -3081,6 +3083,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
                 ))
   :init
   (setq eglot-stay-out-of '(company-backends))
+  (setq eglot-autoshutdown t)
+  (setq eglot-extend-to-xref t)
   :config
   (setq-default eglot-workspace-configuration
                 '((:pylsp
@@ -3122,7 +3126,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package company-lsp
   :disabled
   :config
-  (setq-default company-smart-backend 'company-lsp))
+  (setq-default company-alt-backend 'company-lsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-toggle-flyspell-prog-mode ()
@@ -3194,6 +3198,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
               hippie-expand-try-functions-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq completions-detailed t)
 (setq tab-always-indent 'complete)      ;or t to avoid completion
 (add-to-list 'completion-styles 'initials t)
 (setq completion-auto-help nil)
@@ -3216,13 +3221,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; completion-at-point
-(defun harmsway-company-at-point ()
-  "Try company completion at point."
-  (and (not (minibufferp))
-       (featurep 'company)
-       company-mode
-       #'company-complete-common))
+;; completion-at-point (defunct)
+;; (defun harmsway-company-at-point ()
+;;   "Try company completion at point."
+;;   (and (not (minibufferp))
+;;        (featurep 'company)
+;;        company-mode
+;;        #'company-complete-common))
 
 ;; (defun harmsway-company-capf-workaround (completion-functions)
 ;;   "Ensure `harmsway-company-at-point' is not a member of COMPLETION-FUNCTIONS.
@@ -3235,28 +3240,36 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; (advice-add 'company--capf-workaround :filter-return 'harmsway-company-capf-workaround)
 
 ;; Smart completion
-(defvar-local company-smart-backend #'company-etags
+(defvar-local company-alt-backend #'company-etags
   "The smartest backend for company-completion.")
-(defun harmsway-smart-completion-at-point ()
-  "Perform smart completion at point."
+(defun harmsway-alt-completion-at-point ()
+  "Perform alternative completion at point."
   (interactive)
-  (company-begin-backend company-smart-backend))
+  (if (and (fboundp #'eglot-managed-p) (eglot-managed-p))
+      (let ((completion-at-point-functions #'eglot-completion-at-point))
+        (company-begin-backend company-alt-backend))
+    (company-begin-backend company-alt-backend)))
 
 (global-set-key "\M-/" #'hippie-expand)
-(global-set-key "\e\e/" #'harmsway-smart-completion-at-point)
-(global-set-key (kbd "s-/") #'harmsway-smart-completion-at-point)
-;; (global-set-key [?\C-\M-/] #'harmsway-smart-completion-at-point)
+(global-set-key "\e\e/" #'harmsway-alt-completion-at-point)
+(global-set-key (kbd "s-/") #'harmsway-alt-completion-at-point)
+;; (global-set-key [?\C-\M-/] #'harmsway-alt-completion-at-point)
+(global-set-key (kbd "TAB") #'company-indent-or-complete-common)
 
 (use-package company
   :init
+  (setq company-lighter-base "Co.")
   (setq company-idle-delay nil)
   (setq company-tooltip-limit 20)
   (setq company-tooltip-idle-delay 1)
   (setq company-require-match nil)
   (setq company-minimum-prefix-length 1)
-  (setq company-dabbrev-minimum-length 1)
+  (setq company-dabbrev-minimum-length 2)
+  (setq company-dabbrev-other-buffers 'all)
+  (setq company-dabbrev-ignore-case 'keep-prefix)
   (setq company-dabbrev-downcase nil)
-  (setq company-dabbrev-ignore-case t)
+  (setq company-files-chop-trailing-slash t)
+  (setq company-files-exclusions '(".pdf" ".log" ".gz" ".git/" ".DS_Store"))
   (setq company-etags-ignore-case t)
   (setq company-abort-on-unique-match nil)
   (setq company-format-margin-function nil) ;disable icons for now
@@ -3266,16 +3279,13 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq company-backends
         '((
            company-files
-           company-keywords
            company-capf
            company-dabbrev-code
-           company-etags
-           company-dabbrev
+           company-keywords
            )))
-  (setq company-files-exclusions '(".pdf" ".log" ".gz"))
+  (add-hook 'after-init-hook #'global-company-mode)
   :config
-  (global-company-mode 1)
-  (add-hook 'completion-at-point-functions 'harmsway-company-at-point)
+  ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point)
   ;; Use Ctrl-[N,P] rather than Meta to cycle
   (define-key company-active-map "\C-n" #'company-select-next-if-tooltip-visible-or-complete-selection)
   (define-key company-active-map "\C-p" #'company-select-previous)
@@ -3457,7 +3467,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
                                yas-dropdown-prompt
                                yas-no-prompt
                                ))
-  (add-hook 'after-init-hook (lambda() (yas-global-mode 1)))
+  (add-hook 'after-init-hook #'yas-global-mode)
   :config
   (bind-keys
    :map yas-minor-mode-map
@@ -3592,13 +3602,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (use-package company-restclient)
   (add-hook 'restclient-mode-hook
             (lambda ()
-              (make-local-variable 'company-backends)
-              (setq company-backends
-                    (list
-                     (cons 'company-restclient
-                           (copy-tree
-                            (car company-backends)))))
-              (setq-local company-smart-backend 'company-restclient)))
+              (setq-local company-alt-backend 'company-restclient)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; verb ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3986,14 +3990,12 @@ This function's result only has value if it is preceded by any font changes."
               (visual-line-mode 1)
               (flyspell-mode 1)
               (turn-on-reftex)
-              (make-local-variable 'company-backends)
-              (setq company-backends
-                    (append (list 'company-math-symbols-latex
-                                  'company-math-symbols-unicode
-                                  'company-auctex-macros
-                                  'company-auctex-environments
-                                  'company-latex-commands)
-                            (copy-tree (car company-backends))))
+              (setq-local company-alt-backend '((
+                                                 company-math-symbols-latex
+                                                 company-math-symbols-unicode
+                                                 company-auctex-macros
+                                                 company-auctex-environments
+                                                 company-latex-commands)))
               (push
                '("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
                  :help "Run latexmk on file")
@@ -4026,7 +4028,7 @@ This function's result only has value if it is preceded by any font changes."
   (add-hook 'bat-mode-hook
             (lambda()
               (dos-indent)
-              (setq-local company-smart-backend 'company-cmd)
+              (setq-local company-alt-backend 'company-cmd)
               ))
   ;; remap 'bat-run
   (define-key bat-mode-map "\C-c\C-c" nil t)
@@ -4065,15 +4067,9 @@ This function's result only has value if it is preceded by any font changes."
   (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
   (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
   (add-hook 'cmake-mode-hook (lambda ()
-                               (make-local-variable 'company-backends)
-                               (setq company-backends
-                                     (list
-                                      (cons 'company-cmake
-                                            (copy-tree
-                                             (car company-backends)))))
-                               (setq-local company-smart-backend
-                                           'company-cmake)))
-  )
+                               (setq-local company-alt-backend 'company-cmake)
+                               )))
+
 (use-package eldoc-cmake
   :after cmake-mode
   :config
@@ -4162,7 +4158,6 @@ This function's result only has value if it is preceded by any font changes."
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda()
-            (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
             (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
@@ -4345,7 +4340,7 @@ This function's result only has value if it is preceded by any font changes."
             (lambda()
               (require 'flymake-collection-luacheck)
               (flymake-mode 1)
-              (setq-local company-smart-backend 'company-lua)
+              (setq-local company-alt-backend 'company-lua)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4590,14 +4585,7 @@ This function's result only has value if it is preceded by any font changes."
               (flymake-mode 1)
               (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
               ;; set completion
-              (make-local-variable 'company-backends)
-              (setq company-backends
-                    (list
-                     (cons 'company-shell
-                           (copy-tree
-                            (car company-backends)))))
-              (setq-local company-smart-backend 'company-shell)
-              (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
+              (setq-local company-alt-backend 'company-shell)
               ))
   :config
   (setq sh-basic-offset 4)
@@ -4611,14 +4599,8 @@ This function's result only has value if it is preceded by any font changes."
 (add-hook 'shell-mode-hook
           (lambda ()
             ;; set completion
-            (make-local-variable 'company-backends)
-            (setq company-backends
-                  (list
-                   (cons 'company-shell
-                         (copy-tree
-                          (car company-backends)))))
-            (setq-local company-smart-backend 'company-shell)
-            ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
+            (setq-local company-alt-backend 'company-shell)
+            (define-key shell-mode-map (kbd "TAB") #'company-indent-or-complete-common)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sln-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4676,12 +4658,8 @@ This function's result only has value if it is preceded by any font changes."
     (add-to-list 'company-dabbrev-code-modes 'web-mode))
   (add-hook 'web-mode-hook
             (lambda ()
-              (make-local-variable 'company-backends)
-              (setq company-backends
-                    (list
-                     (cons 'company-web-html
-                           (copy-tree
-                            (car company-backends))))))))
+              (setq-local company-alt-backend 'company-web-html)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-nxml-hook ()
@@ -4692,12 +4670,8 @@ This function's result only has value if it is preceded by any font changes."
   (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
   (make-local-variable 'electric-pair-pairs)
   (push (cons ?< ?>) electric-pair-pairs)
-  (make-local-variable 'company-backends)
-  (setq company-backends
-        (list
-         (cons 'company-nxml
-               (copy-tree
-                (car company-backends))))))
+  (setq-local company-alt-backend 'company-nxml)
+  )
 (add-hook 'nxml-mode-hook #'harmsway-nxml-hook)
 
 (use-package mz-comment-fix

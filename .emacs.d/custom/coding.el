@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-09-05 16:57:01 dharms>
+;; Modified Time-stamp: <2023-09-22 16:25:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -130,10 +130,12 @@
   (setq-default c-auto-newline t)
   (define-key c++-mode-map "\C-c\C-c" nil)
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
+  (define-key c++-mode-map (kbd "TAB") #'company-indent-or-complete-common)
   (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
   (define-key c-mode-base-map (kbd "C-c C-;")
     (lambda() (interactive) (c-try-one-liner)))
   (define-key c-mode-base-map "\C-c." nil)
+  (define-key c-mode-base-map (kbd "TAB") #'company-indent-or-complete-common)
   ;; skips the final included file, ending in `:', when traversing compile
   ;; errors.  See
   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
@@ -160,14 +162,12 @@
   (hide-ifdef-mode 1)
   (require 'flymake-collection-clang)
   (flymake-mode 1)
-  (make-local-variable 'company-backends)
-  (setq company-backends
-        (list
-         (append
-          (list 'company-c-headers 'company-c-preprocessor)
-          (copy-tree
-           (car company-backends)))))
-  (setq-local company-smart-backend 'company-clang)
+  (setq-local company-backends
+              (append
+               (list 'company-c-headers 'company-c-preprocessor)
+               (copy-tree
+                (remq 'company-capf (car company-backends)))))
+  (setq-local company-alt-backend 'company-clang)
   )
 
 (add-hook 'c-mode-common-hook #'harmsway-c-mode-common-fn -50)
