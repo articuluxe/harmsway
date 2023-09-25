@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-25 09:53:31 dharms>
+;; Modified Time-stamp: <2023-09-25 16:27:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3059,18 +3059,29 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-eglot-keymap)
 (global-set-key "\C-c'" 'harmsway-eglot-keymap)
+
+(defun harmsway-customize-eglot-on ()
+  "Customize eglot to turn on its functionality."
+  (interactive)
+  (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
+  (setq-local company-alt-backend--prior 'company-alt-backend)
+  (setq-local company-alt-backend 'company-capf)
+  (setq-local company-backends
+              (copy-tree (remq 'company-capf (car company-backends)))))
+
+(defun harmsway-customize-eglot-off ()
+  "Customize eglot to turn off its functionality."
+  (interactive)
+  (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
+  (setq-local company-alt-backend 'company-alt-backend--prior)
+  (setq-local company-alt-backend--prior nil)
+  (setq-local company-backends (default-value 'company-backends)))
+
 (defun harmsway-customize-eglot (&rest _)
   "Customize `eglot'."
   (interactive)
-  (if (eglot-managed-p)
-      (progn
-        (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
-        (setq-local company-alt-backend 'company-capf)
-        (setq-local company-backends
-                    (copy-tree (remq 'company-capf (car company-backends))))
-        )
-    )
-  )
+  (if (eglot-managed-p) (harmsway-customize-eglot-on)))
+
 (advice-add #'eglot--managed-mode :after #'harmsway-customize-eglot)
 
 (use-package eglot
@@ -3252,6 +3263,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 ;; Smart completion
 (defvar-local company-alt-backend #'company-etags
   "The smartest backend for company-completion.")
+(defvar-local company-alt-backend--prior nil "Prior value of alternate completion, if any.")
 (defun harmsway-alt-completion-at-point ()
   "Perform alternative completion at point."
   (interactive)
@@ -3272,8 +3284,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq company-idle-delay nil)
   (setq company-tooltip-limit 20)
   (setq company-tooltip-idle-delay 1)
+  (setq company-tooltip-align-annotations t)
+  (setq company-tooltip-offset-display 'scrollbar) ;or 'lines
   (setq company-require-match nil)
   (setq company-minimum-prefix-length 1)
+  (setq company-search-regexp-function 'company-search-words-in-any-order-regexp) ;or 'regexp-quote
   (setq company-dabbrev-minimum-length 2)
   (setq company-dabbrev-other-buffers 'all)
   (setq company-dabbrev-ignore-case 'keep-prefix)
@@ -3285,7 +3300,6 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq company-format-margin-function nil) ;disable icons for now
   ;; (setq company-begin-commands '(self-insert-command))
   (setq company-show-quick-access t)
-  (setq company-tooltip-align-annotations t)
   (setq company-backends
         '((
            company-files
