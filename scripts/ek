@@ -1,11 +1,11 @@
 #!/bin/sh
 # -*- Mode: sh -*-
 # ek --- kill emacs daemon
-# Copyright (C) 2018-2021  Dan Harms (dharms)
+# Copyright (C) 2018-2021, 2023  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Thursday, August  9, 2018
 # Version: 1.0
-# Modified Time-stamp: <2021-03-29 00:18:15 dharms>
+# Modified Time-stamp: <2023-09-25 10:31:33 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
@@ -14,12 +14,12 @@ srv=${srv:-$(hostname -s)}
 
 server_ok()
 {
-    "$EMACS_CLIENT" -a "none" -s $srv -e "(boundp 'server-process)"
+    "$EMACS_CLIENT" -a "none" -s "$srv" -e "(boundp 'server-process)"
 }
 
 if [ "t" = "$(server_ok)" ]; then
     echo "Shutting down Emacs server"
-    "$EMACS_CLIENT" -s $srv -e '(kill-emacs)'
+    "$EMACS_CLIENT" -s "$srv" -e '(kill-emacs)'
 else
     echo "Emacs server not running"
 fi

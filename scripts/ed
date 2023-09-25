@@ -1,16 +1,16 @@
 #!/bin/sh
 # -*- Mode: sh -*-
 # ed --- start emacs daemon
-# Copyright (C) 2021  Dan Harms (dharms)
+# Copyright (C) 2021, 2023  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-03-29 00:17:07 dharms>
+# Modified Time-stamp: <2023-09-25 10:31:03 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
 srv=${1:-$ESRV}
 srv=${srv:-$(hostname -s)}
-"$EMACS_BIN" --daemon=$srv
+"$EMACS_BIN" --daemon="$srv"
 
 # code ends here
