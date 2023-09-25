@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-22 16:24:07 dharms>
+;; Modified Time-stamp: <2023-09-25 09:53:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3085,7 +3085,17 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq eglot-stay-out-of '(company-backends))
   (setq eglot-autoshutdown t)
   (setq eglot-extend-to-xref t)
+  (setq eglot-ignored-server-capabilities '(
+                                            :hoverProvider
+                                            :documentHighlightProvider
+                                            :documentFormattingProvider
+                                            :documentRangeFormattingProvider
+                                            :documentOnTypeFormattingProvider
+                                            :colorProvider
+                                            :foldingRangeProvider
+                                            ))
   :config
+  (require 'markdown-mode)
   (setq-default eglot-workspace-configuration
                 '((:pylsp
                    . (:configurationSources
@@ -3297,7 +3307,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
   (define-key company-active-map [backtab] #'company-select-previous)
   (define-key company-active-map (kbd "S-TAB") #'company-select-previous)
-  (define-key company-active-map "\C-e" #'company-other-backend)
+  (define-key company-active-map "\M-/" #'company-other-backend)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-quickhelp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
