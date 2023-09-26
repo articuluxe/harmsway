@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-25 16:27:05 dharms>
+;; Modified Time-stamp: <2023-09-26 11:52:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4082,17 +4082,22 @@ This function's result only has value if it is preceded by any font changes."
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-cmake-fix-underscore()
+  (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
 (use-package cmake-mode
   :mode ("CMakeLists\\.txt$" "\\.cmake$")
+  :init
+  (add-hook 'cmake-mode-hook
+            (lambda()
+              (if (and (executable-find "cmake-language-server")
+                       nil)
+                  (eglot-ensure)
+                (setq-local company-alt-backend 'company-cmake)
+                (harmsway-cmake-fix-underscore)
+                (cmake-font-lock-activate))
+              ))
   :config
-  (use-package cmake-font-lock)
-  (defun my/cmake-fix-underscore()
-    (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
-  (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
-  (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
-  (add-hook 'cmake-mode-hook (lambda ()
-                               (setq-local company-alt-backend 'company-cmake)
-                               )))
+  (require 'cmake-font-lock))
 
 (use-package eldoc-cmake
   :after cmake-mode
@@ -4457,7 +4462,8 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'python-mode-hook
             (lambda()
-              (if (executable-find "pylsp")
+              (if (and (executable-find "pylsp")
+                       t)
                   (eglot-ensure)
                 (require 'flymake-collection-pycodestyle)
                 (flymake-mode 1))
@@ -4605,11 +4611,14 @@ This function's result only has value if it is preceded by any font changes."
   (setq sh-indent-statement-after-and t)
   (add-hook 'sh-mode-hook
             (lambda()
-              (require 'flymake-collection-shellcheck)
-              (flymake-mode 1)
+              (if (and (executable-find "bash-language-server")
+                       t)
+                  (eglot-ensure)
+                ;; set completion
+                (setq-local company-alt-backend 'company-shell)
+                (require 'flymake-collection-shellcheck)
+                (flymake-mode 1))
               (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
-              ;; set completion
-              (setq-local company-alt-backend 'company-shell)
               ))
   :config
   (setq sh-basic-offset 4)
