@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-26 11:52:11 dharms>
+;; Modified Time-stamp: <2023-09-26 14:41:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4259,6 +4259,9 @@ This function's result only has value if it is preceded by any font changes."
 (use-package validate-html :commands validate-html)
 (add-hook 'html-mode-hook
           (lambda()
+            (if (and (executable-find "vscode-html-language-server")
+                     t)
+                (eglot-ensure))
             (if (featurep 'rainbow-mode)
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
@@ -4329,8 +4332,11 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'json-mode-hook
             (lambda()
-              (require 'flymake-collection-jq)
-              (flymake-mode 1)
+              (if (and (executable-find "vscode-json-language-server")
+                       nil)
+                  (eglot-ensure)
+                (require 'flymake-collection-jq)
+                (flymake-mode 1))
               (subword-mode 1)
               ))
   :config
@@ -4386,8 +4392,14 @@ This function's result only has value if it is preceded by any font changes."
   :commands (markdown-mode gfm-mode)
   :init
   (setq markdown-command "Markdown.pl")
-  (add-hook 'markdown-mode-hook #'good-word/init-word-processor)
-  )
+  (add-hook 'markdown-mode-hook
+            (lambda()
+              (if (and (executable-find "vscode-markdown-language-server")
+                     t)
+                (eglot-ensure))
+              )
+            (good-word/init-word-processor)
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nhexl-mode :defer t)
@@ -4595,8 +4607,12 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rust-mode :mode "\\.rs$"
   :init
-  (add-hook 'rust-mode-hook 'eglot-ensure)
-  )
+  (add-hook 'rust-mode-hook
+            (lambda ()
+              (if (and (executable-find "rust-analyzer")
+                       t)
+                  (eglot-ensure)
+                ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package qt-pro-mode :mode ("\\.pr[oi]$"))
@@ -4725,8 +4741,11 @@ This function's result only has value if it is preceded by any font changes."
          (search-backward-regexp ": *"))
   (add-hook 'yaml-mode-hook
             (lambda()
-              (require 'flymake-collection-yamllint)
-              (flymake-mode 1)
+              (if (and (executable-find "yaml-language-server")
+                       t)
+                  (eglot-ensure)
+                (require 'flymake-collection-yamllint)
+                (flymake-mode 1))
               (define-key yaml-mode-map "\C-m" 'newline-and-indent)
               (define-key yaml-mode-map "\M-\r" 'insert-ts)
               (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)

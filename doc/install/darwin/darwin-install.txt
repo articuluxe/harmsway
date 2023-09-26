@@ -53,9 +53,6 @@ brew install coreutils
 (setq dired-use-ls-dired t)
 brew install findutils
 
-brew install node
-npm i -g bash-language-server
-
 # for org-download
 brew install pngpaste
 brew install youtube-dl
@@ -119,6 +116,12 @@ export MANPATH=`manpath`
 /usr/libexec/makewhatis
 
 # language servers
+pip install cmake-language-server
+brew install yaml-language-server
+brew install vscode-langservers-extracted
+# old
+# brew install node
+# npm i -g bash-language-server
 brew install bash-language-server
 
 brew install rustup
