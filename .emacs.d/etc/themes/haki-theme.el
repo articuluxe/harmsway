@@ -7,7 +7,7 @@
 ;; Maintainer: Dilip
 ;; URL: https://github.com/idlip/haki
 ;; Created: 2023
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -288,7 +288,7 @@ Respected Only in GUI frame"
    `(completions-first-difference    ((,class )))
 
    ;; Modeline
-   `(doom-modeline-bar                  ((,class :background ,haki-region)))
+   `(doom-modeline-bar                  ((,class :bold t :background ,haki-region)))
    `(doom-modeline-buffer-file          ((,class :inherit  (doom-modeline bold) :foreground ,heading-1)))
    `(doom-modeline-buffer-major-mode    ((,class :inherit  (doom-modeline-emphasis bold) :foreground ,heading-2)))
    `(doom-modeline-time                 ((,class :inherit doom-modeline-buffer-file :foreground ,heading-6)))
@@ -354,8 +354,8 @@ Respected Only in GUI frame"
    `(org-level-5                             ((,class :font ,haki-heading-font :weight bold :foreground ,heading-5 :height 1.10)))
    `(org-level-6                             ((,class :font ,haki-heading-font :weight bold :foreground ,heading-6 :height 1.10)))
    `(org-archived                            ((,class :foreground ,fg-dim)))
-   `(org-block                               ((,class :background ,bg-dim)))
-   `(org-block-begin-line                    ((,class  :underline (:line-width (1 . 1) :color ,cursor) :extend t :weight semi-bold :height 0.9 :foreground ,fg-dim)))
+   `(org-block                               ((,class :inherit fixed-pitch :background ,bg-dim)))
+   `(org-block-begin-line                    ((,class :inherit org-block :underline (:line-width (1 . 1) :color ,cursor) :extend t :weight semi-bold :height 0.9 :foreground ,fg-dim)))
    `(org-block-end-line                      ((,class :inherit org-block-begin-line)))
    `(org-checkbox                            ((,class :foreground ,yellow-5)))
    `(org-checkbox-statistics-done            ((,class :foreground ,done)))
@@ -413,7 +413,7 @@ Respected Only in GUI frame"
    `(org-agenda-date-weekend-today           ((,class )))
    `(org-agenda-diary                        ((,class :inherit org-agenda-calendar-sexp)))
    `(org-agenda-dimmed-todo-face             ((,class :inherit shadow)))
-   `(org-agenda-done                         ((,class :inherit org-done :background nil)))
+   `(org-agenda-done                         ((,class :inherit org-done)))
    `(org-agenda-filter-category              ((,class :inherit bold :foreground ,c-keyword)))
    `(org-agenda-filter-effort                ((,class :inherit bold :foreground ,c-keyword)))
    `(org-agenda-filter-regexp                ((,class :inherit bold :foreground ,c-keyword)))
@@ -757,23 +757,23 @@ Respected Only in GUI frame"
    `(message-cited-text-2           ((,class :inherit org-level-2)))
    `(message-cited-text-3           ((,class :inherit org-level-3)))
    `(message-cited-text-4           ((,class :inherit org-level-4)))
-   `(message-header-name            ((,class :inherit bold :foreground ,c-warning)))
+   `(message-header-name            ((,class :height 0.9 :foreground ,heading-7)))
    `(message-header-newsgroups      ((,class :inherit message-header-other)))
    `(message-header-to              ((,class :font ,haki-sans-font :inherit bold :slant italic :height 1.5 :foreground ,heading-1)))
    `(message-header-cc              ((,class :foreground ,c-var)))
    `(message-header-subject         ((,class :font ,haki-title-font :inherit bold :height 1.8 :foreground ,title)))
    `(message-header-xheader         ((,class :inherit message-header-other)))
-   `(message-header-other           ((,class :font ,haki-sans-font :height 1.0 :foreground ,heading-7)))
+   `(message-header-other           ((,class :inherit bold :font ,haki-sans-font :height 1.0 :foreground ,c-warning)))
    `(message-mml                    ((,class :foreground ,c-property)))
    `(message-separator              ((,class :inherit separator-line)))
    `(header-line                    ((,class :height 0.9)))
 
 ;;; --- Info
    `(Info-quoted            ((,class :inherit org-verbatim)))
-   `(info-header-node       ((,class :inherit (shadow bold) :foreground ,c-var)))
+   `(info-header-node       ((,class :inherit (shadow bold) :foreground ,c-regexc)))
    `(info-xref-visited      ((,class :inherit link :foreground ,heading-6)))
    `(info-xref              ((,class :foreground ,clock)))
-   `(info-header-xref       ((,class :foreground ,c-regexb)))
+   `(info-header-xref       ((,class :foreground ,heading-5)))
    `(info-index-match       ((,class :inherit highlight)))
    `(info-menu-star         ((,class :foreground ,error)))
    `(info-node              ((,class :inherit bold)))
@@ -781,7 +781,7 @@ Respected Only in GUI frame"
    `(info-title-2           ((,class :inherit org-level-2)))
    `(info-title-3           ((,class :inherit org-level-3)))
    `(info-title-4           ((,class :inherit org-level-4)))
-   `(info-menu-header       ((,class :inherit org-level-5)))
+   `(info-menu-header       ((,class :foreground ,c-var)))
 
 ;;; --- helpful
    `(helpful-heading          ((,class :inherit org-level-1)))

@@ -13,6 +13,7 @@
 ;;     (emacs "26.1")
 ;;     (compat "29.1.3.4")
 ;;     (libgit "0")
+;;     (seq "2.24")
 ;;     (magit "3.3.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -54,6 +55,11 @@
 (require 'dash)
 (require 'eieio)
 (require 'subr-x)
+
+(when (and (featurep' seq)
+           (not (fboundp 'seq-keep)))
+  (unload-feature 'seq 'force))
+(require 'seq)
 
 (require 'magit-git)
 

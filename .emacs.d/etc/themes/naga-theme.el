@@ -31,9 +31,7 @@
 ;; Note that while I've been using this as my main theme for nearly a
 ;; year now, it still is very much a work in progress, as I've only
 ;; styled and checked the packages I actually use so far.  Some main
-;; colors might still be subject to change, I'm mainly unhappy with
-;; pink (maybe try out a more purple-ish tone instead) and the
-;; coloring of strings.
+;; colors might still be subject to change.
 
 ;;; Code:
 
@@ -114,14 +112,14 @@ beginning (or ending) line."
       (mode-line-buffer-id (:weight bold))
       (mode-line-emphasis (:weight bold))
       (mode-line-inactive (:box "#555555" :background ,bg :foreground ,comment))
-      (isearch (:foreground ,bg :weight semi-bold :background ,gold))
-      (lazy-highlight (:foreground ,fg :background "blue3"))
+      (isearch (:foreground ,bg :weight semi-bold :background ,gold :underline t))
+      (lazy-highlight (:foreground ,fg :background "blue3" :underline t))
       (show-paren-match
        (:foreground ,bg :background ,(if naga-theme-use-red-cursor
                                          fg
                                        red)))
       (show-paren-mismatch (:foreground "red" :background ,dark-blue))
-      (completions-common-part (:inherit 'orderless-match-face-0))
+      (completions-common-part (:foreground ,purple :background "#160617"))
       (error (:foreground ,red))
       (compilation-mode-line-run (:foreground ,yellow))
       (cursor (:background ,(if naga-theme-use-red-cursor
@@ -131,10 +129,10 @@ beginning (or ending) line."
       (match (:foreground ,yellow :background ,bg-green :slant oblique))
 
       ;; orderless
-      (orderless-match-face-0 (:foreground ,purple))
-      (orderless-match-face-1 (:foreground ,orange))
-      (orderless-match-face-2 (:foreground ,string))
-      (orderless-match-face-3 (:foreground ,comment-light))
+      (orderless-match-face-0 (:inherit 'completions-common-part))
+      (orderless-match-face-1 (:foreground ,orange :background "#190e00"))
+      (orderless-match-face-2 (:foreground ,string :background "#131b02"))
+      (orderless-match-face-3 (:foreground ,comment-light :background "#0e0f0e"))
 
       ;; outline-*, and by extension org-level-*
       (outline-1 (:weight bold :foreground ,fg))
@@ -236,6 +234,9 @@ beginning (or ending) line."
       ;; mu4e
       (mu4e-highlight-face (:weight semi-bold :foreground ,orange))
 
+      ;; notmuch
+      (notmuch-tag-unread (:weight semi-bold :foreground ,gold))
+
       ;; whitespace-mode
       (whitespace-space (:foreground ,whitespace-fg :background ,bg))
       (whitespace-tab (:foreground ,whitespace-fg :background ,bg))
@@ -331,3 +332,7 @@ beginning (or ending) line."
 (provide-theme 'naga)
 
 ;;; naga-theme.el ends here
+
+;; Local Variables:
+;; fill-column: 70
+;; End:

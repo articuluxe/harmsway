@@ -455,7 +455,7 @@ project directory is important."
      (and doom-modeline-major-mode-icon
           (concat
            (doom-modeline-icon
-            'octicon "nf-oct-file_directory" "🖿" "" :face face)
+            'octicon "nf-oct-file_directory_fill" "🖿" "" :face face)
            (doom-modeline-vspc)))
      (doom-modeline--buffer-state-icon)
      (propertize (abbreviate-file-name default-directory) 'face face))))
@@ -471,7 +471,7 @@ project directory is important."
      (and doom-modeline-major-mode-icon
           (concat
            (doom-modeline-icon
-            'octicon "nf-oct-file_directory" "🖿" "" :face face)
+            'octicon "nf-oct-file_directory_fill" "🖿" "" :face face)
            (doom-modeline-vspc)))
      (propertize (abbreviate-file-name default-directory) 'face face))))
 
@@ -1174,19 +1174,26 @@ block selection."
   "Display current Emacs or evil macro being recorded."
   (when (and (doom-modeline--active)
              (or defining-kbd-macro executing-kbd-macro))
-    (let ((sep (propertize " " 'face 'doom-modeline-panel ))
+    (let ((sep (propertize " " 'face 'doom-modeline-panel))
           (vsep (propertize " " 'face
-                            '(:inherit (doom-modeline-panel variable-pitch)))))
+                            '(:inherit (doom-modeline-panel variable-pitch))))
+          (macro-name (if (bound-and-true-p evil-this-macro)
+                          (format " @%s "
+                                  (char-to-string evil-this-macro))
+                        "Macro")))
       (concat
        sep
-       (doom-modeline-icon 'mdicon "nf-md-record" "●"
-                           (if (bound-and-true-p evil-this-macro)
-                               (char-to-string evil-this-macro)
-                             "Macro")
-                           :face 'doom-modeline-panel)
-       vsep
-       (doom-modeline-icon 'octicon "nf-oct-triangle_right" "▶" ">"
-                           :face 'doom-modeline-panel)
+       (if doom-modeline-always-show-macro-register
+           (propertize macro-name 'face 'doom-modeline-panel)
+         (concat
+          (doom-modeline-icon 'mdicon "nf-md-record" "●"
+                              macro-name
+                              :face '(:inherit (doom-modeline-urgent doom-modeline-panel))
+                              :v-adjust 0.15)
+          vsep
+          (doom-modeline-icon 'mdicon "nf-md-menu_right" "▶" ">"
+                              :face 'doom-modeline-panel
+                              :v-adjust 0.15)))
        sep))))
 
 ;; `anzu' and `evil-anzu' expose current/total state that can be displayed in the
@@ -1696,7 +1703,9 @@ See `mode-line-percent-position'.")
      (doom-modeline-wspc)
 
      ;; Line and column
-     (propertize (format-mode-line lc)
+     (propertize (concat (format-mode-line lc)
+                         (and doom-modeline-total-line-number
+                              (format "/%d" (line-number-at-pos (point-max)))))
                  'face (doom-modeline-face)
                  'help-echo "Buffer position\n\
 mouse-1: Display Line and Column Mode Menu"
@@ -1765,9 +1774,10 @@ mouse-1: Display Line and Column Mode Menu"
 TEXT is alternative if icon is not available."
   (propertize (doom-modeline-icon
                'mdicon
-               (when doom-modeline-modal-icon
-                 (or icon "nf-md-record"))
-               (or unicode "●")
+               (and doom-modeline-modal-icon
+                    (or (and doom-modeline-modal-modern-icon icon)
+                        "nf-md-record"))
+               (or (and doom-modeline-modal-modern-icon unicode) "●")
                text
                :face (doom-modeline-face face))
               'help-echo help-echo))
@@ -2225,7 +2235,7 @@ Example:
                           (token (or (ghub--token ghub-default-host username 'forge t)
                                      (ghub--token ghub-default-host username 'ghub t))))
                 (ghub-get "/notifications"
-                          '((all . t))
+                          '((notifications . t))
                           :host ghub-default-host
                           :username username
                           :auth token

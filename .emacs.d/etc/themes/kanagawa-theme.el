@@ -397,7 +397,7 @@
   (vertico-multiline                             (:background samuraiRed))
   (vertico-group-title                           (:background winterBlue :foreground lightBlue :bold t))
   (vertico-group-separator                       (:background winterBlue :foreground lightBlue :strike-through t))
-  (vertico-current                               (:foreground carpYellow :bold t :italic t :background waveBlue-1))
+  (vertico-current                               (:foreground carpYellow :bold t :italic nil :background waveBlue-1))
 
   (vertico-posframe-border                       (:background sumiInk-3))
   (vertico-posframe                              (:background sumiInk-2))

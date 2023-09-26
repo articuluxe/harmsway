@@ -5,7 +5,7 @@
 ;; Title: Nordic-Night Theme
 ;; Author: Ashton Wiersdorf <mail@wiersdorf.dev>
 ;; Created: 2023
-;; Version: 2.0.0
+;; Version: 2.0.2
 ;; Package-Requires: ((emacs "24.1"))
 ;; SPDX-License-Identifier: MIT
 ;; Homepage: https://sr.ht/~ashton314/nordic-night/
@@ -19,8 +19,8 @@
 
 ;;; Code:
 
-(unless (>= emacs-major-version 24)
-  (error "Nordic-Night theme requires Emacs 24.1 or later!"))
+(unless (>= emacs-major-version 25)
+  (error "Nordic-Night theme requires Emacs 25.1 or later!"))
 
 (deftheme nordic-night "A darker, more colorful version of the lovely Nord theme.")
 
@@ -51,6 +51,18 @@ The theme has to be reloaded after changing anything in this group."
     :nord14 "#a3be8c"
     :nord15 "#b48ead")
   "Nord colors for full-color displays")
+
+(defvar nordic-night-auroa-bg
+  '(:nord07b "#3f4f4f"
+    :nord08b "#3d5056"
+    :nord09b "#3b4551"
+    :nord10b "#233949"
+    :nord11b "#512e31"
+    :nord12b "#573d35"
+    :nord13b "#61553d"
+    :nord14b "#46503e"
+    :nord15b "#4c3e4a")
+  "Nord colors tuned for background")
 
 (defvar nordic-night-colors
   '(:nn00 "#121212"
@@ -83,6 +95,18 @@ The theme has to be reloaded after changing anything in this group."
     :nord14 "#87af5f"
     :nord15 "#af87af")
   "Nord colors for limited-color displays")
+
+(defvar nordic-night-auroa-bg-shell
+  '(:nord07b "#3a4e4e"
+    :nord08b "#3a4e58"
+    :nord09b "#3a444e"
+    :nord10b "#263a4e"
+    :nord11b "#582630"
+    :nord12b "#583a30"
+    :nord13b "#62583a"
+    :nord14b "#444e3a"
+    :nord15b "#4e3a4e")
+  "Nord colors for limited-color displays tuned for background")
 
 (defvar nordic-night-colors-shell
   '(:nn00 "#121212"
@@ -117,6 +141,15 @@ The theme has to be reloaded after changing anything in this group."
         (nn-yellow13     (plist-get color-set :nord13))
         (nn-green14      (plist-get color-set :nord14))
         (nn-purple15     (plist-get color-set :nord15))
+        (nn-bg07         (plist-get color-set :nord07b))
+        (nn-bg08         (plist-get color-set :nord08b))
+        (nn-bg09         (plist-get color-set :nord09b))
+        (nn-bg10         (plist-get color-set :nord10b))
+        (nn-bg11         (plist-get color-set :nord11b))
+        (nn-bg12         (plist-get color-set :nord12b))
+        (nn-bg13         (plist-get color-set :nord13b))
+        (nn-bg14         (plist-get color-set :nord14b))
+        (nn-bg15         (plist-get color-set :nord15b))
         (nn-annotation   (plist-get color-set :nord12))
         (nn-attribute    (plist-get color-set :nord07))
         (nn-class        (plist-get color-set :nord07))
@@ -212,7 +245,19 @@ The theme has to be reloaded after changing anything in this group."
      `(file-name-shadow ((,class (:inherit shadow))))
      `(header-line ((,class (:foreground ,nn-snowy4 :background ,nn-dark2))))
      `(help-argument-name ((,class (:foreground ,nn-brightblue8))))
-     `(highlight ((,class (:foreground ,nn-brightblue8 :background ,nn-dark2))))
+     `(highlight ((,class (:background ,nn-bg15))))
+     ;; `(hi-yellow ((,class (:background ,nn-bg13))))
+     ;; `(hi-green ((,class (:background ,nn-bg14))))
+     ;; `(hi-blue ((,class (:background ,nn-bg10))))
+     ;; `(hi-pink ((,class (:background ,nn-bg11))))
+     ;; `(hi-salmon ((,class (:background ,nn-bg13))))
+     ;; `(hi-aquamarine ((,class (:background ,nn-bg07))))
+     `(hi-yellow ((,class (:background ,nn-yellow13))))
+     `(hi-green ((,class (:background ,nn-green14 :foreground ,nn-dark0))))
+     `(hi-blue ((,class (:background ,nn-blue10))))
+     `(hi-pink ((,class (:background ,nn-red11 :foreground ,nn-dark0))))
+     `(hi-salmon ((,class (:background ,nn-orange12 :foreground ,nn-dark0))))
+     `(hi-aquamarine ((,class (:background ,nn-bluegreen7))))
      `(hl-line ((,class (:background ,nn-brightblack2))))
      `(info-menu-star ((,class (:foreground ,nn-lapis9))))
      `(isearch ((,class (:foreground ,nn-dark0 :background ,nn-brightblue8))))
@@ -266,22 +311,14 @@ The theme has to be reloaded after changing anything in this group."
      `(package-status-incompat ((,class (:foreground ,nn-red11))))
      `(package-status-installed ((,class (:foreground ,nn-bluegreen7 :weight bold))))
      `(package-status-unsigned ((,class (:underline ,nn-yellow13))))
-     ;; `(pulse-highlight-start-face ((,class (:background ,nn-yellow13))))
+     `(pulse-highlight-start-face ((,class (:background ,nn-bg13))))
      `(query-replace ((,class (:foreground ,nn-brightblue8 :background ,nn-dark2))))
-     `(region ((,class (:extend t :background ,nn-dark0))))
+     `(region ((,class (:extend t :background ,nn-bg08))))
      `(scroll-bar ((,class (:background ,nn-dark3))))
      `(secondary-selection ((,class (:background ,nn-dark2))))
 
-     ;; `show-paren-match-face` and `show-paren-mismatch-face` are deprecated since Emacs version 22.1 and were
-     ;; removed in Emacs 25.
-     ;; https://github.com/nordic-nighttheme/emacs/issues/75
-     ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=c430f7e23fc2c22f251ace4254e37dea1452dfc3
-     ;; https://github.com/emacs-mirror/emacs/commit/c430f7e23fc2c22f251ace4254e37dea1452dfc3
-     `(show-paren-match-face ((,class (:foreground ,nn-dark0 :background ,nn-brightblue8))))
-     `(show-paren-mismatch-face ((,class (:background ,nn-red11))))
-
-     `(show-paren-match ((,class (:background ,nn-dark0))))
-     `(show-paren-mismatch ((,class (:background ,nn-red11))))
+     `(show-paren-match ((,class (:background ,nn-bg10))))
+     `(show-paren-mismatch ((,class (:background ,nn-bg11))))
      `(success ((,class (:foreground ,nn-green14))))
      `(tab-bar ((,class (:background ,nn-dark0 :foreground ,nn-snowy4 :box (:line-width (1 . 2) :color ,nn-dark0)))))
      `(tab-bar-tab ((,class (:inherit tab-bar :background ,nn-dark3 :box (:color ,nn-dark3)))))
@@ -661,6 +698,25 @@ The theme has to be reloaded after changing anything in this group."
      `(powerline-evil-visual-face ((,class (:foreground ,nn-dark0 :background ,nn-bluegreen7))))
      `(powerline-evil-replace-face ((,class (:foreground ,nn-dark0 :background ,nn-lapis9))))
 
+;;; --- Prism
+     `(prism-level-0 ((,class (:foreground ,nn-bluegreen7))))
+     `(prism-level-1 ((,class (:foreground ,nn-purple15))))
+     `(prism-level-2 ((,class (:foreground ,nn-brightblue8))))
+     `(prism-level-3 ((,class (:foreground ,nn-green14))))
+     `(prism-level-4 ((,class (:foreground ,nn-lapis9))))
+     `(prism-level-5 ((,class (:foreground ,nn-yellow13))))
+     `(prism-level-6 ((,class (:foreground ,nn-blue10))))
+     `(prism-level-7 ((,class (:foreground ,nn-orange12))))
+     `(prism-level-8 ((,class (:foreground ,nn-red11))))
+
+;;; --- Pulsar
+     `(pulsar-red ((,class (:background ,nn-bg11))))
+     `(pulsar-green ((,class (:background ,nn-bg14))))
+     `(pulsar-blue ((,class (:background ,nn-bg08))))
+     `(pulsar-cyan ((,class (:background ,nn-bg07))))
+     `(pulsar-yellow ((,class (:background ,nn-bg13))))
+     `(pulsar-magenta ((,class (:background ,nn-bg15))))
+
 ;;; --- NeoTree
      `(neo-banner-face ((,class (:foreground ,nn-blue10))))
      `(neo-dir-link-face ((,class (:foreground ,nn-lapis9))))
@@ -713,7 +769,7 @@ The theme has to be reloaded after changing anything in this group."
      `(org-column-title ((,class (:inherit org-column :weight bold :underline t))))
      `(org-date ((,class (:foreground ,nn-brightblue8))))
      `(org-document-info ((,class (:foreground ,nn-snowy4))))
-     `(org-document-info-keyword ((,class (:foreground ,nn-dark3 :weight bold))))
+     `(org-document-info-keyword ((,class (:foreground ,nn-lessdark3-1 :weight bold))))
      `(org-document-title ((,class (:foreground ,nn-brightblue8 :weight bold))))
      `(org-done ((,class (:foreground ,nn-green14 :weight bold))))
      `(org-ellipsis ((,class (:foreground ,nn-dark3))))
@@ -768,8 +824,8 @@ The theme has to be reloaded after changing anything in this group."
 
 (nordic-night--build-theme 'nordic-night
                            (if (nordic-night--fullcolorp)
-                               (append nordic-night-nord-colors nordic-night-colors)
-                             (append nordic-night-nord-colors-shell nordic-night-colors-shell)))
+                               (append nordic-night-nord-colors nordic-night-colors nordic-night-auroa-bg)
+                             (append nordic-night-nord-colors-shell nordic-night-colors-shell nordic-night-auroa-bg-shell)))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

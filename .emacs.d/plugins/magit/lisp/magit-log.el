@@ -530,13 +530,13 @@ commits before and half after."
    ("-d" "Show refnames"            "--decorate")]
   [["Refresh"
     ("g" "buffer"                   magit-log-refresh)
-    ("s" "buffer and set defaults"  transient-set  :transient nil)
-    ("w" "buffer and save defaults" transient-save :transient nil)]
+    ("s" "buffer and set defaults"  transient-set-and-exit)
+    ("w" "buffer and save defaults" transient-save-and-exit)]
    ["Margin"
-    ("L" "toggle visibility"        magit-toggle-margin      :transient t)
-    ("l" "cycle style"              magit-cycle-margin-style :transient t)
-    ("d" "toggle details"           magit-toggle-margin-details)
-    ("x" "toggle shortstat"         magit-toggle-log-margin-style)]
+    ("L" "toggle visibility"        magit-toggle-margin           :transient t)
+    ("l" "cycle style"              magit-cycle-margin-style      :transient t)
+    ("d" "toggle details"           magit-toggle-margin-details   :transient t)
+    ("x" "toggle shortstat"         magit-toggle-log-margin-style :transient t)]
    [:if-mode magit-log-mode
     :description "Toggle"
     ("b" "buffer lock"              magit-toggle-buffer-lock)]]

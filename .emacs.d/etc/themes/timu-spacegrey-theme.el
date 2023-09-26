@@ -612,6 +612,9 @@ Sourced other themes to get information about font faces for packages.")
      `(circe-prompt-face ((,class (:weight bold :foreground ,orange))))
      `(circe-server-face ((,class (:foreground ,spacegrey5))))
 
+;;;; column-enforce-mode - dark
+   `(column-enforce-face ((,class (:foreground ,purple :underline t))))
+
 ;;;; company - dark
      `(company-preview ((,class (:foreground ,spacegrey5))))
      `(company-preview-common ((,class (:background ,spacegrey3 :foreground ,orange))))
@@ -1649,9 +1652,9 @@ Sourced other themes to get information about font faces for packages.")
      `(sml/vc-edited ((,class (:foreground ,green))))
 
 ;;;; smartparens - dark
-     `(sp-pair-overlay-face ((,class (:background ,grey))))
-     `(sp-show-pair-match-face ((,class (:foreground ,red :background ,spacegrey0 :weight ultra-bold))))
-     `(sp-show-pair-mismatch-face ((,class (:foreground ,spacegrey0 :background ,red :weight ultra-bold))))
+     `(sp-pair-overlay-face ((,class (:underline ,magenta))))
+     `(sp-show-pair-match-face ((,class (:foreground ,magenta :weight bold))))
+     `(sp-show-pair-mismatch-face ((,class (:foreground ,magenta :weight bold))))
 
 ;;;; smerge-tool - dark
      `(smerge-base ((,class (:background ,blue))))
@@ -2243,6 +2246,9 @@ Sourced other themes to get information about font faces for packages.")
      `(circe-my-message-face ((,class (:weight bold))))
      `(circe-prompt-face ((,class (:weight bold :foreground ,orange))))
      `(circe-server-face ((,class (:foreground ,spacegrey5))))
+
+;;;; column-enforce-mode - light
+   `(column-enforce-face ((,class (:foreground ,cyan :underline t))))
 
 ;;;; company - light
      `(company-preview ((,class (:foreground ,spacegrey5))))
@@ -3281,9 +3287,9 @@ Sourced other themes to get information about font faces for packages.")
      `(sml/vc-edited ((,class (:foreground ,green))))
 
 ;;;; smartparens - light
-     `(sp-pair-overlay-face ((,class (:background ,grey))))
-     `(sp-show-pair-match-face ((,class (:foreground ,red :background ,spacegrey0 :weight ultra-bold))))
-     `(sp-show-pair-mismatch-face ((,class (:foreground ,spacegrey0 :background ,red :weight ultra-bold))))
+     `(sp-pair-overlay-face ((,class (:underline ,magenta))))
+     `(sp-show-pair-match-face ((,class (:foreground ,magenta :weight bold))))
+     `(sp-show-pair-mismatch-face ((,class (:foreground ,magenta :weight bold))))
 
 ;;;; smerge-tool - light
      `(smerge-base ((,class (:background ,darkblue))))

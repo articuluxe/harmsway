@@ -49,8 +49,8 @@
   :type 'boolean)
 
 (deftheme tok
-  "Minimal monochromatic theme for Emacs in the spirit of
-Zmacs and Smalltalk-80"
+  "Minimal monochromatic theme for Emacs in the spirit of Zmacs and
+Smalltalk-80"
   :kind 'color-scheme)
 
 (let ((class '((class color) (min-colors 89)))
@@ -146,7 +146,7 @@ Zmacs and Smalltalk-80"
    `(outline-8 ((,class (:inherit outline-1))))
 
    ;; Show paren
-   `(show-paren-match ((,class (:weight bold :background ,dim-2))))
+   `(show-paren-match ((,class (:weight bold :background ,dim-5))))
    `(show-paren-match-expression ((,class (:inherit show-paren-match))))
    `(show-paren-mismatch ((,class (:inherit error))))
 
@@ -165,16 +165,9 @@ Zmacs and Smalltalk-80"
    ;; Magit
    `(magit-diff-file-heading ((,class (nil))))
    `(magit-section-heading ((,class (:weight bold))))
-   ;;
-   ;; Let Magit decide based on whether the `background-mode' is light or
-   ;; dark.
-   ;;
-   ;; `(magit-diff-added ((,class (:extend t :background "#ddffdd"))))
-   ;; `(magit-diff-added-highlight ((,class (:extend t :background "#cceecc"))))
-   ;; `(magit-diff-removed ((,class (:extend t :background "#ffdddd"))))
-   ;; `(magit-diff-removed-highlight ((,class (:extend t :background "#eecccc"))))
 
-   ;; Completions
+
+   ;; completions
    `(completions-common-part ((,class (:weight bold))))
    `(completions-first-difference ((,class (nil))))
 

@@ -903,6 +903,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(standard-themes-fringe-warning ((,c :inherit bold :background ,bg-yellow :foreground ,fg-main)))
 ;;;; all basic faces
 ;;;;; absolute essentials
+    `(appt-notification ((,c :inherit error)))
     `(bold ((,c :weight bold)))
     `(bold-italic ((,c :inherit (bold italic))))
     `(cursor ((,c :background ,cursor)))
@@ -1022,6 +1023,10 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(TeX-error-description-warning ((,c :inherit warning)))
 ;;;; auto-dim-other-buffers
     `(auto-dim-other-buffers-face ((,c :background ,bg-inactive)))
+;;;; breadcrumb
+    `(breadcrumb-face (( )))
+    `(breadcrumb-imenu-leaf-face ((,c :inherit bold :foreground ,modeline-warning))) ; same as `which-func'
+    `(breadcrumb-project-leaf-face ((,c :inherit bold)))
 ;;;; bongo
     `(bongo-album-title (( )))
     `(bongo-artist ((,c :foreground ,rainbow-0)))
@@ -1119,6 +1124,8 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(corfu-bar ((,c :background ,fg-main)))
     `(corfu-border ((,c :background ,bg-active)))
     `(corfu-default ((,c :background ,bg-inactive)))
+;;;;; corfu-candidate-overlay
+    `(corfu-candidate-overlay-face ((t :inherit shadow)))
 ;;;; custom (M-x customize)
     `(custom-button ((,c :box (:line-width 2 :style released-button) :background ,bg-active :foreground ,fg-main)))
     `(custom-button-mouse ((,c :inherit (highlight custom-button))))
@@ -2105,7 +2112,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(wgrep-file-face ((,c :foreground ,fg-alt)))
     `(wgrep-reject-face ((,c :background ,bg-err :foreground ,err)))
 ;;;; which-function-mode
-    `(which-func ((,c :inherit bold :foreground ,modeline-warning)))
+    `(which-func ((,c :inherit bold :foreground ,modeline-warning))) ; same as `breadcrumb-imenu-leaf-face'
 ;;;; whitespace-mode
     `(whitespace-big-indent ((,c :background ,bg-err :foreground ,err)))
     `(whitespace-empty ((,c :inherit whitespace-big-indent)))

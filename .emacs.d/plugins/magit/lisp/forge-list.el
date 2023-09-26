@@ -96,9 +96,9 @@ This is a list of package names.  Used by the commands
 (defvar-keymap forge-topic-list-mode-map
   :doc "Local keymap for Forge-Topic-List mode buffers."
   :parent tabulated-list-mode-map
-  "RET"      #'forge-visit-topic
-  "<return>" #'forge-visit-topic
-  "o"        #'forge-browse-topic
+  "RET"      #'forge-visit-this-topic
+  "<return>" #'forge-visit-this-topic
+  "o"        #'forge-browse-this-topic
   "'"        #'forge-dispatch
   "?"        #'magit-dispatch)
 
@@ -119,7 +119,7 @@ This is a list of package names.  Used by the commands
 
 (defun forge-topic-list-setup (mode id buffer-name columns fn)
   (declare (indent 4))
-  (let* ((repo (forge-get-repository (list :id id)))
+  (let* ((repo (forge-get-repository :id id))
          (topdir (magit-toplevel)))
     (with-current-buffer
         (get-buffer-create
@@ -157,9 +157,9 @@ This is a list of package names.  Used by the commands
 (defvar-keymap forge-repository-list-mode-map
   :doc "Local keymap for Forge-Repository-List mode buffers."
   :parent tabulated-list-mode-map
-  "RET"      #'forge-visit-repository
-  "<return>" #'forge-visit-repository
-  "o"        #'forge-browse-repository
+  "RET"      #'forge-visit-this-repository
+  "<return>" #'forge-visit-this-repository
+  "o"        #'forge-browse-this-repository
   "'"        #'forge-dispatch
   "?"        #'magit-dispatch)
 
@@ -265,7 +265,7 @@ List them in a separate buffer."
                               (isnull issue:closed))
                   :order-by [(desc updated)]]
                  (forge--tablist-columns-vector 'issue)
-                 id (ghub--username (forge-get-repository (list :id id)))))))
+                 id (ghub--username (forge-get-repository :id id))))))
 
 ;;;###autoload
 (defun forge-list-owned-issues ()
@@ -337,7 +337,7 @@ List them in a separate buffer."
                               (isnull pullreq:closed))
                   :order-by [(desc updated)]]
                  (forge--tablist-columns-vector 'pullreq)
-                 id (ghub--username (forge-get-repository (list :id id)))))))
+                 id (ghub--username (forge-get-repository :id id))))))
 
 ;;;###autoload
 (defun forge-list-requested-reviews (id)
@@ -354,7 +354,7 @@ List them in a separate buffer."
                               (isnull pullreq:closed))
                   :order-by [(desc updated)]]
                  (forge--tablist-columns-vector 'pullreq)
-                 id (ghub--username (forge-get-repository (list :id id)))))))
+                 id (ghub--username (forge-get-repository :id id))))))
 
 ;;;###autoload
 (defun forge-list-owned-pullreqs ()
@@ -391,7 +391,7 @@ List them in a separate buffer."
                               (isnull pullreq:closed))
                   :order-by [(desc updated)]]
                  (forge--tablist-columns-vector 'pullreq)
-                 id (ghub--username (forge-get-repository (list :id id)))))))
+                 id (ghub--username (forge-get-repository :id id))))))
 
 ;;;###autoload
 (defun forge-list-authored-issues (id)
@@ -406,7 +406,7 @@ List them in a separate buffer."
                               (isnull issue:closed))
                   :order-by [(desc updated)]]
                  (forge--tablist-columns-vector 'issue)
-                 id (ghub--username (forge-get-repository (list :id id)))))))
+                 id (ghub--username (forge-get-repository :id id))))))
 
 ;;;; Repository
 

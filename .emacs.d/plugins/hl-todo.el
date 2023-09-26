@@ -103,15 +103,15 @@ located inside a string."
   :type '(repeat function))
 
 (defcustom hl-todo-keyword-faces
-  '(("HOLD" . "#d0bf8f")
-    ("TODO" . "#cc9393")
-    ("NEXT" . "#dca3a3")
-    ("THEM" . "#dc8cc3")
-    ("PROG" . "#7cb8bb")
-    ("OKAY" . "#7cb8bb")
-    ("DONT" . "#5f7f5f")
-    ("FAIL" . "#8c5353")
-    ("DONE" . "#afd8af")
+  '(("HOLD"   . "#d0bf8f")
+    ("TODO"   . "#cc9393")
+    ("NEXT"   . "#dca3a3")
+    ("THEM"   . "#dc8cc3")
+    ("PROG"   . "#7cb8bb")
+    ("OKAY"   . "#7cb8bb")
+    ("DONT"   . "#5f7f5f")
+    ("FAIL"   . "#8c5353")
+    ("DONE"   . "#afd8af")
     ("NOTE"   . "#d0bf8f")
     ("KLUDGE" . "#d0bf8f")
     ("HACK"   . "#d0bf8f")
@@ -189,8 +189,11 @@ including alphanumeric characters, cannot be used here."
   :group 'hl-todo
   :type 'boolean)
 
+(defvar hl-todo--keywords
+  `((,(lambda (bound) (hl-todo--search nil bound))
+     (1 (hl-todo--get-face) prepend t))))
+
 (defvar-local hl-todo--regexp nil)
-(defvar-local hl-todo--keywords nil)
 
 (defsubst hl-todo--regexp ()
   "Return regular expression matching TODO or similar keyword."
@@ -213,12 +216,6 @@ See the function `hl-todo--regexp'."
                      (concat "[" hl-todo-highlight-punctuation "]"
                              (if hl-todo-require-punctuation "+" "*")))
                 "\\)")))
-
-(defun hl-todo--setup ()
-  (setq hl-todo--keywords
-        `((,(lambda (bound) (hl-todo--search nil bound))
-           (1 (hl-todo--get-face) prepend t))))
-  (font-lock-add-keywords nil hl-todo--keywords t))
 
 (defvar hl-todo--syntax-table (copy-syntax-table text-mode-syntax-table))
 
@@ -277,7 +274,7 @@ If COLOR is a face symbol, do not combine, return COLOR instead."
   :keymap hl-todo-mode-map
   :group 'hl-todo
   (if hl-todo-mode
-      (hl-todo--setup)
+      (font-lock-add-keywords nil hl-todo--keywords t)
     (font-lock-remove-keywords nil hl-todo--keywords))
   (when font-lock-mode
     (jit-lock-mode 1)))

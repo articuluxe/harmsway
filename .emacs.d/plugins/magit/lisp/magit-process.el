@@ -167,7 +167,8 @@ itself from the hook, to avoid further futile attempts."
 (defcustom magit-process-password-prompt-regexps
   '("^\\(Enter \\)?[Pp]assphrase\\( for \\(RSA \\)?key '.*'\\)?: ?$"
     ;; Match-group 99 is used to identify the "user@host" part.
-    "^\\(Enter \\)?[Pp]assword\\( for '?\\(https?://\\)?\\(?99:[^']*\\)'?\\)?: ?$"
+    "^\\(Enter \\|([^) ]+) \\)?\
+[Pp]assword\\( for '?\\(https?://\\)?\\(?99:[^']*\\)'?\\)?: ?$"
     "Please enter the passphrase for the ssh key"
     "Please enter the passphrase to unlock the OpenPGP secret key"
     "^.*'s password: ?$"
@@ -1179,11 +1180,10 @@ Limited by `magit-process-error-tooltip-max-lines'."
               (goto-char (1+ (line-end-position)))
               (delete-char -1)
               (oset section content nil))
-          (let ((buf (magit-process-buffer t)))
-            (when (and (= arg 0)
-                       (not (--any-p (eq (window-buffer it) buf)
-                                     (window-list))))
-              (magit-section-hide section)))))))
+          (when (and (= arg 0)
+                     (not (--any-p (eq (window-buffer it) process-buf)
+                                   (window-list))))
+            (magit-section-hide section))))))
   (if (= arg 0)
       ;; Unset the `mode-line-process' value upon success.
       (magit-process-unset-mode-line default-dir)

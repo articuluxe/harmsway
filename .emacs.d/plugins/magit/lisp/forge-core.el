@@ -28,6 +28,7 @@
 (require 'compat)
 (require 'dash)
 (require 'eieio)
+(require 'seq)
 (require 'subr-x)
 
 (require 'transient)
@@ -170,6 +171,9 @@ valid values are:
   the `id' and `forge-id' slots whose value differ from what they
   would be if the object were retrieved from the database.
 
+* `maybe' Like `stub', but when that would signal an error, just
+  return nil.
+
 * `create' This value is only intended to be used by commands
   that fetch data from the API.  If the repository is stored in
   the database, then return that, regardless of whether the
@@ -179,8 +183,10 @@ valid values are:
   object in the database and return it.
 
 If DEMAND is t, `stub' or `create', then also signal an error if
-the repository cannot be determined because there is no matching
-entry in `forge-alist'.
+if the Forge repository cannot be determined.  This happens if
+`default-directory' is not inside a Git repository, if there is
+no matching entry in `forge-alist', of if it is unclear which
+remote to use.
 
 Also update the object's `apihost', `githost' and `remote' slots
 according to the respective entry in `forge-alist' and the REMOTE
@@ -199,10 +205,6 @@ Also see info node `(forge) Repository Detection'.")
 
 (cl-defgeneric forge-get-url (obj)
   "Return the URL for a forge object.")
-
-(cl-defgeneric forge-browse (obj)
-  "Visit the URL corresponding to a forge object in a browser."
-  (browse-url (forge-get-url obj)))
 
 (cl-defgeneric forge-visit (obj)
   "View a forge object in a separate buffer.")

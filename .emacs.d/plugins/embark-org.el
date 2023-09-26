@@ -164,6 +164,7 @@
   "<left>"  #'org-table-move-cell-left
   "<right>" #'org-table-move-cell-right
   "d" #'org-table-kill-row
+  "c" #'org-table-copy-down
   "D" #'org-table-delete-column ; capital = column
   "^" #'org-table-move-row-up
   "v" #'org-table-move-row-down
@@ -219,7 +220,7 @@
 ;;   also without the "file:" prefix nor the "::line-number or search"
 ;;   suffix.  That way, file actions will correctly apply to it.
 
-;; - The type will not be 'file, but 'org-file-link that way we can
+;; - The type will not be 'file, but 'org-file-link; that way we can
 ;;   register a keymap for 'org-file-link that inherits from both
 ;;   embark-org-link-map (with RET bound to org-open-at-point and a
 ;;   few other generic link actions) and embark-file-map.
@@ -240,6 +241,24 @@
 ;; you to cycle first.  This sounds very inconvenient, the above
 ;; slightly more complex design allows both whole-link and inner
 ;; target actions to work without cycling.
+
+(defun embark-org-target-link ()
+  "Target Org link at point.
+This targets Org links in any buffer, not just buffers in
+`org-mode' or `org-agenda-mode'.  Org links in any buffer can be
+opened with `org-open-at-point-global', which is the default
+Embark action for Org links."
+  (pcase (org-in-regexp org-link-any-re)
+    (`(,start . ,end)
+     ;; We won't recognize unadorned http(s) or mailto links, as those
+     ;; already have target finders (but if these links have either a
+     ;; description, double brackets or angle brackets, then we do
+     ;; recognize them as org links)
+     (unless (save-excursion (goto-char start) (looking-at "http\\|mailto"))
+       `(org-link ,(buffer-substring start end) ,start . ,end)))))
+
+(let ((tail (memq 'embark-target-active-region embark-target-finders)))
+  (cl-pushnew 'embark-org-target-link (cdr tail)))
 
 (autoload 'org-attach-dir "org-attach")
 
@@ -330,7 +349,7 @@ bound to i."
 (defvar-keymap embark-org-link-map
   :doc "Keymap for actions on Org links."
   :parent embark-general-map
-  "RET" #'org-open-at-point
+  "RET" #'org-open-at-point-global
   "'" #'org-insert-link
   "w" #'embark-org-link-copy-map)
 
@@ -376,17 +395,19 @@ bound to i."
   "D" #'org-delete-property
   "k" #'org-cut-subtree
   "N" #'org-narrow-to-subtree
-  "<left>" #'org-do-demote
-  "<right>" #'org-do-promote
-  "S" #'org-sort
+  "T" #'org-tree-to-indirect-buffer
+  "<left>" #'org-do-promote
+  "<right>" #'org-do-demote
+  "^" #'org-sort
   "r" #'org-refile
-  "i" #'org-clock-in
-  "o" #'org-clock-out
-  "I" #'embark-insert                   ; keep it available
+  "R" #'embark-org-refile-here
+  "I" #'org-clock-in
+  "O" #'org-clock-out
   "a" #'org-archive-subtree-default-with-confirmation
   "h" #'org-insert-heading-respect-content
   "H" #'org-insert-todo-heading-respect-content
-  "L" #'org-store-link)
+  "l" #'org-store-link
+  "j" #'embark-org-insert-link-to)
 
 (dolist (cmd '(org-todo org-metaright org-metaleft org-metaup org-metadown
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
@@ -553,7 +574,11 @@ REST are the remaining arguments."
 
 (keymap-set embark-encode-map "o" 'embark-org-export-in-place-map)
 
-;;; Org agenda items
+;;; References to Org headings, such as agenda items
+
+;; These are targets that represent an org heading but not in the
+;; current buffer, instead they have a text property named
+;; `org-marker' that points to the actual heading.
 
 (defun embark-org-target-agenda-item ()
   "Target Org agenda item at point."
@@ -561,45 +586,121 @@ REST are the remaining arguments."
              (get-text-property (line-beginning-position) 'org-marker))
     (let ((start (+ (line-beginning-position) (current-indentation)))
           (end (line-end-position)))
-      `(org-agenda-item ,(buffer-substring start end) ,start . ,end))))
+      `(org-heading ,(buffer-substring start end) ,start . ,end))))
 
 (let ((tail (memq 'embark-org-target-element-context embark-target-finders)))
   (cl-pushnew 'embark-org-target-agenda-item (cdr tail)))
 
-(defvar-keymap embark-org-agenda-item-map
-  :doc "Keymap for actions on Org agenda items"
-  :parent embark-general-map
-  "RET" 'org-agenda-todo
-  "j" 'org-agenda-goto
-  "n" 'org-agenda-next-item
-  "p" 'org-agenda-previous-item
-  "t" 'org-agenda-todo
-  "k" 'org-agenda-kill
-  "u" 'org-agenda-undo
-  "D" 'org-agenda-toggle-deadlines
-  "a" 'org-agenda-archive
-  "i" 'org-agenda-clock-in
-  "o" 'org-agenda-clock-out
-  ":" 'org-agenda-set-tags
-  "," 'org-agenda-priority
-  "s" 'org-agenda-schedule
-  "d" 'org-agenda-deadline
-  "P" 'org-agenda-set-property
-  "e" 'org-agenda-set-effort
-  "r" 'org-agenda-refile
-  "N" 'org-agenda-add-note
-  "b" 'org-agenda-tree-to-indirect-buffer)
+(cl-defun embark-org--at-heading
+    (&rest rest &key run target &allow-other-keys)
+  "RUN the action at the location of the heading TARGET refers to.
+The location is given by the `org-marker' text property of
+target.  Applies RUN to the REST of the arguments."
+  (if-let ((marker (get-text-property 0 'org-marker target)))
+      (org-with-point-at marker
+        (apply run :target target rest))
+    (apply run :target target rest)))
 
-(add-to-list 'embark-keymap-alist '(org-agenda-item embark-org-agenda-item-map))
+(cl-defun embark-org-goto-heading (&key target &allow-other-keys)
+  "Jump to the org heading TARGET refers to."
+  (when-let ((marker (get-text-property 0 'org-marker target)))
+    (pop-to-buffer (marker-buffer marker))
+    (widen)
+    (goto-char marker)
+    (org-reveal)
+    (pulse-momentary-highlight-one-line)))
 
-(dolist (cmd '(org-agenda-todo org-agenda-next-item org-agenda-previous-item))
-  (cl-pushnew cmd embark-repeat-actions))
+(defun embark-org-heading-default-action (target)
+  "Default action for Org headings.
+There are two types of heading TARGETs: the heading at point in a
+normal org buffer, and references to org headings in some other
+buffer (for example, org agenda items).  For references the
+default action is to jump to the reference, and for the heading
+at point, the default action is whatever is bound to RET in
+`embark-org-heading-map', or `org-todo' if RET is unbound."
+  (if (get-text-property 0 'org-marker target)
+      (embark-org-goto-heading :target target)
+    (command-execute
+     (or (keymap-lookup embark-org-heading-map "RET") #'org-todo))))
 
-(dolist (cmd '(org-agenda-set-tags org-agenda-priority
-               org-agenda-schedule org-agenda-set-property
-               org-agenda-set-effort org-agenda-refile))
-  (cl-pushnew 'embark--ignore-target
-              (alist-get cmd embark-target-injection-hooks)))
+(defconst embark-org--invisible-jump-to-heading
+  '(org-tree-to-indirect-buffer
+    org-refile
+    org-clock-in
+    org-clock-out
+    org-archive-subtree-default-with-confirmation
+    org-store-link)
+  "Org heading actions which won't display the heading's buffer.")
+
+(setf (alist-get 'org-heading embark-default-action-overrides)
+      #'embark-org-heading-default-action)
+
+(map-keymap
+ (lambda (_key cmd)
+   (unless (or (where-is-internal cmd (list embark-general-map))
+               (memq cmd embark-org--invisible-jump-to-heading))
+     (cl-pushnew 'embark-org-goto-heading
+                 (alist-get cmd embark-pre-action-hooks))))
+ embark-org-heading-map)
+
+(dolist (cmd embark-org--invisible-jump-to-heading)
+  (cl-pushnew 'embark-org--at-heading
+              (alist-get cmd embark-around-action-hooks)))
+
+(defun embark-org--in-source-window (target function)
+  "Call FUNCTION, in the source window, on TARGET's `org-marker'.
+
+If TARGET does not have an `org-marker' property a `user-error'
+is signaled.  In case the TARGET comes from an org agenda buffer
+and the `other-window-for-scrolling' is an org mode buffer, then
+the FUNCTION is called with that other window temporarily
+selected; otherwise the FUNCTION is called in the selected
+window."
+  (if-let ((marker (get-text-property 0 'org-marker target)))
+      (with-selected-window
+          (or (and (derived-mode-p 'org-agenda-mode)
+                   (let ((window (ignore-errors (other-window-for-scrolling))))
+                     (with-current-buffer (window-buffer window)
+                       (when (derived-mode-p 'org-mode) window))))
+              (selected-window))
+        (funcall function marker))
+    (user-error "The target is an org heading rather than a reference to one")))
+
+(defun embark-org-refile-here (target)
+  "Refile the heading at point in the source window to TARGET.
+
+If TARGET is an agenda item and `other-window-for-scrolling' is
+displaying an org mode buffer, then that is the source window.
+If TARGET is a minibuffer completion candidate, then the source
+window is the window selected before the command that opened the
+minibuffer ran."
+  (embark-org--in-source-window target
+    (lambda (marker)
+      (org-refile nil nil
+                  ;; The RFLOC argument:
+                  (list
+                   ;; Name
+                   (org-with-point-at marker
+                     (nth 4 (org-heading-components)))
+                   ;; File
+                   (buffer-file-name (marker-buffer marker))
+                   ;; nil
+                   nil
+                   ;; Position
+                   marker)))))
+
+(defun embark-org-insert-link-to (target)
+  "Insert a link to the TARGET in the source window.
+
+If TARGET is an agenda item and `other-window-for-scrolling' is
+displaying an org mode buffer, then that is the source window.
+If TARGET is a minibuffer completion candidate, then the source
+window is the window selected before the command that opened the
+minibuffer ran."
+  (embark-org--in-source-window target
+    (lambda (marker)
+      (org-with-point-at marker (org-store-link nil t))
+      (org-insert-all-links 1 "" ""))))
 
 (provide 'embark-org)
 ;;; embark-org.el ends here

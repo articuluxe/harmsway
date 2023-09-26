@@ -44,6 +44,9 @@
    (create-pullreq-url-format :initform "https://%h/%o/%n/compare")
    (pullreq-refspec           :initform "+refs/pull/*/head:refs/pullreqs/*")))
 
+(defun forge-get-github-repository-p ()
+  (forge-github-repository-p (forge-get-repository nil)))
+
 ;;; Pull
 ;;;; Repository
 
@@ -336,17 +339,18 @@
     (forge--msg nil t nil "Pulling notifications")
     (pcase-let*
         ((`(,_ ,apihost ,forge ,_) spec)
-         (notifs (-keep (lambda (data)
-                          ;; Github may return notifications for repos
-                          ;; the user no longer has access to.  Trying
-                          ;; to retrieve information for such a repo
-                          ;; leads to an error, which we suppress.  See #164.
-                          (with-demoted-errors "forge--pull-notifications: %S"
-                            (forge--ghub-massage-notification
-                             data forge githost)))
-                        (forge--ghub-get nil "/notifications"
-                          '((all . nil))
-                          :host apihost :unpaginate t)))
+         (notifs
+          (seq-keep (lambda (data)
+                      ;; Github returns notifications for repositories the
+                      ;; user no longer has access to.  Trying to retrieve
+                      ;; information for such repositories leads to errors,
+                      ;; which we suppress.  See #164.
+                      (with-demoted-errors "forge--pull-notifications: %S"
+                        (forge--ghub-massage-notification
+                         data forge githost)))
+                    (forge--ghub-get nil "/notifications"
+                      '((all . nil))
+                      :host apihost :unpaginate t)))
          (groups (-partition-all 50 notifs))
          (pages  (length groups))
          (page   0)
@@ -361,7 +365,7 @@
                                     "Pulling notifications (page %s/%s)"
                                     page pages)
                         (ghub--graphql-vacuum
-                         (cons 'query (-keep #'caddr (pop groups)))
+                         (cons 'query (seq-keep #'caddr (pop groups)))
                          nil #'cb nil :auth 'forge :host apihost))
                (forge--msg nil t t   "Pulling notifications")
                (forge--msg nil t nil "Storing notifications")
@@ -430,7 +434,7 @@
   (when (oref topic unread-p)
     (oset topic unread-p nil)
     (when-let ((notif (forge-get-notification topic)))
-      (oset topic unread-p nil)
+      (oset notif unread-p nil)
       (forge--ghub-patch notif "/notifications/threads/:thread-id"))))
 
 ;;;; Miscellaneous
@@ -580,12 +584,12 @@
     :callback (forge--set-field-callback)))
 
 (cl-defmethod forge--set-topic-state
-  ((_repo forge-github-repository) topic)
+  ((_repo forge-github-repository) topic value)
   (forge--ghub-patch topic
     "/repos/:owner/:repo/issues/:number"
-    `((state . ,(cl-ecase (oref topic state)
-                  (closed "OPEN")
-                  (open   "CLOSED"))))
+    `((state . ,(cl-ecase value
+                  (open   "OPEN")
+                  (closed "CLOSED"))))
     :callback (forge--set-field-callback)))
 
 (cl-defmethod forge--set-topic-draft

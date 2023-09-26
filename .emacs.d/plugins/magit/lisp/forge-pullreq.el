@@ -119,12 +119,23 @@
               (oref post pullreq)
               'forge-pullreq))
 
+(cl-defmethod forge-get-pullreq ((_(eql :branch)) branch)
+  (and branch
+       (and-let* ((branch (cdr (magit-split-branch-name branch)))
+                  (number (magit-get "branch" branch "pullRequest")))
+         (forge-get-pullreq (string-to-number number)))))
+
 (cl-defmethod forge-ls-pullreqs ((repo forge-repository) &optional type select)
   (forge-ls-topics repo 'forge-pullreq type select))
 
 ;;; Utilities
 
 (defun forge-read-pullreq (prompt &optional type)
+  "Read a pull-request with completion using PROMPT.
+TYPE can be `open', `closed', or nil to select from all
+pull-requests.  TYPE can also be t to select from open
+pull-requests, or all pull-requests if a prefix argument
+is in effect."
   (when (eq type t)
     (setq type (if current-prefix-arg nil 'open)))
   (let* ((default (forge-current-pullreq))
@@ -172,29 +183,38 @@
 (cl-defmethod forge-get-url ((pullreq forge-pullreq))
   (forge--format pullreq 'pullreq-url-format))
 
-(defun forge--pullreq-by-forge-short-link-at-point ()
-  (forge--topic-by-forge-short-link-at-point '("#" "!") #'forge-get-pullreq))
+(put 'forge-pullreq 'thing-at-point #'forge-thingatpt--pullreq)
+(defun forge-thingatpt--pullreq ()
+  (and-let* ((repo (forge-get-repository nil)))
+    (and (thing-at-point-looking-at
+          (format "%s\\([0-9]+\\)\\_>"
+                  (forge--topic-type-prefix repo 'pullreq)))
+         (forge-get-pullreq repo (string-to-number (match-string 1))))))
 
 ;;; Sections
 
-(defun forge-current-pullreq ()
+(defun forge-current-pullreq (&optional demand)
+  "Return the pull-request at point or being visited.
+If there is no such pull-request and demand is non-nil, then signal
+an error."
   (or (forge-pullreq-at-point)
       (and (derived-mode-p 'forge-topic-mode)
            (forge-pullreq-p forge-buffer-topic)
            forge-buffer-topic)
+      (and demand (user-error "No current pull-request"))))
+
+(defun forge-pullreq-at-point (&optional demand)
+  "Return the pull-request at point.
+If there is no such pull-request and demand is non-nil, then signal
+an error."
+  (or (thing-at-point 'forge-pullreq)
+      (magit-section-value-if 'pullreq)
+      (forge-get-pullreq :branch (magit-branch-at-point))
       (and (derived-mode-p 'forge-topic-list-mode)
            (let ((topic (forge-get-topic (tabulated-list-get-id))))
              (and (forge-pullreq-p topic)
-                  topic)))))
-
-(defun forge-pullreq-at-point ()
-  (or (magit-section-value-if 'pullreq)
-      (and-let* ((post (magit-section-value-if 'post)))
-        (cond ((forge-pullreq-p post)
-               post)
-              ((forge-pullreq-post-p post)
-               (forge-get-pullreq post))))
-      (forge--pullreq-by-forge-short-link-at-point)))
+                  topic)))
+      (and demand (user-error "No pull-request at point"))))
 
 (defvar-keymap forge-pullreqs-section-map
   "<remap> <magit-browse-thing>" #'forge-browse-pullreqs
@@ -202,8 +222,7 @@
   "C-c C-n"                      #'forge-create-pullreq)
 
 (defvar-keymap forge-pullreq-section-map
-  "<remap> <magit-browse-thing>" #'forge-browse-pullreq
-  "<remap> <magit-visit-thing>"  #'forge-visit-pullreq)
+  "<remap> <magit-visit-thing>"  #'forge-visit-this-topic)
 
 (defun forge-insert-pullreqs ()
   "Insert a list of mostly recent and/or open pull-requests.

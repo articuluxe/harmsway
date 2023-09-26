@@ -633,6 +633,9 @@ Sourced other themes to get information about font faces for packages.")
    `(circe-prompt-face ((,class (:weight bold :foreground ,teal))))
    `(circe-server-face ((,class (:foreground ,caribbean5))))
 
+;;;; column-enforce-mode
+   `(column-enforce-face ((,class (:foreground ,magenta :underline t))))
+
 ;;;; company
    `(company-preview ((,class (:background ,bg-other :foreground ,caribbean5))))
    `(company-preview-common ((,class (:background ,caribbean3 :foreground ,cyan))))
@@ -1690,9 +1693,9 @@ Sourced other themes to get information about font faces for packages.")
    `(sml/vc-edited ((,class (:foreground ,green))))
 
 ;;;; smartparens
-   `(sp-pair-overlay-face ((,class (:background ,grey))))
-   `(sp-show-pair-match-face ((,class (:foreground ,red :background ,caribbean0 :weight ultra-bold))))
-   `(sp-show-pair-mismatch-face ((,class (:foreground ,caribbean0 :background ,red :weight ultra-bold))))
+   `(sp-pair-overlay-face ((,class (:underline ,magenta))))
+   `(sp-show-pair-match-face ((,class (:foreground ,magenta :weight bold))))
+   `(sp-show-pair-mismatch-face ((,class (:foreground ,magenta :weight bold))))
 
 ;;;; smerge-tool
    `(smerge-base ((,class (:background ,blue :foreground ,bg))))

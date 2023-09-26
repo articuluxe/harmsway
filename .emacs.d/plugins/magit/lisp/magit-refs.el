@@ -64,9 +64,9 @@ To change the value in an existing buffer use the command
   :package-version '(magit . "2.1.0")
   :group 'magit-refs
   :safe (lambda (val) (memq val '(all branch nil)))
-  :type '(choice (const all    :tag "For branches and tags")
-                 (const branch :tag "For branches only")
-                 (const nil    :tag "Never")))
+  :type '(choice (const :tag "For branches and tags" all)
+                 (const :tag "For branches only"     branch)
+                 (const :tag "Never"                 nil)))
 (put 'magit-refs-show-commit-count 'safe-local-variable 'symbolp)
 (put 'magit-refs-show-commit-count 'permanent-local t)
 
@@ -623,17 +623,17 @@ line is inserted at all."
     (magit-make-margin-overlay nil t)))
 
 (defun magit-refs--format-local-branches ()
-  (let ((lines (delq nil (mapcar #'magit-refs--format-local-branch
-                                 (magit-git-lines
-                                  "for-each-ref"
-                                  (concat "--format=\
+  (let ((lines (seq-keep #'magit-refs--format-local-branch
+                         (magit-git-lines
+                          "for-each-ref"
+                          (concat "--format=\
 %(HEAD)%00%(refname:short)%00%(refname)%00\
 %(upstream:short)%00%(upstream)%00%(upstream:track)%00"
-                                          (if magit-refs-show-push-remote "\
+                                  (if magit-refs-show-push-remote "\
 %(push:remotename)%00%(push)%00%(push:track)%00%(subject)"
                                  "%00%00%00%(subject)"))
-                                  "refs/heads"
-                                  magit-buffer-arguments)))))
+                          "refs/heads"
+                          magit-buffer-arguments))))
     (unless (magit-get-current-branch)
       (push (magit-refs--format-local-branch
              (concat "*\0\0\0\0\0\0\0\0" (magit-rev-format "%s")))

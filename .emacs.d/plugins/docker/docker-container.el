@@ -245,6 +245,27 @@ nil, ask the user for it."
         (vterm-other-window (docker-utils-generate-new-buffer-name "docker" "vterm:" default-directory)))
     (error "The vterm package is not installed")))
 
+;;;###autoload (autoload 'docker-container-vterm-env "docker-container" nil t)
+(aio-defun docker-container-vterm-env (container)
+  "Open `vterm' in CONTAINER with the environment variable set and
+default directory set to workdir."
+  (interactive (list
+                (docker-container-read-name)))
+  (let* ((container-address (format "docker:%s:" container))
+         (file-prefix (let ((prefix (file-remote-p default-directory)))
+                        (if prefix
+                            (format "%s|" (s-chop-suffix ":" prefix))
+                          "/")))
+         (container-config (cdr (assq 'Config (aref (json-read-from-string (aio-await (docker-run-docker-async "inspect" container))) 0))))
+         (container-workdir (cdr (assq 'WorkingDir container-config)))
+         (container-env (cdr (assq 'Env container-config)))
+         (default-directory (format "%s%s%s" file-prefix container-address container-workdir))
+         ;; process-environment doesn't work with tramp if you call this function more than one per emacs session
+         (tramp-remote-process-environment (append container-env nil)))
+    (if (fboundp 'vterm-other-window)
+        (vterm-other-window (docker-utils-generate-new-buffer-name "docker" "vterm-env:" default-directory))
+      (error "The vterm package is not installed"))))
+
 (defun docker-container-cp-from-selection (container-path host-path)
   "Run \"docker cp\" from CONTAINER-PATH to HOST-PATH for selected container."
   (interactive "sContainer path: \nFHost path: ")
@@ -302,12 +323,6 @@ nil, ask the user for it."
   (--each (docker-utils-get-marked-items-ids)
     (docker-container-shell-env it prefix)))
 
-(defun docker-container-unpause-selection ()
-  "Run `docker-container-unpause' on the containers selection."
-  (interactive)
-  (docker-utils-ensure-items)
-  (docker-generic-action-multiple-ids "unpause" (transient-args transient-current-command)))
-
 (defun docker-container-vterm-selection ()
   "Run `docker-container-vterm' on the containers selection."
   (interactive)
@@ -315,12 +330,19 @@ nil, ask the user for it."
   (--each (docker-utils-get-marked-items-ids)
     (docker-container-vterm it)))
 
+(defun docker-container-vterm-env-selection ()
+  "Run `docker-container-vterm-env' on the containers selection."
+  (interactive)
+  (docker-utils-ensure-items)
+  (--each (docker-utils-get-marked-items-ids)
+    (docker-container-vterm-env it)))
+
 (docker-utils-transient-define-prefix docker-container-attach ()
   "Transient for attaching to containers."
   :man-page "docker-container-attach"
   ["Arguments"
    ("n" "No STDIN" "--no-stdin")
-   ("d" "Key sequence for detaching" "--detach-keys=" read-string)]
+   ("d" "Key sequence for detaching" "--detach-keys " read-string)]
   [:description docker-generic-action-description
    ("a" "Attach" docker-generic-action-with-buffer)])
 
@@ -381,8 +403,13 @@ nil, ask the user for it."
   "Transient for pausing containers."
   :man-page "docker-container-pause"
   [:description docker-generic-action-description
-   ("P" "Pause" docker-generic-action-multiple-ids)
-   ("U" "Unpause" docker-container-unpause-selection)])
+   ("P" "Pause" docker-generic-action-multiple-ids)])
+
+(docker-utils-transient-define-prefix docker-container-unpause ()
+  "Transient for pausing containers."
+  :man-page "docker-container-unpause"
+  [:description docker-generic-action-description
+   ("N" "Unpause" docker-generic-action-multiple-ids)])
 
 (docker-utils-transient-define-prefix docker-container-restart ()
   "Transient for restarting containers."
@@ -407,7 +434,8 @@ nil, ask the user for it."
    ("b" "Shell" docker-container-shell-selection)
    ("B" "Shell with env" docker-container-shell-env-selection)
    ("e" "Eshell" docker-container-eshell-selection)
-   ("v" "Vterm" docker-container-vterm-selection)])
+   ("v" "Vterm" docker-container-vterm-selection)
+   ("V" "Vterm with env" docker-container-vterm-env-selection)])
 
 (docker-utils-transient-define-prefix docker-container-start ()
   "Transient for starting containers."
@@ -429,6 +457,7 @@ nil, ask the user for it."
    ["Lifecycle"
     ("K" "Kill"       docker-container-kill)
     ("O" "Stop"       docker-container-stop)
+    ("N" "Unpause"    docker-container-unpause)
     ("P" "Pause"      docker-container-pause)
     ("R" "Restart"    docker-container-restart)
     ("S" "Start"      docker-container-start)]
@@ -453,6 +482,7 @@ nil, ask the user for it."
     (define-key map "K" 'docker-container-kill)
     (define-key map "L" 'docker-container-logs)
     (define-key map "O" 'docker-container-stop)
+    (define-key map "N" 'docker-container-unpause)
     (define-key map "P" 'docker-container-pause)
     (define-key map "R" 'docker-container-restart)
     (define-key map "S" 'docker-container-start)

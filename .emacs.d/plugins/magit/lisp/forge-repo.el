@@ -111,7 +111,7 @@ forges and hosts."
                           ;; This is base64 encoded, according to
                           ;; https://docs.github.com/en/graphql/reference/scalars#id.
                           ;; Unfortunately that is not always true.
-                          ;; E.g. https://github.com/dit7ya/roamex.
+                          ;; E.g., https://github.com/dit7ya/roamex.
                           (condition-case nil
                               (base64-decode-string their-id)
                             (error their-id)))
@@ -148,7 +148,7 @@ forges and hosts."
                "https://magit.vc/manual/forge/Repository-Detection.html"))
     remote))
 
-(cl-defmethod forge-get-repository (((_ id) (head :id)))
+(cl-defmethod forge-get-repository ((_(eql :id)) id)
   (closql-get (forge-db) id 'forge-repository))
 
 (cl-defmethod forge-get-repository ((demand symbol) &optional remote)
@@ -164,24 +164,28 @@ repository, if any."
            (forge-get-repository forge-buffer-topic))
       (magit--with-refresh-cache
           (list default-directory 'forge-get-repository demand)
-        (unless remote
-          (setq remote (forge--get-remote 'warn)))
-        (if-let ((url (and remote
-                           (magit-git-string "remote" "get-url" remote))))
-            (when-let* ((repo (forge-get-repository url remote demand)))
-              ;; Cannot use and-let* because of debbugs#31840.
-              (oset repo worktree (magit-toplevel))
-              repo)
-          (when (memq demand forge--signal-no-entry)
-            (error
-             "Cannot determine forge repository.  %s\nSee %s."
-             (cond (remote (format "No url configured for %S." remote))
-                   ((and-let* ((config (magit-get "forge.remote")))
-                      (format "Value of `forge.remote' is %S but %s"
-                              config "that remote does not exist.")))
-                   ((magit-list-remotes) "Cannot decide on remote to use.")
-                   (t "No remote configured."))
-             "https://magit.vc/manual/forge/Repository-Detection.html"))))))
+        (if (not (magit-gitdir))
+            (when (memq demand forge--signal-no-entry)
+              (error
+               "Cannot determine Forge repository outside of Git repository"))
+          (unless remote
+            (setq remote (forge--get-remote 'warn)))
+          (if-let ((url (and remote
+                             (magit-git-string "remote" "get-url" remote))))
+              (and-let* ((repo (forge-get-repository url remote demand)))
+                (progn ; work around debbugs#31840
+                  (oset repo worktree (magit-toplevel))
+                  repo))
+            (when (memq demand forge--signal-no-entry)
+              (error
+               "Cannot determine forge repository.  %s\nSee %s."
+               (cond (remote (format "No url configured for %S." remote))
+                     ((and-let* ((config (magit-get "forge.remote")))
+                        (format "Value of `forge.remote' is %S but %s"
+                                config "that remote does not exist.")))
+                     ((magit-list-remotes) "Cannot decide on remote to use.")
+                     (t "No remote configured."))
+               "https://magit.vc/manual/forge/Repository-Detection.html")))))))
 
 (cl-defmethod forge-get-repository ((url string) &optional remote demand)
   "Return the repository at URL."
@@ -214,16 +218,18 @@ See `forge-alist' for valid Git hosts."
                  (error "Cannot use `%s' in %S yet.\n%s"
                         this-command (magit-toplevel)
                         "Use `M-x forge-add-repository' before trying again."))
-                ((and (eq demand 'full) obj
-                      (oref obj sparse-p))
+                ((and obj
+                      (oref obj sparse-p)
+                      (eq demand 'full))
                  (setq obj nil)))
-          (when (and (memq demand '(stub create))
+          (when (and (memq demand '(create stub maybe))
                      (not obj))
             (pcase-let ((`(,id . ,forge-id)
-                         (forge--repository-ids class host owner name
-                                                (eq demand 'stub))))
+                         (forge--repository-ids
+                          class host owner name
+                          (memq demand '(stub maybe)))))
               ;; The repo might have been renamed on the forge.  #188
-              (unless (setq obj (forge-get-repository (list :id id)))
+              (unless (setq obj (forge-get-repository :id id))
                 (setq obj (funcall class
                                    :id       id
                                    :forge-id forge-id
@@ -243,15 +249,30 @@ See `forge-alist' for valid Git hosts."
 (cl-defmethod forge-get-repository ((repo forge-repository))
   repo)
 
+(defun forge-get-repository-p ()
+  "Like (forge-get-repository nil), but don't require an argument.
+Needed because Eieio does not support adding a method that takes
+no argument."
+  (forge-get-repository nil))
+
 ;;; Utilities
 
-(defun forge-repository-at-point ()
-  (magit-section-value-if 'forge-repo))
-
-(defun forge-current-repository ()
+(defun forge-current-repository (&optional demand)
+  "Return the repository at point or being visited.
+If there is no such repository and demand is non-nil, then signal
+an error."
   (or (forge-repository-at-point)
+      (forge-get-repository nil)
+      (and demand (user-error "No current repository"))))
+
+(defun forge-repository-at-point (&optional demand)
+  "Return the repository at point.
+If there is no such repository and demand is non-nil, then signal
+an error."
+  (or (magit-section-value-if 'forge-repo)
       (and (derived-mode-p 'forge-repository-list-mode)
-           (forge-get-repository (list :id (tabulated-list-get-id))))))
+           (forge-get-repository :id (tabulated-list-get-id)))
+      (and demand (user-error "No repository at point"))))
 
 (cl-defmethod forge-visit ((repo forge-repository))
   (let ((worktree (oref repo worktree)))
@@ -267,8 +288,7 @@ See `forge-alist' for valid Git hosts."
                          (forge-sql [:select [githost owner name]
                                      :from repository]))
                  nil t nil nil
-                 (and-let* ((default (or (forge-current-repository)
-                                         (forge-get-repository nil))))
+                 (and-let* ((default (forge-current-repository)))
                    (format "%s/%s @%s"
                            (oref default owner)
                            (oref default name)
@@ -284,9 +304,9 @@ See `forge-alist' for valid Git hosts."
   (magit-completing-read
    prompt
    (if class
-       (-keep (pcase-lambda (`(,githost ,_apihost ,_id ,c))
-                (and (child-of-class-p c class) githost))
-              forge-alist)
+       (seq-keep (pcase-lambda (`(,githost ,_apihost ,_id ,c))
+                   (and (child-of-class-p c class) githost))
+                 forge-alist)
      (mapcar #'car forge-alist))
    nil t))
 

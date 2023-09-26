@@ -55,6 +55,18 @@ The theme has to be reloaded after changing anything in this group."
     :nord15 "#af87af")
   "Darker Nord colors for limited-color displays")
 
+(defvar nordic-midnight-auroa-bg
+  '(:nord07b "#3f4f4f"
+    :nord08b "#3d5056"
+    :nord09b "#3b4551"
+    :nord10b "#233949"
+    :nord11b "#512e31"
+    :nord12b "#573d35"
+    :nord13b "#61553d"
+    :nord14b "#46503e"
+    :nord15b "#4c3e4a")
+  "Darker Nord colors tuned for background")
+
 (defvar nordic-midnight-colors
   '(:nn00 "#000000"
     :nn01 "#121212"
@@ -73,10 +85,22 @@ The theme has to be reloaded after changing anything in this group."
     :nn05 "#c6c6c6")
   "Nordic midnight colors for limited-color displays")
 
+(defvar nordic-midnight-auroa-bg-shell
+  '(:nord07b "#3a4e4e"
+    :nord08b "#3a4e58"
+    :nord09b "#3a444e"
+    :nord10b "#263a4e"
+    :nord11b "#582630"
+    :nord12b "#583a30"
+    :nord13b "#62583a"
+    :nord14b "#444e3a"
+    :nord15b "#4e3a4e")
+  "Darker Nord colors for limited-color displays tuned for background")
+
 (nordic-night--build-theme 'nordic-midnight
                            (if (nordic-night--fullcolorp)
-                               (append nordic-midnight-nord-colors nordic-midnight-colors)
-                             (append nordic-midnight-nord-colors-shell nordic-midnight-colors-shell)))
+                               (append nordic-midnight-nord-colors nordic-midnight-colors nordic-midnight-auroa-bg)
+                             (append nordic-midnight-nord-colors-shell nordic-midnight-colors-shell nordic-midnight-auroa-bg-shell)))
 
 (provide-theme 'nordic-midnight)
 

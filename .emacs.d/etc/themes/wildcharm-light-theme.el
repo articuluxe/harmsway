@@ -700,11 +700,13 @@
 
    ;; diff
    `(diff-header
-     ((,class256 (:foreground ,blue :weight bold))))
+     ((,class256 (:background ,grey3 :foreground ,blue :weight bold))))
    `(diff-file-header
-     ((,class256 (:foreground ,black))))
+     ((,class256 (:background ,grey3 :foreground ,black))))
    `(diff-hunk-header
      ((,class256 (:foreground ,yellow :weight bold))))
+   `(diff-function
+     ((,class256 (:foreground ,red :weight bold))))
    `(diff-added
      ((,class256 (:background ,diff-added-bg :foreground ,diff-added-fg))))
    `(diff-indicator-added
@@ -925,6 +927,10 @@
 
    ;; eglot
    `(eglot-highlight-symbol-face
+     ((,class256 (:background ,match))))
+
+   ;; lsp-mode
+   `(lsp-face-highlight-textual
      ((,class256 (:background ,match))))
 
    ;; wgrep
@@ -1196,6 +1202,20 @@
      ((,class256 (:background ,non-text))))
    `(corfu-border
      ((,class256 (:background ,grey))))
+
+   ;; company
+   `(company-tooltip
+     ((,class256 (:background ,grey3))))
+   `(company-tooltip-common
+     ((,class256 (:inherit completions-common-part))))
+   `(company-tooltip-annotation
+     ((,class256 (:inherit completions-annotations))))
+   `(company-tooltip-selection
+     ((,class256 (:background ,grey1))))
+   `(company-tooltip-scrollbar-track
+     ((,class256 (:background ,grey))))
+   `(company-tooltip-scrollbar-thumb
+     ((,class256 (:background ,non-text))))
 
    ;; rainbow-delimiters
    `(rainbow-delimiters-depth-1-face

@@ -53,6 +53,8 @@
 	  (bg6 "gray99")
 	  (bg7 "gray80")
 
+    (hl-line "gray93")
+
 	  (fg1  "black")
 	  (fg2 "gray90")
 	  (fg3 "gray80")
@@ -68,13 +70,14 @@
 	  (warning "orange")
 	  (red     "darkred")
 	  (ok      "DarkGreen"))
-  (cl-flet ((user-controlled-with (var &key bg fg italic? bold?)
+  (cl-flet ((user-controlled-with (var &key bg fg italic? bold? extend?)
 			  "Utility function for user-customizable faces.
 VAR is the variable that is checked, like `stimmung-themes-comment'.
 BG and FG  correspond to the highlight used by 'background and 'foreground,
 if something other than the standard is desired.
 ITALIC? and BOLD? control font variant."
 			  (let ((font-variants `(,@(when italic? `(:italic t))
+                                     ,@(when extend? `(:extend t))
 									 ,@(when bold? `(:bold t)))))
 				`((t ,(pcase var
 						('background `(:background ,(or bg stimmung-themes-light-highlight-color) :foreground ,fg1 ,@font-variants))
@@ -85,7 +88,7 @@ ITALIC? and BOLD? control font variant."
 
 	 `(default  ((t (:background ,bg1 :foreground ,fg1))))
 	 ;; `(shadow   ((t (:background ,bg1))))
-	 `(hl-line  ((t (:background ,bg2 :extend t))))
+	 `(hl-line  ((t (:background ,hl-line :extend t))))
 
 	 `(region              ((t (:background ,bg4))))
 	 `(lazy-highlight      ((t (:foreground ,fg1 :background ,search2))))
@@ -126,9 +129,9 @@ ITALIC? and BOLD? control font variant."
 	 `(linum                    ((t (:inherit 'line-number))))
 
 	 ;; syntax, user customizable
-	 `(font-lock-comment-delimiter-face ,(user-controlled-with stimmung-themes-comment :bg str :fg fg5 :italic? t))
-	 `(font-lock-comment-face           ,(user-controlled-with stimmung-themes-comment :bg str :fg fg5 :italic? t))
-	 `(font-lock-doc-face               ,(user-controlled-with stimmung-themes-comment :bg str :fg fg5 :italic? t))
+	 `(font-lock-comment-delimiter-face ,(user-controlled-with stimmung-themes-comment :bg str :fg fg5 :italic? t :extend? t))
+	 `(font-lock-comment-face           ,(user-controlled-with stimmung-themes-comment :bg str :fg fg5 :italic? t :extend? t))
+	 `(font-lock-doc-face               ,(user-controlled-with stimmung-themes-comment :bg str :fg fg5 :italic? t :extend? t))
 
 	 `(font-lock-negation-char-face     ,(user-controlled-with stimmung-themes-preprocessor))
 	 `(font-lock-preprocessor-face      ,(user-controlled-with stimmung-themes-preprocessor))
@@ -141,42 +144,54 @@ ITALIC? and BOLD? control font variant."
 	 `(font-lock-constant-face          ,(user-controlled-with stimmung-themes-constant :italic? t))
 	 `(font-lock-function-name-face     ,(user-controlled-with stimmung-themes-function-name :bold? t))
 	 `(font-lock-keyword-face           ,(user-controlled-with stimmung-themes-keyword))
-	 `(font-lock-type-face              ,(user-controlled-with stimmung-themes-type))
+	 `(font-lock-type-face              ,(user-controlled-with stimmung-themes-type :italic? t))
 	 `(font-lock-variable-name-face     ,(user-controlled-with stimmung-themes-variable-name :bold? t))
 	 `(font-lock-string-face            ,(user-controlled-with stimmung-themes-string :bg str :fg str-fg))
 	 `(font-lock-doc-markup-face        ,(user-controlled-with stimmung-themes-markup))
 
+     ;; tree-sitter based font lock faces
+	 `(font-lock-regexp-face            ,(user-controlled-with stimmung-themes-regex))
+   `(font-lock-escape-face            ,(user-controlled-with stimmung-themes-regex :italic? t))
+   `(font-lock-number-face            ((t (:foreground ,fg1))))
+   `(font-lock-operator-face          ((t (:foreground ,fg1))))
+   `(font-lock-property-name-face     ((t (:foreground ,fg1))))
+   `(font-lock-property-use-face      ((t (:foreground ,fg1 :italic t))))
+	 `(font-lock-bracket-face           ((t (:foreground ,str-fg))))
+	 `(font-lock-delimiter-face         ((t (:foreground ,str-fg))))
+	 `(font-lock-punctuation-face       ((t (:foreground ,str-fg))))
+	 `(font-lock-misc-punctuation-face  ((t (:foreground ,str-fg))))
+
 	 ;; custom
-	 `(custom-invalid		((t (:background ,bg1 :foreground ,fg1 :underline (:style wave :color ,warning)))))
-	 `(custom-rogue		    ((t (:background ,bg1 :foreground ,fg5 :underline nil))))
-	 `(custom-modified		((t (:background ,stimmung-themes-light-highlight-color :foreground ,fg1))))
-	 `(custom-set			((t (:background ,bg1 :foreground ,fg1 :bold t))))
-	 `(custom-changed		((t (:background ,bg1 :foreground ,fg1 :italic t))))
-	 `(custom-themed		((t (:background ,str :foreground ,fg1))))
-	 `(custom-saved			((t (:background ,bg1 :foreground ,fg1 :bold t))))
-	 `(custom-state			((t (:background ,bg1 :foreground ,fg1 :italic t))))
-	 `(custom-link			((t (:background ,str :foreground ,fg1 :underline nil))))
-	 `(custom-visibility	((t (:background ,bg1 :foreground ,fg5 :height 0.8))))
-	 `(custom-comment		((t (:background ,bg1 :foreground ,fg1 :italic t))))
-	 `(custom-comment-tag	((t (:background ,bg1 :foreground ,fg1 :italic t))))
+	 `(custom-invalid           ((t (:background ,bg1 :foreground ,fg1 :underline (:style wave :color ,warning)))))
+	 `(custom-rogue             ((t (:background ,bg1 :foreground ,fg5 :underline nil))))
+	 `(custom-modified          ((t (:background ,stimmung-themes-light-highlight-color :foreground ,fg1))))
+	 `(custom-set               ((t (:background ,bg1 :foreground ,fg1 :bold t))))
+	 `(custom-changed           ((t (:background ,bg1 :foreground ,fg1 :italic t))))
+	 `(custom-themed            ((t (:background ,str :foreground ,fg1))))
+	 `(custom-saved             ((t (:background ,bg1 :foreground ,fg1 :bold t))))
+	 `(custom-state             ((t (:background ,bg1 :foreground ,fg1 :italic t))))
+	 `(custom-link              ((t (:background ,str :foreground ,fg1 :underline nil))))
+	 `(custom-visibility        ((t (:background ,bg1 :foreground ,fg5 :height 0.8))))
+	 `(custom-comment           ((t (:background ,bg1 :foreground ,fg1 :italic t))))
+	 `(custom-comment-tag       ((t (:background ,bg1 :foreground ,fg1 :italic t))))
 
-	 `(custom-group-tag-1		((t (:background ,bg1 :foreground ,fg1 :bold t :height 1.1 :inherit variable-pitch))))
-	 `(custom-group-tag			((t (:background ,bg1 :foreground ,fg1 :bold t :height 1.1 :inherit variable-pitch))))
-	 `(custom-group-subtitle	((t (:background ,bg1 :foreground ,fg1 :bold t))))
+	 `(custom-group-tag-1       ((t (:background ,bg1 :foreground ,fg1 :bold t :height 1.1 :inherit variable-pitch))))
+	 `(custom-group-tag         ((t (:background ,bg1 :foreground ,fg1 :bold t :height 1.1 :inherit variable-pitch))))
+	 `(custom-group-subtitle    ((t (:background ,bg1 :foreground ,fg1 :bold t))))
 
-	 `(custom-button			((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
-	 `(custom-button-mouse		((t (:background ,bg3 :foreground ,fg1 :box (:line-width 1 :color ,bg4)))))
-	 `(custom-button-unraised	((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
+	 `(custom-button            ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
+	 `(custom-button-mouse      ((t (:background ,bg3 :foreground ,fg1 :box (:line-width 1 :color ,bg4)))))
+	 `(custom-button-unraised   ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
 
 	 `(custom-variable-obsolete	((t (:background ,bg1 :foreground ,fg5))))
-	 `(custom-variable-tag		((t (:background ,bg1 :foreground ,fg5))))
-	 `(custom-variable-button	((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
+	 `(custom-variable-tag      ((t (:background ,bg1 :foreground ,fg5))))
+	 `(custom-variable-button   ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
 
 	 ;; widget
-	 `(widget-inactive			((t (:background ,bg1 :foreground ,fg5))))
-	 `(widget-documentation		((t (:background ,bg1 :foreground ,fg1))))
-	 `(widget-button			((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
-	 `(widget-field				((t (:background ,bg2 :foreground ,fg1 :box (:line-width 1 :color ,bg4)))))
+	 `(widget-inactive          ((t (:background ,bg1 :foreground ,fg5))))
+	 `(widget-documentation     ((t (:background ,bg1 :foreground ,fg1))))
+	 `(widget-button            ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5)))))
+	 `(widget-field             ((t (:background ,bg2 :foreground ,fg1 :box (:line-width 1 :color ,bg4)))))
 	 `(widget-single-line-field	((t (:background ,bg2 :foreground ,fg1 :box (:line-width 1 :color ,bg4)))))
 
 	 ;; message
@@ -278,10 +293,10 @@ ITALIC? and BOLD? control font variant."
 	 `(consult-preview-line       ((t (:foreground ,fg1))))
 	 `(consult-separator          ((t (:foreground ,fg5))))
 
-	 ;; modeline
+	 ;; mode-line
 	 `(header-line         ((t (:inherit 'mode-line :distant-foreground ,bg1))))
-	 `(mode-line           ((t (:foreground ,fg1 :background ,bg5 :box (:line-width 1 :color ,fg5 :style nil)))))
-	 `(mode-line-inactive  ((t (:foreground ,fg5 :background ,bg1 :box (:line-width 1 :color ,bg3 :style nil)))))
+	 `(mode-line           ((t (:foreground ,fg1 :background ,bg1 :box nil))))
+	 `(mode-line-inactive  ((t (:foreground ,fg5 :background ,bg5 :box nil))))
 	 `(mode-line-buffer-id ((t (:foreground ,fg1 :bold t :distant-foreground ,bg1))))
 	 `(mode-line-emphasis  ((t (:foreground ,fg1 :bold t))))
 	 `(mode-line-highlight ((t (:foreground ,bg3))))
@@ -308,7 +323,7 @@ ITALIC? and BOLD? control font variant."
 	 `(doom-modeline-project-dir        ((t (:foreground ,fg1 :weight bold))))
 	 `(doom-modeline-project-root-dir   ((t (:foreground ,fg1 :weight normal))))
 	 `(doom-modeline-project-parent-dir ((t (:foreground ,fg1 :weight normal))))
-	 `(doom-modeline-bar-inactive       ((t (:foreground ,fg1 :background ,bg1))))
+	 `(doom-modeline-bar-inactive       ((t (:foreground ,fg1 :background ,bg5))))
 	 `(doom-modeline-bar                ((t (:background ,stimmung-themes-light-highlight-color)))) ; the leftmost bar
 	 `(doom-modeline-evil-insert-state  ((t (:foreground ,fg1))))
 	 `(doom-modeline-evil-visual-state  ((t (:foreground ,fg1))))
@@ -564,14 +579,14 @@ ITALIC? and BOLD? control font variant."
 	 `(markdown-table-face              ((t (:inherit fixed-pitch))))
 
 	 ;; solaire
-	 `(solaire-default-face				((t (:background ,bg5 :foreground ,fg1))))
-	 `(solaire-fringe-face				((t (:background ,bg5 :foreground ,fg1))))
-	 `(solaire-line-number-face			((t (:background ,bg5 :foreground ,fg5))))
-	 `(solaire-hl-line-face				((t (:background ,bg2 :extend t))))
-	 `(solaire-org-hide-face			((t (:background ,bg2 :foreground ,fg5))))
-	 `(solaire-mode-line-face			((t (:foreground ,fg1 :background ,bg6 :box (:line-width 1 :color ,fg5 :style nil)))))
-	 `(solaire-mode-line-inactive-face	((t (:foreground ,fg5 :background ,bg2 :box (:line-width 1 :color ,bg3 :style nil)))))
-	 `(solaire-header-line-face			((t (:background ,bg5 :foreground ,fg1))))
+	 `(solaire-default-face            ((t (:background ,bg5 :foreground ,fg1))))
+	 `(solaire-fringe-face             ((t (:background ,bg5 :foreground ,fg1))))
+	 `(solaire-line-number-face        ((t (:background ,bg5 :foreground ,fg5))))
+	 `(solaire-hl-line-face            ((t (:background ,bg2 :extend t))))
+	 `(solaire-org-hide-face           ((t (:background ,bg2 :foreground ,fg5))))
+	 `(solaire-mode-line-face          ((t (:foreground ,fg1 :background ,bg5 :box nil))))
+	 `(solaire-mode-line-inactive-face ((t (:foreground ,fg5 :background ,bg5 :box nil))))
+	 `(solaire-header-line-face        ((t (:background ,bg5 :foreground ,fg1))))
 
 	 ;; sh
 	 `(sh-quoted-exec ((t (:background ,stimmung-themes-light-highlight-color))))
@@ -606,33 +621,33 @@ ITALIC? and BOLD? control font variant."
 	 `(rainbow-delimiters-depth-12-face ((t (:foreground ,fg5))))
 
 	 ;; treemacs
-	 `(treemacs-directory-face					((t (:foreground ,fg1))))
-	 `(treemacs-directory-collapsed-face		((t (:foreground ,fg1))))
-	 `(treemacs-file-face						((t (:foreground ,fg1))))
-	 `(treemacs-root-face						((t (:foreground ,fg1  :bold t))))
-	 `(treemacs-root-unreadable-face			((t (:foreground ,fg1  :underline t :strike-through t))))
-	 `(treemacs-root-remote-face				((t (:foreground ,fg1))))
+	 `(treemacs-directory-face                ((t (:foreground ,fg1))))
+	 `(treemacs-directory-collapsed-face      ((t (:foreground ,fg1))))
+	 `(treemacs-file-face                     ((t (:foreground ,fg1))))
+	 `(treemacs-root-face                     ((t (:foreground ,fg1 :bold t))))
+	 `(treemacs-root-unreadable-face          ((t (:foreground ,fg1 :underline t :strike-through t))))
+	 `(treemacs-root-remote-face              ((t (:foreground ,fg1))))
 	 `(treemacs-root-remote-disconnected-face	((t (:foreground ,red))))
 	 `(treemacs-root-remote-unreadable-face		((t (:foreground ,red))))
-	 `(treemacs-term-node-face					((t (:foreground ,fg1))))
-	 `(treemacs-git-unmodified-face				((t (:foreground ,fg1))))
-	 `(treemacs-git-modified-face				((t (:foreground ,fg1 :italic t))))
-	 `(treemacs-git-renamed-face				((t (:foreground ,fg1 :italic t))))
-	 `(treemacs-git-added-face					((t (:foreground ,fg1))))
-	 `(treemacs-git-ignored-face				((t (:foreground ,fg5 :italic nil))))
-	 `(treemacs-git-untracked-face				((t (:foreground ,fg5 :italic nil))))
-	 `(treemacs-git-conflict-face				((t (:foreground ,red))))
-	 `(treemacs-on-failure-pulse-face			((t (:foreground ,red))))
-	 `(treemacs-on-success-pulse-face			((t (:foreground ,ok))))
-	 `(treemacs-tags-face						((t (:foreground ,fg1 :italic nil))))
-	 `(treemacs-help-title-face					((t (:foreground ,fg1 :bold t))))
-	 `(treemacs-help-column-face				((t (:foreground ,fg1 :bold t))))
-	 `(treemacs-on-failure-pulse-face			((t (:background ,warning :foreground ,fg1 :extend t))))
-	 `(treemacs-on-success-pulse-face			((t (:background ,ok :foreground ,fg1 :extend t))))
-	 `(treemacs-fringe-indicator-face			((t (:background ,bg1 :foreground ,fg5))))
-	 `(treemacs-peek-mode-indicator-face		((t (:background ,stimmung-themes-light-highlight-color))))
-	 `(treemacs-header-button-face				((t (:background ,stimmung-themes-light-highlight-color))))
-	 `(treemacs-header-button-face				((t (:foreground ,fg1 :background ,bg5 :box (:line-width 1 :color ,fg5 :style nil)))))
+	 `(treemacs-term-node-face                ((t (:foreground ,fg1))))
+	 `(treemacs-git-unmodified-face           ((t (:foreground ,fg1))))
+	 `(treemacs-git-modified-face             ((t (:foreground ,fg1 :italic t))))
+	 `(treemacs-git-renamed-face              ((t (:foreground ,fg1 :italic t))))
+	 `(treemacs-git-added-face                ((t (:foreground ,fg1))))
+	 `(treemacs-git-ignored-face              ((t (:foreground ,fg5 :italic nil))))
+	 `(treemacs-git-untracked-face            ((t (:foreground ,fg5 :italic nil))))
+	 `(treemacs-git-conflict-face             ((t (:foreground ,red))))
+	 `(treemacs-on-failure-pulse-face         ((t (:foreground ,red))))
+	 `(treemacs-on-success-pulse-face         ((t (:foreground ,ok))))
+	 `(treemacs-tags-face                     ((t (:foreground ,fg1 :italic nil))))
+	 `(treemacs-help-title-face               ((t (:foreground ,fg1 :bold t))))
+	 `(treemacs-help-column-face              ((t (:foreground ,fg1 :bold t))))
+	 `(treemacs-on-failure-pulse-face         ((t (:background ,warning :foreground ,fg1 :extend t))))
+	 `(treemacs-on-success-pulse-face         ((t (:background ,ok      :foreground ,fg1 :extend t))))
+	 `(treemacs-fringe-indicator-face         ((t (:background ,bg4     :foreground ,bg4))))
+	 `(treemacs-peek-mode-indicator-face      ((t (:background ,stimmung-themes-light-highlight-color))))
+	 `(treemacs-header-button-face            ((t (:background ,stimmung-themes-light-highlight-color))))
+	 `(treemacs-header-button-face            ((t (:foreground ,fg1 :background ,bg5 :box (:line-width 1 :color ,fg5 :style nil)))))
 
 	 ;; tab-bar-mode
 	 `(tab-bar              ((t (:background ,bg1 :foreground ,fg1))))
@@ -640,15 +655,15 @@ ITALIC? and BOLD? control font variant."
 	 `(tab-bar-tab-inactive ((t (:background ,bg1 :foreground ,fg5 :box (:line-width 1 :color ,fg2 :style nil)))))
 
 	 ;; tab-line-mode
-	 `(tab-line							((t (:background ,bg1 :foreground ,fg1))))
-	 `(tab-line-tab						((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5 :style nil)))))
-	 `(tab-line-tab-current				((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5 :style nil)))))
-	 `(tab-line-highlight				((t (:background ,bg2 :foreground ,fg1 :box (:line-width 1 :color ,fg5 :style nil)))))
-	 `(tab-line-close-highlight			((t (:foreground ,red))))
-	 `(tab-line-tab-modified			((t (:italic t))))
-	 `(tab-line-tab						((t (:background ,bg5 :foreground ,fg1 :italic t:box (:line-width 1 :color ,fg5 :style nil)))))
-	 `(tab-line-tab-inactive			((t (:background ,bg1 :foreground ,fg5 :box (:line-width 1 :color ,fg2 :style nil)))))
-	 `(tab-line-tab-inactive-alternate	((t (:background ,bg1 :foreground ,fg4 :box (:line-width 1 :color ,fg2 :style nil)))))
+	 `(tab-line                        ((t (:background ,bg1 :foreground ,fg1))))
+	 `(tab-line-tab                    ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5 :style nil)))))
+	 `(tab-line-tab-current            ((t (:background ,bg5 :foreground ,fg1 :box (:line-width 1 :color ,fg5 :style nil)))))
+	 `(tab-line-highlight              ((t (:background ,bg2 :foreground ,fg1 :box (:line-width 1 :color ,fg5 :style nil)))))
+	 `(tab-line-close-highlight        ((t (:foreground ,red))))
+	 `(tab-line-tab-modified           ((t (:italic t))))
+	 `(tab-line-tab                    ((t (:background ,bg5 :foreground ,fg1 :italic t:box (:line-width 1 :color ,fg5 :style nil)))))
+	 `(tab-line-tab-inactive           ((t (:background ,bg1 :foreground ,fg5 :box (:line-width 1 :color ,fg2 :style nil)))))
+	 `(tab-line-tab-inactive-alternate ((t (:background ,bg1 :foreground ,fg4 :box (:line-width 1 :color ,fg2 :style nil)))))
 
 	 ;; perspective
 	 `(persp-selected-face ((t (:bold t))))
@@ -736,10 +751,24 @@ ITALIC? and BOLD? control font variant."
 	 `(lsp-ui-sideline-symbol-info		((t (:foreground ,fg1 :background ,search2))))
 	 `(lsp-ui-sideline-global			((t (:foreground ,fg1 :background ,bg1))))
 
+     ;; lsp-bridge
+	 `(lsp-bridge-ref-font-lock-header-line-text      ((t (:foreground ,fg1 :background nil))))
+	 `(lsp-bridge-ref-font-lock-header-line-edit-mode ((t (:foreground ,fg1 :background nil))))
+	 `(lsp-bridge-ref-font-lock-command               ((t (:foreground ,fg1 :background nil :bold t))))
+	 `(lsp-bridge-ref-font-lock-file                  ((t (:foreground ,fg1 :background nil :bold t))))
+	 `(lsp-bridge-ref-font-lock-line-number           ((t (:inherit 'line-number))))
+	 `(lsp-bridge-ref-font-lock-column-number         ((t (:inherit 'line-number))))
+	 `(lsp-bridge-ref-font-lock-position-splitter     ((t (:foreground ,fg1 :background nil))))
+	 `(lsp-bridge-ref-font-lock-match                 ((t (:foreground ,fg1 :background ,search2))))
+	 `(lsp-bridge-ref-font-lock-diagnostic            ((t (:inherit 'error))))
+	 `(lsp-bridge-ref-font-lock-mark-changed          ((t (:foreground ,fg1 :background ,search2 :italic t))))
+	 `(lsp-bridge-ref-font-lock-mark-deleted          ((t (:foreground ,fg1 :background ,bg1 :strike-through ,red))))
+	 `(lsp-bridge-ref-font-lock-function-location     ((t (:foreground ,fg1 :background ,search2))))
+
 	 ;; tree-sitter
 
 	 `(tree-sitter-hl-face:attribute             ((t (:inherit 'font-lock-constant-face))))
-	 `(tree-sitter-hl-face:comment               ((t (:inherit 'font-lock-comment-face))))
+	 `(tree-sitter-hl-face:comment               ((t (:inherit 'font-lock-comment-face :extend t))))
 	 `(tree-sitter-hl-face:constant              ((t (:inherit 'font-lock-constant-face))))
 	 `(tree-sitter-hl-face:constant.builtin      ((t (:inherit 'font-lock-constant-face))))
 	 `(tree-sitter-hl-face:constructor           ((t (:foreground ,fg1 :background nil))))
@@ -759,10 +788,10 @@ ITALIC? and BOLD? control font variant."
 	 `(tree-sitter-hl-face:operator              ((t (:foreground ,fg1 :background nil))))
 	 `(tree-sitter-hl-face:property              ((t (:foreground ,fg1 :background nil))))
 	 `(tree-sitter-hl-face:property.definition   ((t (:foreground ,fg1 :background nil))))
-	 `(tree-sitter-hl-face:punctuation           ((t (:foreground ,fg1 :background nil))))
-	 `(tree-sitter-hl-face:punctuation.bracket   ((t (:foreground ,fg1 :background nil))))
-	 `(tree-sitter-hl-face:punctuation.special   ((t (:foreground ,fg1 :background nil))))
-	 `(tree-sitter-hl-face:punctuation.delimiter ((t (:foreground ,fg1 :background nil))))
+	 `(tree-sitter-hl-face:punctuation           ((t (:foreground ,fg5 :background nil))))
+	 `(tree-sitter-hl-face:punctuation.bracket   ((t (:foreground ,fg5 :background nil))))
+	 `(tree-sitter-hl-face:punctuation.special   ((t (:foreground ,fg5 :background nil))))
+	 `(tree-sitter-hl-face:punctuation.delimiter ((t (:foreground ,fg5 :background nil))))
 	 `(tree-sitter-hl-face:string                ((t (:inherit 'font-lock-string-face))))
 	 `(tree-sitter-hl-face:string.special        ((t (:inherit 'font-lock-string-face))))
 	 `(tree-sitter-hl-face:tag                   ((t (:foreground ,fg1 :background nil :bold t))))
@@ -778,9 +807,11 @@ ITALIC? and BOLD? control font variant."
 
 	 ;; Typescript
 
-	 `(typescript-jsdoc-value ((t (:foreground ,fg1 :background ,stimmung-themes-light-highlight-color))))
-	 `(typescript-jsdoc-type  ((t (:inherit font-lock-type-face))))
-	 `(typescript-jsdoc-tag   ((t (:foreground ,fg1 :bold t))))
+	 `(typescript-jsdoc-value           ((t (:foreground ,fg1 :background ,stimmung-themes-dark-highlight-color))))
+	 `(typescript-jsdoc-type            ((t (:inherit font-lock-type-face))))
+	 `(typescript-jsdoc-tag             ((t (:foreground ,fg1 :bold t))))
+	 `(typescript-ts-jsx-attribute-face ((t (:foreground ,fg1 :italic t))))
+	 `(typescript-ts-jsx-tag-face       ((t (:foreground ,fg1 :bold t))))
 
 	 ;; rg.el
 

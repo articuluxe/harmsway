@@ -12,7 +12,8 @@
 ;; Package-Requires: (
 ;;     (emacs "25.1")
 ;;     (compat "29.1.3.4")
-;;     (dash "2.19.1"))
+;;     (dash "2.19.1")
+;;     (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -43,11 +44,20 @@
 
 (require 'cl-lib)
 (require 'compat)
-(require 'cursor-sensor)
 (require 'dash)
 (require 'eieio)
-(require 'format-spec)
 (require 'subr-x)
+
+;; For older Emacs releases we depend on an updated `seq' release from GNU
+;; ELPA, for `seq-keep'.  Unfortunately something else may require `seq'
+;; before `package' had a chance to put this version on the `load-path'.
+(when (and (featurep' seq)
+           (not (fboundp 'seq-keep)))
+  (unload-feature 'seq 'force))
+(require 'seq)
+
+(require 'cursor-sensor)
+(require 'format-spec)
 
 (eval-when-compile (require 'benchmark))
 
@@ -424,6 +434,8 @@ Magit-Section is documented in info node `(magit-section)'."
               #'magit-section--highlight-region)
   (setq-local redisplay-unhighlight-region-function
               #'magit-section--unhighlight-region)
+  (add-function :filter-return (local 'filter-buffer-substring-function)
+                #'magit-section--remove-text-properties)
   (when (fboundp 'magit-section-context-menu)
     (add-hook 'context-menu-functions #'magit-section-context-menu 10 t))
   (when magit-section-disable-line-numbers
@@ -438,6 +450,12 @@ Magit-Section is documented in info node `(magit-section)'."
       (display-line-numbers-mode -1)))
   (when (fboundp 'magit-preserve-section-visibility-cache)
     (add-hook 'kill-buffer-hook #'magit-preserve-section-visibility-cache)))
+
+(defun magit-section--remove-text-properties (string)
+  "Remove all text-properties from STRING.
+Most importantly `magit-section'."
+  (set-text-properties 0 (length string) nil string)
+  string)
 
 ;;; Core
 
@@ -1599,12 +1617,15 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
         (setq magit-section-unhighlight-sections
               magit-section-highlighted-sections)
         (setq magit-section-highlighted-sections nil)
-        (unless (eq section magit-root-section)
-          (run-hook-with-args-until-success
-           'magit-section-highlight-hook section selection))
-        (dolist (s magit-section-unhighlight-sections)
-          (run-hook-with-args-until-success
-           'magit-section-unhighlight-hook s selection))
+        (if (and (fboundp 'long-line-optimizations-p)
+                 (long-line-optimizations-p))
+            (magit-section--enable-long-lines-shortcuts)
+          (unless (eq section magit-root-section)
+            (run-hook-with-args-until-success
+             'magit-section-highlight-hook section selection))
+          (dolist (s magit-section-unhighlight-sections)
+            (run-hook-with-args-until-success
+             'magit-section-unhighlight-hook s selection)))
         (restore-buffer-modified-p nil)))
     (setq magit-section-highlight-force-update nil)
     (magit-section-maybe-paint-visibility-ellipses)))
@@ -1667,6 +1688,29 @@ invisible."
     (overlay-put ov 'evaporate t)
     (push ov magit-section-highlight-overlays)
     ov))
+
+(defvar magit-show-long-lines-warning t)
+
+(defun magit-section--enable-long-lines-shortcuts ()
+  (message "Enabling long lines shortcuts in %S" (current-buffer))
+  (kill-local-variable 'redisplay-highlight-region-function)
+  (kill-local-variable 'redisplay-unhighlight-region-function)
+  (when magit-show-long-lines-warning
+    (setq magit-show-long-lines-warning nil)
+    (display-warning 'magit "\
+Emacs has enabled redisplay shortcuts
+in this buffer because there are lines who's length go beyond
+`long-line-treshhold' \(%s characters).  As a result section
+highlighting and the special appearance of the region has been
+disabled.  Some existing highlighting might remain in effect.
+
+These shortcuts remain enables, even once there no longer are
+any long lines in this buffer.  To disable them again, kill
+and recreate the buffer.
+
+This message won't be shown for this session again.  To disable
+it for all future sessions, set `magit-show-long-lines-warning'
+to nil." :warning)))
 
 (cl-defgeneric magit-section-get-relative-position (section))
 

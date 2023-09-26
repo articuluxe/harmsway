@@ -41,6 +41,15 @@
 (require 'eieio)
 (require 'subr-x)
 
+;; For older Emacs releases we depend on an updated `seq' release from
+;; GNU ELPA, for `seq-keep'.  Unfortunately something else may already
+;; have required `seq', before `package' had a chance to put the more
+;; recent version earlier on the `load-path'.
+(when (and (featurep' seq)
+           (not (fboundp 'seq-keep)))
+  (unload-feature 'seq 'force))
+(require 'seq)
+
 (require 'crm)
 
 (require 'magit-section)
@@ -86,26 +95,7 @@ alphabetical order, depending on your version of Ivy."
     (magit-stash-branch-here  nil t)
     (magit-stash-format-patch nil t)
     (magit-stash-drop         nil ask)
-    (magit-stash-pop          nil ask)
-    (forge-browse-dwim        nil t)
-    (forge-browse-commit      nil t)
-    (forge-browse-branch      nil t)
-    (forge-browse-remote      nil t)
-    (forge-browse-issue       nil t)
-    (forge-browse-pullreq     nil t)
-    (forge-edit-topic-title   nil t)
-    (forge-edit-topic-state   nil t)
-    (forge-edit-topic-draft   nil t)
-    (forge-edit-topic-milestone nil t)
-    (forge-edit-topic-labels  nil t)
-    (forge-edit-topic-marks   nil t)
-    (forge-edit-topic-assignees nil t)
-    (forge-edit-topic-review-requests nil t)
-    (forge-edit-topic-note    nil t)
-    (forge-pull-pullreq       nil t)
-    (forge-visit-issue        nil t)
-    (forge-visit-pullreq      nil t)
-    (forge-visit-topic        nil t))
+    (magit-stash-pop          nil ask))
   "When not to offer alternatives and ask for confirmation.
 
 Many commands by default ask the user to select from a list of
@@ -168,6 +158,7 @@ The value has the form ((COMMAND nil|PROMPT DEFAULT)...).
     (const remove-modules)
     (const remove-dirty-modules)
     (const trash-module-gitdirs)
+    (const stash-apply-3way)
     (const kill-process)
     (const safe-with-wip)))
 
@@ -316,6 +307,11 @@ Removing modules:
   the `trash-directory' for traces of lost work.
 
 Various:
+
+  `stash-apply-3way' When a stash cannot be applied using \"git
+  stash apply\", then Magit uses \"git apply\" instead, possibly
+  using the \"--3way\" argument, which isn't always perfectly
+  safe.  See also `magit-stash-apply'.
 
   `kill-process' There seldom is a reason to kill a process.
 
@@ -475,7 +471,8 @@ and delay of your graphical environment or operating system."
 (defclass magit-file-section (magit-diff-section)
   ((keymap :initform 'magit-file-section-map)
    (source :initform nil)
-   (header :initform nil)))
+   (header :initform nil)
+   (binary :initform nil)))
 
 (defclass magit-module-section (magit-file-section)
   ((keymap :initform 'magit-module-section-map)
@@ -777,12 +774,14 @@ ACTION is a member of option `magit-slow-confirm'."
                    discard reverse stage-all-changes unstage-all-changes)))
 
 (cl-defun magit-confirm ( action &optional prompt prompt-n noabort
-                          (items nil sitems))
+                          (items nil sitems) prompt-suffix)
   (declare (indent defun))
   (setq prompt-n (format (concat (or prompt-n prompt) "? ") (length items)))
   (setq prompt   (format (concat (or prompt (magit-confirm-make-prompt action))
                                  "? ")
                          (car items)))
+  (when prompt-suffix
+    (setq prompt (concat prompt prompt-suffix)))
   (or (cond ((and (not (eq action t))
                   (or (eq magit-no-confirm t)
                       (memq action magit-no-confirm)
@@ -805,14 +804,14 @@ ACTION is a member of option `magit-slow-confirm'."
                   items)))
       (if noabort nil (user-error "Abort"))))
 
-(defun magit-confirm-files (action files &optional prompt)
+(defun magit-confirm-files (action files &optional prompt prompt-suffix noabort)
   (when files
     (unless prompt
       (setq prompt (magit-confirm-make-prompt action)))
     (magit-confirm action
-      (concat prompt " %s")
+      (concat prompt " \"%s\"")
       (concat prompt " %d files")
-      nil files)))
+      noabort files prompt-suffix)))
 
 (defun magit-confirm-make-prompt (action)
   (let ((prompt (symbol-name action)))

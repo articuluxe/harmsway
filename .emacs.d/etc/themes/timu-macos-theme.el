@@ -358,9 +358,19 @@ BOXCOLOR supplies the border color."
   "Toggle between intense and non intense colors for `org-mode'.
 Customize `timu-macos-org-intense-colors' the to achieve this."
   (interactive)
-  (if (eq t timu-macos-org-intense-colors)
+  (if timu-macos-org-intense-colors
       (customize-set-variable 'timu-macos-org-intense-colors nil)
     (customize-set-variable 'timu-macos-org-intense-colors t))
+  (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-macos-toggle-muted-colors ()
+  "Toggle between muted and unmuted colors.
+Customize `timu-macos-muted-colors' the to achieve this."
+  (interactive)
+  (if timu-macos-muted-colors
+      (customize-set-variable 'timu-macos-muted-colors nil)
+    (customize-set-variable 'timu-macos-muted-colors t))
   (load-theme (car custom-enabled-themes) t))
 
 ;;;###autoload
@@ -368,7 +378,7 @@ Customize `timu-macos-org-intense-colors' the to achieve this."
   "Toggle between borders and no borders for the `mode-line'.
 Customize `timu-macos-mode-line-border' the to achieve this."
   (interactive)
-  (if (eq t timu-macos-mode-line-border)
+  (if timu-macos-mode-line-border
       (customize-set-variable 'timu-macos-mode-line-border nil)
     (customize-set-variable 'timu-macos-mode-line-border t))
   (load-theme (car custom-enabled-themes) t))
@@ -454,7 +464,7 @@ Sourced other themes to get information about font faces for packages.")
    `(lazy-highlight ((,class (:background ,darkblue  :foreground ,macos8 :distant-foreground ,macos0 :weight bold))))
    `(link ((,class (:foreground ,blue :underline t :weight bold))))
    `(match ((,class (:foreground ,green :background ,macos0 :weight bold))))
-   `(minibuffer-prompt ((,class (:foreground ,red))))
+   `(minibuffer-prompt ((,class (:foreground ,blue))))
    `(nobreak-space ((,class (:background ,bg :foreground ,fg))))
    `(region ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
    `(secondary-selection ((,class (:background ,grey :extend t))))
@@ -677,6 +687,9 @@ Sourced other themes to get information about font faces for packages.")
    `(circe-my-message-face ((,class (:weight bold))))
    `(circe-prompt-face ((,class (:weight bold :foreground ,blue))))
    `(circe-server-face ((,class (:foreground ,macos5))))
+
+;;;; column-enforce-mode - dark
+   `(column-enforce-face ((,class (:foreground ,yellow :underline t))))
 
 ;;;; company - dark
    `(company-preview ((,class (:background ,bg-other :foreground ,macos5))))
@@ -1440,11 +1453,11 @@ Sourced other themes to get information about font faces for packages.")
    `(mmm-special-submode-face ((,class (:background ,green))))
 
 ;;;; mode-line - dark
-   `(mode-line ((,class (,@(timu-macos-set-mode-line-active-border blue) :background ,bg-other :foreground ,fg :distant-foreground ,bg))))
+   `(mode-line ((,class (,@(timu-macos-set-mode-line-active-border blue) :background ,bg-org :foreground ,fg :distant-foreground ,bg))))
    `(mode-line-buffer-id ((,class (:weight bold))))
    `(mode-line-emphasis ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
    `(mode-line-highlight ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
-   `(mode-line-inactive ((,class (,@(timu-macos-set-mode-line-inactive-border macos4) :background ,bg-other :foreground ,macos4 :distant-foreground ,macos4))))
+   `(mode-line-inactive ((,class (,@(timu-macos-set-mode-line-inactive-border macos4) :background ,bg-org :foreground ,macos4 :distant-foreground ,macos4))))
 
 ;;;; mu4e - dark
    `(mu4e-forwarded-face ((,class (:foreground ,purple))))
@@ -1609,7 +1622,7 @@ Sourced other themes to get information about font faces for packages.")
    `(org-level-7 ((,class (:foreground ,purple ,@(timu-macos-set-intense-org-colors purple bg-org)))))
    `(org-level-8 ((,class (:foreground ,fg ,@(timu-macos-set-intense-org-colors fg bg-org)))))
    `(org-link ((,class (:foreground ,blue :underline t))))
-   `(org-list-dt ((,class (:foreground ,green :weight bold))))
+   `(org-list-dt ((,class (:foreground ,cyan :weight bold))))
    `(org-meta-line ((,class (:foreground ,macos5))))
    `(org-priority ((,class (:foreground ,red))))
    `(org-property-value ((,class (:foreground ,macos5))))
@@ -1738,9 +1751,9 @@ Sourced other themes to get information about font faces for packages.")
    `(sml/vc-edited ((,class (:foreground ,green))))
 
 ;;;; smartparens - dark
-   `(sp-pair-overlay-face ((,class (:background ,grey))))
-   `(sp-show-pair-match-face ((,class (:foreground ,red :background ,macos0 :weight ultra-bold))))
-   `(sp-show-pair-mismatch-face ((,class (:foreground ,macos0 :background ,red :weight ultra-bold))))
+   `(sp-pair-overlay-face ((,class (:underline ,magenta))))
+   `(sp-show-pair-match-face ((,class (:foreground ,magenta :weight bold))))
+   `(sp-show-pair-mismatch-face ((,class (:foreground ,bg :background ,magenta :weight bold))))
 
 ;;;; smerge-tool - dark
    `(smerge-base ((,class (:background ,purple :foreground ,bg))))
@@ -1933,15 +1946,15 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; vterm - dark
    `(vterm ((,class (:foreground ,fg))))
-   `(vterm-color-black ((,class (:background ,macos0 :foreground ,macos0))))
-   `(vterm-color-blue ((,class (:background ,purple :foreground ,purple))))
-   `(vterm-color-cyan ((,class (:background ,darkblue :foreground ,darkblue))))
-   `(vterm-color-default ((,class (:foreground ,fg))))
+   `(vterm-color-black ((,class (:background ,black :foreground ,black))))
+   `(vterm-color-blue ((,class (:background ,blue :foreground ,blue))))
+   `(vterm-color-cyan ((,class (:background ,cyan :foreground ,cyan))))
+   `(vterm-color-default ((,class (:background ,fg :foreground ,fg))))
    `(vterm-color-green ((,class (:background ,green :foreground ,green))))
    `(vterm-color-magenta ((,class (:background ,magenta :foreground ,magenta))))
-   `(vterm-color-purple ((,class (:background ,teal :foreground ,teal))))
+   `(vterm-color-purple ((,class (:background ,purple :foreground ,purple))))
    `(vterm-color-red ((,class (:background ,red :foreground ,red))))
-   `(vterm-color-white ((,class (:background ,macos8 :foreground ,macos8))))
+   `(vterm-color-white ((,class (:background ,white :foreground ,white))))
    `(vterm-color-yellow ((,class (:background ,yellow :foreground ,yellow))))
 
 ;;;; web-mode - dark
@@ -2101,7 +2114,7 @@ Sourced other themes to get information about font faces for packages.")
    `(lazy-highlight ((,class (:background ,darkblue  :foreground ,macos8 :distant-foreground ,macos0 :weight bold))))
    `(link ((,class (:foreground ,blue :underline t :weight bold))))
    `(match ((,class (:foreground ,green :background ,macos0 :weight bold))))
-   `(minibuffer-prompt ((,class (:foreground ,red))))
+   `(minibuffer-prompt ((,class (:foreground ,darkblue))))
    `(nobreak-space ((,class (:background ,bg :foreground ,fg))))
    `(region ((,class (:background ,macos2 :foreground nil :distant-foreground ,bg :extend t))))
    `(secondary-selection ((,class (:background ,grey :extend t))))
@@ -2324,6 +2337,9 @@ Sourced other themes to get information about font faces for packages.")
    `(circe-my-message-face ((,class (:weight bold))))
    `(circe-prompt-face ((,class (:weight bold :foreground ,blue))))
    `(circe-server-face ((,class (:foreground ,macos5))))
+
+;;;; column-enforce-mode - light
+   `(column-enforce-face ((,class (:foreground ,red :underline t))))
 
 ;;;; company - light
    `(company-preview ((,class (:background ,bg-other :foreground ,macos5))))
@@ -3385,9 +3401,9 @@ Sourced other themes to get information about font faces for packages.")
    `(sml/vc-edited ((,class (:foreground ,green))))
 
 ;;;; smartparens - light
-   `(sp-pair-overlay-face ((,class (:background ,grey))))
-   `(sp-show-pair-match-face ((,class (:foreground ,red :background ,macos0 :weight ultra-bold))))
-   `(sp-show-pair-mismatch-face ((,class (:foreground ,macos0 :background ,red :weight ultra-bold))))
+   `(sp-pair-overlay-face ((,class (:underline ,magenta))))
+   `(sp-show-pair-match-face ((,class (:foreground ,magenta :weight bold))))
+   `(sp-show-pair-mismatch-face ((,class (:foreground ,bg :background ,magenta :weight bold))))
 
 ;;;; smerge-tool - light
    `(smerge-base ((,class (:background ,purple :foreground ,bg))))
@@ -3580,15 +3596,15 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; vterm - light
    `(vterm ((,class (:foreground ,fg))))
-   `(vterm-color-black ((,class (:background ,macos0 :foreground ,macos0))))
-   `(vterm-color-blue ((,class (:background ,purple :foreground ,purple))))
-   `(vterm-color-cyan ((,class (:background ,darkblue :foreground ,darkblue))))
-   `(vterm-color-default ((,class (:foreground ,fg))))
+   `(vterm-color-black ((,class (:background ,black :foreground ,black))))
+   `(vterm-color-blue ((,class (:background ,blue :foreground ,blue))))
+   `(vterm-color-cyan ((,class (:background ,cyan :foreground ,cyan))))
+   `(vterm-color-default ((,class (:background ,fg :foreground ,fg))))
    `(vterm-color-green ((,class (:background ,green :foreground ,green))))
    `(vterm-color-magenta ((,class (:background ,magenta :foreground ,magenta))))
-   `(vterm-color-purple ((,class (:background ,teal :foreground ,teal))))
+   `(vterm-color-purple ((,class (:background ,purple :foreground ,purple))))
    `(vterm-color-red ((,class (:background ,red :foreground ,red))))
-   `(vterm-color-white ((,class (:background ,macos8 :foreground ,macos8))))
+   `(vterm-color-white ((,class (:background ,white :foreground ,white))))
    `(vterm-color-yellow ((,class (:background ,yellow :foreground ,yellow))))
 
 ;;;; web-mode - light

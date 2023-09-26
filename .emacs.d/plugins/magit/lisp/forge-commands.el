@@ -56,6 +56,7 @@ Takes the pull-request as only argument and must return a directory."
 (transient-define-prefix forge-dispatch ()
   "Dispatch a forge command."
   [["Fetch"
+    :if forge-get-repository-p
     ("f f" "all topics"    forge-pull)
     ("f t" "one topic"     forge-pull-topic)
     ("f n" "notifications" forge-pull-notifications)
@@ -63,11 +64,12 @@ Takes the pull-request as only argument and must return a directory."
     ("c i" "issue"         forge-create-issue)
     ("c p" "pull-request"  forge-create-pullreq)
     ("c u" "pull-request from issue" forge-create-pullreq-from-issue
-     :if (lambda () (forge-github-repository-p (forge-get-repository nil))))
+     :if forge-get-github-repository-p)
     ("c f" "fork or remote" forge-fork)
     """Merge"
     (7 "M  " "merge using API" forge-merge)]
    ["List"
+    :if forge-get-repository-p
     ("l t" "topics"        forge-list-topics)
     ("l i" "issues"        forge-list-issues)
     ("l p" "pull-requests" forge-list-pullreqs)
@@ -80,27 +82,63 @@ Takes the pull-request as only argument and must return a directory."
     (7 "m p" "authored pull-requests" forge-list-authored-pullreqs)
     (7 "o i" "owned issues"           forge-list-owned-issues)
     (7 "o p" "owned pull-requests"    forge-list-owned-pullreqs)
-    (7 "o r" "owned repositories"     forge-list-owned-repositories)]
-   ["Visit"
+    (7 "o r" "owned repositories"     forge-list-owned-repositories)]]
+  [:if forge-get-repository-p
+   [:description (lambda () (forge-dispatch--format-description "Visit"))
     ("v t" "topic"         forge-visit-topic)
     ("v i" "issue"         forge-visit-issue)
-    ("v p" "pull-request"  forge-visit-pullreq)
-    """Browse"
-    ("b I" "issues"        forge-browse-issues)
-    ("b P" "pull-requests" forge-browse-pullreqs)
+    ("v p" "pull-request"  forge-visit-pullreq)]
+   [:description (lambda () (forge-dispatch--format-description "Browse"))
     ("b t" "topic"         forge-browse-topic)
     ("b i" "issue"         forge-browse-issue)
-    ("b p" "pull-request"  forge-browse-pullreq)
-    ("b r" "remote"        forge-browse-remote)]]
+    ("b p" "pull-request"  forge-browse-pullreq)]
+   ["Browse"
+    ("b r" "remote"        forge-browse-remote)
+    ("b I" "issues"        forge-browse-issues)
+    ("b P" "pull-requests" forge-browse-pullreqs)]]
   [["Configure"
-    ("a  " "add repository to database" forge-add-repository)
-    ("R  " "add pull-request refspec" forge-add-pullreq-refspec
-     :if-not forge--pullreq-refspec)
-    ("r  " "forge.remote"  forge-forge.remote)
-    ("t l" "forge.graphqlItemLimit" forge-forge.graphqlItemLimit
-     :if (lambda () (forge-github-repository-p (forge-get-repository nil))))
+    :if forge-get-repository-p
+    ("a  " forge-add-repository)
+    ("R  " forge-add-pullreq-refspec)
+    ("r  " forge-forge.remote)
+    ("t l" forge-forge.graphqlItemLimit)
     ("t t" forge-toggle-display-in-status-buffer)
-    ("t c" forge-toggle-closed-visibility)]])
+    ("t c" forge-toggle-closed-visibility)]]
+  [[:description (lambda ()
+                   (if (magit-gitdir)
+                       "Forge doesn't know about this Git repository yet"
+                     "Not inside a Git repository"))
+    :if-not forge-get-repository-p
+    ("a" "add repository to database" forge-add-repository)
+    ("f" "fetch notifications"        forge-pull-notifications)
+    ("l" "list notifications"         forge-list-notifications)]])
+
+(defun forge-dispatch--format-description (action)
+  (concat
+   (propertize (concat action " ") 'face 'transient-heading)
+   (propertize "[" 'face 'transient-inactive-value)
+   (cond
+    (prefix-arg
+     (concat
+      (format (propertize "open(%s)" 'face 'transient-inactive-value)
+              (propertize (or (ignore-errors
+                                (key-description
+                                 (car (where-is-internal 'transient-quit-one
+                                                         transient-base-map))))
+                              "C-g")
+                          'face 'transient-key))
+      (propertize "|" 'face 'transient-inactive-value)
+      (propertize "any" 'face 'transient-heading)))
+    ((concat
+      (propertize "open" 'face 'transient-heading)
+      (propertize "|" 'face 'transient-inactive-value)
+      (format (propertize "any(%s)" 'face 'transient-inactive-value)
+              (propertize (or (ignore-errors
+                                (key-description
+                                 (car (where-is-internal 'universal-argument))))
+                              "C-p")
+                          'face 'transient-key)))))
+   (propertize "]" 'face 'transient-inactive-value)))
 
 ;;; Pull
 
@@ -180,18 +218,17 @@ If pulling is too slow, then also consider setting the Git variable
 (defun forge-pull-notifications ()
   "Fetch notifications for all repositories from the current forge."
   (interactive)
-  (let* ((repo  (forge-get-repository 'stub))
-         (class (eieio-object-class repo)))
-    (if (eq class 'forge-github-repository)
-        (forge--pull-notifications class (oref repo githost))
-      (user-error "Fetching notifications not supported for forge %S"
-                  (oref repo forge)))))
+  (if-let ((repo (forge-get-repository 'maybe)))
+      (let ((class (eieio-object-class repo)))
+        (if (eq class 'forge-github-repository)
+            (forge--pull-notifications class (oref repo githost))
+          (user-error "Fetching notifications not supported for forge %S"
+                      (oref repo forge))))
+    (forge--pull-notifications 'forge-github-repository "github.com")))
 
 ;;;###autoload
 (defun forge-pull-topic (topic)
-  "Pull the API data for the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC to pull instead."
+  "Read a TOPIC and pull data about it from its forge."
   (interactive (list (forge-read-topic "Pull topic" nil t)))
   (let ((repo (forge-get-repository t)))
     (forge--zap-repository-cache repo)
@@ -215,162 +252,190 @@ TOPIC to pull instead."
 ;;; Browse
 
 ;;;###autoload
-(defun forge-browse-dwim ()
-  "Visit a topic, branch or commit using a browser.
-Prefer a topic over a branch and that over a commit."
+(defun forge-browse-issues ()
+  "Visit the current repository's issues using a browser."
   (interactive)
-  (if-let ((topic (forge-topic-at-point)))
-      (forge-browse topic)
-    (if-let ((branch (magit-branch-at-point)))
-        (forge-browse-branch branch)
-      (call-interactively #'forge-browse-commit))))
+  (browse-url (forge--format (forge-get-repository 'stub)
+                             'issues-url-format)))
 
 ;;;###autoload
-(defun forge-browse-commit (rev)
-  "Visit the url corresponding to REV using a browser."
+(defun forge-browse-pullreqs ()
+  "Visit the current repository's pull-requests using a browser."
+  (interactive)
+  (browse-url (forge--format (forge-get-repository 'stub)
+                             'pullreqs-url-format)))
+
+;;;###autoload
+(defun forge-browse-topic (topic)
+  "Read a TOPIC and visit it using a browser.
+By default only offer open topics but with a prefix argument
+also offer closed topics."
+  (interactive (list (forge-read-pullreq "Browse topic" t)))
+  (forge--browse-topic topic))
+
+;;;###autoload
+(defun forge-browse-issue (issue)
+  "Read an ISSUE and visit it using a browser.
+By default only offer open issues but with a prefix argument
+also offer closed issues."
+  (interactive (list (forge-read-issue "Browse issue" t)))
+  (forge--browse-topic issue))
+
+;;;###autoload
+(defun forge-browse-pullreq (pull-request)
+  "Read a PULL-REQUEST and visit it using a browser.
+By default only offer open pull-requests but with a prefix
+argument also offer closed pull-requests."
+  (interactive (list (forge-read-pullreq "Browse pull-request" t)))
+  (forge--browse-topic pull-request))
+
+(defun forge--browse-topic (topic)
+  (let ((obj (forge-get-topic topic)))
+    (browse-url (forge-get-url obj))
+    (oset obj unread-p nil)))
+
+;;;###autoload
+(defun forge-browse-commit (commit)
+  "Read a COMMIT and visit it using a browser."
   (interactive
    (list (or (magit-completing-read "Browse commit"
                                     (magit-list-branch-names)
                                     nil nil nil 'magit-revision-history
                                     (magit-branch-or-commit-at-point))
              (user-error "Nothing selected"))))
-  (let ((repo (forge-get-repository 'stub)))
-    (unless (magit-list-containing-branches
-             rev "-r" (concat (oref repo remote) "/*"))
-      (if-let ((branch (car (magit-list-containing-branches rev "-r"))))
-          (setq repo (forge-get-repository
-                      'stub (cdr (magit-split-branch-name branch))))
-        (message "%s does not appear to be available on any remote.  %s"
-                 rev "You might have to push it first.")))
-    (browse-url
-     (forge--format repo 'commit-url-format
-                    `((?r . ,(magit-commit-p rev)))))))
+  (browse-url (forge-get-url :commit commit)))
+
+;;;###autoload
+(defun forge-browse-branch (branch)
+  "Read a BRANCH and visit it using a browser."
+  (interactive (list (magit-read-branch "Browse branch")))
+  (browse-url (forge-get-url :branch branch)))
+
+;;;###autoload
+(defun forge-browse-remote (remote)
+  "Read a REMOTE and visit it using a browser."
+  (interactive (list (magit-read-remote "Browse remote")))
+  (browse-url (forge-get-url :remote remote)))
+
+;;;###autoload
+(defun forge-browse-repository (repository)
+  "Read a REPOSITORY and visit it using a browser."
+  (interactive (list (forge-read-repository "Browse repository")))
+  (browse-url (forge-get-url (forge-get-repository repository))))
+
+;;;###autoload
+(defun forge-browse-this-topic ()
+  "Visit the topic at point using a browser."
+  (interactive)
+  (forge-browse-topic (forge-topic-at-point)))
+
+;;;###autoload
+(defun forge-browse-this-repository ()
+  "Visit the repository at point using a browser."
+  (interactive)
+  (forge-browse-repository (forge-repository-at-point)))
 
 ;;;###autoload
 (defun forge-copy-url-at-point-as-kill ()
   "Copy the url of the thing at point."
   (interactive)
-  (if-let ((url (forge-get-url (or (forge-post-at-point)
-                                   (forge-current-topic)))))
-      (progn
+  (if-let ((target (forge--browse-target)))
+      (let ((url (if (stringp target) target (forge-get-url target))))
         (kill-new url)
         (message "Copied %S" url))
     (user-error "Nothing at point with a URL")))
 
 ;;;###autoload
-(defun forge-browse-branch (branch)
-  "Visit the url corresponding BRANCH using a browser."
-  (interactive (list (magit-read-branch "Browse branch")))
+(defun forge-browse ()
+  "Visit the thing at point using a browser."
+  (interactive)
+  (if-let ((target (forge--browse-target)))
+      (if (stringp target)
+          (browse-url target)
+        (browse-url (forge-get-url target))
+        (when (cl-typep target 'forge-topic)
+          (oset target unread-p nil)))
+    (user-error "Nothing to browse here")))
+
+(defun forge--browse-target ()
+  (or (and-let* ((branch (magit--painted-branch-at-point)))
+        (forge-get-url :branch branch))
+      (and-let* ((commit (magit-commit-at-point)))
+        (forge-get-url :commit commit))
+      (and-let* ((branch (magit-branch-at-point)))
+        (forge-get-url :branch branch))
+      (and-let* ((remote (magit-remote-at-point)))
+        (forge-get-url :remote remote))
+      (forge-post-at-point)
+      (forge-current-topic)
+      (and magit-buffer-revision
+           (forge-get-url :commit magit-buffer-revision))
+      (forge-current-repository)))
+
+(cl-defmethod forge-get-url ((_(eql :commit)) commit)
+  (let ((repo (forge-get-repository 'stub)))
+    (unless (magit-list-containing-branches
+             commit "-r" (concat (oref repo remote) "/*"))
+      (if-let ((branch (car (magit-list-containing-branches commit "-r"))))
+          (setq repo (forge-get-repository
+                      'stub (cdr (magit-split-branch-name branch))))
+        (message "%s does not appear to be available on any remote.  %s"
+                 commit "You might have to push it first.")))
+    (forge--format repo 'commit-url-format
+                   `((?r . ,(magit-commit-p commit))))))
+
+(cl-defmethod forge-get-url ((_(eql :branch)) branch)
   (let (remote)
     (if (magit-remote-branch-p branch)
         (let ((cons (magit-split-branch-name branch)))
           (setq remote (car cons))
           (setq branch (cdr cons)))
-      (or (setq remote (or (magit-get-push-remote branch)
-                           (magit-get-upstream-remote branch)))
-          (user-error "Cannot determine remote for %s" branch)))
-    (browse-url (forge--format remote 'branch-url-format
-                               `((?r . ,branch))))))
+      (unless (setq remote (or (magit-get-push-remote branch)
+                               (magit-get-upstream-remote branch)))
+        (user-error "Cannot determine remote for %s" branch)))
+    (forge--format remote 'branch-url-format
+                   `((?r . ,branch)))))
 
-;;;###autoload
-(defun forge-browse-remote (remote)
-  "Visit the url corresponding to REMOTE using a browser."
-  (interactive (list (magit-read-remote "Browse remote")))
-  (browse-url (forge--format remote 'remote-url-format)))
-
-;;;###autoload
-(defun forge-browse-repository (repo)
-  "View the current repository in a separate buffer."
-  (interactive
-   (list (or (forge-current-repository)
-             (forge-get-repository
-              (forge-read-repository "Browse repository")))))
-  (browse-url (forge--format repo 'remote-url-format)))
-
-;;;###autoload
-(defun forge-browse-topic ()
-  "Visit the current topic using a browser."
-  (interactive)
-  (if-let ((topic (forge-current-topic)))
-      (forge-browse topic)
-    (user-error "There is no current topic")))
-
-;;;###autoload
-(defun forge-browse-pullreqs ()
-  "Visit the pull-requests of the current repository using a browser."
-  (interactive)
-  (browse-url (forge--format (forge-get-repository 'stub)
-                             'pullreqs-url-format)))
-
-;;;###autoload
-(defun forge-browse-pullreq (pullreq)
-  "Visit the url corresponding to PULLREQ using a browser."
-  (interactive (list (forge-read-pullreq "Browse pull-request" t)))
-  (forge-browse (forge-get-pullreq pullreq)))
-
-;;;###autoload
-(defun forge-browse-issues ()
-  "Visit the issues of the current repository using a browser."
-  (interactive)
-  (browse-url (forge--format (forge-get-repository 'stub)
-                             'issues-url-format)))
-
-;;;###autoload
-(defun forge-browse-issue (issue)
-  "Visit the current issue using a browser.
-If there is no current issue or with a prefix argument
-read an ISSUE to visit."
-  (interactive (list (forge-read-issue "Browse issue" t)))
-  (forge-browse (forge-get-issue issue)))
-
-;;;###autoload
-(defun forge-browse-post ()
-  "Visit the current post using a browser."
-  (interactive)
-  (if-let ((post (forge-post-at-point)))
-      (forge-browse post)
-    (user-error "There is no current post")))
+(cl-defmethod forge-get-url ((_(eql :remote)) remote)
+  (forge--format remote 'remote-url-format))
 
 ;;; Visit
 
 ;;;###autoload
 (defun forge-visit-topic (topic)
-  "View the current topic in a separate buffer.
-If there is no current topic or with a prefix argument
-read a topic to visit instead."
-  (interactive (list (if-let ((topic (forge-current-topic)))
-                         (oref topic id)
-                       (forge-read-topic "View topic"))))
+  "Read a TOPIC and visit it.
+By default only offer open topics for completion;
+with a prefix argument also closed topics."
+  (interactive (list (forge-read-topic "View topic" t)))
   (forge-visit (forge-get-topic topic)))
 
 ;;;###autoload
-(defun forge-visit-pullreq (pullreq)
-  "View the current pull-request in a separate buffer.
-If there is no current pull-request or with a prefix argument
-read a PULLREQ to visit instead. If point is looking at a pullreq
-reference with Gitlab/Github notation try to visit the pullreq
-with that number."
-  (interactive (list (forge-read-pullreq "View pull-request" t)))
-  (forge-visit (forge-get-pullreq pullreq)))
-
-;;;###autoload
 (defun forge-visit-issue (issue)
-  "Visit the current issue in a separate buffer.
-If there is no current issue or with a prefix argument read an
-ISSUE to visit instead. If point is looking at an issue reference
-with Gitlab/Github notation try to visit the issue with that
-number."
+  "Read an ISSUE and visit it.
+By default only offer open topics for completion;
+with a prefix argument also closed topics."
   (interactive (list (forge-read-issue "View issue" t)))
   (forge-visit (forge-get-issue issue)))
 
 ;;;###autoload
-(defun forge-visit-repository (repo)
-  "View the current repository in a separate buffer."
-  (interactive
-   (list (or (forge-current-repository)
-             (forge-get-repository
-              (forge-read-repository "Visit repository")))))
-  (forge-visit repo))
+(defun forge-visit-pullreq (pull-request)
+  "Read a PULL-REQUEST and visit it.
+By default only offer open topics for completion;
+with a prefix argument also closed topics."
+  (interactive (list (forge-read-pullreq "View pull-request" t)))
+  (forge-visit (forge-get-pullreq pull-request)))
+
+;;;###autoload
+(defun forge-visit-this-topic ()
+  "Visit the topic at point."
+  (interactive)
+  (forge-visit (forge-topic-at-point)))
+
+;;;###autoload
+(defun forge-visit-this-repository ()
+  "Visit the repository at point."
+  (interactive)
+  (forge-visit (forge-repository-at-point)))
 
 ;;; Create
 
@@ -478,8 +543,7 @@ point is currently on."
 (defun forge-edit-post ()
   "Edit the current post."
   (interactive)
-  (let* ((post (or (forge-post-at-point)
-                   (user-error "There is no current post")))
+  (let* ((post (forge-post-at-point t))
          (buf (cl-typecase post
                 (forge-topic
                  (forge--prepare-post-buffer
@@ -498,123 +562,93 @@ point is currently on."
       (insert (oref post body)))
     (forge--display-post-buffer buf)))
 
-(defun forge-edit-topic-title (topic)
-  "Edit the title of the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
-  (interactive (list (forge-read-topic "Edit title of")))
-  (let ((topic (forge-get-topic topic)))
-    (forge--set-topic-title
-     (forge-get-repository topic) topic
-     (read-string "Title: " (oref topic title)))))
+(defun forge-edit-topic-title (title)
+  "Edit the TITLE of the current topic."
+  (interactive (list (read-string "Title: "
+                                  (oref (forge-current-topic t) title))))
+  (forge--topic-set 'title title))
 
-(defun forge-edit-topic-state (topic)
-  "Close or reopen the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
+(defun forge-edit-topic-state ()
+  "Close or reopen the current topic."
+  (interactive)
+  (let* ((topic (forge-current-topic t))
+         (state (oref topic state)))
+    (when (eq state 'merged)
+      (user-error "Merged pull-requests cannot be reopened"))
+    (if (magit-y-or-n-p (format "%s %S"
+                                (if (eq state 'closed) "Reopen" "Close")
+                                (car (forge--topic-format-choice topic))))
+        (forge--topic-set 'state (if (eq state 'closed) 'open 'closed))
+      (user-error "Abort"))))
+
+(defun forge-edit-topic-draft ()
+  "Toggle whether the current pull-request is a draft."
+  (interactive)
+  (forge--topic-set 'draft (not (oref (forge-current-pullreq t) draft-p))))
+
+(defun forge-edit-topic-milestone (milestone)
+  "Edit what MILESTONE the current topic belongs to."
   (interactive
-   (let* ((id (forge-read-topic "Close/reopen"))
-          (topic (forge-get-topic id)))
-     (if (magit-y-or-n-p
-          (format "%s %S"
-                  (cl-ecase (oref topic state)
-                    (merged (error "Merged pull-requests cannot be reopened"))
-                    (closed "Reopen")
-                    (open   "Close"))
-                  (car (forge--topic-format-choice topic))))
-         (list id)
-       (user-error "Abort"))))
-  (let ((topic (forge-get-topic topic)))
-    (forge--set-topic-state (forge-get-repository topic) topic)))
+   (let ((topic (forge-current-topic t)))
+     (list (magit-completing-read
+            "Milestone"
+            (mapcar #'caddr (oref (forge-get-repository topic) milestones))
+            nil t (forge--get-topic-milestone topic)))))
+  (forge--topic-set 'milestone milestone))
 
-(defun forge-edit-topic-draft (pullreq)
-  "Toggle whether the current pull-request is a draft.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
-  (interactive (list (forge-read-pullreq "Toggle draft state of")))
-  (let ((pullreq (forge-get-pullreq pullreq)))
-    (forge--set-topic-draft (forge-get-repository pullreq)
-                            pullreq
-                            (not (oref pullreq draft-p)))))
-
-(defun forge-edit-topic-milestone (topic)
-  (interactive (list (forge-read-topic "Edit milestone of")))
-  (let* ((topic (forge-get-topic topic))
-         (repo  (forge-get-repository topic)))
-    (forge--set-topic-milestone
-     repo topic
-     (magit-completing-read
-      "Milestone"
-      (mapcar #'caddr (oref repo milestones))
-      nil t (forge--get-topic-milestone topic)))))
-
-(defun forge-edit-topic-labels (topic)
-  "Edit the labels of the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
-  (interactive (list (forge-read-topic "Edit labels of")))
-  (let* ((topic (forge-get-topic topic))
-         (repo  (forge-get-repository topic))
-         (crm-separator ","))
-    (forge--set-topic-labels
-     repo topic (magit-completing-read-multiple
-                 "Labels: "
-                 (mapcar #'cadr (oref repo labels))
-                 nil t
-                 (mapconcat #'car (closql--iref topic 'labels) ",")))))
-
-(defun forge-edit-topic-marks (topic marks)
-  "Edit the marks of the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
+(defun forge-edit-topic-labels (labels)
+  "Edit the LABELS of the current topic."
   (interactive
-   (let ((topic (forge-read-topic "Edit marks of")))
-     (list topic (forge-read-marks "Marks: " (forge-get-topic topic)))))
-  (oset (forge-get-topic topic) marks marks)
+   (let* ((topic (forge-current-topic t))
+          (repo  (forge-get-repository topic))
+          (crm-separator ","))
+     (list (magit-completing-read-multiple
+            "Labels: "
+            (mapcar #'cadr (oref repo labels))
+            nil t
+            (mapconcat #'car (closql--iref topic 'labels) ",")))))
+  (forge--topic-set 'labels labels))
+
+(defun forge-edit-topic-marks (marks)
+  "Edit the MARKS of the current topic."
+  (interactive (list (forge-read-marks "Marks: " (forge-current-topic t))))
+  (oset (forge-current-topic t) marks marks)
   (magit-refresh))
 
-(defun forge-edit-topic-assignees (topic)
-  "Edit the assignees of the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
-  (interactive (list (forge-read-topic "Edit assignees of")))
-  (let* ((topic (forge-get-topic topic))
-         (repo  (forge-get-repository topic))
-         (value (closql--iref topic 'assignees))
-         (choices (mapcar #'cadr (oref repo assignees)))
-         (crm-separator ","))
-    (forge--set-topic-assignees
-     repo topic
-     (magit-completing-read-multiple
-      "Assignees: " choices nil
-      (if (forge--childp repo 'forge-gitlab-repository)
-          t ; Selecting something else would fail later on.
-        'confirm)
-      (mapconcat #'car value ",")))))
+(defun forge-edit-topic-assignees (assignees)
+  "Edit the ASSIGNEES of the current topic."
+  (interactive
+   (let* ((topic (forge-current-topic t))
+          (repo  (forge-get-repository topic))
+          (value (closql--iref topic 'assignees))
+          (choices (mapcar #'cadr (oref repo assignees)))
+          (crm-separator ","))
+     (list (magit-completing-read-multiple
+            "Assignees: " choices nil
+            (if (forge--childp repo 'forge-gitlab-repository)
+                t ; Selecting something else would fail later on.
+              'confirm)
+            (mapconcat #'car value ",")))))
+  (forge--topic-set 'assignees assignees))
 
-(defun forge-edit-topic-review-requests (pullreq)
-  "Edit the review-requests of the current pull-request.
-If there is no current topic or with a prefix argument read a
-PULLREQ and modify that instead."
-  (interactive (list (forge-read-pullreq "Request review for")))
-  (let* ((topic (forge-get-pullreq pullreq))
-         (repo  (forge-get-repository topic))
-         (value (closql--iref topic 'review-requests))
-         (choices (mapcar #'cadr (oref repo assignees)))
-         (crm-separator ","))
-    (forge--set-topic-review-requests
-     repo topic
-     (magit-completing-read-multiple
-      "Request review from: " choices nil
-      'confirm
-      (mapconcat #'car value ",")))))
+(defun forge-edit-topic-review-requests (review-requests)
+  "Edit the REVIEW-REQUESTS of the current pull-request."
+  (interactive
+   (let* ((topic (forge-current-topic t))
+          (repo  (forge-get-repository topic))
+          (value (closql--iref topic 'review-requests))
+          (choices (mapcar #'cadr (oref repo assignees)))
+          (crm-separator ","))
+     (list (magit-completing-read-multiple
+            "Request review from: " choices nil
+            'confirm
+            (mapconcat #'car value ",")))))
+  (forge--topic-set 'review-requests review-requests))
 
-(defun forge-edit-topic-note (topic)
-  "Edit your private note about the current topic.
-If there is no current topic or with a prefix argument read a
-TOPIC and modify that instead."
-  (interactive (list (forge-read-topic "Edit note about")))
-  (let* ((topic (forge-get-topic topic))
+(defun forge-edit-topic-note ()
+  "Edit your private note about the current topic."
+  (interactive)
+  (let* ((topic (forge-current-topic t))
          (buf (forge--prepare-post-buffer
                (forge--format topic "%i;note")
                (forge--format topic "New note on #%i of %p"))))
@@ -628,12 +662,12 @@ TOPIC and modify that instead."
 
 ;;; Delete
 
-(defun forge-delete-comment (comment)
+(defun forge-delete-comment ()
   "Delete the comment at point."
-  (interactive (list (or (forge-comment-at-point)
-                         (user-error "There is no comment at point"))))
-  (when (yes-or-no-p "Do you really want to delete the selected comment? ")
-    (forge--delete-comment (forge-get-repository t) comment)))
+  (interactive)
+  (let ((comment (forge-comment-at-point t)))
+    (when (yes-or-no-p "Do you really want to delete the selected comment? ")
+      (forge--delete-comment (forge-get-repository t) comment))))
 
 ;;; Branch
 
@@ -872,17 +906,16 @@ information."
 
 (defun forge-toggle-mark (mark)
   "Toggle MARK for the current topic."
-  (if-let ((topic (forge-current-topic)))
-      (let* ((value (mapcar #'car (closql--iref topic 'marks)))
-             (value (if (member mark value)
-                        (delete mark value)
-                      (cons mark value)))
-             (marks (forge-sql [:select [name id] :from mark])))
-        (oset topic marks (--map (cadr (assoc it marks)) value))
-        (magit-refresh))
-    (user-error "There is no topic at point")))
+  (let* ((topic (forge-current-topic t))
+         (value (mapcar #'car (closql--iref topic 'marks)))
+         (value (if (member mark value)
+                    (delete mark value)
+                  (cons mark value)))
+         (marks (forge-sql [:select [name id] :from mark])))
+    (oset topic marks (--map (cadr (assoc it marks)) value))
+    (magit-refresh)))
 
-;;; Fork
+;;; Remotely
 
 ;;;###autoload
 (defun forge-fork (fork remote)
@@ -904,7 +937,72 @@ is added anyway.  Currently this only supports Github and Gitlab."
                                                (oref repo name))
                       (list "--fetch"))))
 
-;;; Misc
+;;;###autoload
+(defun forge-merge (pullreq method)
+  "Merge the current pull-request using METHOD using the forge's API.
+
+If there is no current pull-request or with a prefix argument,
+then read pull-request PULLREQ to visit instead.
+
+Use of this command is discouraged.  Unless the remote repository
+is configured to disallow that, you should instead merge locally
+and then push the target branch.  Forges detect that you have
+done that and respond by automatically marking the pull-request
+as merged."
+  (interactive
+   (list (forge-read-pullreq "Merge pull-request" t)
+         (if (forge--childp (forge-get-repository t) 'forge-gitlab-repository)
+             (magit-read-char-case "Merge method " t
+               (?m "[m]erge"  'merge)
+               (?s "[s]quash" 'squash))
+           (magit-read-char-case "Merge method " t
+             (?m "[m]erge"  'merge)
+             (?s "[s]quash" 'squash)
+             (?r "[r]ebase" 'rebase)))))
+  (let ((pullreq (forge-get-pullreq pullreq)))
+    (forge--merge-pullreq (forge-get-repository pullreq)
+                          pullreq
+                          (magit-rev-hash
+                           (forge--pullreq-branch-internal pullreq))
+                          method))
+  (forge-pull))
+
+;;;###autoload
+(defun forge-rename-default-branch ()
+  "Rename the default branch to NEWNAME.
+Change the name on the upstream remote and locally, and update
+the upstream remotes of local branches accordingly."
+  (interactive)
+  (let* ((repo (forge-get-repository 'full))
+         (_ (unless (forge-github-repository-p repo)
+              (user-error "Updating default branch not supported for forge `%s'"
+                          (oref repo forge))))
+         (remote (or (and (fboundp 'forge--get-remote)
+                          (forge--get-remote))
+                     (magit-get-some-remote)
+                     (user-error "No remote configured")))
+         (symref (format "refs/remotes/%s/HEAD" remote))
+         (oldhead (progn
+                    (message "Determining old default branch...")
+                    (magit-git "fetch" "--prune")
+                    (magit-git "remote" "set-head" "--auto" remote)
+                    (message "Determining old default branch...done")
+                    (magit-git-string "symbolic-ref" "--short" symref)))
+         (oldname (if oldhead
+                      (cdr (magit-split-branch-name oldhead))
+                    (error "Cannot determine old default branch")))
+         (default (and (not (equal oldname "main")) "main"))
+         (newname (read-string
+                   (format "Rename default branch `%s' to%s: "
+                           oldname
+                           (if default (format " (default: %s)" default) ""))
+                   nil nil default)))
+    (message "Renaming default branch...")
+    (forge--set-default-branch repo newname oldname)
+    (magit-refresh)
+    (message "Renaming default branch...done")))
+
+;;; Configuration
 
 (transient-define-infix forge-forge.remote ()
   "Change the local value of the `forge.remote' Git variable."
@@ -913,18 +1011,24 @@ is added anyway.  Currently this only supports Github and Gitlab."
   :choices #'magit-list-remotes
   :default (lambda (_) (forge--get-remote t)))
 
-;;;###autoload
-(defun forge-list-notifications ()
-  "List notifications."
-  (interactive)
-  (forge-notifications-setup-buffer))
+(transient-define-infix forge-forge.graphqlItemLimit ()
+  "Change the maximum number of GraphQL entities to pull at once."
+  :if #'forge-get-github-repository-p
+  :class 'magit--git-variable
+  :variable "forge.graphqlItemLimit"
+  :reader #'read-string
+  :default (lambda () (number-to-string ghub-graphql-items-per-request)))
 
 (transient-define-suffix forge-toggle-display-in-status-buffer ()
   "Toggle whether to display topics in the current status buffer."
+  :inapt-if-not (lambda ()
+                  (and (eq major-mode 'magit-status-mode)
+                       (forge-get-repository nil)))
   :description (lambda ()
                  (if forge-display-in-status-buffer
                      "hide all topics"
                    "display topics"))
+  :transient t
   (interactive)
   (setq forge-display-in-status-buffer (not forge-display-in-status-buffer))
   (magit-refresh))
@@ -932,12 +1036,16 @@ is added anyway.  Currently this only supports Github and Gitlab."
 (transient-define-suffix forge-toggle-closed-visibility ()
   "Toggle whether to display recently closed topics.
 This only affect the current status buffer."
+  :inapt-if-not (lambda ()
+                  (and forge-display-in-status-buffer
+                       (eq major-mode 'magit-status-mode)
+                       (forge-get-repository nil)))
   :description (lambda ()
                  (if (or (atom forge-topic-list-limit)
                          (> (cdr forge-topic-list-limit) 0))
                      "hide closed topics"
                    "display recently closed topics"))
-  :inapt-if-not (lambda () forge-display-in-status-buffer)
+  :transient t
   (interactive)
   (magit-repository-local-delete (list 'forge-ls-recent-topics 'issue))
   (magit-repository-local-delete (list 'forge-ls-recent-topics 'pullreq))
@@ -947,19 +1055,14 @@ This only affect the current status buffer."
     (setcdr forge-topic-list-limit (* -1 (cdr forge-topic-list-limit))))
   (magit-refresh))
 
-(transient-define-infix forge-forge.graphqlItemLimit ()
-  "Change the maximum number of GraphQL entities to pull at once."
-  :class 'magit--git-variable
-  :variable "forge.graphqlItemLimit"
-  :reader #'read-string
-  :default (lambda () (number-to-string ghub-graphql-items-per-request)))
-
-;;;###autoload
-(defun forge-add-pullreq-refspec ()
+;;;###autoload (autoload 'forge-add-pullreq-refspec "forge-commands" nil t)
+(transient-define-suffix forge-add-pullreq-refspec ()
   "Configure Git to fetch all pull-requests.
 This is done by adding \"+refs/pull/*/head:refs/pullreqs/*\"
 to the value of `remote.REMOTE.fetch', where REMOTE is the
 upstream remote.  Also fetch from REMOTE."
+  :if-not 'forge--pullreq-refspec
+  :description "add pull-request refspec"
   (interactive)
   (let* ((repo    (forge-get-repository 'stub))
          (remote  (oref repo remote))
@@ -979,12 +1082,16 @@ upstream remote.  Also fetch from REMOTE."
          (refspec (oref repo pullreq-refspec)))
     (car (member refspec fetch))))
 
-;;;###autoload
-(defun forge-add-repository (url)
+;;; Add repositories
+
+;;;###autoload (autoload 'forge-add-repository "forge-commands" nil t)
+(transient-define-suffix forge-add-repository (url)
   "Add a repository to the database.
 Offer to either pull topics (now and in the future) or to only
 pull individual topics when the user invokes `forge-pull-topic'."
-  (declare (interactive-only t))
+  :description (lambda ()
+                 (format "add %srepository to database"
+                         (if (forge-get-repository nil) "another " "")))
   (interactive
    (let ((str (magit-read-string-ns
                "Add repository to database (url or name)"
@@ -1025,35 +1132,7 @@ This may take a while.  Only Github is supported at the moment."
          (read-string "Organization: ")))
   (forge--add-organization-repos 'forge-github-repository host organization))
 
-;;;###autoload
-(defun forge-merge (pullreq method)
-  "Merge the current pull-request using METHOD using the forge's API.
-
-If there is no current pull-request or with a prefix argument,
-then read pull-request PULLREQ to visit instead.
-
-Use of this command is discouraged.  Unless the remote repository
-is configured to disallow that, you should instead merge locally
-and then push the target branch.  Forges detect that you have
-done that and respond by automatically marking the pull-request
-as merged."
-  (interactive
-   (list (forge-read-pullreq "Merge pull-request" t)
-         (if (forge--childp (forge-get-repository t) 'forge-gitlab-repository)
-             (magit-read-char-case "Merge method " t
-               (?m "[m]erge"  'merge)
-               (?s "[s]quash" 'squash))
-           (magit-read-char-case "Merge method " t
-             (?m "[m]erge"  'merge)
-             (?s "[s]quash" 'squash)
-             (?r "[r]ebase" 'rebase)))))
-  (let ((pullreq (forge-get-pullreq pullreq)))
-    (forge--merge-pullreq (forge-get-repository pullreq)
-                          pullreq
-                          (magit-rev-hash
-                           (forge--pullreq-branch-internal pullreq))
-                          method))
-  (forge-pull))
+;;; Cleanup
 
 ;;;###autoload
 (defun forge-remove-repository (host owner name)
@@ -1087,41 +1166,6 @@ you to manually clean up the local database."
     (magit-refresh)))
 
 ;;;###autoload
-(defun forge-rename-default-branch ()
-  "Rename the default branch to NEWNAME.
-Change the name on the upstream remote and locally, and update
-the upstream remotes of local branches accordingly."
-  (interactive)
-  (let* ((repo (forge-get-repository 'full))
-         (_ (unless (forge-github-repository-p repo)
-              (user-error "Updating default branch not supported for forge `%s'"
-                          (oref repo forge))))
-         (remote (or (and (fboundp 'forge--get-remote)
-                          (forge--get-remote))
-                     (magit-get-some-remote)
-                     (user-error "No remote configured")))
-         (symref (format "refs/remotes/%s/HEAD" remote))
-         (oldhead (progn
-                    (message "Determining old default branch...")
-                    (magit-git "fetch" "--prune")
-                    (magit-git "remote" "set-head" "--auto" remote)
-                    (message "Determining old default branch...done")
-                    (magit-git-string "symbolic-ref" "--short" symref)))
-         (oldname (if oldhead
-                      (cdr (magit-split-branch-name oldhead))
-                    (error "Cannot determine old default branch")))
-         (default (and (not (equal oldname "main")) "main"))
-         (newname (read-string
-                   (format "Rename default branch `%s' to%s: "
-                           oldname
-                           (if default (format " (default: %s)" default) ""))
-                   nil nil default)))
-    (message "Renaming default branch...")
-    (forge--set-default-branch repo newname oldname)
-    (magit-refresh)
-    (message "Renaming default branch...done")))
-
-;;;###autoload
 (defun forge-reset-database ()
   "Move the current database file to the trash.
 This is useful after the database scheme has changed, which will
@@ -1134,6 +1178,14 @@ heavy development."
       (emacsql-close db))
     (delete-file forge-database-file t)
     (magit-refresh)))
+
+;;; Misc
+
+;;;###autoload
+(defun forge-list-notifications ()
+  "List notifications."
+  (interactive)
+  (forge-notifications-setup-buffer))
 
 (defun forge-enable-sql-logging ()
   "Enable logging Forge's SQL queries."

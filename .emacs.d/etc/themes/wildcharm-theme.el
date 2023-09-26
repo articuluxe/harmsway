@@ -711,11 +711,13 @@
 
    ;; diff
    `(diff-header
-     ((,class256 (:foreground ,bright-blue :weight bold))))
+     ((,class256 (:background ,grey2 :foreground ,bright-blue :weight bold))))
    `(diff-file-header
-     ((,class256 (:foreground ,white))))
+     ((,class256 (:background ,grey2 :foreground ,white))))
    `(diff-hunk-header
      ((,class256 (:foreground ,bright-yellow :weight bold))))
+   `(diff-function
+     ((,class256 (:foreground ,bright-red :weight bold))))
    `(diff-added
      ((,classTC (:background ,diff-added-bg :foreground ,diff-added-fg))
       (t (:background ,diff-added-bg-tty :foreground ,diff-added-fg))))
@@ -950,6 +952,10 @@
 
    ;; eglot
    `(eglot-highlight-symbol-face
+     ((,class256 (:background ,match))))
+
+   ;; lsp-mode
+   `(lsp-face-highlight-textual
      ((,class256 (:background ,match))))
 
    ;; wgrep
@@ -1220,6 +1226,20 @@
    `(corfu-bar
      ((,class256 (:background ,non-text))))
    `(corfu-border
+     ((,class256 (:background ,darkgrey))))
+
+   ;; company
+   `(company-tooltip
+     ((,class256 (:background ,grey3))))
+   `(company-tooltip-common
+     ((,class256 (:inherit completions-common-part))))
+   `(company-tooltip-annotation
+     ((,class256 (:inherit completions-annotations))))
+   `(company-tooltip-selection
+     ((,class256 (:background ,grey1))))
+   `(company-tooltip-scrollbar-track
+     ((,class256 (:background ,non-text))))
+   `(company-tooltip-scrollbar-thumb
      ((,class256 (:background ,darkgrey))))
 
    ;; rainbow-delimiters

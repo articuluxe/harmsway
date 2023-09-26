@@ -24,7 +24,7 @@
 ;;     (dash "2.19.1")
 ;;     (git-commit "3.3.0")
 ;;     (magit-section "3.3.0")
-;;     (seq "2.23")
+;;     (seq "2.24")
 ;;     (transient "0.3.6")
 ;;     (with-editor "3.0.5"))
 
@@ -303,8 +303,6 @@ already been run."
                  (const :tag "Use default bindings" default)
                  (const :tag "Use recommended bindings" recommended)))
 
-;; This is autoloaded and thus is used before `compat' is
-;; loaded, so we cannot use `keymap-lookup' and `keymap-set'.
 ;;;###autoload
 (progn
   (defun magit-maybe-define-global-key-bindings (&optional force)
@@ -319,6 +317,8 @@ already been run."
                              ('(("C-x g"   . magit-status)
                                 ("C-x M-g" . magit-dispatch)
                                 ("C-c M-g" . magit-file-dispatch)))))
+          ;; This is autoloaded and thus is used before `compat' is
+          ;; loaded, so we cannot use `keymap-lookup' and `keymap-set'.
           (when (or force
                     (not (or (lookup-key map (kbd key))
                              (where-is-internal def (make-sparse-keymap) t))))

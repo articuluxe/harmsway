@@ -15,6 +15,7 @@
 ;; Package-Requires: (
 ;;     (emacs "25.1")
 ;;     (compat "29.1.3.4")
+;;     (seq "2.24")
 ;;     (transient "0.3.6")
 ;;     (with-editor "3.0.5"))
 
@@ -119,6 +120,12 @@
 
 (require 'compat)
 (require 'subr-x)
+
+(when (and (featurep' seq)
+           (not (fboundp 'seq-keep)))
+  (unload-feature 'seq 'force))
+(require 'seq)
+
 (require 'log-edit)
 (require 'ring)
 (require 'rx)
@@ -446,16 +453,16 @@ This is only used if Magit is available."
 (add-to-list 'with-editor-file-name-history-exclude git-commit-filename-regexp)
 
 (defun git-commit-setup-font-lock-in-buffer ()
-  (and buffer-file-name
-       (string-match-p git-commit-filename-regexp buffer-file-name)
-       (git-commit-setup-font-lock)))
+  (when (and buffer-file-name
+             (string-match-p git-commit-filename-regexp buffer-file-name))
+    (git-commit-setup-font-lock)))
 
 (add-hook 'after-change-major-mode-hook #'git-commit-setup-font-lock-in-buffer)
 
 (defun git-commit-setup-check-buffer ()
-  (and buffer-file-name
-       (string-match-p git-commit-filename-regexp buffer-file-name)
-       (git-commit-setup)))
+  (when (and buffer-file-name
+             (string-match-p git-commit-filename-regexp buffer-file-name))
+    (git-commit-setup)))
 
 (defvar git-commit-mode)
 
@@ -534,10 +541,17 @@ Used as the local value of `header-line-format', in buffer using
       (hack-dir-local-variables)
       (hack-local-variables-apply)))
   (when git-commit-major-mode
-    (let ((auto-mode-alist (list (cons (concat "\\`"
-                                               (regexp-quote buffer-file-name)
-                                               "\\'")
-                                       git-commit-major-mode)))
+    (let ((auto-mode-alist
+           ;; `set-auto-mode--apply-alist' removes the remote part from
+           ;; the file-name before looking it up in `auto-mode-alist'.
+           ;; For our temporary entry to be found, we have to modify the
+           ;; file-name the same way.
+           (list (cons (concat "\\`"
+                               (regexp-quote
+                                (or (file-remote-p buffer-file-name 'localname)
+                                    buffer-file-name))
+                               "\\'")
+                       git-commit-major-mode)))
           ;; The major-mode hook might want to consult these minor
           ;; modes, while the minor-mode hooks might want to consider
           ;; the major mode.
@@ -810,7 +824,10 @@ Save current message first."
 
 (transient-define-prefix git-commit-insert-pseudo-header ()
   "Insert a commit message pseudo header."
-  [["Insert ... by yourself"
+  [[:description (lambda ()
+                   (cond (prefix-arg
+                          "Insert ... by someone ")
+                         ("Insert ... by yourself")))
     ("a"   "Ack"          git-commit-ack)
     ("m"   "Modified"     git-commit-modified)
     ("r"   "Reviewed"     git-commit-review)
@@ -825,27 +842,31 @@ Save current message first."
 
 (defun git-commit-ack (name mail)
   "Insert a header acknowledging that you have looked at the commit."
-  (interactive (git-commit-self-ident))
+  (interactive (git-commit-get-ident "Acked-by"))
   (git-commit-insert-header "Acked-by" name mail))
 
 (defun git-commit-modified (name mail)
   "Insert a header to signal that you have modified the commit."
-  (interactive (git-commit-self-ident))
+  (interactive (git-commit-get-ident "Modified-by"))
   (git-commit-insert-header "Modified-by" name mail))
 
 (defun git-commit-review (name mail)
-  "Insert a header acknowledging that you have reviewed the commit."
-  (interactive (git-commit-self-ident))
+  "Insert a header acknowledging that you have reviewed the commit.
+With a prefix argument, prompt for another person who performed a
+review."
+  (interactive (git-commit-get-ident "Reviewed-by"))
   (git-commit-insert-header "Reviewed-by" name mail))
 
 (defun git-commit-signoff (name mail)
-  "Insert a header to sign off the commit."
-  (interactive (git-commit-self-ident))
+  "Insert a header to sign off the commit.
+With a prefix argument, prompt for another person who signed off."
+  (interactive (git-commit-get-ident "Signed-off-by"))
   (git-commit-insert-header "Signed-off-by" name mail))
 
 (defun git-commit-test (name mail)
-  "Insert a header acknowledging that you have tested the commit."
-  (interactive (git-commit-self-ident))
+  "Insert a header acknowledging that you have tested the commit.
+With a prefix argument, prompt for another person who tested."
+  (interactive (git-commit-get-ident "Tested-by"))
   (git-commit-insert-header "Tested-by" name mail))
 
 (defun git-commit-cc (name mail)
@@ -873,25 +894,37 @@ Save current message first."
   (interactive (git-commit-read-ident "Co-developed-by"))
   (git-commit-insert-header "Co-developed-by" name mail))
 
-(defun git-commit-self-ident ()
-  (list (or (getenv "GIT_AUTHOR_NAME")
-            (getenv "GIT_COMMITTER_NAME")
-            (with-demoted-errors "Error running 'git config user.name': %S"
-              (car (process-lines
-                    (git-commit-executable) "config" "user.name")))
-            user-full-name
-            (read-string "Name: "))
-        (or (getenv "GIT_AUTHOR_EMAIL")
-            (getenv "GIT_COMMITTER_EMAIL")
-            (getenv "EMAIL")
-            (with-demoted-errors "Error running 'git config user.email': %S"
-              (car (process-lines
-                    (git-commit-executable) "config" "user.email")))
-            (read-string "Email: "))))
+(defun git-commit-get-ident (&optional prompt)
+  "Return name and email of the user or read another name and email.
+If PROMPT and `current-prefix-arg' are both non-nil, read name
+and email using `git-commit-read-ident' (which see), otherwise
+return name and email of the current user (you)."
+  (if (and prompt current-prefix-arg)
+      (git-commit-read-ident prompt)
+    (list (or (getenv "GIT_AUTHOR_NAME")
+              (getenv "GIT_COMMITTER_NAME")
+              (with-demoted-errors "Error running 'git config user.name': %S"
+                (car (process-lines
+                      (git-commit-executable) "config" "user.name")))
+              user-full-name
+              (read-string "Name: "))
+          (or (getenv "GIT_AUTHOR_EMAIL")
+              (getenv "GIT_COMMITTER_EMAIL")
+              (getenv "EMAIL")
+              (with-demoted-errors "Error running 'git config user.email': %S"
+                (car (process-lines
+                      (git-commit-executable) "config" "user.email")))
+              (read-string "Email: ")))))
+
+(defalias 'git-commit-self-ident #'git-commit-get-ident)
 
 (defvar git-commit-read-ident-history nil)
 
 (defun git-commit-read-ident (prompt)
+  "Read a name and email, prompting with PROMPT, and return them.
+If Magit is available, read them using a single prompt, offering
+past commit authors as completion candidates.  The input must
+have the form \"NAME <EMAIL>\"."
   (if (require 'magit-git nil t)
       (let ((str (magit-completing-read
                   prompt
@@ -911,7 +944,7 @@ Save current message first."
   (setq header (format "%s: %s <%s>" header name email))
   (save-excursion
     (goto-char (point-max))
-    (cond ((re-search-backward "^[-a-zA-Z]+: [^<]+? <[^>]+>" nil t)
+    (cond ((re-search-backward "^[-a-zA-Z]+: [^<\n]+? <[^>\n]+>" nil t)
            (end-of-line)
            (insert ?\n header)
            (unless (= (char-after) ?\n)
@@ -1069,8 +1102,16 @@ Added to `font-lock-extend-region-functions'."
                              (buffer-substring (point) (line-end-position)))))
                     "#"))
     (setq-local comment-start-skip (format "^%s+[\s\t]*" comment-start))
+    (setq-local comment-end "")
     (setq-local comment-end-skip "\n")
     (setq-local comment-use-syntax nil)
+    (when (and (derived-mode-p 'markdown-mode)
+               (fboundp 'markdown-fill-paragraph))
+      (setq-local fill-paragraph-function
+                  (lambda (&optional justify)
+                    (and (not (= (char-after (line-beginning-position))
+                                 (aref comment-start 0)))
+                         (markdown-fill-paragraph justify)))))
     (setq-local git-commit--branch-name-regexp
                 (if (and (featurep 'magit-git)
                          ;; When using cygwin git, we may end up in a

@@ -181,6 +181,14 @@ implement such a function themselves.  See #447.")
     'utf-8)
    t))
 
+(defun forge--topic-set (slot value &optional topic)
+  (unless topic
+    (setq topic (forge-current-topic t)))
+  (funcall (intern (format "forge--set-topic-%s" slot))
+           (forge-get-repository topic)
+           topic
+           value))
+
 ;;; Query
 
 (cl-defmethod forge-get-parent ((topic forge-topic))
@@ -340,6 +348,13 @@ identifier."
                       (oref topic number))
               'font-lock-face 'magit-dimmed))
 
+(cl-defmethod forge--topic-type-prefix ((_ forge-topic))
+  "Get the identifier prefix specific to the type of TOPIC."
+  "#")
+
+(cl-defmethod forge--topic-type-prefix ((_repo forge-repository) _type)
+  "#")
+
 (cl-defmethod forge--insert-topic-contents ((topic forge-topic) width prefix)
   (with-slots (number title unread-p closed) topic
     (insert (format (if width (format "%%-%is" (1+ width)) "%s")
@@ -358,24 +373,42 @@ identifier."
      (format-time-string "%s" (parse-iso8601-time-string (oref topic created)))
      t)))
 
-(defun forge--topic-by-forge-short-link-at-point (known-prefixes finder)
-  "Finds a topic by forge-dependant short link around point.
-The topic number is expected to be a number prefixed by any of
-the elements in KNOWN-PREFIXES. If a reference is found, FINDER
-is called and a topic object is returned if available."
-  (and-let* ((number (number-at-point))
-             (prefix (buffer-substring-no-properties
-                      (- (match-beginning 0) 1)
-                      (match-beginning 0))))
-    (and (member prefix known-prefixes)
-         (funcall finder number))))
+(put 'forge-topic 'thing-at-point #'forge-thingatpt--topic)
+(defun forge-thingatpt--topic ()
+  (and-let* ((repo (forge-get-repository nil)))
+    (and (thing-at-point-looking-at
+          (format "[%s%s]\\([0-9]+\\)\\_>"
+                  (forge--topic-type-prefix repo 'issue)
+                  (forge--topic-type-prefix repo 'pullreq)))
+         (forge-get-topic repo (string-to-number (match-string 1))))))
+
+;;; Sections
+
+(defun forge-current-topic (&optional demand)
+  "Return the topic at point or being visited.
+If there is no such topic and demand is non-nil, then signal
+an error."
+  (or (forge-topic-at-point)
+      (and (derived-mode-p 'forge-topic-mode)
+           forge-buffer-topic)
+      (and demand (user-error "No current topic"))))
+
+(defun forge-topic-at-point (&optional demand)
+  "Return the topic at point.
+If there is no such topic and demand is non-nil, then signal
+an error."
+  (or (thing-at-point 'forge-topic)
+      (magit-section-value-if '(issue pullreq))
+      (forge-get-pullreq :branch (magit-branch-at-point))
+      (and (derived-mode-p 'forge-topic-list-mode)
+           (forge-get-topic (tabulated-list-get-id)))
+      (and demand (user-error "No topic at point"))))
 
 ;;; Mode
 
 (defvar-keymap forge-topic-mode-map
   "C-c C-n"                      #'forge-create-post
   "C-c C-r"                      #'forge-create-post
-  "<remap> <magit-browse-thing>" #'forge-browse-topic
   "<remap> <magit-visit-thing>"  #'markdown-follow-link-at-point
   "<mouse-2>"                    #'markdown-follow-link-at-point)
 
@@ -396,7 +429,6 @@ is called and a topic object is returned if available."
     forge-insert-topic-review-requests))
 
 (defvar-keymap forge-post-section-map
-  "<remap> <magit-browse-thing>" #'forge-browse-post
   "<remap> <magit-edit-thing>"   #'forge-edit-post
   "C-c C-k"                      #'forge-delete-comment)
 
@@ -468,6 +500,9 @@ is called and a topic object is returned if available."
 (cl-defmethod magit-buffer-value (&context (major-mode forge-topic-mode))
   forge-buffer-topic-ident)
 
+;;; Headers
+;;;; Title
+
 (defvar-keymap forge-topic-title-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-title)
 
@@ -502,6 +537,8 @@ is called and a topic object is returned if available."
     (magit-insert-section (topic-draft)
       (insert (format "%-11s%s\n" "Draft: " (oref topic draft-p))))))
 
+;;;; Milestone
+
 (defvar-keymap forge-topic-milestone-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-milestone)
 
@@ -519,6 +556,8 @@ is called and a topic object is returned if available."
 (defun forge--get-topic-milestone (topic)
   (and-let* ((id (oref topic milestone)))
     (caar (forge-sql [:select [title] :from milestone :where (= id $s1)] id))))
+
+;;;; Labels
 
 (defvar-keymap forge-topic-labels-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-labels)
@@ -557,6 +596,8 @@ is called and a topic object is returned if available."
         (when description
           (overlay-put o 'help-echo description))))))
 
+;;;; Marks
+
 (defvar-keymap forge-topic-marks-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-marks)
 
@@ -583,32 +624,7 @@ is called and a topic object is returned if available."
       (when description
         (overlay-put o 'help-echo description)))))
 
-(defun forge--sanitize-color (color)
-  (cond ((color-values color) color)
-        ;; Discard alpha information.
-        ((string-match-p "\\`#.\\{4\\}\\'" color) (substring color 0 3))
-        ((string-match-p "\\`#.\\{8\\}\\'" color) (substring color 0 6))
-        (t "#000000"))) ; Use fallback instead of invalid color.
-
-(defun forge--contrast-color (color)
-  "Return black or white depending on the luminance of COLOR."
-  (if (> (forge--x-color-luminance color) 0.5) "black" "white"))
-
-;; Copy of `rainbow-x-color-luminance'.
-(defun forge--x-color-luminance (color)
-  "Calculate the luminance of a color string (e.g. \"#ffaa00\", \"blue\").
-Return a value between 0 and 1."
-  (let ((values (color-values color)))
-    (forge--color-luminance (/ (nth 0 values) 256.0)
-                            (/ (nth 1 values) 256.0)
-                            (/ (nth 2 values) 256.0))))
-
-;; Copy of `rainbow-color-luminance'.
-;; Also see https://en.wikipedia.org/wiki/Relative_luminance.
-(defun forge--color-luminance (red green blue)
-  "Calculate the luminance of color composed of RED, GREEN and BLUE.
-Return a value between 0 and 1."
-  (/ (+ (* .2126 red) (* .7152 green) (* .0722 blue)) 256))
+;;;; Refs
 
 (cl-defun forge-insert-topic-refs
     (&optional (topic forge-buffer-topic))
@@ -629,6 +645,8 @@ Return a value between 0 and 1."
                     (or head-ref deleted))
                   "\n"))))))
 
+;;;; Assignees
+
 (defvar-keymap forge-topic-assignees-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-assignees)
 
@@ -644,6 +662,8 @@ Return a value between 0 and 1."
                            assignees ", "))
       (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
     (insert ?\n)))
+
+;;;; Review-Requests
 
 (defvar-keymap forge-topic-review-requests-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-review-requests)
@@ -662,6 +682,35 @@ Return a value between 0 and 1."
         (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
       (insert ?\n))))
 
+;;; Internal Utilities
+
+(defun forge--sanitize-color (color)
+  (cond ((color-values color) color)
+        ;; Discard alpha information.
+        ((string-match-p "\\`#.\\{4\\}\\'" color) (substring color 0 3))
+        ((string-match-p "\\`#.\\{8\\}\\'" color) (substring color 0 6))
+        (t "#000000"))) ; Use fallback instead of invalid color.
+
+(defun forge--contrast-color (color)
+  "Return black or white depending on the luminance of COLOR."
+  (if (> (forge--x-color-luminance color) 0.5) "black" "white"))
+
+;; Copy of `rainbow-x-color-luminance'.
+(defun forge--x-color-luminance (color)
+  "Calculate the luminance of a color string (e.g., \"#ffaa00\", \"blue\").
+Return a value between 0 and 1."
+  (let ((values (color-values color)))
+    (forge--color-luminance (/ (nth 0 values) 256.0)
+                            (/ (nth 1 values) 256.0)
+                            (/ (nth 2 values) 256.0))))
+
+;; Copy of `rainbow-color-luminance'.
+;; Also see https://en.wikipedia.org/wiki/Relative_luminance.
+(defun forge--color-luminance (red green blue)
+  "Calculate the luminance of color composed of RED, GREEN and BLUE.
+Return a value between 0 and 1."
+  (/ (+ (* .2126 red) (* .7152 green) (* .0722 blue)) 256))
+
 (defun forge--fontify-markdown (text)
   (with-temp-buffer
     (delay-mode-hooks
@@ -671,13 +720,6 @@ Return a value between 0 and 1."
     (when forge-post-fill-region
       (fill-region (point-min) (point-max)))
     (buffer-string)))
-
-(cl-defmethod forge--topic-type-prefix ((_ forge-topic))
-  "Get the identifier prefix specific to the type of TOPIC."
-  "#")
-
-(cl-defmethod forge--topic-type-prefix ((_repo forge-repository) _type)
-  "#")
 
 (defun forge--markdown-translate-filename-function (file)
   (if (string-match-p "\\`https?://" file)
@@ -696,6 +738,11 @@ Return a value between 0 and 1."
 ;;; Completion
 
 (defun forge-read-topic (prompt &optional type allow-number)
+  "Read a topic with completion using PROMPT.
+TYPE can be `open', `closed', or nil to select from all topics.
+TYPE can also be t to select from open topics, or all topics if
+a prefix argument is in effect.  If ALLOW-NUMBER is non-nil, then
+allow exiting with a number that doesn't match any candidate."
   (when (eq type t)
     (setq type (if current-prefix-arg nil 'open)))
   (let* ((default (forge-current-topic))
@@ -717,7 +764,7 @@ Return a value between 0 and 1."
         (and allow-number
              (let ((number (string-to-number choice)))
                (if (= number 0)
-                   (user-error "Not an existing topic or number: %s")
+                   (user-error "Not an existing topic or number: %s" choice)
                  number))))))
 
 (cl-defmethod forge--topic-format-choice ((topic forge-topic))

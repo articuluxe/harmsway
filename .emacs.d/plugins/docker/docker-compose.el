@@ -181,12 +181,11 @@
   "Transient for \"docker-compose logs\"."
   :man-page "docker-compose logs"
   ["Arguments"
-   ("T" "Tail" "--tail=" read-string)
+   ("T" "Tail" "--tail " read-string)
    ("f" "Follow" "--follow")
    ("n" "No color" "--no-color")
    ("t" "Timestamps" "--timestamps")]
   ["Actions"
-
    ("L" "Logs" docker-compose-run-action-for-one-service)
    ("A" "All services" docker-compose-run-action-for-all-services)])
 
@@ -281,6 +280,20 @@
    ("U" "Up" docker-compose-run-action-for-one-service)
    ("A" "All services" docker-compose-run-action-for-all-services)])
 
+(transient-define-prefix docker-compose-pause ()
+  "Transient for \"docker-compose pause\"."
+  :man-page "docker-compose pause"
+  ["Actions"
+   ("P" "Pause" docker-compose-run-action-for-one-service)
+   ("A" "All services" docker-compose-run-action-for-all-services)])
+
+(transient-define-prefix docker-compose-unpause ()
+  "Transient for \"docker-compose unpause\"."
+  :man-page "docker-compose unpause"
+  ["Actions"
+   ("N" "Unpause" docker-compose-run-action-for-one-service)
+   ("A" "All services" docker-compose-run-action-for-all-services)])
+
 (docker-utils-define-transient-arguments docker-compose)
 
 ;;;###autoload (autoload 'docker-compose "docker-compose" nil t)
@@ -305,6 +318,8 @@
    ["Containers"
     ("C" "Create"     docker-compose-create)
     ("D" "Remove"     docker-compose-rm)
+    ("N" "Unpause"    docker-compose-unpause)
+    ("P" "Pause"      docker-compose-pause)
     ("U" "Up"         docker-compose-up)
     ("W" "Down"       docker-compose-down)]
    ["State"
@@ -312,9 +327,9 @@
     ("S" "Start"      docker-compose-start)
     ("T" "Restart"    docker-compose-restart)]
    ["Other"
-    ("R" "Run"        docker-compose-run)
-    ("L" "Logs"       docker-compose-logs)
     ("E" "Exec"       docker-compose-exec)
+    ("L" "Logs"       docker-compose-logs)
+    ("R" "Run"        docker-compose-run)
     ("V" "Config"     docker-compose-config)]])
 
 (provide 'docker-compose)

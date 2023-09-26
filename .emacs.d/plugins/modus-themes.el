@@ -6,7 +6,7 @@
 ;; Maintainer: Modus-Themes Development <~protesilaos/modus-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/modus-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/modus-themes
-;; Version: 4.2.0
+;; Version: 4.3.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -1029,7 +1029,7 @@ Info node `(modus-themes) Option for palette overrides'.")
     (overline-heading-6 yellow-cooler)
     (overline-heading-7 red-cooler)
     (overline-heading-8 magenta))
-  "Preset for palette overrides with faint coloration.
+  "Preset for palette overrides with intense coloration.
 
 This changes many parts of the theme to make them look more
 colorful/intense.  Many background colors are accented and
@@ -1563,20 +1563,22 @@ Optional OL is the color of an overline."
          (style (or key (alist-get t modus-themes-headings)))
          (style-listp (listp style))
          (properties style)
-         (var (when (memq 'variable-pitch properties) 'variable-pitch))
+         (var (when (and style-listp (memq 'variable-pitch properties)) 'variable-pitch))
          (weight (when style-listp (modus-themes--weight style))))
-    (list :inherit
-          (cond
-           ;; `no-bold' is for backward compatibility because we cannot
-           ;; deprecate a variable's value.
-           ((or weight (memq 'no-bold properties))
-            var)
-           (var (append (list 'bold) (list var)))
-           ('bold))
+    (list :inherit (cond
+                    ((not style-listp) 'bold)
+                    ;; `no-bold' is for backward compatibility because we cannot
+                    ;; deprecate a variable's value.
+                    ((or weight (memq 'no-bold properties))
+                     var)
+                    (var (append (list 'bold) (list var)))
+                    (t 'bold))
           :background (or bg 'unspecified)
           :foreground fg
           :overline (or ol 'unspecified)
-          :height (modus-themes--property-lookup properties 'height #'floatp 'unspecified)
+          :height (if style-listp
+                      (modus-themes--property-lookup properties 'height #'floatp 'unspecified)
+                    'unspecified)
           :weight (or weight 'unspecified))))
 
 (defun modus-themes--org-block (fg bg)
@@ -1758,6 +1760,7 @@ FG and BG are the main colors."
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; basic and/or ungrouped styles
+    `(appt-notification ((,c :inherit error)))
     `(blink-matching-paren-highlight-offscreen ((,c :background ,bg-paren-match)))
     `(bold ((,c :weight bold)))
     `(bold-italic ((,c :inherit (bold italic))))
@@ -1950,6 +1953,10 @@ FG and BG are the main colors."
     `(binder-sidebar-marked ((,c :inherit modus-themes-mark-sel)))
     `(binder-sidebar-missing ((,c :inherit modus-themes-mark-del)))
     `(binder-sidebar-tags ((,c :foreground ,variable)))
+;;;;; breadcrumb
+    `(breadcrumb-face ((,c :foreground ,fg-alt)))
+    `(breadcrumb-imenu-leaf-face ((,c :inherit bold :foreground ,modeline-info))) ; same as `which-func'
+    `(breadcrumb-project-leaf-face ((,c :inherit bold)))
 ;;;;; bongo
     `(bongo-album-title (( )))
     `(bongo-artist ((,c :foreground ,accent-0)))
@@ -2102,6 +2109,8 @@ FG and BG are the main colors."
     `(corfu-bar ((,c :background ,fg-dim)))
     `(corfu-border ((,c :background ,bg-active)))
     `(corfu-default ((,c :background ,bg-dim)))
+;;;;; corfu-candidate-overlay
+    `(corfu-candidate-overlay-face ((t :inherit shadow)))
 ;;;;; corfu-quick
     `(corfu-quick1 ((,c :inherit bold :background ,bg-char-0)))
     `(corfu-quick2 ((,c :inherit bold :background ,bg-char-1)))
@@ -2819,7 +2828,7 @@ FG and BG are the main colors."
 ;;;;; ivy-posframe
     `(ivy-posframe-border ((,c :background ,border)))
     `(ivy-posframe-cursor ((,c :background ,fg-main :foreground ,bg-main)))
-;;;;; japanese-holiday-saturday
+;;;;; japanese-holidays
     `(japanese-holiday-saturday ((,c :foreground ,date-holiday-other)))
 ;;;;; jira (org-jira)
     `(jiralib-comment-face ((,c :background ,bg-inactive)))
@@ -3184,6 +3193,8 @@ FG and BG are the main colors."
     `(nerd-icons-red-alt ((,c :foreground ,red-cooler)))
     `(nerd-icons-silver ((,c :foreground "gray50")))
     `(nerd-icons-yellow ((,c :foreground ,yellow)))
+;;;;; nerd-icons-completion
+    `(nerd-icons-completion-dir-face ((,c :foreground ,cyan-faint)))
 ;;;;; nerd-icons-dired
     `(nerd-icons-dired-dir-face ((,c :foreground ,cyan-faint)))
 ;;;;; nerd-icons-ibuffer
@@ -4011,7 +4022,7 @@ FG and BG are the main colors."
     `(wgrep-file-face ((,c :foreground ,fg-alt)))
     `(wgrep-reject-face ((,c :inherit error)))
 ;;;;; which-function-mode
-    `(which-func ((,c :inherit bold :foreground ,modeline-info)))
+    `(which-func ((,c :inherit bold :foreground ,modeline-info))) ; same as `breadcrumb-imenu-leaf-face'
 ;;;;; which-key
     `(which-key-command-description-face ((,c :foreground ,fg-main)))
     `(which-key-group-description-face ((,c :foreground ,keyword)))

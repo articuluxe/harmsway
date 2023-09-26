@@ -111,6 +111,10 @@
 ;;; Utilities
 
 (defun forge-read-issue (prompt &optional type)
+  "Read an issue with completion using PROMPT.
+TYPE can be `open', `closed', or nil to select from all issues.
+TYPE can also be t to select from open issues, or all issues if
+a prefix argument is in effect."
   (when (eq type t)
     (setq type (if current-prefix-arg nil 'open)))
   (let* ((default (forge-current-issue))
@@ -129,29 +133,37 @@
 (cl-defmethod forge-get-url ((issue forge-issue))
   (forge--format issue 'issue-url-format))
 
-(defun forge--issue-by-forge-short-link-at-point ()
-  (forge--topic-by-forge-short-link-at-point '("#") #'forge-get-issue))
+(put 'forge-issue 'thing-at-point #'forge-thingatpt--issue)
+(defun forge-thingatpt--issue ()
+  (and-let* ((repo (forge-get-repository nil)))
+    (and (thing-at-point-looking-at
+          (format "%s\\([0-9]+\\)\\_>"
+                  (forge--topic-type-prefix repo 'issue)))
+         (forge-get-issue repo (string-to-number (match-string 1))))))
 
 ;;; Sections
 
-(defun forge-current-issue ()
+(defun forge-current-issue (&optional demand)
+  "Return the issue at point or being visited.
+If there is no such issue and demand is non-nil, then signal
+an error."
   (or (forge-issue-at-point)
       (and (derived-mode-p 'forge-topic-mode)
            (forge-issue-p forge-buffer-topic)
            forge-buffer-topic)
+      (and demand (user-error "No current issue"))))
+
+(defun forge-issue-at-point (&optional demand)
+  "Return the issue at point.
+If there is no such issue and demand is non-nil, then signal
+an error."
+  (or (thing-at-point 'forge-issue)
+      (magit-section-value-if 'issue)
       (and (derived-mode-p 'forge-topic-list-mode)
            (let ((topic (forge-get-topic (tabulated-list-get-id))))
              (and (forge-issue-p topic)
-                  topic)))))
-
-(defun forge-issue-at-point ()
-  (or (magit-section-value-if 'issue)
-      (and-let* ((post (magit-section-value-if 'post)))
-        (cond ((forge-issue-p post)
-               post)
-              ((forge-issue-post-p post)
-               (forge-get-issue post))))
-      (forge--issue-by-forge-short-link-at-point)))
+                  topic)))
+      (and demand (user-error "No issue at point"))))
 
 (defvar-keymap forge-issues-section-map
   "<remap> <magit-browse-thing>" #'forge-browse-issues
@@ -159,8 +171,7 @@
   "C-c C-n"                      #'forge-create-issue)
 
 (defvar-keymap forge-issue-section-map
-  "<remap> <magit-browse-thing>" #'forge-browse-issue
-  "<remap> <magit-visit-thing>"  #'forge-visit-issue)
+  "<remap> <magit-visit-thing>"  #'forge-visit-this-topic)
 
 (defun forge-insert-issues ()
   "Insert a list of mostly recent and/or open issues.

@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.22.1
+;; Version: 0.23
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 
@@ -56,7 +56,7 @@
 ;; variable associates target types with variable containing keymaps,
 ;; and those keymaps containing binds for the actions.  For example,
 ;; in the default configuration the type `file' is associated with the
-;; symbol `embark-file-keymap'.  That symbol names a keymap with
+;; symbol `embark-file-map'.  That symbol names a keymap with
 ;; single-letter key bindings for common Emacs file commands, for
 ;; instance `c' is bound to `copy-file'.  This means that if while you
 ;; are in the minibuffer after running a command that prompts for a
@@ -301,8 +301,8 @@ prescribe a default for commands not used as alist keys."
                  (alist :tag "Configure per action"
                         :key-type (choice (function :tag "Action")
                                           (const :tag "All other actions" t))
-                        :value-type (choice (const :tag "Quit")
-                                            (const :tag "Do not quit")))))
+                        :value-type (choice (const :tag "Quit" t)
+                                            (const :tag "Do not quit" nil)))))
 
 (defcustom embark-confirm-act-all t
   "Should `embark-act-all' prompt the user for confirmation?
@@ -351,6 +351,7 @@ indicate that for files at the prompt of the `delete-file' command,
     ;; commands which prompt for something that is *not* the target
     (write-region embark--ignore-target)
     (append-to-file embark--ignore-target)
+    (append-to-buffer embark--ignore-target)
     (shell-command-on-region embark--ignore-target)
     (format-encode-region embark--ignore-target)
     (format-decode-region embark--ignore-target)
@@ -477,9 +478,14 @@ arguments and more details."
     (format-decode-region embark--mark-target)
     (write-region embark--mark-target)
     (append-to-file embark--mark-target)
+    (append-to-buffer embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (embark-eval-replace embark--mark-target)
     (delete-indentation embark--mark-target)
+    (comment-dwim embark--mark-target)
+    (insert-parentheses embark--mark-target)
+    (insert-pair embark--mark-target)
+    (org-emphasize embark--mark-target)
     ;; do the actual work of selecting & deselecting targets
     (embark-select embark--select))
   "Alist associating commands with post-action hooks.
@@ -611,7 +617,7 @@ the variable `embark--target-buffer'.")
 (defun embark--target-buffer ()
   "Return buffer that should be targeted by Embark actions."
   (cond
-   ((and (minibufferp) (minibuffer-selected-window))
+   ((and (minibufferp) minibuffer-completion-table (minibuffer-selected-window))
     (window-buffer (minibuffer-selected-window)))
    ((and embark--target-buffer (buffer-live-p embark--target-buffer))
     embark--target-buffer)
@@ -622,7 +628,7 @@ the variable `embark--target-buffer'.")
 If DISPLAY is non-nil, call `display-buffer' to produce the
 window if necessary."
   (cond
-   ((and (minibufferp) (minibuffer-selected-window))
+   ((and (minibufferp) minibuffer-completion-table (minibuffer-selected-window))
     (minibuffer-selected-window))
    ((and embark--target-window
          (window-live-p embark--target-window)
@@ -1277,12 +1283,13 @@ UPDATE is the indicator update function."
 (defun embark--command-name (cmd)
   "Return an appropriate name for CMD.
 If CMD is a symbol, use its symbol name; for lambdas, use the
-first line of the documentation string; otherwise use the word
-\"unnamed\"."
+first line of the documentation string; for keyboard macros use
+`key-description'; otherwise use the word \"unnamed\"."
   (concat ; fresh copy, so we can freely add text properties
    (cond
+    ((or (stringp cmd) (vectorp cmd)) (key-description cmd))
     ((stringp (car-safe cmd)) (car cmd))
-    ((eq (car-safe cmd) 'menu-item) (cadr cmd))
+    ((eq (car-safe cmd) 'menu-item) (eval (cadr cmd)))
     ((keymapp cmd)
      (propertize (if (symbolp cmd) (format "+%s" cmd) "<keymap>")
                  'face 'embark-keymap))
@@ -2404,15 +2411,17 @@ ARG is the prefix argument."
                                    (alist-get action embark-pre-action-hooks))))
                     (y-or-n-p (format "Run %s on %d %ss? "
                                       action (length candidates) type)))
-            (if quit
-                (embark--quit-and-run #'mapc act candidates)
-              (if (memq action embark-multitarget-actions)
-                  (let ((prefix-arg prefix))
-                    (embark--act action transformed quit))
-                (save-excursion (mapc act candidates)))
-              (when (memq 'embark--restart
-                          (alist-get action embark-post-action-hooks))
-                (embark--restart)))))
+            (if (memq action embark-multitarget-actions)
+                (let ((prefix-arg prefix))
+                  (embark--act action transformed quit))
+              (save-excursion
+                (if quit
+                    (embark--quit-and-run #'mapc act candidates)
+                  (mapc act candidates))))
+            (when (and (not quit)
+                       (memq 'embark--restart
+                             (alist-get action embark-post-action-hooks)))
+              (embark--restart))))
       (dolist (cand candidates)
         (when-let ((bounds (plist-get cand :bounds)))
           (set-marker (car bounds) nil) ; yay, manual memory management!
@@ -2967,6 +2976,14 @@ For non-minibuffers, assume candidates are of given TYPE."
               (setq pos nexti))))))
     (if chunks (apply #'concat (nreverse chunks)) str)))
 
+(defconst embark--hline
+  (propertize
+   (concat "\n" (propertize
+                 " " 'display '(space :align-to right)
+                 'face '(:inherit completions-group-separator :height 0.01)
+                 'cursor-intangible t 'intangible t)))
+  "Horizontal line used to separate multiline collect entries.")
+
 (defun embark-collect--format-entries (candidates grouper)
   "Format CANDIDATES for `tabulated-list-mode' grouped by GROUPER.
 The GROUPER is either nil or a function like the `group-function'
@@ -2979,49 +2996,55 @@ example)."
   (let ((max-width 0)
         (transform
          (if grouper (lambda (cand) (funcall grouper cand t)) #'identity)))
-    (setq tabulated-list-entries
-          (mapcan
-           (lambda (group)
-             (cons
-              `(nil [(,(concat (propertize embark-collect--outline-string
-                                           'invisible t)
-                               (format embark-collect-group-format (car group)))
-                      type embark-collect-group)
-                     ("" skip t)])
-              (mapcar
-               (pcase-lambda (`(,cand ,prefix ,annotation))
-                 (let* ((display (embark--display-string (funcall transform cand)))
-                        (length (length annotation))
-                        (faces (text-property-not-all
-                                0 length 'face nil annotation)))
-                   (setq max-width (max max-width (+ (string-width prefix)
-                                                     (string-width display))))
-                   (when faces
-                     (add-face-text-property 0 length 'default t annotation))
-                   `(,cand
-                     [(,(propertize display 'line-prefix prefix)
-                       type embark-collect-entry)
-                      (,annotation
-                       skip t
-                       ,@(unless faces
-                           '(face embark-collect-annotation)))])))
-               (cdr group))))
-           (if grouper
-               (seq-group-by (lambda (item) (funcall grouper (car item) nil))
-                             candidates)
-             (list (cons "" candidates)))))
-    (if (null grouper)
-        (pop tabulated-list-entries)
-      (setq-local outline-regexp embark-collect--outline-string)
-      (outline-minor-mode))
-    (setq tabulated-list-format
-          `[("Candidate" ,max-width t) ("Annotation" 0 t)])))
+    (setq
+     tabulated-list-entries
+     (mapcan
+      (lambda (group)
+        (let ((multiline (seq-some (lambda (x) (string-match-p "\n" (car x)))
+                                   candidates)))
+          (cons
+           `(nil [(,(concat (propertize embark-collect--outline-string
+                                        'invisible t)
+                            (format embark-collect-group-format (car group)))
+                   type embark-collect-group)
+                  ("" skip t)])
+           (mapcar
+            (pcase-lambda (`(,cand ,prefix ,annotation))
+              (let* ((display (embark--display-string (funcall transform cand)))
+                     (length (length annotation))
+                     (faces (text-property-not-all
+                             0 length 'face nil annotation)))
+                (setq max-width (max max-width (+ (string-width prefix)
+                                                  (string-width display))))
+                (when faces
+                  (add-face-text-property 0 length 'default t annotation))
+                `(,cand
+                  [(,(propertize
+                      (if multiline (concat display embark--hline) display)
+                      'line-prefix prefix)
+                    type embark-collect-entry)
+                   (,annotation
+                    skip t
+                    ,@(unless faces
+                        '(face embark-collect-annotation)))])))
+            (cdr group)))))
+     (if grouper
+         (seq-group-by (lambda (item) (funcall grouper (car item) nil))
+                       candidates)
+       (list (cons "" candidates)))))
+  (if (null grouper)
+      (pop tabulated-list-entries)
+    (setq-local outline-regexp embark-collect--outline-string)
+    (outline-minor-mode))
+  (setq tabulated-list-format
+        `[("Candidate" ,max-width t) ("Annotation" 0 t)])))
 
 (defun embark-collect--update-candidates (buffer)
   "Update candidates for Embark Collect BUFFER."
   (let* ((transformed (embark--maybe-transform-candidates))
          (type (plist-get transformed :orig-type)) ; we need the originals for
          (candidates (plist-get transformed :orig-candidates)) ; default action
+         (bounds (plist-get transformed :bounds))
          (affixator (embark-collect--affixator type))
          (grouper (embark-collect--metadatum type 'group-function)))
     (when (eq type 'file)
@@ -3031,11 +3054,31 @@ example)."
                         (let ((rel (file-relative-name cand dir)))
                           (if (string-prefix-p "../" rel) cand rel)))
                       candidates))))
+    (if (seq-some #'identity bounds)
+      (cl-loop for cand in candidates and (start . _end) in bounds
+               when start
+               do (add-text-properties
+                   0 1 `(embark--location ,(copy-marker start)) cand)))
     (setq candidates (funcall affixator candidates))
     (with-current-buffer buffer
       (setq embark--type type)
+      (unless embark--command
+        (setq embark--command #'embark--goto))
       (embark-collect--format-entries candidates grouper))
     candidates))
+
+(defun embark--goto (target)
+  "Jump to the original location of TARGET.
+This function is used as a default action in Embark Collect
+buffers when the candidates were a selection from a regular
+buffer."
+  ;; TODO: ensure the location jumped to is visible
+  ;; TODO: remove duplication with embark-org-goto-heading
+  (when-let ((marker (get-text-property 0 'embark--location target)))
+    (pop-to-buffer (marker-buffer marker))
+    (widen)
+    (goto-char marker)
+    (pulse-momentary-highlight-one-line)))
 
 (defun embark--collect (buffer-name)
   "Create an Embark Collect buffer named BUFFER-NAME.
@@ -3330,7 +3373,7 @@ PRED is a predicate function used to filter the items."
 (defcustom embark-selection-indicator
   #("  Embark:%s " 1 12 (face (embark-selected bold)))
   "Mode line indicator used for selected candidates."
-  :type '(choice string nil))
+  :type '(choice string (const nil)))
 
 (defvar-local embark--selection nil
   "Buffer local list of selected targets.
@@ -3563,13 +3606,19 @@ constituent character next to an existing word constituent.
 2. For a multiline inserted string, newlines may be added before
 or after as needed to ensure the inserted string is on lines of
 its own."
-  (let ((multiline (seq-some (lambda (s) (string-match-p "\n" s)) strings))
-        (separator (embark--separator strings)))
+  (let* ((separator (embark--separator strings))
+         (multiline
+          (or (and (cdr strings) (string-match-p "\n" separator))
+              (and (null (cdr strings))
+                   (equal (buffer-substring (line-beginning-position)
+                                            (line-end-position))
+                          (car strings)))
+              (seq-some (lambda (s) (string-match-p "\n" s)) strings))))
     (cl-labels ((maybe-space ()
                   (and (looking-at "\\w") (looking-back "\\w" 1)
                        (insert " ")))
                 (maybe-newline ()
-                  (or (looking-back "^[ \t]*" 40) (looking-at "\n\n")
+                  (or (looking-back "^[ \t]*" 40) (looking-at "\n")
                       (newline-and-indent)))
                 (maybe-whitespace ()
                   (if multiline (maybe-newline) (maybe-space)))
@@ -3693,7 +3742,7 @@ Returns the new name actually used."
 (defun embark-insert-variable-value (var)
   "Insert value of VAR."
   (interactive "SVariable: ")
-  (insert (string-trim (pp-to-string (symbol-value var)))))
+  (embark-insert (list (string-trim (pp-to-string (symbol-value var))))))
 
 (defun embark-toggle-variable (var &optional local)
   "Toggle value of boolean variable VAR.
@@ -3710,7 +3759,7 @@ If prefix LOCAL is non-nil make variable local."
   "Insert relative path to FILE.
 The insert path is relative to `default-directory'."
   (interactive "FFile: ")
-  (insert (file-relative-name (substitute-in-file-name file))))
+  (embark-insert (list (file-relative-name (substitute-in-file-name file)))))
 
 (defun embark-save-relative-path (file)
   "Save the relative path to FILE in the kill ring.
@@ -3839,14 +3888,16 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (pp-display-expression result "*Pp Eval Output*"))))
     (eval-defun edebug)))
 
-(defun embark-eval-replace ()
-  "Evaluate region and replace with evaluated result."
-  (interactive)
+(defun embark-eval-replace (noquote)
+  "Evaluate region and replace with evaluated result.
+If NOQUOTE is non-nil (interactively, if called with a prefix
+argument), no quoting is used for strings."
+  (interactive "P")
   (let ((beg (region-beginning))
         (end (region-end)))
     (save-excursion
       (goto-char end)
-      (insert (prin1-to-string
+      (insert (format (if noquote "%s" "%S")
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
@@ -4180,6 +4231,7 @@ This simply calls RUN with the REST of its arguments inside
   "D" #'delete-directory
   "r" #'rename-file
   "c" #'copy-file
+  "s" #'make-symbolic-link
   "j" #'embark-dired-jump
   "!" #'shell-command
   "&" #'async-shell-command

@@ -68,45 +68,25 @@ of the current pull-request."
                               ((forge--childp topic 'forge-pullreq)
                                'pullreq-post-url-format)))))
 
-(cl-defmethod forge-browse :after ((post forge-post))
-  (oset (forge-get-topic post) unread-p nil))
-
 ;;; Sections
 
-(defun forge-post-at-point ()
-  (magit-section-value-if '(issue pullreq post)))
+(defun forge-post-at-point (&optional assert)
+  "Return the post at point.
+If there is no such post and demand is non-nil, then signal
+an error."
+  (or (magit-section-value-if '(issue pullreq post))
+      (and assert (user-error "There is no post at point"))))
 
-(defun forge-comment-at-point ()
-  (and (magit-section-value-if '(post))
-       (let ((post (oref (magit-current-section) value)))
-         (and (or (forge-pullreq-post-p post)
-                  (forge-issue-post-p post))
-              post))))
-
-(defun forge-topic-at-point ()
-  (or (magit-section-value-if '(issue pullreq))
-      (and-let* ((branch (magit-branch-at-point))
-                 (n (magit-get "branch" branch "pullRequest")))
-        (forge-get-pullreq (string-to-number n)))
-      (and-let* ((rev (magit-commit-at-point)))
-        (forge--pullreq-from-rev rev))
-      (forge--issue-by-forge-short-link-at-point)
-      (forge--pullreq-by-forge-short-link-at-point)))
-
-(defun forge-current-topic ()
-  (or (forge-topic-at-point)
-      (and (derived-mode-p 'forge-topic-mode)
-           forge-buffer-topic)
-      (and (derived-mode-p 'forge-topic-list-mode)
-           (forge-get-topic (tabulated-list-get-id)))))
-
-(defun forge--pullreq-from-rev (rev)
-  (and-let* ((repo    (forge-get-repository nil))
-             (refspec (oref repo pullreq-refspec))
-             (name    (magit-rev-name rev (cadr (split-string refspec ":")))))
-    (save-match-data
-      (and (string-match "\\([0-9]*\\)\\([~^][0-9]*\\)?\\'" name)
-           (forge-get-pullreq (string-to-number (match-string 0 name)))))))
+(defun forge-comment-at-point (&optional assert)
+  "Return the comment at point.
+If there is no such comment and demand is non-nil, then signal
+an error."
+  (or (and (magit-section-value-if '(post))
+           (let ((post (oref (magit-current-section) value)))
+             (and (or (forge-pullreq-post-p post)
+                      (forge-issue-post-p post))
+                  post)))
+      (and assert (user-error "There is no comment at point"))))
 
 ;;; Utilities
 

@@ -398,6 +398,7 @@ visiting the same file."
         (file-name-handler-alist
          '(("\\(?:\\.dz\\|\\.txz\\|\\.xz\\|\\.lzma\\|\\.lz\\|\\.g?z\\|\\.\\(?:tgz\\|svgz\\|sifz\\)\\|\\.tbz2?\\|\\.bz2\\|\\.Z\\)\\(?:~\\|\\.~[-[:alnum:]:#@^._]+\\(?:~[[:digit:]]+\\)?~\\)?\\'" .
             jka-compr-handler)
+           ("\\(?:^/\\)\\(\\(?:\\(?:\\(-\\|[[:alnum:]]\\{2,\\}\\)\\(?::\\)\\(?:\\([^/:|[:blank:]]+\\)\\(?:@\\)\\)?\\(\\(?:[%._[:alnum:]-]+\\|\\(?:\\[\\)\\(?:\\(?:[[:alnum:]]*:\\)+[.[:alnum:]]*\\)?\\(?:]\\)\\)\\(?:\\(?:#\\)\\(?:[[:digit:]]+\\)\\)?\\)?\\)\\(?:|\\)\\)+\\)?\\(?:\\(-\\|[[:alnum:]]\\{2,\\}\\)\\(?::\\)\\(?:\\([^/:|[:blank:]]+\\)\\(?:@\\)\\)?\\(\\(?:[%._[:alnum:]-]+\\|\\(?:\\[\\)\\(?:\\(?:[[:alnum:]]*:\\)+[.[:alnum:]]*\\)?\\(?:]\\)\\)\\(?:\\(?:#\\)\\(?:[[:digit:]]+\\)\\)?\\)?\\)\\(?::\\)\\([^\n]*\\'\\)" . tramp-file-name-handler)
            ("\\`/:" . file-name-non-special))))
     (with-current-buffer fresh-buffer
       (setq-local elisp-refs--path path)
@@ -813,7 +814,6 @@ search."
     (define-key map (kbd "<backtab>") #'elisp-refs-prev-match)
     (define-key map (kbd "n") #'elisp-refs-next-match)
     (define-key map (kbd "p") #'elisp-refs-prev-match)
-    (define-key map (kbd "q") #'kill-this-buffer)
     (define-key map (kbd "RET") #'elisp-refs-visit-match)
     map)
   "Keymap for `elisp-refs-mode'.")

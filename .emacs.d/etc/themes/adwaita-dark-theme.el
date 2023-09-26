@@ -197,7 +197,7 @@
    `(warning ((,class (:foreground ,yellow))))
    `(success ((,class (:foreground ,green))))
    `(fringe ((,class (:inherit default :foreground ,base-4))))
-   `(region ((,class (:background ,base-4 :foreground nil :distant-foreground ,fg))))
+   `(region ((,class (:background ,base-4 :foreground unspecified :distant-foreground ,fg))))
    `(highlight ((,class (:background ,blue :foreground ,base-0 :distant-foreground ,base-8))))
    `(lazy-highlight ((,class (:inherit highlight))))
    `(cursor ((,class (:background ,fg))))

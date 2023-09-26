@@ -5,7 +5,7 @@
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.14
+;; Version: 1.15
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -384,7 +384,7 @@ quote, for example.")
     (json-ts-mode    javascript    json-ts-mode-indent-offset)
     (cmake-ts-mode   cmake         cmake-ts-mode-indent-offset)
     (typescript-ts-mode javascript typescript-ts-mode-indent-offset)
-    (ursa-ts-mode    c/c++/java    ursa-ts-mode-indent-offet)
+    (ursa-ts-mode    c/c++/java    ursa-ts-mode-indent-offset)
 
     (default         default       standard-indent))     ; default fallback
   "A mapping from hook variables to language types.")

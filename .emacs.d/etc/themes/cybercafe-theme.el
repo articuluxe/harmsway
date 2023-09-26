@@ -6,7 +6,7 @@
 ;; URL: http://github.com/gboncoffee/cybercafe-emacs-theme
 ;; Keywords: faces
 ;; Package-Requires: ((emacs "24.1"))
-;; Version: 0.3.2
+;; Version: 0.3.3
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
@@ -302,7 +302,7 @@
    `(font-latex-verbatim-face ((t (:foreground ,cybercafe-fg :italic t))))
    `(font-latex-warning-face ((t (:foreground ,cybercafe-yellow))))))
 
-;; ;;;###autoload
+;;;###autoload
 (when load-file-name
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))

@@ -258,7 +258,7 @@ See `consult--multi' for a description of the source data structure."
   "Command line arguments for grep, see `consult-grep'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
-  :type '(choice string (repeat (choice string expression))))
+  :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-git-grep-args
   "git --no-pager grep --null --color=never --ignore-case\
@@ -266,7 +266,7 @@ Can be either a string, or a list of strings or expressions."
   "Command line arguments for git-grep, see `consult-git-grep'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
-  :type '(choice string (repeat (choice string expression))))
+  :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-ripgrep-args
   "rg --null --line-buffered --color=never --max-columns=1000 --path-separator /\
@@ -274,28 +274,36 @@ Can be either a string, or a list of strings or expressions."
   "Command line arguments for ripgrep, see `consult-ripgrep'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
-  :type '(choice string (repeat (choice string expression))))
+  :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-find-args
   "find . -not ( -wholename */.* -prune )"
   "Command line arguments for find, see `consult-find'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
-  :type '(choice string (repeat (choice string expression))))
+  :type '(choice string (repeat (choice string sexp))))
+
+(defcustom consult-fd-args
+  '((if (executable-find "fdfind" 'remote) "fdfind" "fd")
+    "--full-path --color=never")
+  "Command line arguments for fd, see `consult-fd'.
+The dynamically computed arguments are appended.
+Can be either a string, or a list of strings or expressions."
+  :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-locate-args
   "locate --ignore-case" ;; --existing not supported by Debian plocate
   "Command line arguments for locate, see `consult-locate'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
-  :type '(choice string (repeat (choice string expression))))
+  :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-man-args
   "man -k"
   "Command line arguments for man, see `consult-man'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
-  :type '(choice string (repeat (choice string expression))))
+  :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-preview-key 'any
   "Preview trigger keys, can be nil, `any', a single key or a list of keys.
@@ -1677,8 +1685,9 @@ PREVIEW-KEY, STATE, TRANSFORM and CANDIDATE."
                         (setq cand (substring-no-properties cand))
                         (with-selected-window (active-minibuffer-window)
                           (let ((input (minibuffer-contents-no-properties))
-                                (narrow consult--narrow))
-                            (with-selected-window (or (minibuffer-selected-window) (next-window))
+                                (narrow consult--narrow)
+                                (win (or (minibuffer-selected-window) (next-window))))
+                            (with-selected-window win
                               (when-let ((transformed (funcall transform narrow input cand))
                                          (debounce (consult--preview-key-debounce preview-key transformed)))
                                 (when timer
@@ -1702,15 +1711,18 @@ PREVIEW-KEY, STATE, TRANSFORM and CANDIDATE."
                                 ;; the thing which is actually previewed.
                                 (unless (equal-including-properties previewed transformed)
                                   (if (> debounce 0)
-                                      (let ((win (selected-window)))
-                                        (setq timer
-                                              (run-at-time
-                                               debounce nil
-                                               (lambda ()
-                                                 (when (window-live-p win)
-                                                   (with-selected-window win
-                                                     ;; STEP 2: Preview candidate
-                                                     (funcall state 'preview (setq previewed transformed))))))))
+                                      (setq timer
+                                            (run-at-time
+                                             debounce nil
+                                             (lambda ()
+                                               ;; Preview only when a completion
+                                               ;; window is selected and when
+                                               ;; the preview window is alive.
+                                               (when (and (consult--completion-window-p)
+                                                          (window-live-p win))
+                                                 (with-selected-window win
+                                                   ;; STEP 2: Preview candidate
+                                                   (funcall state 'preview (setq previewed transformed)))))))
                                     ;; STEP 2: Preview candidate
                                     (funcall state 'preview (setq previewed transformed)))))))))))
               (consult--preview-append-local-pch
@@ -1883,7 +1895,9 @@ to make it available for commands with narrowing."
       (define-key map (vconcat key (vector (car pair)))
                   (cons (cdr pair) #'consult-narrow))))
   (when-let ((widen (consult--widen-key)))
-    (define-key map widen (cons "All" #'consult-narrow))))
+    (define-key map widen (cons "All" #'consult-narrow)))
+  (when-let ((init (and (memq :keys settings) (plist-get settings :initial))))
+    (consult-narrow init)))
 
 ;; Emacs 28: hide in M-X
 (put #'consult-narrow-help 'completion-predicate #'ignore)
@@ -3083,12 +3097,14 @@ These configuration options are supported:
     (nreverse candidates)))
 
 ;;;###autoload
-(defun consult-outline ()
+(defun consult-outline (&optional level)
   "Jump to an outline heading, obtained by matching against `outline-regexp'.
 
-This command supports narrowing to a heading level and candidate preview.
-The symbol at point is added to the future history."
-  (interactive)
+This command supports narrowing to a heading level and candidate
+preview.  The initial narrowing LEVEL can be given as prefix
+argument.  The symbol at point is added to the future history."
+  (interactive
+   (list (and current-prefix-arg (prefix-numeric-value current-prefix-arg))))
   (let* ((candidates (consult--slow-operation
                          "Collecting headings..."
                        (consult--outline-candidates)))
@@ -3099,7 +3115,8 @@ The symbol at point is added to the future history."
                         (<= (get-text-property 0 'consult--outline-level cand)
                             (+ consult--narrow min-level))))
          (narrow-keys (mapcar (lambda (c) (cons c (format "Level %c" c)))
-                              (number-sequence ?1 ?9))))
+                              (number-sequence ?1 ?9)))
+         (narrow-init (and level (max ?1 (min ?9 (+ level ?0))))))
     (consult--read
      candidates
      :prompt "Go to heading: "
@@ -3108,7 +3125,7 @@ The symbol at point is added to the future history."
      :sort nil
      :require-match t
      :lookup #'consult--line-match
-     :narrow `(:predicate ,narrow-pred :keys ,narrow-keys)
+     :narrow `(:predicate ,narrow-pred :keys ,narrow-keys :initial ,narrow-init)
      :history '(:input consult--line-history)
      :add-history (thing-at-point 'symbol)
      :state (consult--location-state candidates))))
@@ -4870,11 +4887,13 @@ See `consult-grep' for details."
     (lambda (input)
       (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
                    (flags (append cmd opts))
-                   (ignore-case (if (or (member "-S" flags) (member "--smart-case" flags))
-                                    (let (case-fold-search)
-                                      ;; Case insensitive if there are no uppercase letters
-                                      (not (string-match-p "[[:upper:]]" arg)))
-                                  (or (member "-i" flags) (member "--ignore-case" flags)))))
+                   (ignore-case
+                    (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                         (or (member "-i" flags) (member "--ignore-case" flags)
+                             (and (or (member "-S" flags) (member "--smart-case" flags))
+                                  (let (case-fold-search)
+                                    ;; Case insensitive if there are no uppercase letters
+                                    (not (string-match-p "[[:upper:]]" arg))))))))
         (if (or (member "-F" flags) (member "--fixed-strings" flags))
             (cons (append cmd (list "-e" arg) opts paths)
                   (apply-partially #'consult--highlight-regexps
@@ -4945,13 +4964,51 @@ INITIAL is initial input."
 
 ;;;###autoload
 (defun consult-find (&optional dir initial)
-  "Search for files in DIR matching input regexp given INITIAL input.
-See `consult-grep' for details regarding the asynchronous search
-and the arguments."
+  "Search for files with `find' in DIR.
+The file names must match the input regexp.  INITIAL is the
+initial minibuffer input.  See `consult-grep' for details
+regarding the asynchronous search and the arguments."
   (interactive "P")
   (pcase-let* ((`(,prompt ,paths ,dir) (consult--directory-prompt "Find" dir))
                (default-directory dir)
                (builder (consult--find-make-builder paths)))
+    (find-file (consult--find prompt builder initial))))
+
+;;;;; Command: consult-fd
+
+(defun consult--fd-make-builder (paths)
+  "Build find command line, finding across PATHS."
+  (let ((cmd (consult--build-args consult-fd-args)))
+    (lambda (input)
+      (pcase-let* ((`(,arg . ,opts) (consult--command-split input))
+                   (flags (append cmd opts))
+                   (ignore-case
+                    (and (not (or (member "-s" flags) (member "--case-sensitive" flags)))
+                         (or (member "-i" flags) (member "--ignore-case" flags)
+                             (let (case-fold-search)
+                               ;; Case insensitive if there are no uppercase letters
+                               (not (string-match-p "[[:upper:]]" arg)))))))
+        (if (or (member "-F" flags) (member "--fixed-strings" flags))
+            (cons (append cmd (list arg) opts paths)
+                  (apply-partially #'consult--highlight-regexps
+                                   (list (regexp-quote arg)) ignore-case))
+          (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg 'pcre ignore-case)))
+            (when re
+              (cons (append cmd
+                            (cdr (mapcan (lambda (x) `("--and" ,x)) re))
+                            opts paths)
+                    hl))))))))
+
+;;;###autoload
+(defun consult-fd (&optional dir initial)
+  "Search for files with `fd' in DIR.
+The file names must match the input regexp.  INITIAL is the
+initial minibuffer input.  See `consult-grep' for details
+regarding the asynchronous search and the arguments."
+  (interactive "P")
+  (pcase-let* ((`(,prompt ,paths ,dir) (consult--directory-prompt "Fd" dir))
+               (default-directory dir)
+               (builder (consult--fd-make-builder paths)))
     (find-file (consult--find prompt builder initial))))
 
 ;;;;; Command: consult-locate

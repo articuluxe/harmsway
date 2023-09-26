@@ -396,7 +396,7 @@ recommended value."
   "C-c C-c" 'magit-dispatch
   "C-c C-e" 'magit-edit-thing
   "C-c C-o" 'magit-browse-thing
-  "C-c C-w" 'magit-browse-thing
+  "C-c C-w" 'magit-copy-thing
   "C-w"     'magit-copy-section-value
   "M-w"     'magit-copy-buffer-revision
   "<remap> <previous-line>"      'magit-previous-line
@@ -405,36 +405,45 @@ recommended value."
   "<remap> <evil-next-line>"     'evil-next-visual-line)
 
 (defun magit-delete-thing ()
-  "This is a placeholder command.
-Where applicable, section-specific keymaps bind another command
-which deletes the thing at point."
+  "This is a placeholder command, which signals an error if called.
+Where applicable, other keymaps remap this command to another,
+which actually deletes the thing at point."
   (interactive)
   (user-error "There is no thing at point that could be deleted"))
 
 (defun magit-visit-thing ()
-  "This is a placeholder command.
-Where applicable, section-specific keymaps bind another command
-which visits the thing at point."
+  "This is a placeholder command, which may signal an error if called.
+Where applicable, other keymaps remap this command to another,
+which actually visits the thing at point."
   (interactive)
   (if (eq transient-current-command 'magit-dispatch)
       (call-interactively (key-binding (this-command-keys)))
     (user-error "There is no thing at point that could be visited")))
 
 (defun magit-edit-thing ()
-  "This is a placeholder command.
-Where applicable, section-specific keymaps bind another command
-which lets you edit the thing at point, likely in another buffer."
+  "This is a placeholder command, which may signal an error if called.
+Where applicable, other keymaps remap this command to another,
+which actually lets you edit the thing at point, likely in another
+buffer."
   (interactive)
   (if (eq transient-current-command 'magit-dispatch)
       (call-interactively (key-binding (this-command-keys)))
     (user-error "There is no thing at point that could be edited")))
 
 (defun magit-browse-thing ()
-  "This is a placeholder command.
-Where applicable, section-specific keymaps bind another command
-which visits the thing at point using `browse-url'."
+  "This is a placeholder command, which signals an error if called.
+Where applicable, other keymaps remap this command to another,
+which actually visits thing at point using `browse-url'."
   (interactive)
   (user-error "There is no thing at point that could be browsed"))
+
+(defun magit-copy-thing ()
+  "This is a placeholder command, which signals an error if called.
+Where applicable, other keymaps remap this command to another,
+which actually copies some representation of the thing at point
+to the kill ring."
+  (interactive)
+  (user-error "There is no thing at point that we know how to copy"))
 
 ;;;###autoload
 (defun magit-info ()
@@ -526,6 +535,7 @@ Magit is documented in info node `(magit)'."
   (setq-local revert-buffer-function #'magit-refresh-buffer)
   (setq-local bookmark-make-record-function #'magit--make-bookmark)
   (setq-local imenu-create-index-function #'magit--imenu-create-index)
+  (setq-local imenu-default-goto-function #'magit--imenu-goto-function)
   (setq-local isearch-filter-predicate #'magit-section--open-temporarily))
 
 ;;; Local Variables
@@ -1442,6 +1452,17 @@ mentioned caches completely."
        ((string-match " ([0-9]+)\\'" heading)
         (substring heading 0 (match-beginning 0)))
        (t heading)))))
+
+(defun magit--imenu-goto-function (_name position &rest _rest)
+  "Go to the section at POSITION.
+Make sure it is visible, by showing its ancestors where
+necessary.  For use as `imenu-default-goto-function' in
+`magit-mode' buffers."
+  (goto-char position)
+  (let ((section (magit-current-section)))
+    (while (setq section (oref section parent))
+      (when (oref section hidden)
+        (magit-section-show section)))))
 
 ;;; Bookmark support
 
