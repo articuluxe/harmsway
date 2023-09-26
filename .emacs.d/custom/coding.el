@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-09-22 16:25:15 dharms>
+;; Modified Time-stamp: <2023-09-26 14:52:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -160,15 +160,25 @@
   (setq hide-ifdef-lines nil)
   (setq hide-ifdef-shadow nil)
   (hide-ifdef-mode 1)
-  (require 'flymake-collection-clang)
-  (flymake-mode 1)
-  (setq-local company-backends
-              (append
-               (list 'company-c-headers 'company-c-preprocessor)
-               (copy-tree
-                (remq 'company-capf (car company-backends)))))
-  (setq-local company-alt-backend 'company-clang)
-  )
+  (if (and (executable-find "clangd")
+           nil)
+      (progn
+        (eglot-ensure)
+        (setq-local company-backends
+                    (list
+                     (append
+                      (list 'company-c-headers 'company-c-preprocessor)
+                      (copy-tree
+                       (remq 'company-capf (car company-backends)))))))
+    (require 'flymake-collection-clang)
+    (flymake-mode 1)
+    (setq-local company-alt-backend 'company-clang)
+    (setq-local company-backends
+                (append
+                 (list
+                  (list 'company-c-headers 'company-c-preprocessor)
+                  (copy-tree
+                   (car company-backends)))))))
 
 (add-hook 'c-mode-common-hook #'harmsway-c-mode-common-fn -50)
 
