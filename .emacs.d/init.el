@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-26 14:41:53 dharms>
+;; Modified Time-stamp: <2023-09-26 16:30:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4153,13 +4153,21 @@ This function's result only has value if it is preceded by any font changes."
   :bind ("C-c dd" . docker)
   )
 
+(defun harmsway-customize-dockerfile-mode ()
+  "Customize mode as there is no hook provided."
+  (if (and (derived-mode-p 'dockerfile-mode)
+           (executable-find "docker-langserver")
+           t)
+      (eglot-ensure)
+    ))
+
 (use-package dockerfile-mode
   :mode ("\\.dockerfile$" "Dockerfile$")
   :init
   (setq dockerfile-mode-command "docker")
   :config
-  (define-key dockerfile-mode-map "\C-c\C-c" nil t)
-  )
+  (define-key dockerfile-mode-map "\C-c\C-c" nil t))
+(advice-add #'dockerfile-mode :after #'harmsway-customize-dockerfile-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dotenv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dotenv-mode :mode ("\\.env$" "\\.env\\.example$"))
@@ -4373,10 +4381,13 @@ This function's result only has value if it is preceded by any font changes."
   (setq lua-indent-string-contents t)
   (add-hook 'lua-mode-hook
             (lambda()
-              (require 'flymake-collection-luacheck)
-              (flymake-mode 1)
-              (setq-local company-alt-backend 'company-lua)
-              )))
+              (if (and (executable-find "lua-language-server")
+                       t)
+                  (eglot-ensure)
+                (require 'flymake-collection-luacheck)
+                (flymake-mode 1)
+                (setq-local company-alt-backend 'company-lua)
+                ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
