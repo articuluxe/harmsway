@@ -1,0 +1,18 @@
+#!/bin/sh
+# -*- Mode: sh -*-
+# utilities.txt --- help on various application/utilities
+# Copyright (C) 2023  Dan Harms (dharms)
+# Author: Dan Harms <enniomore@icloud.com>
+# Created: Sunday, October  1, 2023
+# Version: 1.0
+# Modified Time-stamp: <2023-10-01 20:05:40 dharms>
+# Modified by: Dan Harms
+# Keywords: linux docs
+
+################################### ffmpeg ###################################
+# find all moments of at least 2 sec. silence at -50 dB
+ffmpeg -i StadiumArcadium-GuitarTracks.m4a -af silencedetect=n=-50dB:d=2 -f null -
+# save without encoding a portion of the input file
+ffmpeg -i StadiumArcadium-GuitarTracks.m4a -ss 01:58:43 -to 7387 -c copy 14-DeathOfAMartian.m4a
+
+# code ends here
