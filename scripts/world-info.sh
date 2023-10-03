@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, October  3, 2023
 # Version: 1.0
-# Modified Time-stamp: <2023-10-03 11:30:17 dharms>
+# Modified Time-stamp: <2023-10-03 11:33:25 dharms>
 # Modified by: Dan Harms
 # Keywords:
 
@@ -21,11 +21,11 @@ if [ ! -d ~/src/harmsway ]; then
     echo "Harmsway not installed, exiting..."
     exit 1
 fi
-cd ~/src/harmsway
+cd ~/src/harmsway || exit 1
 
 last=$( tail -1 $registry | cut -d'-' -f2 )
 curr=$( git rev-parse --short HEAD )
 
-git log "$last".."$curr" --oneline
+git log $last..$curr --oneline
 
 # code ends here
