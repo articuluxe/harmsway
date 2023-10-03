@@ -120,6 +120,7 @@ brew install lua-language-server
 pip install cmake-language-server
 brew install yaml-language-server
 brew install vscode-langservers-extracted
+brew install jdtls
 # old
 # brew install node
 # npm i -g bash-language-server

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-09-26 17:32:06 dharms>
+;; Modified Time-stamp: <2023-10-03 11:03:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4275,6 +4275,13 @@ This function's result only has value if it is preceded by any font changes."
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; java-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'java-mode-hook (lambda ()
+                            (if (and (executable-find "jdtls")
+                                     t)
+                                (eglot-ensure)
+                              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jinja-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package jinja2-mode :mode ("\\.jinja$" "\\.j2$"))
