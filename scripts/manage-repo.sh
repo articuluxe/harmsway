@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, November  5, 2021
 # Version: 1.0
-# Modified Time-stamp: <2023-03-10 12:01:17 dharms>
+# Modified Time-stamp: <2023-10-05 11:12:00 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -23,7 +23,11 @@ echo "-*- $repo -*-"
 base="$parent/local"
 
 # clone
-if [ ! -d "$parent/src" ] && [ -f "$base/clone" ]; then
+if [ -f "$base/.ignore_clone_$(uname -s)" ]; then
+    :
+elif [ -f "$base/.ignore_clone" ]; then
+    :
+elif [ ! -d "$parent/src" ] && [ -f "$base/clone" ]; then
     echo "Cloning $repo"
     local/clone
 fi
@@ -89,9 +93,9 @@ elif [ -d "$parent/src/.hg" ]; then
 fi
 # install
 cd "$parent" || exit
-if [ -f "$base/.ignore_install" ]; then
+if [ -f "$base/.ignore_install_$(uname -s)" ]; then
     :
-elif [ -f "$base/.ignore_install_$(uname -s)" ]; then
+elif [ -f "$base/.ignore_install" ]; then
     :
 elif [ -f "$base/install_$(uname -s)" ]; then
     local/"install_$(uname -s)"

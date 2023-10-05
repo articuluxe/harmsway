@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2023-03-10 12:01:25 dharms>
+# Modified Time-stamp: <2023-10-05 10:51:54 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -18,7 +18,8 @@ fi
 
 cd "$dir" || exit 1
 
-find "$dir" -type f -ipath "*local/clone" | sort | while read -r fname; do
+# ensure _ sorts first
+find "$dir" -type f -ipath "*local/clone" | LC_COLLATE=C sort | while read -r fname; do
     subparent=$( dirname "$fname" ) # local
     parent=$( dirname "$subparent" )
     manage-repo.sh "$parent"
