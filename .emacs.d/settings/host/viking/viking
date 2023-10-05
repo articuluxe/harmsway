@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-05-09 12:21:49 dharms>
+;; Modified Time-stamp: <2023-10-05 11:25:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -69,6 +69,7 @@
                             "Code New Roman 12"
                             "LiterationMono Nerd Font Mono 14"
                             "Hermit 12"
+                            "PanicSans 12"
                             "agave 16"
                             "Overpass Mono 12"
                             "Lekton 14"
