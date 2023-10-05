@@ -3,9 +3,9 @@
 ;; Copyright (C) 2009-2023  Free Software Foundation, Inc.
 
 ;; Author: Nikolaj Schumacher
-;; Maintainer: Dmitry Gutov <dgutov@yandex.ru>
+;; Maintainer: Dmitry Gutov <dmitry@gutov.dev>
 ;; URL: http://company-mode.github.io/
-;; Version: 0.9.13
+;; Version: 0.10.0
 ;; Keywords: abbrev, convenience, matching
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -1360,9 +1360,6 @@ To toggle the value of this variable, call `company-show-doc-buffer' with a
 prefix argument.")
 
 (defun company-call-frontends (command)
-  (when (and company-auto-update-doc
-             (memq command '(update show)))
-    (company-show-doc-buffer))
   (cl-loop for frontend in company-frontends collect
            (condition-case-unless-debug err
                (funcall frontend command)
@@ -2227,7 +2224,12 @@ For more details see `company-insertion-on-trigger' and
             (let (company-idle-delay) ; Against misbehavior while debugging.
               (company--perform)))
           (if company-candidates
-              (company-call-frontends 'post-command)
+              (progn
+                (company-call-frontends 'post-command)
+                (when company-auto-update-doc
+                  (condition-case nil
+                      (company-show-doc-buffer)
+                    (user-error nil))))
             (let ((delay (company--idle-delay)))
              (and (numberp delay)
                   (not defining-kbd-macro)
@@ -2862,11 +2864,7 @@ from the candidates list.")
         (selection (or company-selection 0)))
       (let* ((selected (nth selection company-candidates))
              (doc-buffer (or (company-call-backend 'doc-buffer selected)
-                             (if company-auto-update-doc
-                                 (company-doc-buffer
-                                  (format "%s: No documentation available"
-                                          selected))
-                               (user-error "No documentation available"))))
+                             (user-error "No documentation available")))
              start)
         (when (consp doc-buffer)
           (setq start (cdr doc-buffer)
@@ -2883,10 +2881,8 @@ automatically show the documentation buffer for each selection."
   (interactive "P")
   (when toggle-auto-update
     (setq company-auto-update-doc (not company-auto-update-doc)))
-  (if company-auto-update-doc
-      (company--show-doc-buffer)
-    (company--electric-do
-      (company--show-doc-buffer))))
+  (company--electric-do
+    (company--show-doc-buffer)))
 (put 'company-show-doc-buffer 'company-keep t)
 
 (defun company-show-location ()

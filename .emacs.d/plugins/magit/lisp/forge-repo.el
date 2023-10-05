@@ -133,6 +133,8 @@ forges and hosts."
 (defvar-local forge-buffer-repository nil)
 (put 'forge-buffer-repository 'permanent-local t)
 
+(defvar-local forge-buffer-unassociated-p nil)
+
 (defconst forge--signal-no-entry '(t stub create))
 
 (defun forge--get-remote (&optional warn)
@@ -259,7 +261,7 @@ no argument."
 
 (defun forge-current-repository (&optional demand)
   "Return the repository at point or being visited.
-If there is no such repository and demand is non-nil, then signal
+If there is no such repository and DEMAND is non-nil, then signal
 an error."
   (or (forge-repository-at-point)
       (forge-get-repository nil)
@@ -267,9 +269,11 @@ an error."
 
 (defun forge-repository-at-point (&optional demand)
   "Return the repository at point.
-If there is no such repository and demand is non-nil, then signal
+If there is no such repository and DEMAND is non-nil, then signal
 an error."
   (or (magit-section-value-if 'forge-repo)
+      (and-let* ((topic (forge-topic-at-point nil 'not-thingatpt)))
+        (forge-get-repository topic))
       (and (derived-mode-p 'forge-repository-list-mode)
            (forge-get-repository :id (tabulated-list-get-id)))
       (and demand (user-error "No repository at point"))))

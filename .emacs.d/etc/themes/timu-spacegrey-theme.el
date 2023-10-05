@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 06 Jun 2021
 ;; Keywords: faces themes
-;; Version: 2.6
+;; Version: 2.9
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-spacegrey-theme
 
@@ -56,12 +56,12 @@
 ;;         :config
 ;;         (load-theme 'timu-spacegrey t))
 ;;
-;; II. Configuration
+;; II.  Configuration
 ;;   A. Dark and light flavour
 ;;     By default the theme is `dark', to setup the `light' flavour:
 ;;
 ;;     - Change the variable `timu-spacegrey-flavour' in the Customization Interface.
-;;       M-x customize RET. Then Search for `timu'.
+;;       M-x customize RET.  Then Search for `timu'.
 ;;
 ;;     or
 ;;
@@ -80,7 +80,7 @@
 ;;     More to follow in the future.
 ;;
 ;;     By default the scaling is turned off.
-;;     To setup the scaling add the following to your `~/.emacs.d/init.el' or `~/.emacs':
+;;     To setup the scaling add the following to your Emacs configuration.
 ;;
 ;;     1. Default scaling
 ;;       This will turn on default values of scaling in the theme.
@@ -106,32 +106,60 @@
 ;;     You can set a variable to make some faces more "intense".
 ;;
 ;;     By default the intense colors are turned off.
-;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;     To turn this on add the following to your Emacs configuration.
 ;;       (customize-set-variable 'timu-spacegrey-org-intense-colors t)
 ;;
 ;;   D. Muted colors for the dark flavour
 ;;     You can set muted colors for the dark flavour of the theme.
 ;;
 ;;     By default muted colors are turned off.
-;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;     To turn this on add the following to your Emacs configuration.
 ;;       (customize-set-variable 'timu-spacegrey-muted-colors t)
 ;;
-;;   E. Border for the `mode-line'
+;;   E. More contrast for the foreground
+;;     You can set the =default= foreground to be more contrasted.
+;;
+;;     By default the option are turned off.
+;;     To turn this on add the following to your Emacs configuration.
+;;       (customize-set-variable 'timu-spacegrey-contrasted-foreground t)
+;;
+;;   F. More contrast for comments & docs
+;;      You can set the comments & docs to be more contrasted.
+;;
+;;      - `font-lock-comment-delimiter-face'
+;;      - `font-lock-comment-face'
+;;      - `tree-sitter-hl-face:comment'
+;;      - `tree-sitter-hl-face:doc'
+;;
+;;     By default the option are turned off.
+;;     To turn this on add the following to your Emacs configuration.
+;;       (customize-set-variable 'timu-spacegrey-contrasted-comments t)
+;;
+;;   G. Border for the `mode-line'
 ;;     You can set a variable to add a border to the mode-line.
 ;;
 ;;     By default the border is turned off.
-;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
+;;     To turn this on add the following to your Emacs configuration.
 ;;       (customize-set-variable 'timu-spacegrey-mode-line-border t)
 ;;
-;; III. Utility functions
+;; III.  Utility functions
 ;;   A. Toggle dark and light flavour of the theme
-;;       M-x timu-spacegrey-toggle-dark-light RET.
+;;       M-x `timu-spacegrey-toggle-dark-light' RET.
 ;;
 ;;   B. Toggle between intense and non intense colors for `org-mode'
-;;       M-x timu-spacegrey-toggle-org-colors-intensity RET.
+;;       M-x `timu-spacegrey-toggle-org-colors-intensity' RET.
 ;;
 ;;   C. Toggle between borders and no borders for the `mode-line'
-;;       M-x timu-spacegrey-toggle-mode-line-border RET.
+;;       M-x `timu-spacegrey-toggle-mode-line-border' RET.
+;;
+;;   D. Toggle italic faces on or off
+;;       M-x `timu-spacegrey-toggle-italic-faces' RET.
+;;
+;;   E. Toggle toggle more contrast for the foreground on or off
+;;       M-x `timu-spacegrey-toggle-contrasted-foreground' RET.
+;;
+;;   F. Toggle toggle more contrast for comments and docs on or off
+;;       M-x `timu-spacegrey-toggle-contrasted-comments' RET.
 
 
 ;;; Code:
@@ -182,7 +210,7 @@ Possible values: `dark' or `light'."
 
 (defcustom timu-spacegrey-scale-org-document-info nil
   "Variable to control the scale of the `org-document-info' faces.
-Possible values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil.  When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -191,7 +219,7 @@ Possible values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-spacegrey-scale-org-document-title nil
   "Variable to control the scale of the `org-document-title' faces.
-Possible values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil.  When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -200,7 +228,7 @@ Possible values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-spacegrey-scale-org-level-1 nil
   "Variable to control the scale of the `org-level-1' faces.
-Possible values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil.  When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -209,7 +237,7 @@ Possible values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-spacegrey-scale-org-level-2 nil
   "Variable to control the scale of the `org-level-2' faces.
-Possible values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil.  When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -218,7 +246,7 @@ Possible values: t, number or nil. When t, use theme default height."
 
 (defcustom timu-spacegrey-scale-org-level-3 nil
   "Variable to control the scale of the `org-level-3' faces.
-Possible values: t, number or nil. When t, use theme default height."
+Possible values: t, number or nil.  When t, use theme default height."
   :type '(choice
           (const :tag "No scaling" nil)
           (const :tag "Theme default scaling" t)
@@ -245,6 +273,45 @@ OVERLINE-COLOR changes the `overline' color.
 BACKGROUND-COLOR changes the `background' color."
   (if (eq t timu-spacegrey-org-intense-colors)
       (list :overline overline-color :background background-color)))
+
+(defcustom timu-spacegrey-italic-faces t
+  "Variable to control italic faces where applicable."
+  :type 'boolean
+  :group 'timu-spacegrey-theme)
+
+(defun timu-spacegrey-set-italic-faces ()
+  "Function enabling italic faces where applicable."
+  (if (eq t timu-spacegrey-italic-faces)
+      (list :italic t)))
+
+(defcustom timu-spacegrey-contrasted-foreground nil
+  "Variable to control the contrast of foreground faces.
+These are:
+- default"
+  :type 'boolean
+  :group 'timu-spacegrey-theme)
+
+(defun timu-spacegrey-set-contrasted-foreground (more less)
+  "Function enabling MORE or LESS contrasted foreground faces."
+  (if (eq t timu-spacegrey-contrasted-foreground)
+      (list :foreground more)
+    (list :foreground less)))
+
+(defcustom timu-spacegrey-contrasted-comments nil
+  "Variable to control the contrast of comment faces.
+These are:
+- `font-lock-comment-delimiter-face'
+- `font-lock-comment-face'
+- `tree-sitter-hl-face:comment'
+- `tree-sitter-hl-face:doc'"
+  :type 'boolean
+  :group 'timu-spacegrey-theme)
+
+(defun timu-spacegrey-set-contrasted-comments (more less)
+  "Function enabling MORE or LESS contrasted comment faces."
+  (if (eq t timu-spacegrey-contrasted-comments)
+      (list :foreground more)
+    (list :foreground less)))
 
 (defcustom timu-spacegrey-muted-colors nil
   "Variable to set muted colors for the \"dark\" flavour of the theme."
@@ -287,7 +354,7 @@ LBOX supplies the border color of the light `timu-spacegrey-flavour'."
 ;;;###autoload
 (defun timu-spacegrey-toggle-org-colors-intensity ()
   "Toggle between intense and non intense colors for `org-mode'.
-Customize `timu-spacegrey-org-intense-colors' the to achieve this. "
+Customize `timu-spacegrey-org-intense-colors' the to achieve this."
   (interactive)
   (if (eq t timu-spacegrey-org-intense-colors)
       (customize-set-variable 'timu-spacegrey-org-intense-colors nil)
@@ -297,12 +364,43 @@ Customize `timu-spacegrey-org-intense-colors' the to achieve this. "
 ;;;###autoload
 (defun timu-spacegrey-toggle-mode-line-border ()
   "Toggle between borders and no borders for the `mode-line'.
-Customize `timu-spacegrey-mode-line-border' the to achieve this. "
+Customize `timu-spacegrey-mode-line-border' the to achieve this."
   (interactive)
   (if (eq t timu-spacegrey-mode-line-border)
       (customize-set-variable 'timu-spacegrey-mode-line-border nil)
     (customize-set-variable 'timu-spacegrey-mode-line-border t))
   (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-spacegrey-toggle-italic-faces ()
+  "Toggle italic faces on or off.
+Customize `timu-spacegrey-italic-faces' to make your preferences permanent."
+  (interactive)
+  (if (eq t timu-spacegrey-italic-faces)
+      (customize-set-variable 'timu-spacegrey-italic-faces nil)
+    (customize-set-variable 'timu-spacegrey-italic-faces t))
+  (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-spacegrey-toggle-contrasted-foreground ()
+  "Toggle toggle more contrast for the foreground on or off.
+Customize `timu-spacegrey-contrasted-foreground' to make your preferences permanent."
+  (interactive)
+  (if (eq t timu-spacegrey-contrasted-foreground)
+      (customize-set-variable 'timu-spacegrey-contrasted-foreground nil)
+    (customize-set-variable 'timu-spacegrey-contrasted-foreground t))
+  (load-theme (car custom-enabled-themes) t))
+
+;;;###autoload
+(defun timu-spacegrey-toggle-contrasted-comments ()
+  "Toggle toggle more contrast for comments and docs on or off.
+Customize `timu-spacegrey-contrasted-comments' to make your preferences permanent."
+  (interactive)
+  (if (eq t timu-spacegrey-contrasted-comments)
+      (customize-set-variable 'timu-spacegrey-contrasted-comments nil)
+    (customize-set-variable 'timu-spacegrey-contrasted-comments t))
+  (load-theme (car custom-enabled-themes) t))
+
 
 (deftheme timu-spacegrey
   "Custom theme inspired by the spacegray theme in Sublime Text.
@@ -361,7 +459,7 @@ Sourced other themes to get information about font faces for packages.")
      `(bold-italic ((,class (:weight bold :slant italic))))
      `(bookmark-face ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
      `(cursor ((,class (:background ,orange))))
-     `(default ((,class (:background ,bg :foreground ,fg))))
+     `(default ((,class (:background ,bg ,@(timu-spacegrey-set-contrasted-foreground spacegrey8 fg)))))
      `(error ((,class (:foreground ,red))))
      `(fringe ((,class (:background ,bg :foreground ,spacegrey4))))
      `(highlight ((,class (:foreground ,magenta :weight bold :underline ,darkcyan))))
@@ -382,10 +480,10 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; font-lock - dark
      `(font-lock-builtin-face ((,class (:foreground ,orange))))
-     `(font-lock-comment-delimiter-face ((,class (:foreground ,spacegrey5))))
-     `(font-lock-comment-face ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(font-lock-comment-delimiter-face ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey7 spacegrey5)))))
+     `(font-lock-comment-face ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey7 spacegrey5) ,@(timu-spacegrey-set-italic-faces)))))
      `(font-lock-constant-face ((,class (:foreground ,magenta))))
-     `(font-lock-doc-face ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(font-lock-doc-face ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey7 spacegrey5) ,@(timu-spacegrey-set-italic-faces)))))
      `(font-lock-function-name-face ((,class (:foreground ,blue))))
      `(font-lock-keyword-face ((,class (:foreground ,orange))))
      `(font-lock-negation-char-face ((,class (:foreground ,fg :weight bold))))
@@ -525,7 +623,7 @@ Sourced other themes to get information about font faces for packages.")
      `(font-latex-sectioning-4-face ((,class (:foreground ,purple :weight semi-bold))))
      `(font-latex-sectioning-5-face ((,class (:foreground ,magenta :weight semi-bold))))
      `(font-latex-string-face ((,class (:foreground ,green))))
-     `(font-latex-verbatim-face ((,class (:foreground ,magenta :slant italic))))
+     `(font-latex-verbatim-face ((,class (:foreground ,magenta ,@(timu-spacegrey-set-italic-faces)))))
      `(font-latex-warning-face ((,class (:foreground ,yellow))))
 
 ;;;; avy - dark
@@ -613,7 +711,7 @@ Sourced other themes to get information about font faces for packages.")
      `(circe-server-face ((,class (:foreground ,spacegrey5))))
 
 ;;;; column-enforce-mode - dark
-   `(column-enforce-face ((,class (:foreground ,purple :underline t))))
+     `(column-enforce-face ((,class (:foreground ,purple :underline t))))
 
 ;;;; company - dark
      `(company-preview ((,class (:foreground ,spacegrey5))))
@@ -634,13 +732,13 @@ Sourced other themes to get information about font faces for packages.")
      `(company-box-candidate ((,class (:foreground ,fg))))
 
 ;;;; compilation - dark
-     `(compilation-column-number ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(compilation-column-number ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(compilation-error ((,class (:foreground ,red :weight bold))))
      `(compilation-info ((,class (:foreground ,green))))
      `(compilation-line-number ((,class (:foreground ,orange))))
      `(compilation-mode-line-exit ((,class (:foreground ,green))))
      `(compilation-mode-line-fail ((,class (:foreground ,red :weight bold))))
-     `(compilation-warning ((,class (:foreground ,yellow :slant italic))))
+     `(compilation-warning ((,class (:foreground ,yellow ,@(timu-spacegrey-set-italic-faces)))))
 
 ;;;; corfu - dark
      `(corfu-bar ((,class (:background ,bg-org :foreground ,fg))))
@@ -656,7 +754,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; cperl - dark
      `(cperl-array-face ((,class (:weight bold :foreground ,red))))
-     `(cperl-hash-face ((,class (:weight bold :slant italic :foreground ,red))))
+     `(cperl-hash-face ((,class (:weight bold ,@(timu-spacegrey-set-italic-faces) :foreground ,red))))
      `(cperl-nonoverridable-face ((,class (:foreground ,orange))))
 
 ;;;; custom - dark
@@ -890,7 +988,7 @@ Sourced other themes to get information about font faces for packages.")
      `(eshell-prompt ((,class (:foreground ,orange :weight bold))))
 
 ;;;; evil - dark
-     `(evil-ex-info ((,class (:foreground ,red :slant italic))))
+     `(evil-ex-info ((,class (:foreground ,red ,@(timu-spacegrey-set-italic-faces)))))
      `(evil-ex-search ((,class (:background ,orange :foreground ,spacegrey0 :weight bold))))
      `(evil-ex-substitute-matches ((,class (:background ,spacegrey0 :foreground ,red :weight bold :strike-through t))))
      `(evil-ex-substitute-replacement ((,class (:background ,spacegrey0 :foreground ,green :weight bold))))
@@ -951,11 +1049,11 @@ Sourced other themes to get information about font faces for packages.")
      `(git-commit-comment-detached ((,class (:foreground ,orange))))
      `(git-commit-comment-file ((,class (:foreground ,magenta))))
      `(git-commit-comment-heading ((,class (:foreground ,magenta))))
-     `(git-commit-keyword ((,class (:foreground ,cyan :slant italic))))
-     `(git-commit-known-pseudo-header ((,class (:foreground ,spacegrey5 :weight bold :slant italic))))
+     `(git-commit-keyword ((,class (:foreground ,cyan ,@(timu-spacegrey-set-italic-faces)))))
+     `(git-commit-known-pseudo-header ((,class (:foreground ,spacegrey5 :weight bold ,@(timu-spacegrey-set-italic-faces)))))
      `(git-commit-nonempty-second-line ((,class (:foreground ,red))))
-     `(git-commit-overlong-summary ((,class (:foreground ,red :slant italic :weight bold))))
-     `(git-commit-pseudo-header ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(git-commit-overlong-summary ((,class (:foreground ,red ,@(timu-spacegrey-set-italic-faces) :weight bold))))
+     `(git-commit-pseudo-header ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(git-commit-summary ((,class (:foreground ,darkcyan))))
 
 ;;;; git-gutter - dark
@@ -1014,15 +1112,15 @@ Sourced other themes to get information about font faces for packages.")
      `(gnus-header-subject ((,class (:foreground ,orange :weight bold))))
      `(gnus-signature ((,class (:foreground ,yellow))))
      `(gnus-summary-cancelled ((,class (:foreground ,red :strike-through t))))
-     `(gnus-summary-high-ancient ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(gnus-summary-high-ancient ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(gnus-summary-high-read ((,class (:foreground ,fg))))
      `(gnus-summary-high-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-high-unread ((,class (:foreground ,green))))
-     `(gnus-summary-low-ancient ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(gnus-summary-low-ancient ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(gnus-summary-low-read ((,class (:foreground ,fg))))
      `(gnus-summary-low-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-low-unread ((,class (:foreground ,green))))
-     `(gnus-summary-normal-ancient ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(gnus-summary-normal-ancient ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(gnus-summary-normal-read ((,class (:foreground ,fg))))
      `(gnus-summary-normal-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-normal-unread ((,class (:foreground ,green :weight bold))))
@@ -1040,7 +1138,7 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; helm - dark
      `(helm-ff-directory ((,class (:foreground ,red))))
      `(helm-ff-dotted-directory ((,class (:foreground ,grey))))
-     `(helm-ff-executable ((,class (:foreground ,spacegrey8 :slant italic))))
+     `(helm-ff-executable ((,class (:foreground ,spacegrey8 ,@(timu-spacegrey-set-italic-faces)))))
      `(helm-ff-file ((,class (:foreground ,fg))))
      `(helm-ff-prefix ((,class (:foreground ,magenta))))
      `(helm-grep-file ((,class (:foreground ,blue))))
@@ -1145,7 +1243,7 @@ Sourced other themes to get information about font faces for packages.")
      `(ivy-minibuffer-match-face-4 ((,class (:foreground ,yellow :weight semi-bold))))
      `(ivy-minibuffer-match-highlight ((,class (:foreground ,magenta))))
      `(ivy-modified-buffer ((,class (:weight bold :foreground ,darkcyan))))
-     `(ivy-virtual ((,class (:slant italic :foreground ,fg))))
+     `(ivy-virtual ((,class (,@(timu-spacegrey-set-italic-faces) :foreground ,fg))))
 
 ;;;; ivy-posframe - dark
      `(ivy-posframe ((,class (:background ,bg-other))))
@@ -1175,7 +1273,7 @@ Sourced other themes to get information about font faces for packages.")
      `(jdee-font-lock-constructor-face ((,class (:foreground ,blue))))
      `(jdee-font-lock-doc-tag-face ((,class (:foreground ,magenta))))
      `(jdee-font-lock-italic-face ((,class (:slant italic))))
-     `(jdee-font-lock-link-face ((,class (:foreground ,blue :italic nil :underline t))))
+     `(jdee-font-lock-link-face ((,class (:foreground ,blue :underline t))))
      `(jdee-font-lock-modifier-face ((,class (:foreground ,yellow))))
      `(jdee-font-lock-number-face ((,class (:foreground ,orange))))
      `(jdee-font-lock-operator-face ((,class (:foreground ,fg))))
@@ -1304,7 +1402,7 @@ Sourced other themes to get information about font faces for packages.")
      `(marginalia-file-name ((,class (:foreground ,blue))))
 
 ;;;; markdown-mode - dark
-     `(markdown-blockquote-face ((,class (:slant italic :foreground ,spacegrey5))))
+     `(markdown-blockquote-face ((,class (,@(timu-spacegrey-set-italic-faces) :foreground ,spacegrey5))))
      `(markdown-bold-face ((,class (:weight bold :foreground ,orange))))
      `(markdown-code-face ((,class (:background ,bg-org :extend t))))
      `(markdown-header-delimiter-face ((,class (:weight bold :foreground ,orange))))
@@ -1337,7 +1435,7 @@ Sourced other themes to get information about font faces for packages.")
      `(message-header-subject ((,class (:foreground ,orange :weight bold))))
      `(message-header-to ((,class (:foreground ,orange :weight bold))))
      `(message-header-xheader ((,class (:foreground ,spacegrey5))))
-     `(message-mml ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(message-mml ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(message-separator ((,class (:foreground ,spacegrey5))))
 
 ;;;; mic-paren - dark
@@ -1489,16 +1587,16 @@ Sourced other themes to get information about font faces for packages.")
      `(org-habit-ready-future-face ((,class (:weight bold :background ,blue))))
 
 ;;;; org-journal - dark
-     `(org-journal-calendar-entry-face ((,class (:foreground ,purple :slant italic))))
-     `(org-journal-calendar-scheduled-face ((,class (:foreground ,red :slant italic))))
+     `(org-journal-calendar-entry-face ((,class (:foreground ,purple ,@(timu-spacegrey-set-italic-faces)))))
+     `(org-journal-calendar-scheduled-face ((,class (:foreground ,red ,@(timu-spacegrey-set-italic-faces)))))
      `(org-journal-highlight ((,class (:foreground ,orange))))
 
 ;;;; org-mode - dark
      `(org-archived ((,class (:foreground ,spacegrey5))))
      `(org-block ((,class (:foreground ,spacegrey8 :background ,bg-org :extend t))))
      `(org-block-background ((,class (:background ,bg-org :extend t))))
-     `(org-block-begin-line ((,class (:foreground ,spacegrey5 :slant italic :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg bg-other)))))
-     `(org-block-end-line ((,class (:foreground ,spacegrey5 :slant italic :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg-other bg-other)))))
+     `(org-block-begin-line ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces) :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg bg-other)))))
+     `(org-block-end-line ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces) :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg-other bg-other)))))
      `(org-checkbox ((,class (:foreground ,green :weight bold))))
      `(org-checkbox-statistics-done ((,class (:foreground ,spacegrey5))))
      `(org-checkbox-statistics-todo ((,class (:foreground ,green :weight bold))))
@@ -1527,7 +1625,7 @@ Sourced other themes to get information about font faces for packages.")
      `(org-meta-line ((,class (:foreground ,spacegrey5))))
      `(org-priority ((,class (:foreground ,red))))
      `(org-property-value ((,class (:foreground ,spacegrey5))))
-     `(org-quote ((,class (:background ,spacegrey3 :slant italic :extend t))))
+     `(org-quote ((,class (:background ,spacegrey3 ,@(timu-spacegrey-set-italic-faces) :extend t))))
      `(org-special-keyword ((,class (:foreground ,spacegrey5))))
      `(org-table ((,class (:foreground ,magenta))))
      `(org-tag ((,class (:foreground ,spacegrey5 :weight normal))))
@@ -1771,7 +1869,7 @@ Sourced other themes to get information about font faces for packages.")
      `(treemacs-git-added-face ((,class (:foreground ,green))))
      `(treemacs-git-conflict-face ((,class (:foreground ,red))))
      `(treemacs-git-modified-face ((,class (:foreground ,magenta))))
-     `(treemacs-git-untracked-face ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(treemacs-git-untracked-face ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(treemacs-root-face ((,class (:foreground ,green :weight bold :height 1.2))))
      `(treemacs-tags-face ((,class (:foreground ,orange))))
 
@@ -1799,8 +1897,8 @@ Sourced other themes to get information about font faces for packages.")
      `(tree-sitter-hl-face:variable.special ((,class (:foreground ,yellow))))
      `(tree-sitter-hl-face:property ((,class (:foreground ,magenta))))
      `(tree-sitter-hl-face:property.definition ((,class (:foreground ,darkcyan))))
-     `(tree-sitter-hl-face:comment ((,class (:foreground ,spacegrey5 :slant italic))))
-     `(tree-sitter-hl-face:doc ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(tree-sitter-hl-face:comment ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey7 spacegrey5) ,@(timu-spacegrey-set-italic-faces)))))
+     `(tree-sitter-hl-face:doc ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey7 spacegrey5) ,@(timu-spacegrey-set-italic-faces)))))
      `(tree-sitter-hl-face:string ((,class (:foreground ,green))))
      `(tree-sitter-hl-face:string.special ((,class (:foreground ,green :weight bold))))
      `(tree-sitter-hl-face:escape ((,class (:foreground ,orange))))
@@ -1832,7 +1930,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; vimish-fold - dark
      `(vimish-fold-fringe ((,class (:foreground ,purple))))
-     `(vimish-fold-overlay ((,class (:foreground ,spacegrey5 :slant italic :background ,spacegrey0 :weight light))))
+     `(vimish-fold-overlay ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces) :background ,spacegrey0 :weight light))))
 
 ;;;; volatile-highlights - dark
      `(vhl/default-face ((,class (:background ,grey))))
@@ -1858,7 +1956,7 @@ Sourced other themes to get information about font faces for packages.")
      `(web-mode-doctype-face ((,class (:foreground ,spacegrey5))))
      `(web-mode-html-attr-name-face ((,class (:foreground ,yellow))))
      `(web-mode-html-attr-value-face ((,class (:foreground ,green))))
-     `(web-mode-html-entity-face ((,class (:foreground ,cyan :slant italic))))
+     `(web-mode-html-entity-face ((,class (:foreground ,cyan ,@(timu-spacegrey-set-italic-faces)))))
      `(web-mode-html-tag-bracket-face ((,class (:foreground ,blue))))
      `(web-mode-html-tag-bracket-face ((,class (:foreground ,fg))))
      `(web-mode-html-tag-face ((,class (:foreground ,blue))))
@@ -1996,7 +2094,7 @@ Sourced other themes to get information about font faces for packages.")
      `(bold-italic ((,class (:weight bold :slant italic))))
      `(bookmark-face ((,class (:foreground ,magenta  :weight bold :underline ,darkcyan))))
      `(cursor ((,class (:background ,orange))))
-     `(default ((,class (:background ,bg :foreground ,fg))))
+     `(default ((,class (:background ,bg ,@(timu-spacegrey-set-contrasted-foreground black fg)))))
      `(error ((,class (:foreground ,red))))
      `(fringe ((,class (:background ,bg :foreground ,spacegrey4))))
      `(highlight ((,class (:foreground ,magenta  :weight bold :underline ,darkcyan))))
@@ -2017,10 +2115,10 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; font-lock - light
      `(font-lock-builtin-face ((,class (:foreground ,orange))))
-     `(font-lock-comment-delimiter-face ((,class (:foreground ,spacegrey5))))
-     `(font-lock-comment-face ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(font-lock-comment-delimiter-face ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey5 spacegrey7)))))
+     `(font-lock-comment-face ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey5 spacegrey7) ,@(timu-spacegrey-set-italic-faces)))))
      `(font-lock-constant-face ((,class (:foreground ,magenta))))
-     `(font-lock-doc-face ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(font-lock-doc-face ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey5 spacegrey7) ,@(timu-spacegrey-set-italic-faces)))))
      `(font-lock-function-name-face ((,class (:foreground ,darkblue))))
      `(font-lock-keyword-face ((,class (:foreground ,orange))))
      `(font-lock-negation-char-face ((,class (:foreground ,fg :weigth bold))))
@@ -2160,7 +2258,7 @@ Sourced other themes to get information about font faces for packages.")
      `(font-latex-sectioning-4-face ((,class (:foreground ,purple :weight semi-bold))))
      `(font-latex-sectioning-5-face ((,class (:foreground ,magenta :weight semi-bold))))
      `(font-latex-string-face ((,class (:foreground ,green))))
-     `(font-latex-verbatim-face ((,class (:foreground ,magenta :slant italic))))
+     `(font-latex-verbatim-face ((,class (:foreground ,magenta ,@(timu-spacegrey-set-italic-faces)))))
      `(font-latex-warning-face ((,class (:foreground ,yellow))))
 
 ;;;; avy - light
@@ -2248,7 +2346,7 @@ Sourced other themes to get information about font faces for packages.")
      `(circe-server-face ((,class (:foreground ,spacegrey5))))
 
 ;;;; column-enforce-mode - light
-   `(column-enforce-face ((,class (:foreground ,cyan :underline t))))
+     `(column-enforce-face ((,class (:foreground ,cyan :underline t))))
 
 ;;;; company - light
      `(company-preview ((,class (:foreground ,spacegrey5))))
@@ -2269,13 +2367,13 @@ Sourced other themes to get information about font faces for packages.")
      `(company-box-candidate ((,class (:foreground ,fg))))
 
 ;;;; compilation - light
-     `(compilation-column-number ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(compilation-column-number ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(compilation-error ((,class (:background ,red :weight bold))))
      `(compilation-info ((,class (:foreground ,green))))
      `(compilation-line-number ((,class (:foreground ,orange))))
      `(compilation-mode-line-exit ((,class (:foreground ,green))))
      `(compilation-mode-line-fail ((,class (:background ,red :weight bold))))
-     `(compilation-warning ((,class (:foreground ,yellow :slant italic))))
+     `(compilation-warning ((,class (:foreground ,yellow ,@(timu-spacegrey-set-italic-faces)))))
 
 ;;;; corfu - light
      `(corfu-bar ((,class (:background ,bg-org :foreground ,fg))))
@@ -2291,7 +2389,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; cperl - light
      `(cperl-array-face ((,class (:weight bold :foreground ,red))))
-     `(cperl-hash-face ((,class (:weight bold :slant italic :foreground ,red))))
+     `(cperl-hash-face ((,class (:weight bold ,@(timu-spacegrey-set-italic-faces) :foreground ,red))))
      `(cperl-nonoverridable-face ((,class (:foreground ,orange))))
 
 ;;;; custom - light
@@ -2525,7 +2623,7 @@ Sourced other themes to get information about font faces for packages.")
      `(eshell-prompt ((,class (:foreground ,orange :weight bold))))
 
 ;;;; evil - light
-     `(evil-ex-info ((,class (:foreground ,red :slant italic))))
+     `(evil-ex-info ((,class (:foreground ,red ,@(timu-spacegrey-set-italic-faces)))))
      `(evil-ex-search ((,class (:background ,orange :foreground ,spacegrey0 :weight bold))))
      `(evil-ex-substitute-matches ((,class (:background ,spacegrey0 :foreground ,red :weight bold :strike-through t))))
      `(evil-ex-substitute-replacement ((,class (:background ,spacegrey0 :foreground ,green :weight bold))))
@@ -2586,11 +2684,11 @@ Sourced other themes to get information about font faces for packages.")
      `(git-commit-comment-detached ((,class (:foreground ,orange))))
      `(git-commit-comment-file ((,class (:foreground ,magenta))))
      `(git-commit-comment-heading ((,class (:foreground ,magenta))))
-     `(git-commit-keyword ((,class (:foreground ,cyan :slant italic))))
-     `(git-commit-known-pseudo-header ((,class (:foreground ,spacegrey5 :weight bold :slant italic))))
+     `(git-commit-keyword ((,class (:foreground ,cyan ,@(timu-spacegrey-set-italic-faces)))))
+     `(git-commit-known-pseudo-header ((,class (:foreground ,spacegrey5 :weight bold ,@(timu-spacegrey-set-italic-faces)))))
      `(git-commit-nonempty-second-line ((,class (:foreground ,red))))
-     `(git-commit-overlong-summary ((,class (:foreground ,red :slant italic :weight bold))))
-     `(git-commit-pseudo-header ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(git-commit-overlong-summary ((,class (:foreground ,red ,@(timu-spacegrey-set-italic-faces) :weight bold))))
+     `(git-commit-pseudo-header ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(git-commit-summary ((,class (:foreground ,darkcyan))))
 
 ;;;; git-gutter - light
@@ -2649,15 +2747,15 @@ Sourced other themes to get information about font faces for packages.")
      `(gnus-header-subject ((,class (:foreground ,orange :weight bold))))
      `(gnus-signature ((,class (:foreground ,yellow))))
      `(gnus-summary-cancelled ((,class (:foreground ,red :strike-through t))))
-     `(gnus-summary-high-ancient ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(gnus-summary-high-ancient ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(gnus-summary-high-read ((,class (:foreground ,fg))))
      `(gnus-summary-high-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-high-unread ((,class (:foreground ,green))))
-     `(gnus-summary-low-ancient ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(gnus-summary-low-ancient ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(gnus-summary-low-read ((,class (:foreground ,fg))))
      `(gnus-summary-low-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-low-unread ((,class (:foreground ,green))))
-     `(gnus-summary-normal-ancient ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(gnus-summary-normal-ancient ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(gnus-summary-normal-read ((,class (:foreground ,fg))))
      `(gnus-summary-normal-ticked ((,class (:foreground ,purple))))
      `(gnus-summary-normal-unread ((,class (:foreground ,green :weight bold))))
@@ -2675,7 +2773,7 @@ Sourced other themes to get information about font faces for packages.")
 ;;;; helm - light
      `(helm-ff-directory ((,class (:foreground ,red))))
      `(helm-ff-dotted-directory ((,class (:foreground ,grey))))
-     `(helm-ff-executable ((,class (:foreground ,spacegrey8 :slant italic))))
+     `(helm-ff-executable ((,class (:foreground ,spacegrey8 ,@(timu-spacegrey-set-italic-faces)))))
      `(helm-ff-file ((,class (:foreground ,fg))))
      `(helm-ff-prefix ((,class (:foreground ,magenta))))
      `(helm-grep-file ((,class (:foreground ,darkblue))))
@@ -2780,7 +2878,7 @@ Sourced other themes to get information about font faces for packages.")
      `(ivy-minibuffer-match-face-4 ((,class (:foreground ,yellow :weight semi-bold))))
      `(ivy-minibuffer-match-highlight ((,class (:foreground ,magenta))))
      `(ivy-modified-buffer ((,class (:weight bold :foreground ,darkcyan))))
-     `(ivy-virtual ((,class (:slant italic :foreground ,spacegrey5))))
+     `(ivy-virtual ((,class (,@(timu-spacegrey-set-italic-faces) :foreground ,spacegrey5))))
 
 ;;;; ivy-posframe - light
      `(ivy-posframe ((,class (:background ,bg-other))))
@@ -2810,7 +2908,7 @@ Sourced other themes to get information about font faces for packages.")
      `(jdee-font-lock-constructor-face ((,class (:foreground ,darkblue))))
      `(jdee-font-lock-doc-tag-face ((,class (:foreground ,magenta))))
      `(jdee-font-lock-italic-face ((,class (:slant italic))))
-     `(jdee-font-lock-link-face ((,class (:foreground ,darkblue :italic nil :underline t))))
+     `(jdee-font-lock-link-face ((,class (:foreground ,darkblue :underline t))))
      `(jdee-font-lock-modifier-face ((,class (:foreground ,yellow))))
      `(jdee-font-lock-number-face ((,class (:foreground ,orange))))
      `(jdee-font-lock-operator-face ((,class (:foreground ,fg))))
@@ -2939,7 +3037,7 @@ Sourced other themes to get information about font faces for packages.")
      `(marginalia-file-name ((,class (:foreground ,darkblue))))
 
 ;;;; markdown-mode - light
-     `(markdown-blockquote-face ((,class (:slant italic :foreground ,spacegrey5))))
+     `(markdown-blockquote-face ((,class (,@(timu-spacegrey-set-italic-faces) :foreground ,spacegrey5))))
      `(markdown-bold-face ((,class (:weight bold :foreground ,orange))))
      `(markdown-code-face ((,class (:background ,bg-org :extend t))))
      `(markdown-header-delimiter-face ((,class (:weight bold :foreground ,orange))))
@@ -2972,7 +3070,7 @@ Sourced other themes to get information about font faces for packages.")
      `(message-header-subject ((,class (:foreground ,orange :weight bold))))
      `(message-header-to ((,class (:foreground ,orange :weight bold))))
      `(message-header-xheader ((,class (:foreground ,spacegrey5))))
-     `(message-mml ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(message-mml ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(message-separator ((,class (:foreground ,spacegrey5))))
 
 ;;;; mic-paren - light
@@ -3124,16 +3222,16 @@ Sourced other themes to get information about font faces for packages.")
      `(org-habit-ready-future-face ((,class (:weight bold :background ,darkblue))))
 
 ;;;; org-journal - light
-     `(org-journal-calendar-entry-face ((,class (:foreground ,purple :slant italic))))
-     `(org-journal-calendar-scheduled-face ((,class (:foreground ,red :slant italic))))
+     `(org-journal-calendar-entry-face ((,class (:foreground ,purple ,@(timu-spacegrey-set-italic-faces)))))
+     `(org-journal-calendar-scheduled-face ((,class (:foreground ,red ,@(timu-spacegrey-set-italic-faces)))))
      `(org-journal-highlight ((,class (:foreground ,orange))))
 
 ;;;; org-mode - light
      `(org-archived ((,class (:foreground ,spacegrey5))))
      `(org-block ((,class (:foreground ,fg :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg-org bg-org)))))
      `(org-block-background ((,class (:background ,bg-org :extend t))))
-     `(org-block-begin-line ((,class (:foreground ,spacegrey5 :slant italic :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg l-grey)))))
-     `(org-block-end-line ((,class (:foreground ,spacegrey5 :slant italic :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg l-grey)))))
+     `(org-block-begin-line ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces) :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg l-grey)))))
+     `(org-block-end-line ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces) :background ,bg-org :extend t ,@(timu-spacegrey-set-intense-org-colors bg l-grey)))))
      `(org-checkbox ((,class (:foreground ,green :weight bold))))
      `(org-checkbox-statistics-done ((,class (:foreground ,spacegrey5))))
      `(org-checkbox-statistics-todo ((,class (:foreground ,green :weight bold))))
@@ -3162,7 +3260,7 @@ Sourced other themes to get information about font faces for packages.")
      `(org-meta-line ((,class (:foreground ,spacegrey5))))
      `(org-priority ((,class (:foreground ,red))))
      `(org-property-value ((,class (:foreground ,spacegrey5))))
-     `(org-quote ((,class (:background ,spacegrey3 :slant italic :extend t))))
+     `(org-quote ((,class (:background ,spacegrey3 ,@(timu-spacegrey-set-italic-faces) :extend t))))
      `(org-special-keyword ((,class (:foreground ,spacegrey5))))
      `(org-table ((,class (:foreground ,magenta))))
      `(org-tag ((,class (:foreground ,spacegrey5 :weight normal))))
@@ -3406,7 +3504,7 @@ Sourced other themes to get information about font faces for packages.")
      `(treemacs-git-added-face ((,class (:foreground ,green))))
      `(treemacs-git-conflict-face ((,class (:foreground ,red))))
      `(treemacs-git-modified-face ((,class (:foreground ,magenta))))
-     `(treemacs-git-untracked-face ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(treemacs-git-untracked-face ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces)))))
      `(treemacs-root-face ((,class (:foreground ,green :weight bold :height 1.2))))
      `(treemacs-tags-face ((,class (:foreground ,orange))))
 
@@ -3434,8 +3532,8 @@ Sourced other themes to get information about font faces for packages.")
      `(tree-sitter-hl-face:variable.special ((,class (:foreground ,yellow))))
      `(tree-sitter-hl-face:property ((,class (:foreground ,magenta))))
      `(tree-sitter-hl-face:property.definition ((,class (:foreground ,darkcyan))))
-     `(tree-sitter-hl-face:comment ((,class (:foreground ,spacegrey5 :slant italic))))
-     `(tree-sitter-hl-face:doc ((,class (:foreground ,spacegrey5 :slant italic))))
+     `(tree-sitter-hl-face:comment ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey5 spacegrey7) ,@(timu-spacegrey-set-italic-faces)))))
+     `(tree-sitter-hl-face:doc ((,class (,@(timu-spacegrey-set-contrasted-comments spacegrey5 spacegrey7) ,@(timu-spacegrey-set-italic-faces)))))
      `(tree-sitter-hl-face:string ((,class (:foreground ,green))))
      `(tree-sitter-hl-face:string.special ((,class (:foreground ,green :weight bold))))
      `(tree-sitter-hl-face:escape ((,class (:foreground ,orange))))
@@ -3467,7 +3565,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; vimish-fold - light
      `(vimish-fold-fringe ((,class (:foreground ,purple))))
-     `(vimish-fold-overlay ((,class (:foreground ,spacegrey5 :slant italic :background ,spacegrey0 :weight light))))
+     `(vimish-fold-overlay ((,class (:foreground ,spacegrey5 ,@(timu-spacegrey-set-italic-faces) :background ,spacegrey0 :weight light))))
 
 ;;;; volatile-highlights - light
      `(vhl/default-face ((,class (:background ,grey))))
@@ -3493,7 +3591,7 @@ Sourced other themes to get information about font faces for packages.")
      `(web-mode-doctype-face ((,class (:foreground ,spacegrey5))))
      `(web-mode-html-attr-name-face ((,class (:foreground ,yellow))))
      `(web-mode-html-attr-value-face ((,class (:foreground ,green))))
-     `(web-mode-html-entity-face ((,class (:foreground ,cyan :slant italic))))
+     `(web-mode-html-entity-face ((,class (:foreground ,cyan ,@(timu-spacegrey-set-italic-faces)))))
      `(web-mode-html-tag-bracket-face ((,class (:foreground ,darkblue))))
      `(web-mode-html-tag-bracket-face ((,class (:foreground ,fg))))
      `(web-mode-html-tag-face ((,class (:foreground ,darkblue))))

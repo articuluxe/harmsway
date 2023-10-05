@@ -135,7 +135,7 @@ a prefix argument is in effect."
 
 (put 'forge-issue 'thing-at-point #'forge-thingatpt--issue)
 (defun forge-thingatpt--issue ()
-  (and-let* ((repo (forge-get-repository nil)))
+  (and-let* ((repo (forge--repo-for-thingatpt)))
     (and (thing-at-point-looking-at
           (format "%s\\([0-9]+\\)\\_>"
                   (forge--topic-type-prefix repo 'issue)))
@@ -145,7 +145,7 @@ a prefix argument is in effect."
 
 (defun forge-current-issue (&optional demand)
   "Return the issue at point or being visited.
-If there is no such issue and demand is non-nil, then signal
+If there is no such issue and DEMAND is non-nil, then signal
 an error."
   (or (forge-issue-at-point)
       (and (derived-mode-p 'forge-topic-mode)
@@ -155,7 +155,7 @@ an error."
 
 (defun forge-issue-at-point (&optional demand)
   "Return the issue at point.
-If there is no such issue and demand is non-nil, then signal
+If there is no such issue and DEMAND is non-nil, then signal
 an error."
   (or (thing-at-point 'forge-issue)
       (magit-section-value-if 'issue)
@@ -210,7 +210,7 @@ Also see option `forge-topic-list-limit'."
            (ghub--username repo))))
 
 (defun forge-insert-authored-issues ()
-  "Insert a list of open issues that are authored to you."
+  "Insert a list of open issues that are authored by you."
   (when forge-display-in-status-buffer
     (when-let ((repo (forge-get-repository nil)))
       (unless (oref repo sparse-p)

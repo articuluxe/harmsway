@@ -9,7 +9,7 @@
 ;;       Arthur Evstifeev <lod@pisem.net>
 ;; Maintainer: taku0 <mxxouy6x3m_github@tatapa.org>
 ;;
-;; Version: 9.0.0
+;; Version: 9.1.0
 ;; Package-Requires: ((emacs "24.4") (seq "2.3"))
 ;; Keywords: languages swift
 ;; URL: https://github.com/swift-emacs/swift-mode
@@ -241,7 +241,7 @@ Signal `scan-error' if it hits opening parentheses."
                 (swift-mode:current-defun-name))))
   (setq-local add-log-current-defun-function #'swift-mode:current-defun-name))
 
-;;;###autoload (add-to-list 'auto-mode-alist '("\\.swift\\'" . swift-mode))
+;;;###autoload (add-to-list 'auto-mode-alist '("\\.swift\\(interface\\)?\\'" . swift-mode))
 
 ;;;###autoload (swift-mode:add-supported-extension-for-speedbar)
 

@@ -1644,11 +1644,12 @@ It is a Generic parameter list if:
     \;
     { } \( \) \[ \]
     "true" "false"
-    "class" "struct" "actor" "enum" "extension" "func" "operator"
+    "class" "struct" "actor" "enum" "extension" "func" "operator" "macro"
     "try" "try?" "try!"
     "as" "as?" "as!"
     "is"
     "await"
+    "consume" "copy" "discard"
     "in"
     "init" "deinit" "get" "set" "willSet" "didSet" "subscript"
     "for" "case" "default" "while" "let" "var" "repeat" "if" "else"

@@ -60,9 +60,9 @@ The value can also be an integer, in which case it limits the
 number of closed topics only."
   :package-version '(forge . "0.1.0")
   :group 'forge
-  :type '(choice (number :tag "Maximal number of closed issues")
-                 (cons (number :tag "Maximal number of open issues")
-                       (number :tag "Maximal number of closed issues"))))
+  :type '(choice (number :tag "Maximal number of closed topics")
+                 (cons (number :tag "Maximal number of open topics")
+                       (number :tag "Maximal number of closed topics"))))
 
 (defcustom forge-post-heading-format "%a %C\n"
   "Format for post headings in topic view.
@@ -172,8 +172,8 @@ implement such a function themselves.  See #447.")
             (base64-decode-string prefix)
             (if (numberp number-or-id)
                 number-or-id
-              ;; Currently every id is base64 encode.  Unfortunately
-              ;; we cannot use the ids of Gitlab labels (see comment
+              ;; Currently every ID is base64 encoded.  Unfortunately
+              ;; we cannot use the IDs of Gitlab labels (see comment
               ;; in the respective `forge--update-labels' method),
               ;; and have to use their names, which are not encoded.
               (or (ignore-errors (base64-decode-string number-or-id))
@@ -350,17 +350,16 @@ identifier."
 
 (cl-defmethod forge--topic-type-prefix ((_ forge-topic))
   "Get the identifier prefix specific to the type of TOPIC."
-  "#")
+  (quote "#"))
 
 (cl-defmethod forge--topic-type-prefix ((_repo forge-repository) _type)
-  "#")
+  (quote "#"))
 
 (cl-defmethod forge--insert-topic-contents ((topic forge-topic) width prefix)
   (with-slots (number title unread-p closed) topic
-    (insert (format (if width (format "%%-%is" (1+ width)) "%s")
-                    (forge--format-topic-id topic prefix)))
-    (forge--insert-topic-marks topic)
+    (insert (string-pad (forge--format-topic-id topic prefix) (or width 5)))
     (insert " ")
+    (forge--insert-topic-marks topic t)
     (insert (magit-log-propertize-keywords
              nil (propertize title 'font-lock-face
                              (cond (unread-p 'forge-topic-unread)
@@ -373,9 +372,16 @@ identifier."
      (format-time-string "%s" (parse-iso8601-time-string (oref topic created)))
      t)))
 
+(defun forge--repo-for-thingatpt ()
+  (or (forge-repository-at-point)
+      (and-let* ((topic (forge-topic-at-point nil 'not-thingatpt)))
+        (forge-get-repository topic))
+      (and (not forge-buffer-unassociated-p)
+           (forge-get-repository nil))))
+
 (put 'forge-topic 'thing-at-point #'forge-thingatpt--topic)
 (defun forge-thingatpt--topic ()
-  (and-let* ((repo (forge-get-repository nil)))
+  (and-let* ((repo (forge--repo-for-thingatpt)))
     (and (thing-at-point-looking-at
           (format "[%s%s]\\([0-9]+\\)\\_>"
                   (forge--topic-type-prefix repo 'issue)
@@ -386,25 +392,32 @@ identifier."
 
 (defun forge-current-topic (&optional demand)
   "Return the topic at point or being visited.
-If there is no such topic and demand is non-nil, then signal
+If there is no such topic and DEMAND is non-nil, then signal
 an error."
   (or (forge-topic-at-point)
       (and (derived-mode-p 'forge-topic-mode)
            forge-buffer-topic)
       (and demand (user-error "No current topic"))))
 
-(defun forge-topic-at-point (&optional demand)
+(defun forge-topic-at-point (&optional demand not-thingatpt)
   "Return the topic at point.
-If there is no such topic and demand is non-nil, then signal
-an error."
-  (or (thing-at-point 'forge-topic)
+If there is no such topic and DEMAND is non-nil, then signal
+an error.  If NOT-THINGATPT is non-nil, then don't use
+`thing-at-point'."
+  (or (and (not not-thingatpt)
+           (thing-at-point 'forge-topic))
       (magit-section-value-if '(issue pullreq))
       (forge-get-pullreq :branch (magit-branch-at-point))
       (and (derived-mode-p 'forge-topic-list-mode)
            (forge-get-topic (tabulated-list-get-id)))
       (and demand (user-error "No topic at point"))))
 
-;;; Mode
+;;; Topic Modes
+;;;; Modes
+
+(defvar-keymap forge-post-section-map
+  "<remap> <magit-edit-thing>"   #'forge-edit-post
+  "C-c C-k"                      #'forge-delete-comment)
 
 (defvar-keymap forge-topic-mode-map
   "C-c C-n"                      #'forge-create-post
@@ -412,12 +425,29 @@ an error."
   "<remap> <magit-visit-thing>"  #'markdown-follow-link-at-point
   "<mouse-2>"                    #'markdown-follow-link-at-point)
 
-(define-derived-mode forge-topic-mode magit-mode "View Topic"
-  "View a forge issue or pull-request."
+(define-derived-mode forge-topic-mode magit-mode "Topic"
+  "Parent mode of `forge-{issue,pullreq}-mode'.
+This mode itself is never used directly."
   (setq-local markdown-translate-filename-function
               #'forge--markdown-translate-filename-function))
 
-(defvar forge-topic-headers-hook
+(define-derived-mode forge-issue-mode forge-topic-mode "Issue"
+  "Mode for looking at a Forge issue.")
+(defalias 'forge-issue-setup-buffer   #'forge-topic-setup-buffer)
+(defalias 'forge-issue-refresh-buffer #'forge-topic-refresh-buffer)
+(defvar forge-issue-headers-hook
+  '(forge-insert-topic-title
+    forge-insert-topic-state
+    forge-insert-topic-milestone
+    forge-insert-topic-labels
+    forge-insert-topic-marks
+    forge-insert-topic-assignees))
+
+(define-derived-mode forge-pullreq-mode forge-topic-mode "Pull-request"
+  "Mode for looking at a Forge pull-request.")
+(defalias 'forge-pullreq-setup-buffer   #'forge-topic-setup-buffer)
+(defalias 'forge-pullreq-refresh-buffer #'forge-topic-refresh-buffer)
+(defvar forge-pullreq-headers-hook
   '(forge-insert-topic-title
     forge-insert-topic-state
     forge-insert-topic-draft
@@ -427,10 +457,6 @@ an error."
     forge-insert-topic-marks
     forge-insert-topic-assignees
     forge-insert-topic-review-requests))
-
-(defvar-keymap forge-post-section-map
-  "<remap> <magit-edit-thing>"   #'forge-edit-post
-  "C-c C-k"                      #'forge-delete-comment)
 
 (defvar-local forge-buffer-topic nil)
 (defvar-local forge-buffer-topic-ident nil)
@@ -451,7 +477,8 @@ an error."
                                 default-directory
                               (or (oref repo worktree)
                                   default-directory))))
-    (magit-setup-buffer #'forge-topic-mode t
+    (magit-setup-buffer
+        (if (forge-issue-p topic) #'forge-issue-mode #'forge-pullreq-mode) t
       (forge-buffer-topic topic)
       (forge-buffer-topic-ident ident))))
 
@@ -461,7 +488,9 @@ an error."
     (magit-set-header-line-format
      (format "%s: %s" forge-buffer-topic-ident (oref topic title)))
     (magit-insert-section (topicbuf)
-      (magit-insert-headers 'forge-topic-headers-hook)
+      (magit-insert-headers
+       (intern (format "%s-headers-hook"
+                       (substring (symbol-name major-mode) 0 -5))))
       (when (forge-pullreq-p topic)
         (magit-insert-section (pullreq topic)
           (magit-insert-heading "Commits")
@@ -500,8 +529,8 @@ an error."
 (cl-defmethod magit-buffer-value (&context (major-mode forge-topic-mode))
   forge-buffer-topic-ident)
 
-;;; Headers
-;;;; Title
+;;;; Sections
+;;;;; Title
 
 (defvar-keymap forge-topic-title-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-title)
@@ -510,6 +539,8 @@ an error."
     (&optional (topic forge-buffer-topic))
   (magit-insert-section (topic-title)
     (insert (format "%-11s" "Title: ") (oref topic title) "\n")))
+
+;;;;; State
 
 (defvar-keymap forge-topic-state-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-state)
@@ -528,16 +559,17 @@ an error."
                   ('(open t) 'forge-topic-unmerged)
                   ('(open)   'forge-topic-open))))))))
 
+;;;;; Draft
+
 (defvar-keymap forge-topic-draft-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-draft)
 
 (cl-defun forge-insert-topic-draft
     (&optional (topic forge-buffer-topic))
-  (when (forge-pullreq-p topic)
-    (magit-insert-section (topic-draft)
-      (insert (format "%-11s%s\n" "Draft: " (oref topic draft-p))))))
+  (magit-insert-section (topic-draft)
+    (insert (format "%-11s%s\n" "Draft: " (oref topic draft-p)))))
 
-;;;; Milestone
+;;;;; Milestone
 
 (defvar-keymap forge-topic-milestone-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-milestone)
@@ -557,7 +589,7 @@ an error."
   (and-let* ((id (oref topic milestone)))
     (caar (forge-sql [:select [title] :from milestone :where (= id $s1)] id))))
 
-;;;; Labels
+;;;;; Labels
 
 (defvar-keymap forge-topic-labels-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-labels)
@@ -596,7 +628,7 @@ an error."
         (when description
           (overlay-put o 'help-echo description))))))
 
-;;;; Marks
+;;;;; Marks
 
 (defvar-keymap forge-topic-marks-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-marks)
@@ -624,28 +656,27 @@ an error."
       (when description
         (overlay-put o 'help-echo description)))))
 
-;;;; Refs
+;;;;; Refs
 
 (cl-defun forge-insert-topic-refs
     (&optional (topic forge-buffer-topic))
-  (when (forge-pullreq-p topic)
-    (magit-insert-section (topic-refs)
-      (with-slots (cross-repo-p base-repo base-ref head-repo head-ref) topic
-        (let ((separator (propertize ":" 'font-lock-face 'magit-dimmed))
-              (deleted (propertize "(deleted)" 'font-lock-face 'magit-dimmed)))
-          (insert (format "%-11s" "Refs: ")
-                  (if cross-repo-p
-                      (concat base-repo separator base-ref)
-                    base-ref)
-                  (propertize "..." 'font-lock-face 'magit-dimmed)
-                  (if cross-repo-p
-                      (if (and head-repo head-ref)
-                          (concat head-repo separator head-ref)
-                        deleted)
-                    (or head-ref deleted))
-                  "\n"))))))
+  (magit-insert-section (topic-refs)
+    (with-slots (cross-repo-p base-repo base-ref head-repo head-ref) topic
+      (let ((separator (propertize ":" 'font-lock-face 'magit-dimmed))
+            (deleted (propertize "(deleted)" 'font-lock-face 'magit-dimmed)))
+        (insert (format "%-11s" "Refs: ")
+                (if cross-repo-p
+                    (concat base-repo separator base-ref)
+                  base-ref)
+                (propertize "..." 'font-lock-face 'magit-dimmed)
+                (if cross-repo-p
+                    (if (and head-repo head-ref)
+                        (concat head-repo separator head-ref)
+                      deleted)
+                  (or head-ref deleted))
+                "\n")))))
 
-;;;; Assignees
+;;;;; Assignees
 
 (defvar-keymap forge-topic-assignees-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-assignees)
@@ -663,24 +694,23 @@ an error."
       (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
     (insert ?\n)))
 
-;;;; Review-Requests
+;;;;; Review-Requests
 
 (defvar-keymap forge-topic-review-requests-section-map
   "<remap> <magit-edit-thing>" #'forge-edit-topic-review-requests)
 
 (cl-defun forge-insert-topic-review-requests
     (&optional (topic forge-buffer-topic))
-  (when (forge-pullreq-p topic)
-    (magit-insert-section (topic-review-requests)
-      (insert (format "%-11s" "Review-Requests: "))
-      (if-let ((review-requests (closql--iref topic 'review-requests)))
-          (insert (mapconcat (pcase-lambda (`(,login ,name))
-                               (format "%s%s (@%s)"
-                                       (forge--format-avatar login)
-                                       name login))
-                             review-requests ", "))
-        (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
-      (insert ?\n))))
+  (magit-insert-section (topic-review-requests)
+    (insert (format "%-11s" "Review-Requests: "))
+    (if-let ((review-requests (closql--iref topic 'review-requests)))
+        (insert (mapconcat (pcase-lambda (`(,login ,name))
+                             (format "%s%s (@%s)"
+                                     (forge--format-avatar login)
+                                     name login))
+                           review-requests ", "))
+      (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
+    (insert ?\n)))
 
 ;;; Internal Utilities
 

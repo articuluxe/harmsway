@@ -109,18 +109,6 @@ displayed when a derived class overrides virtual methods."
     (irony-completion--skip-whitespaces-backward)
     (point)))
 
-(defun irony--completion-line-column (&optional pos)
-  (save-excursion
-    (when pos
-      (goto-char pos))
-    ;; `position-bytes' to handle multibytes and 'multicolumns' (i.e
-    ;; tabulations) characters properly
-    (irony--without-narrowing
-      (cons
-       (line-number-at-pos)
-       (1+ (- (position-bytes (point))
-              (position-bytes (point-at-bol))))))))
-
 
 ;;
 ;; Functions
@@ -291,17 +279,17 @@ A candidate is composed of the following elements:
          (format "%s\\=" (regexp-opt '("."     ;object member access
                                        "->"    ;pointer member access
                                        "::"))) ;scope operator
-         (point-at-bol) t)
+         (pos-bol) t)
         (unless
             ;; ignore most common uses of '.' where it's not a member access
             (and (eq (char-after) ?.)
                  (or
                   ;; include statements: #include <foo.|>
                   (looking-back  "^#\\s-*include\\s-+[<\"][^>\"]*"
-                                 (point-at-bol))
+                                 (pos-bol))
                   ;; floating point numbers (not thorough, see:
                   ;; http://en.cppreference.com/w/cpp/language/floating_literal)
-                  (looking-back "[^_a-zA-Z0-9][[:digit:]]+" (point-at-bol))))
+                  (looking-back "[^_a-zA-Z0-9][[:digit:]]+" (pos-bol))))
           ;; except the above exceptions we use a "whitelist" for the places
           ;; where it looks like a member access
           (irony-completion--skip-whitespaces-backward)
@@ -318,7 +306,7 @@ A candidate is composed of the following elements:
            ;; or just look if the face is: font-lock-keyword-face?
            (save-excursion
              (and (re-search-backward "\\b\\([_a-zA-Z][_a-zA-Z0-9]*\\)\\="
-                                      (point-at-bol) t)
+                                      (pos-bol) t)
                   (not (member (match-string 0)
                                '("class" "sizeof" "typename"))))))))))))
 

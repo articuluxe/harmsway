@@ -3,7 +3,7 @@
 ;; Copyright (C) 2011-2016  Guillaume Papin
 
 ;; Author: Guillaume Papin <guillaume.papin@epitech.eu>
-;; Version: 1.5.0
+;; Version: 1.6.0
 ;; URL: https://github.com/Sarcasm/irony-mode
 ;; Compatibility: GNU Emacs 24.x
 ;; Keywords: c, convenience, tools
@@ -178,7 +178,9 @@ the buffer size to use for the irony-server process pipe on Windows.
 Larger values can improve performances on large buffers.
 
 If non-nil, `w32-pipe-buffer-size' will be let-bound to this value
-during the creation of the irony-server process.")
+during the creation of the irony-server process."
+  :type 'integer
+  :group 'irony)
 
 
 ;;
@@ -404,9 +406,9 @@ If no such file exists on the filesystem the special file '-' is
 ;;;###autoload
 (define-minor-mode irony-mode
   "Minor mode for C, C++ and Objective-C, powered by libclang."
-  nil
-  irony-lighter
-  irony-mode-map
+  :init-value nil
+  :lighter irony-lighter
+  :keymap irony-mode-map
   :group 'irony
   (if irony-mode
       (irony--mode-enter)
@@ -662,8 +664,8 @@ list (and undo information is not kept).")
 `irony--quote-strings' will convert it to \"\" instead of <SPC>.
 That is:
 
-  (irony--quote-strings \'(\"a\" \"\" \"b\"))            => \"a \\\"\\\" b\"
-  (combine-and-quote-strings \'(\"a\" \"\" \"b\"))       => \"a  b\"
+  (irony--quote-strings \\'(\"a\" \"\" \"b\"))            => \"a \\\"\\\" b\"
+  (combine-and-quote-strings \\'(\"a\" \"\" \"b\"))       => \"a  b\"
 "
   (let* ((sep (or separator " "))
          (re (concat "[\\\"]" "\\|" (regexp-quote sep))))
@@ -883,6 +885,18 @@ old-state can be nil if the old state isn't known."
   :start (lambda (line col)
            (irony--server-send-command "get-type" line col))
   :update irony--server-query-update)
+
+(defun irony--completion-line-column (&optional pos)
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    ;; `position-bytes' to handle multibytes and 'multicolumns' (i.e
+    ;; tabulations) characters properly
+    (irony--without-narrowing
+      (cons
+       (line-number-at-pos)
+       (1+ (- (position-bytes (point))
+              (position-bytes (pos-bol))))))))
 
 (defun irony--get-type-task (&optional buffer pos)
   (let ((line-column (irony--completion-line-column pos)))

@@ -11,6 +11,19 @@
 (unless (>= emacs-major-version 24)
   (error "Requires Emacs 24 or later"))
 
+(defgroup kanagawa-theme nil
+	"Kanagawa-theme options."
+	:group 'faces)
+
+(defcustom kanagawa-theme-comment-italic t
+	"Enable italics for comments and also disable background."
+	:type 'boolean
+	:group 'kanagawa-theme)
+
+(defcustom kanagawa-theme-keyword-italic t
+	"Enable italics for keywords."
+	:type 'boolean
+	:group 'kanagawa-theme)
 
 (autothemer-deftheme
 	kanagawa "A theme inspired by the colors of the famous painting by Katsushika Hokusa"
@@ -106,7 +119,7 @@
   ;; Font lock
   (font-lock-type-face                           (:foreground waveAqua2))
   (font-lock-regexp-grouping-backslash           (:foreground boatYellow2))
-  (font-lock-keyword-face                        (:foreground oniViolet :weight 'semi-bold))
+  (font-lock-keyword-face                        (:foreground oniViolet :weight 'semi-bold :italic kanagawa-theme-keyword-italic))
   (font-lock-warning-face                        (:foreground roninYellow))
   (font-lock-string-face                         (:foreground springGreen :italic t))
   (font-lock-builtin-face                        (:foreground springBlue))
@@ -115,7 +128,7 @@
   (font-lock-function-name-face                  (:foreground crystalBlue))
   (font-lock-variable-name-face                  (:foreground waveRed))
   (font-lock-negation-char-face                  (:foreground peachRed))
-  (font-lock-comment-face                        (:foreground fujiGray :italic t))
+  (font-lock-comment-face                        (:foreground fujiGray :italic kanagawa-theme-comment-italic))
   (font-lock-comment-delimiter-face              (:foreground fujiGray :italic t))
   (font-lock-doc-face                            (:foreground comet))
   (font-lock-doc-markup-face                     (:foreground comet))

@@ -1,15 +1,31 @@
 ;;; dart-mode.el --- Major mode for editing Dart files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015-2018  Natalie Weizenbaum
+;; Copyright (C) 2011-2018  Google Inc.
 ;; Copyright (C) 2018-2023  Brady Trainor
 
-;; Author: Natalie Weizenbaum <nex342@gmail.com>
-;; Maintainer: Brady Trainor
-;;             Jen-Chieh Shen <jcs090218@gmail.com>
+;; Author: Brady Trainor
+;; Maintainer: Jen-Chieh Shen <jcs090218@gmail.com>
 ;; URL: https://github.com/emacsorphanage/dart-mode
 ;; Version: 1.0.7
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: languages
+
+;;; About the previous implementation:
+
+;; To a not fully determined extend, this implementation derives from an
+;; earlier implementation by Natalie Weizenbaum, for which the copyright
+;; holder is Google.
+
+;; In the discussion attached to [1], Brady Trainor implicitly repeats
+;; his claim, that no code from that earlier implementation remains.
+;; This seems plausible, but, as mentioned in that discussion, would have
+;; to be studied in more detail, to be absolutely certain, which is why I
+;; am restoring Google's copyright notice.
+
+;; [1]: https://github.com/emacsorphanage/dart-mode/commit/69d7c23be7518bcb004860120ba3ea2a7dcfb6de
+
+;; Bradly Trainor added the below statement in 2021.  It is preserved
+;; unchanged:
 
 ;; The author is Brady Trainor, but removed from keywords in attempt
 ;; to avoid some class of robots.
@@ -24,11 +40,9 @@
 ;; option.
 
 ;;; Commentary:
-;;
-;; Major mode for editing Dart files.
-;;
-;; Provides basic syntax highlighting and indentation.
-;;
+
+;; This package implements a major-mode for the Dart language,
+;; providing basic syntax highlighting and indentation support.
 
 ;;; Code:
 
@@ -358,7 +372,9 @@ matched."
   (catch 'result
     (let (beg end)
       (while (re-search-forward
-              (rx (and (not (any ?\.)) (group (eval (dart--identifier 'lower)))) ?\() limit t)
+              (rx (and (not (any ?\.)) (group (eval (dart--identifier 'lower))))
+                  ?\()
+              limit t)
         (setq beg (match-beginning 1))
         (setq end (match-end 1))
         (condition-case nil
@@ -581,9 +597,9 @@ untyped parameters. For example, in
 
 (defvar dart-font-lock-keywords-1
   `((,(regexp-opt dart--file-directives 'words) . font-lock-builtin-face)
-    (dart--function-declaration-func            . font-lock-function-name-face)
-    (,dart--operator-declaration-re             . (1 font-lock-function-name-face))
-    (dart--abstract-method-func                 . font-lock-function-name-face)))
+    (dart--function-declaration-func . font-lock-function-name-face)
+    (,dart--operator-declaration-re  . (1 font-lock-function-name-face))
+    (dart--abstract-method-func      . font-lock-function-name-face)))
 
 (defvar dart-font-lock-keywords-2
   `(,dart--async-keywords-re
@@ -652,19 +668,23 @@ strings."
       ;; Unless rawp, ensure an even number of backslashes
       (when (or (looking-at (concat (unless rawp (rx (zero-or-more ?\\ ?\\)))
                                     string-delimiter))
-                (re-search-forward (concat (unless rawp (rx (not (any ?\\)) (zero-or-more ?\\ ?\\)))
+                (re-search-forward (concat (unless rawp
+                                             (rx (not (any ?\\))
+                                                 (zero-or-more ?\\ ?\\)))
                                            string-delimiter)
                                    end t))
         (let ((eos (match-end 0)))
           ;; Set end of string fence delimiter
-          (put-text-property (1- eos) eos 'syntax-table (string-to-syntax "|") nil)
+          (put-text-property (1- eos) eos 'syntax-table (string-to-syntax "|"))
           ;; For all strings, remove fence property between fences
           ;; For raw strings, set all backslashes to punctuation syntax
           (dolist (pt (number-sequence (1+ bos) (- eos 2)))
-            (when (equal (get-text-property pt 'syntax-table) (string-to-syntax "|"))
+            (when (equal (get-text-property pt 'syntax-table)
+                         (string-to-syntax "|"))
               (remove-text-properties pt (1+ pt) 'syntax-table))
             (when (and rawp (equal (char-after pt) ?\\))
-              (put-text-property pt (1+ pt) 'syntax-table (string-to-syntax ".") nil)))
+              (put-text-property pt (1+ pt) 'syntax-table
+                                 (string-to-syntax ".") nil)))
           (goto-char eos))))))
 
 

@@ -32,6 +32,7 @@
 
 ;;; Code:
 
+(require 'compat)
 (require 'dash)
 (require 'pretty-hydra)
 
@@ -56,8 +57,8 @@ Set to nil to stop generating such heads."
 
 (defun major-mode-hydra--put-if-absent (plist prop val)
   "Set PROP to VAL if it's absent in PLIST."
-  (when (not (lax-plist-get plist prop))
-    (lax-plist-put plist prop val))
+  (when (not (compat-call plist-get plist prop #'equal))
+    (compat-call plist-put plist prop val #'equal))
   plist)
 
 (defun major-mode-hydra--name-for (mode)
@@ -74,8 +75,7 @@ Overwrite existing hydra if OVERWRITE-P is t, otherwise add new heads to it."
   (let* ((hydra-name (major-mode-hydra--name-for mode))
          (title (when (functionp major-mode-hydra-title-generator)
                   (funcall major-mode-hydra-title-generator mode)))
-         (body (-> body
-                   (lax-plist-put :hint nil)
+         (body (-> (compat-call plist-put body :hint nil #'equal)
                    (major-mode-hydra--put-if-absent :color 'teal)
                    (major-mode-hydra--put-if-absent :title title)
                    (major-mode-hydra--put-if-absent :separator major-mode-hydra-separator)
