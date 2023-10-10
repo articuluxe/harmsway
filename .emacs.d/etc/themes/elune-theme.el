@@ -57,7 +57,7 @@
    `(fringe ((t (:background ,elune-bg))))
    `(mode-line ((t (:foreground ,elune-fg-5 :background ,elune-type))))
    `(mode-line-inactive ((t (:foreground ,elune-fg-5 :background ,elune-bg-inactive))))
-   `(region ((t (:background ,elune-select ))))
+   `(region ((t (:foreground, elune-whitespace-line))))
    '(secondary-selection ((t (:background "#3e3834" ))))
    `(font-lock-builtin-face ((t (:foreground ,elune-keyword :bold t ))))
    `(font-lock-comment-face ((t (:italic t :foreground ,elune-comment))))
@@ -119,7 +119,7 @@
    ;; Which Function
    `(which-func ((t (:foreground ,elune-fg-3))))
    ;; Whitespace
-   `(whitespace-space ((t (:background ,elune-bg :foreground ,elune-bg-2))))
+   `(whitespace-space ((t (:background ,elune-bg :foreground ,elune-bg-4))))
    `(whitespace-tab ((t (:background ,elune-bg :foreground ,elune-bg-3))))
    `(whitespace-hspace ((t (:background ,elune-bg-2 :foreground ,elune-bg))))
    `(whitespace-line ((t  (:background ,elune-bg-2 :foreground ,elune-compilation-r :bold t))))

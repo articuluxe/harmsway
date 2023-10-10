@@ -58,6 +58,7 @@
    (marks                :closql-table (issue-mark mark))
    (note                 :initarg :note :initform nil)
    (their-id             :initarg :their-id)
+   (slug                 :initarg :slug)
    ))
 
 (defclass forge-issue-post (forge-post)
@@ -78,6 +79,7 @@
    ))
 
 ;;; Query
+;;;; Get
 
 (cl-defmethod forge-get-repository ((post forge-issue-post))
   (forge-get-repository (forge-get-issue post)))
@@ -105,43 +107,7 @@
               (oref post issue)
               'forge-issue))
 
-(cl-defmethod forge-ls-issues ((repo forge-repository) &optional type select)
-  (forge-ls-topics repo 'forge-issue type select))
-
-;;; Utilities
-
-(defun forge-read-issue (prompt &optional type)
-  "Read an issue with completion using PROMPT.
-TYPE can be `open', `closed', or nil to select from all issues.
-TYPE can also be t to select from open issues, or all issues if
-a prefix argument is in effect."
-  (when (eq type t)
-    (setq type (if current-prefix-arg nil 'open)))
-  (let* ((default (forge-current-issue))
-         (repo    (forge-get-repository (or default t)))
-         (choices (mapcar
-                   (apply-partially #'forge--topic-format-choice repo)
-                   (forge-ls-issues repo type [number title id class]))))
-    (cdr (assoc (magit-completing-read
-                 prompt choices nil nil nil nil
-                 (and default
-                      (setq default (forge--topic-format-choice default))
-                      (member default choices)
-                      (car default)))
-                choices))))
-
-(cl-defmethod forge-get-url ((issue forge-issue))
-  (forge--format issue 'issue-url-format))
-
-(put 'forge-issue 'thing-at-point #'forge-thingatpt--issue)
-(defun forge-thingatpt--issue ()
-  (and-let* ((repo (forge--repo-for-thingatpt)))
-    (and (thing-at-point-looking-at
-          (format "%s\\([0-9]+\\)\\_>"
-                  (forge--topic-type-prefix repo 'issue)))
-         (forge-get-issue repo (string-to-number (match-string 1))))))
-
-;;; Sections
+;;;; Current
 
 (defun forge-current-issue (&optional demand)
   "Return the issue at point or being visited.
@@ -165,34 +131,19 @@ an error."
                   topic)))
       (and demand (user-error "No issue at point"))))
 
-(defvar-keymap forge-issues-section-map
-  "<remap> <magit-browse-thing>" #'forge-browse-issues
-  "<remap> <magit-visit-thing>"  #'forge-list-issues
-  "C-c C-n"                      #'forge-create-issue)
+(put 'forge-issue 'thing-at-point #'forge-thingatpt--issue)
+(defun forge-thingatpt--issue ()
+  (and-let* ((repo (forge--repo-for-thingatpt)))
+    (and (thing-at-point-looking-at "#\\([0-9]+\\)\\_>")
+         (forge-get-issue repo (string-to-number (match-string 1))))))
 
-(defvar-keymap forge-issue-section-map
-  "<remap> <magit-visit-thing>"  #'forge-visit-this-topic)
+;;;; List
 
-(defun forge-insert-issues ()
-  "Insert a list of mostly recent and/or open issues.
-Also see option `forge-topic-list-limit'."
-  (when (and forge-display-in-status-buffer (forge-db t))
-    (when-let ((repo (forge-get-repository nil)))
-      (when (and (not (oref repo sparse-p))
-                 (or (not (slot-boundp repo 'issues-p)) ; temporary KLUDGE
-                     (oref repo issues-p)))
-        (forge-insert-topics "Issues"
-                             (forge-ls-recent-topics repo 'issue)
-                             (forge--topic-type-prefix repo 'issue))))))
+(defun forge-ls-issues (repo &optional type select)
+  (forge-ls-topics repo 'forge-issue type select))
 
-(defun forge-insert-assigned-issues ()
-  "Insert a list of open issues that are assigned to you."
-  (when forge-display-in-status-buffer
-    (when-let ((repo (forge-get-repository nil)))
-      (unless (oref repo sparse-p)
-        (forge-insert-topics "Assigned issues"
-                             (forge--ls-assigned-issues repo)
-                             (forge--topic-type-prefix repo 'issue))))))
+(defun forge--ls-recent-issues (repo)
+  (forge-ls-recent-topics repo 'issue))
 
 (defun forge--ls-assigned-issues (repo)
   (mapcar (lambda (row)
@@ -209,15 +160,6 @@ Also see option `forge-topic-list-limit'."
            (oref repo id)
            (ghub--username repo))))
 
-(defun forge-insert-authored-issues ()
-  "Insert a list of open issues that are authored by you."
-  (when forge-display-in-status-buffer
-    (when-let ((repo (forge-get-repository nil)))
-      (unless (oref repo sparse-p)
-        (forge-insert-topics "Authored issues"
-                             (forge--ls-authored-issues repo)
-                             (forge--topic-type-prefix repo 'issue))))))
-
 (defun forge--ls-authored-issues (repo)
   (mapcar (lambda (row)
             (closql--remake-instance 'forge-issue (forge-db) row))
@@ -230,6 +172,54 @@ Also see option `forge-topic-list-limit'."
            (vconcat (closql--table-columns (forge-db) 'issue t))
            (oref repo id)
            (ghub--username repo))))
+
+;;; Read
+
+(defun forge-read-issue (prompt &optional type)
+  "Read an issue with completion using PROMPT.
+TYPE can be `open', `closed', or nil to select from all issues.
+TYPE can also be t to select from open issues, or all issues if
+a prefix argument is in effect."
+  (when (eq type t)
+    (setq type (if current-prefix-arg nil 'open)))
+  (let* ((default (forge-current-issue))
+         (repo    (forge-get-repository (or default t)))
+         (choices (mapcar #'forge--format-topic-choice
+                          (forge-ls-issues repo type))))
+    (cdr (assoc (magit-completing-read
+                 prompt choices nil nil nil nil
+                 (and default
+                      (setq default (forge--format-topic-choice default))
+                      (member default choices)
+                      (car default)))
+                choices))))
+
+;;; Insert
+
+(defvar-keymap forge-issues-section-map
+  "<remap> <magit-browse-thing>" #'forge-browse-issues
+  "<remap> <magit-visit-thing>"  #'forge-list-issues
+  "C-c C-n"                      #'forge-create-issue)
+
+(defvar-keymap forge-issue-section-map
+  "<remap> <magit-visit-thing>"  #'forge-visit-this-topic)
+
+(defun forge-insert-issues ()
+  "Insert a list of mostly recent and/or open issues.
+Also see option `forge-topic-list-limit'."
+  (forge--insert-issues "Issues" #'forge--ls-recent-issues))
+
+(defun forge-insert-assigned-issues ()
+  "Insert a list of open issues that are assigned to you."
+  (forge--insert-issues "Assigned issues" #'forge--ls-assigned-issues))
+
+(defun forge-insert-authored-issues ()
+  "Insert a list of open issues that are authored by you."
+  (forge--insert-issues "Authored issues" #'forge--ls-assigned-issues))
+
+(defun forge--insert-issues (heading getter)
+  (when-let ((repo (forge--assert-insert-topics-get-repository t)))
+    (forge--insert-topics 'issues heading (funcall getter repo))))
 
 ;;; _
 (provide 'forge-issue)

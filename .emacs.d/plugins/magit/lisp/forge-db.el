@@ -28,11 +28,13 @@
 (require 'emacsql)
 
 ;; For `closql--db-update-schema':
+(declare-function forge--object-id "forge-core")
 (declare-function forge-get-issue "forge-core")
 (declare-function forge-get-pullreq "forge-core")
-(declare-function forge--object-id "forge-core")
+(declare-function forge-get-repository "forge-core" (demand))
 
 (eval-when-compile
+  (cl-pushnew 'number eieio--known-slot-names)
   (cl-pushnew 'value eieio--known-slot-names))
 
 ;;; Options
@@ -51,7 +53,7 @@
    (object-class :initform 'forge-repository)
    (file         :initform 'forge-database-file)
    (schemata     :initform 'forge--db-table-schemata)
-   (version      :initform 9)))
+   (version      :initform 10)))
 
 (defvar forge--override-connection-class nil)
 
@@ -153,7 +155,8 @@
       (timeline     :default eieio-unbound)
       (marks        :default eieio-unbound)
       note
-      their-id]
+      their-id
+      slug]
      (:foreign-key
       [repository] :references repository [id]
       :on-delete :cascade))
@@ -292,7 +295,8 @@
       base-rev
       head-rev
       draft-p
-      their-id]
+      their-id
+      slug]
      (:foreign-key
       [repository] :references repository [id]
       :on-delete :cascade))
@@ -428,7 +432,26 @@
         (emacsql db [:alter-table pullreq :add-column their-id :default nil])
         (emacsql db [:alter-table issue   :add-column their-id :default nil])
         (closql--db-set-version db (setq version 9))
-        (message "Upgrading Forge database from version 8 to 9...done")))
+        (message "Upgrading Forge database from version 8 to 9...done"))
+      (when (= version 9)
+        (message "Upgrading Forge database from version 9 to 10...")
+        (emacsql db [:alter-table pullreq :add-column slug :default nil])
+        (emacsql db [:alter-table issue   :add-column slug :default nil])
+        (dolist (o (closql-entries (forge-db) nil 'forge-pullreq))
+          (oset o slug
+                (format "%s%s"
+                        (if (and (fboundp
+                                  'forge-gitlab-repository--eieio-childp)
+                                 (forge-gitlab-repository--eieio-childp
+                                  (forge-get-repository o)))
+                            "!"
+                          "#")
+                        (oref o number))))
+        (dolist (o (closql-entries (forge-db) nil 'forge-issue))
+          (oset o slug (format "#%s" (oref o number))))
+        (closql--db-set-version db (setq version 10))
+        (message "Upgrading Forge database from version 9 to 10...done"))
+      )
     (cl-call-next-method)))
 
 (defun forge--backup-database (db)

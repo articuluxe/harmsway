@@ -71,9 +71,6 @@ properties are currently being used:
   :group 'forge
   :type '(repeat (cons (string :tag "Account") plist)))
 
-(define-obsolete-variable-alias 'forge-owned-blacklist
-  'forge-owned-ignored "Forge 3.0.0")
-
 (defcustom forge-owned-ignored nil
   "A list of repositories that are ignored when listing those owned by you.
 This is a list of package names.  Used by the commands
@@ -408,6 +405,14 @@ List them in a separate buffer."
                  (forge--tablist-columns-vector 'issue)
                  id (ghub--username (forge-get-repository :id id))))))
 
+;;;; Notifications
+
+;;;###autoload
+(defun forge-list-notifications ()
+  "List notifications."
+  (interactive)
+  (forge-notifications-setup-buffer))
+
 ;;;; Repository
 
 ;;;###autoload
@@ -429,7 +434,7 @@ Only Github is supported for now."
   (forge-repository-list-setup #'forge-repository-list-owned-refresh
                                "*Forge Owned Repositories*"))
 
-;;; Internal
+;;; Miscellaneous
 
 (defun forge-topic-list-sort-by-number (a b)
   "Sort the `tabulated-list-entries' by topic number.

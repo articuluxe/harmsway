@@ -44,7 +44,8 @@
    (topic                     :initarg :topic)
    (url                       :initarg :url)))
 
-;;; Core
+;;; Query
+;;;; Get
 
 (cl-defmethod forge-get-repository ((notify forge-notification))
   "Return the object for the repository that NOTIFY belongs to."
@@ -66,10 +67,34 @@
                                   (oref topic number)))))
     (closql--remake-instance 'forge-notification (forge-db) row)))
 
-;;; Utilities
+;;;; List
 
-(cl-defmethod forge-get-url ((notify forge-notification))
-  (oref notify url))
+(defun forge--ls-notifications-all ()
+  (mapcar (lambda (row)
+            (closql--remake-instance 'forge-notification (forge-db) row))
+          (forge-sql [:select * :from notification
+                      :order-by [(desc updated)]])))
+
+(defun forge--ls-notifications-recent ()
+  (mapcar (lambda (row)
+            (closql--remake-instance 'forge-notification (forge-db) row))
+          (forge-sql [:select * :from notification
+                      :order-by [(desc updated)]
+                      :limit 100])))
+
+(defun forge--ls-notifications-open ()
+  (mapcar (lambda (row)
+            (closql--remake-instance 'forge-notification (forge-db) row))
+          (forge-sql [:select * :from notification
+                      :where (isnull done-p)
+                      :order-by [(desc updated)]])))
+
+(defun forge--ls-notifications-unread ()
+  (mapcar (lambda (row)
+            (closql--remake-instance 'forge-notification (forge-db) row))
+          (forge-sql [:select * :from notification
+                      :where (notnull unread-p)
+                      :order-by [(desc id)]])))
 
 ;;; Mode
 
@@ -92,11 +117,11 @@
 (defun forge-notifications-refresh-buffer ()
   (forge-insert-notifications))
 
-;;; Display options
+;;; Commands
 
 (defvar forge-notifications-display-style 'flat)
 (defvar forge-notifications-display-list-function
-  #'forge--list-notifications-all)
+  #'forge--ls-notifications-all)
 
 (defun forge-set-notifications-display-style ()
   "Set the value of `forge-notifications-display-style' and refresh."
@@ -116,38 +141,11 @@
     (user-error "Not in forge-notifications-mode"))
   (setq forge-notifications-display-list-function
         (magit-read-char-case "Display " t
-          (?a "[a]ll"    #'forge--list-notifications-all)
-          (?m "[r]ecent" #'forge--list-notifications-recent)
-          (?o "[o]pen"   #'forge--list-notifications-open)
-          (?u "[u]nread" #'forge--list-notifications-unread)))
+          (?a "[a]ll"    #'forge--ls-notifications-all)
+          (?m "[r]ecent" #'forge--ls-notifications-recent)
+          (?o "[o]pen"   #'forge--ls-notifications-open)
+          (?u "[u]nread" #'forge--ls-notifications-unread)))
   (magit-refresh))
-
-(defun forge--list-notifications-all ()
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-notification (forge-db) row))
-          (forge-sql [:select * :from notification
-                      :order-by [(desc updated)]])))
-
-(defun forge--list-notifications-recent ()
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-notification (forge-db) row))
-          (forge-sql [:select * :from notification
-                      :order-by [(desc updated)]
-                      :limit 100])))
-
-(defun forge--list-notifications-open ()
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-notification (forge-db) row))
-          (forge-sql [:select * :from notification
-                      :where (isnull done-p)
-                      :order-by [(desc updated)]])))
-
-(defun forge--list-notifications-unread ()
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-notification (forge-db) row))
-          (forge-sql [:select * :from notification
-                      :where (notnull unread-p)
-                      :order-by [(desc id)]])))
 
 ;;; Sections
 
@@ -161,10 +159,10 @@
     (magit-insert-section (notifications)
       (magit-insert-heading
         (concat (pcase forge-notifications-display-list-function
-                  ('forge--list-notifications-all    "All")
-                  ('forge--list-notifications-recent "Recent")
-                  ('forge--list-notifications-open   "Open")
-                  ('forge--list-notifications-unread "Unread"))
+                  ('forge--ls-notifications-all    "All")
+                  ('forge--ls-notifications-recent "Recent")
+                  ('forge--ls-notifications-open   "Open")
+                  ('forge--ls-notifications-unread "Unread"))
                 " notifications:"))
       (if (eq forge-notifications-display-style 'flat)
           (magit-insert-section-body
@@ -190,7 +188,7 @@
   (with-slots (type title url unread-p) notif
     (pcase type
       ((or 'issue 'pullreq)
-       (forge-insert-topic (forge-get-topic notif)))
+       (forge--insert-topic (forge-get-topic notif)))
       ('commit
        (magit-insert-section (ncommit nil) ; !commit
          (string-match "[^/]*\\'" url)

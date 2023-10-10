@@ -84,51 +84,16 @@
 
 (defclass forge-noapi-repository (forge-repository) () :abstract t)
 
-;;; Core
+(cl-defmethod slot-missing ((object forge-repository)
+                            slot-name operation &optional _new-value)
+  (if (and (eq operation 'oref)
+           (eq slot-name 'slug))
+      (concat (oref object owner) "/"
+              (oref object name))
+    (cl-call-next-method)))
 
-(cl-defmethod forge--repository-ids ((class (subclass forge-repository))
-                                     host owner name &optional stub)
-  "Return (OUR-ID . THEIR-ID) of the specified repository.
-If optional STUB is non-nil, then the IDs are not guaranteed to
-be unique.  Otherwise this method has to make an API request to
-retrieve THEIR-ID, the repository's ID on the forge.  In that
-case OUR-ID derives from THEIR-ID and is unique across all
-forges and hosts."
-  (pcase-let* ((`(,_githost ,apihost ,id ,_class)
-                (or (assoc host forge-alist)
-                    (error "No entry for %S in forge-alist" host)))
-               (path (format "%s/%s" owner name))
-               (their-id (and (not stub)
-                              (ghub-repository-id
-                               owner name
-                               :host apihost
-                               :auth 'forge
-                               :forge (forge--ghub-type-symbol class)))))
-    (cons (base64-encode-string
-           (format "%s:%s" id
-                   (cond (stub path)
-                         ((eq class 'forge-github-repository)
-                          ;; This is base64 encoded, according to
-                          ;; https://docs.github.com/en/graphql/reference/scalars#id.
-                          ;; Unfortunately that is not always true.
-                          ;; E.g., https://github.com/dit7ya/roamex.
-                          (condition-case nil
-                              (base64-decode-string their-id)
-                            (error their-id)))
-                         (t their-id)))
-           t)
-          (or their-id path))))
-
-(cl-defmethod forge--repository-ids ((_class (subclass forge-noapi-repository))
-                                     host owner name &optional _stub)
-  (let ((their-id (if owner (concat owner "/" name) name)))
-    (cons (base64-encode-string
-           (format "%s:%s"
-                   (nth 3 (or (assoc host forge-alist)
-                              (error "No entry for %S in forge-alist" host)))
-                   their-id)
-           t)
-          their-id)))
+;;; Query
+;;;; Get
 
 (defvar-local forge-buffer-repository nil)
 (put 'forge-buffer-repository 'permanent-local t)
@@ -257,7 +222,7 @@ Needed because Eieio does not support adding a method that takes
 no argument."
   (forge-get-repository nil))
 
-;;; Utilities
+;;;; Current
 
 (defun forge-current-repository (&optional demand)
   "Return the repository at point or being visited.
@@ -278,11 +243,53 @@ an error."
            (forge-get-repository :id (tabulated-list-get-id)))
       (and demand (user-error "No repository at point"))))
 
-(cl-defmethod forge-visit ((repo forge-repository))
-  (let ((worktree (oref repo worktree)))
-    (if (and worktree (file-directory-p worktree))
-        (magit-status-setup-buffer worktree)
-      (forge-list-issues (oref repo id)))))
+;;; Identity
+
+(cl-defmethod forge--repository-ids ((class (subclass forge-repository))
+                                     host owner name &optional stub)
+  "Return (OUR-ID . THEIR-ID) of the specified repository.
+If optional STUB is non-nil, then the IDs are not guaranteed to
+be unique.  Otherwise this method has to make an API request to
+retrieve THEIR-ID, the repository's ID on the forge.  In that
+case OUR-ID derives from THEIR-ID and is unique across all
+forges and hosts."
+  (pcase-let* ((`(,_githost ,apihost ,id ,_class)
+                (or (assoc host forge-alist)
+                    (error "No entry for %S in forge-alist" host)))
+               (path (format "%s/%s" owner name))
+               (their-id (and (not stub)
+                              (ghub-repository-id
+                               owner name
+                               :host apihost
+                               :auth 'forge
+                               :forge (forge--ghub-type-symbol class)))))
+    (cons (base64-encode-string
+           (format "%s:%s" id
+                   (cond (stub path)
+                         ((eq class 'forge-github-repository)
+                          ;; This is base64 encoded, according to
+                          ;; https://docs.github.com/en/graphql/reference/scalars#id.
+                          ;; Unfortunately that is not always true.
+                          ;; E.g., https://github.com/dit7ya/roamex.
+                          (condition-case nil
+                              (base64-decode-string their-id)
+                            (error their-id)))
+                         (t their-id)))
+           t)
+          (or their-id path))))
+
+(cl-defmethod forge--repository-ids ((_class (subclass forge-noapi-repository))
+                                     host owner name &optional _stub)
+  (let ((their-id (if owner (concat owner "/" name) name)))
+    (cons (base64-encode-string
+           (format "%s:%s"
+                   (nth 3 (or (assoc host forge-alist)
+                              (error "No entry for %S in forge-alist" host)))
+                   their-id)
+           t)
+          their-id)))
+
+;;; Read
 
 (defun forge-read-repository (prompt)
   (let ((choice (magit-completing-read
@@ -313,6 +320,8 @@ an error."
                  forge-alist)
      (mapcar #'car forge-alist))
    nil t))
+
+;;; Miscellaneous
 
 (defun forge--as-githost (host)
   (or (car (car (cl-member host forge-alist :test #'equal :key #'car)))
@@ -348,9 +357,6 @@ an error."
          (?n . ,name)
          (?p . ,path)
          (?P . ,(string-replace "/" "%2F" path)))))))
-
-(cl-defmethod forge-get-url ((repo forge-repository))
-  (forge--format (oref repo remote) 'remote-url-format))
 
 (defun forge--set-field-callback ()
   (let ((buf (current-buffer)))

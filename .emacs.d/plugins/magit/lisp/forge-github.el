@@ -154,6 +154,7 @@
                                       :number     .number)))))
         (oset issue id         issue-id)
         (oset issue their-id   .id)
+        (oset issue slug       (format "#%s" .number))
         (oset issue state      (pcase-exhaustive .state
                                  ("CLOSED" 'closed)
                                  ("OPEN"   'open)))
@@ -205,6 +206,7 @@
                                           :repository   (oref repo id)
                                           :number       .number)))))
         (oset pullreq their-id     .id)
+        (oset pullreq slug         (format "#%s" .number))
         (oset pullreq state        (pcase-exhaustive .state
                                      ("MERGED" 'merged)
                                      ("CLOSED" 'closed)
@@ -724,7 +726,7 @@
     `((merge_method . ,(symbol-name method))
       ,@(and hash `((sha . ,hash))))))
 
-;;; Utilities
+;;; Wrappers
 
 (cl-defun forge--ghub-get (obj resource
                                &optional params

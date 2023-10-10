@@ -52,6 +52,7 @@ of the current pull-request."
 (defclass forge-post (forge-object) () :abstract t)
 
 ;;; Query
+;;;; Get
 
 (cl-defmethod forge-get-parent ((post forge-post))
   (forge-get-topic post))
@@ -59,16 +60,7 @@ of the current pull-request."
 (cl-defmethod forge-get-repository ((post forge-post))
   (forge-get-repository (forge-get-topic post)))
 
-;;; Utilities
-
-(cl-defmethod forge-get-url ((post forge-post))
-  (forge--format post (let ((topic (forge-get-parent post)))
-                        (cond ((forge--childp topic 'forge-issue)
-                               'issue-post-url-format)
-                              ((forge--childp topic 'forge-pullreq)
-                               'pullreq-post-url-format)))))
-
-;;; Sections
+;;;; Current
 
 (defun forge-post-at-point (&optional assert)
   "Return the post at point.

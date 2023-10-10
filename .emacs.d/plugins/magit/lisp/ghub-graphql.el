@@ -43,10 +43,11 @@
 Adjust this value if you're hitting query timeouts against larger
 repositories.")
 
-(cl-defun ghub-graphql (graphql &optional variables
-                                &key username auth host forge
-                                headers silent
-                                callback errorback value extra)
+(cl-defun ghub-graphql (graphql
+                        &optional variables
+                        &key username auth host forge
+                        headers silent
+                        callback errorback value extra)
   "Make a GraphQL request using GRAPHQL and VARIABLES.
 Return the response as a JSON-like alist.  Even if the response
 contains `errors', do not raise an error.  GRAPHQL is a GraphQL
@@ -137,6 +138,7 @@ behave as for `ghub-request' (which see)."
                      (assignees [(:edges t)]
                                 id)
                      (comments  [(:edges t)]
+                                id
                                 databaseId
                                 (author login)
                                 createdAt
@@ -190,6 +192,7 @@ behave as for `ghub-request' (which see)."
                      (reviewRequests [(:edges t)]
                                      (requestedReviewer "... on User { id }\n"))
                      (comments  [(:edges t)]
+                                id
                                 databaseId
                                 (author login)
                                 createdAt
@@ -226,10 +229,10 @@ behave as for `ghub-request' (which see)."
                                               (originalCommit oid)
                                               path))))))
 
-(cl-defun ghub-fetch-repository (owner name callback
-                                       &optional until
-                                       &key username auth host forge
-                                       headers errorback sparse)
+(cl-defun ghub-fetch-repository ( owner name callback
+                                  &optional until
+                                  &key username auth host forge
+                                  headers errorback sparse)
   "Asynchronously fetch forge data about the specified repository.
 Once all data has been collected, CALLBACK is called with the
 data as the only argument."
@@ -247,10 +250,10 @@ data as the only argument."
                         :headers  headers
                         :errorback errorback))
 
-(cl-defun ghub-fetch-issue (owner name number callback
-                                  &optional until
-                                  &key username auth host forge
-                                  headers errorback)
+(cl-defun ghub-fetch-issue ( owner name number callback
+                             &optional until
+                             &key username auth host forge
+                             headers errorback)
   "Asynchronously fetch forge data about the specified issue.
 Once all data has been collected, CALLBACK is called with the
 data as the only argument."
@@ -268,10 +271,10 @@ data as the only argument."
                         :headers  headers
                         :errorback errorback))
 
-(cl-defun ghub-fetch-pullreq (owner name number callback
-                                    &optional until
-                                    &key username auth host forge
-                                    headers errorback)
+(cl-defun ghub-fetch-pullreq ( owner name number callback
+                               &optional until
+                               &key username auth host forge
+                               headers errorback)
   "Asynchronously fetch forge data about the specified pull-request.
 Once all data has been collected, CALLBACK is called with the
 data as the only argument."
@@ -289,10 +292,10 @@ data as the only argument."
                         :headers  headers
                         :errorback errorback))
 
-(cl-defun ghub-fetch-review-threads (owner name number callback
-                                           &optional until
-                                           &key username auth host forge
-                                           headers errorback)
+(cl-defun ghub-fetch-review-threads ( owner name number callback
+                                      &optional until
+                                      &key username auth host forge
+                                      headers errorback)
   "Asynchronously fetch forge data about the review threads from a pull-request.
 Once all data has been collected, CALLBACK is called with the
 data as the only argument."
@@ -323,10 +326,10 @@ data as the only argument."
   (buffer    nil :read-only t)
   (pages     0   :read-only nil))
 
-(cl-defun ghub--graphql-vacuum (query variables callback
-                                      &optional until
-                                      &key narrow username auth host forge
-                                      headers errorback)
+(cl-defun ghub--graphql-vacuum ( query variables callback
+                                 &optional until
+                                 &key narrow username auth host forge
+                                 headers errorback)
   "Make a GraphQL request using QUERY and VARIABLES.
 See Info node `(ghub)GraphQL Support'."
   (unless host
@@ -392,8 +395,11 @@ See Info node `(ghub)GraphQL Support'."
                      (listp (aref node 0)))
             (let ((alist (cl-coerce node 'list))
                   vars)
-              (when (cadr (assq :edges alist))
-                (push (list 'first ghub-graphql-items-per-request) vars)
+              (when-let ((edges (cadr (assq :edges alist))))
+                (push (list 'first (if (numberp edges)
+                                       edges
+                                     ghub-graphql-items-per-request))
+                      vars)
                 (setq loc  (treepy-up loc))
                 (setq node (treepy-node loc))
                 (setq loc  (treepy-replace
@@ -457,25 +463,24 @@ See Info node `(ghub)GraphQL Support'."
             (let-alist val
               (let* ((cursor (and .pageInfo.hasNextPage
                                   .pageInfo.endCursor))
-                     (until (cdr (assq (intern (format "%s-until" key))
-                                       (ghub--graphql-req-until req))))
-                     (nodes (mapcar #'cdar .edges))
-                     (nodes (if until
-                                (seq-take-while
-                                 (lambda (node)
-                                   (or (string> (cdr (assq 'updatedAt node))
-                                                until)
-                                       (setq cursor nil)))
-                                 nodes)
-                              nodes)))
-                (if cursor
-                    (progn
-                      (setf (ghub--req-value req) loc)
-                      (ghub--graphql-retrieve req
-                                              (ghub--graphql-lineage loc)
-                                              cursor)
-                      (cl-return))
-                  (setq loc (treepy-replace loc (cons key nodes))))))))
+                     (until  (cdr (assq (intern (format "%s-until" key))
+                                        (ghub--graphql-req-until req))))
+                     (nodes  (mapcar #'cdar .edges))
+                     (nodes  (if until
+                                 (seq-take-while
+                                  (lambda (node)
+                                    (or (string> (cdr (assq 'updatedAt node))
+                                                 until)
+                                        (setq cursor nil)))
+                                  nodes)
+                               nodes)))
+                (cond (cursor
+                       (setf (ghub--req-value req) loc)
+                       (ghub--graphql-retrieve req
+                                               (ghub--graphql-lineage loc)
+                                               cursor)
+                       (cl-return))
+                      ((setq loc (treepy-replace loc (cons key nodes)))))))))
         (cond ((not (treepy-end-p loc))
                (setq loc (treepy-next loc)))
               ((ghub--req-callback req)

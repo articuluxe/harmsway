@@ -376,6 +376,20 @@ argument also offer closed pull-requests."
            (forge-get-url :commit magit-buffer-revision))
       (forge-current-repository)))
 
+;;;; Urls
+
+(cl-defgeneric forge-get-url (obj)
+  "Return the URL for a forge object.")
+
+(cl-defmethod forge-get-url ((issue forge-issue))
+  (forge--format issue 'issue-url-format))
+
+(cl-defmethod forge-get-url ((pullreq forge-pullreq))
+  (forge--format pullreq 'pullreq-url-format))
+
+(cl-defmethod forge-get-url ((repo forge-repository))
+  (forge--format (oref repo remote) 'remote-url-format))
+
 (cl-defmethod forge-get-url ((_(eql :commit)) commit)
   (let ((repo (forge-get-repository 'stub)))
     (unless (magit-list-containing-branches
@@ -403,6 +417,16 @@ argument also offer closed pull-requests."
 (cl-defmethod forge-get-url ((_(eql :remote)) remote)
   (forge--format remote 'remote-url-format))
 
+(cl-defmethod forge-get-url ((post forge-post))
+  (forge--format post (let ((topic (forge-get-parent post)))
+                        (cond ((forge--childp topic 'forge-issue)
+                               'issue-post-url-format)
+                              ((forge--childp topic 'forge-pullreq)
+                               'pullreq-post-url-format)))))
+
+(cl-defmethod forge-get-url ((notify forge-notification))
+  (oref notify url))
+
 ;;; Visit
 
 ;;;###autoload
@@ -411,7 +435,7 @@ argument also offer closed pull-requests."
 By default only offer open topics for completion;
 with a prefix argument also closed topics."
   (interactive (list (forge-read-topic "View topic" t)))
-  (forge-visit (forge-get-topic topic)))
+  (forge-topic-setup-buffer (forge-get-topic topic)))
 
 ;;;###autoload
 (defun forge-visit-issue (issue)
@@ -419,7 +443,7 @@ with a prefix argument also closed topics."
 By default only offer open topics for completion;
 with a prefix argument also closed topics."
   (interactive (list (forge-read-issue "View issue" t)))
-  (forge-visit (forge-get-issue issue)))
+  (forge-topic-setup-buffer (forge-get-issue issue)))
 
 ;;;###autoload
 (defun forge-visit-pullreq (pull-request)
@@ -427,19 +451,23 @@ with a prefix argument also closed topics."
 By default only offer open topics for completion;
 with a prefix argument also closed topics."
   (interactive (list (forge-read-pullreq "View pull-request" t)))
-  (forge-visit (forge-get-pullreq pull-request)))
+  (forge-topic-setup-buffer (forge-get-pullreq pull-request)))
 
 ;;;###autoload
 (defun forge-visit-this-topic ()
   "Visit the topic at point."
   (interactive)
-  (forge-visit (forge-topic-at-point)))
+  (forge-topic-setup-buffer (forge-topic-at-point)))
 
 ;;;###autoload
 (defun forge-visit-this-repository ()
   "Visit the repository at point."
   (interactive)
-  (forge-visit (forge-repository-at-point)))
+  (let* ((repo (forge-repository-at-point))
+         (worktree (oref repo worktree)))
+    (if (and worktree (file-directory-p worktree))
+        (magit-status-setup-buffer worktree)
+      (forge-list-issues (oref repo id)))))
 
 ;;; Create
 
@@ -579,9 +607,10 @@ point is currently on."
          (state (oref topic state)))
     (when (eq state 'merged)
       (user-error "Merged pull-requests cannot be reopened"))
-    (if (magit-y-or-n-p (format "%s %S"
+    (if (magit-y-or-n-p (format "%s %s %s"
                                 (if (eq state 'closed) "Reopen" "Close")
-                                (car (forge--topic-format-choice topic))))
+                                (oref topic slug)
+                                (oref topic title)))
         (forge--topic-set 'state (if (eq state 'closed) 'open 'closed))
       (user-error "Abort"))))
 
@@ -1183,13 +1212,7 @@ heavy development."
     (delete-file forge-database-file t)
     (magit-refresh)))
 
-;;; Misc
-
-;;;###autoload
-(defun forge-list-notifications ()
-  "List notifications."
-  (interactive)
-  (forge-notifications-setup-buffer))
+;;; Miscellaneous
 
 (defun forge-enable-sql-logging ()
   "Enable logging Forge's SQL queries."
