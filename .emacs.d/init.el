@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-10-11 16:15:05 dharms>
+;; Modified Time-stamp: <2023-10-11 16:32:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4241,12 +4241,13 @@ This function's result only has value if it is preceded by any font changes."
 (use-package go-eldoc :after go-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gradle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package gradle-mode :interpreter "gradle"
-  :mode ("\\.gradle$"))
+(use-package gradle-mode
+  :init
+  (add-hook 'groovy-mode-hook #'gradle-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; groovy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package groovy-mode :interpreter "groovy"
-  :mode ("\\.groovy$")
+  :mode ("\\.groovy$" "\\.gradle$")
   :config
   (use-package inf-groovy)
   (add-hook 'groovy-mode-hook 'inf-groovy-keys)
