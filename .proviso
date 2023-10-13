@@ -1,3 +1,2 @@
-(:proj-alist ((:name "harmsway"
-               :ctags-opts "--exclude=repos"))
- :search-exclude-dirs (+ "*repos"))
+(:proj-alist ((:name "harmsway"))
+ :search-exclude-dirs (+ "*repos*"))
