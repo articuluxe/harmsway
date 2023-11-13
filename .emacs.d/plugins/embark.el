@@ -177,7 +177,7 @@ or a list of such symbols."
     embark-target-file-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
-    embark-target-library-file-at-point
+    embark-target-guess-file-at-point
     embark-target-expression-at-point
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
@@ -457,8 +457,6 @@ arguments and more details."
   '(;; use directory of target as default-directory
     (shell embark--cd)
     (eshell embark--cd)
-    ;; narrow to target for duration of action
-    (repunctuate-sentences embark--narrow-to-target)
     ;; mark the target preserving point and previous mark
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
@@ -501,6 +499,11 @@ used for other types of action hooks, for more details see
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
+
+(when (version-list-< (version-to-list emacs-version) '(29 1))
+  ;; narrow to target for duration of action
+  (setf (alist-get 'repunctuate-sentences embark-around-action-hooks)
+        '(embark--narrow-to-target)))
 
 (defcustom embark-multitarget-actions '(embark-insert embark-copy-as-kill)
   "Commands for which `embark-act-all' should pass a list of targets.
@@ -710,6 +713,22 @@ This function is meant to be added to `minibuffer-setup-hook'."
 (autoload 'dired-get-filename "dired")
 (declare-function image-dired-original-file-name "image-dired")
 
+(defun embark-target-guess-file-at-point ()
+  "Target the file guessed by `ffap' at point."
+  (when-let ((tap-file (thing-at-point 'filename))
+             ((not (ffap-url-p tap-file))) ; no URLs, those have a target finder
+             (bounds (bounds-of-thing-at-point 'filename))
+             (file (ffap-file-at-point)))
+    ;; ffap doesn't make bounds available, so we use
+    ;; thingatpt bounds, which might be a little off
+    ;; adjust bounds if thingatpt gobbled punctuation around file
+    (when (or (string-match (regexp-quote file) tap-file)
+              (string-match (regexp-quote (file-name-base file)) tap-file))
+      (setq bounds (cons (+ (car bounds) (match-beginning 0))
+                         (- (cdr bounds) (- (length tap-file)
+                                            (match-end 0))))))
+    `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds)))
+
 (defun embark-target-file-at-point ()
   "Target file at point.
 This function mostly relies on `ffap-file-at-point', with the
@@ -729,30 +748,12 @@ following exceptions:
         (and (derived-mode-p 'image-dired-thumbnail-mode)
              (setq file (image-dired-original-file-name))
              (setq bounds (cons (point) (1+ (point)))))
-        (when-let ((tap-file (thing-at-point 'filename)))
-          ;; no urls or elisp libraries, those have other target finders
-          (and (not (or (ffap-url-p tap-file) (ffap-el-mode tap-file)))
-               (setq file (ffap-file-at-point))
-               ;; ffap doesn't make bounds available, so we use
-               ;; thingatpt bounds, which might be a little off
-               (setq bounds (bounds-of-thing-at-point 'filename)))
-          ;; adjust bounds if thingatpt gobbled punctuation around file
-          (when (and bounds (string-match (regexp-quote file) tap-file))
-            (setq bounds (cons (+ (car bounds) (match-beginning 0))
-                               (- (cdr bounds) (- (length tap-file)
-                                                  (match-end 0))))))))
+        (when-let ((tap-file (thing-at-point 'filename))
+                   ((not (equal (file-name-base tap-file) tap-file)))
+                   (guess (embark-target-guess-file-at-point)))
+          (setq file (cadr guess) bounds (cddr guess))))
     (when file
       `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds))))
-
-(defun embark-target-library-file-at-point ()
-  "Target the file of the Emacs Lisp library at point.
-The function `embark-target-file-at-point' could also easily
-target Emacs Lisp library files, the only reason it doesn't is so
-that library files and other types of file targets can be given
-different priorities in `embark-target-finders'."
-  (when-let* ((name (thing-at-point 'filename))
-              (lib (ffap-el-mode name)))
-    `(file ,lib . ,(bounds-of-thing-at-point 'filename))))
 
 (defun embark-target-package-at-point ()
   "Target the package on the current line in a packages buffer."
@@ -1877,7 +1878,12 @@ type @ and the key binding (without the prefix)."
   (when-let ((keys (this-command-keys-vector))
              (prefix (seq-take keys (1- (length keys))))
              (keymap (key-binding prefix 'accept-default)))
-    (embark-bindings-in-keymap keymap)))
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (let ((pt (- (minibuffer-prompt-end) 2)))
+            (overlay-put (make-overlay pt pt) 'before-string
+                         (format " under %s" (key-description prefix)))))
+      (embark-bindings-in-keymap keymap))))
 
 (defun embark--prompt (indicators keymap targets)
   "Call the prompter with KEYMAP and INDICATORS.
@@ -2178,11 +2184,12 @@ plist concerns one target, and has keys `:type', `:target',
                     (list :type type :target target)))))
            (push full-target targets)))
        (and targets (minibufferp))))
-    (cl-delete-duplicates
-     (nreverse targets)
-     :test (lambda (t1 t2)
-             (and (equal (plist-get t1 :target) (plist-get t2 :target))
-                  (eq (plist-get t1 :type) (plist-get t2 :type)))))))
+    (nreverse
+     (cl-delete-duplicates ; keeps last duplicate, but we reverse
+      targets
+      :test (lambda (t1 t2)
+              (and (equal (plist-get t1 :target) (plist-get t2 :target))
+                   (eq (plist-get t1 :type) (plist-get t2 :type))))))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
@@ -3337,14 +3344,16 @@ PRED is a predicate function used to filter the items."
                    (let ((file (file-name-nondirectory path)))
                      (or (string= file ".") (string= file ".."))))
                  files)))
-  (let* ((dir (or (file-name-directory (try-completion "" files)) ""))
-         (buf (dired-noselect
-               (cons (expand-file-name dir)
-                     (mapcar (lambda (file) (string-remove-prefix dir file))
-                             files)))))
-    ;; unadvertise this buffer to avoid reuse
+  (cl-letf* ((dir (or (file-name-directory (try-completion "" files)) ""))
+             ;; Prevent reusing existing Dired buffer.
+             ((symbol-function 'dired-find-buffer-nocreate) #'ignore)
+             (buf (dired-noselect
+                   (cons (expand-file-name dir)
+                         (mapcar (lambda (file) (string-remove-prefix dir file))
+                                 files)))))
     (with-current-buffer buf
-      (dired-unadvertise (car dired-directory)) ; avoid reuse of this buffer
+      ;; Unadvertise to prevent the new buffer from being reused.
+      (dired-unadvertise (car dired-directory))
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
 

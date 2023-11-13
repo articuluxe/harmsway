@@ -44,6 +44,11 @@
    (topic                     :initarg :topic)
    (url                       :initarg :url)))
 
+;;; Special
+
+(cl-defmethod forge-topic-mark-read ((_ forge-repository) topic)
+  (oset topic unread-p nil))
+
 ;;; Query
 ;;;; Get
 
@@ -67,6 +72,26 @@
                                   (oref topic number)))))
     (closql--remake-instance 'forge-notification (forge-db) row)))
 
+;;;; Current
+
+(defun forge-current-notification (&optional demand)
+  "Return the current notification, casting a topic if necessary.
+If there is no such notification and DEMAND is non-nil, then
+signal an error."
+  (or (magit-section-value-if 'notification)
+      (and-let* ((topic (forge-current-topic)))
+        (forge-get-notification topic))
+      (and demand (user-error "No current notification"))))
+
+(defun forge-notification-at-point (&optional demand)
+  "Return the notification at point, casting a topic if necessary.
+If there is no such notification and DEMAND is non-nil, then
+signal an error."
+  (or (magit-section-value-if 'notification)
+      (and-let* ((topic (forge-topic-at-point)))
+        (forge-get-notification topic))
+      (and demand (user-error "No notication at point"))))
+
 ;;;; List
 
 (defun forge--ls-notifications-all ()
@@ -82,7 +107,7 @@
                       :order-by [(desc updated)]
                       :limit 100])))
 
-(defun forge--ls-notifications-open ()
+(defun forge--ls-notifications-pending ()
   (mapcar (lambda (row)
             (closql--remake-instance 'forge-notification (forge-db) row))
           (forge-sql [:select * :from notification
@@ -141,10 +166,10 @@
     (user-error "Not in forge-notifications-mode"))
   (setq forge-notifications-display-list-function
         (magit-read-char-case "Display " t
-          (?a "[a]ll"    #'forge--ls-notifications-all)
-          (?m "[r]ecent" #'forge--ls-notifications-recent)
-          (?o "[o]pen"   #'forge--ls-notifications-open)
-          (?u "[u]nread" #'forge--ls-notifications-unread)))
+          (?a "[a]ll"     #'forge--ls-notifications-all)
+          (?r "[r]ecent"  #'forge--ls-notifications-recent)
+          (?p "[p]ending" #'forge--ls-notifications-pending)
+          (?u "[u]nread"  #'forge--ls-notifications-unread)))
   (magit-refresh))
 
 ;;; Sections
@@ -159,10 +184,10 @@
     (magit-insert-section (notifications)
       (magit-insert-heading
         (concat (pcase forge-notifications-display-list-function
-                  ('forge--ls-notifications-all    "All")
-                  ('forge--ls-notifications-recent "Recent")
-                  ('forge--ls-notifications-open   "Open")
-                  ('forge--ls-notifications-unread "Unread"))
+                  ('forge--ls-notifications-all     "All")
+                  ('forge--ls-notifications-recent  "Recent")
+                  ('forge--ls-notifications-pending "Pending")
+                  ('forge--ls-notifications-unread  "Unread"))
                 " notifications:"))
       (if (eq forge-notifications-display-style 'flat)
           (magit-insert-section-body

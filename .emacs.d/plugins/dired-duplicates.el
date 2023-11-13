@@ -1,16 +1,16 @@
 ;;; dired-duplicates.el --- Find duplicate files locally and remotely  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022 Harald Judt
+;; Copyright (C) 2022-2023 Free Software Foundation, Inc.
 
 ;; Author: Harald Judt <h.judt@gmx.at>
 ;; Maintainer: Harald Judt <h.judt@gmx.at>
 ;; Created: 2022
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: files
 ;; Homepage: https://codeberg.org/hjudt/dired-duplicates
 
-;; This file is not part of GNU Emacs.
+;; This file is part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -54,7 +54,6 @@
 (defcustom dired-duplicates-separate-results
   t
   "Boolean value indicating whether to separate results with new-lines."
-  :group 'dired-duplicates
   :tag "Separate results"
   :type 'boolean)
 
@@ -64,19 +63,52 @@
 
 The checksums will be used for comparison of files of the same
 size."
-  :group 'dired-duplicates
   :tag "Checksum executable"
   :type 'string)
+
+(defcustom dired-duplicates-external-internal-algo-mapping
+  '(("sha512sum" . sha512)
+    ("sha384sum" . sha384)
+    ("sha256sum" . sha256)
+    ("sha224sum" . sha224)
+    ("sha1sum" . sha1)
+    ("md5sum" . md5))
+  "Mappings of checksum execs to internal secure hash algorithms.
+
+These mappings will be used in fallback cases to determine the
+secure hash function to use when the desired checksum
+executable (see `dired-duplicates-checksum-exec') cannot be
+found."
+  :tag "Checksum exec to internal algo mappings."
+  :type 'list)
+
+(defcustom dired-duplicates-internal-checksumming-size-limit
+  (let ((mb (* 1024 1024)))
+    ;; 1024MiB for 64-bit systems, 512MiB for 32-bit
+    (if (or (< most-positive-fixnum (* 2.0 1024 mb))
+            ;; 32-bit system with wide ints
+            (string-match-p "--with-wide-int" system-configuration-options))
+        (* 512 mb)
+      (* 1024 mb)))
+  "File size in bytes above which internal checksumming will not be used.
+
+If the size of a file exceeds this limit, a warning will be
+issued and checksumming using internal functions will not be
+done, resulting in ignoring the file.  It has no effect on
+checksumming using an executable.  This limit exists to prevent
+out-of-memory situations, where the Emacs process becomes
+unresponsive or gets killed."
+  :tag "Internal checksumming file size limit"
+  :type 'integer)
 
 (defcustom dired-duplicates-size-comparison-function
   '<
   "The comparison function used for sorting grouped results.
 
 The sorting can be in ascending (<) or descending (>) order."
-  :group 'dired-duplicates
   :tag "Ascending or descending file size sort order"
-  :type '(choice (const :tag "Ascending" :value <)
-                 (const :tag "Descending" :value >)))
+  :type '(choice (const :tag "Ascending" <)
+                 (const :tag "Descending" >)))
 
 (defcustom dired-duplicates-file-filter-functions
   nil
@@ -84,40 +116,63 @@ The sorting can be in ascending (<) or descending (>) order."
 
 A filter function must accept as its single argument the file and
 return boolean t if the file matches a criteria, otherwise nil."
-  :group 'dired-duplicates
   :tag "File filter functions"
   :type 'hook)
 
 (defcustom dired-duplicates-search-directories-recursively
   t
   "Search directories recursively."
-  :group 'dired-duplicates
   :tag "Search directories recursively"
   :type 'boolean)
 
 (defvar dired-duplicates-directories nil
   "List of directories that will be searched for duplicate files.")
 
-(defun dired-duplicates-checksum-file (file)
-  "Create a checksum for FILE.
 
-The executable used is defined by `dired-duplicates-checksum-exec'."
-  (let* ((default-directory (file-name-directory (expand-file-name file)))
-         (exec (executable-find dired-duplicates-checksum-exec t)))
-    (unless exec
-      (user-error "Checksum program %s not found in exec-path" exec))
-    (car (split-string
-          (shell-command-to-string
-           (concat exec " \"" (expand-file-name (file-local-name file)) "\""))
-          nil
-          t))))
+(defun dired-duplicates--checksum-file (file &optional exec)
+  "Create a checksum for FILE, optionally using EXEC.
+
+EXEC needs to be specified with its full path.  If nil, use the
+internal function `secure-hash' with the appropriate algorithm,
+which will be deduced from `dired-duplicates-checksum-exec' via
+the `dired-duplicates-external-internal-algo-mapping'.  Using
+`secure-hash' instead of spawning a process can be faster for
+very small files and will work even when the TRAMP method used
+does not provide a shell, but is usually slower and could cause
+memory issues for files bigger than the Emacs process or the
+machine can handle because they have to be loaded into a
+temporary buffer for the hash calculation."
+  (if (not exec)
+      (let ((message-log-max nil)
+            (hash-algo (alist-get dired-duplicates-checksum-exec
+                                  dired-duplicates-external-internal-algo-mapping
+                                  nil nil #'string=)))
+        (unless hash-algo
+          (user-error "Could not determine the correct hash algorithm for %s via %s"
+                      dired-duplicates-checksum-exec
+                      "`dired-duplicates-external-internal-algo-mapping'"))
+        (message "Internal checksumming of %s" file)
+        (with-temp-buffer
+          (let ((inhibit-message t))
+            (insert-file-contents-literally file))
+          (secure-hash hash-algo
+                       (current-buffer))))
+    (let* ((default-directory (file-name-directory (expand-file-name file)))
+           (file (expand-file-name (file-local-name file)))
+           (message-log-max nil))
+      (with-temp-buffer
+        (message "External checksumming of %s" file)
+        (unless (zerop (process-file exec nil t nil file))
+          (error "Failed to start checksum program %s" exec))
+        (goto-char (point-min))
+        (if (looking-at "\\`[[:alnum:]]+")
+            (match-string 0)
+          (error "Unexpected output from checksum program %s" exec))))))
 
 (defun dired-duplicates--apply-file-filter-functions (files)
   "Apply file filter functions to FILES, returning the resulting list."
-  (if (and dired-duplicates-file-filter-functions files)
-      (dolist (filter-func dired-duplicates-file-filter-functions files)
-        (setf files (cl-delete-if-not filter-func files)))
-    files))
+  (dolist (filter-func dired-duplicates-file-filter-functions files)
+    (setf files (cl-delete-if-not filter-func files))))
 
 (defun dired-duplicates--find-and-filter-files (directories)
   "Search below DIRECTORIES for duplicate files.
@@ -136,18 +191,36 @@ duplicate files as values."
            and checksum-table = (make-hash-table :test 'equal)
            for f in files
            for size = (file-attribute-size (file-attributes f))
+           initially do
+           (message "Collecting sizes of %d files..." (length files))
            do (setf (gethash size same-size-table)
                     (append (gethash size same-size-table) (list f)))
            finally
-           (cl-loop for same-size-files being the hash-values in same-size-table
-                    if (> (length same-size-files) 1) do
+           (cl-loop with checksum-exec-availability = (make-hash-table :test 'equal)
+                    initially do
+                    (cl-loop for d in directories do
+                             (let* ((default-directory (file-name-directory (expand-file-name d)))
+                                    (exec (executable-find dired-duplicates-checksum-exec t)))
+                               (if exec
+                                   (setf (gethash (file-remote-p d) checksum-exec-availability) exec)
+                                 (message "Checksum program %s not found in exec-path, falling back to internal routines" exec))))
+
+                    for same-size-files being the hash-value in same-size-table using (hash-key size)
+                    if (cdr same-size-files) do
                     (cl-loop for f in same-size-files
-                             for checksum = (dired-duplicates-checksum-file f)
-                             do (setf (gethash checksum checksum-table)
-                                      (append (gethash checksum checksum-table) (list f)))))
+                             for checksum-path = (gethash (file-remote-p f) checksum-exec-availability)
+                             for checksum = (if checksum-path
+                                                  (dired-duplicates--checksum-file f checksum-path)
+                                                (if (<= size dired-duplicates-internal-checksumming-size-limit)
+                                                    (dired-duplicates--checksum-file f nil)
+                                                  (warn "File %s is too big to checksum using internal functions, skipping." f)
+                                                  nil))
+                             when checksum do
+                               (setf (gethash checksum checksum-table)
+                                     (append (gethash checksum checksum-table) (list f)))))
            (cl-loop for same-files being the hash-value in checksum-table using (hash-key checksum)
                     do
-                    (if (> (length same-files) 1)
+                    (if (cdr same-files)
                         (setf (gethash checksum checksum-table)
                               (cons (file-attribute-size (file-attributes (car same-files)))
                                     (sort same-files #'string<)))
@@ -180,7 +253,6 @@ Currently, this simply adds a new-line after each results group."
                for len in lengths
                do
                (forward-line len)
-               ;; (forward-line len)
                (let ((inhibit-read-only t))
                  (beginning-of-line)
                  (unless (= (point) (point-max))
@@ -197,8 +269,8 @@ The args ARG and NOCONFIRM are passed through from
                 (append (list (car dired-directory))
                         (flatten-list results)))
     (dired-revert arg noconfirm)
-    (dired-duplicates--post-process-dired-buffer results))
-  (message "Reverting buffer complete."))
+    (dired-duplicates--post-process-dired-buffer results)
+    (message "Reverted buffer, found %d files having duplicates." (length results))))
 
 (when (< emacs-major-version 29)
   (defun dired-duplicates--do-delete (&optional arg)
@@ -248,20 +320,19 @@ The results will be shown in a Dired buffer."
                                                default-directory)))
   (unless directories
     (user-error "Specify one or more directories to search in"))
-  (let* ((directories (if (listp directories) directories (list directories)))
-         (truncated-dirs (truncate-string-to-width (string-join directories ", ") 40 0 nil t)))
-    (message "Finding duplicate files in %s..." truncated-dirs)
+  (let* ((directories (if (listp directories) directories (list directories))))
+    (message "Finding duplicate files in %s..." (string-join directories ", "))
     (if-let ((default-directory "/")
              (results (dired-duplicates--generate-grouped-results directories)))
         (progn
-          (message "Finding duplicate files in %s completed." truncated-dirs)
+          (message "Found %d files having duplicates." (length results))
           (dired (cons "/" (flatten-list results)))
-          (set-keymap-parent dired-duplicates-map (current-local-map))
-          (setf (current-local-map) dired-duplicates-map)
+          (set-keymap-parent dired-duplicates-map dired-mode-map)
+          (use-local-map dired-duplicates-map)
           (setq-local dired-duplicates-directories directories)
-          (setq-local revert-buffer-function 'dired-duplicates-dired-revert)
-          (dired-duplicates--post-process-dired-buffer results))
-      (message "No duplicate files found in %s." truncated-dirs))))
+          (dired-duplicates--post-process-dired-buffer results)
+          (setq-local revert-buffer-function 'dired-duplicates-dired-revert))
+      (message "No duplicate files found."))))
 
 (provide 'dired-duplicates)
 

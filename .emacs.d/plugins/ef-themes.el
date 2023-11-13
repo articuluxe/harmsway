@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 1.3.0
+;; Version: 1.4.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -295,41 +295,7 @@ ELPA (by Protesilaos))."
   :type 'boolean
   :link '(info-link "(ef-themes) UI typeface"))
 
-(defcustom ef-themes-region nil
-  "Control the appearance of the `region' face.
-
-The value is a list of symbols.
-
-If nil or an empty list (the default), use a subtle background
-for the region and preserve the color of selected text.
-
-The `no-extend' symbol limits the highlighted area to the end of
-the line, so that it does not reach the edge of the window.
-
-The `neutral' symbol makes the highlighted area's background
-gray (or more gray, depending on the theme).
-
-The `intense' symbol amplifies the intensity of the highlighted
-area's background color.  It also overrides any text color to
-keep it legible.
-
-Combinations of those symbols are expressed in any order.
-
-In user configuration files the form may look like this:
-
-    (setq ef-themes-region \\='(intense no-extend))
-
-Other examples:
-
-    (setq ef-themes-region \\='(intense))
-    (setq ef-themes-region \\='(intense no-extend neutral))"
-  :group 'ef-themes
-  :package-version '(ef-themes . "0.10.0")
-  :type '(set :tag "Properties" :greedy t
-              (const :tag "Do not extend to the edge of the window" no-extend)
-              (const :tag "More neutral/gray background" neutral)
-              (const :tag "More intense background (also override text color)" accented))
-  :link '(info-link "(ef-themes) Style of region highlight"))
+(make-obsolete-variable 'ef-themes-region nil "1.4.0 (use palette overrides to change region colours)")
 
 (defcustom ef-themes-common-palette-overrides nil
   "Set palette overrides for all the Ef themes.
@@ -412,33 +378,6 @@ sequence given SEQ-PRED, using SEQ-DEFAULT as a fallback."
           (ef-themes--alist-or-seq properties 'height #'floatp 'unspecified)
           :weight
           (or weight 'unspecified))))
-
-(defun ef-themes--region (bg bgneutral bgintense bgintenseneutral fgintense)
-  "Apply `ef-themes-region' styles.
-
-BG is the default background.  BGNEUTRAL is its gray counterpart.
-BGINTENSE is an amplified variant of BG, while BGINTENSENEUTRAL
-is a more intense neutral background.  FGINTENSE is the
-foreground that is used with any of the intense backgrounds."
-  (let ((properties (ef-themes--list-or-warn 'ef-themes-region)))
-    (list
-     :background
-     (cond
-      ((and (memq 'intense properties) (memq 'neutral properties))
-       bgintenseneutral)
-      ((memq 'intense properties)
-       bgintense)
-      ((memq 'neutral properties)
-       bgneutral)
-      (bg))
-     :foreground
-     (if (memq 'intense properties)
-         fgintense
-       'unspecified)
-     :extend
-     (if (memq 'no-extend properties)
-         nil
-       t))))
 
 ;;; Commands and their helper functions
 
@@ -915,7 +854,7 @@ text should not be underlined as well) yet still blend in."
     `(default ((,c :background ,bg-main :foreground ,fg-main)))
     `(italic ((,c :slant italic)))
     `(menu ((,c :background ,bg-dim :foreground ,fg-main)))
-    `(region ((,c ,@(ef-themes--region bg-region bg-alt bg-region-intense bg-active fg-intense))))
+    `(region ((,c :background ,bg-region :foreground ,fg-region)))
     `(scroll-bar ((,c :background ,bg-dim :foreground ,fg-dim)))
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
@@ -1430,8 +1369,8 @@ text should not be underlined as well) yet still blend in."
     `(git-commit-comment-heading ((,c :inherit (bold font-lock-comment-face))))
     `(git-commit-comment-file ((,c :inherit font-lock-comment-face :foreground ,name)))
     `(git-commit-keyword ((,c :foreground ,keyword)))
-    `(git-commit-nonempty-second-line ((,c :background ,bg-err :foreground ,err)))
-    `(git-commit-overlong-summary ((,c :background ,bg-warning :foreground ,warning)))
+    `(git-commit-nonempty-second-line ((,c :foreground ,err)))
+    `(git-commit-overlong-summary ((,c :foreground ,warning)))
     `(git-commit-summary ((,c :inherit success)))
 ;;;; git-gutter
     `(git-gutter:added ((,c :background ,bg-added :foreground ,fg-added)))
@@ -1797,7 +1736,7 @@ text should not be underlined as well) yet still blend in."
     `(mu4e-contact-face ((,c :inherit message-header-to)))
     `(mu4e-context-face ((,c :inherit bold)))
     `(mu4e-draft-face ((,c :foreground ,info)))
-    `(mu4e-flagged-face ((,c :foreground ,err)))
+    `(mu4e-flagged-face ((,c :foreground ,keyword)))
     `(mu4e-footer-face ((,c :inherit italic :foreground ,fg-alt)))
     `(mu4e-forwarded-face ((,c :inherit italic :foreground ,info)))
     `(mu4e-header-face ((,c :inherit shadow)))
@@ -1895,7 +1834,7 @@ text should not be underlined as well) yet still blend in."
     `(notmuch-message-summary-face ((,c :inherit bold :background ,bg-alt)))
     `(notmuch-search-count ((,c :foreground ,fg-dim)))
     `(notmuch-search-date ((,c :foreground ,date-common)))
-    `(notmuch-search-flagged-face ((,c :foreground ,err)))
+    `(notmuch-search-flagged-face ((,c :foreground ,keyword)))
     `(notmuch-search-matching-authors ((,c :foreground ,mail-recipient)))
     `(notmuch-search-non-matching-authors ((,c :inherit shadow)))
     `(notmuch-search-subject ((,c :foreground ,fg-main)))
@@ -1903,7 +1842,7 @@ text should not be underlined as well) yet still blend in."
     `(notmuch-tag-added ((,c :underline ,underline-info)))
     `(notmuch-tag-deleted ((,c :strike-through ,underline-err)))
     `(notmuch-tag-face ((,c :foreground ,accent-0)))
-    `(notmuch-tag-flagged ((,c :foreground ,err)))
+    `(notmuch-tag-flagged ((,c :foreground ,keyword)))
     `(notmuch-tag-unread ((,c :foreground ,accent-1)))
     `(notmuch-tree-match-author-face ((,c :inherit notmuch-search-matching-authors)))
     `(notmuch-tree-match-date-face ((,c :inherit notmuch-search-date)))
@@ -2260,8 +2199,8 @@ text should not be underlined as well) yet still blend in."
     `(vc-dir-status-warning ((,c :inherit error)))
     `(vc-conflict-state ((,c :inherit error)))
     `(vc-edited-state ((,c :inherit italic)))
-    `(vc-git-log-edit-summary-max-warning ((,c :background ,bg-err :foreground ,err)))
-    `(vc-git-log-edit-summary-target-warning ((,c :background ,bg-warning :foreground ,warning)))
+    `(vc-git-log-edit-summary-max-warning ((,c :foreground ,err)))
+    `(vc-git-log-edit-summary-target-warning ((,c :foreground ,warning)))
     `(vc-locally-added-state ((,c :inherit italic)))
     `(vc-locked-state ((,c :inherit success)))
     `(vc-missing-state ((,c :inherit error)))

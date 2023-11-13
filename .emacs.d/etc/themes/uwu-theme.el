@@ -168,17 +168,17 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(highline-face ((t (:background ,uwu-black))))
                           `(ac-selection-face ((t (:background ,uwu-magenta :foreground ,uwu-highlight))))
                           `(ac-candidate-face ((t (:background ,uwu-black :foreground ,uwu-white))))
-                          `(flymake-errline
+                          `(flymake-error
                             ((((supports :underline (:style wave)))
                               (:underline (:style wave :color ,uwu-error)
                                           :inherit unspecified :foreground unspecified :background unspecified))
                              (t (:foreground ,uwu-error :weight bold :underline t))))
-                          `(flymake-warnline
+                          `(flymake-warning
                             ((((supports :underline (:style wave)))
                               (:underline (:style wave :color ,uwu-warning)
                                           :inherit unspecified :foreground unspecified :background unspecified))
                              (t (:foreground ,uwu-warning :weight bold :underline t))))
-                          `(flymake-infoline
+                          `(flymake-note
                             ((((supports :underline (:style wave)))
                               (:underline (:style wave :color ,uwu-green)
                                           :inherit unspecified :foreground unspecified :background unspecified))
@@ -243,8 +243,12 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(completions-annotations ((t (:foreground ,uwu-white))))
                           `(completions-common-part ((t (:foreground ,uwu-bright-blue))))
                           `(completions-first-difference ((t (:inherit bold :foreground ,uwu-white))))
+                          ;; icomplete
+                          `(icomplete-first-match ((t (:foreground ,uwu-bright-blue :weight bold))))
+                          `(icomplete-selected-match ((t (:background ,uwu-black :foreground ,uwu-yellow :weight bold))))
+                          `(icomplete-section ((t (:foreground ,uwu-green :weight bold))))
                           ;; ido
-                          `(ido-first-match ((t (:foreground ,uwu-blue :weight bold))))
+                          `(ido-first-match ((t (:foreground ,uwu-bright-blue :weight bold))))
                           `(ido-only-match ((t (:foreground ,uwu-green :weight bold))))
                           `(ido-subdir ((t (:foreground ,uwu-yellow))))
                           `(ido-indicator ((t (:foreground ,uwu-yellow :background ,uwu-bright-red))))
@@ -507,10 +511,6 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(vertico-multiline ((t (:foreground ,uwu-green :weight bold))))
                           `(vertico-group-title ((t (:foreground ,uwu-green :weight bold))))
                           `(vertico-group-separator ((t (:foreground ,uwu-green :weight bold))))
-                          ;; selectrum
-                          `(selectrum-current-candidate ((t (:background ,uwu-black :foreground ,uwu-yellow :weight bold))))
-                          `(selectrum-primary-highlight ((t (:foreground ,uwu-blue :weight bold))))
-                          `(selectrum-secondary-highlight ((t (:foreground ,uwu-magenta :weight bold))))
                           ;; orderless
                           `(orderless-match-face-0 ((t (:foreground ,uwu-blue))))
                           `(orderless-match-face-1 ((t (:foreground ,uwu-magenta))))

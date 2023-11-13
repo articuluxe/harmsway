@@ -161,7 +161,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
 
       ;; --- Common logics
       (error      "#ee6363")
-      (link       "#fcde69")
+      (link       "#b4befe")
       (todo       "#54ff9f")
       (done       "#b4dddd")
       (code       "#77ee77")
@@ -178,16 +178,17 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
       (yellow-5 "#eee685")
 
       ;; -- For Code
-      (c-keyword     "#00cdcd")
+      (c-keyword     "#22fefe")
       (c-func        "#54ff9f")
       (c-builtin     "#ee88ee")
       (c-const       "#ff6a6a")
       (c-var         "#ffb5c5")
-      (c-string      "#ffec8b")
+      (c-string      "#89b4fa")
+      (c-type        "#11bfa0")
       (c-operator    "#ee9572")
       (c-regexc      "#9bcd9b")
       (c-regexb      "#a2cd5a")
-      (c-warning     "#97ffff")
+      (c-warning     "#daa520")
       (c-property    "#EE7286")
 
       ;; --- For diffs
@@ -216,7 +217,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
       ;; --- For headings
       (title        "#6ae4b9")
       (heading-1    "#ab82ff")
-      (heading-2    "#ffec8b")
+      (heading-2    "#fab387")
       (heading-3    "#3cb6df")
       (heading-4    "#9aff9a")
       (heading-5    "#97ffff")
@@ -275,7 +276,7 @@ Respected Only in GUI frame"
    `(region                    ((,class :background ,fg-region :weight semi-bold)))
    `(highlight                 ((,class :background ,bg-dim :foreground ,fg-dim)))
    `(fixed-pitch-serif         ((,class :inherit default)))
-   `(variable-pitch            ((,class :inherit default)))
+   `(variable-pitch            ((,class )))
    `(cursor                    ((,class :background ,cursor)))
    `(hl-line                   ((,class :extend t :background ,bg-dim)))
    `(link                      ((,class :font ,haki-link-font :slant italic :underline t :weight medium :foreground ,link :height 1.1)))
@@ -327,7 +328,7 @@ Respected Only in GUI frame"
    `(font-lock-regexp-grouping-backslash       ((,class :inherit bold :foreground ,c-regexb)))
    `(font-lock-regexp-grouping-construct       ((,class :inherit bold :foreground ,c-regexc)))
    `(font-lock-string-face                     ((,class :foreground ,c-string :slant italic)))
-   `(font-lock-type-face                       ((,class :inherit bold :foreground ,c-string)))
+   `(font-lock-type-face                       ((,class :inherit bold :foreground ,c-type)))
    `(font-lock-variable-name-face              ((,class :foreground ,c-var)))
    `(font-lock-warning-face                    ((,class :inherit bold :foreground ,c-warning)))
    `(font-lock-punctuation-face                ((,class :inherit (italic) :foreground ,bracket)))
@@ -385,13 +386,13 @@ Respected Only in GUI frame"
    `(org-mode-line-clock-overrun             ((,class :foreground ,error)))
    `(org-priority                            ((,class :foreground ,bg-main)))
    `(org-property-value                      ((,class :foreground ,c-var)))
-   `(org-quote                               ((,class )))
+   `(org-quote                               ((,class :inherit bold :foreground ,fg-main)))
    `(org-scheduled                           ((,class :foreground ,fg-main)))
    `(org-scheduled-previously                ((,class :foreground ,fg-dim)))
    `(org-scheduled-today                     ((,class :foreground ,fg-main)))
    `(org-sexp-date                           ((,class :foreground ,bg-main)))
    `(org-special-keyword                     ((,class :foreground ,fg-inactive)))
-   `(org-table                               ((,class :foreground ,c-warning)))
+   `(org-table                               ((,class :inherit fixed-pitch :foreground ,c-warning)))
    `(org-table-header                        ((,class :foreground ,title :inherit (bold org-table))))
    `(org-tag                                 ((,class :width condensed :height 0.9 :weight regular :underline nil :box (:color ,cursor :line-width (1 . -3)) :background ,bg-tag :foreground ,bg-dim)))
    `(org-tag-group                           ((,class )))
@@ -441,17 +442,17 @@ Respected Only in GUI frame"
    `(olivetti-fringe ((,class )))
 
 ;;; --- Rainbow delimiters (parenthesis world)
-   `(rainbow-delimiters-base-face nil)
-   `(rainbow-delimiters-depth-1-face              ((,class :foreground ,heading-1 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-2-face              ((,class :foreground ,heading-2 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-3-face              ((,class :foreground ,heading-3 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-4-face              ((,class :foreground ,heading-4 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-5-face              ((,class :foreground ,heading-5 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-6-face              ((,class :foreground ,heading-6 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-7-face              ((,class :foreground ,heading-7 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-8-face              ((,class :foreground ,heading-8 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-depth-9-face              ((,class :foreground ,heading-9 :inherit 'rainbow-delimiters-base-face)))
-   `(rainbow-delimiters-base-error-face           ((,class :foreground ,error :inherit 'rainbow-delimiters-base-face :underline ,link)))
+   `(rainbow-delimiters-base-face                 ((,class :inherit default)))
+   `(rainbow-delimiters-depth-1-face              ((,class :foreground ,heading-1)))
+   `(rainbow-delimiters-depth-2-face              ((,class :foreground ,heading-2)))
+   `(rainbow-delimiters-depth-3-face              ((,class :foreground ,heading-3)))
+   `(rainbow-delimiters-depth-4-face              ((,class :foreground ,heading-4)))
+   `(rainbow-delimiters-depth-5-face              ((,class :foreground ,heading-5)))
+   `(rainbow-delimiters-depth-6-face              ((,class :foreground ,heading-6)))
+   `(rainbow-delimiters-depth-7-face              ((,class :foreground ,heading-7)))
+   `(rainbow-delimiters-depth-8-face              ((,class :foreground ,heading-8)))
+   `(rainbow-delimiters-depth-9-face              ((,class :foreground ,heading-9)))
+   `(rainbow-delimiters-base-error-face           ((,class :foreground ,error :underline ,link)))
 
 ;;; --- Dired
    `(dired-broken-symlink       ((,class :inherit button :foreground ,error)))
@@ -590,10 +591,15 @@ Respected Only in GUI frame"
    `(tempel-field                      ((,class :inherit tempel-default :foreground ,todo :box ,todo)))
    `(tempel-default                    ((,class :inherit (bold italic) :foreground ,c-warning :box ,c-warning)))
 
+;;; --- embark
+   `(embark-keybinding                 ((,class :inherit marginalia-key)))
+   `(embark-target                     ((,class :inherit (org-target highlight))))
+
+
 ;;; --- Jinx
    `(jinx-accept                       ((,class :inherit font-lock-negation-char-face)))
    `(jinx-highlight                    ((,class :background ,yellow-5 :foreground ,bg-inactive)))
-   `(jinx-misspelled                   ((,class :underline ,link)))
+   `(jinx-misspelled                   ((,class :underline ,yellow-5)))
 
 ;;; --- Dictionary (better use sdcv)
    `(dictionary-button-face            ((,class :inherit bold)))
@@ -612,7 +618,7 @@ Respected Only in GUI frame"
    `(shr-h6               ((,class :inherit org-level-6)))
    `(shr-selected-link    ((,class :inherit link :box t)))
    `(shr-link             ((,class :inherit link :foreground ,link)))
-   `(shr-text             ((,class )))
+   `(shr-text             ((,class :inherit variable-pitch-text)))
 
 ;;; --- eww
    `(eww-invalid-certificate      ((,class :foreground ,error)))
@@ -692,7 +698,7 @@ Respected Only in GUI frame"
    `(eglot-inlay-hint-face                   ((,class :height 0.8 :inherit shadow :foreground ,fg-dim)))
    `(eglot-parameter-hint-face               ((,class :inherit eglot-inlay-hint-face)))
    `(eglot-highlight-symbol-face             ((,class :inherit bold)))
-   `(eglot-diagnostic-tag-deprecated-face    ((,class :strike-t<hrough t :inherit shadow)))
+   `(eglot-diagnostic-tag-deprecated-face    ((,class :strike-through t :inherit shadow)))
    `(eglot-diagnostic-tag-unnecessary-face   ((,class :inherit shadow)))
 
 ;;; --- Eldoc-box
@@ -722,13 +728,12 @@ Respected Only in GUI frame"
    `(flycheck-indicator-warning          ((,class :inherit warning)))
 
 ;;; --- flymake
-   `(flymake-error                                ((,class :inherit flycheck-error)))
-   `(flymake-error-echo                           ((,class :inherit error)))
-   `(flymake-note                                 ((,class :inherit flycheck-info)))
-   `(flymake-note-echo                            ((,class :inherit success)))
-   `(flymake-warning                              ((,class :inherit flycheck-warning)))
-   `(flymake-warning-echo                         ((,class :inherit warning)))
-   `(flymake-note-echo-at-eol                     ((,class :foreground ,fg-region)))
+   `(flymake-error              ((,class :underline (:style wave :color ,error))))
+   `(flymake-note               ((,class :underline (:style wave :color ,fg-region))))
+   `(flymake-warning            ((,class :underline (:style wave :color ,yellow-5))))
+   `(flymake-error-echo         ((,class :inherit bold :background ,error :foreground ,bg-dim)))
+   `(flymake-note-echo          ((,class :inherit bold :background ,cursor :foreground ,bg-dim)))
+   `(flymake-warning-echo       ((,class :inherit bold :background ,yellow-5 :foreground ,bg-main)))
 
 ;;; --- flyspell (better use jinx)
    `(flyspell-duplicate         ((,class :inherit jinx-highlight)))
@@ -1078,6 +1083,11 @@ Respected Only in GUI frame"
    `(solaire-mode-line-face                     ((,class :foreground ,fg-dim)))
    `(solaire-header-line-face                   ((,class )))
    `(solaire-line-number-face                   ((,class :inherit line-number :background ,bg-dim :foreground ,fg-inactive)))
+
+;;; --- dashboard
+   `(dashboard-heading                          ((,class :font ,haki-heading-font :weight bold :foreground ,heading-1)))
+   `(dashboard-banner-logo-title-face           ((,class :inherit dashboard-heading :foreground ,title)))
+   `(dashboard-items-face                       ((,class )))
 
 ;;; --- vundo
    `(vundo-highlight                            ((,class :inherit (bold vundo-nodeatom) :foreground ,link)))))

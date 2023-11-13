@@ -3,7 +3,7 @@
 ;; Author: Jessie Hildebrandt <jessieh.net>
 ;; Homepage: https://gitlab.com/jessieh/adwaita-dark-theme
 ;; Keywords: mode-line faces
-;; Version: 1.1.0
+;; Version: 1.1.1
 ;; Package-Requires: ((emacs "27.1"))
 ;;
 ;; This file is not part of GNU Emacs.
@@ -215,7 +215,7 @@
    `(link-visited ((,class (:foreground ,magenta :underline t :weight bold))))
    `(escape-glyph ((,class (:foreground ,pink))))
    `(homoglyph ((,class (:inherit escape-glyph))))
-   `(widget-single-line-field ((,class :background ,base-5)))
+   `(widget-single-line-field ((,class (:background ,base-5))))
    `(widget-field ((,class (:inherit widget-single-line-field :extend t))))
 
    ;; font-lock
@@ -380,7 +380,7 @@
    ;; flymake
    `(flymake-error ((,class (:underline (:color ,red)))))
    `(flymake-note ((,class (:underline (:color ,green)))))
-   `(flymake-warning ((,class (:underline (:color ,orange)))))
+   `(flymake-warning ((,class (:underline (:color ,yellow)))))
 
    ;; flyspell
    `(flyspell-incorrect ((,class (:inherit unspecified :underline (:color ,red)))))
@@ -785,6 +785,12 @@
    `(nlinum-hl-face ((,class (:inherit line-number-current-line))))
    `(nlinum-relative-current-face ((,class (:inherit line-number-current-line))))
 
+   ;; orderless
+   `(orderless-match-face-0 ((,class (:inherit completions-common-part))))
+   `(orderless-match-face-1 ((,class (:inherit orderless-match-face-0))))
+   `(orderless-match-face-2 ((,class (:inherit orderless-match-face-0))))
+   `(orderless-match-face-3 ((,class (:inherit orderless-match-face-0))))
+
    ;; popup
    `(popup-face ((,class (:background ,base-3 :foreground ,base-8))))
    `(popup-tip-face ((,class (:inherit tooltip))))
@@ -826,6 +832,11 @@
    `(swiper-match-face-2 ((,class (:background ,orange :foreground ,base-0 :weight bold))))
    `(swiper-match-face-3 ((,class (:background ,magenta :foreground ,base-0 :weight bold))))
    `(swiper-match-face-4 ((,class (:background ,green :foreground ,base-0 :weight bold))))
+
+   ;; tempel
+   `(tempel-form ((,class (:foreground unspecified))))
+   `(tempel-field ((,class (:foreground unspecified))))
+   `(tempel-default ((,class (:foreground unspecified :underline t))))
 
    ;; transient
    `(transient-heading ((,class (:foreground ,base-8 :weight bold))))

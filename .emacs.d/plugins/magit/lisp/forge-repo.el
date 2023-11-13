@@ -240,7 +240,8 @@ an error."
       (and-let* ((topic (forge-topic-at-point nil 'not-thingatpt)))
         (forge-get-repository topic))
       (and (derived-mode-p 'forge-repository-list-mode)
-           (forge-get-repository :id (tabulated-list-get-id)))
+           (and-let* ((id (tabulated-list-get-id)))
+             (forge-get-repository :id id)))
       (and demand (user-error "No repository at point"))))
 
 ;;; Identity
@@ -306,9 +307,9 @@ forges and hosts."
                            (oref default githost))))))
     (save-match-data
       (if (string-match "\\`\\(.+\\)/\\([^/]+\\) @\\(.+\\)\\'" choice)
-          (list (match-string 3 choice)
-                (match-string 1 choice)
-                (match-string 2 choice))
+          (forge-get-repository (list (match-string 3 choice)
+                                      (match-string 1 choice)
+                                      (match-string 2 choice)))
         (error "BUG")))))
 
 (defun forge-read-host (prompt &optional class)
@@ -349,14 +350,14 @@ forges and hosts."
    (if (symbolp format-or-slot)
        (eieio-oref repo format-or-slot)
      format-or-slot)
-   (with-slots (githost owner name) repo
-     (let ((path (if owner (concat owner "/" name) name)))
-       `(,@spec
-         (?h . ,githost)
-         (?o . ,owner)
-         (?n . ,name)
-         (?p . ,path)
-         (?P . ,(string-replace "/" "%2F" path)))))))
+   (pcase-let* (((eieio githost owner name) repo)
+                (path (if owner (concat owner "/" name) name)))
+     `(,@spec
+       (?h . ,githost)
+       (?o . ,owner)
+       (?n . ,name)
+       (?p . ,path)
+       (?P . ,(string-replace "/" "%2F" path))))))
 
 (defun forge--set-field-callback ()
   (let ((buf (current-buffer)))
@@ -393,16 +394,16 @@ forges and hosts."
     (cl-call-next-method (ghub--host sym) sym)))
 
 (defun forge--ghub-type-symbol (class)
-  (cl-ecase class
+  (pcase-exhaustive class
     ;; This package does not define a `forge-gitlab-http-repository'
     ;; class, but we suggest at #9 that users define such a class if
     ;; they must connect to a Gitlab instance that uses http instead
     ;; of https.
-    ((forge-gitlab-repository forge-gitlab-http-repository) 'gitlab)
-    (forge-github-repository    'github)
-    (forge-gitea-repository     'gitea)
-    (forge-gogs-repository      'gogs)
-    (forge-bitbucket-repository 'bitbucket)))
+    ((or 'forge-gitlab-repository 'forge-gitlab-http-repository) 'gitlab)
+    ('forge-github-repository    'github)
+    ('forge-gitea-repository     'gitea)
+    ('forge-gogs-repository      'gogs)
+    ('forge-bitbucket-repository 'bitbucket)))
 
 ;;; _
 (provide 'forge-repo)

@@ -1493,12 +1493,14 @@ regions, 5. The current/total for the highlight term (with `symbol-overlay'),
 
 (doom-modeline-def-segment bar
   "The bar regulates the height of the `doom-modeline' in GUI."
-  (if doom-modeline-hud
-      (doom-modeline--hud)
-    (doom-modeline--bar)))
+  (concat
+   (if doom-modeline-hud
+       (doom-modeline--hud)
+     (doom-modeline--bar))
+   (doom-modeline-spc)))
 
 (doom-modeline-def-segment hud
-  "Powerline's hud segment reimplemented in the style of Doom's bar segment."
+  "Powerline's hud segment reimplemented in the style of bar segment."
   (doom-modeline--hud))
 
 
@@ -1546,18 +1548,17 @@ one. The ignored buffers are excluded unless `aw-ignore-on' is nil."
               ((bound-and-true-p window-numbering-mode)
                (window-numbering-get-number-string))
               (t ""))))
-    (if (and (length> num 0)
-             (length> (cl-mapcan
-                       (lambda (frame)
-                         ;; Exclude minibuffer and child frames
-                         (unless (and (fboundp 'frame-parent)
-                                      (frame-parent frame))
-                           (window-list frame 'never)))
-                       (visible-frame-list))
-                      1))
-        (propertize (format " %s " num)
-                    'face (doom-modeline-face 'doom-modeline-buffer-major-mode))
-      (doom-modeline-spc))))
+    (when (and (length> num 0)
+               (length> (cl-mapcan
+                         (lambda (frame)
+                           ;; Exclude minibuffer and child frames
+                           (unless (and (fboundp 'frame-parent)
+                                        (frame-parent frame))
+                             (window-list frame 'never)))
+                         (visible-frame-list))
+                        1))
+      (propertize (format " %s " num)
+                  'face (doom-modeline-face 'doom-modeline-buffer-major-mode)))))
 
 
 ;;
@@ -2019,7 +2020,9 @@ mouse-3: Describe current input method")
 
 (defun doom-modeline-lsp-icon (text face)
   "Display LSP icon (or TEXT in terminal) with FACE."
-  (doom-modeline-icon 'octicon "nf-oct-rocket" "🚀" text :face face))
+  (if doom-modeline-lsp-icon
+      (doom-modeline-icon 'octicon "nf-oct-rocket" "🚀" text :face face)
+    (propertize text 'face face)))
 
 (defvar-local doom-modeline--lsp nil)
 (defun doom-modeline-update-lsp (&rest _)
@@ -2121,7 +2124,7 @@ mouse-1: Start server"))
   "Update tags state."
   (setq doom-modeline--tags
         (propertize
-         (doom-modeline-lsp-icon "LSP" 'doom-modeline-lsp-success)
+         (doom-modeline-lsp-icon "TAGS" 'doom-modeline-lsp-success)
          'help-echo "TAGS: Citre mode
 mouse-1: Toggle citre mode"
          'mouse-face 'doom-modeline-highlight
@@ -2136,6 +2139,15 @@ mouse-1: Toggle citre mode"
          (doom-modeline-update-eglot))
         ((bound-and-true-p citre-mode)
          (doom-modeline-update-tags))))
+
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-lsp-icon
+ (lambda (_sym val op _where)
+   (when (eq op 'set)
+     (setq doom-modeline-lsp-icon val)
+     (dolist (buf (buffer-list))
+       (with-current-buffer buf
+         (doom-modeline-update-lsp-icon))))))
 
 (doom-modeline-add-variable-watcher
  'doom-modeline-icon
@@ -3058,6 +3070,29 @@ mouse-3: Restart preview"
 ;; Display time
 ;;
 
+(defun doom-modeline-time-icon ()
+  "Displays the time icon."
+  (doom-modeline-icon
+   'mdicon
+   (if doom-modeline-time-live-icon
+       (pcase (% (caddr (decode-time)) 12)
+         (0 "nf-md-clock_time_twelve_outline")
+         (1 "nf-md-clock_time_one_outline")
+         (2 "nf-md-clock_time_two_outline")
+         (3 "nf-md-clock_time_three_outline")
+         (4 "nf-md-clock_time_four_outline")
+         (5 "nf-md-clock_time_five_outline")
+         (6 "nf-md-clock_time_six_outline")
+         (7 "nf-md-clock_time_seven_outline")
+         (8 "nf-md-clock_time_eight_outline")
+         (9 "nf-md-clock_time_nine_outline")
+         (10 "nf-md-clock_time_ten_outline")
+         (11 "nf-md-clock_time_eleven_outline"))
+     "nf-md-clock_outline")
+   "⏰"
+   ""
+   :face '(:inherit doom-modeline-time :weight normal)))
+
 (doom-modeline-def-segment time
   (when (and doom-modeline-time
              (bound-and-true-p display-time-mode)
@@ -3066,10 +3101,9 @@ mouse-3: Restart preview"
      (doom-modeline-spc)
      (when doom-modeline-time-icon
        (concat
-        (doom-modeline-icon 'octicon "nf-oct-clock" "⏰" ""
-                            :face '(:inherit doom-modeline-time :weight normal))
+        (doom-modeline-time-icon)
         (and (or doom-modeline-icon doom-modeline-unicode-fallback)
-             (doom-modeline-spc))))
+             (doom-modeline-vspc))))
      (propertize display-time-string
                  'face (doom-modeline-face 'doom-modeline-time)))))
 
@@ -3099,11 +3133,11 @@ mouse-3: Restart preview"
        (propertize "[Compiling] "
                    'face (doom-modeline-face 'doom-modeline-compilation)
 	               'help-echo "Compiling; mouse-2: Goto Buffer"
-                   'mouse-face 'doom-modeline-highlight
-                   'local-map
-                   (make-mode-line-mouse-map
-                    'mouse-2
-			        #'compilation-goto-in-progress-buffer))))
+  'mouse-face 'doom-modeline-highlight
+  'local-map
+  (make-mode-line-mouse-map
+   'mouse-2
+   #'compilation-goto-in-progress-buffer))))
 
 ;;
 ;; Eldoc

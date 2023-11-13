@@ -3,8 +3,8 @@
 ;; Author: Philippe Vaucher <philippe.vaucher@gmail.com>
 ;; URL: https://github.com/Silex/docker.el
 ;; Keywords: filename, convenience
-;; Version: 2.2.0
-;; Package-Requires: ((aio "1.0") (dash "2.19.1") (emacs "26.1") (s "1.12.0") (tablist "1.0") (transient "0.3.7"))
+;; Version: 2.3.1
+;; Package-Requires: ((aio "1.0") (dash "2.19.1") (emacs "26.1") (s "1.13.0") (tablist "1.1") (transient "0.4.3"))
 
 ;; This file is NOT part of GNU Emacs.
 

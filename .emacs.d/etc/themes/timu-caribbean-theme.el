@@ -304,13 +304,13 @@ With a value of t the mode-line has a border."
   "Function adding a border to the `mode-line' of the active window.
 BOXCOLOR supplies the border color."
   (if (eq t timu-caribbean-mode-line-border)
-        (list :box boxcolor)))
+      (list :box boxcolor)))
 
 (defun timu-caribbean-set-mode-line-inactive-border (boxcolor)
   "Function adding a border to the `mode-line' of the inactive window.
 BOXCOLOR supplies the border color."
   (if (eq t timu-caribbean-mode-line-border)
-        (list :box boxcolor)))
+      (list :box boxcolor)))
 
 ;;;###autoload
 (defun timu-caribbean-toggle-org-colors-intensity ()
@@ -710,7 +710,7 @@ Sourced other themes to get information about font faces for packages.")
    `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
    `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
 
-;;; diff
+;;;; diff
    `(diff-added ((,class (:foreground ,bg :background ,green :extend t))))
    `(diff-indicator-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
    `(diff-refine-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
@@ -1556,8 +1556,8 @@ Sourced other themes to get information about font faces for packages.")
    `(org-hide ((,class (:foreground ,bg))))
    `(org-latex-and-related ((,class (:foreground ,caribbean8 :weight bold))))
    `(org-level-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.3) ,@(timu-caribbean-set-intense-org-colors blue bg-other)))))
-   `(org-level-2 ((,class (:foreground ,red :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.2) ,@(timu-caribbean-set-intense-org-colors red bg-other)))))
-   `(org-level-3 ((,class (:foreground ,teal :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.1) ,@(timu-caribbean-set-intense-org-colors teal bg-other)))))
+   `(org-level-2 ((,class (:foreground ,teal :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.2) ,@(timu-caribbean-set-intense-org-colors red bg-other)))))
+   `(org-level-3 ((,class (:foreground ,red :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.1) ,@(timu-caribbean-set-intense-org-colors teal bg-other)))))
    `(org-level-4 ((,class (:foreground ,cyan ,@(timu-caribbean-set-intense-org-colors cyan bg-org)))))
    `(org-level-5 ((,class (:foreground ,green ,@(timu-caribbean-set-intense-org-colors green bg-org)))))
    `(org-level-6 ((,class (:foreground ,orange ,@(timu-caribbean-set-intense-org-colors orange bg-org)))))
@@ -1589,8 +1589,8 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; outline
    `(outline-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.2)))))
-   `(outline-2 ((,class (:foreground ,red :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.2)))))
-   `(outline-3 ((,class (:foreground ,teal :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.1)))))
+   `(outline-2 ((,class (:foreground ,teal :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.2)))))
+   `(outline-3 ((,class (:foreground ,red :weight bold ,@(timu-caribbean-do-scale timu-caribbean-scale-org-document-info 1.1)))))
    `(outline-4 ((,class (:foreground ,cyan))))
    `(outline-5 ((,class (:foreground ,green))))
    `(outline-6 ((,class (:foreground ,orange))))
@@ -1825,8 +1825,8 @@ Sourced other themes to get information about font faces for packages.")
    `(treemacs-tags-face ((,class (:foreground ,red))))
 
 ;;;; treemacs-all-the-icons
-     `(treemacs-all-the-icons-file-face ((,class (:foreground ,blue))))
-     `(treemacs-all-the-icons-root-face ((,class (:foreground ,fg))))
+   `(treemacs-all-the-icons-file-face ((,class (:foreground ,blue))))
+   `(treemacs-all-the-icons-root-face ((,class (:foreground ,fg))))
 
 ;;;; tree-sitter-hl
    `(tree-sitter-hl-face:function ((,class (:foreground ,lightcyan))))

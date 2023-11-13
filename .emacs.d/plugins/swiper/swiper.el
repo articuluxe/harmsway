@@ -3,9 +3,10 @@
 ;; Copyright (C) 2015-2023 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
+;; Maintainer: Basil L. Contovounesios <contovob@tcd.ie>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.14.0
-;; Package-Requires: ((emacs "24.5") (ivy "0.14.0"))
+;; Version: 0.14.2
+;; Package-Requires: ((emacs "24.5") (ivy "0.14.2"))
 ;; Keywords: matching
 
 ;; This file is part of GNU Emacs.
@@ -747,20 +748,21 @@ When capture groups are present in the input, print them instead of lines."
     (evil-set-jump)))
 
 (defun swiper--normalize-regex (re)
-  "Normalize the swiper regex RE.
-Add a space after a leading `^' if needed and apply
-`search-default-mode' if bound."
+  "Normalize the Swiper regexp RE.
+Add a space after a leading `^' for `swiper', and apply
+`search-default-mode' if bound in the original buffer."
   (replace-regexp-in-string
    "^\\(?:\\\\(\\)?\\^"
    (concat "\\&" (if (eq 'swiper (ivy-state-caller ivy-last)) " " ""))
-   (if (functionp (bound-and-true-p search-default-mode))
-       (mapconcat
-        (lambda (x)
-          (if (string-match-p "\\`[^$\\^]+\\'" x)
-              (funcall search-default-mode x)
-            x))
-        (split-string re "\\b") "")
-     re)
+   (let ((mode (with-ivy-window (bound-and-true-p search-default-mode))))
+     (if (functionp mode)
+         (mapconcat
+          (lambda (x)
+            (if (string-match-p "\\`[^$\\^]+\\'" x)
+                (funcall mode x)
+              x))
+          (split-string re "\\b") "")
+       re))
    t))
 
 (defun swiper--re-builder (str)

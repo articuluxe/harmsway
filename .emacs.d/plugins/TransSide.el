@@ -99,10 +99,12 @@
 	 (outline-6 (:foreground level6))
 	 (outline-7 (:foreground level7))
 	 (outline-8 (:foreground level8))
-     
+
 	 ;;Org-mode stuff
 	 (org-todo (:weight 'bold :box nil :foreground purple-alt))
 	 (org-done (:weight 'bold :box nil :foreground purple))
+
+     (org-tag (:weight 'bold :foreground fg-white :background bg-black))
      
 	 (org-headline-todo (:foreground pink-alt))
 	 (org-headline-done (:foreground blue-alt))
@@ -158,25 +160,16 @@
 	 (org-time-grid (:foreground purple-alt-dimmed))
      
 	 (org-ellipsis (:foreground purple))
-     
-     ;;org-modern
-     (org-modern-symbol nil)
-     (org-modern-label (:width 'regular :height 1.0 :weight 'regular :underline nil :box (:color bg-main)))
-     (org-modern-block-name (:height 0.9 :weight 'light))
-     (org-modern-tag (:foreground fg-white :inherit ('secondary-selection 'org-modern-label)))
-     (org-modern-internal-target (:inherit 'org-modern-done))
-     (org-modern-radio-target (:inherit 'org-modern-done))
-     (org-modern-done (:inverse-video t :weight 'semibold :background gray-dark :height 1.0 :inherit ('org-modern-label 'org-done)))
-     (org-modern-todo (:weight 'semibold :inverse-video t :height 1.0 :inherit ('org-todo 'org-modern-label)))
-     (org-modern-priority (:weight 'semibold :inverse-video t :inherit ('org-priority 'org-modern-label)))
-     (org-modern-statistics (:inherit 'org-modern-todo))
-     (org-modern-date-active (:inverse-video t :weight 'semibold :inherit ('org-modern-label 'org-date)))
-     (org-modern-time-active (:inverse-video t :foreground blue-alt-dimmed :weight 'semibold :inherit ('org-modern-label 'org-date)))
-     (org-modern-date-inactive (:inverse-video t :inherit ('org-modern-label 'org-date)))
-     (org-modern-time-inactive (:inverse-video t :foreground blue-alt-dimmed :inherit ('org-modern-label 'org-date)))
-     (org-modern-horizontal-rule (:strike-through gray-alt :inherit 'org-hide))
-     
-     
+
+     ;;Org-modern
+     (org-modern-tag (:foreground fg-white :background bg-black))
+     (org-modern-todo (:weight 'bold :box nil :background purple-alt :foreground bg-main))
+     (org-modern-done (:weight 'bold :box nil :background pastel-aqua :foreground bg-main))
+     (org-modern-date-inactive (:background pastel-blue :foreground bg-black))
+     (org-modern-date-active (:background blue :foreground gray-alt-dark))
+     (org-modern-time-inactive (:background blue-alt :foreground bg-black))
+     (org-modern-time-active (:background blue-alt-dimmed :foreground gray-alt-dark))     
+
 	 ;;font-latex
 	 (font-latex-math-face (:inherit 'bold :foreground pink-alt))
 	 (font-latex-sectioning-5-face (:weight 'bold :foreground blue-alt :inherit 'variable-pitch))
@@ -209,126 +202,15 @@
 	 (rainbow-delimiters-unmatched-face (:foreground warning))
 	 (rainbow-delimiters-base-error-face (:foreground bg-black :inherit 'rainbow-delimiters-base-face))
 	 (rainbow-delimiters-base-face (:weight 'bold))
-     
-	 ;;Company
-	 (company-tooltip (:foreground fg-text :background bg-black :box (:color pastel-violet)))
-	 (company-tooltip-selection (:inherit 'highlight))
-	 (company-tooltip-search (:foreground fg-text))
-	 (company-tooltip-search-selection (:inherit 'highlight))
-	 (company-echo-common (:foreground fg-text))
-	 (company-tooltip-common (:inherit 'highlight))
-	 (company-tooltip-annotation (:foreground fg-text))
-	 (company-scrollbar-fg nil)
-	 (company-scrollbar-bg (:background bg-main))
-	 (company-preview (:inhert 'highlight))
-	 (company-preview-common (:inherit 'company-preview))
-	 (company-preview-search (:background bg-main :foreground gray))
-	 (company-echo nil)
-     
-	 ;;Avy and Ace-Window
-	 (avy-lead-face (:foreground gray-alt-dark :background background-standout1))
-	 (avy-lead-face-0 (:foreground gray-alt-dark :background background-standout2))
-	 
-	 (aw-leading-char-face (:height 2.0 :foreground warning))
-	 (aw-background-face (:foreground purple-dimmed))
-     
-	 ;;Mode-line-general.
+          
+	 ;;Mode-line
 	 (mode-line (:foreground fg-white :background purple))
+     (mode-line-active (:inherit 'mode-line))
 	 (mode-line-inactive (:foreground gray-dark :background purple-dimmed))
-	 
-	 ;;Nano modeline.
-	 (nano-modeline-inactive-status-** (:inherit 'mode-line-inactive  :background pastel-blue :foreground gray-alt-dark))
-	 (nano-modeline-inactive-status-RW (:inherit 'mode-line-inactive  :background purple-alt-dimmed :foreground gray-alt-dark))
-	 (nano-modeline-inactive-status-RO (:inherit 'mode-line-inactive  :background purple-alt-dimmed :foreground gray-alt-dark))
-	 (nano-modeline-inactive-secondary (:inherit 'mode-line-inactive))
-	 (nano-modeline-inactive-primary (:inherit 'mode-line-inactive))
-	 (nano-modeline-inactive-name (:inherit 'mode-line-inactive))
-	 (nano-modeline-inactive (:inherit 'mode-line-inactive))
-	 
-	 (nano-modeline-active-status-** (:inherit 'mode-line  :background pastel-aqua :foreground gray-alt-dark))
-	 (nano-modeline-active-status-RW (:inherit 'mode-line :background purple-alt :foreground gray-alt-dark))
-	 (nano-modeline-active-status-RO (:inherit 'mode-line :background purple-alt :foreground gray-alt-dark))
-	 (nano-modeline-active-secondary (:inherit ('mode-line 'italic)))
-	 (nano-modeline-active-primary (:inherit ('mode-line 'italic)))
-	 (nano-modeline-active-name (:inherit ('mode-line 'bold)))
-	 (nano-modeline-active (:inherit 'mode-line))
+     (mode-line-highlight (:box (:line-width 2 :color comment :style 'released-button)))
+     (mode-line-buffer-id (:weight 'bold))
+     (mode-line-emphasis (:weight 'bold))
      
-	 ;;Ivy
-	 (ivy-current-match (:extend t :foreground pink-alt :background bg-black))
-	 (ivy-minibuffer-match-highlight (:inherit 'highlight))
-	 (ivy-minibuffer-match-face-1 (:weight 'bold :inherit 'ivy-current-match))
-	 (ivy-minibuffer-match-face-2 (:weight 'bold :foreground standout))
-	 (ivy-minibuffer-match-face-3 (:weight 'bold :foreground standout))
-	 (ivy-minibuffer-match-face-4 (:weight 'bold :foreground standout))
-     
-	 ;;Swiper
-	 (swiper-match-face-1 (:weight 'bold :inherit 'highlight))
-	 (swiper-match-face-2 (:weight 'bold :foreground standout))
-	 (swiper-match-face-3 (:weight 'bold :foreground standout))
-	 (swiper-match-face-4 (:weight 'bold :foreground standout))
-     
-	 ;;mu4e
-	 (mu4e-unread-face (:weight 'bold :foreground pastel-pink))
-	 (mu4e-trashed-face (:strike-through t :foreground purple-alt-dimmed))
-	 (mu4e-draft-face (:foreground pink-alt-dimmed))
-	 (mu4e-flagged-face (:weight 'bold :foreground purple-alt))
-	 (mu4e-replied-face (:weight 'normal :slant 'normal :foreground blue-alt))
-	 (mu4e-forwarded-face (:weight 'normal :slant 'normal :foreground blue-alt-dimmed))
-	 
-	 (mu4e-header-face (:foreground pastel-violet))
-	 (mu4e-header-title-face (:foreground pastel-lilac))
-	 (mu4e-header-highlight-face (:extend t :inherit 'highlight))
-	 (mu4e-header-marks-face (:inherit 'font-lock-preprocessor-face))
-	 (mu4e-header-key-face (:weight 'bold :foreground blue))
-	 (mu4e-header-value-face (:foreground blue-alt))
-	 (mu4e-special-header-value-face (:foreground blue-alt))
-	 
-	 (mu4e-related-face (:slant 'italic :inherit 'default))
-	 
-	 (mu4e-link-face (:inherit 'link))
-	 (mu4e-contact-face (:inherit 'font-lock-variable-name-face))
-	 (mu4e-highlight-face (:foreground pink-alt))
-	 (mu4e-title-face (:weight 'bold :foreground purple-alt))
-	 
-	 (mu4e-url-number-face (:weight 'bold :inherit 'link))
-     
-	 ;;mu4e-column-faces
-	 (mu4e-column-faces-thread-subject (:foreground purple-alt))
-	 (mu4e-column-faces-to-from (:foreground blue))
-	 (mu4e-column-faces-date (:foreground pastel-lilac))
-	 (mu4e-column-faces-flags (:foreground warning))
-	 (mu4e-column-faces-tags (:foreground standout))
-	 (mu4e-column-faces-mailing-list (:foreground pastel-violet))
-	 (mu4e-column-faces-maildir (:foreground purple))
-	 (mu4e-column-faces-message-id (:foreground blue-alt ))
-	 (mu4e-column-faces-attachments (:foreground standout))
-	 (mu4e-column-faces-signature (:foreground pastel-blue :weight 'bold))
-	 (mu4e-column-faces-thead-subject (:foreground pastel-pink :weight 'bold))
-	 (mu4e-column-faces-user-agent (:foreground blue-alt))
-     
-	 ;;gnus
-	 (gnus-header-from (:foreground blue-alt))
-	 (gnus-header-subject (:foreground blue-alt))
-	 (gnus-header-name (:foreground purple-alt))
-	 (gnus-header-content (:slant 'italic :foreground blue))
-     
-	 ;;message
-	 (message-separator (:weight 'bold :foreground comment))
-	 (message-header-to (:weight 'bold :foreground blue))
-	 (message-header-cc (:weight 'bold :foreground blue-alt))
-	 (message-header-subject (:foreground pink-alt))
-	 (message-header-other (:foreground blue-alt))
-	 (message-header-name (:foreground purple-alt))
-     
-	 ;;elfeed
-	 (elfeed-search-date-face (:foreground pastel-lilac))
-	 (elfeed-search-title-face (:foreground pastel-violet :weight 'normal))
-	 (elfeed-search-unread-title-face (:weight 'normal :foreground pastel-pink))
-	 (elfeed-search-feed-face (:foreground blue))
-	 (elfeed-search-tag-face (:foreground pastel-blue))
-	 (elfeed-search-last-update-face nil)
-	 (elfeed-search-unread-count-face (:inherit 'default))
-	 (elfeed-search-filter-face (:foreground purple))
      )
     ,@body))
 

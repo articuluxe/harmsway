@@ -293,7 +293,7 @@ calculate to the right side."
   (setq str-len (+ str-len opposing-str-len))
   ;; Start the calculation!
   (if on-left
-      (let* ((line (sideline--s-replace "\n" "" (thing-at-point 'line)))
+      (let* ((line (sideline--s-replace "\n" "" (thing-at-point 'line t)))
              (column-start (window-hscroll))
              (pos-first (save-excursion (back-to-indentation) (current-column)))
              (pos-end (- (sideline--str-len line) column-start)))
@@ -301,7 +301,7 @@ calculate to the right side."
                (cons column-start pos-first))
               ((= pos-first pos-end)
                (cons column-start (sideline--window-width)))))
-    (let* ((line (sideline--s-replace "\n" "" (thing-at-point 'line)))
+    (let* ((line (sideline--s-replace "\n" "" (thing-at-point 'line t)))
            (column-start (window-hscroll))
            (column-end (+ column-start (sideline--window-width)))
            (pos-end (- (sideline--str-len line) column-start)))

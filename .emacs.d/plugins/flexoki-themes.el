@@ -240,14 +240,14 @@
      `(font-lock-builtin-face
        ((t (:foreground ,flexoki-themes-green :weight bold))))
      `(font-lock-constant-face
-       ((t (:foreground ,flexoki-themes-orange :weight light))))
+       ((t (:foreground ,flexoki-themes-purple :weight light))))
      `(font-lock-comment-face
        ((t (:foreground ,flexoki-themes-meek
 	    :slant ,(if flexoki-themes-set-italic-comments
 			 'italic 'normal)
 	    :weight normal))))
      `(font-lock-function-name-face
-       ((t (:foreground ,flexoki-themes-cyan :weight bold))))
+       ((t (:foreground ,flexoki-themes-orange :weight bold))))
      `(font-lock-keyword-face
        ((t (:foreground ,flexoki-themes-fg
 		 :weight light
@@ -415,6 +415,18 @@
        ((t (:background ,flexoki-themes-faint-bg))))
 
 ;;;;;; Magit
+     `(magit-branch-local
+       ((t (:foreground ,flexoki-themes-purple))))
+     `(magit-branch-remote
+       ((t (:foreground ,flexoki-themes-cyan))))
+     `(git-commit-summary
+       ((t (:foreground ,flexoki-themes-green))))
+     `(git-commit-overlong-summary
+       ((t (:foreground ,flexoki-themes-red :weight semi-bold))))
+     `(magit-dimmed
+       ((t (:foreground ,flexoki-themes-meek))))
+     `(magit-blame-dimmed
+       ((t (:foreground ,flexoki-themes-meek))))
      `(magit-header-line
        ((t (:foreground ,flexoki-themes-fg
 	    :background ,flexoki-themes-highlight))))
@@ -425,14 +437,6 @@
        ((t (:foreground ,flexoki-themes-meek :height 1.2))))
      `(magit-section-highlight
        ((t (:background ,flexoki-themes-lowlight :extend t))))
-     `(magit-dimmed
-       ((t (:foreground ,flexoki-themes-meek))))
-     `(magit-blame-dimmed
-       ((t (:foreground ,flexoki-themes-meek))))
-     `(git-commit-summary
-       ((t (:foreground ,flexoki-themes-green))))
-     `(git-commit-overlong-summary
-       ((t (:foreground ,flexoki-themes-red :weight semi-bold))))
 
 ;;;;;; Rainbow delimiters
      `(rainbow-delimiters-depth-1-face
@@ -513,15 +517,17 @@
      `(markdown-url-face
        ((t (:foreground ,flexoki-themes-cyan))))
      `(markdown-code-face
-       ((t (:inherit default))))
+       ((t (:inherit org-code
+	    :background ,flexoki-themes-faint-bg
+	    :extend t))))
+     `(markdown-inline-code-face
+       ((t (:inherit org-code))))
      `(markdown-footnote-marker-face
        ((t (:foreground ,flexoki-themes-meek))))
      `(markdown-list-face
        ((t (:foreground ,flexoki-themes-meek))))
      `(markdown-markup-face
        ((t (:foreground ,flexoki-themes-lowlight))))
-     `(markdown-inline-code-face
-       ((t (:foreground ,flexoki-themes-orange))))
      `(markdown-italic-face
        ((t (:foreground ,flexoki-themes-purple))))
      `(markdown-html-tag-delimiter-face
@@ -550,9 +556,11 @@
      `(org-block
        ((t (:inherit 'default :background ,flexoki-themes-faint-bg))))
      `(org-code
-       ((t (:inherit 'default :foreground ,flexoki-themes-orange))))
+       ((t (:foreground ,flexoki-themes-purple))))
      `(org-date
-       ((t (:foreground ,flexoki-themes-purple :underline t ))))
+       ((t (:foreground ,flexoki-themes-green :underline t ))))
+     `(org-drawer
+       ((t (:foreground ,flexoki-themes-yellow))))
      `(org-todo
        ((t (:inherit outline-1 :foreground ,flexoki-themes-red))))
      `(org-done
@@ -567,7 +575,11 @@
        ((t (:foreground ,flexoki-themes-cyan))))
      `(org-document-title
        ((t (:inherit org-document-info :weight bold))))
-     
+
+;;;;;; Dired
+     `(dired-symlink
+       ((t (:foreground ,flexoki-themes-purple :weight bold))))
+
 ;;;;;; Eshell
      `(eshell-prompt
        ((t (:foreground ,flexoki-themes-yellow))))

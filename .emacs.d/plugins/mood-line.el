@@ -4,7 +4,7 @@
 ;; Homepage: https://gitlab.com/jessieh/mood-line
 ;; Keywords: mode-line faces
 ;; Version: 2.1.0
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -77,6 +77,7 @@
 
 (declare-function flymake-running-backends "flymake" ())
 (declare-function flymake-reporting-backends "flymake" ())
+(declare-function flymake--lookup-type-property "flymake" (type prop &optional default))
 
 (declare-function mood-line-segment-indentation--segment "mood-line-segment-indentation" ())
 
@@ -499,8 +500,7 @@ Counts will be returned in an alist as the `cdr' of the following keys:
 `'note-count'    | All notes reported by checker
 `'error-count'   | All errors reported by checker
 `'warning-count' | All warnings reported by checker
-`'issue-count'   | All errors and warnings reported by checker
-`'all-count'     | Everything reported by checker"
+`'issue-count'   | All errors and warnings reported by checker"
   (let-alist (flycheck-count-errors flycheck-current-errors)
     (let ((note-count (+ (or .info 0)))
           (error-count (+ (or .error 0)))
@@ -509,10 +509,7 @@ Counts will be returned in an alist as the `cdr' of the following keys:
         (error-count . ,error-count)
         (warning-count . ,warning-count)
         (issue-count . ,(+ warning-count
-                           error-count))
-        (all-count . ,(+ note-count
-                         warning-count
-                         error-count))))))
+                           error-count))))))
 
 (defun mood-line--checker-flycheck-update-segment (&optional status)
   "Update `mood-line--checker-flycheck-text' against provided flycheck STATUS."
@@ -539,7 +536,7 @@ Counts will be returned in an alist as the `cdr' of the following keys:
                        (mood-line--get-glyph :checker-info)
                        .note-count
                        (if (> .note-count 1) "s" "")))
-              ((zerop .all-count)
+              (t
                (format #("%s No Issues  "
                          0 12 (face mood-line-status-neutral))
                        (mood-line--get-glyph :checker-good))))))
@@ -575,7 +572,8 @@ Counts will be returned in an alist as the `cdr' of the following keys:
   "Return count of current flymake reports of TYPE."
   (let ((count 0))
     (dolist (d (flymake-diagnostics))
-      (when (eq (cl-struct-slot-value 'flymake--diag 'type d) type)
+      (when (eq (flymake--lookup-type-property (flymake-diagnostic-type d) 'severity)
+                (flymake--lookup-type-property type 'severity))
         (cl-incf count)))
     count))
 
@@ -586,8 +584,7 @@ Counts will be returned in an alist as the cdr of the following keys:
 `'note-count'    | All notes reported by checker
 `'error-count'   | All errors reported by checker
 `'warning-count' | All warnings reported by checkero
-`'issue-count'   | All errors and warnings reported by checker
-`'all-count'     | Everything reported by checker"
+`'issue-count'   | All errors and warnings reported by checker"
   (let ((note-count (mood-line--checker-flymake-count-report-type :note))
         (error-count (mood-line--checker-flymake-count-report-type :error))
         (warning-count (mood-line--checker-flymake-count-report-type :warning)))
@@ -595,10 +592,7 @@ Counts will be returned in an alist as the cdr of the following keys:
       (error-count . ,error-count)
       (warning-count . ,warning-count)
       (issue-count . ,(+ warning-count
-                         error-count))
-      (all-count . ,(+ note-count
-                       warning-count
-                       error-count)))))
+                         error-count)))))
 
 (defun mood-line--checker-flymake-update-segment (&rest _)
   "Update `mood-line--checker-flymake-text' against the state of flymake."
@@ -609,31 +603,31 @@ Counts will be returned in an alist as the cdr of the following keys:
             (cond
              ((seq-difference (flymake-running-backends)
                               (flymake-reporting-backends))
-              (propertize (concat (mood-line--get-glyph :checker-checking)
-                                  " Checking  ")
-                          'face 'mood-line-status-info))
+              (format #("%s Checking  "
+                        0 12 (face mood-line-status-neutral))
+                      (mood-line--get-glyph :checker-checking)))
              ((> .error-count 0)
-              (propertize (concat (mood-line--get-glyph :checker-issues)
-                                  " Errors: "
-                                  (number-to-string .all-count)
-                                  "  ")
-                          'face 'mood-line-status-error))
+              (format #("%s %s Issue%s  "
+                        0 2 (face mood-line-status-error))
+                      (mood-line--get-glyph :checker-issues)
+                      .issue-count
+                      (if (> .issue-count 1) "s" "")))
              ((> .warning-count 0)
-              (propertize (concat (mood-line--get-glyph :checker-issues)
-                                  " Issues: "
-                                  (number-to-string .all-count)
-                                  "  ")
-                          'face 'mood-line-status-warning))
+              (format #("%s %s Issue%s  "
+                        0 2 (face mood-line-status-warning))
+                      (mood-line--get-glyph :checker-issues)
+                      .issue-count
+                      (if (> .issue-count 1) "s" "")))
              ((> .note-count 0)
-              (propertize (concat (mood-line--get-glyph :checker-info)
-                                  " Info: "
-                                  (number-to-string .all-count)
-                                  "  ")
-                          'face 'mood-line-status-info))
+              (format #("%s %s Note%s  "
+                        0 2 (face mood-line-status-info))
+                      (mood-line--get-glyph :checker-info)
+                      .note-count
+                      (if (> .note-count 1) "s" "")))
              (t
-              (propertize (concat (mood-line--get-glyph :checker-good)
-                                  " Good  ")
-                          'face 'mood-line-status-success)))))))
+              (format #("%s No Issues  "
+                        0 12 (face mood-line-status-neutral))
+                      (mood-line--get-glyph :checker-good))))))))
 
 ;; ---------------------------------- ;;
 ;; Flymake segment function
@@ -864,6 +858,12 @@ Checkers checked, in order: `flycheck', `flymake'."
                #'mood-line--checker-flycheck-update-segment)
   (remove-hook 'flycheck-mode-hook
                #'mood-line--checker-flycheck-update-segment)
+
+  ;; Remove flymake hooks
+  (advice-remove 'flymake-start
+                 #'mood-line--checker-flymake-update-segment)
+  (advice-remove 'flymake--handle-report
+                 #'mood-line--checker-flymake-update-segment)
 
   ;; Remove VC hooks
   (remove-hook 'file-find-hook

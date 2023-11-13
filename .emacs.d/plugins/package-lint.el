@@ -6,8 +6,8 @@
 ;;         Fanael Linithien <fanael4@gmail.com>
 ;; URL: https://github.com/purcell/package-lint
 ;; Keywords: lisp
-;; Version: 0.19
-;; Package-Requires: ((cl-lib "0.5") (emacs "24.1") (let-alist "1.0.6"))
+;; Version: 0.20
+;; Package-Requires: ((cl-lib "0.5") (emacs "24.4") (let-alist "1.0.6") (compat "29.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -171,6 +171,35 @@ symbol such as `variable-added'.")
   "Return t if SYM is a function added/removed in any known Emacs version."
   (let-alist (package-lint-symbol-info sym)
     (or .function-added .function-removed)))
+
+(defconst package-lint--supported-symbols
+  (let (symbols functions)
+    (dolist (ver '(25 26 27 28 29))
+      (let ((el-path (locate-library (format "compat-%d.el" ver) t)))
+        (unless el-path
+          (error "compat package not installed"))
+        (with-temp-buffer
+          (insert-file-contents el-path)
+          (goto-char (point-min))
+          (while (search-forward-regexp (rx line-start
+                                            "(compat-" (group (or "defun" "defmacro" "defvar"))
+                                            (+ space)
+                                            symbol-start
+                                            (group (+? any))
+                                            symbol-end)
+                                        nil t)
+            (pcase (match-string 1)
+              ("defvar" (push (intern (match-string 2)) symbols))
+              ((or "defun" "defmacro") (push (intern (match-string 2)) functions)))))))
+    (cons symbols functions))
+  "A cons cell of (VARS . FUNCTIONS) supported by \"compat\".")
+
+(defun package-lint--supported-by-compat (type sym)
+  "Return non-nil if SYM is supported by the \"compat\" package.
+TYPE is `function' or `variable'."
+  (memq sym (pcase type
+              (`function (cdr package-lint--supported-symbols))
+              (_ nil))))
 
 (defconst package-lint--sane-prefixes
   (rx
@@ -636,17 +665,21 @@ type of the symbol, either FUNCTION or FEATURE."
                     (available-backport (car available-backport-with-ver))
                     (required-backport-version (cadr available-backport-with-ver))
                     (matching-dep (when available-backport
-                                    (assoc available-backport valid-deps))))
-               (unless (or (and matching-dep
-                                (or (not required-backport-version)
-                                    (version-list-<= (version-to-list required-backport-version)
-                                                     (cadr matching-dep))))
-                           (and (eq type 'function)
-                                (or (package-lint--seen-fboundp-check-for sym)
-                                    (package-lint--is-a-let-binding))))
+                                    (assoc available-backport valid-deps)))
+                    (compat-support (package-lint--supported-by-compat type (intern sym)))
+                    (compat-in-deps (assoc 'compat valid-deps)))
+               (unless (or
+                        (and compat-support compat-in-deps)
+                        (and matching-dep
+                             (or (not required-backport-version)
+                                 (version-list-<= (version-to-list required-backport-version)
+                                                  (cadr matching-dep))))
+                        (and (eq type 'function)
+                             (or (package-lint--seen-fboundp-check-for sym)
+                                 (package-lint--is-a-let-binding))))
                  (list
                   'error
-                  (format "You should depend on (emacs \"%s\")%s if you need `%s'."
+                  (format "You should depend on (emacs \"%s\")%s%s if you need `%s'."
                           (mapconcat #'number-to-string added-in-version ".")
                           (if available-backport
                               (format " or the %s package"
@@ -656,6 +689,7 @@ type of the symbol, either FUNCTION or FEATURE."
                                                   required-backport-version)
                                         available-backport))
                             "")
+                          (if compat-support " or the compat package" "")
                           sym)))))))))))
 
 (defun package-lint--check-eval-after-load ()

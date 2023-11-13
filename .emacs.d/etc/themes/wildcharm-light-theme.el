@@ -3,7 +3,7 @@
 ;; Author: Maxim Kim <habamax@gmail.com>
 ;; URL: https://github.com/habamax/wildcharm-theme
 ;; Package-Requires: ((emacs "24.1"))
-;; Package-Version: 0.6
+;; Package-Version: 0.7
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -68,6 +68,12 @@
        (outline-6 "#af875f")
        (outline-7 "#005f87")
        (outline-8 darkgrey)
+       (hi-yellow "#ffffaf")
+       (hi-pink "#ffafd7")
+       (hi-blue "#afd7ff")
+       (hi-green "#d7ffd7")
+       (hi-salmon "#ffd7af")
+       (hi-aquamarine "#d7ffff")
        (code-block "#f7f7f7"))
 
   (custom-theme-set-faces
@@ -263,7 +269,17 @@
    `(elisp-shorthand-font-lock-face
      ((,class256 (:foreground ,bright-cyan :weight bold :slant unspecified))))
 
-   ;; isearch
+   `(perl-non-scalar-variable
+     ((,class256 (:inherit font-lock-variable-name-face))))
+
+   `(cperl-nonoverridable-face
+     ((,class256 (:background unspecified :foreground unspecified))))
+   `(cperl-hash-face
+     ((,class256 (:inherit font-lock-variable-name-face))))
+   `(cperl-array-face
+     ((,class256 (:inherit font-lock-variable-name-face))))
+
+   ;; isearch & search
    `(isearch
      ((,class256 (:background ,white :foreground ,bright-yellow :inverse-video t))))
    `(isearch-group-1
@@ -274,6 +290,24 @@
      ((,class256 (:background ,white :foreground ,green :inverse-video t))))
    `(isearch-fail
      ((,class256 (:background ,diff-removed-bg :foreground ,diff-removed-fg))))
+   `(hi-yellow
+     ((,class256 (:background ,hi-yellow :foreground unspecified :inverse-video nil))))
+   `(hi-pink
+     ((,class256 (:background ,hi-pink :foreground unspecified :inverse-video nil))))
+   `(hi-blue
+     ((,class256 (:background ,hi-blue :foreground unspecified :inverse-video nil))))
+   `(hi-green
+     ((,class256 (:background ,hi-green :foreground unspecified :inverse-video nil))))
+   `(hi-salmon
+     ((,class256 (:background ,hi-salmon :foreground unspecified :inverse-video nil))))
+   `(hi-aquamarine
+     ((,class256 (:background ,hi-aquamarine :foreground unspecified :inverse-video nil))))
+   `(hi-red-b
+     ((,class256 (:background unspecified :foreground ,red :weight bold))))
+   `(hi-green-b
+     ((,class256 (:background unspecified :foreground ,green :weight bold))))
+   `(hi-blue-b
+     ((,class256 (:background unspecified :foreground ,blue :weight bold))))
 
    ;; replace.el
    `(match
@@ -283,7 +317,7 @@
    `(hl-line
      ((,class256 (:background ,hl-line :foreground unspecified))))
 
-   ;; widget
+   ;; customize & widget
    `(custom-button
      ((,class256 (:background ,grey1 :foreground ,fg :extend t
                               :box (:line-width (2 . 2) :style released-button)))))
@@ -297,6 +331,12 @@
      ((,class256 (:foreground ,green))))
    `(custom-group-tag
      ((,class256 (:foreground ,bright-magenta :weight bold))))
+   `(custom-variable-tag
+     ((,class256 (:background unspecified :foreground unspecified :weight bold))))
+   `(custom-comment
+     ((,class256 (:background unspecified :foreground ,comment :weight unspecified))))
+   `(custom-comment-tag
+     ((,class256 (:background unspecified :foreground unspecified :weight unspecified))))
    `(widget-field
      ((,class256 (:background ,grey1 :foreground ,fg :extend t))))
    `(widget-inactive
@@ -305,10 +345,6 @@
      ((,class256 (:foreground ,bright-red))))
    `(widget-documentation
      ((,class256 (:foreground ,green))))
-
-   ;; customize
-   `(custom-variable-tag
-     ((,class256 (:weight bold))))
 
    ;; shortdoc
    `(shortdoc-heading
@@ -452,11 +488,9 @@
      ((,classTC (:background ,code-block :foreground ,fg :extend t))
       (t (:foreground ,fg))))
    `(org-block-begin-line
-     ((,classTC (:background ,code-block :foreground ,darkgrey :extend t))
-      (t (:foreground ,darkgrey))))
+     ((t (:background unspecified :foreground ,darkgrey))))
    `(org-block-end-line
-     ((,classTC (:background ,code-block :foreground ,darkgrey :extend t))
-      (t (:foreground ,darkgrey))))
+     ((t (:background unspecified :foreground ,darkgrey))))
    `(org-document-title
      ((,class256 (:foreground ,black :weight bold))))
    `(org-document-info
@@ -853,6 +887,11 @@
    `(magit-reflog-cherry-pick
      ((,class256 (:foreground ,bright-green))))
 
+   `(transient-key
+     ((,class256 (:inherit help-key-binding))))
+   `(transient-heading
+     ((,class256 (:inherit magit-section-heading))))
+
    ;; ediff
    `(ediff-current-diff-A
      ((,class256 (:background ,diff-removed-bg))))
@@ -1161,7 +1200,7 @@
 
    ;; embark
    `(embark-keybinding
-     ((,class256 (:foreground ,bright-cyan :weight bold))))
+     ((,class256 (:inherit help-key-binding))))
 
    ;; notmuch
    `(notmuch-message-summary-face

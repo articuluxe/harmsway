@@ -296,7 +296,7 @@ argument also offer closed pull-requests."
 (defun forge--browse-topic (topic)
   (let ((obj (forge-get-topic topic)))
     (browse-url (forge-get-url obj))
-    (oset obj unread-p nil)))
+    (forge-topic-mark-read topic)))
 
 ;;;###autoload
 (defun forge-browse-commit (commit)
@@ -325,19 +325,19 @@ argument also offer closed pull-requests."
 (defun forge-browse-repository (repository)
   "Read a REPOSITORY and visit it using a browser."
   (interactive (list (forge-read-repository "Browse repository")))
-  (browse-url (forge-get-url (forge-get-repository repository))))
+  (browse-url (forge-get-url repository)))
 
 ;;;###autoload
 (defun forge-browse-this-topic ()
   "Visit the topic at point using a browser."
   (interactive)
-  (forge-browse-topic (forge-topic-at-point)))
+  (forge-browse-topic (forge-topic-at-point t)))
 
 ;;;###autoload
 (defun forge-browse-this-repository ()
   "Visit the repository at point using a browser."
   (interactive)
-  (forge-browse-repository (forge-repository-at-point)))
+  (forge-browse-repository (forge-repository-at-point t)))
 
 ;;;###autoload
 (defun forge-copy-url-at-point-as-kill ()
@@ -358,7 +358,7 @@ argument also offer closed pull-requests."
           (browse-url target)
         (browse-url (forge-get-url target))
         (when (cl-typep target 'forge-topic)
-          (oset target unread-p nil)))
+          (forge-topic-mark-read target)))
     (user-error "Nothing to browse here")))
 
 (defun forge--browse-target ()
@@ -388,15 +388,15 @@ argument also offer closed pull-requests."
   (forge--format pullreq 'pullreq-url-format))
 
 (cl-defmethod forge-get-url ((repo forge-repository))
-  (forge--format (oref repo remote) 'remote-url-format))
+  (forge--format repo 'remote-url-format))
 
 (cl-defmethod forge-get-url ((_(eql :commit)) commit)
   (let ((repo (forge-get-repository 'stub)))
     (unless (magit-list-containing-branches
              commit "-r" (concat (oref repo remote) "/*"))
-      (if-let ((branch (car (magit-list-containing-branches commit "-r"))))
-          (setq repo (forge-get-repository
-                      'stub (cdr (magit-split-branch-name branch))))
+      (if-let* ((branch (car (magit-list-containing-branches commit "-r")))
+                (remote (cdr (magit-split-branch-name branch))))
+          (setq repo (forge-get-repository 'stub remote))
         (message "%s does not appear to be available on any remote.  %s"
                  commit "You might have to push it first.")))
     (forge--format repo 'commit-url-format
@@ -411,11 +411,12 @@ argument also offer closed pull-requests."
       (unless (setq remote (or (magit-get-push-remote branch)
                                (magit-get-upstream-remote branch)))
         (user-error "Cannot determine remote for %s" branch)))
-    (forge--format remote 'branch-url-format
+    (forge--format (forge-get-repository 'stub remote)
+                   'branch-url-format
                    `((?r . ,branch)))))
 
 (cl-defmethod forge-get-url ((_(eql :remote)) remote)
-  (forge--format remote 'remote-url-format))
+  (forge--format (forge-get-repository 'stub remote) 'remote-url-format))
 
 (cl-defmethod forge-get-url ((post forge-post))
   (forge--format post (let ((topic (forge-get-parent post)))
@@ -863,20 +864,20 @@ information."
                            (forge--branch-pullreq (forge-get-pullreq pullreq))))
 
 (defun forge-checkout-worktree-default-read-directory-function (pullreq)
-  (with-slots (number head-ref) pullreq
-    (let ((path (read-directory-name
-                 (format "Checkout #%s in new worktree: " number)
-                 (file-name-directory
-                  (directory-file-name default-directory))
-                 nil nil
-                 (let ((branch (forge--pullreq-branch-internal pullreq)))
-                   (if (string-match-p "\\`pr-[0-9]+\\'" branch)
-                       (number-to-string number)
-                     (format "%s-%s" number
-                             (string-replace "/" "-" head-ref)))))))
-      (when (equal path "")
-        (user-error "The empty string isn't a valid path"))
-      path)))
+  (pcase-let* (((eieio number head-ref) pullreq)
+               (path (read-directory-name
+                      (format "Checkout #%s in new worktree: " number)
+                      (file-name-directory
+                       (directory-file-name default-directory))
+                      nil nil
+                      (let ((branch (forge--pullreq-branch-internal pullreq)))
+                        (if (string-match-p "\\`pr-[0-9]+\\'" branch)
+                            (number-to-string number)
+                          (format "%s-%s" number
+                                  (string-replace "/" "-" head-ref)))))))
+    (when (equal path "")
+      (user-error "The empty string isn't a valid path"))
+    path))
 
 ;;; Marks
 
@@ -1168,18 +1169,16 @@ This may take a while.  Only Github is supported at the moment."
 ;;; Cleanup
 
 ;;;###autoload
-(defun forge-remove-repository (host owner name)
+(defun forge-remove-repository (repository)
   "Remove a repository from the database."
   (interactive
-   (pcase-let ((`(,githost ,owner ,name)
-                (forge-read-repository "Remove repository from db")))
-     (if (yes-or-no-p
-          (format
-           "Do you really want to remove \"%s/%s @%s\" from the database? "
-           owner name githost))
-         (list githost owner name)
+   (pcase-let* ((repo (forge-read-repository "Remove repository from db"))
+                ((eieio githost owner name) repo))
+     (if (yes-or-no-p (format "Do you really want to remove \"%s/%s @%s\" %s? "
+                              owner name githost "from the database"))
+         (list repo)
        (user-error "Abort"))))
-  (closql-delete (forge-get-repository (list host owner name)))
+  (closql-delete repository)
   (magit-refresh))
 
 ;;;###autoload

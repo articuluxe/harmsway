@@ -540,10 +540,10 @@ commits before and half after."
     ("s" "buffer and set defaults"  transient-set-and-exit)
     ("w" "buffer and save defaults" transient-save-and-exit)]
    ["Margin"
-    ("L" "toggle visibility"        magit-toggle-margin           :transient t)
-    ("l" "cycle style"              magit-cycle-margin-style      :transient t)
-    ("d" "toggle details"           magit-toggle-margin-details   :transient t)
-    ("x" "toggle shortstat"         magit-toggle-log-margin-style :transient t)]
+    (magit-toggle-margin)
+    (magit-cycle-margin-style)
+    (magit-toggle-margin-details)
+    (magit-toggle-log-margin-style)]
    [:if-mode magit-log-mode
     :description "Toggle"
     ("b" "buffer lock"              magit-toggle-buffer-lock)]]
@@ -1073,8 +1073,6 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
       (magit-section-update-highlight))
     (current-buffer)))
 
-(defvar-local magit-log--color-graph nil)
-
 (defun magit-log-refresh-buffer ()
   (let ((revs  magit-buffer-revisions)
         (args  magit-buffer-log-args)
@@ -1089,20 +1087,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
                          (concat "^" (regexp-opt magit-log-remove-graph-args)) it)
                         args))
       (setq args (remove "--graph" args)))
-    (if (member "--color" args)
-        (if (cond
-             ((not (member "--graph" args)))
-             ((not magit-log-color-graph-limit) nil)
-             ((not limit)
-              (message "Dropping --color because -n isn't set (see %s)"
-                       'magit-log-color-graph-limit))
-             ((> limit magit-log-color-graph-limit)
-              (message "Dropping --color because -n is larger than %s"
-                       'magit-log-color-graph-limit)))
-            (progn (setq args (remove "--color" args))
-                   (setq magit-log--color-graph nil))
-          (setq magit-log--color-graph t))
-      (setq magit-log--color-graph nil))
+    (setq args (magit-log--maybe-drop-color-graph args limit))
     (when-let* ((limit limit)
                 (limit (* 2 limit)) ; increase odds for complete graph
                 (count (and (length= revs 1)
@@ -1127,6 +1112,24 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
       (setq magit-section-insert-in-reverse (not delay)))
     (magit-insert-section (logbuf)
       (magit--insert-log t revs args files))))
+
+(defvar-local magit-log--color-graph nil)
+
+(defun magit-log--maybe-drop-color-graph (args limit)
+  (if (member "--color" args)
+      (if (cond ((not (member "--graph" args)))
+                ((not magit-log-color-graph-limit) nil)
+                ((not limit)
+                 (message "Dropping --color because -n isn't set (see %s)"
+                          'magit-log-color-graph-limit))
+                ((> limit magit-log-color-graph-limit)
+                 (message "Dropping --color because -n is larger than %s"
+                          'magit-log-color-graph-limit)))
+          (progn (setq args (remove "--color" args))
+                 (setq magit-log--color-graph nil))
+        (setq magit-log--color-graph t))
+    (setq magit-log--color-graph nil))
+  args)
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-log-mode))
   (append magit-buffer-revisions
@@ -1564,9 +1567,12 @@ If there is no blob buffer in the same frame, then do nothing."
 
 (defvar-local magit-log-margin-show-shortstat nil)
 
-(defun magit-toggle-log-margin-style ()
+(transient-define-suffix magit-toggle-log-margin-style ()
   "Toggle between the regular and the shortstat margin style.
 The shortstat style is experimental and rather slow."
+  :description "Toggle shortstat"
+  :key "x"
+  :transient t
   (interactive)
   (setq magit-log-margin-show-shortstat
         (not magit-log-margin-show-shortstat))
@@ -1686,7 +1692,10 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
   (setq magit-section-inhibit-markers t)
   (setq magit-section-insert-in-reverse t)
   (magit-insert-section (logbuf)
-    (magit--insert-log t magit-buffer-revisions magit-buffer-log-args)))
+    (magit--insert-log t magit-buffer-revisions
+      (magit-log--maybe-drop-color-graph
+       magit-buffer-log-args
+       (magit-log-get-commit-limit)))))
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-log-select-mode))
   magit-buffer-revisions)
@@ -1857,8 +1866,7 @@ in the pushremote case."
       (magit-log-insert-child-count))))
 
 (magit-define-section-jumper magit-jump-to-unpulled-from-pushremote
-  "Unpulled from <push-remote>" unpulled
-  (concat ".." (magit-get-push-branch)))
+  "Unpulled from <push-remote>" unpulled "..@{push}")
 
 (defun magit-insert-unpulled-from-pushremote ()
   "Insert commits that haven't been pulled from the push-remote yet."
@@ -1929,8 +1937,7 @@ Show the last `magit-log-section-commit-count' commits."
                         magit-buffer-log-args))))))
 
 (magit-define-section-jumper magit-jump-to-unpushed-to-pushremote
-  "Unpushed to <push-remote>" unpushed
-  (concat (magit-get-push-branch) ".."))
+  "Unpushed to <push-remote>" unpushed "@{push}..")
 
 (defun magit-insert-unpushed-to-pushremote ()
   "Insert commits that haven't been pushed to the push-remote yet."

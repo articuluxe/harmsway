@@ -49,13 +49,6 @@
 (eval-when-compile (require 'cl-lib))
 (eval-when-compile (require 'subr-x))
 
-(define-obsolete-variable-alias 'keycast-insert-after
-  'keycast-mode-line-insert-after "Keycast 2.0.0")
-(define-obsolete-variable-alias 'keycast-remove-tail-elements
-  'keycast-mode-line-remove-tail-elements "Keycast 2.0.0")
-(define-obsolete-variable-alias 'keycast-window-predicate
-  'keycast-mode-line-window-predicate "Keycast 2.0.0")
-
 ;;; Options
 
 (defgroup keycast nil
@@ -67,8 +60,9 @@
 (defcustom keycast-mode-line-insert-after 'mode-line-buffer-identification
   "The position in `mode-line-format' where `keycast-mode-line' is inserted.
 
-Enabling `keycast-mode' inserts the element `keycast-mode-line'
-into `mode-line-format' after the element specified here."
+Enabling `keycast-mode-line-mode' inserts the element
+`keycast-mode-line' into `mode-line-format' after the
+element specified here."
   :group 'keycast
   :type '(cons (choice :tag "Insert after"
                        (const mode-line-buffer-identification)
@@ -78,10 +72,10 @@ into `mode-line-format' after the element specified here."
                (boolean :tag "Remove following elements")))
 
 (defcustom keycast-mode-line-remove-tail-elements t
-  "Whether enabling `keycast-mode' removes elements to the right.
+  "Whether enabling `keycast-mode-line-mode' removes elements to the right.
 
-When this is non-nil, then enabling `keycast-mode' not only
-inserts `keycast-mode-line' into `mode-line-format' but also
+When this is non-nil, then enabling `keycast-mode-line-mode' not
+only inserts `keycast-mode-line' into `mode-line-format' but also
 removes all elements to the right of where that was inserted."
   :group 'keycast
   :type 'boolean)
@@ -266,6 +260,8 @@ but that isn't a member yet, then insert that followed by
   :package-version '(keycast . "2.0.0")
   :group 'keycast
   :type 'string)
+
+;;;; Common
 
 (defcustom keycast-substitute-alist
   '((keycast-log-erase-buffer nil nil)
@@ -591,7 +587,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 
 (defvar keycast-header-line
   '(:eval
-    (and (funcall keycast-window-predicate)
+    (and (funcall keycast-mode-line-window-predicate)
          (keycast--format keycast-header-line-format))))
 
 (put 'keycast-header-line 'risky-local-variable t)
@@ -674,10 +670,12 @@ t to show the actual COMMAND, or a symbol to be shown instead."
    (keycast-log-mode
     (add-hook 'post-command-hook #'keycast--update t)
     (add-hook 'minibuffer-exit-hook #'keycast--minibuffer-exit t)
+    (keycast-log--set-focus-properties t)
     (keycast-log-update-buffer))
    ((not (keycast--mode-active-p))
     (remove-hook 'post-command-hook #'keycast--update)
-    (remove-hook 'minibuffer-exit-hook #'keycast--minibuffer-exit))))
+    (remove-hook 'minibuffer-exit-hook #'keycast--minibuffer-exit)
+    (keycast-log--set-focus-properties nil))))
 
 (defun keycast-log-update-buffer ()
   (let ((buf (get-buffer keycast-log-buffer-name)))
@@ -702,6 +700,15 @@ t to show the actual COMMAND, or a symbol to be shown instead."
                              (1+ (line-end-position)))))
           (insert output))
         (goto-char (if keycast-log-newest-first (point-min) (point-max)))))))
+
+(defun keycast-log--set-focus-properties (value)
+  (when-let* ((buffer (get-buffer keycast-log-buffer-name))
+              (window (get-buffer-window buffer t))
+              (frame (window-frame window)))
+    (when (cdr (assq 'no-accept-focus keycast-log-frame-alist))
+      (set-frame-parameter frame 'no-accept-focus value))
+    (when (cdr (assq 'no-accept-on-map keycast-log-frame-alist))
+      (set-frame-parameter frame 'no-focus-on-map value))))
 
 (defun keycast-log-erase-buffer ()
   "Erase the contents of `keycast-log-mode's buffer."

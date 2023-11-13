@@ -187,35 +187,49 @@ While using the server mode in GUI, should set the value explicitly."
 (defcustom doom-modeline-major-mode-icon t
   "Whether display the icon for `major-mode'.
 
-It respects variable `doom-modeline-icon'."
+It respects option `doom-modeline-icon'."
   :type 'boolean
   :group'doom-modeline)
 
 (defcustom doom-modeline-major-mode-color-icon t
   "Whether display the colorful icon for `major-mode'.
 
-It respects `nerd-icons-color-icons'."
+It respects option `nerd-icons-color-icons'."
   :type 'boolean
   :group'doom-modeline)
 
 (defcustom doom-modeline-buffer-state-icon t
   "Whether display the icon for the buffer state.
 
-It respects variable `doom-modeline-icon'."
+It respects option `doom-modeline-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-buffer-modification-icon t
   "Whether display the modification icon for the buffer.
 
-It respects variable `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
+It respects option `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-lsp-icon t
+  "Whether display the icon of lsp client.
+
+It respects option `doom-modeline-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-time-icon t
-  "Whether display the time icon.
+  "Whether display the icon of time.
 
-It respects variable `doom-modeline-icon'."
+It respects option `doom-modeline-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-time-live-icon t
+  "Whether display the live icons of time.
+
+It respects option `doom-modeline-icon' and option `doom-modeline-time-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -607,6 +621,16 @@ If nil, display only if the mode line is active."
   :type '(repeat symbol)
   :group 'doom-modeline)
 
+(defcustom doom-modeline-buffer-file-name-function #'identity
+  "The function to handle variable `buffer-file-name'."
+  :type 'function
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-buffer-file-truename-function #'identity
+  "The function to handle `buffer-file-truename'."
+  :type 'function
+  :group 'doom-modeline)
+
 
 ;;
 ;; Faces
@@ -897,7 +921,7 @@ Also see the face `doom-modeline-unread-number'."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-time
-  '((t (:inherit doom-modeline-buffer-file)))
+  '((t (:inherit doom-modeline)))
   "Face for display time."
   :group 'doom-modeline-faces)
 
@@ -909,6 +933,8 @@ Also see the face `doom-modeline-unread-number'."
 ;;
 ;; Externals
 ;;
+
+(defvar mode-line-right-align-edge)
 
 (declare-function face-remap-remove-relative "face-remap")
 (declare-function ffip-project-root "ext:find-file-in-project")
@@ -1013,11 +1039,11 @@ used as an advice to window creation functions."
 (defvar-local doom-modeline--limited-width-p nil)
 
 (defun doom-modeline--segment-visible (name)
-"Whether the segment NAME should be displayed."
-(and
- (or (doom-modeline--active)
-     (member name doom-modeline-always-visible-segments))
- (not doom-modeline--limited-width-p)))
+  "Whether the segment NAME should be displayed."
+  (and
+   (or (doom-modeline--active)
+       (member name doom-modeline-always-visible-segments))
+   (not doom-modeline--limited-width-p)))
 
 (defun doom-modeline-set-selected-window (&rest _)
   "Set `doom-modeline-current-window' appropriately."
@@ -1412,11 +1438,26 @@ Return nil if no project was found."
 Return `default-directory' if no project was found."
   (or (doom-modeline--project-root) default-directory))
 
+(defun doom-modeline--format-buffer-file-name ()
+  "Get and format the buffer file name."
+  (let ((buffer-file-name (file-local-name
+                           (or (buffer-file-name (buffer-base-buffer)) ""))))
+    (or (and doom-modeline-buffer-file-name-function
+             (funcall doom-modeline-buffer-file-name-function buffer-file-name))
+        buffer-file-name)))
+
+(defun doom-modeline--format-buffer-file-truename (b-f-n)
+  "Get and format buffer file truename via B-F-N."
+  (let ((buffer-file-truename (file-local-name
+                               (or (file-truename b-f-n) ""))))
+    (or (and doom-modeline-buffer-file-truename-function
+             (funcall doom-modeline-buffer-file-truename-function buffer-file-truename))
+        buffer-file-truename)))
+
 (defun doom-modeline-buffer-file-name ()
   "Propertize file name based on `doom-modeline-buffer-file-name-style'."
-  (let* ((buffer-file-name (file-local-name (or (buffer-file-name (buffer-base-buffer)) "")))
-         (buffer-file-truename (file-local-name
-                                (or buffer-file-truename (file-truename buffer-file-name) "")))
+  (let* ((buffer-file-name (doom-modeline--format-buffer-file-name))
+         (buffer-file-truename (doom-modeline--format-buffer-file-truename buffer-file-name))
          (file-name
           (pcase doom-modeline-buffer-file-name-style
             ('auto

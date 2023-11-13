@@ -181,6 +181,8 @@ implement such a function themselves.  See #447.")
     'utf-8)
    t))
 
+;;; Special
+
 (defun forge--topic-set (slot value &optional topic)
   (unless topic
     (setq topic (forge-current-topic t)))
@@ -243,7 +245,8 @@ an error.  If NOT-THINGATPT is non-nil, then don't use
       (magit-section-value-if '(issue pullreq))
       (forge-get-pullreq :branch (magit-branch-at-point))
       (and (derived-mode-p 'forge-topic-list-mode)
-           (forge-get-topic (tabulated-list-get-id)))
+           (and-let* ((id (tabulated-list-get-id)))
+             (forge-get-topic id)))
       (and demand (user-error "No topic at point"))))
 
 (put 'forge-topic 'thing-at-point #'forge-thingatpt--topic)
@@ -508,9 +511,6 @@ This mode itself is never used directly."
         (let ((markdown-display-remote-images t))
           (markdown-display-inline-images))))))
 
-(cl-defmethod forge-topic-mark-read ((_ forge-repository) topic)
-  (oset topic unread-p nil))
-
 (cl-defmethod magit-buffer-value (&context (major-mode forge-topic-mode))
   (oref forge-buffer-topic slug))
 
@@ -643,23 +643,23 @@ This mode itself is never used directly."
 
 ;;;;; Refs
 
-(cl-defun forge-insert-topic-refs
-    (&optional (topic forge-buffer-topic))
+(cl-defun forge-insert-topic-refs (&optional (topic forge-buffer-topic))
   (magit-insert-section (topic-refs)
-    (with-slots (cross-repo-p base-repo base-ref head-repo head-ref) topic
-      (let ((separator (propertize ":" 'font-lock-face 'magit-dimmed))
-            (deleted (propertize "(deleted)" 'font-lock-face 'magit-dimmed)))
-        (insert (format "%-11s" "Refs: ")
-                (if cross-repo-p
-                    (concat base-repo separator base-ref)
-                  base-ref)
-                (propertize "..." 'font-lock-face 'magit-dimmed)
-                (if cross-repo-p
-                    (if (and head-repo head-ref)
-                        (concat head-repo separator head-ref)
-                      deleted)
-                  (or head-ref deleted))
-                "\n")))))
+    (pcase-let
+        (((eieio cross-repo-p base-repo base-ref head-repo head-ref) topic)
+         (separator (propertize ":" 'font-lock-face 'magit-dimmed))
+         (deleted (propertize "(deleted)" 'font-lock-face 'magit-dimmed)))
+      (insert (format "%-11s" "Refs: ")
+              (if cross-repo-p
+                  (concat base-repo separator base-ref)
+                base-ref)
+              (propertize "..." 'font-lock-face 'magit-dimmed)
+              (if cross-repo-p
+                  (if (and head-repo head-ref)
+                      (concat head-repo separator head-ref)
+                    deleted)
+                (or head-ref deleted))
+              "\n"))))
 
 ;;;;; Assignees
 
@@ -975,7 +975,9 @@ If forge data has been fetched for the current repository, then
 enable `bug-reference-mode' or `bug-reference-prog-mode' and
 modify `bug-reference-bug-regexp' if appropriate."
   (unless (or bug-reference-url-format
-              (not (forge-db t)))
+              (not (forge-db t))
+              ;; TODO Allow use in this mode again.
+              (derived-mode-p 'forge-notifications-mode))
     (magit--with-safe-default-directory nil
       (when-let ((repo (forge-get-repository 'full)))
         (if (>= emacs-major-version 28)

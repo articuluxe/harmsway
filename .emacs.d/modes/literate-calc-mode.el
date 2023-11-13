@@ -56,6 +56,7 @@
 
 If any of these functions returns non-nil, overlays will not be displayed."
   :group 'literate-calc-mode
+  :local t
   :type 'hook)
 
 (defcustom literate-calc-mode-idle-time 1
@@ -64,12 +65,14 @@ If any of these functions returns non-nil, overlays will not be displayed."
 A larger value can prevent lagginess in larger buffers by only
 recalculating once the buffer contents have settled."
   :group 'literate-calc-mode
+  :local t
   :type '(choice integer
                  float))
 
 (defcustom literate-calc-mode-radix 10
   "Radix for display of output."
   :group 'literate-calc-mode
+  :local t
   :type 'integer)
 
 (defcustom literate-calc-mode-max-buffer-size 0
@@ -79,6 +82,12 @@ If set to a non-zero value, literate-calc-mode will abort in
 buffers larger than this, as measured by `buffer-size'."
   :group 'literate-calc-mode
   :type 'integer)
+
+(defcustom literate-calc-usimplify-results nil
+  "If non-nil, apply `calcFunc-usimplify' to all results."
+  :group 'literate-calc-mode
+  :local t
+  :type 'boolean)
 
 (defun literate-calc-mode-inhibit-in-src-blocks ()
   "Return non-nil if point is in a source block."
@@ -134,9 +143,12 @@ buffers larger than this, as measured by `buffer-size'."
 
 (defun literate-calc--eval (value)
   "Wrapper around `(calc-eval VALUE)' with extra args."
-  (calc-eval `(,value
-               calc-group-digits t
-               calc-number-radix ,literate-calc-mode-radix)))
+  (let ((calc-input (if literate-calc-usimplify-results
+                        (format "usimplify(%s)" value)
+                      value)))
+    (calc-eval `(,calc-input
+                 calc-group-digits t
+                 calc-number-radix ,literate-calc-mode-radix))))
 
 (defun literate-calc-set-radix (radix)
   "Set the output radix to RADIX."

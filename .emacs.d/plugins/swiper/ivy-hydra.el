@@ -3,9 +3,10 @@
 ;; Copyright (C) 2015-2023 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
+;; Maintainer: Basil L. Contovounesios <contovob@tcd.ie>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.14.0
-;; Package-Requires: ((emacs "24.5") (ivy "0.14.0") (hydra "0.14.0"))
+;; Version: 0.14.2
+;; Package-Requires: ((emacs "24.5") (ivy "0.14.2") (hydra "0.14.0"))
 ;; Keywords: convenience
 
 ;; This file is part of GNU Emacs.

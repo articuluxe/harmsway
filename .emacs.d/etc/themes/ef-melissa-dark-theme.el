@@ -53,7 +53,7 @@
       (bg-dim      "#483426")
       (fg-dim      "#90918a")
       (bg-alt      "#59463f")
-      (fg-alt      "#d5af8f")
+      (fg-alt      "#a2c080")
 
       (bg-active   "#79665f")
       (bg-inactive "#3d2e1f")
@@ -138,10 +138,9 @@
       (bg-mode-line       "#704f00")
       (fg-mode-line       "#f8efd8")
       (bg-completion      "#66421f")
-      (bg-hover           "#29595f")
+      (bg-hover           "#60518f")
       (bg-hover-secondary "#5a661f")
       (bg-hl-line         "#4f311f")
-      (bg-region          "#345040")
       (bg-paren           "#5f6f1f")
       (bg-err             "#551a05") ; check with err
       (bg-warning         "#4f3f10") ; check with warning
@@ -163,10 +162,6 @@
       (bg-char-1 "#7f1f7f")
       (bg-char-2 "#6f6600")
 
-;;; Conditional hues
-
-      (bg-region-intense "#6a5040")
-
 ;;; Mappings
 
 ;;;; General mappings
@@ -175,12 +170,15 @@
       (warning yellow-warmer)
       (info green)
 
-      (link yellow-cooler)
+      (link yellow)
       (link-alt magenta-cooler)
-      (name yellow)
+      (name yellow-cooler)
       (keybind yellow-warmer)
       (identifier red-faint)
-      (prompt yellow-warmer)
+      (prompt green-warmer)
+
+      (bg-region "#443a4f")
+      (fg-region unspecified)
 
 ;;;; Code mappings
 

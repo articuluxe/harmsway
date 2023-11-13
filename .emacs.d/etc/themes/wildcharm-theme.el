@@ -3,7 +3,7 @@
 ;; Author: Maxim Kim <habamax@gmail.com>
 ;; URL: https://github.com/habamax/wildcharm-theme
 ;; Package-Requires: ((emacs "24.1"))
-;; Package-Version: 0.6
+;; Package-Version: 0.7
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@
        (grey "#d0d0d0")(white "#ffffff")
        (purple "#875fff")(comment "#87875f")
        (yellow1 "#d7af5f")(yellow2 "#ffd75f")
-       (grey1 "#303030")(grey2 "#262626")(grey3 "#1c1c1c")
+       (grey1 "#3a3a3a")(grey2 "#262626")
        (non-text "#585858")
        (match-paren "#ff00af")(match "#5f005f")
        (mode-line-active "#444444")(mode-line-inactive "#303030")
@@ -73,6 +73,12 @@
        (outline-6 "#af875f")
        (outline-7 "#5fafd7")
        (outline-8 darkgrey)
+       (hi-yellow "#5f5f00")
+       (hi-pink "#005f87")
+       (hi-blue "#000087")
+       (hi-green "#005f00")
+       (hi-salmon "#875f00")
+       (hi-aquamarine "#005f5f")
        (code-block "#1F1F1F"))
 
   (custom-theme-set-faces
@@ -271,7 +277,17 @@
    `(elisp-shorthand-font-lock-face
      ((,class256 (:foreground ,bright-cyan :weight bold :slant unspecified))))
 
-   ;; isearch
+   `(perl-non-scalar-variable
+     ((,class256 (:inherit font-lock-variable-name-face))))
+
+   `(cperl-nonoverridable-face
+     ((,class256 (:background unspecified :foreground unspecified))))
+   `(cperl-hash-face
+     ((,class256 (:inherit font-lock-variable-name-face))))
+   `(cperl-array-face
+     ((,class256 (:inherit font-lock-variable-name-face))))
+
+   ;; isearch & search
    `(isearch
      ((,class256 (:background ,black :foreground ,bright-yellow :inverse-video t))))
    `(isearch-group-1
@@ -283,6 +299,24 @@
    `(isearch-fail
      ((,classTC (:background ,diff-removed-bg :foreground ,diff-removed-fg))
       (t (:background ,diff-removed-bg-tty :foreground ,diff-removed-fg))))
+   `(hi-yellow
+     ((,classTC (:background ,hi-yellow :foreground unspecified :inverse-video nil))))
+   `(hi-pink
+     ((,classTC (:background ,hi-pink :foreground unspecified :inverse-video nil))))
+   `(hi-blue
+     ((,classTC (:background ,hi-blue :foreground unspecified :inverse-video nil))))
+   `(hi-green
+     ((,classTC (:background ,hi-green :foreground unspecified :inverse-video nil))))
+   `(hi-salmon
+     ((,classTC (:background ,hi-salmon :foreground unspecified :inverse-video nil))))
+   `(hi-aquamarine
+     ((,classTC (:background ,hi-aquamarine :foreground unspecified :inverse-video nil))))
+   `(hi-red-b
+     ((,classTC (:background unspecified :foreground ,red :weight bold))))
+   `(hi-green-b
+     ((,classTC (:background unspecified :foreground ,green :weight bold))))
+   `(hi-blue-b
+     ((,classTC (:background unspecified :foreground ,blue :weight bold))))
 
    ;; replace.el
    `(match
@@ -292,7 +326,7 @@
    `(hl-line
      ((,class256 (:background ,hl-line :foreground unspecified))))
 
-   ;; widget
+   ;; customize & widget
    `(custom-button
      ((,class256 (:background ,grey2 :foreground ,fg :extend t
                               :box (:line-width (2 . 2) :style released-button)))))
@@ -306,6 +340,12 @@
      ((,class256 (:foreground ,green))))
    `(custom-group-tag
      ((,class256 (:foreground ,bright-magenta :weight bold))))
+   `(custom-variable-tag
+     ((,class256 (:background unspecified :foreground ,white :weight bold))))
+   `(custom-comment
+     ((,class256 (:background unspecified :foreground ,comment :weight unspecified))))
+   `(custom-comment-tag
+     ((,class256 (:background unspecified :foreground unspecified :weight unspecified))))
    `(widget-field
      ((,class256 (:background ,grey2 :foreground ,fg :extend t))))
    `(widget-inactive
@@ -314,10 +354,6 @@
      ((,class256 (:foreground ,red))))
    `(widget-documentation
      ((,class256 (:foreground ,green))))
-
-   ;; customize
-   `(custom-variable-tag
-     ((,class256 (:foreground ,white :weight bold))))
 
    ;; shortdoc
    `(shortdoc-heading
@@ -463,11 +499,9 @@
      ((,classTC (:background ,code-block :foreground ,fg :extend t))
       (t (:foreground ,fg))))
    `(org-block-begin-line
-     ((,classTC (:background ,code-block :foreground ,darkgrey :extend t))
-      (t (:foreground ,darkgrey))))
+     ((t (:background unspecified :foreground ,darkgrey))))
    `(org-block-end-line
-     ((,classTC (:background ,code-block :foreground ,darkgrey :extend t))
-      (t (:foreground ,darkgrey))))
+     ((t (:background unspecified :foreground ,darkgrey))))
    `(org-document-title
      ((,class256 (:foreground ,white :weight bold))))
    `(org-document-info
@@ -818,7 +852,7 @@
    `(magit-diff-context
      ((t (:foreground ,fg))))
    `(magit-diff-context-highlight
-     ((t (:background ,grey3))))
+     ((t (:background ,grey2))))
    `(magit-diff-added
      ((t (:inherit 'diff-added))))
    `(magit-diff-added-highlight
@@ -867,6 +901,11 @@
      ((,class256 (:foreground ,blue))))
    `(magit-reflog-cherry-pick
      ((,class256 (:foreground ,green))))
+
+   `(transient-key
+     ((,class256 (:inherit help-key-binding))))
+   `(transient-heading
+     ((,class256 (:inherit magit-section-heading))))
 
    ;; ediff
    `(ediff-current-diff-A
@@ -1186,7 +1225,7 @@
 
    ;; embark
    `(embark-keybinding
-     ((,class256 (:foreground ,cyan :weight bold))))
+     ((,class256 (:inherit help-key-binding))))
 
    ;; notmuch
    `(notmuch-message-summary-face
@@ -1222,7 +1261,7 @@
 
    ;; corfu
    `(corfu-default
-     ((,class256 (:background ,grey3))))
+     ((,class256 (:background ,grey2))))
    `(corfu-current
      ((,class256 (:background ,grey1))))
    `(corfu-bar
@@ -1232,7 +1271,7 @@
 
    ;; company
    `(company-tooltip
-     ((,class256 (:background ,grey3))))
+     ((,class256 (:background ,grey2))))
    `(company-tooltip-common
      ((,class256 (:inherit completions-common-part))))
    `(company-tooltip-annotation
