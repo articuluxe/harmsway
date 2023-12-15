@@ -128,12 +128,12 @@ standard)."
       (bg-magenta-subtle  "#552f5f")
       (bg-cyan-subtle     "#004065")
 
-      (bg-red-nuanced     "#2c0614")
-      (bg-green-nuanced   "#001904")
-      (bg-yellow-nuanced  "#221000")
-      (bg-blue-nuanced    "#0f0e39")
-      (bg-magenta-nuanced "#230631")
-      (bg-cyan-nuanced    "#041529")
+      (bg-red-nuanced     "#3a0c14")
+      (bg-green-nuanced   "#092f1f")
+      (bg-yellow-nuanced  "#381d0f")
+      (bg-blue-nuanced    "#12154a")
+      (bg-magenta-nuanced "#2f0c3f")
+      (bg-cyan-nuanced    "#042837")
 
 ;;; Uncommon accent backgrounds
 
@@ -240,6 +240,11 @@ standard)."
       (fg-prominent-warning fg-main)
       (bg-prominent-note bg-cyan-intense)
       (fg-prominent-note fg-main)
+
+      (bg-active-argument bg-red-nuanced)
+      (fg-active-argument red-warmer)
+      (bg-active-value bg-cyan-nuanced)
+      (fg-active-value cyan)
 
 ;;;; Code mappings
 
@@ -350,6 +355,7 @@ standard)."
       (prose-metadata fg-dim)
       (prose-metadata-value fg-alt)
       (prose-table fg-alt)
+      (prose-table-formula red-cooler)
       (prose-tag fg-alt)
       (prose-todo red)
       (prose-verbatim magenta-warmer)
@@ -365,6 +371,17 @@ standard)."
       (rainbow-6 cyan-faint)
       (rainbow-7 magenta-faint)
       (rainbow-8 red-faint)
+
+;;;; Search mappings
+
+      (bg-search-current bg-red-intense)
+      (bg-search-lazy bg-cyan-intense)
+      (bg-search-replace bg-magenta-intense)
+
+      (bg-search-rx-group-0 bg-blue-intense)
+      (bg-search-rx-group-1 bg-magenta-intense)
+      (bg-search-rx-group-2 bg-cyan-subtle)
+      (bg-search-rx-group-3 bg-red-subtle)
 
 ;;;; Space mappings
 

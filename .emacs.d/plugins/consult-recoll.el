@@ -4,11 +4,11 @@
 ;; Maintainer: Jose A Ortega Ruiz <jao@gnu.org>
 ;; Keywords: docs, convenience
 ;; License: GPL-3.0-or-later
-;; Version: 0.8
+;; Version: 0.8.1
 ;; Package-Requires: ((emacs "26.1") (consult "0.19"))
 ;; Homepage: https://codeberg.org/jao/consult-recoll
 
-;; Copyright (C) 2021-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023  Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@
 
 (require 'consult)
 
-(declare-function 'eww-open-file "eww")
+(declare-function eww-open-file "eww")
 
 (defgroup consult-recoll nil
   "Options for consult recoll."
@@ -182,8 +182,8 @@ Set to nil to use the default `title (path)' format."
         (goto-char (match-beginning 0))
         (when (derived-mode-p 'org-mode) (org-reveal))))))
 
-(declare-function 'doc-view-goto-page "doc-view")
-(declare-function 'pdf-view-goto-page "pdf-view")
+(declare-function doc-view-goto-page "doc-view")
+(declare-function pdf-view-goto-page "ext:pdf-view")
 
 (defun consult-recoll--open-file (filename &optional page)
   "Default function for opening result files."

@@ -5,7 +5,7 @@
 
 ;; Author: USAMI Kenta <tadsan@zonu.me>
 ;; Created: 5 Dec 2018
-;; Version: 1.25.0
+;; Version: 1.25.1
 ;; Keywords: languages, php
 ;; Homepage: https://github.com/emacs-php/php-mode
 ;; License: GPL-3.0-or-later
@@ -203,6 +203,12 @@ a completion list."
   :type 'integer
   :link '(url-link :tag "Built-in web server"
                    "https://www.php.net/manual/features.commandline.webserver.php"))
+
+(defcustom php-topsy-separator " > "
+  "Separator string for `php-topsy-beginning-of-defun-with-class'."
+  :group 'php
+  :tag "PHP Topsy Separator"
+  :type 'string)
 
 ;;; PHP Keywords
 (defconst php-magical-constants
@@ -622,6 +628,15 @@ Look at the `php-executable' variable instead of the constant \"php\" command."
     (or mode php-default-major-mode)))
 
 ;;;###autoload
+(define-derived-mode php-base-mode prog-mode "PHP"
+  "Generic major mode for editing PHP.
+
+This mode is intended to be inherited by concrete major modes.
+Currently there are `php-mode' and `php-ts-mode'."
+  :group 'php
+  nil)
+
+;;;###autoload
 (defun php-mode-maybe ()
   "Select PHP mode or other major mode."
   (interactive)
@@ -654,6 +669,33 @@ Look at the `php-executable' variable instead of the constant \"php\" command."
     (kill-new (concat (if (string= namespace "") "" namespace)
                       (if (string= class "") "" (concat "\\" class "::"))
                       (if (string= namedfunc "") "" (concat namedfunc "()"))))))
+
+(defun php-topsy-beginning-of-defun-with-class ()
+  "Return function signature and class name string for header line in topsy.
+
+You can add the function to topsy with the code below:
+
+    (add-to-list \\='topsy-mode-functions
+                 \\='(php-mode . php-topsy-beginning-of-defun-with-class))"
+  (save-excursion
+    (goto-char (window-start))
+    (mapconcat
+     #'identity
+     (append
+      (save-match-data
+        (save-excursion
+          (when (re-search-backward php--re-classlike-pattern nil t)
+            (font-lock-ensure (point) (line-end-position))
+            (list (string-trim (buffer-substring (point) (line-end-position)))))))
+      (progn
+        (beginning-of-defun)
+        (font-lock-ensure (point) (line-end-position))
+        (list (string-trim
+               (replace-regexp-in-string
+                (eval-when-compile (rx bos "<?php"))
+                ""
+                (buffer-substring (point) (line-end-position)))))))
+     php-topsy-separator)))
 
 ;;;###autoload
 (defun php-run-builtin-web-server (router-or-dir hostname port &optional document-root)

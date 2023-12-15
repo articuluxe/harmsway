@@ -6,7 +6,7 @@
 ;;         Fanael Linithien <fanael4@gmail.com>
 ;; URL: https://github.com/purcell/package-lint
 ;; Keywords: lisp
-;; Version: 0.20
+;; Version: 0.21
 ;; Package-Requires: ((cl-lib "0.5") (emacs "24.4") (let-alist "1.0.6") (compat "29.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -182,7 +182,7 @@ symbol such as `variable-added'.")
           (insert-file-contents el-path)
           (goto-char (point-min))
           (while (search-forward-regexp (rx line-start
-                                            "(compat-" (group (or "defun" "defmacro" "defvar"))
+                                            "(compat-" (group (or "defun" "defmacro" "defvar" "defalias"))
                                             (+ space)
                                             symbol-start
                                             (group (+? any))
@@ -190,7 +190,7 @@ symbol such as `variable-added'.")
                                         nil t)
             (pcase (match-string 1)
               ("defvar" (push (intern (match-string 2)) symbols))
-              ((or "defun" "defmacro") (push (intern (match-string 2)) functions)))))))
+              ((or "defun" "defmacro" "defalias") (push (intern (match-string 2)) functions)))))))
     (cons symbols functions))
   "A cons cell of (VARS . FUNCTIONS) supported by \"compat\".")
 
@@ -540,7 +540,8 @@ required version PACKAGE-VERSION.  If not, raise an error for DEP-POS."
   "Check that all VALID-DEPS are available for installation."
   (pcase-dolist (`(,package-name ,package-version ,dep-pos) valid-deps)
     (unless (eq 'emacs package-name)
-      (let ((archive-entry (assq package-name package-archive-contents)))
+      (let ((archive-entry (append (assq package-name package-archive-contents)
+                                   (assq package-name package-alist))))
         (if archive-entry
             (package-lint--check-package-installable archive-entry package-version dep-pos)
           (package-lint--error-at-point
@@ -1157,7 +1158,8 @@ Lines consisting only of whitespace or empty comments are considered empty."
 
 (defun package-lint--highest-installable-version-of (package)
   "Return the highest version of PACKAGE available for installation."
-  (let ((descriptors (cdr (assq package package-archive-contents))))
+  (let ((descriptors (append (cdr (assq package package-archive-contents))
+                             (cdr (assq package package-alist)))))
     (if (fboundp 'package-desc-version)
         (car (sort (mapcar 'package-desc-version descriptors)
                    (lambda (v1 v2) (not (version-list-< v1 v2)))))

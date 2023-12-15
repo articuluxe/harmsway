@@ -156,13 +156,13 @@
      ((t (:background ,white))))
    ;; -tool-bar
    `(tab-bar
-     ((,class256 (:background ,mode-line-inactive :foreground ,darkgrey))))
+     ((,class256 (:background ,header-line :foreground ,fg))))
    `(tab-bar-tab
-     ((,class256 (:background ,mode-line-active :foreground ,white :weight bold
-                              :box (:line-width 1 :color ,non-text)))))
+     ((,class256 (:background ,mode-line-inactive :foreground ,grey :weight bold
+                              :box (:style released-button)))))
    `(tab-bar-tab-inactive
-     ((t (:background unspecified :foreground ,grey
-                      :box (:line-width 1 :color ,non-text)))))
+     ((,class256 (:background ,header-line :foreground ,darkgrey
+                              :box (:style released-button)))))
    `(tab-line
      ((,class256 (:background ,mode-line-inactive :foreground ,darkgrey))))
    `(tab-line-tab
@@ -740,6 +740,8 @@
    `(markdown-inline-code-face
      ((,classTC (:background ,code-block :foreground ,cyan))
       (t (:foreground ,green))))
+   `(markdown-line-break-face
+     ((,class256 (:foreground ,bright-red :weight unspecified :slant unspecified))))
    `(markdown-language-keyword-face
      ((,class256 (:foreground ,darkgrey))))
    `(markdown-gfm-checkbox-face
@@ -904,6 +906,12 @@
 
    `(transient-key
      ((,class256 (:inherit help-key-binding))))
+   `(transient-key-stay
+     ((,class256 (:foreground ,bright-green :weight bold))))
+   `(transient-key-exit
+     ((,class256 (:foreground ,bright-magenta :weight bold))))
+   `(transient-key-return
+     ((,class256 (:foreground ,bright-blue :weight bold))))
    `(transient-heading
      ((,class256 (:inherit magit-section-heading))))
 
@@ -957,9 +965,9 @@
      ((,classTC (:background ,diff-removed-bg))
       (t (:background ,diff-removed-bg-tty))))
    `(smerge-refined-added
-     ((t (:background ,green :foreground ,black))))
+     ((t (:background ,diff-refine-added-bg :foreground ,diff-added-fg))))
    `(smerge-refined-removed
-     ((t (:background ,red :foreground ,black))))
+     ((t (:background ,diff-refine-removed-bg :foreground ,diff-removed-fg))))
 
    ;; epa
    `(epa-mark
@@ -1025,7 +1033,7 @@
    `(erc-nick-msg-face
      ((,class256 (:foreground ,bright-yellow))))
    `(erc-input-face
-     ((,class256 (:foreground ,purple))))
+     ((,class256 (:foreground ,bright-green))))
    `(erc-error-face
      ((,class256 (:foreground ,red))))
    `(erc-dangerous-host-face
@@ -1035,7 +1043,7 @@
    `(erc-button
      ((,class256 (:background unspecified :foreground ,bright-blue :underline t))))
    `(erc-prompt-face
-     ((,class256 (:background unspecified :foreground ,magenta :weight bold))))
+     ((,class256 (:background unspecified :foreground ,magenta :weight bold :inverse-video t))))
    `(erc-action-face
      ((,class256 (:background unspecified :foreground ,comment))))
    `(fg:erc-face0
@@ -1284,6 +1292,8 @@
      ((,class256 (:background ,darkgrey))))
 
    ;; rainbow-delimiters
+   `(rainbow-delimiters-base-error-face
+     ((,class256 (:background ,grey2 :foreground ,red :weight bold))))
    `(rainbow-delimiters-depth-1-face
      ((,class256 (:foreground ,fg))))
    `(rainbow-delimiters-depth-2-face
@@ -1328,6 +1338,8 @@
    ;; sh
    `(sh-quoted-exec
      ((,class256 (:foreground ,bright-magenta))))
+   `(sh-heredoc
+     ((,class256 (:foreground ,green))))
 
    ;; tuareg
    `(tuareg-font-lock-error-face

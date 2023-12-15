@@ -1,7 +1,7 @@
 ;;; flexoki-themes.el --- An inky color scheme for prose and code -*- lexical-binding:t -*-
-;;; Version: 0.15
+;;; Version: 0.20
 
-;; Copyright (C) 2023 Andrew Jose, Steph Ango
+;; Copyright (C) 2023 Andrew Jose, Jayaram, Steph Ango
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Author: Andrew Jose <arnav.jose@gmail.com>
@@ -41,13 +41,18 @@
   :group 'flexoki-themes
   :type 'symbol)
 
-(defcustom flexoki-themes-set-italic-comments t
+(defcustom flexoki-themes-use-italic-comments t
   "If t then use italics for comments."
   :group 'flexoki-themes
   :type 'boolean)
 
-(defcustom flexoki-themes-set-italic-keywords t
-  "If t then use italics for keywords."
+(defcustom flexoki-themes-use-bold-keywords nil
+  "If t then use bold weight for keywords."
+  :group 'flexoki-themes
+  :type 'boolean)
+
+(defcustom flexoki-themes-use-bold-builtins nil
+  "If t then use bold weight for font lock builtins."
   :group 'flexoki-themes
   :type 'boolean)
 
@@ -103,6 +108,9 @@
        (flexoki-themes-faint-bg
 	(if (eq variant 'light)
 	    flexoki-colour-100 flexoki-colour-900))
+       (flexoki-themes-faint-fg
+	(if (eq variant 'light)
+	    flexoki-colour-800 flexoki-colour-300))
        (flexoki-themes-fg
 	(if (eq variant 'light) "#100f0f" "#fffcf0"))
        ;; accents
@@ -136,7 +144,7 @@
     (dolist (item flexoki-themes-custom-colours)
       (pcase item
 	(`(,cvar . ,val) (set cvar val))))
-    
+
     (custom-theme-set-faces
      theme-name
      `(default
@@ -217,6 +225,11 @@
 ;;;;; Basic faces
      `(error
        ((t (:foreground ,flexoki-themes-red :bold t))))
+     `(italic
+       ((t (:foreground
+	    ,flexoki-themes-faint-fg
+	    :underline nil
+	    :slant italic))))
      `(success
        ((t (:foreground ,flexoki-themes-green :bold t))))
      `(warning
@@ -232,27 +245,58 @@
      `(match
        ((t (:foreground ,flexoki-themes-lowlight
 	    :background ,flexoki-themes-blue))))
-     
+
+;;;;; Buttons
+     `(custom-button
+       ((t (:foreground
+	    ,flexoki-themes-purple
+	    :background ,flexoki-themes-faint-bg
+	    :box
+	    (:line-width
+	     (2 . 1)
+	     :color nil
+	     :style released-button)))))
+     `(custom-button-mouse
+       ((t (:foreground
+	    ,flexoki-themes-purple
+	    :background ,flexoki-themes-bg
+	    :inherit t
+	    :box
+	    (:line-width
+	     (1 . 1)
+	     :color ,flexoki-themes-lowlight)))))
+     `(custom-button-pressed
+       ((t (:box
+	    (:line-width
+	     (2 . 1)
+	     :color nil
+	     :style pressed-button)
+	    :foreground ,flexoki-themes-purple
+	    :background ,flexoki-themes-lowlight))))
+
 ;;;;; built-in syntax (font-lock)
 
-     `(font-lock-keyword-face
-       ((t (:foreground ,flexoki-themes-magenta :weight bold))))
      `(font-lock-builtin-face
-       ((t (:foreground ,flexoki-themes-green :weight bold))))
+       ((t (:foreground
+	    ,flexoki-themes-green
+	    :weight
+	    ,(if flexoki-themes-use-bold-builtins
+		 'bold 'light)))))
      `(font-lock-constant-face
        ((t (:foreground ,flexoki-themes-purple :weight light))))
      `(font-lock-comment-face
        ((t (:foreground ,flexoki-themes-meek
-	    :slant ,(if flexoki-themes-set-italic-comments
+	    :slant ,(if flexoki-themes-use-italic-comments
 			 'italic 'normal)
 	    :weight normal))))
      `(font-lock-function-name-face
-       ((t (:foreground ,flexoki-themes-orange :weight bold))))
+       ((t (:foreground ,flexoki-themes-orange))))
      `(font-lock-keyword-face
-       ((t (:foreground ,flexoki-themes-fg
-		 :weight light
-		 :slant ,(if flexoki-themes-set-italic-keywords
-			     'italic 'normal)))))
+       ((t (:foreground
+	    ,flexoki-themes-magenta
+	    :weight
+	    ,(if flexoki-themes-use-bold-keywords
+		 'bold 'light)))))
      `(font-lock-string-face
        ((t (:foreground ,flexoki-themes-cyan))))
      `(font-lock-variable-name-face
@@ -289,6 +333,32 @@
        ((t (:inherit 'default :foreground ,flexoki-themes-lowlight))))
      `(line-number-current-line
        ((t (:inherit line-number :foreground ,flexoki-themes-purple))))
+
+;;;;; tab-bar
+     `(tab-bar ((t (:height 1.1 :foreground ,flexoki-themes-fg :background ,flexoki-themes-bg))))
+     `(tab-bar-tab
+       ((t (:background
+	    ,flexoki-themes-bg
+	    :foreground ,flexoki-themes-yellow
+	    :box (:line-width 1 :style released-button)))))
+     `(tab-bar-tab-inactive
+       ((t (:inherit
+	    tab-bar-tab
+	    :background ,flexoki-themes-lowlight
+	    :foreground ,flexoki-themes-bg))))
+
+;;;;; tab-line
+     `(tab-line ((t (:foreground ,flexoki-themes-fg :background ,flexoki-themes-bg))))
+     `(tab-line-close-highlight ((t (:foreground ,flexoki-themes-red))))
+     `(tab-line-tab
+       ((t (:background
+	    ,flexoki-themes-bg
+	    :foreground ,flexoki-themes-yellow
+	    :box (:line-width 1 :style released-button)))))
+     `(tab-line-tab-inactive
+       ((t (:inherit tab-line-tab
+	    :background ,flexoki-themes-lowlight
+	    :foreground ,flexoki-themes-bg))))
 
 ;;;;; Completion/Narrowing
 ;;;;;; General Completion
@@ -341,6 +411,20 @@
        ((t (:foreground ,flexoki-themes-highlight))))
      `(corfu-echo
        ((t (:inherit default))))
+
+;;;;;; Isearch
+     `(isearch
+       ((t (:foreground ,flexoki-colour-paper
+	    :background ,flexoki-themes-purple
+	    :weight bold))))
+     `(isearch-fail
+       ((t (:background ,flexoki-themes-red))))
+     `(isearch-group-1
+       ((t (:background ,flexoki-themes-magenta))))
+     `(isearch-group-2
+       ((t (:background ,flexoki-themes-yellow))))
+     `(lazy-highlight
+       ((t (:foreground ,flexoki-themes-purple :background ,flexoki-themes-lowlight))))
 
 ;;;;;; Vertico
      `(vertico-current
@@ -542,15 +626,11 @@
      `(mode-line
        ((t (:foreground ,flexoki-themes-fg
 	    :background ,flexoki-themes-faint-bg
-	    :box (:line-width 1
-		  :color ,flexoki-themes-highlight
-		  :style nil)))))
+	    :box nil))))
      `(mode-line-inactive
        ((t (:foreground ,flexoki-themes-meek
-	    :background ,flexoki-themes-lowlight
-	    :box (:line-width 1
-		    :color ,flexoki-themes-highlight
-		    :style nil)))))
+	    :background ,flexoki-themes-bg
+	    :box nil))))
 
 ;;;;;; Org-mode
      `(org-block
@@ -579,6 +659,84 @@
 ;;;;;; Dired
      `(dired-symlink
        ((t (:foreground ,flexoki-themes-purple :weight bold))))
+
+;;;;;; Term
+     `(term
+       ((t (:foreground
+	    ,flexoki-themes-fg
+	    :background ,flexoki-themes-bg))))
+     `(term-bold
+       ((t  (:weight bold))))
+     `(term-color-black
+       ((t  (:background
+	     ,flexoki-colour-black
+	     :foreground ,flexoki-colour-black))))
+     `(term-color-red
+       ((t  (:background
+	     ,flexoki-themes-red
+	     :foreground ,flexoki-themes-red))))
+     `(term-color-green
+       ((t  (:background
+	     ,flexoki-themes-green
+	     :foreground ,flexoki-themes-green))))
+     `(term-color-yellow
+       ((t  (:background
+	     ,flexoki-themes-yellow
+	     :foreground ,flexoki-themes-yellow))))
+     `(term-color-blue
+       ((t  (:background
+	     ,flexoki-themes-blue
+	     :foreground ,flexoki-themes-blue))))
+     `(term-color-magenta
+       ((t  (:background
+	     ,flexoki-themes-magenta
+	     :foreground ,flexoki-themes-magenta))))
+     `(term-color-cyan
+       ((t  (:background
+	     ,flexoki-themes-cyan
+	     :foreground ,flexoki-themes-cyan))))
+     `(term-color-white
+       ((t  (:background
+	     ,flexoki-colour-paper
+	     :foreground ,flexoki-colour-paper))))
+
+;;;;;; Vterm
+     `(vterm
+       ((t (:foreground
+	    ,flexoki-themes-fg
+	    :background ,flexoki-themes-bg))))
+     `(vterm-color-black
+       ((t  (:background
+	     ,flexoki-colour-black
+	     :foreground ,flexoki-colour-black))))
+     `(vterm-color-red
+       ((t  (:background
+	     ,flexoki-themes-red
+	     :foreground ,flexoki-themes-red))))
+     `(vterm-color-green
+       ((t  (:background
+	     ,flexoki-themes-green
+	     :foreground ,flexoki-themes-green))))
+     `(vterm-color-yellow
+       ((t  (:background
+	     ,flexoki-themes-yellow
+	     :foreground ,flexoki-themes-yellow))))
+     `(vterm-color-blue
+       ((t  (:background
+	     ,flexoki-themes-blue
+	     :foreground ,flexoki-themes-blue))))
+     `(vterm-color-magenta
+       ((t  (:background
+	     ,flexoki-themes-magenta
+	     :foreground ,flexoki-themes-magenta))))
+     `(vterm-color-cyan
+       ((t  (:background
+	     ,flexoki-themes-cyan
+	     :foreground ,flexoki-themes-cyan))))
+     `(vterm-color-white
+       ((t  (:background
+	     ,flexoki-colour-paper
+	     :foreground ,flexoki-colour-paper))))
 
 ;;;;;; Eshell
      `(eshell-prompt
@@ -614,13 +772,37 @@
      `(sh-heredoc
        ((t (:foreground ,flexoki-themes-orange))))
 
+;;;;;; uiua-mode
+     `(uiua-number
+       ((t (:foreground ,flexoki-themes-orange))))
+     `(uiua-monadic-function
+       ((t (:foreground ,flexoki-themes-green))))
+     `(uiua-noadic-or-constant
+       ((t (:foreground ,flexoki-themes-red))))
+     `(uiua-ocean-function
+       ((t (:weight semi-bold))))
+
 ;;;;;; js2-mode
      `(js2-function-call
        ((t (:foreground ,flexoki-themes-green))))
      `(js2-object-property
        ((t (:foreground ,flexoki-themes-purple))))
      `(js2-object-property-access
-       ((t (:inherit js2-object-property)))))))
+       ((t (:inherit js2-object-property))))
+
+;;;;;; web-mode
+     `(web-mode-doctype-face ((t (:foreground ,flexoki-themes-orange))))
+     `(web-mode-function-call-face
+       ((t (:inherit font-lock-function-name-face :weight bold))))
+     `(web-mode-function-call-face
+       ((t (:inherit font-lock-function-name-face))))
+     `(web-mode-string-face ((t (:foreground ,flexoki-themes-cyan))))
+     `(web-mode-html-tag-face ((t (:foreground ,flexoki-themes-orange))))
+     `(web-mode-html-tag-bracket-face ((t (:foreground ,flexoki-themes-magenta))))
+     `(web-mode-html-attr-name-face ((t (:foreground ,flexoki-themes-orange))))
+     `(web-mode-json-key-face
+       ((t (:inherit font-lock-keyword-face :weight light))))
+     `(web-mode-json-context-face ((t (:inherit font-lock-keyword-face)))))))
 
 ;;;###autoload
 (and load-file-name

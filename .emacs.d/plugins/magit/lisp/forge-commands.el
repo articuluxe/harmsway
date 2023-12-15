@@ -55,35 +55,27 @@ Takes the pull-request as only argument and must return a directory."
 ;;;###autoload (autoload 'forge-dispatch "forge-commands" nil t)
 (transient-define-prefix forge-dispatch ()
   "Dispatch a forge command."
-  [["Fetch"
-    :if forge-get-repository-p
-    ("f f" "all topics"    forge-pull)
-    ("f t" "one topic"     forge-pull-topic)
-    ("f n" "notifications" forge-pull-notifications)
-    """Create"
-    ("c i" "issue"         forge-create-issue)
-    ("c p" "pull-request"  forge-create-pullreq)
-    ("c u" "pull-request from issue" forge-create-pullreq-from-issue
-     :if forge-get-github-repository-p)
-    ("c f" "fork or remote" forge-fork)
-    """Merge"
-    (7 "M  " "merge using API" forge-merge)]
+  [:if forge--get-full-repository
+   ["Create"
+    ("c i" "issue"             forge-create-issue)
+    ("c p" "pull-request"      forge-create-pullreq)
+    ("c u" "pull-request from issue"
+     forge-create-pullreq-from-issue
+     :if forge--get-github-repository)
+    ("c f" "fork or remote"    forge-fork)]]
+  [:if forge--get-full-repository
    ["List"
-    :if forge-get-repository-p
-    ("l t" "topics"        forge-list-topics)
-    ("l i" "issues"        forge-list-issues)
-    ("l p" "pull-requests" forge-list-pullreqs)
-    ("l n" "notifications" forge-list-notifications)
-    ("l r" "repositories"  forge-list-repositories)
-    (7 "l a" "awaiting review"        forge-list-requested-reviews)
-    (7 "n i" "labeled issues"         forge-list-labeled-issues)
-    (7 "n p" "labeled pull-requests"  forge-list-labeled-pullreqs)
-    (7 "m i" "authored issues"        forge-list-authored-issues)
-    (7 "m p" "authored pull-requests" forge-list-authored-pullreqs)
-    (7 "o i" "owned issues"           forge-list-owned-issues)
-    (7 "o p" "owned pull-requests"    forge-list-owned-pullreqs)
-    (7 "o r" "owned repositories"     forge-list-owned-repositories)]]
-  [:if forge-get-repository-p
+    ("t" "topics...         "  forge-topics-menu       :transient replace)
+    ("n" "notifications...  "  forge-notification-menu :transient replace)
+    ("r" "repositories...   "  forge-repository-menu   :transient replace)]
+   ["Fetch"
+    ("f f" "all topics       " forge-pull)
+    ("f t" "one topic        " forge-pull-topic)
+    ("f n" "notifications    " forge-pull-notifications)]
+   ["API Commands"
+    :if forge--get-full-repository
+    (7 "M" "merge" forge-merge)]]
+  [:if forge--get-full-repository
    [:description (lambda () (forge-dispatch--format-description "Visit"))
     ("v t" "topic"         forge-visit-topic)
     ("v i" "issue"         forge-visit-issue)
@@ -97,22 +89,18 @@ Takes the pull-request as only argument and must return a directory."
     ("b I" "issues"        forge-browse-issues)
     ("b P" "pull-requests" forge-browse-pullreqs)]]
   [["Configure"
-    :if forge-get-repository-p
+    :if forge--get-full-repository
     ("a  " forge-add-repository)
     ("R  " forge-add-pullreq-refspec)
-    ("r  " forge-forge.remote)
-    ("t l" forge-forge.graphqlItemLimit)
-    ("t t" forge-toggle-display-in-status-buffer)
-    ("t c" forge-toggle-closed-visibility)]]
-  [["Configure notifications display"
-    :if-mode forge-notifications-mode
-    ("n w" "set style and refresh"     forge-set-notifications-display-style)
-    ("n h" "set selection and refresh" forge-set-notifications-display-selection)]]
+    ("s r" forge-forge.remote)
+    ("s l" forge-forge.graphqlItemLimit)
+    ("s s" forge-toggle-display-in-status-buffer)
+    ("s c" forge-toggle-closed-visibility)]]
   [[:description (lambda ()
                    (if (magit-gitdir)
                        "Forge doesn't know about this Git repository yet"
                      "Not inside a Git repository"))
-    :if-not forge-get-repository-p
+    :if-not forge--get-full-repository
     ("a" "add repository to database" forge-add-repository)
     ("f" "fetch notifications"        forge-pull-notifications)
     ("l" "list notifications"         forge-list-notifications)]])
@@ -160,12 +148,13 @@ If pulling is too slow, then also consider setting the Git variable
   (interactive
    (list nil
          (and current-prefix-arg
-              (not (forge-get-repository 'full))
+              (let ((repo (forge-current-repository)))
+                (or (not repo) (oref repo sparse-p)))
               (forge-read-date "Limit pulling to topics updates since: "))
          t))
   (let (create)
-    (unless repo
-      (setq repo (forge-get-repository 'full))
+    (when (or (not repo) (oref repo sparse-p))
+      (setq repo (forge-current-repository))
       (unless repo
         (setq repo (forge-get-repository 'create))
         (setq create t)))
@@ -190,7 +179,9 @@ If pulling is too slow, then also consider setting the Git variable
                           (format "remote.%s.fetch" remote)
                           refspec)))
       (forge--msg repo t nil "Pulling REPO")
-      (forge--pull repo until))))
+      (when-let ((worktree (oref repo worktree)))
+        (let ((default-directory worktree))
+          (forge--pull repo until))))))
 
 (defun forge-read-date (prompt)
   (cl-block nil
@@ -346,7 +337,7 @@ argument also offer closed pull-requests."
   (if-let ((target (forge--browse-target)))
       (let ((url (if (stringp target) target (forge-get-url target))))
         (kill-new url)
-        (message "Copied %S" url))
+        (message "Copied \"%s\"" url))
     (user-error "Nothing at point with a URL")))
 
 ;;;###autoload
@@ -466,9 +457,15 @@ with a prefix argument also closed topics."
   (interactive)
   (let* ((repo (forge-repository-at-point))
          (worktree (oref repo worktree)))
-    (if (and worktree (file-directory-p worktree))
-        (magit-status-setup-buffer worktree)
-      (forge-list-issues (oref repo id)))))
+    (cond
+     ((eq transient-current-command 'forge-repository-menu)
+      (if-let ((buffer (forge-topic-get-buffer repo)))
+          (switch-to-buffer buffer)
+        (forge-list-topics repo))
+      (transient-setup 'forge-topics-menu))
+     ((and worktree (file-directory-p worktree))
+      (magit-status-setup-buffer worktree))
+     ((forge-list-topics repo)))))
 
 ;;; Create
 
@@ -609,10 +606,10 @@ point is currently on."
     (when (eq state 'merged)
       (user-error "Merged pull-requests cannot be reopened"))
     (if (magit-y-or-n-p (format "%s %s %s"
-                                (if (eq state 'closed) "Reopen" "Close")
+                                (if (eq state 'open) "Close" "Reopen")
                                 (oref topic slug)
                                 (oref topic title)))
-        (forge--topic-set 'state (if (eq state 'closed) 'open 'closed))
+        (forge--topic-set 'state (if (eq state 'open) 'closed 'open))
       (user-error "Abort"))))
 
 (defun forge-edit-topic-draft ()
@@ -647,7 +644,7 @@ point is currently on."
   "Edit the MARKS of the current topic."
   (interactive (list (forge-read-marks "Marks: " (forge-current-topic t))))
   (oset (forge-current-topic t) marks marks)
-  (magit-refresh))
+  (forge-refresh-buffer))
 
 (defun forge-edit-topic-assignees (assignees)
   "Edit the ASSIGNEES of the current topic."
@@ -715,7 +712,7 @@ Please see the manual for more information."
         (progn (message "Branch %S already exists and is configured" branch)
                branch)
       (forge--branch-pullreq (forge-get-repository pullreq) pullreq)
-      (magit-refresh))))
+      (forge-refresh-buffer))))
 
 (cl-defmethod forge--branch-pullreq ((pullreq forge-pullreq))
   (forge--branch-pullreq (forge-get-repository pullreq) pullreq))
@@ -843,7 +840,7 @@ Please see the manual for more information."
 Please see the manual for more information."
   (interactive (list (forge-read-pullreq "Checkout pull request" t)))
   (magit--checkout (forge--branch-pullreq (forge-get-pullreq pullreq)))
-  (magit-refresh))
+  (forge-refresh-buffer))
 
 ;;;###autoload
 (defun forge-checkout-worktree (path pullreq)
@@ -947,7 +944,7 @@ information."
                   (cons mark value)))
          (marks (forge-sql [:select [name id] :from mark])))
     (oset topic marks (--map (cadr (assoc it marks)) value))
-    (magit-refresh)))
+    (forge-refresh-buffer)))
 
 ;;; Remotely
 
@@ -1033,7 +1030,7 @@ the upstream remotes of local branches accordingly."
                    nil nil default)))
     (message "Renaming default branch...")
     (forge--set-default-branch repo newname oldname)
-    (magit-refresh)
+    (forge-refresh-buffer)
     (message "Renaming default branch...done")))
 
 ;;; Configuration
@@ -1047,7 +1044,7 @@ the upstream remotes of local branches accordingly."
 
 (transient-define-infix forge-forge.graphqlItemLimit ()
   "Change the maximum number of GraphQL entities to pull at once."
-  :if #'forge-get-github-repository-p
+  :if #'forge--get-github-repository
   :class 'magit--git-variable
   :variable "forge.graphqlItemLimit"
   :reader #'read-string
@@ -1065,7 +1062,7 @@ the upstream remotes of local branches accordingly."
   :transient t
   (interactive)
   (setq forge-display-in-status-buffer (not forge-display-in-status-buffer))
-  (magit-refresh))
+  (forge-refresh-buffer))
 
 (transient-define-suffix forge-toggle-closed-visibility ()
   "Toggle whether to display recently closed topics.
@@ -1087,7 +1084,7 @@ This only affect the current status buffer."
   (if (atom forge-topic-list-limit)
       (setq forge-topic-list-limit (cons forge-topic-list-limit 5))
     (setcdr forge-topic-list-limit (* -1 (cdr forge-topic-list-limit))))
-  (magit-refresh))
+  (forge-refresh-buffer))
 
 ;;;###autoload (autoload 'forge-add-pullreq-refspec "forge-commands" nil t)
 (transient-define-suffix forge-add-pullreq-refspec ()
@@ -1179,7 +1176,7 @@ This may take a while.  Only Github is supported at the moment."
          (list repo)
        (user-error "Abort"))))
   (closql-delete repository)
-  (magit-refresh))
+  (forge-refresh-buffer))
 
 ;;;###autoload
 (defun forge-remove-topic-locally (topic)
@@ -1195,7 +1192,7 @@ you to manually clean up the local database."
            (eq (oref topic id)
                (oref forge-buffer-topic id)))
       (kill-buffer (current-buffer))
-    (magit-refresh)))
+    (forge-refresh-buffer)))
 
 ;;;###autoload
 (defun forge-reset-database ()
@@ -1209,7 +1206,7 @@ heavy development."
     (when-let ((db (forge-db t)))
       (emacsql-close db))
     (delete-file forge-database-file t)
-    (magit-refresh)))
+    (forge-refresh-buffer)))
 
 ;;; Miscellaneous
 

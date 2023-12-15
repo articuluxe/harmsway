@@ -107,37 +107,173 @@ This is experimental and intended for users who wish to
 implement such a function themselves.  See #447.")
 
 ;;; Faces
+;;;; Common
 
-(defface forge-topic-unread
-  '((t :inherit bold))
-  "Face used for title of unread topics."
+(defcustom forge-fancy-topic-summaries nil
+  "Whether and where to use fancy topic faces.
+
+When listing different types of topics in a single list, then it
+is desirable to be able to easily tell the types apart, which can
+be done using fancy (by default more colorful) faces.
+
+If the value of this option nil, then never use fancy faces.  If
+it is `notifications', then only do so when listing notifications.
+If `mixed', then only in lists that contain topics of different
+types.  If `always', then go full-on fruit salad."
+  :package-version '(forge . "0.4.0")
+  :group 'forge-faces
+  :type '(choice (const :tag "Never" nil)
+                 (const :tag "Only in notifications buffer" notifications)
+                 (const :tag "Only when listing mixed-type topics" mixed)
+                 (const :tag "Always" always)))
+
+(defface forge-dimmed '((t :foreground "#93a1a1"))
+  "Parent face or faces used for text that shouldn't stand out.
+
+This face is not directly, instead several faces inherit from it
+either directly or via an intermediate face.  This face should
+only specify the `:foreground' attribute, which is why this face
+does not inherit from `magit-dimmed'."
+  :group 'magit-faces)
+
+;;;; Topic and Notification Slugs
+
+(defface forge-topic-slug-open
+  '((t :inherit forge-dimmed))
+  "Face uses for slugs of open topics."
   :group 'forge-faces)
 
-(defface forge-topic-closed
-  '((t :inherit magit-dimmed))
-  "Face used for title of closed topics."
+(defface forge-topic-slug-completed
+  '((t :inherit forge-dimmed))
+  "Face used for slugs of completed topics."
   :group 'forge-faces)
 
-(defface forge-topic-open
-  '((t :inherit default))
-  "Face used for title of open topics."
+(defface forge-topic-slug-unplanned
+  '((t :inherit forge-dimmed :strike-through t))
+  "Face used for slugs of unplanned topics.
+E.g., for issues closes as \"unplanned\" and pull-requests that
+were closed without being merged."
   :group 'forge-faces)
 
-(defface forge-topic-merged
-  '((t :inherit magit-dimmed))
-  "Face used for number of merged pull-requests."
+(defface forge-topic-slug-saved
+  '((t :foreground "orange"))
+  "Face used for slugs of topics with saved notifications.
+This is used in combination with one of the other slug faces."
   :group 'forge-faces)
 
-(defface forge-topic-unmerged
-  '((t :inherit magit-dimmed :slant italic))
-  "Face used for number of unmerged pull-requests."
+;;;; Topic and Notification Summaries
+;;;;; Notifications
+
+(defface forge-notification-unread
+  '((t :weight bold))
+  "Face used for summaries of entities with unread notifications.
+This face is always used together with, and takes preference
+over, a `forge[-fancy]-{issue,pullreq}-STATE' face and should not
+specify any attribute that is specified by any of those faces.
+Likewise those faces should not set `:weight' or `:slant'."
   :group 'forge-faces)
+
+(defface forge-notification-pending
+  '((t))
+  "Face used for summaries of entities with open notifications.
+This face is always used together with, and takes preference
+over, a `forge[-fancy]-{issue,pullreq}-STATE' face and should not
+specify any attribute that is specified by any of those faces.
+Likewise those faces should not set `:weight' or `:slant'."
+  :group 'forge-faces)
+
+(defface forge-notification-pending-spotlight
+  '((t :box t))
+  "Additional face used for summaries of entities with open notifications.
+
+This face is used in addition to `forge-notification-pending' in
+the buffer listing notifications, making it easier to synchronize
+the state between Forge and Github.
+
+See info node `(forge) Dealing with Github's abysmal notification API'."
+  :group 'forge-faces)
+
+(defface forge-notification-done
+  '((t :slant italic))
+  "Face used for summaries of entities with no unread or open notification.
+This face is always used together with, and takes preference
+over, a `forge[-fancy]-{issue,pullreq}-STATE' face and should not
+specify any attribute that is specified by any of those faces.
+Likewise those faces should not set `:weight' or `:slant'."
+  :group 'forge-faces)
+
+;;;;; Issues
+
+(defface forge-issue-open
+  '((t))
+  "Face used for summaries of open issues."
+  :group 'forge-faces)
+
+(defface forge-issue-completed
+  '((t :inherit forge-dimmed))
+  "Face used for summaries of issues closed as completed."
+  :group 'forge-faces)
+
+(defface forge-issue-unplanned
+  '((t :inherit forge-dimmed :strike-through t))
+  "Face used for summaries of issues closed as unplanned."
+  :group 'forge-faces)
+
+;;;;; Pull-Requests
+
+(defface forge-pullreq-open
+  '((t :inherit forge-issue-open))
+  "Face used for summaries of open pull-requests.
+Whether this face or `forge-fancy-pullreq-open' is used,
+depends on option `forge-fancy-topic-summaries'."
+  :group 'forge-faces)
+
+(defface forge-pullreq-merged
+  '((t :inherit forge-issue-completed))
+  "Face used for summaries of merged pull-requests.
+Whether this face or `forge-fancy-pullreq-merged' is used,
+depends on option `forge-fancy-topic-summaries'."
+  :group 'forge-faces)
+
+(defface forge-pullreq-rejected
+  '((t :inherit forge-issue-unplanned))
+  "Face used for summaries of closed pull-requests, that weren't merged.
+Whether this face or `forge-fancy-pullreq-rejected' is used,
+depends on option `forge-fancy-topic-summaries'."
+  :group 'forge-faces)
+
+;;;;; Fancy Pull-Requests
+
+(defface forge-fancy-pullreq-open
+  '((t :foreground "LimeGreen"))
+  "Face used for summaries of open pull-requests.
+Whether this face or `forge-pullreq-open' is used,
+depends on option `forge-fancy-topic-summaries'."
+  :group 'forge-faces)
+
+(defface forge-fancy-pullreq-merged
+  '((t :foreground "MediumPurple"))
+  "Face used for summaries of merged pull-requests.
+Whether this face or `forge-pullreq-merged' is used,
+depends on option `forge-fancy-topic-summaries'."
+  :group 'forge-faces)
+
+(defface forge-fancy-pullreq-rejected
+  '((t :foreground "MediumPurple" :strike-through t))
+  "Face used for summaries of closed pull-requests, that weren't merged.
+Whether this face or `forge-pullreq-rejected' is used,
+depends on option `forge-fancy-topic-summaries'."
+  :group 'forge-faces)
+
+;;;; Labels
 
 (defface forge-topic-label
   `((t :box ( :line-width ,(if (>= emacs-major-version 28) (cons -1 -1) -1)
               :style released-button)))
   "Face used for topic labels."
   :group 'forge-faces)
+
+;;;; Post Details
 
 (defface forge-post-author
   '((t :inherit bold))
@@ -190,6 +326,9 @@ implement such a function themselves.  See #447.")
            (forge-get-repository topic)
            topic
            value))
+
+(cl-defmethod forge-topic-mark-read ((topic forge-topic))
+  (oset topic status 'done))
 
 ;;; Query
 ;;;; Get
@@ -299,7 +438,7 @@ an error.  If NOT-THINGATPT is non-nil, then don't use
            (closed-limit (if (consp limit) (cdr limit) limit))
            (topics (forge-sql [:select * :from $i1
                                :where (and (= repository $s2)
-                                           (notnull unread-p))]
+                                           (= status 'unread))]
                               table id)))
       (mapc (lambda (row)
               (cl-pushnew row topics :test #'equal))
@@ -332,33 +471,169 @@ an error.  If NOT-THINGATPT is non-nil, then don't use
                (cdr forge-topic-list-order)
                :key (lambda (it) (eieio-oref it (car forge-topic-list-order)))))))
 
+;;; Read
+
+(defun forge-read-topic (prompt &optional type allow-number)
+  "Read a topic with completion using PROMPT.
+TYPE can be `open', `closed', or nil to select from all topics.
+TYPE can also be t to select from open topics, or all topics if
+a prefix argument is in effect.  If ALLOW-NUMBER is non-nil, then
+allow exiting with a number that doesn't match any candidate."
+  (when (eq type t)
+    (setq type (if current-prefix-arg nil 'open)))
+  (let* ((default (forge-current-topic))
+         (repo    (forge-get-repository (or default t)))
+         (choices (mapcar #'forge--format-topic-choice
+                          (cl-sort (nconc (forge-ls-pullreqs repo type)
+                                          (forge-ls-issues   repo type))
+                                   #'> :key (-cut oref <> number))))
+         (choice  (magit-completing-read
+                   prompt choices nil nil nil nil
+                   (and default
+                        (setq default (forge--format-topic-choice default))
+                        (member default choices)
+                        (car default)))))
+    (or (cdr (assoc choice choices))
+        (and allow-number
+             (let ((number (string-to-number choice)))
+               (if (= number 0)
+                   (user-error "Not an existing topic or number: %s" choice)
+                 number))))))
+
+(defun forge-topic-completion-at-point ()
+  (let ((bol (line-beginning-position))
+        repo)
+    (and (looking-back "[!#][0-9]*" bol)
+         (or (not bug-reference-prog-mode)
+             (nth 8 (syntax-ppss))) ; inside comment or string
+         (setq repo (forge-get-repository t))
+         (looking-back (if (forge--childp repo 'forge-gitlab-repository)
+                           "\\(?3:[!#]\\)\\(?2:[0-9]*\\)"
+                         "#\\(?2:[0-9]*\\)")
+                       bol)
+         (list (match-beginning 2)
+               (match-end 0)
+               (mapcar (lambda (row)
+                         (propertize (number-to-string (car row))
+                                     :title (format " %s" (cadr row))))
+                       (if (forge--childp repo 'forge-gitlab-repository)
+                           (forge-sql [:select [number title]
+                                       :from $i1
+                                       :where (= repository $s2)
+                                       :order-by [(desc updated)]]
+                                      (if (equal (match-string 3) "#")
+                                          'issue
+                                        'pullreq)
+                                      (oref repo id))
+                         (forge-sql [:select [number title updated]
+                                     :from pullreq
+                                     :where (= repository $s1)
+                                     :union
+                                     :select [number title updated]
+                                     :from issue
+                                     :where (= repository $s1)
+                                     :order-by [(desc updated)]]
+                                    (oref repo id))))
+               :annotation-function (lambda (c) (get-text-property 0 :title c))))))
+
+(defun forge-read-topic-label (&optional prompt repository)
+  (magit-completing-read (or prompt "Label")
+                         (forge--format-topic-label-choices
+                          (or repository (forge-get-repository t)))
+                         nil t))
+
 ;;; Format
 
 (cl-defmethod forge--format ((topic forge-topic) slot &optional spec)
   (forge--format (forge-get-repository topic) slot
                  `(,@spec (?i . ,(oref topic number)))))
 
-(defun forge--format-topic-line (topic &optional width)
-  (with-slots (slug title unread-p closed) topic
-    (concat (string-pad (magit--propertize-face
-                         slug
-                         (cond ((forge-issue-p topic)
-                                'magit-dimmed)
-                               ((oref topic merged)
-                                'forge-topic-merged)
-                               ('forge-topic-unmerged)))
-                        (or width 5))
-            " "
-            (magit-log-propertize-keywords
-             nil (magit--propertize-face
-                  title
-                  (cond (unread-p 'forge-topic-unread)
-                        (closed   'forge-topic-closed)
-                        (t        'forge-topic-open)))))))
+(defun forge--format-topic-line (topic &optional width mixed)
+  (let ((fancy (pcase forge-fancy-topic-summaries
+                 ('always t)
+                 ('notifications (derived-mode-p 'forge-notifications-mode))
+                 ('mixed mixed)))) ;TODO actually pass
+    (concat
+     (and (derived-mode-p 'forge-notifications-mode)
+          (eq forge-notifications-display-style 'flat)
+          (concat (truncate-string-to-width
+                   (oref (forge-get-repository topic) slug)
+                   forge-notifications-repo-slug-width
+                   nil ?\s t)
+                  " "))
+     (cond ((or fancy (not (derived-mode-p 'forge-notifications-mode))) nil)
+           ((forge-issue-p   topic) (magit--propertize-face "i " 'magit-dimmed))
+           ((forge-pullreq-p topic) (magit--propertize-face "p " 'magit-dimmed))
+           (t                       (magit--propertize-face "* " 'error)))
+     (string-pad (forge--format-topic-slug topic) (or width 5))
+     " "
+     (forge--format-topic-title topic fancy))))
 
 (defun forge--format-topic-choice (topic)
   (cons (forge--format-topic-line topic)
         (oref topic id)))
+
+(defun forge--format-topic-slug (topic)
+  (magit--propertize-face
+   (oref topic slug)
+   `(,@(and (oref topic saved-p)
+            '(forge-topic-slug-saved))
+     ,(cond ((eq (oref topic state) 'open)
+             'forge-topic-slug-open)
+            ('forge-topic-slug-completed)))))
+
+(defun forge--format-topic-title (topic &optional fancy)
+  (with-slots (title status closed) topic
+    (magit-log-propertize-keywords
+     nil
+     (magit--propertize-face
+      title
+      `(,@(and (eq status 'unread) '(forge-notification-unread))
+        ,@(cond ((eq status 'done) '(forge-notification-done))
+                ((derived-mode-p 'forge-notifications-mode)
+                 '(forge-notification-pending-spotlight
+                   forge-notification-pending))
+                ('(forge-notification-pending)))
+        ,(cond ((forge-issue-p topic)
+                (cond ((not closed) ; TODO use state
+                       'forge-issue-open)
+                      ('forge-issue-completed)))
+               ((forge-pullreq-p topic)
+                (cond ((not closed)
+                       (if fancy
+                           'forge-fancy-pullreq-open
+                         'forge-pullreq-open))
+                      ((oref topic merged)
+                       (if fancy
+                           'forge-fancy-pullreq-merged
+                         'forge-pullreq-merged))
+                      (fancy
+                       'forge-fancy-pullreq-rejected)
+                      ('forge-pullreq-rejected)))))))))
+
+(defun forge--format-topic-title+labels (topic)
+  (concat (forge--format-topic-title  topic) " "
+          (forge--format-topic-labels topic)))
+
+(defun forge--format-topic-labels (topic)
+  (mapconcat (pcase-lambda (`(,name ,color ,_description))
+               (let* ((background (forge--sanitize-color color))
+                      (foreground (forge--contrast-color background)))
+                 (magit--propertize-face
+                  name `(forge-tablist-topic-label
+                         ( :background ,background
+                           :foreground ,foreground)))))
+             (closql--iref topic 'labels)
+             " "))
+
+(defun forge--format-topic-label-choices (repo)
+  (mapcar (pcase-lambda (`(,_id ,name ,color ,_description))
+            (let* ((background (forge--sanitize-color color))
+                   (foreground (forge--contrast-color background)))
+              (magit--propertize-face
+               name `( :background ,background
+                       :foreground ,foreground))))
+          (oref repo labels)))
 
 ;;; Insert
 
@@ -462,10 +737,10 @@ This mode itself is never used directly."
                                 default-directory
                               (or (oref repo worktree)
                                   default-directory))))
-    (magit-setup-buffer
-        (if (forge-issue-p topic) #'forge-issue-mode #'forge-pullreq-mode) t
-      (forge-buffer-topic topic))
-    (forge-topic-mark-read repo topic)))
+    (magit-setup-buffer-internal
+     (if (forge-issue-p topic) #'forge-issue-mode #'forge-pullreq-mode)
+     t `((forge-buffer-topic ,topic)) name)
+    (forge-topic-mark-read topic)))
 
 (defun forge-topic-refresh-buffer ()
   (let ((topic (closql-reload forge-buffer-topic)))
@@ -538,11 +813,14 @@ This mode itself is never used directly."
              (let ((state (oref topic state)))
                (magit--propertize-face
                 (symbol-name state)
-                (pcase (list state (forge-pullreq-p (forge-topic-at-point)))
-                  ('(merged) 'forge-topic-merged)
-                  ('(closed) 'forge-topic-closed)
-                  ('(open t) 'forge-topic-unmerged)
-                  ('(open)   'forge-topic-open))))))))
+                (pcase (list (if (forge-issue-p topic) 'issue 'pullreq) state)
+                  ('(issue   open)      'forge-issue-open)
+                  ('(issue   closed)    'forge-issue-completed)
+                  ('(issue   completed) 'forge-issue-completed)
+                  ('(issue   unplanned) 'forge-issue-unplanned)
+                  ('(pullreq open)      'forge-fancy-pullreq-open)
+                  ('(pullreq merged)    'forge-fancy-pullreq-merged)
+                  ('(pullreq closed)    'forge-fancy-pullreq-rejected))))))))
 
 ;;;;; Draft
 
@@ -587,12 +865,6 @@ This mode itself is never used directly."
         (forge--insert-topic-labels topic t labels)
       (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
     (insert ?\n)))
-
-(defun forge--format-topic-labels (topic)
-  (and-let* ((labels (closql--iref topic 'labels)))
-    (mapconcat (pcase-lambda (`(,name ,color ,_desc))
-                 (propertize name 'font-lock-face (list :box color)))
-               labels " ")))
 
 (defun forge--insert-topic-labels (topic &optional skip-separator labels)
   (pcase-dolist (`(,name ,color ,description)
@@ -697,6 +969,153 @@ This mode itself is never used directly."
       (insert (propertize "none" 'font-lock-face 'magit-dimmed)))
     (insert ?\n)))
 
+;;; Commands
+;;;; State
+
+(transient-define-suffix forge-topic-state-set-open ()
+  "Set the state of the current topic to `open'."
+  :description "open"
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-topic)))
+                  (eq (oref topic state) 'open)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-topic)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (oset (forge-current-topic t) state 'open)
+  (forge-refresh-buffer))
+
+(transient-define-suffix forge-issue-state-set-completed ()
+  "Set the state of the current issue to `completed'."
+  :description "completed"
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-issue)))
+                  (eq (oref topic state) 'completed)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-issue)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (oset (forge-current-issue t) state 'completed)
+  (forge-refresh-buffer))
+
+(transient-define-suffix forge-issue-state-set-unplanned ()
+  "Set the state of the current issue to `unplanned'."
+  :description "unplanned"
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-issue)))
+                  (eq (oref topic state) 'unplanned)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-issue)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (oset (forge-current-issue t) state 'unplanned)
+  (forge-refresh-buffer))
+
+(transient-define-suffix forge-pullreq-state-set-merged ()
+  "If the current pull-request is merged, then visualize that."
+  :description "merged"
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-pullreq)))
+                  (eq (oref topic state) 'merged)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-pullreq)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (message "Please use a merge command for this"))
+
+(transient-define-suffix forge-pullreq-state-set-closed ()
+  "Set the state of the current pull-request to `closed'."
+  :description "closed"
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-pullreq)))
+                  (eq (oref topic state) 'closed)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-pullreq)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (oset (forge-current-pullreq t) state 'closed)
+  (forge-refresh-buffer))
+
+;;;; Status
+
+(transient-define-suffix forge-topic-status-set-unread ()
+  "Set the notification status of the current topic to `unread'."
+  :description "unread           "
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-topic)))
+                  (eq (oref topic status) 'unread)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-topic)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (oset (forge-current-topic t) status 'unread)
+  (forge-refresh-buffer))
+
+(transient-define-suffix forge-topic-status-set-pending ()
+  "Set the notification status of the current topic to `pending'."
+  :description (lambda ()
+                 (if-let ((topic (forge-current-topic)))
+                     (let ((status (oref topic status)))
+                       (concat
+                        (if (memq status '(nil pending))
+                            (propertize "pending" 'face 'forge-active-suffix)
+                          "pending")
+                        (and (not status) " (assumed)")))
+                   (propertize "pending" 'face 'transient-inapt-suffix)))
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-topic)))
+                  (eq (oref topic status) 'pending)
+                t))
+  :inapt-face nil
+  (interactive)
+  (oset (forge-current-topic t) status 'pending)
+  (forge-refresh-buffer))
+
+(transient-define-suffix forge-topic-status-set-done ()
+  "Set the notification status of the current topic to `done'."
+  :description "done"
+  :inapt-if (lambda ()
+              (if-let ((topic (forge-current-topic)))
+                  (eq (oref topic status) 'done)
+                t))
+  :inapt-face (lambda ()
+                (if (forge-current-topic)
+                    'forge-active-suffix
+                  'transient-inapt-suffix))
+  (interactive)
+  (oset (forge-current-topic t) status 'done)
+  (forge-refresh-buffer))
+
+(transient-define-suffix forge-topic-toggle-saved ()
+  "Toggle whether this topic is marked as saved."
+  :inapt-if-not #'forge-current-topic
+  :description
+  (lambda ()
+    (if-let ((topic (transient-with-shadowed-buffer (forge-current-topic))))
+        (concat "toggle "
+                (format (propertize "[%s]" 'face 'transient-delimiter)
+                        (propertize "saved" 'face
+                                    (if (oref topic saved-p)
+                                        'transient-value
+                                      'transient-inactive-value))))
+      "toggle [saved]"))
+  (interactive)
+  (let ((topic (forge-current-topic t)))
+    (oset topic saved-p (not (oref topic saved-p))))
+  (forge-refresh-buffer))
+
 ;;; Color Utilities
 
 (defun forge--sanitize-color (color)
@@ -751,71 +1170,6 @@ Return a value between 0 and 1."
   (if forge-format-avatar-function
       (funcall forge-format-avatar-function author)
     ""))
-
-;;; Completion
-
-(defun forge-read-topic (prompt &optional type allow-number)
-  "Read a topic with completion using PROMPT.
-TYPE can be `open', `closed', or nil to select from all topics.
-TYPE can also be t to select from open topics, or all topics if
-a prefix argument is in effect.  If ALLOW-NUMBER is non-nil, then
-allow exiting with a number that doesn't match any candidate."
-  (when (eq type t)
-    (setq type (if current-prefix-arg nil 'open)))
-  (let* ((default (forge-current-topic))
-         (repo    (forge-get-repository (or default t)))
-         (choices (mapcar #'forge--format-topic-choice
-                          (cl-sort (nconc (forge-ls-pullreqs repo type)
-                                          (forge-ls-issues   repo type))
-                                   #'> :key (-cut oref <> number))))
-         (choice  (magit-completing-read
-                   prompt choices nil nil nil nil
-                   (and default
-                        (setq default (forge--format-topic-choice default))
-                        (member default choices)
-                        (car default)))))
-    (or (cdr (assoc choice choices))
-        (and allow-number
-             (let ((number (string-to-number choice)))
-               (if (= number 0)
-                   (user-error "Not an existing topic or number: %s" choice)
-                 number))))))
-
-(defun forge-topic-completion-at-point ()
-  (let ((bol (line-beginning-position))
-        repo)
-    (and (looking-back "[!#][0-9]*" bol)
-         (or (not bug-reference-prog-mode)
-             (nth 8 (syntax-ppss))) ; inside comment or string
-         (setq repo (forge-get-repository t))
-         (looking-back (if (forge--childp repo 'forge-gitlab-repository)
-                           "\\(?3:[!#]\\)\\(?2:[0-9]*\\)"
-                         "#\\(?2:[0-9]*\\)")
-                       bol)
-         (list (match-beginning 2)
-               (match-end 0)
-               (mapcar (lambda (row)
-                         (propertize (number-to-string (car row))
-                                     :title (format " %s" (cadr row))))
-                       (if (forge--childp repo 'forge-gitlab-repository)
-                           (forge-sql [:select [number title]
-                                       :from $i1
-                                       :where (= repository $s2)
-                                       :order-by [(desc updated)]]
-                                      (if (equal (match-string 3) "#")
-                                          'issue
-                                        'pullreq)
-                                      (oref repo id))
-                         (forge-sql [:select [number title updated]
-                                     :from pullreq
-                                     :where (= repository $s1)
-                                     :union
-                                     :select [number title updated]
-                                     :from issue
-                                     :where (= repository $s1)
-                                     :order-by [(desc updated)]]
-                                    (oref repo id))))
-               :annotation-function (lambda (c) (get-text-property 0 :title c))))))
 
 ;;; Templates
 

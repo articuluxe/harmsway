@@ -125,12 +125,12 @@ which corresponds to a minimum contrast in relative luminance of
       (bg-magenta-subtle  "#552f5f")
       (bg-cyan-subtle     "#004065")
 
-      (bg-red-nuanced     "#2c0614")
-      (bg-green-nuanced   "#001904")
-      (bg-yellow-nuanced  "#221000")
-      (bg-blue-nuanced    "#0f0e39")
-      (bg-magenta-nuanced "#230631")
-      (bg-cyan-nuanced    "#041529")
+      (bg-red-nuanced     "#3a0c14")
+      (bg-green-nuanced   "#092f1f")
+      (bg-yellow-nuanced  "#381d0f")
+      (bg-blue-nuanced    "#12154a")
+      (bg-magenta-nuanced "#2f0c3f")
+      (bg-cyan-nuanced    "#042837")
 
 ;;; Uncommon accent backgrounds
 
@@ -237,6 +237,11 @@ which corresponds to a minimum contrast in relative luminance of
       (fg-prominent-warning fg-main)
       (bg-prominent-note bg-cyan-intense)
       (fg-prominent-note fg-main)
+
+      (bg-active-argument bg-yellow-nuanced)
+      (fg-active-argument yellow-cooler)
+      (bg-active-value bg-cyan-nuanced)
+      (fg-active-value cyan-cooler)
 
 ;;;; Code mappings
 
@@ -347,6 +352,7 @@ which corresponds to a minimum contrast in relative luminance of
       (prose-metadata fg-dim)
       (prose-metadata-value fg-alt)
       (prose-table fg-alt)
+      (prose-table-formula magenta-warmer)
       (prose-tag magenta-faint)
       (prose-todo red)
       (prose-verbatim magenta-warmer)
@@ -362,6 +368,17 @@ which corresponds to a minimum contrast in relative luminance of
       (rainbow-6 green-intense)
       (rainbow-7 blue-warmer)
       (rainbow-8 magenta-warmer)
+
+;;;; Search mappings
+
+      (bg-search-current bg-yellow-intense)
+      (bg-search-lazy bg-cyan-intense)
+      (bg-search-replace bg-red-intense)
+
+      (bg-search-rx-group-0 bg-blue-intense)
+      (bg-search-rx-group-1 bg-green-intense)
+      (bg-search-rx-group-2 bg-red-subtle)
+      (bg-search-rx-group-3 bg-magenta-subtle)
 
 ;;;; Space mappings
 

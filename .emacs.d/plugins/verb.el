@@ -113,15 +113,16 @@ This handler is used when no appropriate handler was found in
                                 (const :tag "Text" nil))))
 
 (defcustom verb-export-functions
-  '(("verb" . verb--export-to-verb)
-    ("curl" . verb--export-to-curl)
-    ("eww" . verb--export-to-eww))
+  '(("verb" ?v verb--export-to-verb)
+    ("curl" ?c verb--export-to-curl)
+    ("eww" ?e verb--export-to-eww)
+    ("websocat" ?w verb--export-to-websocat))
   "Alist of request specification export functions.
 Each element should have the form (NAME . FN), where NAME should be a
 user-friendly name for this function, and FN should be the function
 itself.  FN should take a `verb-request-spec' object as its only
 argument."
-  :type '(alist :key-type string :value-type function))
+  :type '(repeat (list string character function)))
 
 (defcustom verb-auto-kill-response-buffers nil
   "Whether to kill existing response buffers before sending a request.
@@ -266,6 +267,13 @@ Note the the point must be between the two code tag delimiters
 \(e.g.  \"{{\" and \"}}\") for the completion function to work."
   :type 'boolean)
 
+(defcustom verb-enable-var-preview t
+  "When set to a non-nil value, enable preview of Verb variables.
+A preview of the value of a Verb variable will be shown in the
+minibuffer, when the point is moved over a code tag containing only
+a call to `verb-var'."
+  :type 'boolean)
+
 (defface verb-http-keyword '((t :inherit font-lock-constant-face
                                 :weight bold))
   "Face for highlighting HTTP methods.")
@@ -381,6 +389,9 @@ here under its value.")
 (defvar-local verb--vars nil
   "List of values set with `verb-var', with their corresponding names.")
 
+(defvar verb--set-var-hist nil
+  "Input history for `verb-set-var'.")
+
 (defvar verb--requests-count 0
   "Number of HTTP requests sent in the past.")
 
@@ -405,10 +416,8 @@ other buffers without actually expanding the embedded code tags.")
     (define-key map (kbd "C-f") #'verb-send-request-on-point)
     (define-key map (kbd "C-k") #'verb-kill-all-response-buffers)
     (define-key map (kbd "C-e") #'verb-export-request-on-point)
-    (define-key map (kbd "C-u") #'verb-export-request-on-point-curl)
-    (define-key map (kbd "C-b") #'verb-export-request-on-point-verb)
-    (define-key map (kbd "C-w") #'verb-export-request-on-point-eww)
     (define-key map (kbd "C-v") #'verb-set-var)
+    (define-key map (kbd "C-x") #'verb-show-vars)
     map)
   "Keymap for `verb-mode' commands.
 Bind this to an easy-to-reach key in Org mode in order to use Verb
@@ -463,6 +472,7 @@ If REMOVE is nil, add the necessary keywords to
         ["Export request to curl" verb-export-request-on-point-curl]
         ["Export request to Verb" verb-export-request-on-point-verb]
         ["Export request to EWW" verb-export-request-on-point-eww]
+        ["Export request to websocat" verb-export-request-on-point-websocat]
         "--"
         ["Customize Verb" verb-customize-group]
         ["Show log" verb-show-log]))
@@ -487,6 +497,7 @@ more details on how to use it."
           (add-hook 'completion-at-point-functions
                     #'verb-elisp-completion-at-point
                     nil 'local))
+        (add-hook 'post-command-hook #'verb--var-preview nil t)
         (when (buffer-file-name)
           (verb--log nil 'I
                      "Verb mode enabled in buffer: %s"
@@ -670,6 +681,30 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
   "Show the Customize menu buffer for the Verb package group."
   (interactive)
   (customize-group "verb"))
+
+(defun verb--var-preview ()
+  "Preview the value of a Verb variable in the minibuffer."
+  (when-let* (((not (current-message)))
+              (verb-enable-var-preview)
+              ((not (string= (buffer-substring (line-beginning-position)
+                                               (1+ (line-beginning-position)))
+                             "#")))
+              ;; Get the contents inside the code tag: {{<content>}}
+              (beg (save-excursion
+                     (when (search-backward (car verb-code-tag-delimiters)
+                                            (line-beginning-position) t)
+                       (match-end 0))))
+              (end (save-excursion
+                     (when (search-forward (cdr verb-code-tag-delimiters)
+                                           (line-end-position) t)
+                       (match-beginning 0))))
+              (code (buffer-substring-no-properties beg end))
+              (form (car (ignore-errors (read-from-string code))))
+              ((eq (car form) 'verb-var))
+              (var (cadr form))
+              (val (assq var verb--vars)))
+    (let ((message-log-max nil))
+      (message "Current value for %s: %s" (car val) (cdr val)))))
 
 (defun verb-elisp-completion-at-point ()
   "Completion at point function for Lisp code tags."
@@ -969,10 +1004,9 @@ CLASS must be an EIEIO class."
 
 (defun verb--request-spec-metadata-get (rs key)
   "Get the metadata value under KEY for request spec RS.
-If no value is found under KEY, return nil.  KEY must not
-have the prefix `verb--metadata-prefix' included.
-If the value associated with KEY is the empty string, return
-nil."
+If no value is found under KEY, or if the value associated is the
+empty string, return nil.  KEY must NOT have the prefix
+`verb--metadata-prefix' included."
   (thread-first
     (concat verb--metadata-prefix key)
     (assoc-string (oref rs metadata) t)
@@ -1124,7 +1158,10 @@ unless DEFAULT is non-nil, in which case that value is used instead."
   "Set new value for variable VAR previously set with `verb-var'.
 When called interactively, prompt the user for a variable that has
 been set once with `verb-var', and then prompt for VALUE.  Otherwise,
-use string VAR and value VALUE."
+use string VAR and value VALUE.
+
+When called with a non-nil prefix argument, copy the current variable
+value to the kill ring instead of setting it, and ignore VALUE."
   (interactive)
   (verb--ensure-verb-mode)
   (let* ((name (or (and (stringp var) var)
@@ -1132,15 +1169,25 @@ use string VAR and value VALUE."
                    (completing-read "Variable: "
                                     (mapcar (lambda (e)
                                               (symbol-name (car e)))
-                                            verb--vars))))
+                                            verb--vars)
+                                    nil nil nil
+                                    'verb--set-var-hist)))
          (key (intern name))
-         (val (or value (read-string (format "Set value for %s: " name))))
+         (val (or current-prefix-arg
+                  value
+                  (read-string (format "Set value for %s: " name))))
          (elem (assq key verb--vars)))
     (when (string-empty-p name)
       (user-error "%s" "Variable name can't be empty"))
     (if elem
-        (setcdr elem val)
-      (push (cons key val) verb--vars))))
+        (if current-prefix-arg
+            (progn
+              (kill-new (format "%s" (cdr elem)))
+              (message "Variable value copied to the kill ring"))
+          (setcdr elem val))
+      (if current-prefix-arg
+          (user-error "%s" "Variable has no value set")
+        (push (cons key val) verb--vars)))))
 
 (defun verb-unset-vars ()
   "Unset all variables set with `verb-var' or `verb-set-var'.
@@ -1357,7 +1404,7 @@ After the user has finished modifying the buffer, they can press
   ;; Don't require tagging for this temp buffer
   (set (make-local-variable 'verb-tag) t)
 
-  ;; Copy over verb variables
+  ;; Copy over Verb variables
   (setq verb--vars verb-variables)
 
   ;; Insert the request spec
@@ -1436,13 +1483,25 @@ explicitly.  Lisp code tags are evaluated when exporting."
   (interactive)
   (verb--ensure-verb-mode)
   (let ((rs (verb--request-spec-from-hierarchy))
-        (exporter (or name
-                      (completing-read "Export function: "
-                                       verb-export-functions
-                                       nil t))))
-    (when-let ((fn (cdr (assoc exporter verb-export-functions))))
-      (funcall fn rs)
-      (verb--log nil 'I "Exported request to %s format" exporter))))
+        (prompt (string-join
+                 (append
+                  (mapcar (lambda (x)
+                            (format "[%c]: Export to %s" (nth 1 x) (nth 0 x)))
+                          verb-export-functions)
+                  '("Choice: "))
+                 "\n"))
+        (choice))
+    (unless name
+      (setq choice (read-char-choice prompt
+                                     (mapcar (lambda (x)
+                                               (nth 1 x))
+                                             verb-export-functions))))
+    (mapc (lambda (x)
+            (when (or (string= name (nth 0 x))
+                      (equal choice (nth 1 x)))
+              (funcall (nth 2 x) rs)
+              (verb--log nil 'I "Exported request to %s format" (nth 0 x))))
+          verb-export-functions)))
 
 ;;;###autoload
 (defun verb-export-request-on-point-verb ()
@@ -1465,6 +1524,13 @@ See `verb--export-to-eww' for more information."
   (interactive)
   (verb-export-request-on-point "eww"))
 
+;;;###autoload
+(defun verb-export-request-on-point-websocat ()
+  "Export request on point to websocat format.
+See `verb--export-to-websocat' for more information."
+  (interactive)
+  (verb-export-request-on-point "websocat"))
+
 (defun verb--export-to-verb (rs)
   "Export a request spec RS to Verb format.
 Return a new buffer with the export results inserted into it."
@@ -1481,6 +1547,30 @@ be displayed."
   (unless (string= (oref rs method) "GET")
     (user-error "%s" "Can only perform GET requests using EWW"))
   (verb--request-spec-send-eww rs))
+
+(defun verb--export-to-websocat (rs &optional no-message no-kill)
+  "Export a request spec RS to websocat format.
+Add the generated command to the kill ring and return it.  For more
+information about websocat see URL `https://github.com/vi/websocat'.
+If NO-MESSAGE is non-nil, do not display a message on the minibuffer.
+If NO-KILL is non-nil, do not add the command to the kill ring."
+  (with-temp-buffer
+    (unless (string= (oref rs method) "GET")
+      (user-error "%s" "Can only export GET requests to websocat"))
+    (let ((url (concat "ws"
+                       (string-remove-prefix
+                        "http" (verb-request-spec-url-to-string rs)))))
+      (insert "websocat '" url "'"))
+    (dolist (key-value (oref rs headers))
+      (insert " \\\n")
+      (insert "-H '" (car key-value) ": " (cdr key-value) "'"))
+    (let ((result (verb--buffer-string-no-properties)))
+      (unless no-kill
+        (kill-new result))
+      (unless no-message
+        (message "Websocat command copied to the kill ring"))
+      ;; Return the generated command
+      result)))
 
 (defun verb--export-to-curl (rs &optional no-message no-kill)
   "Export a request spec RS to curl format.
@@ -1526,7 +1616,8 @@ non-nil, do not add the command to the kill ring."
   (let ((status-line (oref response status))
         (elapsed (oref response duration))
         (headers (oref response headers))
-        (bytes (oref response body-bytes)))
+        (bytes (oref response body-bytes))
+        (path (car (url-path-and-query (oref (oref response request) url)))))
     (concat
      (or status-line "No Response")
      " | "
@@ -1541,7 +1632,9 @@ non-nil, do not add the command to the kill ring."
                      bytes)))
        (format " | %s byte%s"
                (file-size-human-readable value)
-               (if (= value 1) "" "s"))))))
+               (if (= value 1) "" "s")))
+     (when (not (string-empty-p path))
+       (format " | %s" path)))))
 
 (cl-defmethod verb-request-spec-url-to-string ((rs verb-request-spec))
   "Return RS's url member as a string if it is non-nil."
@@ -1843,6 +1936,16 @@ If CHARSET is nil, use `verb-default-request-charset'."
   "Replacement function for `url-http-user-agent-string'."
   nil)
 
+(defun verb--zlib-decompress-region (args)
+  "Advice ARGS for function `zlib-decompress-region'.
+The function ensures that the ALLOW-PARTIAL argument is always set to
+nil when the original function is called.  Setting it to a non-nil
+value will make `zlib-decompress-region' partially decompress
+contents, which means it can potentially delete a response body if the
+`Content-Encoding' header was incorrectly set to `gzip' when the
+response body was actually not compressed."
+  (list (nth 0 args) (nth 1 args)))
+
 (defun verb--advice-url ()
   "Advice some url.el functions.
 For more information, see `verb-advice-url'."
@@ -1850,7 +1953,11 @@ For more information, see `verb-advice-url'."
     (advice-add 'url-http-user-agent-string :override
                 #'verb--http-user-agent-string)
     (advice-add 'url-http-handle-authentication :override
-                #'verb--http-handle-authentication)))
+                #'verb--http-handle-authentication)
+    (when (and (fboundp 'zlib-available-p)
+               (zlib-available-p))
+      (advice-add 'zlib-decompress-region :filter-args
+                  #'verb--zlib-decompress-region))))
 
 (defun verb--unadvice-url ()
   "Undo advice from `verb--advice-url'."
@@ -1858,7 +1965,11 @@ For more information, see `verb-advice-url'."
     (advice-remove 'url-http-user-agent-string
                    #'verb--http-user-agent-string)
     (advice-remove 'url-http-handle-authentication
-                   #'verb--http-handle-authentication)))
+                   #'verb--http-handle-authentication)
+    (when (and (fboundp 'zlib-available-p)
+	       (zlib-available-p))
+      (advice-remove 'zlib-decompress-region
+                     #'verb--zlib-decompress-region))))
 
 (defun verb--get-accept-header (headers)
   "Retrieve the value of the \"Accept\" header from alist HEADERS.
@@ -1942,7 +2053,7 @@ loaded into."
                    h)))
 
     ;; Maybe log a warning if body is present but method usually
-    ;; doesn't take one
+    ;; doesn't take one (like GET)
     (when (and (member url-request-method verb--bodyless-http-methods)
                url-request-data)
       (verb--log num 'W "Body is present but request method is %s"

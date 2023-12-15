@@ -3,7 +3,7 @@
 ;; Author: Jessie Hildebrandt <jessieh.net>
 ;; Homepage: https://gitlab.com/jessieh/adwaita-dark-theme
 ;; Keywords: mode-line faces
-;; Version: 1.1.1
+;; Version: 1.3.0
 ;; Package-Requires: ((emacs "27.1"))
 ;;
 ;; This file is not part of GNU Emacs.
@@ -16,8 +16,8 @@
 ;; Features offered:
 ;; * Beautiful dark color scheme inspired by Adwaita
 ;; * Automatic 256-color mode support
+;; * Custom configurations for neotree and eldoc-frame
 ;; * Custom fringe bitmaps for line continuations, visual-line-mode, diff-hl, flycheck, and flymake
-;; * Custom configuration for neotree
 ;; * Lightweight with no dependencies
 ;;
 ;; To replace default line continuation/line wrap fringe bitmaps:
@@ -25,6 +25,9 @@
 ;;
 ;; To enable custom configuration for `neotree':
 ;; (eval-after-load 'neotree #'adwaita-dark-theme-neotree-configuration-enable)
+;;
+;; To enable custom configuration for `eldoc-frame':
+;; (eval-after-load 'eldoc-frame #'adwaita-dark-theme-eldoc-frame-configuration-enable)
 ;;
 ;; To enable custom fringe bitmaps for `diff-hl':
 ;; (eval-after-load 'diff-hl #'adwaita-dark-theme-diff-hl-fringe-bmp-enable)
@@ -64,33 +67,33 @@
 ;; External variable defs
 ;; ---------------------------------- ;;
 
-(defvar diff-hl-fringe-bmp-function)
-
-(defvar flymake-error-bitmap)
-(defvar flymake-warning-bitmap)
-(defvar flymake-note-bitmap)
-
-(defvar neo-global--window)
+(eval-when-compile
+  (defvar diff-hl-fringe-bmp-function)
+  (defvar eldoc-frame-parameters)
+  (defvar flymake-error-bitmap)
+  (defvar flymake-warning-bitmap)
+  (defvar flymake-note-bitmap)
+  (defvar neo-global--window))
 
 ;; ---------------------------------- ;;
 ;; External function decls
 ;; ---------------------------------- ;;
 
-(declare-function flycheck-redefine-standard-error-levels "flycheck" (&optional margin-str fringe-bitmap))
-
-(declare-function neo-open-dir "neotree" (full-path &optional arg))
-(declare-function neo-open-file "neotree" (full-path &optional arg))
-(declare-function neo-filepath-hidden-p "neotree" (node))
-(declare-function neo-path--file-short-name "neotree" (file))
-(declare-function neo-global--create-window "neotree" ())
-(declare-function neo-buffer--newline-and-begin "neotree" ())
-(declare-function neo-buffer--node-list-set "neotree" (line-num path))
-(declare-function neo-buffer--insert-root-entry "neotree" (node))
-(declare-function neo-buffer--insert-dir-entry "neotree" (node depth expanded))
-(declare-function neo-buffer--insert-file-entry "neotree" (node depth))
-(declare-function neotree-hidden-file-toggle "neotree" ())
-(declare-function neotree-select-up-node "neotree" ())
-(declare-function neotree-change-root "neotree" ())
+(eval-when-compile
+  (declare-function flycheck-redefine-standard-error-levels "flycheck" (&optional margin-str fringe-bitmap))
+  (declare-function neo-open-dir "neotree" (full-path &optional arg))
+  (declare-function neo-open-file "neotree" (full-path &optional arg))
+  (declare-function neo-filepath-hidden-p "neotree" (node))
+  (declare-function neo-path--file-short-name "neotree" (file))
+  (declare-function neo-global--create-window "neotree" ())
+  (declare-function neo-buffer--newline-and-begin "neotree" ())
+  (declare-function neo-buffer--node-list-set "neotree" (line-num path))
+  (declare-function neo-buffer--insert-root-entry "neotree" (node))
+  (declare-function neo-buffer--insert-dir-entry "neotree" (node depth expanded))
+  (declare-function neo-buffer--insert-file-entry "neotree" (node depth))
+  (declare-function neotree-hidden-file-toggle "neotree" ())
+  (declare-function neotree-select-up-node "neotree" ())
+  (declare-function neotree-change-root "neotree" ()))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
@@ -117,6 +120,21 @@
 ;; Variable definitions
 ;; ---------------------------------- ;;
 
+(defcustom adwaita-dark-theme-pad-mode-line nil
+  "When non-nil, mode line faces will be padded similarly to GTK header bars."
+  :group 'adwaita-dark-theme
+  :type 'boolean)
+
+(defcustom adwaita-dark-theme-pad-tab-line nil
+  "When non-nil, `tab-line-mode' faces will be padded similarly to GTK header bars."
+  :group 'adwaita-dark-theme
+  :type 'boolean)
+
+(defcustom adwaita-dark-theme-pad-tab-bar nil
+  "When non-nil, `tab-bar-mode' faces will be padded similarly to GTK header bars."
+  :group 'adwaita-dark-theme
+  :type 'boolean)
+
 (defcustom adwaita-dark-theme-no-completions-first-difference nil
   "When non-nil, `completions-first-difference' will be set to an empty face."
   :group 'adwaita-dark-theme
@@ -129,6 +147,11 @@
 
 (defcustom adwaita-dark-theme-gray-rainbow-delimiters nil
   "When non-nil, `rainbow-delimiters-mode' faces will be the same shade of gray."
+  :group 'adwaita-dark-theme
+  :type 'boolean)
+
+(defcustom adwaita-dark-theme-gray-outlines nil
+  "When non-nil, `outline-mode' faces will be alternating shades of gray."
   :group 'adwaita-dark-theme
   :type 'boolean)
 
@@ -153,7 +176,7 @@
        ;; [True color | 256-compatible]
        (bg (if true-color-available-p "#1c1c1c" "gray11"))               ; #1c1c1c
        (bg-alt (if true-color-available-p "#242424" "gray14"))           ; #242424
-       (bg-osd (if true-color-available-p "#101010" "gray6"))            ; #0f0f0f
+       (bg-osd (if true-color-available-p "#060606" "gray3"))            ; #080808
        (base-0 (if true-color-available-p "#202020" "gray13"))           ; #212121
        (base-1 (if true-color-available-p "#262626" "gray15"))           ; #262626
        (base-2 (if true-color-available-p "#292929" "gray16"))           ; #292929
@@ -168,6 +191,7 @@
        ;; [True color | 256-compatible]
        (fg (if true-color-available-p "#deddda" "gray86"))               ; #dbdbdb
        (fg-alt (if true-color-available-p "#77767b" "gray47"))           ; #787878
+       (fg-osd (if true-color-available-p "#f0f0f0" "gray94"))           ; #f0f0f0
        (gray (if true-color-available-p "#3d3846" "gray23"))             ; #3b3b3b
        (red (if true-color-available-p "#ff6c6b" "indianred2"))          ; #ee6363
        (orange (if true-color-available-p "#ffa348" "orange2"))          ; #ee9a00
@@ -197,13 +221,13 @@
    `(warning ((,class (:foreground ,yellow))))
    `(success ((,class (:foreground ,green))))
    `(fringe ((,class (:inherit default :foreground ,base-4))))
-   `(region ((,class (:background ,base-4 :foreground unspecified :distant-foreground ,fg))))
+   `(region ((,class (:background ,base-4 :distant-foreground ,fg))))
    `(highlight ((,class (:background ,blue :foreground ,base-0 :distant-foreground ,base-8))))
    `(lazy-highlight ((,class (:inherit highlight))))
    `(cursor ((,class (:background ,fg))))
    `(shadow ((,class (:foreground ,base-5))))
    `(minibuffer-prompt ((,class (:foreground ,base-7))))
-   `(tooltip ((,class (:background ,bg-osd :foreground ,fg))))
+   `(tooltip ((,class (:background ,bg-osd :foreground ,fg-osd))))
    `(secondary-selection ((,class (:background ,gray))))
    `(fill-column-indicator ((,class (:foreground ,base-3))))
    `(match ((,class (:foreground ,green :weight bold))))
@@ -223,21 +247,22 @@
    `(font-lock-doc-face ((,class (:foreground ,base-6))))
    `(font-lock-comment-face ((,class (:foreground ,base-5))))
    `(font-lock-comment-delimiter-face ((,class (:inherit font-lock-comment-face))))
+   `(font-lock-delimiter-face ((,class (:foreground ,base-7))))
    `(font-lock-constant-face ((,class (:foreground ,violet))))
-   `(font-lock-variable-name-face ((,class (:foreground unspecified))))
-   `(font-lock-function-name-face ((,class (:foreground unspecified))))
+   `(font-lock-variable-name-face ((,class ())))
+   `(font-lock-function-name-face ((,class ())))
    `(font-lock-keyword-face ((,class (:foreground ,orange :weight bold))))
    `(font-lock-type-face ((,class (:foreground ,teal :weight bold))))
    `(font-lock-string-face ((,class (:foreground ,teal))))
    `(font-lock-warning-face ((,class (:inherit warning))))
    `(font-lock-preprocessor-face ((,class (:foreground ,dark-orange))))
-   `(font-lock-negation-char-face ((,class (:foreground unspecified :weight bold))))
+   `(font-lock-negation-char-face ((,class (::weight bold))))
    `(font-lock-regexp-grouping-backslash ((,class (:foreground ,teal :weight bold))))
    `(font-lock-regexp-grouping-construct ((,class (:foreground ,teal :weight bold))))
 
    ;; mode-line/header-line
-   `(mode-line ((,class (:background ,base-3 :foreground ,fg :box (:line-width ,mode-line-padding :color ,base-3)))))
-   `(mode-line-inactive ((,class (:background ,bg-alt :foreground ,base-5 :box (:line-width ,mode-line-padding :color ,bg-alt)))))
+   `(mode-line ((,class (:background ,base-3 :foreground ,fg :box ,(when adwaita-dark-theme-pad-mode-line `(:line-width ,mode-line-padding :color ,base-3))))))
+   `(mode-line-inactive ((,class (:background ,bg-alt :foreground ,base-5 :box ,(when adwaita-dark-theme-pad-mode-line `(:line-width ,mode-line-padding :color ,bg-alt))))))
    `(mode-line-emphasis ((,class (:foreground ,blue))))
    `(mode-line-highlight ((,class (:foreground ,fg))))
    `(mode-line-buffer-id ((,class (:foreground ,base-8 :weight bold))))
@@ -383,7 +408,7 @@
    `(flymake-warning ((,class (:underline (:color ,yellow)))))
 
    ;; flyspell
-   `(flyspell-incorrect ((,class (:inherit unspecified :underline (:color ,red)))))
+   `(flyspell-incorrect ((,class (:underline (:color ,red)))))
 
    ;; gdb
    `(breakpoint-enabled ((,class (:foreground ,red))))
@@ -437,14 +462,14 @@
    `(message-cited-text ((,class (:foreground ,magenta))))
 
    ;; outline
-   `(outline-1 ((,class (:foreground ,base-6 :weight bold))))
-   `(outline-2 ((,class (:foreground ,base-7 :weight bold))))
-   `(outline-3 ((,class (:foreground ,base-6 :weight bold))))
-   `(outline-4 ((,class (:foreground ,base-5 :weight bold))))
-   `(outline-5 ((,class (:foreground ,base-6 :weight bold))))
-   `(outline-6 ((,class (:foreground ,base-7 :weight bold))))
-   `(outline-7 ((,class (:foreground ,base-6 :weight bold))))
-   `(outline-8 ((,class (:foreground ,base-5 :weight bold))))
+   `(outline-1 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-6 blue) :weight bold))))
+   `(outline-2 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-7 magenta) :weight bold))))
+   `(outline-3 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-6 green) :weight bold))))
+   `(outline-4 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-5 violet) :weight bold))))
+   `(outline-5 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-6 teal) :weight bold))))
+   `(outline-6 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-7 blue) :weight bold))))
+   `(outline-7 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-6 magenta) :weight bold))))
+   `(outline-8 ((,class (:foreground ,(if adwaita-dark-theme-gray-outlines base-5 green) :weight bold))))
 
    ;; pulse
    `(pulse-highlight-start-face ((,class (:background ,base-5 :extend t))))
@@ -461,15 +486,15 @@
 
    ;; tab-line
    `(tab-line ((,class (:background ,bg-alt))))
-   `(tab-line-tab ((,class (:background ,bg :foreground ,fg :box (:line-width ,mode-line-padding :color ,bg)))))
-   `(tab-line-tab-inactive ((,class (:background ,bg-alt :foreground ,fg-alt :box (:line-width ,mode-line-padding :color ,bg-alt)))))
+   `(tab-line-tab ((,class (:background ,bg :foreground ,fg :box ,(when adwaita-dark-theme-pad-tab-line `(:line-width ,mode-line-padding :color ,bg))))))
+   `(tab-line-tab-inactive ((,class (:background ,bg-alt :foreground ,fg-alt :box ,(when adwaita-dark-theme-pad-tab-line `(:line-width ,mode-line-padding :color ,bg-alt))))))
    `(tab-line-tab-current ((,class (:inherit tab-line-tab))))
    `(tab-line-highlight ((,class (:inherit tab-line-tab))))
 
    ;; tab-bar
    `(tab-bar ((,class (:background ,bg-alt))))
-   `(tab-bar-tab ((,class (:background ,bg :foreground ,fg :box (:line-width ,mode-line-padding :color ,bg)))))
-   `(tab-bar-tab-inactive ((,class (:background ,bg-alt :foreground ,fg-alt :box (:line-width ,mode-line-padding :color ,bg-alt)))))
+   `(tab-bar-tab ((,class (:background ,bg :foreground ,fg :box ,(when adwaita-dark-theme-pad-tab-bar `(:line-width ,mode-line-padding :color ,bg))))))
+   `(tab-bar-tab-inactive ((,class (:background ,bg-alt :foreground ,fg-alt :box ,(when adwaita-dark-theme-pad-tab-bar `(:line-width ,mode-line-padding :color ,bg-alt))))))
 
    ;; which-func
    `(which-func ((,class (:inherit font-lock-function-name-face))))
@@ -561,6 +586,14 @@
    `(diff-hl-delete ((,class (:foreground ,red))))
    `(diff-hl-insert ((,class (:foreground ,green))))
 
+   ;; eldoc-box
+   `(eldoc-box-body ((,class (:inherit (tooltip variable-pitch-text)))))
+   `(eldoc-box-border ((,class (:background ,base-3))))
+
+   ;; eldoc-frame
+   `(eldoc-frame-default ((,class (:inherit (tooltip variable-pitch-text)))))
+   `(eldoc-frame-border ((,class (:background ,base-3))))
+
    ;; fic-mode
    `(fic-face ((,class (:foreground ,yellow :weight bold))))
 
@@ -588,9 +621,9 @@
    `(git-gutter:deleted ((,class (:foreground ,red))))
 
    ;; git-gutter+
-   `(git-gutter+-modified ((,class (:background nil :foreground ,orange))))
-   `(git-gutter+-added ((,class (:background nil :foreground ,green))))
-   `(git-gutter+-deleted ((,class (:background nil :foreground ,red))))
+   `(git-gutter+-modified ((,class (:foreground ,orange))))
+   `(git-gutter+-added ((,class (:foreground ,green))))
+   `(git-gutter+-deleted ((,class (:foreground ,red))))
 
    ;; git-gutter-fringe
    `(git-gutter-fr:modified ((,class (:inherit git-gutter:modified))))
@@ -637,8 +670,8 @@
    `(ido-vertical-match-face ((,class (:foreground ,blue :underline nil))))
 
    ;; ivy
-   `(ivy-current-match ((,class (:background ,base-4 :distant-foreground nil))))
-   `(ivy-minibuffer-match-face-1 ((,class (:background nil :foreground ,gray :weight light))))
+   `(ivy-current-match ((,class (:background ,base-4))))
+   `(ivy-minibuffer-match-face-1 ((,class (:foreground ,gray :weight light))))
    `(ivy-minibuffer-match-face-2 ((,class (:inherit ivy-minibuffer-match-face-1 :background ,base-1 :foreground ,magenta :weight semi-bold))))
    `(ivy-minibuffer-match-face-3 ((,class (:inherit ivy-minibuffer-match-face-2 :foreground ,green :weight semi-bold))))
    `(ivy-minibuffer-match-face-4 ((,class (:inherit ivy-minibuffer-match-face-2 :foreground ,yellow :weight semi-bold))))
@@ -834,9 +867,9 @@
    `(swiper-match-face-4 ((,class (:background ,green :foreground ,base-0 :weight bold))))
 
    ;; tempel
-   `(tempel-form ((,class (:foreground unspecified))))
-   `(tempel-field ((,class (:foreground unspecified))))
-   `(tempel-default ((,class (:foreground unspecified :underline t))))
+   `(tempel-form ((,class ())))
+   `(tempel-field ((,class (:underline (:color ,base-5)))))
+   `(tempel-default ((,class (:underline t))))
 
    ;; transient
    `(transient-heading ((,class (:foreground ,base-8 :weight bold))))
@@ -1000,6 +1033,33 @@
   (advice-add #'neo-buffer--insert-root-entry :override #'adwaita-dark-theme--neotree-insert-root)
   (advice-add #'neo-buffer--insert-dir-entry :override #'adwaita-dark-theme--neotree-insert-dir)
   (advice-add #'neo-buffer--insert-file-entry :override #'adwaita-dark-theme--neotree-insert-file))
+
+;; -------------------------------------------------------------------------- ;;
+;;
+;; eldoc-frame configuration
+;;
+;; -------------------------------------------------------------------------- ;;
+
+;; ---------------------------------- ;;
+;; Setup function
+;; ---------------------------------- ;;
+
+;;;###autoload
+(defun adwaita-dark-theme-eldoc-frame-configuration-enable ()
+  "Enable custom adwaita-dark configuration for use with eldoc-frame."
+  (set-face-background 'eldoc-frame-default "#000000")
+  (dolist (parameter '((left-fringe . 12)
+                       (right-fringe . 12)
+                       (alpha-background . 80)))
+    (add-to-list 'eldoc-frame-parameters parameter))
+  (add-hook 'eldoc-frame-buffer-hook
+            (lambda ()
+              (setq-local line-spacing 0.25)
+              (goto-char (point-min))
+              (insert (propertize "\s\n" 'face '(:height 0.2)))
+              (goto-char (point-max))
+              (insert (propertize "\s\n" 'face '(:height 0.2))))
+            100))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;

@@ -43,7 +43,7 @@
    (created              :initarg :created)
    (updated              :initarg :updated)
    (closed               :initarg :closed)
-   (unread-p             :initarg :unread-p :initform nil)
+   (status               :initarg :status :initform nil)
    (locked-p             :initarg :locked-p)
    (milestone            :initarg :milestone)
    (body                 :initarg :body)
@@ -59,6 +59,7 @@
    (note                 :initarg :note :initform nil)
    (their-id             :initarg :their-id)
    (slug                 :initarg :slug)
+   (saved-p              :initarg :saved-p :initform nil)
    ))
 
 (defclass forge-issue-post (forge-post)
@@ -147,32 +148,60 @@ an error."
   (forge-ls-recent-topics repo 'issue))
 
 (defun forge--ls-assigned-issues (repo)
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-issue (forge-db) row))
-          (forge-sql
-           [:select $i1 :from [issue issue_assignee assignee]
-            :where (and (= issue_assignee:issue issue:id)
-                        (= issue_assignee:id    assignee:id)
-                        (= issue:repository     $s2)
-                        (= assignee:login       $s3)
-                        (isnull issue:closed))
-            :order-by [(desc updated)]]
-           (vconcat (closql--table-columns (forge-db) 'issue t))
-           (oref repo id)
-           (ghub--username repo))))
+  (forge--select-issues repo
+    [:from issue
+     :join issue_assignee :on (= issue_assignee:issue issue:id)
+     :join assignee       :on (= issue_assignee:id    assignee:id)
+     :where (and (= issue:repository $s2)
+                 (= assignee:login   $s3)
+                 (isnull issue:closed))]
+    (ghub--username repo)))
 
 (defun forge--ls-authored-issues (repo)
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-issue (forge-db) row))
-          (forge-sql
-           [:select $i1 :from [issue]
-            :where (and (= issue:repository $s2)
-                        (= issue:author     $s3)
-                        (isnull issue:closed))
-            :order-by [(desc updated)]]
-           (vconcat (closql--table-columns (forge-db) 'issue t))
-           (oref repo id)
-           (ghub--username repo))))
+  (forge--select-issues repo
+    [:from [issue]
+     :where (and (= issue:repository $s2)
+                 (= issue:author     $s3)
+                 (isnull issue:closed))]
+    (ghub--username repo)))
+
+(defun forge--ls-labeled-issues (repo label)
+  (forge--select-issues repo
+    [:from issue
+     :join issue_label :on (= issue_label:issue issue:id)
+     :join label       :on (= issue_label:id    label:id)
+     :where (and (= issue:repository $s2)
+                 (= label:name       $s3)
+                 (isnull issue:closed))]
+    label))
+
+(defun forge--ls-owned-issues ()
+  (forge--select-issues nil
+    [:from [issue repository]
+     :where (and (= issue:repository repository:id)
+                 (in repository:owner $v2)
+                 (not (in repository:name $v3))
+                 (isnull issue:closed))
+     :order-by [(asc repository:owner)
+                (asc repository:name)
+                (desc issue:number)]]
+    (vconcat (mapcar #'car forge-owned-accounts))
+    (vconcat forge-owned-ignored)))
+
+(defun forge--select-issues (repo query &rest args)
+  (declare (indent 1))
+  (let ((db (forge-db)))
+    (mapcar (lambda (row)
+              (closql--remake-instance 'forge-issue db row))
+            (apply #'forge-sql
+                   (vconcat [:select $i1]
+                            query
+                            (and (not (cl-find :order-by query))
+                                 [:order-by [(desc updated)]]))
+                   (vconcat (closql--table-columns db 'issue t))
+                   (if repo
+                       (cons (oref repo id) args)
+                     args)))))
 
 ;;; Read
 

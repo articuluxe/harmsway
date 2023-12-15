@@ -166,6 +166,8 @@
 
 ;;;; General mappings
 
+      (fringe unspecified)
+
       (err red)
       (warning yellow-cooler)
       (info green)
@@ -222,6 +224,7 @@
       (prose-metadata fg-dim)
       (prose-metadata-value fg-alt)
       (prose-table fg-alt)
+      (prose-table-formula err)
       (prose-tag yellow-faint)
       (prose-todo red)
       (prose-verbatim green-cooler)

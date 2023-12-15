@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.3
+;; Version: 1.4
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 ;; Homepage: https://github.com/minad/marginalia
 ;; Keywords: docs, help, matching, completion
@@ -301,11 +301,9 @@ The value of `this-command' is used as key for the lookup."
 
 ;;;; Pre-declarations for external packages
 
-(declare-function project-current "project")
+(declare-function bookmark-prop-get "bookmark")
 
-(declare-function bookmark-get-handler "bookmark")
-(declare-function bookmark-get-filename "bookmark")
-(declare-function bookmark-get-front-context-string "bookmark")
+(declare-function project-current "project")
 
 (defvar package--builtins)
 (defvar package-archive-contents)
@@ -615,7 +613,7 @@ keybinding since CAND includes it."
   "Annotate imenu CAND with its documentation string."
   (when (derived-mode-p 'emacs-lisp-mode)
     ;; Strip until the last whitespace in order to support flat imenu
-    (marginalia-annotate-symbol (replace-regexp-in-string "^.* " "" cand))))
+    (marginalia-annotate-symbol (replace-regexp-in-string "\\`.* " "" cand))))
 
 (defun marginalia-annotate-function (cand)
   "Annotate function CAND with its documentation string."
@@ -762,6 +760,7 @@ keybinding since CAND includes it."
 (defun marginalia-annotate-minor-mode (cand)
   "Annotate minor-mode CAND with status and documentation string."
   (let* ((sym (intern-soft cand))
+         (message-log-max nil)
          (mode (if (and sym (boundp sym))
                    sym
                  (lookup-minor-mode-from-indicator cand)))
@@ -801,7 +800,7 @@ keybinding since CAND includes it."
 (defun marginalia--bookmark-type (bm)
   "Return bookmark type string of BM.
 The string is transformed according to `marginalia--bookmark-type-transforms'."
-  (let ((handler (or (bookmark-get-handler bm) 'bookmark-default-handler)))
+  (let ((handler (or (bookmark-prop-get bm 'handler) 'bookmark-default-handler)))
     (and
      ;; Some libraries use lambda handlers instead of symbols. For
      ;; example the function `xwidget-webkit-bookmark-make-record' is
@@ -821,16 +820,18 @@ The string is transformed according to `marginalia--bookmark-type-transforms'."
 (defun marginalia-annotate-bookmark (cand)
   "Annotate bookmark CAND with its file name and front context string."
   (when-let ((bm (assoc cand (bound-and-true-p bookmark-alist))))
-    (let ((front (bookmark-get-front-context-string bm)))
-      (marginalia--fields
-       ((marginalia--bookmark-type bm) :width 10 :face 'marginalia-type)
-       ((bookmark-get-filename bm)
-        :truncate -0.5 :face 'marginalia-file-name)
-       ((unless (or (not front) (equal front ""))
-          (concat (string-clean-whitespace
-                   (string-replace "\n" "\\n" front))
-                  (marginalia--ellipsis)))
-        :truncate -0.3 :face 'marginalia-documentation)))))
+    (marginalia--fields
+     ((marginalia--bookmark-type bm) :width 10 :face 'marginalia-type)
+     ((or (bookmark-prop-get bm 'filename)
+          (bookmark-prop-get bm 'location))
+      :truncate (if (bookmark-prop-get bm 'filename) -0.5 0.5)
+      :face 'marginalia-file-name)
+     ((let ((front (or (bookmark-prop-get bm 'front-context-string) ""))
+            (rear (or (bookmark-prop-get bm 'rear-context-string) "")))
+        (unless (and (string-blank-p front) (string-blank-p rear))
+          (string-clean-whitespace
+           (concat front (marginalia--ellipsis) rear))))
+      :truncate 0.5 :face 'marginalia-documentation))))
 
 (defun marginalia-annotate-customize-group (cand)
   "Annotate customization group CAND with its documentation string."
@@ -1136,7 +1137,7 @@ These annotations are skipped for remote paths."
       ;; of the window buffer list and gets duplicated.
       (when (cadr (assq 'buffer ws)) (pop bufs))
       (marginalia--fields
-       (:left index :format " (%s)" :face 'marginalia-key)
+       (:left (1+ index) :format " (%s)" :face 'marginalia-key)
        ((if (eq (car tab) 'current-tab)
             (length (window-list nil 'no-minibuf))
           (length bufs))

@@ -216,21 +216,15 @@ See `forge-alist' for valid Git hosts."
 (cl-defmethod forge-get-repository ((repo forge-repository))
   repo)
 
-(defun forge-get-repository-p ()
-  "Like (forge-get-repository nil), but don't require an argument.
-Needed because Eieio does not support adding a method that takes
-no argument."
-  (forge-get-repository nil))
+(defun forge--get-full-repository ()
+  (forge-get-repository 'full))
 
 ;;;; Current
 
-(defun forge-current-repository (&optional demand)
-  "Return the repository at point or being visited.
-If there is no such repository and DEMAND is non-nil, then signal
-an error."
+(defun forge-current-repository ()
+  "Return the repository at point or being visited."
   (or (forge-repository-at-point)
-      (forge-get-repository nil)
-      (and demand (user-error "No current repository"))))
+      (forge-get-repository nil)))
 
 (defun forge-repository-at-point (&optional demand)
   "Return the repository at point.

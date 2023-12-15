@@ -5,7 +5,7 @@
 ;; Author: Harald Judt <h.judt@gmx.at>
 ;; Maintainer: Harald Judt <h.judt@gmx.at>
 ;; Created: 2022
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: files
 ;; Homepage: https://codeberg.org/hjudt/dired-duplicates
@@ -179,13 +179,16 @@ temporary buffer for the hash calculation."
 
 It is possible to provide one or more root DIRECTORIES.  Returns
 a hash-table with the checksums as keys and a list of size and
-duplicate files as values."
+duplicate files as values.  Subdirectories and files that cannot
+be read will be silently ignored."
   (cl-loop with files = (dired-duplicates--apply-file-filter-functions
                          (mapcan
                           (lambda (d)
-                            (if dired-duplicates-search-directories-recursively
-                                (directory-files-recursively d ".*")
-                              (cl-remove-if #'file-directory-p (directory-files d t nil t))))
+                            (seq-remove (lambda (f)
+                                          (not (file-readable-p f)))
+                                        (if dired-duplicates-search-directories-recursively
+                                            (directory-files-recursively d ".*" nil t)
+                                          (seq-remove #'file-directory-p (directory-files d t nil t)))))
                           directories))
            and same-size-table = (make-hash-table)
            and checksum-table = (make-hash-table :test 'equal)

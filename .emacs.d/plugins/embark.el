@@ -1,11 +1,11 @@
 ;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021, 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.23
+;; Version: 1.0
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 
@@ -1248,7 +1248,8 @@ UPDATE is the indicator update function."
                   keymap
                 (let ((overriding-terminal-local-map keymap))
                   (key-binding (seq-take keys (1- (length keys)))
-                               'accept-default)))))
+                               'accept-default))))
+             (prefix-arg prefix-arg)) ; preserve prefix arg
          (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
                                             'visible)))
            (quit-window 'kill-buffer win))
@@ -1282,7 +1283,8 @@ UPDATE is the indicator update function."
        (funcall cmd last-command-event)
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
-       (intern-soft (read-extended-command)))
+       (let ((prefix-arg prefix-arg)) ; preserve prefix arg
+         (intern-soft (read-extended-command))))
       ((or 'keyboard-quit 'keyboard-escape-quit)
        nil)
       (_ cmd))))
@@ -1981,7 +1983,8 @@ arguments are passed to the hooks as keyword arguments."
   (mapc (lambda (h) (apply h :action action :quit quit target))
         (alist-get :always hooks)))
 
-(defun embark--run-around-action-hooks (action target quit)
+(defun embark--run-around-action-hooks
+    (action target quit &optional non-interactive)
   "Run the `embark-around-action-hooks' for ACTION.
 All the applicable around hooks are composed in the order they
 are present in `embark-around-action-hooks'.  The keys t and
@@ -1989,7 +1992,11 @@ are present in `embark-around-action-hooks'.  The keys t and
 The :always hooks are executed always (outermost) and the t hooks
 are the default hooks, for when there are no command-specific
 hooks for ACTION.  The QUIT, ACTION and TARGET arguments are
-passed to the hooks as keyword arguments."
+passed to the hooks as keyword arguments.
+
+The optional argument NON-INTERACTIVE controls whether the action
+is run with `command-execute' or with `funcall' passing the
+target as argument."
   (apply
    (seq-reduce
     (lambda (fn hook)
@@ -1998,8 +2005,12 @@ passed to the hooks as keyword arguments."
       (reverse
        (append (or (alist-get action hooks) (alist-get t hooks))
                (alist-get :always hooks))))
-    (lambda (&rest args)
-      (command-execute (plist-get args :action))))
+    (if non-interactive
+        (lambda (&rest args)
+          (funcall (plist-get args :action)
+                   (or (plist-get args :candidates) (plist-get args :target))))
+      (lambda (&rest args)
+        (command-execute (plist-get args :action)))))
    :action action :quit quit target))
 
 (defun embark--act (action target &optional quit)
@@ -2074,12 +2085,11 @@ minibuffer before executing the action."
                       (when dedicate (set-window-dedicated-p dedicate nil)))
                     (unless (eq final-window action-window)
                       (select-window final-window))))
-              ;; TODO uniformize the command and non-interactive cases?
-              (let ((argument
-                     (if multi
-                         (or (plist-get target :candidates) ; embark-act-all
-                             (list (plist-get target :target)))
-                       (plist-get target :target))))
+              (let ((target
+                     (if (and multi (null (plist-get target :candidates)))
+                         (plist-put
+                          target :candidates (list (plist-get target :target)))
+                       target)))
                 (lambda ()
                   (with-selected-window action-window
                     (embark--run-action-hooks embark-pre-action-hooks
@@ -2087,7 +2097,8 @@ minibuffer before executing the action."
                     (unwind-protect
                         (let ((current-prefix-arg prefix)
                               (default-directory directory))
-                          (funcall action argument))
+                          (embark--run-around-action-hooks
+                           action target quit :non-interactive))
                       (embark--run-action-hooks embark-post-action-hooks
                                                 action target quit))))))))
       (setq prefix-arg nil)
@@ -3798,8 +3809,11 @@ with command output.  For replacement behavior see
                              (and replace (current-buffer)))))
 
 (defun embark-open-externally (file)
-  "Open FILE using system's default application."
-  (interactive "fOpen: ")
+  "Open FILE or url using system's default application."
+  (interactive "sOpen externally: ")
+  (unless (string-match-p "\\`[a-z]+://" file)
+    (setq file (expand-file-name file)))
+  (message "Opening `%s' externally..." file)
   (if (and (eq system-type 'windows-nt)
            (fboundp 'w32-shell-execute))
       (w32-shell-execute "open" file)
@@ -3807,8 +3821,18 @@ with command output.  For replacement behavior see
                     ('darwin "open")
                     ('cygwin "cygstart")
                     (_ "xdg-open"))
-                  nil 0 nil
-                  (expand-file-name file))))
+                  nil 0 nil file)))
+
+(declare-function bookmark-prop-get "bookmark")
+(declare-function bookmark-completing-read "bookmark")
+
+(defun embark-bookmark-open-externally (bookmark)
+  "Open BOOKMARK in external application."
+  (interactive (list (bookmark-completing-read "Open externally: ")))
+  (embark-open-externally
+   (or (bookmark-prop-get bookmark 'location)
+       (bookmark-prop-get bookmark 'filename)
+       (user-error "Bookmark `%s' does not have a location" bookmark))))
 
 (defun embark-bury-buffer (buf)
   "Bury buffer BUF."
@@ -4074,25 +4098,26 @@ the REST of the arguments."
   (unless (y-or-n-p (format "Run %s on %s? " action target))
     (user-error "Canceled")))
 
+(defconst embark--associated-file-fn-alist
+  `((file . identity)
+    (buffer . ,(lambda (target)
+                 (let ((buffer (get-buffer target)))
+                   (or (buffer-file-name buffer)
+                       (buffer-local-value 'default-directory buffer)))))
+    (bookmark . bookmark-location)
+    (library . locate-library))
+  "Alist of functions that extract a file path from targets of a given type.")
+
 (defun embark--associated-directory (target type)
   "Return directory associated to TARGET of given TYPE.
 The supported values of TYPE are file, buffer, bookmark and
 library, which have an obvious notion of associated directory."
-  (setq target (pcase type
-                 ('file
-                  target)
-                 ('buffer
-                  (buffer-local-value 'default-directory (get-buffer target)))
-                 ('bookmark
-                  (bookmark-location target))
-                 ('library
-                  (locate-library target))))
-  (when target
-    (if (file-directory-p target)
-        (file-name-as-directory target)
-      (file-name-directory target))))
+  (when-let ((file-fn (alist-get type embark--associated-file-fn-alist))
+             (file (funcall file-fn target)))
+    (if (file-directory-p file)
+        (file-name-as-directory file)
+      (file-name-directory file))))
 
-(autoload 'bookmark-location "bookmark")
 (cl-defun embark--cd (&rest rest &key run target type &allow-other-keys)
   "Run action with `default-directory' set to the directory of TARGET.
 The supported values of TYPE are file, buffer, bookmark and
@@ -4276,6 +4301,7 @@ This simply calls RUN with the REST of its arguments inside
   "RET" #'browse-url
   "b" #'browse-url
   "d" #'embark-download-url
+  "x" #'embark-open-externally
   "e" #'eww)
 
 (defvar-keymap embark-email-map
@@ -4465,6 +4491,7 @@ This simply calls RUN with the REST of its arguments inside
   "f" #'bookmark-jump-other-frame
   "a" 'bookmark-show-annotation
   "e" 'bookmark-edit-annotation
+  "x" #'embark-bookmark-open-externally
   "$" #'eshell)
 
 (defvar-keymap embark-unicode-name-map

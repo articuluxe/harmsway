@@ -23,9 +23,7 @@
 (require 'cl-lib)
 
 (declare-function bbdb-record-get-field "bbdb")
-(declare-function bbdb-records "bbdb")
 (declare-function bbdb-dwim-mail "bbdb-com")
-(declare-function bbdb-search "bbdb-com")
 
 (defgroup company-bbdb nil
   "Completion backend for BBDB."
@@ -36,11 +34,13 @@
   :type '(repeat (symbol :tag "Major mode"))
   :package-version '(company . "0.8.8"))
 
-(defun company-bbdb--candidates (_arg)
+(defun company-bbdb--candidates (arg)
   (cl-mapcan (lambda (record)
                (mapcar (lambda (mail) (bbdb-dwim-mail record mail))
                        (bbdb-record-get-field record 'mail)))
-             (eval '(bbdb-search (bbdb-records) arg nil arg))))
+             (eval `(let ((arg ,arg))
+                      (bbdb-search (bbdb-records) :all-names arg :mail arg))
+                   t)))
 
 ;;;###autoload
 (defun company-bbdb (command &optional arg &rest _ignore)

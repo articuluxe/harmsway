@@ -175,9 +175,9 @@ As defined by the Language Server Protocol 3.16."
 
 (defcustom lsp-client-packages
   '( ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-awk lsp-astro lsp-bash
-     lsp-beancount lsp-clangd lsp-clojure lsp-cmake lsp-credo lsp-crystal lsp-csharp lsp-css
-     lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile lsp-elm lsp-elixir lsp-emmet
-     lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go lsp-gleam
+     lsp-beancount lsp-bufls lsp-clangd lsp-clojure lsp-cmake lsp-credo lsp-crystal lsp-csharp lsp-css
+     lsp-cypher lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile lsp-elm lsp-elixir lsp-emmet
+     lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go lsp-golangci-lint lsp-gleam
      lsp-glsl lsp-graphql lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe
      lsp-idris lsp-java lsp-javascript lsp-json lsp-kotlin lsp-latex lsp-ltex
      lsp-lua lsp-markdown lsp-marksman lsp-mdx lsp-mint lsp-move lsp-nginx lsp-nim lsp-nix lsp-magik
@@ -776,6 +776,7 @@ Changes take effect only when a new session is started."
     ("\\.php$" . "php")
     ("\\.rs\\'" . "rust")
     ("\\.sql$" . "sql")
+    ("\\.cypher$" . "cypher")
     ("\\.svelte$" . "svelte")
     ("\\.toml\\'" . "toml")
     ("\\.ts$" . "typescript")
@@ -798,6 +799,7 @@ Changes take effect only when a new session is started."
     (bash-ts-mode . "shellscript")
     (ebuild-mode . "shellscript")
     (pkgbuild-mode . "shellscript")
+    (envrc-file-mode . "shellscript")
     (scala-mode . "scala")
     (scala-ts-mode . "scala")
     (julia-mode . "julia")
@@ -887,6 +889,7 @@ Changes take effect only when a new session is started."
     (csharp-ts-mode . "csharp")
     (plain-tex-mode . "plaintex")
     (context-mode . "context")
+    (cypher-mode . "cypher")
     (latex-mode . "latex")
     (v-mode . "v")
     (vhdl-mode . "vhdl")
@@ -933,8 +936,10 @@ Changes take effect only when a new session is started."
     (rst-mode . "restructuredtext")
     (glsl-mode . "glsl")
     (shader-mode . "shaderlab")
+    (wgsl-mode . "wgsl")
     (jq-mode . "jq")
-    (jq-ts-mode . "jq"))
+    (jq-ts-mode . "jq")
+    (protobuf-mode . "protobuf"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -8042,7 +8047,10 @@ When prefix UPDATE? is t force installation even if the server is present."
 (defun lsp-async-start-process (callback error-callback &rest command)
   "Start async process COMMAND with CALLBACK and ERROR-CALLBACK."
   (let ((name (cl-first command)))
-    (with-current-buffer (compilation-start (mapconcat #'shell-quote-argument command " ") t
+    (with-current-buffer (compilation-start (mapconcat #'shell-quote-argument (-filter (lambda (cmd)
+                                                                                         (not (null cmd)))
+                                                                                       command)
+                                                       " ") t
                                             (lambda (&rest _)
                                               (generate-new-buffer-name (format "*lsp-install: %s*" name))))
       (lsp-installation-buffer-mode +1)
@@ -8071,6 +8079,8 @@ Otherwise returns value itself."
 (defvar lsp-deps-providers
   (list :npm (list :path #'lsp--npm-dependency-path
                    :install #'lsp--npm-dependency-install)
+        :cargo (list :path #'lsp--cargo-dependency-path
+                     :install #'lsp--cargo-dependency-install)
         :system (list :path #'lsp--system-path)
         :download (list :path #'lsp-download-path
                         :install #'lsp-download-install)))
@@ -8160,6 +8170,37 @@ nil."
                                  package))
     (lsp-log "Unable to install %s via `npm' because it is not present" package)
     nil))
+
+
+;; Cargo dependency handling
+(cl-defun lsp--cargo-dependency-path (&key package path &allow-other-keys)
+  (let ((path (executable-find
+               (f-join lsp-server-install-dir
+                       "cargo"
+                       package
+                       "bin"
+                       path)
+               t)))
+    (unless (and path (f-exists? path))
+      (error "The package %s is not installed.  Unable to find %s" package path))
+    path))
+
+(cl-defun lsp--cargo-dependency-install (callback error-callback &key package git &allow-other-keys)
+  (if-let ((cargo-binary (executable-find "cargo")))
+      (lsp-async-start-process
+       callback
+       error-callback
+       cargo-binary
+       "install"
+       package
+       (when git
+         "--git")
+       git
+       "--root"
+       (f-join lsp-server-install-dir "cargo" package))
+    (lsp-log "Unable to install %s via `cargo' because it is not present" package)
+    nil))
+
 
 
 ;; Download URL handling

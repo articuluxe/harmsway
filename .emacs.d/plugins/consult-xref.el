@@ -91,6 +91,8 @@ FETCHER and ALIST arguments."
   (let* ((consult-xref--fetcher fetcher)
          (candidates (consult-xref--candidates))
          (display (alist-get 'display-action alist)))
+    (unless candidates
+      (user-error "No xref locations"))
     (xref-pop-to-location
      (if (cdr candidates)
          (apply

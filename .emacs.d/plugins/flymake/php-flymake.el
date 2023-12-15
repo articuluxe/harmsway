@@ -4,7 +4,7 @@
 
 ;; Author: USAMI Kenta <tadsan@zonu.me>
 ;; Created: 5 Mar 2022
-;; Version: 1.25.0
+;; Version: 1.25.1
 ;; Keywords: tools, languages, php
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,8 +26,9 @@
 
 ;;; Code:
 (require 'flymake)
-(require 'flymake-proc)
 (require 'cl-lib)
+(eval-and-compile
+  (require 'flymake-proc))
 (eval-when-compile
   (require 'pcase)
   (require 'rx))

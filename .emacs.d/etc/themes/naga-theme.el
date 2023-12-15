@@ -223,10 +223,18 @@ beginning (or ending) line."
       (magit-branch-remote (:foreground ,cyan))
       (magit-tag (:foreground ,string))
       (magit-diff-file-heading-highlight (:background ,dark-blue))
-      (magit-diff-context-highlight (:background ,block-light :foreground ,grey))
+      (magit-diff-context-highlight (:background "#0e0e11" :foreground "#809080"))
       (magit-diff-context (:foreground ,comment))
-      (magit-diff-hunk-heading (:background "#181818" :foreground ,comment-light :slant oblique))
-      (magit-diff-hunk-heading-highlight (:slant oblique :weight bold :background "#3f3f3f" :foreground "#b5c5b5"))
+      (magit-diff-hunk-heading (:background "#151515" :foreground ,comment-light :slant oblique))
+      (magit-diff-hunk-heading-highlight (:slant oblique :weight bold :background "#242424" :foreground ,gold))
+      (magit-diff-added (:background "#042104" :foreground ,fg-medium))
+      (magit-diff-added-highlight (:inherit 'magit-diff-added :foreground ,fg))
+      (diff-refine-added (:foreground ,bg :background ,fg-dark))
+      (magit-diff-removed (:background "#210503" :foreground "#be1008"))
+      (magit-diff-removed-highlight (:inherit 'magit-diff-removed :foreground "#de2018"))
+      (diff-refine-removed (:foreground ,bg :background "#be1008"))
+      (magit-diff-base (:background ,docstring :foreground ,bg)) ;; FIXME
+      (magit-diff-base-highlight (:inherit 'magit-diff-base))
 
       ;; manpages
       (Man-overstrike (:foreground ,cyan))
@@ -280,6 +288,13 @@ beginning (or ending) line."
       (envrc-mode-line-on-face (:foreground ,string))
       (envrc-mode-line-error-face (:inherit 'error))
 
+      ;; hydra
+      (hydra-face-red (:foreground ,orange-red))
+      (hydra-face-blue (:foreground ,cyan))
+      (hydra-face-pink (:foreground ,purple))
+      (hydra-face-amaranth (:foreground ,amaranth))
+      (hydra-face-teal (:foreground ,sea-green))
+
       ;; vterm NOTE: vterm doesn't use the whole face description (or
       ;; these would not make sense at all), but rather seems to pick
       ;; either foreground or background color as actual foreground,
@@ -300,6 +315,7 @@ beginning (or ending) line."
 (let ((bg "#040404")
       (bg-green "#041a04")
       (fg "#0ac30a")
+      (fg-medium "#089e08")
       (fg-dark "#078807")
       (yellow "#eec900")
       (gold "#eead0e")
@@ -318,7 +334,8 @@ beginning (or ending) line."
       (red "#ff1500")
       (whitespace-fg "#555f55")
       (block "#060606")
-      (block-light "#252525"))
+      (block-light "#252525")
+      (amaranth "#e52b50"))
   (apply #'custom-theme-set-faces
          (cons 'naga (create-theme-colors))))
 

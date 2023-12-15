@@ -34,7 +34,7 @@
        (class256 '((class color) (min-colors 256)))
        (classTTY '((type tty)))
        (fg "#000000")(bg "#ffffff")
-       (black "#000000")(darkgrey "#808080")
+       (black "#000000")(darkgrey "#808080")(darkergrey "#5f5f5f")
        (red "#af0000")(bright-red "#d70000")
        (green "#008700")(bright-green "#5faf5f")
        (yellow "#af5f00")(bright-yellow "#d78700")
@@ -148,13 +148,13 @@
      ((t (:background ,fg))))
    ;; -tool-bar
    `(tab-bar
-     ((,class256 (:background ,mode-line-inactive :foreground ,darkgrey))))
+     ((,class256 (:background ,header-line :foreground ,fg))))
    `(tab-bar-tab
-     ((,class256 (:background ,mode-line-active :foreground ,black :weight bold
-                              :box (:line-width 1 :color ,non-text)))))
+     ((,class256 (:background ,mode-line-inactive :foreground ,fg :weight bold
+                              :box (:style released-button)))))
    `(tab-bar-tab-inactive
-     ((t (:background unspecified :foreground ,fg
-                      :box (:line-width 1 :color ,non-text)))))
+     ((,class256 (:background ,header-line :foreground ,darkergrey
+                              :box (:style released-button)))))
    `(tab-line
      ((,class256 (:background ,mode-line-inactive :foreground ,darkgrey))))
    `(tab-line-tab
@@ -729,6 +729,8 @@
    `(markdown-inline-code-face
      ((,classTC (:background ,code-block :foreground ,cyan))
       (t (:foreground ,cyan))))
+   `(markdown-line-break-face
+     ((,class256 (:foreground ,red :weight unspecified :slant unspecified))))
    `(markdown-language-keyword-face
      ((,class256 (:foreground ,darkgrey))))
    `(markdown-gfm-checkbox-face
@@ -889,6 +891,12 @@
 
    `(transient-key
      ((,class256 (:inherit help-key-binding))))
+   `(transient-key-stay
+     ((,class256 (:foreground ,green :weight bold))))
+   `(transient-key-exit
+     ((,class256 (:foreground ,magenta :weight bold))))
+   `(transient-key-return
+     ((,class256 (:foreground ,blue :weight bold))))
    `(transient-heading
      ((,class256 (:inherit magit-section-heading))))
 
@@ -932,9 +940,9 @@
    `(smerge-upper
      ((,class256 (:background ,diff-removed-bg))))
    `(smerge-refined-added
-     ((t (:background ,green :foreground ,black))))
+     ((t (:background ,diff-refine-added-bg :foreground ,diff-added-fg))))
    `(smerge-refined-removed
-     ((t (:background ,red :foreground ,black))))
+     ((t (:background ,diff-refine-removed-bg :foreground ,diff-removed-fg))))
 
    ;; epa
    `(epa-mark
@@ -998,7 +1006,7 @@
    `(erc-nick-msg-face
      ((,class256 (:foreground ,yellow))))
    `(erc-input-face
-     ((,class256 (:foreground ,purple))))
+     ((,class256 (:foreground ,green))))
    `(erc-error-face
      ((,class256 (:foreground ,bright-red))))
    `(erc-dangerous-host-face
@@ -1008,7 +1016,7 @@
    `(erc-button
      ((,class256 (:background unspecified :foreground ,blue :underline t))))
    `(erc-prompt-face
-     ((,class256 (:background unspecified :foreground ,bright-magenta :weight bold))))
+     ((,class256 (:background unspecified :foreground ,bright-magenta :weight bold :inverse-video t))))
    `(erc-action-face
      ((,class256 (:background unspecified :foreground ,comment))))
    `(fg:erc-face0
@@ -1259,6 +1267,8 @@
      ((,class256 (:background ,non-text))))
 
    ;; rainbow-delimiters
+   `(rainbow-delimiters-base-error-face
+     ((,class256 (:background ,grey3 :foreground ,red :weight bold))))
    `(rainbow-delimiters-depth-1-face
      ((,class256 (:foreground ,fg))))
    `(rainbow-delimiters-depth-2-face
@@ -1303,6 +1313,8 @@
    ;; sh
    `(sh-quoted-exec
      ((,class256 (:foreground ,bright-magenta))))
+   `(sh-heredoc
+     ((,class256 (:foreground ,bright-green))))
 
    ;; tuareg
    `(tuareg-font-lock-error-face

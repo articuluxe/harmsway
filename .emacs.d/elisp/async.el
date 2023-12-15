@@ -6,7 +6,7 @@
 ;; Maintainer: Thierry Volpiatto <thievol@posteo.net>
 
 ;; Created: 18 Jun 2012
-;; Version: 1.9.7
+;; Version: 1.9.8
 ;; Package-Requires: ((emacs "24.4"))
 
 ;; Keywords: async
@@ -34,6 +34,8 @@
 
 (eval-when-compile (require 'cl-lib))
 
+(defvar tramp-password-prompt-regexp)
+
 (defgroup async nil
   "Simple asynchronous processing in Emacs"
   :group 'lisp)
@@ -41,6 +43,12 @@
 (defcustom async-variables-noprops-function #'async--purecopy
   "Default function to remove text properties in variables."
   :type 'function)
+
+(defcustom async-prompt-for-password t
+  "Prompt for password in parent Emacs if needed when non nil.
+When this is nil child Emacs will hang forever when a user interaction
+for password is required unless a password is stored in a \".authinfo\" file."
+  :type 'boolean)
 
 (defvar async-debug nil)
 (defvar async-send-over-pipe t)
@@ -219,6 +227,12 @@ lasts complete line.  Every time we get new input, we try to look
 for newline, and if found, process the entire line and bump the
 marker position to the end of this next line."
   (with-current-buffer (process-buffer proc)
+    (when (and async-prompt-for-password
+               (boundp 'tramp-password-prompt-regexp)
+               tramp-password-prompt-regexp
+               (string-match tramp-password-prompt-regexp string))
+      (process-send-string
+       proc (concat (read-passwd (match-string 0 string)) "\n")))
     (goto-char (point-max))
     (save-excursion
       (insert string))

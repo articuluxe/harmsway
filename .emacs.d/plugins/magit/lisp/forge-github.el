@@ -46,8 +46,8 @@
 
 ;;; Query
 
-(defun forge-get-github-repository-p ()
-  (forge-github-repository-p (forge-get-repository nil)))
+(defun forge--get-github-repository ()
+  (forge-github-repository-p (forge-get-repository 'maybe)))
 
 ;;; Pull
 ;;;; Repository
@@ -113,9 +113,7 @@
      (oref topic number)
      (lambda (data)
        (funcall update repo data nil)
-       (with-current-buffer
-           (if (buffer-live-p buffer) buffer (current-buffer))
-         (magit-refresh)))
+       (forge-refresh-buffer (and (buffer-live-p buffer) buffer)))
      nil
      :errorback errorback
      :host (oref repo apihost)
@@ -157,9 +155,12 @@
         (oset issue id         issue-id)
         (oset issue their-id   .id)
         (oset issue slug       (format "#%s" .number))
-        (oset issue state      (pcase-exhaustive .state
-                                 ("CLOSED" 'closed)
-                                 ("OPEN"   'open)))
+        (oset issue state
+              (pcase-exhaustive (list .stateReason .state)
+                (`("COMPLETED"   ,_) 'completed)
+                (`("NOT_PLANNED" ,_) 'unplanned)
+                (`(,_      "CLOSED") 'completed)
+                (`(,_        "OPEN") 'open)))
         (oset issue author     .author.login)
         (oset issue title      .title)
         (oset issue created    .createdAt)
@@ -352,7 +353,9 @@
                       (with-demoted-errors "forge--pull-notifications: %S"
                         (forge--ghub-massage-notification data githost)))
                     (forge--ghub-get nil "/notifications"
-                      '((all . nil))
+                      (if-let ((since (forge--ghub-notifications-since forge)))
+                          `((all . t) (since . ,since))
+                        '((all . t)))
                       :host apihost :unpaginate t)))
          (groups (-partition-all 50 notifs))
          (pages  (length groups))
@@ -372,11 +375,19 @@
                          nil #'cb nil :auth 'forge :host apihost))
                (forge--msg nil t t   "Pulling notifications")
                (forge--msg nil t nil "Storing notifications")
-               (forge--ghub-update-notifications forge topics notifs)
+               (forge--ghub-update-notifications notifs topics)
                (forge--msg nil t t "Storing notifications")
                (when callback
                  (funcall callback)))))
         (cb)))))
+
+(defun forge--ghub-notifications-since (forge)
+  (caar (forge-sql [:select :distinct [notification:updated]
+                    :from [notification repository]
+                    :where (and (= repository:forge $s1)
+                                (= repository:id notification:repository))
+                    :order-by [(desc notification:updated)]]
+                   forge)))
 
 (defun forge--ghub-massage-notification (data githost)
   (let-alist data
@@ -407,35 +418,39 @@
                               `(repository issues (issue . ,number))
                             `(repository pullRequest (pullRequest . ,number)))
                           ))))
-                   repo type number data))))))
+                   repo type data))))))
 
-(defun forge--ghub-update-notifications (forge topics notifs)
+(defun forge--ghub-update-notifications (notifs topics)
   (closql-with-transaction (forge-db)
-    (pcase-dolist (`(,alias ,id ,_ ,repo ,type ,number ,data) notifs)
+    (pcase-dolist (`(,alias ,id ,_ ,repo ,type ,data) notifs)
       (let-alist data
-        (let ((topic (funcall (if (eq type 'issue)
-                                  #'forge--update-issue
-                                #'forge--update-pullreq)
-                              repo
-                              (cdr (cadr (assq alias topics)))
-                              nil))
-              (notif (or (forge-get-notification id)
-                         (closql-insert
-                          (forge-db)
-                          (forge-notification
-                           :id           id
-                           :thread-id    .id
-                           :repository   (oref repo id)
-                           :forge        forge
-                           :type         type
-                           :topic        number
-                           :url          .subject.url)))))
+        (let* ((topic (funcall (if (eq type 'issue)
+                                   #'forge--update-issue
+                                 #'forge--update-pullreq)
+                               repo
+                               (cdr (cadr (assq alias topics)))
+                               nil))
+               (notif (or (forge-get-notification id)
+                          (closql-insert (forge-db)
+                                         (forge-notification
+                                          :id           id
+                                          :thread-id    .id
+                                          :repository   (oref repo id)
+                                          :type         type
+                                          :topic        (oref topic id)
+                                          :url          .subject.url)))))
           (oset notif title     .subject.title)
           (oset notif reason    (intern (downcase .reason)))
           (oset notif last-read .last_read_at)
           (oset notif updated   .updated_at)
-          (oset notif unread-p  .unread)
-          (oset topic unread-p  .unread)))
+          (pcase-exhaustive (list (and .unread 'unread)
+                                  (and (not (oref topic state)) 'unset)
+                                  forge-notifications-github-kludge)
+            (`(unread ,_    ,_)               (oset topic state 'unread))
+            (`(nil    ,_    always-unread)    (oset topic state 'unread))
+            (`(nil    ,_    pending-again)    (oset topic state 'pending))
+            ('(nil    unset pending-if-unset) (oset topic state 'pending))
+            ('(nil    nil   pending-if-unset)))))
       (forge--zap-repository-cache repo))))
 
 ;;;; Miscellaneous
@@ -611,9 +626,7 @@
                  (if (assq 'error data)
                      (ghub--graphql-pp-response data)
                    (oset topic draft-p value)
-                   (when (buffer-live-p buffer)
-                     (with-current-buffer buffer
-                       (magit-refresh-buffer))))))))
+                   (forge-refresh-buffer buffer))))))
 
 (cl-defmethod forge--set-topic-milestone
   ((repo forge-github-repository) topic milestone)
@@ -662,7 +675,7 @@
   ((_repo forge-github-repository) post)
   (forge--ghub-delete post "/repos/:owner/:repo/issues/comments/:number")
   (closql-delete post)
-  (magit-refresh))
+  (forge-refresh-buffer))
 
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-issue)))

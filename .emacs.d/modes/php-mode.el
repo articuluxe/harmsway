@@ -9,13 +9,13 @@
 ;; Maintainer: USAMI Kenta <tadsan@zonu.me>
 ;; URL: https://github.com/emacs-php/php-mode
 ;; Keywords: languages php
-;; Version: 1.25.0
+;; Version: 1.25.1
 ;; Package-Requires: ((emacs "26.1"))
 ;; License: GPL-3.0-or-later
 
 (eval-and-compile
   (make-obsolete-variable
-   (defconst php-mode-version-number "1.25.0" "PHP Mode version number.")
+   (defconst php-mode-version-number "1.25.1" "PHP Mode version number.")
    "Please call (php-mode-version :as-number t) for compatibility." "1.24.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -327,6 +327,7 @@ as a function.  Call with AS-NUMBER keyword to compare by `version<'.
 
 (defvar php-mode-map
   (let ((map (make-sparse-keymap "PHP Mode")))
+    (set-keymap-parent map c-mode-base-map)
     ;; Remove menu item for c-mode
     (define-key map [menu-bar C] nil)
 
@@ -1150,14 +1151,14 @@ After setting the stylevars run hook `php-mode-STYLENAME-hook'."
     table))
 
 ;;;###autoload
-(define-derived-mode php-mode c-mode "PHP"
+(define-derived-mode php-mode php-base-mode "PHP"
   "Major mode for editing PHP code.
 
 \\{php-mode-map}"
   :syntax-table php-mode-syntax-table
-  ;; :after-hook (c-update-modeline)
-  ;; (setq abbrev-mode t)
-
+  :after-hook (progn (c-make-noise-macro-regexps)
+                     (c-make-macro-with-semi-re)
+                     (c-update-modeline))
   (unless (string= php-mode-cc-version c-version)
     (php-mode-debug-reinstall nil))
 
@@ -1168,8 +1169,16 @@ After setting the stylevars run hook `php-mode-STYLENAME-hook'."
                      :warning))
 
   (c-initialize-cc-mode t)
+  (setq abbrev-mode t)
+
+  ;; Must be called once as c-mode to enable font-lock for Heredoc.
+  ;; TODO: This call may be removed in the future.
+  (c-common-init 'c-mode)
+
   (c-init-language-vars php-mode)
   (c-common-init 'php-mode)
+  (cc-imenu-init cc-imenu-c-generic-expression)
+
   (setq-local c-auto-align-backslashes nil)
 
   (setq-local comment-start "// ")
@@ -1252,7 +1261,7 @@ After setting the stylevars run hook `php-mode-STYLENAME-hook'."
   (advice-add 'acm-backend-tabnine-candidate-expand
               :filter-args #'php-acm-backend-tabnine-candidate-expand-filter-args)
 
-  (when (>= emacs-major-version 25)
+  (when (eval-when-compile (>= emacs-major-version 25))
     (with-silent-modifications
       (save-excursion
         (let* ((start (point-min))

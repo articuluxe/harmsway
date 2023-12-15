@@ -1,6 +1,6 @@
 ;;; embark-org.el --- Embark targets and actions for Org Mode  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2022-2023  Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -351,7 +351,12 @@ bound to i."
   :parent embark-general-map
   "RET" #'org-open-at-point-global
   "'" #'org-insert-link
+  "n" #'org-next-link
+  "p" #'org-previous-link
   "w" #'embark-org-link-copy-map)
+
+(dolist (motion '(org-next-link org-previous-link))
+  (cl-pushnew motion embark-repeat-actions))
 
 ;; The reason for this is left as an exercise to the reader.
 ;; Solution: Na ryvfc gnetrg znl cebzcg gur hfre sbe fbzrguvat!
@@ -398,7 +403,7 @@ bound to i."
   "T" #'org-tree-to-indirect-buffer
   "<left>" #'org-do-promote
   "<right>" #'org-do-demote
-  "^" #'org-sort
+  "o" #'org-sort
   "r" #'org-refile
   "R" #'embark-org-refile-here
   "I" #'org-clock-in

@@ -1437,6 +1437,14 @@ Git."
   (and-let* ((name (magit-rev-name rev "refs/heads/*")))
     (and (not (string-match-p "[~^]" name)) name)))
 
+(defun magit-rev-fixup-target (rev)
+  (let ((msg (magit-rev-format "%s" rev)))
+    (save-match-data
+      (and (string-match "\\`\\(fixup\\|squash\\)! \\(.+\\)" msg)
+           (magit-rev-format
+            "%h" (format "%s^{/^%s}" rev
+                         (magit--ext-regexp-quote (match-string 2 msg))))))))
+
 (defun magit-get-shortname (rev)
   (let* ((fn (apply-partially #'magit-rev-name rev))
          (name (or (funcall fn "refs/tags/*")
@@ -1851,13 +1859,13 @@ if BRANCH is merged into both TARGET (as described above) as well
 as into its upstream."
   (and (if-let ((upstream (and (magit-branch-p branch)
                                (magit-get-upstream-branch branch))))
-           (magit-git-success "merge-base" "--is-ancestor" branch upstream)
+           (magit-rev-ancestor-p branch upstream)
          t)
        (if (eq target t)
            (delete (magit-name-local-branch branch)
                    (magit-list-containing-branches branch))
          (and-let* ((target (or target (magit-get-current-branch))))
-           (magit-git-success "merge-base" "--is-ancestor" branch target)))))
+           (magit-rev-ancestor-p branch target)))))
 
 (defun magit-get-tracked (refname)
   "Return the remote branch tracked by the remote-tracking branch REFNAME.

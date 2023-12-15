@@ -44,7 +44,7 @@
    (updated              :initarg :updated)
    (closed               :initarg :closed)
    (merged               :initarg :merged)
-   (unread-p             :initarg :unread-p :initform nil)
+   (status               :initarg :status :initform nil)
    (locked-p             :initarg :locked-p)
    (editable-p           :initarg :editable-p)
    (cross-repo-p         :initarg :cross-repo-p)
@@ -73,6 +73,7 @@
    (draft-p              :initarg :draft-p)
    (their-id             :initarg :their-id)
    (slug                 :initarg :slug)
+   (saved-p              :initarg :saved-p :initform nil)
    ))
 
 (defclass forge-pullreq-post (forge-post)
@@ -171,48 +172,70 @@ an error."
   (forge-ls-recent-topics repo 'pullreq))
 
 (defun forge--ls-assigned-pullreqs (repo)
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-pullreq (forge-db) row))
-          (forge-sql
-           [:select $i1 :from pullreq
-            :join pullreq_assignee :on (= pullreq_assignee:pullreq pullreq:id)
-            :join assignee         :on (= pullreq_assignee:id      assignee:id)
-            :where (and (= pullreq:repository $s2)
-                        (= assignee:login     $s3)
-                        (isnull pullreq:closed))
-            :order-by [(desc updated)]]
-           (vconcat (closql--table-columns (forge-db) 'pullreq t))
-           (oref repo id)
-           (ghub--username repo))))
+  (forge--select-pullreqs repo
+    [:from pullreq
+     :join pullreq_assignee :on (= pullreq_assignee:pullreq pullreq:id)
+     :join assignee         :on (= pullreq_assignee:id      assignee:id)
+     :where (and (= pullreq:repository $s2)
+                 (= assignee:login     $s3)
+                 (isnull pullreq:closed))]
+    (ghub--username repo)))
 
 (defun forge--ls-requested-reviews (repo)
-  (mapcar
-   (lambda (row)
-     (closql--remake-instance 'forge-pullreq (forge-db) row))
-   (forge-sql
-    [:select $i1 :from pullreq
+  (forge--select-pullreqs repo
+    [:from pullreq
      :join pullreq_review_request :on (= pullreq_review_request:pullreq pullreq:id)
      :join assignee               :on (= pullreq_review_request:id      assignee:id)
      :where (and (= pullreq:repository $s2)
                  (= assignee:login     $s3)
-                 (isnull pullreq:closed))
-     :order-by [(desc updated)]]
-    (vconcat (closql--table-columns (forge-db) 'pullreq t))
-    (oref repo id)
-    (ghub--username repo))))
+                 (isnull pullreq:closed))]
+    (ghub--username repo)))
 
 (defun forge--ls-authored-pullreqs (repo)
-  (mapcar (lambda (row)
-            (closql--remake-instance 'forge-pullreq (forge-db) row))
-          (forge-sql
-           [:select $i1 :from [pullreq]
-            :where (and (= pullreq:repository $s2)
-                        (= pullreq:author     $s3)
-                        (isnull pullreq:closed))
-            :order-by [(desc updated)]]
-           (vconcat (closql--table-columns (forge-db) 'pullreq t))
-           (oref repo id)
-           (ghub--username repo))))
+  (forge--select-pullreqs repo
+    [:from [pullreq]
+     :where (and (= pullreq:repository $s2)
+                 (= pullreq:author     $s3)
+                 (isnull pullreq:closed))]
+    (ghub--username repo)))
+
+(defun forge--ls-labeled-pullreqs (repo label)
+  (forge--select-pullreqs repo
+    [:from pullreq
+     :join pullreq_label :on (= pullreq_label:pullreq pullreq:id)
+     :join label         :on (= pullreq_label:id      label:id)
+     :where (and (= pullreq:repository  $s2)
+                 (= label:name        $s3)
+                 (isnull pullreq:closed))]
+    label))
+
+(defun forge--ls-owned-pullreqs ()
+  (forge--select-pullreqs nil
+    [:from [pullreq repository]
+     :where (and (= pullreq:repository repository:id)
+                 (in repository:owner $v2)
+                 (not (in repository:name $v3))
+                 (isnull pullreq:closed))
+     :order-by [(asc repository:owner)
+                (asc repository:name)
+                (desc pullreq:number)]]
+    (vconcat (mapcar #'car forge-owned-accounts))
+    (vconcat forge-owned-ignored)))
+
+(defun forge--select-pullreqs (repo query &rest args)
+  (declare (indent 1))
+  (let ((db (forge-db)))
+    (mapcar (lambda (row)
+              (closql--remake-instance 'forge-pullreq db row))
+            (apply #'forge-sql
+                   (vconcat [:select $i1]
+                            query
+                            (and (not (cl-find :order-by query))
+                                 [:order-by [(desc updated)]]))
+                   (vconcat (closql--table-columns db 'pullreq t))
+                   (if repo
+                       (cons (oref repo id) args)
+                     args)))))
 
 ;;; Read
 

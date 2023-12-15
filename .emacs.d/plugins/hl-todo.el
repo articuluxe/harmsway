@@ -70,14 +70,14 @@ foreground color."
 (define-obsolete-variable-alias 'hl-todo-activate-in-modes
   'hl-todo-include-modes "hl-todo 3.1.0")
 
-(defcustom hl-todo-include-modes '(prog-mode text-mode)
+(defcustom hl-todo-include-modes '(prog-mode text-mode conf-mode)
   "Major-modes in which `hl-todo-mode' is activated.
 
 This is used by `global-hl-todo-mode', which activates the local
 `hl-todo-mode' in all buffers whose major-mode derive from one
 of the modes listed here, but not from one of the modes listed
 in `hl-todo-exclude-modes'."
-  :package-version '(hl-todo . "2.1.0")
+  :package-version '(hl-todo . "3.7.0")
   :group 'hl-todo
   :type '(repeat function))
 
@@ -113,6 +113,7 @@ located inside a string."
     ("FAIL"   . "#8c5353")
     ("DONE"   . "#afd8af")
     ("NOTE"   . "#d0bf8f")
+    ("MAYBE"  . "#d0bf8f")
     ("KLUDGE" . "#d0bf8f")
     ("HACK"   . "#d0bf8f")
     ("TEMP"   . "#d0bf8f")
@@ -147,7 +148,16 @@ a Grep implementation other than GNU's, then that may break
   :type '(repeat (cons (string :tag "Keyword")
                        (choice :tag "Face   "
                                (string :tag "Color")
-                               (sexp :tag "Face")))))
+                               (sexp :tag "Face"))))
+  :set (lambda (symbol value)
+         (set-default-toplevel-value symbol value)
+         (dolist (buf (buffer-list))
+	   (with-current-buffer buf
+             (when (and (bound-and-true-p hl-todo-mode)
+                        (boundp 'hl-todo--regexp))
+               (setq hl-todo--regexp nil)
+               (hl-todo-mode -1)
+               (hl-todo-mode 1))))))
 
 (defcustom hl-todo-color-background nil
   "Whether to emphasize keywords using the background color.

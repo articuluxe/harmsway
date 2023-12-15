@@ -33,7 +33,14 @@
 
 (require 'format-spec)
 (require 'help-mode)
+
 (require 'transient)
+(unless (fboundp 'transient-prefix-object)
+  (display-warning 'magit (substitute-command-keys
+                           (format magit--core-upgrade-instructions
+                                   'transient "0.5.0" 'transient
+                                   'transient 'transient 'transient))
+                   :emergency))
 
 (defvar bookmark-make-record-function)
 (defvar magit--wip-inhibit-autosave)
@@ -592,14 +599,16 @@ The buffer's major-mode should derive from `magit-section-mode'."
                            `(list ',var ,form))
                          bindings))))
 
-(defun magit-setup-buffer-internal (mode locked bindings)
+(defun magit-setup-buffer-internal (mode locked bindings &optional buffer-name)
   (let* ((value   (and locked
                        (with-temp-buffer
                          (pcase-dolist (`(,var ,val) bindings)
                            (set (make-local-variable var) val))
                          (let ((major-mode mode))
                            (magit-buffer-value)))))
-         (buffer  (magit-get-mode-buffer mode value))
+         (buffer  (if buffer-name
+                      (get-buffer-create buffer-name)
+                    (magit-get-mode-buffer mode value)))
          (section (and buffer (magit-current-section)))
          (created (not buffer)))
     (unless buffer
@@ -1005,6 +1014,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
 
 (defun magit-refresh-buffer (&rest _ignore)
   "Refresh the current Magit buffer."
+  (interactive)
   (setq magit-refresh-start-time (current-time))
   (let ((refresh (intern (format "%s-refresh-buffer"
                                  (substring (symbol-name major-mode) 0 -5))))

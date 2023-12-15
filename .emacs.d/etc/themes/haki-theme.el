@@ -7,7 +7,7 @@
 ;; Maintainer: Dilip
 ;; URL: https://github.com/idlip/haki
 ;; Created: 2023
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -52,50 +52,26 @@ Make sure to reload the theme after setting the values!"
 
 ;; I know docstring is more than 80 should I minimize it?
 (defcustom haki-region "#2e8b6d"
-  "Your color choice for haki theme region background.
-Usually dark variant of any color is *recommended*,
-as it syncs with orderless matching and text visibility.
-It will be used in region selection, vertico-current and corfu-current too.
+  "Color choice for haki theme region background.
+Usually dark or medium variant is *recommended* for text visibility.
+It will be used in `region' selection.
 
-==> Tip : You can use `haki-change-region' function.
+Value can be hex value or color name as string.
 
-Default value is SeaGreen (#2e8b57)
-
-If you dont like coloured one, some better choices are :
-#2b2b2b  ==> Darker
-#6c7b8b  ==> Greyish
-#5f9ea0  ==> Cadet Blue
-
-Usage : (setq haki-region <#hex-value>)
+`haki-change-region' funtion gives interactive choice.
 
 -- Requires reloading the theme to display changes --"
   :group 'haki-theme
   :type 'string)
 
-;; I know docstring is more than 80 should I minimize it?
-(defun haki-change-region (color)
-  "Lists COLOR to choose and set as #`haki-region.
-Copies chosen hex value `kill-ring.
-
-Default value is SeaGreen (#2e8b57)."
-  (interactive
-   (list
-    (if (fboundp 'consult--read)
-        (consult--read (defined-colors)
-                       :prompt "Choose Haki's Region: "
-                       :require-match t
-                       :category 'color)
-      (completing-read "Choose Haki's Region: " (defined-colors) nil t ))))
-  (let (( region-choice
-          (when-let* ((rgb (color-name-to-rgb color))
-                      ;; Sets 2 digits per component.
-                      (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
-            hex)))
-    (setq haki-region region-choice)
+(defun haki-change-region ()
+  "Interactively choose a COLOR to set it as `haki-region'."
+  (interactive)
+  (let ((choice (string-trim
+                 (call-interactively #'read-color))))
+    (setopt haki-region choice)
     (load-theme 'haki t)
-    (message (concat "Add this line to init.el to persist on sessions. Hex value is in your kill-ring too.
-(setq haki-region " region-choice")  ;; value in double quotes"))
-    (kill-new region-choice)))
+    (kill-new choice)))
 
 ;;; --- Variables to use different fonts
 (defcustom haki-code-font `unspecified' ;; we can use it for both verbatim and code face
@@ -188,7 +164,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
       (c-operator    "#ee9572")
       (c-regexc      "#9bcd9b")
       (c-regexb      "#a2cd5a")
-      (c-warning     "#daa520")
+      (c-warning     "#fbfba2")
       (c-property    "#EE7286")
 
       ;; --- For diffs
@@ -392,7 +368,7 @@ Respected Only in GUI frame"
    `(org-scheduled-today                     ((,class :foreground ,fg-main)))
    `(org-sexp-date                           ((,class :foreground ,bg-main)))
    `(org-special-keyword                     ((,class :foreground ,fg-inactive)))
-   `(org-table                               ((,class :inherit fixed-pitch :foreground ,c-warning)))
+   `(org-table                               ((,class :inherit fixed-pitch :foreground ,c-string)))
    `(org-table-header                        ((,class :foreground ,title :inherit (bold org-table))))
    `(org-tag                                 ((,class :width condensed :height 0.9 :weight regular :underline nil :box (:color ,cursor :line-width (1 . -3)) :background ,bg-tag :foreground ,bg-dim)))
    `(org-tag-group                           ((,class )))
@@ -754,7 +730,7 @@ Respected Only in GUI frame"
 
 ;;; --- show-paren
    `(show-paren-match               ((,class :inherit bold :foreground ,bg-inactive :background ,done)))
-   `(show-paren-match-expression    ((,class :background ,bg-inactive)))
+   `(show-paren-match-expression    ((,class :background ,fg-main)))
    `(show-paren-mismatch            ((,class :inherit error)))
 
 ;;; --- Message
@@ -867,6 +843,64 @@ Respected Only in GUI frame"
    `(ement-room-timestamp               ((,class :inherit shadow)))
    `(ement-room-timestamp-header        ((,class :inherit bold :foreground ,clock)))
    `(ement-room-user                    ((,class :inherit bold :foreground ,heading-3)))
+
+;;; --- Erc
+   ;; `(erc-action-face                    ((,class :foreground ,cyan-alt-other)))
+   `(erc-bold-face                      ((,class :inherit bold)))
+   `(erc-button                         ((,class :inherit button)))
+   ;; `(erc-command-indicator-face         ((,class :inherit bold :foreground ,cyan-alt)))
+   ;; `(erc-current-nick-face              ((,class :inherit bold :foreground ,red-alt)))
+   ;; `(erc-dangerous-host-face            ((,class :inherit modus-themes-intense-red)))
+   ;; `(erc-direct-msg-face                ((,class :foreground ,fg-special-warm)))
+   ;; `(erc-error-face                     ((,class :inherit bold :foreground ,red)))
+   `(erc-fool-face                      ((,class :inherit shadow)))
+   ;; `(erc-header-line                    ((,class :background ,bg-header :foreground ,fg-header)))
+   `(erc-input-face                     ((,class :foreground ,heading-1)))
+   ;; `(erc-inverse-face                   ((,class :inherit erc-default-face :inverse-video t)))
+   ;; `(erc-keyword-face                   ((,class :inherit bold :foreground ,magenta-alt-other)))
+   `(erc-my-nick-prefix-face            ((,class :inherit erc-my-nick-face)))
+   `(erc-nick-default-face              ((,class :inherit bold :foreground ,heading-7)))
+   `(erc-my-nick-face                   ((,class :inherit bold :foreground ,c-string)))
+   `(erc-nick-msg-face                  ((,class :inherit warning)))
+   `(erc-nick-prefix-face               ((,class :inherit erc-nick-default-face)))
+   `(erc-notice-face                    ((,class :inherit font-lock-comment-face)))
+   ;; `(erc-pal-face                       ((,class :inherit bold :foreground ,magenta-alt)))
+   ;; `(erc-prompt-face                    ((,class :inherit modus-themes-prompt)))
+   ;; `(erc-timestamp-face                 ((,class :foreground ,cyan)))
+   ;; `(erc-underline-face                 ((,class :underline t)))
+   ;; `(bg:erc-color-face0                 ((,class :background "white")))
+   ;; `(bg:erc-color-face1                 ((,class :background "black")))
+   ;; `(bg:erc-color-face10                ((,class :background ,cyan-subtle-bg)))
+   ;; `(bg:erc-color-face11                ((,class :background ,cyan-intense-bg)))
+   ;; `(bg:erc-color-face12                ((,class :background ,blue-subtle-bg)))
+   ;; `(bg:erc-color-face13                ((,class :background ,magenta-subtle-bg)))
+   ;; `(bg:erc-color-face14                ((,class :background "gray60")))
+   ;; `(bg:erc-color-face15                ((,class :background "gray80")))
+   ;; `(bg:erc-color-face2                 ((,class :background ,blue-intense-bg)))
+   ;; `(bg:erc-color-face3                 ((,class :background ,green-intense-bg)))
+   ;; `(bg:erc-color-face4                 ((,class :background ,red-subtle-bg)))
+   ;; `(bg:erc-color-face5                 ((,class :background ,red-intense-bg)))
+   ;; `(bg:erc-color-face6                 ((,class :background ,magenta-refine-bg)))
+   ;; `(bg:erc-color-face7                 ((,class :background ,yellow-subtle-bg)))
+   ;; `(bg:erc-color-face8                 ((,class :background ,yellow-refine-bg)))
+   ;; `(bg:erc-color-face9                 ((,class :background ,green-subtle-bg)))
+   ;; `(fg:erc-color-face0                 ((,class :foreground "white")))
+   ;; `(fg:erc-color-face1                 ((,class :foreground "black")))
+   ;; `(fg:erc-color-face10                ((,class :foreground ,cyan)))
+   ;; `(fg:erc-color-face11                ((,class :foreground ,cyan-alt-other)))
+   ;; `(fg:erc-color-face12                ((,class :foreground ,blue)))
+   ;; `(fg:erc-color-face13                ((,class :foreground ,magenta-alt)))
+   ;; `(fg:erc-color-face14                ((,class :foreground "gray60")))
+   ;; `(fg:erc-color-face15                ((,class :foreground "gray80")))
+   ;; `(fg:erc-color-face2                 ((,class :foreground ,blue-alt-other)))
+   ;; `(fg:erc-color-face3                 ((,class :foreground ,green)))
+   ;; `(fg:erc-color-face4                 ((,class :foreground ,red)))
+   ;; `(fg:erc-color-face5                 ((,class :foreground ,red-alt)))
+   ;; `(fg:erc-color-face6                 ((,class :foreground ,magenta-alt-other)))
+   ;; `(fg:erc-color-face7                 ((,class :foreground ,yellow-alt-other)))
+   ;; `(fg:erc-color-face8                 ((,class :foreground ,yellow-alt)))
+   ;; `(fg:erc-color-face9                 ((,class :foreground ,green-alt-other)))
+
 
 ;;; --- nano modeline
    `(nano-modeline-active-status-RW     ((,class :inherit region :foreground ,fg-main)))
@@ -1088,6 +1122,10 @@ Respected Only in GUI frame"
    `(dashboard-heading                          ((,class :font ,haki-heading-font :weight bold :foreground ,heading-1)))
    `(dashboard-banner-logo-title-face           ((,class :inherit dashboard-heading :foreground ,title)))
    `(dashboard-items-face                       ((,class )))
+
+;;; --- mini-echo
+   `(mini-echo-time                             ((,class :foreground ,clock)))
+   `(mini-echo-battery                          ((,class :foreground ,c-keyword)))
 
 ;;; --- vundo
    `(vundo-highlight                            ((,class :inherit (bold vundo-nodeatom) :foreground ,link)))))

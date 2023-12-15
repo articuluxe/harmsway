@@ -37,9 +37,7 @@
 
 
 
-(eval-when-compile
-  (require 'cl-lib)
-  (require 'subr-x))
+(eval-when-compile (require 'subr-x))
 
 (defgroup modus-themes ()
   "User options for the Modus themes.
@@ -65,11 +63,6 @@ deficiency (deuteranopia or tritanopia, respectively)."
   :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/modus-themes-pictures")
   :prefix "modus-themes-"
   :tag "Modus Themes Faces")
-
-(make-obsolete-variable 'modus-themes-operandi-colors nil "4.0.0")
-(make-obsolete-variable 'modus-themes-vivendi-colors nil "4.0.0")
-(make-obsolete-variable 'modus-themes-version nil "4.0.0")
-(make-obsolete 'modus-themes-report-bug nil "4.0.0")
 
 
 
@@ -139,7 +132,7 @@ deficiency (deuteranopia or tritanopia, respectively)."
    :version "30.1"
    :group 'modus-themes-faces))
 
-(dolist (scope '(current lazy))
+(dolist (scope '(current lazy replace))
   (custom-declare-face
    (intern (format "modus-themes-search-%s" scope))
    nil (format "Search of type %s." scope)
@@ -147,15 +140,13 @@ deficiency (deuteranopia or tritanopia, respectively)."
    :version "30.1"
    :group 'modus-themes-faces))
 
-(define-obsolete-variable-alias
-  'modus-themes-search-success
-  'modus-themes-search-current
-  "4.0.0")
-
-(define-obsolete-variable-alias
-  'modus-themes-search-success-lazy
-  'modus-themes-search-lazy
-  "4.0.0")
+(dotimes (n 4)
+  (custom-declare-face
+   (intern (format "modus-themes-search-rx-group-%s" n))
+   nil (format "Search regexp group number %s." n)
+   :package-version '(modus-themes . "4.4.0")
+   :version "30.1"
+   :group 'modus-themes-faces))
 
 (dolist (scope '(code macro verbatim))
   (custom-declare-face
@@ -164,21 +155,6 @@ deficiency (deuteranopia or tritanopia, respectively)."
    :package-version '(modus-themes . "4.0.0")
    :version "30.1"
    :group 'modus-themes-faces))
-
-(define-obsolete-variable-alias
-  'modus-themes-markup-code
-  'modus-themes-prose-code
-  "4.0.0")
-
-(define-obsolete-variable-alias
-  'modus-themes-markup-macro
-  'modus-themes-prose-macro
-  "4.0.0")
-
-(define-obsolete-variable-alias
-  'modus-themes-markup-verbatim
-  'modus-themes-prose-verbatim
-  "4.0.0")
 
 (dotimes (n 9)
   (custom-declare-face
@@ -248,67 +224,6 @@ text should not be underlined as well) yet still blend in."
    :version "30.1"
    :group 'modus-themes-faces))
 
-(make-obsolete-variable 'modus-themes-reset-hard nil "4.0.0")
-(make-obsolete-variable 'modus-themes-subtle-neutral nil "4.0.0")
-(make-obsolete-variable 'modus-themes-intense-neutral nil "4.0.0")
-(make-obsolete-variable 'modus-themes-refine-red nil "4.0.0")
-(make-obsolete-variable 'modus-themes-refine-green nil "4.0.0")
-(make-obsolete-variable 'modus-themes-refine-yellow nil "4.0.0")
-(make-obsolete-variable 'modus-themes-refine-blue nil "4.0.0")
-(make-obsolete-variable 'modus-themes-refine-magenta nil "4.0.0")
-(make-obsolete-variable 'modus-themes-refine-cyan nil "4.0.0")
-(make-obsolete-variable 'modus-themes-active-red nil "4.0.0")
-(make-obsolete-variable 'modus-themes-active-green nil "4.0.0")
-(make-obsolete-variable 'modus-themes-active-yellow nil "4.0.0")
-(make-obsolete-variable 'modus-themes-active-blue nil "4.0.0")
-(make-obsolete-variable 'modus-themes-active-magenta nil "4.0.0")
-(make-obsolete-variable 'modus-themes-active-cyan nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringe-red nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringe-green nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringe-yellow nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringe-blue nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringe-magenta nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringe-cyan nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-red-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-green-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-yellow-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-blue-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-magenta-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-cyan-nuanced nil "4.0.0")
-(make-obsolete-variable 'modus-themes-special-calm nil "4.0.0")
-(make-obsolete-variable 'modus-themes-special-cold nil "4.0.0")
-(make-obsolete-variable 'modus-themes-special-mild nil "4.0.0")
-(make-obsolete-variable 'modus-themes-special-warm nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-added nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-changed nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-removed nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-refine-added nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-refine-changed nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-refine-removed nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-focus-added nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-focus-changed nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-focus-removed nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diff-heading nil "4.0.0")
-(make-obsolete-variable 'modus-themes-pseudo-header nil "4.0.0")
-(make-obsolete-variable 'modus-themes-mark-symbol nil "4.0.0")
-(make-obsolete-variable 'modus-themes-hl-line nil "4.0.0")
-(make-obsolete-variable 'modus-themes-search-success-modeline nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue-active nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue-background-active nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue-background-intense nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue-background-subtle nil "4.0.0")
-(make-obsolete-variable 'modus-themes-grue-background-refine nil "4.0.0")
-(make-obsolete-variable 'modus-themes-link-broken nil "4.0.0")
-(make-obsolete-variable 'modus-themes-link-symlink nil "4.0.0")
-(make-obsolete-variable 'modus-themes-tab-backdrop nil "4.0.0")
-(make-obsolete-variable 'modus-themes-tab-active nil "4.0.0")
-(make-obsolete-variable 'modus-themes-tab-inactive nil "4.0.0")
-(make-obsolete-variable 'modus-themes-completion-selected-popup nil "4.0.0")
-(make-obsolete-variable 'modus-themes-box-button nil "4.0.0")
-(make-obsolete-variable 'modus-themes-box-button-pressed nil "4.0.0")
-
 
 
 ;;;; Customization variables
@@ -330,8 +245,6 @@ consequences.  The user must manually reload the theme."
   :version "30.1"
   :type 'boolean
   :link '(info-link "(modus-themes) Custom reload theme"))
-
-(make-obsolete-variable 'modus-themes-inhibit-reload 'modus-themes-custom-auto-reload "4.0.0")
 
 (defun modus-themes--set-option (sym val)
   "Custom setter for theme related user options.
@@ -422,9 +335,6 @@ This is used by the command `modus-themes-toggle'."
   :initialize #'custom-initialize-default
   :group 'modus-themes)
 
-(make-obsolete-variable 'modus-themes-operandi-color-overrides nil "4.0.0")
-(make-obsolete-variable 'modus-themes-vivendi-color-overrides nil "4.0.0")
-
 (defvaralias 'modus-themes-slanted-constructs 'modus-themes-italic-constructs)
 
 (defcustom modus-themes-italic-constructs nil
@@ -476,8 +386,6 @@ Protesilaos))."
   :set #'modus-themes--set-option
   :initialize #'custom-initialize-default
   :link '(info-link "(modus-themes) Mixed fonts"))
-
-(make-obsolete-variable 'modus-themes-intense-mouseovers nil "4.0.0")
 
 (defconst modus-themes--weight-widget
   '(choice :tag "Font weight (must be supported by the typeface)"
@@ -611,10 +519,6 @@ and related user options."
   :initialize #'custom-initialize-default
   :link '(info-link "(modus-themes) Heading styles"))
 
-(make-obsolete-variable 'modus-themes-org-agenda nil "4.0.0")
-(make-obsolete-variable 'modus-themes-fringes nil "4.0.0")
-(make-obsolete-variable 'modus-themes-lang-checkers nil "4.0.0")
-
 (defcustom modus-themes-org-blocks nil
   "Set the overall style of Org code blocks, quotes, and the like.
 
@@ -653,9 +557,6 @@ is non-nil.  While quote/verse blocks require setting
   :set #'modus-themes--set-option
   :initialize #'custom-initialize-default
   :link '(info-link "(modus-themes) Org mode blocks"))
-
-(make-obsolete-variable 'modus-themes-mode-line nil "4.0.0")
-(make-obsolete-variable 'modus-themes-diffs nil "4.0.0")
 
 (defcustom modus-themes-completions nil
   "Control the style of completion user interfaces.
@@ -777,17 +678,6 @@ In user configuration files the form may look like this:
   :set #'modus-themes--set-option
   :initialize #'custom-initialize-default
   :link '(info-link "(modus-themes) Command prompts"))
-
-(make-obsolete-variable 'modus-themes-subtle-line-numbers nil "4.0.0")
-(make-obsolete-variable 'modus-themes-markup nil "4.0.0")
-(make-obsolete-variable 'modus-themes-paren-match nil "4.0.0")
-(make-obsolete-variable 'modus-themes-syntax nil "4.0.0")
-(make-obsolete-variable 'modus-themes-links nil "4.0.0")
-(make-obsolete-variable 'modus-themes-region nil "4.0.0")
-(make-obsolete-variable 'modus-themes-deuteranopia nil "4.0.0")
-(make-obsolete-variable 'modus-themes-mail-citations nil "4.0.0")
-(make-obsolete-variable 'modus-themes-tabs-accented nil "4.0.0")
-(make-obsolete-variable 'modus-themes-box-buttons nil "4.0.0")
 
 (defcustom modus-themes-common-palette-overrides nil
   "Set palette overrides for all the Modus themes.
@@ -1162,14 +1052,22 @@ Info node `(modus-themes) Option for palette overrides'.")
 ;;;; Helper functions for theme setup
 
 ;; This is the WCAG formula: https://www.w3.org/TR/WCAG20-TECHS/G18.html
+(defun modus-themes--wcag-contribution (channel weight)
+  "Return the CHANNEL contribution to overall luminance given WEIGHT."
+  (* weight
+     (if (<= channel 0.03928)
+         (/ channel 12.92)
+       (expt (/ (+ channel 0.055) 1.055) 2.4))))
+
 (defun modus-themes-wcag-formula (hex)
   "Get WCAG value of color value HEX.
 The value is defined in hexadecimal RGB notation, such #123456."
-  (cl-loop for k in '(0.2126 0.7152 0.0722)
-           for x in (color-name-to-rgb hex)
-           sum (* k (if (<= x 0.03928)
-                        (/ x 12.92)
-                      (expt (/ (+ x 0.055) 1.055) 2.4)))))
+  (let ((channels (color-name-to-rgb hex))
+        (weights '(0.2126 0.7152 0.0722))
+        contribution)
+    (while channels
+      (push (modus-themes--wcag-contribution (pop channels) (pop weights)) contribution))
+    (apply #'+ contribution)))
 
 ;;;###autoload
 (defun modus-themes-contrast (c1 c2)
@@ -1179,32 +1077,27 @@ C1 and C2 are color values written in hexadecimal RGB."
                (+ (modus-themes-wcag-formula c2) 0.05))))
     (max ct (/ ct))))
 
-(make-obsolete 'modus-themes-color nil "4.0.0")
-(make-obsolete 'modus-themes-color-alts nil "4.0.0")
-
-(declare-function cl-remove-if-not "cl-seq" (cl-pred cl-list &rest cl-keys))
+(defun modus-themes--modus-p (theme)
+  "Return non-nil if THEME name has a modus- prefix."
+  (string-prefix-p "modus-" (symbol-name theme)))
 
 (defun modus-themes--list-enabled-themes ()
   "Return list of `custom-enabled-themes' with modus- prefix."
-  (cl-remove-if-not
-   (lambda (theme)
-     (string-prefix-p "modus-" (symbol-name theme)))
-   custom-enabled-themes))
+  (seq-filter #'modus-themes--modus-p custom-enabled-themes))
+
+(defun modus-themes--load-no-enable (theme)
+  "Load but do not enable THEME if it belongs to `custom-known-themes'."
+  (unless (memq theme custom-known-themes)
+    (load-theme theme :no-confirm :no-enable)))
 
 (defun modus-themes--enable-themes ()
   "Enable the Modus themes."
-  (mapc (lambda (theme)
-          (unless (memq theme custom-known-themes)
-            (load-theme theme :no-confirm :no-enable)))
-        modus-themes-items))
+  (mapc #'modus-themes--load-no-enable modus-themes-items))
 
 (defun modus-themes--list-known-themes ()
   "Return list of `custom-known-themes' with modus- prefix."
   (modus-themes--enable-themes)
-  (cl-remove-if-not
-   (lambda (theme)
-     (string-prefix-p "modus-" (symbol-name theme)))
-   custom-known-themes))
+  (seq-filter #'modus-themes--modus-p custom-known-themes))
 
 (defun modus-themes--current-theme ()
   "Return first enabled Modus theme."
@@ -1310,10 +1203,6 @@ symbol, which is safe when used as a face attribute's value."
     'unspecified))
 
 ;;;; Commands
-
-(make-obsolete 'modus-themes-load-themes nil "4.0.0")
-(make-obsolete 'modus-themes-load-operandi nil "4.0.0; Check `modus-themes-load-theme'")
-(make-obsolete 'modus-themes-load-vivendi nil "4.0.0; Check `modus-themes-load-theme'")
 
 (defvar modus-themes--select-theme-history nil
   "Minibuffer history of `modus-themes--select-prompt'.")
@@ -1486,8 +1375,7 @@ Check PROPERTIES for an alist value that corresponds to
 ALIST-KEY.  If no alist is present, search the PROPERTIES
 list given LIST-PRED, using DEFAULT as a fallback."
   (if-let* ((val (or (alist-get alist-key properties)
-                     (cl-loop for x in properties
-                              if (funcall list-pred x) return x)
+                     (seq-filter (lambda (x) (funcall list-pred x)) properties)
                      default))
             ((listp val)))
       (car val)
@@ -1727,8 +1615,14 @@ FG and BG are the main colors."
     `(modus-themes-prose-macro ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-macro)))
     `(modus-themes-prose-verbatim ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-verbatim)))
 ;;;;; search
-    `(modus-themes-search-current ((,c :background ,bg-yellow-intense :foreground ,fg-main)))
-    `(modus-themes-search-lazy ((,c :background ,bg-cyan-intense :foreground ,fg-main)))
+    `(modus-themes-search-current ((,c :background ,bg-search-current :foreground ,fg-main)))
+    `(modus-themes-search-lazy ((,c :background ,bg-search-lazy :foreground ,fg-main)))
+    `(modus-themes-search-replace ((,c :background ,bg-search-replace :foreground ,fg-main)))
+;;;;; search regexp groups
+    `(modus-themes-search-rx-group-0 ((,c :background ,bg-search-rx-group-0 :foreground ,fg-main)))
+    `(modus-themes-search-rx-group-1 ((,c :background ,bg-search-rx-group-1 :foreground ,fg-main)))
+    `(modus-themes-search-rx-group-2 ((,c :background ,bg-search-rx-group-2 :foreground ,fg-main)))
+    `(modus-themes-search-rx-group-3 ((,c :background ,bg-search-rx-group-3 :foreground ,fg-main)))
 ;;;;; completion frameworks
     `(modus-themes-completion-match-0 ((,c ,@(modus-themes--completion-match fg-completion-match-0 bg-completion-match-0))))
     `(modus-themes-completion-match-1 ((,c ,@(modus-themes--completion-match fg-completion-match-1 bg-completion-match-1))))
@@ -1776,7 +1670,7 @@ FG and BG are the main colors."
     `(escape-glyph ((,c :foreground ,err)))
     `(file-name-shadow ((,c :inherit shadow)))
     `(header-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-dim)))
-    `(header-line-highlight ((,c :inherit highlight)))
+    `(header-line-highlight ((,c :background ,bg-hover :foreground ,fg-main :box ,fg-main)))
     `(help-argument-name ((,c :inherit modus-themes-slant :foreground ,variable)))
     `(help-key-binding ((,c :inherit modus-themes-key-binding)))
     `(highlight ((,c :background ,bg-hover :foreground ,fg-main)))
@@ -1792,7 +1686,7 @@ FG and BG are the main colors."
     `(mm-uu-extract ((,c :foreground ,mail-part)))
     `(next-error ((,c :inherit modus-themes-prominent-error :extend t)))
     `(pgtk-im-0 ((,c :inherit modus-themes-prominent-note)))
-    `(read-multiple-choice-face ((,c :inherit (bold modus-themes-mark-alt))))
+    `(read-multiple-choice-face ((,c :inherit modus-themes-mark-sel)))
     `(rectangle-preview ((,c :inherit secondary-selection)))
     `(region ((,c :background ,bg-region :foreground ,fg-region)))
     `(secondary-selection ((,c :background ,bg-hover-secondary :foreground ,fg-main)))
@@ -1909,7 +1803,7 @@ FG and BG are the main colors."
     `(anzu-match-3 ((,c :inherit modus-themes-subtle-yellow)))
     `(anzu-mode-line ((,c :inherit bold)))
     `(anzu-mode-line-no-match ((,c :inherit error)))
-    `(anzu-replace-highlight ((,c :inherit modus-themes-prominent-error :underline t)))
+    `(anzu-replace-highlight ((,c :inherit modus-themes-search-replace)))
     `(anzu-replace-to ((,c :inherit modus-themes-search-current)))
 ;;;;; auctex and Tex
     `(font-latex-bold-face ((,c :inherit bold)))
@@ -2171,6 +2065,20 @@ FG and BG are the main colors."
     `(deft-summary-face ((,c :inherit (shadow modus-themes-slant))))
     `(deft-time-face ((,c :foreground ,date-common)))
     `(deft-title-face ((,c :inherit bold)))
+;;;;; denote
+    `(denote-faces-date ((,c :foreground ,date-common)))
+    `(denote-faces-delimiter ((,c :inherit shadow)))
+    `(denote-faces-extension ((,c :inherit shadow)))
+    `(denote-faces-keywords ((,c :inherit modus-themes-bold :foreground ,keyword)))
+    `(denote-faces-link ((,c :inherit link)))
+    `(denote-faces-prompt-current-name ((,c :inherit modus-themes-slant :foreground ,fg-changed-intense)))
+    `(denote-faces-prompt-new-name ((,c :inherit modus-themes-slant :foreground ,fg-added-intense)))
+    `(denote-faces-prompt-old-name ((,c :inherit modus-themes-slant :foreground ,fg-removed-intense)))
+    `(denote-faces-signature ((,c :inherit modus-themes-bold :foreground ,string)))
+    `(denote-faces-subdirectory ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
+    `(denote-faces-time ((,c :inherit denote-faces-date)))
+    `(denote-faces-time-delimiter ((,c :inherit shadow)))
+    `(denote-faces-title (( )))
 ;;;;; devdocs
     `(devdocs-code-block ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim :extend t)))
 ;;;;; dictionary
@@ -2340,7 +2248,7 @@ FG and BG are the main colors."
     `(el-search-occur-match ((,c :inherit match)))
 ;;;;; eldoc
     ;; NOTE: see https://github.com/purcell/package-lint/issues/187
-    (list 'eldoc-highlight-function-argument `((,c :inherit modus-themes-mark-alt)))
+    (list 'eldoc-highlight-function-argument `((,c :inherit bold :background ,bg-active-argument :foreground ,fg-active-argument)))
 ;;;;; eldoc-box
     `(eldoc-box-body ((,c :background ,bg-dim :foreground ,fg-main)))
     `(eldoc-box-border ((,c :background ,border)))
@@ -2463,7 +2371,7 @@ FG and BG are the main colors."
     `(evil-ex-info ((,c :inherit font-lock-type-face)))
     `(evil-ex-lazy-highlight ((,c :inherit modus-themes-search-lazy)))
     `(evil-ex-search ((,c :inherit modus-themes-search-current)))
-    `(evil-ex-substitute-matches ((,c :inherit modus-themes-prominent-error :underline t)))
+    `(evil-ex-substitute-matches ((,c :inherit modus-themes-search-replace)))
     `(evil-ex-substitute-replacement ((,c :inherit modus-themes-search-current)))
 ;;;;; eww
     `(eww-invalid-certificate ((,c :foreground ,err)))
@@ -2533,7 +2441,7 @@ FG and BG are the main colors."
     `(font-lock-variable-name-face ((,c :foreground ,variable)))
     `(font-lock-warning-face ((,c :inherit modus-themes-bold :foreground ,warning)))
 ;;;;; geiser
-    `(geiser-font-lock-autodoc-current-arg ((,c :inherit modus-themes-mark-alt)))
+    `(geiser-font-lock-autodoc-current-arg ((,c :inherit bold :background ,bg-active-argument :foreground ,fg-active-argument)))
     `(geiser-font-lock-autodoc-identifier ((,c :foreground ,docstring)))
     `(geiser-font-lock-doc-button ((,c :inherit button)))
     `(geiser-font-lock-doc-link ((,c :inherit button)))
@@ -2807,11 +2715,11 @@ FG and BG are the main colors."
 ;;;;; isearch, occur, and the like
     `(isearch ((,c :inherit modus-themes-search-current)))
     `(isearch-fail ((,c :inherit modus-themes-prominent-error)))
-    `(isearch-group-1 ((,c :inherit modus-themes-intense-blue)))
-    `(isearch-group-2 ((,c :inherit modus-themes-intense-magenta)))
+    `(isearch-group-1 ((,c :inherit modus-themes-search-rx-group-0)))
+    `(isearch-group-2 ((,c :inherit modus-themes-search-rx-group-1)))
     `(lazy-highlight ((,c :inherit modus-themes-search-lazy)))
     `(match ((,c :background ,bg-magenta-subtle :foreground ,fg-main)))
-    `(query-replace ((,c :inherit modus-themes-prominent-error)))
+    `(query-replace ((,c :inherit modus-themes-search-replace)))
 ;;;;; ivy
     `(ivy-action ((,c :inherit modus-themes-key-binding)))
     `(ivy-confirm-face ((,c :inherit success)))
@@ -2876,7 +2784,7 @@ FG and BG are the main colors."
     `(kaocha-runner-warning-face ((,c :inherit warning)))
 ;;;;; keycast
     `(keycast-command ((,c :inherit bold)))
-    `(keycast-key ((,c :background ,keybind :foreground ,bg-main)))
+    `(keycast-key ((,c :inherit modus-themes-bold :background ,keybind :foreground ,bg-main)))
 ;;;;; ledger-mode
     `(ledger-font-auto-xact-face ((,c :inherit font-lock-builtin-face)))
     `(ledger-font-account-name-face ((,c :foreground ,name)))
@@ -3280,7 +3188,7 @@ FG and BG are the main colors."
     `(nxml-ref ((,c :inherit (shadow modus-themes-bold))))
     `(rng-error ((,c :inherit error)))
 ;;;;; olivetti
-    `(olivetti-fringe ((,c :background ,bg-main)))
+    `(olivetti-fringe ((,c :background ,fringe)))
 ;;;;; orderless
     `(orderless-match-face-0 ((,c :inherit modus-themes-completion-match-0)))
     `(orderless-match-face-1 ((,c :inherit modus-themes-completion-match-1)))
@@ -3290,7 +3198,7 @@ FG and BG are the main colors."
     `(org-agenda-calendar-daterange ((,c :foreground ,date-range)))
     `(org-agenda-calendar-event ((,c :foreground ,date-event)))
     `(org-agenda-calendar-sexp ((,c :inherit (modus-themes-slant org-agenda-calendar-event))))
-    `(org-agenda-clocking ((,c :inherit modus-themes-mark-alt)))
+    `(org-agenda-clocking ((,c :inherit bold :background ,bg-active-argument :foreground ,fg-active-argument)))
     `(org-agenda-column-dateline ((,c :background ,bg-inactive)))
     `(org-agenda-current-time ((,c :foreground ,date-now)))
     `(org-agenda-date ((,c ,@(modus-themes--heading 'agenda-date date-weekday))))
@@ -3328,7 +3236,7 @@ FG and BG are the main colors."
     `(org-drawer ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-metadata)))
     `(org-ellipsis (( ))) ; inherits from the heading's color
     `(org-footnote ((,c :inherit link)))
-    `(org-formula ((,c :inherit modus-themes-fixed-pitch :foreground ,fnname)))
+    `(org-formula ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-table-formula)))
     `(org-headline-done ((,c :inherit org-done)))
     `(org-headline-todo ((,c :inherit org-todo)))
     `(org-hide ((,c :foreground ,bg-main)))
@@ -3551,10 +3459,10 @@ FG and BG are the main colors."
     `(recursion-indicator-general ((,c :foreground ,modeline-err)))
     `(recursion-indicator-minibuffer ((,c :foreground ,modeline-info)))
 ;;;;; regexp-builder (re-builder)
-    `(reb-match-0 ((,c :inherit modus-themes-intense-cyan)))
-    `(reb-match-1 ((,c :inherit modus-themes-subtle-magenta)))
-    `(reb-match-2 ((,c :inherit modus-themes-subtle-green)))
-    `(reb-match-3 ((,c :inherit modus-themes-intense-yellow)))
+    `(reb-match-0 ((,c :inherit modus-themes-search-rx-group-0)))
+    `(reb-match-1 ((,c :inherit modus-themes-search-rx-group-1)))
+    `(reb-match-2 ((,c :inherit modus-themes-search-rx-group-2)))
+    `(reb-match-3 ((,c :inherit modus-themes-search-rx-group-3)))
     `(reb-regexp-grouping-backslash ((,c :inherit font-lock-regexp-grouping-backslash)))
     `(reb-regexp-grouping-construct ((,c :inherit font-lock-regexp-grouping-construct)))
 ;;;;; rg (rg.el)
@@ -3803,14 +3711,25 @@ FG and BG are the main colors."
     `(transient-amaranth ((,c :inherit bold :foreground ,yellow-warmer)))
     ;; Placate the compiler for what is a spurious warning.  We also
     ;; have to do this with `eldoc-highlight-function-argument'.
-    (list 'transient-argument `((,c :inherit (bold modus-themes-mark-alt))))
+    (list 'transient-argument `((,c :inherit bold :background ,bg-active-argument :foreground ,fg-active-argument)))
     `(transient-blue ((,c :inherit bold :foreground ,blue)))
     `(transient-disabled-suffix ((,c :inherit modus-themes-mark-del)))
     `(transient-enabled-suffix ((,c :inherit modus-themes-subtle-cyan)))
     `(transient-heading ((,c :inherit bold :foreground ,fg-main)))
     `(transient-inactive-argument ((,c :inherit shadow)))
     `(transient-inactive-value ((,c :inherit shadow)))
+    ;; NOTE 2023-12-09 10:30:09 +0200: The new user option
+    ;; `transient-semantic-coloring' is enabled by default.  This is
+    ;; not good for us, because we are making it harder for users who
+    ;; need accessible colors to use the transient interfaces.  I
+    ;; could set that user option to nil, but I think it is less
+    ;; intrusive to enforce uniformity among the relevant faces.
+    ;; Those who want semantic coloring can modify these faces.
     `(transient-key ((,c :inherit modus-themes-key-binding)))
+    `(transient-key-exit ((,c :inherit modus-themes-key-binding)))
+    `(transient-key-noop ((,c :inherit (shadow modus-themes-key-binding))))
+    `(transient-key-return ((,c :inherit modus-themes-key-binding)))
+    `(transient-key-stay ((,c :inherit modus-themes-key-binding)))
     `(transient-mismatched-key ((,c :underline t)))
     `(transient-nonstandard-key ((,c :underline t)))
     `(transient-pink ((,c :inherit bold :foreground ,magenta)))
@@ -3819,7 +3738,7 @@ FG and BG are the main colors."
     `(transient-teal ((,c :inherit bold :foreground ,cyan-cooler)))
     `(transient-unreachable ((,c :inherit shadow)))
     `(transient-unreachable-key ((,c :inherit shadow)))
-    `(transient-value ((,c :inherit (bold modus-themes-mark-sel))))
+    `(transient-value ((,c :inherit bold :background ,bg-active-value :foreground ,fg-active-value)))
 ;;;;; trashed
     `(trashed-deleted ((,c :inherit modus-themes-mark-del)))
     `(trashed-directory ((,c :foreground ,accent-0)))
@@ -3918,11 +3837,11 @@ FG and BG are the main colors."
     `(visible-mark-forward-face1 ((,c :background ,bg-magenta-intense)))
     `(visible-mark-forward-face2 ((,c :background ,bg-green-intense)))
 ;;;;; visual-regexp
-    `(vr/group-0 ((,c :inherit modus-themes-intense-blue)))
-    `(vr/group-1 ((,c :inherit modus-themes-intense-magenta)))
-    `(vr/group-2 ((,c :inherit modus-themes-intense-green)))
-    `(vr/match-0 ((,c :inherit modus-themes-intense-yellow)))
-    `(vr/match-1 ((,c :inherit modus-themes-intense-yellow)))
+    `(vr/group-0 ((,c :inherit modus-themes-search-rx-group-0)))
+    `(vr/group-1 ((,c :inherit modus-themes-search-rx-group-1)))
+    `(vr/group-2 ((,c :inherit modus-themes-search-rx-group-2)))
+    `(vr/match-0 ((,c :inherit modus-themes-search-current)))
+    `(vr/match-1 ((,c :inherit modus-themes-search-lazy)))
     `(vr/match-separator-face ((,c :inherit bold :background ,bg-active)))
 ;;;;; vterm
     ;; NOTE 2023-08-10: `vterm-color-black' and `vterm-color-white'
@@ -4034,14 +3953,14 @@ FG and BG are the main colors."
     `(which-key-special-key-face ((,c :inherit error)))
 ;;;;; whitespace-mode
     `(whitespace-big-indent ((,c :background ,bg-space-err)))
-    `(whitespace-empty ((,c :inherit modus-themes-intense-magenta)))
+    `(whitespace-empty ((,c :background ,bg-space)))
     `(whitespace-hspace ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-indentation ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-line ((,c :background ,bg-space :foreground ,warning)))
     `(whitespace-newline ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-space ((,c :background ,bg-space :foreground ,fg-space)))
-    `(whitespace-space-after-tab ((,c :inherit modus-themes-subtle-magenta)))
-    `(whitespace-space-before-tab ((,c :inherit modus-themes-subtle-cyan)))
+    `(whitespace-space-after-tab ((,c :inherit warning :background ,bg-space)))
+    `(whitespace-space-before-tab ((,c :inherit warning :background ,bg-space)))
     `(whitespace-tab ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-trailing ((,c :background ,bg-space-err)))
 ;;;;; window-divider-mode

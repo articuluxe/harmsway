@@ -717,6 +717,9 @@ The theme has to be reloaded after changing anything in this group."
      `(pulsar-yellow ((,class (:background ,nn-bg13))))
      `(pulsar-magenta ((,class (:background ,nn-bg15))))
 
+;;; --- Transient
+     `(transient-key-exit ((,class (:foreground ,nn-brightblue8))))
+
 ;;; --- NeoTree
      `(neo-banner-face ((,class (:foreground ,nn-blue10))))
      `(neo-dir-link-face ((,class (:foreground ,nn-lapis9))))

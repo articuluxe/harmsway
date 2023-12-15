@@ -145,10 +145,10 @@
      ((t (:background ,mode-line-inactive :foreground ,darkgrey))))
    `(tab-bar-tab
      ((t (:background ,mode-line-active :foreground ,black :weight bold
-                      :box (:line-width 1 :color ,non-text)))))
+                      :box (:style released-button)))))
    `(tab-bar-tab-inactive
      ((t (:background unspecified :foreground ,fg
-                      :box (:line-width 1 :color ,non-text)))))
+                      :box (:style released-button)))))
    `(tab-line
      ((t (:background ,mode-line-inactive :foreground ,darkgrey))))
    `(tab-line-tab
@@ -921,9 +921,9 @@
    `(smerge-upper
      ((t (:background ,diff-removed-bg))))
    `(smerge-refined-added
-     ((t (:background ,green :foreground ,black))))
+     ((t (:background ,diff-refine-added-bg :foreground ,diff-added-fg))))
    `(smerge-refined-removed
-     ((t (:background ,red :foreground ,black))))
+     ((t (:background ,diff-refine-removed-bg :foreground ,diff-removed-fg))))
 
    ;; epa
    `(epa-mark
@@ -1244,6 +1244,8 @@
      ((t (:background ,non-text))))
 
    ;; rainbow-delimiters
+   `(rainbow-delimiters-base-error-face
+     ((t (:background ,grey1 :foreground ,red :weight bold))))
    `(rainbow-delimiters-depth-1-face
      ((t (:foreground ,fg))))
    `(rainbow-delimiters-depth-2-face
@@ -1288,6 +1290,8 @@
    ;; sh
    `(sh-quoted-exec
      ((t (:foreground ,bright-magenta))))
+   `(sh-heredoc
+     ((t (:foreground ,bright-green))))
 
    ;; tuareg
    `(tuareg-font-lock-error-face

@@ -1,47 +1,40 @@
-;;; kanagawa-theme.el --- Retro elegant theme -*- lexical-binding: t -*-
+;;; kanagawa-theme.el --- An elegant theme inspired by The Great Wave off Kanagawa by Katsushika Hokusa -*- lexical-binding: t -*-
 
+;; Copyright (C) 2023 Mikael Konradsson
 ;; Copyright (C) 2023 Meritamen <meritamen@sdf.org>
 
 ;; Author: Meritamen <meritamen@sdf.org>
-;; URL: https://github.com/Meritamen/kanagawa-theme
-;; Version: 0.0.1
-;; Package-Requires: ((autothemer "0.2.18") (emacs "28.1"))
+;; URL: https://github.com/meritamen/emacs-kanagawa-theme
+;; Version: 1.0.0
+;; Package-Requires: ((emacs "24.3"))
 ;; Created: 16 September 2023
 ;; Keywords: themes faces
 
-;; The MIT License (MIT)
+;; This file is not part of GNU Emacs.
 
-;; Permission is hereby granted, free of charge, to any person obtaining
-;; a copy of this software and associated documentation files (the
-;; "Software"), to deal in the Software without restriction, including
-;; without limitation the rights to use, copy, modify, merge, publish,
-;; distribute, sublicense, and/or sell copies of the Software, and to
-;; permit persons to whom the Software is furnished to do so, subject to
-;; the following conditions:
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 
-;; The above copyright notice and this permission notice shall be
-;; included in all copies or substantial portions of the Software.
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 
-;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-;; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-;; IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-;; CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-;; TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-;; SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
-;; Kanagawa is a theme inspired by the colors of the famous painting by
-;; Katsushika Hokusa. 
+;; Kanagawa is a theme inspired by the colors of the famous painting
+;; The Great Wave off Kanagawa by Katsushika Hokusa.
 ;; Original theme created by rebelot see: https://github.com/rebelot/kanagawa.nvim
 
 ;;; Code:
 
 (eval-when-compile
   (require 'cl-lib))
-
-(require 'autothemer)
 
 (unless (>= emacs-major-version 24)
   (error "Requires Emacs 24 or later"))
@@ -62,497 +55,524 @@
   :type 'boolean
   :group 'kanagawa-theme)
 
-(autothemer-deftheme
-  kanagawa "A theme inspired by the colors of the famous painting by Katsushika Hokusa"
+(defcustom kanagawa-theme-org-height t
+  "Use varying text heights for org headings."
+  :type 'boolean
+  :group 'kanagawa-theme)
 
- ((((class color) (min-colors #xFFFFFF))        ; col 1 GUI/24bit
-   ((class color) (min-colors #xFF)))           ; col 2 Xterm/256
+(defcustom kanagawa-theme-org-bold t
+  "Inherit text bold for org headings"
+  :type 'boolean
+  :group 'kanagawa-theme)
 
-  ;; Define our color palette
-  (fuji-white		   "#DCD7BA" "#ffffff")
-  (old-white		   "#C8C093" "#ffffff")
+(defcustom kanagawa-theme-org-priority-bold t
+  "Inherit text bold for priority items in agenda view"
+  :type 'boolean
+  :group 'kanagawa-theme)
 
-  (sumi-ink-0		   "#16161D" "#000000")
-  (sumi-ink-1b	   "#1f1f28" "#000000")
-  (sumi-ink-1		   "#1F1F28" "#080808")
-  (sumi-ink-2		   "#2A2A37" "#121212")
-  (sumi-ink-3		   "#363646" "#303030")
-  (sumi-ink-4		   "#54546D" "#303030")
+(defcustom kanagawa-theme-org-highlight nil
+  "Highlight org headings."
+  :type 'boolean
+  :group 'kanagawa-theme)
 
-  (wave-blue-1 	   "#223249" "#4e4e4e")
-  (wave-blue-2  	 "#2D4F67" "#585858")
-  (wave-aqua-1		 "#6A9589" "#6a9589")
-  (wave-aqua-2		 "#7AA89F" "#717C7C")
+(defcustom kanagawa-theme-underline-parens t
+  "If non-nil, underline matching parens when using `show-paren-mode' or similar."
+  :type 'boolean
+  :group 'kanagawa-theme)
 
-  (winter-green	   "#2B3328" "#585858")
-  (winter-yellow   "#49443C" "#585858")
-  (winter-red		   "#43242B" "#585858")
-  (winter-blue	   "#252535" "#585858")
+(defun true-color-p ()
+  (or (display-graphic-p)
+      (= (tty-display-color-cells) 16777216)))
 
-  (autumn-green	   "#76946A" "#585858")
-  (autumn-red		   "#C34043" "#585858")
-  (autumn-yellow   "#DCA561" "#585858")
+;; TODO: Kanagawa Light variant
+(defun create-kanagawa-theme (theme-name)
+  (let ((class '((class color) (min-colors 89)))
+        ;; Define Kanagawa color palette
+        (fuji-white       (if (true-color-p) "#DCD7BA" "#ffffff"))
+        (old-white        (if (true-color-p) "#C8C093" "#ffffff"))
+        (sumi-ink-0       (if (true-color-p) "#16161D" "#000000"))
+        (sumi-ink-1b      (if (true-color-p) "#1f1f28" "#000000"))
+        (sumi-ink-1       (if (true-color-p) "#1F1F28" "#080808"))
+        (sumi-ink-2       (if (true-color-p) "#2A2A37" "#121212"))
+        (sumi-ink-3       (if (true-color-p) "#363646" "#303030"))
+        (sumi-ink-4       (if (true-color-p) "#54546D" "#303030"))
+        (wave-blue-1      (if (true-color-p) "#223249" "#4e4e4e"))
+        (wave-blue-2      (if (true-color-p) "#2D4F67" "#585858"))
+        (wave-aqua-1      (if (true-color-p) "#6A9589" "#6a9589"))
+        (wave-aqua-2      (if (true-color-p) "#7AA89F" "#717C7C"))
+        (winter-green     (if (true-color-p) "#2B3328" "#585858"))
+        (winter-yellow    (if (true-color-p) "#49443C" "#585858"))
+        (winter-red       (if (true-color-p) "#43242B" "#585858"))
+        (winter-blue      (if (true-color-p) "#252535" "#585858"))
+        (autumn-green     (if (true-color-p) "#76946A" "#585858"))
+        (autumn-red       (if (true-color-p) "#C34043" "#585858"))
+        (autumn-yellow    (if (true-color-p) "#DCA561" "#585858"))
+        (samurai-red      (if (true-color-p) "#E82424" "#585858"))
+        (ronin-yellow     (if (true-color-p) "#FF9E3B" "#585858"))
+        (dragon-blue      (if (true-color-p) "#658594" "#658594"))
+        (fuji-gray        (if (true-color-p) "#727169" "#717C7C"))
+        (spring-violet-1  (if (true-color-p) "#938AA9" "#717C7C"))
+        (oni-violet       (if (true-color-p) "#957FB8" "#717C7C"))
+        (crystal-blue     (if (true-color-p) "#7E9CD8" "#717C7C"))
+        (spring-violet-2  (if (true-color-p) "#9CABCA" "#717C7C"))
+        (spring-blue      (if (true-color-p) "#7FB4CA" "#717C7C"))
+        (light-blue       (if (true-color-p) "#A3D4D5" "#717C7C"))
+        (spring-green     (if (true-color-p) "#98BB6C" "#717C7C"))
+        (boat-yellow-1    (if (true-color-p) "#938056" "#717C7C"))
+        (boat-yellow-2    (if (true-color-p) "#C0A36E" "#717C7C"))
+        (carp-yellow      (if (true-color-p) "#E6C384" "#717C7C"))
+        (sakura-pink      (if (true-color-p) "#D27E99" "#717C7C"))
+        (wave-red         (if (true-color-p) "#E46876" "#717C7C"))
+        (peach-red        (if (true-color-p) "#FF5D62" "#717C7C"))
+        (surimi-orange    (if (true-color-p) "#FFA066" "#717C7C"))
+        (katana-gray      (if (true-color-p) "#717C7C" "#717C7C"))
+        (comet            (if (true-color-p) "#54536D" "#4e4e4e")))
+    (custom-theme-set-faces
+     theme-name
 
-  (samurai-red		 "#E82424" "#585858")
-  (ronin-yellow		 "#FF9E3B" "#585858")
+     ;; Customize faces
+     `(default                                       ((,class (:background ,sumi-ink-1b :foreground ,fuji-white))))
+     `(border                                        ((,class (:background ,sumi-ink-1b :foreground ,sumi-ink-0))))
+     `(button                                        ((,class (:foreground ,wave-aqua-2))))
+     `(child-frame                                   ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-0))))
+     `(child-frame-border                            ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-0))))
+     `(cursor                                        ((,class (:background ,light-blue :foreground ,sumi-ink-0 :weight bold))))
+     `(error                                         ((,class (:foreground ,samurai-red))))
+     `(fringe                                        ((,class (:foreground ,sumi-ink-3))))
+     `(glyph-face                                    ((,class (:background ,sumi-ink-4))))
+     `(glyphless-char                                ((,class (:foreground ,sumi-ink-4))))
+     `(header-line                                   ((,class (:background ,sumi-ink-0))))
+     `(highlight                                     ((,class (:background ,comet :foreground ,spring-violet-1))))
+     `(hl-line                                       ((,class (:background ,sumi-ink-2))))
+     `(homoglyph                                     ((,class (:foreground ,light-blue))))
+     `(internal-border                               ((,class (:background ,sumi-ink-1b))))
+     `(line-number                                   ((,class (:foreground ,sumi-ink-4))))
+     `(line-number-current-line                      ((,class (:foreground ,spring-violet-2 :background ,sumi-ink-2 :weight bold))))
+     `(lv-separator                                  ((,class (:foreground ,wave-blue-2 :background ,sumi-ink-2))))
+     `(match                                         ((,class (:background ,carp-yellow :foreground ,sumi-ink-0))))
+     `(menu                                          ((,class (:background ,sumi-ink-0 :foreground ,fuji-white))))
+     `(mode-line                                     ((,class (:background ,sumi-ink-0))))
+     `(mode-line-inactive                            ((,class (:background unspecified :foreground ,sumi-ink-4))))
+     `(mode-line-active                              ((,class (:background ,sumi-ink-0 :foreground ,old-white))))
+     `(mode-line-highlight                           ((,class (:foreground ,boat-yellow-2))))
+     `(mode-line-buffer-id                           ((,class (:foreground ,wave-aqua-2 :weight bold))))
+     `(numbers                                       ((,class (:background ,sakura-pink))))
+     `(region                                        ((,class (:background ,wave-blue-2))))
+     `(separator-line                                ((,class (:background ,sumi-ink-0))))
+     `(shadow                                        ((,class (:background ,sumi-ink-0))))
+     `(success                                       ((,class (:foreground ,wave-aqua-2))))
+     `(vertical-border                               ((,class (:foreground ,sumi-ink-4))))
+     `(warning                                       ((,class (:foreground ,ronin-yellow))))
+     `(window-border                                 ((,class (:background ,sumi-ink-1b))))
+     `(window-divider                                ((,class (:foreground ,sumi-ink-2))))
+     `(hi-yellow                                     ((,class (:background ,carp-yellow :foreground ,sumi-ink-1b))))
 
-  (dragon-blue		 "#658594" "#658594")
-  (fuji-gray       "#727169" "#717C7C")
-  (spring-violet-1 "#938AA9" "#717C7C")
-  (oni-violet		   "#957FB8" "#717C7C")
-  (crystal-blue		 "#7E9CD8" "#717C7C")
-  (spring-violet-2 "#9CABCA" "#717C7C")
-  (spring-blue		 "#7FB4CA" "#717C7C")
-  (light-blue		   "#A3D4D5" "#717C7C")
-  (spring-green		 "#98BB6C" "#717C7C")
-  (boat-yellow-1	 "#938056" "#717C7C")
-  (boat-yellow-2	 "#C0A36E" "#717C7C")
-  (carp-yellow		 "#E6C384" "#717C7C")
-  (sakura-pink		 "#D27E99" "#717C7C")
-  (wave-red        "#E46876" "#717C7C")
-  (peach-red       "#FF5D62" "#717C7C")
-  (surimi-orange	 "#FFA066" "#717C7C")
-  (katana-gray		 "#717C7C" "#717C7C")
-  (comet           "#54536D" "#4e4e4e"))
+     ;; Font lock
+     `(font-lock-type-face                           ((,class (:foreground ,wave-aqua-2))))
+     `(font-lock-regexp-grouping-backslash           ((,class (:foreground ,boat-yellow-2))))
+     `(font-lock-keyword-face                        ((,class (:foreground ,oni-violet :weight semi-bold :slant ,(if kanagawa-theme-keyword-italic 'italic 'normal)))))
+     `(font-lock-warning-face                        ((,class (:foreground ,ronin-yellow))))
+     `(font-lock-string-face                         ((,class (:foreground ,spring-green :slant italic))))
+     `(font-lock-builtin-face                        ((,class (:foreground ,spring-blue))))
+     `(font-lock-reference-face                      ((,class (:foreground ,peach-red))))
+     `(font-lock-constant-face                       ((,class (:foreground ,carp-yellow))))
+     `(font-lock-function-name-face                  ((,class (:foreground ,crystal-blue))))
+     `(font-lock-variable-name-face                  ((,class (:foreground ,wave-red))))
+     `(font-lock-negation-char-face                  ((,class (:foreground ,peach-red))))
+     `(font-lock-comment-face                        ((,class (:foreground ,fuji-gray :slant ,(if kanagawa-theme-keyword-italic 'italic 'normal)))))
+     `(font-lock-comment-delimiter-face              ((,class (:foreground ,fuji-gray :slant ,(if kanagawa-theme-keyword-italic 'italic 'normal)))))
+     `(font-lock-doc-face                            ((,class (:foreground ,comet))))
+     `(font-lock-doc-markup-face                     ((,class (:foreground ,comet))))
+     `(font-lock-preprocessor-face                   ((,class (:foreground ,boat-yellow-2))))
+     `(elisp-shorthand-font-lock-face                ((,class (:foreground ,fuji-white))))
+     `(info-xref                                     ((,class (:foreground ,carp-yellow))))
+     `(minibuffer-prompt-end                         ((,class (:foreground ,autumn-red :background ,winter-red))))
+     `(minibuffer-prompt                             ((,class (:foreground ,carp-yellow :background ,winter-yellow))))
+     `(epa-mark                                      ((,class (:foreground ,wave-red))))
+     `(dired-mark                                    ((,class (:foreground ,wave-red))))
+     `(trailing-whitespace                           ((,class (:background ,comet))))
+     `(mode-line                                     ((,class (:background ,sumi-ink-0 :foreground ,fuji-white :weight bold))))
 
-  ;; Customize faces
-  (
-  (default                                       (:background sumi-ink-1b :foreground fuji-white))
-  (border                                        (:background sumi-ink-1b :foreground sumi-ink-0))
-  (button                                        (:foreground wave-aqua-2))
-  (child-frame                                   (:background sumi-ink-0 :foreground sumi-ink-0))
-  (child-frame-border                            (:background sumi-ink-0 :foreground sumi-ink-0))
-  (cursor                                        (:background light-blue :foreground sumi-ink-0 :bold t))
-  (error                                         (:foreground samurai-red))
-  (fringe                                        (:foreground sumi-ink-3))
-  (glyph-face                                    (:background sumi-ink-4))
-  (glyphless-char                                (:foreground sumi-ink-4))
-  (header-line                                   (:background sumi-ink-0))
-  (highlight                                     (:background comet :foreground spring-violet-1))
-  (hl-line                                       (:background sumi-ink-2))
-  (homoglyph                                     (:foreground light-blue))
-  (internal-border                               (:background sumi-ink-1b))
-  (line-number                                   (:foreground sumi-ink-4))
-  (line-number-current-line                      (:foreground spring-violet-2 :background sumi-ink-2 :bold t))
-  (lv-separator                                  (:foreground wave-blue-2 :background sumi-ink-2))
-  (match                                         (:background carp-yellow :foreground sumi-ink-0))
-  (menu                                          (:background sumi-ink-0 :foreground fuji-white))
-  (mode-line                                     (:background sumi-ink-0))
-  (mode-line-inactive                            (:background nil :foreground sumi-ink-4 :bold nil))
-  (mode-line-active                              (:background sumi-ink-0 :foreground old-white :bold nil))
-  (mode-line-highlight                           (:foreground boat-yellow-2))
-  (mode-line-buffer-id                           (:foreground wave-aqua-2 :bold t))
-  (numbers                                       (:background sakura-pink))
-  (region                                        (:background wave-blue-2))
-  (separator-line                                (:background sumi-ink-0))
-  (shadow                                        (:background sumi-ink-0))
-  (success                                       (:foreground wave-aqua-2))
-  (vertical-border                               (:foreground sumi-ink-4))
-  (warning                                       (:foreground ronin-yellow))
-  (window-border                                 (:background sumi-ink-1b))
-  (window-divider                                (:foreground sumi-ink-2))
-  (hi-yellow                                     (:background carp-yellow :foreground sumi-ink-1b))
+     ;; Battery colors
+     `(doom-modeline-battery-critical                ((,class (:foreground ,peach-red))))
+     `(doom-modeline-battery-warning                 ((,class (:foreground ,spring-green))))
+     `(doom-modeline-battery-charging                ((,class (:foreground ,fuji-gray))))
+     `(doom-modeline-battery-error                   ((,class (:foreground ,peach-red))))
+     `(doom-modeline-battery-normal                  ((,class (:foreground ,spring-violet-1))))
+     `(doom-modeline-battery-full                    ((,class (:foreground ,wave-aqua-2))))
 
-  ;; Font lock
-  (font-lock-type-face                           (:foreground wave-aqua-2))
-  (font-lock-regexp-grouping-backslash           (:foreground boat-yellow-2))
-  (font-lock-keyword-face                        (:foreground oni-violet :weight 'semi-bold :italic kanagawa-theme-keyword-italic))
-  (font-lock-warning-face                        (:foreground ronin-yellow))
-  (font-lock-string-face                         (:foreground spring-green :italic t))
-  (font-lock-builtin-face                        (:foreground spring-blue))
-  (font-lock-reference-face                      (:foreground peach-red))
-  (font-lock-constant-face                       (:foreground carp-yellow))
-  (font-lock-function-name-face                  (:foreground crystal-blue))
-  (font-lock-variable-name-face                  (:foreground wave-red))
-  (font-lock-negation-char-face                  (:foreground peach-red))
-  (font-lock-comment-face                        (:foreground fuji-gray :italic kanagawa-theme-comment-italic))
-  (font-lock-comment-delimiter-face              (:foreground fuji-gray :italic t))
-  (font-lock-doc-face                            (:foreground comet))
-  (font-lock-doc-markup-face                     (:foreground comet))
-  (font-lock-preprocessor-face	                 (:foreground boat-yellow-2))
-  (elisp-shorthand-font-lock-face                (:foreground fuji-white))
+     ;; Doom visual state
+     `(doom-modeline-evil-motion-state               ((,class (:foreground ,light-blue))))
+     `(doom-modeline-evil-emacs-state                ((,class (:foreground ,crystal-blue))))
+     `(doom-modeline-evil-insert-state               ((,class (:foreground ,peach-red))))
+     `(doom-modeline-evil-normal-state               ((,class (:foreground ,light-blue))))
+     `(doom-modeline-evil-visual-state               ((,class (:foreground ,spring-green))))
+     `(doom-modeline-evil-replace-state              ((,class (:foreground ,ronin-yellow))))
+     `(doom-modeline-evil-operator-state             ((,class (:foreground ,crystal-blue))))
 
-  (info-xref                                     (:foreground carp-yellow))
-  (minibuffer-prompt-end                         (:foreground autumn-red :background winter-red))
-  (minibuffer-prompt                             (:foreground carp-yellow :background winter-yellow))
-  (epa-mark                                      (:foreground wave-red))
-  (dired-mark                                    (:foreground wave-red))
-  (trailing-whitespace                           (:background comet))
-  (mode-line                                     (:background sumi-ink-0 :foreground fuji-white :bold t))
+     `(doom-modeline-project-dir                     ((,class (:weight bold :foreground ,wave-aqua-2))))
+     `(doom-modeline-buffer-path                     ((,class (:inherit bold :foreground ,wave-aqua-2))))
+     `(doom-modeline-buffer-file                     ((,class (:inherit bold :foreground ,oni-violet))))
+     `(doom-modeline-buffer-modified                 ((,class (:inherit bold :foreground ,carp-yellow))))
+     `(doom-modeline-error                           ((,class (:background ,peach-red))))
+     `(doom-modeline-buffer-major-mode               ((,class (:foreground ,wave-aqua-2 :weight bold))))
+     `(doom-modeline-info                            ((,class (:weight bold :foreground ,light-blue))))
+     `(doom-modeline-project-dir                     ((,class (:weight bold :foreground ,surimi-orange))))
+     `(doom-modeline-bar                             ((,class (:weight bold :background ,spring-violet-1))))
+     `(doom-modeline-panel                           ((,class (:inherit bold :background ,boat-yellow-2 :foreground ,sumi-ink-2))))
+     `(doom-themes-visual-bell                       ((,class (:background ,autumn-red))))
 
-  ;; Battery colors
-  (doom-modeline-battery-critical                (:foreground peach-red))
-  (doom-modeline-battery-warning                 (:foreground spring-green))
-  (doom-modeline-battery-charging                (:foreground fuji-gray))
-  (doom-modeline-battery-error                   (:foreground peach-red))
-  (doom-modeline-battery-normal                  (:foreground spring-violet-1))
-  (doom-modeline-battery-full                    (:foreground wave-aqua-2))
-  
-  ;; Doom visual state
-  (doom-modeline-evil-motion-state               (:foreground light-blue))
-  (doom-modeline-evil-emacs-state                (:foreground crystal-blue))
-  (doom-modeline-evil-insert-state               (:foreground peach-red))
-  (doom-modeline-evil-normal-state               (:foreground light-blue))
-  (doom-modeline-evil-visual-state               (:foreground spring-green))
-  (doom-modeline-evil-replace-state              (:foreground ronin-yellow))
-  (doom-modeline-evil-operator-state             (:foreground crystal-blue))
+     ;; elfeed
+     `(elfeed-search-feed-face                       ((,class (:foreground ,spring-violet-1))))
+     `(elfeed-search-tag-face                        ((,class (:foreground ,wave-aqua-2))))
 
-  (doom-modeline-project-dir                     (:bold t :foreground wave-aqua-2))
-  (doom-modeline-buffer-path                     (:inherit 'bold :foreground wave-aqua-2))
-  (doom-modeline-buffer-file                     (:inherit 'bold :foreground oni-violet))
-  (doom-modeline-buffer-modified                 (:inherit 'bold :foreground carp-yellow))
-  (doom-modeline-error                           (:background peach-red))
-  (doom-modeline-buffer-major-mode               (:foreground wave-aqua-2 :bold t))
-  (doom-modeline-info                            (:bold t :foreground light-blue))
-  (doom-modeline-project-dir                     (:bold t :foreground surimi-orange))
-  (doom-modeline-bar                             (:bold t :background spring-violet-1))
-  (doom-modeline-panel                           (:inherit 'bold :background boat-yellow-2 :foreground sumi-ink-2))
-  (doom-themes-visual-bell                       (:background autumn-red))
+     ;; message colors
+     `(message-header-name                           ((,class (:foreground ,sumi-ink-4))))
+     `(message-header-other                          ((,class (:foreground ,surimi-orange))))
+     `(message-header-subject                        ((,class (:foreground ,carp-yellow))))
+     `(message-header-to                             ((,class (:foreground ,old-white))))
+     `(message-header-cc                             ((,class (:foreground ,wave-aqua-2))))
+     `(message-header-xheader                        ((,class (:foreground ,old-white))))
+     `(custom-link                                   ((,class (:foreground ,crystal-blue))))
+     `(link                                          ((,class (:foreground ,crystal-blue))))
 
-  ;; elfeed
-  (elfeed-search-feed-face                       (:foreground spring-violet-1))
-  (elfeed-search-tag-face                        (:foreground wave-aqua-2))
+     ;; org-mode
+     `(org-done                                      ((,class (:foreground ,dragon-blue))))
+     `(org-code                                      ((,class (:background ,sumi-ink-0))))
+     `(org-meta-line                                 ((,class (:background ,winter-green :foreground ,spring-green))))
+     `(org-block                                     ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-4))))
+     `(org-block-begin-line                          ((,class (:background ,winter-blue :foreground ,spring-blue))))
+     `(org-block-end-line                            ((,class (:background ,winter-red :foreground ,peach-red))))
+     `(org-headline-done                             ((,class (:foreground ,dragon-blue :strike-through t))))
+     `(org-todo                                      ((,class (:foreground ,surimi-orange :weight bold))))
+     `(org-headline-todo                             ((,class (:foreground ,sumi-ink-2))))
+     `(org-upcoming-deadline                         ((,class (:foreground ,peach-red))))
+     `(org-footnote                                  ((,class (:foreground ,wave-aqua-2))))
+     `(org-indent                                    ((,class (:background ,sumi-ink-1b :foreground ,sumi-ink-1b))))
+     `(org-hide                                      ((,class (:background ,sumi-ink-1b :foreground ,sumi-ink-1b))))
+     `(org-date                                      ((,class (:foreground ,wave-blue-2))))
+     `(org-ellipsis                                  ((,class (:foreground ,wave-blue-2 :weight bold))))
+     `(org-level-1                                   ((,class (:inherit bold :foreground ,peach-red :height ,(if kanagawa-theme-org-height 1.3 1.0) :weight ,(if kanagawa-theme-org-bold 'unspecified 'normal)))))
+     `(org-level-2                                   ((,class (:inherit bold :foreground ,spring-violet-2 :height ,(if kanagawa-theme-org-height 1.2 1.0) :weight ,(if kanagawa-theme-org-bold 'unspecified 'normal)))))
+     `(org-level-3                                   ((,class (:foreground ,boat-yellow-2 :height ,(if kanagawa-theme-org-height 1.1 1.0)))))
+     `(org-level-4                                   ((,class (:foreground ,fuji-white))))
+     `(org-level-5                                   ((,class (:foreground ,fuji-white))))
+     `(org-level-6                                   ((,class (:foreground ,carp-yellow))))
+     `(org-level-7                                   ((,class (:foreground ,surimi-orange))))
+     `(org-level-8                                   ((,class (:foreground ,spring-green))))
+     `(org-priority                                  ((,class (:foreground ,peach-red :inherit bold :weight ,(if kanagawa-theme-org-priority-bold 'unspecified 'normal)))))
 
-  ;; message colors
-  (message-header-name                           (:foreground sumi-ink-4))
-  (message-header-other                          (:foreground surimi-orange))
-  (message-header-subject                        (:foreground carp-yellow))
-  (message-header-to                             (:foreground old-white))
-  (message-header-cc                             (:foreground wave-aqua-2))
-  (message-header-xheader                        (:foreground old-white))
-  (custom-link                                   (:foreground crystal-blue))
-  (link                                          (:foreground crystal-blue))
+     ;; which-key
+     `(which-key-key-face                            ((,class (:inherit font-lock-variable-name-face))))
+     `(which-func                                    ((,class (:inherit font-lock-function-name-face :weight bold))))
+     `(which-key-group-description-face              ((,class (:foreground ,wave-red))))
+     `(which-key-command-description-face            ((,class (:foreground ,crystal-blue))))
+     `(which-key-local-map-description-face          ((,class (:foreground ,carp-yellow))))
+     `(which-key-posframe                            ((,class (:background ,wave-blue-1))))
+     `(which-key-posframe-border                     ((,class (:background ,wave-blue-1))))
 
-  ;; org-mode
-  (org-done                                      (:foreground dragon-blue))
-  (org-code                                      (:background sumi-ink-0))
-  (org-meta-line                                 (:background winter-green :foreground spring-green))
-  (org-block                                     (:background sumi-ink-0 :foreground sumi-ink-4))
-  (org-block-begin-line                          (:background winter-blue :foreground spring-blue))
-  (org-block-end-line	                           (:background winter-red :foreground peach-red))
-  (org-headline-done                             (:foreground dragon-blue :strike-through t))
-  (org-todo                                      (:foreground surimi-orange :bold t))
-  (org-headline-todo                             (:foreground sumi-ink-2))
-  (org-upcoming-deadline                         (:foreground peach-red))
-  (org-footnote                                  (:foreground wave-aqua-2))
-  (org-indent                                    (:background sumi-ink-1b :foreground sumi-ink-1b))
-  (org-hide                                      (:background sumi-ink-1b :foreground sumi-ink-1b))
-  (org-date                                      (:foreground wave-blue-2))
-  (org-ellipsis                                  (:foreground wave-blue-2 :bold t))
-  (org-level-1                                   (:foreground peach-red :height 1.3 :bold t))
-  (org-level-2                                   (:foreground spring-violet-2 :height 1.15 :bold t))
-  (org-level-3                                   (:foreground boat-yellow-2 :height 1.05))
-  (org-level-4                                   (:foreground fuji-white))
-  (org-level-5                                   (:foreground fuji-white))
-  (org-level-6                                   (:foreground carp-yellow))
-  (org-level-7                                   (:foreground surimi-orange))
-  (org-level-8                                   (:foreground spring-green))
+     ;; swiper
+     `(swiper-line-face                              ((,class (:foreground ,carp-yellow))))
+     `(swiper-background-match-face-1                ((,class (:background ,surimi-orange :foreground ,sumi-ink-0))))
+     `(swiper-background-match-face-2                ((,class (:background ,crystal-blue :foreground ,sumi-ink-0))))
+     `(swiper-background-match-face-3                ((,class (:background ,boat-yellow-2 :foreground ,sumi-ink-0))))
+     `(swiper-background-match-face-4                ((,class (:background ,peach-red :foreground ,sumi-ink-0))))
+     `(swiper-match-face-1                           ((,class (:inherit swiper-background-match-face-1))))
+     `(swiper-match-face-2                           ((,class (:inherit swiper-background-match-face-2))))
+     `(swiper-match-face-3                           ((,class (:inherit swiper-background-match-face-3))))
+     `(swiper-match-face-4                           ((,class (:inherit swiper-background-match-face-4))))
 
-  ;; which-key
-  (which-key-key-face                            (:inherit 'font-lock-variable-name-face))
-  (which-func                                    (:inherit 'font-lock-function-name-face :bold t))
-  (which-key-group-description-face              (:foreground wave-red))
-  (which-key-command-description-face            (:foreground crystal-blue))
-  (which-key-local-map-description-face          (:foreground carp-yellow))
-  (which-key-posframe                            (:background wave-blue-1))
-  (which-key-posframe-border	                   (:background wave-blue-1))
+     `(counsel-outline-default                       ((,class (:foreground ,carp-yellow))))
+     `(info-header-xref                              ((,class (:foreground ,carp-yellow))))
+     `(xref-file-header                              ((,class (:foreground ,carp-yellow))))
+     `(xref-match                                    ((,class (:foreground ,carp-yellow))))
 
-  ;; swiper
-  (swiper-line-face                              (:foreground carp-yellow))
-  (swiper-background-match-face-1                (:background surimi-orange :foreground sumi-ink-0))
-  (swiper-background-match-face-2                (:background crystal-blue :foreground sumi-ink-0))
-  (swiper-background-match-face-3                (:background boat-yellow-2 :foreground sumi-ink-0))
-  (swiper-background-match-face-4                (:background peach-red :foreground sumi-ink-0))
-  (swiper-match-face-1                           (:inherit 'swiper-background-match-face-1))
-  (swiper-match-face-2                           (:inherit 'swiper-background-match-face-2))
-  (swiper-match-face-3                           (:inherit 'swiper-background-match-face-3))
-  (swiper-match-face-4                           (:inherit 'swiper-background-match-face-4))
+     ;; rainbow delimiters
+     `(rainbow-delimiters-mismatched-face            ((,class (:foreground ,peach-red))))
+     `(rainbow-delimiters-unmatched-face             ((,class (:foreground ,wave-aqua-2))))
+     `(rainbow-delimiters-base-error-face            ((,class (:foreground ,peach-red))))
+     `(rainbow-delimiters-base-face                  ((,class (:foreground ,sumi-ink-4))))
 
-  (counsel-outline-default                       (:foreground carp-yellow))
-  (info-header-xref                              (:foreground carp-yellow))
-  (xref-file-header                              (:foreground carp-yellow))
-  (xref-match                                    (:foreground carp-yellow))
+     `(rainbow-delimiters-depth-1-face               ((,class (:foreground ,spring-violet-2))))
+     `(rainbow-delimiters-depth-2-face               ((,class (:foreground ,dragon-blue))))
+     `(rainbow-delimiters-depth-3-face               ((,class (:foreground ,spring-violet-1))))
+     `(rainbow-delimiters-depth-4-face               ((,class (:foreground ,spring-green))))
+     `(rainbow-delimiters-depth-5-face               ((,class (:foreground ,wave-aqua-2))))
+     `(rainbow-delimiters-depth-6-face               ((,class (:foreground ,carp-yellow))))
+     `(rainbow-delimiters-depth-7-face               ((,class (:foreground ,wave-red))))
+     `(rainbow-delimiters-depth-8-face               ((,class (:foreground ,light-blue))))
+     `(rainbow-delimiters-depth-9-face               ((,class (:foreground ,spring-violet-2))))
 
-  ;; rainbow delimiters
-  (rainbow-delimiters-mismatched-face            (:foreground peach-red))
-  (rainbow-delimiters-unmatched-face             (:foreground wave-aqua-2))
-  (rainbow-delimiters-base-error-face            (:foreground peach-red))
-  (rainbow-delimiters-base-face                  (:foreground sumi-ink-4))
+     ;; show-paren
+     `(show-paren-match                              ((,class (:background ,wave-aqua-1 :foreground ,sumi-ink-0 :weight bold :underline ,(when kanagawa-theme-underline-parens t)))))
+     `(show-paren-match-expression                   ((,class (:background ,wave-aqua-1 :foreground ,sumi-ink-0 :weight bold))))
+     `(show-paren-mismatch                           ((,class (:background ,peach-red :foreground ,old-white :underline ,(when kanagawa-theme-underline-parens t)))))
+     `(tooltip                                       ((,class (:foreground ,sumi-ink-0 :background ,carp-yellow :weight bold))))
 
-  (rainbow-delimiters-depth-1-face               (:foreground spring-violet-2))
-  (rainbow-delimiters-depth-2-face               (:foreground dragon-blue))
-  (rainbow-delimiters-depth-3-face               (:foreground spring-violet-1))
-  (rainbow-delimiters-depth-4-face               (:foreground spring-green))
-  (rainbow-delimiters-depth-5-face               (:foreground wave-aqua-2))
-  (rainbow-delimiters-depth-6-face               (:foreground carp-yellow))
-  (rainbow-delimiters-depth-7-face               (:foreground wave-red))
-  (rainbow-delimiters-depth-8-face               (:foreground light-blue))
-  (rainbow-delimiters-depth-9-face               (:foreground spring-violet-2))
+     ;; company-box
+     `(company-tooltip                               ((,class (:background ,sumi-ink-2))))
+     `(company-tooltip-common                        ((,class (:foreground ,autumn-yellow))))
+     `(company-tooltip-quick-access                  ((,class (:foreground ,spring-violet-2))))
+     `(company-tooltip-scrollbar-thumb               ((,class (:background ,autumn-red))))
+     `(company-tooltip-scrollbar-track               ((,class (:background ,sumi-ink-2))))
+     `(company-tooltip-search                        ((,class (:background ,carp-yellow :foreground ,sumi-ink-0 :distant-foreground ,fuji-white))))
+     `(company-tooltip-selection                     ((,class (:background ,peach-red :foreground ,winter-red :weight bold))))
+     `(company-tooltip-mouse                         ((,class (:background ,sumi-ink-2 :foreground ,sumi-ink-0 :distant-foreground ,fuji-white))))
+     `(company-tooltip-annotation                    ((,class (:foreground ,peach-red :distant-foreground ,sumi-ink-1))))
+     `(company-scrollbar-bg                          ((,class (:inherit tooltip))))
+     `(company-scrollbar-fg                          ((,class (:background ,peach-red))))
+     `(company-preview                               ((,class (:foreground ,carp-yellow))))
+     `(company-preview-common                        ((,class (:foreground ,peach-red :weight bold))))
+     `(company-preview-search                        ((,class (:inherit company-tooltip-search))))
+     `(company-template-field                        ((,class (:inherit match))))
 
-  ;; show-paren
-  (show-paren-match                              (:background wave-aqua-1 :foreground sumi-ink-0 :bold t))
-  (show-paren-match-expression	                 (:background wave-aqua-1 :foreground sumi-ink-0 :bold t))
-  (show-paren-mismatch                           (:background peach-red :foreground old-white))
-  (tooltip                                       (:foreground sumi-ink-0 :background carp-yellow :bold t))
-  
-  ;; company-box
-  (company-tooltip                               (:background sumi-ink-2))
-  (company-tooltip-common                        (:foreground autumn-yellow))
-  (company-tooltip-quick-access                  (:foreground spring-violet-2))
-  (company-tooltip-scrollbar-thumb               (:background autumn-red))
-  (company-tooltip-scrollbar-track               (:background sumi-ink-2))
-  (company-tooltip-search                        (:background carp-yellow :foreground sumi-ink-0 :distant-foreground fuji-white))
-  (company-tooltip-selection                     (:background peach-red :foreground winter-red :bold t))
-  (company-tooltip-mouse                         (:background sumi-ink-2 :foreground sumi-ink-0 :distant-foreground fuji-white))
-  (company-tooltip-annotation                    (:foreground peach-red :distant-foreground sumi-ink-1))
-  (company-scrollbar-bg                          (:inherit 'tooltip))
-  (company-scrollbar-fg                          (:background peach-red))
-  (company-preview                               (:foreground carp-yellow))
-  (company-preview-common                        (:foreground peach-red :bold t))
-  (company-preview-search                        (:inherit 'company-tooltip-search))
-  (company-template-field                        (:inherit 'match))
+     ;; flycheck
+     `(flycheck-posframe-background-face             ((,class (:background ,sumi-ink-0))))
+     `(flycheck-posframe-face                        ((,class (:background ,sumi-ink-0))))
+     `(flycheck-posframe-info-face                   ((,class (:background ,sumi-ink-0 :foreground ,autumn-green))))
+     `(flycheck-posframe-warning-face                ((,class (:background ,sumi-ink-0 :foreground ,light-blue))))
+     `(flycheck-posframe-error-face                  ((,class (:background ,sumi-ink-0 :foreground ,samurai-red))))
+     `(flycheck-fringe-warning                       ((,class (:foreground ,light-blue))))
+     `(flycheck-fringe-error                         ((,class (:foreground ,samurai-red))))
+     `(flycheck-fringe-info                          ((,class (:foreground ,autumn-green))))
+     `(flycheck-error-list-warning                   ((,class (:foreground ,ronin-yellow :weight bold))))
+     `(flycheck-error-list-error                     ((,class (:foreground ,samurai-red :weight bold))))
+     `(flycheck-error-list-info                      ((,class (:foreground ,wave-aqua-1 :weight bold))))
+     `(flycheck-inline-error                         ((,class (:foreground ,samurai-red :background ,winter-red :slant italic :weight bold :height 138))))
+     `(flycheck-inline-info                          ((,class (:foreground ,light-blue :background ,winter-blue :slant italic  :weight bold :height 138))))
+     `(flycheck-inline-warning                       ((,class (:foreground ,winter-yellow :background ,carp-yellow :slant italic :weight bold :height 138))))
 
-  ;; flycheck
-  (flycheck-posframe-background-face             (:background sumi-ink-0))
-  (flycheck-posframe-face                        (:background sumi-ink-0))
-  (flycheck-posframe-info-face                   (:background sumi-ink-0 :foreground autumn-green))
-  (flycheck-posframe-warning-face                (:background sumi-ink-0 :foreground light-blue))
-  (flycheck-posframe-error-face                  (:background sumi-ink-0 :foreground samurai-red))
-  (flycheck-fringe-warning                       (:foreground light-blue))
-  (flycheck-fringe-error                         (:foreground samurai-red))
-  (flycheck-fringe-info                          (:foreground autumn-green))
-  (flycheck-error-list-warning                   (:foreground ronin-yellow :bold t))
-  (flycheck-error-list-error                     (:foreground samurai-red :bold t))
-  (flycheck-error-list-info                      (:foreground wave-aqua-1 :bold t))
-  (flycheck-inline-error                         (:foreground samurai-red :background winter-red :italic t :bold t :height 138))
-  (flycheck-inline-info                          (:foreground light-blue :background winter-blue :italic t  :bold t :height 138))
-  (flycheck-inline-warning                       (:foreground winter-yellow :background carp-yellow :italic t :bold t :height 138))
+     ;; indent dots
+     `(highlight-indent-guides-character-face        ((,class (:foreground ,sumi-ink-3))))
+     `(highlight-indent-guides-stack-character-face  ((,class (:foreground ,sumi-ink-3))))
+     `(highlight-indent-guides-stack-odd-face        ((,class (:foreground ,sumi-ink-3))))
+     `(highlight-indent-guides-stack-even-face       ((,class (:foreground ,comet))))
+     `(highlight-indent-guides-stack-character-face  ((,class (:foreground ,sumi-ink-3))))
+     `(highlight-indent-guides-even-face             ((,class (:foreground ,sumi-ink-2))))
+     `(highlight-indent-guides-odd-face              ((,class (:foreground ,comet))))
 
-  ;; indent dots
-  (highlight-indent-guides-character-face        (:foreground sumi-ink-3))
-  (highlight-indent-guides-stack-character-face  (:foreground sumi-ink-3))
-  (highlight-indent-guides-stack-odd-face        (:foreground sumi-ink-3))
-  (highlight-indent-guides-stack-even-face       (:foreground comet))
-  (highlight-indent-guides-stack-character-face  (:foreground sumi-ink-3))
-  (highlight-indent-guides-even-face             (:foreground sumi-ink-2))
-  (highlight-indent-guides-odd-face              (:foreground comet))
+     `(highlight-operators-face                      ((,class (:foreground ,boat-yellow-2))))
+     `(highlight-quoted-symbol                       ((,class (:foreground ,spring-green))))
+     `(highlight-numbers-face                        ((,class (:foreground ,sakura-pink))))
+     `(highlight-symbol-face                         ((,class (:background ,wave-blue-1 :foreground ,light-blue))))
 
-  (highlight-operators-face                      (:foreground boat-yellow-2))
-  (highlight-quoted-symbol                       (:foreground spring-green))
-  (highlight-numbers-face                        (:foreground sakura-pink))
-  (highlight-symbol-face                         (:background wave-blue-1 :foreground light-blue))
-  
-  ;; ivy
-  (ivy-current-match                             (:background crystal-blue :foreground sumi-ink-0 :bold t))
-  (ivy-action                                    (:background nil :foreground fuji-white))
-  (ivy-grep-line-number                          (:background nil :foreground spring-green))
-  (ivy-minibuffer-match-face-1                   (:background nil :foreground wave-red))
-  (ivy-minibuffer-match-face-2                   (:background nil :foreground spring-green))
-  (ivy-minibuffer-match-highlight                (:foreground light-blue))
-  (ivy-grep-info                                 (:foreground light-blue))
-  (ivy-grep-line-number                          (:foreground spring-violet-2))
-  (ivy-confirm-face                              (:foreground wave-aqua-2))
+     ;; ivy
+     `(ivy-current-match                             ((,class (:background ,crystal-blue :foreground ,sumi-ink-0 :weight bold))))
+     `(ivy-action                                    ((,class (:background unspecified :foreground ,fuji-white))))
+     `(ivy-grep-line-number                          ((,class (:background unspecified :foreground ,spring-green))))
+     `(ivy-minibuffer-match-face-1                   ((,class (:background unspecified :foreground ,wave-red))))
+     `(ivy-minibuffer-match-face-2                   ((,class (:background unspecified :foreground ,spring-green))))
+     `(ivy-minibuffer-match-highlight                ((,class (:foreground ,light-blue))))
+     `(ivy-grep-info                                 ((,class (:foreground ,light-blue))))
+     `(ivy-grep-line-number                          ((,class (:foreground ,spring-violet-2))))
+     `(ivy-confirm-face                              ((,class (:foreground ,wave-aqua-2))))
 
-  ;; posframe's
-  (ivy-posframe                                  (:background sumi-ink-2))
-  (ivy-posframe-border                           (:background sumi-ink-3))
-  
-  ;;treemacs
-  (treemacs-directory-collapsed-face             (:foreground fuji-white))
-  (treemacs-directory-face                       (:foreground fuji-white))
-  (treemacs-file-face                            (:foreground fuji-white))
+     ;; posframe's
+     `(ivy-posframe                                  ((,class (:background ,sumi-ink-2))))
+     `(ivy-posframe-border                           ((,class (:background ,sumi-ink-3))))
 
-  (treemacs-git-added-face                       (:foreground surimi-orange))
-  (treemacs-git-renamed-face                     (:foreground fuji-white))
-  (treemacs-git-ignored-face                     (:foreground sumi-ink-4))
-  (treemacs-git-unmodified-face                  (:foreground fuji-white))
-  (treemacs-git-renamed-face                     (:foreground fuji-white))
-  (treemacs-git-modified-face                    (:foreground spring-green))
-   
-  ;; lsp and lsp-ui
-  (lsp-headerline-breadcrumb-path-error-face     (:underline (:color spring-green :style 'wave) :foreground sumi-ink-4 :background sumi-ink-0))
-  (lsp-headerline-breadcrumb-path-face           (:background sumi-ink-0))
-  (lsp-headerline-breadcrumb-path-hint-face      (:background sumi-ink-0))
-  (lsp-headerline-breadcrumb-path-info-face      (:background sumi-ink-0))
-  (lsp-headerline-breadcrumb-separator-face      (:background sumi-ink-0))
-  (lsp-headerline-breadcrumb-symbols-face        (:background sumi-ink-0))
-  (lsp-headerline-breadcrumb-project-prefix-face (:background sumi-ink-0))
-  (lsp-headerline-breadcrumb-symbols-error-face  (:foreground peach-red))
+     ;;treemacs
+     `(treemacs-directory-collapsed-face             ((,class (:foreground ,fuji-white))))
+     `(treemacs-directory-face                       ((,class (:foreground ,fuji-white))))
 
-  (lsp-ui-doc-background                         (:background sumi-ink-0 :foreground peach-red))
-  (lsp-ui-doc-header                             (:background sumi-ink-0 :foreground peach-red))
-  (lsp-ui-doc-border                             (:background nil :foreground nil))
-  (lsp-ui-peek-filename                          (:foreground light-blue))
-  (lsp-ui-sideline-code-action                   (:foreground carp-yellow))
-  (lsp-ui-sideline-current-symbol                (:foreground spring-blue))
-  (lsp-ui-sideline-symbol                        (:foreground dragon-blue))
+     `(treemacs-file-face                            ((,class (:foreground ,fuji-white))))
 
-  ;; dashboard
-  (dashboard-heading                             (:foreground spring-violet-2 :bold t))
-  (dashboard-items-face                          (:bold nil :foreground fuji-white))
-  (dashboard-banner-logo-title                   (:bold t :height 200))
-  (dashboard-no-items-face                       (:foreground sumi-ink-4))
+     `(treemacs-git-added-face                       ((,class (:foreground ,surimi-orange))))
+     `(treemacs-git-renamed-face                     ((,class (:foreground ,fuji-white))))
+     `(treemacs-git-ignored-face                     ((,class (:foreground ,sumi-ink-4))))
+     `(treemacs-git-unmodified-face                  ((,class (:foreground ,fuji-white))))
+     `(treemacs-git-renamed-face                     ((,class (:foreground ,fuji-white))))
+     `(treemacs-git-modified-face                    ((,class (:foreground ,spring-green))))
 
-  ;; all-the-icons
-  (all-the-icons-dgreen                          (:foreground wave-aqua-2))
-  (all-the-icons-green                           (:foreground wave-aqua-2))
-  (all-the-icons-dpurple                         (:foreground spring-violet-2))
-  (all-the-icons-purple                          (:foreground spring-violet-2))
+     ;; lsp and lsp-ui
+     `(lsp-headerline-breadcrumb-path-error-face     ((,class (:underline (:color ,spring-green :style wave) :foreground ,sumi-ink-4 :background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-path-face           ((,class (:background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-path-hint-face      ((,class (:background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-path-info-face      ((,class (:background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-separator-face      ((,class (:background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-symbols-face        ((,class (:background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-project-prefix-face ((,class (:background ,sumi-ink-0))))
+     `(lsp-headerline-breadcrumb-symbols-error-face  ((,class (:foreground ,peach-red))))
 
-  ;; evil
-  (evil-ex-lazy-highlight                        (:foreground winter-green :background autumn-green :bold t))
-  (evil-ex-substitute-matches                    (:foreground winter-red :background autumn-red :bold t))
-  (evil-ex-substitute-replacement                (:foreground surimi-orange :strike-through nil :inherit 'evil-ex-substitute-matches))
-  (evil-search-highlight-persist-highlight-face  (:background carp-yellow))
+     `(lsp-ui-doc-background                         ((,class (:background ,sumi-ink-0 :foreground ,peach-red))))
+     `(lsp-ui-doc-header                             ((,class (:background ,sumi-ink-0 :foreground ,peach-red))))
+     `(lsp-ui-doc-border                             ((,class (:background unspecified :foreground unspecified))))
+     `(lsp-ui-peek-filename                          ((,class (:foreground ,light-blue))))
+     `(lsp-ui-sideline-code-action                   ((,class (:foreground ,carp-yellow))))
+     `(lsp-ui-sideline-current-symbol                ((,class (:foreground ,spring-blue))))
+     `(lsp-ui-sideline-symbol                        ((,class (:foreground ,dragon-blue))))
 
-  ;; term
-  (term                                          (:background sumi-ink-0 :foreground fuji-white))
-  (term-color-blue                               (:background crystal-blue :foreground crystal-blue))
-  (term-color-bright-blue                        (:inherit 'term-color-blue))
-  (term-color-green                              (:background wave-aqua-2 :foreground wave-aqua-2))
-  (term-color-bright-green                       (:inherit 'term-color-green))
-  (term-color-black                              (:background sumi-ink-0 :foreground fuji-white))
-  (term-color-bright-black                       (:background sumi-ink-1b :foreground sumi-ink-1b))
-  (term-color-white                              (:background fuji-white :foreground fuji-white))
-  (term-color-bright-white                       (:background old-white :foreground old-white))
-  (term-color-red                                (:background peach-red :foreground peach-red))
-  (term-color-bright-red                         (:background spring-green :foreground spring-green))
-  (term-color-yellow                             (:background carp-yellow :foreground carp-yellow))
-  (term-color-bright-yellow                      (:background carp-yellow :foreground carp-yellow))
-  (term-color-cyan                               (:background spring-blue :foreground spring-blue))
-  (term-color-bright-cyan                        (:background spring-blue :foreground spring-blue))
-  (term-color-magenta                            (:background spring-violet-2 :foreground spring-violet-2))
-  (term-color-bright-magenta                     (:background spring-violet-2 :foreground spring-violet-2))
+     ;; dashboard
+     `(dashboard-heading                             ((,class (:foreground ,spring-violet-2 :weight bold))))
+     `(dashboard-items-face                          ((,class (:bold unspecified :foreground ,fuji-white))))
+     `(dashboard-banner-logo-title                   ((,class (:weight bold :height 200))))
+     `(dashboard-no-items-face                       ((,class (:foreground ,sumi-ink-4))))
 
-  ;; popup
-  (popup-face                                    (:inherit 'tooltip))
-  (popup-selection-face                          (:inherit 'tooltip))
-  (popup-tip-face                                (:inherit 'tooltip))
+     ;; all-the-icons
+     `(all-the-icons-dgreen                          ((,class (:foreground ,wave-aqua-2))))
+     `(all-the-icons-green                           ((,class (:foreground ,wave-aqua-2))))
+     `(all-the-icons-dpurple                         ((,class (:foreground ,spring-violet-2))))
+     `(all-the-icons-purple                          ((,class (:foreground ,spring-violet-2))))
 
-  ;; anzu
-  (anzu-match-1                                  (:foreground wave-aqua-2 :background sumi-ink-2))
-  (anzu-match-2                                  (:foreground carp-yellow :background sumi-ink-2))
-  (anzu-match-3                                  (:foreground light-blue :background sumi-ink-2))
+     ;; evil
+     `(evil-ex-lazy-highlight                        ((,class (:foreground ,winter-green :background ,autumn-green :weight bold))))
+     `(evil-ex-substitute-matches                    ((,class (:foreground ,winter-red :background ,autumn-red :weight bold))))
+     `(evil-ex-substitute-replacement                ((,class (:foreground ,surimi-orange :strike-through unspecified :inherit evil-ex-substitute-matches))))
+     `(evil-search-highlight-persist-highlight-face  ((,class (:background ,carp-yellow))))
 
-  (anzu-mode-line                                (:foreground sumi-ink-0 :background spring-violet-2))
-  (anzu-mode-no-match	                         (:foreground fuji-white :background peach-red))
-  (anzu-replace-to                               (:foreground spring-blue :background winter-blue))
-  (anzu-replace-highlight                        (:foreground peach-red :background winter-red :strike-through t))
+     ;; term
+     `(term                                          ((,class (:background ,sumi-ink-0 :foreground ,fuji-white))))
+     `(term-color-blue                               ((,class (:background ,crystal-blue :foreground ,crystal-blue))))
+     `(term-color-bright-blue                        ((,class (:inherit term-color-blue))))
+     `(term-color-green                              ((,class (:background ,wave-aqua-2 :foreground ,wave-aqua-2))))
+     `(term-color-bright-green                       ((,class (:inherit term-color-green))))
+     `(term-color-black                              ((,class (:background ,sumi-ink-0 :foreground ,fuji-white))))
+     `(term-color-bright-black                       ((,class (:background ,sumi-ink-1b :foreground ,sumi-ink-1b))))
+     `(term-color-white                              ((,class (:background ,fuji-white :foreground ,fuji-white))))
+     `(term-color-bright-white                       ((,class (:background ,old-white :foreground ,old-white))))
+     `(term-color-red                                ((,class (:background ,peach-red :foreground ,peach-red))))
+     `(term-color-bright-red                         ((,class (:background ,spring-green :foreground ,spring-green))))
+     `(term-color-yellow                             ((,class (:background ,carp-yellow :foreground ,carp-yellow))))
+     `(term-color-bright-yellow                      ((,class (:background ,carp-yellow :foreground ,carp-yellow))))
+     `(term-color-cyan                               ((,class (:background ,spring-blue :foreground ,spring-blue))))
+     `(term-color-bright-cyan                        ((,class (:background ,spring-blue :foreground ,spring-blue))))
+     `(term-color-magenta                            ((,class (:background ,spring-violet-2 :foreground ,spring-violet-2))))
+     `(term-color-bright-magenta                     ((,class (:background ,spring-violet-2 :foreground ,spring-violet-2))))
 
-  ;; ace
-  (ace-jump-face-background                      (:foreground wave-blue-2))
-  (ace-jump-face-foreground                      (:foreground peach-red :background sumi-ink-0 :bold t))
-  
-  ;; vertico
-  (vertico-multiline                             (:background samurai-red))
-  (vertico-group-title                           (:background winter-blue :foreground light-blue :bold t))
-  (vertico-group-separator                       (:background winter-blue :foreground light-blue :strike-through t))
-  (vertico-current                               (:foreground carp-yellow :bold t :italic nil :background wave-blue-1))
+     ;; popup
+     `(popup-face                                    ((,class (:inherit tooltip))))
+     `(popup-selection-face                          ((,class (:inherit tooltip))))
+     `(popup-tip-face                                ((,class (:inherit tooltip))))
 
-  (vertico-posframe-border                       (:background sumi-ink-3))
-  (vertico-posframe                              (:background sumi-ink-2))
-  (orderless-match-face-0                        (:foreground crystal-blue :bold t))
-  
-  (comint-highlight-prompt                       (:background spring-violet-2 :foreground sumi-ink-1))
-  (completions-annotations                       (:background nil :foreground dragon-blue :italic t))
-  (marginalia-file-priv-no                       (:background 'unspecified))
-  
-  ;; hydra
-  (hydra-face-amaranth                           (:foreground autumn-red))
-  (hydra-face-blue                               (:foreground spring-blue))
-  (hydra-face-pink                               (:foreground sakura-pink))
-  (hydra-face-red                                (:foreground peach-red))
-  (hydra-face-teal                               (:foreground light-blue))
+     ;; anzu
+     `(anzu-match-1                                  ((,class (:foreground ,wave-aqua-2 :background ,sumi-ink-2))))
+     `(anzu-match-2                                  ((,class (:foreground ,carp-yellow :background ,sumi-ink-2))))
+     `(anzu-match-3                                  ((,class (:foreground ,light-blue :background ,sumi-ink-2))))
 
-  ;; centaur-tabs
-  (centaur-tabs-active-bar-face                  (:background spring-blue :foreground fuji-white))
-  (centaur-tabs-selected                         (:background sumi-ink-1b :foreground fuji-white :bold t))
-  (centaur-tabs-selected-modified                (:background sumi-ink-1b :foreground fuji-white))
-  (centaur-tabs-modified-marker-selected         (:background sumi-ink-1b :foreground autumn-yellow))
-  (centaur-tabs-close-selected                   (:inherit 'centaur-tabs-selected))
-  (tab-line                                      (:background sumi-ink-0))
+     `(anzu-mode-line                                ((,class (:foreground ,sumi-ink-0 :background ,spring-violet-2))))
+     `(anzu-mode-no-match                            ((,class (:foreground ,fuji-white :background ,peach-red))))
+     `(anzu-replace-to                               ((,class (:foreground ,spring-blue :background ,winter-blue))))
+     `(anzu-replace-highlight                        ((,class (:foreground ,peach-red :background ,winter-red :strike-through t))))
 
-  (centaur-tabs-unselected                       (:background sumi-ink-0 :foreground sumi-ink-4))
-  (centaur-tabs-default                          (:background sumi-ink-0 :foreground sumi-ink-4))
-  (centaur-tabs-unselected-modified              (:background sumi-ink-0 :foreground peach-red))
-  (centaur-tabs-modified-marker-unselected       (:background sumi-ink-0 :foreground sumi-ink-4))
-  (centaur-tabs-close-unselected                 (:background sumi-ink-0 :foreground sumi-ink-4))
+     ;; ace
+     `(ace-jump-face-background                      ((,class (:foreground ,wave-blue-2))))
+     `(ace-jump-face-foreground                      ((,class (:foreground ,peach-red :background ,sumi-ink-0 :weight bold))))
 
-  (centaur-tabs-close-mouse-face                 (:background nil :foreground peach-red))
-  (centaur-tabs-default                          (:background ronin-yellow ))
-  (centaur-tabs-name-mouse-face                  (:foreground spring-blue :bold t))
+     ;; vertico
+     `(vertico-multiline                             ((,class (:background ,samurai-red))))
+     `(vertico-group-title                           ((,class (:background ,winter-blue :foreground ,light-blue :weight bold))))
+     `(vertico-group-separator                       ((,class (:background ,winter-blue :foreground ,light-blue :strike-through t))))
+     `(vertico-current                               ((,class (:foreground ,carp-yellow :weight bold :slant italic :background ,wave-blue-1))))
 
-  (git-gutter:added                              (:foreground autumn-green))
-  (git-gutter:deleted                            (:foreground wave-red))
-  (git-gutter:modified                           (:foreground spring-blue))
+     `(vertico-posframe-border                       ((,class (:background ,sumi-ink-3))))
+     `(vertico-posframe                              ((,class (:background ,sumi-ink-2))))
+     `(orderless-match-face-0                        ((,class (:foreground ,crystal-blue :weight bold))))
 
-  (diff-hl-margin-change                         (:foreground spring-blue :background winter-blue))
-  (diff-hl-margin-delete                         (:foreground peach-red :background winter-red))
-  (diff-hl-margin-insert                         (:foreground comet :background winter-blue))
+     `(comint-highlight-prompt                       ((,class (:background ,spring-violet-2 :foreground ,sumi-ink-1))))
+     `(completions-annotations                       ((,class (:background unspecified :foreground ,dragon-blue :slant italic))))
+     `(marginalia-file-priv-no                       ((,class (:background unspecified))))
 
-  (bm-fringe-face                                (:background peach-red :foreground sumi-ink-3))
-  (bm-fringe-persistent-face                     (:background peach-red :foreground sumi-ink-3))
+     ;; hydra
+     `(hydra-face-amaranth                           ((,class (:foreground ,autumn-red))))
+     `(hydra-face-blue                               ((,class (:foreground ,spring-blue))))
+     `(hydra-face-pink                               ((,class (:foreground ,sakura-pink))))
+     `(hydra-face-red                                ((,class (:foreground ,peach-red))))
+     `(hydra-face-teal                               ((,class (:foreground ,light-blue))))
 
-  (ansi-color-green                              (:foreground spring-green))
-  (ansi-color-black                              (:background sumi-ink-0))
-  (ansi-color-cyan                               (:foreground wave-aqua-2))
-  (ansi-color-magenta                            (:foreground sakura-pink))
-  (ansi-color-blue                               (:foreground crystal-blue))
-  (ansi-color-red                                (:foreground peach-red))
-  (ansi-color-white                              (:foreground fuji-white))
-  (ansi-color-yellow                             (:foreground autumn-yellow))
-  (ansi-color-bright-white                       (:foreground old-white))
-  (ansi-color-bright-white                       (:foreground old-white))
+     ;; centaur-tabs
 
-  (tree-sitter-hl-face:attribute                 (:foreground surimi-orange))
-  (tree-sitter-hl-face:escape                    (:foreground wave-red))
-  (tree-sitter-hl-face:constructor               (:foreground wave-red :weight 'semi-bold))
-  
-  (tree-sitter-hl-face:constant                  (:foreground surimi-orange))
-  (tree-sitter-hl-face:constant.builtin          (:foreground carp-yellow :weight 'semi-bold))
+     `(centaur-tabs-active-bar-face                  ((,class (:background ,spring-blue :foreground ,fuji-white))))
+     `(centaur-tabs-selected                         ((,class (:background ,sumi-ink-1b :foreground ,fuji-white :weight bold))))
+     `(centaur-tabs-selected-modified                ((,class (:background ,sumi-ink-1b :foreground ,fuji-white))))
+     `(centaur-tabs-modified-marker-selected         ((,class (:background ,sumi-ink-1b :foreground ,autumn-yellow))))
+     `(centaur-tabs-close-selected                   ((,class (:inherit centaur-tabs-selected))))
+     `(tab-line                                      ((,class (:background ,sumi-ink-0))))
 
-  (tree-sitter-hl-face:embedded                  (:foreground boat-yellow-2))
-  
-  (tree-sitter-hl-face:function                  (:foreground crystal-blue))
-  (tree-sitter-hl-face:function.builtin          (:foreground peach-red :italic t :background winter-red))
-  (tree-sitter-hl-face:function.call             (:foreground spring-violet-2))
-  (tree-sitter-hl-face:function.macro            (:foreground samurai-red))
-  (tree-sitter-hl-face:function.special          (:foreground sakura-pink))
-  (tree-sitter-hl-face:function.label            (:foreground surimi-orange))
- 
-  (tree-sitter-hl-face:method                    (:foreground light-blue))
-  (tree-sitter-hl-face:method.call               (:foreground light-blue))
+     `(centaur-tabs-unselected                       ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-4))))
+     `(centaur-tabs-default                          ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-4))))
+     `(centaur-tabs-unselected-modified              ((,class (:background ,sumi-ink-0 :foreground ,peach-red))))
+     `(centaur-tabs-modified-marker-unselected       ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-4))))
+     `(centaur-tabs-close-unselected                 ((,class (:background ,sumi-ink-0 :foreground ,sumi-ink-4))))
 
-  (tree-sitter-hl-face:property                  (:foreground carp-yellow))
-  (tree-sitter-hl-face:property.definition       (:foreground old-white :italic t))
-  
-  (tree-sitter-hl-face:tag                       (:foreground peach-red))
+     `(centaur-tabs-close-mouse-face                 ((,class (:background unspecified :foreground ,peach-red))))
+     `(centaur-tabs-default                          ((,class (:background ,ronin-yellow ))))
+     `(centaur-tabs-name-mouse-face                  ((,class (:foreground ,spring-blue :weight bold))))
 
-  (tree-sitter-hl-face:type                      (:foreground wave-aqua-2 :weight 'semi-bold))
-  (tree-sitter-hl-face:type.argument             (:foreground surimi-orange))
-  (tree-sitter-hl-face:type.builtin              (:foreground autumn-red))
-  (tree-sitter-hl-face:type.parameter            (:foreground surimi-orange))
-  (tree-sitter-hl-face:type.super                (:foreground samurai-red :bold t))
+     `(git-gutter:added                              ((,class (:foreground ,autumn-green))))
+     `(git-gutter:deleted                            ((,class (:foreground ,wave-red))))
+     `(git-gutter:modified                           ((,class (:foreground ,spring-blue))))
 
-  (tree-sitter-hl-face:variable                  (:foreground spring-blue :italic t))
-  (tree-sitter-hl-face:variable.builtin          (:foreground wave-red))
-  (tree-sitter-hl-face:variable.parameter        (:foreground spring-violet-2 :italic t))
-  (tree-sitter-hl-face:variable.special          (:foreground surimi-orange))
-  (tree-sitter-hl-face:variable.synthesized      (:foreground light-blue))
+     `(diff-hl-margin-change                         ((,class (:foreground ,spring-blue :background ,winter-blue))))
+     `(diff-hl-margin-delete                         ((,class (:foreground ,peach-red :background ,winter-red))))
+     `(diff-hl-margin-insert                         ((,class (:foreground ,comet :background ,winter-blue))))
 
-  (tree-sitter-hl-face:number                    (:foreground sakura-pink))
-  (tree-sitter-hl-face:operator                  (:foreground sakura-pink :bold t))
-  
-  (tree-sitter-hl-face:punctuation               (:foreground light-blue))
-  (tree-sitter-hl-face:punctuation.bracket       (:foreground spring-violet-2 :bold t))
-  (tree-sitter-hl-face:punctuation.delimiter     (:foreground spring-violet-2 :bold t))
-  (tree-sitter-hl-face:punctuation.special       (:foreground peach-red))
+     `(bm-fringe-face                                ((,class (:background ,peach-red :foreground ,sumi-ink-3))))
+     `(bm-fringe-persistent-face                     ((,class (:background ,peach-red :foreground ,sumi-ink-3))))
 
-  (tree-sitter-hl-face:case-pattern              (:foreground wave-red))
-  (tree-sitter-hl-face:variable.synthesized      (:foreground wave-red))
-  (tree-sitter-hl-face:keyword.compiler          (:foreground peach-red :bold t :italic t))
+     `(ansi-color-green                              ((,class (:foreground ,spring-green))))
+     `(ansi-color-black                              ((,class (:background ,sumi-ink-0))))
+     `(ansi-color-cyan                               ((,class (:foreground ,wave-aqua-2))))
+     `(ansi-color-magenta                            ((,class (:foreground ,sakura-pink))))
+     `(ansi-color-blue                               ((,class (:foreground ,crystal-blue))))
+     `(ansi-color-red                                ((,class (:foreground ,peach-red))))
+     `(ansi-color-white                              ((,class (:foreground ,fuji-white))))
+     `(ansi-color-yellow                             ((,class (:foreground ,autumn-yellow))))
+     `(ansi-color-bright-white                       ((,class (:foreground ,old-white))))
+     `(ansi-color-bright-white                       ((,class (:foreground ,old-white))))
 
-  (focus-unfocused                               (:foreground sumi-ink-4))))
+     `(tree-sitter-hl-face:attribute                 ((,class (:foreground ,surimi-orange))))
+     `(tree-sitter-hl-face:escape                    ((,class (:foreground ,wave-red))))
+     `(tree-sitter-hl-face:constructor               ((,class (:foreground ,wave-red :weight semi-bold))))
+
+     `(tree-sitter-hl-face:constant                  ((,class (:foreground ,surimi-orange))))
+     `(tree-sitter-hl-face:constant.builtin          ((,class (:foreground ,carp-yellow :weight semi-bold))))
+
+     `(tree-sitter-hl-face:embedded                  ((,class (:foreground ,boat-yellow-2))))
+
+     `(tree-sitter-hl-face:function                  ((,class (:foreground ,crystal-blue))))
+     `(tree-sitter-hl-face:function.builtin          ((,class (:foreground ,peach-red :slant italic :background ,winter-red))))
+     `(tree-sitter-hl-face:function.call             ((,class (:foreground ,spring-violet-2))))
+     `(tree-sitter-hl-face:function.macro            ((,class (:foreground ,samurai-red))))
+     `(tree-sitter-hl-face:function.special          ((,class (:foreground ,sakura-pink))))
+     `(tree-sitter-hl-face:function.label            ((,class (:foreground ,surimi-orange))))
+
+     `(tree-sitter-hl-face:method                    ((,class (:foreground ,light-blue))))
+     `(tree-sitter-hl-face:method.call               ((,class (:foreground ,light-blue))))
+
+     `(tree-sitter-hl-face:property                  ((,class (:foreground ,carp-yellow))))
+     `(tree-sitter-hl-face:property.definition       ((,class (:foreground ,old-white :slant italic))))
+
+     `(tree-sitter-hl-face:tag                       ((,class (:foreground ,peach-red))))
+
+     `(tree-sitter-hl-face:type                      ((,class (:foreground ,wave-aqua-2 :weight semi-bold))))
+     `(tree-sitter-hl-face:type.argument             ((,class (:foreground ,surimi-orange))))
+     `(tree-sitter-hl-face:type.builtin              ((,class (:foreground ,autumn-red))))
+     `(tree-sitter-hl-face:type.parameter            ((,class (:foreground ,surimi-orange))))
+     `(tree-sitter-hl-face:type.super                ((,class (:foreground ,samurai-red :weight bold))))
+
+     `(tree-sitter-hl-face:variable                  ((,class (:foreground ,spring-blue :slant italic))))
+     `(tree-sitter-hl-face:variable.builtin          ((,class (:foreground ,wave-red))))
+     `(tree-sitter-hl-face:variable.parameter        ((,class (:foreground ,spring-violet-2 :slant italic))))
+     `(tree-sitter-hl-face:variable.special          ((,class (:foreground ,surimi-orange))))
+     `(tree-sitter-hl-face:variable.synthesized      ((,class (:foreground ,light-blue))))
+
+     `(tree-sitter-hl-face:number                    ((,class (:foreground ,sakura-pink))))
+     `(tree-sitter-hl-face:operator                  ((,class (:foreground ,sakura-pink :weight bold))))
+
+     `(tree-sitter-hl-face:punctuation               ((,class (:foreground ,light-blue))))
+     `(tree-sitter-hl-face:punctuation.bracket       ((,class (:foreground ,spring-violet-2 :slant italic))))
+     `(tree-sitter-hl-face:punctuation.delimiter     ((,class (:foreground ,spring-violet-2 :slant italic))))
+     `(tree-sitter-hl-face:punctuation.special       ((,class (:foreground ,peach-red))))
+
+     `(tree-sitter-hl-face:case-pattern              ((,class (:foreground ,wave-red))))
+     `(tree-sitter-hl-face:variable.synthesized      ((,class (:foreground ,wave-red))))
+     `(tree-sitter-hl-face:keyword.compiler          ((,class (:foreground ,peach-red :slant italic))))
+
+     `(focus-unfocused                               ((,class (:foreground ,sumi-ink-4)))))))
+
+(deftheme kanagawa "An elegant theme inspired by The Great Wave off Kanagawa by Katsushika Hokusa")
+
+(create-kanagawa-theme 'kanagawa)
 
 ;;;###autoload
 (and load-file-name

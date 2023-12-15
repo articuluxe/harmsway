@@ -108,6 +108,7 @@
        (code           blue-purple)
        (current        yellow)
        (date           light-blue)
+       (directory      dark-green)
        (executable     red)
        (file           blue)
        (file-suffix    light-gray)
@@ -332,6 +333,12 @@
    `(compilation-mode-line-run ((t (:inherit compilation-warning))))
    `(compilation-mode-line-fail ((t (:inherit compilation-error))))
 
+   `(consult-file ((t (:foreground ,file))))
+   `(consult-imenu-prefix ((t (:foreground ,line))))
+   `(consult-key ((t (:foreground ,key))))
+   `(consult-line-number ((t (:foreground ,line))))
+   `(consult-projectile-projects ((t (:foreground ,directory))))
+
    ;; custom
    `(custom-button ((t (:inherit button :underline nil :box t))))
    `(custom-button-mouse ((t (:inherit highlight :box t))))
@@ -394,6 +401,7 @@
    `(diff-hl-delete ((t (:inherit fringe :foreground ,diff-removed))))
 
    ;; dired
+   `(dired-directory ((t (:foreground ,directory))))
    `(dired-header ((t (:foreground ,heading))))
    `(dired-flagged ((t (:foreground ,dark-red))))
    `(dired-symlink ((t (:foreground ,yellow :slant italic))))
@@ -525,6 +533,7 @@
    `(eshell-prompt ((t (:foreground ,heading))))
 
    ;; eshell-syntax-highlighting
+   `(eshell-syntax-highlighting-alias-face ((t (:inherit dired-symlink :bold t))))
    `(eshell-syntax-highlighting-option-face ((t (:foreground ,blue-purple))))
 
    ;; evil-search-highlight-persist
@@ -900,7 +909,10 @@
    `(makefile-space ((t (:inherit trailing-whitespace))))
 
    ;; makey
-   `(makey-key-mode-button-face ((t (:inherit font-lock-constant-face))))
+   `(makey-key-mode-args-face ((t (:foreground ,value))))
+   `(makey-key-mode-button-face ((t (:foreground ,key))))
+   `(makey-key-mode-header-face ((t (:foreground ,heading))))
+   `(makey-key-mode-switch-face ((t (:foreground ,orange))))
 
    ;; Man
    `(Man-overstrike ((t (:foreground ,blue))))
@@ -978,6 +990,7 @@
    `(org-done ((t (:foreground ,dark-green))))
    `(org-drawer ((t (:foreground ,special))))
    `(org-ellipsis ((t (:foreground ,light-gray))))
+   `(org-footnote ((t (:inherit link))))
    `(org-headline-done ((t (:foreground ,light-gray :strike-through ,strike))))
    `(org-hide ((t (:foreground ,bg))))
    `(org-level-1 ((t (:foreground ,rainbow-1))))
@@ -1157,8 +1170,14 @@
    `(term-default-fg-color ((t (:inherit fg))))
 
    ;; transient
+   `(transient-argument ((t (:foreground ,yellow :bold t))))
+   `(transient-disabled-suffix ((t (:background ,red-bg))))
+   `(transient-enabled-suffix ((t (:background ,green-bg))))
    `(transient-heading ((t (:foreground ,heading))))
    `(transient-key ((t (:foreground ,key))))
+   `(transient-key-exit ((t (:foreground ,key))))
+   `(transient-key-return ((t (:foreground ,red))))
+   `(transient-key-stay ((t (:foreground ,orange))))
    `(transient-value ((t (:foreground ,value))))
 
    ;; tree-sitter
@@ -1183,6 +1202,7 @@
    `(undo-tree-visualizer-unmodified-face ((t (:foreground ,purple))))
 
    ;; vertico
+   `(vertico-group-title ((t (:foreground ,heading))))
    `(vertico-indexed ((t (:foreground ,line))))
    `(vertico-quick1 ((t (:inherit default :foreground ,black :background ,search))))
    `(vertico-quick2 ((t (:inherit vertico-quick1 :background ,lazy))))

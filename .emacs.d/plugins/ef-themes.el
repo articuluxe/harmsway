@@ -6,7 +6,7 @@
 ;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/ef-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
-;; Version: 1.4.0
+;; Version: 1.4.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -868,7 +868,7 @@ text should not be underlined as well) yet still blend in."
     `(elisp-shorthand-font-lock-face ((,c :inherit italic)))
     `(error ((,c :inherit bold :foreground ,err)))
     `(escape-glyph ((,c :foreground ,warning)))
-    `(fringe ((,c :background unspecified)))
+    `(fringe ((,c :background ,fringe)))
     `(header-line ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-dim)))
     `(header-line-highlight ((,c :inherit highlight)))
     `(help-argument-name ((,c :foreground ,accent-0)))
@@ -1131,7 +1131,18 @@ text should not be underlined as well) yet still blend in."
     `(dashboard-items-face (( ))) ; use the underlying style of all-the-icons
 ;;;; denote
     `(denote-faces-date ((,c :foreground ,date-common)))
-    `(denote-faces-keywords ((,c :foreground ,name)))
+    `(denote-faces-delimiter ((,c :inherit shadow)))
+    `(denote-faces-extension ((,c :inherit shadow)))
+    `(denote-faces-keywords ((,c :inherit bold :foreground ,keyword)))
+    `(denote-faces-link ((,c :inherit link)))
+    `(denote-faces-prompt-current-name ((,c :inherit italic :foreground ,fg-changed)))
+    `(denote-faces-prompt-new-name ((,c :inherit italic :foreground ,fg-added)))
+    `(denote-faces-prompt-old-name ((,c :inherit italic :foreground ,fg-removed)))
+    `(denote-faces-signature ((,c :inherit bold :foreground ,string)))
+    `(denote-faces-subdirectory ((,c :inherit bold :foreground ,fg-dim)))
+    `(denote-faces-time ((,c :inherit denote-faces-date)))
+    `(denote-faces-time-delimiter ((,c :inherit shadow)))
+    `(denote-faces-title (( )))
 ;;;; dictionary
     `(dictionary-button-face ((,c :inherit bold)))
     `(dictionary-reference-face ((,c :inherit link)))
@@ -1258,7 +1269,7 @@ text should not be underlined as well) yet still blend in."
     `(ediff-even-diff-B ((,c :background ,bg-dim)))
     `(ediff-even-diff-C ((,c :background ,bg-dim)))
     `(ediff-fine-diff-A ((,c :background ,bg-removed-refine :foreground ,fg-removed)))
-    `(ediff-fine-diff-Ancestor ((,c :inherit modus-themes-subtle-cyan)))
+    `(ediff-fine-diff-Ancestor ((,c :background ,bg-active :foreground ,fg-intense)))
     `(ediff-fine-diff-B ((,c :background ,bg-added-refine :foreground ,fg-added)))
     `(ediff-fine-diff-C ((,c :background ,bg-changed-refine :foreground ,fg-changed)))
     `(ediff-odd-diff-A ((,c :inherit ediff-even-diff-A)))
@@ -1796,6 +1807,8 @@ text should not be underlined as well) yet still blend in."
     `(nerd-icons-red-alt ((,c :foreground ,red-cooler)))
     `(nerd-icons-silver ((,c :foreground "gray50")))
     `(nerd-icons-yellow ((,c :foreground ,yellow)))
+;;;;; nerd-icons-completion
+    `(nerd-icons-completion-dir-face ((,c :foreground ,accent-0)))
 ;;;; nerd-icons-dired
     `(nerd-icons-dired-dir-face ((,c :foreground ,accent-0)))
 ;;;; nerd-icons-ibuffer
@@ -1853,7 +1866,7 @@ text should not be underlined as well) yet still blend in."
     `(notmuch-wash-cited-text ((,c :inherit message-cited-text-1)))
     `(notmuch-wash-toggle-button ((,c :background ,bg-dim :foreground ,fg-alt)))
 ;;;; olivetti
-    `(olivetti-fringe (( )))
+    `(olivetti-fringe ((,c :background ,fringe)))
 ;;;; orderless
     `(orderless-match-face-0 ((,c :inherit bold :foreground ,accent-0)))
     `(orderless-match-face-1 ((,c :inherit bold :foreground ,accent-1)))
@@ -1902,7 +1915,7 @@ text should not be underlined as well) yet still blend in."
     `(org-drawer ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-metadata)))
     `(org-ellipsis (( ))) ; inherits from the heading's color
     `(org-footnote ((,c :inherit link)))
-    `(org-formula ((,c :inherit ef-themes-fixed-pitch :foreground ,fnname)))
+    `(org-formula ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-table-formula)))
     `(org-headline-done ((,c :inherit org-done)))
     `(org-headline-todo ((,c :inherit org-todo)))
     `(org-hide ((,c :foreground ,bg-main)))
@@ -2108,14 +2121,14 @@ text should not be underlined as well) yet still blend in."
     `(smerge-refined-removed ((,c :inherit diff-refine-removed)))
     `(smerge-upper ((,c :inherit diff-removed)))
 ;;;; tab-bar-mode
-    `(tab-bar ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar)))
+    `(tab-bar ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-tab-bar)))
     `(tab-bar-tab-group-current ((,c :inherit bold :background ,bg-tab-current :box (:line-width -2 :color ,bg-tab-current) :foreground ,fg-alt)))
     `(tab-bar-tab-group-inactive ((,c :background ,bg-tab-bar :box (:line-width -2 :color ,bg-tab-bar) :foreground ,fg-alt)))
     `(tab-bar-tab ((,c :inherit bold :box (:line-width -2 :color ,bg-tab-current) :background ,bg-tab-current)))
     `(tab-bar-tab-inactive ((,c :box (:line-width -2 :color ,bg-tab-other) :background ,bg-tab-other)))
     `(tab-bar-tab-ungrouped ((,c :inherit tab-bar-tab-inactive)))
 ;;;; tab-line-mode
-    `(tab-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar :height 0.95)))
+    `(tab-line ((,c :inherit ef-themes-ui-variable-pitch :background ,bg-tab-bar :height 0.95)))
     `(tab-line-close-highlight ((,c :foreground ,err)))
     `(tab-line-highlight ((,c :inherit highlight)))
     `(tab-line-tab (( )))
@@ -2153,7 +2166,18 @@ text should not be underlined as well) yet still blend in."
     `(transient-heading ((,c :inherit bold)))
     `(transient-inactive-argument ((,c :inherit shadow)))
     `(transient-inactive-value ((,c :inherit shadow)))
+    ;; NOTE 2023-12-09 10:30:09 +0200: The new user option
+    ;; `transient-semantic-coloring' is enabled by default.  This is
+    ;; not good for us, because we are making it harder for users who
+    ;; need accessible colors to use the transient interfaces.  I
+    ;; could set that user option to nil, but I think it is less
+    ;; intrusive to enforce uniformity among the relevant faces.
+    ;; Those who want semantic coloring can modify these faces.
     `(transient-key ((,c :inherit ef-themes-key-binding)))
+    `(transient-key-exit ((,c :inherit ef-themes-key-binding)))
+    `(transient-key-noop ((,c :inherit (shadow ef-themes-key-binding))))
+    `(transient-key-return ((,c :inherit ef-themes-key-binding)))
+    `(transient-key-stay ((,c :inherit ef-themes-key-binding)))
     `(transient-mismatched-key ((,c :underline t)))
     `(transient-nonstandard-key ((,c :underline t)))
     `(transient-pink ((,c :inherit bold :foreground ,magenta)))
@@ -2250,14 +2274,14 @@ text should not be underlined as well) yet still blend in."
     `(which-key-special-key-face ((,c :inherit error)))
 ;;;; whitespace-mode
     `(whitespace-big-indent ((,c :background ,bg-space-err)))
-    `(whitespace-empty ((,c :inherit modus-themes-intense-magenta)))
+    `(whitespace-empty ((,c :background ,bg-space)))
     `(whitespace-hspace ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-indentation ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-line ((,c :background ,bg-space :foreground ,warning)))
     `(whitespace-newline ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-space ((,c :background ,bg-space :foreground ,fg-space)))
-    `(whitespace-space-after-tab ((,c :inherit modus-themes-subtle-magenta)))
-    `(whitespace-space-before-tab ((,c :inherit modus-themes-subtle-cyan)))
+    `(whitespace-space-after-tab ((,c :inherit warning :background ,bg-space)))
+    `(whitespace-space-before-tab ((,c :inherit warning :background ,bg-space)))
     `(whitespace-tab ((,c :background ,bg-space :foreground ,fg-space)))
     `(whitespace-trailing ((,c :background ,bg-space-err)))
 ;;;; widget

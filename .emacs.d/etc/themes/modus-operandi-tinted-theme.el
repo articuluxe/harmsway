@@ -6,6 +6,7 @@
 ;; Maintainer: Modus-Themes Development <~protesilaos/modus-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/modus-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/modus-themes
+;; Keywords: faces, theme, accessibility
 
 ;; This file is part of GNU Emacs.
 
@@ -125,12 +126,12 @@ which corresponds to a minimum contrast in relative luminance of
       (bg-magenta-subtle  "#ffddff")
       (bg-cyan-subtle     "#bfefff")
 
-      (bg-red-nuanced     "#ffe8f0")
-      (bg-green-nuanced   "#e0f5e0")
-      (bg-yellow-nuanced  "#f9ead0")
-      (bg-blue-nuanced    "#ebebff")
-      (bg-magenta-nuanced "#f6e7ff")
-      (bg-cyan-nuanced    "#e1f3fc")
+      (bg-red-nuanced     "#ffe8e8")
+      (bg-green-nuanced   "#e0f6e0")
+      (bg-yellow-nuanced  "#f8f0d0")
+      (bg-blue-nuanced    "#ecedff")
+      (bg-magenta-nuanced "#f8e6f5")
+      (bg-cyan-nuanced    "#e0f2fa")
 
 ;;; Uncommon accent backgrounds
 
@@ -237,6 +238,11 @@ which corresponds to a minimum contrast in relative luminance of
       (fg-prominent-warning fg-main)
       (bg-prominent-note bg-cyan-intense)
       (fg-prominent-note fg-main)
+
+      (bg-active-argument bg-yellow-nuanced)
+      (fg-active-argument yellow-warmer)
+      (bg-active-value bg-cyan-nuanced)
+      (fg-active-value cyan-warmer)
 
 ;;;; Code mappings
 
@@ -347,6 +353,7 @@ which corresponds to a minimum contrast in relative luminance of
       (prose-metadata fg-dim)
       (prose-metadata-value fg-alt)
       (prose-table fg-alt)
+      (prose-table-formula magenta-warmer)
       (prose-tag magenta-faint)
       (prose-todo red)
       (prose-verbatim magenta-warmer)
@@ -362,6 +369,17 @@ which corresponds to a minimum contrast in relative luminance of
       (rainbow-6 green-intense)
       (rainbow-7 blue-warmer)
       (rainbow-8 magenta-warmer)
+
+;;;; Search mappings
+
+      (bg-search-current bg-yellow-intense)
+      (bg-search-lazy bg-cyan-intense)
+      (bg-search-replace bg-red-intense)
+
+      (bg-search-rx-group-0 bg-blue-intense)
+      (bg-search-rx-group-1 bg-green-intense)
+      (bg-search-rx-group-2 bg-red-subtle)
+      (bg-search-rx-group-3 bg-magenta-subtle)
 
 ;;;; Space mappings
 
