@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021, 2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-09-05 16:57:52 dharms>
+;; Modified Time-stamp: <2023-12-21 12:33:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -54,6 +54,10 @@
          ("I" . homebrew-info)
          ("p" . homebrew-package-info)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mac-os-module ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package macos
+  :bind ("C-c 0 M-e" . macos-reveal-in-finder))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gif-screencast ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (with-eval-after-load 'gif-screencast
