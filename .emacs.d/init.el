@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-12-21 11:58:54 dharms>
+;; Modified Time-stamp: <2023-12-21 12:16:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4294,6 +4294,9 @@ This function's result only has value if it is preceded by any font changes."
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; inputrc-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package inputrc-mode :mode "\\.?inputrc$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; java-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'java-mode-hook (lambda ()
