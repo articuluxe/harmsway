@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-12-21 11:37:12 dharms>
+;; Modified Time-stamp: <2023-12-21 11:58:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -391,6 +391,15 @@ not an error if any files do not exist."
   :config
   (use-package proviso-frame-title)
   (setq project-find-functions (list #'proviso-find-project))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dape ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dape
+  :init
+  (setq dape-buffer-window-arrangement 'gud)
+  (setq dape-key-prefix "\C-x\C-a")
+  :config
+  (setq dape-buffer-window-arrangement 'right)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
