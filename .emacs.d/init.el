@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2023  Dan Harms (dharms)
+;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2023-12-21 12:16:05 dharms>
+;; Modified Time-stamp: <2024-01-02 10:24:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3101,8 +3101,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
    :bind ((:map harmsway-eglot-keymap
                 ("'" . eglot)
                 ("a" . eglot-code-actions)
+                ("i" . eglot-code-action-organize-imports)
                 ("r" . eglot-rename)
-                ("f" . eglot-format-buffer)
+                ("f" . eglot-format)
+                ("F" . eglot-format-buffer)
                 ))
   :init
   (setq eglot-stay-out-of '(company-backends))
