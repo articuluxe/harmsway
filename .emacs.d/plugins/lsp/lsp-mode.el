@@ -174,18 +174,20 @@ As defined by the Language Server Protocol 3.16."
   :package-version '(lsp-mode . "6.1"))
 
 (defcustom lsp-client-packages
-  '( ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-awk lsp-astro lsp-bash
-     lsp-beancount lsp-bufls lsp-clangd lsp-clojure lsp-cmake lsp-credo lsp-crystal lsp-csharp lsp-css
-     lsp-cypher lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile lsp-elm lsp-elixir lsp-emmet
-     lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go lsp-golangci-lint lsp-gleam
-     lsp-glsl lsp-graphql lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe
-     lsp-idris lsp-java lsp-javascript lsp-json lsp-kotlin lsp-latex lsp-ltex
-     lsp-lua lsp-markdown lsp-marksman lsp-mdx lsp-mint lsp-move lsp-nginx lsp-nim lsp-nix lsp-magik
-     lsp-mojo lsp-metals lsp-mssql lsp-ocaml lsp-openscad lsp-pascal lsp-perl lsp-perlnavigator
-     lsp-pls lsp-php lsp-pwsh lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms lsp-purescript
-     lsp-r lsp-racket lsp-remark lsp-ruff-lsp lsp-rf lsp-rubocop lsp-rust lsp-semgrep lsp-shader
-     lsp-solargraph lsp-sorbet lsp-sourcekit lsp-sonarlint lsp-tailwindcss lsp-tex lsp-terraform
-     lsp-toml lsp-ttcn3 lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-volar
+  '( ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-autotools lsp-awk lsp-asm lsp-astro
+     lsp-bash lsp-beancount lsp-bufls lsp-clangd lsp-clojure lsp-cmake lsp-credo
+     lsp-crystal lsp-csharp lsp-css lsp-cypher lsp-d lsp-dart lsp-dhall lsp-docker
+     lsp-dockerfile lsp-elm lsp-elixir lsp-emmet lsp-erlang lsp-eslint lsp-fortran
+     lsp-fsharp lsp-gdscript lsp-go lsp-golangci-lint lsp-gleam lsp-glsl lsp-graphql
+     lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-idris lsp-java
+     lsp-javascript lsp-json lsp-kotlin lsp-latex lsp-ltex lsp-lua lsp-markdown
+     lsp-marksman lsp-mdx lsp-mint lsp-move lsp-nginx lsp-nim lsp-nix lsp-magik
+     lsp-mojo lsp-metals lsp-mssql lsp-ocaml lsp-openscad lsp-pascal lsp-perl
+     lsp-perlnavigator lsp-pls lsp-php lsp-pwsh lsp-pyls lsp-pylsp lsp-pyright
+     lsp-python-ms lsp-purescript lsp-r lsp-racket lsp-remark lsp-ruff-lsp lsp-rf
+     lsp-rubocop lsp-rust lsp-semgrep lsp-shader lsp-solargraph lsp-sorbet
+     lsp-sourcekit lsp-sonarlint lsp-tailwindcss lsp-tex lsp-terraform lsp-toml
+     lsp-ttcn3 lsp-typeprof lsp-v lsp-vala lsp-verilog lsp-vetur lsp-volar
      lsp-vhdl lsp-vimscript lsp-xml lsp-yaml lsp-ruby-lsp lsp-ruby-syntax-tree
      lsp-solidity lsp-sqls lsp-svelte lsp-steep lsp-tilt lsp-zig lsp-jq)
   "List of the clients to be automatically required."
@@ -406,6 +408,8 @@ the server has requested that."
     "[/\\\\]\\.terraform\\'"
     "[/\\\\]\\.terragrunt-cache\\'"
     ;; nix-direnv
+    "[/\\\\]\\result"
+    "[/\\\\]\\result-bin"
     "[/\\\\]\\.direnv\\'")
   "List of regexps matching directory paths which won't be monitored when
 creating file watches. Customization of this variable is only honored at
@@ -768,6 +772,7 @@ Changes take effect only when a new session is started."
     ("\\.java\\'" . "java")
     ("\\.js$" . "javascript")
     ("\\.json$" . "json")
+    ("\\.jsonnet$" . "jsonnet")
     ("\\.jsonc$" . "jsonc")
     ("\\.jsx$" . "javascriptreact")
     ("\\.jq$"  . "jq")
@@ -893,6 +898,7 @@ Changes take effect only when a new session is started."
     (latex-mode . "latex")
     (v-mode . "v")
     (vhdl-mode . "vhdl")
+    (vhdl-ts-mode . "vhdl")
     (verilog-mode . "verilog")
     (terraform-mode . "terraform")
     (ess-julia-mode . "julia")
@@ -910,6 +916,7 @@ Changes take effect only when a new session is started."
     (robot-mode . "robot")
     (racket-mode . "racket")
     (nix-mode . "nix")
+    (nix-ts-mode . "Nix")
     (prolog-mode . "prolog")
     (vala-mode . "vala")
     (actionscript-mode . "actionscript")
@@ -5988,6 +5995,7 @@ Request codeAction/resolve for more info if server supports."
     (java-ts-mode               . java-ts-mode-indent-offset)
     (jde-mode                   . c-basic-offset)                   ; Java (JDE)
     (js-mode                    . js-indent-level)                  ; JavaScript
+    (js-ts-mode                 . js-indent-level)
     (js2-mode                   . js2-basic-offset)                 ; JavaScript-IDE
     (js3-mode                   . js3-indent-level)                 ; JavaScript-IDE
     (json-mode                  . js-indent-level)                  ; JSON

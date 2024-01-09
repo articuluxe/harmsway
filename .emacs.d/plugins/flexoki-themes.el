@@ -601,11 +601,11 @@
      `(markdown-url-face
        ((t (:foreground ,flexoki-themes-cyan))))
      `(markdown-code-face
-       ((t (:inherit org-code
+       ((t (:foreground ,flexoki-themes-purple
 	    :background ,flexoki-themes-faint-bg
 	    :extend t))))
      `(markdown-inline-code-face
-       ((t (:inherit org-code))))
+       ((t (:foreground ,flexoki-themes-purple))))
      `(markdown-footnote-marker-face
        ((t (:foreground ,flexoki-themes-meek))))
      `(markdown-list-face
@@ -613,7 +613,7 @@
      `(markdown-markup-face
        ((t (:foreground ,flexoki-themes-lowlight))))
      `(markdown-italic-face
-       ((t (:foreground ,flexoki-themes-purple))))
+       ((t (:foreground ,flexoki-themes-orange))))
      `(markdown-html-tag-delimiter-face
        ((t (:inherit 'default))))
 

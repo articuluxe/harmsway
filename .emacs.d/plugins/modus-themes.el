@@ -1655,7 +1655,7 @@ FG and BG are the main colors."
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; basic and/or ungrouped styles
     `(appt-notification ((,c :inherit bold :foreground ,modeline-err)))
-    `(blink-matching-paren-highlight-offscreen ((,c :background ,bg-paren-match)))
+    `(blink-matching-paren-offscreen ((,c :background ,bg-paren-match)))
     `(bold ((,c :weight bold)))
     `(bold-italic ((,c :inherit (bold italic))))
     `(underline ((,c :underline ,fg-dim)))
@@ -1998,6 +1998,7 @@ FG and BG are the main colors."
     `(consult-imenu-prefix ((,c :inherit shadow)))
     `(consult-line-number ((,c :inherit shadow)))
     `(consult-line-number-prefix ((,c :inherit shadow)))
+    `(consult-preview-insertion ((,c :background ,bg-dim)))
 ;;;;; corfu
     `(corfu-current ((,c :inherit modus-themes-completion-selected)))
     `(corfu-bar ((,c :background ,fg-dim)))
@@ -2643,14 +2644,14 @@ FG and BG are the main colors."
     `(image-dired-thumb-header-file-size ((,c :foreground ,constant)))
     `(image-dired-thumb-mark ((,c :inherit modus-themes-mark-sel :box (:line-width -3))))
 ;;;;; imenu-list
-    `(imenu-list-entry-face-0 ((,c :foreground ,fg-heading-0)))
-    `(imenu-list-entry-face-1 ((,c :foreground ,fg-heading-1)))
-    `(imenu-list-entry-face-2 ((,c :foreground ,fg-heading-2)))
-    `(imenu-list-entry-face-3 ((,c :foreground ,fg-heading-3)))
-    `(imenu-list-entry-subalist-face-0 ((,c :inherit bold :foreground ,fg-heading-4 :underline t)))
-    `(imenu-list-entry-subalist-face-1 ((,c :inherit bold :foreground ,fg-heading-5 :underline t)))
-    `(imenu-list-entry-subalist-face-2 ((,c :inherit bold :foreground ,fg-heading-6 :underline t)))
-    `(imenu-list-entry-subalist-face-3 ((,c :inherit bold :foreground ,fg-heading-7 :underline t)))
+    `(imenu-list-entry-face-0 ((,c :foreground ,fg-heading-1)))
+    `(imenu-list-entry-face-1 ((,c :foreground ,fg-heading-2)))
+    `(imenu-list-entry-face-2 ((,c :foreground ,fg-heading-3)))
+    `(imenu-list-entry-face-3 ((,c :foreground ,fg-heading-4)))
+    `(imenu-list-entry-subalist-face-0 ((,c :inherit bold :foreground ,fg-heading-1 :underline t)))
+    `(imenu-list-entry-subalist-face-1 ((,c :inherit bold :foreground ,fg-heading-2 :underline t)))
+    `(imenu-list-entry-subalist-face-2 ((,c :inherit bold :foreground ,fg-heading-3 :underline t)))
+    `(imenu-list-entry-subalist-face-3 ((,c :inherit bold :foreground ,fg-heading-4 :underline t)))
 ;;;;; indium
     `(indium-breakpoint-face ((,c :foreground ,err)))
     `(indium-frame-url-face ((,c :inherit (shadow button))))
@@ -2982,6 +2983,8 @@ FG and BG are the main colors."
     `(markup-title-4-face ((,c :inherit modus-themes-heading-5)))
     `(markup-title-5-face ((,c :inherit modus-themes-heading-6)))
     `(markup-verbatim-face ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-verbatim)))
+;;;;; mct
+    `(mct-highlight-candidate ((,c :inherit modus-themes-completion-selected)))
 ;;;;; messages
     `(message-cited-text-1 ((,c :foreground ,mail-cite-0)))
     `(message-cited-text-2 ((,c :foreground ,mail-cite-1)))
@@ -3529,6 +3532,7 @@ FG and BG are the main colors."
     `(shr-h4 ((,c :inherit modus-themes-heading-4)))
     `(shr-h5 ((,c :inherit modus-themes-heading-5)))
     `(shr-h6 ((,c :inherit modus-themes-heading-6)))
+    `(shr-mark ((,c :inherit match)))
     `(shr-selected-link ((,c :inherit modus-themes-mark-sel)))
 ;;;;; side-notes
     `(side-notes ((,c :background ,bg-dim :foreground ,fg-dim)))

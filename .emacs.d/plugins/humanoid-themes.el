@@ -5,9 +5,9 @@
 ;; Author: Thomas Friese
 ;; URL: https://github.com/humanoid-colors/emacs-humanoid-themes
 ;;
-;; Version: 0.3
+;; Version: 0.4
 ;; Keywords: faces, color, theme
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "27.1"))
 
 ;; Initially forked from Spacemacs Theme <https://github.com/nashamri/spacemacs-theme>.
 
@@ -57,6 +57,11 @@
   :type 'boolean
   :group 'humanoid-themes)
 
+(defcustom humanoid-themes-headings-underline nil
+  "If non-nil, underline headings and important titles."
+  :type 'boolean
+  :group 'humanoid-themes)
+
 (defcustom humanoid-themes-keyword-italic nil
   "Enable italics for keywords."
   :type 'boolean
@@ -66,7 +71,7 @@
   "If non-nil, use varying text heights for agenda items.
 Note that if you change this to a non-nil value, you may want to
 also adjust the value of `org-agenda-tags-column'. If that is set
-to 'auto, tags may not be properly aligned."
+to `auto', tags may not be properly aligned."
   :type 'boolean
   :group 'humanoid-themes)
 
@@ -147,6 +152,7 @@ or similar."
         (purple-light  (if (eq variant 'dark) (if (humanoid-themes-tc) "#c089fe" "MediumPurple1")   (if (humanoid-themes-tc) "#7518c4" "purple")))
         (purple        (if (eq variant 'dark) (if (humanoid-themes-tc) "#ac6efe" "MediumPurple3")   (if (humanoid-themes-tc) "#4d10a5" "purple3")))
         (purple-dark   (if (eq variant 'dark) (if (humanoid-themes-tc) "#7d46c0" "purple3")         (if (humanoid-themes-tc) "#2f1086" "purple4")))
+        (purple-fg     (if (eq variant 'dark) (if (humanoid-themes-tc) "#b67cfe" "MediumPurple3")   (if (humanoid-themes-tc) "#6114b4" "purple3")))
         (aqua-light    (if (eq variant 'dark) (if (humanoid-themes-tc) "#60e2e4" "turquoise1")      (if (humanoid-themes-tc) "#0ed1d1" "cyan3")))
         (aqua          (if (eq variant 'dark) (if (humanoid-themes-tc) "#0ed1d1" "turquoise2")      (if (humanoid-themes-tc) "#08a7b3" "cyan4")))
         (aqua-dark     (if (eq variant 'dark) (if (humanoid-themes-tc) "#08a7b3" "turquoise3")      (if (humanoid-themes-tc) "#007784" "DarkSlateGray")))
@@ -289,14 +295,65 @@ or similar."
      `(window-divider                      ((,class (:foreground ,bg2)))) ; foreground same like `mode-line' background
 
      ;;; outline
-     `(outline-1  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head1-bg 'unspecified) :foreground ,head1 :height ,(if humanoid-themes-org-height 1.3 1.0)))))
-     `(outline-2  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head2-bg 'unspecified) :foreground ,head2 :height ,(if humanoid-themes-org-height 1.2 1.0)))))
-     `(outline-3  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head3-bg 'unspecified) :foreground ,head3 :height ,(if humanoid-themes-org-height 1.1 1.0)))))
-     `(outline-4  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head4-bg 'unspecified) :foreground ,head4))))
-     `(outline-5  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head5-bg 'unspecified) :foreground ,head5))))
-     `(outline-6  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head6-bg 'unspecified) :foreground ,head6))))
-     `(outline-7  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head7-bg 'unspecified) :foreground ,head7))))
-     `(outline-8  ((,class (:inherit variable-pitch :weight ,(if humanoid-themes-org-bold 'bold 'normal) :background ,(if humanoid-themes-org-highlight head8-bg 'unspecified) :foreground ,head8))))
+     `(outline-1
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head1-bg 'unspecified)
+                :foreground ,head1
+                :height ,(if humanoid-themes-org-height 1.3 1.0)
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-2
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head2-bg 'unspecified)
+                :foreground ,head2
+                :height ,(if humanoid-themes-org-height 1.2 1.0)
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-3
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head3-bg 'unspecified)
+                :foreground ,head3
+                :height ,(if humanoid-themes-org-height 1.1 1.0)
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-4
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head4-bg 'unspecified)
+                :foreground ,head4
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-5
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head5-bg 'unspecified)
+                :foreground ,head5
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-6
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head6-bg 'unspecified)
+                :foreground ,head6
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-7
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head7-bg 'unspecified)
+                :foreground ,head7
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(outline-8
+          ((,class
+               (:inherit variable-pitch
+                :weight ,(if humanoid-themes-org-bold 'bold 'normal)
+                :background ,(if humanoid-themes-org-highlight head8-bg 'unspecified)
+                :foreground ,head8
+                :underline ,(if humanoid-themes-headings-underline t nil)))))
 
      ;;; mode-line
      `(mode-line             ((,class (:background ,bg2 :foreground ,base :box nil :underline nil))))
@@ -308,7 +365,10 @@ or similar."
      `(header-line-highlight ((,class (:background ,bg3 :foreground ,base))))
 
      ;;; ace-window
-     `(aw-leading-char-face ((,class (:foreground ,func :weight bold :height 2.0 :box (:line-width 1 :color ,keyword :style released-button)))))
+     `(aw-leading-char-face ((,class (:foreground ,func
+                                      :weight bold
+                                      :height 2.0
+                                      :box (:line-width 1 :color ,keyword :style released-button)))))
 
      ;;; ahs
      `(ahs-face                     ((,class (:background ,highlight :distant-foreground ,base))))
@@ -528,7 +588,8 @@ or similar."
      `(elfeed-search-date-face         ((,class (:foreground ,var))))
      `(elfeed-search-feed-face         ((,class (:foreground ,blue))))
      `(elfeed-search-tag-face          ((,class (:foreground ,func))))
-     `(elfeed-search-title-face        ((,class (:foreground ,var))))
+     `(elfeed-search-title-face        ((,class (:foreground ,var
+                                                 :underline ,(if humanoid-themes-headings-underline t nil)))))
      `(elfeed-search-unread-title-face ((,class (:foreground ,base))))
 
      ;;; enh-ruby
@@ -778,10 +839,10 @@ or similar."
      `(info-quoted-name    ((,class (:foreground ,keyword))))
      `(info-reference-item ((,class (:inherit bold :background unspecified :underline t))))
      `(info-string         ((,class (:foreground ,str))))
-     `(info-title-1        ((,class (:inherit bold :height 1.4))))
-     `(info-title-2        ((,class (:inherit bold :height 1.3))))
-     `(info-title-3        ((,class (:height 1.3))))
-     `(info-title-4        ((,class (:height 1.2))))
+     `(info-title-1        ((,class (:inherit bold :height 1.4 :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(info-title-2        ((,class (:inherit bold :height 1.3 :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(info-title-3        ((,class (:height 1.3               :underline ,(if humanoid-themes-headings-underline t nil)))))
+     `(info-title-4        ((,class (:height 1.2               :underline ,(if humanoid-themes-headings-underline t nil)))))
 
      ;;; ivy
      `(ivy-current-match           ((,class (:inherit bold :background ,highlight))))
@@ -917,7 +978,10 @@ or similar."
      `(magit-section-heading             ((,class (:inherit bold :foreground ,keyword :extend t))))
      `(magit-section-heading-selection   ((,class (:inherit magit-section-heading :foreground ,meta))))
      `(magit-section-highlight           ((,class (:background ,bg2 :extend t))))
-     `(magit-section-title               ((,class (:inherit bold :background ,bg1 :foreground ,keyword))))
+     `(magit-section-title               ((,class (:inherit bold
+                                                   :background ,bg1
+                                                   :foreground ,keyword
+                                                   :underline ,(if humanoid-themes-headings-underline t nil)))))
      `(magit-sequence-drop               ((,class (:foreground ,war))))
      `(magit-sequence-head               ((,class (:foreground ,keyword))))
      `(magit-sequence-part               ((,class (:foreground ,type))))
@@ -959,7 +1023,8 @@ or similar."
      `(message-header-newsgroups     ((,class (:foreground ,num))))
      `(message-header-other          ((,class (:foreground ,meta))))
      `(message-header-subject        ((,class (:inherit bold :foreground ,base))))
-     `(message-header-to             ((,class (:foreground ,keyword :slant ,(if humanoid-themes-comment-italic 'italic 'normal)))))
+     `(message-header-to             ((,class (:foreground ,keyword
+                                               :slant ,(if humanoid-themes-comment-italic 'italic 'normal)))))
      `(message-header-xheader        ((,class (:foreground ,const))))
      `(message-mml                   ((,class (:foreground ,meta))))
      `(message-separator             ((,class (:inherit wimdow-devider))))
@@ -986,18 +1051,57 @@ or similar."
      `(mu4e-header-highlight-face     ((,class (:inherit hl-line))))
      `(mu4e-header-key-face           ((,class (:inherit bold    :foreground ,keyword))))
      `(mu4e-header-marks-face         ((,class (:foreground ,var))))
-     `(mu4e-header-title-face         ((,class (:inherit bold    :foreground ,base))))
+     `(mu4e-header-title-face         ((,class (:inherit bold    :foreground ,base
+                                                :underline ,(if humanoid-themes-headings-underline t nil)))))
      `(mu4e-header-value-face         ((,class (:inherit bold    :foreground ,str))))
      `(mu4e-highlight-face            ((,class (:foreground ,comp))))
      `(mu4e-modeline-face             ((,class (:foreground ,base))))
      `(mu4e-replied-face              ((,class (:foreground ,green))))
      `(mu4e-special-header-value-face ((,class (:foreground ,mat))))
-     `(mu4e-title-face                ((,class (:inherit bold    :foreground ,head1))))
+     `(mu4e-title-face                ((,class (:inherit bold    :foreground ,head1
+                                                :underline ,(if humanoid-themes-headings-underline t nil)))))
      `(mu4e-unread-face               ((,class (:inherit bold    :foreground ,war))))
      `(mu4e-view-url-number-face      ((,class (:foreground ,comment))))
 
      ;;; mu4e-maildirs
      `(mu4e-maildirs-extension-maildir-hl-face ((,class (:inherit bold :foreground ,head1))))
+
+     ;;; nerd-icons
+     `(nerd-icons-blue                ((,class (:foreground ,blue))))
+     `(nerd-icons-blue-alt            ((,class (:foreground ,blue-fg))))
+     `(nerd-icons-completion-dir-face ((,class (:foreground ,keyword))))
+     `(nerd-icons-cyan                ((,class (:foreground ,aqua))))
+     `(nerd-icons-cyan-alt            ((,class (:foreground ,cyan))))
+     `(nerd-icons-dblue               ((,class (:foreground ,blue-dark))))
+     `(nerd-icons-dcyan               ((,class (:foreground ,aqua-dark))))
+     `(nerd-icons-dgreen              ((,class (:foreground ,green-dark))))
+     `(nerd-icons-dmaroon             ((,class (:foreground ,brown-dark))))
+     `(nerd-icons-dorange             ((,class (:foreground ,orange-dark))))
+     `(nerd-icons-dpink               ((,class (:foreground ,magenta-dark))))
+     `(nerd-icons-dpurple             ((,class (:foreground ,purple-dark))))
+     `(nerd-icons-dred                ((,class (:foreground ,red-dark))))
+     `(nerd-icons-dsilver             ((,class (:foreground ,gray-dark))))
+     `(nerd-icons-dyellow             ((,class (:foreground ,yellow-dark))))
+     `(nerd-icons-green               ((,class (:foreground ,green))))
+     `(nerd-icons-lblue               ((,class (:foreground ,blue-light))))
+     `(nerd-icons-lcyan               ((,class (:foreground ,aqua-light))))
+     `(nerd-icons-lgreen              ((,class (:foreground ,green-light))))
+     `(nerd-icons-lmaroon             ((,class (:foreground ,brown-light))))
+     `(nerd-icons-lorange             ((,class (:foreground ,orange-light))))
+     `(nerd-icons-lpink               ((,class (:foreground ,magenta-light))))
+     `(nerd-icons-lpurple             ((,class (:foreground ,purple-light))))
+     `(nerd-icons-lred                ((,class (:foreground ,red-light))))
+     `(nerd-icons-lsilver             ((,class (:foreground ,gray-light))))
+     `(nerd-icons-lyellow             ((,class (:foreground ,yellow-light))))
+     `(nerd-icons-maroon              ((,class (:foreground ,brown))))
+     `(nerd-icons-orange              ((,class (:foreground ,orange))))
+     `(nerd-icons-pink                ((,class (:foreground ,magenta))))
+     `(nerd-icons-purple              ((,class (:foreground ,purple))))
+     `(nerd-icons-purple-alt          ((,class (:foreground ,purple-fg))))
+     `(nerd-icons-red                 ((,class (:foreground ,red))))
+     `(nerd-icons-red-alt             ((,class (:foreground ,red-fg))))
+     `(nerd-icons-silver              ((,class (:foreground ,gray))))
+     `(nerd-icons-yellow              ((,class (:foreground ,yellow))))
 
      ;;; notmuch
      `(notmuch-crypto-decryption           ((,class (:background ,bg3))))
@@ -1010,9 +1114,13 @@ or similar."
      `(notmuch-message-summary-face        ((,class (:inherit default))))
      `(notmuch-search-count                ((,class (:foreground ,num))))
      `(notmuch-search-date                 ((,class (:foreground ,var))))
-     `(notmuch-search-flagged-face         ((,class (:background ,blue-bg-s :foreground unspecified :underline nil :extend t))))
+     `(notmuch-search-flagged-face         ((,class (:background ,blue-bg-s
+                                                     :foreground unspecified
+                                                     :underline nil
+                                                     :extend t))))
      `(notmuch-search-matching-authors     ((,class (:foreground ,str :slant italic))))
-     `(notmuch-search-non-matching-authors ((,class (:inherit notmuch-search-matching-authors :foreground ,base-dim))))
+     `(notmuch-search-non-matching-authors ((,class (:inherit notmuch-search-matching-authors
+                                                     :foreground ,base-dim))))
      `(notmuch-search-subject              ((,class (:inherit default))))
      `(notmuch-search-unread-face          ((,class (:inherit bold
                                                      :background ,brown-bg-s
@@ -1063,13 +1171,15 @@ or similar."
      ;;; org
      `(org-default                   ((,class (:inherit 'variable-pitch))))
      `(org-agenda-clocking           ((,class (:background ,highlight :foreground ,comp))))
-     `(org-agenda-date               ((,class (:foreground ,var :height ,(if humanoid-themes-org-agenda-height 1.1 1.0)))))
+     `(org-agenda-date               ((,class (:foreground ,var
+                                               :height ,(if humanoid-themes-org-agenda-height 1.1 1.0)))))
      `(org-agenda-date-today         ((,class (:inherit bold :foreground ,keyword
                                                :height ,(if humanoid-themes-org-agenda-height 1.3 1.0)
                                                :underline ,(if humanoid-themes-org-agenda-height nil t)))))
      `(org-agenda-date-weekend       ((,class (:inherit bold :foreground ,var))))
      `(org-agenda-dimmed-todo-face   ((,class (:foreground ,comment))))
-     `(org-agenda-done               ((,class (:foreground ,suc :height ,(if humanoid-themes-org-agenda-height 1.2 1.0)))))
+     `(org-agenda-done               ((,class (:foreground ,suc
+                                               :height ,(if humanoid-themes-org-agenda-height 1.2 1.0)))))
      `(org-agenda-structure          ((,class (:inherit bold :foreground ,comp))))
      `(org-block                     ((,class (:background ,cblk-bg :foreground ,cblk :extend t))))
      `(org-block-begin-line          ((,class (:inherit font-lock-comment-face :background ,bg2 :extend t))))
@@ -1083,7 +1193,9 @@ or similar."
      `(org-dispatcher-highlight      ((,class (:background ,blue-bg :foreground ,blue))))
      `(org-document-info             ((,class (:foreground ,builtin))))
      `(org-document-info-keyword     ((,class (:foreground ,meta))))
-     `(org-document-title            ((,class (:inherit bold :foreground ,func :height ,(if humanoid-themes-org-height 1.4 1.0) :underline t))))
+     `(org-document-title            ((,class (:inherit bold :foreground ,func
+                                               :height ,(if humanoid-themes-org-height 1.4 1.0)
+                                               :underline ,(if humanoid-themes-headings-underline t nil)))))
      `(org-done                      ((,class (:inherit bold :background ,green-bg-s :foreground ,suc))))
      `(org-drawer                    ((,class (:inherit org-block-begin-line))))
      `(org-ellipsis                  ((,class (:foreground ,keyword))))
@@ -1092,15 +1204,20 @@ or similar."
      `(org-headline-done             ((,class (:foreground ,base-dim))))
      `(org-headline-todo             ((,class (:foreground ,war))))
      `(org-hide                      ((,class (:foreground ,highlight-dim))))
-     `(org-kbd                       ((,class (:inherit region :foreground ,base :box (:line-width 1 :style released-button)))))
+     `(org-kbd                       ((,class (:inherit region :foreground ,base
+                                               :box (:line-width 1 :style released-button)))))
      `(org-latex-and-related         ((,class (:foreground ,mat))))
      `(org-link                      ((,class (:inherit link))))
-     `(org-meta-line                 ((,class (:inherit org-block-begin-line :foreground ,meta :slant ,(if humanoid-themes-comment-italic 'italic 'normal)))))
+     `(org-meta-line                 ((,class (:inherit org-block-begin-line
+                                               :foreground ,meta
+                                               :slant ,(if humanoid-themes-comment-italic 'italic 'normal)))))
      `(org-mode-line-clock-overrun   ((,class (:foreground ,err))))
-     `(org-priority                  ((,class (:inherit ,(if humanoid-themes-org-priority-bold 'bold 'default) :foreground ,war))))
+     `(org-priority                  ((,class (:inherit ,(if humanoid-themes-org-priority-bold 'bold 'default)
+                                               :foreground ,war))))
      `(org-quote                     ((,class (:inherit org-block :slant italic :extend t))))
      `(org-scheduled                 ((,class (:foreground ,comp))))
-     `(org-scheduled-today           ((,class (:foreground ,func :height ,(if humanoid-themes-org-agenda-height 1.2 1.0)))))
+     `(org-scheduled-today           ((,class (:foreground ,func
+                                               :height ,(if humanoid-themes-org-agenda-height 1.2 1.0)))))
      `(org-scheduled-previously      ((,class (:foreground ,base :slant italic))))
      `(org-sexp-date                 ((,class (:foreground ,var))))
      `(org-special-keyword           ((,class (:foreground ,func))))
@@ -1118,11 +1235,14 @@ or similar."
      ;;; perspective
      `(parenthesis                           ((,class (:foreground ,base-dim))))
      `(parinfer-pretty-parens:dim-paren-face ((,class (:foreground ,border))))
-     `(show-paren-match                      ((,class (:inherit bold :foreground ,mat :underline ,(when humanoid-themes-underline-parens t)))))
+     `(show-paren-match                      ((,class (:inherit bold :foreground ,mat
+                                                       :underline ,(when humanoid-themes-underline-parens t)))))
      `(show-paren-match-expression           ((,class (:background ,green-bg-s))))
-     `(show-paren-mismatch                   ((,class (:inherit bold :foreground ,err :underline ,(when humanoid-themes-underline-parens t)))))
+     `(show-paren-mismatch                   ((,class (:inherit bold :foreground ,err
+                                                       :underline ,(when humanoid-themes-underline-parens t)))))
      `(sp-pair-overlay-face                  ((,class (:background ,highlight :foreground unspecified))))
-     `(sp-show-pair-match-face               ((,class (:inherit bold :foreground ,mat :underline ,(when humanoid-themes-underline-parens t)))))
+     `(sp-show-pair-match-face               ((,class (:inherit bold :foreground ,mat
+                                                       :underline ,(when humanoid-themes-underline-parens t)))))
 
      ;;; perspective
      `(persp-selected-face ((,class (:inherit bold :foreground ,func))))
@@ -1135,7 +1255,8 @@ or similar."
      `(popup-menu-mouse-face            ((,class (:inherit highlight))))
      `(popup-scroll-bar-background-face ((,class (:background ,bg2))))
      `(popup-scroll-bar-foreground-face ((,class (:background ,act2))))
-     `(popup-tip-face                   ((,class (:background ,ttip-sl :foreground ,base :weight unspecified :slant unspecified :underline nil))))
+     `(popup-tip-face                   ((,class (:background ,ttip-sl :foreground ,base
+                                                  :weight unspecified :slant unspecified :underline nil))))
 
      ;;; powerline
      `(powerline-active0   ((,class (:background ,bg1 :foreground ,base))))
@@ -1206,7 +1327,7 @@ or similar."
      `(solaire-default-face            ((,class (:inherit default :background ,bg1))))
      `(solaire-hl-line-face            ((,class (:inherit hl-line :background ,bg3 :extend t))))
      `(solaire-minibuffer-face         ((,class (:inherit solaire-default-face :background ,bg3))))
-     `(solaire-mode-line-face          ((,class (:inherit (solaire-default-face mode-line) :distant-foreground ,bg1))))
+     `(solaire-mode-line-face          ((,class (:inherit solaire-default-face mode-line :distant-foreground ,bg1))))
      `(solaire-mode-line-inactive-face ((,class (:inherit mode-line-inactive :distant-foreground ,comment))))
      `(solaire-org-hide-face           ((,class (:foreground ,bg1))))
 

@@ -59,7 +59,8 @@
 ;;; User options
 
 (defconst ef-themes-light-themes
-  '(ef-cyprus
+  '(ef-arbutus
+    ef-cyprus
     ef-day
     ef-deuteranopia-light
     ef-duo-light
@@ -86,6 +87,7 @@
     ef-maris-dark
     ef-melissa-dark
     ef-night
+    ef-rosa
     ef-symbiosis
     ef-trio-dark
     ef-tritanopia-dark
@@ -860,6 +862,7 @@ text should not be underlined as well) yet still blend in."
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; all other basic faces
     `(appt-notification ((,c :inherit bold :foreground ,modeline-err)))
+    `(blink-matching-paren-offscreen ((,c :background ,bg-paren)))
     `(button ((,c :foreground ,link :underline ,border)))
     `(child-frame-border ((,c :background ,border)))
     `(comint-highlight-input ((,c :inherit bold)))
@@ -1327,6 +1330,10 @@ text should not be underlined as well) yet still blend in."
     `(eshell-ls-symlink ((,c :inherit link)))
     `(eshell-ls-unreadable ((,c :inherit shadow)))
     `(eshell-prompt ((,c :inherit minibuffer-prompt)))
+;;;; evil-mode
+    `(evil-ex-commands ((,c :inherit font-lock-keyword-face)))
+    `(evil-ex-info ((,c :inherit font-lock-type-face)))
+    `(evil-ex-substitute-replacement ((,c :inherit query-replace)))
 ;;;; eww
     `(eww-invalid-certificate ((,c :foreground ,err)))
     `(eww-valid-certificate ((,c :foreground ,info)))
@@ -1516,6 +1523,15 @@ text should not be underlined as well) yet still blend in."
     `(image-dired-thumb-header-file-name ((,c :inherit bold)))
     `(image-dired-thumb-header-file-size ((,c :foreground ,info)))
     `(image-dired-thumb-mark ((,c :background ,info :box (:line-width -3))))
+;;;; imenu-list
+    `(imenu-list-entry-face-0 ((,c :foreground ,rainbow-1)))
+    `(imenu-list-entry-face-1 ((,c :foreground ,rainbow-2)))
+    `(imenu-list-entry-face-2 ((,c :foreground ,rainbow-3)))
+    `(imenu-list-entry-face-3 ((,c :foreground ,rainbow-4)))
+    `(imenu-list-entry-subalist-face-0 ((,c :inherit bold :foreground ,rainbow-1 :underline t)))
+    `(imenu-list-entry-subalist-face-1 ((,c :inherit bold :foreground ,rainbow-2 :underline t)))
+    `(imenu-list-entry-subalist-face-2 ((,c :inherit bold :foreground ,rainbow-3 :underline t)))
+    `(imenu-list-entry-subalist-face-3 ((,c :inherit bold :foreground ,rainbow-4 :underline t)))
 ;;;; info
     `(Info-quoted ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-verbatim))) ; the capitalization is canonical
     `(info-header-node ((,c :inherit (shadow bold))))
@@ -1704,6 +1720,8 @@ text should not be underlined as well) yet still blend in."
     `(markdown-pre-face ((,c :inherit markdown-code-face)))
     `(markdown-table-face ((,c :inherit ef-themes-fixed-pitch :foreground ,prose-table)))
     `(markdown-url-face ((,c :foreground ,fg-alt)))
+;;;; mct
+    `(mct-highlight-candidate ((,c :background ,bg-completion)))
 ;;;; messages
     `(message-cited-text-1 ((,c :foreground ,mail-cite-0)))
     `(message-cited-text-2 ((,c :foreground ,mail-cite-1)))
@@ -2111,6 +2129,7 @@ text should not be underlined as well) yet still blend in."
     `(shr-h4 ((,c :inherit ef-themes-heading-4)))
     `(shr-h5 ((,c :inherit ef-themes-heading-5)))
     `(shr-h6 ((,c :inherit ef-themes-heading-6)))
+    `(shr-mark ((,c :inherit match)))
     `(shr-selected-link ((,c :inherit link :background ,bg-dim)))
 ;;;; smerge
     `(smerge-base ((,c :inherit diff-changed)))

@@ -1,6 +1,6 @@
 ;;; undersea-theme.el --- Theme styled after undersea imagery  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Shen, Jen-Chieh
+;; Copyright (C) 2020-2024  Shen, Jen-Chieh
 ;; Created date 2020-07-16 00:16:27
 
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>

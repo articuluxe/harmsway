@@ -1,11 +1,11 @@
 ;;; dtrt-indent.el --- Adapt to foreign indentation offsets
 
 ;; Copyright (C) 2003, 2007, 2008 Julian Scheid
-;; Copyright (C) 2014-2023 Reuben Thomas
+;; Copyright (C) 2014-2024 Reuben Thomas
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.15
+;; Version: 1.16
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -192,7 +192,7 @@ mode.
 When dtrt-indent mode is enabled, the proper indentation offset
 and `indent-tabs-mode' will be guessed for newly opened files and
 adjusted transparently."
-  :lighter " dtrt-indent"
+  :lighter dtrt-indent-lighter
   :group 'dtrt-indent
   (if dtrt-indent-mode
       (if (and (featurep 'smie) (not (null smie-grammar)) (not (eq smie-grammar 'unset)))
@@ -409,6 +409,12 @@ use either \\[customize] or the function `dtrt-indent-mode'."
   :type    'boolean
   :group   'dtrt-indent
   :require 'dtrt-indent)
+
+(defcustom dtrt-indent-lighter " dtrt-indent"
+  "Mode line lighter for the dtrt-indent minor mode.
+If the value is nil, no lighter is displayed."
+  :type '(choice string
+                 (const :tag "None" nil)))
 
 (defcustom dtrt-indent-verbosity 1
   "*Verbosity level.

@@ -1,8 +1,8 @@
 ;;; web-mode.el --- major mode for editing web templates -*- coding: utf-8; lexical-binding: t; -*-
 
-;; Copyright 2011-2023 François-Xavier Bois
+;; Copyright 2011-2024 François-Xavier Bois
 
-;; Version: 17.3.15
+;; Version: 17.3.17
 ;; Author: François-Xavier Bois
 ;; Maintainer: François-Xavier Bois <fxbois@gmail.com>
 ;; Package-Requires: ((emacs "23.1"))
@@ -23,7 +23,7 @@
 
 ;;---- CONSTS ------------------------------------------------------------------
 
-(defconst web-mode-version "17.3.15"
+(defconst web-mode-version "17.3.17"
   "Web Mode version.")
 
 ;;---- GROUPS ------------------------------------------------------------------
@@ -938,13 +938,13 @@ Must be used in conjunction with web-mode-enable-block-face."
         'syntax-table)
   "Text properties used for code regions/tokens and html nodes.")
 
-(defvar web-mode-start-tag-regexp "<\\([[:alpha:]][[:alnum:].:_-]*\\|>\\)"
+(defvar web-mode-start-tag-regexp "<\\([[:alnum:].:_-]+\\|>\\)"
   "Regular expression for HTML/XML start tag.")
 
-(defvar web-mode-tag-regexp "</?\\([[:alpha:]][[:alnum:].:_-]*\\)"
+(defvar web-mode-tag-regexp "</?\\([[:alnum:].:_-]+\\)"
   "Regular expression for HTML/XML tag.")
 
-(defvar web-mode-dom-regexp "<\\(/?>\\|/?[[:alpha:]][[:alnum:].:_-]*\\|!--\\|!\\[CDATA\\[\\|!doctype\\|!DOCTYPE\\|\?xml\\)")
+(defvar web-mode-dom-regexp "<\\(/?>\\|/?[[:alnum:].:_-]+\\|!--\\|!\\[CDATA\\[\\|!doctype\\|!DOCTYPE\\|\?xml\\)")
 
 (defvar web-mode-whitespaces-regexp
   "^[ \t]\\{2,\\}$\\| \t\\|\t \\|[ \t]+$\\|^[ \n\t]+\\'\\|^[ \t]?[\n]\\{2,\\}"
@@ -3431,13 +3431,15 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
              (setq closing-string '("<\\?". "\\?>")))
            (cond
              ((looking-at-p "<?php")
-              (setq delim-open "<?php"))
+              (setq delim-open "<?php")
+              (setq delim-close "?>"))
              ((eq (char-after) ?\=)
-              (setq delim-open "<?="))
+              (setq delim-open "<?=")
+              (setq delim-close "?>"))
              (t
-              (setq delim-open "<?"))
+              (setq delim-open "<?")
+              (setq delim-close "?>"))
              ) ;cond
-           (setq delim-close "?>")
            ) ;php
 
           ((string= web-mode-engine "erb")
@@ -5493,7 +5495,9 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
            (cond
              ((string-match-p "-" tname)
               (setq flags (logior flags 2)))
-             ((string-match-p ":" tname)
+             ;;((string-match-p ":" tname)
+             ;; (setq flags (logior flags 32)))
+             ((string-match-p "[._:]" tname)
               (setq flags (logior flags 32)))
              )
            (cond
@@ -7980,7 +7984,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
   (let ((index 0) overlay diff column line-to line-from line-delta regions (overlay-skip nil) last-line-no)
     (web-mode-column-hide)
     (setq web-mode-enable-current-column-highlight t)
-    (save-mark-and-excursion
+    (save-excursion ;;save-mark-and-excursion
       (back-to-indentation)
       (setq column (current-column)
             line-to (web-mode-line-number))
@@ -8000,7 +8004,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
         (when (> line-from 1)
           (forward-line (1- line-from)))
         ;; Added by JMA
-        (save-mark-and-excursion
+        (save-excursion ;;save-mark-and-excursion
           (let (start-point end-point)
             (goto-line line-from)
             (move-to-column column)
@@ -8049,7 +8053,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
           (setq index (1+ index))
           ) ;while
         ) ;when
-      ) ;save-mark-and-excursion
+      ) ;save-excursion
     ) ;let
   )
 

@@ -6,7 +6,7 @@
 ;; Maintainer: Standard-Themes Development <~protesilaos/standard-themes@lists.sr.ht>
 ;; URL: https://git.sr.ht/~protesilaos/standard-themes
 ;; Mailing-List: https://lists.sr.ht/~protesilaos/standard-themes
-;; Version: 2.0.0
+;; Version: 2.0.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -506,7 +506,8 @@ symbol, which is safe when used as a face attribute's value."
 
 (defun standard-themes--current-theme ()
   "Return first enabled Standard theme."
-  (car (standard-themes--list-enabled-themes)))
+  (car (or (standard-themes--list-enabled-themes)
+           (standard-themes--list-known-themes))))
 
 (defun standard-themes--palette-symbol (theme &optional overrides)
   "Return THEME palette as a symbol.
@@ -1923,6 +1924,7 @@ Optional prefix argument MAPPINGS has the same meaning as for
     `(shr-h4 ((,c :inherit standard-themes-heading-4)))
     `(shr-h5 ((,c :inherit standard-themes-heading-5)))
     `(shr-h6 ((,c :inherit standard-themes-heading-6)))
+    `(shr-mark ((,c :inherit match)))
     `(shr-selected-link ((,c :inherit link :background ,bg-dim)))
 ;;;; smerge
     `(smerge-base ((,c :inherit diff-changed)))

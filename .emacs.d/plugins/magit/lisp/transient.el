@@ -1,12 +1,12 @@
 ;;; transient.el --- Transient commands  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2018-2024 Free Software Foundation, Inc.
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.5.2
+;; Package-Version: 0.5.3
 ;; Package-Requires: ((emacs "26.1") (compat "29.1.4.4") (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -1516,7 +1516,7 @@ invoked from.
 Regular suffix commands, which are not prefixes, do not have to
 concern themselves with this distinction, so they can use this
 function instead.  In the context of a plain suffix, it always
-returns the value of the appropiate variable."
+returns the value of the appropriate variable."
   (or transient--prefix transient-current-prefix))
 
 (defun transient-suffix-object (&optional command)
@@ -2231,14 +2231,14 @@ value.  Otherwise return CHILDREN as is."
   (when (window-live-p transient--window)
     (let ((remain-in-minibuffer-window
            (and (minibuffer-selected-window)
-                (selected-window)))
-          (buf (window-buffer transient--window)))
+                (selected-window))))
       ;; Only delete the window if it has never shown another buffer.
       (unless (eq (car (window-parameter transient--window 'quit-restore))
                   'other)
         (with-demoted-errors "Error while exiting transient: %S"
           (delete-window transient--window)))
-      (kill-buffer buf)
+      (when-let ((buffer (get-buffer transient--buffer-name)))
+        (kill-buffer buffer))
       (when remain-in-minibuffer-window
         (select-window remain-in-minibuffer-window)))))
 
@@ -3623,7 +3623,8 @@ have a history of their own.")
            (lambda (column)
              (transient--maybe-pad-keys column group)
              (transient-with-shadowed-buffer
-               (let ((rows (mapcar #'transient-format (oref column suffixes))))
+               (let* ((transient--pending-group column)
+                      (rows (mapcar #'transient-format (oref column suffixes))))
                  (when-let ((desc (transient-format-description column)))
                    (push desc rows))
                  (flatten-tree rows))))

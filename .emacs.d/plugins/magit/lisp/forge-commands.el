@@ -1,6 +1,6 @@
 ;;; forge-commands.el --- Commands  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2023 Jonas Bernoulli
+;; Copyright (C) 2018-2024 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -309,7 +309,7 @@ argument also offer closed pull-requests."
 ;;;###autoload
 (defun forge-browse-remote (remote)
   "Read a REMOTE and visit it using a browser."
-  (interactive (list (magit-read-remote "Browse remote")))
+  (interactive (list (magit-read-remote "Browse remote" nil t)))
   (browse-url (forge-get-url :remote remote)))
 
 ;;;###autoload

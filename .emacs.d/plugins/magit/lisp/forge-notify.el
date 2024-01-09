@@ -1,6 +1,6 @@
 ;;; forge-notify.el --- Notify support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2023 Jonas Bernoulli
+;; Copyright (C) 2018-2024 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -104,7 +104,7 @@ signal an error."
   (or (magit-section-value-if 'notification)
       (and-let* ((topic (forge-topic-at-point)))
         (forge-get-notification topic))
-      (and demand (user-error "No notication at point"))))
+      (and demand (user-error "No notification at point"))))
 
 ;;;; List
 

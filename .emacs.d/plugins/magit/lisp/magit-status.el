@@ -1,6 +1,6 @@
 ;;; magit-status.el --- The grand overview  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2023 The Magit Project Contributors
+;; Copyright (C) 2008-2024 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -426,8 +426,8 @@ Type \\[magit-commit] to create a commit.
                                   magit-status-use-buffer-arguments))
          (file (and magit-status-goto-file-position
                     (magit-file-relative-name)))
-         (line (and file (line-number-at-pos)))
-         (col  (and file (current-column)))
+         (line (and file (save-restriction (widen) (line-number-at-pos))))
+         (col  (and file (save-restriction (widen) (current-column))))
          (buf  (magit-setup-buffer #'magit-status-mode nil
                  (magit-buffer-diff-args  (nth 0 d))
                  (magit-buffer-diff-files (nth 1 d))

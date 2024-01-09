@@ -1,6 +1,6 @@
 ;;; vs-dark-theme.el --- Visual Studio IDE dark theme
 
-;; Copyright (C) 2019-2023 , Jen-Chieh Shen
+;; Copyright (C) 2019-2024  Shen, Jen-Chieh
 
 ;; Author: Jen-Chieh Shen
 ;; URL: https://github.com/emacs-vs/vs-dark-theme
@@ -51,11 +51,8 @@
  `(font-lock-type-face          ((t (:foreground "#38EFCA"))))
  `(font-lock-variable-name-face ((t (:foreground "#D2D2D2"))))
 
- `(line-number              ((t ( :background "#252525" :foreground "#2B9181"))))
- `(line-number-current-line ((t ( :background "#252525"
-                                  :foreground ,(if vs-dark-theme-graphic-p
-                                                   "#2B9181"
-                                                 "#00FFD5")))))
+ `(mode-line          ((t :box ( :line-width -1 :style released-button))))
+ `(mode-line-inactive ((t :box ( :line-width -1 :style released-button))))
 
  `(cursor  ((t :background "#909090")))
  `(hl-line ((t :background ,(if vs-dark-theme-graphic-p "#2E2E2E" "#363636"))))
@@ -66,6 +63,12 @@
  `(completions-common-part ((t :foreground "#72A4FF" :weight bold)))
 
  `(highlight ((t :background ,(if vs-dark-theme-graphic-p "#264F78" "#363636"))))
+
+ `(line-number              ((t ( :background "#252525" :foreground "#2B9181"))))
+ `(line-number-current-line ((t ( :background "#252525"
+                                  :foreground ,(if vs-dark-theme-graphic-p
+                                                   "#2B9181"
+                                                 "#00FFD5")))))
 
  `(fill-column-indicator ((t :foreground "#AA4242")))
 
@@ -185,6 +188,13 @@
  `(modablist-insert-face ((t :background "#565136" :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
 
  `(ts-fold-replacement-face ((t :foreground "#808080" :box (:line-width (-1 . -1) :style pressed-button))))
+
+ `(dap-ui-breakpoint-verified-fringe ((t :foreground "#E71F2D")))
+ `(breakpoint-disabled               ((t :foreground "#C55159")))
+
+ `(diff-hl-insert ((t :background "#107C10")))
+ `(diff-hl-delete ((t :background "#B01414")))
+ `(diff-hl-change ((t :background "#0077D4")))
 
  `(rjsx-tag              ((t (:foreground "#87CEFA"))))
  `(rjsx-attr             ((t (:foreground "#EEDD82"))))

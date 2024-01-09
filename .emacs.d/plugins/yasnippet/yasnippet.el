@@ -1,6 +1,6 @@
 ;;; yasnippet.el --- Yet another snippet extension for Emacs  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2008-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2008-2024 Free Software Foundation, Inc.
 ;; Authors: pluskid <pluskid@gmail.com>,
 ;;          João Távora <joaotavora@gmail.com>,
 ;;          Noam Postavsky <npostavs@gmail.com>
@@ -132,8 +132,7 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'eldoc) ; Needed for 24.
-(declare-function cl-progv-after "cl-extra") ; Needed for 23.4.
+(require 'eldoc) ; Needed for Emacs<25.
 (require 'easymenu)
 (require 'help-mode)
 
@@ -342,8 +341,8 @@ If non-nil insert region contents.  This can be overridden on a
 per-snippet basis.  A value of `cua' is considered equivalent to
 `?0' for backwards compatibility."
   :type '(choice (character :tag "Insert from register")
-                 (const t :tag "Insert region contents")
-                 (const nil :tag "Don't insert anything")
+                 (const :tag "Insert region contents" t)
+                 (const :tag "Don't insert anything" nil)
                  (const cua))) ; backwards compat
 
 (defcustom yas-good-grace t
@@ -763,7 +762,7 @@ expanded.")
      :help "Display some information about YASnippet"]))
 
 (define-obsolete-variable-alias 'yas-extra-modes 'yas--extra-modes "0.9.1")
-(defvar yas--extra-modes nil
+(defvar yas--extra-modes nil            ;FIXME: Use `defvar-local'?
   "An internal list of modes for which to also lookup snippets.
 
 This variable probably makes more sense as buffer-local, so
@@ -773,7 +772,7 @@ ensure your use `make-local-variable' when you set it.")
   "A hash table of mode symbols to `yas--table' objects.")
 
 (defvar yas--parents (make-hash-table)
-  "A hash table of mode symbols do lists of direct parent mode symbols.
+  "A hash table of mode symbols to lists of direct parent mode symbols.
 
 This list is populated when reading the \".yas-parents\" files
 found when traversing snippet directories with
@@ -805,29 +804,62 @@ which decides on the snippet to expand.")
                      yas--direct-keymaps))
            yas--tables))
 
+(defalias 'yas--merge-ordered-lists
+  (if (fboundp 'merge-ordered-lists)    ;Emacs≥30.
+      #'merge-ordered-lists
+    (lambda (lists)
+      (setq lists (delq nil lists))
+      (if (null (cdr lists)) (car lists) ;Common case.
+        (delete-dups (apply #'append
+                            ;; Prevent sharing the tail.
+                            (append lists '(()) )))))))
+
+(defun yas--all-parents (mode)
+  "Like `derived-mode-all-parents' but obeying `yas--parents'."
+  (or (get mode 'yas--all-parents) ;; FIXME: Use `with-memoization'?
+      (progn
+        (put mode 'yas--all-parents (list mode)) ;; Stop inf-loop with cycles.
+        (let ((all-parents
+               (if (fboundp 'derived-mode-all-parents)
+                   (let* ((ap (derived-mode-all-parents mode))
+                          (extras
+                           (mapcar (lambda (parent)
+                                     (yas--merge-ordered-lists
+                                      (mapcar #'yas--all-parents
+                                              (gethash parent yas--parents))))
+                                   ap)))
+                     (yas--merge-ordered-lists
+                      (cons (append ap '(fundamental-mode)) extras)))
+                 (cons mode
+                       (yas--merge-ordered-lists
+                        (mapcar #'yas--all-parents
+                                (remq nil
+                                      `(,(or (get mode 'derived-mode-parent)
+                                             ;; Consider `fundamental-mode'
+                                             ;; as ultimate ancestor.
+                                             'fundamental-mode)
+                                        ,(let ((alias (symbol-function mode)))
+                                           (when (symbolp alias) alias))
+                                        ,@(gethash mode yas--parents)))))))))
+          (dolist (parent all-parents)
+            (cl-pushnew mode (get parent 'yas--all-children)))
+          (put mode 'yas--all-parents all-parents)))))
+
 (defun yas--modes-to-activate (&optional mode)
   "Compute list of mode symbols that are active for `yas-expand' and friends."
-  (defvar yas--dfs)        ;We rely on dynbind.  We could use `letrec' instead!
-  (let* ((explored (if mode (list mode) ; Building up list in reverse.
-                     (cons major-mode (reverse yas--extra-modes))))
-         (yas--dfs
-          (lambda (mode)
-            (cl-loop for neighbour
-                     in (cl-list* (or (get mode 'derived-mode-parent)
-                                      ;; Consider `fundamental-mode'
-                                      ;; as ultimate ancestor.
-                                      'fundamental-mode)
-                                  ;; NOTE: `fboundp' check is redundant
-                                  ;; since Emacs 24.4.
-                                  (and (fboundp mode) (symbol-function mode))
-                                  (gethash mode yas--parents))
-                     when (and neighbour
-                               (not (memq neighbour explored))
-                               (symbolp neighbour))
-                     do (push neighbour explored)
-                     (funcall yas--dfs neighbour)))))
-    (mapc yas--dfs explored)
-    (nreverse explored)))
+  (let* ((modes
+          (delete-dups
+           (remq nil `(,(or mode major-mode)
+                       ;; FIXME: Alternative major modes should use
+                       ;; `derived-mode-add-parents', but until that
+                       ;; becomes common, use `major-mode-remap-alist'
+                       ;; as a crutch to supplement the mode hierarchy.
+                       ,(and (boundp 'major-mode-remap-alist)
+                             (car (rassq (or mode major-mode)
+                                         major-mode-remap-alist)))
+                       ,@(unless mode (reverse yas--extra-modes)))))))
+    (yas--merge-ordered-lists
+     (mapcar #'yas--all-parents modes))))
 
 (defvar yas-minor-mode-hook nil
   "Hook run when `yas-minor-mode' is turned on.")
@@ -889,13 +921,8 @@ Key bindings:
 The function can be called in the hook of a minor mode to
 activate snippets associated with that mode."
   (interactive
-   (let (modes
-         symbol)
-     (maphash (lambda (k _)
-                (setq modes (cons (list k) modes)))
-              yas--parents)
-     (setq symbol (completing-read
-                   "Activate mode: " modes nil t))
+   (let ((symbol (completing-read
+                  "Activate mode: " yas--parents nil t)))
      (list
       (when (not (string= "" symbol))
         (intern symbol)))))
@@ -909,9 +936,8 @@ activate snippets associated with that mode."
    (list (intern
           (completing-read
            "Deactivate mode: " (mapcar #'list yas--extra-modes) nil t))))
-  (set (make-local-variable 'yas--extra-modes)
-       (remove mode
-               yas--extra-modes)))
+  (setq-local yas--extra-modes
+              (remove mode yas--extra-modes)))
 
 (defun yas-temp-buffer-p (&optional buffer)
   (eq (aref (buffer-name buffer) 0) ?\s))
@@ -923,20 +949,10 @@ activate snippets associated with that mode."
 Functions are called with no argument, and should return non-nil to prevent
 `yas-global-mode' from enabling yasnippet in this buffer.
 
-In Emacsen < 24, this variable is buffer-local.  Because
-`yas-minor-mode-on' is called by `yas-global-mode' after
-executing the buffer's major mode hook, setting this variable
-there is an effective way to define exceptions to the \"global\"
-activation behaviour.
-
-In Emacsen >= 24, only the global value is used.  To define
+Only the global value is used.  To define
 per-mode exceptions to the \"global\" activation behaviour, call
 `yas-minor-mode' with a negative argument directily in the major
-mode's hook.")
-(unless (> emacs-major-version 23)
-  (with-no-warnings
-    (make-variable-buffer-local 'yas-dont-activate)))
-
+mode's hook.") ;; FIXME: Why do we say "Only the global value is used"?
 
 (defun yas-minor-mode-on ()
   "Turn on YASnippet minor mode.
@@ -1003,23 +1019,13 @@ Honour `yas-dont-activate-functions', which see."
 
 
 ;;;###autoload(autoload 'snippet-mode "yasnippet" "A mode for editing yasnippets" t nil)
-(eval-and-compile
-  (if (fboundp 'prog-mode)
-      ;; `prog-mode' is new in 24.1.
-      (define-derived-mode snippet-mode prog-mode "Snippet"
-        "A mode for editing yasnippets"
-        (setq font-lock-defaults '(yas--font-lock-keywords))
-        (set (make-local-variable 'require-final-newline) nil)
-        (set (make-local-variable 'comment-start) "#")
-        (set (make-local-variable 'comment-start-skip) "#+[\t ]*")
-        (add-hook 'after-save-hook #'yas-maybe-load-snippet-buffer nil t))
-    (define-derived-mode snippet-mode fundamental-mode "Snippet"
-      "A mode for editing yasnippets"
-      (setq font-lock-defaults '(yas--font-lock-keywords))
-      (set (make-local-variable 'require-final-newline) nil)
-      (set (make-local-variable 'comment-start) "#")
-      (set (make-local-variable 'comment-start-skip) "#+[\t ]*")
-      (add-hook 'after-save-hook #'yas-maybe-load-snippet-buffer nil t))))
+(define-derived-mode snippet-mode prog-mode "Snippet"
+  "A mode for editing yasnippets"
+  (setq font-lock-defaults '(yas--font-lock-keywords))
+  (setq-local require-final-newline nil)
+  (setq-local comment-start "#")
+  (setq-local comment-start-skip "#+[\t ]*")
+  (add-hook 'after-save-hook #'yas-maybe-load-snippet-buffer nil t))
 
 (defun yas-snippet-mode-buffer-p ()
   "Return non-nil if current buffer should be in `snippet-mode'.
@@ -1721,12 +1727,10 @@ Optional PROMPT sets the prompt to use."
     (redisplay)
     (or
      (x-popup-menu
-      (if (fboundp 'posn-at-point)
-          (let ((x-y (posn-x-y (posn-at-point (point)))))
-            (list (list (+ (car x-y) 10)
-                        (+ (cdr x-y) 20))
-                  (selected-window)))
-        t)
+      (let ((x-y (posn-x-y (posn-at-point (point)))))
+        (list (list (+ (car x-y) 10)
+                    (+ (cdr x-y) 20))
+              (selected-window)))
       `(,prompt ("title"
                  ,@(cl-mapcar (lambda (c d) `(,(concat "   " d) . ,c))
                               choices
@@ -1853,6 +1857,8 @@ the current buffers contents."
 
 (defun yas--define-parents (mode parents)
   "Add PARENTS to the list of MODE's parents."
+  (dolist (child (get mode 'yas--all-children))
+    (put child 'yas--all-parents nil))  ;Flush the cache for all children.
   (puthash mode (cl-remove-duplicates
                  (append parents
                          (gethash mode yas--parents)))
@@ -2100,6 +2106,9 @@ This works by stubbing a few functions, then calling
            (or (ignore-errors (car (let ((default-directory yas--loaddir))
                                      (process-lines "git" "describe"
                                                     "--tags" "--dirty"))))
+               (eval-when-compile
+                 (and (fboundp 'package-get-version)
+                      (package-get-version)))
                (when (and (featurep 'package)
                           (fboundp 'package-desc-version)
                           (fboundp 'package-version-join))
@@ -2549,7 +2558,7 @@ visited file in `snippet-mode'."
     (cond ((and file (file-readable-p file))
            (find-file-other-window file)
            (snippet-mode)
-           (set (make-local-variable 'yas--editing-template) template))
+           (setq-local yas--editing-template template))
           (file
            (message "Original file %s no longer exists!" file))
           (t
@@ -2571,9 +2580,10 @@ visited file in `snippet-mode'."
                          (pp-to-string (yas--template-content template))
                        (yas--template-content template))))
            (snippet-mode)
-           (set (make-local-variable 'yas--editing-template) template)
-           (set (make-local-variable 'default-directory)
-                (car (cdr (car (yas--guess-snippet-directories (yas--template-table template))))))))))
+           (setq-local yas--editing-template template)
+           (setq-local default-directory
+                       (car (cdr (car (yas--guess-snippet-directories
+                                       (yas--template-table template))))))))))
 
 (defun yas--guess-snippet-directories-1 (table)
   "Guess possible snippet subdirectories for TABLE."
@@ -2649,11 +2659,11 @@ NO-TEMPLATE is non-nil."
     (kill-all-local-variables)
     (snippet-mode)
     (yas-minor-mode 1)
-    (set (make-local-variable 'yas--guessed-modes)
-         (mapcar (lambda (d) (yas--table-mode (car d)))
-                 guessed-directories))
-    (set (make-local-variable 'default-directory)
-         (car (cdr (car guessed-directories))))
+    (setq-local yas--guessed-modes
+                (mapcar (lambda (d) (yas--table-mode (car d)))
+                        guessed-directories))
+    (setq-local default-directory
+                (car (cdr (car guessed-directories))))
     (if (and (not no-template) yas-new-snippet-default)
         (yas-expand-snippet yas-new-snippet-default))))
 
@@ -2703,8 +2713,8 @@ neither do the elements of PARENTS."
                          ido-mode)
                     'ido-completing-read 'completing-read)))
     (unless yas--guessed-modes
-      (set (make-local-variable 'yas--guessed-modes)
-           (or (yas--compute-major-mode-and-parents buffer-file-name))))
+      (setq-local yas--guessed-modes
+                  (yas--compute-major-mode-and-parents buffer-file-name)))
     (intern
      (funcall prompt (format "Choose or enter a table (yas guesses %s): "
                              (if yas--guessed-modes
@@ -2736,11 +2746,12 @@ Return the `yas--template' object created"
    ;;
    (t
     (unless yas--guessed-modes
-      (set (make-local-variable 'yas--guessed-modes) (or (yas--compute-major-mode-and-parents buffer-file-name))))
+      (setq-local yas--guessed-modes
+                  (or (yas--compute-major-mode-and-parents buffer-file-name))))
     (let* ((table (yas--table-get-create table)))
-      (set (make-local-variable 'yas--editing-template)
-           (yas--define-snippets-1 (yas--parse-template buffer-file-name)
-                                  table)))))
+      (setq-local yas--editing-template
+                  (yas--define-snippets-1 (yas--parse-template buffer-file-name)
+                                          table)))))
   (when interactive
     (yas--message 3 "Snippet \"%s\" loaded for %s."
                   (yas--template-name yas--editing-template)
@@ -3097,14 +3108,13 @@ other fields."
 
 ;;; Snippet expansion and field management
 
-(defvar yas--active-field-overlay nil
+(defvar-local yas--active-field-overlay nil
   "Overlays the currently active field.")
 
-(defvar yas--active-snippets nil
+(defvar-local yas--active-snippets nil
   "List of currently active snippets")
-(make-variable-buffer-local 'yas--active-snippets)
 
-(defvar yas--field-protection-overlays nil
+(defvar-local yas--field-protection-overlays nil
   "Two overlays protect the current active field.")
 
 (defvar yas-selected-text nil
@@ -3113,8 +3123,6 @@ other fields."
 (defvar yas--start-column nil
   "The column where the snippet expansion started.")
 
-(make-variable-buffer-local 'yas--active-field-overlay)
-(make-variable-buffer-local 'yas--field-protection-overlays)
 (put 'yas--active-field-overlay 'permanent-local t)
 (put 'yas--field-protection-overlays 'permanent-local t)
 
@@ -3494,8 +3502,7 @@ This renders the snippet as ordinary text."
 
   (yas--message 4 "Snippet %s exited." (yas--snippet-id snippet)))
 
-(defvar yas--snippets-to-move nil)
-(make-variable-buffer-local 'yas--snippets-to-move)
+(defvar-local yas--snippets-to-move nil)
 
 (defun yas--prepare-snippets-for-move (beg end buf pos)
   "Gather snippets in BEG..END for moving to POS in BUF."
@@ -3762,13 +3769,10 @@ BEG, END and LENGTH like overlay modification hooks."
 
 (defun yas--merge-and-drop-dups (list1 list2 cmp key)
   ;; `delete-consecutive-dups' + `cl-merge'.
-  (funcall (if (fboundp 'delete-consecutive-dups)
-               #'delete-consecutive-dups ; 24.4
-             #'delete-dups)
-           (cl-merge 'list list1 list2 cmp :key key)))
+  (delete-consecutive-dups
+   (cl-merge 'list list1 list2 cmp :key key)))
 
-(defvar yas--before-change-modified-snippets nil)
-(make-variable-buffer-local 'yas--before-change-modified-snippets)
+(defvar-local yas--before-change-modified-snippets nil)
 
 (defun yas--gather-active-snippets (overlay beg end then-delete)
   ;; Add active snippets in BEG..END into an OVERLAY keyed entry of
@@ -3793,8 +3797,7 @@ BEG, END and LENGTH like overlay modification hooks."
       (when then-delete
         (cl-callf2 delq old yas--before-change-modified-snippets)))))
 
-(defvar yas--todo-snippet-indent nil nil)
-(make-variable-buffer-local 'yas--todo-snippet-indent)
+(defvar-local yas--todo-snippet-indent nil nil)
 
 (defun yas--on-field-overlay-modification (overlay after? beg end &optional length)
   "Clears the field and updates mirrors, conditionally.
@@ -4104,25 +4107,34 @@ Returns the newly created snippet."
         ;; content.
         (let ((buffer-undo-list t))
           (goto-char begin)
-          ;; Call before and after change functions manually,
-          ;; otherwise cc-mode's cache can get messed up.  Don't use
-          ;; `inhibit-modification-hooks' for that, that blocks
-          ;; overlay and text property hooks as well!  FIXME: Maybe
-          ;; use `combine-change-calls'?  (Requires Emacs 27+ though.)
-          (run-hook-with-args 'before-change-functions begin end)
-          (let ((before-change-functions nil)
-                (after-change-functions nil))
-            ;; Some versions of cc-mode (might be the one with Emacs
-            ;; 24.3 only) fail when inserting snippet content in a
-            ;; narrowed buffer, so make sure to insert before
-            ;; narrowing.
-            (insert content)
-            (narrow-to-region begin (point))
-            (goto-char (point-min))
-            (yas--snippet-parse-create snippet))
-          (run-hook-with-args 'after-change-functions
-                              (point-min) (point-max)
-                              (- end begin)))
+          (if (> emacs-major-version 29)
+              ;; Don't use the workaround for CC-mode's cache,
+              ;; since it was presumably a bug in CC-mode, so either
+              ;; it's fixed already, or it should get fixed.
+              (progn
+                (insert content)
+                (narrow-to-region begin (point))
+                (goto-char (point-min))
+                (yas--snippet-parse-create snippet))
+            ;; Call before and after change functions manually,
+            ;; otherwise cc-mode's cache can get messed up.  Don't use
+            ;; `inhibit-modification-hooks' for that, that blocks
+            ;; overlay and text property hooks as well!  FIXME: Maybe
+            ;; use `combine-change-calls'?  (Requires Emacs 27+ though.)
+            (run-hook-with-args 'before-change-functions begin end)
+            (let ((before-change-functions nil)
+                  (after-change-functions nil))
+              ;; Some versions of cc-mode (might be the one with Emacs
+              ;; 24.3 only) fail when inserting snippet content in a
+              ;; narrowed buffer, so make sure to insert before
+              ;; narrowing.
+              (insert content)
+              (narrow-to-region begin (point))
+              (goto-char (point-min))
+              (yas--snippet-parse-create snippet))
+            (run-hook-with-args 'after-change-functions
+                                (point-min) (point-max)
+                                (- end begin))))
         (when (listp buffer-undo-list)
           (push (cons (point-min) (point-max))
                 buffer-undo-list))
