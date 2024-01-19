@@ -43,19 +43,19 @@
     (list :tag "Column"
           (string  :tag "Header Label")
           (choice  :tag "Value source"
-                   (function)
+                   function
                    (symbol :tag "Object slot"))
           (integer :tag "Column Width")
           (choice  :tag "Sort predicate"
                    (const :tag "Don't sort" nil)
                    (const :tag "Default" t)
-                   (function))
-          (repeat  :tag "Properties"
-                   (list (choice :tag "Property"
-                                 (const :right-align)
-                                 (const :pad-right)
-                                 (symbol))
-                         (sexp :tag "Value"))))))
+                   function)
+          (plist   :tag "Properties"
+                   :key-type (choice :tag "Property"
+                                     (const :right-align)
+                                     (const :pad-right)
+                                     symbol)
+                   :value-type (sexp :tag "Value")))))
 
 (defcustom forge-topic-list-columns
   '(("#"     forge--format-topic-slug          5 nil nil)
@@ -488,20 +488,18 @@ menu."
    (inapt-face                  :initform nil)))
 
 (defun forge--topic-list-inapt ()
-  (transient-with-shadowed-buffer
-    (with-slots (type filter global) transient--pending-suffix
-      (and (eq type   forge--buffer-list-type)
-           (eq filter forge--buffer-list-filter)
-           (eq global forge--buffer-list-global)))))
+  (with-slots (type filter global) transient--pending-suffix
+    (and (eq type   forge--buffer-list-type)
+         (eq filter forge--buffer-list-filter)
+         (eq global forge--buffer-list-global))))
 
 (cl-defmethod transient-format-description ((obj forge--topic-list-command))
-  (transient-with-shadowed-buffer
-    (with-slots (description type filter global) obj
-      (if (and (eq   type   forge--buffer-list-type)
-               (memq filter (list nil forge--buffer-list-filter))
-               (eq   global forge--buffer-list-global))
-          (propertize description 'face 'forge-active-suffix)
-        description))))
+  (with-slots (description type filter global) obj
+    (if (and (eq   type   forge--buffer-list-type)
+             (memq filter (list nil forge--buffer-list-filter))
+             (eq   global forge--buffer-list-global))
+        (propertize description 'face 'forge-active-suffix)
+      description)))
 
 ;;;; Topic
 

@@ -153,6 +153,7 @@ background color."
       (org-headline-done (:foreground ,comment :strike-through t))
       (org-document-title (:foreground ,fnct :weight bold))
       (org-document-info (:foreground ,fnct))
+      (org-document-info-keyword (:foreground ,fnct))
       (org-verbatim (:foreground ,purple))
       (org-code (:foreground ,string))
       (org-block (:background ,(if naga-blue-theme-use-lighter-org-block-background
@@ -249,8 +250,6 @@ background color."
       (ivy-current-match (:inherit nil :background ,bg-blue :box ,fg  ))
       (ivy-highlight-face (:background nil))
       (persp-selected-face (:foreground ,keyword-blue-red :weight bold))
-      
-
       
 
       ;; eglot

@@ -390,10 +390,10 @@ NOQUERY is passed to `make-process', which see.
                    ('binary nil)
                    (_ decode)))
          (default-directory
-           ;; Avoid making process in a nonexistent directory (in case the current
-           ;; default-directory has since been removed).  It's unclear what the best
-           ;; directory is, but this seems to make sense, and it should still exist.
-           temporary-file-directory)
+          ;; Avoid making process in a nonexistent directory (in case the current
+          ;; default-directory has since been removed).  It's unclear what the best
+          ;; directory is, but this seems to make sense, and it should still exist.
+          temporary-file-directory)
          (process-buffer (generate-new-buffer " *plz-request-curl*"))
          (stderr-process (make-pipe-process :name "plz-request-curl-stderr"
                                             :buffer (generate-new-buffer " *plz-request-curl-stderr*")
@@ -449,6 +449,8 @@ NOQUERY is passed to `make-process', which see.
                       (progn
                         (write-region (point-min) (point-max) filename)
                         (funcall then filename))
+                    (file-already-exists
+                     (funcall then (make-plz-error :message (format "error while writing to file %S: %S" filename err))))
                     ;; In case of an error writing to the file, delete the temp file
                     ;; and signal the error.  Ignore any errors encountered while
                     ;; deleting the file, which would obscure the original error.
@@ -463,6 +465,8 @@ NOQUERY is passed to `make-process', which see.
               (progn
                 (write-region (point-min) (point-max) filename nil nil nil 'excl)
                 (funcall then filename))
+            (file-already-exists
+             (funcall then (make-plz-error :message (format "error while writing to file %S: %S" filename err))))
             ;; Since we are creating the file, it seems sensible to delete it in case of an
             ;; error while writing to it (e.g. a disk-full error).  And we ignore any errors
             ;; encountered while deleting the file, which would obscure the original error.
@@ -631,11 +635,11 @@ making QUEUE's requests."
 Return when QUEUE is at limit or has no more queued requests.
 
 QUEUE should be a `plz-queue' structure."
-  (cl-labels ((readyp
-               (queue) (and (not (plz-queue-canceled-p queue))
-                            (plz-queue-requests queue)
-                            ;; With apologies to skeeto...
-                            (< (length (plz-queue-active queue)) (plz-queue-limit queue)))))
+  (cl-labels ((readyp (queue)
+                (and (not (plz-queue-canceled-p queue))
+                     (plz-queue-requests queue)
+                     ;; With apologies to skeeto...
+                     (< (length (plz-queue-active queue)) (plz-queue-limit queue)))))
     (while (readyp queue)
       (pcase-let* ((request (plz--queue-pop queue))
                    ((cl-struct plz-queued-request method url

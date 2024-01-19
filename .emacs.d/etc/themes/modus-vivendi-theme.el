@@ -1,11 +1,10 @@
 ;;; modus-vivendi-theme.el --- Elegant, highly legible theme with a black background -*- lexical-binding:t -*-
 
-;; Copyright (C) 2019-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2019-2024  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; Maintainer: Modus-Themes Development <~protesilaos/modus-themes@lists.sr.ht>
-;; URL: https://git.sr.ht/~protesilaos/modus-themes
-;; Mailing-List: https://lists.sr.ht/~protesilaos/modus-themes
+;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
+;; URL: https://github.com/protesilaos/modus-themes
 ;; Keywords: faces, theme, accessibility
 
 ;; This file is part of GNU Emacs.

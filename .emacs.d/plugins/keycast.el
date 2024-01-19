@@ -50,10 +50,41 @@
 (eval-when-compile (require 'subr-x))
 
 ;;; Options
+;;;; Common
 
 (defgroup keycast nil
   "Show the current command and its key binding in the mode line."
   :group 'applications)
+
+(defcustom keycast-show-minibuffer-exit-command 'log-only
+  "Whether to show the command that exited the minibuffer.
+
+If `log-only', the default, then show the command that exited the
+minibuffer in the log buffer, but in places where just the latest
+command is shown, show the command that used the minibuffer.
+
+This is the default because if you use, e.g., `find-file' once,
+then it is more reasonable to show
+
+  RET      minibuffer-complete-and-exit
+  x        self-insert-command x5
+  C-x C-f  find-file
+
+than this would be
+
+  C-x C-f  find-file
+  x        self-insert-command x5
+  C-x C-f  find-file
+
+Otherwise this has to be a boolean and its value applies to all
+Keycast modes.
+
+`execute-extended-command' is not affected by this option.  For
+that \"M-x the-selected-command\" is displayed unconditionally."
+  :group 'keycast
+  :type '(choice (const :tag "Exiting command in log only" log-only)
+                 (const :tag "Exiting command everywhere" t)
+                 (const :tag "Using command everywhere" nil)))
 
 ;;;; Mode-Line
 
@@ -335,6 +366,12 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defvar keycast--command-repetitions 0)
 (defvar keycast--reading-passwd nil)
 
+(defvar keycast--prefix-argument-commands
+  '(universal-argument
+    universal-argument-more
+    negative-argument
+    digit-argument))
+
 (defun keycast--minibuffer-exit ()
   (setq keycast--minibuffer-exited
         (cons (this-single-command-keys) this-command))
@@ -347,28 +384,39 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defun keycast--update ()
   (let ((key (this-single-command-keys))
         (cmd this-command))
-    (when (and keycast--minibuffer-exited
-               (or (not (equal key []))
-                   (not (eq this-original-command 'execute-extended-command))))
-      ;; Show the command that exited the minibuffer instead of
-      ;; once more showing the command that used the minibuffer.
-      (setq key (car keycast--minibuffer-exited))
-      (setq cmd (cdr keycast--minibuffer-exited)))
-    (setq keycast--minibuffer-exited nil)
-    (when (or
-           ;; If a command uses the minibuffer twice, then
-           ;; `post-command-hook' gets called twice (unless the
-           ;; minibuffer is aborted).  This is the first call.
-           (equal key [])
-           ;; `execute-extended-command' intentionally corrupts
-           ;; the value returned by `this-single-command-keys'.
-           (eq (aref key 0) ?\M-x))
+    (cond
+     ((memq this-original-command keycast--prefix-argument-commands)
+      ;; These commands set `this-command' to `last-command', to
+      ;; prevent `last-command' being the prefix command, for the
+      ;; command that uses the prefix argument.
+      (setq cmd this-original-command))
+     ((and (not cmd)
+           (length> key 0)
+           (eq (aref key (1- (length key))) ?\C-g))
+      ;; If a valid but incomplete prefix sequence is followed by
+      ;; an unbound key, then Emacs calls the `undefined' command
+      ;; but does not set `this-command', which is nil instead.
+      (setq cmd 'undefined)))
+    (cond
+     ;; Special handling for `execute-extended-command'.
+     ((eq this-original-command 'execute-extended-command)
+      ;; Instead of "M-x t h e - c o m m a n d RET", just use
+      ;; "M-x", because we follow that up with the command anyway.
+      (setq key [?\M-x]))
+     ;; If a command uses the minibuffer then `post-command-hook'
+     ;; gets called twice on behalf of that command:
+     ((equal key [])
+      ;; 1. When the minibuffer is entered.  The key is void in that
+      ;;    case, which allows us to detect that it is the first call,
+      ;;    but also means we have to get the actual key like this.
       (setq key (this-single-command-raw-keys)))
+     (keycast--minibuffer-exited
+      ;; 2. When the minibuffer is exited (unless it is aborted).
+      (when (eq keycast-show-minibuffer-exit-command t)
+        (setq key (car keycast--minibuffer-exited))
+        (setq cmd (cdr keycast--minibuffer-exited)))))
     (setq keycast--this-command-keys key)
-    (setq keycast--this-command-desc
-          (cond ((symbolp cmd) cmd)
-                ((eq (car-safe cmd) 'lambda) "<lambda>")
-                (t (format "<%s>" (type-of cmd)))))
+    (setq keycast--this-command-desc (keycast--format-command cmd))
     (if (or (eq last-command cmd)
             (< keycast--command-repetitions 0))
         (cl-incf keycast--command-repetitions)
@@ -385,9 +433,22 @@ t to show the actual COMMAND, or a symbol to be shown instead."
      'keycast--header-line-modified-buffers))
   (when (and keycast-log-mode
              (not keycast--reading-passwd))
-    (keycast-log-update-buffer))
+    (if (and keycast--minibuffer-exited
+             (eq keycast-show-minibuffer-exit-command 'log-only)
+             (not (eq this-original-command 'execute-extended-command)))
+        (let ((keycast--this-command-keys (car keycast--minibuffer-exited))
+              (keycast--this-command-desc (keycast--format-command
+                                           (cdr keycast--minibuffer-exited))))
+          (keycast-log-update-buffer))
+      (keycast-log-update-buffer)))
+  (setq keycast--minibuffer-exited nil)
   (when (keycast--mode-active-p 'line)
     (force-mode-line-update (minibufferp))))
+
+(defun keycast--format-command (cmd)
+  (cond ((symbolp cmd) cmd)
+        ((eq (car-safe cmd) 'lambda) "<lambda>")
+        (t (format "<%s>" (type-of cmd)))))
 
 (defun keycast--maybe-edit-local-format (format item record)
   (let ((value (buffer-local-value format (current-buffer))))
@@ -470,8 +531,6 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defvar keycast--mode-line-removed-tail nil)
 (defvar keycast--temporary-mode-line nil)
 (defvar keycast--mode-line-modified-buffers nil)
-
-(defalias 'keycast-mode 'keycast-mode-line-mode)
 
 ;;;###autoload
 (define-minor-mode keycast-mode-line-mode

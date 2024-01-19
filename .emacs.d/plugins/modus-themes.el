@@ -1,11 +1,10 @@
 ;;; modus-themes.el --- Elegant, highly legible and customizable themes -*- lexical-binding:t -*-
 
-;; Copyright (C) 2019-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2019-2024  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; Maintainer: Modus-Themes Development <~protesilaos/modus-themes@lists.sr.ht>
-;; URL: https://git.sr.ht/~protesilaos/modus-themes
-;; Mailing-List: https://lists.sr.ht/~protesilaos/modus-themes
+;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
+;; URL: https://github.com/protesilaos/modus-themes
 ;; Version: 4.3.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
@@ -1211,7 +1210,9 @@ symbol, which is safe when used as a face attribute's value."
   "Return completion annotation for THEME."
   (when-let ((symbol (intern-soft theme))
              (doc-string (get symbol 'theme-documentation)))
-    (format " -- %s" (car (split-string doc-string "\\.")))))
+    (format " -- %s"
+            (propertize (car (split-string doc-string "\\."))
+                        'face 'completions-annotations))))
 
 (defun modus-themes--completion-table (category candidates)
   "Pass appropriate metadata CATEGORY to completion CANDIDATES."

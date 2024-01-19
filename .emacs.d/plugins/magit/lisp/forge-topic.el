@@ -43,6 +43,9 @@ used to order the topics by that slot.  Reasonable values
 include (number . >) and (updated . string>)."
   :package-version '(forge . "0.1.0")
   :group 'forge
+  :set (lambda (symbol value)
+         (set-default-toplevel-value symbol value)
+         (forge--zap-repository-cache 'all))
   :type '(cons (symbol   :tag "Slot")
                (function :tag "Predicate")))
 
@@ -431,7 +434,7 @@ an error.  If NOT-THINGATPT is non-nil, then don't use
               rows))))
 
 (defun forge-ls-recent-topics (repo table)
-  (magit--with-repository-local-cache (list 'forge-ls-recent-topics table)
+  (progn ; MAYBE resume caching this
     (let* ((id (oref repo id))
            (limit forge-topic-list-limit)
            (open-limit   (if (consp limit) (car limit) limit))
@@ -1103,7 +1106,7 @@ This mode itself is never used directly."
   :inapt-if-not #'forge-current-topic
   :description
   (lambda ()
-    (if-let ((topic (transient-with-shadowed-buffer (forge-current-topic))))
+    (if-let ((topic (forge-current-topic)))
         (concat "toggle "
                 (format (propertize "[%s]" 'face 'transient-delimiter)
                         (propertize "saved" 'face

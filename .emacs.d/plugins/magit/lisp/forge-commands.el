@@ -237,13 +237,6 @@ If pulling is too slow, then also consider setting the Git variable
   (error "Fetching an individual topic not implemented for %s"
          (eieio-object-class repo)))
 
-(defun forge--zap-repository-cache (&optional repo)
-  (when-let ((r (if repo
-                    (oref repo worktree)
-                  (magit-repository-local-repository))))
-    (magit-repository-local-delete (list 'forge-ls-recent-topics 'issue) r)
-    (magit-repository-local-delete (list 'forge-ls-recent-topics 'pullreq) r)))
-
 ;;; Browse
 
 ;;;###autoload
@@ -1078,8 +1071,7 @@ This only affect the current status buffer."
                    "display recently closed topics"))
   :transient t
   (interactive)
-  (magit-repository-local-delete (list 'forge-ls-recent-topics 'issue))
-  (magit-repository-local-delete (list 'forge-ls-recent-topics 'pullreq))
+  (forge--zap-repository-cache)
   (make-local-variable 'forge-topic-list-limit)
   (if (atom forge-topic-list-limit)
       (setq forge-topic-list-limit (cons forge-topic-list-limit 5))
