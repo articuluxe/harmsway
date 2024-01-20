@@ -135,6 +135,7 @@ luarocks install luacheck
 brew install sql-lint
 brew install proselint
 brew install yamllint
+brew install sqlfluff
 
 # Local Variables:
 # mode: sh

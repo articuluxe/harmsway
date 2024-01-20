@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-01-20 16:21:05 dharms>
+;; Modified Time-stamp: <2024-01-20 16:25:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4713,7 +4713,9 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'sql-mode-hook
             (lambda()
-              (require 'flymake-collection-sql-lint)
+              (if (executable-find "sqlfluff")
+                  (require 'flymake-sqlfluff)
+                (require 'flymake-collection-sql-lint))
               (flymake-mode 1)
               (define-key sql-mode-map "\C-c\C-c" nil t)
               (define-key sql-mode-map "\C-c\C-p" #'sql-send-paragraph)
