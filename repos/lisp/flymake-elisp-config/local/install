@@ -1,0 +1,1 @@
+cp src/flymake*.el ../../../.emacs.d/plugins/flymake

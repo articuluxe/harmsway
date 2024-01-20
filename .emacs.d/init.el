@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-01-20 16:25:17 dharms>
+;; Modified Time-stamp: <2024-01-20 16:53:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3556,7 +3556,13 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (setq flymake-wrap-around t)
   (setq flymake-mode-line-lighter "Fly")
   (add-hook 'emacs-lisp-mode-hook #'flymake-mode)
- )
+  )
+
+(use-package flymake-elisp-config
+  :after flymake
+  :config
+  (flymake-elisp-config-global-mode)
+  (flymake-elisp-config-auto-mode))
 
 (use-package flymake-collection
   :after flymake
