@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-01-02 10:24:00 dharms>
+;; Modified Time-stamp: <2024-01-20 16:19:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2653,6 +2653,11 @@ ARGS are the additional arguments."
          )
   :init
   (setq filetree-use-all-the-icons t)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; calc-prog-utils ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package calc-prog-utils
+  :after calc
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
