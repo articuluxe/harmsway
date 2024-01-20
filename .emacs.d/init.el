@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-01-20 16:19:08 dharms>
+;; Modified Time-stamp: <2024-01-20 16:21:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2327,7 +2327,10 @@ ARGS are the additional arguments."
 (use-package org-chef
   :after org
   :commands (org-chef-insert-recipe)
-)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; relative-date ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package relative-date)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elfeed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elfeed
