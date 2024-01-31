@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2022, 2024  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2024-01-31 17:01:45 dharms>
+;; Modified Time-stamp: <2024-01-31 17:25:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -101,6 +101,7 @@
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'beach)
            (set-face-attribute 'font-lock-comment-face nil :inherit nil)
+           (set-face-attribute 'font-lock-string-face nil :inherit nil)
            (set-face-attribute 'font-lock-doc-face nil :inherit nil))
           ((eq sym 'brin)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
