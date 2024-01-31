@@ -145,7 +145,8 @@
 (cl-defmethod forge--update-issue ((repo forge-github-repository) data bump)
   (closql-with-transaction (forge-db)
     (let-alist data
-      (let* ((issue-id (forge--object-id 'forge-issue repo .number))
+      (let* ((updated (or .updatedAt .createdAt))
+             (issue-id (forge--object-id 'forge-issue repo .number))
              (issue (or (forge-get-issue repo .number)
                         (closql-insert
                          (forge-db)
@@ -164,10 +165,10 @@
         (oset issue author     .author.login)
         (oset issue title      .title)
         (oset issue created    .createdAt)
-        (oset issue updated    (cond (bump (or .updatedAt .createdAt))
-                                     ((slot-boundp issue 'updated)
-                                      (oref issue updated))
-                                     (t "0")))
+        (cond (updated
+               (oset issue updated updated))
+              ((not (slot-boundp issue 'updated))
+               (oset issue updated "0")))
         (oset issue closed     .closedAt)
         (oset issue locked-p   .locked)
         (oset issue milestone  (and .milestone.id
@@ -189,6 +190,9 @@
               :body    (forge--sanitize-string .body))
              t)))
         (when bump
+          (when (and updated
+                     (string> updated (forge--topics-until repo nil 'issue)))
+            (oset repo issues-until updated))
           (forge--set-id-slot repo issue 'assignees .assignees)
           (unless (magit-get-boolean "forge.kludge-for-issue-294")
             (forge--set-id-slot repo issue 'labels .labels)))
@@ -201,7 +205,8 @@
 (cl-defmethod forge--update-pullreq ((repo forge-github-repository) data bump)
   (closql-with-transaction (forge-db)
     (let-alist data
-      (let* ((pullreq-id (forge--object-id 'forge-pullreq repo .number))
+      (let* ((updated (or .updatedAt .createdAt))
+             (pullreq-id (forge--object-id 'forge-pullreq repo .number))
              (pullreq (or (forge-get-pullreq repo .number)
                           (closql-insert
                            (forge-db)
@@ -212,15 +217,15 @@
         (oset pullreq slug         (format "#%s" .number))
         (oset pullreq state        (pcase-exhaustive .state
                                      ("MERGED" 'merged)
-                                     ("CLOSED" 'closed)
+                                     ("CLOSED" 'rejected)
                                      ("OPEN"   'open)))
         (oset pullreq author       .author.login)
         (oset pullreq title        .title)
         (oset pullreq created      .createdAt)
-        (oset pullreq updated      (cond (bump (or .updatedAt .createdAt))
-                                         ((slot-boundp pullreq 'updated)
-                                          (oref pullreq updated))
-                                         (t "0")))
+        (cond (updated
+               (oset pullreq updated updated))
+              ((not (slot-boundp pullreq 'updated))
+               (oset pullreq updated "0")))
         (oset pullreq closed       .closedAt)
         (oset pullreq merged       .mergedAt)
         (oset pullreq draft-p      .isDraft)
@@ -253,6 +258,9 @@
               :body    (forge--sanitize-string .body))
              t)))
         (when bump
+          (when (and updated
+                     (string> updated (forge--topics-until repo nil 'pullreq)))
+            (oset repo pullreqs-until updated))
           (forge--set-id-slot repo pullreq 'assignees .assignees)
           (forge--set-id-slot repo pullreq 'review-requests
                               (--map (cdr (cadr (car it)))
@@ -442,15 +450,21 @@
           (oset notif title     .subject.title)
           (oset notif reason    (intern (downcase .reason)))
           (oset notif last-read .last_read_at)
-          (oset notif updated   .updated_at)
-          (pcase-exhaustive (list (and .unread 'unread)
-                                  (and (not (oref topic state)) 'unset)
-                                  forge-notifications-github-kludge)
-            (`(unread ,_    ,_)               (oset topic state 'unread))
-            (`(nil    ,_    always-unread)    (oset topic state 'unread))
-            (`(nil    ,_    pending-again)    (oset topic state 'pending))
-            ('(nil    unset pending-if-unset) (oset topic state 'pending))
-            ('(nil    nil   pending-if-unset)))))
+          ;; The `updated_at' returned for notifications is often
+          ;; incorrect, so use the value from the topic instead.
+          (oset notif updated   (oref topic updated))
+          ;; Github represents the three possible states using a boolean,
+          ;; which of course means that we cannot do the right thing here.
+          (oset topic status
+                (pcase-exhaustive
+                    (list (and .unread 'unread)
+                          (and (not (oref topic status)) 'unset)
+                          forge-notifications-github-kludge)
+                  (`(unread ,_    ,_)               'unread)
+                  (`(nil    ,_    always-unread)    'unread)
+                  (`(nil    ,_    pending-again)    'pending)
+                  ('(nil    unset pending-if-unset) 'pending)
+                  ('(nil    ,_    ,_                'done))))))
       (forge--zap-repository-cache repo))))
 
 ;;;; Miscellaneous
@@ -600,12 +614,15 @@
     :callback (forge--set-field-callback)))
 
 (cl-defmethod forge--set-topic-state
-  ((_repo forge-github-repository) topic value)
+  ((_repo forge-github-repository) topic state)
   (forge--ghub-patch topic
     "/repos/:owner/:repo/issues/:number"
-    `((state . ,(pcase-exhaustive value
-                  ('open   "OPEN")
-                  ('closed "CLOSED"))))
+    (pcase-exhaustive state
+      ;; Merging isn't done through here.
+      ('completed '((state . "closed") (state_reason . "completed")))
+      ('unplanned '((state . "closed") (state_reason . "not_planned")))
+      ('rejected  '((state . "closed")))
+      ('open      '((state . "open"))))
     :callback (forge--set-field-callback)))
 
 (cl-defmethod forge--set-topic-draft

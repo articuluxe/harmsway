@@ -1,7 +1,7 @@
 ;;; kanagawa-theme.el --- An elegant theme inspired by The Great Wave off Kanagawa by Katsushika Hokusa -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2023 Mikael Konradsson
-;; Copyright (C) 2023 Meritamen <meritamen@sdf.org>
+;; Copyright (C) 2023-2024 Meritamen <meritamen@sdf.org>
 
 ;; Author: Meritamen <meritamen@sdf.org>
 ;; URL: https://github.com/meritamen/emacs-kanagawa-theme

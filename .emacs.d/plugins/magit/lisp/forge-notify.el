@@ -35,9 +35,8 @@
                  always-unread)
           (const :tag "Unless unread, updated notifications become pending"
                  pending-again)
-          (const :tag (concat "Unless unread or non-nil local status, "
-                              "updated notifications become pending")
-                 pending-if-unset)))
+          (const :tag "Unless unread or fetched before, updated become pending")
+                 pending-if-unset))
 
 (defcustom forge-notifications-repo-slug-width 28
   "Width of repository slugs in `forge-notifications-mode' buffers."
@@ -169,9 +168,9 @@ signal an error."
   :refresh-suffixes t
   [:hide always ("q" forge-menu-quit-list)]
   [["Type"
-    ("t"   "topics...        " forge-topics-menu     :transient replace)
-    (:info "notifications    " :face forge-active-suffix)
-    ("r"   "repositories...  " forge-repository-menu :transient replace)
+    ("t"   "topics...       " forge-topics-menu     :transient replace)
+    (:info "notifications   " :face forge-active-suffix)
+    ("r"   "repositories... " forge-repository-menu :transient replace)
     ""]
    ["Selection"
     ("I" forge-notifications-display-inbox)
@@ -183,7 +182,7 @@ signal an error."
     ("s c" forge-issue-state-set-completed)
     ("s u" forge-issue-state-set-unplanned)
     ("s m" forge-pullreq-state-set-merged)
-    ("s x" forge-pullreq-state-set-closed)
+    ("s r" forge-pullreq-state-set-rejected)
     """Set status"
     ("s i" forge-topic-status-set-unread)
     ("s p" forge-topic-status-set-pending)
@@ -197,7 +196,8 @@ signal an error."
     (magit-cycle-margin-style)
     ("e" magit-toggle-margin-details)]]
   (interactive)
-  (forge-list-notifications)
+  (unless (derived-mode-p 'forge-notifications-mode)
+    (forge-list-notifications))
   (transient-setup 'forge-notification-menu))
 
 ;;;###autoload
@@ -280,18 +280,15 @@ signal an error."
   "<remap> <magit-visit-thing>"  #'forge-visit-this-repository)
 
 (defun forge-insert-notifications ()
-  (let* ((notifs (forge--ls-notifications forge-notifications-selection))
-         (status forge-notifications-selection))
+  (let* ((status forge-notifications-selection)
+         (notifs (forge--ls-notifications status)))
     (magit-insert-section (notifications)
       (magit-insert-heading
         (cond
-         ((eq status 'unread) "Unread notifications")
-         ((eq status 'saved) "Saved notifications")
-         ((eq status 'done) "Done notifications")
          ((not (listp status))
-          (format "Notifications %s" status))
+          (format "%s notifications" (capitalize (symbol-name status))))
          ((seq-set-equal-p status '(unread pending)) "Inbox")
-         ((seq-set-equal-p status '(unread pending done)) "Notifications")
+         ((seq-set-equal-p status '(unread pending done)) "All notifications")
          ((format "Notifications %s" status))))
       (if (eq forge-notifications-display-style 'flat)
           (magit-insert-section-body

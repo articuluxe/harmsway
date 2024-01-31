@@ -1,8 +1,8 @@
 ;;; diff-hl.el --- Highlight uncommitted changes using VC -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2012-2024  Free Software Foundation, Inc.
 
-;; Author:   Dmitry Gutov <dgutov@yandex.ru>
+;; Author:   Dmitry Gutov <dmitry@gutov.dev>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
 ;; Version:  1.9.2
@@ -192,6 +192,14 @@ When this variable is nil (default), `diff-hl-diff-goto-hunk'
 only does that when called without the prefix argument, or when
 the NEW revision is not specified (meaning, the diff is against
 the current version of the file)."
+  :type 'boolean)
+
+(defcustom diff-hl-update-async nil
+  "When non-nil, `diff-hl-update' will run asynchronously.
+
+This can help prevent Emacs from freezing, especially by a slow version
+control (VC) backend. Remote files will not be affected since this feature
+does not work reliably with them."
   :type 'boolean)
 
 (defvar diff-hl-reference-revision nil
@@ -384,6 +392,24 @@ the current version of the file)."
       (nreverse res))))
 
 (defun diff-hl-update ()
+  "Updates the diff-hl overlay."
+  (if (and diff-hl-update-async
+           ;; Disable threading on the remote file as it is unreliable.
+           (not (file-remote-p default-directory)))
+      ;; TODO: debounce if a thread is already running.
+      (make-thread 'diff-hl--update-safe "diff-hl--update-safe")
+    (diff-hl--update)))
+
+(defun diff-hl--update-safe ()
+  "Updates the diff-hl overlay. It handles and logs when an error is signaled."
+  (condition-case err
+      (diff-hl--update)
+    (error
+     (message "An error occurred in diff-hl--update: %S" err)
+     nil)))
+
+(defun diff-hl--update ()
+  "Updates the diff-hl overlay."
   (let ((changes (diff-hl-changes))
         (current-line 1))
     (diff-hl-remove-overlays)
@@ -708,6 +734,21 @@ its end position."
     (unless (eq backend 'Git)
       (user-error "Only Git supports staging; this file is controlled by %s" backend))))
 
+(defun diff-hl-stage-diff (orig-buffer)
+  (let ((patchfile (make-temp-file "diff-hl-stage-patch"))
+        success)
+    (write-region (point-min) (point-max) patchfile
+                  nil 'silent)
+    (unwind-protect
+        (with-current-buffer orig-buffer
+          (with-output-to-string
+            (vc-git-command standard-output 0
+                            patchfile
+                            "apply" "--cached" )
+            (setq success t)))
+      (delete-file patchfile))
+    success))
+
 (defun diff-hl-stage-current-hunk ()
   "Stage the hunk at or near point.
 
@@ -741,17 +782,7 @@ Only supported with Git."
         (insert (format "diff a/%s b/%s\n" file-base file-base))
         (insert (format "--- a/%s\n" file-base))
         (insert (format "+++ b/%s\n" file-base)))
-      (let ((patchfile (make-temp-file "diff-hl-stage-patch")))
-        (write-region (point-min) (point-max) patchfile
-                      nil 'silent)
-        (unwind-protect
-            (with-current-buffer orig-buffer
-              (with-output-to-string
-                (vc-git-command standard-output 0
-                                patchfile
-                                "apply" "--cached" ))
-              (setq success t))
-          (delete-file patchfile))))
+      (setq success (diff-hl-stage-diff orig-buffer)))
     (when success
       (if diff-hl-show-staged-changes
           (message (concat "Hunk staged; customize `diff-hl-show-staged-changes'"
@@ -773,6 +804,85 @@ Only supported with Git."
   (unless diff-hl-show-staged-changes
     (diff-hl-update)))
 
+(defun diff-hl-stage-dwim (&optional with-edit)
+  "Stage the current hunk or choose the hunks to stage.
+When called with the prefix argument, invokes `diff-hl-stage-some'."
+  (interactive "p")
+  (if (or with-edit (region-active-p))
+      (call-interactively #'diff-hl-stage-some)
+    (call-interactively #'diff-hl-stage-current-hunk)))
+
+(defvar diff-hl-stage--orig nil)
+
+(define-derived-mode diff-hl-stage-diff-mode diff-mode "Stage Diff"
+  "Major mode for editing a diff buffer before staging.
+
+\\[diff-hl-stage-commit]"
+  (setq revert-buffer-function #'ignore))
+
+(define-key diff-hl-stage-diff-mode-map (kbd "C-c C-c") #'diff-hl-stage-finish)
+
+(defun diff-hl-stage-some (&optional beg end)
+  "Stage some or all of the current changes, interactively.
+Pops up a diff buffer that can be edited to choose the changes to stage."
+  (interactive "r")
+  (diff-hl--ensure-staging-supported)
+  (let* ((line-beg (and beg (line-number-at-pos beg t)))
+         (line-end (and end (line-number-at-pos end t)))
+         (file buffer-file-name)
+         (dest-buffer (get-buffer-create "*diff-hl-stage-some*"))
+         (orig-buffer (current-buffer))
+         ;; FIXME: If the file name has double quotes, these need to be quoted.
+         (file-base (file-name-nondirectory file)))
+    (with-current-buffer dest-buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)))
+    (diff-hl-diff-buffer-with-reference file dest-buffer nil 3)
+    (with-current-buffer dest-buffer
+      (let ((inhibit-read-only t))
+        (when end
+          (with-no-warnings
+            (let (diff-auto-refine-mode)
+              (diff-hl-diff-skip-to line-end)
+              (diff-hl-split-away-changes 3)
+              (diff-end-of-hunk)))
+          (delete-region (point) (point-max)))
+        (if beg
+            (with-no-warnings
+              (let (diff-auto-refine-mode)
+                (diff-hl-diff-skip-to line-beg)
+                (diff-hl-split-away-changes 3)
+                (diff-beginning-of-hunk)))
+          (goto-char (point-min))
+          (forward-line 3))
+        (delete-region (point-min) (point))
+        ;; diff-no-select creates a very ugly header; Git rejects it
+        (insert (format "diff a/%s b/%s\n" file-base file-base))
+        (insert (format "--- a/%s\n" file-base))
+        (insert (format "+++ b/%s\n" file-base)))
+      (let ((diff-default-read-only t))
+        (diff-hl-stage-diff-mode))
+      (setq-local diff-hl-stage--orig orig-buffer))
+    (pop-to-buffer dest-buffer)
+    (message "Press %s and %s to navigate, %s to split, %s to kill hunk, %s to undo, and %s to stage the diff after editing"
+             (substitute-command-keys "\\`n'")
+             (substitute-command-keys "\\`p'")
+             (substitute-command-keys "\\[diff-split-hunk]")
+             (substitute-command-keys "\\[diff-hunk-kill]")
+             (substitute-command-keys "\\[diff-undo]")
+             (substitute-command-keys "\\[diff-hl-stage-finish]"))))
+
+(defun diff-hl-stage-finish ()
+  (interactive)
+  (let ((count 0))
+    (when (diff-hl-stage-diff diff-hl-stage--orig)
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward diff-hunk-header-re-unified nil t)
+          (cl-incf count)))
+      (message "Staged %d hunks" count)
+      (bury-buffer))))
+
 (defvar diff-hl-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n" 'diff-hl-revert-hunk)
@@ -781,7 +891,7 @@ Only supported with Git."
     (define-key map "*" 'diff-hl-show-hunk)
     (define-key map "{" 'diff-hl-show-hunk-previous)
     (define-key map "}" 'diff-hl-show-hunk-next)
-    (define-key map "S" 'diff-hl-stage-current-hunk)
+    (define-key map "S" 'diff-hl-stage-dwim)
     map))
 (fset 'diff-hl-command-map diff-hl-command-map)
 

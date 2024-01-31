@@ -135,7 +135,7 @@ Takes the pull-request as only argument and must return a directory."
 ;;; Pull
 
 ;;;###autoload
-(defun forge-pull (&optional repo until interactive)
+(defun forge-pull (&optional repo until interactive callback)
   "Pull topics from the forge repository.
 
 With a prefix argument and if the repository has not been fetched
@@ -181,7 +181,7 @@ If pulling is too slow, then also consider setting the Git variable
       (forge--msg repo t nil "Pulling REPO")
       (when-let ((worktree (oref repo worktree)))
         (let ((default-directory worktree))
-          (forge--pull repo until))))))
+          (forge--pull repo until callback))))))
 
 (defun forge-read-date (prompt)
   (cl-block nil
@@ -232,6 +232,13 @@ If pulling is too slow, then also consider setting the Git variable
                            (forge-issue :repository (oref repo id)
                                         :number topic)
                          (forge-get-topic topic)))))
+
+;;;###autoload (autoload 'forge-pull-this-topic "forge-commands" nil t)
+(transient-define-suffix forge-pull-this-topic ()
+  "Pull data about the topic at point from its forge."
+  :description "fetch"
+  (interactive)
+  (forge-pull-topic (forge-current-topic t)))
 
 (cl-defmethod forge--pull-topic ((repo forge-repository) _topic)
   (error "Fetching an individual topic not implemented for %s"
@@ -311,11 +318,12 @@ argument also offer closed pull-requests."
   (interactive (list (forge-read-repository "Browse repository")))
   (browse-url (forge-get-url repository)))
 
-;;;###autoload
-(defun forge-browse-this-topic ()
+;;;###autoload (autoload 'forge-browse-this-topic "forge-commands" nil t)
+(transient-define-suffix forge-browse-this-topic ()
   "Visit the topic at point using a browser."
+  :description "browse"
   (interactive)
-  (forge-browse-topic (forge-topic-at-point t)))
+  (forge-browse-topic (forge-current-topic t)))
 
 ;;;###autoload
 (defun forge-browse-this-repository ()
@@ -491,8 +499,13 @@ with a prefix argument also closed topics."
       (run-hooks 'forge-create-pullreq-hook))
     (forge--display-post-buffer buf)))
 
-(defun forge-create-pullreq-from-issue (issue source target)
+(transient-define-suffix forge-create-pullreq-from-issue (issue source target)
   "Convert an existing ISSUE into a pull-request."
+  :description "convert to pull-request"
+  :if (lambda ()
+        (let ((issue (forge-current-issue)))
+          (and issue (eq (oref issue state) 'open)
+               issue)))
   (interactive (cons (forge-read-issue "Convert issue")
                      (forge-create-pullreq--read-args)))
   (setq issue (forge-get-issue issue))
@@ -591,20 +604,6 @@ point is currently on."
                                   (oref (forge-current-topic t) title))))
   (forge--topic-set 'title title))
 
-(defun forge-edit-topic-state ()
-  "Close or reopen the current topic."
-  (interactive)
-  (let* ((topic (forge-current-topic t))
-         (state (oref topic state)))
-    (when (eq state 'merged)
-      (user-error "Merged pull-requests cannot be reopened"))
-    (if (magit-y-or-n-p (format "%s %s %s"
-                                (if (eq state 'open) "Close" "Reopen")
-                                (oref topic slug)
-                                (oref topic title)))
-        (forge--topic-set 'state (if (eq state 'open) 'closed 'open))
-      (user-error "Abort"))))
-
 (defun forge-edit-topic-draft ()
   "Toggle whether the current pull-request is a draft."
   (interactive)
@@ -686,8 +685,10 @@ point is currently on."
 
 ;;; Delete
 
-(defun forge-delete-comment ()
+(transient-define-suffix forge-delete-comment ()
   "Delete the comment at point."
+  :description "delete comment"
+  :inapt-if-not #'forge-comment-at-point
   (interactive)
   (let ((comment (forge-comment-at-point t)))
     (when (yes-or-no-p "Do you really want to delete the selected comment? ")
@@ -1201,13 +1202,6 @@ heavy development."
     (forge-refresh-buffer)))
 
 ;;; Miscellaneous
-
-(defun forge-enable-sql-logging ()
-  "Enable logging Forge's SQL queries."
-  (interactive)
-  (let ((db (forge-db)))
-    (emacsql-enable-debugging db)
-    (switch-to-buffer-other-window (emacsql-log-buffer (oref db connection)))))
 
 (magit-define-section-jumper forge-jump-to-pullreqs "Pull requests" pullreqs)
 (magit-define-section-jumper forge-jump-to-issues "Issues" issues)

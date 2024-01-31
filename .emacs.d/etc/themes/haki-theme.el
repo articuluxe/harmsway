@@ -1,6 +1,6 @@
 ;;; haki-theme.el --- An elegant, high-contrast dark theme in modern sense -*- lexical-binding:t -*-
 
-;; Copyright (C) 2023 Dilip
+;; Copyright (C) 2023, 2024 Dilip
 
 ;; Title: Haki-theme
 ;; Author: Dilip
@@ -30,10 +30,30 @@
 ;; Haki is an elegant, high-contrast dark theme in modern sense.
 ;; Looks and distinguish-ability is maintained.
 ;;
-;; theme was inspired on modus-vivendi and minad's packages
-;; I hope you will love it ;)
-;;
-;;
+;; Theme was inspired on modus-vivendi and minad's packages.
+;; You can use `haki-change-region' to interactively change
+;; `haki-region' face.
+;; You can set some fonts, as haki-theme inherit them in some sensible places
+;; like elfeed, org-mode, eww (shr)
+
+;; sample configuration
+;; (use-package haki-theme
+;; :custom-face
+;; (haki-region ((t (:background "#2e8b57" :foreground "#ffffff"))))
+;; (haki-highlight ((t (:background "#fafad2" :foreground "#000000"))))
+;; :config
+;; (setq
+;;  ;; If you skip setting this, it will use 'default' font.
+;;  haki-heading-font "Comic Mono"
+;;  haki-sans-font "Iosevka Comfy Motion"
+;;  haki-title-font "Impress BT"
+;;  haki-link-font "VictorMono Nerd Font" ;; or Maple Mono looks good
+;;  haki-code-font "Maple Mono") ;; inline code/verbatim (org,markdown..)
+
+;; ;; For meow/evil users (change border of mode-line according to modal states)
+;; (add-hook 'post-command-hook #'haki-modal-mode-line)
+
+;; (load-theme 'haki t))
 
 ;;; Code:
 
@@ -72,8 +92,8 @@ Do make sure to set foreground, so it is contrasts background."
 (defun haki-change-region ()
   "Interactively choose a COLOR to set it as `haki-region'."
   (interactive)
-  (let* ((bg-choice (string-trim (read-color "Background Color: " t)))
-         (fg-choice (string-trim (read-color "Foreground Color: " t))))
+  (let* ((bg-choice (string-trim (read-color "Region Background Color: " t)))
+         (fg-choice (string-trim (read-color "Region Foreground Color: " t))))
     (set-face-attribute 'haki-region nil :background bg-choice :foreground fg-choice)))
 
 ;;; --- Variables to use different fonts
@@ -136,7 +156,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
       (fg-dim        "#D8DEE9")
       (fg-inactive   "#6c7b8b")
       ;; (fg-region     haki-region)
-      (cursor        "#ffe4e1")
+      (cursor        "#8470ff")
 
       ;; --- Common logics
       (error      "#ee6363")
@@ -266,7 +286,7 @@ Respected Only in GUI frame"
    `(highlight                 ((,class :inherit (bold haki-highlight))))
    `(fixed-pitch-serif         ((,class :inherit default)))
    `(variable-pitch            ((,class )))
-   `(cursor                    ((,class :background ,cursor)))
+   `(cursor                    ((,class :background ,cursor :foreground ,fg-main)))
    `(hl-line                   ((,class :background ,bg-inactive :extend t)))
    `(link                      ((,class :font ,haki-link-font  :weight medium :underline t :foreground ,link)))
    `(button                    ((,class :inherit (bold link) :foreground ,c-operator)))
@@ -1115,6 +1135,12 @@ Respected Only in GUI frame"
    `(vundo-last-saved                           ((,class :inherit bold :foreground ,c-keyword)))
    ;; `(vundo-branch-stem                          ((,class :inherit ,c-type)))
    `(vundo-highlight                            ((,class :foreground ,link)))))
+
+(custom-theme-set-variables
+ 'haki
+ `(flymake-note-bitmap       '(exclamation-mark flymake-note-echo))
+ `(flymake-error-bitmap      '(flymake-double-exclamation-mark flymake-error-echo))
+ `(flymake-warning-bitmap    '(exclamation-mark flymake-warning-echo)))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

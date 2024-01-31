@@ -77,7 +77,9 @@
    (revnotes                  :closql-class forge-revnote)
    (selective-p               :initform nil)
    (worktree                  :initform nil)
-   (milestones                :closql-table milestone))
+   (milestones                :closql-table milestone)
+   (issues-until              :initform nil)
+   (pullreqs-until            :initform nil))
   :abstract t)
 
 (defclass forge-unusedapi-repository (forge-repository) () :abstract t)
@@ -121,14 +123,19 @@
 (cl-defmethod forge-get-repository ((demand symbol) &optional remote)
   "Return the current forge repository.
 
-If the `forge-buffer-repository' is non-nil, then return that.
-Otherwise if `forge-buffer-topic' is non-nil, then return the
-repository for that.  Finally if both variables are nil, then
-return the forge repository corresponding to the current Git
-repository, if any."
-  (or forge-buffer-repository
-      (and forge-buffer-topic
-           (forge-get-repository forge-buffer-topic))
+First check if `forge-buffer-repository', or if that is nil, then
+the repository for `forge-buffer-topic', satisfies DEMAND.  If so,
+then return that repository.
+
+Otherwise return the repository for `default-directory', if that
+exists and satisfies DEMAND.  If that fails too, then return nil
+or signal an error, depending on DEMAND."
+  (or (and-let* ((repo (or forge-buffer-repository
+                           (and forge-buffer-topic
+                                (forge-get-repository forge-buffer-topic)))))
+        (and (not (and (memq demand forge--signal-no-entry)
+                       (oref repo sparse-p)))
+             repo))
       (magit--with-refresh-cache
           (list default-directory 'forge-get-repository demand)
         (if (not (magit-gitdir))
@@ -330,14 +337,17 @@ forges and hosts."
       (cadr (car (cl-member host forge-alist :test #'equal :key #'caddr)))
       (user-error "Cannot determine githost for %S" host)))
 
-(cl-defmethod forge--topics-until ((repo forge-repository) until table)
+(cl-defmethod forge--topics-until ((repo forge-repository) until type)
   (if (oref repo sparse-p)
       until
-    (caar (forge-sql [:select [updated] :from $i1
-                      :where (= repository $s2)
-                      :order-by [(desc updated)]
-                      :limit 1]
-                     table (oref repo id)))))
+    (let ((slot (intern (format "%ss-until" type))))
+      (or (eieio-oref repo slot)
+          (eieio-oset repo slot
+                      (caar (forge-sql [:select [updated] :from $i1
+                                        :where (= repository $s2)
+                                        :order-by [(desc updated)]
+                                        :limit 1]
+                                       type (oref repo id))))))))
 
 (cl-defmethod forge--format ((repo forge-repository) format-or-slot &optional spec)
   (format-spec
@@ -356,9 +366,17 @@ forges and hosts."
 (defun forge--set-field-callback ()
   (let ((buf (current-buffer)))
     (lambda (&rest _)
-      (with-current-buffer
-          (or buf (current-buffer))
-        (forge-pull)))))
+      (with-current-buffer buf
+        (forge-pull nil nil nil
+                    (lambda ()
+                      (with-current-buffer buf
+                        (forge-refresh-buffer)
+                        (when (and transient--showp
+                                   (memq transient-current-command
+                                         '(forge-topic-menu
+                                           forge-topics-menu
+                                           forge-notification-menu)))
+                          (transient--refresh-transient)))))))))
 
 (defvar forge--mode-line-buffer nil)
 

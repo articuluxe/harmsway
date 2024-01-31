@@ -5,7 +5,7 @@
 ;;          João Távora <joaotavora@gmail.com>,
 ;;          Noam Postavsky <npostavs@gmail.com>
 ;; Maintainer: Noam Postavsky <npostavs@gmail.com>
-;; Version: 0.14.0
+;; Version: 0.14.1
 ;; X-URL: http://github.com/joaotavora/yasnippet
 ;; Keywords: convenience, emulation
 ;; URL: http://github.com/joaotavora/yasnippet
@@ -1366,10 +1366,10 @@ conditions to filter out potential expansions."
       'always
     (let ((local-condition
            (or (cond
-                ((consp yas-buffer-local-condition)
-                 (yas--funcall-condition #'eval yas-buffer-local-condition t))
                 ((functionp yas-buffer-local-condition)
-                 (yas--funcall-condition yas-buffer-local-condition)))
+                 (yas--funcall-condition yas-buffer-local-condition))
+                ((consp yas-buffer-local-condition)
+                 (yas--funcall-condition #'eval yas-buffer-local-condition t)))
                yas-buffer-local-condition)))
       (when local-condition
         (if (eq local-condition t)
@@ -1632,7 +1632,8 @@ Here's a list of currently recognized directives:
                  (setq expand-env (yas--read-lisp val 'nil-on-error)))
                 ("binding" (setq binding val))
                 ("contributor" nil) ;Documented in `snippet-development.org'.
-                (dir (message "Ignoring unknown directive: %s" dir))))))
+                (dir (message "Ignoring unknown directive %S in file: %s"
+                              dir file))))))
       (setq template
             (buffer-substring-no-properties (point-min) (point-max))))
     (unless (or key binding)
@@ -1827,14 +1828,6 @@ the current buffers contents."
   (if yas--creating-compiled-snippets
       (let ((print-length nil))
         (insert ";;; Snippet definitions:\n;;;\n")
-        (dolist (snippet snippets)
-          ;; Fill in missing elements with nil.
-          (setq snippet (append snippet (make-list (- 10 (length snippet)) nil)))
-          ;; Move LOAD-FILE to SAVE-FILE because we will load from the
-          ;; compiled file, not LOAD-FILE.
-          (let ((load-file (nth 6 snippet)))
-            (setcar (nthcdr 6 snippet) nil)
-            (setcar (nthcdr 9 snippet) load-file)))
         (insert (pp-to-string
                  `(yas-define-snippets ',mode ',snippets)))
         (insert "\n\n"))
@@ -1942,7 +1935,8 @@ With prefix argument USE-JIT do jit-loading of snippets."
                           (current-time-string)))))
     ;; Normal case.
     (unless (file-exists-p (expand-file-name ".yas-skip" directory))
-      (unless (and (load (expand-file-name ".yas-compiled-snippets" directory) 'noerror (<= yas-verbosity 3))
+      (unless (and (load (expand-file-name ".yas-compiled-snippets" directory)
+                         'noerror (<= yas-verbosity 3))
                    (progn (yas--message 4 "Loaded compiled snippets from %s" directory) t))
         (yas--message 4 "Loading snippet files from %s" directory)
         (yas--load-directory-2 directory mode-sym)))))
@@ -2091,7 +2085,7 @@ prefix argument."
 
 This works by stubbing a few functions, then calling
 `yas-load-directory'."
-  (interactive "DTop level snippet directory?")
+  (interactive "DTop level snippet directory? ")
   (let ((yas--creating-compiled-snippets t))
     (yas-load-directory top-level-dir nil)))
 
@@ -4528,7 +4522,8 @@ The SNIPPET's markers are preserved."
                              remarkers)))
                    (unwind-protect
                        (progn (back-to-indentation)
-                              (indent-according-to-mode))
+                              (with-demoted-errors "%S"
+                                (indent-according-to-mode)))
                      (save-restriction
                        (narrow-to-region bol (line-end-position))
                        (dolist (remarker remarkers)
@@ -4971,6 +4966,7 @@ When multiple expressions are found, only the last one counts."
                     ;; When not in an undo, check if we must commit the snippet
                     ;; (user exited it).
                     (yas--check-commit-snippet))))
+    ;; FIXME: Why?
     ((debug error) (signal (car err) (cdr err)))))
 
 ;;; Fancy docs:

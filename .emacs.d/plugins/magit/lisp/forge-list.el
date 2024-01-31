@@ -226,10 +226,15 @@ Must be set before `forge-list' is loaded.")
 (defun forge-topic-list-setup (type filter fn &optional repo global columns)
   (let* ((repo (or repo
                    (and (not global)
-                        (forge-get-repository t))))
+                        (if-let* ((topic (forge-topic-at-point))
+                                  (repo (forge-get-repository topic)))
+                            repo
+                          (forge-get-repository nil)))))
          (topdir (and repo (oref repo worktree)))
-         (buffer (forge-topic-get-buffer repo t)))
-    (with-current-buffer buffer
+         (buffer nil))
+    (unless (or repo global)
+      (error "Cannot determine repository"))
+    (with-current-buffer (setq buffer (forge-topic-get-buffer repo t))
       (setq default-directory (or topdir "/"))
       (setq forge-buffer-repository repo)
       (setq forge--tabulated-list-columns (or columns forge-topic-list-columns))
@@ -355,16 +360,19 @@ Must be set before `forge-list' is loaded.")
 
 ;;;###autoload (autoload 'forge-topics-menu "forge-list" nil t)
 (transient-define-prefix forge-topics-menu ()
-  "Control list of topics and topic at point."
+  "Control list of topics and the topic at point."
   :transient-suffix t
   :transient-non-suffix t
   :transient-switch-frame nil
   :refresh-suffixes t
-  [:hide always ("q" forge-menu-quit-list)]
+  [:hide always
+   ("q"        forge-menu-quit-list)
+   ("RET"      forge-topic-menu)
+   ("<return>" forge-topic-menu)]
   [["Type"
-    (:info "topics           " :face forge-active-suffix)
-    ("n"   "notifications... " forge-notification-menu :transient replace)
-    ("r"   "repositories...  " forge-repository-menu   :transient replace)]
+    (:info "topics"           :face forge-active-suffix)
+    ("n"   "notifications..." forge-notification-menu :transient replace)
+    ("r"   "repositories..."  forge-repository-menu   :transient replace)]
    [:description (lambda ()
                    (if forge--buffer-list-global
                        "Per-repository lists"
@@ -397,7 +405,7 @@ Must be set before `forge-list' is loaded.")
     ("s c" forge-issue-state-set-completed)
     ("s u" forge-issue-state-set-unplanned)
     ("s m" forge-pullreq-state-set-merged)
-    ("s x" forge-pullreq-state-set-closed)
+    ("s r" forge-pullreq-state-set-rejected)
     """Set status"
     ("s i" forge-topic-status-set-unread)
     ("s p" forge-topic-status-set-pending)
@@ -460,11 +468,15 @@ or notification list buffer to becomes current in the selected
 window, then display the respective menu, otherwise display no
 menu."
   (interactive)
-  (when (derived-mode-p 'forge-topic-list-mode
+  (when (derived-mode-p 'forge-topic-mode
+                        'forge-topic-list-mode
                         'forge-repository-list-mode
                         'forge-notifications-mode)
     (quit-window))
-  (cond ((derived-mode-p 'forge-topic-list-mode)
+  (cond ((derived-mode-p 'forge-topic-mode)
+         (setq transient--exitp 'replace)
+         (transient-setup (setq this-command 'forge-topic-menu)))
+        ((derived-mode-p 'forge-topic-list-mode)
          (setq transient--exitp 'replace)
          (transient-setup (setq this-command 'forge-topics-menu)))
         ((derived-mode-p 'forge-repository-list-mode)

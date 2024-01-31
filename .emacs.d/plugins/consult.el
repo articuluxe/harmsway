@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.1
+;; Version: 1.2
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.4"))
 ;; Homepage: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -886,6 +886,15 @@ When no project is found and MAY-PROMPT is non-nil ask the user."
   (or (eq (selected-window) (active-minibuffer-window))
       (eq #'completion-list-mode (buffer-local-value 'major-mode (window-buffer)))))
 
+(defun consult--original-window ()
+  "Return window which was just selected just before the minibuffer was entered.
+In contrast to `minibuffer-selected-window' never return nil and
+always return an appropriate non-minibuffer window."
+  (or (minibuffer-selected-window)
+      (if (window-minibuffer-p (selected-window))
+          (next-window)
+        (selected-window))))
+
 (defun consult--forbid-minibuffer ()
   "Raise an error if executed from the minibuffer."
   (when (minibufferp)
@@ -1293,8 +1302,9 @@ ORIG is the original function, HOOKS the arguments."
       (when (bound-and-true-p so-long-detected-p)
         (kill-buffer)
         (error "File `%s' with long lines not previewed" name))
-      (when (and (memq major-mode '(fundamental-mode hexl-mode))
-                 (save-excursion (search-forward "\0" nil 'noerror)))
+      (when (or (eq major-mode 'hexl-mode)
+                (and (eq major-mode 'fundamental-mode)
+                     (save-excursion (search-forward "\0" nil 'noerror))))
         (kill-buffer)
         (error "Binary file `%s' not previewed" name))
       (current-buffer))))
@@ -1322,7 +1332,7 @@ ORIG is the original function, HOOKS the arguments."
             (set-default k d)
             (set k v)))
       (error
-       (message "%s" (cdr err))
+       (message "%s" (error-message-string err))
        nil))))
 
 (defun consult--temporary-files ()
@@ -1414,7 +1424,7 @@ ORIG is the original function, HOOKS the arguments."
 (defun consult--invisible-open-permanently ()
   "Open overlays which hide the current line.
 See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
-  (if (and (derived-mode-p #'org-mode) (fboundp 'org-fold-show-set-visibility))
+  (if (and (derived-mode-p 'org-mode) (fboundp 'org-fold-show-set-visibility))
       ;; New Org 9.6 fold-core API
       (let ((inhibit-redisplay t)) ;; HACK: Prevent flicker due to premature redisplay
         (org-fold-show-set-visibility 'canonical))
@@ -1426,7 +1436,7 @@ See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
 (defun consult--invisible-open-temporarily ()
   "Temporarily open overlays which hide the current line.
 See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
-  (if (and (derived-mode-p #'org-mode)
+  (if (and (derived-mode-p 'org-mode)
            (fboundp 'org-fold-show-set-visibility)
            (fboundp 'org-fold-core-get-regions)
            (fboundp 'org-fold-core-region))
@@ -1681,7 +1691,7 @@ PREVIEW-KEY, STATE, TRANSFORM, CANDIDATE and SAVE-INPUT."
                           (when timer
                             (cancel-timer timer)
                             (setq timer nil))
-                          (with-selected-window (or (minibuffer-selected-window) (next-window))
+                          (with-selected-window (consult--original-window)
                             ;; STEP 3: Reset preview
                             (when previewed
                               (funcall state 'preview nil))
@@ -1689,7 +1699,7 @@ PREVIEW-KEY, STATE, TRANSFORM, CANDIDATE and SAVE-INPUT."
                             (funcall state 'exit nil)))))
                 (add-hook 'minibuffer-exit-hook hook))
               ;; STEP 1: Setup the preview function
-              (with-selected-window (or (minibuffer-selected-window) (next-window))
+              (with-selected-window (consult--original-window)
                 (funcall state 'setup nil))
               (setq consult--preview-function
                     (lambda ()
@@ -1704,7 +1714,7 @@ PREVIEW-KEY, STATE, TRANSFORM, CANDIDATE and SAVE-INPUT."
                         (with-selected-window (active-minibuffer-window)
                           (let ((input (minibuffer-contents-no-properties))
                                 (narrow consult--narrow)
-                                (win (or (minibuffer-selected-window) (next-window))))
+                                (win (consult--original-window)))
                             (with-selected-window win
                               (when-let ((transformed (funcall transform narrow input cand))
                                          (debounce (consult--preview-key-debounce preview-key transformed)))
@@ -1790,7 +1800,7 @@ sequence with the following arguments:
   5. \\='return CAND/nil   After leaving the mb, CAND has been selected.
 
 The state function is always executed with the original window selected,
-see `minibuffer-selected-window'.  The state function is called once in
+see `consult--original-window'.  The state function is called once in
 the beginning of the minibuffer setup with the `setup' argument.  This is
 useful in order to perform certain setup operations which require that
 the minibuffer is initialized.  During completion candidates are
@@ -2597,7 +2607,7 @@ PREVIEW-KEY are the preview keys."
           ;; Repair the null completion semantics. `completing-read' may return
           ;; an empty string even if REQUIRE-MATCH is non-nil. One can always
           ;; opt-in to null completion by passing the empty string for DEFAULT.
-          (when (and require-match (not default) (equal selected ""))
+          (when (and (eq require-match t) (not default) (equal selected ""))
             (user-error "No selection"))
           selected)))))
 
@@ -3226,15 +3236,12 @@ The symbol at point is added to the future history."
               (when (consult--in-range-p pos)
                 (goto-char pos)
                 ;; `line-number-at-pos' is slow, see comment in `consult--mark-candidates'.
-                (let ((line (line-number-at-pos pos consult-line-numbers-widen)))
-                  (push (concat
-                         (propertize
-                          (consult--format-file-line-match (buffer-name buf) line "")
-                          'consult-location (cons marker line)
-                          'consult-strip t)
-                         (consult--line-with-mark marker)
-                         (consult--tofu-encode marker))
-                        candidates))))))))
+                (let* ((line (line-number-at-pos pos consult-line-numbers-widen))
+                       (prefix (consult--format-file-line-match (buffer-name buf) line ""))
+                       (cand (concat prefix (consult--line-with-mark marker) (consult--tofu-encode marker))))
+                  (put-text-property 0 (length prefix) 'consult-strip t cand)
+                  (put-text-property 0 (length cand) 'consult-location (cons marker line) cand)
+                  (push cand candidates))))))))
     (unless candidates
       (user-error "No global marks"))
     (nreverse (delete-dups candidates))))
@@ -4462,7 +4469,7 @@ AS is a conversion function."
 
 (defun consult--buffer-preview ()
   "Buffer preview function."
-  (let ((orig-buf (current-buffer))
+  (let ((orig-buf (window-buffer (consult--original-window)))
         (orig-prev (copy-sequence (window-prev-buffers)))
         (orig-next (copy-sequence (window-next-buffers)))
         other-win)
@@ -4474,7 +4481,7 @@ AS is a conversion function."
         ('preview
          (when (and (eq consult--buffer-display #'switch-to-buffer-other-window)
                     (not other-win))
-           (switch-to-buffer-other-window orig-buf)
+           (switch-to-buffer-other-window orig-buf 'norecord)
            (setq other-win (selected-window)))
          (let ((win (or other-win (selected-window)))
                (buf (or (and cand (get-buffer cand)) orig-buf)))
