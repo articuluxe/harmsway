@@ -24,17 +24,21 @@ end processFolder
 on processFile(currfile, currdir)
 	set currname to name of currfile
 	set moddate to modification date of currfile
---	display dialog "moddate: " & moddate
+	--	display dialog "moddate: " & moddate
 	set todaystr to formatDate(current date)
 	set thenstr to formatDate(moddate)
---	display dialog "today: " & todaystr & return & "then: " & thenstr
+	--	display dialog "today: " & todaystr & return & "then: " & thenstr
 	set newtxtname to thenstr & "-" & text 1 thru -7 of currname & ".txt"
 	set newpdfname to thenstr & "-" & text 1 thru -7 of currname & ".pdf"
 	set currpath to (currdir as Unicode text) & currname
+	set subdir to (currdir as text) & ".converted-at-" & todaystr
 	tell application "Finder"
-		set subdir to make new folder at (currdir as text) with properties {name:".converted-at-" & todaystr}
+		if (exists folder subdir) = false then
+			set subdir to make new folder at (currdir as text) with properties {name:".converted-at-" & todaystr}
+		else
+			set subdir to subdir & ":"
+		end if
 	end tell
---	display dialog "subdir: " & subdir
 	set newpath to (subdir as Unicode text)
 	tell application "Pages"
 		set currdoc to open file currpath
