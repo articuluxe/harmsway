@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-01-20 16:53:50 dharms>
+;; Modified Time-stamp: <2024-02-08 12:20:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -697,8 +697,8 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
   multi-line
-  :bind (("C-`" . multi-line)
-         ("M-' `" . multi-line)
+  :bind (("C-~" . multi-line)
+         ("M-' ~" . multi-line)
          ))
 
 (use-package fill-function-arguments
@@ -2591,6 +2591,18 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired-duplicates ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dired-duplicates
   :bind ("C-c 0dp" . dired-duplicates))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dwim-shell-command ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun dwim-dwim ()
+  "Personal executor of `dwim-shell-command'."
+  (interactive)
+  (counsel-M-x "dwim-shell-commands-"))
+(use-package dwim-shell-command
+  :bind (("C-`" . dwim-dwim)
+         ("M-' `" . dwim-dwim))
+  :config
+  (require 'dwim-shell-commands)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; disk-usage ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package disk-usage
