@@ -165,19 +165,27 @@ an error."
 
 ;;;; List
 
-(defun forge-ls-pullreqs (repo &optional type select)
-  (forge-ls-topics repo 'forge-pullreq type select))
-
 (defun forge--ls-recent-pullreqs (repo)
   (forge-ls-recent-topics repo 'pullreq))
+
+(defun forge--ls-pullreqs (repo)
+  (forge--select-pullreqs repo
+    [:from pullreq :where (= pullreq:repository $s1)]))
+
+(defun forge--ls-active-pullreqs (repo)
+  (forge--select-pullreqs repo
+    [:from pullreq
+     :where (and (= pullreq:repository $s1)
+                 (or (= pullreq:state 'open)
+                     (in pullreq:status [pending unread])))]))
 
 (defun forge--ls-assigned-pullreqs (repo)
   (forge--select-pullreqs repo
     [:from pullreq
      :join pullreq_assignee :on (= pullreq_assignee:pullreq pullreq:id)
      :join assignee         :on (= pullreq_assignee:id      assignee:id)
-     :where (and (= pullreq:repository $s2)
-                 (= assignee:login     $s3)
+     :where (and (= pullreq:repository $s1)
+                 (= assignee:login     $s2)
                  (isnull pullreq:closed))]
     (ghub--username repo)))
 
@@ -186,16 +194,16 @@ an error."
     [:from pullreq
      :join pullreq_review_request :on (= pullreq_review_request:pullreq pullreq:id)
      :join assignee               :on (= pullreq_review_request:id      assignee:id)
-     :where (and (= pullreq:repository $s2)
-                 (= assignee:login     $s3)
+     :where (and (= pullreq:repository $s1)
+                 (= assignee:login     $s2)
                  (isnull pullreq:closed))]
     (ghub--username repo)))
 
 (defun forge--ls-authored-pullreqs (repo)
   (forge--select-pullreqs repo
     [:from [pullreq]
-     :where (and (= pullreq:repository $s2)
-                 (= pullreq:author     $s3)
+     :where (and (= pullreq:repository $s1)
+                 (= pullreq:author     $s2)
                  (isnull pullreq:closed))]
     (ghub--username repo)))
 
@@ -204,8 +212,8 @@ an error."
     [:from pullreq
      :join pullreq_label :on (= pullreq_label:pullreq pullreq:id)
      :join label         :on (= pullreq_label:id      label:id)
-     :where (and (= pullreq:repository  $s2)
-                 (= label:name        $s3)
+     :where (and (= pullreq:repository  $s1)
+                 (= label:name        $s2)
                  (isnull pullreq:closed))]
     label))
 
@@ -213,8 +221,8 @@ an error."
   (forge--select-pullreqs nil
     [:from [pullreq repository]
      :where (and (= pullreq:repository repository:id)
-                 (in repository:owner $v2)
-                 (not (in repository:name $v3))
+                 (in repository:owner $v1)
+                 (not (in repository:name $v2))
                  (isnull pullreq:closed))
      :order-by [(asc repository:owner)
                 (asc repository:name)
@@ -228,36 +236,32 @@ an error."
     (mapcar (lambda (row)
               (closql--remake-instance 'forge-pullreq db row))
             (apply #'forge-sql
-                   (vconcat [:select $i1]
+                   (vconcat [:select *]
                             query
                             (and (not (cl-find :order-by query))
                                  [:order-by [(desc updated)]]))
-                   (vconcat (closql--table-columns db 'pullreq t))
                    (if repo
                        (cons (oref repo id) args)
                      args)))))
 
 ;;; Read
 
-(defun forge-read-pullreq (prompt &optional type)
-  "Read a pull-request with completion using PROMPT.
-TYPE can be `open', `closed', or nil to select from all
-pull-requests.  TYPE can also be t to select from open
-pull-requests, or all pull-requests if a prefix argument
-is in effect."
-  (when (eq type t)
-    (setq type (if current-prefix-arg nil 'open)))
-  (let* ((default (forge-current-pullreq))
-         (repo    (forge-get-repository (or default t)))
-         (choices (mapcar #'forge--format-topic-choice
-                          (forge-ls-pullreqs repo type))))
-    (cdr (assoc (magit-completing-read
-                 prompt choices nil nil nil nil
-                 (and default
-                      (setq default (forge--format-topic-choice default))
-                      (member default choices)
-                      (car default)))
-                choices))))
+(defun forge-read-pullreq (prompt)
+  "Read an active pull-request with completion using PROMPT.
+
+Open, unread and pending pull-requests are considered active.
+Default to the current pull-request even if it isn't active.
+
+\\<forge-read-topic-minibuffer-map>While completion is in \
+progress, \\[forge-read-topic-lift-limit] lifts the limit, extending
+the completion candidates to include all pull-requests.
+
+If `forge-limit-topic-choices' is nil, then all candidates
+can be selected from the start."
+  (forge--read-topic prompt
+                     #'forge-current-pullreq
+                     #'forge--ls-active-pullreqs
+                     #'forge--ls-pullreqs))
 
 ;;; Utilities
 
@@ -295,10 +299,12 @@ is in effect."
 (defvar-keymap forge-pullreqs-section-map
   "<remap> <magit-browse-thing>" #'forge-browse-pullreqs
   "<remap> <magit-visit-thing>"  #'forge-list-pullreqs
+  "C-c C-m"                      #'forge-topics-menu
   "C-c C-n"                      #'forge-create-pullreq)
 
 (defvar-keymap forge-pullreq-section-map
-  "<remap> <magit-visit-thing>"  #'forge-visit-this-topic)
+  "<remap> <magit-visit-thing>"  #'forge-visit-this-topic
+  "C-c C-m"                      #'forge-topic-menu)
 
 (defun forge-insert-pullreqs ()
   "Insert a list of mostly recent and/or open pull-requests.

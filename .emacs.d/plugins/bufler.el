@@ -326,7 +326,7 @@ clear `bufler-cache', and regenerate buffer groups (which can be
 useful after changing `bufler-groups' if the buffer list has not
 yet changed).  With two universal prefix args, also show buffers
 which are otherwise filtered by `bufler-filter-buffer-fns'."
-  (interactive "P")
+  (interactive "P")  ;; FIXME: Using "P" broke showing filtered buffers.
   (let (format-table)
     (cl-labels
         ;; This gets a little hairy because we have to wrap `-group-by'
@@ -1045,10 +1045,15 @@ e.g. symlinks are resolved."
 In other words, if DIR-A is either equal to or an ancestor of
 DIR-B."
   (cl-labels ((dir-related-p (dir-a dir-b)
-                (let ((test-dir (f-canonical dir-a))
-                      (buffer-dir (f-canonical dir-b)))
-                  (or (f-equal? test-dir buffer-dir)
-                      (f-ancestor-of? test-dir buffer-dir)))))
+                ;; Test without canonicalizing first, because if a
+                ;; subdirectory of dir-A is a symlink to a directory
+                ;; outside of dir-A, we still consider them related.
+                (or (f-equal? dir-a dir-b)
+                    (f-ancestor-of? dir-a dir-b)
+                    (let ((test-dir (f-canonical dir-a))
+                          (buffer-dir (f-canonical dir-b)))
+                      (or (f-equal? test-dir buffer-dir)
+                          (f-ancestor-of? test-dir buffer-dir))))))
     (if bufler-cache-related-dirs-p
         (let ((key (cons dir-a dir-b)))
           (pcase (gethash key bufler-cache-related-dirs)

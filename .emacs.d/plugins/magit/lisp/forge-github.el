@@ -346,9 +346,7 @@
   ;; The GraphQL API doesn't support notifications and also likes to
   ;; timeout for handcrafted requests, forcing us to perform a major
   ;; rain dance.
-  (let ((spec (assoc githost forge-alist)))
-    (unless spec
-      (error "No entry for %S in forge-alist" githost))
+  (let ((spec (forge--get-forge-host githost t)))
     (forge--msg nil t nil "Pulling notifications")
     (pcase-let*
         ((`(,_ ,apihost ,forge ,_) spec)
@@ -464,8 +462,7 @@
                   (`(nil    ,_    always-unread)    'unread)
                   (`(nil    ,_    pending-again)    'pending)
                   ('(nil    unset pending-if-unset) 'pending)
-                  ('(nil    ,_    ,_                'done))))))
-      (forge--zap-repository-cache repo))))
+                  (`(nil    ,_    ,_)               'done))))))))
 
 ;;;; Miscellaneous
 
@@ -649,44 +646,50 @@
   ((repo forge-github-repository) topic milestone)
   (forge--ghub-patch topic
     "/repos/:owner/:repo/issues/:number"
-    `((milestone
-       . ,(caar (forge-sql [:select [number]
-                            :from milestone
-                            :where (and (= repository $s1)
-                                        (= title $s2))]
-                           (oref repo id)
-                           milestone))))
+    (if milestone
+        `((milestone . ,(caar (forge-sql [:select [number]
+                                          :from milestone
+                                          :where (and (= repository $s1)
+                                                      (= title $s2))]
+                                         (oref repo id)
+                                         milestone))))
+      `((milestone . :null)))
     :callback (forge--set-field-callback)))
 
 (cl-defmethod forge--set-topic-labels
   ((_repo forge-github-repository) topic labels)
-  (forge--ghub-put topic "/repos/:owner/:repo/issues/:number/labels" nil
-    :payload labels
-    :callback (forge--set-field-callback)))
+  (funcall (if labels #'forge--ghub-put #'forge--ghub-delete)
+           topic "/repos/:owner/:repo/issues/:number/labels" nil
+           :payload labels
+           :callback (forge--set-field-callback)))
 
 (cl-defmethod forge--set-topic-assignees
   ((_repo forge-github-repository) topic assignees)
   (let ((value (mapcar #'car (closql--iref topic 'assignees))))
+    ;; FIXME Only refresh once.
     (when-let ((add (cl-set-difference assignees value :test #'equal)))
       (forge--ghub-post topic "/repos/:owner/:repo/issues/:number/assignees"
-        `((assignees . ,add))))
+        `((assignees . ,add))
+        :callback (forge--set-field-callback)))
     (when-let ((remove (cl-set-difference value assignees :test #'equal)))
       (forge--ghub-delete topic "/repos/:owner/:repo/issues/:number/assignees"
-        `((assignees . ,remove)))))
-  (forge-pull))
+        `((assignees . ,remove))
+        :callback (forge--set-field-callback)))))
 
 (cl-defmethod forge--set-topic-review-requests
   ((_repo forge-github-repository) topic reviewers)
   (let ((value (mapcar #'car (closql--iref topic 'review-requests))))
+    ;; FIXME Only refresh once.
     (when-let ((add (cl-set-difference reviewers value :test #'equal)))
       (forge--ghub-post topic
         "/repos/:owner/:repo/pulls/:number/requested_reviewers"
-        `((reviewers . ,add))))
+        `((reviewers . ,add))
+        :callback (forge--set-field-callback)))
     (when-let ((remove (cl-set-difference value reviewers :test #'equal)))
       (forge--ghub-delete topic
         "/repos/:owner/:repo/pulls/:number/requested_reviewers"
-        `((reviewers . ,remove)))))
-  (forge-pull))
+        `((reviewers . ,remove))
+        :callback (forge--set-field-callback)))))
 
 (cl-defmethod forge--delete-comment
   ((_repo forge-github-repository) post)
@@ -694,8 +697,8 @@
   (closql-delete post)
   (forge-refresh-buffer))
 
-(cl-defmethod forge--topic-templates ((repo forge-github-repository)
-                                      (_ (subclass forge-issue)))
+(cl-defmethod forge--topic-template-files ((repo forge-github-repository)
+                                           (_ (subclass forge-issue)))
   (and-let* ((files (magit-revision-files (oref repo default-branch))))
     (let ((case-fold-search t))
       (if-let ((file (--first (string-match-p "\
@@ -713,8 +716,8 @@
                    (list conf))
           files)))))
 
-(cl-defmethod forge--topic-templates ((repo forge-github-repository)
-                                      (_ (subclass forge-pullreq)))
+(cl-defmethod forge--topic-template-files ((repo forge-github-repository)
+                                           (_ (subclass forge-pullreq)))
   (and-let* ((files (magit-revision-files (oref repo default-branch))))
     (let ((case-fold-search t))
       (if-let ((file (--first (string-match-p "\

@@ -908,6 +908,9 @@ Sourced other themes to get information about font faces for packages.")
      `(ediff-odd-diff-B ((,class (:background ,bg-other :extend t))))
      `(ediff-odd-diff-C ((,class (:background ,bg-other :extend t))))
 
+;;;; eldoc - dark
+     `(eldoc-highlight-function-argument ((,class (:foreground ,magenta :weight bold ))))
+
 ;;;; elfeed - dark
      `(elfeed-log-debug-level-face ((,class (:foreground ,macos5))))
      `(elfeed-log-error-level-face ((,class (:foreground ,red))))
@@ -1652,6 +1655,16 @@ Sourced other themes to get information about font faces for packages.")
      `(outline-6 ((,class (:foreground ,orange))))
      `(outline-7 ((,class (:foreground ,teal))))
      `(outline-8 ((,class (:foreground ,fg))))
+
+;;;; outline-minor-faces - dark
+     `(outline-minor-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-macos-do-scale timu-macos-scale-org-document-info 1.2)))))
+     `(outline-minor-2 ((,class (:foreground ,magenta :weight bold ,@(timu-macos-do-scale timu-macos-scale-org-document-info 1.2)))))
+     `(outline-minor-3 ((,class (:foreground ,lightcyan :weight bold ,@(timu-macos-do-scale timu-macos-scale-org-document-info 1.1)))))
+     `(outline-minor-4 ((,class (:foreground ,red))))
+     `(outline-minor-5 ((,class (:foreground ,green))))
+     `(outline-minor-6 ((,class (:foreground ,orange))))
+     `(outline-minor-7 ((,class (:foreground ,purple))))
+     `(outline-minor-8 ((,class (:foreground ,fg))))
 
 ;;;; parenface - dark
      `(paren-face ((,class (:foreground ,macos5))))
@@ -2556,6 +2569,9 @@ Sourced other themes to get information about font faces for packages.")
      `(ediff-odd-diff-B ((,class (:background ,bg-other :extend t))))
      `(ediff-odd-diff-C ((,class (:background ,bg-other :extend t))))
 
+;;;; eldoc - light
+     `(eldoc-highlight-function-argument ((,class (:foreground ,magenta :weight bold ))))
+
 ;;;; elfeed - light
      `(elfeed-log-debug-level-face ((,class (:foreground ,macos5))))
      `(elfeed-log-error-level-face ((,class (:foreground ,red))))
@@ -3300,6 +3316,16 @@ Sourced other themes to get information about font faces for packages.")
      `(outline-6 ((,class (:foreground ,orange))))
      `(outline-7 ((,class (:foreground ,teal))))
      `(outline-8 ((,class (:foreground ,fg))))
+
+;;;; outline-minor-faces - light
+     `(outline-minor-1 ((,class (:foreground ,darkblue :weight ultra-bold ,@(timu-macos-do-scale timu-macos-scale-org-document-info 1.2)))))
+     `(outline-minor-2 ((,class (:foreground ,magenta :weight bold ,@(timu-macos-do-scale timu-macos-scale-org-document-info 1.2)))))
+     `(outline-minor-3 ((,class (:foreground ,blue :weight bold ,@(timu-macos-do-scale timu-macos-scale-org-document-info 1.1)))))
+     `(outline-minor-4 ((,class (:foreground ,red))))
+     `(outline-minor-5 ((,class (:foreground ,green))))
+     `(outline-minor-6 ((,class (:foreground ,orange))))
+     `(outline-minor-7 ((,class (:foreground ,purple))))
+     `(outline-minor-8 ((,class (:foreground ,fg))))
 
 ;;;; parenface - light
      `(paren-face ((,class (:foreground ,macos5))))

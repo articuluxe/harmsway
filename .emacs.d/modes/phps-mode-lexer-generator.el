@@ -1,6 +1,6 @@
 ;;; phps-mode-lexer-generator.el -- Generate lexer rules for lexer -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2024  Free Software Foundation, Inc.
 
 
 ;;; Commentary:
@@ -28,9 +28,6 @@
 (defvar-local phps-mode-lexer--state-stack nil
   "Current state-stack of lexer.")
 
-(defvar-local phps-mode-lexer--states nil
-  "History of state and state-stack.")
-
 (defvar-local phps-mode-lexer--heredoc-label nil
   "Current heredoc label.")
 
@@ -54,6 +51,9 @@
 
 (defvar-local phps-mode-lexer--restart-flag nil
   "Non-nil means restart.")
+
+(defvar-local phps-mode-lexer--move-flag nil
+  "Non nil means move.")
 
 ;; @see https://secure.php.net/manual/en/language.types.integer.php
 (defconst phps-mode-lexer--long-limit
@@ -1942,18 +1942,18 @@
 
 (defun phps-mode-lexer--move-forward (position)
   "Move forward to POSITION."
-  (when (boundp 'phps-mode-lex-analyzer--lexer-index)
-    (setq-local
-     phps-mode-lex-analyzer--lexer-index
-     position)))
+  (setq-local phps-mode-lexer--move-flag position)
+  (phps-mode-debug-message
+   (message "Signal move forward to %S" phps-mode-lexer--move-flag)))
 
-(defun phps-mode-lexer--yyless (points)
+(defun phps-mode-lexer--yyless (_points)
   "Move lexer back POINTS."
-  (when (boundp 'phps-mode-lex-analyzer--lexer-index)
-    (setq-local
-     phps-mode-lex-analyzer--lexer-index
-     (- phps-mode-lex-analyzer--lexer-index points)))
-  (forward-char (- points)))
+  ;; (setq-local
+  ;;  phps-mode-lexer--move-flag
+  ;;  (- phps-mode-lexer--generated-new-tokens-index points))
+  ;; (phps-mode-debug-message
+  ;;  (message "Signal move backward to %S" phps-mode-lexer--move-flag))
+  )
 
 (defun phps-mode-lexer--inline-char-handler ()
   "Mimic inline_char_handler."
@@ -2041,19 +2041,7 @@
     (buffer-substring-no-properties
      start
      end)
-    `(,token ,start . ,end)))
-  
-  ;; Push token start, end, lexer state and state stack to variable
-  (push
-   (list
-    start
-    end
-    phps-mode-lexer--state
-    phps-mode-lexer--state-stack
-    phps-mode-lexer--heredoc-label
-    phps-mode-lexer--heredoc-label-stack
-    phps-mode-lexer--nest-location-stack)
-   phps-mode-lexer--states))
+    `(,token ,start . ,end))))
 
 (defun phps-mode-lexer--get-next-unescaped (character)
   "Find where next un-escaped CHARACTER comes, if none is found return nil."
@@ -2079,10 +2067,11 @@
     (setq start (match-beginning 0)))
   (unless end
     (setq end (match-end 0)))
-  (when (boundp 'phps-mode-lex-analyzer--lexer-index)
-    (setq-local
-     phps-mode-lex-analyzer--lexer-index
-     end)))
+  (setq-local
+   phps-mode-lexer--move-flag
+   end)
+  (phps-mode-debug-message
+   (message "Signal move skip forward to %S" phps-mode-lexer--move-flag)))
 
 (defun phps-mode-lexer--return-token (&optional token start end)
   "Return TOKEN with START and END."

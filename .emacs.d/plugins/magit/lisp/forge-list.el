@@ -26,6 +26,7 @@
 (require 'tabulated-list)
 
 (require 'forge)
+(require 'forge-topic)
 
 (defvar x-stretch-cursor)
 
@@ -190,7 +191,7 @@ forges web interface."
   "RET"      #'forge-visit-this-topic
   "<return>" #'forge-visit-this-topic
   "o"        #'forge-browse-this-topic
-  "L"        #'forge-topics-menu
+  "C-c C-m"  #'forge-topics-menu
   "'"        #'forge-dispatch
   "?"        #'magit-dispatch)
 
@@ -289,7 +290,7 @@ Must be set before `forge-list' is loaded.")
   "RET"      #'forge-visit-this-repository
   "<return>" #'forge-visit-this-repository
   "o"        #'forge-browse-this-repository
-  "L"        #'forge-repository-menu
+  "C-c C-m"  #'forge-repositories-menu
   "'"        #'forge-dispatch
   "?"        #'magit-dispatch)
 
@@ -365,14 +366,15 @@ Must be set before `forge-list' is loaded.")
   :transient-non-suffix t
   :transient-switch-frame nil
   :refresh-suffixes t
+  :column-widths forge--topic-menus-column-widths
   [:hide always
    ("q"        forge-menu-quit-list)
    ("RET"      forge-topic-menu)
    ("<return>" forge-topic-menu)]
   [["Type"
     (:info "topics"           :face forge-active-suffix)
-    ("n"   "notifications..." forge-notification-menu :transient replace)
-    ("r"   "repositories..."  forge-repository-menu   :transient replace)]
+    ("n"   "notifications..." forge-notifications-menu :transient replace)
+    ("r"   "repositories..."  forge-repositories-menu  :transient replace)]
    [:description (lambda ()
                    (if forge--buffer-list-global
                        "Per-repository lists"
@@ -400,17 +402,7 @@ Must be set before `forge-list' is loaded.")
     ("c" "created"          forge-list-authored-pullreqs)
     ("a" "assigned"         forge-list-assigned-pullreqs)
     ("w" "awaiting review"  forge-list-requested-reviews)]]
-  [["Set state"
-    ("s o" forge-topic-state-set-open)
-    ("s c" forge-issue-state-set-completed)
-    ("s u" forge-issue-state-set-unplanned)
-    ("s m" forge-pullreq-state-set-merged)
-    ("s r" forge-pullreq-state-set-rejected)
-    """Set status"
-    ("s i" forge-topic-status-set-unread)
-    ("s p" forge-topic-status-set-pending)
-    ("s d" forge-topic-status-set-done)
-    ("s s" forge-topic-toggle-saved)]
+  [forge--topic-set-state-group
    ["Global lists"
     ("o t" "owned topics"        forge-list-owned-topics)
     ("o i" "owned issues"        forge-list-owned-issues)
@@ -418,6 +410,7 @@ Must be set before `forge-list' is loaded.")
    ["Actions"
     ("f" "fetch all topics"  forge-pull)
     ("m" "show more actions" forge-dispatch)]]
+  [forge--topic-set-status-group]
   (interactive)
   (catch 'add-instead
     (unless (derived-mode-p 'forge-topic-list-mode)
@@ -438,8 +431,8 @@ Must be set before `forge-list' is loaded.")
             (forge-list-owned-topics)))))
     (transient-setup 'forge-topics-menu)))
 
-;;;###autoload (autoload 'forge-repository-menu "forge-list" nil t)
-(transient-define-prefix forge-repository-menu ()
+;;;###autoload (autoload 'forge-repositories-menu "forge-list" nil t)
+(transient-define-prefix forge-repositories-menu ()
   "Control list of repositories and repository at point."
   :transient-suffix t
   :transient-non-suffix 'call
@@ -448,7 +441,7 @@ Must be set before `forge-list' is loaded.")
   [:hide always ("q" forge-menu-quit-list)]
   [["Type"
     ("t" "topics..."        forge-topics-menu       :transient replace)
-    ("n" "notifications..." forge-notification-menu :transient replace)
+    ("n" "notifications..." forge-notifications-menu :transient replace)
     ("r" "repositories"     forge-list-repositories)]
    ["Filter"
     ("o" "owned" forge-list-owned-repositories)]]
@@ -458,7 +451,7 @@ Must be set before `forge-list' is loaded.")
         (switch-to-buffer buffer)
       (with-no-warnings ; "interactive use only"
         (forge-list-repositories))))
-  (transient-setup 'forge-repository-menu))
+  (transient-setup 'forge-repositories-menu))
 
 (defun forge-menu-quit-list ()
   "From a transient menu, quit the list buffer and the menu.
@@ -481,10 +474,10 @@ menu."
          (transient-setup (setq this-command 'forge-topics-menu)))
         ((derived-mode-p 'forge-repository-list-mode)
          (setq transient--exitp 'replace)
-         (transient-setup (setq this-command 'forge-repository-menu)))
+         (transient-setup (setq this-command 'forge-repositories-menu)))
         ((derived-mode-p 'forge-notifications-mode)
          (setq transient--exitp 'replace)
-         (transient-setup (setq this-command 'forge-notification-menu)))
+         (transient-setup (setq this-command 'forge-notifications-menu)))
         (t
          (setq transient--exitp t)
          (transient--pre-exit)
@@ -525,7 +518,9 @@ Non-interactively if optional REPOSITORY is non-nil, then list
 topics for that instead."
   :class 'forge--topic-list-command :type 'topic
   (interactive)
-  (forge--topic-list-setup nil (list #'forge-ls-issues #'forge-ls-pullreqs)
+  (forge--topic-list-setup nil
+                           (list #'forge--ls-issues
+                                 #'forge--ls-pullreqs)
                            repository))
 (put 'forge-list-topics 'interactive-only nil)
 
@@ -580,7 +575,7 @@ Only Github is supported for now."
   "List issues of the current repository."
   :class 'forge--topic-list-command :type 'issue
   (interactive)
-  (forge--issue-list-setup nil #'forge-ls-issues))
+  (forge--issue-list-setup nil #'forge--ls-issues))
 
 ;;;###autoload (autoload 'forge-list-labeled-issues "forge-list" nil t)
 (transient-define-suffix forge-list-labeled-issues (label)
@@ -624,7 +619,7 @@ Only Github is supported for now."
   "List pull-requests of the current repository."
   :class 'forge--topic-list-command :type 'pullreq
   (interactive)
-  (forge--pullreq-list-setup nil #'forge-ls-pullreqs))
+  (forge--pullreq-list-setup nil #'forge--ls-pullreqs))
 
 ;;;###autoload (autoload 'forge-list-labeled-pullreqs "forge-list" nil t)
 (transient-define-suffix forge-list-labeled-pullreqs (label)

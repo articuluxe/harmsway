@@ -1,6 +1,6 @@
 ;;; phps-mode-automation-parser-generator --- Generate a parser for PHP YACC grammar -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2024  Free Software Foundation, Inc.
 
 
 ;;; Commentary:
@@ -56,18 +56,18 @@
 (defun phps-mode-automation-parser-generator--ensure-yacc-grammar-is-available ()
   "If grammar is not available, download it."
   (let ((php-yacc-url
-         "https://raw.githubusercontent.com/php/php-src/PHP-8.2/Zend/zend_language_parser.y")
+         "https://raw.githubusercontent.com/php/php-src/PHP-8.3/Zend/zend_language_parser.y")
         (php-yacc-file
          (expand-file-name "zend_language_parser.y")))
 
     ;; Download YACC if not available (seems to now work in batch mode for some reason)
     (unless (file-exists-p php-yacc-file)
       (message
-       ";; Downloading PHP 8.2 YACC grammar.. since %S does not exists" php-yacc-file)
+       ";; Downloading PHP 8.3 YACC grammar.. since %S does not exists" php-yacc-file)
       (with-current-buffer (url-retrieve-synchronously php-yacc-url)
         (write-file php-yacc-file))
       (message
-       ";; Download of PHP 8.2 YACC grammar completed"))
+       ";; Download of PHP 8.3 YACC grammar completed"))
 
     (unless (file-exists-p php-yacc-file)
       (error "Missing PHP YACC grammar at %s!" php-yacc-file))))
@@ -230,9 +230,10 @@
   (when (boundp 'parser-generator-lex-analyzer--function)
     (setq
      parser-generator-lex-analyzer--function
-     (lambda (index)
+     (lambda (index _state)
        (with-current-buffer "*buffer*"
-         (let ((token))
+         (let ((token)
+               (move-to-index-flag))
            (when
                (<
                 index
@@ -245,10 +246,7 @@
                (when
                    (search-forward-regexp "[^\t\n; ]" nil t)
                  (forward-char -1)
-                 (when (boundp 'parser-generator-lex-analyzer--move-to-index-flag)
-                   (setq-local
-                    parser-generator-lex-analyzer--move-to-index-flag
-                    (point)))))
+                 (setq move-to-index-flag (point))))
 
              (cond
 
@@ -260,10 +258,7 @@
                    (error
                     "Failed to find end of comment started at %S (1)"
                     comment-start))
-                 (when (boundp 'parser-generator-lex-analyzer--move-to-index-flag)
-                   (setq-local
-                    parser-generator-lex-analyzer--move-to-index-flag
-                    comment-end))))
+                 (setq move-to-index-flag comment-end)))
 
               ((looking-at "\\({\\)")
                (let ((nesting-stack 1)
@@ -350,16 +345,7 @@
 
               ))
 
-           (when token
-             ;; (message
-             ;;  "token: %S from %S"
-             ;;  token
-             ;;  (buffer-substring-no-properties
-             ;;   (car (cdr token))
-             ;;   (cdr (cdr token))))
-             )
-
-           token)))))
+           (list token move-to-index-flag))))))
 
   (when (boundp 'parser-generator-lex-analyzer--get-function)
     (setq
@@ -528,9 +514,10 @@
   (when (boundp 'parser-generator-lex-analyzer--function)
     (setq
      parser-generator-lex-analyzer--function
-     (lambda (index)
+     (lambda (index _state)
        (with-current-buffer "*buffer*"
-         (let ((token))
+         (let ((token)
+               (move-to-index-flag))
            (when
                (<
                 index
@@ -540,13 +527,9 @@
 
              ;; Skip white-space(s)
              (when (looking-at-p "[\t\n ]+")
-               (when
-                   (search-forward-regexp "[^\t\n ]" nil t)
+               (when (search-forward-regexp "[^\t\n ]" nil t)
                  (forward-char -1)
-                 (when (boundp 'parser-generator-lex-analyzer--move-to-index-flag)
-                   (setq-local
-                    parser-generator-lex-analyzer--move-to-index-flag
-                    (point)))))
+                 (setq move-to-index-flag (point))))
 
              (cond
 
@@ -579,7 +562,7 @@
 
               ))
 
-           token)))))
+           (list token move-to-index-flag))))))
 
   (when (boundp 'parser-generator-lex-analyzer--get-function)
     (setq

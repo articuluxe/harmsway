@@ -355,22 +355,20 @@ chunk from the beginning of the file is previewed."
   :type '(alist :key-type symbol))
 
 (defcustom consult-bookmark-narrow
-  `((?f "File" ,#'bookmark-default-handler)
-    (?h "Help" ,#'help-bookmark-jump)
-    (?i "Info" ,#'Info-bookmark-jump)
-    (?p "Picture" ,#'image-bookmark-jump)
-    (?d "Docview" ,#'doc-view-bookmark-jump)
-    (?m "Man" ,#'Man-bookmark-jump)
-    (?w "Woman" ,#'woman-bookmark-jump)
-    (?g "Gnus" ,#'gnus-summary-bookmark-jump)
-    ;; Introduced on Emacs 28
+  `((?f "File" bookmark-default-handler)
+    (?h "Help" help-bookmark-jump Info-bookmark-jump
+               Man-bookmark-jump woman-bookmark-jump)
+    (?p "Picture" image-bookmark-jump)
+    (?d "Docview" doc-view-bookmark-jump)
+    (?m "Mail" gnus-summary-bookmark-jump)
     (?s "Eshell" eshell-bookmark-jump)
-    (?e "Eww" eww-bookmark-jump)
-    (?v "VC Directory" vc-dir-bookmark-jump))
+    (?w "Web" eww-bookmark-jump xwidget-webkit-bookmark-jump-handler)
+    (?v "VC Directory" vc-dir-bookmark-jump)
+    (nil "Other"))
   "Bookmark narrowing configuration.
 
-Each element of the list must have the form (char name handler)."
-  :type '(repeat (list character string function)))
+Each element of the list must have the form (char name handlers...)."
+  :type '(alist :key-type character :value-type (cons string (repeat function))))
 
 (defcustom consult-yank-rotate
   (if (boundp 'yank-from-kill-ring-rotate)
@@ -3031,11 +3029,6 @@ These configuration options are supported:
              (cs (or (plist-get config :completion-styles) completion-styles))
              (completion-styles cs)
              ((default-value 'completion-styles) cs)
-             (prompt (or (plist-get config :prompt) "Completion: "))
-             (require-match (plist-get config :require-match))
-             (preview-key (if (plist-member config :preview-key)
-                              (plist-get config :preview-key)
-                            consult-preview-key))
              (initial (buffer-substring-no-properties start end))
              (metadata (completion-metadata initial collection predicate))
              ;; TODO: `minibuffer-completing-file-name' is mostly deprecated,
@@ -3068,29 +3061,23 @@ These configuration options are supported:
                  (and completion-cycling completion-all-sorted-completions)))
         (completion--in-region start end collection predicate)
       (let* ((limit (car (completion-boundaries initial collection predicate "")))
+             (this-command #'consult-completion-in-region)
              (completion
               (cond
                ((atom all) nil)
                ((and (consp all) (atom (cdr all)))
                 (concat (substring initial 0 limit) (car all)))
-               (t (consult--with-preview
-                      preview-key
-                      ;; preview state
-                      (consult--insertion-preview start end)
-                      ;; transformation function
-                      (lambda (_narrow _inp cand) cand)
-                      ;; candidate function
-                      (apply-partially #'run-hook-with-args-until-success
-                                       'consult--completion-candidate-hook)
-                      nil
-                    (consult--local-let ((enable-recursive-minibuffers t))
-                      ;; Evaluate completion table in the original buffer.
-                      ;; This is a reasonable thing to do and required by
-                      ;; some completion tables in particular by lsp-mode.
-                      ;; See gh:minad/vertico#61.
-                      (completing-read prompt
-                                       (consult--completion-table-in-buffer collection)
-                                       predicate require-match initial)))))))
+               (t
+                (consult--local-let ((enable-recursive-minibuffers t))
+                  ;; Evaluate completion table in the original buffer.
+                  ;; This is a reasonable thing to do and required by
+                  ;; some completion tables in particular by lsp-mode.
+                  ;; See gh:minad/vertico#61.
+                  (consult--read (consult--completion-table-in-buffer collection)
+                                 :prompt "Completion: "
+                                 :state (consult--insertion-preview start end)
+                                 :predicate predicate
+                                 :initial initial))))))
         (if completion
             (progn
               ;; bug#55205: completion--replace removes properties!
@@ -4007,15 +3994,14 @@ There exists no equivalent of this command in Emacs 28."
 (defun consult--bookmark-candidates ()
   "Return bookmark candidates."
   (bookmark-maybe-load-default-file)
-  (let ((narrow (mapcar (pcase-lambda (`(,y ,_ ,x)) (cons x y))
-                        consult-bookmark-narrow)))
-    (mapcar (lambda (cand)
-              (propertize (car cand)
-                          'consult--type
-                          (alist-get
-                           (or (bookmark-get-handler cand) #'bookmark-default-handler)
-                           narrow)))
-            bookmark-alist)))
+  (let ((narrow (cl-loop for (y _ . xs) in consult-bookmark-narrow nconc
+                         (cl-loop for x in xs collect (cons x y)))))
+    (cl-loop for bm in bookmark-alist collect
+             (propertize (car bm)
+                         'consult--type
+                         (alist-get
+                          (or (bookmark-get-handler bm) #'bookmark-default-handler)
+                          narrow)))))
 
 ;;;###autoload
 (defun consult-bookmark (name)
@@ -4025,8 +4011,7 @@ The command supports preview of file bookmarks and narrowing.  See the
 variable `consult-bookmark-narrow' for the narrowing configuration."
   (interactive
    (list
-    (let ((narrow (mapcar (pcase-lambda (`(,x ,y ,_)) (cons x y))
-                          consult-bookmark-narrow)))
+    (let ((narrow (cl-loop for (x y . _) in consult-bookmark-narrow collect (cons x y))))
       (consult--read
        (consult--bookmark-candidates)
        :prompt "Bookmark: "

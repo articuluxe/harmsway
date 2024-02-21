@@ -23,6 +23,7 @@
 ;;; Code:
 
 (require 'forge)
+(require 'forge-topic)
 
 ;;; Options
 
@@ -136,7 +137,7 @@ signal an error."
   :doc "Keymap for `forge-notifications-mode'."
   :parent magit-mode-map
   "<remap> <magit-refresh>" #'magit-refresh-buffer
-  "L" #'forge-notification-menu)
+  "C-c C-m"                 #'forge-notifications-menu)
 
 (define-derived-mode forge-notifications-mode magit-mode "Forge Notifications"
   "Mode for looking at forge notifications."
@@ -160,45 +161,36 @@ signal an error."
 
 ;;; Commands
 
-(transient-define-prefix forge-notification-menu ()
+(transient-define-prefix forge-notifications-menu ()
   "Control list of notifications and notification at point."
   :transient-suffix t
   :transient-non-suffix t
   :transient-switch-frame nil
   :refresh-suffixes t
-  [:hide always ("q" forge-menu-quit-list)]
+  :column-widths forge--topic-menus-column-widths
+  [:hide always
+   ("q"        forge-menu-quit-list)
+   ("RET"      forge-topic-menu)
+   ("<return>" forge-topic-menu)]
   [["Type"
-    ("t"   "topics...       " forge-topics-menu     :transient replace)
-    (:info "notifications   " :face forge-active-suffix)
-    ("r"   "repositories... " forge-repository-menu :transient replace)
+    ("t"   "topics..."       forge-topics-menu       :transient replace)
+    (:info "notifications"   :face forge-active-suffix)
+    ("r"   "repositories..." forge-repositories-menu :transient replace)
     ""]
    ["Selection"
     ("I" forge-notifications-display-inbox)
     ("S" forge-notifications-display-saved)
     ("D" forge-notifications-display-done)
     ("A" forge-notifications-display-all)]]
-  [["Set state"
-    ("s o" forge-topic-state-set-open)
-    ("s c" forge-issue-state-set-completed)
-    ("s u" forge-issue-state-set-unplanned)
-    ("s m" forge-pullreq-state-set-merged)
-    ("s r" forge-pullreq-state-set-rejected)
-    """Set status"
-    ("s i" forge-topic-status-set-unread)
-    ("s p" forge-topic-status-set-pending)
-    ("s d" forge-topic-status-set-done)
-    ("s s" forge-topic-toggle-saved)]
+  [forge--topic-set-state-group
    ["Group"
     ("f" forge-notifications-style-flat)
-    ("g" forge-notifications-style-nested)]
-   ["Margin"
-    (magit-toggle-margin)
-    (magit-cycle-margin-style)
-    ("e" magit-toggle-margin-details)]]
+    ("g" forge-notifications-style-nested)]]
+  [forge--topic-set-status-group]
   (interactive)
   (unless (derived-mode-p 'forge-notifications-mode)
     (forge-list-notifications))
-  (transient-setup 'forge-notification-menu))
+  (transient-setup 'forge-notifications-menu))
 
 ;;;###autoload
 (defun forge-list-notifications ()
@@ -274,8 +266,14 @@ signal an error."
 
 ;;; Sections
 
-;; The double-prefix is necessary due to a limitation of magit-insert-section.
-(defvar-keymap forge-forge-repo-section-map
+(defclass forge-repository-section (magit-section)
+  ((type   :initform 'forge-repo)
+   (keymap :initform 'forge-repository-section-map)))
+
+(define-obsolete-variable-alias 'forge-forge-repo-section-map
+  'forge-repository-section-map "Forge 0.4.0")
+
+(defvar-keymap forge-repository-section-map
   "<remap> <magit-browse-thing>" #'forge-browse-this-repository
   "<remap> <magit-visit-thing>"  #'forge-visit-this-repository)
 

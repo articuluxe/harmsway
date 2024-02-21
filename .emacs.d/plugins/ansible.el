@@ -244,7 +244,7 @@
      (3 font-lock-builtin-face t))
     (,ansible-section-keywords-regex    (1 ansible-section-face t))
     (,ansible-task-keywords-regex       (1 font-lock-keyword-face t))
-    ("^ *- \\(name\\):\\(.*\\)"
+    ("^ *- \\(name\\):\\([^#\n]*\\)"
      (1 font-lock-builtin-face t)
      (2 ansible-task-label-face t))
     (,ansible-keywords-regex            (1 font-lock-builtin-face t)))
@@ -390,6 +390,23 @@ Also, automatically encrypts the file before saving the buffer."
   (let ((dict-dir (expand-file-name "dict" ansible-dir)))
     (when (and (f-directory? dict-dir) (boundp 'ac-user-dictionary-files))
       (add-to-list 'ac-user-dictionary-files (f-join dict-dir "ansible") t))))
+
+;;;###ansible-lint
+; Compile regex for ansible-lint
+(require 'compile)
+(add-to-list 'compilation-error-regexp-alist
+             'ansible)
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(ansible "^\\(.*?\\):\\([0-9]+\\)" 1 2)
+             )
+
+; Replace make -k with ansible-lint, with an UTF-8 locale to avoid crashes
+(defun ansible-lint-errors ()
+  (make-local-variable 'compile-command)
+  (let ((ansiblelint_command "ansible-lint ") (loc "LANG=C.UTF-8 "))
+    (setq compile-command (concat loc ansiblelint_command buffer-file-name)))
+)
+(add-hook 'ansible-hook 'ansible-lint-errors)
 
 (provide 'ansible)
 

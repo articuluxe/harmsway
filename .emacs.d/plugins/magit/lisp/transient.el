@@ -674,6 +674,7 @@ If `transient-save-history' is nil, then do nothing."
    (incompatible         :initarg :incompatible         :initform nil)
    (suffix-description   :initarg :suffix-description)
    (variable-pitch       :initarg :variable-pitch       :initform nil)
+   (column-widths        :initarg :column-widths        :initform nil)
    (unwind-suffix        :documentation "Internal use." :initform nil))
   "Transient prefix command.
 
@@ -1023,15 +1024,21 @@ example, sets a variable, use `transient-define-infix' instead.
 
 (defun transient--default-infix-command ()
   ;; Most infix commands are but an alias for this command.
-  "Cannot show any documentation for this anonymous infix command.
+  "Cannot show any documentation for this transient infix command.
 
-This infix command was defined anonymously, i.e., it was define
-inside a call to `transient-define-prefix'.
+When you request help for an infix command using `transient-help', that
+usually shows the respective man-page and tries to jump to the location
+where the respective argument is being described.
 
-When you request help for such an infix command, then we usually
-show the respective man-page and jump to the location where the
-respective argument is being described.  This isn't possible in
-this case, because the `man-page' slot was not set in this case."
+If no man-page is specified for the containing transient menu, then the
+docstring is displayed instead, if any.
+
+If the infix command doesn't have a docstring, as is the case here, then
+this docstring is displayed instead, because technically infix commands
+are aliases for `transient--default-infix-command'.
+
+`describe-function' also shows the docstring of the infix command,
+falling back to that of the same aliased command."
   (interactive)
   (let ((obj (transient-suffix-object)))
     (transient-infix-set obj (transient-infix-read obj)))
@@ -1039,6 +1046,17 @@ this case, because the `man-page' slot was not set in this case."
 (put 'transient--default-infix-command 'interactive-only t)
 (put 'transient--default-infix-command 'completion-predicate
      #'transient--suffix-only)
+
+(defun transient--find-function-advised-original (fn func)
+  "Return nil instead of `transient--default-infix-command'.
+When using `find-function' to jump to the definition of a transient
+infix command/argument, then we want to actually jump to that, not to
+the definition of `transient--default-infix-command', which all infix
+commands are aliases for."
+  (let ((val (funcall fn func)))
+    (and val (not (eq val 'transient--default-infix-command)) val)))
+(advice-add 'find-function-advised-original :around
+            #'transient--find-function-advised-original)
 
 (eval-and-compile
   (defun transient--expand-define-args (args &optional arglist)
@@ -1099,10 +1117,11 @@ this case, because the `man-page' slot was not set in this case."
                 ((setq args (plist-put args key val))))))
       (list 'vector
             (or level transient--default-child-level)
-            (or class
-                (if (vectorp car)
-                    (quote 'transient-columns)
-                  (quote 'transient-column)))
+            (cond (class)
+                  ((or (vectorp car)
+                       (symbolp car))
+                   (quote 'transient-columns))
+                  ((quote 'transient-column)))
             (and args (cons 'list args))
             (cons 'list
                   (cl-mapcan (lambda (s) (transient--parse-child prefix s))
@@ -1797,7 +1816,10 @@ of the corresponding object."
   ;; an unbound key, then Emacs calls the `undefined' command
   ;; but does not set `this-command', `this-original-command'
   ;; or `real-this-command' accordingly.  Instead they are nil.
-  "<nil>"                         #'transient--do-warn)
+  "<nil>"                         #'transient--do-warn
+  ;; Bound to the `mouse-movement' event, this command is similar
+  ;; to `ignore'.
+  "<ignore-preserving-kill-region>" #'transient--do-noop)
 
 (defvar transient--transient-map nil)
 (defvar transient--predicate-map nil)
@@ -2346,7 +2368,7 @@ value.  Otherwise return CHILDREN as is."
              (remove-hook 'minibuffer-exit-hook ,exit)))
        ,@body)))
 
-(static-if (>= emacs-major-version 30)
+(static-if (>= emacs-major-version 30) ;transient--wrap-command
     (defun transient--wrap-command ()
       (cl-assert
        (>= emacs-major-version 30) nil
@@ -2377,7 +2399,8 @@ value.  Otherwise return CHILDREN as is."
                   (funcall unwind suffix))
                 (advice-remove suffix advice)
                 (oset prefix unwind-suffix nil)))))
-        (advice-add suffix :around advice '((depth . -99)))))
+        (when (symbolp this-command)
+          (advice-add suffix :around advice '((depth . -99))))))
 
   (defun transient--wrap-command ()
     (let* ((prefix transient--prefix)
@@ -2409,7 +2432,8 @@ value.  Otherwise return CHILDREN as is."
       (setq advice `(lambda (fn &rest args)
                       (interactive ,advice-interactive)
                       (apply ',advice-body fn args)))
-      (advice-add suffix :around advice '((depth . -99))))))
+      (when (symbolp this-command)
+        (advice-add suffix :around advice '((depth . -99)))))))
 
 (defun transient--premature-post-command ()
   (and (equal (this-command-keys-vector) [])
@@ -2591,6 +2615,7 @@ exit."
 
 (defun transient--get-pre-command (&optional cmd enforce-type)
   (or (and (not (eq enforce-type 'non-suffix))
+           (symbolp cmd)
            (lookup-key transient--predicate-map (vector cmd)))
       (and (not (eq enforce-type 'suffix))
            (transient--resolve-pre-command
@@ -3558,7 +3583,7 @@ have a history of their own.")
                              (button-get (1- (point)) 'command))
                         (transient--heading-at-point))))
       (erase-buffer)
-      (setq window-size-fixed t)
+      (setq window-size-fixed 'height)
       (when (bound-and-true-p tab-line-format)
         (setq tab-line-format nil))
       (setq header-line-format nil)
@@ -3679,10 +3704,15 @@ have a history of their own.")
                  transient-align-variable-pitch))
          (rs (apply #'max (mapcar #'length columns)))
          (cs (length columns))
-         (cw (mapcar (lambda (col)
-                       (apply #'max
-                              (mapcar (if vp #'transient--pixel-width #'length)
-                                      col)))
+         (cw (mapcar (let ((widths (oref transient--prefix column-widths)))
+                       (lambda (col)
+                         (apply
+                          #'max
+                          (if-let ((min (pop widths)))
+                              (if vp (* min (transient--pixel-width " ")) min)
+                            0)
+                          (mapcar (if vp #'transient--pixel-width #'length)
+                                  col))))
                      columns))
          (cc (transient--seq-reductions-from
               (apply-partially #'+ (* 3 (if vp (transient--pixel-width " ") 1)))

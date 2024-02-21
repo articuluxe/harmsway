@@ -1,9 +1,9 @@
 ;;; counsel.el --- Various completion functions using Ivy -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2024 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
-;; Maintainer: Basil L. Contovounesios <contovob@tcd.ie>
+;; Maintainer: Basil L. Contovounesios <basil@contovou.net>
 ;; URL: https://github.com/abo-abo/swiper
 ;; Version: 0.14.2
 ;; Package-Requires: ((emacs "24.5") (ivy "0.14.2") (swiper "0.14.2"))
@@ -348,10 +348,14 @@ Update the minibuffer with the amount of lines collected every
       (delete-process process))))
 
 ;;* Completion at point
-(define-obsolete-function-alias 'counsel-el #'complete-symbol "<2020-05-20 Wed>")
-(define-obsolete-function-alias 'counsel-cl #'complete-symbol "<2020-05-20 Wed>")
-(define-obsolete-function-alias 'counsel-jedi #'complete-symbol "<2020-05-20 Wed>")
-(define-obsolete-function-alias 'counsel-clj #'complete-symbol "<2020-05-20 Wed>")
+(define-obsolete-function-alias 'counsel-el
+  #'complete-symbol "0.13.2 (2020-05-20)")
+(define-obsolete-function-alias 'counsel-cl
+  #'complete-symbol "0.13.2 (2020-05-20)")
+(define-obsolete-function-alias 'counsel-jedi
+  #'complete-symbol "0.13.2 (2020-05-20)")
+(define-obsolete-function-alias 'counsel-clj
+  #'complete-symbol "0.13.2 (2020-05-20)")
 
 ;;** `counsel-company'
 (defvar company-candidates)
@@ -6919,7 +6923,7 @@ We update it in the callback with `ivy-update-candidates'."
             :caller 'counsel-search))
 
 (define-obsolete-function-alias 'counsel-google
-    #'counsel-search "<2019-10-17 Thu>")
+    #'counsel-search "0.13.2 (2019-10-17)")
 
 ;;** `counsel-compilation-errors'
 (defun counsel--compilation-errors-buffer (buf)

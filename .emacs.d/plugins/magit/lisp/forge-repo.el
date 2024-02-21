@@ -163,24 +163,27 @@ or signal an error, depending on DEMAND."
 
 (cl-defmethod forge-get-repository ((url string) &optional remote demand)
   "Return the repository at URL."
-  (if-let ((parts (forge--split-url url)))
+  (if-let ((parts (forge--split-forge-url url)))
       (forge-get-repository parts remote demand)
     (when (memq demand forge--signal-no-entry)
       (error "Cannot determine forge repository.  %s isn't a forge url" url))))
 
 (cl-defmethod forge-get-repository (((host owner name) list)
                                     &optional remote demand)
-  "((GITHOST OWNER NAME) &optional REMOTE DEMAND)
+  "((HOST OWNER NAME) &optional REMOTE DEMAND)
 
-Return the repository identified by GITHOST, OWNER and NAME.
+Return the repository identified by HOST, OWNER and NAME.
 See `forge-alist' for valid Git hosts."
-  (if-let ((spec (assoc host forge-alist)))
-      (pcase-let ((`(,githost ,apihost ,forge ,class) spec))
+  (if-let ((spec (forge--get-forge-host host t)))
+      (pcase-let ((`(,githost ,apihost ,webhost ,class) spec))
+        ;; The `webhost' is used to identify the corresponding forge.
+        ;; For that reason it is stored in the `forge' slot.  The id
+        ;; stored in the `id' slot also derives from that value.
         (let* ((row (car (forge-sql [:select * :from repository
                                      :where (and (= forge $s1)
                                                  (= owner $s2)
                                                  (= name  $s3))]
-                                    forge owner name)))
+                                    webhost owner name)))
                (obj (and row (closql--remake-instance class (forge-db) row))))
           (when obj
             (oset obj apihost apihost)
@@ -200,14 +203,14 @@ See `forge-alist' for valid Git hosts."
                      (not obj))
             (pcase-let ((`(,id . ,forge-id)
                          (forge--repository-ids
-                          class host owner name
+                          class webhost owner name
                           (memq demand '(stub maybe)))))
               ;; The repo might have been renamed on the forge.  #188
               (unless (setq obj (forge-get-repository :id id))
                 (setq obj (funcall class
                                    :id       id
                                    :forge-id forge-id
-                                   :forge    forge
+                                   :forge    webhost
                                    :owner    owner
                                    :name     name
                                    :apihost  apihost
@@ -256,8 +259,7 @@ retrieve THEIR-ID, the repository's ID on the forge.  In that
 case OUR-ID derives from THEIR-ID and is unique across all
 forges and hosts."
   (pcase-let* ((`(,_githost ,apihost ,id ,_class)
-                (or (assoc host forge-alist)
-                    (error "No entry for %S in forge-alist" host)))
+                (forge--get-forge-host host t))
                (path (format "%s/%s" owner name))
                (their-id (and (not stub)
                               (ghub-repository-id
@@ -285,8 +287,7 @@ forges and hosts."
   (let ((their-id (if owner (concat owner "/" name) name)))
     (cons (base64-encode-string
            (format "%s:%s"
-                   (nth 3 (or (assoc host forge-alist)
-                              (error "No entry for %S in forge-alist" host)))
+                   (nth 3 (forge--get-forge-host host t))
                    their-id)
            t)
           their-id)))
@@ -317,7 +318,7 @@ forges and hosts."
   (magit-completing-read
    prompt
    (if class
-       (seq-keep (pcase-lambda (`(,githost ,_apihost ,_id ,c))
+       (seq-keep (pcase-lambda (`(,githost ,_apihost ,_webhost ,c))
                    (and (child-of-class-p c class) githost))
                  forge-alist)
      (mapcar #'car forge-alist))
@@ -335,7 +336,7 @@ forges and hosts."
   (or (cadr (car (cl-member host forge-alist :test #'equal :key #'cadr)))
       (cadr (car (cl-member host forge-alist :test #'equal :key #'car)))
       (cadr (car (cl-member host forge-alist :test #'equal :key #'caddr)))
-      (user-error "Cannot determine githost for %S" host)))
+      (user-error "Cannot determine apihost for %S" host)))
 
 (cl-defmethod forge--topics-until ((repo forge-repository) until type)
   (if (oref repo sparse-p)
@@ -354,10 +355,10 @@ forges and hosts."
    (if (symbolp format-or-slot)
        (eieio-oref repo format-or-slot)
      format-or-slot)
-   (pcase-let* (((eieio githost owner name) repo)
+   (pcase-let* (((eieio forge owner name) repo)
                 (path (if owner (concat owner "/" name) name)))
      `(,@spec
-       (?h . ,githost)
+       (?h . ,forge) ;aka webhost
        (?o . ,owner)
        (?n . ,name)
        (?p . ,path)
@@ -375,7 +376,7 @@ forges and hosts."
                                    (memq transient-current-command
                                          '(forge-topic-menu
                                            forge-topics-menu
-                                           forge-notification-menu)))
+                                           forge-notifications-menu)))
                           (transient--refresh-transient)))))))))
 
 (defvar forge--mode-line-buffer nil)

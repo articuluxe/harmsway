@@ -6,7 +6,9 @@
 ;; Maintainer: S. Irie
 ;; Keywords: Tooltip
 
-(defconst pos-tip-version "0.4.6")
+;; Package-Version: 0.4.7
+
+(defconst pos-tip-version "0.4.7")
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as

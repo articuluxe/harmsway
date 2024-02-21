@@ -53,9 +53,9 @@
    `(default ((t (:background ,color-bg :foreground ,color-fg))))
    `(cursor ((t (:background ,color-fg-alt))))
    `(region ((t (:foreground ,color-dark :background ,color-light))))
-   `(success ((t (:foreground ,color-dark :background ,color-light :extend t))))
-   `(warning ((t (:foreground ,color-bright :background ,color-bright-light :extend t))))
-   `(error ((t (:foreground ,color-strong :background ,color-strong-light :extend t))))
+   `(success ((t (:foreground ,color-middle))))
+   `(warning ((t (:foreground ,color-bright))))
+   `(error ((t (:foreground ,color-strong))))
    `(secondary-selection ((t (:background ,color-bg-alt))))
    `(mode-line ((t (:background ,color-fg :foreground ,color-bg :box nil))))
    `(mode-line-buffer-id ((t (:foreground ,color-bg :weight bold))))
@@ -87,17 +87,17 @@
    `(escape-glyph ((t (:weight bold :inherit font-lock-string-face))))
 
    `(font-lock-face ((t (:foreground ,color-middle))))
-   `(font-lock-builtin-face ((t (:foreground ,color-strong :slant italic))))
+   `(font-lock-builtin-face ((t (:foreground ,color-fg :slant italic))))
    `(font-lock-comment-face ((t (:foreground ,color-fg-dim :slant italic :inherit fixed-pitch-serif))))
    `(font-lock-constant-face ((t (:foreground ,color-fg))))
    `(font-lock-doc-face ((t (:foreground ,color-middle :slant italic :inherit fixed-pitch-serif))))
-   `(font-lock-function-name-face ((t (:weight bold :slant italic))))
-   `(font-lock-keyword-face ((t (:foreground ,color-bright))))
-   `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-bright))))
-   `(font-lock-regexp-grouping-construct ((t (:foreground ,color-bright))))
+   `(font-lock-function-name-face ((t (:weight bold))))
+   `(font-lock-keyword-face ((t (:foreground ,color-bright :slant italic))))
+   `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-middle))))
+   `(font-lock-regexp-grouping-construct ((t (:foreground ,color-middle))))
    `(font-lock-string-face ((t (:foreground ,color-dark :inherit fixed-pitch-serif))))
    `(font-lock-type-face ((t (:foreground ,color-fg :weight bold))))
-   `(font-lock-variable-name-face ((t (:slant italic))))
+   `(font-lock-variable-name-face ((t (:foreground ,color-fg))))
    `(font-lock-warning-face ((t (:foreground ,color-strong :slant italic))))
 
    ;; shell-mode
@@ -323,9 +323,9 @@
    `(magit-filename ((t (:inherit git-commit-comment-file))))
 
    ;; git-gutter-fringe
-   `(git-gutter-fr:modified ((t (:foreground ,color-dark))))
-   `(git-gutter-fr:added ((t (:foreground ,color-dark))))
-   `(git-gutter-fr:deleted ((t (:foreground ,color-dark))))
+   `(git-gutter-fr:modified ((t (:foreground ,color-bright-soft))))
+   `(git-gutter-fr:added ((t (:foreground ,color-dark-soft))))
+   `(git-gutter-fr:deleted ((t (:foreground ,color-strong-soft))))
 
    ;; company
    `(company-echo ((t (:inherit company-preview))))

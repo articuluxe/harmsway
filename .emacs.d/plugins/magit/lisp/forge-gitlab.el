@@ -47,7 +47,8 @@
 ;;; Pull
 ;;;; Repository
 
-(cl-defmethod forge--pull ((repo forge-gitlab-repository) until)
+(cl-defmethod forge--pull ((repo forge-gitlab-repository) until
+                           &optional callback)
   (let ((cb (let ((buf (and (derived-mode-p 'magit-mode)
                             (current-buffer)))
                   (dir default-directory)
@@ -81,8 +82,10 @@
                       (dolist (v .pullreqs) (forge--update-pullreq repo v))
                       (oset repo sparse-p nil))
                     (forge--msg repo t t "Storing REPO")
-                    (unless (oref repo selective-p)
-                      (forge--git-fetch buf dir repo)))))))))
+                    (cond
+                     ((oref repo selective-p))
+                     (callback (funcall callback))
+                     ((forge--git-fetch buf dir repo))))))))))
     (funcall cb cb)))
 
 (cl-defmethod forge--fetch-repository ((repo forge-gitlab-repository) callback)
@@ -115,12 +118,6 @@
     (oset repo wiki-p         .wiki_enabled)
     (oset repo stars          .star_count)
     (oset repo watchers       .star_count)))
-
-(cl-defmethod forge--split-url-path
-  ((_class (subclass forge-gitlab-repository)) path)
-  (and (string-match "\\`\\(?:~?\\(.+\\)/\\)?\\([^/]+?\\)\\'" path)
-       (list (match-string 1 path)
-             (match-string 2 path))))
 
 ;;;; Issues
 
@@ -583,13 +580,13 @@
   (closql-delete post)
   (forge-refresh-buffer))
 
-(cl-defmethod forge--topic-templates ((repo forge-gitlab-repository)
-                                      (_ (subclass forge-issue)))
+(cl-defmethod forge--topic-template-files ((repo forge-gitlab-repository)
+                                           (_ (subclass forge-issue)))
   (--filter (string-match-p "\\`\\.gitlab/issue_templates/.+\\.md\\'" it)
             (magit-revision-files (oref repo default-branch))))
 
-(cl-defmethod forge--topic-templates ((repo forge-gitlab-repository)
-                                      (_ (subclass forge-pullreq)))
+(cl-defmethod forge--topic-template-files ((repo forge-gitlab-repository)
+                                           (_ (subclass forge-pullreq)))
   (--filter (string-match-p "\\`\\.gitlab/merge_request_templates/.+\\.md\\'" it)
             (magit-revision-files (oref repo default-branch))))
 
