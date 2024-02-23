@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-02-08 12:20:55 dharms>
+;; Modified Time-stamp: <2024-02-08 16:47:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2602,6 +2602,24 @@ ARGS are the additional arguments."
          ("M-' `" . dwim-dwim))
   :config
   (require 'dwim-shell-commands)
+  (defun dwim-shell-commands-convert-cr-to-newline ()
+    "Convert carriage returns to newlines."
+    (interactive)
+    (dwim-shell-command-on-marked-files
+     "CR to NL"
+     "tr '\r' '\n' < '<<f>>' > '<<fne>>.txt'"
+     :utils "tr"))
+  (defun dwim-shell-commands-macos-convert-text ()
+    "Convert text files among various formats."
+    (interactive)
+    (let ((fmt (completing-read "Format: "
+                                '("txt" "html" "rtf" "rtfd" "doc" "docx"
+                                  "wordml" "odt" "webarchive"))))
+      (unless (string-empty-p fmt)
+        (dwim-shell-command-on-marked-files
+         "MacOS Text Conversion"
+         (format "textutil -convert %s <<f>>" fmt)
+         :utils "textutil"))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; disk-usage ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
