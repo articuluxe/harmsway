@@ -35,6 +35,10 @@
 
 ;;; Change Log:
 
+;; 2024-03-03 - v0.9.1
+;; * Add support for remote host resolution via ssh config (thanks Sibi Prabakaran)
+;; * Regexp escape parts when extracting host from scp-like URLs (thanks Sibi Prabakaran)
+;;
 ;; 2023-02-15 - v0.9.0
 ;; * Add support for GoogleSource (thanks Peter Becich)
 ;; * Add plain=1 to force showing a non rendered GitHub links (thanks Erick Navarro)
@@ -211,6 +215,11 @@ more than 1 line.
 
 Note that `git-link' can exclude line numbers on a per invocation basis.
 See its docs."
+  :type 'boolean
+  :group 'git-link)
+
+(defcustom git-link-consider-ssh-config nil
+  "Consider ssh configuration file for resolving the remote's hostname."
   :type 'boolean
   :group 'git-link)
 
@@ -431,9 +440,15 @@ return (FILENAME . REVISION) otherwise nil."
       (when (string-match ":" host)
         (let ((parts (split-string host ":" t))
               (case-fold-search t))
-          (string-match (concat (car parts) ":\\(" (cadr parts) "\\)/") url)
+          (string-match (concat (regexp-quote (car parts)) ":\\(" (cadr parts) "\\)/") url)
           (setq host (car parts)
                 path (concat (match-string 1 url) "/" path))))
+
+
+      (when git-link-consider-ssh-config
+	(let* ((ssh-resolved-host (git-link--ssh-resolve-hostname host)))
+	  (when ssh-resolved-host
+	    (setq host ssh-resolved-host))))
 
       ;; Fix-up Azure SSH URLs
       (when (string= "ssh.dev.azure.com" host)
@@ -470,6 +485,15 @@ return (FILENAME . REVISION) otherwise nil."
                              (substring path 9)))))
 
       (list host path))))
+
+(defun git-link--ssh-resolve-hostname (hostname)
+  "Resolve HOSTNAME using ssh client."
+  (let ((output (shell-command-to-string (format "ssh -G %s" hostname)))
+	(host nil))
+    (dolist (line (split-string output "\n"))
+      (when (string-match "^hostname \\(.*\\)" line)
+	(setq host (match-string 1 line))))
+    host))
 
 (defun git-link--using-git-timemachine ()
   (and (boundp 'git-timemachine-revision)

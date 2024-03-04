@@ -922,6 +922,9 @@ Sourced other themes to get information about font faces for packages.")
      `(ediff-odd-diff-B ((,class (:background ,bg-other :extend t))))
      `(ediff-odd-diff-C ((,class (:background ,bg-other :extend t))))
 
+;;;; eldoc - dark
+     `(eldoc-highlight-function-argument ((,class (:foreground ,orange :weight bold ))))
+
 ;;;; elfeed - dark
      `(elfeed-log-debug-level-face ((,class (:foreground ,spacegrey5))))
      `(elfeed-log-error-level-face ((,class (:foreground ,red))))
@@ -1562,12 +1565,13 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; org-agenda - dark
      `(org-agenda-clocking ((,class (:background ,blue))))
-     `(org-agenda-date ((,class (:foreground ,magenta :weight ultra-bold))))
-     `(org-agenda-date-today ((,class (:foreground ,magenta :weight ultra-bold))))
-     `(org-agenda-date-weekend ((,class (:foreground ,magenta :weight ultra-bold))))
+     `(org-agenda-date ((,class (:foreground ,darkcyan :weight ultra-bold))))
+     `(org-agenda-date-today ((,class (:foreground ,darkcyan :weight ultra-bold))))
+     `(org-agenda-date-weekend ((,class (:foreground ,darkcyan :weight ultra-bold))))
      `(org-agenda-dimmed-todo-face ((,class (:foreground ,spacegrey5))))
      `(org-agenda-done ((,class (:foreground ,spacegrey5))))
-     `(org-agenda-structure ((,class (:foreground ,fg :weight ultra-bold))))
+     `(org-agenda-structure ((,class (:foreground ,orange :weight ultra-bold))))
+     `(org-imminent-deadline ((,class (:foreground ,magenta))))
      `(org-scheduled ((,class (:foreground ,fg))))
      `(org-scheduled-previously ((,class (:foreground ,spacegrey8))))
      `(org-scheduled-today ((,class (:foreground ,spacegrey7))))
@@ -1653,6 +1657,16 @@ Sourced other themes to get information about font faces for packages.")
      `(outline-6 ((,class (:foreground ,purple))))
      `(outline-7 ((,class (:foreground ,purple))))
      `(outline-8 ((,class (:foreground ,fg))))
+
+;;;; outline-minor-faces - dark
+     `(outline-minor-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.2)))))
+     `(outline-minor-2 ((,class (:foreground ,magenta :weight bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.2)))))
+     `(outline-minor-3 ((,class (:foreground ,darkcyan :weight bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.1)))))
+     `(outline-minor-4 ((,class (:foreground ,orange))))
+     `(outline-minor-5 ((,class (:foreground ,green))))
+     `(outline-minor-6 ((,class (:foreground ,teal))))
+     `(outline-minor-7 ((,class (:foreground ,purple))))
+     `(outline-minor-8 ((,class (:foreground ,fg))))
 
 ;;;; parenface - dark
      `(paren-face ((,class (:foreground ,spacegrey5))))
@@ -2557,6 +2571,9 @@ Sourced other themes to get information about font faces for packages.")
      `(ediff-odd-diff-B ((,class (:background ,bg-other :extend t))))
      `(ediff-odd-diff-C ((,class (:background ,bg-other :extend t))))
 
+;;;; eldoc - light
+     `(eldoc-highlight-function-argument ((,class (:foreground ,orange :weight bold ))))
+
 ;;;; elfeed - light
      `(elfeed-log-debug-level-face ((,class (:foreground ,spacegrey5))))
      `(elfeed-log-error-level-face ((,class (:foreground ,red))))
@@ -3197,14 +3214,15 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; org-agenda - light
      `(org-agenda-clocking ((,class (:background ,darkblue))))
-     `(org-agenda-date ((,class (:foreground ,magenta :weight ultra-bold))))
-     `(org-agenda-date-today ((,class (:foreground ,magenta :weight ultra-bold))))
-     `(org-agenda-date-weekend ((,class (:foreground ,magenta :weight ultra-bold))))
+     `(org-agenda-date ((,class (:foreground ,darkcyan :weight ultra-bold))))
+     `(org-agenda-date-today ((,class (:foreground ,darkcyan :weight ultra-bold))))
+     `(org-agenda-date-weekend ((,class (:foreground ,darkcyan :weight ultra-bold))))
      `(org-agenda-dimmed-todo-face ((,class (:foreground ,spacegrey5))))
      `(org-agenda-done ((,class (:foreground ,spacegrey5))))
-     `(org-agenda-structure ((,class (:foreground ,fg :weight ultra-bold))))
+     `(org-agenda-structure ((,class (:foreground ,orange :weight ultra-bold))))
+     `(org-imminent-deadline ((,class (:foreground ,purple))))
      `(org-scheduled ((,class (:foreground ,fg))))
-     `(org-scheduled-previously ((,class (:foreground ,spacegrey8))))
+     `(org-scheduled-previously ((,class (:foreground ,fg))))
      `(org-scheduled-today ((,class (:foreground ,spacegrey7))))
      `(org-sexp-date ((,class (:foreground ,fg))))
      `(org-time-grid ((,class (:foreground ,spacegrey5))))
@@ -3288,6 +3306,16 @@ Sourced other themes to get information about font faces for packages.")
      `(outline-6 ((,class (:foreground ,purple))))
      `(outline-7 ((,class (:foreground ,purple))))
      `(outline-8 ((,class (:foreground ,fg))))
+
+;;;; outline-minor-faces - light
+     `(outline-minor-1 ((,class (:foreground ,darkblue :weight ultra-bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.2)))))
+     `(outline-minor-2 ((,class (:foreground ,magenta :weight bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.2)))))
+     `(outline-minor-3 ((,class (:foreground ,darkcyan :weight bold ,@(timu-spacegrey-do-scale timu-spacegrey-scale-org-document-info 1.1)))))
+     `(outline-minor-4 ((,class (:foreground ,orange))))
+     `(outline-minor-5 ((,class (:foreground ,green))))
+     `(outline-minor-6 ((,class (:foreground ,teal))))
+     `(outline-minor-7 ((,class (:foreground ,purple))))
+     `(outline-minor-8 ((,class (:foreground ,fg))))
 
 ;;;; parenface - light
      `(paren-face ((,class (:foreground ,spacegrey5))))

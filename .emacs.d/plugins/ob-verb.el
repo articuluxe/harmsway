@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.15.0
+;; Package-Version: 2.16.0
 ;; Package-Requires: ((emacs "26.3"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -90,7 +90,7 @@ See `org-babel-execute:verb' for details of PARAMS."
 Like `verb--export-to-verb' but returns string instead of a
 buffer."
   (save-window-excursion
-    (with-current-buffer (verb--export-to-verb rs)
+    (with-current-buffer (verb--export-to-verb rs t)
       (let ((result (verb--buffer-string-no-properties)))
         (kill-buffer)
         result))))

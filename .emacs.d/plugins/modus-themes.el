@@ -518,44 +518,7 @@ and related user options."
   :initialize #'custom-initialize-default
   :link '(info-link "(modus-themes) Heading styles"))
 
-(defcustom modus-themes-org-blocks nil
-  "Set the overall style of Org code blocks, quotes, and the like.
-
-Nil (the default) means that the block has no background of its
-own: it uses the one that applies to the rest of the buffer.  In
-this case, the delimiter lines have a gray color for their text,
-making them look exactly like all other Org properties.
-
-Option `gray-background' applies a subtle gray background to the
-block's contents.  It also affects the begin and end lines of the
-block as they get another shade of gray as their background,
-which differentiates them from the contents of the block.  All
-background colors extend to the edge of the window, giving the
-area a rectangular, \"blocky\" presentation.  If the begin/end
-lines do not extend in this way, check the value of the Org user
-option `org-fontify-whole-block-delimiter-line'.
-
-Option `tinted-background' uses a colored background for the
-contents of the block.  The exact color value will depend on the
-programming language and is controlled by the variable
-`org-src-block-faces' (refer to the theme's source code for the
-current association list).  For this to take effect, the Org
-buffer needs to be restarted with `org-mode-restart'.
-
-Code blocks use their major mode's fontification (syntax
-highlighting) only when the variable `org-src-fontify-natively'
-is non-nil.  While quote/verse blocks require setting
-`org-fontify-quote-and-verse-blocks' to a non-nil value."
-  :group 'modus-themes
-  :package-version '(modus-themes . "4.0.0")
-  :version "30.1"
-  :type '(choice
-          (const :format "[%v] %t\n" :tag "No Org block background (default)" nil)
-          (const :format "[%v] %t\n" :tag "Subtle gray block background" gray-background)
-          (const :format "[%v] %t\n" :tag "Color-coded background per programming language" tinted-background))
-  :set #'modus-themes--set-option
-  :initialize #'custom-initialize-default
-  :link '(info-link "(modus-themes) Org mode blocks"))
+(make-obsolete-variable 'modus-themes-org-blocks nil "4.4.0: Use palette overrides")
 
 (defcustom modus-themes-completions nil
   "Control the style of completion user interfaces.
@@ -882,7 +845,8 @@ Info node `(modus-themes) Option for palette overrides'.")
 
     (fg-prompt blue-intense)
 
-    (prose-block red-faint)
+    (bg-prose-block-delimiter bg-dim)
+    (fg-prose-block-delimiter red-faint)
     (prose-done green-intense)
     (prose-metadata magenta-faint)
     (prose-metadata-value blue-cooler)
@@ -1470,18 +1434,6 @@ Optional OL is the color of an overline."
                     'unspecified)
           :weight (or weight 'unspecified))))
 
-(defun modus-themes--org-block (fg bg)
-  "Conditionally set the FG and BG of Org blocks."
-  ;; NOTE 2024-02-03: We don't really need to specify the value of
-  ;; `modus-themes-org-blocks' here, since the only case where it
-  ;; really matters is if the user opts for the tinted backgrounds.
-  ;; This is done further done where we set the value of the user
-  ;; option `org-src-block-faces'.
-  (list :inherit 'modus-themes-fixed-pitch
-        :background (if modus-themes-org-blocks bg 'unspecified)
-        :foreground (if modus-themes-org-blocks 'unspecified fg)
-        :extend (if modus-themes-org-blocks t 'unspecified)))
-
 (defun modus-themes--completion-line (bg)
   "Styles for `modus-themes-completions' with BG as the background."
   (let* ((var (modus-themes--list-or-warn 'modus-themes-completions))
@@ -1653,7 +1605,7 @@ FG and BG are the main colors."
     `(cursor ((,c :background ,cursor)))
     `(fringe ((,c :background ,fringe :foreground ,fg-main)))
     `(menu ((,c :background ,bg-dim :foreground ,fg-main)))
-    `(scroll-bar ((,c :background ,bg-dim :foreground ,fg-dim)))
+    `(scroll-bar ((,c :background ,fringe :foreground ,border)))
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; basic and/or ungrouped styles
@@ -2505,7 +2457,7 @@ FG and BG are the main colors."
     `(git-timemachine-minibuffer-author-face ((,c :foreground ,name)))
     `(git-timemachine-minibuffer-detail-face ((,c :foreground ,fg-main)))
 ;;;;; gnus
-    `(gnus-button ((,c :inherit button)))
+    `(gnus-button ((,c :inherit button :underline nil)))
     `(gnus-cite-1 ((,c :inherit message-cited-text-1)))
     `(gnus-cite-2 ((,c :inherit message-cited-text-2)))
     `(gnus-cite-3 ((,c :inherit message-cited-text-3)))
@@ -2964,7 +2916,7 @@ FG and BG are the main colors."
     `(markdown-highlighting-face ((,c :inherit secondary-selection)))
     `(markdown-inline-code-face ((,c :inherit modus-themes-prose-code)))
     `(markdown-italic-face ((,c :inherit italic)))
-    `(markdown-language-keyword-face ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-block)))
+    `(markdown-language-keyword-face ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-delimiter :foreground ,fg-prose-block-delimiter)))
     `(markdown-line-break-face ((,c :inherit nobreak-space)))
     `(markdown-link-face ((,c :inherit link)))
     `(markdown-markup-face ((,c :inherit shadow)))
@@ -3020,7 +2972,7 @@ FG and BG are the main colors."
     `(message-header-xheader ((,c :inherit message-header-other)))
     `(message-header-other ((,c :foreground ,mail-other)))
     `(message-mml ((,c :foreground ,mail-part)))
-    `(message-separator ((,c :background ,bg-active)))
+    `(message-separator ((,c :background ,bg-inactive :foreground ,fg-main)))
 ;;;;; minimap
     `(minimap-active-region-background ((,c :background ,bg-active)))
     `(minimap-current-line-face ((,c :background ,bg-cyan-intense :foreground ,fg-main)))
@@ -3081,6 +3033,7 @@ FG and BG are the main colors."
     `(mu4e-replied-face ((,c :foreground ,info)))
     `(mu4e-special-header-value-face ((,c :inherit message-header-subject)))
     `(mu4e-system-face ((,c :inherit italic)))
+    `(mu4e-thread-fold-face ((,c :foreground ,border)))
     `(mu4e-title-face (( )))
     `(mu4e-trashed-face ((,c :foreground ,err)))
     `(mu4e-unread-face ((,c :inherit bold)))
@@ -3242,10 +3195,10 @@ FG and BG are the main colors."
     `(org-agenda-structure-filter ((,c :inherit org-agenda-structure :foreground ,warning)))
     `(org-agenda-structure-secondary ((,c :inherit font-lock-doc-face)))
     `(org-archived ((,c :background ,bg-inactive :foreground ,fg-main)))
-    `(org-block ((,c ,@(modus-themes--org-block fg-main bg-dim))))
-    `(org-block-begin-line ((,c ,@(modus-themes--org-block prose-block bg-inactive))))
+    `(org-block ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
+    `(org-block-begin-line ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-delimiter :foreground ,fg-prose-block-delimiter :extend t)))
     `(org-block-end-line ((,c :inherit org-block-begin-line)))
-    `(org-checkbox ((,c :foreground ,warning)))
+    `(org-checkbox ((,c :inherit modus-themes-fixed-pitch :foreground ,warning)))
     `(org-checkbox-statistics-done ((,c :inherit org-done)))
     `(org-checkbox-statistics-todo ((,c :inherit org-todo)))
     `(org-clock-overlay ((,c :inherit secondary-selection)))
@@ -3542,7 +3495,7 @@ FG and BG are the main colors."
     `(shortdoc-heading ((,c :inherit bold)))
     `(shortdoc-section (())) ; remove the default's variable-pitch style
 ;;;;; show-paren-mode
-    `(show-paren-match ((,c :background ,bg-paren-match :foreground ,fg-main :underline ,underline-paren-match)))
+    `(show-paren-match ((,c :background ,bg-paren-match :foreground ,fg-paren-match :underline ,underline-paren-match)))
     `(show-paren-match-expression ((,c :background ,bg-paren-expression)))
     `(show-paren-mismatch ((,c :inherit modus-themes-prominent-error)))
 ;;;;; shr
@@ -4110,29 +4063,35 @@ FG and BG are the main colors."
         modus-themes-fg-yellow-intense
         modus-themes-fg-magenta-intense
         modus-themes-fg-cyan-intense))
-;;;; org-src-block-faces
-    (if (or (eq modus-themes-org-blocks 'tinted-background)
-            (eq modus-themes-org-blocks 'rainbow))
-        `(org-src-block-faces
-          `(("emacs-lisp" modus-themes-nuanced-magenta)
-            ("elisp" modus-themes-nuanced-magenta)
-            ("clojure" modus-themes-nuanced-magenta)
-            ("clojurescript" modus-themes-nuanced-magenta)
-            ("c" modus-themes-nuanced-blue)
-            ("c++" modus-themes-nuanced-blue)
-            ("sh" modus-themes-nuanced-green)
-            ("shell" modus-themes-nuanced-green)
-            ("html" modus-themes-nuanced-yellow)
-            ("xml" modus-themes-nuanced-yellow)
-            ("css" modus-themes-nuanced-red)
-            ("scss" modus-themes-nuanced-red)
-            ("python" modus-themes-nuanced-green)
-            ("ipython" modus-themes-nuanced-magenta)
-            ("r" modus-themes-nuanced-cyan)
-            ("yaml" modus-themes-nuanced-cyan)
-            ("conf" modus-themes-nuanced-cyan)
-            ("docker" modus-themes-nuanced-cyan)))
-      `(org-src-block-faces '())))
+;;;; rustic-ansi-faces
+    `(rustic-ansi-faces
+      [,fg-term-black
+       ,fg-term-red
+       ,fg-term-green
+       ,fg-term-yellow
+       ,fg-term-blue
+       ,fg-term-magenta
+       ,fg-term-cyan
+       ,fg-term-white])
+;;;; xterm-color
+    `(xterm-color-names
+      [,fg-term-black
+       ,fg-term-red
+       ,fg-term-green
+       ,fg-term-yellow
+       ,fg-term-blue
+       ,fg-term-magenta
+       ,fg-term-cyan
+       ,fg-term-white])
+    `(xterm-color-names-bright
+      [,fg-term-black-bright
+       ,fg-term-red-bright
+       ,fg-term-green-bright
+       ,fg-term-yellow-bright
+       ,fg-term-blue-bright
+       ,fg-term-magenta-bright
+       ,fg-term-cyan-bright
+       ,fg-term-white-bright]))
   "Custom variables for `modus-themes-theme'.")
 
 ;;; Theme macros

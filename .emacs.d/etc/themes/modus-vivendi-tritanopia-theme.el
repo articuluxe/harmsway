@@ -211,6 +211,7 @@ standard)."
 ;;; Paren match
 
       (bg-paren-match        "#2f7f9f")
+      (fg-paren-match        unspecified)
       (bg-paren-expression   "#453040")
       (underline-paren-match unspecified)
 
@@ -347,7 +348,10 @@ standard)."
 
 ;;;; Prose mappings
 
-      (prose-block fg-dim)
+      (bg-prose-block-delimiter bg-dim)
+      (fg-prose-block-delimiter fg-dim)
+      (bg-prose-block-contents bg-dim)
+
       (prose-code cyan)
       (prose-done cyan)
       (prose-macro red-warmer)

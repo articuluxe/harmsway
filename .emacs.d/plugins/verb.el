@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.15.0
+;; Package-Version: 2.16.0
 ;; Package-Requires: ((emacs "26.3"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -340,7 +340,7 @@ E = Error.")
   "Prefix for Verb metadata keys in heading properties.
 Matching is case insensitive.")
 
-(defconst verb-version "2.15.0"
+(defconst verb-version "2.16.0"
   "Verb package version.")
 
 (defconst verb--multipart-boundary-alphabet
@@ -587,10 +587,19 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
           (throw 'end nil)))
       t)))
 
+(cl-deftype verb--http-method-type ()
+  '(or null (satisfies verb--http-method-p)))
+
+(cl-deftype verb--alist-type ()
+  '(or null (satisfies verb--alist-p)))
+
+(cl-deftype verb--http-headers-type ()
+  '(or null (satisfies verb--http-headers-p)))
+
 (defclass verb-request-spec ()
   ((method :initarg :method
            :initform nil
-           :type (or null verb--http-method)
+           :type verb--http-method-type
            :documentation "HTTP method.")
    (url :initarg :url
         :initform nil
@@ -598,7 +607,7 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
         :documentation "Request URL.")
    (headers :initarg :headers
             :initform ()
-            :type (or null verb--http-headers)
+            :type verb--http-headers-type
             :documentation "HTTP headers.")
    (body :initarg :body
          :initform nil
@@ -606,7 +615,7 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
          :documentation "Request body.")
    (metadata :initarg :metadata
              :initform nil
-             :type (or null verb--alist)
+             :type verb--alist-type
              :documentation "User-defined request metadata."))
   "Represents an HTTP request to be made.")
 
@@ -615,7 +624,7 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
             :type verb-request-spec
             :documentation "Corresponding request.")
    (headers :initarg :headers
-            :type (or null verb--http-headers)
+            :type verb--http-headers-type
             :documentation "Response headers.")
    (status :initarg :status
            :type (or null string)
@@ -771,6 +780,11 @@ If `verb-enable-log' is nil, do not log anything."
         ;; to make things more readable
         (when (> (line-number-at-pos) (1+ line))
           (newline))))))
+
+(defun verb--ensure-org-mode ()
+  "Ensure `org-mode' is enabled in the current buffer."
+  (unless (derived-mode-p 'org-mode)
+    (org-mode)))
 
 (defun verb--ensure-verb-mode ()
   "Ensure `verb-mode' is enabled in the current buffer."
@@ -1260,8 +1274,7 @@ buffer used to show the request."
         (name (buffer-name)))
     (with-current-buffer (get-buffer-create "*Show HTTP Request*")
       ;; Set up buffer
-      (unless (derived-mode-p 'org-mode)
-        (org-mode))
+      (verb--ensure-org-mode)
       (verb--ensure-verb-mode)
       (erase-buffer)
 
@@ -1397,8 +1410,7 @@ After the user has finished modifying the buffer, they can press
   (switch-to-buffer-other-window (get-buffer-create "*Edit HTTP Request*"))
   ;; "Reset" the buffer in case it wasn't killed correctly
   (erase-buffer)
-  (unless (derived-mode-p 'org-mode)
-    (org-mode))
+  (verb--ensure-org-mode)
   (verb--ensure-verb-mode)
 
   ;; Don't require tagging for this temp buffer
@@ -1531,11 +1543,15 @@ See `verb--export-to-websocat' for more information."
   (interactive)
   (verb-export-request-on-point "websocat"))
 
-(defun verb--export-to-verb (rs)
+(defun verb--export-to-verb (rs &optional omit-heading)
   "Export a request spec RS to Verb format.
-Return a new buffer with the export results inserted into it."
-  (with-current-buffer (generate-new-buffer "*HTTP Request Spec*")
-    (verb-mode)
+Return a new buffer with the export results inserted into it.
+If OMIT-HEADING is non-nil, do not insert an Org heading on the top."
+  (with-current-buffer (generate-new-buffer "*Exported HTTP Request*")
+    (verb--ensure-org-mode)
+    (verb--ensure-verb-mode)
+    (unless omit-heading
+      (insert (format "* Exported HTTP Request  :%s:\n" verb-tag)))
     (insert (verb-request-spec-to-string rs))
     (switch-to-buffer-other-window (current-buffer))
     (current-buffer)))

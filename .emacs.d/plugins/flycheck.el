@@ -10,7 +10,7 @@
 ;;             Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://www.flycheck.org
 ;; Keywords: convenience, languages, tools
-;; Version: 34.1
+;; Version: 35.0-snapshot
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is not part of GNU Emacs.
@@ -80,7 +80,6 @@
 (require 'find-func)             ; `find-function-regexp-alist'
 (require 'json)                  ; `flycheck-parse-json'
 (require 'ansi-color)            ; `flycheck-parse-with-patterns-without-color'
-(require 'lisp-mnt)              ; `lm-version'
 
 
 ;; Declare a bunch of dynamic variables that we need from other modes
@@ -1234,10 +1233,12 @@ Only has effect when variable `global-flycheck-mode' is non-nil."
 
 
 
-(defconst flycheck-version
-  (eval-when-compile
-    (lm-version (or load-file-name buffer-file-name)))
-  "The current version of Flycheck.")
+(defconst flycheck-version "35.0-snapshot"
+  "The current version of Flycheck.
+
+Should be kept in sync with the package version metadata.
+Used only when `package-get-function' is not available
+or fails.")
 
 (defun flycheck--pkg-version ()
   "Extract FLYCHECK's package version from its package metadata."
@@ -11186,32 +11187,30 @@ See URL `https://github.com/nerdypepper/statix' for more
 information about statix."
   (mapcar (lambda (err)
             ;; Diagnostic information is a (seemingly always) 1 element array.
-            ;; Set the values here to avoid nesting `let-alist'.
             (let-alist (car (alist-get 'diagnostics err))
-              (setf message .message
-                    start-line .at.from.line
-                    start-column .at.from.column
-                    end-line .at.to.line
-                    end-column .at.to.column))
+              (let ((message .message)
+                    (start-line .at.from.line)
+                    (start-column .at.from.column)
+                    (end-line .at.to.line)
+                    (end-column .at.to.column))
 
-            (let-alist err
-              (let ((diagnostic (car .diagnostics)))
-                (flycheck-error-new-at
-                 start-line
-                 start-column
-                 (pcase .severity ("Error" 'error)
-                        ("Warn" 'warning)
-                        (_ 'warning))
-                 (format "%s: %s" .note message)
-                 :id (format "%s%02d" (pcase .severity
-                                        ("Error" "E")
-                                        ("Warn" "W")
-                                        (_ "")) .code)
-                 :checker checker
-                 :buffer buffer
-                 :filename (buffer-file-name buffer)
-                 :end-line end-line
-                 :end-column end-column))))
+                (let-alist err
+                  (flycheck-error-new-at
+                   start-line
+                   start-column
+                   (pcase .severity ("Error" 'error)
+                          ("Warn" 'warning)
+                          (_ 'warning))
+                   (format "%s: %s" .note message)
+                   :id (format "%s%02d" (pcase .severity
+                                          ("Error" "E")
+                                          ("Warn" "W")
+                                          (_ "")) .code)
+                   :checker checker
+                   :buffer buffer
+                   :filename (buffer-file-name buffer)
+                   :end-line end-line
+                   :end-column end-column)))))
           (alist-get 'report (car (flycheck-parse-json output)))))
 
 (flycheck-define-checker statix
@@ -12362,7 +12361,7 @@ See URL `https://www.nongnu.org/chktex/'."
   :error-filter
   (lambda (errors)
     (flycheck-sanitize-errors (flycheck-increment-error-columns errors)))
-  :modes (latex-mode plain-tex-mode))
+  :modes (latex-mode LaTeX-mode plain-tex-mode plain-TeX-mode))
 
 (flycheck-define-checker tex-lacheck
   "A LaTeX syntax and style checker using lacheck.
@@ -12373,7 +12372,7 @@ See URL `https://www.ctan.org/pkg/lacheck'."
   ((warning line-start
             "\"" (file-name) "\", line " line ": " (message)
             line-end))
-  :modes latex-mode)
+  :modes (latex-mode LaTeX-mode))
 
 (flycheck-define-checker texinfo
   "A Texinfo syntax checker using makeinfo.
@@ -12388,7 +12387,7 @@ See URL `https://www.gnu.org/software/texinfo/'."
    (error line-start
           "-:" line (optional ":" column) ": " (message)
           line-end))
-  :modes texinfo-mode)
+  :modes (texinfo-mode Texinfo-mode))
 
 (flycheck-def-config-file-var flycheck-textlint-config
     textlint "textlintrc.json")
@@ -12442,7 +12441,7 @@ See URL `https://textlint.github.io/'."
   ;; `flycheck-textlint-plugin-alist'.
   :modes
   (text-mode markdown-mode gfm-mode message-mode adoc-mode
-             mhtml-mode latex-mode org-mode rst-mode)
+             mhtml-mode latex-mode LaTeX-mode org-mode rst-mode)
   :enabled
   (lambda () (flycheck--textlint-get-plugin))
   :verify

@@ -170,7 +170,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
       (bg-tag     "#ffe1ff")
       (bracket    "#ffeeee")
       (date       "#8ee5ee")
-      (info-doc   "#bcd2ee")
+      (info-doc   "#76eec6")
 
       ;; --- Colours are named in order from 1 --> 5
       ;; --- 1 as pale, and progressively intense, 5 as dark
@@ -371,8 +371,8 @@ Respected Only in GUI frame"
    `(org-archived                            ((,class :foreground ,fg-dim)))
 
    `(org-block                               ((,class :inherit fixed-pitch :background ,bg-inactive)))
-   `(org-block-begin-line                    ((,class :inherit org-block :overline ,cursor :weight semi-bold :height 0.9)))
-   `(org-block-end-line                      ((,class :inherit org-block-begin-line :overline nil :underline ,cursor)))
+   `(org-block-begin-line                    ((,class :inherit org-block :weight semi-bold :height 0.9)))
+   `(org-block-end-line                      ((,class :inherit org-block-begin-line)))
    `(org-inline-src-block                    ((,class :box ,cursor :height 0.8)))
 
    `(org-checkbox                            ((,class :weight bold :foreground ,clock)))
@@ -381,7 +381,7 @@ Respected Only in GUI frame"
    `(org-clock-overlay                       ((,class :foreground ,clock)))
    `(org-code                                ((,class :font ,haki-code-font :weight medium :height 1.1 :foreground ,code)))
    `(org-verbatim                            ((,class :inherit org-code :foreground ,verbatim)))
-   `(org-column                              ((,class :background ,bg-inactive)))
+   `(org-column                              ((,class :background ,fg-inactive)))
    `(org-column-title                        ((,class :background ,bg-inactive :underline t :weight bold)))
    `(org-date                                ((,class :foreground ,bg-main :background ,date)))
    `(org-date-selected                       ((,class :inherit haki-region :box ,cursor :weight bold)))
@@ -399,7 +399,7 @@ Respected Only in GUI frame"
    `(org-headline-todo                       ((,class :inherit org-todo :inverse-video t)))
    `(org-latex-and-related                   ((,class :foreground ,date)))
    `(org-link                                ((,class :inherit (link))))
-   `(org-list-dt                             ((,class :weight bold :foreground ,info-doc)))
+   `(org-list-dt                             ((,class :weight bold :height 1.1 :foreground ,info-doc)))
    `(org-macro                               ((,class :foreground ,c-keyword)))
    `(org-meta-line                           ((,class :foreground ,fg-inactive)))
    `(org-mode-line-clock                     ((,class :foreground ,date)))
@@ -458,7 +458,7 @@ Respected Only in GUI frame"
    `(org-modern-date-inactive                ((,class :foreground ,bg-inactive :background ,fg-comment)))
 
 ;;; --- Olivetti (No fringe, so it looks good)
-   `(fringe          ((,class :foreground ,bg-main)))
+   `(fringe          ((,class :inherit default)))
    `(olivetti-fringe ((,class :inherit fringe)))
 
 ;;; --- Rainbow delimiters (parenthesis world)
@@ -1133,7 +1133,7 @@ Respected Only in GUI frame"
    `(vundo-stem                                 ((,class :foreground ,fg-inactive)))
    `(vundo-saved                                ((,class :inherit bold :foreground ,code)))
    `(vundo-last-saved                           ((,class :inherit bold :foreground ,c-keyword)))
-   ;; `(vundo-branch-stem                          ((,class :inherit ,c-type)))
+   `(vundo-branch-stem                          ((,class :foreground ,c-warning)))
    `(vundo-highlight                            ((,class :foreground ,link)))))
 
 (custom-theme-set-variables

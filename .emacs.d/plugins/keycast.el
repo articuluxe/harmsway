@@ -43,10 +43,10 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'compat)
 (require 'format-spec)
 
-(eval-when-compile (require 'cl-lib))
 (eval-when-compile (require 'subr-x))
 
 ;;; Options
@@ -452,8 +452,8 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 
 (defun keycast--maybe-edit-local-format (format item record)
   (let ((value (buffer-local-value format (current-buffer))))
-    (unless (and (listp value)
-                 (memq item value))
+    (unless (or (eq value (default-value format))
+                (keycast--tree-member item value))
       (set record (cons (current-buffer) (symbol-value record)))
       (set format (if (keycast--format-atom-p value)
                       (list "" item value)
@@ -517,14 +517,21 @@ t to show the actual COMMAND, or a symbol to be shown instead."
          (eq (window-frame) (window-frame powerline-selected-window)))
         (t t)))
 
-(defun keycast--tree-member (elt tree)
+(defun keycast--tree-member (elt tree &optional delete)
   ;; Also known as auto-compile--tree-member.
   (and (listp tree)
-       (or (member elt tree)
-           (catch 'found
-             (dolist (sub tree)
-               (when-let ((found (keycast--tree-member elt sub)))
-                 (throw 'found found)))))))
+       (if-let* ((pos (cl-position elt tree))
+                 (mem (nthcdr pos tree)))
+           (cond ((not delete) mem)
+                 ((cdr mem)
+                  (setcar mem (cadr mem))
+                  (setcdr mem (cddr mem))
+                  nil)
+                 ((nbutlast tree) nil))
+         (catch 'found
+           (dolist (sub tree)
+             (when-let ((found (keycast--tree-member elt sub delete)))
+               (throw 'found found)))))))
 
 ;;; Mode-Line
 
@@ -568,14 +575,13 @@ t to show the actual COMMAND, or a symbol to be shown instead."
              (setcar cons (car keycast--mode-line-removed-tail))
              (setcdr cons (cdr keycast--mode-line-removed-tail))
              (setq keycast--mode-line-removed-tail nil))
-            (t
-             (setcar cons (cadr cons))
-             (setcdr cons (cddr cons)))))
+            ((keycast--tree-member 'keycast-mode-line
+                                   (default-value 'mode-line-format)
+                                   'delete))))
     (dolist (buf keycast--mode-line-modified-buffers)
       (when (buffer-live-p buf)
         (with-current-buffer buf
-          (setq-local mode-line-format
-                      (delq 'keycast-mode-line mode-line-format)))))
+          (keycast--tree-member 'keycast-mode-line mode-line-format 'delete))))
     (unless (keycast--mode-active-p)
       (remove-hook 'post-command-hook #'keycast--update)
       (remove-hook 'minibuffer-exit-hook #'keycast--minibuffer-exit)))))
@@ -629,9 +635,9 @@ t to show the actual COMMAND, or a symbol to be shown instead."
             (keycast--header-line-removed-tail
              (setcar cons (car keycast--header-line-removed-tail))
              (setcdr cons (cdr keycast--header-line-removed-tail)))
-            (t
-             (setcar cons (cadr cons))
-             (setcdr cons (cddr cons)))))
+            ((keycast--tree-member 'keycast-header-line
+                                   (default-value 'header-line-format)
+                                   'delete))))
     (setq keycast--header-line-removed-tail nil)
     (dolist (buf keycast--header-line-modified-buffers)
       (when (buffer-live-p buf)

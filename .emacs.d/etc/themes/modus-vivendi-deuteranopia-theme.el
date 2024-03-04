@@ -211,6 +211,7 @@ standard)."
 ;;; Paren match
 
       (bg-paren-match        "#2f7f9f")
+      (fg-paren-match        unspecified)
       (bg-paren-expression   "#453040")
       (underline-paren-match unspecified)
 
@@ -293,7 +294,7 @@ standard)."
       (date-event fg-alt)
       (date-holiday yellow-warmer)
       (date-holiday-other blue)
-      (date-now blue-faint)
+      (date-now fg-main)
       (date-range fg-alt)
       (date-scheduled yellow-cooler)
       (date-weekday cyan)
@@ -347,7 +348,10 @@ standard)."
 
 ;;;; Prose mappings
 
-      (prose-block fg-dim)
+      (bg-prose-block-delimiter bg-dim)
+      (fg-prose-block-delimiter fg-dim)
+      (bg-prose-block-contents bg-dim)
+
       (prose-code cyan-cooler)
       (prose-done blue)
       (prose-macro magenta-cooler)

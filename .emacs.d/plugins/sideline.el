@@ -174,6 +174,8 @@
 ;; (@* "Externals" )
 ;;
 
+(defvar overflow-newline-into-fringe)
+
 (declare-function string-pixel-width "subr-x.el")   ; TODO: remove this after 29.1
 (declare-function shr-string-pixel-width "shr.el")  ; TODO: remove this after 29.1
 
@@ -224,13 +226,20 @@
   `(when (buffer-live-p ,buffer-or-name)
      (with-current-buffer ,buffer-or-name ,@body)))
 
+(defun sideline--str-no-props (str)
+  "Remove STR's text properties."
+  (with-temp-buffer
+    (insert str)
+    (buffer-substring-no-properties (point-min) (point-max))))
+
 ;; TODO: Use function `string-pixel-width' after 29.1
 (defun sideline--string-pixel-width (str)
   "Return the width of STR in pixels."
-  (if (fboundp #'string-pixel-width)
-      (string-pixel-width str)
-    (require 'shr)
-    (shr-string-pixel-width str)))
+  (let ((str (sideline--str-no-props str)))
+    (if (fboundp #'string-pixel-width)
+        (string-pixel-width str)
+      (require 'shr)
+      (shr-string-pixel-width str))))
 
 (defun sideline--str-len (str)
   "Calculate STR in pixel width."
@@ -245,7 +254,7 @@
 
 (defun sideline--column-to-point (column)
   "Convert COLUMN to point."
-  (save-excursion (move-to-column column) (point)))
+  (save-excursion (move-to-column (max column 0)) (point)))
 
 (defun sideline--window-width ()
   "Correct window width for sideline."
@@ -273,10 +282,28 @@
       (sideline--str-len str)
     0))  ; not found, then return 0
 
-(defun sideline--align (&rest lengths)
-  "Align sideline string by LENGTHS from the right of the window."
-  (list (* (window-font-width)
-           (+ (apply #'+ lengths) (if (display-graphic-p) 1 3)))))
+(defun sideline--align-right (str offset)
+  "Align sideline STR from the right of the window.
+
+ Argument OFFSET is additional calculation from the right alignment."
+  (list (+
+         ;; If the sideline text is displayed without at least 1 pixel gap from the right fringe and
+         ;; overflow-newline-into-fringe is not true, emacs will line wrap it.
+         (if (and (display-graphic-p)
+                  (> (nth 1 (window-fringes)) 0)
+                  (not overflow-newline-into-fringe))
+             1
+           0)
+         (* (window-font-width)
+            (+ offset (if (display-graphic-p)
+                          ;; If right fringe deactivated add 1 offset
+                          (if (= 0 (nth 1 (window-fringes))) 1 0)
+                        1)))
+         (sideline--string-pixel-width str))))
+
+(defun sideline--get-line ()
+  "Return current line."
+  (sideline--s-replace "\n" "" (thing-at-point 'line t)))
 
 (defun sideline--calc-space (str-len on-left opposing-str-len)
   "Calculate space in current line.
@@ -293,7 +320,7 @@ calculate to the right side."
   (setq str-len (+ str-len opposing-str-len))
   ;; Start the calculation!
   (if on-left
-      (let* ((line (sideline--s-replace "\n" "" (thing-at-point 'line t)))
+      (let* ((line (sideline--get-line))
              (column-start (window-hscroll))
              (pos-first (save-excursion (back-to-indentation) (current-column)))
              (pos-end (- (sideline--str-len line) column-start)))
@@ -301,27 +328,28 @@ calculate to the right side."
                (cons column-start pos-first))
               ((= pos-first pos-end)
                (cons column-start (sideline--window-width)))))
-    (let* ((line (sideline--s-replace "\n" "" (thing-at-point 'line t)))
+    (let* ((line (sideline--get-line))
            (column-start (window-hscroll))
            (column-end (+ column-start (sideline--window-width)))
            (pos-end (- (sideline--str-len line) column-start)))
       (when (<= str-len (- column-end pos-end))
         (cons column-end pos-end)))))
 
-(defun sideline--find-line (str-len on-left &optional direction exceeded)
+(defun sideline--find-line (str-len on-left bol eol &optional direction exceeded)
   "Find a line where the string can be inserted.
 
 Argument STR-LEN is the length of the message, use to calculate the alignment.
 
 If argument ON-LEFT is non-nil, it will align to the left instead of right.
 
+Arguments BOL and EOL are cache early for better performance.
+
 See variable `sideline-order' document string for optional argument DIRECTION
 for details.
 
 Optional argument EXCEEDED is set to non-nil when we have already searched
 available lines in both directions (up & down)."
-  (let ((bol (window-start)) (eol (window-end))
-        (occupied-lines (if on-left sideline--occupied-lines-left
+  (let ((occupied-lines (if on-left sideline--occupied-lines-left
                           sideline--occupied-lines-right))
         (going-up (eq direction 'up))
         (skip-first t)
@@ -346,7 +374,7 @@ available lines in both directions (up & down)."
       (setq sideline--occupied-lines-right occupied-lines))
     (or pos-ov
         (and (not exceeded)
-             (sideline--find-line str-len on-left (if going-up 'down 'up) t)))))
+             (sideline--find-line str-len on-left bol eol (if going-up 'down 'up) t)))))
 
 (defun sideline--create-keymap (action candidate)
   "Create keymap for sideline ACTION.
@@ -423,7 +451,8 @@ FACE, NAME, ON-LEFT, and ORDER for details."
           (if on-left (format sideline-format-left text)
             (format sideline-format-right text))))
        (len-title (sideline--str-len title))
-       (pos-ov (sideline--find-line len-title on-left order))
+       (bol (window-start)) (eol (window-end))
+       (pos-ov (sideline--find-line len-title on-left bol eol order))
        (pos-start (car pos-ov)) (pos-end (cdr pos-ov))
        (offset (if (or on-left (zerop (window-hscroll))) 0
                  (save-excursion
@@ -435,8 +464,10 @@ FACE, NAME, ON-LEFT, and ORDER for details."
                          (t (- 0 (window-hscroll)))))))
        (str (concat
              (unless on-left
-               (propertize " " 'display `((space :align-to (- right ,(sideline--align (1- len-title) offset)))
-                                          (space :width 0))
+               (propertize " "
+                           'display `((space :align-to
+                                             (- right ,(sideline--align-right title offset)))
+                                      (space :width 0))
                            `cursor t))
              title)))
     ;; Create overlay

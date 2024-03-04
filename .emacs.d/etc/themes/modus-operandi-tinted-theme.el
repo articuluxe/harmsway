@@ -209,6 +209,7 @@ which corresponds to a minimum contrast in relative luminance of
 ;;; Paren match
 
       (bg-paren-match        "#7fdfcf")
+      (fg-paren-match        unspecified)
       (bg-paren-expression   "#efd3f5")
       (underline-paren-match unspecified)
 
@@ -219,7 +220,7 @@ which corresponds to a minimum contrast in relative luminance of
       (fringe bg-dim)
       (cursor red)
 
-      (keybind blue-cooler)
+      (keybind red)
       (name magenta)
       (identifier yellow-cooler)
 
@@ -345,7 +346,10 @@ which corresponds to a minimum contrast in relative luminance of
 
 ;;;; Prose mappings
 
-      (prose-block fg-dim)
+      (bg-prose-block-delimiter bg-dim)
+      (fg-prose-block-delimiter fg-dim)
+      (bg-prose-block-contents bg-dim)
+
       (prose-code green-cooler)
       (prose-done green)
       (prose-macro magenta-cooler)

@@ -20,13 +20,6 @@
 (require 'cl-lib)
 (require 'subr-x)
 
-;; TODO: it would be nice not to need to load all of tramp just for the file
-;; name parsing. I'm not sure if that's possible though.
-(require 'tramp)
-
-
-
-
 (defgroup terminal-here nil
   "Open external terminal emulators in current buffer's directory."
   :group 'external
@@ -40,21 +33,27 @@ Linux this is and pick a sensible terminal."
     (cond
      ;; Try to guess from the wide range of "standard" environment variables!
      ;; Based on xdg_util.cc.
-     ((equal xdg-current-desktop "Enlightenment") 'terminology)
-     ((equal xdg-current-desktop "GNOME") 'gnome-terminal)
-     ((equal xdg-current-desktop "KDE") 'konsole)
-     ((equal xdg-current-desktop "LXQt") 'qterminal)
-     ((equal xdg-current-desktop "Unity") 'gnome-terminal)
-     ((equal xdg-current-desktop "XFCE") 'xfce4-terminal)
-     ((equal desktop-session "enlightenment") 'terminology)
-     ((equal desktop-session "gnome") 'gnome-terminal)
-     ((equal desktop-session "kde") 'konsole)
-     ((equal desktop-session "kde-plasma") 'konsole)
-     ((equal desktop-session "kde4") 'konsole)
-     ((equal desktop-session "lxqt") 'qterminal)
-     ((equal desktop-session "mate") 'gnome-terminal)
-     ((equal desktop-session "xubuntu") 'xfce4-terminal)
-     ((string-match-p (regexp-quote "xfce") desktop-session) 'xfce4-terminal)
+     ((or (equal xdg-current-desktop "Enlightenment")
+          (equal desktop-session "enlightenment"))
+      'terminology)
+     ((or (equal xdg-current-desktop "GNOME")
+          (equal desktop-session "gnome")
+          (equal desktop-session "mate")
+          (equal xdg-current-desktop "Unity"))
+      ;; Gnome has two possible terminals these days
+      (if (executable-find "kgx") 'gnome-console 'gnome-terminal))
+     ((or (equal xdg-current-desktop "KDE")
+          (equal desktop-session "kde")
+          (equal desktop-session "kde-plasma")
+          (equal desktop-session "kde4"))
+      'konsole)
+     ((or (equal xdg-current-desktop "LXQt")
+          (equal desktop-session "lxqt"))
+      'qterminal)
+     ((or (equal xdg-current-desktop "XFCE")
+          (equal desktop-session "xubuntu")
+          (string-match-p (regexp-quote "xfce") desktop-session))
+      'xfce4-terminal)
 
      ;; We've failed, hopefully we're on a Debian-based OS so that we can use this
      ((executable-find "x-terminal-emulator") 'x-terminal-emulator))))
@@ -210,6 +209,9 @@ buffer is not in a project."
    ;; Linux
    (cons 'urxvt               (list "urxvt"))
    (cons 'gnome-terminal      (list "gnome-terminal"))
+   ;; A newish gnome terminal alternative, the strange name seems to be here to
+   ;; stay https://gitlab.gnome.org/GNOME/console/-/issues/119
+   (cons 'gnome-console       (list "kgx")) 
    (cons 'alacritty           (list "alacritty"))
    (cons 'xst                 (list "xst"))
    (cons 'st                  #'terminal-here--find-and-run-st)
@@ -253,6 +255,7 @@ terminal-here with tramp files to create ssh connections."
   (list
    (cons 'urxvt          "-e")
    (cons 'gnome-terminal "-x")
+   (cons 'gnome-console  "-e")
    (cons 'alacritty      "-e")
    (cons 'xst            "-e") ; popular st fork
    (cons 'st             "-e")
@@ -355,8 +358,10 @@ it was installed."
 ;;; Tramp/ssh support
 
 (defun terminal-here--parse-ssh-dir (dir)
-  (when (string-prefix-p "/ssh:" dir)
-    (with-parsed-tramp-file-name dir nil
+  (when (equal (file-remote-p dir 'method) "ssh")
+    (let ((user (file-remote-p dir 'user))
+	  (host (file-remote-p dir 'host))
+	  (localname (file-remote-p dir 'localname)))
       (list (if user (concat user "@" host) host) localname))))
 
 (defun terminal-here--ssh-command (ssh-data)
@@ -371,13 +376,12 @@ it was installed."
 
 Given a tramp path returns the local part, otherwise returns
 nil."
-  (let ((file-name-struct (tramp-dissect-file-name dir)))
+  (let ((method (file-remote-p dir 'method)))
     (cond
      ;; sudo: just strip the extra tramp stuff
-     ((equal (tramp-file-name-method file-name-struct) "sudo")
-      (tramp-file-name-localname file-name-struct))
+     ((equal method "sudo") (file-remote-p dir 'localname))
      ;; ssh: run with a custom command handled later
-     ((equal (tramp-file-name-method file-name-struct) "ssh") dir)
+     ((equal method "ssh") dir)
      (t (user-error "Terminal here cannot currently handle tramp files other than sudo and ssh")))))
 
 
@@ -389,7 +393,7 @@ nil."
   "Launch a terminal in directory DIR.
 
 Handles tramp paths sensibly."
-  (let* ((local-dir (if (tramp-tramp-file-p dir) (terminal-here--tramp-path-to-directory dir) dir))
+  (let* ((local-dir (if (file-remote-p dir) (terminal-here--tramp-path-to-directory dir) dir))
          (ssh-data (terminal-here--parse-ssh-dir dir))
          (terminal-command (if ssh-data
                                (terminal-here--ssh-command ssh-data)
@@ -405,7 +409,7 @@ Handles tramp paths sensibly."
 
 (defun terminal-here--run-command (command dir)
   (when terminal-here-verbose
-    (message "Running `%s` with default-directory `%s`" (mapconcat #'identity command " ") dir))
+    (message "Running `%s` with default-directory `%s`" (string-join command " ") dir))
   (let* ((default-directory dir)
          (process-name (car command))
          (proc (apply #'start-process process-name nil command)))
@@ -416,7 +420,7 @@ Handles tramp paths sensibly."
                   (or (/= (process-exit-status proc) 0)
                       terminal-here-verbose))
          (message "In terminal here, command `%s` exited with error code %d"
-                  (mapconcat #'identity command " ")
+                  (string-join command " ")
                   (process-exit-status proc)))))
     ;; Don't close when emacs closes, seems to only be necessary on Windows.
     (set-process-query-on-exit-flag proc nil)))

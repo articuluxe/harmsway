@@ -4,8 +4,8 @@
 
 ;; Author: Artur Yaroshenko <artawower@protonmail.com>
 ;; URL: https://github.com/artawower/blamer.el
-;; Package-Requires: ((emacs "27.1") (posframe "1.1.7") (async "1.9.7"))
-;; Version: 0.8.2
+;; Package-Requires: ((emacs "27.1") (posframe "1.1.7") (async "1.9.8"))
+;; Version: 0.8.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -197,7 +197,7 @@ This feature required Emacs built with `imagemagick'"
 (defcustom blamer-avatar-size 96
   "Size of avatar."
   :group 'blamer
-  :type 'int)
+  :type 'integer)
 
 (defcustom blamer-avatar-ratio '(3 . 3)
   "Image ration for avatar."
@@ -207,7 +207,7 @@ This feature required Emacs built with `imagemagick'"
 (defcustom blamer-avatar-cache-time 604800
   "Time in seconds to cache avatar.  Default value is 1 week."
   :group 'blamer
-  :type 'int)
+  :type 'integer)
 
 (defcustom blamer-avatar-folder "~/.blamer/avatars/"
   "Folder for avatars."
@@ -317,6 +317,13 @@ author name by left click and copying commit hash by right click.
                  (const :tag "Info about author" blamer-tooltip-author-info)
                  (const :tag "No tooltip" nil)))
 
+(defcustom blamer-symbol-count-before-new-line 0
+  "The number of characters before the end of the line.
+May be useful in some cases where the accuser unexpectedly
+moves to the next line."
+  :group 'blamer
+  :type 'integer)
+
 (defvar blamer-idle-timer nil
   "Current timer before commit info showing.")
 
@@ -343,9 +350,6 @@ author name by left click and copying commit hash by right click.
 
 (defvar blamer--buffer-name "*blamer*"
   "Name of buffer for git blame messages.")
-
-(defvar blamer--async-processes '()
-  "List of currently running asynchronous processes.")
 
 (defvar-local blamer--current-author nil
   "Git.name for current repository.")
@@ -511,23 +515,21 @@ COMMIT-INFO - all the commit information, for `blamer--apply-bindings'"
   (let* ((has-error (or (blamer--git-cmd-error-p git-commit-res) (eq (length git-commit-res) 0)))
          commit-message)
     (unless has-error
-      (string-match blamer--commit-message-regexp git-commit-res)
-      (setq commit-message (match-string 1 git-commit-res))
-      (split-string commit-message "\n"))))
+      (when (string-match blamer--commit-message-regexp git-commit-res)
+        (setq commit-message (match-string 1 git-commit-res))
+        (split-string commit-message "\n")))))
 
 (defun blamer--async-get-email-commit-message (commit-hash callback)
   "Get email and commit message for COMMIT-HASH asynchronously.
-Rusn CALLBACK with partial user-info plist."
-  (add-to-list
-   'blamer--async-processes
-   (let ((commit-info-args (append blamer--git-commit-message (list commit-hash))))
-     (blamer--async-start
-      `(lambda ()
-         (require 'vc-git)
-         (let* ((author-email (vc-git--run-command-string nil "log" "-n1" "--pretty=format:%ae" ,commit-hash))
-                (commit-res (vc-git--run-command-string nil ,@commit-info-args)))
-           (list author-email commit-res)))
-      callback))))
+Run CALLBACK with partial user-info plist."
+  (let ((commit-info-args (append blamer--git-commit-message (list commit-hash))))
+    (blamer--async-start
+     `(lambda ()
+        (require 'vc-git)
+        (let* ((author-email (vc-git--run-command-string nil "log" "-n1" "--pretty=format:%ae" ,commit-hash))
+               (commit-res (vc-git--run-command-string nil ,@commit-info-args)))
+          (list author-email commit-res)))
+     callback)))
 
 (defun blamer--async-parse-line-info (blame-msg callback line-number &optional include-avatar-p)
   "Parse BLAME-MSG from LINE-NUMBER and create a plist with commit info.
@@ -699,8 +701,11 @@ Works only for github right now."
 
 (defun blamer--maybe-normalize-truncated-line (text)
   "Disable line break for truncated line by truncated TEXT for available width."
+
   (if (and (not truncate-lines) blamer-force-truncate-long-line)
-      (truncate-string-to-width text (- (blamer--get-available-width-before-window-end) (blamer--get-line-number-column-width)))
+      (truncate-string-to-width text (- (blamer--get-available-width-before-window-end)
+                                        (blamer--get-line-number-column-width)
+                                        blamer-symbol-count-before-new-line))
     text))
 
 (defun blamer--create-popup-msg (commit-info)
@@ -926,13 +931,12 @@ CALLBACK will be called with result."
   (when-let*
       ((file-name file-name)
        (command (append blamer--git-blame-cmd
-                        (list (format "%s,%s" start-line end-line))))
-       (process (blamer--async-start
-                 `(lambda ()
-                    (require 'vc-git)
-                    (apply #'vc-git--run-command-string ,file-name ',command))
-                 callback)))
-    (add-to-list 'blamer--async-processes process)))
+                        (list (format "%s,%s" start-line end-line)))))
+    (blamer--async-start
+     `(lambda ()
+        (require 'vc-git)
+        (apply #'vc-git--run-command-string ,file-name ',command))
+     callback)))
 
 (defun blamer--render (&optional type)
   "Render text about current line commit status.
@@ -982,7 +986,7 @@ TYPE is optional view render type."
          (line-number start-line-number))
     (blamer--goto-line start-line-number)
     (dolist (cmd-msg commit-infos)
-      (unless (blamer--git-cmd-error-p cmd-msg)
+      (unless (and (blamer--git-cmd-error-p cmd-msg) (not (blamer--line-in-cusor-range-p line-number)))
         (blamer--async-parse-line-info
          cmd-msg
          (lambda (commit-info)
@@ -994,6 +998,14 @@ TYPE is optional view render type."
          line-number
          include-avatar-p)
         (setq line-number (1+ line-number))))))
+
+(defun blamer--line-in-cusor-range-p (line-number)
+  "Check whether current LINE-NUMBER in visible range or focused line."
+  (let ((window-start-line (line-number-at-pos (window-start)))
+        (window-end-line (line-number-at-pos (window-end))))
+    (or (and (>= line-number window-start-line)
+             (<= line-number window-end-line))
+        (eq line-number (line-number-at-pos)))))
 
 (defun blamer--goto-line (line-number)
   "Go to LINE-NUMBER."
@@ -1025,8 +1037,6 @@ Optional TYPE argument will override global `blamer-type'."
   "Render commit info with delay."
   (when blamer-idle-timer
     (cancel-timer blamer-idle-timer))
-
-  (blamer--kill-async-processes)
 
   (setq blamer-idle-timer
         (run-with-idle-timer (or blamer-idle-time 0) nil 'blamer--safety-render)))
@@ -1071,12 +1081,6 @@ LOCAL-TYPE is force replacement of current `blamer-type' for handle rendering."
       (blamer--render-commit-info-with-delay))
 
     (blamer--preserve-state)))
-
-(defun blamer--kill-async-processes ()
-  "Kill currently running async processes."
-  (dolist (process blamer--async-processes)
-    (when (process-live-p process)
-      (kill-process process))))
 
 (defun blamer--reset-state ()
   "Reset all state after blamer mode is disabled."
@@ -1150,7 +1154,7 @@ will appear after BLAMER-IDLE-TIME.  It works only inside git repo"
       (add-hook 'post-command-hook #'blamer--try-render nil t)
       (add-hook 'window-state-change-hook #'blamer--try-render nil t))))
 
-(defun blamer--async-start (start-func &optional finish-func)
+(defun blamer--async-start (start-func finish-func)
   "Optional wrapper over \\='async-start function.
 
 Needed for toggling async execution for better debug.

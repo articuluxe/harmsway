@@ -4,7 +4,6 @@
 
 ;; Author: Justin Burkett <justin@burkett.cc>
 ;; Maintainer: Justin Burkett <justin@burkett.cc>
-;; URL: https://github.com/justbur/emacs-which-key
 ;; Version: 3.6.0
 ;; Keywords:
 ;; Package-Requires: ((emacs "24.4"))
@@ -106,7 +105,7 @@ before.  Truncation is done using `which-key-ellipsis'."
 (defcustom which-key-min-column-description-width 0
   "Every column should at least have this width."
   :group 'which-key
-  :type 'integer
+  :type 'natnum
   :version "1.0")
 
 (defcustom which-key-add-column-padding 0
@@ -525,15 +524,16 @@ This string is fed into `substitute-command-keys'")
     map)
   "Keymap for C-h commands.")
 
-(defvar which-key--paging-functions '(which-key-C-h-dispatch
-                                      which-key-manual-update
-                                      which-key-turn-page
-                                      which-key-show-next-page-cycle
-                                      which-key-show-next-page-no-cycle
-                                      which-key-show-previous-page-cycle
-                                      which-key-show-previous-page-no-cycle
-                                      which-key-undo-key
-                                      which-key-undo))
+(defvar which-key--paging-functions
+  (list #'which-key-C-h-dispatch
+	#'which-key-manual-update
+	#'which-key-turn-page
+	#'which-key-show-next-page-cycle
+	#'which-key-show-next-page-no-cycle
+	#'which-key-show-previous-page-cycle
+	#'which-key-show-previous-page-no-cycle
+	#'which-key-undo-key
+	#'which-key-undo))
 
 (defvar which-key-persistent-popup nil
   "Whether or not to disable `which-key--hide-popup'.")
@@ -756,10 +756,9 @@ Used when `which-key-popup-type' is frame.")
     (regexp-opt '("mouse-" "wheel-" "remap" "drag-" "scroll-bar"
                   "select-window" "switch-frame" "which-key"))))
 (defvar which-key--ignore-keys-regexp
-  (eval-when-compile
-    (regexp-opt '("mouse-" "wheel-" "remap" "drag-" "scroll-bar"
-                  "select-window" "switch-frame" "-state"
-                  "which-key"))))
+  (regexp-opt '("mouse-" "wheel-" "remap" "drag-" "scroll-bar"
+                "select-window" "switch-frame" "-state"
+                "which-key")))
 
 (defvar which-key--pages-obj nil)
 (cl-defstruct which-key--pages
@@ -1130,6 +1129,7 @@ replacements are added to `which-key-replacement-alist'."
 The difference is that MODE specifies the `major-mode' that must
 be active for KEY-SEQUENCE and REPLACEMENT (MORE contains
 addition KEY-SEQUENCE REPLACEMENT pairs) to apply."
+  (declare (indent defun))
   ;; TODO: Make interactive
   (when (not (symbolp mode))
     (error "MODE should be a symbol corresponding to a value of major-mode"))
@@ -1156,8 +1156,6 @@ addition KEY-SEQUENCE REPLACEMENT pairs) to apply."
     (if (assq mode which-key--prefix-title-alist)
         (setcdr (assq mode which-key--prefix-title-alist) title-mode-alist)
       (push (cons mode title-mode-alist) which-key--prefix-title-alist))))
-(put 'which-key-add-major-mode-key-based-replacements
-     'lisp-indent-function 'defun)
 
 (defun which-key-define-key-recursively (map key def &optional at-root)
   "Recursively bind KEY in MAP to DEF on every level of MAP except the first.
@@ -1450,7 +1448,7 @@ characters respectively."
       which-key-side-window-max-height))
    ;; width
    (max 0
-        (- (if (member which-key-side-window-location '(left right))
+        (- (if (memq which-key-side-window-location '(left right))
                (which-key--total-width-to-text
                 (which-key--width-or-percentage-to-width
                  which-key-side-window-max-width))
@@ -1593,7 +1591,7 @@ Within these categories order using `which-key-key-order'."
   (if (stringp maybe-string) (string-width maybe-string) 0))
 
 (defsubst which-key--butlast-string (str)
-  (mapconcat #'identity (butlast (split-string str)) " "))
+  (string-join (butlast (split-string str)) " "))
 
 (defun which-key--match-replacement (key-binding replacement)
   ;; these are mode specific ones to ignore. The mode specific case is

@@ -241,13 +241,13 @@ With a value of t the mode-line has a border."
   "Function adding a border to the `mode-line' of the active window.
 BOXCOLOR supplies the border color."
   (if (eq t timu-rouge-mode-line-border)
-        (list :box boxcolor)))
+      (list :box boxcolor)))
 
 (defun timu-rouge-set-mode-line-inactive-border (boxcolor)
   "Function adding a border to the `mode-line' of the inactive window.
 BOXCOLOR supplies the border color."
   (if (eq t timu-rouge-mode-line-border)
-        (list :box boxcolor)))
+      (list :box boxcolor)))
 
 ;;;###autoload
 (defun timu-rouge-toggle-org-colors-intensity ()
@@ -624,7 +624,7 @@ Sourced other themes to get information about font faces for packages.")
    `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
    `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
 
-;;; diff
+;;;; diff
    `(diff-added ((,class (:foreground ,bg :background ,green :extend t))))
    `(diff-indicator-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
    `(diff-refine-added ((,class (:foreground ,bg :weight bold :background ,green :extend t))))
@@ -767,6 +767,9 @@ Sourced other themes to get information about font faces for packages.")
    `(ediff-odd-diff-A ((,class (:background ,bg-other :extend t))))
    `(ediff-odd-diff-B ((,class (:background ,bg-other :extend t))))
    `(ediff-odd-diff-C ((,class (:background ,bg-other :extend t))))
+
+;;;; eldoc
+   `(eldoc-highlight-function-argument ((,class (:foreground ,red :weight bold ))))
 
 ;;;; elfeed
    `(elfeed-log-debug-level-face ((,class (:foreground ,rouge5))))
@@ -1408,12 +1411,13 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; org-agenda
    `(org-agenda-clocking ((,class (:background ,blue))))
-   `(org-agenda-date ((,class (:foreground ,magenta :weight ultra-bold))))
-   `(org-agenda-date-today ((,class (:foreground ,magenta :weight ultra-bold))))
-   `(org-agenda-date-weekend ((,class (:foreground ,magenta :weight ultra-bold))))
+   `(org-agenda-date ((,class (:foreground ,red :weight ultra-bold))))
+   `(org-agenda-date-today ((,class (:foreground ,red :weight ultra-bold))))
+   `(org-agenda-date-weekend ((,class (:foreground ,red :weight ultra-bold))))
    `(org-agenda-dimmed-todo-face ((,class (:foreground ,rouge5))))
    `(org-agenda-done ((,class (:foreground ,rouge5))))
-   `(org-agenda-structure ((,class (:foreground ,fg :weight ultra-bold))))
+   `(org-agenda-structure ((,class (:foreground ,blue :weight ultra-bold))))
+   `(org-imminent-deadline ((,class (:foreground ,darkred))))
    `(org-scheduled ((,class (:foreground ,fg))))
    `(org-scheduled-previously ((,class (:foreground ,rouge8))))
    `(org-scheduled-today ((,class (:foreground ,rouge7))))
@@ -1500,6 +1504,16 @@ Sourced other themes to get information about font faces for packages.")
    `(outline-6 ((,class (:foreground ,purple))))
    `(outline-7 ((,class (:foreground ,purple))))
    `(outline-8 ((,class (:foreground ,fg))))
+
+;;;; outline-minor-faces
+     `(outline-minor-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.2)))))
+     `(outline-minor-2 ((,class (:foreground ,red :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.2)))))
+     `(outline-minor-3 ((,class (:foreground ,orange :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.1)))))
+     `(outline-minor-4 ((,class (:foreground ,darkred))))
+     `(outline-minor-5 ((,class (:foreground ,green))))
+     `(outline-minor-6 ((,class (:foreground ,teal))))
+     `(outline-minor-7 ((,class (:foreground ,purple))))
+     `(outline-minor-8 ((,class (:foreground ,fg))))
 
 ;;;; parenface
    `(paren-face ((,class (:foreground ,rouge5))))
