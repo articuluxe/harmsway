@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; viking --- host file
-;; Copyright (C) 2015-2023  Dan Harms (dharms)
+;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-10-05 11:25:03 dharms>
+;; Modified Time-stamp: <2024-03-08 10:31:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -98,6 +98,8 @@
                             "Bedstead 12"
                             "ProggyCleanTT 18"
                             "Monofur 15"
+                            "LinuxLibertine O 14"
+                            "Linux Biolinum O 14"
                             "iMWritingMonoS Nerd Font Mono 12"
                             ))
   (choose-font-init))
