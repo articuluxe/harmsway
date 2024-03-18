@@ -7,6 +7,11 @@ brew install tnftp tnftpd
 # apple's telnet
 brew install telnet telnetd
 
+#shell
+brew install bash
+echo "/opt/homebrew/bin/bash" > /etc/shells
+chsh -s /opt/homebrew/bin/bash
+
 brew install autoconf
 brew install automake
 brew install pkg-config
