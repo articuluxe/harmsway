@@ -1,28 +1,29 @@
 ;;; mood-line.el --- A minimal mode line inspired by doom-modeline -*- lexical-binding: t; -*-
-
+;;
 ;; Author: Jessie Hildebrandt <jessieh.net>
 ;; Homepage: https://gitlab.com/jessieh/mood-line
 ;; Keywords: mode-line faces
-;; Version: 2.1.0
+;; Version: 3.1.0
 ;; Package-Requires: ((emacs "26.1"))
-
+;;
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
 ;;
-;; mood-line is a minimal mode line configuration that aims to replicate
-;; some of the features of the more advanced doom-modeline package.
+;; mood-line is a lightweight, drop-in replacement for the default mode line.
 ;;
 ;; Features offered:
-;; * Clean, minimal design
+;; * Clean, informative design
+;; * Customizable, modular segment format
 ;; * Customizable glyph sets
-;; * Anzu and multiple-cursors counter
-;; * Version control status indicator
-;; * Custom Flycheck/Flymake indicator
-;; * Lightweight with no dependencies
+;; * Lazy-loaded extensions
+;; * Lightweight, no dependencies
 ;;
 ;; To activate mood-line:
 ;; (mood-line-mode)
+;;
+;; For information on customizing mood-line:
+;; M-x customize-group mood-line
 
 ;;; License:
 ;;
@@ -50,46 +51,74 @@
 ;; -------------------------------------------------------------------------- ;;
 
 ;; ---------------------------------- ;;
-;; Compile time requirements
+;; Required features
 ;; ---------------------------------- ;;
 
 (eval-when-compile
-  (require 'flymake))
+  (require 'cl-lib))
 
 ;; ---------------------------------- ;;
 ;; External variable defs
 ;; ---------------------------------- ;;
 
-(defvar anzu--cached-count)
-(defvar anzu--current-position)
-(defvar anzu--overflow-p)
-(defvar anzu--total-matched)
-
-(defvar flycheck-current-errors)
+(eval-when-compile
+  (defvar anzu--cached-count)
+  (defvar anzu--current-position)
+  (defvar anzu--overflow-p)
+  (defvar anzu--total-matched))
 
 ;; ---------------------------------- ;;
 ;; External function decls
 ;; ---------------------------------- ;;
 
-(declare-function cl-struct-slot-value "cl-macs" (struct-type slot-name inst))
+(eval-when-compile
+  (declare-function mc/num-cursors "multiple-cursors")
+  (declare-function string-blank-p "subr-x"))
 
-(declare-function flycheck-count-errors "flycheck" (errors))
+;; -------------------------------------------------------------------------- ;;
+;;
+;; Macros
+;;
+;; -------------------------------------------------------------------------- ;;
 
-(declare-function flymake-running-backends "flymake" ())
-(declare-function flymake-reporting-backends "flymake" ())
-(declare-function flymake--lookup-type-property "flymake" (type prop &optional default))
+(defmacro mood-line--deflazy (name)
+  "Define dummy function NAME to `require' its module and call actual function."
+  (let ((module (intern (car (split-string (symbol-name name) "--")))))
+    `(defun ,name (&rest args)
+       "Not yet loaded."
+       (fmakunbound (quote ,name))
+       (require (quote ,module))
+       (apply (function ,name) args))))
 
-(declare-function mood-line-segment-indentation--segment "mood-line-segment-indentation" ())
+(defmacro mood-line-defformat (&rest spec)
+  "Format :left and :right segment lists of plist SPEC for `mood-line-format'.
 
-(declare-function mood-line-segment-modal--evil "mood-line-segment-modal" ())
-(declare-function mood-line-segment-modal--meow "mood-line-segment-modal" ())
-(declare-function mood-line-segment-modal--god "mood-line-segment-modal" ())
+A segment may be a string, a cons cell of the form (FUNCTION . SEPARATOR),
+ or any expression that evaluates to a string or nil.
 
-(declare-function mc/num-cursors "multiple-cursors" ())
+Strings will be collected into the format sequence unaltered.
 
-(declare-function string-blank-p "subr-x" (string))
+Cons cells of the form (FUNCTION . SEPARATOR) will expand into the format
+ sequence as FUNCTION, followed by SEPARATOR.
 
-(declare-function warning-numeric-level "warnings" (level))
+All other expressions will expand into the format sequence unaltered,
+ followed by an empty string. This prevents accidental elision of the
+ following segment should the expression evaluate to nil.
+
+An optional key :padding may be provided, the value of which will be used as
+ the padding for either side of the mode line. If :padding is nil, \"\s\" will
+ be used as a default."
+  (let* ((padding (or (plist-get spec :padding) "\s"))
+         (left (append (list padding) (plist-get spec :left)))
+         (right (append (plist-get spec :right) (list padding))))
+    `(quote ,(mapcar
+              (lambda (segments)
+                (cl-loop for seg in segments
+                         if (nlistp (cdr-safe seg)) append (list (car seg)
+                                                                 (cdr seg))
+                         else if (stringp seg) collect seg
+                         else append (list seg "")))
+              (list left right)))))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
@@ -115,6 +144,8 @@
     (:buffer-modified . ?*)
     (:buffer-read-only . ?#)
 
+    (:frame-client . ?@)
+
     (:count-separator . ?*))
   "Set of ASCII glyphs for use with mood-line.")
 
@@ -135,6 +166,8 @@
     (:buffer-narrowed . ?◢)
     (:buffer-modified . ?●)
     (:buffer-read-only . ?■)
+
+    (:frame-client . ?)
 
     (:count-separator . ?×))
   "Set of Fira Code-compatible glyphs for use with mood-line.")
@@ -157,8 +190,55 @@
     (:buffer-modified . ?●)
     (:buffer-read-only . ?■)
 
+    (:frame-client . ?⇅)
+
     (:count-separator . ?✕))
   "Set of Unicode glyphs for use with mood-line.")
+
+(defconst mood-line-format-default
+  (mood-line-defformat
+   :left
+   (((mood-line-segment-modal)                  . " ")
+    ((or (mood-line-segment-buffer-status) " ") . " ")
+    ((mood-line-segment-buffer-name)            . "  ")
+    ((mood-line-segment-anzu)                   . "  ")
+    ((mood-line-segment-multiple-cursors)       . "  ")
+    ((mood-line-segment-cursor-position)        . " ")
+    (mood-line-segment-scroll))
+   :right
+   (((mood-line-segment-vc)         . "  ")
+    ((mood-line-segment-major-mode) . "  ")
+    ((mood-line-segment-misc-info)  . "  ")
+    ((mood-line-segment-checker)    . "  ")
+    ((mood-line-segment-process)    . "  ")))
+  "Default format for mood-line.")
+
+(defconst mood-line-format-default-extended
+  (mood-line-defformat
+   :left
+   (((mood-line-segment-modal)            . " ")
+    ((or (mood-line-segment-buffer-status)
+         (mood-line-segment-client)
+         " ")                             . " ")
+    ((mood-line-segment-project)          . "/")
+    ((mood-line-segment-buffer-name)      . "  ")
+    ((mood-line-segment-anzu)             . "  ")
+    ((mood-line-segment-multiple-cursors) . "  ")
+    (mood-line-segment-cursor-position)
+    #(":" 0 1 (face mood-line-unimportant))
+    ((mood-line-segment-cursor-point)     . " ")
+    ((mood-line-segment-region)           . " ")
+    (mood-line-segment-scroll))
+   :right
+   (((mood-line-segment-indentation) . "  ")
+    ((mood-line-segment-eol)         . "  ")
+    ((mood-line-segment-encoding)    . "  ")
+    ((mood-line-segment-vc)          . "  ")
+    ((mood-line-segment-major-mode)  . "  ")
+    ((mood-line-segment-misc-info)   . "  ")
+    ((mood-line-segment-checker)     . "  ")
+    ((mood-line-segment-process)     . "  ")))
+  "Extended default format for mood-line showcasing all included segments.")
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
@@ -183,73 +263,73 @@
 ;; Variable definitions
 ;; ---------------------------------- ;;
 
-(defcustom mood-line-show-indentation-style nil
-  "When non-nil, show the indentation style of the current buffer."
-  :group 'mood-line
-  :type 'boolean)
-
-(defcustom mood-line-show-eol-style nil
-  "When non-nil, show the EOL style of the current buffer."
-  :group 'mood-line
-  :type 'boolean)
-
-(defcustom mood-line-show-encoding-information nil
-  "When non-nil, show the encoding format of the current buffer."
-  :group 'mood-line
-  :type 'boolean)
-
-(defcustom mood-line-show-cursor-point nil
-  "When non-nil, show the `point' value as an integer."
-  :group 'mood-line
-  :type 'boolean)
-
-(defcustom mood-line-show-major-mode t
-  "When non-nil, show the name of the major mode of the current buffer."
-  :group 'mood-line
-  :type 'boolean)
-
 (defcustom mood-line-glyph-alist mood-line-glyphs-ascii
   "Alist mapping glyph names to characters used to draw some mode line segments.
 
 mood-line includes several sets of glyphs by default:
 
-`mood-line-glyphs-ascii'     | Basic ASCII character glyphs
-`mood-line-glyphs-fira-code' | Fira Code-compatible glyphs
-`mood-line-glyphs-unicode'   | Fancy unicode glyphs
+ `mood-line-glyphs-ascii'     | Basic ASCII character glyphs
+ `mood-line-glyphs-fira-code' | Fira Code-compatible glyphs
+ `mood-line-glyphs-unicode'   | Fancy unicode glyphs
 
 Note that if a character provided by a glyph set is not included in your default
-font, the editor will render it with a fallback font.  If your fallback font is
-not the same height as your default font, the mode line may unexpectedly grow
-or shrink.
+ font, the editor will render it with a fallback font.  If your fallback font is
+ not the same height as your default font, the mode line may unexpectedly grow
+ or shrink.
 
 Keys are names for different mode line glyphs, values are characters for that
-glyph.  Glyphs used by mood-line include:
+ glyph.  Glyphs used by mood-line include:
 
-`:checker-info'        | Syntax checker reports notes
-`:checker-issues'      | Syntax checker reports issues
-`:checker-good'        | Syntax checker reports no issues
-`:checker-checking'    | Syntax checker is running
-`:checker-errored'     | Syntax checker is stopped due to an error
-`:checker-interrupted' | Syntax checker is paused
+ :checker-info        | Syntax checker reports notes
+ :checker-issues      | Syntax checker reports issues
+ :checker-good        | Syntax checker reports no issues
+ :checker-checking    | Syntax checker is running
+ :checker-errored     | Syntax checker is stopped due to an error
+ :checker-interrupted | Syntax checker is paused
 
-`:vc-added'            | VC backend reports additions/changes
-`:vc-needs-merge'      | VC backend reports required merge
-`:vc-needs-update'     | VC backend reports upstream is ahead of local
-`:vc-conflict'         | VC backend reports conflict
-`:vc-good'             | VC backend has nothing to report
+ :vc-added            | VC backend reports additions/changes
+ :vc-needs-merge      | VC backend reports required merge
+ :vc-needs-update     | VC backend reports upstream is ahead of local
+ :vc-conflict         | VC backend reports conflict
+ :vc-good             | VC backend has nothing to report
 
-`:buffer-narrowed'     | File-backed buffer is narrowed
-`:buffer-modified'     | File-backed buffer is modified
-`:buffer-read-only'    | File-backed buffer is read-only
+ :buffer-narrowed     | File-backed buffer is narrowed
+ :buffer-modified     | File-backed buffer is modified
+ :buffer-read-only    | File-backed buffer is read-only
 
-`:count-separator'     | Separates some indicator names from numerical counts
+ :frame-client        | Frame is a client for an Emacs daemon
 
-`mood-line-glyphs-ascii' will be used as a fallback wherever the a glyph may be
-found to be missing in `mood-line-glyph-alist'."
+ :count-separator     | Separates some indicator names from numerical counts
+
+`mood-line-glyphs-ascii' will be used as a fallback whenever a glyph is found
+ to be missing in `mood-line-glyph-alist'."
   :group 'mood-line
-  :type `(alist :tag "Character map alist"
+  :type '(alist :tag "Character map alist"
                 :key-type (symbol :tag "Glyph name")
                 :value-type (character :tag "Character to use")))
+
+(defcustom mood-line-format mood-line-format-default
+  "List providing left and right lists of segments to format as the mode line.
+
+The list should be of the form (L-SEGMENTS R-SEGMENTS), where L-SEGMENTS is a
+ list of segments to be left-aligned, and R-SEGMENTS is a list of segments to
+ be right-aligned. Lists are processed from first to last, and segments are
+ displayed from left to right.
+
+A segment may be any expression that evaluates to a string, or nil.
+ Segment expressions evaluating to nil are not displayed.
+
+When a segment evaluates to nil, the following segment will be skipped and not
+ processed or displayed. This behavior may be used to, e.g., conditionally
+ display separating whitespace after a segment.
+
+Examples: `mood-line-format-default' and `mood-line-format-default-extended'
+
+See `mood-line-defformat' for a helpful formatting macro."
+  :group 'mood-line
+  :type '(list :tag "Mode line segments"
+               (repeat :tag "Left side" sexp)
+               (repeat :tag "Right side" sexp)))
 
 ;; ---------------------------------- ;;
 ;; Face definitions
@@ -274,6 +354,10 @@ found to be missing in `mood-line-glyph-alist'."
   '((t (:inherit font-lock-doc-face :weight normal)))
   "Face used for the ':buffer-narrowed' buffer status indicator."
   :group 'mood-line-faces)
+
+(defface mood-line-frame-status-client
+  '((t (:inherit mood-line-unimportant)))
+  "Face used for the :frame-client frame status indicator.")
 
 (defface mood-line-major-mode
   '((t (:inherit bold)))
@@ -315,97 +399,171 @@ found to be missing in `mood-line-glyph-alist'."
   "Face used for less important mode line elements."
   :group 'mood-line-faces)
 
-;; ---------------------------------- ;;
-;; Obsolete faces
-;; ---------------------------------- ;;
-
-(define-obsolete-face-alias 'mood-line-modified 'mood-line-buffer-status-modified "2.1.0")
-
 ;; -------------------------------------------------------------------------- ;;
 ;;
 ;; Helper functions
 ;;
 ;; -------------------------------------------------------------------------- ;;
 
+(defvar mood-line--escape-buffer (get-buffer-create " *mood-line*")
+  "Buffer used by `mood-line--escape'.")
+
+(defun mood-line--escape (&rest strings)
+  "Escape all mode line constructs in STRINGS."
+  (with-current-buffer mood-line--escape-buffer
+    (erase-buffer)
+    (apply #'insert strings)
+    (while (search-backward "%" nil t)
+      (goto-char (match-beginning 0))
+      (insert-char ?% 1 t)
+      (goto-char (- (point) 1)))
+    (buffer-string)))
+
 (defun mood-line--get-glyph (glyph)
   "Return character from `mood-line-glyph-alist' for GLYPH.
-
 If a character could not be found for the requested glyph, a fallback will be
 returned from `mood-line-glyphs-ascii'."
-  (char-to-string (or (alist-get glyph
-                                 mood-line-glyph-alist)
-                      (alist-get glyph
-                                 mood-line-glyphs-ascii))))
+  (char-to-string (or (alist-get glyph mood-line-glyph-alist)
+                      (alist-get glyph mood-line-glyphs-ascii))))
 
-(defun mood-line--format (left right)
-  "Format a mode line with a `LEFT' and `RIGHT' justified list of elements.
-The mode line should fit the `window-width' with space between the lists."
-  (let ((reserve (length right)))
-    (concat left
-            " "
-            (propertize " "
-                        'display `((space :align-to (- right
-                                                       (- 0 right-margin)
-                                                       ,reserve))))
-            right)))
+(defun mood-line--process-segments (segments)
+  "Process list of segments SEGMENTS, returning a string.
+Segments are processed according to the rules described in the documentation
+for `mood-line-format', which see."
+  (cl-loop with last = t
+           for seg in segments
+           if last do (setq last (eval seg)) and concat last
+           else do (setq last t)))
+
+(defun mood-line--process-format (format)
+  "Format and return a mode line string according to FORMAT.
+Returned string is padded in the center to fit the width of the window.
+Left and right segment lists of FORMAT will be processed according to the rules
+described in the documentation for `mood-line-format', which see."
+  (let ((right-str (mood-line--process-segments (cadr format))))
+    (mood-line--escape
+     (mood-line--process-segments (car format))
+     " "
+     (propertize " "
+                 'display `((space :align-to (- right (- 0 right-margin)
+                                                ,(length right-str)))))
+     right-str)))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
-;; Optional/lazy loaded segments
+;; Optional/lazy-loaded segments
 ;;
 ;; -------------------------------------------------------------------------- ;;
-
-;; ---------------------------------- ;;
-;; Indentation style
-;; ---------------------------------- ;;
-
-(defun mood-line-segment-indentation ()
-  "Display the indentation style of the current buffer (if enabled)."
-  (when mood-line-show-indentation-style
-    (require 'mood-line-segment-indentation)
-    (mood-line-segment-indentation--segment)))
 
 ;; ---------------------------------- ;;
 ;; Modal editing
 ;; ---------------------------------- ;;
 
+(mood-line--deflazy mood-line-segment-modal--evil-fn)
+(mood-line--deflazy mood-line-segment-modal--meow-fn)
+(mood-line--deflazy mood-line-segment-modal--xah-fn)
+(mood-line--deflazy mood-line-segment-modal--god-fn)
+
 (defun mood-line-segment-modal ()
   "Return the correct mode line segment for the first active modal mode found.
-
-Modal modes checked, in order: `evil-mode', `meow-mode', `god-mode'."
+Modal editing modes checked, in order:
+`evil-mode', `meow-mode', `xah-fly-keys', `god-mode'"
   (cond
    ((bound-and-true-p evil-mode)
-    (require 'mood-line-segment-modal)
-    (mood-line-segment-modal--evil))
+    (mood-line-segment-modal--evil-fn))
    ((bound-and-true-p meow-mode)
-    (require 'mood-line-segment-modal)
-    (mood-line-segment-modal--meow))
-   ((featurep 'god-mode)
-    (require 'mood-line-segment-modal)
-    (mood-line-segment-modal--god))))
+    (mood-line-segment-modal--meow-fn))
+   ((bound-and-true-p xah-fly-keys)
+    (mood-line-segment-modal--xah-fn))
+   ((or (bound-and-true-p god-local-mode)
+        (bound-and-true-p god-global-mode))
+    (mood-line-segment-modal--god-fn))))
+
+;; ---------------------------------- ;;
+;; Indentation style
+;; ---------------------------------- ;;
+
+(mood-line--deflazy mood-line-segment-indentation)
+
+;; ---------------------------------- ;;
+;; Version control
+;; ---------------------------------- ;;
+
+(mood-line--deflazy mood-line-segment-vc--update)
+
+(defvar-local mood-line-segment-vc--text nil)
+
+(defun mood-line-segment-vc ()
+  "Return color-coded version control information."
+  mood-line-segment-vc--text)
+
+;; ---------------------------------- ;;
+;; Checker status
+;; ---------------------------------- ;;
+
+(mood-line--deflazy mood-line-segment-checker--flycheck-update)
+(mood-line--deflazy mood-line-segment-checker--flymake-update)
+
+(defvar-local mood-line-segment-checker--flycheck-text nil)
+(defvar-local mood-line-segment-checker--flymake-text nil)
+
+(defun mood-line-segment-checker ()
+  "Return status information for flycheck or flymake, if active."
+  (cond
+   ((bound-and-true-p flycheck-mode)
+    mood-line-segment-checker--flycheck-text)
+   ((bound-and-true-p flymake-mode)
+    mood-line-segment-checker--flymake-text)))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
-;; Anzu segment
+;; Client segment
+;;
+;; -------------------------------------------------------------------------- ;;
+
+(defun mood-line-segment-client ()
+  "Return an indicator representing the client status of the current frame."
+  (when (frame-parameter nil 'client)
+    (propertize (mood-line--get-glyph :frame-client)
+                'face 'mood-line-frame-status-client)))
+
+;; -------------------------------------------------------------------------- ;;
+;;
+;; Project segment
+;;
+;; -------------------------------------------------------------------------- ;;
+
+(defun mood-line-segment-project ()
+  "Return project name from project.el or Projectile, if any."
+  (or
+   (and (fboundp 'project-name)
+        (project-current)
+        (project-name (project-current)))
+   (and (fboundp 'projectile-project-name)
+        (projectile-project-name))))
+
+;; -------------------------------------------------------------------------- ;;
+;;
+;; anzu segment
 ;;
 ;; -------------------------------------------------------------------------- ;;
 
 (defun mood-line-segment-anzu ()
-  "Display color-coded anzu status information."
+  "Return color-coded anzu status information."
   (when (bound-and-true-p anzu--state)
     (cond
      ((eq anzu--state 'replace-query)
-      (format #("Replace%s%d  "
+      (format #("Replace%s%d"
                 7 10 (face mood-line-status-info))
               (mood-line--get-glyph :count-separator)
               anzu--cached-count))
      (anzu--overflow-p
-      (format #("%d/%d+  "
+      (format #("%d/%d+"
                 0 2 (face mood-line-status-info)
                 3 6 (face mood-line-status-error))
               anzu--current-position anzu--total-matched))
      (t
-      (format #("%d/%d  "
+      (format #("%d/%d"
                 0 2 (face mood-line-status-info))
               anzu--current-position anzu--total-matched)))))
 
@@ -416,240 +574,12 @@ Modal modes checked, in order: `evil-mode', `meow-mode', `god-mode'."
 ;; -------------------------------------------------------------------------- ;;
 
 (defun mood-line-segment-multiple-cursors ()
-  "Display the number of active multiple-cursors."
+  "Return the number of active multiple-cursors."
   (when (bound-and-true-p multiple-cursors-mode)
-    (format #("MC%s%d  "
+    (format #("MC%s%d"
               2 5 (face mood-line-status-info))
             (mood-line--get-glyph :count-separator)
             (mc/num-cursors))))
-
-;; -------------------------------------------------------------------------- ;;
-;;
-;; VC segment
-;;
-;; -------------------------------------------------------------------------- ;;
-
-;; ---------------------------------- ;;
-;; Update function
-;; ---------------------------------- ;;
-
-(defvar-local mood-line--vc-text nil)
-
-(defun mood-line--vc-update-segment (&rest _)
-  "Update `mood-line--vc-text' against the current VCS state."
-  (setq mood-line--vc-text
-        (when (and vc-mode
-                   buffer-file-name)
-          (let* ((backend (vc-backend buffer-file-name))
-                 (branch (substring-no-properties vc-mode
-                                                  (+ (if (eq backend 'Hg) 2 3)
-                                                     2)))
-                 (state (vc-state buffer-file-name
-                                  (vc-backend buffer-file-name))))
-            (cond
-             ((memq state '(edited added))
-              (format #("%s %s  "
-                        0 2 (face mood-line-status-info))
-                      (mood-line--get-glyph :vc-added)
-                      branch))
-             ((eq state 'needs-merge)
-              (format #("%s %s  "
-                        0 2 (face mood-line-status-warning))
-                      (mood-line--get-glyph :vc-needs-merge)
-                      branch))
-             ((eq state 'needs-update)
-              (format #("%s %s  "
-                        0 2 (face mood-line-status-warning))
-                      (mood-line--get-glyph :vc-needs-update)
-                      branch))
-             ((memq state '(removed conflict unregistered))
-              (format #("%s %s  "
-                        0 2 (face mood-line-status-error))
-                      (mood-line--get-glyph :vc-conflict)
-                      branch))
-             (t
-              (format #("%s %s  "
-                        0 5 (face mood-line-status-neutral))
-                      (mood-line--get-glyph :vc-good)
-                      branch)))))))
-
-;; ---------------------------------- ;;
-;; Segment function
-;; ---------------------------------- ;;
-
-(defun mood-line-segment-vc ()
-  "Display color-coded version control information."
-  mood-line--vc-text)
-
-;; -------------------------------------------------------------------------- ;;
-;;
-;; Checker segment
-;;
-;; -------------------------------------------------------------------------- ;;
-
-;; ---------------------------------- ;;
-;; Flycheck update function
-;; ---------------------------------- ;;
-
-(defvar-local mood-line--checker-flycheck-text nil)
-
-(defun mood-line--checker-flycheck-count-errors ()
-  "Return alist with count of all error types in `flycheck-current-errors'.
-
-Counts will be returned in an alist as the `cdr' of the following keys:
-`'note-count'    | All notes reported by checker
-`'error-count'   | All errors reported by checker
-`'warning-count' | All warnings reported by checker
-`'issue-count'   | All errors and warnings reported by checker"
-  (let-alist (flycheck-count-errors flycheck-current-errors)
-    (let ((note-count (+ (or .info 0)))
-          (error-count (+ (or .error 0)))
-          (warning-count (+ (or .warning 0))))
-      `((note-count . ,note-count)
-        (error-count . ,error-count)
-        (warning-count . ,warning-count)
-        (issue-count . ,(+ warning-count
-                           error-count))))))
-
-(defun mood-line--checker-flycheck-update-segment (&optional status)
-  "Update `mood-line--checker-flycheck-text' against provided flycheck STATUS."
-  (setq mood-line--checker-flycheck-text
-        (pcase status
-          ('finished
-           (let-alist (mood-line--checker-flycheck-count-errors)
-             (cond
-              ((> .error-count 0)
-               (format #("%s %s Issue%s  "
-                         0 2 (face mood-line-status-error))
-                       (mood-line--get-glyph :checker-issues)
-                       .issue-count
-                       (if (> .issue-count 1) "s" "")))
-              ((> .warning-count 0)
-               (format #("%s %s Issue%s  "
-                         0 2 (face mood-line-status-warning))
-                       (mood-line--get-glyph :checker-issues)
-                       .issue-count
-                       (if (> .issue-count 1) "s" "")))
-              ((> .note-count 0)
-               (format #("%s %s Note%s  "
-                         0 2 (face mood-line-status-info))
-                       (mood-line--get-glyph :checker-info)
-                       .note-count
-                       (if (> .note-count 1) "s" "")))
-              (t
-               (format #("%s No Issues  "
-                         0 12 (face mood-line-status-neutral))
-                       (mood-line--get-glyph :checker-good))))))
-          ('running
-           (format #("%s Checking  "
-                     0 12 (face mood-line-status-neutral))
-                   (mood-line--get-glyph :checker-checking)))
-          ('errored
-           (propertize (concat (mood-line--get-glyph :checker-errored)
-                               " Error  ")
-                       'face 'mood-line-status-error))
-          ('interrupted
-           (propertize (concat (mood-line--get-glyph :checker-interrupted)
-                               " Paused  ")
-                       'face 'mood-line-status-neutral))
-          ('no-checker ""))))
-
-;; ---------------------------------- ;;
-;; Flycheck segment function
-;; ---------------------------------- ;;
-
-(defun mood-line-segment-checker-flycheck ()
-  "Display the current status of flycheck."
-  mood-line--checker-flycheck-text)
-
-;; ---------------------------------- ;;
-;; Flymake update function
-;; ---------------------------------- ;;
-
-(defvar-local mood-line--checker-flymake-text nil)
-
-(defun mood-line--checker-flymake-count-report-type (type)
-  "Return count of current flymake reports of TYPE."
-  (let ((count 0))
-    (dolist (d (flymake-diagnostics))
-      (when (eq (flymake--lookup-type-property (flymake-diagnostic-type d) 'severity)
-                (flymake--lookup-type-property type 'severity))
-        (cl-incf count)))
-    count))
-
-(defun mood-line--checker-flymake-count-errors ()
-  "Return alist with count of all current flymake diagnostic reports.
-
-Counts will be returned in an alist as the cdr of the following keys:
-`'note-count'    | All notes reported by checker
-`'error-count'   | All errors reported by checker
-`'warning-count' | All warnings reported by checkero
-`'issue-count'   | All errors and warnings reported by checker"
-  (let ((note-count (mood-line--checker-flymake-count-report-type :note))
-        (error-count (mood-line--checker-flymake-count-report-type :error))
-        (warning-count (mood-line--checker-flymake-count-report-type :warning)))
-    `((note-count . ,note-count)
-      (error-count . ,error-count)
-      (warning-count . ,warning-count)
-      (issue-count . ,(+ warning-count
-                         error-count)))))
-
-(defun mood-line--checker-flymake-update-segment (&rest _)
-  "Update `mood-line--checker-flymake-text' against the state of flymake."
-  (setq mood-line--checker-flymake-text
-        (when (and (fboundp 'flymake-is-running)
-                   (flymake-is-running))
-          (let-alist (mood-line--checker-flymake-count-errors)
-            (cond
-             ((seq-difference (flymake-running-backends)
-                              (flymake-reporting-backends))
-              (format #("%s Checking  "
-                        0 12 (face mood-line-status-neutral))
-                      (mood-line--get-glyph :checker-checking)))
-             ((> .error-count 0)
-              (format #("%s %s Issue%s  "
-                        0 2 (face mood-line-status-error))
-                      (mood-line--get-glyph :checker-issues)
-                      .issue-count
-                      (if (> .issue-count 1) "s" "")))
-             ((> .warning-count 0)
-              (format #("%s %s Issue%s  "
-                        0 2 (face mood-line-status-warning))
-                      (mood-line--get-glyph :checker-issues)
-                      .issue-count
-                      (if (> .issue-count 1) "s" "")))
-             ((> .note-count 0)
-              (format #("%s %s Note%s  "
-                        0 2 (face mood-line-status-info))
-                      (mood-line--get-glyph :checker-info)
-                      .note-count
-                      (if (> .note-count 1) "s" "")))
-             (t
-              (format #("%s No Issues  "
-                        0 12 (face mood-line-status-neutral))
-                      (mood-line--get-glyph :checker-good))))))))
-
-;; ---------------------------------- ;;
-;; Flymake segment function
-;; ---------------------------------- ;;
-
-(defun mood-line-segment-checker-flymake ()
-  "Display the current status of flymake."
-  mood-line--checker-flymake-text)
-
-;; ---------------------------------- ;;
-;; Checker segment function
-;; ---------------------------------- ;;
-
-(defun mood-line-segment-checker ()
-  "Return the correct mode line segment for the first active checker found.
-
-Checkers checked, in order: `flycheck', `flymake'."
-  (cond
-   ((bound-and-true-p flycheck-mode)
-    (mood-line-segment-checker-flycheck))
-   ((bound-and-true-p flymake-mode)
-    (mood-line-segment-checker-flymake))))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
@@ -663,221 +593,205 @@ Checkers checked, in order: `flycheck', `flymake'."
 
 (defun mood-line-segment-buffer-status ()
   "Return an indicator representing the status of the current buffer."
-  (concat (if (buffer-file-name (buffer-base-buffer))
-              (cond
-               ((and (buffer-narrowed-p)
-                     (buffer-modified-p))
-                (propertize (mood-line--get-glyph :buffer-narrowed)
-                            'face 'mood-line-buffer-status-modified))
-               ((and (buffer-narrowed-p)
-                     buffer-read-only)
-                (propertize (mood-line--get-glyph :buffer-narrowed)
-                            'face 'mood-line-buffer-status-read-only))
-               ((buffer-narrowed-p)
-                (propertize (mood-line--get-glyph :buffer-narrowed)
-                            'face 'mood-line-buffer-status-narrowed))
-               ((buffer-modified-p)
-                (propertize (mood-line--get-glyph :buffer-modified)
-                            'face 'mood-line-buffer-status-modified))
-               (buffer-read-only
-                (propertize (mood-line--get-glyph :buffer-read-only)
-                            'face 'mood-line-buffer-status-read-only))
-               (t " "))
-            (if (buffer-narrowed-p)
-                (propertize (mood-line--get-glyph :buffer-narrowed)
-                            'face 'mood-line-buffer-status-narrowed)
-              " "))
-          " "))
+  (if (buffer-file-name (buffer-base-buffer))
+      (cond
+       ((and (buffer-narrowed-p)
+             (buffer-modified-p))
+        (propertize (mood-line--get-glyph :buffer-narrowed)
+                    'face 'mood-line-buffer-status-modified))
+       ((and (buffer-narrowed-p)
+             buffer-read-only)
+        (propertize (mood-line--get-glyph :buffer-narrowed)
+                    'face 'mood-line-buffer-status-read-only))
+       ((buffer-narrowed-p)
+        (propertize (mood-line--get-glyph :buffer-narrowed)
+                    'face 'mood-line-buffer-status-narrowed))
+       ((buffer-modified-p)
+        (propertize (mood-line--get-glyph :buffer-modified)
+                    'face 'mood-line-buffer-status-modified))
+       (buffer-read-only
+        (propertize (mood-line--get-glyph :buffer-read-only)
+                    'face 'mood-line-buffer-status-read-only)))
+    (when (buffer-narrowed-p)
+      (propertize (mood-line--get-glyph :buffer-narrowed)
+                  'face 'mood-line-buffer-status-narrowed))))
 
 ;; ---------------------------------- ;;
 ;; Buffer name segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-buffer-name ()
-  "Display the name of the current buffer."
-  (propertize "%b  "
-              'face 'mood-line-buffer-name))
+  "Return the name of the current buffer."
+  (format-mode-line "%b" 'mood-line-buffer-name))
 
 ;; ---------------------------------- ;;
 ;; Cursor position segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-cursor-position ()
-  "Display the position of the cursor in the current buffer."
-  (concat "%l:%c"
-          (when mood-line-show-cursor-point
-            (propertize (format ":%d" (point))
-                        'face 'mood-line-unimportant))
-          (propertize " %p%%  "
-                      'face 'mood-line-unimportant)))
+  "Return the position of the cursor in the current buffer."
+  (format-mode-line "%l:%c"))
+
+;; ---------------------------------- ;;
+;; Cursor point segment
+;; ---------------------------------- ;;
+
+(defun mood-line-segment-cursor-point ()
+  "Return the value of `point' in the current buffer."
+  (format #("%d"
+            0 2 (face mood-line-unimportant))
+          (point)))
+
+;; ---------------------------------- ;;
+;; Region segment
+;; ---------------------------------- ;;
+
+(defun mood-line-segment-region ()
+  "Return the size of the active region in the current buffer, if any."
+  (when (use-region-p)
+    (format #("%sL:%sC"
+              0 7 (face mood-line-unimportant))
+            (count-lines (region-beginning)
+                         (region-end))
+            (- (region-end) (region-beginning)))))
+
+;; ---------------------------------- ;;
+;; Scroll segment
+;; ---------------------------------- ;;
+
+(defun mood-line-segment-scroll ()
+  "Return the relative position of the viewport in the current buffer."
+  (format-mode-line "%o" 'mood-line-unimportant))
 
 ;; ---------------------------------- ;;
 ;; EOL segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-eol ()
-  "Display the EOL type for the coding system of the current buffer."
-  (when (and mood-line-show-eol-style
-             buffer-file-coding-system)
+  "Return the EOL type for the coding system of the current buffer."
+  (when buffer-file-coding-system
     (pcase (coding-system-eol-type buffer-file-coding-system)
-      (0 "LF  ")
-      (1 "CRLF  ")
-      (2 "CR  "))))
+      (0 "LF")
+      (1 "CRLF")
+      (2 "CR"))))
 
 ;; ---------------------------------- ;;
 ;; Encoding segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-encoding ()
-  "Display the name of the coding system of the current buffer."
-  (when (and mood-line-show-encoding-information
-             buffer-file-coding-system)
-    (concat (let ((coding-system (coding-system-plist buffer-file-coding-system)))
-              (cond
-               ((memq (plist-get coding-system :category)
-                      '(coding-category-undecided coding-category-utf-8))
-                "UTF-8")
-               (t
-                (upcase (symbol-name (plist-get coding-system :name))))))
-            "  ")))
+  "Return the name of the coding system of the current buffer."
+  (when buffer-file-coding-system
+    (let ((coding-system (coding-system-plist buffer-file-coding-system)))
+      (cond
+       ((memq (plist-get coding-system :category)
+              '(coding-category-undecided coding-category-utf-8))
+        "UTF-8")
+       (t
+        (upcase (symbol-name (plist-get coding-system :name))))))))
 
 ;; ---------------------------------- ;;
 ;; Major mode segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-major-mode ()
-  "Display the name of the major mode of the current buffer."
-  (when mood-line-show-major-mode
-    (concat (propertize (substring-no-properties (format-mode-line mode-name))
-                        'face 'mood-line-major-mode)
-            "  ")))
+  "Return the name of the major mode of the current buffer."
+  (propertize (substring-no-properties (format-mode-line mode-name))
+              'face 'mood-line-major-mode))
 
 ;; ---------------------------------- ;;
 ;; Misc. info segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-misc-info ()
-  "Display the current value of `mode-line-misc-info'."
+  "Return the current value of `mode-line-misc-info'."
   (let ((misc-info (format-mode-line mode-line-misc-info)))
     (unless (string-blank-p misc-info)
-      (concat (propertize (string-trim misc-info)
-                          'face 'mood-line-unimportant)
-              "  "))))
+      (propertize (string-trim misc-info)
+                  'face 'mood-line-unimportant))))
 
 ;; ---------------------------------- ;;
 ;; Process segment
 ;; ---------------------------------- ;;
 
 (defun mood-line-segment-process ()
-  "Display the current value of `mode-line-process'."
+  "Return the current value of `mode-line-process'."
   (let ((process-info (format-mode-line mode-line-process)))
     (unless (string-blank-p process-info)
-      (concat (string-trim process-info)
-              "  "))))
+      (string-trim process-info))))
 
 ;; -------------------------------------------------------------------------- ;;
 ;;
-;; mood-line-mode definition
+;; mood-line-mode
 ;;
 ;; -------------------------------------------------------------------------- ;;
 
-(defvar-local mood-line--default-mode-line mode-line-format)
-(defvar-local mood-line--anzu-cons-mode-line-p nil)
+(defconst mood-line--hooks-alist
+  '((mood-line-segment-checker--flycheck-update
+     . (flycheck-mode-hook
+        flycheck-status-changed-functions))
+    (mood-line-segment-vc--update
+     . (find-file-hook
+        after-save-hook)))
+  "Alist of update functions and their corresponding hooks.")
+
+(defconst mood-line--advice-alist
+  '((mood-line-segment-checker--flymake-update
+     . (flymake-start
+        flymake--handle-report))
+    (mood-line-segment-vc--update
+     . (vc-refresh-state)))
+  "Alist of update functions and their corresponding advised functions.")
+
+(defconst mood-line--settings-alist
+  '((anzu-cons-mode-line-p
+     . nil)
+    (mode-line-format
+     . (:eval (mood-line--process-format mood-line-format))))
+  "Alist providing symbol names and their desired values.
+These settings are applied by `mood-line--activate' when `mood-line-mode'
+is activated. The original value of each symbol will be stored in
+`mood-line--settings-backup-alist' until `mood-line--deactivate' is called.")
+
+(defvar mood-line--settings-backup-alist nil
+  "Alist storing symbol names and their original values.
+Populated by `mood-line--activate', and emptied by `mood-line--deactivate'.")
 
 ;; ---------------------------------- ;;
-;; Activation function
+;; Activation
 ;; ---------------------------------- ;;
 
 (defun mood-line--activate ()
   "Activate mood-line, installing hooks and setting `mode-line-format'."
-
-  ;; Set up flycheck hooks
-  (add-hook 'flycheck-status-changed-functions
-            #'mood-line--checker-flycheck-update-segment)
-  (add-hook 'flycheck-mode-hook
-            #'mood-line--checker-flycheck-update-segment)
-
-  ;; Set up flymake hooks
-  (advice-add 'flymake-start :after
-              #'mood-line--checker-flymake-update-segment)
-  (advice-add 'flymake--handle-report :after
-              #'mood-line--checker-flymake-update-segment)
-
-  ;; Set up VC hooks
-  (add-hook 'find-file-hook
-            #'mood-line--vc-update-segment)
-  (add-hook 'after-save-hook
-            #'mood-line--vc-update-segment)
-  (advice-add 'vc-refresh-state :after
-              #'mood-line--vc-update-segment)
-
-  ;; Disable anzu's mode line segment setting, saving the previous
-  ;; setting to be restored later (if present)
-  (when (boundp 'anzu-cons-mode-line-p)
-    (setq mood-line--anzu-cons-mode-line-p anzu-cons-mode-line-p))
-  (setq-default anzu-cons-mode-line-p nil)
-
-  ;; Save previous value of `mode-line-format' to be restored later
-  (setq mood-line--default-mode-line mode-line-format)
-
-  ;; Set new value of `mode-line-format'
-  (setq-default mode-line-format
-                '((:eval
-                   (mood-line--format
-                    ;; Left
-                    (format-mode-line
-                     '(" "
-                       (:eval (mood-line-segment-modal))
-                       (:eval (mood-line-segment-buffer-status))
-                       (:eval (mood-line-segment-buffer-name))
-                       (:eval (mood-line-segment-anzu))
-                       (:eval (mood-line-segment-multiple-cursors))
-                       (:eval (mood-line-segment-cursor-position))))
-
-                    ;; Right
-                    (format-mode-line
-                     '((:eval (mood-line-segment-indentation))
-                       (:eval (mood-line-segment-eol))
-                       (:eval (mood-line-segment-encoding))
-                       (:eval (mood-line-segment-vc))
-                       (:eval (mood-line-segment-major-mode))
-                       (:eval (mood-line-segment-misc-info))
-                       (:eval (mood-line-segment-checker))
-                       (:eval (mood-line-segment-process))
-                       " ")))))))
+  ;; Install hooks and advice
+  (cl-loop for (update-fn . hooks) in mood-line--hooks-alist
+           do (dolist (hook hooks)
+                (add-hook hook update-fn)))
+  (cl-loop for (update-fn . advised-fns) in mood-line--advice-alist
+           do (dolist (advised-fn advised-fns)
+                (advice-add advised-fn :after update-fn)))
+  ;; Install configuration, backing up original values
+  (cl-loop for (var . new-val) in mood-line--settings-alist
+           when (boundp var) do (push (cons var (eval var))
+                                      mood-line--settings-backup-alist)
+           do (set-default (intern (symbol-name var)) new-val)))
 
 ;; ---------------------------------- ;;
-;; Deactivation function
+;; Deactivation
 ;; ---------------------------------- ;;
 
 (defun mood-line--deactivate ()
   "Deactivate mood-line, uninstalling hooks and restoring `mode-line-format'."
-
-  ;; Remove flycheck hooks
-  (remove-hook 'flycheck-status-changed-functions
-               #'mood-line--checker-flycheck-update-segment)
-  (remove-hook 'flycheck-mode-hook
-               #'mood-line--checker-flycheck-update-segment)
-
-  ;; Remove flymake hooks
-  (advice-remove 'flymake-start
-                 #'mood-line--checker-flymake-update-segment)
-  (advice-remove 'flymake--handle-report
-                 #'mood-line--checker-flymake-update-segment)
-
-  ;; Remove VC hooks
-  (remove-hook 'file-find-hook
-               #'mood-line--vc-update-segment)
-  (remove-hook 'after-save-hook
-               #'mood-line--vc-update-segment)
-  (advice-remove #'vc-refresh-state
-                 #'mood-line--vc-update-segment)
-
-  ;; Restore anzu's mode line segment setting
-  (setq-default anzu-cons-mode-line-p mood-line--anzu-cons-mode-line-p)
-
-  ;; Restore the original value of `mode-line-format'
-  (setq-default mode-line-format mood-line--default-mode-line))
+  ;; Destroy hooks and advice
+  (cl-loop for (update-fn . hooks) in mood-line--hooks-alist
+           do (dolist (hook hooks)
+                (remove-hook hook update-fn)))
+  (cl-loop for (update-fn . advised-fns) in mood-line--advice-alist
+           do (dolist (advised-fn advised-fns)
+                (advice-remove advised-fn update-fn)))
+  ;; Restore original configuration values
+  (cl-loop for (var . old-val) in mood-line--settings-backup-alist
+           do (set-default (intern (symbol-name var)) old-val)))
 
 ;; ---------------------------------- ;;
 ;; Mode definition

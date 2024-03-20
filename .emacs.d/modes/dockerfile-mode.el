@@ -1,7 +1,7 @@
 ;;; dockerfile-mode.el --- Major mode for editing Docker's Dockerfiles -*- lexical-binding: t -*-
 
 ;; Copyright (c) 2013 Spotify AB
-;; Package-Requires: ((emacs "24"))
+;; Package-Requires: ((emacs "24") (s "1.2.0"))
 ;; Homepage: https://github.com/spotify/dockerfile-mode
 ;; URL: https://github.com/spotify/dockerfile-mode
 ;; Version: 1.7
@@ -29,6 +29,7 @@
 
 (require 'sh-script)
 (require 'rx)
+(require 's)
 
 
 (declare-function cygwin-convert-file-name-to-windows "cygw32.c" (file &optional absolute-p))
@@ -165,7 +166,7 @@ by `dockerfile-enable-auto-indent'."
 
 (defun dockerfile-build-arg-string ()
   "Create a --build-arg string for each element in `dockerfile-build-args'."
-  (mapconcat (lambda (arg) (concat "--build-arg " (shell-quote-argument arg)))
+  (mapconcat (lambda (arg) (concat "--build-arg="  (s-replace "\\=" "=" (shell-quote-argument arg))))
              dockerfile-build-args " "))
 
 (defun dockerfile-standard-filename (file)

@@ -211,7 +211,7 @@ standard)."
 ;;; Paren match
 
       (bg-paren-match        "#2f7f9f")
-      (fg-paren-match        unspecified)
+      (fg-paren-match        fg-main)
       (bg-paren-expression   "#453040")
       (underline-paren-match unspecified)
 
@@ -352,16 +352,25 @@ standard)."
       (fg-prose-block-delimiter fg-dim)
       (bg-prose-block-contents bg-dim)
 
-      (prose-code cyan-cooler)
+      (bg-prose-code unspecified)
+      (fg-prose-code cyan-cooler)
+
+      (bg-prose-macro unspecified)
+      (fg-prose-macro magenta-cooler)
+
+      (bg-prose-verbatim unspecified)
+      (fg-prose-verbatim magenta-warmer)
+
       (prose-done blue)
-      (prose-macro magenta-cooler)
+      (prose-todo yellow-warmer)
+
       (prose-metadata fg-dim)
       (prose-metadata-value fg-alt)
+
       (prose-table fg-alt)
-      (prose-table-formula yellow-cooler)
+      (prose-table-formula yellow-warmer)
+
       (prose-tag magenta-faint)
-      (prose-todo yellow-warmer)
-      (prose-verbatim magenta-warmer)
 
 ;;;; Rainbow mappings
 
@@ -394,10 +403,10 @@ standard)."
 
 ;;;; Terminal mappings
 
-      (bg-term-black           "black")
-      (fg-term-black           "black")
-      (bg-term-black-bright    "gray35")
-      (fg-term-black-bright    "gray35")
+      (bg-term-black           "#000000")
+      (fg-term-black           "#000000")
+      (bg-term-black-bright    "#595959")
+      (fg-term-black-bright    "#595959")
 
       (bg-term-red             red)
       (fg-term-red             red)
@@ -429,10 +438,10 @@ standard)."
       (bg-term-cyan-bright     cyan-cooler)
       (fg-term-cyan-bright     cyan-cooler)
 
-      (bg-term-white           "gray65")
-      (fg-term-white           "gray65")
-      (bg-term-white-bright    "white")
-      (fg-term-white-bright    "white")
+      (bg-term-white           "#a6a6a6")
+      (fg-term-white           "#a6a6a6")
+      (bg-term-white-bright    "#ffffff")
+      (fg-term-white-bright    "#ffffff")
 
 ;;;; Heading mappings
 

@@ -1,7 +1,7 @@
 ;; base16-horizon-terminal-dark-theme.el -- A base16 colorscheme
 
 ;;; Commentary:
-;; Base16: (https://github.com/chriskempson/base16)
+;; Base16: (https://github.com/tinted-theming/home)
 
 ;;; Authors:
 ;; Scheme: Michaël Ball (http://github.com/michael-ball/)
@@ -28,7 +28,7 @@
     :base0D "#26bbd9"
     :base0E "#ee64ac"
     :base0F "#f09383")
-  "All colors for Base16 Horizon Dark are defined here.")
+  "All colors for Base16 Horizon Terminal Dark are defined here.")
 
 ;; Define the theme
 (deftheme base16-horizon-terminal-dark)

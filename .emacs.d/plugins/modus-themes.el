@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/modus-themes
-;; Version: 4.3.0
+;; Version: 4.4.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -770,12 +770,13 @@ represents."
 
     (fg-prompt cyan-faint)
 
-    (prose-code olive)
+    (fg-prose-code olive)
+    (fg-prose-macro indigo)
+    (fg-prose-verbatim maroon)
+
     (prose-done green-faint)
-    (prose-macro indigo)
     (prose-tag rust)
     (prose-todo red-faint)
-    (prose-verbatim maroon)
 
     (rainbow-0 fg-main)
     (rainbow-1 magenta)
@@ -835,11 +836,11 @@ Info node `(modus-themes) Option for palette overrides'.")
     (keybind blue-intense)
 
     (mail-cite-0 blue)
-    (mail-cite-1 yellow)
-    (mail-cite-2 green)
+    (mail-cite-1 yellow-cooler)
+    (mail-cite-2 green-warmer)
     (mail-cite-3 magenta)
-    (mail-part magenta-cooler)
-    (mail-recipient cyan)
+    (mail-part cyan)
+    (mail-recipient magenta-cooler)
     (mail-subject red-warmer)
     (mail-other cyan-cooler)
 
@@ -934,7 +935,7 @@ Info node `(modus-themes) Option for palette overrides'.")
     (mail-other blue)
 
     (prose-tag fg-dim)
-    (prose-verbatim blue-cooler))
+    (fg-prose-verbatim blue-cooler))
   "Preset of palette overrides with cooler colors.
 
 This changes parts of the palette to use more blue and
@@ -989,7 +990,7 @@ Info node `(modus-themes) Option for palette overrides'.")
     (mail-subject blue-warmer)
     (mail-other magenta-warmer)
 
-    (prose-macro red-cooler)
+    (fg-prose-macro red-cooler)
     (prose-tag fg-dim))
   "Preset of palette overrides with warmer colors.
 
@@ -1566,9 +1567,9 @@ FG and BG are the main colors."
     `(modus-themes-prominent-note ((,c :background ,bg-prominent-note :foreground ,fg-prominent-note)))
     `(modus-themes-prominent-warning ((,c :background ,bg-prominent-warning :foreground ,fg-prominent-warning)))
 ;;;;; markup
-    `(modus-themes-prose-code ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-code)))
-    `(modus-themes-prose-macro ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-macro)))
-    `(modus-themes-prose-verbatim ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-verbatim)))
+    `(modus-themes-prose-code ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-code :foreground ,fg-prose-code)))
+    `(modus-themes-prose-macro ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-macro :foreground ,fg-prose-macro)))
+    `(modus-themes-prose-verbatim ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-verbatim :foreground ,fg-prose-verbatim)))
 ;;;;; search
     `(modus-themes-search-current ((,c :background ,bg-search-current :foreground ,fg-main)))
     `(modus-themes-search-lazy ((,c :background ,bg-search-lazy :foreground ,fg-main)))
@@ -2548,37 +2549,37 @@ FG and BG are the main colors."
     ;; entries in their palette for such an edge case.  Defining those
     ;; entries is not appropriate.
     `(hi-aquamarine ((((class color) (min-colors 88) (background light))
-                      :background "white" :foreground "#227f9f" :inverse-video t)
+                      :background "#ffffff" :foreground "#227f9f" :inverse-video t)
                      (((class color) (min-colors 88) (background dark))
-                      :background "black" :foreground "#66cbdc" :inverse-video t)))
+                      :background "#000000" :foreground "#66cbdc" :inverse-video t)))
     `(hi-black-b ((,c :inverse-video t)))
     `(hi-black-hb ((,c :background ,bg-main :foreground ,fg-dim :inverse-video t)))
     `(hi-blue ((((class color) (min-colors 88) (background light))
-                :background "white" :foreground "#3366dd" :inverse-video t)
+                :background "#ffffff" :foreground "#3366dd" :inverse-video t)
                (((class color) (min-colors 88) (background dark))
-                :background "black" :foreground "#aaccff" :inverse-video t)))
+                :background "#000000" :foreground "#aaccff" :inverse-video t)))
     `(hi-blue-b ((,c :inherit (bold hi-blue))))
     `(hi-green ((((class color) (min-colors 88) (background light))
-                 :background "white" :foreground "#008a00" :inverse-video t)
+                 :background "#ffffff" :foreground "#008a00" :inverse-video t)
                 (((class color) (min-colors 88) (background dark))
-                 :background "black" :foreground "#66dd66" :inverse-video t)))
+                 :background "#000000" :foreground "#66dd66" :inverse-video t)))
     `(hi-green-b ((,c :inherit (bold hi-green))))
     `(hi-pink ((((class color) (min-colors 88) (background light))
-                :background "white" :foreground "#bd30aa" :inverse-video t)
+                :background "#ffffff" :foreground "#bd30aa" :inverse-video t)
                (((class color) (min-colors 88) (background dark))
-                :background "black" :foreground "#ff88ee" :inverse-video t)))
+                :background "#000000" :foreground "#ff88ee" :inverse-video t)))
     `(hi-red-b ((((class color) (min-colors 88) (background light))
-                 :background "white" :foreground "#dd0000" :inverse-video t)
+                 :background "#ffffff" :foreground "#dd0000" :inverse-video t)
                 (((class color) (min-colors 88) (background dark))
-                 :background "black" :foreground "#f06666" :inverse-video t)))
+                 :background "#000000" :foreground "#f06666" :inverse-video t)))
     `(hi-salmon ((((class color) (min-colors 88) (background light))
-                  :background "white" :foreground "#bf555a" :inverse-video t)
+                  :background "#ffffff" :foreground "#bf555a" :inverse-video t)
                  (((class color) (min-colors 88) (background dark))
-                  :background "black" :foreground "#e08a50" :inverse-video t)))
+                  :background "#000000" :foreground "#e08a50" :inverse-video t)))
     `(hi-yellow ((((class color) (min-colors 88) (background light))
-                  :background "white" :foreground "#af6400" :inverse-video t)
+                  :background "#ffffff" :foreground "#af6400" :inverse-video t)
                  (((class color) (min-colors 88) (background dark))
-                  :background "black" :foreground "#faea00" :inverse-video t)))
+                  :background "#000000" :foreground "#faea00" :inverse-video t)))
     `(highlight-changes ((,c :foreground ,warning :underline nil)))
     `(highlight-changes-delete ((,c :foreground ,err :underline t)))
     `(hl-line ((,c :background ,bg-hl-line :extend t)))
@@ -2929,12 +2930,12 @@ FG and BG are the main colors."
 ;;;;; markup-faces (`adoc-mode')
     `(markup-attribute-face ((,c :inherit (modus-themes-slant markup-meta-face))))
     `(markup-bold-face ((,c :inherit bold)))
-    `(markup-code-face ((,c :foreground ,prose-code)))
+    `(markup-code-face ((,c :inherit modus-themes-prose-code)))
     `(markup-comment-face ((,c :inherit font-lock-comment-face)))
-    `(markup-complex-replacement-face ((,c :foreground ,prose-macro)))
+    `(markup-complex-replacement-face ((,c :inherit modus-themes-prose-macro)))
     `(markup-emphasis-face ((,c :inherit markup-italic-face)))
     `(markup-error-face ((,c :inherit error)))
-    `(markup-gen-face ((,c :foreground ,prose-verbatim)))
+    `(markup-gen-face ((,c :inherit modus-themes-prose-verbatim)))
     `(markup-internal-reference-face ((,c :inherit (shadow modus-themes-slant))))
     `(markup-italic-face ((,c :inherit italic)))
     `(markup-list-face ((,c :background ,bg-inactive)))
@@ -2956,7 +2957,7 @@ FG and BG are the main colors."
     `(markup-title-3-face ((,c :inherit modus-themes-heading-4)))
     `(markup-title-4-face ((,c :inherit modus-themes-heading-5)))
     `(markup-title-5-face ((,c :inherit modus-themes-heading-6)))
-    `(markup-verbatim-face ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-verbatim)))
+    `(markup-verbatim-face ((,c :inherit modus-themes-prose-verbatim)))
 ;;;;; mct
     `(mct-highlight-candidate ((,c :inherit modus-themes-completion-selected)))
 ;;;;; messages
@@ -3207,6 +3208,11 @@ FG and BG are the main colors."
     `(org-column-title ((,c :inherit (bold default) :underline t :background ,bg-dim)))
     `(org-date ((,c :inherit modus-themes-fixed-pitch :foreground ,date-common)))
     `(org-date-selected ((,c :foreground ,date-common :inverse-video t)))
+    ;; NOTE 2024-03-17: Normally we do not want to add this padding
+    ;; with the :box, but I do it here because the keys are otherwise
+    ;; very hard to read.  The square brackets around them are not
+    ;; colored, which is what is causing the problem.
+    `(org-dispatcher-highlight ((,c :inherit modus-themes-bold :box (:line-width 2 :color ,bg-hover-secondary) :background ,bg-hover-secondary :foreground ,fg-main)))
     `(org-document-info ((,c :foreground ,prose-metadata-value)))
     `(org-document-info-keyword ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-metadata)))
     `(org-document-title ((,c :inherit modus-themes-heading-0)))
@@ -3256,13 +3262,13 @@ FG and BG are the main colors."
     `(org-verse ((,c :inherit org-block)))
     `(org-warning ((,c :inherit warning)))
 ;;;;; org-habit
-    `(org-habit-alert-face ((,c :background ,bg-graph-yellow-0 :foreground "black"))) ; fg is special case
+    `(org-habit-alert-face ((,c :background ,bg-graph-yellow-0 :foreground "#000000"))) ; fg is special case
     `(org-habit-alert-future-face ((,c :background ,bg-graph-yellow-1)))
-    `(org-habit-clear-face ((,c :background ,bg-graph-blue-0 :foreground "black"))) ; fg is special case
+    `(org-habit-clear-face ((,c :background ,bg-graph-blue-0 :foreground "#000000"))) ; fg is special case
     `(org-habit-clear-future-face ((,c :background ,bg-graph-blue-1)))
     `(org-habit-overdue-face ((,c :background ,bg-graph-red-0)))
     `(org-habit-overdue-future-face ((,c :background ,bg-graph-red-1)))
-    `(org-habit-ready-face ((,c :background ,bg-graph-green-0 :foreground "black"))) ; fg is special case
+    `(org-habit-ready-face ((,c :background ,bg-graph-green-0 :foreground "#000000"))) ; fg is special case
     `(org-habit-ready-future-face ((,c :background ,bg-graph-green-1)))
 ;;;;; org-journal
     `(org-journal-calendar-entry-face ((,c :inherit modus-themes-slant :foreground ,date-common)))
@@ -3923,7 +3929,7 @@ FG and BG are the main colors."
     `(which-func ((,c :inherit bold :foreground ,modeline-info))) ; same as `breadcrumb-imenu-leaf-face'
 ;;;;; which-key
     `(which-key-command-description-face ((,c :foreground ,fg-main)))
-    `(which-key-group-description-face ((,c :foreground ,keyword)))
+    `(which-key-group-description-face ((,c :foreground ,type)))
     `(which-key-highlighted-command-face ((,c :foreground ,warning :underline t)))
     `(which-key-key-face ((,c :inherit modus-themes-key-binding)))
     `(which-key-local-map-description-face ((,c :foreground ,fg-main)))
@@ -3990,7 +3996,7 @@ FG and BG are the main colors."
   '(
 ;;;; ansi-colors
     `(ansi-color-faces-vector [default bold shadow italic underline success warning error])
-    `(ansi-color-names-vector ["gray35" ,red ,green ,yellow ,blue ,magenta ,cyan "gray65"])
+    `(ansi-color-names-vector ["#595959" ,red ,green ,yellow ,blue ,magenta ,cyan "#a6a6a6"])
 ;;;; chart
     `(chart-face-color-list
       '( ,bg-graph-red-0 ,bg-graph-green-0 ,bg-graph-yellow-0 ,bg-graph-blue-0 ,bg-graph-magenta-0 ,bg-graph-cyan-0

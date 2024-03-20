@@ -118,13 +118,6 @@ Complications:
                        (string :tag "ID")
                        (symbol :tag "Repository class"))))
 
-(defcustom forge-pull-notifications nil
-  "Whether `forge-pull' also fetches notifications.
-If this is nil, then `forge-pull-notifications' has to be used."
-  :package-version '(forge . "0.2.0")
-  :group 'forge
-  :type 'boolean)
-
 ;;; Class
 
 (defclass forge-object (closql-object) () :abstract t)
@@ -198,8 +191,10 @@ The valid values for DEMAND are:
 
   Stub repository objects are created without making an API request, so
   we lack access to the upstream ID, which the IDs used in out database,
-  derive from.  This is done to allow offline operations, but means that
-  the ID cannot be relied on, making equality operations harder.
+  derive from.  This is done to allow offline operations.
+
+Use `forge-repository-equal' to check if two objects refer to the same
+repository.
 
 Also see info node `(forge) Repository Detection'.")
 

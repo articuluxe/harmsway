@@ -1,6 +1,6 @@
 ;;; compat-26.el --- Functionality added in Emacs 26.1 -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2024 Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@
 ;;; Code:
 
 (eval-when-compile (load "compat-macs.el" nil t t))
-(compat-declare-version "26.1")
+(compat-require compat-25 "25.1")
+
+(compat-version "26.1")
 
 ;;;; Defined in fns.c
 
@@ -73,7 +75,7 @@ see `region-noncontiguous-p' and `extract-rectangle-bounds'."
 
 ;;;; Defined in subr.el
 
-(compat-defun provided-mode-derived-p (mode &rest modes) ;; <compat-tests:provided-derived-mode-p>
+(compat-defun provided-mode-derived-p (mode &rest modes) ;; <compat-tests:provided-mode-derived-p>
   "Non-nil if MODE is derived from one of MODES.
 Uses the `derived-mode-parent' property of the symbol to trace backwards.
 If you just want to check `major-mode', use `derived-mode-p'."
@@ -113,8 +115,8 @@ If you just want to check `major-mode', use `derived-mode-p'."
              (compat--assoc key alist testfn))))
     (if x (cdr x) default)))
 
-(compat-guard t
-  (gv-define-expander compat--alist-get ;; <compat-tests:alist-get-gv>
+(compat-guard t ;; <compat-tests:alist-get-gv>
+  (gv-define-expander compat--alist-get
     (lambda (do key alist &optional default remove testfn)
       (macroexp-let2 macroexp-copyable-p k key
         (gv-letplace (getter setter) alist

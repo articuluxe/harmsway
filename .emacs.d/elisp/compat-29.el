@@ -1,6 +1,6 @@
 ;;; compat-29.el --- Functionality added in Emacs 29.1 -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2024 Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,8 +22,24 @@
 ;;; Code:
 
 (eval-when-compile (load "compat-macs.el" nil t t))
-;; TODO Update to 29.1 as soon as the Emacs emacs-29 branch version bumped
-(compat-declare-version "29.0")
+(compat-require compat-28 "28.1")
+
+;; Preloaded in loadup.el
+(compat-require seq "29.1") ;; <compat-tests:seq>
+
+(compat-version "29.1")
+
+;;;; Defined in startup.el
+
+(compat-defvar lisp-directory ;; <compat-tests:lisp-directory>
+    (file-truename
+     (file-name-directory
+      (locate-file "simple" load-path (get-load-suffixes))))
+  "Directory where Emacs's own *.el and *.elc Lisp files are installed.")
+
+;;;; Defined in window.c
+
+(compat-defalias window-configuration-equal-p compare-window-configurations) ;; <compat-tests:window-configuration-equal-p>
 
 ;;;; Defined in xdisp.c
 
@@ -86,43 +102,45 @@ Unibyte strings are converted to multibyte for comparison."
 (compat-defun plist-get (plist prop &optional predicate) ;; <compat-tests:plist-get>
   "Handle optional argument PREDICATE."
   :extended t
-  (if (or (null predicate) (eq predicate 'eq))
-      (plist-get plist prop)
-    (catch 'found
-      (while (consp plist)
-        (when (funcall predicate prop (car plist))
-          (throw 'found (cadr plist)))
-        (setq plist (cddr plist))))))
+  (pcase predicate
+    ((or `nil `eq) (plist-get plist prop))
+    (`equal (lax-plist-get plist prop))
+    (_ (catch 'found
+         (while (consp plist)
+           (when (funcall predicate prop (car plist))
+             (throw 'found (cadr plist)))
+           (setq plist (cddr plist)))))))
 
 (compat-defun plist-put (plist prop val &optional predicate) ;; <compat-tests:plist-get>
   "Handle optional argument PREDICATE."
   :extended t
-  (if (or (null predicate) (eq predicate 'eq))
-      (plist-put plist prop val)
-    (catch 'found
-      (let ((tail plist))
-        (while (consp tail)
-          (when (funcall predicate prop (car tail))
-            (setcar (cdr tail) val)
-            (throw 'found plist))
-          (setq tail (cddr tail))))
-      (nconc plist (list prop val)))))
+  (pcase predicate
+    ((or `nil `eq) (plist-put plist prop val))
+    (`equal (lax-plist-put plist prop val))
+    (_ (catch 'found
+         (let ((tail plist))
+           (while (consp tail)
+             (when (funcall predicate prop (car tail))
+               (setcar (cdr tail) val)
+               (throw 'found plist))
+             (setq tail (cddr tail))))
+         (nconc plist (list prop val))))))
 
 (compat-defun plist-member (plist prop &optional predicate) ;; <compat-tests:plist-get>
   "Handle optional argument PREDICATE."
   :extended t
-  (if (or (null predicate) (eq predicate 'eq))
-      (plist-member plist prop)
-    (catch 'found
-      (while (consp plist)
-        (when (funcall predicate prop (car plist))
-          (throw 'found plist))
-        (setq plist (cddr plist))))))
+  (pcase predicate
+    ((or `nil `eq) (plist-member plist prop))
+    (_ (catch 'found
+         (while (consp plist)
+           (when (funcall predicate prop (car plist))
+             (throw 'found plist))
+           (setq plist (cddr plist)))))))
 
 ;;;; Defined in gv.el
 
-(compat-guard t
-  (gv-define-expander compat--plist-get ;; <compat-tests:plist-get-gv>
+(compat-guard t ;; <compat-tests:plist-get-gv>
+  (gv-define-expander compat--plist-get
     (lambda (do plist prop &optional predicate)
       (macroexp-let2 macroexp-copyable-p key prop
         (gv-letplace (getter setter) plist
@@ -188,7 +206,7 @@ baked into the Elisp interpreter.
 (compat-defun funcall-with-delayed-message (timeout message function) ;; <compat-tests:with-delayed-message>
   "Like `funcall', but display MESSAGE if FUNCTION takes longer than TIMEOUT.
 TIMEOUT is a number of seconds, and can be an integer or a
-floating point number. If FUNCTION takes less time to execute
+floating point number.  If FUNCTION takes less time to execute
 than TIMEOUT seconds, MESSAGE is not displayed.
 
 NOTE: The compatibility function never displays the message,
@@ -272,7 +290,7 @@ in order to restore the state of the local variables set via this macro.
      (,(if (fboundp 'compat--setq-local) 'compat--setq-local 'setq-local)
       ,@pairs)))
 
-(compat-defun list-of-strings-p (object) ;; <compat-tests:lists-of-strings-p>
+(compat-defun list-of-strings-p (object) ;; <compat-tests:list-of-strings-p>
   "Return t if OBJECT is nil or a list of strings."
   (declare (pure t) (side-effect-free t))
   (while (and (consp object) (stringp (car object)))
@@ -288,22 +306,39 @@ in order to restore the state of the local variables set via this macro.
   "Delete the current line."
   (delete-region (pos-bol) (pos-bol 2)))
 
-(compat-defmacro with-narrowing (start end &rest rest) ;; <compat-tests:with-narrowing>
+(compat-defmacro with-restriction (start end &rest rest) ;; <compat-tests:with-restriction>
   "Execute BODY with restrictions set to START and END.
 
 The current restrictions, if any, are restored upon return.
 
-With the optional :locked TAG argument, inside BODY,
-`narrow-to-region' and `widen' can be used only within the START
-and END limits, unless the restrictions are unlocked by calling
-`narrowing-unlock' with TAG.  See `narrowing-lock' for a more
-detailed description.
+When the optional :label LABEL argument is present, in which
+LABEL is a symbol, inside BODY, `narrow-to-region' and `widen'
+can be used only within the START and END limits.  To gain access
+to other portions of the buffer, use `without-restriction' with the
+same LABEL argument.
 
-\(fn START END [:locked TAG] BODY)"
+\(fn START END [:label LABEL] BODY)"
+  (declare (indent 0) (debug t))
   `(save-restriction
      (narrow-to-region ,start ,end)
      ;; Locking is ignored
-     ,@(if (eq (car rest) :locked) (cddr rest) rest)))
+     ,@(if (eq (car rest) :label) (cddr rest) rest)))
+
+(compat-defmacro without-restriction (&rest rest) ;; <compat-tests:without-restriction>
+  "Execute BODY without restrictions.
+
+The current restrictions, if any, are restored upon return.
+
+When the optional :label LABEL argument is present, the
+restrictions set by `with-restriction' with the same LABEL argument
+are lifted.
+
+\(fn [:label LABEL] BODY)"
+  (declare (indent 0) (debug t))
+  `(save-restriction
+     (widen)
+     ;; Locking is ignored
+     ,@(if (eq (car rest) :label) (cddr rest) rest)))
 
 (compat-defmacro with-memoization (place &rest code) ;; <compat-tests:with-memoization>
   "Return the value of CODE and stash it in PLACE.
@@ -425,10 +460,12 @@ thus overriding the value of the TIMEOUT argument to that function.")
 (compat-defvar set-transient-map-timer nil ;; <compat-tests:set-transient-map>
   "Timer for `set-transient-map-timeout'.")
 
-(autoload 'format-spec "format-spec")
+(declare-function format-spec "format-spec")
 (compat-defun set-transient-map (map &optional keep-pred on-exit message timeout) ;; <compat-tests:set-transient-map>
   "Handle the optional arguments MESSAGE and TIMEOUT."
   :extended t
+  (unless (fboundp 'format-spec)
+    (require 'format-spec))
   (let* ((timeout (or set-transient-map-timeout timeout))
          (message
           (when message
@@ -474,6 +511,14 @@ thus overriding the value of the TIMEOUT argument to that function.")
     exitfun))
 
 ;;;; Defined in simple.el
+
+(compat-defun char-uppercase-p (char) ;; <compat-tests:char-uppercase-p>
+  "Return non-nil if CHAR is an upper-case character.
+If the Unicode tables are not yet available, e.g. during bootstrap,
+then gives correct answers only for ASCII characters."
+  (cond ((unicode-property-table-internal 'lowercase)
+         (characterp (get-char-code-property char 'lowercase)))
+        ((and (>= char ?A) (<= char ?Z)))))
 
 (compat-defun use-region-noncontiguous-p () ;; <compat-tests:region-noncontiguous-p>
   "Return non-nil for a non-contiguous region if `use-region-p'."
@@ -597,6 +642,31 @@ The variable list SPEC is the same as in `if-let*'."
            (throw ',done nil))))))
 
 ;;;; Defined in files.el
+
+(compat-defun directory-abbrev-make-regexp (directory) ;; <compat-tests:directory-abbrev-make-regexp>
+  "Create a regexp to match DIRECTORY for `directory-abbrev-alist'."
+  (let ((regexp
+         ;; We include a slash at the end, to avoid spurious
+         ;; matches such as `/usr/foobar' when the home dir is
+         ;; `/usr/foo'.
+         (concat "\\`" (regexp-quote directory) "\\(/\\|\\'\\)")))
+    ;; The value of regexp could be multibyte or unibyte.  In the
+    ;; latter case, we need to decode it.
+    (if (multibyte-string-p regexp)
+        regexp
+      (decode-coding-string regexp
+                            (if (eq system-type 'windows-nt)
+                                'utf-8
+                              locale-coding-system)))))
+
+(compat-defun directory-abbrev-apply (filename) ;; <compat-tests:directory-abbrev-apply>
+  "Apply the abbreviations in `directory-abbrev-alist' to FILENAME.
+Note that when calling this, you should set `case-fold-search' as
+appropriate for the filesystem used for FILENAME."
+  (dolist (dir-abbrev directory-abbrev-alist filename)
+    (when (string-match (car dir-abbrev) filename)
+         (setq filename (concat (cdr dir-abbrev)
+                                (substring filename (match-end 0)))))))
 
 (compat-defun file-name-split (filename) ;; <compat-tests:file-name-split>
   "Return a list of all the components of FILENAME.
@@ -1159,14 +1229,17 @@ value can also be a property list with properties `:enter' and
      :repeat (:enter (commands ...) :exit (commands ...))
 
 `:enter' specifies the list of additional commands that only
-enter `repeat-mode'.  When the list is empty, then by default all
-commands in the map enter `repeat-mode'.  This is useful when
-there is a command that has the `repeat-map' symbol property, but
-doesn't exist in this specific map.  `:exit' is a list of
-commands that exit `repeat-mode'.  When the list is empty, no
-commands in the map exit `repeat-mode'.  This is useful when a
-command exists in this specific map, but it doesn't have the
-`repeat-map' symbol property on its symbol.
+enter `repeat-mode'.  When the list is empty, then only the
+commands defined in the map enter `repeat-mode'.  Specifying a
+list of commands is useful when there are commands that have the
+`repeat-map' symbol property, but don't exist in this specific
+map.
+
+`:exit' is a list of commands that exit `repeat-mode'.  When the
+list is empty, no commands in the map exit `repeat-mode'.
+Specifying a list of commands is useful when those commands exist
+in this specific map, but should not have the `repeat-map' symbol
+property.
 
 \(fn VARIABLE-NAME &key DOC FULL PARENT SUPPRESS NAME PREFIX KEYMAP REPEAT &rest [KEY DEFINITION]...)"
   (declare (indent 1))
@@ -1338,6 +1411,60 @@ Also see `buttonize'."
           (setq sentences (1- sentences)))
         sentences))))
 
+;;;; Defined in cl-lib.el
+
+(compat-defun cl-constantly (value) ;; <compat-tests:cl-constantly>
+  "Return a function that takes any number of arguments, but returns VALUE."
+  :feature cl-lib
+  (lambda (&rest _) value))
+
+;;;; Defined in cl-macs.el
+
+(compat-defmacro cl-with-gensyms (names &rest body) ;; <compat-tests:cl-with-gensyms>
+  "Bind each of NAMES to an uninterned symbol and evaluate BODY."
+  ;; No :feature since macro is autoloaded
+  (declare (debug (sexp body)) (indent 1))
+  `(let ,(cl-loop for name in names collect
+                  `(,name (gensym (symbol-name ',name))))
+     ,@body))
+
+(compat-defmacro cl-once-only (names &rest body) ;; <compat-tests:cl-once-only>
+  "Generate code to evaluate each of NAMES just once in BODY.
+
+This macro helps with writing other macros.  Each of names is
+either (NAME FORM) or NAME, which latter means (NAME NAME).
+During macroexpansion, each NAME is bound to an uninterned
+symbol.  The expansion evaluates each FORM and binds it to the
+corresponding uninterned symbol.
+
+For example, consider this macro:
+
+    (defmacro my-cons (x)
+      (cl-once-only (x)
+        \\=`(cons ,x ,x)))
+
+The call (my-cons (pop y)) will expand to something like this:
+
+    (let ((g1 (pop y)))
+      (cons g1 g1))
+
+The use of `cl-once-only' ensures that the pop is performed only
+once, as intended.
+
+See also `macroexp-let2'."
+  ;; No :feature since macro is autoloaded
+  (declare (debug (sexp body)) (indent 1))
+  (setq names (mapcar #'ensure-list names))
+  (let ((our-gensyms (cl-loop for _ in names collect (gensym))))
+    `(let ,(cl-loop for sym in our-gensyms collect `(,sym (gensym)))
+       `(let ,(list
+               ,@(cl-loop for name in names for gensym in our-gensyms
+                          for to-eval = (or (cadr name) (car name))
+                          collect ``(,,gensym ,,to-eval)))
+          ,(let ,(cl-loop for name in names for gensym in our-gensyms
+                          collect `(,(car name) ,gensym))
+             ,@body)))))
+
 ;;;; Defined in ert-x.el
 
 (compat-defmacro ert-with-temp-file (name &rest body) ;; <compat-tests:ert-with-temp-file>
@@ -1403,7 +1530,8 @@ See also `ert-with-temp-directory'."
                         (concat "-")))))
       `(let* ((coding-system-for-write ,(or coding coding-system-for-write))
               (,temp-file (,(if directory 'file-name-as-directory 'identity)
-                           (,(if (< emacs-major-version 26) 'compat--make-temp-file 'make-temp-file)
+                           (,(if (fboundp 'compat--make-temp-file)
+                                 'compat--make-temp-file 'make-temp-file)
                             ,prefix ,directory ,suffix ,text)))
               (,name ,(if directory
                           `(file-name-as-directory ,temp-file)
@@ -1442,6 +1570,30 @@ The same keyword arguments are supported as in
   `(ert-with-temp-file ,name
      :directory t
      ,@body))
+
+;;;; Defined in wid-edit.el
+
+(compat-guard (not (fboundp 'widget-key-validate)) ;; <compat-tests:widget-key>
+  :feature wid-edit
+  (defvar widget-key-prompt-value-history nil
+    "History of input to `widget-key-prompt-value'.")
+  (define-widget 'key 'editable-field
+    "A key sequence."
+    :prompt-value 'widget-field-prompt-value
+    :match 'widget-key-valid-p
+    :format "%{%t%}: %v"
+    :validate 'widget-key-validate
+    :keymap widget-key-sequence-map
+    :help-echo "C-q: insert KEY, EVENT, or CODE; RET: enter value"
+    :tag "Key")
+  (defun widget-key-valid-p (_widget value)
+    (key-valid-p value))
+  (defun widget-key-validate (widget)
+    (unless (and (stringp (widget-value widget))
+                 (key-valid-p (widget-value widget)))
+      (widget-put widget :error (format "Invalid key: %S"
+                                        (widget-value widget)))
+      widget)))
 
 (provide 'compat-29)
 ;;; compat-29.el ends here

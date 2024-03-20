@@ -1,7 +1,7 @@
 ;; base16-tomorrow-night-eighties-theme.el -- A base16 colorscheme
 
 ;;; Commentary:
-;; Base16: (https://github.com/chriskempson/base16)
+;; Base16: (https://github.com/tinted-theming/home)
 
 ;;; Authors:
 ;; Scheme: Chris Kempson (http://chriskempson.com)
@@ -28,7 +28,7 @@
     :base0D "#6699cc"
     :base0E "#cc99cc"
     :base0F "#a3685a")
-  "All colors for Base16 Tomorrow Night are defined here.")
+  "All colors for Base16 Tomorrow Night Eighties are defined here.")
 
 ;; Define the theme
 (deftheme base16-tomorrow-night-eighties)

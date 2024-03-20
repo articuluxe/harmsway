@@ -1,14 +1,14 @@
 ;;; company-prescient.el --- prescient.el + Company -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Radon Rosborough
+;; Copyright (C) 2018-2022 Radian LLC and contributors
 
-;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Author: Radian LLC <contact+prescient@radian.codes>
 ;; Homepage: https://github.com/raxod502/prescient.el
 ;; Keywords: extensions
 ;; Created: 7 May 2018
-;; Package-Requires: ((emacs "25.1") (prescient "5.2") (company "0.9.6"))
+;; Package-Requires: ((emacs "25.1") (prescient "6.1.0") (company "0.9.6"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 5.2
+;; Version: 6.3.0
 
 ;;; Commentary:
 
@@ -41,14 +41,19 @@ this variable is `:default', then this binding is skipped."
 
 ;;;; Minor mode
 
+(declare-function prescient-completion-sort "prescient" (candidates))
 (defun company-prescient-transformer (candidates)
   "Candidate transformer function that uses prescient.el to sort CANDIDATES.
 This is for use in `company-transformers'."
+  ;; Candidates are always sorted and de-duplicated before being
+  ;; passed to transformers. Therefore, we are always trying to
+  ;; at least apply prescient.el sorting on top the existing sort,
+  ;; if not overwrite it entirely.
   (let ((prescient-sort-length-enable
          (if (eq company-prescient-sort-length-enable :default)
              prescient-sort-length-enable
            company-prescient-sort-length-enable)))
-    (prescient-sort candidates)))
+    (prescient-completion-sort candidates)))
 
 (defalias 'company-prescient-completion-finished #'prescient-remember
   "Hook function to remember selected Company candidate.

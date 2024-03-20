@@ -6,7 +6,7 @@
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
 ;; URL: https://github.com/emacs-sideline/sideline
 ;; Version: 0.1.1
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.1") (ht "2.4"))
 ;; Keywords: convenience
 
 ;; This file is NOT part of GNU Emacs.
@@ -46,6 +46,8 @@
 (require 'face-remap)
 (require 'rect)
 (require 'subr-x)
+
+(require 'ht)
 
 (defgroup sideline nil
   "Show information on the side."
@@ -155,7 +157,7 @@
   :type 'function
   :group 'sideline)
 
-(defvar-local sideline--overlays nil
+(defvar-local sideline--overlays (make-hash-table)
   "Displayed overlays.")
 
 (defvar-local sideline--ex-bound-or-point nil
@@ -185,6 +187,10 @@
 
 (defun sideline--enable ()
   "Enable `sideline' in current buffer."
+  ;; XXX: Still don't know why local variable doesn't work!
+  (progn
+    (sideline--delete-ovs)
+    (setq-local sideline--overlays (make-hash-table)))
   (setq sideline--ex-bound-or-point t  ; render immediately
         sideline--text-scale-mode-amount text-scale-mode-amount)
   (add-hook 'post-command-hook #'sideline--post-command nil t))
@@ -226,16 +232,11 @@
   `(when (buffer-live-p ,buffer-or-name)
      (with-current-buffer ,buffer-or-name ,@body)))
 
-(defun sideline--str-no-props (str)
-  "Remove STR's text properties."
-  (with-temp-buffer
-    (insert str)
-    (buffer-substring-no-properties (point-min) (point-max))))
-
 ;; TODO: Use function `string-pixel-width' after 29.1
 (defun sideline--string-pixel-width (str)
   "Return the width of STR in pixels."
-  (let ((str (sideline--str-no-props str)))
+  ;; Text properties may effect the length, remove it!
+  (let ((str (substring-no-properties str)))
     (if (fboundp #'string-pixel-width)
         (string-pixel-width str)
       (require 'shr)
@@ -255,6 +256,17 @@
 (defun sideline--column-to-point (column)
   "Convert COLUMN to point."
   (save-excursion (move-to-column (max column 0)) (point)))
+
+(defun sideline--modeline-height ()
+  "Return lines modeline cost."
+  (ceiling (/ (float (window-mode-line-height)) (frame-char-height))))
+
+(defun sideline--window-end ()
+  "Return the accurate window end position."
+  (save-excursion
+    (goto-char (window-end))
+    (forward-line (- 0 (sideline--modeline-height)))
+    (line-beginning-position)))
 
 (defun sideline--window-width ()
   "Correct window width for sideline."
@@ -285,21 +297,23 @@
 (defun sideline--align-right (str offset)
   "Align sideline STR from the right of the window.
 
- Argument OFFSET is additional calculation from the right alignment."
-  (list (+
-         ;; If the sideline text is displayed without at least 1 pixel gap from the right fringe and
-         ;; overflow-newline-into-fringe is not true, emacs will line wrap it.
-         (if (and (display-graphic-p)
-                  (> (nth 1 (window-fringes)) 0)
-                  (not overflow-newline-into-fringe))
-             1
-           0)
-         (* (window-font-width)
-            (+ offset (if (display-graphic-p)
-                          ;; If right fringe deactivated add 1 offset
-                          (if (= 0 (nth 1 (window-fringes))) 1 0)
-                        1)))
-         (sideline--string-pixel-width str))))
+Argument OFFSET is additional calculation from the right alignment."
+  (let ((graphic-p (display-graphic-p))
+        (fringes (window-fringes)))
+    (list (+
+           ;; If the sideline text is displayed without at least 1 pixel gap from the right fringe and
+           ;; overflow-newline-into-fringe is not true, emacs will line wrap it.
+           (if (and graphic-p
+                    (> (nth 1 fringes) 0)
+                    (not overflow-newline-into-fringe))
+               1
+             0)
+           (* (window-font-width)
+              (+ offset (if graphic-p
+                            ;; If right fringe deactivated add 1 offset
+                            (if (= 0 (nth 1 fringes)) 1 0)
+                          1)
+                 (sideline--str-len str)))))))
 
 (defun sideline--get-line ()
   "Return current line."
@@ -354,25 +368,27 @@ available lines in both directions (up & down)."
         (going-up (eq direction 'up))
         (skip-first t)
         (break-it)
-        (pos-ov))
+        (data))
     (save-excursion
       (while (not break-it)
         (if skip-first (setq skip-first nil)
           (forward-line (if going-up -1 1)))
         (unless (if going-up (<= bol (point)) (<= (point) eol))
           (setq break-it t))
-        (when (and (not (memq (line-beginning-position) occupied-lines))
-                   (not break-it))
-          (when-let ((col (sideline--calc-space str-len on-left (sideline--opposing-str-len))))
-            (setq pos-ov (cons (sideline--column-to-point (car col))
-                               (sideline--column-to-point (cdr col))))
-            (setq break-it t)
-            (push (line-beginning-position) occupied-lines)))
+        (when-let* ((occ-bol (line-beginning-position))
+                    ((and (not (memq occ-bol occupied-lines))
+                          (not break-it)))
+                    (col (sideline--calc-space str-len on-left (sideline--opposing-str-len))))
+          (setq data (list (sideline--column-to-point (car col))
+                           (sideline--column-to-point (cdr col))
+                           occ-bol))
+          (setq break-it t)
+          (push occ-bol occupied-lines))
         (when (if going-up (bobp) (eobp)) (setq break-it t))))
     (if on-left
         (setq sideline--occupied-lines-left occupied-lines)
       (setq sideline--occupied-lines-right occupied-lines))
-    (or pos-ov
+    (or data
         (and (not exceeded)
              (sideline--find-line str-len on-left bol eol (if going-up 'down 'up) t)))))
 
@@ -391,9 +407,38 @@ Argument CANDIDATE is the data for users."
 ;; (@* "Overlays" )
 ;;
 
+(defun sideline-backend-ovs (backend)
+  "Return overlays for BACKEND."
+  (sideline--overlays-in 'backend backend))
+
+(defun sideline-delete-backend-ovs (backend)
+  "Delete overlays from BACKEND."
+  (dolist (ov (ht-get sideline--overlays backend))
+    (let ((on-left (overlay-get ov 'left))
+          (occ-pt (overlay-get ov 'occ-pt)))
+      (if on-left
+          (setq sideline--occupied-lines-left
+                (delete occ-pt sideline--occupied-lines-left))
+        (setq sideline--occupied-lines-right
+              (delete occ-pt sideline--occupied-lines-right))))
+    (delete-overlay ov))
+  (ht-set sideline--overlays backend nil))
+
+(defun sideline--reset-occupied-lines ()
+  "Reset occupied lines."
+  (let ((mark (list (line-beginning-position))))
+    (setq sideline--occupied-lines-left
+          (if sideline-backends-left-skip-current-line mark nil))
+    (setq sideline--occupied-lines-right
+          (if sideline-backends-right-skip-current-line mark nil))))
+
 (defun sideline--delete-ovs ()
   "Clean up all overlays."
-  (mapc #'delete-overlay sideline--overlays))
+  (sideline--reset-occupied-lines)
+  (ht-map (lambda (_key value)
+            (mapc #'delete-overlay value))
+          sideline--overlays)
+  (ht-clear sideline--overlays))
 
 (defun sideline--display-string (on-left backend-str candidate &optional type)
   "Return the display string to render the text correctly.
@@ -424,11 +469,15 @@ Optional argument TYPE is used for recursive `outer' and `inner'."
     (`inner (sideline--display-starting on-left backend-str (if on-left 'right 'left)))
     (`outer (sideline--display-starting on-left backend-str (if on-left 'left 'right)))))
 
-(defun sideline--create-ov (candidate action face name on-left order)
+(defun sideline--create-ov (backend candidate action face name on-left order bol eol)
   "Create information (CANDIDATE) overlay.
 
+Argument BACKEND is used to categorize overlays.
+
 See function `sideline--render-candidates' document string for arguments ACTION,
-FACE, NAME, ON-LEFT, and ORDER for details."
+FACE, NAME, ON-LEFT, and ORDER for details.
+
+Arguments BOL and EOL are cached for faster performance."
   (when-let*
       ((backend-str (format sideline-display-backend-format name))
        (text (if sideline-display-backend-name  ; this is the displayed text
@@ -451,9 +500,8 @@ FACE, NAME, ON-LEFT, and ORDER for details."
           (if on-left (format sideline-format-left text)
             (format sideline-format-right text))))
        (len-title (sideline--str-len title))
-       (bol (window-start)) (eol (window-end))
-       (pos-ov (sideline--find-line len-title on-left bol eol order))
-       (pos-start (car pos-ov)) (pos-end (cdr pos-ov))
+       (data (sideline--find-line len-title on-left bol eol order))
+       (pos-start (nth 0 data)) (pos-end (nth 1 data)) (occ-pt (nth 2 data))
        (offset (if (or on-left (zerop (window-hscroll))) 0
                  (save-excursion
                    (goto-char pos-start)
@@ -486,7 +534,12 @@ FACE, NAME, ON-LEFT, and ORDER for details."
                                   ;; Add 1 to render on the same line!
                                   (1+ sideline-priority)))
       (overlay-put ov 'creator 'sideline)
-      (push ov sideline--overlays))))
+      (overlay-put ov 'backend backend)
+      (overlay-put ov 'on-left on-left)
+      (overlay-put ov 'occ-pt occ-pt)
+      (unless (gethash backend sideline--overlays)
+        (setf (gethash backend sideline--overlays) nil))
+      (push ov (gethash backend sideline--overlays)))))
 
 ;;
 ;; (@* "Async" )
@@ -512,9 +565,10 @@ Argument ORDER determined the search order for going up or down."
         (action (sideline--call-backend backend 'action))
         (face (or (sideline--call-backend backend 'face) 'sideline-default))
         (name (or (sideline--call-backend backend 'name)
-                  (sideline--guess-backend-name backend))))
+                  (sideline--guess-backend-name backend)))
+        (bol (window-start)) (eol (sideline--window-end)))
     (dolist (candidate candidates)
-      (sideline--create-ov candidate action face name on-left order))))
+      (sideline--create-ov backend candidate action face name on-left order bol eol))))
 
 ;;
 ;; (@* "Core" )
@@ -554,11 +608,6 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
   "Render sideline once in the BUFFER."
   (sideline--with-buffer (or buffer (current-buffer))
     (unless (funcall sideline-inhibit-display-function)
-      (let ((mark (list (line-beginning-position))))
-        (setq sideline--occupied-lines-left
-              (if sideline-backends-left-skip-current-line mark nil))
-        (setq sideline--occupied-lines-right
-              (if sideline-backends-right-skip-current-line mark nil)))
       (sideline--delete-ovs)  ; for function call externally
       (run-hooks 'sideline-pre-render-hook)
       (sideline--render-backends sideline-backends-left t)
@@ -567,6 +616,9 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
 
 (defvar-local sideline--delay-timer nil
   "Timer for delay.")
+
+(defvar-local sideline--ex-window nil
+  "Holds previous window.")
 
 (defvar-local sideline--ex-window-start nil
   "Holds previous window start point; this will detect vertical scrolling.")
@@ -577,16 +629,19 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
 (defun sideline--do-render-p ()
   "Return non-nil if we should re-render sidelines in the post-command."
   (let ((bound-or-point (or (bounds-of-thing-at-point 'symbol) (point)))
+        (window (selected-window))
         (win-start (window-start))
         (win-hscroll (window-hscroll)))
     (when  ; conditions allow to re-render sidelines
         (or (not (equal sideline--ex-bound-or-point bound-or-point))
             (not (equal sideline--text-scale-mode-amount text-scale-mode-amount))
+            (not (equal sideline--ex-window window))
             (not (equal sideline--ex-window-start win-start))
             (not (equal sideline--ex-window-hscroll win-hscroll)))
       ;; update
       (setq sideline--ex-bound-or-point bound-or-point
             sideline--text-scale-mode-amount text-scale-mode-amount
+            sideline--ex-window window
             sideline--ex-window-start win-start
             sideline--ex-window-hscroll win-hscroll)
       t)))

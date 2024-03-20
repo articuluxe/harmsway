@@ -1,6 +1,6 @@
 ;;; compat-macs.el --- Compatibility Macros -*- lexical-binding: t; no-byte-compile: t; -*-
 
-;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2024 Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -17,12 +17,13 @@
 
 ;;; Commentary:
 
-;; This file provides *internal* macros, which are used by Compat to
-;; facilitate the definition of compatibility functions, macros and
-;; variables.  The `compat-macs' feature should never be loaded at
-;; runtime in your Emacs and will only be used during byte
-;; compilation.  Every definition provided here should be considered
-;; internal and may change any time between Compat releases.
+;; WARNING: This file provides *internal* macros.  The macros are used
+;; by Compat to facilitate the definition of compatibility functions,
+;; compatibility macros and compatibility variables.  The
+;; `compat-macs' feature should never be loaded at runtime in your
+;; Emacs and will only be used during byte compilation.  Every
+;; definition provided here is internal, may change any time between
+;; Compat releases and must not be used by other packages.
 
 ;;; Code:
 
@@ -50,12 +51,9 @@ Prepend compatibility notice to the actual documentation string."
   (with-temp-buffer
     (insert
      (format
-      "[Compatibility %s for `%S', defined in Emacs %s.  \
-If this is not documented on yourself system, you can check \
-`(compat) Emacs %s' for more details.]\n\n%s"
-      type name
-      compat-macs--version compat-macs--version
-      docstring))
+      "[Compatibility %s for `%s', defined in Emacs %s. \
+See (compat) Emacs %s' for more details.]\n\n%s"
+      type name compat-macs--version compat-macs--version docstring))
     (let ((fill-column 80))
       (fill-region (point-min) (point-max)))
     (buffer-string)))
@@ -64,9 +62,9 @@ If this is not documented on yourself system, you can check \
   "Check ATTRS given PREDS predicate plist and return rest."
   (while (keywordp (car attrs))
     (compat-macs--assert (cdr attrs) "Attribute list length is odd")
-    (let ((pred (plist-get preds (car attrs))))
-      (compat-macs--assert (and pred (or (eq pred t) (funcall pred (cadr attrs))))
-                      "Invalid attribute %s" (car attrs)))
+    (compat-macs--assert (let ((p (plist-get preds (car attrs))))
+                           (and p (or (eq p t) (funcall p (cadr attrs)))))
+                         "Invalid attribute %s" (car attrs))
     (setq attrs (cddr attrs)))
   attrs)
 
@@ -75,6 +73,7 @@ If this is not documented on yourself system, you can check \
 The version constraints specified by ATTRS are checked.  PREDS is
 a plist of predicates for arguments which are passed to FUN."
   (declare (indent 2))
+  (compat-macs--assert compat-macs--version "No `compat-version' was declared")
   (let* ((body (compat-macs--check-attributes
                 attrs `(,@preds :feature symbolp)))
          (feature (plist-get attrs :feature))
@@ -97,9 +96,10 @@ a plist of predicates for arguments which are passed to FUN."
 (defun compat-macs--defun (type name arglist docstring rest)
   "Define function NAME of TYPE with ARGLIST and DOCSTRING.
 REST are attributes and the function BODY."
-  (compat-macs--guard rest (list :extended (lambda (x) (or (booleanp x) (version-to-list x)))
-                                 :obsolete (lambda (x) (or (booleanp x) (stringp x)))
-                                 :body t)
+  (compat-macs--guard
+     rest (list :extended (lambda (x) (or (booleanp x) (version-to-list x)))
+                :obsolete (lambda (x) (or (booleanp x) (stringp x)))
+                :body t)
     (lambda (extended obsolete body)
       (when (stringp extended)
         (compat-macs--assert
@@ -111,10 +111,9 @@ REST are attributes and the function BODY."
       ;; Remove unsupported declares.  It might be possible to set these
       ;; properties otherwise.  That should be looked into and implemented
       ;; if it is the case.
-      (when (and (listp (car-safe body)) (eq (caar body) 'declare))
-        (when (<= emacs-major-version 25)
-          (delq (assq 'side-effect-free (car body)) (car body))
-          (delq (assq 'pure (car body)) (car body))))
+      (when (and (listp (car-safe body)) (eq (caar body) 'declare) (<= emacs-major-version 25))
+        (setcar body (assq-delete-all 'pure (assq-delete-all
+                                             'side-effect-free (car body)))))
       ;; Use `:extended' name if the function is already defined.
       (let* ((defname (if (and extended (fboundp name))
                           (intern (format "compat--%s" name))
@@ -143,7 +142,7 @@ REST are attributes and the function BODY."
 (defmacro compat-guard (cond &rest rest)
   "Guard definition with a runtime COND and a version check.
 The runtime condition must make sure that no definition is
-overriden.  REST is an attribute plist followed by the definition
+overridden.  REST is an attribute plist followed by the definition
 body.  The attributes specify the conditions under which the
 definition is generated.
 
@@ -153,6 +152,7 @@ definition is generated.
            (indent 1))
   (compat-macs--guard rest '(:body t)
     (lambda (body)
+      (compat-macs--assert body "The guarded body is empty")
       (if (eq cond t)
           body
         (compat-macs--strict (eval cond t) "Guard %S failed" cond)
@@ -230,16 +230,18 @@ definition is generated.
 - :feature :: See `compat-guard'."
   (declare (debug (name form stringp [&rest keywordp sexp]))
            (doc-string 3) (indent 2))
-  (compat-macs--guard attrs (list :constant #'booleanp
-                                  :local (lambda (x) (memq x '(nil t permanent)))
-                                  :obsolete (lambda (x) (or (booleanp x) (stringp x))))
+  (compat-macs--guard
+      attrs (list :constant #'booleanp
+                  :local (lambda (x) (memq x '(nil t permanent)))
+                  :obsolete (lambda (x) (or (booleanp x) (stringp x))))
     (lambda (constant local obsolete)
       (compat-macs--strict (not (boundp name)) "%s already defined" name)
       (compat-macs--assert (not (and constant local)) "Both :constant and :local")
       ;; The boundp check is performed at runtime to make sure that we never
       ;; redefine an existing definition if Compat is loaded on a newer Emacs
       ;; version.
-      `((unless (boundp ',name)
+      `((defvar ,name)
+        (unless (boundp ',name)
           (,(if constant 'defconst 'defvar)
            ,name ,initval
            ,(compat-macs--docstring 'variable name docstring))
@@ -250,13 +252,16 @@ definition is generated.
         ,@(and local `((make-variable-buffer-local ',name)))
         ,@(and (eq local 'permanent) `((put ',name 'permanent-local t)))))))
 
-(defmacro compat-declare-version (version)
+(defmacro compat-version (version)
   "Set the Emacs version that is currently being handled to VERSION."
-  (prog1
-      (let ((before (1- (car (version-to-list version)))))
-        (when (and (< 24 before) (< emacs-major-version before))
-          `(require ',(require (intern (format "compat-%d" before))))))
-    (setq compat-macs--version version)))
+  (setq compat-macs--version version)
+  nil)
+
+(defmacro compat-require (feature version)
+  "Require FEATURE if the Emacs version is less than VERSION."
+  (when (version< emacs-version version)
+    (require feature)
+    `(require ',feature)))
 
 (provide 'compat-macs)
 ;;; compat-macs.el ends here

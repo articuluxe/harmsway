@@ -233,6 +233,29 @@ It respects option `doom-modeline-icon' and option `doom-modeline-time-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-time-analogue-clock t
+  "Whether to draw an analogue clock SVG as the live time icon.
+It respects options `doom-modeline-icon', `doom-modeline-time-icon', and
+`doom-modeline-time-live-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-time-clock-minute-resolution 1
+  "The clock will be updated every this many minutes, truncated.
+See `doom-modeline-time-analogue-clock'."
+  :type 'natnum
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-time-clock-size 0.7
+  "Size of the analogue clock drawn, either in pixels or as a proportional height.
+An integer value is used as the diameter of clock in pixels.
+A floating point value sets the diameter of the clock realtive to
+`doom-modeline-height'.
+
+Only relevant when `doom-modeline-time-analogue-clock' is non-nil, which see."
+  :type 'number
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-unicode-fallback nil
   "Whether to use unicode as a fallback (instead of ASCII) when not using icons."
   :type 'boolean
@@ -1249,19 +1272,19 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 IF FACE is nil, `mode-line' face will be used.
 If INACTIVE-FACE is nil, `mode-line-inactive' face will be used."
   (if (doom-modeline--active)
-      (or (and (facep face) face)
-          (and (facep 'mode-line-active) 'mode-line-active)
-          'mode-line)
-    (or (and (facep face) `(:inherit (mode-line-inactive ,face)))
-        (and (facep inactive-face) inactive-face)
-        'mode-line-inactive)))
+      (or (and (facep face) `(:inherit (doom-modeline ,face)))
+          (and (facep 'mode-line-active) '(:inherit (doom-modeline mode-line-active)))
+          '(:inherit (doom-modeline mode-line)))
+    (or (and (facep face) `(:inherit (doom-modeline mode-line-inactive ,face)))
+        (and (facep inactive-face) `(:inherit (doom-modeline ,inactive-face)))
+        '(:inherit (doom-modeline mode-line-inactive)))))
 
 (defun doom-modeline-string-pixel-width (str)
-    "Return the width of STR in pixels."
-    (if (fboundp 'string-pixel-width)
-        (string-pixel-width str)
-      (* (string-width str) (window-font-width nil 'mode-line)
-         (if (display-graphic-p) 1.05 1.0))))
+  "Return the width of STR in pixels."
+  (if (fboundp 'string-pixel-width)
+      (string-pixel-width str)
+    (* (string-width str) (window-font-width nil 'mode-line)
+       (if (display-graphic-p) 1.05 1.0))))
 
 (defun doom-modeline--font-height ()
   "Calculate the actual char height of the mode-line."

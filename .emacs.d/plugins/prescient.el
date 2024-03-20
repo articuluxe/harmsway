@@ -1,14 +1,14 @@
 ;;; prescient.el --- Better sorting and filtering -*- lexical-binding: t -*-
 
-;; Copyright (C) 2017-2018 Radon Rosborough
+;; Copyright (C) 2017-2022 Radian LLC and contributors
 
-;; Author: Radon Rosborough <radon.neon@gmail.com>
+;; Author: Radian LLC <contact+prescient@radian.codes>
 ;; Homepage: https://github.com/raxod502/prescient.el
 ;; Keywords: extensions
 ;; Created: 7 Aug 2017
 ;; Package-Requires: ((emacs "25.1"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 5.2
+;; Version: 6.3.0
 
 ;;; Commentary:
 
@@ -46,6 +46,9 @@
 
 ;;;; Libraries
 
+;; Require `char-fold' so that `char-fold-table' gets defined.
+;; Otherwise `char-fold-to-regexp' can signal an error.
+(require 'char-fold)
 (require 'cl-lib)
 (require 'subr-x)
 
@@ -180,6 +183,20 @@ usefully be sorted by length (presumably, the backend returns
 these results in some already-sorted order)."
   :type 'boolean)
 
+(defcustom prescient-tiebreaker nil
+  "If non-nil, the method used to break ties instead of length.
+The value will be called as a function with two candidates that
+have the same recency and frequency information, and should
+return a number to indicate their relative order (negative for
+first < second, zero for first = second, positive for first >
+second), where candidates are assumed to sort in ascending order.
+You can also use the variable `prescient-query' to access the
+original query from the user (but see that variable for
+caveats)."
+  :type '(choice
+          (const :tag "Length" nil)
+          (function :tag "Custom function")))
+
 (defcustom prescient-aggressive-file-save nil
   "Whether to save the cache file aggressively.
 If non-nil, then write the cache data to `prescient-save-file'
@@ -216,6 +233,35 @@ contains no upper-case letters."
           (const :tag "Always" t)
           (const :tag "Never" nil)
           (const :tag "Unless using upper-case letters" smart)))
+
+(defcustom prescient-completion-highlight-matches t
+  "Whether the `prescient' completion style should highlight matches.
+
+If `completion-lazy-hilit' is bound and non-nil, then this user
+option is ignored in favor of that variable.
+
+See also the faces `prescient-primary-highlight' and
+`prescient-secondary-highlight'."
+  :type 'boolean)
+
+(define-obsolete-face-alias 'selectrum-primary-highlight
+  'prescient-primary-highlight t)
+(define-obsolete-face-alias 'selectrum-prescient-primary-highlight
+  'prescient-primary-highlight t)
+(defface prescient-primary-highlight
+  '((t :weight bold))
+  "Face used to highlight the parts of candidates that match the input.")
+
+(define-obsolete-face-alias 'selectrum-secondary-highlight
+  'prescient-secondary-highlight t)
+(define-obsolete-face-alias 'selectrum-prescient-secondary-highlight
+  'prescient-secondary-highlight t)
+(defface prescient-secondary-highlight
+  '((t :inherit prescient-primary-highlight :underline t))
+  "Additional face used to highlight parts of candidates.
+
+May be used to highlight parts of candidates that match specific
+parts of the input.")
 
 ;;;; Caches
 
@@ -339,7 +385,6 @@ Usually this variable is dynamically bound to another value while
     (remove-hook 'kill-emacs-hook #'prescient--save)))
 
 ;;;; Utility functions
-
 (defun prescient--char-fold-to-regexp (string)
   "Convert STRING to a regexp that handles char folding.
 This is the same as `char-fold-to-regexp' but it works around
@@ -406,6 +451,120 @@ as a sub-query delimiter."
       (format "\\(%s\\)" regexp)
     regexp))
 
+(defun prescient--prefix-and-pattern (string table pred)
+  "Split STRING into prefix and pattern according to TABLE.
+
+The predicate PRED is used to constrain the entries in TABLE."
+  (let ((limit (car (completion-boundaries string table pred ""))))
+    (cons (substring string 0 limit) (substring string limit))))
+
+(defun prescient-ignore-case-p (input)
+  "Whether prescient.el should ignore case considering INPUT.
+
+Filtering can optionally ignore case if `prescient-use-case-folding'
+is non-nil.  If `smart', then filtering will not ignore case when
+INPUT contains uppercase letters."
+  (if (eq prescient-use-case-folding 'smart)
+      (let ((case-fold-search nil))
+        ;; If using upper-case characters, then don't fold case.
+        (not (string-match-p "[[:upper:]]" input)))
+    prescient-use-case-folding))
+
+(defun prescient--add-sort-info (candidates &rest properties)
+  "Propertize the first candidate in CANDIDATES to save data.
+
+Currently recognized PROPERTIES are:
+
+- `:prescient-match-regexps': The regexps used for filtering.
+
+- `:prescient-all-regexps': All regexps outputted by the filter
+  methods, which were used to make PRESCIENT-MATCH-REGEXPS. A
+  regexp in this list does not necessarily match the candidates
+  by itself.
+
+- `:prescient-ignore-case': Whether prescient ignored case.
+
+- `:prescient-query': Original search query from user.
+
+These properties are identified using keyword symbols.
+
+This information is used by the function
+`prescient-sort-full-matches-first'."
+  (if (null candidates)
+      nil
+    (cons (apply #'propertize (car candidates)
+                 ;; While PROPERTIES contains all given keys, we
+                 ;; explicitly set the properties this way so that
+                 ;; we're sure that the properties exist even when
+                 ;; they're not given. This makes testing easier
+                 ;; and should be helpful for others creating their
+                 ;; own sorting functions.
+                 ;;
+                 ;; Note all passed properties will still get set,
+                 ;; this just defaults the standard ones to nil in
+                 ;; case they are missing.
+                 (cl-flet ((put-get (props sym)
+                                    (plist-put props sym
+                                               (plist-get props sym))))
+                   (thread-first properties
+                                 (put-get :prescient-match-regexps)
+                                 (put-get :prescient-all-regexps)
+                                 (put-get :prescient-ignore-case)
+                                 (put-get :prescient-query))))
+          (cdr candidates))))
+
+(defun prescient--get-sort-info (candidates)
+  "Return a property list of properties added by `prescient-filter'.
+
+`prescient-filter' adds properties to the CANDIDATES that it
+filtered for use by the function `prescient-sort-full-matches-first'."
+  (cl-loop for cand in candidates
+           for props = (text-properties-at 0 cand)
+           until (plist-member props :prescient-match-regexps)
+           ;; Since we allow other keys in `prescient--add-sort-info',
+           ;; just return all properties here.
+           finally return props))
+
+(defun prescient--highlight-candidate (regexps case-fold candidate)
+  "Highlight text matching REGEXPS and considering CASE-FOLD in CANDIDATE.
+
+Returns a propertized CANDIDATE."
+  (setq candidate (copy-sequence candidate))
+  (prog1 candidate
+    (let ((case-fold-search case-fold))
+      (save-match-data
+        (dolist (regexp regexps)
+          (when (string-match regexp candidate)
+            (font-lock-prepend-text-property
+             (match-beginning 0) (match-end 0)
+             'face 'prescient-primary-highlight
+             candidate)
+            (cl-loop
+             for (start end)
+             on (cddr (match-data))
+             by #'cddr
+             do (when (and start end)
+                  (font-lock-prepend-text-property
+                   start end
+                   'face 'prescient-secondary-highlight
+                   candidate)))))))))
+
+(defun prescient--highlight-candidates (input candidates)
+  "According to INPUT, highlight the matched sections in CANDIDATES.
+
+INPUT is the string that was used to generate a list of regexps
+for filtering. CANDIDATES is the list of filtered candidates,
+which should be a list of strings.
+
+Return a list of propertized CANDIDATES."
+  (cl-loop with regexps = (prescient-filter-regexps input 'with-group)
+           and case-fold-search = (prescient-ignore-case-p input)
+           for cand in candidates
+           collect (prescient--highlight-candidate regexps case-fold-search
+                                                   cand)))
+
+;;;; Regexp Builders
+
 (cl-defun prescient-literal-regexp (query &key with-group
                                           &allow-other-keys)
   "Return a regexp matching QUERY with optional character folding.
@@ -416,7 +575,7 @@ See also the customizable variable `prescient-use-char-folding'."
   (prescient-with-group
    (if prescient-use-char-folding
        (prescient--char-fold-to-regexp query)
-     query)
+     (regexp-quote query))
    (eq with-group 'all)))
 
 (cl-defun prescient-literal-prefix-regexp
@@ -438,7 +597,7 @@ See also the customizable variable `prescient-use-char-folding'."
              "\\b")
            (if prescient-use-char-folding
                (prescient--char-fold-to-regexp query)
-             query))
+             (regexp-quote query)))
    (eq with-group 'all)))
 
 (cl-defun prescient-initials-regexp (query &key with-group
@@ -525,106 +684,160 @@ data can be used to highlight the matched substrings."
   "Return a regexp for matching the beginnings of words in QUERY.
 This is similar to the `partial-completion' completion style
 provided by Emacs, except that non-word characters are taken
-literally \(i.e., one can't glob using \"*\").  Prescient already
+literally (i.e., one can't glob using \"*\").  Prescient already
 covers that case by separating queries with a space.
+
+If QUERY contains non-word characters, then this matches
+greedily. Otherwise, it matches non-greedily. For example,
+
+- \"str-r\" fully matches \"string-repeat\"
+
+- \"re\" does not fully match the word \"repertoire\", only the
+  \"re\" at the beginning of the word
+
+- \".g\" fully matches \".git\"
+
+This behavior is meant to work better with the function
+`prescient-sort-full-matches-first' and to avoid interpreting an
+initialism as a prefix.
 
 If WITH-GROUP is non-nil, enclose the parts of the regexp that
 match the QUERY characters in capture groups, so that the match
 data can be used to highlight the matched substrings."
-  (let ((str (replace-regexp-in-string
-              "[[:word:]]+"
-              ;; Choose whether to wrap sequences of word characters.
-              (if with-group
-                  (lambda (s) (concat "\\(" s "\\)[[:word:]]*"))
-                "\\&[[:word:]]*")
-              ;; Quote non-word characters so that they're taken
-              ;; literally.
-              (replace-regexp-in-string "[^[:word:]]"
-                                        (lambda (s) (regexp-quote s))
-                                        query 'fixed-case 'literal)
-              'fixed-case with-group)))
-    ;; If regexp begins with a word character, make sure regexp
-    ;; doesn't start matching in the middle of a word.
-    (if (eql 0 (string-match-p "[[:word:]]" str))
-        (concat "\\<" str)
-      str)))
+  (concat (when (eql 0 (string-match-p "[[:word:]]" query))
+            ;; If QUERY begins with a word character, make sure the
+            ;; returned regexp doesn't start matching in the middle of
+            ;; a word.
+            "\\<")
+          (replace-regexp-in-string
+           "[[:word:]]+"
+           ;; Choose whether to wrap sequences of word characters.
+           (concat (if with-group
+                       "\\\\(\\&\\\\)[[:word:]]*"
+                     "\\&[[:word:]]*")
+                   (unless (string-match-p "[^[:word:]]" query)
+                     "?"))
+           ;; Quote non-word characters so that they're taken
+           ;; literally.
+           (replace-regexp-in-string "[^[:word:]]"
+                                     #'regexp-quote
+                                     query 'fixed-case 'literal)
+           'fixed-case)))
 
 ;;;; Sorting and filtering
 
-(defun prescient-filter-regexps (query &optional with-group)
+(defun prescient-filter-regexps (query &optional with-group separated)
   "Convert QUERY to list of regexps.
 Each regexp must match the candidate in order for a candidate to
 match the QUERY.
 
 If WITH-GROUP is non-nil, enclose the initials in initialisms
 with capture groups. If it is the symbol `all', additionally
-enclose literal substrings with capture groups."
-  (let ((subquery-number 0))
-    (mapcar
-     (lambda (subquery)
-       (prog1 (string-join
-               (cl-remove
-                nil
-                (mapcar
-                 (lambda (method)
-                   (if-let ((func (alist-get method prescient-filter-alist)))
-                       (funcall func subquery
-                                :with-group with-group
-                                :subquery-number subquery-number)
-                     ;; Don't throw error if function doesn't exist, but do
-                     ;; warn user.
-                     (message
-                      "No function in `prescient-filter-alist' for method: %s"
-                      method)))
-                 (pcase
-                     (if (functionp prescient-filter-method)
-                         (funcall prescient-filter-method)
-                       prescient-filter-method)
-                   ;; We support `literal+initialism' for backwards
-                   ;; compatibility.
-                   (`literal+initialism '(literal initialism))
-                   ((and (pred listp) x) x)
-                   (x (list x))))
-                :test #'eq)
-               "\\|")
-         (cl-incf subquery-number)))
-     (prescient-split-query query))))
+enclose literal substrings with capture groups.
 
-(defun prescient-filter (query candidates)
+By default, this function returns a list containing one regexp
+for each space-separated sub-query in QUERY, in which each
+sub-query's regexp is a combination of the regexps produced by
+the filter methods for that sub-query, joined by \"\\|\". If
+SEPARATED is non-nil, this function instead returns a list of all
+regexps produced by the filter methods, without combining them
+into a single regexp for each sub-query."
+  (let ((list-of-lists
+         (cl-loop
+          with filter-methods
+          = (pcase (if (functionp prescient-filter-method)
+                       (funcall prescient-filter-method)
+                     prescient-filter-method)
+              ;; We support `literal+initialism' for backwards
+              ;; compatibility.
+              (`literal+initialism '(literal initialism))
+              ((and (pred listp) x) x)
+              (x (list x)))
+          for subquery in (prescient-split-query query)
+          for subquery-number from 0
+          collect
+          (cl-loop with temp-regexp = nil
+                   for method in filter-methods
+                   for func = (alist-get method prescient-filter-alist)
+                   if (null func)
+                   do (message
+                       "No function in `prescient-filter-alist' for method: %s"
+                       method)
+                   else
+                   ;; Can't use "for =" here.
+                   do (setq temp-regexp
+                            (funcall func subquery
+                                     :with-group with-group
+                                     :subquery-number subquery-number))
+                   and if temp-regexp collect temp-regexp end
+                   end))))
+    (if separated
+        (apply #'append list-of-lists)
+      (mapcar (lambda (list) (string-join list "\\|"))
+              list-of-lists))))
+
+;;;###autoload
+(defun prescient-filter (query candidates &optional pred)
   "Use QUERY to filter list of CANDIDATES.
-Split the query using `prescient-split-query'. Each candidate
-must match each subquery, either using substring or initialism
-matching. Discard any that do not, and return the resulting list.
-Do not modify CANDIDATES; always make a new copy of the list."
-  (let ((regexps (prescient-filter-regexps query))
-        (results nil)
-        (prioritized-results nil)
-        (case-fold-search (if (eq prescient-use-case-folding 'smart)
-                              (let ((case-fold-search nil))
-                                ;; If using upper-case characters,
-                                ;; then don't fold case.
-                                (not (string-match-p "[[:upper:]]"
-                                                     query)))
-                            prescient-use-case-folding)))
-    (save-match-data
-      ;; Use named block in case somebody loads `cl' accidentally
-      ;; which causes `dolist' to turn into `cl-dolist' which
-      ;; creates a nil block implicitly.
-      (dolist (candidate candidates)
-        (cl-block done
-          (let ((fully-matched nil))
-            (dolist (regexp regexps)
-              (unless (string-match regexp candidate)
-                (cl-return-from done))
-              (when (and
-                     prescient-sort-full-matches-first
-                     (equal (length candidate)
-                            (length (match-string 0 candidate))))
-                (setq fully-matched t)))
-            (if fully-matched
-                (push candidate prioritized-results)
-              (push candidate results)))))
-      (nconc (nreverse prioritized-results) (nreverse results)))))
+
+CANDIDATES is a completion table, such as a list of strings
+or a function as defined in the Info node
+`(elisp)Programmed Completion'.
+
+QUERY is a string containing the sub-queries, which are gotten
+using `prescient-split-query'. Each sub-query is used to produce
+a regular expression according to the filter methods listed in
+`prescient-filter-method'. A candidate must match every regular
+expression made from the sub-queries to be included in the list
+of returned candidates.
+
+PRED is the predicate used with the completion table, as
+described in the above Info node.
+
+This function does not modify CANDIDATES; it always make a new
+copy of the list."
+  (pcase-let*
+      ((`(,prefix . ,pattern)
+        (prescient--prefix-and-pattern query candidates pred))
+       (completion-regexp-list (prescient-filter-regexps pattern))
+       (completion-ignore-case (prescient-ignore-case-p pattern)))
+
+    ;; Add information for `prescient-sort-full-matches-first'. We
+    ;; want to add these properties even if we can't modify table
+    ;; metadata, since a user might be able to configure their
+    ;; completion UI with a custom sorting function that would use
+    ;; this info.
+    ;;
+    ;; There is a question of how to handle prefixes for identifying
+    ;; fully matched candidates. Prefixes are used in:
+    ;;
+    ;; - `completing-read-multiple', as the candidates that have
+    ;;   already been selected
+    ;;
+    ;; - file-name completion, as the directory preceeding the file
+    ;;   name, though this seems to only happen when there is no
+    ;;   match in some UIs (Icomplete, but not Selectrum)
+    ;;
+    ;; It might turn out that for file names we need to adjust the
+    ;; regexps to be "\(?:QUOTED-PREFIX\)METHOD-REGEXP", but this
+    ;; isn't evident yet. We just do the below to be proactive.
+    (cl-flet ((maybe-add-prefix (regexps)
+                                (if (and (not (string-empty-p prefix))
+                                         minibuffer-completing-file-name)
+                                    (cl-loop for regexp in regexps
+                                             collect (concat
+                                                      "\\(?:"
+                                                      (regexp-quote prefix)
+                                                      "\\)"
+                                                      regexp))
+                                  regexps)))
+      (prescient--add-sort-info
+       (all-completions prefix candidates pred)
+       :prescient-match-regexps completion-regexp-list
+       :prescient-all-regexps (maybe-add-prefix
+                               (prescient-filter-regexps pattern nil t))
+       :prescient-ignore-case completion-ignore-case
+       :prescient-query query))))
 
 (defmacro prescient--sort-compare ()
   "Hack used to cause the byte-compiler to produce faster code.
@@ -639,9 +852,12 @@ lexical scope."
                        (f2 (gethash c2 freq 0)))
                   (or (> f1 f2)
                       (and (eq f1 f2)
-                           len-enable
-                           (< (length c1)
-                              (length c2))))))))))
+                           (if tiebreaker
+                               (< (funcall tiebreaker c1 c2) 0)
+                             (and
+                              len-enable
+                              (< (length c1)
+                                 (length c2))))))))))))
 
 (defun prescient-sort-compare (c1 c2)
   "Compare candidates C1 and C2 by usage and length.
@@ -658,12 +874,25 @@ length."
   (let ((hist prescient--history)
         (len prescient-history-length)
         (freq prescient--frequency)
-        (len-enable prescient-sort-length-enable))
+        (len-enable prescient-sort-length-enable)
+        (tiebreaker prescient-tiebreaker))
     (prescient--sort-compare)))
+
+(defvar prescient-query nil
+  "The original query from the user, if available.
+You can use this in your implementation of `prescient-tiebreaker'
+to sort candidates depending on the user's query. This might be
+nil if `prescient-sort-compare' is invoked directly, or if
+`prescient-sort' is invoked without `prescient-filter' having
+been run first, so you should handle that case too.")
 
 (defun prescient-sort (candidates)
   "Sort CANDIDATES using frequency data.
-Return the sorted list. The original is modified destructively."
+Return the sorted list. The original is modified destructively.
+
+See also the functions `prescient-sort-full-matches-first' and
+`prescient-completion-sort'. Both are meant to be used after
+`prescient-filter'."
   (when (and prescient-persist-mode (not prescient--cache-loaded))
     (prescient--load))
   ;; Performance optimization revealed that reading dynamic variables
@@ -674,11 +903,42 @@ Return the sorted list. The original is modified destructively."
   (let ((hist prescient--history)
         (len prescient-history-length)
         (freq prescient--frequency)
-        (len-enable prescient-sort-length-enable))
+        (len-enable prescient-sort-length-enable)
+        (tiebreaker prescient-tiebreaker)
+        (prescient-query (plist-get (prescient--get-sort-info candidates)
+                                    :prescient-query)))
     (sort
      candidates
      (lambda (c1 c2)
        (prescient--sort-compare)))))
+
+(defun prescient-sort-full-matches-first (candidates regexps ignore-case)
+  "Sort fully matched strings in CANDIDATES before other candidates.
+
+REGEXPS are the regexps prescient.el used to filter the candidates.
+IGNORE-CASE is whether case was ignored when filtering.
+
+As this function is meant to be used after filtering, all of the
+candidates in CANDIDATES should match all of the regexps in
+REGEXPS."
+  (cond
+   ((null candidates) nil)
+   ((null regexps) candidates)
+   (t (save-match-data
+        (cl-loop
+         with prioritized-candidates = nil
+         and remaining-candidates = nil
+         and case-fold-search = ignore-case
+         for cand in candidates
+         if (cl-loop for regexp in regexps
+                     thereis (and (string-match regexp cand)
+                                  (= (length cand)
+                                     (- (match-end 0)
+                                        (match-beginning 0)))))
+         do (push cand prioritized-candidates)
+         else do (push cand remaining-candidates)
+         finally return (nconc (nreverse prioritized-candidates)
+                               (nreverse remaining-candidates)))))))
 
 ;;;; Candidate selection
 
@@ -726,8 +986,434 @@ Return the sorted list. The original is modified destructively."
              prescient-aggressive-file-save)
     (prescient--save)))
 
-;;;; Closing remarks
+;;;; Completion Style
 
+;; This section contains functions for implementing the `prescient'
+;; completion style. This feature is based on Orderless.el.
+;; See: https://github.com/oantolin/orderless
+
+(defvar completion-lazy-hilit)
+(defvar completion-lazy-hilit-fn)
+
+;;;;; Sorting functions
+
+;;;###autoload
+(cl-defun prescient-completion-sort (candidates)
+  "Sort the filtered CANDIDATES.
+
+This function will always sort candidates using the function
+`prescient-sort'. When CANDIDATES has been filtered using the
+`prescient' completion style, it can optionally also sort them
+using the function `prescient-sort-full-matches-first'.
+
+This function checks for the properties `prescient-regexps' and
+`prescient-ignore-case' on any candidate in CANDIDATES (though
+they are stored on the first candidate returned by
+`prescient-filter'). These properties are used for implementing
+the user option `prescient-sort-full-matches-first'."
+  (if (null candidates)
+      nil
+    ;; `prescient-filter' adds the properties needed for
+    ;; `prescient-sort-full-matches-first' to the first candidate in
+    ;; the list it returns. If we're receiving the filtered candidates
+    ;; directly (so, not in `company-prescient-transformer') then we
+    ;; should be checking for them before running `prescient-sort',
+    ;; which destructively modifies CANDIDATES.
+    (let ((regexps)
+          (ignore-case))
+      (when prescient-sort-full-matches-first
+        (let ((props (prescient--get-sort-info candidates)))
+          (setq regexps (plist-get props :prescient-all-regexps)
+                ignore-case (plist-get props :prescient-ignore-case))))
+      (thread-first
+        candidates
+        (prescient-sort)
+        ;; If `regexps' is nil, this just returns the input.
+        (prescient-sort-full-matches-first regexps ignore-case)))))
+
+;;;;; Filtering functions
+
+;;;###autoload
+(defun prescient-all-completions (string table &optional pred _point)
+  "`all-completions' using prescient.el.
+
+STRING is the input. TABLE is a completion table. PRED is a
+predicate that further restricts the matching candidates. POINT
+would be the current point, but it is not used by this function.
+See the function `all-completions' for more information.
+
+This function returns a list of completions whose final `cdr' is
+the length of the prefix string used for completion (which might
+be all or just part of STRING).
+
+When `completion-lazy-hilit' is bound and non-nil, then this
+function sets `completion-lazy-hilit-fn'. Otherwise, if
+`prescient-completion-highlight-matches' is non-nil, this
+function propertizes all of the returned completions using the
+face `prescient-primary-highlight' and the face
+`prescient-secondary-highlight'."
+  ;; `point' is a required argument, but unneeded here.
+  (when-let ((completions (prescient-filter string table pred)))
+    (pcase-let* ((`(,prefix . ,pattern)
+                  (prescient--prefix-and-pattern string table pred))
+                 (maybe-highlighted
+                  (cond
+                   ((bound-and-true-p completion-lazy-hilit)
+                    (setq completion-lazy-hilit-fn
+                          (apply-partially
+                           #'prescient--highlight-candidate
+                           (prescient-filter-regexps pattern 'with-group)
+                           (prescient-ignore-case-p pattern)))
+                    completions)
+                   (prescient-completion-highlight-matches
+                    (prescient--highlight-candidates pattern completions))
+                   (t
+                    completions))))
+      (nconc maybe-highlighted (length prefix)))))
+
+;;;###autoload
+(defun prescient-try-completion (string table &optional pred point)
+  "`try-completion' using Prescient.
+
+STRING is the input.  TABLE is a completion table.  PRED is a
+predicate.  POINT is the current point.  See the function
+`try-completion' for more information.
+
+If there are no matches, this function returns nil. If the only
+match equals STRING, this function returns t. Otherwise, this
+function returns a cons cell of the completed string and its
+length. If there is more than one match, that completed string is
+actually just the input, in which case nothing happens."
+  (when-let ((completions (prescient-filter string table pred)))
+    (if (cdr completions)
+        (cons string point) ; Multiple matches
+      (let ((match (car completions)))
+        (if (equal string match)
+            t ; Literal input equals only match.
+          ;; Otherwise, return the match and move point to its end.
+          (let* ((prefix (car (prescient--prefix-and-pattern
+                               string table pred)))
+                 (full (concat prefix match)))
+            (cons full (length full))))))))
+
+;;;;; Setting up the completion style
+
+;;;###autoload
+(add-to-list
+ 'completion-styles-alist
+ '( prescient prescient-try-completion prescient-all-completions
+    "Filtering using prescient.el.
+For sorting, see the function `prescient-completion-sort'."))
+
+;;;;; Component functions for completion-style minor modes
+
+;; These functions are used to implement the integration packages
+;; for Corfu and Vertico, which use completion styles.
+
+(defconst prescient--completion-recommended-styles '(prescient basic)
+  "Recommended completions styles for using `prescient'.")
+
+(defconst prescient--completion-recommended-overrides
+  '(;; Include `partial-completion' to enable wildcards and
+    ;; partial paths.
+    (file (styles basic partial-completion))
+    ;; Eglot forces `flex' by default.
+    (eglot (styles prescient basic)))
+  "Recommended completion-category overrides for using prescient.")
+
+(defconst prescient--completion-settings-vars
+  '( completion-styles completion-category-overrides
+     completion-category-defaults)
+  "Variables that are changed to configure filtering.")
+
+(defvar prescient--completion-old-styles nil
+  "Previous value of `completion-styles'.")
+
+(defvar prescient--completion-old-overrides nil
+  "Previous value of `completion-category-overrides'.")
+
+(defvar prescient--completion-old-defaults nil
+  "Previous value of `completion-category-defaults'.")
+
+(defconst prescient--completion-old-vars
+  '( prescient--completion-old-styles
+     prescient--completion-old-overrides
+     prescient--completion-old-defaults)
+  "Variables used to store old settings.")
+
+(cl-defun prescient--completion-apply-completion-settings
+    (&key (styles prescient--completion-recommended-styles)
+          (overrides prescient--completion-recommended-overrides))
+  "Modify the user options and variables.
+
+STYLES is the new `completion-styles'. OVERRIDES is new
+overrides for `completion-category-overrides'.
+`completion-category-defaults' is set to nil. These variables
+are listed in `prescient--completion-settings-vars'.
+
+While there are recommended settings, these can be overridden by
+user options in the extension packages."
+  (setq completion-styles styles
+        completion-category-defaults nil)
+
+  (cl-symbol-macrolet
+      ((category-setting-overrides
+        (alist-get setting
+                   (alist-get category completion-category-overrides))))
+    (cl-loop for (category . overrides)
+             in overrides
+             do (cl-loop for (setting . values) in overrides
+                         do (setf category-setting-overrides values)))))
+
+(defun prescient--completion-save-completion-settings ()
+  "Save the old completion filtering settings.
+
+Values are saved in `prescient--completion-old-styles',
+`prescient--completion-old-defaults', and
+`prescient--completion-old-overrides', which are listed in
+`prescient--completion-old-vars'."
+  (setq prescient--completion-old-styles completion-styles
+        prescient--completion-old-defaults completion-category-defaults)
+
+  (cl-symbol-macrolet
+      ((category-setting-overrides
+        (alist-get setting
+                   (alist-get category completion-category-overrides))))
+    (setq prescient--completion-old-overrides
+          (cl-loop
+           for (category . overrides)
+           in prescient--completion-recommended-overrides
+           collect
+           `(,category ,@(cl-loop
+                          for (setting . _) in overrides
+                          collect
+                          `(,setting ,@category-setting-overrides)))))))
+
+(cl-defun prescient--completion-restore-completion-settings
+    (&key (styles prescient--completion-recommended-styles)
+          (overrides prescient--completion-recommended-overrides))
+  "Restore the old settings.
+
+STYLES is what `completion-styles' was changed to. OVERRIDES are
+the overrides that were changed in `completion-category-overrides'.
+
+If the current values of the settings variables do not match the
+changes made by `prescient--completion-apply-completion-settings',
+then we don't restore the previous values and instead only try to
+remove usages of the `prescient' completion style."
+  ;; Try to revert back to old settings, or at least not use the
+  ;; `prescient' style.
+  (if (equal completion-styles styles)
+      (setq completion-styles prescient--completion-old-styles)
+    (cl-callf2 remq 'prescient completion-styles))
+
+  (cl-loop for (key . val) in prescient--completion-old-defaults
+           unless (alist-get key completion-category-defaults)
+           do (setf (alist-get key completion-category-defaults) val))
+
+  (cl-symbol-macrolet
+      ((category-setting-overrides
+        (alist-get
+         setting
+         (alist-get category completion-category-overrides))))
+    (cl-loop
+     ;; These two trees should have the same structure by this
+     ;; point. We want to try to avoid undoing any changes that were
+     ;; made after the mode was enabled.
+     for (category . new-overrides)
+     in overrides
+     for (_ . old-overrides)
+     in prescient--completion-old-overrides
+     do (cl-loop
+         for (setting . new-values) in new-overrides
+         for (_ . old-values) in old-overrides
+         if (equal category-setting-overrides new-values)
+         do (setf category-setting-overrides old-values)
+         else do (cl-callf2 remq 'prescient category-setting-overrides)))))
+
+(defvar-local prescient--completion-vars-already-local nil
+  "Variables of interest that were already buffer local.
+
+Extension packages might wish to configure the variables listed
+in `prescient--completion-settings-vars' buffer locally, whose
+localness should be undone when the extension mode is disabled.
+This list is to prevent extension modes from killing variables
+that were already local when the mode was enabled.")
+
+(defun prescient--completion-make-vars-local ()
+  "Make the settings and restoration variables buffer local.
+
+Record whether a settings variable (for example,
+`completion-styles') was already local in
+`prescient--completion-vars-already-local'.
+
+This must happen before storing old values."
+  (mapc #'make-local-variable prescient--completion-old-vars)
+  (dolist (var prescient--completion-settings-vars)
+    (if (local-variable-p var)
+        (push var prescient--completion-vars-already-local)
+      (make-local-variable var))))
+
+(defun prescient--completion-kill-local-vars ()
+  "Kill local settings and restoration variables.
+
+Don't kill the variables if they are members of
+`prescient--completion-vars-already-local'.
+
+This must happen after restoring old values."
+  (dolist (var prescient--completion-settings-vars)
+    (unless (memq var prescient--completion-vars-already-local)
+      (kill-local-variable var)))
+  (setq prescient--completion-vars-already-local nil))
+
+;;;; Toggling commands
+;; These commands are meant to be bound in a completion UI, in which
+;; `prescient-filter-method' can be bound buffer locally.
+
+(defconst prescient--toggle-vars
+  '( prescient-filter-method prescient-use-case-folding
+     prescient-use-char-folding)
+  "Variables that can be changed locally by toggling commands.
+
+An explicit list is needed for Corfu.")
+
+(defvar prescient--toggle-refresh-functions nil
+  "Functions to run to force refreshing the completion UI.
+Functions are added by the integration packages.")
+
+(defun prescient--toggle-refresh ()
+  "Run the UI refresh functions."
+  (run-hooks 'prescient--toggle-refresh-functions))
+
+(defvar prescient-toggle-map (make-sparse-keymap)
+  "Toggling commands for `prescient.el' filters in minibuffer completion.
+This map is automatically bound by the integration packages.")
+
+;;;###autoload
+(defmacro prescient-create-and-bind-toggle-command
+    (filter-type kbd-string)
+  "Create and bind a command to toggle the use of a filter method.
+
+The created command toggles the FILTER-TYPE method on
+or off buffer locally, and doesn't affect the default
+behavior (determined by `prescient-filter-method').
+
+The created command is bound to KBD-STRING in
+`prescient-toggle-map'. This map is itself bound to `M-s'
+in the completion buffer when `selectrum-prescient-mode' or
+`vertico-prescient-mode' are enabled.
+
+FILTER-TYPE is an unquoted symbol that can be used in
+`prescient-filter-method'. KBD-STRING is a string that can be
+passed to `kbd'."
+  (let* ((filter-type-name (symbol-name filter-type)))
+    `(define-key prescient-toggle-map (kbd ,kbd-string)
+       (defun ,(intern (concat "prescient-toggle-" filter-type-name))
+           (arg)                    ; Arg list
+         ,(format
+           "Toggle the \"%s\" filter on or off. With ARG, use only this filter.
+This toggling only affects filtering in the current completion
+buffer. It does not affect the default behavior (determined by
+`prescient-filter-method')."  filter-type-name)
+         (interactive "P")
+
+         ;; Make `prescient-filter-method' buffer-local in the
+         ;; completion buffer. We don't want to accidentally change the
+         ;; user's default behavior.
+         (make-local-variable 'prescient-filter-method)
+
+         (if arg
+             ;; If user provides a prefix argument, set filtering to
+             ;; be a list of only one filter type.
+             (setq prescient-filter-method '(,filter-type))
+
+           ;; Otherwise, if the current setting is a function,
+           ;; evaluate it to get the value.
+           (when (functionp prescient-filter-method)
+             (setq prescient-filter-method
+                   (funcall prescient-filter-method)))
+
+           ;; If we need to add or remove from the list, make sure
+           ;; it's actually a list and not just a symbol.
+           (when (symbolp prescient-filter-method)
+             (setq prescient-filter-method
+                   (list prescient-filter-method)))
+
+           (if (equal prescient-filter-method '(,filter-type))
+               ;; Make sure the user doesn't accidentally disable all
+               ;; filtering.
+               (user-error
+                ,(concat
+                  "Prescient.el: Can't toggle off only active filter method: "
+                  filter-type-name))
+
+             (setq prescient-filter-method
+                   (if (memq ',filter-type prescient-filter-method)
+                       ;; Even when running `make-local-variable',
+                       ;; it seems `delq' might still modify the
+                       ;; global value, so we use `remq' here.
+                       (remq ',filter-type prescient-filter-method)
+                     (cons ',filter-type prescient-filter-method)))))
+
+         ;; After changing `prescient-filter-method', tell the user
+         ;; the new value and update the UI's display.
+         (message "Prescient.el filter is now %s"
+                  prescient-filter-method)
+
+         ;; Call "exhibit" function.
+         (prescient--toggle-refresh)))))
+
+(prescient-create-and-bind-toggle-command anchored "a")
+(prescient-create-and-bind-toggle-command fuzzy "f")
+(prescient-create-and-bind-toggle-command initialism "i")
+(prescient-create-and-bind-toggle-command literal "l")
+(prescient-create-and-bind-toggle-command literal-prefix "P")
+(prescient-create-and-bind-toggle-command prefix "p")
+(prescient-create-and-bind-toggle-command regexp "r")
+
+(defun prescient-toggle-char-fold ()
+  "Toggle character folding in the current completion buffer.
+
+See the user option `prescient-use-char-folding'."
+  (interactive)
+  (setq-local prescient-use-char-folding
+              (not prescient-use-char-folding))
+  (message "Character folding toggled %s"
+           (if prescient-use-char-folding "on" "off"))
+  (prescient--toggle-refresh))
+
+;; This is the same binding used by `isearch-toggle-char-fold'.
+(define-key prescient-toggle-map (kbd "'")
+  #'prescient-toggle-char-fold)
+
+(defun prescient-toggle-case-fold ()
+  "Toggle case folding in the current completion buffer.
+
+If `prescient-use-case-folding' is set to `smart', then this
+toggles whether to use smart case folding or no case folding.
+Otherwise, this toggles between normal case folding and no case
+folding."
+  (interactive)
+  (setq-local prescient-use-case-folding
+              (cond
+               (prescient-use-case-folding
+                (message "Case folding toggled off")
+                nil)
+               ((eq (default-toplevel-value 'prescient-use-case-folding)
+                    'smart)
+                (message "Smart case folding toggled on")
+                'smart)
+               (t
+                (message "Case folding toggled on")
+                t)))
+  (prescient--toggle-refresh))
+
+;; This is the same binding used by `isearch-toggle-case-fold'.
+(define-key prescient-toggle-map (kbd "c")
+  #'prescient-toggle-case-fold)
+
+
+;;;; Closing remarks
 (provide 'prescient)
 
 ;;; prescient.el ends here

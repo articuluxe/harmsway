@@ -6,7 +6,7 @@
 
 ;; Maintainer: Étienne Deparis <etienne@depar.is>
 ;; Author: film42
-;; Version: 1.7.0
+;; Version: 1.8.2
 ;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/dracula/emacs
 
@@ -15,6 +15,92 @@
 ;; A dark color theme available for a number of editors.
 ;; This theme tries as much as possible to follow the consensual
 ;; specification (see URL `https://spec.draculatheme.com/').
+
+;;; News:
+
+;;;; Version 1.8.2
+
+;; Fix ansi-color definition
+;; Support solaire-mode
+
+;;;; Version 1.8.1
+
+;; Fix missing 1.8.0 docstring...
+
+;;;; Version 1.8.0
+
+;; New package support:
+;;
+;; - Add support for ansi-color-names-vector
+;; - Add support for bookmark-face
+;; - Add support for (e)diff-mode. Add dark-red and dark-green new colors
+;; - Add support for eldoc-box
+;; - Add support for elfeed
+;; - Add support for gemini-mode and elpher
+;; - Add support for go-test
+;; - Add support for header-line
+;; - Add support for ivy
+;; - Add support for lsp-ui
+;; - Add support for neotree
+;; - Add support for perspective and mini-modeline
+;; - Add support for reStructuredText
+;; - Add support for selectrum-mode
+;; - Add support for shadow-face
+;; - Add support for speedbar
+;; - Add support for telephone-line
+;; - Add support for tooltip-face
+;; - Add support for tree-sitter and add missing font-lock faces
+;; - Add support for web-mode-css-property-name-face
+;; - Add support for which-key-mode
+;;
+;; - Fix ‘message-cited-text-*’ colors
+;; - Use same color for gnus than message mode and old mu4e-view mode
+;; - Follow dracula color specs for Markdown and Org mode
+;; - Improve readability of company colors
+;; - Improve default mode-line colors
+;; - Set powerline active and inactive dracula colors
+;; - Improve completions (from minibuffer.el) colors
+;;
+;; Terminal related things:
+;;
+;; - Try a new 256 colors palette
+;; - Add a setting to force 24bit colors on 256 colors terms
+;; - Do not advertize dracula-use-24-bit-colors-on-256-colors-terms in README
+;; - Avoid black and black text for TUI applications
+;; - Use a dark menubar on terminals
+;;
+;; Tests related things:
+;;
+;; - Improve a little test script
+;; - Avoid auto-save-default folder creation in test profile
+;; - Remove test profile from melpa package content
+;;
+;; README related things:
+;;
+;; - Remove outdated homebrew instructions
+;; - Update screenshot
+;; - Update install instruction to advertize NonGNU Elpa
+;; - Update README configure section with correct names.
+;; - 📃 Standardize docs with other dracula repositories
+;;
+;; Others:
+;;
+;; - Fix comment before color listing
+;; - Use unspecified-bg/-fg instead of nil color spec
+;; - Use inherit highlight for two matching company faces
+;; - Remove useless , in front of inherited faces
+;; - Remove cl-lib dependency
+;; - Reduce eval call scope
+;; - Little change to file metadata
+;; - Remove some unspecified color specifications
+;; - Alphabetically sort basic faces settings
+;; - Move mode-line faces in basic faces section
+;; - Little adjustments for eglot package
+;; - Remove bg3 as it was very similar to dracula-current
+;; - Rename other-blue to dark-blue
+;; - Colorize shr title as in the other markup modes
+;; - Improve magit faces
+;;
 
 ;;; Code:
 (deftheme dracula)
@@ -69,7 +155,7 @@ following lines in their config file after having load the
 Dracula theme:
 
     (unless (display-graphic-p)
-      (set-face-background 'default \"black\" nil))
+      (set-face-background \\='default \"black\" nil))
 
 There is a lot of discussion behind the 256 colors theme (see URL
 `https://github.com/dracula/emacs/pull/57').  Please take time to
@@ -164,6 +250,35 @@ read it before opening a new issue about your will.")
                (font-lock-warning-face :inherit warning :background ,bg2)
                ;; auto-complete
                (ac-completion-face :underline t :foreground ,dracula-pink)
+               ;; ansi-color
+               (ansi-color-black :foreground ,dracula-bg :background ,dracula-bg)
+               (ansi-color-bright-black :foreground "black" :background "black")
+               (ansi-color-blue :foreground ,dracula-purple :background ,dracula-purple)
+               (ansi-color-bright-blue :foreground ,dracula-purple
+                                       :background ,dracula-purple
+                                       :weight bold)
+               (ansi-color-cyan :foreground ,dracula-cyan :background ,dracula-cyan)
+               (ansi-color-bright-cyan :foreground ,dracula-cyan
+                                       :background ,dracula-cyan
+                                       :weight bold)
+               (ansi-color-green :foreground ,dracula-green :background ,dracula-green)
+               (ansi-color-bright-green :foreground ,dracula-green
+                                        :background ,dracula-green
+                                        :weight bold)
+               (ansi-color-magenta :foreground ,dracula-pink :background ,dracula-pink)
+               (ansi-color-bright-magenta :foreground ,dracula-pink
+                                          :background ,dracula-pink
+                                          :weight bold)
+               (ansi-color-red :foreground ,dracula-red :background ,dracula-red)
+               (ansi-color-bright-red :foreground ,dracula-red
+                                      :background ,dracula-red
+                                      :weight bold)
+               (ansi-color-white :foreground ,dracula-fg :background ,dracula-fg)
+               (ansi-color-bright-white :foreground "white" :background "white")
+               (ansi-color-yellow :foreground ,dracula-yellow :background ,dracula-yellow)
+               (ansi-color-bright-yellow :foreground ,dracula-yellow
+                                         :background ,dracula-yellow
+                                         :weight bold)
                ;; bookmarks
                (bookmark-face :foreground ,dracula-pink)
                ;; company
@@ -768,6 +883,8 @@ read it before opening a new issue about your will.")
                (shr-h6 :foreground ,dracula-orange)
                ;; slime
                (slime-repl-inputed-output-face :foreground ,dracula-purple)
+               ;; solaire-mode
+               (solaire-default-face :background ,bg2)
                ;; spam
                (spam :inherit gnus-summary-normal-read :foreground ,dracula-orange
                      :strike-through t :slant oblique)
@@ -900,24 +1017,7 @@ read it before opening a new issue about your will.")
                       (t                       ; should be only tty-like envs
                        ,(funcall expand-with-func 'cadddr spec))))
                    whole-theme))
-           whole-theme))
-
-  (apply #'custom-theme-set-variables
-         'dracula
-         (let ((get-func
-                (pcase (display-color-cells)
-                  ((pred (<= 16777216)) 'car) ; fully graphical envs
-                  ((pred (<= 256)) 'cadr)     ; terminal withs 256 colors
-                  (_ 'caddr))))               ; should be only tty-like envs
-           `((ansi-color-names-vector
-              [,(funcall get-func (alist-get 'dracula-bg colors))
-               ,(funcall get-func (alist-get 'dracula-red colors))
-               ,(funcall get-func (alist-get 'dracula-green colors))
-               ,(funcall get-func (alist-get 'dracula-yellow colors))
-               ,(funcall get-func (alist-get 'dracula-comment colors))
-               ,(funcall get-func (alist-get 'dracula-purple colors))
-               ,(funcall get-func (alist-get 'dracula-cyan colors))
-               ,(funcall get-func (alist-get 'dracula-fg colors))])))))
+           whole-theme)))
 
 
 ;;;###autoload

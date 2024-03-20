@@ -25,6 +25,10 @@
   "Show outline around mode-line and header."
   :type 'boolean)
 
+(defcustom inkpot-theme-use-black-background nil
+  "Use a black background."
+  :type 'boolean)
+
 ;; Colors from original Vim theme (for reference)
 ;; as of https://github.com/ciaranm/inkpot (Feb 11, 2013)
 
@@ -34,7 +38,7 @@
 (let ((ip-red-dark "#6e2e2e") ; bg:Error
       (ip-red-dark+0.2 "#6d3030") ; bg:DiffDelete
       (ip-red-mid "#af4f4b") ; fg:Title
-      (ip-red-light "#ce4e4e") ; bg:ErrorMsg
+      (ip-red-bright "#ce4e4e") ; bg:ErrorMsg
       ;; (ip-red-light+4.5 "#cc6666") ; sp:SpellBad
 
       (ip-orange-dark "#ad600b") ; fg:doxygenSpecialMultilineDesc fg:doxygenSpecialOnelineDesc
@@ -62,9 +66,9 @@
       (ip-green-bright "#00ff8b") ; fg:User1 fg:Directory
       ;; (ip-green-light "#8fff8b") ; bg:lCursor
 
-      (ip-cyan-dark "#306b8f") ; bg:DiffChange
-      (ip-cyan-mid "#409090") ; fg:PreProc
-      ;; (ip-cyan-bright "#66cccc") ; sp:SpellCap
+      (ip-cyan-mid "#306b8f") ; bg:DiffChange
+      (ip-cyan-bright "#409090") ; fg:PreProc
+      ;; (ip-cyan-light "#66cccc") ; sp:SpellCap
 
       ;; Use name 'slate' as the palette has many de-saturated blues.
       (ip-slate-dark-inverted "#b38363")
@@ -72,6 +76,8 @@
       (ip-slate-dark+7.6 "#2e2e37") ; bg:CursorLine
       (ip-slate-dark+7.9 "#2e2e3f") ; bg:MBENormal bg:MBEChanged bg:PmenuSel
       (ip-slate-dark+15.7 "#3e3e5e") ; bg:StatusLine bg:User1 bg:User2 bg:StatusLineNC bg:VertSplit
+
+      (ip-slate-dark+7.6-bg "#2e2e37") ; ip-slate-dark+7.6, background adjusted.
 
       (ip-slate-mid "#4e4e8f") ; bg:MBEVisibleNormal bg:MBEVisibleChanged bg:Visual bg:Pmenu bg:MatchParen
       (ip-slate-light "#7070a0") ; fg:User2
@@ -87,8 +93,8 @@
       ;; (ip-purple-mid "#4a2a4a") ; bg:DiffText
 
       ;; (ip-pink-dark-3.9 "#cc66cc") ; sp:SpellRare
-      (ip-pink-dark "#c080d0") ; fg:Special fg:SpecialChar fg:perlSpecialMatch fg:perlSpecialString
-      ;;                         fg:cSpecialCharacter fg:cFormat fg:Conceal
+      (ip-pink-bright "#c080d0") ; fg:Special fg:SpecialChar fg:perlSpecialMatch fg:perlSpecialString
+      ;;                           fg:cSpecialCharacter fg:cFormat fg:Conceal
       (ip-pink-light "#ff8bff") ; fg:Identifier fg:Type
 
       ;; Tones.
@@ -105,12 +111,25 @@
       (ip-white "#ffffff") ; fg:ErrorMsg fg:WarningMsg
       ;; End palette colors.
 
+      ;; Colors not from the palette.
+      (ip-slate-dark-hi-1 "#2A2A36") ; ip-slate-dark V  +6 (HSLUV)
+      (ip-slate-dark-hi-2 "#373745") ; ip-slate-dark V +12 (HSLUV)
+
       (box-outline
        (cond
         (inkpot-theme-use-box
          (list :box (list :line-width -1 :color "#7070a0")))
         (t
          nil))))
+
+  (when inkpot-theme-use-black-background
+    (setq ip-slate-dark "#000000")
+    (setq ip-slate-dark+7.6-bg "#181818")
+
+    (setq ip-slate-dark-hi-1 "#131313")
+    (setq ip-slate-dark-hi-2 "#1F1F1F")
+
+    (setq ip-grey+25 "#1E1E1E"))
 
   (custom-theme-set-faces
    ;; Theme name.
@@ -134,9 +153,9 @@
    ;; UI.
    `(button ((t (:underline t :foreground ,ip-pink-light))))
    `(link ((t (:foreground ,ip-pink-light))))
-   `(link-visited ((t (:foreground ,ip-pink-dark)))) ; Not a vim color, just a little darker.
+   `(link-visited ((t (:foreground ,ip-pink-bright)))) ; Not a vim color, just a little darker.
    ;; FIXME.
-   `(widget-field ((t (:foreground ,ip-pink-dark :background ,ip-yellow-bright))))
+   `(widget-field ((t (:foreground ,ip-pink-bright :background ,ip-yellow-bright))))
    ;; Follow other window border colors (mode-line in this case), don't blend in with the fringe.
    `(scroll-bar ((t (:foreground ,ip-grey+73 :background ,ip-slate-dark+15.7))))
 
@@ -145,11 +164,11 @@
    `(font-lock-comment-face ((t (:foreground ,ip-orange-bright))))
    `(font-lock-comment-delimiter-face ((t (:inherit font-lock-comment-face))))
    `(font-lock-doc-face ((t (:foreground ,ip-blue-bright)))) ; Alternate comment face.
-   `(font-lock-doc-markup-face ((t (:foreground ,ip-cyan-mid))))
-   `(font-lock-constant-face ((t (:foreground ,ip-cyan-mid))))
-   `(font-lock-function-name-face ((t (:foreground ,ip-pink-dark))))
+   `(font-lock-doc-markup-face ((t (:foreground ,ip-cyan-bright))))
+   `(font-lock-constant-face ((t (:foreground ,ip-cyan-bright))))
+   `(font-lock-function-name-face ((t (:foreground ,ip-pink-bright))))
    `(font-lock-keyword-face ((t (:foreground ,ip-blue-bright))))
-   `(font-lock-preprocessor-face ((t (:foreground ,ip-cyan-mid))))
+   `(font-lock-preprocessor-face ((t (:foreground ,ip-cyan-bright))))
    `(font-lock-string-face ((t (:foreground ,ip-brown-light :background ,ip-grey+25))))
    `(font-lock-type-face ((t (:foreground ,ip-pink-light))))
    '(font-lock-variable-name-face ((t nil)))
@@ -157,7 +176,7 @@
 
    `(font-lock-negation-char-face ((t (:foreground ,ip-cream-light)))) ; currently no change.
    `(font-lock-regexp-grouping-construct ((t (:foreground ,ip-blue-bright :weight bold))))
-   `(font-lock-regexp-grouping-backslash ((t (:foreground ,ip-pink-dark :weight bold))))
+   `(font-lock-regexp-grouping-backslash ((t (:foreground ,ip-pink-bright :weight bold))))
 
    ;; Mode line.
    ;; Follow GVIM, inactive mode-line isn't bold.
@@ -169,7 +188,7 @@
    `(mode-line-buffer-id ((t (:foreground ,ip-grey+73 :bold nil ,@box-outline))))
 
 
-   `(hl-line ((t (:background ,ip-slate-dark+7.6))))
+   `(hl-line ((t (:background ,ip-slate-dark+7.6-bg))))
 
    `(show-paren-match-face ((t (:background ,ip-slate-mid))))
    `(show-paren-match ((t (:background ,ip-slate-mid))))
@@ -180,7 +199,7 @@
    ;; Note: original theme doesn't show different colors here,
    ;; simply use bold for 'isearch'.
    `(isearch ((t (:foreground ,ip-grey+19 :background ,ip-brown-mid :bold t))))
-   `(isearch-fail ((t (:foreground ,ip-white :background ,ip-red-light))))
+   `(isearch-fail ((t (:foreground ,ip-white :background ,ip-red-bright))))
    `(lazy-highlight ((t (:foreground ,ip-grey+19 :background ,ip-brown-mid))))
 
    `(minibuffer-prompt ((t (:foreground ,ip-slate-light+5.5 :bold t))))
@@ -193,11 +212,16 @@
    '(whitespace-space ((nil (:foreground "#434357"))))
    '(whitespace-tab ((nil (:foreground "#434357"))))
 
+   ;; `eglot`.
+   `(eglot-inlay-hint-face ((t (:foreground ,ip-slate-light+5.9 :background ,ip-slate-dark+7.6-bg))))
+   `(eglot-type-hint-face ((t (:foreground ,ip-slate-light+5.9 :background ,ip-slate-dark+7.6-bg))))
+   `(eglot-parameter-hint-face ((t (:foreground ,ip-slate-light+5.9 :background ,ip-slate-dark+7.6-bg))))
+
    ;; xref mode.
    `(xref-line-number ((t (:foreground ,ip-slate-lite+17.7 :background ,ip-grey+18))))
 
    ;; tab-bar-mode.
-   `(tab-bar ((t (:foreground ,ip-grey+73 :background ,ip-slate-dark+7.6 :bold t))))
+   `(tab-bar ((t (:foreground ,ip-grey+73 :background ,ip-slate-dark+7.6-bg :bold t))))
    `(tab-bar-tab ((t (:foreground ,ip-grey+73 :background ,ip-slate-dark+15.7 ,@box-outline))))
    `(tab-bar-tab-inactive ((t (:foreground ,ip-grey+73 :background ,ip-slate-dark+15.7 :bold nil :italic t))))
 
@@ -227,22 +251,22 @@
    `(diff-file-header ((t (:foreground ,ip-brown-light+30.9 :background ,ip-grey+25))))
    ;; These are displayed side-by-side, a rare exception where a black
    ;; background is useful to visually separate content.
-   `(diff-hunk-header ((t (:foreground ,ip-cyan-mid :background ,ip-black))))
-   `(diff-function ((t (:foreground ,ip-yellow-bright :background ,ip-black))))
+   `(diff-hunk-header ((t (:foreground ,ip-cream-light :background ,ip-slate-dark+15.7))))
+   `(diff-function ((t (:foreground ,ip-yellow-bright :background ,ip-slate-dark+15.7))))
 
    ;; ediff-mode
    `(ediff-current-diff-A ((t (:foreground ,ip-cream-light :background ,ip-red-mid))))
    `(ediff-current-diff-Ancestor ((t (:foreground ,ip-cream-light :background ,ip-red-mid))))
    `(ediff-current-diff-B ((t (:foreground ,ip-cream-light :background ,ip-green-mid))))
-   `(ediff-current-diff-C ((t (:foreground ,ip-cream-light :background ,ip-cyan-dark))))
+   `(ediff-current-diff-C ((t (:foreground ,ip-cream-light :background ,ip-cyan-mid))))
    `(ediff-even-diff-A ((t (:background ,ip-slate-dark+7.6))))
    `(ediff-even-diff-Ancestor ((t (:background ,ip-slate-dark+7.6))))
    `(ediff-even-diff-B ((t (:background ,ip-slate-dark+7.6))))
    `(ediff-even-diff-C ((t (:background ,ip-slate-dark+7.6))))
-   `(ediff-fine-diff-A ((t (:foreground ,ip-cream-light :background ,ip-red-light :weight bold))))
-   `(ediff-fine-diff-Ancestor ((t (:foreground ,ip-cream-light :background ,ip-red-light weight bold))))
+   `(ediff-fine-diff-A ((t (:foreground ,ip-cream-light :background ,ip-red-bright :weight bold))))
+   `(ediff-fine-diff-Ancestor ((t (:foreground ,ip-cream-light :background ,ip-red-bright :weight bold))))
    `(ediff-fine-diff-B ((t (:foreground ,ip-cream-light :background ,ip-green-bright :weight bold))))
-   `(ediff-fine-diff-C ((t (:foreground ,ip-cream-light :background ,ip-cyan-mid :weight bold))))
+   `(ediff-fine-diff-C ((t (:foreground ,ip-cream-light :background ,ip-cyan-bright :weight bold))))
    `(ediff-odd-diff-A ((t (:background ,ip-slate-dark+15.7))))
    `(ediff-odd-diff-Ancestor ((t (:background ,ip-slate-dark+15.7))))
    `(ediff-odd-diff-B ((t (:background ,ip-slate-dark+15.7))))
@@ -254,27 +278,27 @@
    `(dired-symlink ((t (:foreground ,ip-yellow-bright :bold t))))
    `(dired-broken-symlink ((t (:foreground ,ip-yellow-bright :background ,ip-red-dark :bold t))))
 
-   `(w3m-anchor ((t (:foreground ,ip-pink-dark))))
-   `(info-xref ((t (:foreground ,ip-cyan-mid))))
-   `(info-menu-star ((t (:foreground ,ip-cyan-mid))))
+   `(w3m-anchor ((t (:foreground ,ip-pink-bright))))
+   `(info-xref ((t (:foreground ,ip-cyan-bright))))
+   `(info-menu-star ((t (:foreground ,ip-cyan-bright))))
    `(message-cited-text ((t (:foreground ,ip-orange-bright))))
    '(gnus-cite-face-1 ((t (:foreground "#708090"))))
    `(gnus-cite-face-2 ((t (:foreground ,ip-orange-light))))
    '(gnus-cite-face-3 ((t (:foreground "#ad7fa8"))))
    '(gnus-cite-face-4 ((t (:foreground "#4090904"))))
-   `(gnus-group-mail-1-empty-face ((t (:foreground ,ip-pink-dark))))
-   `(gnus-group-mail-1-face ((t (:foreground ,ip-pink-dark :bold t))))
-   `(gnus-group-mail-2-empty-face ((t (:foreground ,ip-cyan-mid))))
-   `(gnus-group-mail-2-face ((t (:foreground ,ip-cyan-mid :bold t))))
+   `(gnus-group-mail-1-empty-face ((t (:foreground ,ip-pink-bright))))
+   `(gnus-group-mail-1-face ((t (:foreground ,ip-pink-bright :bold t))))
+   `(gnus-group-mail-2-empty-face ((t (:foreground ,ip-cyan-bright))))
+   `(gnus-group-mail-2-face ((t (:foreground ,ip-cyan-bright :bold t))))
    '(gnus-group-mail-3-empty-face ((t (:foreground "#506dbd"))))
    `(gnus-group-mail-3-face ((t (:foreground ,ip-orange-bright :bold t))))
    `(gnus-group-mail-3 ((t (:foreground ,ip-orange-bright :bold t))))
    `(gnus-group-mail-low-empty-face ((t (:foreground ,ip-slate-lite+17.7))))
    `(gnus-group-mail-low-face ((t (:foreground,ip-slate-lite+17.7 :bold t))))
-   `(gnus-group-news-1-empty-face ((t (:foreground ,ip-pink-dark))))
-   `(gnus-group-news-1-face ((t (:foreground ,ip-pink-dark :bold t))))
-   `(gnus-group-news-2-empty-face ((t (:foreground ,ip-cyan-mid))))
-   `(gnus-group-news-2-face ((t (:foreground ,ip-cyan-mid :bold t))))
+   `(gnus-group-news-1-empty-face ((t (:foreground ,ip-pink-bright))))
+   `(gnus-group-news-1-face ((t (:foreground ,ip-pink-bright :bold t))))
+   `(gnus-group-news-2-empty-face ((t (:foreground ,ip-cyan-bright))))
+   `(gnus-group-news-2-face ((t (:foreground ,ip-cyan-bright :bold t))))
    '(gnus-group-news-3-empty-face ((t (:foreground "#506dbd"))))
    '(gnus-group-news-3-empty ((t (:foreground "#506dbd"))))
    `(gnus-group-news-3-face ((t (:foreground ,ip-orange-bright :bold t))))
@@ -283,16 +307,16 @@
    '(gnus-header-name-face ((t (:foreground "#ab60ed" :bold t))))
    `(gnus-header-from ((t (:foreground ,ip-orange-bright :bold t))))
    `(gnus-header-subject ((t (:foreground ,ip-blue-bright))))
-   `(gnus-header-content ((t (:foreground ,ip-cyan-mid :italic t))))
+   `(gnus-header-content ((t (:foreground ,ip-cyan-bright :italic t))))
    `(gnus-header-newsgroups-face ((t (:foreground ,ip-pink-light :bold t :italic t))))
    '(gnus-signature-face ((t (:foreground "#708090" :italic t))))
    `(gnus-summary-cancelled-face ((t (:foreground ,ip-orange-bright))))
    `(gnus-summary-cancelled ((t (:foreground ,ip-orange-bright))))
    '(gnus-summary-high-ancient-face ((t (:foreground "#ab60ed" :bold t))))
-   `(gnus-summary-high-read-face ((t (:foreground ,ip-pink-dark :bold t))))
+   `(gnus-summary-high-read-face ((t (:foreground ,ip-pink-bright :bold t))))
    `(gnus-summary-high-ticked-face ((t (:foreground ,ip-red-mid :bold t))))
    `(gnus-summary-high-unread-face ((t (:foreground ,ip-brown-light :bold t))))
-   `(gnus-summary-low-ancient-face ((t (:foreground ,ip-pink-dark :italic t))))
+   `(gnus-summary-low-ancient-face ((t (:foreground ,ip-pink-bright :italic t))))
    '(gnus-summary-low-read-face ((t (:foreground "#ab60ed" :italic t))))
    `(gnus-summary-low-ticked-face ((t (:foreground ,ip-red-mid :italic t))))
    `(gnus-summary-low-unread-face ((t (:foreground ,ip-brown-light :italic t))))
@@ -306,12 +330,12 @@
    '(message-header-name-face ((t (:foreground "#ab60ed"))))
    '(message-header-name ((t (:foreground "#ab60ed"))))
    `(message-header-newsgroups-face ((t (:foreground ,ip-pink-light :bold t italic t))))
-   `(message-header-other-face ((t (:foreground ,ip-cyan-mid))))
-   `(message-header-other ((t (:foreground ,ip-cyan-mid))))
-   `(message-header-xheader-face ((t (:foreground ,ip-cyan-mid))))
+   `(message-header-other-face ((t (:foreground ,ip-cyan-bright))))
+   `(message-header-other ((t (:foreground ,ip-cyan-bright))))
+   `(message-header-xheader-face ((t (:foreground ,ip-cyan-bright))))
    `(message-header-subject ((t (:foreground ,ip-blue-bright))))
    `(message-header-to ((t (:foreground ,ip-orange-bright))))
-   `(message-header-cc ((t (:foreground ,ip-cyan-mid))))
+   `(message-header-cc ((t (:foreground ,ip-cyan-bright))))
    `(font-latex-bold-face ((t (:foreground ,ip-orange-bright))))
    `(font-latex-italic-face ((t (:foreground ,ip-blue-bright :italic t))))
    '(font-latex-string-face ((t (:foreground "#708090"))))
@@ -324,7 +348,7 @@
    ;; Org-Mode.
    '(org-hide ((t (:foreground "#708090"))))
    `(org-level-1 ((t (:foreground ,ip-slate-lite+17.7 :height 1.0 :bold t))))
-   `(org-level-2 ((t (:foreground ,ip-cyan-mid :height 1.0 :bold nil))))
+   `(org-level-2 ((t (:foreground ,ip-cyan-bright :height 1.0 :bold nil))))
    `(org-level-3 ((t (:foreground ,ip-orange-light :height 1.0 :bold t))))
    `(org-level-4 ((t (:foreground ,ip-red-mid :height 1.0 :bold nil))))
    `(org-date ((t (:underline t :foreground ,ip-brown-bright))))
@@ -337,16 +361,16 @@
    '(org-quote ((t (:inherit org-block :slant italic))))
    '(org-verse ((t (:inherit org-block :slant italic))))
    `(org-todo ((t (:foreground ,ip-red-mid :bold t))))
-   `(org-done ((t (:foreground ,ip-cyan-mid :bold t))))
-   `(org-warning ((t (:underline t :foreground ,ip-cyan-mid))))
+   `(org-done ((t (:foreground ,ip-cyan-bright :bold t))))
+   `(org-warning ((t (:underline t :foreground ,ip-cyan-bright))))
    `(org-agenda-structure ((t (:weight bold :foreground ,ip-red-mid))))
-   `(org-agenda-date ((t (:foreground ,ip-cyan-mid))))
+   `(org-agenda-date ((t (:foreground ,ip-cyan-bright))))
    `(org-agenda-date-weekend ((t (:weight normal :foreground,ip-slate-lite+17.7))))
    `(org-agenda-date-today ((t (:weight bold :foreground ,ip-orange-bright))))
 
    ;; reStructuredText.
    `(rst-external ((t (:foreground ,ip-pink-light))))
-   `(rst-definition ((t (:foreground ,ip-cyan-mid))))
+   `(rst-definition ((t (:foreground ,ip-cyan-bright))))
    `(rst-directive ((t (:foreground ,ip-blue-bright))))
    '(rst-emphasis1 ((t (:italic t))))
    '(rst-emphasis2 ((t (:weight bold t))))
@@ -371,8 +395,17 @@
 
    ;; Colors for popular plugins.
 
+   ;; vundo (elpa).
+   `(vundo-node ((t (:foreground ,ip-slate-dark+15.7))))
+   `(vundo-stem ((t (:foreground ,ip-slate-dark+15.7))))
+   `(vundo-branch-stem ((t (:foreground ,ip-slate-light))))
+   `(vundo-saved ((t (:foreground ,ip-slate-light))))
+   `(vundo-last-saved ((t (:foreground ,ip-cream-light))))
+   `(vundo-highlight ((t (:foreground ,ip-yellow-bright))))
+
    ;; anzu (melpa)
-   `(anzu-mode-line ((t (:foreground ,ip-grey+93))))
+   `(anzu-mode-line ((t (:foreground ,ip-grey+93 :weight normal))))
+   `(anzu-mode-line-no-match ((t (:foreground ,ip-grey+73 :weight normal))))
 
    ;; highlight-numbers (melpa).
    `(highlight-numbers-number ((t (:foreground ,ip-brown-bright))))
@@ -391,11 +424,11 @@
    `(lsp-face-semhl-comment ((t (:foreground ,ip-grey+25))))
 
    ;; Without this, inherit from `font-lock-type-face' face which isn't so nice.
-   `(lsp-face-semhl-interface ((t (:foreground ,ip-pink-dark))))
+   `(lsp-face-semhl-interface ((t (:foreground ,ip-pink-bright))))
    `(lsp-face-semhl-parameter ((t (:foreground ,ip-cream-light))))
    `(lsp-face-semhl-variable ((t (:foreground ,ip-cream-light))))
    `(lsp-face-semhl-constant ((t (:foreground ,ip-cream-light))))
-   `(lsp-face-semhl-function ((t (:foreground ,ip-pink-dark))))
+   `(lsp-face-semhl-function ((t (:foreground ,ip-pink-bright))))
 
    ;; `dap-mode' (melpa).
    `(dap-ui-marker-face ((t (:background ,ip-slate-dark+7.6))))
@@ -428,7 +461,9 @@
 
    ;; fancy-dabbrev (melpa).
    ;; Colors selected from the palette to be a balance: not too intrusive, not too faded.
-   `(fancy-dabbrev-preview-face ((t (:foreground ,ip-slate-light+5.5 :background ,ip-slate-dark+7.6))))
+   `(fancy-dabbrev-preview-face ((t (:foreground ,ip-slate-light+5.5 :background ,ip-slate-dark+7.6-bg))))
+   ;; mono-complete (melpa)
+   `(mono-complete-preview-face ((t (:foreground ,ip-slate-light+5.5 :background ,ip-slate-dark+7.6-bg))))
 
    ;; neotree (melpa).
    `(neo-banner-face ((t (:foreground ,ip-orange-bright))))
@@ -439,12 +474,16 @@
    `(neo-file-link-face ((t (:foreground ,ip-cream-light))))
 
    ;; highlight-indent-guides (melpa).
-   `(highlight-indent-guides-odd-face ((t (:background ,ip-slate-dark+15.7))))
-   `(highlight-indent-guides-even-face ((t (:background ,ip-slate-dark+7.9))))
+   `(highlight-indent-guides-odd-face ((t (:background ,ip-slate-dark-hi-2))))
+   `(highlight-indent-guides-even-face ((t (:background ,ip-slate-dark-hi-1))))
 
    ;; hl-indent-scope (melpa).
-   `(hl-indent-scope-odd-face ((t (:background ,ip-slate-dark+15.7))))
-   `(hl-indent-scope-even-face ((t (:background ,ip-slate-dark+7.9))))
+   `(hl-indent-scope-odd-face ((t (:background ,ip-slate-dark-hi-2))))
+   `(hl-indent-scope-even-face ((t (:background ,ip-slate-dark-hi-1))))
+
+   ;; visual-indentation-mode (stand alone package).
+   `(visual-indentation-light-face ((t (:background ,ip-slate-dark-hi-2))))
+   `(visual-indentation-dark-face ((t (:background ,ip-slate-dark-hi-1))))
 
    ;; highlight-operators (melpa).
    `(highlight-operators-face ((t (:foreground ,ip-blue-bright))))
@@ -454,10 +493,6 @@
    `(highlight-symbol-face ((t (:background ,ip-slate-dark+15.7))))
    ;; idle-highlight-mode (melpa).
    `(idle-highlight ((t (:background ,ip-slate-dark+15.7))))
-
-   ;; visual-indentation-mode (stand alone package).
-   `(visual-indentation-light-face ((t (:background ,ip-slate-dark+15.7))))
-   `(visual-indentation-dark-face ((t (:background ,ip-slate-dark+7.9))))
 
    ;; swiper (melpa).
    ;; NOTE: This color is needed as a more subtle tone that doesn't make comments unreadable.

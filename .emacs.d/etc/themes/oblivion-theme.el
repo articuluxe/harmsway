@@ -2,7 +2,7 @@
 
 ;; SPDX-License-Identifier: GPL-2.0-or-later
 ;; Author: Campbell Barton <ideasman42@gmail.com>
-;; URL: https://codeberg.org/ideasman42/emacs-oblivion-theme
+;; URL: https://codeberg.org/ideasman42/emacs-theme-oblivion
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.1"))
 
@@ -59,7 +59,8 @@
 
       ;; Blends, not part of GEdit theme.
       (ob-aluminium6+16 "#464f52")
-      (ob-aluminium6+5 "#3a4144"))
+      (ob-aluminium6+5 "#3a4144")
+      (ob-aluminium6-5 "#232829"))
 
   (custom-theme-set-faces
    ;; Theme name.
@@ -142,6 +143,11 @@
    `(whitespace-trailing ((nil (:background ,ob-aluminium4))))
    `(whitespace-space ((nil (:foreground ,ob-aluminium4))))
    `(whitespace-tab ((nil (:background ,ob-aluminium6+5 :foreground ,ob-aluminium4))))
+
+   ;; `eglot`.
+   `(eglot-inlay-hint-face ((t (:foreground ,ob-aluminium4 :background ,ob-aluminium6-5))))
+   `(eglot-type-hint-face ((t (:foreground ,ob-chameleon1 :background ,ob-aluminium6-5))))
+   `(eglot-parameter-hint-face ((t (:foreground ,ob-aluminium4 :background ,ob-aluminium6-5))))
 
    ;; xref mode.
    `(xref-line-number ((t (:background ,ob-aluminium6+16 :foreground ,ob-aluminium4))))
@@ -267,6 +273,15 @@
 
    ;; Colors for popular plugins.
 
+   ;; vundo (elpa).
+   `(vundo-node ((t (:foreground ,ob-aluminium4))))
+   `(vundo-stem ((t (:foreground ,ob-aluminium4))))
+   `(vundo-saved ((t (:foreground ,ob-aluminium2))))
+   `(vundo-highlight ((t (:foreground ,ob-butter2))))
+
+   ;; anzu (melpa)
+   `(anzu-mode-line ((t (:foreground ,ob-skyblue1-2-blend))))
+
    ;; highlight-numbers (melpa).
    `(highlight-numbers-number ((t (:foreground ,ob-butter2))))
 
@@ -315,7 +330,9 @@
 
    ;; fancy-dabbrev (melpa).
    ;; Colors selected from the palette to be a balance: not too intrusive, not too faded.
-   `(fancy-dabbrev-preview-face ((t (:foreground ,ob-aluminium4 :background ,ob-aluminium6+5))))
+   `(fancy-dabbrev-preview-face ((t (:foreground ,ob-aluminium5 :background ,ob-aluminium6-5))))
+   ;; mono-complete (melpa).
+   `(mono-complete-preview-face ((t (:foreground ,ob-aluminium5 :background ,ob-aluminium6-5))))
 
    ;; neotree (melpa).
    `(neo-banner-face ((t (:foreground ,ob-chocolate2))))

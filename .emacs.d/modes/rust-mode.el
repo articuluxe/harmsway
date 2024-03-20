@@ -1,7 +1,7 @@
 ;;; rust-mode.el --- A major-mode for editing Rust source code -*-lexical-binding: t-*-
 
 ;; Version: 1.0.5
-;; Author: Mozilla
+;; Author: Mozilla <rust-mode@noreply.github.com>
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1"))
@@ -74,6 +74,9 @@ instead of `prog-mode'. This option requires emacs29+."
 (if (and (version<= "29.1" emacs-version) rust-mode-treesitter-derive)
     (require 'rust-mode-treesitter)
   (require 'rust-prog-mode))
+
+;;;###autoload
+(autoload 'rust-mode "rust-mode" "Major mode for Rust code." t)
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))

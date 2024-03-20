@@ -1,11 +1,13 @@
 ;;; org-vcard.el --- org-mode support for vCard export and import.
 
-;; Copyright (C) 2014-2019,2021-2022 Alexis <flexibeast@gmail.com>, Will Dey <will123dey@gmail.com>
+;; Copyright (C) 2014-2019,2021-2022 Alexis <flexibeast@gmail.com>
+;; Copyright (C) 2019 Will Dey <will123dey@gmail.com>
+;; Copyright (C) 2024 pinoaffe <pinoaffe@gmail.com>
 
-;; Author: Alexis <flexibeast@gmail.com>, Will Dey <will123dey@gmail.com>
-;; Maintainer: Alexis <flexibeast@gmail.com>
+;; Author: Alexis <flexibeast@gmail.com>, Will Dey <will123dey@gmail.com>, pinoaffe <pinoaffe@gmail.com>
+;; Maintainer: pinoaffe <pinoaffe@gmail.com>
 ;; Created: 2014-07-31
-;; URL: https://github.com/flexibeast/org-vcard
+;; URL: https://github.com/pinoaffe/org-vcard
 ;; Keywords: outlines, org, vcard
 
 ;;
@@ -28,9 +30,8 @@
 
 ;;; Commentary:
 
-;; *This project is currently unmaintained, and needs a new
-;; maintainer. If you wish to take maintainership, please email
-;; Alexis.*
+;; *As of march 2024, I (pinoaffe) have taken over maintainership of
+;; org-vcard.*
 
 ;; `org-vcard' is a package for exporting and importing
 ;; [vCards](https://en.wikipedia.org/wiki/Vcard) from within [GNU
@@ -224,7 +225,7 @@
 ;; * as a TODO item, or
 
 ;; * in [the project's "Issues" section on
-;; GitHub](https://github.com/flexibeast/org-vcard/issues),
+;; GitHub](https://github.com/pinoaffe/org-vcard/issues),
 
 ;; please create a new issue with as much detail as possible, including:
 
@@ -279,6 +280,7 @@
 
 (require 'org)
 (require 'org-element)
+(require 'ox)
 (require 'subr-x)
 
 (defconst org-vcard-mode-keymap (make-sparse-keymap))
@@ -597,9 +599,7 @@ PROPERTY-NAME must be a string containing a vCard property name."
                      (file-name-nondirectory style))))))))))
     (sort the-list
           #'(lambda (a b)
-              (if (string< (car a) (car b))
-                  t
-                nil)))))
+              (string< (car a) (car b))))))
 
 (defun org-vcard--create-styles-languages-mappings ()
   "Create a data structure for use by `org-vcard-styles-languages-mappings'."
@@ -611,9 +611,7 @@ PROPERTY-NAME must be a string containing a vCard property name."
                ;; list.
                (sort (directory-files style-dir)
                      #'(lambda (a b)
-                         (if (not (string< a b))
-                             t
-                           nil))))
+                         (not (string< a b)))))
         (if (and
              (not (string= "." style))
              (not (string= ".." style)))
@@ -631,9 +629,7 @@ PROPERTY-NAME must be a string containing a vCard property name."
                               "mappings"))
                             t)
                            #'(lambda (a b)
-                               (if (not (string< a b))
-                                   t
-                                 nil))))
+                               (not (string< a b)))))
                   (if (and
                        (not
                         (string=
@@ -903,106 +899,47 @@ DESTINATION must be either \"buffer\" or \"file\"."
                               (repeat (cons string string))))))))
   :group 'org-vcard)
 
+(defun org-vcard--sort-by-car (list)
+  (sort list
+        (lambda (a b)
+          (string< (car a) (car b)))))
+
+(defun org-vcard--conversion-menu-helper (exportp)
+  (mapcar (lambda (style)
+            (cons (concat (if exportp
+                              "from "
+                            "to ")
+                          (car style))
+                  (mapcar (lambda (language)
+                            (cons (car language)
+                                  (mapcar (lambda (version)
+                                            (vector
+                                             (concat (if exportp
+                                                         "to vCard "
+                                                       "from vCard")
+                                                     (car version))
+                                             `(,(if exportp
+                                                    'org-vcard-export-via-menu
+                                                  'org-vcard-import-via-menu)
+                                               ,(car style)
+                                               ,(car language)
+                                               ,(car version))
+                                             t))
+                                          (org-vcard--sort-by-car (cadr language)))))
+                          (org-vcard--sort-by-car (cadr style)))))
+          (org-vcard--sort-by-car org-vcard-styles-languages-mappings)))
+
 (defun org-vcard--create-org-vcard-mode-menu ()
   "Create or recreate the `org-vcard-mode' menu."
   (easy-menu-define org-vcard-menu org-vcard-mode-keymap
     "Menu bar entry for org-vcard"
     `("Org-vCard"
-      ,(let ((export '("Export")))
-         (let ((style-list '()))
-           (dolist (style
-                    (sort (mapcar
-                           'car
-                           org-vcard-styles-languages-mappings)
-                          'string<))
-             (setq style-list
-                   (list (concat "from " style)))
-             (let ((language-list '()))
-               (dolist (language
-                        (sort (mapcar
-                               'car
-                               (cadr
-                                (assoc
-                                 style
-                                 org-vcard-styles-languages-mappings)))
-                              'string<))
-                 (setq language-list (list language))
-                 (let ((version-list '()))
-                   (dolist (version
-                            (sort (mapcar
-                                   'car
-                                   (cadr
-                                    (assoc
-                                     language
-                                     (cadr
-                                      (assoc
-                                       style
-                                       org-vcard-styles-languages-mappings)))))
-                                  'string<))
-                     (setq version-list
-                           (append
-                            version-list
-                            (list
-                             (vector
-                              (concat "to vCard " version)
-                              `(org-vcard-export-via-menu
-                                ,style
-                                ,language
-                                ,version)
-                              t)))))
-                   (setq language-list
-                         (append language-list version-list)))
-                 (setq style-list
-                       (append style-list `(,language-list)))))
-             (setq export
-                   (append export `(,style-list)))))
-         export)
-      ,(let ((import '("Import")))
-         (let ((style-list '()))
-           (dolist (style
-                    (sort (mapcar
-                           'car
-                           org-vcard-styles-languages-mappings)
-                          'string<))
-             (setq style-list
-                   (list (concat "to " style)))
-             (let ((language-list '()))
-               (dolist (language
-                        (sort (mapcar
-                               'car
-                               (cadr
-                                (assoc
-                                 style
-                                 org-vcard-styles-languages-mappings)))
-                              'string<))
-                 (setq language-list (list language))
-                 (let ((version-list '()))
-                   (dolist (version
-                            (sort (mapcar
-                                   'car
-                                   (cadr
-                                    (assoc
-                                     language
-                                     (cadr
-                                      (assoc
-                                       style
-                                       org-vcard-styles-languages-mappings)))))
-                                  'string<))
-                     (setq version-list
-                           (append version-list
-                                   (list
-                                    (vector
-                                     (concat "from vCard " version)
-                                     `(org-vcard-import-via-menu
-                                       ,style
-                                       ,language
-                                       ,version)
-                                     t)))))
-                   (setq language-list (append language-list version-list)))
-                 (setq style-list (append style-list `(,language-list)))))
-             (setq import (append import `(,style-list)))))
-         import)
+      ("Export" .
+       ,(org-vcard--conversion-menu-helper t))
+      ("Import" .
+       ,(org-vcard--conversion-menu-helper nil))
       ["Customize" (customize-group 'org-vcard) t])))
+
 (org-vcard--create-org-vcard-mode-menu)
 
 
@@ -1530,7 +1467,46 @@ variable. DIRECTION must be either 'export or 'import."
         (org-vcard--create-styles-functions))
   (setq org-vcard-styles-languages-mappings
         (org-vcard--create-styles-languages-mappings))
-  (org-vcard-create-org-vcard-mode-menu))
+  (org-vcard--create-org-vcard-mode-menu))
+
+
+;;
+;; Export backend
+;;
+
+(defun org-vcard-export-helper (&optional mode async subtreep visible-only body-only ext-plist)
+  (let ((filename (org-export-output-file-name ".vcf" subtreep))
+        (source (if (region-active-p)
+                    "region"
+                  (if subtreep
+                      "subtree"
+                    "buffer"))))
+    (org-vcard-transfer-helper source
+                               "buffer"
+                               org-vcard-default-style
+                               org-vcard-default-language
+                               org-vcard-default-version
+                               'export)
+    (when (or (equal mode 'file) (equal mode 'open))
+      (with-current-buffer (get-buffer "*org-vcard-export*")
+        (write-region (point-min) (point-max) filename)))
+    (when (equal mode 'open)
+      (org-open-file org-vcard-default-export-file))))
+
+(defun org-vcard-export-helper-buffer (&optional async subtreep visible-only body-only ext-plist)
+  (org-vcard-export-helper 'buffer async subtreep visible-only body-only ext-plist))
+(defun org-vcard-export-helper-file (&optional async subtreep visible-only body-only ext-plist)
+  (org-vcard-export-helper 'file async subtreep visible-only body-only ext-plist))
+(defun org-vcard-export-helper-open (&optional async subtreep visible-only body-only ext-plist)
+  (org-vcard-export-helper 'open async subtreep visible-only body-only ext-plist))
+
+
+(org-export-define-backend
+    'contacts
+  '()
+  :menu-entry '(?v "Export to VCARD" ((?V "As VCARD buffer" org-vcard-export-helper-buffer)
+                                      (?v "As VCARD file" org-vcard-export-helper-file)
+                                      (?o "As VCARD file and open" org-vcard-export-helper-open))))
 
 
 ;;
@@ -1547,9 +1523,9 @@ When called from Lisp, argument omitted or nil enables the mode, and
  `toggle' toggles the mode.
 
 Enabling org-vcard mode will add an Org-vCard entry to Emacs' menu bar."
-  nil                    ; The initial value.
-  nil                    ; The indicator for the mode line.
-  org-vcard-mode-keymap  ; The minor mode bindings.
+  :init-value nil                ; The initial value.
+  :lighter nil                   ; The indicator for the mode line.
+  :keymap org-vcard-mode-keymap  ; The minor mode bindings.
   :group 'org-vcard)
 
 

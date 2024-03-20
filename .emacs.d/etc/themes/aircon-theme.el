@@ -1,6 +1,6 @@
 ;;; aircon-theme.el --- Cool and legible light theme  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022  Free Software Foundation, Inc.
+;; Copyright (C) 2022, 2024  Free Software Foundation, Inc.
 
 ;; Version: 0.0.6
 ;; Author: Gregory Chamberlain <greg@cosine.blue>
@@ -134,7 +134,7 @@
  '(compilation-error          ((t (:inherit error))))
 
  `(help-key-binding ((t (:inherit (aircon-header)
-                         :box (:color ,aircon-ghost (1 . -1) :line-width)))))
+                         :box (:color ,aircon-ghost :line-width (1 . -1))))))
 
  '(shadow       ((t (:inherit (aircon-scorpion)))))
  '(error        ((t (:inherit (bold aircon-brick)))))

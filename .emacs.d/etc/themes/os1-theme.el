@@ -184,15 +184,14 @@
                    :underline base02
                    :foreground base0
                    :background base03
-                   :box (:line-width 2 :color base03
-                                     :style 'unspecified)))
+                   :box (:line-width 2 :color base03)))
   (lazy-highlight (:foreground base03 :background yellow
                                :weight 'normal))
   (link (:foreground blue :underline t :weight maybe-bold))
   (link-visited (:foreground blue-1fg :underline t :weight 'normal))
   (match (:background base02 :foreground base1 :weight 'bold))
   (menu (:foreground base0 :background base03))
-  (help-key-binding (:box (:line-width '(1 . -1) :color middle :style nil) :background base02))
+  (help-key-binding (:box (:line-width '(1 . -1) :color middle) :background base02))
   (mode-line
    (:inverse-video 'unspecified
                    :underline nil :overline nil

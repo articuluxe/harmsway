@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-02-08 16:47:27 dharms>
+;; Modified Time-stamp: <2024-03-20 13:10:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -547,7 +547,9 @@ not an error if any files do not exist."
               ("]" . annotate-goto-next-annotation)
               ("c" . annotate-clear-annotations)
               ("s" . annotate-save-annotations)
-              ("p" . annotate-db-purge))
+              ("b" . annotate-db-purge)
+              ("p" . annotate-change-annotation-text-position)
+              ("C" . annotate-change-annotation-colors))
   :commands (annotate-annotate)
   :demand t
   :init
@@ -556,6 +558,8 @@ not an error if any files do not exist."
   (define-key annotate-mode-map (kbd "C-c C-a") nil t)
   (define-key annotate-mode-map (kbd "C-c C-s") nil t)
   (define-key annotate-mode-map (kbd "C-c C-d") nil t)
+  (define-key annotate-mode-map (kbd "C-c C-p") nil t)
+  (define-key annotate-mode-map (kbd "C-c C-c") nil t)
   (define-key annotate-mode-map (kbd "C-c ]") nil t)
   (define-key annotate-mode-map (kbd "C-c [") nil t)
   (annotate-mode 1))

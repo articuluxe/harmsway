@@ -77,6 +77,11 @@
   :type 'boolean
   :group 'kanagawa-theme)
 
+(defcustom kanagawa-theme-custom-colors nil
+  "Specify a list of custom colors."
+  :type 'alist
+  :group 'kanagawa-theme)
+
 (defun true-color-p ()
   (or (display-graphic-p)
       (= (tty-display-color-cells) 16777216)))
@@ -127,9 +132,9 @@
 (defmacro define-kanagawa-dark-theme (theme &rest faces)
   `(let ((class '((class color) (min-colors 89)))
          ,@kanagawa-dark-palette)
-     (custom-theme-set-faces
-      ,theme
-      ,@faces)))
+     (cl-loop for (cvar . val) in kanagawa-theme-custom-colors
+              do (set cvar val))
+     (custom-theme-set-faces ,theme ,@faces)))
 
 (define-kanagawa-dark-theme
  'kanagawa

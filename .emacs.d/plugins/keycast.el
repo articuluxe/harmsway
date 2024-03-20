@@ -545,11 +545,12 @@ t to show the actual COMMAND, or a symbol to be shown instead."
   :global t
   (cond
    (keycast-mode-line-mode
-    (cond ((not (default-value 'mode-line-format))
-           (setq keycast--temporary-mode-line t)
-           (setq-default mode-line-format (list "")))
-          ((keycast--format-atom-p mode-line-format)
-           (setq-default mode-line-format (list "" mode-line-format))))
+    (let ((format (default-value 'mode-line-format)))
+      (cond ((not format)
+             (setq keycast--temporary-mode-line t)
+             (setq-default mode-line-format (list "")))
+            ((keycast--format-atom-p format)
+             (setq-default mode-line-format (list "" format)))))
     (let ((cons (keycast--tree-member keycast-mode-line-insert-after
                                       (default-value 'mode-line-format))))
       (unless cons
@@ -578,8 +579,11 @@ t to show the actual COMMAND, or a symbol to be shown instead."
             ((keycast--tree-member 'keycast-mode-line
                                    (default-value 'mode-line-format)
                                    'delete))))
-    (dolist (buf keycast--mode-line-modified-buffers)
-      (when (buffer-live-p buf)
+    (while-let ((buf (pop keycast--mode-line-modified-buffers)))
+      (when (and (buffer-live-p buf)
+                 (condition-case nil
+                     (listp (buffer-local-value 'mode-line-format buf))
+                   (void-variable nil)))
         (with-current-buffer buf
           (keycast--tree-member 'keycast-mode-line mode-line-format 'delete))))
     (unless (keycast--mode-active-p)

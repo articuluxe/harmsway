@@ -1,11 +1,11 @@
 ;;; orderless.el --- Completion style for matching regexps in any order  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2024 Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
-;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
+;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Keywords: extensions
-;; Version: 1.0
+;; Version: 1.1
 ;; Homepage: https://github.com/oantolin/orderless
 ;; Package-Requires: ((emacs "27.1"))
 
@@ -89,7 +89,7 @@
     (t :foreground "yellow"))
   "Face for matches of components numbered 3 mod 4.")
 
-(defcustom orderless-component-separator " +"
+(defcustom orderless-component-separator #'orderless-escapable-split-on-space
   "Component separators for orderless completion.
 This can either be a string, which is passed to `split-string',
 or a function of a single string argument."
@@ -130,7 +130,7 @@ customizing this variable to see a list of them."
 (defcustom orderless-affix-dispatch-alist
   `((?% . ,#'char-fold-to-regexp)
     (?! . ,#'orderless-not)
-    (?@ . ,#'orderless-annotation)
+    (?& . ,#'orderless-annotation)
     (?, . ,#'orderless-initialism)
     (?= . ,#'orderless-literal)
     (?^ . ,#'orderless-literal-prefix)
@@ -221,7 +221,11 @@ is determined by the values of `completion-ignore-case',
 
 (defun orderless-literal (component)
   "Match COMPONENT as a literal string."
-  `(literal ,component))
+  ;; Do not use (literal component) here, such that `delete-dups' in
+  ;; `orderless--compile-component' has a chance to delete duplicates for
+  ;; literal input. The default configuration of `orderless-matching-styles'
+  ;; with `orderless-regexp' and `orderless-literal' leads to duplicates.
+  (regexp-quote component))
 
 (defun orderless-literal-prefix (component)
   "Match COMPONENT as a literal prefix string."
@@ -416,7 +420,7 @@ DEFAULT as the list of styles."
    else if res collect (if (stringp res) `(regexp ,res) res) into regexps
    finally return
    (when (or pred regexps)
-     (cons pred (and regexps (rx-to-string `(or ,@(delete-dups regexps))))))))
+     (cons pred (and regexps (rx-to-string `(or ,@(delete-dups regexps)) t))))))
 
 (defun orderless-compile (pattern &optional styles dispatchers)
   "Build regexps to match the components of PATTERN.
@@ -495,17 +499,16 @@ The predicate PRED is used to constrain the entries in TABLE."
 ;; https://github.com/oantolin/orderless/issues/79#issuecomment-916073526
 (defun orderless--literal-prefix-p (regexp)
   "Determine if REGEXP is a quoted regexp anchored at the beginning.
-If REGEXP is of the form \"\\(?:\\`q\\)\" for q = (regexp-quote u),
+If REGEXP is of the form \"\\`q\" for q = (regexp-quote u),
 then return (cons REGEXP u); else return nil."
-  (when (and (string-prefix-p "\\(?:\\`" regexp) (string-suffix-p "\\)" regexp))
-    (let ((trimmed (substring regexp 6 -2)))
-      (unless (string-match-p "[$*+.?[\\^]"
-                              (replace-regexp-in-string
-                               "\\\\[$*+.?[\\^]" "" trimmed
-                               'fixedcase 'literal))
-        (cons regexp
-              (replace-regexp-in-string "\\\\\\([$*+.?[\\^]\\)" "\\1"
-                                        trimmed 'fixedcase))))))
+  (when (and (string-prefix-p "\\`" regexp)
+             (not (string-match-p "[$*+.?[\\^]"
+                                  (replace-regexp-in-string
+                                   "\\\\[$*+.?[\\^]" "" regexp
+                                   'fixedcase 'literal nil 2))))
+    (cons regexp
+          (replace-regexp-in-string "\\\\\\([$*+.?[\\^]\\)" "\\1"
+                                    regexp 'fixedcase nil nil 2))))
 
 (defun orderless--ignore-case-p (regexps)
   "Return non-nil if case should be ignored for REGEXPS."
@@ -517,7 +520,7 @@ then return (cons REGEXP u); else return nil."
 (defun orderless--filter (prefix regexps ignore-case table pred)
   "Filter TABLE by PREFIX, REGEXPS and PRED.
 The matching should be case-insensitive if IGNORE-CASE is non-nil."
-  ;; If there is a regexp of the form \(?:\`quoted-regexp\) then
+  ;; If there is a regexp of the form \`quoted-regexp then
   ;; remove the first such and add the unquoted form to the prefix.
   (pcase (cl-loop for r in regexps
                   thereis (orderless--literal-prefix-p r))
@@ -627,17 +630,17 @@ This function delegates to `orderless-%s'.
 The orderless configuration is locally modified
 specifically for the %s style.")
          (fn-doc (lambda (fn) (format doc-fmt fn name fn name name))))
-  `(progn
-     (defun ,try-completion (string table pred point)
-       ,(funcall fn-doc "try-completion")
-       (let ,configuration
-         (orderless-try-completion string table pred point)))
-     (defun ,all-completions (string table pred point)
-       ,(funcall fn-doc "all-completions")
-       (let ,configuration
-         (orderless-all-completions string table pred point)))
-     (add-to-list 'completion-styles-alist
-                  '(,name ,try-completion ,all-completions ,docstring)))))
+    `(progn
+       (defun ,try-completion (string table pred point)
+         ,(funcall fn-doc "try-completion")
+         (let ,configuration
+           (orderless-try-completion string table pred point)))
+       (defun ,all-completions (string table pred point)
+         ,(funcall fn-doc "all-completions")
+         (let ,configuration
+           (orderless-all-completions string table pred point)))
+       (add-to-list 'completion-styles-alist
+                    '(,name ,try-completion ,all-completions ,docstring)))))
 
 ;;; Ivy integration
 

@@ -1,6 +1,6 @@
 ;;; compat-27.el --- Functionality added in Emacs 27.1 -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2024 Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@
 ;;; Code:
 
 (eval-when-compile (load "compat-macs.el" nil t t))
-(compat-declare-version "27.1")
+(compat-require compat-26 "26.1")
+
+(compat-version "27.1")
 
 ;;;; Defined in fns.c
 
@@ -349,8 +351,8 @@ There is no need to explicitly add `help-char' to CHARS;
 
 ;;;; Defined in simple.el
 
-(compat-guard (not (fboundp 'decoded-time-second))
-  (cl-defstruct (decoded-time ;; <compat-tests:decoded-time>
+(compat-guard (not (fboundp 'decoded-time-second)) ;; <compat-tests:decoded-time>
+  (cl-defstruct (decoded-time
                  (:constructor nil)
                  (:copier nil)
                  (:type list))
@@ -393,6 +395,13 @@ the minibuffer was activated, and execute the forms."
      (with-selected-window window
        ,@body)))
 
+;;;; Defined in byte-run.el
+
+(compat-defmacro with-suppressed-warnings (_warnings &rest body) ;; <compat-tests:with-suppressed-warnings>
+  "Like `progn', but prevents compiler WARNINGS in BODY.
+NOTE: The compatibility version behaves like `with-no-warnings'."
+  `(with-no-warnings ,@body))
+
 ;;;; Defined in image.el
 
 (compat-defun image--set-property (image property value) ;; <compat-tests:image-property>
@@ -410,9 +419,10 @@ the minibuffer was activated, and execute the forms."
 ;; HACK: image--set-property was broken with an off-by-one error on Emacs 26.
 ;; The bug was fixed in a4ad7bed187493c1c230f223b52c71f5c34f7c89. Therefore we
 ;; override the gv expander until Emacs 27.1.
-(compat-guard (or (= emacs-major-version 26) (not (get 'image-property 'gv-expander)))
+(compat-guard ;; <compat-tests:image-property>
+    (or (= emacs-major-version 26) (not (get 'image-property 'gv-expander)))
   :feature image
-  (gv-define-setter image-property (value image prop) ;; <compat-tests:image-property>
+  (gv-define-setter image-property (value image prop)
     `(,(if (< emacs-major-version 26) 'image--set-property 'compat--image--set-property)
       ,image ,prop ,value)))
 
@@ -564,19 +574,6 @@ The return value is a string (or nil in case we can’t find it)."
             (or (lm-header "package-version")
                 (lm-header "version")))))))))
 
-;;;; Defined in dired.el
-
-(compat-defun dired-get-marked-files
-    (&optional localp arg filter distinguish-one-marked error)
-  "Obsolete function."
-  :obsolete "The compatibility function has been made obsolete."
-  :feature dired
-  :extended t
-  (let ((result (dired-get-marked-files localp arg filter distinguish-one-marked)))
-    (if (and (null result) error)
-        (user-error (if (stringp error) error "No files specified"))
-      result)))
-
 ;;;; Defined in time-date.el
 
 (compat-defun make-decoded-time ;; <compat-tests:make-decoded-time>
@@ -613,8 +610,8 @@ January 1st being 1."
 ;;;; Defined in text-property-search.el
 
 (declare-function make-prop-match nil)
-(compat-guard (not (fboundp 'make-prop-match))
-  (cl-defstruct (prop-match) beginning end value)) ;; <compat-tests:prop-match>
+(compat-guard (not (fboundp 'make-prop-match)) ;; <compat-tests:prop-match>
+  (cl-defstruct (prop-match) beginning end value))
 
 (compat-defun text-property-search-forward ;; <compat-tests:text-property-search-forward>
     (property &optional value predicate not-current)
@@ -830,7 +827,7 @@ discarded."
 
 ;;;; Defined in map-ynp.el
 
-(compat-declare-version "26.2")
+(compat-version "26.2")
 
 (compat-defvar read-answer-short 'auto ;; <compat-tests:read-answer>
   "If non-nil, the `read-answer' function accepts single-character answers.

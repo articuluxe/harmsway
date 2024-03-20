@@ -121,26 +121,18 @@ export MANPATH=`manpath`
 /usr/libexec/makewhatis
 
 # language servers
-brew install lua-language-server
-pip install cmake-language-server
-brew install yaml-language-server
-brew install vscode-langservers-extracted
-brew install jdtls
+brew install lua-language-server cmake-language-server yaml-language-server vscode-langservers-extracted jdtls bash-language-server
 # old
 # brew install node
 # npm i -g bash-language-server
-brew install bash-language-server
 
-brew install rustup
-brew install mcrypt
+brew install rustup mcrypt
 rustup-init
 
 brew install luarocks
 luarocks install luacheck
-brew install sql-lint
-brew install proselint
-brew install yamllint
-brew install sqlfluff
+
+brew install sql-lint proselint vale yamllint sqlfluff
 
 # Local Variables:
 # mode: sh

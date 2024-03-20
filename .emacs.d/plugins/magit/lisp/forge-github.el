@@ -55,11 +55,7 @@
 (cl-defmethod forge--pull ((repo forge-github-repository) until
                            &optional callback)
   (let ((buf (current-buffer))
-        (dir default-directory)
-        (selective-p (oref repo selective-p))
-        (ghub-graphql-items-per-request
-         (string-to-number
-          (or (magit-get "forge.graphqlItemLimit") "100"))))
+        (dir default-directory))
     (ghub-fetch-repository
      (oref repo owner)
      (oref repo name)
@@ -79,18 +75,14 @@
          (oset repo sparse-p nil))
        (forge--msg repo t t   "Storing REPO")
        (cond
-        (selective-p)
+        ((oref repo selective-p))
         (callback (funcall callback))
-        (forge-pull-notifications
-         (forge--pull-notifications (eieio-object-class repo)
-                                    (oref repo githost)
-                                    (lambda () (forge--git-fetch buf dir repo))))
         (t (forge--git-fetch buf dir repo))))
      `((issues-until       . ,(forge--topics-until repo until 'issue))
        (pullRequests-until . ,(forge--topics-until repo until 'pullreq)))
      :host (oref repo apihost)
      :auth 'forge
-     :sparse selective-p)))
+     :sparse (oref repo selective-p))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (topic forge-topic))
@@ -453,16 +445,7 @@
           (oset notif updated   (oref topic updated))
           ;; Github represents the three possible states using a boolean,
           ;; which of course means that we cannot do the right thing here.
-          (oset topic status
-                (pcase-exhaustive
-                    (list (and .unread 'unread)
-                          (and (not (oref topic status)) 'unset)
-                          forge-notifications-github-kludge)
-                  (`(unread ,_    ,_)               'unread)
-                  (`(nil    ,_    always-unread)    'unread)
-                  (`(nil    ,_    pending-again)    'pending)
-                  ('(nil    unset pending-if-unset) 'pending)
-                  (`(nil    ,_    ,_)               'done))))))))
+          (oset topic status 'unread))))))
 
 ;;;; Miscellaneous
 

@@ -118,7 +118,7 @@
     remote))
 
 (cl-defmethod forge-get-repository ((_(eql :id)) id)
-  (closql-get (forge-db) id 'forge-repository))
+  (closql-get (forge-db) (substring-no-properties id) 'forge-repository))
 
 (cl-defmethod forge-get-repository ((_ null) &optional remote)
   ;; Avoid matching the ((host owner name) list) ...) method.
@@ -171,7 +171,8 @@ or signal an error, depending on DEMAND."
   (if-let ((parts (forge--split-forge-url url)))
       (forge-get-repository parts remote (or demand :known?))
     (when (memq demand forge--signal-no-entry)
-      (error "Cannot determine forge repository.  %s isn't a forge url" url))))
+      (error "Cannot determine forge repository.  %s isn't a forge URL.  %s"
+             url "You might have to customize `forge-alist'."))))
 
 (cl-defmethod forge-get-repository (((host owner name) list)
                                     &optional remote demand)
@@ -179,6 +180,9 @@ or signal an error, depending on DEMAND."
 
 Return the repository identified by HOST, OWNER and NAME.
 See `forge-alist' for valid Git hosts."
+  (setq host  (substring-no-properties host))
+  (setq owner (substring-no-properties owner))
+  (setq name  (substring-no-properties name))
   (unless (memq demand '(:tracked :tracked? :known? :insert! :stub :stub?))
     (if-let ((new (pcase demand
                     ('t      :tracked)
@@ -271,7 +275,36 @@ an error."
              (forge-get-repository :id id)))
       (and demand (user-error "No repository at point"))))
 
+;;;; List
+
+(defun forge--ls-repos ()
+  (mapcar (let ((db (forge-db)))
+            (lambda (row)
+              (closql--remake-instance 'forge-repository db row)))
+          (forge-sql [:select * :from repository
+                      :order-by [(asc owner) (asc name)]])))
+
+(defun forge--ls-owned-repos ()
+  (mapcar (let ((db (forge-db)))
+            (lambda (row)
+              (closql--remake-instance 'forge-repository db row)))
+          (forge-sql [:select * :from repository
+                      :where (and (in owner $v1)
+                                  (not (in name $v2)))
+                      :order-by [(asc owner) (asc name)]]
+                     (vconcat (mapcar #'car forge-owned-accounts))
+                     (vconcat forge-owned-ignored))))
+
 ;;; Identity
+
+(defun forge-repository-equal (repo1 repo2)
+  "Return t if REPO1 and REPO2 are the same repository.
+REPO1 and/or REPO2 may also be nil, in which case return nil."
+  (and repo1 repo2
+       (or (equal      (oref repo1 id)    (oref repo2 id))
+           (and (equal (oref repo1 host)  (oref repo2 host))
+                (equal (oref repo1 owner) (oref repo2 owner))
+                (equal (oref repo1 name)  (oref repo2 name))))))
 
 (cl-defmethod forge--repository-ids ((class (subclass forge-repository))
                                      host owner name &optional stub)
@@ -426,8 +459,12 @@ forges and hosts."
   (cl-call-next-method (forge--ghub-type-symbol (eieio-object-class repo))))
 
 (cl-defmethod ghub--username ((repo forge-repository))
-  (let ((sym (forge--ghub-type-symbol (eieio-object-class repo))))
-    (cl-call-next-method (ghub--host sym) sym)))
+  (let ((default-directory default-directory))
+    (unless (forge-repository-equal (forge-get-repository :stub?) repo)
+      (when-let ((worktree (oref repo worktree)))
+        (setq default-directory worktree)))
+    (cl-call-next-method (oref repo apihost)
+                         (forge--ghub-type-symbol (eieio-object-class repo)))))
 
 (defun forge--ghub-type-symbol (class)
   (pcase-exhaustive class
