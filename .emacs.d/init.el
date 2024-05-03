@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-03-20 13:10:06 dharms>
+;; Modified Time-stamp: <2024-05-03 14:11:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2047,6 +2047,33 @@ ARGS are the additional arguments."
 (use-package minions
   :if (version<= "25.2" emacs-version))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bespoke-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package bespoke-modeline
+  :disabled
+  :init
+  (setq bespoke-modeline-position 'bottom)
+  (setq bespoke-modeline-git-diff-mode-line t)
+  (setq bespoke-modeline-cleaner t)
+  :config
+  (bespoke-modeline-mode)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lambda-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package lambda-line
+  :init
+  (setq lambda-line-position 'bottom)
+  (setq lambda-line-abbrev t)
+  (setq lambda-line-hspace "  ")
+  (setq lambda-line-prefix t)
+  (setq lambda-line-padding t)
+  (setq lambda-line-vc-symbol "  ")
+  (setq lambda-line-visual-bell t)
+  (setq lambda-line-status-invert nil)
+  (setq lambda-line-syntax t)
+  :config
+  (lambda-line-mode)
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package doom-modeline
   :if (version<= "25.1" emacs-version)
@@ -2066,6 +2093,7 @@ ARGS are the additional arguments."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mood-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mood-line
+  :disabled
   :init
   (setq mood-line-show-eol-style t)
   :config
