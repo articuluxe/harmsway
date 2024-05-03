@@ -2,19 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
-
-;; Homepage: https://github.com/magit/magit
-;; Keywords: git tools vc
-
-;; Package-Version: 3.3.0.50-git
-;; Package-Requires: (
-;;     (emacs "26.1")
-;;     (compat "29.1.4.4")
-;;     (libgit "0")
-;;     (seq "2.24")
-;;     (magit "3.3.0"))
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -36,7 +25,10 @@
 
 ;;; Commentary:
 
-;; This package teaches Magit to use functions provided by the
+;; This library is not used by default and it is highly experimental.
+;; It only implements a single method.  Do not use this.
+
+;; This library teaches Magit to use functions provided by the
 ;; `libegit2' module to perform certain tasks.  That module used the
 ;; Libgit2 implementation of the Git core methods and is implemented
 ;; in the `libgit' package.
@@ -44,9 +36,6 @@
 ;; The hope is that using a C module instead of calling out to `git'
 ;; all the time increases performance; especially on Windows where
 ;; starting a process is unreasonably slow.
-
-;; This package is still experimental and not many functions have been
-;; reimplemented to use `libgit' yet.
 
 ;;; Code:
 

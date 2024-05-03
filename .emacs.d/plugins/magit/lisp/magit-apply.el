@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -48,11 +48,6 @@
 (declare-function magit-submodule-read-name-for-path "magit-submodule"
                   (path &optional prefer-short))
 (defvar borg-user-emacs-directory)
-
-(cl-eval-when (compile load)
-  (when (< emacs-major-version 26)
-    (defalias 'smerge-keep-upper 'smerge-keep-mine)
-    (defalias 'smerge-keep-lower 'smerge-keep-other)))
 
 ;;; Options
 

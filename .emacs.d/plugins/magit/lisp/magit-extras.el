@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -197,27 +197,17 @@ blame to center around the line point is on."
 (defun ido-enter-magit-status ()
   "Drop into `magit-status' from file switching.
 
-This command does not work in Emacs 26.1.
-See https://github.com/magit/magit/issues/3634
-and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=31707.
-
 To make this command available use something like:
 
-  (add-hook \\='ido-setup-hook
-            (lambda ()
-              (keymap-set ido-completion-map
-                          \"C-x g\" \\='ido-enter-magit-status)))
-
-Starting with Emacs 25.1 the Ido keymaps are defined just once
-instead of every time Ido is invoked, so now you can modify it
-like pretty much every other keymap:
-
   (keymap-set ido-common-completion-map
-              \"C-x g\" \\='ido-enter-magit-status)"
+              \"C-x g\" \\='ido-enter-magit-status)
+
+This command does not work in Emacs 26.1.
+See https://github.com/magit/magit/issues/3634
+and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=31707."
   (interactive)
   (setq ido-exit 'fallback)
-  (setq ido-fallback #'magit-status)                ; for Emacs >= 26.2
-  (with-no-warnings (setq fallback #'magit-status)) ; for Emacs 25
+  (setq ido-fallback #'magit-status)
   (exit-minibuffer))
 
 ;;;###autoload
@@ -235,10 +225,10 @@ well.  If you want to use another key, then you must set this
 to nil before loading Magit to prevent \"m\" from being bound.")
 
 (with-eval-after-load 'project
-  ;; Only more recent versions of project.el have `project-prefix-map' and
-  ;; `project-switch-commands', though project.el is available in Emacs 25.
   (when (and magit-bind-magit-project-status
+             ;; Added in Emacs 28.1.
              (boundp 'project-prefix-map)
+             (boundp 'project-switch-commands)
              ;; Only modify if it hasn't already been modified.
              (equal project-switch-commands
                     (eval (car (get 'project-switch-commands 'standard-value))
@@ -417,7 +407,7 @@ in HEAD as well as staged changes in the diff to check."
          (setq-local diff-vc-revisions (list rev1 rev2))
          (setq-local diff-vc-backend 'Git)
          (diff-add-log-current-defuns)))))
-   (t (user-error "`magit-generate-changelog' requires Emacs 27 or greater"))))
+   ((user-error "`magit-generate-changelog' requires Emacs 27 or greater"))))
 
 ;;;###autoload
 (defun magit-add-change-log-entry (&optional whoami file-name other-window)
@@ -550,7 +540,8 @@ list returned by `magit-rebase-arguments'."
      ((not rev)
       (when (and (magit-ref-p backup)
                  (not (magit-y-or-n-p
-                       (format "Backup ref %s already exists.  Override? " backup))))
+                       (format "Backup ref %s already exists.  Override? "
+                               backup))))
         (user-error "Abort"))
       (magit-log-select
         (lambda (rev)
@@ -805,7 +796,7 @@ argument."
            (push (list value default-directory) magit-revision-stack)
            (kill-new (message "%s" (or (and current-prefix-arg ref)
                                        value)))))
-        (t (kill-new (message "%s" value))))))))
+        ((kill-new (message "%s" value))))))))
 
 ;;;###autoload
 (defun magit-copy-buffer-revision ()

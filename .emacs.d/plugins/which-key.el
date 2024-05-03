@@ -127,7 +127,7 @@ of the which-key popup."
 (defcustom which-key-dont-use-unicode nil
   "If non-nil, don't use any unicode characters in default setup.
 For affected settings, see `which-key-replacement-alist', `which-key-ellipsis'
-'which-key-separator'."
+`which-key-separator'."
   :type 'boolean
   :version "1.0")
 
@@ -162,12 +162,11 @@ currently active keymaps."
   :version "1.0")
 
 (defcustom which-key-replacement-alist
-  (delq nil
-        `(((nil . "which-key-show-next-page-no-cycle") . (nil . "wk next pg"))
-          ,@(unless which-key-dont-use-unicode
-              '((("<left>") . ("←"))
-                (("<right>") . ("→"))))
-          (("<\\([[:alnum:]-]+\\)>") . ("\\1"))))
+  `(((nil . "which-key-show-next-page-no-cycle") . (nil . "wk next pg"))
+    ,@(unless which-key-dont-use-unicode
+        '((("<left>") . ("←"))
+          (("<right>") . ("→"))))
+    (("<\\([[:alnum:]-]+\\)>") . ("\\1")))
   "ALIST for manipulating display of binding descriptions.
 Each element of the list is a nested cons cell with the format
 
@@ -326,12 +325,12 @@ a percentage out of the frame's height."
 
 (defcustom which-key-frame-max-width 60
   "Maximum width of which-key popup when type is frame."
-  :type 'integer
+  :type 'natnum
   :version "1.0")
 
 (defcustom which-key-frame-max-height 20
   "Maximum height of which-key popup when type is frame."
-  :type 'integer
+  :type 'natnum
   :version "1.0")
 
 (defcustom which-key-allow-imprecise-window-fit (not (display-graphic-p))
@@ -729,9 +728,8 @@ Used when `which-key-popup-type' is frame.")
 
 (defun which-key--rotate (list n)
   (let* ((len (length list))
-         (n (if (< n 0) (+ len n) n))
-         (n (mod n len)))
-    (append (last list (- len n)) (butlast list (- len n)))))
+         (n (- len (mod n len))))
+    (append (last list n) (butlast list n))))
 
 (defun which-key--pages-set-current-page (pages-obj n)
   (setf (which-key--pages-pages pages-obj)
@@ -794,11 +792,11 @@ should be formatted as an input for `kbd'."
       (setq this-command-keys (this-single-command-raw-keys)))
     this-command-keys))
 
-(defcustom which-key-this-command-keys-function 'which-key--this-command-keys
+(defcustom which-key-this-command-keys-function #'which-key--this-command-keys
   "Function used to retrieve current key sequence.
 The purpose of allowing this variable to be customized is to
 allow which-key to support packages that insert non-standard
-'keys' into the key sequence being read by emacs."
+`keys' into the key sequence being read by emacs."
   :group 'which-key
   :type 'function
   :version "1.0")
@@ -832,7 +830,7 @@ invalid keys."
        (bound-and-true-p evil-this-operator)))
 
 (add-hook 'which-key-inhibit-display-hook
-          'which-key-evil-this-operator-p)
+          #'which-key-evil-this-operator-p)
 
 ;;;; God-mode
 
@@ -875,16 +873,16 @@ disable support."
       (progn
         (advice-remove 'god-mode-lookup-command
                        #'which-key--god-mode-lookup-command-advice)
-        (setq which-key-this-command-keys-function
-              'which-key--this-command-keys)
+        (remove-function which-key-this-command-keys-function
+                         #'which-key--god-mode-this-command-keys)
         (remove-hook 'which-key-inhibit-display-hook
-                     'which-key-god-mode-self-insert-p))
+                     #'which-key-god-mode-self-insert-p))
     (advice-add 'god-mode-lookup-command :around
                 #'which-key--god-mode-lookup-command-advice)
-    (setq which-key-this-command-keys-function
-          'which-key--god-mode-this-command-keys)
+    (add-function :override which-key-this-command-keys-function
+                  #'which-key--god-mode-this-command-keys)
     (add-hook 'which-key-inhibit-display-hook
-              'which-key-god-mode-self-insert-p)))
+              #'which-key-god-mode-self-insert-p)))
 
 ;;; Mode
 
@@ -1085,7 +1083,7 @@ addition KEY-SEQUENCE REPLACEMENT pairs) to apply."
   (declare (indent defun))
   ;; TODO: Make interactive
   (when (not (symbolp mode))
-    (error "MODE should be a symbol corresponding to a value of major-mode"))
+    (error "`%S' should be a symbol corresponding to a value of major-mode" mode))
   (let ((mode-alist
          (or (cdr-safe (assq mode which-key-replacement-alist)) (list)))
         (title-mode-alist
@@ -1170,7 +1168,7 @@ If WIDTH-OR-PERCENTAGE is a whole number, return it unchanged.  Otherwise, it
 should be a percentage (a number between 0 and 1) out of the frame's width.
 More precisely, it should be a percentage out of the frame's root window's
 total width."
-  (if (wholenump width-or-percentage)
+  (if (natnump width-or-percentage)
       width-or-percentage
     (round (* width-or-percentage (window-total-width (frame-root-window))))))
 
@@ -1180,7 +1178,7 @@ If HEIGHT-OR-PERCENTAGE is a whole number, return it unchanged.  Otherwise, it
 should be a percentage (a number between 0 and 1) out of the frame's height.
 More precisely, it should be a percentage out of the frame's root window's
 total height."
-  (if (wholenump height-or-percentage)
+  (if (natnump height-or-percentage)
       height-or-percentage
     (round (* height-or-percentage (window-total-height (frame-root-window))))))
 
@@ -1285,6 +1283,10 @@ call signature in different emacs versions"
               (window-height . (lambda (w) (fit-window-to-buffer w nil 1)))
               (side . ,which-key-side-window-location)
               (slot . ,which-key-side-window-slot)))))
+    (which-key--debug-message "Allow imprecise fit: %s
+Display window alist: %s"
+                              which-key-allow-imprecise-window-fit
+                              alist)
     ;; Previously used `display-buffer-in-major-side-window' here, but
     ;; apparently that is meant to be an internal function. See emacs bug #24828
     ;; and advice given there.
@@ -1362,11 +1364,11 @@ call signature in different emacs versions"
 
 (defun which-key--popup-max-dimensions ()
   "Return maximum dimension available for popup.
-Dimesion functions should return the maximum possible (height
+Dimension functions should return the maximum possible (height
 . width) of the intended popup. SELECTED-WINDOW-WIDTH is the
 width of currently active window, not the which-key buffer
 window."
-  (cl-case which-key-popup-type
+  (cl-ecase which-key-popup-type
     (minibuffer (which-key--minibuffer-max-dimensions))
     (side-window (which-key--side-window-max-dimensions))
     (frame (which-key--frame-max-dimensions))
@@ -1552,7 +1554,7 @@ Within these categories order using `which-key-key-order'."
   (when (and (consp key-binding) (not (symbolp (car replacement))))
     (let ((key-regexp (caar replacement))
           (binding-regexp (cdar replacement))
-          case-fold-search)
+          (case-fold-search nil))
       (and (or (null key-regexp)
                (string-match-p key-regexp
                                (car key-binding)))
@@ -1685,7 +1687,7 @@ If KEY contains any \"special keys\" defined in
                         (mapconcat #'identity which-key-special-keys
                                    "\\|")
                         "\\)"))
-        case-fold-search)
+        (case-fold-search nil))
     (save-match-data
       (if (and which-key-special-keys
                (string-match regexp key))
@@ -1849,11 +1851,10 @@ alists. Returns a list (key separator description)."
 (defun which-key--compute-binding (binding)
   "Replace BINDING with remapped binding if it exists.
 Requires `which-key-compute-remaps' to be non-nil."
-  (let (remap)
-    (if (and which-key-compute-remaps
-             (setq remap (command-remapping binding)))
-        (copy-sequence (symbol-name remap))
-      (copy-sequence (symbol-name binding)))))
+  (copy-sequence (symbol-name
+                  (or (and which-key-compute-remaps
+                           (command-remapping binding))
+                      binding))))
 
 (defun which-key--get-menu-item-binding (def)
   "Retrieve binding for menu-item"
@@ -1898,8 +1899,11 @@ Requires `which-key-compute-remaps' to be non-nil."
                            (cond
                             ((symbolp def) (which-key--compute-binding def))
                             ((keymapp def) "prefix")
-                            ((eq 'lambda (car-safe def)) "lambda")
-                            ((eq 'closure (car-safe def)) "closure")
+                            ((functionp def)
+                             (cond
+                              ((eq 'lambda (car-safe def)) "lambda")
+                              ((eq 'closure (car-safe def)) "closure")
+                              (t "function")))
                             ((stringp def) def)
                             ((vectorp def) (key-description def))
                             ((and (consp def)
@@ -2075,7 +2079,7 @@ should be minimized."
       ;; simple search for a fitting page
       (while (and (> available-lines min-lines)
                   (not found))
-        (setq available-lines (- available-lines 1)
+        (setq available-lines (cl-decf available-lines)
               prev-result result
               result (which-key--list-to-pages
                       keys available-lines available-width)
@@ -2123,11 +2127,36 @@ is the width of the live window."
         ;; `which-key-allow-imprecise-window-fit' is non-nil.
         (setf (which-key--pages-height result) which-key-min-display-lines))
       (which-key--debug-message "Frame height: %s
+Frame pixel width: %s
+Frame char width: %s
+Frame width: %s
+Which-key initial width: %s
+Which-key adjusted width: %s
 Minibuffer height: %s
-Max dimensions: (%s,%s)
-Available for bindings: (%s,%s)
-Actual lines: %s" (frame-height) (window-text-height (minibuffer-window))
-max-lines max-width avl-lines avl-width (which-key--pages-height result))
+Max dimensions: (%s, %s)
+Available for bindings: (%s, %s)
+Popup type info: (%s, %s, %s)
+Computed page widths: %s
+Actual lines: %s"
+                                (frame-height)
+                                (frame-pixel-width)
+                                (frame-char-width)
+                                (window-total-width (frame-root-window))
+                                (which-key--width-or-percentage-to-width
+                                  which-key-side-window-max-width)
+                                (which-key--total-width-to-text
+                                 (which-key--width-or-percentage-to-width
+                                  which-key-side-window-max-width))
+                                (window-text-height (minibuffer-window))
+                                max-lines
+                                max-width
+                                avl-lines
+                                avl-width
+                                which-key-popup-type
+                                which-key-side-window-location
+                                which-key-side-window-max-width
+                                (which-key--pages-widths result)
+                                (which-key--pages-height result))
       result)))
 
 (defun which-key--lighter-status ()
@@ -2164,32 +2193,13 @@ max-lines max-width avl-lines avl-width (which-key--pages-height result))
       (which-key--propertize (format "[%s paging/help]" key)
                              'face 'which-key-note-face))))
 
-(eval-and-compile
-  (if (fboundp 'universal-argument--description)
-      (defalias 'which-key--universal-argument--description
-        #'universal-argument--description)
-    (defun which-key--universal-argument--description ()
-      ;; Backport of the definition of universal-argument--description in
-      ;; emacs25 on 2015-12-04
-      (when prefix-arg
-        (concat "C-u"
-                (pcase prefix-arg
-                  (`(-) " -")
-                  (`(,(and (pred integerp) n))
-                   (let ((str ""))
-                     (while (and (> n 4) (= (mod n 4) 0))
-                       (setq str (concat str " C-u"))
-                       (setq n (/ n 4)))
-                     (if (= n 4) str (format " %s" prefix-arg))))
-                  (_ (format " %s" prefix-arg))))))))
-
 (defun which-key--full-prefix (prefix-keys &optional -prefix-arg dont-prop-keys)
   "Return a description of the full key sequence up to now.
 Include prefix arguments."
   (let* ((left (eq which-key-show-prefix 'left))
          (prefix-arg (if -prefix-arg -prefix-arg prefix-arg))
          (str (concat
-               (which-key--universal-argument--description)
+               (universal-argument--description)
                (when prefix-arg " ")
                prefix-keys))
          (dash (if (and (not (string= prefix-keys ""))
@@ -2657,7 +2667,7 @@ KEYMAP is selected interactively by mode in
         (let ((formatted-keys
                (which-key--get-bindings
                 nil keymap #'which-key--evil-operator-filter)))
-          (cond ((= (length formatted-keys) 0)
+          (cond ((null formatted-keys)
                  (message "which-key: Keymap empty"))
                 ((listp which-key-side-window-location)
                  (setq which-key--last-try-2-loc
@@ -2669,8 +2679,8 @@ KEYMAP is selected interactively by mode in
                           formatted-keys
                           nil "evil operator/motion keys"))
                    (which-key--show-page)))))
-      (let* ((key (read-key)))
-        (when (member key '(?f ?F ?t ?T ?`))
+      (let ((key (read-key)))
+        (when (memq key '(?f ?F ?t ?T ?`))
           ;; these keys trigger commands that read the next char manually
           (setq which-key--inhibit-next-operator-popup t))
         (cond ((and which-key-use-C-h-commands (numberp key) (= key help-char))
@@ -2690,7 +2700,7 @@ Finally, show the buffer."
         (formatted-keys (which-key--get-bindings
                          prefix-keys from-keymap filter))
         (prefix-desc (key-description prefix-keys)))
-    (cond ((= (length formatted-keys) 0)
+    (cond ((null formatted-keys)
            (message "%s-  which-key: There are no keys to show" prefix-desc))
           ((listp which-key-side-window-location)
            (setq which-key--last-try-2-loc

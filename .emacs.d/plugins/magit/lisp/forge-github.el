@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -52,10 +52,12 @@
 ;;; Pull
 ;;;; Repository
 
-(cl-defmethod forge--pull ((repo forge-github-repository) until
-                           &optional callback)
-  (let ((buf (current-buffer))
-        (dir default-directory))
+(cl-defmethod forge--pull ((repo forge-github-repository)
+                           &optional callback since)
+  (cl-assert (not (and since (forge-get-repository repo nil :tracked?))))
+  (setq forge--mode-line-buffer (current-buffer))
+  (forge--msg repo t nil "Pulling REPO")
+  (let ((buf (current-buffer)))
     (ghub-fetch-repository
      (oref repo owner)
      (oref repo name)
@@ -72,44 +74,17 @@
            (forge--update-issues     repo .issues t)
            (forge--update-pullreqs   repo .pullRequests t)
            (forge--update-revnotes   repo .commitComments))
-         (oset repo sparse-p nil))
+         (oset repo condition :tracked))
        (forge--msg repo t t   "Storing REPO")
        (cond
         ((oref repo selective-p))
         (callback (funcall callback))
-        (t (forge--git-fetch buf dir repo))))
-     `((issues-until       . ,(forge--topics-until repo until 'issue))
-       (pullRequests-until . ,(forge--topics-until repo until 'pullreq)))
+        ((forge--maybe-git-fetch repo buf))))
+     `((issues-until       . ,(or since (oref repo issues-until)))
+       (pullRequests-until . ,(or since (oref repo pullreqs-until))))
      :host (oref repo apihost)
      :auth 'forge
      :sparse (oref repo selective-p))))
-
-(cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (topic forge-topic))
-  (let ((buffer (current-buffer))
-        (fetch #'ghub-fetch-issue)
-        (update #'forge--update-issue)
-        (errorback (lambda (err _headers _status _req)
-                     (when (equal (cdr (assq 'type (cadr err))) "NOT_FOUND")
-                       (forge--pull-topic
-                        repo (forge-pullreq :repository (oref repo id)
-                                            :number (oref topic number)))))))
-    (when (cl-typep topic 'forge-pullreq)
-      (setq fetch #'ghub-fetch-pullreq)
-      (setq update #'forge--update-pullreq)
-      (setq errorback nil))
-    (funcall
-     fetch
-     (oref repo owner)
-     (oref repo name)
-     (oref topic number)
-     (lambda (data)
-       (funcall update repo data nil)
-       (forge-refresh-buffer (and (buffer-live-p buffer) buffer)))
-     nil
-     :errorback errorback
-     :host (oref repo apihost)
-     :auth 'forge)))
 
 (cl-defmethod forge--update-repository ((repo forge-github-repository) data)
   (let-alist data
@@ -129,137 +104,6 @@
     (oset repo wiki-p         .hasWikiEnabled)
     (oset repo stars          .stargazers.totalCount)
     (oset repo watchers       .watchers.totalCount)))
-
-(cl-defmethod forge--update-issues ((repo forge-github-repository) data bump)
-  (closql-with-transaction (forge-db)
-    (mapc (lambda (e) (forge--update-issue repo e bump)) data)))
-
-(cl-defmethod forge--update-issue ((repo forge-github-repository) data bump)
-  (closql-with-transaction (forge-db)
-    (let-alist data
-      (let* ((updated (or .updatedAt .createdAt))
-             (issue-id (forge--object-id 'forge-issue repo .number))
-             (issue (or (forge-get-issue repo .number)
-                        (closql-insert
-                         (forge-db)
-                         (forge-issue :id         issue-id
-                                      :repository (oref repo id)
-                                      :number     .number)))))
-        (oset issue id         issue-id)
-        (oset issue their-id   .id)
-        (oset issue slug       (format "#%s" .number))
-        (oset issue state
-              (pcase-exhaustive (list .stateReason .state)
-                (`("COMPLETED"   ,_) 'completed)
-                (`("NOT_PLANNED" ,_) 'unplanned)
-                (`(,_      "CLOSED") 'completed)
-                (`(,_        "OPEN") 'open)))
-        (oset issue author     .author.login)
-        (oset issue title      .title)
-        (oset issue created    .createdAt)
-        (cond (updated
-               (oset issue updated updated))
-              ((not (slot-boundp issue 'updated))
-               (oset issue updated "0")))
-        (oset issue closed     .closedAt)
-        (oset issue locked-p   .locked)
-        (oset issue milestone  (and .milestone.id
-                                    (forge--object-id (oref repo id)
-                                                      .milestone.id)))
-        (oset issue body       (forge--sanitize-string .body))
-        .databaseId ; Silence Emacs 25 byte-compiler.
-        (dolist (c .comments)
-          (let-alist c
-            (closql-insert
-             (forge-db)
-             (forge-issue-post
-              :id      (forge--object-id issue-id .databaseId)
-              :issue   issue-id
-              :number  .databaseId
-              :author  .author.login
-              :created .createdAt
-              :updated .updatedAt
-              :body    (forge--sanitize-string .body))
-             t)))
-        (when bump
-          (when (and updated
-                     (string> updated (forge--topics-until repo nil 'issue)))
-            (oset repo issues-until updated))
-          (forge--set-id-slot repo issue 'assignees .assignees)
-          (unless (magit-get-boolean "forge.kludge-for-issue-294")
-            (forge--set-id-slot repo issue 'labels .labels)))
-        issue))))
-
-(cl-defmethod forge--update-pullreqs ((repo forge-github-repository) data bump)
-  (closql-with-transaction (forge-db)
-    (mapc (lambda (e) (forge--update-pullreq repo e bump)) data)))
-
-(cl-defmethod forge--update-pullreq ((repo forge-github-repository) data bump)
-  (closql-with-transaction (forge-db)
-    (let-alist data
-      (let* ((updated (or .updatedAt .createdAt))
-             (pullreq-id (forge--object-id 'forge-pullreq repo .number))
-             (pullreq (or (forge-get-pullreq repo .number)
-                          (closql-insert
-                           (forge-db)
-                           (forge-pullreq :id           pullreq-id
-                                          :repository   (oref repo id)
-                                          :number       .number)))))
-        (oset pullreq their-id     .id)
-        (oset pullreq slug         (format "#%s" .number))
-        (oset pullreq state        (pcase-exhaustive .state
-                                     ("MERGED" 'merged)
-                                     ("CLOSED" 'rejected)
-                                     ("OPEN"   'open)))
-        (oset pullreq author       .author.login)
-        (oset pullreq title        .title)
-        (oset pullreq created      .createdAt)
-        (cond (updated
-               (oset pullreq updated updated))
-              ((not (slot-boundp pullreq 'updated))
-               (oset pullreq updated "0")))
-        (oset pullreq closed       .closedAt)
-        (oset pullreq merged       .mergedAt)
-        (oset pullreq draft-p      .isDraft)
-        (oset pullreq locked-p     .locked)
-        (oset pullreq editable-p   .maintainerCanModify)
-        (oset pullreq cross-repo-p .isCrossRepository)
-        (oset pullreq base-ref     .baseRef.name)
-        (oset pullreq base-rev     .baseRefOid)
-        (oset pullreq base-repo    .baseRef.repository.nameWithOwner)
-        (oset pullreq head-ref     .headRef.name)
-        (oset pullreq head-rev     .headRefOid)
-        (oset pullreq head-user    .headRef.repository.owner.login)
-        (oset pullreq head-repo    .headRef.repository.nameWithOwner)
-        (oset pullreq milestone    (and .milestone.id
-                                        (forge--object-id (oref repo id)
-                                                          .milestone.id)))
-        (oset pullreq body         (forge--sanitize-string .body))
-        .databaseId ; Silence Emacs 25 byte-compiler.
-        (dolist (p .comments)
-          (let-alist p
-            (closql-insert
-             (forge-db)
-             (forge-pullreq-post
-              :id      (forge--object-id pullreq-id .databaseId)
-              :pullreq pullreq-id
-              :number  .databaseId
-              :author  .author.login
-              :created .createdAt
-              :updated .updatedAt
-              :body    (forge--sanitize-string .body))
-             t)))
-        (when bump
-          (when (and updated
-                     (string> updated (forge--topics-until repo nil 'pullreq)))
-            (oset repo pullreqs-until updated))
-          (forge--set-id-slot repo pullreq 'assignees .assignees)
-          (forge--set-id-slot repo pullreq 'review-requests
-                              (--map (cdr (cadr (car it)))
-                                     .reviewRequests))
-          (unless (magit-get-boolean "forge.kludge-for-issue-294")
-            (forge--set-id-slot repo pullreq 'labels .labels)))
-        pullreq))))
 
 (cl-defmethod forge--update-revnotes ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
@@ -331,6 +175,203 @@
                             .description)))
                   (delete-dups data)))))
 
+;;;; Topics
+
+(cl-defmethod forge--pull-topic ((repo forge-github-repository)
+                                 (number number))
+  (let ((id (oref repo id)))
+    (forge--pull-topic
+     repo
+     (forge-issue :repository id :number number)
+     :errorback (lambda (err _headers _status _req)
+                  (when (equal (cdr (assq 'type (cadr err))) "NOT_FOUND")
+                    (forge--pull-topic
+                     repo
+                     (forge-pullreq :repository id :number number)))))))
+
+(cl-defmethod forge--pull-topic ((repo forge-github-repository)
+                                 (topic forge-issue)
+                                 &key callback errorback)
+  (let ((buffer (current-buffer)))
+    (ghub-fetch-issue
+     (oref repo owner)
+     (oref repo name)
+     (oref topic number)
+     (lambda (data)
+       (forge--update-issue repo data)
+       (forge-refresh-buffer (and (buffer-live-p buffer) buffer))
+       (when callback (funcall callback)))
+     nil
+     :host (oref repo apihost)
+     :auth 'forge
+     :errorback errorback)))
+
+(cl-defmethod forge--pull-topic ((repo forge-github-repository)
+                                 (topic forge-pullreq)
+                                 &key callback errorback)
+  (let ((buffer (current-buffer)))
+    (ghub-fetch-pullreq
+     (oref repo owner)
+     (oref repo name)
+     (oref topic number)
+     (lambda (data)
+       (forge--update-pullreq repo data)
+       (forge-refresh-buffer (and (buffer-live-p buffer) buffer))
+       (when callback (funcall callback)))
+     nil
+     :host (oref repo apihost)
+     :auth 'forge
+     :errorback errorback)))
+
+(cl-defmethod forge--update-status ((repo forge-github-repository)
+                                    topic data bump initial-pull)
+  (let-alist data
+    (let ((updated (or .updatedAt .createdAt))
+          (current-status (oref topic status)))
+      (cond ((not .isReadByViewer)
+             (oset topic status 'unread))
+            (initial-pull
+             (oset topic status 'done))
+            ((null current-status)
+             (oset topic status 'pending))
+            ((string> updated (oref topic updated))
+             (oset topic status 'pending)))
+      (oset topic updated updated)
+      (when bump
+        (let* ((slot (if (forge-issue-p topic) 'issues-until 'pullreqs-until))
+               (until (eieio-oref repo slot)))
+          (when (or (not until) (string> updated until))
+            (eieio-oset repo slot updated)))))))
+
+;;;; Issues
+
+(cl-defmethod forge--update-issues ((repo forge-github-repository) data
+                                    &optional bump)
+  (closql-with-transaction (forge-db)
+    (let ((initial-pull (not (oref repo issues-until))))
+      (mapc (lambda (e) (forge--update-issue repo e bump initial-pull)) data))))
+
+(cl-defmethod forge--update-issue ((repo forge-github-repository) data
+                                   &optional bump initial-pull)
+  (let (issue-id issue)
+    (let-alist data
+      (closql-with-transaction (forge-db)
+        (setq issue-id (forge--object-id 'forge-issue repo .number))
+        (setq issue (or (forge-get-issue repo .number)
+                        (closql-insert
+                         (forge-db)
+                         (forge-issue :id         issue-id
+                                      :repository (oref repo id)
+                                      :number     .number))))
+        (oset issue their-id   .id)
+        (oset issue slug       (format "#%s" .number))
+        (oset issue state
+              (pcase-exhaustive (list .stateReason .state)
+                (`("COMPLETED"   ,_) 'completed)
+                (`("NOT_PLANNED" ,_) 'unplanned)
+                (`(,_      "CLOSED") 'completed)
+                (`(,_        "OPEN") 'open)))
+        (oset issue author     .author.login)
+        (oset issue title      .title)
+        (oset issue created    .createdAt)
+        (oset issue closed     .closedAt)
+        (oset issue locked-p   .locked)
+        (oset issue milestone  (and .milestone.id
+                                    (forge--object-id (oref repo id)
+                                                      .milestone.id)))
+        (oset issue body       (forge--sanitize-string .body))
+        (dolist (c .comments)
+          (let-alist c
+            (closql-insert
+             (forge-db)
+             (forge-issue-post
+              :id      (forge--object-id issue-id .databaseId)
+              :issue   issue-id
+              :number  .databaseId
+              :author  .author.login
+              :created .createdAt
+              :updated .updatedAt
+              :body    (forge--sanitize-string .body))
+             t)))
+        (forge--update-status repo issue data bump initial-pull))
+      (ignore-errors
+        (forge--set-id-slot repo issue 'assignees .assignees))
+      (ignore-errors
+        (unless (magit-get-boolean "forge.kludge-for-issue-294")
+          (forge--set-id-slot repo issue 'labels .labels))))
+    issue))
+
+;;;; Pullreqs
+
+(cl-defmethod forge--update-pullreqs ((repo forge-github-repository) data
+                                      &optional bump)
+  (closql-with-transaction (forge-db)
+    (let ((initial-pull (not (oref repo pullreqs-until))))
+      (mapc (lambda (e) (forge--update-pullreq repo e bump initial-pull)) data))))
+
+(cl-defmethod forge--update-pullreq ((repo forge-github-repository) data
+                                     &optional bump initial-pull)
+  (let (pullreq-id pullreq)
+    (let-alist data
+      (closql-with-transaction (forge-db)
+        (setq pullreq-id (forge--object-id 'forge-pullreq repo .number))
+        (setq pullreq (or (forge-get-pullreq repo .number)
+                          (closql-insert
+                           (forge-db)
+                           (forge-pullreq :id         pullreq-id
+                                          :repository (oref repo id)
+                                          :number     .number))))
+        (oset pullreq their-id     .id)
+        (oset pullreq slug         (format "#%s" .number))
+        (oset pullreq state        (pcase-exhaustive .state
+                                     ("MERGED" 'merged)
+                                     ("CLOSED" 'rejected)
+                                     ("OPEN"   'open)))
+        (oset pullreq author       .author.login)
+        (oset pullreq title        .title)
+        (oset pullreq created      .createdAt)
+        (oset pullreq closed       .closedAt)
+        (oset pullreq merged       .mergedAt)
+        (oset pullreq draft-p      .isDraft)
+        (oset pullreq locked-p     .locked)
+        (oset pullreq editable-p   .maintainerCanModify)
+        (oset pullreq cross-repo-p .isCrossRepository)
+        (oset pullreq base-ref     .baseRef.name)
+        (oset pullreq base-rev     .baseRefOid)
+        (oset pullreq base-repo    .baseRef.repository.nameWithOwner)
+        (oset pullreq head-ref     .headRef.name)
+        (oset pullreq head-rev     .headRefOid)
+        (oset pullreq head-user    .headRef.repository.owner.login)
+        (oset pullreq head-repo    .headRef.repository.nameWithOwner)
+        (oset pullreq milestone    (and .milestone.id
+                                        (forge--object-id (oref repo id)
+                                                          .milestone.id)))
+        (oset pullreq body         (forge--sanitize-string .body))
+        (dolist (p .comments)
+          (let-alist p
+            (closql-insert
+             (forge-db)
+             (forge-pullreq-post
+              :id      (forge--object-id pullreq-id .databaseId)
+              :pullreq pullreq-id
+              :number  .databaseId
+              :author  .author.login
+              :created .createdAt
+              :updated .updatedAt
+              :body    (forge--sanitize-string .body))
+             t)))
+        (forge--update-status repo pullreq data bump initial-pull))
+      (ignore-errors
+        (forge--set-id-slot repo pullreq 'assignees .assignees))
+      (ignore-errors
+        (forge--set-id-slot repo pullreq 'review-requests
+                            (--map (cdr (cadr (car it)))
+                                   .reviewRequests)))
+      (ignore-errors
+        (unless (magit-get-boolean "forge.kludge-for-issue-294")
+          (forge--set-id-slot repo pullreq 'labels .labels))))
+    pullreq))
+
 ;;;; Notifications
 
 (cl-defmethod forge--pull-notifications
@@ -342,6 +383,7 @@
     (forge--msg nil t nil "Pulling notifications")
     (pcase-let*
         ((`(,_ ,apihost ,forge ,_) spec)
+         (since (forge--ghub-notifications-since forge))
          (notifs
           (seq-keep (lambda (data)
                       ;; Github returns notifications for repositories the
@@ -351,9 +393,7 @@
                       (with-demoted-errors "forge--pull-notifications: %S"
                         (forge--ghub-massage-notification data githost)))
                     (forge--ghub-get nil "/notifications"
-                      (if-let ((since (forge--ghub-notifications-since forge)))
-                          `((all . t) (since . ,since))
-                        '((all . t)))
+                      `((all . t) ,@(and since `((since . ,since))))
                       :host apihost :unpaginate t)))
          (groups (-partition-all 50 notifs))
          (pages  (length groups))
@@ -373,7 +413,7 @@
                          nil #'cb nil :auth 'forge :host apihost))
                (forge--msg nil t t   "Pulling notifications")
                (forge--msg nil t nil "Storing notifications")
-               (forge--ghub-update-notifications notifs topics)
+               (forge--ghub-update-notifications notifs topics (not since))
                (forge--msg nil t t "Storing notifications")
                (when callback
                  (funcall callback)))))
@@ -418,7 +458,7 @@
                           ))))
                    repo type data))))))
 
-(defun forge--ghub-update-notifications (notifs topics)
+(defun forge--ghub-update-notifications (notifs topics initial-pull)
   (closql-with-transaction (forge-db)
     (pcase-dolist (`(,alias ,id ,_ ,repo ,type ,data) notifs)
       (let-alist data
@@ -427,7 +467,7 @@
                                  #'forge--update-pullreq)
                                repo
                                (cdr (cadr (assq alias topics)))
-                               nil))
+                               nil initial-pull))
                (notif (or (forge-get-notification id)
                           (closql-insert (forge-db)
                                          (forge-notification
@@ -440,12 +480,7 @@
           (oset notif title     .subject.title)
           (oset notif reason    (intern (downcase .reason)))
           (oset notif last-read .last_read_at)
-          ;; The `updated_at' returned for notifications is often
-          ;; incorrect, so use the value from the topic instead.
-          (oset notif updated   (oref topic updated))
-          ;; Github represents the three possible states using a boolean,
-          ;; which of course means that we cannot do the right thing here.
-          (oset topic status 'unread))))))
+          (oset notif updated   .updated_at))))))
 
 ;;;; Miscellaneous
 
@@ -491,18 +526,18 @@
    nil :auth 'forge :host host))
 
 (defun forge--batch-add-callback (host owner names)
-  (let ((repos (cl-mapcan (lambda (name)
-                            (let ((repo (forge-get-repository
-                                         (list host owner name)
-                                         nil :insert!)))
-                              (and (oref repo sparse-p)
-                                   (list repo))))
-                          names))
-        cb)
+  (let ((repos (cl-mapcan
+                (lambda (name)
+                  (let ((repo (forge-get-repository
+                               (list host owner name)
+                               nil :insert!)))
+                    (and (not (forge-get-repository repo nil :tracked?))
+                         (list repo))))
+                names))
+        (cb nil))
     (setq cb (lambda ()
                (when-let ((repo (pop repos)))
-                 (message "Adding %s..." (oref repo name))
-                 (forge--pull repo nil cb))))
+                 (forge--pull repo cb))))
     (funcall cb)))
 
 ;;; Mutations
@@ -591,7 +626,7 @@
   (forge--ghub-patch topic
     "/repos/:owner/:repo/issues/:number"
     `((title . ,title))
-    :callback (forge--set-field-callback)))
+    :callback (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-state
   ((_repo forge-github-repository) topic state)
@@ -603,7 +638,7 @@
       ('unplanned '((state . "closed") (state_reason . "not_planned")))
       ('rejected  '((state . "closed")))
       ('open      '((state . "open"))))
-    :callback (forge--set-field-callback)))
+    :callback (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-draft
   ((_repo forge-github-repository) topic value)
@@ -637,14 +672,14 @@
                                          (oref repo id)
                                          milestone))))
       `((milestone . :null)))
-    :callback (forge--set-field-callback)))
+    :callback (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-labels
   ((_repo forge-github-repository) topic labels)
   (funcall (if labels #'forge--ghub-put #'forge--ghub-delete)
            topic "/repos/:owner/:repo/issues/:number/labels" nil
            :payload labels
-           :callback (forge--set-field-callback)))
+           :callback (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-assignees
   ((_repo forge-github-repository) topic assignees)
@@ -653,11 +688,11 @@
     (when-let ((add (cl-set-difference assignees value :test #'equal)))
       (forge--ghub-post topic "/repos/:owner/:repo/issues/:number/assignees"
         `((assignees . ,add))
-        :callback (forge--set-field-callback)))
+        :callback (forge--set-field-callback topic)))
     (when-let ((remove (cl-set-difference value assignees :test #'equal)))
       (forge--ghub-delete topic "/repos/:owner/:repo/issues/:number/assignees"
         `((assignees . ,remove))
-        :callback (forge--set-field-callback)))))
+        :callback (forge--set-field-callback topic)))))
 
 (cl-defmethod forge--set-topic-review-requests
   ((_repo forge-github-repository) topic reviewers)
@@ -667,12 +702,12 @@
       (forge--ghub-post topic
         "/repos/:owner/:repo/pulls/:number/requested_reviewers"
         `((reviewers . ,add))
-        :callback (forge--set-field-callback)))
+        :callback (forge--set-field-callback topic)))
     (when-let ((remove (cl-set-difference value reviewers :test #'equal)))
       (forge--ghub-delete topic
         "/repos/:owner/:repo/pulls/:number/requested_reviewers"
         `((reviewers . ,remove))
-        :callback (forge--set-field-callback)))))
+        :callback (forge--set-field-callback topic)))))
 
 (cl-defmethod forge--delete-comment
   ((_repo forge-github-repository) post)

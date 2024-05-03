@@ -154,6 +154,7 @@ Given ~/Projects/FOSS/emacs/lisp/comint.el
   relative-from-project => emacs/lisp/comint.el
   relative-to-project => lisp/comint.el
   file-name => comint.el
+  file-name-with-project => FOSS|comint.el
   buffer-name => comint.el<2> (uniquify buffer name)"
   :type '(choice (const auto)
                  (const truncate-upto-project)
@@ -166,6 +167,7 @@ Given ~/Projects/FOSS/emacs/lisp/comint.el
                  (const relative-from-project)
                  (const relative-to-project)
                  (const file-name)
+                 (const file-name-with-project)
                  (const buffer-name))
   :group'doom-modeline)
 
@@ -235,8 +237,8 @@ It respects option `doom-modeline-icon' and option `doom-modeline-time-icon'."
 
 (defcustom doom-modeline-time-analogue-clock t
   "Whether to draw an analogue clock SVG as the live time icon.
-It respects options `doom-modeline-icon', `doom-modeline-time-icon', and
-`doom-modeline-time-live-icon'."
+It respects the option `doom-modeline-icon', option `doom-modeline-time-icon',
+and option `doom-modeline-time-live-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -468,12 +470,26 @@ in the given order."
   :type '(alist :key-type symbol :value-type sexp)
   :group 'doom-modeline)
 
+(defcustom doom-modeline-vcs-icon t
+  "Whether display the icon of vcs segment.
+
+It respects option `doom-modeline-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-check-icon t
+  "Whether display the icon of check segment.
+
+It respects option `doom-modeline-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (define-obsolete-variable-alias
   'doom-modeline-checker-simple-format
   'doom-modeline-check-simple-format
   "4.2.0")
 
-(defcustom doom-modeline-check-simple-format t
+(defcustom doom-modeline-check-simple-format nil
   "If non-nil, only display one number for check information if applicable."
   :type 'boolean
   :group 'doom-modeline)
@@ -662,6 +678,11 @@ If nil, display only if the mode line is active."
 (defcustom doom-modeline-buffer-file-truename-function #'identity
   "The function to handle `buffer-file-truename'."
   :type 'function
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-k8s-show-namespace t
+  "Whether to show the current Kubernetes context's default namespace."
+  :type 'boolean
   :group 'doom-modeline)
 
 
@@ -1375,7 +1396,8 @@ ARGS is same as `nerd-icons-octicon' and others."
   "Display TEXT in mode-line."
   (if (doom-modeline--active)
       text
-    (propertize text 'face 'mode-line-inactive)))
+    (propertize text 'face `(:inherit (mode-line-inactive
+                                       ,(get-text-property 0 'face text))))))
 
 (defun doom-modeline--create-bar-image (face width height)
   "Create the bar image.
@@ -1462,6 +1484,16 @@ Return nil if no project was found."
                    (car (with-no-warnings
                           (project-roots project)))))))))))
 
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-project-detection
+ (lambda (_sym val op _where)
+   (when (eq op 'set)
+     (setq doom-modeline-project-detection val)
+     (dolist (buf (buffer-list))
+       (with-current-buffer buf
+         (setq doom-modeline--project-root nil)
+         (and buffer-file-name (revert-buffer t t)))))))
+
 (defun doom-modeline-project-p ()
   "Check if the file is in a project."
   (doom-modeline--project-root))
@@ -1519,6 +1551,13 @@ Return `default-directory' if no project was found."
             ('file-name
              (propertize (file-name-nondirectory buffer-file-name)
                          'face 'doom-modeline-buffer-file))
+            ('file-name-with-project
+             (format "%s|%s"
+                     (propertize (file-name-nondirectory
+                                  (directory-file-name (file-local-name (doom-modeline-project-root))))
+                                 'face 'doom-modeline-project-dir)
+                     (propertize (file-name-nondirectory buffer-file-name)
+                                 'face 'doom-modeline-buffer-file)))
             ((or 'buffer-name _)
              (propertize "%b" 'face 'doom-modeline-buffer-file)))))
     (propertize (if (string-empty-p file-name)

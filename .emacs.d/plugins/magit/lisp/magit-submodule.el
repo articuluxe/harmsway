@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -488,7 +488,7 @@ or, failing that, the abbreviated HEAD commit hash."
       (dolist (module modules)
         (let ((default-directory
                (expand-file-name (file-name-as-directory module))))
-          (magit-insert-section (magit-module-section module t)
+          (magit-insert-section (module module t)
             (insert (propertize (format path-format module)
                                 'font-lock-face 'magit-diff-file-heading))
             (if (not (file-exists-p ".git"))
@@ -590,7 +590,7 @@ These sections can be expanded to show the respective commits."
   "For internal use, don't add to a hook."
   (unless (magit-ignore-submodules-p)
     (when-let ((modules (magit-list-module-paths)))
-      (magit-insert-section section ((eval type) nil t)
+      (magit-insert-section ((eval type) nil t)
         (string-match "\\`\\(.+\\) \\([^ ]+\\)\\'" heading)
         (magit-insert-heading
           (propertize (match-string 1 heading)
@@ -604,23 +604,22 @@ These sections can be expanded to show the respective commits."
             (when (magit-module-worktree-p module)
               (let ((default-directory
                      (expand-file-name (file-name-as-directory module))))
-                (when (magit-file-accessible-directory-p default-directory)
-                  (magit-insert-section sec (magit-module-section module t)
+                (when (file-accessible-directory-p default-directory)
+                  (magit-insert-section
+                      ( module module t
+                        :range range)
                     (magit-insert-heading
                       (propertize module
                                   'font-lock-face 'magit-diff-file-heading)
                       ":")
-                    (oset sec range range)
-                    (magit-git-wash
-                        (apply-partially #'magit-log-wash-log 'module)
-                      "-c" "push.default=current" "log" "--oneline" range)
-                    (when (> (point)
-                             (oref sec content))
-                      (delete-char -1))))))))
-        (if (> (point)
-               (oref section content))
-            (insert ?\n)
-          (magit-cancel-section))))))
+                    (let ((pos (point)))
+                      (magit-git-wash
+                          (apply-partially #'magit-log-wash-log 'module)
+                        "-c" "push.default=current" "log" "--oneline" range)
+                      (when (> (point) pos)
+                        (delete-char -1)))))))))
+        (magit-cancel-section 'if-empty)
+        (insert ?\n)))))
 
 ;;; List
 

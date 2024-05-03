@@ -38,6 +38,16 @@
 (require 'cl-lib)
 (require 'ivy)
 
+(eval-when-compile
+  (unless (fboundp 'static-if)
+    (defmacro static-if (condition then-form &rest else-forms)
+      "Expand to THEN-FORM or ELSE-FORMS based on compile-time CONDITION.
+Polyfill for Emacs 30 `static-if'."
+      (declare (debug (sexp sexp &rest sexp)) (indent 2))
+      (if (eval condition lexical-binding)
+          then-form
+        (macroexp-progn else-forms)))))
+
 (defgroup swiper nil
   "`isearch' with an overview."
   :group 'matching
@@ -280,15 +290,16 @@ If the input is empty, select the previous history element instead."
 (declare-function avy--remove-leading-chars "ext:avy")
 
 (defun swiper--avy-candidates ()
-  (let* (
+  (let* ((visible-overlays
+          (with-ivy-window (overlays-in (window-start) (window-end))))
          ;; We'll have overlapping overlays, so we sort all the
          ;; overlays in the visible region by their start, and then
          ;; throw out non-Swiper overlays or overlapping Swiper
          ;; overlays.
-         (visible-overlays (cl-sort (with-ivy-window
-                                      (overlays-in (window-start)
-                                                   (window-end)))
-                                    #'< :key #'overlay-start))
+         (visible-overlays
+          (static-if (fboundp 'value<)
+              (sort visible-overlays :key #'overlay-start :in-place t)
+            (cl-sort visible-overlays #'< :key #'overlay-start)))
          (min-overlay-start 0)
          (overlays-for-avy
           (cl-remove-if-not

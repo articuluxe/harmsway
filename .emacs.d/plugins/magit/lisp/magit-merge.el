@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -290,10 +290,6 @@ then also remove the respective remote branch."
         "--merge")))
 
 ;;; Sections
-
-(defvar-keymap magit-unmerged-section-map
-  :doc "Keymap for `unmerged' sections."
-  :parent magit-log-section-map)
 
 (defun magit-insert-merge-log ()
   "Insert section for the on-going merge.

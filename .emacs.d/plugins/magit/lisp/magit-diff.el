@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -464,25 +464,6 @@ image, accordingly.  Either the car or the cdr may be nil."
                          (regexp :tag "Author regexp"    "^Author:     "))
                  (choice (const  :tag "No committer image" nil)
                          (regexp :tag "Committer regexp" "^Commit:     ")))))
-
-(defcustom magit-revision-use-gravatar-kludge nil
-  "Whether to work around a bug which affects display of gravatars.
-
-Gravatar images are spliced into two halves which are then
-displayed on separate lines.  On macOS the splicing has a bug in
-some Emacs builds, which causes the top and bottom halves to be
-interchanged.  Enabling this option works around this issue by
-interchanging the halves once more, which cancels out the effect
-of the bug.
-
-See https://github.com/magit/magit/issues/2265
-and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=7847.
-
-Starting with Emacs 26.1 this kludge should not be required for
-any build."
-  :package-version '(magit . "2.3.0")
-  :group 'magit-revision
-  :type 'boolean)
 
 (defcustom magit-revision-fill-summary-line nil
   "Whether to fill excessively long summary lines.
@@ -1137,7 +1118,7 @@ The information can be in three forms:
 If no DWIM context is found, nil is returned."
   (cond
    ((and-let* ((commits (magit-region-values '(commit branch) t)))
-      (progn ; work around debbugs#31840
+      (progn
         (deactivate-mark)
         (concat (car (last commits)) ".." (car commits)))))
    (magit-buffer-refname
@@ -1191,7 +1172,7 @@ If no DWIM context is found, nil is returned."
   (and-let* ((commits (magit-region-values '(commit branch) t))
              (revA (car (last commits)))
              (revB (car commits)))
-    (progn ; work around debbugs#31840
+    (progn
       (when interactive
         (deactivate-mark))
       (if mbase
@@ -1643,7 +1624,7 @@ Like `magit-diff-visit-worktree-file' but use
 If FORCE-WORKTREE is non-nil, then visit the worktree version of
 the file, even if the diff is about a committed change.  Use FN
 to display the buffer in some window."
-  (if (magit-file-accessible-directory-p file)
+  (if (file-accessible-directory-p file)
       (magit-diff-visit-directory file force-worktree)
     (pcase-let ((`(,buf ,pos)
                  (magit-diff-visit-file--noselect file force-worktree)))
@@ -1734,7 +1715,7 @@ the Magit-Status buffer for DIRECTORY."
 (defun magit-diff-visit--hunk ()
   (and-let* ((scope (magit-diff-scope))
              (section (magit-current-section)))
-    (progn ; work around debbugs#31840
+    (progn
       (cl-case scope
         ((file files)
          (setq section (car (oref section children))))
@@ -2022,7 +2003,8 @@ Staging and applying changes is documented in info node
                (0)
                (1 (concat " in file " (car magit-buffer-diff-files)))
                (_ (concat " in files "
-                          (mapconcat #'identity magit-buffer-diff-files ", ")))))))
+                          (mapconcat #'identity magit-buffer-diff-files
+                                     ", ")))))))
   (setq magit-buffer-range-hashed
         (and magit-buffer-range (magit-hash-range magit-buffer-range)))
   (magit-insert-section (diffbuf)
@@ -2086,6 +2068,8 @@ keymap is the parent of their keymaps."
                                               '(unstaged staged))))))
 
 (defvar-keymap magit-file-section-map
+  ;; Even though this derived map doesn't add any bindings by default,
+  ;; it is quite possible that some users would want to add their own.
   :doc "Keymap for `file' sections."
   :parent magit-diff-section-base-map)
 
@@ -2170,7 +2154,9 @@ keymap is the parent of their keymaps."
       (setq magit-git-global-arguments
             (append magit-diff--reset-non-color-moved
                     magit-git-global-arguments)))
-    (magit--git-wash #'magit-diff-wash-diffs keep-error cmd args)))
+    (magit--git-wash #'magit-diff-wash-diffs
+        (if (member "--no-index" args) 'wash-anyway keep-error)
+      cmd args)))
 
 (defun magit-diff--maybe-add-stat-arguments (args)
   (if (member "--stat" args)
@@ -2417,9 +2403,12 @@ section or a child thereof."
 
 (defun magit-diff-insert-file-section
     (file orig status modes rename header binary long-status)
-  (magit-insert-section section
-    (file file (or (equal status "deleted")
-                   (derived-mode-p 'magit-status-mode)))
+  (magit-insert-section
+      ( file file
+        (or (equal status "deleted") (derived-mode-p 'magit-status-mode))
+        :source (and (not (equal orig file)) orig)
+        :header header
+        :binary binary)
     (insert (propertize (format "%-10s %s" status
                                 (if (or (not orig) (equal orig file))
                                     file
@@ -2430,10 +2419,6 @@ section or a child thereof."
           ((or binary long-status)
            (insert (format " (%s)" (if binary "binary" long-status)))))
     (magit-insert-heading)
-    (unless (equal orig file)
-      (oset section source orig))
-    (oset section header header)
-    (oset section binary binary)
     (when modes
       (magit-insert-section (hunk '(chmod))
         (insert modes)
@@ -2465,7 +2450,7 @@ section or a child thereof."
           (when rewind
             (setq range (replace-regexp-in-string "[^.]\\(\\.\\.\\)[^.]"
                                                   "..." range t t 1)))
-          (magit-insert-section (magit-module-section module t)
+          (magit-insert-section (module module t)
             (magit-insert-heading
               (propertize (concat "modified   " module)
                           'font-lock-face 'magit-diff-file-heading)
@@ -2491,13 +2476,13 @@ section or a child thereof."
              (equal (match-string 1) module))
         (magit-bind-match-strings (_module _range msg) nil
           (magit-delete-line)
-          (magit-insert-section (magit-module-section module)
+          (magit-insert-section (module module)
             (magit-insert-heading
               (propertize (concat "submodule  " module)
                           'font-lock-face 'magit-diff-file-heading)
               " (" msg ")"))))
        (t
-        (magit-insert-section (magit-module-section module)
+        (magit-insert-section (module module)
           (magit-insert-heading
             (propertize (concat "modified   " module)
                         'font-lock-face 'magit-diff-file-heading)
@@ -2524,20 +2509,18 @@ section or a child thereof."
            (combined (length= ranges 3))
            (value    (cons about ranges)))
       (magit-delete-line)
-      (magit-insert-section section (hunk value)
+      (magit-insert-section
+          ( hunk value nil
+            :washer #'magit-diff-paint-hunk
+            :combined combined
+            :from-range (if combined (butlast ranges) (car ranges))
+            :to-range (car (last ranges))
+            :about about)
         (insert (propertize (concat heading "\n")
                             'font-lock-face 'magit-diff-hunk-heading))
         (magit-insert-heading)
         (while (not (or (eobp) (looking-at "^[^-+\s\\]")))
-          (forward-line))
-        (oset section end (point))
-        (oset section washer #'magit-diff-paint-hunk)
-        (oset section combined combined)
-        (if combined
-            (oset section from-ranges (butlast ranges))
-          (oset section from-range (car ranges)))
-        (oset section to-range (car (last ranges)))
-        (oset section about about)))
+          (forward-line))))
     t))
 
 (defun magit-diff-expansion-threshold (section)
@@ -2640,9 +2623,9 @@ or a ref which is not a branch, then it inserts nothing."
                             'magit-section-secondary-heading)))
       (magit-insert-heading)
       (forward-line)
-      (magit-insert-section section (message)
-        (oset section heading-highlight-face
-              'magit-diff-revision-summary-highlight)
+      (magit-insert-section
+          ( message nil nil
+            :heading-highlight-face 'magit-diff-revision-summary-highlight)
         (let ((beg (point)))
           (forward-line)
           (magit--add-face-text-property
@@ -2671,8 +2654,9 @@ or a ref which is not a branch, then it inserts nothing."
 
 (defun magit-insert-revision-message ()
   "Insert the commit message into a revision buffer."
-  (magit-insert-section section (commit-message)
-    (oset section heading-highlight-face 'magit-diff-revision-summary-highlight)
+  (magit-insert-section
+      ( commit-message nil nil
+        :heading-highlight-face 'magit-diff-revision-summary-highlight)
     (let ((beg (point))
           (rev magit-buffer-revision))
       (insert (with-temp-buffer
@@ -2742,9 +2726,10 @@ or a ref which is not a branch, then it inserts nothing."
   "Insert commit notes into a revision buffer."
   (let* ((var "core.notesRef")
          (def (or (magit-get var) "refs/notes/commits")))
-    (dolist (ref (or (magit-list-active-notes-refs)))
-      (magit-insert-section section (notes ref (not (equal ref def)))
-        (oset section heading-highlight-face 'magit-diff-hunk-heading-highlight)
+    (dolist (ref (magit-list-active-notes-refs))
+      (magit-insert-section
+          ( notes ref (not (equal ref def))
+            :heading-highlight-face 'magit-diff-hunk-heading-highlight)
         (let ((beg (point))
               (rev magit-buffer-revision))
           (insert (with-temp-buffer
@@ -2905,8 +2890,6 @@ Refer to user option `magit-revision-insert-related-refs-display-alist'."
             (let ((top (list image '(slice 0.0 0.0 1.0 0.5)))
                   (bot (list image '(slice 0.0 0.5 1.0 1.0)))
                   (align `((space :align-to ,align-to))))
-              (when magit-revision-use-gravatar-kludge
-                (cl-rotatef top bot))
               (let ((inhibit-read-only t))
                 (insert (propertize " " 'display top))
                 (insert (propertize " " 'display align))

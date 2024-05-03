@@ -104,8 +104,11 @@ Argument COMMAND is required in sideline backend."
                ((not (sideline-backend-ovs 'sideline-flycheck))))
       (let (msgs)
         (dolist (err errors)
-          (let* ((level (flycheck-error-level err))
-                 (face (if (eq level 'info) 'success level))
+          (let* ((level (sideline-2str (flycheck-error-level err)))
+                 (face (cond
+                        ((string-match-p "warning" level) 'warning)
+                        ((string-match-p "error" level) 'error)
+                        (t 'success)))
                  (msg (flycheck-error-message err))
                  (lines (split-string msg "\n"))
                  (lines (butlast lines (- (length lines) sideline-flycheck-max-lines)))
@@ -153,8 +156,7 @@ Argument COMMAND is required in sideline backend."
    (t
     (remove-hook 'flycheck-after-syntax-check-hook #'sideline-flycheck--after-check t)
     (remove-hook 'post-command-hook #'sideline-flycheck--post-command t)
-    (remove-hook 'sideline-reset-hook #'sideline-flycheck--reset t)
-    (sideline-render))))  ; update sideline once
+    (remove-hook 'sideline-reset-hook #'sideline-flycheck--reset t))))
 
 (provide 'sideline-flycheck)
 ;;; sideline-flycheck.el ends here

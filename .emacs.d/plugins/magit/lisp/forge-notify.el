@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -131,15 +131,11 @@ signal an error."
   "Mode for looking at forge notifications."
   (hack-dir-local-variables-non-file-buffer))
 
-(defun forge-notifications-setup-buffer (&optional create)
-  (let* ((name "*forge-notifications*")
-         (magit-generate-buffer-name-function (lambda (_mode _value) name))
-         (default-directory "/"))
-    (if create
-        (magit-setup-buffer-internal #'forge-notifications-mode t
-                                     '((forge-buffer-unassociated-p t))
-                                     name)
-      (get-buffer name))))
+(defun forge-notifications-setup-buffer ()
+  (magit-setup-buffer-internal #'forge-notifications-mode nil
+                               '((default-directory "/")
+                                 (forge-buffer-unassociated-p t))
+                               (get-buffer-create "*forge-notifications*")))
 
 (defun forge-notifications-refresh-buffer ()
   (forge-insert-notifications))
@@ -184,7 +180,7 @@ signal an error."
 (defun forge-list-notifications ()
   "List notifications."
   (interactive)
-  (forge-notifications-setup-buffer t))
+  (forge-notifications-setup-buffer))
 
 (transient-define-suffix forge-notifications-display-inbox ()
   "List unread and pending notifications."
@@ -315,7 +311,7 @@ signal an error."
                    nil
                    (propertize title 'font-lock-face
                                (if-let ((topic (oref notif topic))
-                                        (! (eq (oref topic status) 'unread)))
+                                        ((eq (oref topic status) 'unread)))
                                    'forge-topic-unread
                                  'forge-topic-open)))))))
       (_

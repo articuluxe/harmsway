@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -41,7 +41,7 @@
    (author               :initarg :author)
    (title                :initarg :title)
    (created              :initarg :created)
-   (updated              :initarg :updated)
+   (updated              :initarg :updated :initform nil)
    (closed               :initarg :closed)
    (merged               :initarg :merged)
    (status               :initarg :status :initform nil)
@@ -345,8 +345,7 @@ Also see option `forge-topic-list-limit'."
                            (forge--pullreq-branch-active pullreq)
                            (and-let* ((branch (oref pullreq head-ref)))
                              (and (magit-local-branch-p branch) branch))))
-           (seq-uniq (cons "--graph" magit-buffer-log-args)))
-          (magit-make-margin-overlay nil t))
+           (seq-uniq (cons "--graph" magit-buffer-log-args))))
       (when-let ((range (forge--pullreq-range pullreq)))
         (magit-insert-section-body
           (magit--insert-log nil range magit-buffer-log-args)

@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -52,7 +52,7 @@
    (apihost                   :initform nil :initarg :apihost)
    (githost                   :initform nil :initarg :githost)
    (remote                    :initform nil :initarg :remote)
-   (sparse-p                  :initform t)
+   (condition                 :initform :stub)
    (created                   :initform nil)
    (updated                   :initform nil)
    (pushed                    :initform nil)
@@ -120,11 +120,6 @@
 (cl-defmethod forge-get-repository ((_(eql :id)) id)
   (closql-get (forge-db) (substring-no-properties id) 'forge-repository))
 
-(cl-defmethod forge-get-repository ((_ null) &optional remote)
-  ;; Avoid matching the ((host owner name) list) ...) method.
-  ;; Necessary for Emacs 30.0.50, since c55694785e9.  See #642.
-  (forge-get-repository :known? remote))
-
 (cl-defmethod forge-get-repository ((demand symbol) &optional remote)
   "Return the current forge repository.
 
@@ -138,9 +133,7 @@ or signal an error, depending on DEMAND."
   (or (and-let* ((repo (or forge-buffer-repository
                            (and forge-buffer-topic
                                 (forge-get-repository forge-buffer-topic)))))
-        (and (not (and (memq demand forge--signal-no-entry)
-                       (oref repo sparse-p)))
-             repo))
+        (forge-get-repository repo 'noerror demand))
       (magit--with-refresh-cache
           (list default-directory 'forge-get-repository demand)
         (if (not (magit-gitdir))
@@ -183,7 +176,9 @@ See `forge-alist' for valid Git hosts."
   (setq host  (substring-no-properties host))
   (setq owner (substring-no-properties owner))
   (setq name  (substring-no-properties name))
-  (unless (memq demand '(:tracked :tracked? :known? :insert! :stub :stub?))
+  (unless (memq demand '( :tracked :tracked?
+                          :known? :insert! :valid?
+                          :stub :stub?))
     (if-let ((new (pcase demand
                     ('t      :tracked)
                     ('full   :tracked?)
@@ -216,45 +211,87 @@ See `forge-alist' for valid Git hosts."
             (oset obj apihost apihost)
             (oset obj githost githost)
             (oset obj remote  remote))
-          (cond ((and (eq demand :tracked)
-                      (or (not obj)
-                          (oref obj sparse-p)))
-                 (error "Cannot use `%s' in %S yet.\n%s"
-                        this-command (magit-toplevel)
-                        "Use `M-x forge-add-repository' before trying again."))
-                ((and obj
-                      (oref obj sparse-p)
-                      (eq demand :tracked?))
-                 (setq obj nil)))
-          (when (and (memq demand '(:insert! :stub :stub?))
+          (pcase (list demand (and obj (eq (oref obj condition) :tracked)))
+            (`(:tracked? nil) (setq obj nil))
+            (`(:tracked  nil)
+             (error "Cannot use `%s' in %S yet.\n%s"
+                    this-command (magit-toplevel)
+                    "Use `M-x forge-add-repository' before trying again.")))
+          (when (and (memq demand '(:insert! :valid? :stub :stub?))
                      (not obj))
             (pcase-let ((`(,id . ,forge-id)
                          (forge--repository-ids
                           class webhost owner name
-                          (memq demand '(:stub :stub?)))))
-              ;; The repo might have been renamed on the forge.  #188
-              (unless (setq obj (forge-get-repository :id id))
-                (setq obj (funcall class
-                                   :id       id
-                                   :forge-id forge-id
-                                   :forge    webhost
-                                   :owner    owner
-                                   :name     name
-                                   :apihost  apihost
-                                   :githost  githost
-                                   :remote   remote))
-                (when (eq demand :insert!)
-                  (closql-insert (forge-db) obj)))))
+                          (memq demand '(:stub :stub?))
+                          (eq demand :valid?))))
+              (if (not id)
+                  ;; `:valid?' was used and it turned out it is not.
+                  (setq obj nil)
+                ;; The repo might have been renamed on the forge.  #188
+                (unless (setq obj (forge-get-repository :id id))
+                  (setq obj (funcall class
+                                     :id       id
+                                     :forge-id forge-id
+                                     :forge    webhost
+                                     :owner    owner
+                                     :name     name
+                                     :apihost  apihost
+                                     :githost  githost
+                                     :remote   remote))
+                  (when (eq demand :insert!)
+                    (closql-insert (forge-db) obj)
+                    (oset obj condition :known))))))
           obj))
     (when (memq demand forge--signal-no-entry)
       (error "Cannot determine forge repository.  No entry for %S in %s"
              host 'forge-alist))))
 
-(cl-defmethod forge-get-repository ((repo forge-repository))
-  repo)
+(cl-defmethod forge-get-repository ((repo forge-repository)
+                                    &optional noerror demand)
+  (setq noerror (and noerror t))
+  (with-slots (condition slug) repo
+    (cl-symbol-macrolet
+        ((err (error "Requested %s for %s, but is %s" demand slug condition))
+         (key (list (oref repo forge)
+                    (oref repo owner)
+                    (oref repo name)))
+         (ins (forge-get-repository key nil :insert!))
+         (set (forge-get-repository key nil :valid?)))
+      (pcase-exhaustive (list demand condition noerror)
+        (`(nil       ,_                     ,_)  repo)
+        (`(:tracked? :tracked               ,_)  repo)
+        (`(:tracked? ,_                     ,_)   nil)
+        (`(:tracked  :tracked               ,_)  repo)
+        (`(:tracked  ,_                      t)   nil)
+        (`(:tracked  ,_                    nil)   err)
+        (`(:known?   ,(or :tracked :known)  ,_)  repo)
+        (`(:known?   ,_                     ,_)   nil)
+        (`(:insert!  ,(or :tracked :known)  ,_)  repo)
+        (`(:insert!  ,_                     ,_)   ins)
+        (`(:valid?   ,(or :tracked :known)  ,_)  repo)
+        (`(:valid?   ,_                     ,_)   set)
+        (`(:stub?    ,_                     ,_)  repo)
+        (`(:stub     ,_                     ,_)  repo)))))
+
+(cl-defmethod forge-get-repository ((_ null) &optional noerror demand)
+  (if (and (memq demand '(:insert! :tracked :stub))
+           (not noerror))
+      (error "(Maybe repository) is nil; `%s' not satisfied" demand)
+    nil))
 
 (defun forge--get-repository:tracked? ()
   (forge-get-repository :tracked?))
+
+(defun forge-get-worktree (repo)
+  "Validate and return the worktree recorded for REPO.
+If no worktree is recorded, return nil.  If a worktree is recorded but
+that doesn't exist anymore, then discard the recorded value and return
+nil."
+  (and-let* ((worktree (oref repo worktree)))
+    (if (file-directory-p worktree)
+        worktree
+      (oset repo worktree nil)
+      nil)))
 
 ;;;; Current
 
@@ -301,13 +338,13 @@ an error."
   "Return t if REPO1 and REPO2 are the same repository.
 REPO1 and/or REPO2 may also be nil, in which case return nil."
   (and repo1 repo2
-       (or (equal      (oref repo1 id)    (oref repo2 id))
-           (and (equal (oref repo1 host)  (oref repo2 host))
-                (equal (oref repo1 owner) (oref repo2 owner))
-                (equal (oref repo1 name)  (oref repo2 name))))))
+       (or (equal      (oref repo1 id)      (oref repo2 id))
+           (and (equal (oref repo1 githost) (oref repo2 githost))
+                (equal (oref repo1 owner)   (oref repo2 owner))
+                (equal (oref repo1 name)    (oref repo2 name))))))
 
 (cl-defmethod forge--repository-ids ((class (subclass forge-repository))
-                                     host owner name &optional stub)
+                                     host owner name &optional stub noerror)
   "Return (OUR-ID . THEIR-ID) of the specified repository.
 If optional STUB is non-nil, then the IDs are not guaranteed to
 be unique.  Otherwise this method has to make an API request to
@@ -322,21 +359,24 @@ forges and hosts."
                                owner name
                                :host apihost
                                :auth 'forge
-                               :forge (forge--ghub-type-symbol class)))))
-    (cons (base64-encode-string
-           (format "%s:%s" id
-                   (cond (stub path)
-                         ((eq class 'forge-github-repository)
-                          ;; This is base64 encoded, according to
-                          ;; https://docs.github.com/en/graphql/reference/scalars#id.
-                          ;; Unfortunately that is not always true.
-                          ;; E.g., https://github.com/dit7ya/roamex.
-                          (condition-case nil
-                              (base64-decode-string their-id)
-                            (error their-id)))
-                         (t their-id)))
-           t)
-          (or their-id path))))
+                               :forge (forge--ghub-type-symbol class)
+                               :noerror noerror))))
+    (and (or stub their-id (not noerror))
+         (cons (base64-encode-string
+                (format "%s:%s" id
+                        (cond (stub path)
+                              ((eq class 'forge-github-repository)
+                               ;; This is base64 encoded, according to
+                               ;; https://docs.github.com/en/graphql/
+                               ;; reference/scalars#id.  Unfortunately
+                               ;; that is not always true.  E.g.,
+                               ;; https://github.com/dit7ya/roamex.
+                               (condition-case nil
+                                   (base64-decode-string their-id)
+                                 (error their-id)))
+                              (t their-id)))
+                t)
+               (or their-id path)))))
 
 (cl-defmethod forge--repository-ids ((_class (subclass forge-noapi-repository))
                                      host owner name &optional _stub)
@@ -394,46 +434,41 @@ forges and hosts."
       (cadr (car (cl-member host forge-alist :test #'equal :key #'caddr)))
       (user-error "Cannot determine apihost for %S" host)))
 
-(cl-defmethod forge--topics-until ((repo forge-repository) until type)
-  (if (oref repo sparse-p)
-      until
-    (let ((slot (intern (format "%ss-until" type))))
-      (or (eieio-oref repo slot)
-          (eieio-oset repo slot
-                      (caar (forge-sql [:select [updated] :from $i1
-                                        :where (= repository $s2)
-                                        :order-by [(desc updated)]
-                                        :limit 1]
-                                       type (oref repo id))))))))
-
 (cl-defmethod forge--format ((repo forge-repository) format-or-slot &optional spec)
-  (format-spec
-   (if (symbolp format-or-slot)
-       (eieio-oref repo format-or-slot)
-     format-or-slot)
-   (pcase-let* (((eieio forge owner name) repo)
-                (path (if owner (concat owner "/" name) name)))
+  (pcase-let* (((eieio (forge webhost) owner name) repo)
+               (path (if owner (concat owner "/" name) name)))
+    (format-spec
+     (let ((format (if (symbolp format-or-slot)
+                       (eieio-oref repo format-or-slot)
+                     format-or-slot)))
+       (if (member webhost ghub-insecure-hosts)
+           (replace-regexp-in-string "\\`https://" "http://" format t t)
+         format))
      `(,@spec
-       (?h . ,forge) ;aka webhost
+       (?h . ,webhost)
        (?o . ,owner)
        (?n . ,name)
        (?p . ,path)
        (?P . ,(string-replace "/" "%2F" path))))))
 
-(defun forge--set-field-callback ()
+(defun forge--set-field-callback (topic)
   (let ((buf (current-buffer)))
     (lambda (&rest _)
-      (with-current-buffer buf
-        (forge-pull nil nil nil
-                    (lambda ()
-                      (with-current-buffer buf
-                        (forge-refresh-buffer)
-                        (when (and transient--showp
-                                   (memq transient-current-command
-                                         '(forge-topic-menu
-                                           forge-topics-menu
-                                           forge-notifications-menu)))
-                          (transient--refresh-transient)))))))))
+      (with-current-buffer
+          (if (buffer-live-p buf) buf (current-buffer))
+        (forge--pull-topic
+         (forge-get-repository topic)
+         topic
+         :callback (lambda ()
+                     (with-current-buffer
+                         (if (buffer-live-p buf) buf (current-buffer))
+                       (forge-refresh-buffer)
+                       (when (and transient--showp
+                                  (memq transient-current-command
+                                        '(forge-topic-menu
+                                          forge-topics-menu
+                                          forge-notifications-menu)))
+                         (transient--refresh-transient)))))))))
 
 (defvar forge--mode-line-buffer nil)
 
@@ -461,7 +496,7 @@ forges and hosts."
 (cl-defmethod ghub--username ((repo forge-repository))
   (let ((default-directory default-directory))
     (unless (forge-repository-equal (forge-get-repository :stub?) repo)
-      (when-let ((worktree (oref repo worktree)))
+      (when-let ((worktree (forge-get-worktree repo)))
         (setq default-directory worktree)))
     (cl-call-next-method (oref repo apihost)
                          (forge--ghub-type-symbol (eieio-object-class repo)))))
@@ -469,9 +504,11 @@ forges and hosts."
 (defun forge--ghub-type-symbol (class)
   (pcase-exhaustive class
     ;; This package does not define a `forge-gitlab-http-repository'
-    ;; class, but we suggest at #9 that users define such a class if
-    ;; they must connect to a Gitlab instance that uses http instead
-    ;; of https.
+    ;; class, but we used to suggest at #9 that users define such a class
+    ;; if they must connect to a Gitlab instance that uses http instead
+    ;; of https.  Doing that isn't necessary anymore, but we have to keep
+    ;; supporting it here.  It is now sufficient to add an entry to
+    ;; `ghub-insecure-hosts'.
     ((or 'forge-gitlab-repository 'forge-gitlab-http-repository) 'gitlab)
     ('forge-github-repository    'github)
     ('forge-gitea-repository     'gitea)

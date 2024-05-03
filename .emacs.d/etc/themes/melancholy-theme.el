@@ -132,7 +132,7 @@
    `(show-paren-match ((t (:background ,my-shadow :weight extra-bold :foreground ,my-pop  ))))
    `(show-paren-mismatch ((t (:background ,my-warning :weight extra-bold ))))
    `(sp-show-pair-match-face ((t (:family ,font-mono :background ,my-active :height 1.25 ))))
-   `(sp-show-pair-match-content-face ((t (:background ,my-active :height 1.25 :weight bold ))))
+   `(sp-show-pair-match-content-face ((t (:background ,my-contrast :height 1.25 :weight bold ))))
    `(sp-show-pair-mismatch-face ((t (:background ,my-warning :weight extra-bold ))))
    `(sp-pair-overlay-face ((t (:background ,my-contrast ))))
 
@@ -310,7 +310,7 @@
 
 (when load-file-name
   (add-to-list 'custom-theme-load-path
-    (file-name-as-directory (file-name-directory load-file-name) )))
+               (file-name-as-directory (file-name-directory load-file-name) )))
 
 (provide-theme 'melancholy)
 

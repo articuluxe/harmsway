@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -597,7 +597,8 @@ call function WASHER with ARGS as its sole argument."
         (magit-cancel-section)
       (unless (bolp)
         (insert "\n"))
-      (when (equal exit 0)
+      (when (or (equal exit 0)
+                (eq keep-error 'wash-anyway))
         (save-restriction
           (narrow-to-region beg (point))
           (goto-char beg)
@@ -670,9 +671,9 @@ using `magit-debug-git-executable'.")
                          (push (cons host version)
                                magit--host-git-version-cache)
                          version))))
-               (t (error "Unexpected \"%s --version\" output: %S"
-                         (magit-git-executable)
-                         output)))))))))
+               ((error "Unexpected \"%s --version\" output: %S"
+                       (magit-git-executable)
+                       output)))))))))
 
 (defun magit-git-version-assert (&optional minimal who)
   "Assert that the used Git version is greater than or equal to MINIMAL.
@@ -820,7 +821,7 @@ Also see `magit-git-config-p'."
     (let ((dir (file-name-as-directory
                 (expand-file-name (or file default-directory))))
           (previous nil))
-      (while (not (magit-file-accessible-directory-p dir))
+      (while (not (file-accessible-directory-p dir))
         (setq dir (file-name-directory (directory-file-name dir)))
         (when (equal dir previous)
           (throw 'unsafe-default-dir nil))
@@ -1003,7 +1004,7 @@ is non-nil, in which case return nil."
        (let ((gitdir (magit-gitdir)))
          (cond (gitdir (file-in-directory-p default-directory gitdir))
                (noerror nil)
-               (t (signal 'magit-outside-git-repo default-directory))))))
+               ((signal 'magit-outside-git-repo default-directory))))))
 
 (defun magit-inside-worktree-p (&optional noerror)
   "Return t if `default-directory' is below the working directory.
@@ -1303,7 +1304,7 @@ are considered."
 
 (defun magit-module-worktree-p (module)
   (magit-with-toplevel
-    (file-exists-p (expand-file-name (expand-file-name ".git" module)))))
+    (file-exists-p (expand-file-name ".git" module))))
 
 (defun magit-module-no-worktree-p (module)
   (not (magit-module-worktree-p module)))
@@ -1364,7 +1365,7 @@ string \"true\", otherwise return nil."
 If REV is nil or has the form \":/TEXT\", return REV itself."
   (cond ((not rev) nil)
         ((string-match-p "^:/" rev) rev)
-        (t (concat rev "^{commit}"))))
+        ((concat rev "^{commit}"))))
 
 (defun magit-rev-equal (a b)
   "Return t if there are no differences between the commits A and B."
@@ -1456,7 +1457,7 @@ Git."
            (if (magit-ref-ambiguous-p (match-string 1 name))
                name
              (match-string 1 name)))
-          (t (magit-ref-maybe-qualify name)))))
+          ((magit-ref-maybe-qualify name)))))
 
 (defun magit-name-branch (rev &optional lax)
   (or (magit-name-local-branch rev)
@@ -1475,7 +1476,9 @@ Git."
 
 (defun magit-name-tag (rev &optional lax)
   (and-let* ((name (magit-rev-name rev "refs/tags/*")))
-    (progn ; work around debbugs#31840
+    ;; The progn is necessary to work around debbugs#31840.  This, and all
+    ;; the other instances, can be removed once we require at least Emacs 27.
+    (progn
       (when (string-suffix-p "^0" name)
         (setq name (substring name 0 -2)))
       (and (or lax (not (string-match-p "[~^]" name)))
@@ -1626,7 +1629,7 @@ to, or to some other symbolic-ref that points to the same ref."
     ([branch remote] (magit-section-parent-value it))))
 
 (defun magit-module-at-point (&optional predicate)
-  (when (magit-section-match 'magit-module-section)
+  (when (magit-section-match 'module)
     (let ((module (oref (magit-current-section) value)))
       (and (or (not predicate)
                (funcall predicate module))
@@ -2308,7 +2311,7 @@ If `first-parent' is set, traverse only first parents."
 
 (defun magit-format-rev-summary (rev)
   (and-let* ((str (magit-rev-format "%h %s" rev)))
-    (progn ; work around debbugs#31840
+    (progn
       (magit--put-face 0 (string-match " " str) 'magit-hash str)
       str)))
 
@@ -2657,7 +2660,7 @@ and this option only controls what face is used.")
   (magit-read-range
    prompt
    (or (and-let* ((revs (magit-region-values '(commit branch) t)))
-         (progn ; work around debbugs#31840
+         (progn
            (deactivate-mark)
            (concat (car (last revs)) ".." (car revs))))
        (magit-branch-or-commit-at-point)
@@ -2885,7 +2888,7 @@ out.  Only existing branches can be selected."
             (if predicate
                 (user-error "No modules satisfying %s available" predicate)
               (user-error "No modules available"))))
-      (setq modules (magit-region-values 'magit-module-section))
+      (setq modules (magit-region-values 'module))
       (when modules
         (when predicate
           (setq modules (seq-filter predicate modules)))

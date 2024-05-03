@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -31,11 +31,6 @@
 (require 'forge-post)
 
 (defvar bug-reference-auto-setup-functions)
-
-(defvar vertico-mode)
-(defvar vertico--input)
-
-(declare-function vertico--exhibit "vertico" ())
 
 ;;; Options
 
@@ -127,7 +122,7 @@ This face is not directly, instead several faces inherit from it
 either directly or via an intermediate face.  This face should
 only specify the `:foreground' attribute, which is why this face
 does not inherit from `magit-dimmed'."
-  :group 'magit-faces)
+  :group 'forge-faces)
 
 (defface forge-topic-header-line
   `((t :inherit magit-header-line
@@ -167,7 +162,7 @@ were closed without being merged."
 ;;;; Topic and Notification Summaries
 ;;;;; Notifications
 
-(defface forge-notification-unread
+(defface forge-topic-unread
   `((t :weight bold
        :box ( :line-width ,(if (>= emacs-major-version 28) (cons -1 -1) -1)
               :style nil)))
@@ -178,7 +173,7 @@ specify any attribute that is specified by any of those faces.
 Likewise those faces should not set `:weight' or `:slant'."
   :group 'forge-faces)
 
-(defface forge-notification-pending
+(defface forge-topic-pending
   '((t :weight bold))
   "Face used for summaries of entities with open notifications.
 This face is always used together with, and takes preference
@@ -187,7 +182,7 @@ specify any attribute that is specified by any of those faces.
 Likewise those faces should not set `:weight' or `:slant'."
   :group 'forge-faces)
 
-(defface forge-notification-done
+(defface forge-topic-done
   '((t :slant italic))
   "Face used for summaries of entities with no unread or open notification.
 This face is always used together with, and takes preference
@@ -353,9 +348,12 @@ an error.  If NOT-THINGATPT is non-nil, then don't use
   (and-let* ((repo (forge--repo-for-thingatpt)))
     (and (thing-at-point-looking-at
           (if (forge-gitlab-repository--eieio-childp repo)
-              "[#!]\\([0-9]+\\)\\_>"
+              "\\(?2:[#!]\\)\\(?1:[0-9]+\\)\\_>"
             "#\\([0-9]+\\)\\_>"))
-         (forge-get-topic repo (string-to-number (match-string 1))))))
+         (funcall (if (equal (match-string 2) "!")
+                      #'forge-get-pullreq
+                    #'forge-get-topic)
+                  repo (string-to-number (match-string-no-properties 1))))))
 
 (defun forge--repo-for-thingatpt ()
   (or (forge-repository-at-point)
@@ -456,11 +454,16 @@ can be selected from the start."
   (let* ((current (funcall current))
          (repo    (forge-get-repository (or current :tracked)))
          (default (and current (forge--format-topic-line current)))
-         (alist   (forge--topic-collection (funcall active repo)))
+         (alist   (forge--topic-collection
+                   (funcall (if forge-limit-topic-choices active all)
+                            repo)))
          (choices (mapcar #'car alist))
-         (choices (if (and default (not (member default choices)))
-                      (cons default choices)
-                    choices))
+         (choices (cond ((and forge-limit-topic-choices
+                              default
+                              (not (member default choices)))
+                         (push (cons default (oref current id)) alist)
+                         (cons default choices))
+                        (choices)))
          (choice
           (if forge-limit-topic-choices
               (minibuffer-with-setup-hook
@@ -469,19 +472,20 @@ can be selected from the start."
                                     forge-read-topic-minibuffer-map
                                     (current-local-map))))
                 (magit-completing-read
-                 (concat prompt
-                         (substitute-command-keys
-                          (format "\\<forge-read-topic-minibuffer-map>\
- (\\[forge-read-topic-lift-limit] for all)")))
-                 (let (all-choices)
-                   (lambda (&rest _)
-                     (cond
-                      (all-choices)
-                      (forge-limit-topic-choices choices)
-                      (t
-                       (forge--replace-minibuffer-prompt (concat prompt ": "))
-                       (setq alist (forge--topic-collection (funcall all repo)))
-                       (setq all-choices (mapcar #'car alist))))))
+                 (substitute-command-keys
+                  (format "%s \\<%s> (\\[%s] for all)" prompt
+                          'forge-read-topic-minibuffer-map
+                          'forge-read-topic-lift-limit))
+                 (completion-table-dynamic
+                  (let (all-choices)
+                    (lambda (_string)
+                      (cond
+                       (all-choices)
+                       (forge-limit-topic-choices choices)
+                       (t
+                        (forge--replace-minibuffer-prompt (concat prompt ": "))
+                        (setq alist (forge--topic-collection (funcall all repo)))
+                        (setq all-choices (mapcar #'car alist)))))))
                  nil t nil nil default))
             (magit-completing-read prompt choices nil t nil nil default))))
     (cdr (assoc choice alist))))
@@ -501,7 +505,9 @@ can be selected from the start."
   (when (and (minibufferp)
              forge-limit-topic-choices)
     (setq-local forge-limit-topic-choices nil)
-    (when vertico-mode
+    (when (and (bound-and-true-p vertico-mode)
+               (boundp 'vertico--input)
+               (fboundp 'vertico--exhibit))
       (setq vertico--input t)
       (vertico--exhibit))))
 
@@ -560,9 +566,6 @@ can be selected from the start."
                                      :order-by [(desc updated)]]
                                     (oref repo id))))
                :annotation-function (lambda (c) (get-text-property 0 :title c))))))
-
-(defun forge-read-topic-draft (topic)
-  (not (oref topic draft-p)))
 
 (defun forge-read-topic-title (topic)
   (read-string "Title: " (oref topic title)))
@@ -686,6 +689,11 @@ can be selected from the start."
       (magit--propertize-face "yes" 'bold)
     (magit--propertize-face "no" 'magit-dimmed)))
 
+(defun forge--format-topic-saved (topic)
+  (if (oref topic saved-p)
+      (magit--propertize-face "yes" 'bold)
+    (magit--propertize-face "no" 'magit-dimmed)))
+
 (defun forge--format-topic-title (topic)
   (with-slots (title status state) topic
     (magit-log-propertize-keywords
@@ -693,9 +701,9 @@ can be selected from the start."
      (magit--propertize-face
       title
       `(,(pcase status
-           ('unread  'forge-notification-unread)
-           ('pending 'forge-notification-pending)
-           ('done    'forge-notification-done))
+           ('unread  'forge-topic-unread)
+           ('pending 'forge-topic-pending)
+           ('done    'forge-topic-done))
         ,(pcase (list (eieio-object-class topic) state)
            (`(forge-issue   open)      'forge-issue-open)
            (`(forge-issue   completed) 'forge-issue-completed)
@@ -709,12 +717,8 @@ can be selected from the start."
           (forge--format-topic-labels topic)))
 
 (defun forge--format-topic-milestone (topic)
-  (or (and-let* ((id (oref topic milestone)))
-        (caar (forge-sql [:select [title] :from milestone :where (= id $s1)]
-                         id)))
-      ;; If the user hasn't pulled this repository yet after
-      ;; updating to db v7, then only the id is available.
-      (oref topic milestone)))
+  (and-let* ((id (oref topic milestone)))
+    (caar (forge-sql [:select [title] :from milestone :where (= id $s1)] id))))
 
 (defun forge--format-topic-labels (topic)
   (and-let* ((labels (closql--iref topic 'labels)))
@@ -761,9 +765,9 @@ can be selected from the start."
     (magit--propertize-face
      (symbol-name status)
      (pcase status
-       ('unread  'forge-notification-unread)
-       ('pending 'forge-notification-pending)
-       ('done    'forge-notification-done)))))
+       ('unread  'forge-topic-unread)
+       ('pending 'forge-topic-pending)
+       ('done    'forge-topic-done)))))
 
 (defun forge--format-topic-assignees (topic)
   (and-let* ((assignees (closql--iref topic 'assignees)))
@@ -784,6 +788,17 @@ can be selected from the start."
       (funcall forge-format-avatar-function person)
     ""))
 
+(defun forge--format-boolean (slot name)
+  ;; Booleans are formatted differently in transients and headers.
+  ;; Use this to format the (complete) description of suffix commands.
+  (if-let ((topic (forge-current-topic)))
+      (format (propertize "[%s]" 'face 'transient-delimiter)
+              (propertize name 'face
+                          (if (eieio-oref topic slot)
+                              'transient-value
+                            'transient-inactive-value)))
+    (format "[%s]" name)))
+
 ;;; Insert
 
 (defun forge--insert-topics (type heading topics)
@@ -795,7 +810,6 @@ can be selected from the start."
                                           'magit-section-heading)
                   (magit--propertize-face (format "(%s)" (length topics))
                                           'magit-section-child-count)))
-        (magit-make-margin-overlay nil t)
         (magit-insert-section-body
           (dolist (topic topics)
             (forge--insert-topic topic width))
@@ -852,9 +866,8 @@ can be selected from the start."
   (and (forge-db t)
        (or forge-display-in-status-buffer
            (not (eq major-mode 'magit-status-mode)))
-       (and-let* ((repo (forge-get-repository :known?)))
-         (and (not (oref repo sparse-p))
-              (or (not issues-p)
+       (and-let* ((repo (forge-get-repository :tracked?)))
+         (and (or (not issues-p)
                   (oref repo issues-p))
               repo))))
 
@@ -896,8 +909,9 @@ This mode itself is never used directly."
 (defalias 'forge-pullreq-refresh-buffer #'forge-topic-refresh-buffer)
 (defvar forge-pullreq-headers-hook
   '(forge-insert-topic-state
-    forge-insert-topic-status
     forge-insert-topic-draft
+    forge-insert-topic-status
+    forge-insert-topic-saved
     forge-insert-topic-refs
     forge-insert-topic-milestone
     forge-insert-topic-labels
@@ -914,7 +928,7 @@ This mode itself is never used directly."
          (current-repo (forge-get-repository :known?))
          (default-directory (if (forge-repository-equal current-repo repo)
                                 default-directory
-                              (or (oref repo worktree)
+                              (or (forge-get-worktree repo)
                                   default-directory))))
     (magit-setup-buffer-internal
      (if (forge-issue-p topic) #'forge-issue-mode #'forge-pullreq-mode)
@@ -1001,6 +1015,10 @@ This mode itself is never used directly."
   :command #'forge-topic-toggle-draft
   :format #'forge--format-topic-draft)
 
+(forge--define-topic-header saved
+  :command #'forge-topic-toggle-saved
+  :format #'forge--format-topic-saved)
+
 (forge--define-topic-header state
   :command #'forge-topic-state-menu
   :format #'forge--format-topic-state)
@@ -1025,7 +1043,7 @@ This mode itself is never used directly."
   :format #'forge--format-topic-review-requests)
 
 ;;; Commands
-;;;; Menus
+;;;; Groups
 
 (defconst forge--topic-set-state-group
   ["Set state"
@@ -1056,6 +1074,8 @@ This mode itself is never used directly."
    ("l s" forge-topic-toggle-saved)
    ("l m" forge-topic-set-marks)
    ("l n" forge-edit-topic-note)])
+
+;;;; Menus
 
 (defconst forge--topic-menus-column-widths '(19))
 
@@ -1238,10 +1258,14 @@ This mode itself is never used directly."
 (cl-defmethod initialize-instance :after
   ((obj forge--topic-set-slot-command) &optional _slots)
   (with-slots (slot) obj
-    (oset obj reader (intern (format "forge-read-topic-%s" slot)))
-    (oset obj setter (intern (format "forge--set-topic-%s" slot)))
-    (unless (slot-boundp obj 'formatter)
-      (oset obj formatter (intern (format "forge--format-topic-%s" slot))))))
+    (let ((name (symbol-name slot)))
+      (cond ((string-suffix-p "-p" name)
+             (setq name (substring name 0 -2))
+             (oset obj reader (lambda (topic) (not (eieio-oref topic slot)))))
+            ((oset obj reader (intern (format "forge-read-topic-%s" name)))))
+      (oset obj setter (intern (format "forge--set-topic-%s" name)))
+      (unless (slot-boundp obj 'formatter)
+        (oset obj formatter (intern (format "forge--format-topic-%s" name)))))))
 
 (transient-define-suffix forge-topic-set-title (title)
   "Edit the TITLE of the current topic."
@@ -1271,35 +1295,17 @@ This mode itself is never used directly."
   :class 'forge--topic-set-slot-command :slot 'review-requests
   :inapt-if-not #'forge-current-pullreq)
 
-(transient-define-suffix forge-topic-toggle-draft ()
+(transient-define-suffix forge-topic-toggle-draft (draft)
   "Toggle whether the current pull-request is a draft."
+  :class 'forge--topic-set-slot-command :slot 'draft-p
   :inapt-if-not #'forge-current-pullreq
-  :description
-  (lambda ()
-    (if-let ((pullreq (forge-current-pullreq)))
-        (format (propertize "[%s]" 'face 'transient-delimiter)
-                (propertize "draft" 'face
-                            (if (oref pullreq draft-p)
-                                'transient-value
-                              'transient-inactive-value)))
-      "[draft]"))
-  (interactive)
-  (let ((pullreq (forge-current-pullreq t)))
-    (oset pullreq draft-p (not (oref pullreq draft-p))))
-  (forge-refresh-buffer))
+  :description (lambda () (forge--format-boolean 'draft-p "draft")))
 
 (transient-define-suffix forge-topic-toggle-saved ()
   "Toggle whether this topic is marked as saved."
-  :inapt-if-not #'forge-current-topic
-  :description
-  (lambda ()
-    (if-let ((topic (forge-current-topic)))
-        (format (propertize "[%s]" 'face 'transient-delimiter)
-                (propertize "saved" 'face
-                            (if (oref topic saved-p)
-                                'transient-value
-                              'transient-inactive-value)))
-      "[saved]"))
+  :class 'forge--topic-set-slot-command :slot 'saved-p
+  :description (lambda () (forge--format-boolean 'saved-p "saved"))
+  ;; Set only locally because Github's API does not support this.
   (interactive)
   (let ((topic (forge-current-topic t)))
     (oset topic saved-p (not (oref topic saved-p))))
@@ -1349,7 +1355,7 @@ Return a value between 0 and 1."
 (defun forge--markdown-translate-filename-function (file)
   (if (string-match-p "\\`https?://" file)
       file
-    (let ((host (oref (forge-get-repository :tracked) githost)))
+    (let ((host (oref (forge-get-repository :tracked) forge))) ;aka webhost
       (concat (if (member host ghub-insecure-hosts) "http://" "https://")
               host
               (and (not (string-prefix-p "/" file)) "/")

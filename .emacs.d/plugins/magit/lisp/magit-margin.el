@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -126,7 +126,8 @@ does not carry to other options."
     ('magit-refs-mode       'magit-refs-margin)
     ('magit-stashes-mode    'magit-stashes-margin)
     ('magit-status-mode     'magit-status-margin)
-    ('forge-notifications-mode 'magit-status-margin)))
+    ('forge-notifications-mode 'magit-status-margin)
+    ('forge-topics-mode     'magit-status-margin)))
 
 (defun magit-set-buffer-margin (&optional reset refresh)
   (when-let ((option (magit-margin-option)))

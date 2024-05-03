@@ -2,21 +2,21 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;;     Sebastian Wiesner <lunaryorn@gmail.com>
 ;;     Florian Ragwitz <rafl@debian.org>
 ;;     Marius Vollmer <marius.vollmer@gmail.com>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: git tools vc
 
 ;; Package-Version: 3.3.0.50-git
 ;; Package-Requires: (
-;;     (emacs "25.1")
-;;     (compat "29.1.4.4")
+;;     (emacs "26.1")
+;;     (compat "29.1.4.5")
 ;;     (seq "2.24")
-;;     (transient "0.5.0")
+;;     (transient "0.6.0")
 ;;     (with-editor "3.3.2"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -213,8 +213,13 @@ The major mode configured here is turned on by the minor mode
 ;;;###autoload                   fundamental-mode
 ;;;###autoload                   git-commit-elisp-text-mode))))
 
+(defvaralias 'git-commit-mode-hook 'git-commit-setup-hook
+  "This variable is an alias for `git-commit-setup-hook' (which see).
+Also note that `git-commit-mode' (which see) is not a major-mode.")
+
 (defcustom git-commit-setup-hook
-  '(git-commit-save-message
+  '(git-commit-ensure-comment-gap
+    git-commit-save-message
     git-commit-setup-changelog-support
     git-commit-turn-on-auto-fill
     git-commit-propertize-diff
@@ -223,7 +228,8 @@ The major mode configured here is turned on by the minor mode
   :group 'git-commit
   :type 'hook
   :get (and (featurep 'magit-base) #'magit-hook-custom-get)
-  :options '(git-commit-save-message
+  :options '(git-commit-ensure-comment-gap
+             git-commit-save-message
              git-commit-setup-changelog-support
              magit-generate-changelog
              git-commit-turn-on-auto-fill
@@ -332,6 +338,26 @@ Magit isn't available, then setting this to a non-nil value has
 no effect."
   :group 'git-commit
   :safe 'booleanp
+  :type 'boolean)
+
+(defcustom git-commit-cd-to-toplevel nil
+  "Whether to set `default-directory' to the worktree in message buffer.
+
+Editing a commit message is done by visiting a file located in the git
+directory, usually \"COMMIT_EDITMSG\".  As is done when visiting any
+file, the local value of `default-directory' is set to the directory
+that contains the file.
+
+If this option is non-nil, then the local `default-directory' is changed
+to the working tree from which the commit command was invoked.  You may
+wish to do that, to make it easier to open a file that is located in the
+working tree, directly from the commit message buffer.
+
+If the git variable `safe.bareRepository' is set to \"explicit\", then
+you have to enable this, to be able to commit at all.  See issue #5100.
+
+This option only has an effect if the commit was initiated from Magit."
+  :group 'git-commit
   :type 'boolean)
 
 ;;;; Faces
@@ -546,27 +572,36 @@ Used as the local value of `header-line-format', in buffer using
   (setq git-commit-usage-message nil) ; show a shorter message")
 
 (defun git-commit-setup ()
-  (when (fboundp 'magit-toplevel)
-    ;; `magit-toplevel' is autoloaded and defined in magit-git.el,
-    ;; That library declares this functions without loading
-    ;; magit-process.el, which defines it.
-    (require 'magit-process nil t))
-  ;; Pretend that git-commit-mode is a major-mode,
-  ;; so that directory-local settings can be used.
-  (let ((default-directory
-         (or (and (not (file-exists-p ".dir-locals.el"))
-                  ;; When $GIT_DIR/.dir-locals.el doesn't exist,
-                  ;; fallback to $GIT_WORK_TREE/.dir-locals.el,
-                  ;; because the maintainer can use the latter
-                  ;; to enforce conventions, while s/he has no
-                  ;; control over the former.
-                  (fboundp 'magit-toplevel)  ; silence byte-compiler
-                  (magit-toplevel))
-             default-directory)))
-    (let ((buffer-file-name nil)         ; trick hack-dir-local-variables
-          (major-mode 'git-commit-mode)) ; trick dir-locals-collect-variables
-      (hack-dir-local-variables)
-      (hack-local-variables-apply)))
+  (let ((gitdir default-directory)
+        (cd nil))
+    (when (and (fboundp 'magit-toplevel)
+               (boundp 'magit--separated-gitdirs))
+      ;; `magit-toplevel' is autoloaded and defined in magit-git.el.  That
+      ;; library declares this function without loading magit-process.el,
+      ;; which defines it.
+      (require 'magit-process nil t)
+      (when git-commit-cd-to-toplevel
+        (setq cd (or (car (rassoc default-directory magit--separated-gitdirs))
+                     (magit-toplevel)))))
+    ;; Pretend that git-commit-mode is a major-mode,
+    ;; so that directory-local settings can be used.
+    (let ((default-directory
+           (or (and (not (file-exists-p
+                          (expand-file-name ".dir-locals.el" gitdir)))
+                    ;; When $GIT_DIR/.dir-locals.el doesn't exist,
+                    ;; fallback to $GIT_WORK_TREE/.dir-locals.el,
+                    ;; because the maintainer can use the latter
+                    ;; to enforce conventions, while s/he has no
+                    ;; control over the former.
+                    (fboundp 'magit-toplevel)
+                    (or cd (magit-toplevel)))
+               gitdir)))
+      (let ((buffer-file-name nil)         ; trick hack-dir-local-variables
+            (major-mode 'git-commit-mode)) ; trick dir-locals-collect-variables
+        (hack-dir-local-variables)
+        (hack-local-variables-apply)))
+    (when cd
+      (setq default-directory cd)))
   (when git-commit-major-mode
     (let ((auto-mode-alist
            ;; `set-auto-mode--apply-alist' removes the remote part from
@@ -615,24 +650,21 @@ Used as the local value of `header-line-format', in buffer using
       (magit-wip-maybe-add-commit-hook)))
   (setq with-editor-cancel-message
         #'git-commit-cancel-message)
-  (git-commit-mode 1)
   (git-commit-setup-font-lock)
   (git-commit-prepare-message-ring)
   (when (boundp 'save-place)
     (setq save-place nil))
-  (save-excursion
-    (goto-char (point-min))
-    (when (looking-at "\\`\\(\\'\\|\n[^\n]\\)")
-      (open-line 1)))
+  (let ((git-commit-mode-hook nil))
+    (git-commit-mode 1))
   (with-demoted-errors "Error running git-commit-setup-hook: %S"
     (run-hooks 'git-commit-setup-hook))
-  (when git-commit-usage-message
-    (setq with-editor-usage-message git-commit-usage-message))
-  (with-editor-usage-message)
+  (set-buffer-modified-p nil)
   (when-let ((format git-commit-header-line-format))
     (setq header-line-format
           (if (stringp format) (substitute-command-keys format) format)))
-  (set-buffer-modified-p nil))
+  (when git-commit-usage-message
+    (setq with-editor-usage-message git-commit-usage-message))
+  (with-editor-usage-message))
 
 (defun git-commit-run-post-finish-hook (previous)
   (when (and git-commit-post-finish-hook
@@ -653,10 +685,22 @@ Used as the local value of `header-line-format', in buffer using
 (define-minor-mode git-commit-mode
   "Auxiliary minor mode used when editing Git commit messages.
 This mode is only responsible for setting up some key bindings.
-Don't use it directly, instead enable `global-git-commit-mode'."
+Don't use it directly; instead enable `global-git-commit-mode'.
+Variable `git-commit-major-mode' controls which major-mode is
+used."
   :lighter "")
 
 (put 'git-commit-mode 'permanent-local t)
+
+(defun git-commit-ensure-comment-gap ()
+  "Separate initial empty line from initial comment.
+If the buffer begins with an empty line followed by a comment, insert
+an additional newline inbetween, so that once the users start typing,
+the input isn't tacked to the comment."
+  (save-excursion
+    (goto-char (point-min))
+    (when (looking-at (format "\\`\n%s" comment-start))
+      (open-line 1))))
 
 (defun git-commit-setup-changelog-support ()
   "Treat ChangeLog entries as unindented paragraphs."
@@ -779,9 +823,8 @@ With a numeric prefix ARG, go forward ARG comments."
   "Search backward through message history for a match for STRING.
 Save current message first."
   (interactive
-   ;; Avoid `format-prompt' because it isn't available until Emacs 28.
-   (list (read-string (format "Comment substring (default %s): "
-                              log-edit-last-comment-match)
+   (list (read-string (format-prompt "Comment substring"
+                                     log-edit-last-comment-match)
                       nil nil log-edit-last-comment-match)))
   (cl-letf (((symbol-function #'log-edit-previous-comment)
              (symbol-function #'git-commit-prev-message)))
@@ -791,9 +834,8 @@ Save current message first."
   "Search forward through message history for a match for STRING.
 Save current message first."
   (interactive
-   ;; Avoid `format-prompt' because it isn't available until Emacs 28.
-   (list (read-string (format "Comment substring (default %s): "
-                              log-edit-last-comment-match)
+   (list (read-string (format-prompt "Comment substring"
+                                     log-edit-last-comment-match)
                       nil nil log-edit-last-comment-match)))
   (cl-letf (((symbol-function #'log-edit-previous-comment)
              (symbol-function #'git-commit-prev-message)))

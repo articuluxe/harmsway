@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -274,7 +274,7 @@ Also see option `magit-blame-styles'."
                                    (error "Cannot get blame chunk at eob"))
                                (car (magit-blame--parse-chunk type))))))
                    (noerror nil)
-                   (t (error "Buffer does not visit a tracked file")))))))
+                   ((error "Buffer does not visit a tracked file")))))))
 
 (defun magit-blame-chunk-at (pos)
   (--some (overlay-get it 'magit-blame-chunk)

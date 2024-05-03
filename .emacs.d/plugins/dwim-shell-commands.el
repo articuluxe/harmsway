@@ -338,6 +338,25 @@ Optional argument ARGS as per `browse-url-default-browser'"
    "ffmpeg -i '<<f>>' -vcodec libwebp -filter:v fps=fps=10 -compression_level 3 -lossless 1 -loop 0 -preset default -an -vsync 0 '<<fne>>'.webp"
    :utils "ffmpeg"))
 
+(defun dwim-shell-commands-webp-to-video ()
+  "Convert all marked webp(s) to video(s)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Convert webp to video"
+   "convert '<<f>>' '<<td>>/<<bne>>.gif'
+    ffmpeg -i '<<td>>/<<bne>>.gif' -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' '<<fne>>.mp4'"
+   :utils '("ffmpeg" "convert")
+   :extensions "webp"))
+
+(defun dwim-shell-commands-webp-to-gif ()
+  "Convert all marked webp(s) to gif(s)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Convert webp to video"
+   "convert '<<f>>' '<<fne>>.gif''"
+   :utils '("convert")
+   :extensions "webp"))
+
 (defun dwim-shell-commands-video-to-hevc-mkv ()
   "Convert all marked videos to hevc mkv."
   (interactive)
@@ -406,6 +425,19 @@ Optional argument ARGS as per `browse-url-default-browser'"
      :extensions "gif" :utils '("gifsicle" "identify")
      :post-process-template (lambda (script file)
                               (string-replace "<<frames>>" (dwim-shell-commands--gifsicle-frames-every factor file) script)))))
+
+(defun dwim-shell-commands-image-apply-ios-round-corners ()
+  "Apply iOS round corners to image(s)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+     "Speed up gif"
+     "set -o xtrace
+      width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=noprint_wrappers=1:nokey=1 '<<f>>')
+      height=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=noprint_wrappers=1:nokey=1 '<<f>>')
+      corner=$((${width}/4))
+      echo ${corner}
+      convert -size ${width}x${height} xc:none -fill white -draw \"roundRectangle 0,0 ${width},${height} ${corner},${corner}\" '<<f>>' -compose SrcIn -composite '<<fne>>_ios_round.<<e>>'"
+     :utils '("ffprobe" "convert")))
 
 (defun dwim-shell-commands-clip-round-rect-gif ()
   "Clip gif(s) with round rectangle."
@@ -572,14 +604,23 @@ EOF"
    "pdftotext -layout '<<f>>' '<<fne>>.txt'"
    :utils "pdftotext"))
 
-(defun dwim-shell-commands-resize-image ()
-  "Resize marked image(s)."
+(defun dwim-shell-commands-resize-image-by-factor ()
+  "Resize marked image(s) by factor."
   (interactive)
   (dwim-shell-command-on-marked-files
    "Resize image"
    (let ((factor (read-number "Resize scaling factor: " 0.5)))
      (format "convert -resize %%%d '<<f>>' '<<fne>>_x%.2f.<<e>>'"
              (* 100 factor) factor))
+   :utils "convert"))
+
+(defun dwim-shell-commands-resize-image-in-pixels ()
+  "Resize marked image(s) in pixels."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Resize image"
+   (let ((width (read-number "Resize width (pixels): " 500)))
+     (format "convert -resize %dx '<<f>>' '<<fne>>_x%d.<<e>>'" width width))
    :utils "convert"))
 
 (defun dwim-shell-commands-pdf-password-protect ()
@@ -590,6 +631,16 @@ EOF"
    (format "qpdf --verbose --encrypt '%s' '%s' 256 -- '<<f>>' '<<fne>>_protected.<<e>>'"
            (read-passwd "user-password: ")
            (read-passwd "owner-password: "))
+   :utils "qpdf"
+   :extensions "pdf"))
+
+(defun dwim-shell-commands-pdf-password-unprotect ()
+  "Remove a password from pdf(s)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Remove protection from pdf"
+   (format "qpdf --verbose --decrypt --password='%s' -- '<<f>>' '<<fne>>_unprotected.<<e>>'"
+           (read-passwd "password: "))
    :utils "qpdf"
    :extensions "pdf"))
 
@@ -664,6 +715,17 @@ EOF"
              (/ 1 (float factor)) factor))
    :utils "ffmpeg"))
 
+(defun dwim-shell-commands-speed-up-video-fragment ()
+  "Speed up fragment in video(s)."
+  (interactive)
+  (let ((start (read-number "Start (seconds): "))
+        (end (read-number "End (seconds): "))
+        (factor (read-number "Speed up factor: " 2)))
+    (dwim-shell-command-on-marked-files
+     "Speed up fragment in video"
+     (format "ffmpeg -i '<<f>>' -filter_complex '[0:v]trim=start=0:end=%d,setpts=PTS-STARTPTS[v0];[0:v]trim=start=%d:end=%d,setpts=(PTS-1)/%d[v1];[0:v]trim=start=%d,setpts=PTS-STARTPTS[v2];[v0][v1][v2]concat=n=3:v=1:a=0' -preset fast '<<fne>>_%d:%dx%d.<<e>>'" start start end factor end start end factor)
+     :utils "ffmpeg")))
+
 (defun dwim-shell-commands-resize-video ()
   "Resize marked images."
   (interactive)
@@ -712,6 +774,38 @@ ffmpeg -n -i '<<f>>' -vf \"scale=$width:-2\" '<<fne>>_x<<Scaling factor:0.5>>.<<
            (kill-new hash)
            (message "Copied %s to clipboard"
                     (propertize hash 'face 'font-lock-string-face)))
+       (switch-to-buffer buffer)))))
+
+(defun dwim-shell-commands-view-sqlite-schema-diagram ()
+  "View sqlite schema diagram."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "View sqlite schema"
+   "set -e
+temp_dir=\"${TMPDIR:-/tmp/}\"
+file_name=\"sqlite-schema-diagram.sql\"
+file_path=\"${temp_dir}/${file_name}\"
+url=\"https://gitlab.com/Screwtapello/sqlite-schema-diagram/-/raw/main/sqlite-schema-diagram.sql\"
+
+if [[ ! -f \"$file_path\" ]]; then
+  curl -o \"$file_path\" \"$url\"
+fi
+
+sqlite3 -list \"<<f>>\" < $file_path > \"<<fne>>.dot\"
+dot -Tsvg \"<<fne>>.dot\" > \"<<fne>>.svg\"
+echo \"<<fne>>.svg\"
+"
+   :utils '("dot" "sqlite3")
+   :on-completion
+   (lambda (buffer process)
+     (if (= (process-exit-status process) 0)
+         (with-current-buffer buffer
+           (let ((svg-file (string-trim (buffer-string))))
+             (if (string-suffix-p "svg" svg-file)
+                 (progn
+                   (find-file svg-file)
+                   (kill-buffer buffer))
+               (switch-to-buffer buffer))))
        (switch-to-buffer buffer)))))
 
 (defun dwim-shell-commands-open-externally ()

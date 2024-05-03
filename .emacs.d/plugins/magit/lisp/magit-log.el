@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -685,7 +685,7 @@ previously checked out branch and its upstream and push-target."
                     (setq rebase (magit-ref-abbrev rebase))
                     (setq current rebase)
                     (setq head "HEAD"))
-                   (t (setq current (magit-get-previous-branch)))))
+                   ((setq current (magit-get-previous-branch)))))
            (cond (current
                   (setq current
                         (magit--propertize-face current'magit-branch-local))
@@ -694,7 +694,7 @@ previously checked out branch and its upstream and push-target."
                   (when upstream
                     (setq upup (and (magit-local-branch-p upstream)
                                     (magit-get-upstream-branch upstream)))))
-                 (t (setq head "HEAD")))
+                 ((setq head "HEAD")))
            (delq nil (list current head target upstream upup)))
          (magit-log-arguments)))
   (magit-log-setup-buffer revs args files))
@@ -1361,12 +1361,16 @@ Do not add this to a hook variable."
       ;; of the youngest expired reflog entry.
       (when (and (eq style 'reflog) (not date))
         (cl-return-from magit-log-wash-rev t))
-      (magit-insert-section section (commit hash)
-        (pcase style
-          ('stash      (oset section type 'stash))
-          ('module     (oset section type 'module-commit))
-          ('bisect-log (setq hash (magit-rev-parse "--short" hash))))
-        (setq hash (propertize hash 'font-lock-face
+      (magit-insert-section
+          ((eval (pcase style
+                   ('stash  'stash)
+                   ('module 'module-commit)
+                   (_       'commit)))
+           hash)
+        (setq hash (propertize (if (eq style 'bisect-log)
+                                   (magit-rev-parse "--short" hash)
+                                 hash)
+                               'font-lock-face
                                (pcase (and gpg (aref gpg 0))
                                  (?G 'magit-signature-good)
                                  (?B 'magit-signature-bad)
@@ -1595,7 +1599,8 @@ The shortstat style is experimental and rather slow."
 (defun magit-log-format-author-margin (author date &optional previous-line)
   (pcase-let ((`(,_ ,style ,width ,details ,details-width)
                (or magit-buffer-margin
-                   (symbol-value (magit-margin-option)))))
+                   (symbol-value (magit-margin-option))
+                   (error "No margin format specified for %s" major-mode))))
     (magit-make-margin-overlay
      (concat (and details
                   (concat (magit--propertize-face
@@ -1845,10 +1850,6 @@ keymap is the parent of their keymaps."
   "<remap> <magit-visit-thing>" #'magit-diff-dwim
   "<1>" (magit-menu-item "Visit diff" #'magit-diff-dwim))
 
-(defvar-keymap magit-unpulled-section-map
-  :doc "Keymap for `unpulled' sections."
-  :parent magit-log-section-map)
-
 (cl-defmethod magit-section-ident-value ((section magit-unpulled-section))
   "\"..@{push}\" cannot be used as the value because that is
 ambiguous if `push.default' does not allow a 1:1 mapping, and
@@ -1887,10 +1888,6 @@ in the pushremote case."
                   (propertize target 'font-lock-face 'magit-branch-remote)))
         (magit--insert-log nil range magit-buffer-log-args)
         (magit-log-insert-child-count)))))
-
-(defvar-keymap magit-unpushed-section-map
-  :doc "Keymap for `unpushed' sections."
-  :parent magit-log-section-map)
 
 (cl-defmethod magit-section-ident-value ((section magit-unpushed-section))
   "\"..@{push}\" cannot be used as the value because that is

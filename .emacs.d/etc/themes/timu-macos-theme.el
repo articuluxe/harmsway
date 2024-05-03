@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 2023-01-03
 ;; Keywords: faces themes
-;; Version: 1.3
+;; Version: 1.4
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-macos-theme
 
@@ -435,7 +435,7 @@ Customize `timu-macos-mode-line-background' the to achieve this."
 
 
 (deftheme timu-macos
-  "Color theme with cyan as a dominant color.
+  "Color theme inspired by the macOS UI.
 Sourced other themes to get information about font faces for packages.")
 
 ;;; DARK FLAVOUR
@@ -457,18 +457,18 @@ Sourced other themes to get information about font faces for packages.")
         (fg-other  (if timu-macos-muted-colors "#dedede" "#dedede"))
 
         (grey      (if timu-macos-muted-colors "#d2d2d2" "#8c8c8c"))
-        (red       (if timu-macos-muted-colors "#ffa5a4" "#ec5f5e"))
-        (darkred   (if timu-macos-muted-colors "#d7806f" "#913a29"))
-        (orange    (if timu-macos-muted-colors "#ffce80" "#e8883a"))
-        (green     (if timu-macos-muted-colors "#befe9c" "#78b856"))
-        (blue      (if timu-macos-muted-colors "#96ebff" "#50a5eb"))
-        (magenta   (if timu-macos-muted-colors "#ffa2e2" "#e45c9c"))
+        (red       (if timu-macos-muted-colors "#ffa596" "#ff6e64"))
+        (darkred   (if timu-macos-muted-colors "#ff8478" "#cc5850"))
+        (orange    (if timu-macos-muted-colors "#ffd760" "#ffb350"))
+        (green     (if timu-macos-muted-colors "#9fffac" "#6ae073"))
+        (blue      (if timu-macos-muted-colors "#75ecff" "#4e9dff"))
+        (magenta   (if timu-macos-muted-colors "#ffb8ff" "#e45c9c"))
         (teal      (if timu-macos-muted-colors "#d7ffff" "#91f3e7"))
-        (yellow    (if timu-macos-muted-colors "#ffff8a" "#f6c844"))
-        (darkblue  (if timu-macos-muted-colors "#7abeff" "#3478f6"))
-        (purple    (if timu-macos-muted-colors "#e19ae9" "#9b54a3"))
-        (cyan      (if timu-macos-muted-colors "#ceffff" "#88c0d0"))
-        (lightcyan (if timu-macos-muted-colors "#8cffff" "#46d9ff"))
+        (yellow    (if timu-macos-muted-colors "#ffff82" "#ffde57"))
+        (darkblue  (if timu-macos-muted-colors "#7abeff" "#009dff"))
+        (purple    (if timu-macos-muted-colors "#e19ae9" "#cd7bf6"))
+        (cyan      (if timu-macos-muted-colors "#00ffff" "#00d1e9"))
+        (lightcyan (if timu-macos-muted-colors "#ceffff" "#88c0d0"))
         (darkcyan  (if timu-macos-muted-colors "#98ddeb" "#5297a5"))
 
         (black     (if timu-macos-muted-colors "#000000" "#000000"))
@@ -1080,8 +1080,12 @@ Sourced other themes to get information about font faces for packages.")
      `(flyspell-incorrect ((,class (:underline (:style wave :color ,red)))))
 
 ;;;; forge - dark
-     `(forge-topic-closed ((,class (:foreground ,macos5 :strike-through t))))
+     `(forge-topic-closed ((,class (:foreground ,macos3 :strike-through t))))
      `(forge-topic-label ((,class (:box nil))))
+     `(forge-issue-completed ((,class (:foreground ,macos3 :strike-through t))))
+     `(forge-pullreq-merged ((,class (:foreground ,purple))))
+     `(forge-pullreq-open ((,class (:foreground ,green))))
+     `(forge-pullreq-rejected ((,class (:foreground ,red :strike-through t))))
 
 ;;;; git-commit - dark
      `(git-commit-comment-branch-local ((,class (:foreground ,teal))))
@@ -1975,11 +1979,11 @@ Sourced other themes to get information about font faces for packages.")
      `(tree-sitter-hl-face:escape ((,class (:foreground ,red))))
      `(tree-sitter-hl-face:embedded ((,class (:foreground ,fg))))
      `(tree-sitter-hl-face:keyword ((,class (:foreground ,blue))))
-     `(tree-sitter-hl-face:operator ((,class (:foreground ,green))))
+     `(tree-sitter-hl-face:operator ((,class (:foreground ,yellow))))
      `(tree-sitter-hl-face:label ((,class (:foreground ,fg))))
      `(tree-sitter-hl-face:constant ((,class (:foreground ,red))))
      `(tree-sitter-hl-face:constant.builtin ((,class (:foreground ,red))))
-     `(tree-sitter-hl-face:number ((,class (:foreground ,green))))
+     `(tree-sitter-hl-face:number ((,class (:foreground ,purple))))
      `(tree-sitter-hl-face:punctuation ((,class (:foreground ,fg))))
      `(tree-sitter-hl-face:punctuation.bracket ((,class (:foreground ,fg))))
      `(tree-sitter-hl-face:punctuation.delimiter ((,class (:foreground ,fg))))
@@ -2118,18 +2122,18 @@ Sourced other themes to get information about font faces for packages.")
         (fg-other  "#2a2a2a")
 
         (grey      "#8c8c8c")
-        (red       "#ec5f5e")
-        (darkred   "#913a29")
-        (orange    "#e8883a")
-        (green     "#78b856")
-        (blue      "#50a5eb")
+        (red       "#ff6e64")
+        (darkred   "#cc5850")
+        (orange    "#ffb350")
+        (green     "#6ae073")
+        (blue      "#4e9dff")
         (magenta   "#e45c9c")
         (teal      "#91f3e7")
-        (yellow    "#f6c844")
-        (darkblue  "#3478f6")
-        (purple    "#9b54a3")
-        (cyan      "#88c0d0")
-        (lightcyan "#46d9ff")
+        (yellow    "#ffde57")
+        (darkblue  "#009dff")
+        (purple    "#cd7bf6")
+        (cyan      "#00d1e9")
+        (lightcyan "#88c0d0")
         (darkcyan  "#5297a5")
 
         (black     "#000000")
@@ -2741,8 +2745,12 @@ Sourced other themes to get information about font faces for packages.")
      `(flyspell-incorrect ((,class (:underline (:style wave :color ,red)))))
 
 ;;;; forge - light
-     `(forge-topic-closed ((,class (:foreground ,macos5 :strike-through t))))
+     `(forge-topic-closed ((,class (:foreground ,macos2 :strike-through t))))
      `(forge-topic-label ((,class (:box nil))))
+     `(forge-issue-completed ((,class (:foreground ,macos2 :strike-through t))))
+     `(forge-pullreq-merged ((,class (:foreground ,purple))))
+     `(forge-pullreq-open ((,class (:foreground ,green))))
+     `(forge-pullreq-rejected ((,class (:foreground ,red :strike-through t))))
 
 ;;;; git-commit - light
      `(git-commit-comment-branch-local ((,class (:foreground ,teal))))

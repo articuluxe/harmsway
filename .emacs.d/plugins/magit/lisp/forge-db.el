@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -53,7 +53,7 @@
    (object-class :initform 'forge-repository)
    (file         :initform 'forge-database-file)
    (schemata     :initform 'forge--db-table-schemata)
-   (version      :initform 12)))
+   (version      :initform 13)))
 
 (defvar forge--override-connection-class nil)
 
@@ -91,7 +91,7 @@
       apihost
       githost
       remote
-      sparse-p
+      condition
       created
       updated
       pushed
@@ -500,6 +500,37 @@
         (emacsql db [:alter-table repository :add-column pullreqs-until :default nil])
         (closql--db-set-version db (setq version 12))
         (message "Upgrading Forge database from version 11 to 12...done"))
+      (when (= version 12)
+        (message "Upgrading Forge database from version 12 to 13...")
+        (dolist (id (emacsql db [:select id :from repository
+                                 :where (isnull issues-until)]))
+          (emacsql
+           db [:update repository :set (= issues-until $s1) :where (= id $s2)]
+           (caar (forge-sql [:select [updated] :from issue
+                             :where (= repository $s1)
+                             :order-by [(desc updated)]
+                             :limit 1]
+                            id))
+           id))
+        (dolist (id (emacsql db [:select id :from repository
+                                 :where (isnull pullreqs-until)]))
+          (emacsql
+           db [:update repository :set (= pullreqs-until $s1) :where (= id $s2)]
+           (caar (forge-sql [:select [updated] :from pullreq
+                             :where (= repository $s1)
+                             :order-by [(desc updated)]
+                             :limit 1]
+                            id))
+           id))
+        (emacsql db [:alter-table repository :rename-column sparse-p :to condition])
+        (pcase-dolist (`(,id ,not-tracked)
+                       (emacsql db [:select [id condition] :from repository]))
+          (emacsql
+           db [:update repository :set (= condition $s1) :where (= id $s2)]
+           (if not-tracked :known :tracked)
+           id))
+        (closql--db-set-version db (setq version 13))
+        (message "Upgrading Forge database from version 12 to 13...done"))
       )
     (cl-call-next-method)))
 

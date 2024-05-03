@@ -36,11 +36,11 @@
 (require 'eieio)
 (require 'subr-x)
 (require 'url)
-(require 'url-queue)
 (require 'mm-util)
 (require 'json)
 (require 'js)
 (require 'seq)
+(require 'verb-util)
 
 (defgroup verb nil
   "An HTTP client for Emacs that extends Org mode."
@@ -196,6 +196,9 @@ info node `(url)Retrieving URLs'."
                  (function-item
                   :tag "url-queue-retrieve from url-queue.el"
                   url-queue-retrieve)))
+(make-obsolete-variable 'verb-url-retrieve-function
+                        "this feature is no longer supported."
+                        "2024-04-02")
 
 (defcustom verb-json-max-pretty-print-size (* 1 1024 1024)
   "Max JSON file size (bytes) to automatically prettify when received.
@@ -287,15 +290,6 @@ a call to `verb-var'."
 (defface verb-json-key '((t :inherit font-lock-doc-face))
   "Face for highlighting JSON keys.")
 
-(defface verb-log-info '((t :inherit homoglyph))
-  "Face for highlighting I entries in the log buffer.")
-
-(defface verb-log-warning '((t :inherit warning))
-  "Face for highlighting W entries in the log buffer.")
-
-(defface verb-log-error '((t :inherit error))
-  "Face for highlighting E entries in the log buffer.")
-
 (defconst verb--http-methods '("GET" "POST" "DELETE" "PUT"
                                "OPTIONS" "HEAD" "PATCH"
                                "TRACE" "CONNECT")
@@ -304,9 +298,6 @@ a call to `verb-var'."
 (defconst verb--bodyless-http-methods '("GET" "HEAD" "DELETE" "TRACE"
                                         "OPTIONS" "CONNECT")
   "List of HTTP methods which usually don't include bodies.")
-
-(defconst verb--log-buffer-name "*Verb Log*"
-  "Default name for log buffer.")
 
 (defconst verb--url-pre-defined-headers '("MIME-Version"
                                           "Connection"
@@ -323,18 +314,8 @@ will appear duplicated in the request).")
   "Keyword to use when defining request templates.
 Request templates are defined without HTTP methods, paths or hosts.")
 
-(defconst verb--log-levels '(I W E)
-  "Log levels for the log buffer.
-I = Information.
-W = Warning.
-E = Error.")
-
 (defconst verb--http-header-regexp "^\\s-*\\([[:alnum:]_-]+:\\).*$"
   "Regexp for font locking HTTP headers.")
-
-(defconst verb--http-header-parse-regexp
-  "^\\s-*\\([[:alnum:]_-]+\\)\\s-*:\\(.*\\)$"
-  "Regexp for parsing HTTP headers.")
 
 (defconst verb--metadata-prefix "verb-"
   "Prefix for Verb metadata keys in heading properties.
@@ -528,39 +509,6 @@ more details on how to use it."
          (,verb--http-header-regexp
           (1 'verb-header)))))
 
-(define-derived-mode verb-log-mode special-mode "Verb[Log]"
-  "Major mode for displaying Verb logs.
-
-Each line contains a short message representing an event that has been
-logged:
-
-  The first part of each line is a number that represents what
-  request has generated this event (the number identifies the request).
-  If an event does not correspond to any request, \"-\" is used instead.
-  If the first part of the line is empty, then the event corresponds to
-  the same request from the previous line.
-
-  The second part of each line represents the level at which this event
-  has been logged, I for information, W for warnings and E for errors.
-
-  The third part of each line is the message itself.
-
-If this buffer is killed, it will be created again when the next
-message is logged.  To turn off logging, set `verb-enable-log' to nil."
-  (font-lock-add-keywords
-   nil '(;; (request number e.g. 10)
-         ("^[[:digit:]-]+\\s-"
-          (0 'bold))
-         ;; Log level I after request number
-         ("^[[:digit:]-]*\\s-+\\(I\\)"
-          (1 'verb-log-info))
-         ;; Log level W after request number
-         ("^[[:digit:]-]*\\s-+\\(W\\)"
-          (1 'verb-log-warning))
-         ;; Log level E after request number
-         ("^[[:digit:]-]*\\s-+\\(E\\)"
-          (1 'verb-log-error)))))
-
 (defun verb--http-method-p (m)
   "Return non-nil if M is a valid HTTP method."
   (member m verb--http-methods))
@@ -678,14 +626,6 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
             (verb-toggle-show-headers))))
     (setq header-line-format nil)))
 
-(defun verb-show-log ()
-  "Switch to the *Verb Log* buffer."
-  (interactive)
-  (switch-to-buffer (get-buffer-create verb--log-buffer-name)))
-
-;; Old function name (<2.11.0)
-(defalias 'verb-view-log 'verb-show-log)
-
 (defun verb-customize-group ()
   "Show the Customize menu buffer for the Verb package group."
   (interactive)
@@ -746,41 +686,6 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
                       (+ (nth 1 completions) beg -1))
                 (cddr completions))))))
 
-(defun verb--log (request level &rest args)
-  "Log a message in the *Verb Log* buffer.
-REQUEST must be a number corresponding to an HTTP request made.  LEVEL
-must be a value in `verb--log-levels'.  Use the remaining ARGS to call
-`format', and then log the result in the log buffer.
-
-If `verb-enable-log' is nil, do not log anything."
-  (setq request (if request (number-to-string request) "-"))
-  (unless (member level verb--log-levels)
-    (user-error "Invalid log level: \"%s\"" level))
-  (when verb-enable-log
-    (with-current-buffer (get-buffer-create verb--log-buffer-name)
-      (unless (derived-mode-p 'verb-log-mode)
-        (verb-log-mode))
-      (let ((inhibit-read-only t)
-            (last "")
-            (line (line-number-at-pos)))
-        ;; Get last logged request number
-        (when (re-search-backward "^\\(-\\|[[:digit:]]+\\)\\s-"
-                                  nil t)
-          (setq last (match-string 1)))
-        (goto-char (point-max))
-        ;; Log new message
-        (insert (format "%s  %s  "
-                        (if (string= last request)
-                            (make-string (length request) ? )
-                          request)
-                        level)
-                (apply #'format args)
-                "\n")
-        ;; If logged messaged contained newlines, add a blank line
-        ;; to make things more readable
-        (when (> (line-number-at-pos) (1+ line))
-          (newline))))))
-
 (defun verb--ensure-org-mode ()
   "Ensure `org-mode' is enabled in the current buffer."
   (unless (derived-mode-p 'org-mode)
@@ -790,12 +695,6 @@ If `verb-enable-log' is nil, do not log anything."
   "Ensure `verb-mode' is enabled in the current buffer."
   (unless verb-mode
     (verb-mode)))
-
-(defun verb--nonempty-string (s)
-  "Return S. If S is the empty string, return nil."
-  (if (string-empty-p s)
-      nil
-    s))
 
 (defun verb-headers-get (headers name)
   "Return value for HTTP header under NAME in HEADERS.
@@ -2098,16 +1997,15 @@ loaded into."
 
     ;; Send the request!
     (condition-case err
-        (funcall verb-url-retrieve-function
-                 url
-                 #'verb--request-spec-callback
-                 (list rs
-                       response-buf
-                       start-time
-                       timeout-timer
-                       where
-                       num)
-                 t verb-inhibit-cookies)
+        (url-retrieve url
+                      #'verb--request-spec-callback
+                      (list rs
+                            response-buf
+                            start-time
+                            timeout-timer
+                            where
+                            num)
+                      t verb-inhibit-cookies)
       (error (progn
                ;; Cancel timer
                (when timeout-timer
@@ -2558,7 +2456,7 @@ signal an error.
 Before returning the request specification, set its metadata to
 METADATA."
   (let ((context (current-buffer))
-        method url headers body)
+        method url headers headers-start body)
     (with-temp-buffer
       (insert text)
       (goto-char (point-min))
@@ -2613,26 +2511,36 @@ METADATA."
 
       ;; Skip newline after URL line
       (unless (eobp) (forward-char))
+      (setq headers-start (point))
 
       ;;; HEADERS
 
-      ;; Search for HTTP headers, stop as soon as we find a blank line
+      ;; Scan forward until we find a blank line (headers end).  In
+      ;; the region covered, delete all lines starting with '#', as
+      ;; these headers have been commented out.  Finally, go back to
+      ;; where we started
+      (save-excursion
+        (while (re-search-forward "^\\(.+\\)$" (line-end-position) t)
+          (unless (eobp) (forward-char)))
+        (delete-matching-lines "^[[:blank:]]*#" headers-start (point)))
+
+      ;; Expand code tags in the rest of the buffer (if any)
+      (save-excursion
+        (verb--eval-code-tags-in-buffer (current-buffer) context))
+
+      ;; Parse HTTP headers, stop as soon as we find a blank line
       (while (re-search-forward "^\\(.+\\)$" (line-end-position) t)
         (let ((line (match-string 1)))
-          ;; Process line if it doesn't start with '#'
-          (unless (string-prefix-p "#" (string-trim-left line))
-            ;; Check if line matches KEY: VALUE after evaluating any
-            ;; present code tags
-            (setq line (verb--eval-code-tags-in-string line context))
-            (if (string-match verb--http-header-parse-regexp line)
-                ;; Line matches, trim KEY and VALUE and store them
-                (push (cons (string-trim (match-string 1 line))
-                            (string-trim (match-string 2 line)))
-                      headers)
-              (user-error (concat "Invalid HTTP header: \"%s\"\n"
-                                  "Make sure there's a blank line between"
-                                  " the headers and the request body")
-                          line))))
+          ;; Check if line matches KEY: VALUE
+          (if (string-match verb--http-header-parse-regexp line)
+              ;; Line matches, trim KEY and VALUE and store them
+              (push (cons (string-trim (match-string 1 line))
+                          (string-trim (match-string 2 line)))
+                    headers)
+            (user-error (concat "Invalid HTTP header: \"%s\"\n"
+                                "Make sure there's a blank line between"
+                                " the headers and the request body")
+                        line)))
         (unless (eobp) (forward-char)))
       (setq headers (nreverse headers))
 
@@ -2644,10 +2552,6 @@ METADATA."
       ;; XML, etc.). Here we delete the source block delimiters so
       ;; that they are not included in the actual request.
       (delete-matching-lines "^[[:blank:]]*#\\+\\(begin\\|end\\)_src")
-
-      ;; Expand code tags in the rest of the buffer (if any)
-      (save-excursion
-        (verb--eval-code-tags-in-buffer (current-buffer) context))
 
       ;; Skip blank line after headers
       (unless (eobp) (forward-char))

@@ -187,13 +187,15 @@
 
 (defun sideline--enable ()
   "Enable `sideline' in current buffer."
+  (setq sideline-backends-left (cl-remove-if #'null sideline-backends-left)
+        sideline-backends-right (cl-remove-if #'null sideline-backends-right))
   ;; XXX: Still don't know why local variable doesn't work!
   (progn
     (sideline--delete-ovs)
     (setq-local sideline--overlays (make-hash-table)))
   (setq sideline--ex-bound-or-point t  ; render immediately
         sideline--text-scale-mode-amount text-scale-mode-amount)
-  (add-hook 'post-command-hook #'sideline--post-command nil t))
+  (add-hook 'post-command-hook #'sideline--post-command -90 t))
 
 (defun sideline--disable ()
   "Disable `sideline' in current buffer."
@@ -220,6 +222,10 @@
 ;; (@* "Util" )
 ;;
 
+(defun sideline-2str (obj)
+  "Convert OBJ to string."
+  (format "%s" obj))
+
 ;; Copied from s.el
 (defun sideline--s-replace (old new s)
   "Replace OLD with NEW in S."
@@ -231,6 +237,12 @@
   (declare (indent 1) (debug t))
   `(when (buffer-live-p ,buffer-or-name)
      (with-current-buffer ,buffer-or-name ,@body)))
+
+(defun sideline--window-hscroll ()
+  "Like function `window-hscroll' but take more stuff into account."
+  (ceiling (* (window-hscroll)
+              (/ 1.0 (expt text-scale-mode-step
+                           text-scale-mode-amount)))))
 
 ;; TODO: Use function `string-pixel-width' after 29.1
 (defun sideline--string-pixel-width (str)
@@ -300,7 +312,9 @@
 Argument OFFSET is additional calculation from the right alignment."
   (let ((graphic-p (display-graphic-p))
         (fringes (window-fringes)))
-    (list (+
+    (list  ; use pixel instead of character unit
+     (* (window-font-width)
+        (+ offset
            ;; If the sideline text is displayed without at least 1 pixel gap from the right fringe and
            ;; overflow-newline-into-fringe is not true, emacs will line wrap it.
            (if (and graphic-p
@@ -308,12 +322,11 @@ Argument OFFSET is additional calculation from the right alignment."
                     (not overflow-newline-into-fringe))
                1
              0)
-           (* (window-font-width)
-              (+ offset (if graphic-p
-                            ;; If right fringe deactivated add 1 offset
-                            (if (= 0 (nth 1 fringes)) 1 0)
-                          1)
-                 (sideline--str-len str)))))))
+           (if graphic-p
+               ;; If right fringe deactivated add 1 offset
+               (if (= 0 (nth 1 fringes)) 1 0)
+             1)
+           (sideline--str-len str))))))
 
 (defun sideline--get-line ()
   "Return current line."
@@ -335,17 +348,17 @@ calculate to the right side."
   ;; Start the calculation!
   (if on-left
       (let* ((line (sideline--get-line))
-             (column-start (window-hscroll))
+             (column-start (sideline--window-hscroll))
              (pos-first (save-excursion (back-to-indentation) (current-column)))
-             (pos-end (- (sideline--str-len line) column-start)))
+             (pos-end (max (sideline--str-len line) column-start)))
         (cond ((<= str-len (- pos-first column-start))
                (cons column-start pos-first))
               ((= pos-first pos-end)
                (cons column-start (sideline--window-width)))))
     (let* ((line (sideline--get-line))
-           (column-start (window-hscroll))
+           (column-start (sideline--window-hscroll))
            (column-end (+ column-start (sideline--window-width)))
-           (pos-end (- (sideline--str-len line) column-start)))
+           (pos-end (max (sideline--str-len line) column-start)))
       (when (<= str-len (- column-end pos-end))
         (cons column-end pos-end)))))
 
@@ -502,14 +515,7 @@ Arguments BOL and EOL are cached for faster performance."
        (len-title (sideline--str-len title))
        (data (sideline--find-line len-title on-left bol eol order))
        (pos-start (nth 0 data)) (pos-end (nth 1 data)) (occ-pt (nth 2 data))
-       (offset (if (or on-left (zerop (window-hscroll))) 0
-                 (save-excursion
-                   (goto-char pos-start)
-                   (end-of-line)
-                   (cond ((zerop (current-column)) 0)
-                         ((<= (current-column) (window-hscroll))
-                          (- 0 (current-column)))
-                         (t (- 0 (window-hscroll)))))))
+       (offset (- 0 (sideline--window-hscroll)))
        (str (concat
              (unless on-left
                (propertize " "
@@ -547,7 +553,7 @@ Arguments BOL and EOL are cached for faster performance."
 
 (defun sideline--guess-backend-name (backend)
   "Guess BACKEND's name."
-  (let ((name (format "%s" backend)))
+  (let ((name (sideline-2str backend)))
     (setq name (sideline--s-replace "sideline-" "" name)
           name (sideline--s-replace "-sideline" "" name))
     name))
@@ -608,7 +614,6 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
   "Render sideline once in the BUFFER."
   (sideline--with-buffer (or buffer (current-buffer))
     (unless (funcall sideline-inhibit-display-function)
-      (sideline--delete-ovs)  ; for function call externally
       (run-hooks 'sideline-pre-render-hook)
       (sideline--render-backends sideline-backends-left t)
       (sideline--render-backends sideline-backends-right nil)

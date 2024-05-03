@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -505,7 +505,7 @@ instead."
 (defun magit-list-repos-1 (directory depth)
   (cond ((file-readable-p (expand-file-name ".git" directory))
          (list (file-name-as-directory directory)))
-        ((and (> depth 0) (magit-file-accessible-directory-p directory))
+        ((and (> depth 0) (file-accessible-directory-p directory))
          (--mapcat (and (file-directory-p it)
                         (magit-list-repos-1 it (1- depth)))
                    (directory-files directory t

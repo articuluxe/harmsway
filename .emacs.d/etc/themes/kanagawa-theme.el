@@ -1,9 +1,9 @@
 ;;; kanagawa-theme.el --- An elegant theme inspired by The Great Wave off Kanagawa by Katsushika Hokusa -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2023 Mikael Konradsson
-;; Copyright (C) 2023-2024 Meritamen <meritamen@sdf.org>
+;; Copyright (C) 2023-2024 Raime Filianore <meritamen@sdf.org>
 
-;; Author: Meritamen <meritamen@sdf.org>
+;; Author: Raime Filianore <meritamen@sdf.org>
 ;; URL: https://github.com/meritamen/emacs-kanagawa-theme
 ;; Version: 1.0.0
 ;; Package-Requires: ((emacs "24.3"))
@@ -58,12 +58,12 @@
   :group 'kanagawa-theme)
 
 (defcustom kanagawa-theme-org-bold t
-  "Inherit text bold for org headings"
+  "Inherit text bold for org headings."
   :type 'boolean
   :group 'kanagawa-theme)
 
 (defcustom kanagawa-theme-org-priority-bold t
-  "Inherit text bold for priority items in agenda view"
+  "Inherit text bold for priority items in agenda view."
   :type 'boolean
   :group 'kanagawa-theme)
 
@@ -83,12 +83,14 @@
   :group 'kanagawa-theme)
 
 (defun true-color-p ()
+  "Check if the current display supports true colors."
   (or (display-graphic-p)
       (= (tty-display-color-cells) 16777216)))
 
-(deftheme kanagawa "An elegant theme inspired by The Great Wave off Kanagawa by Katsushika Hokusa")
+(deftheme kanagawa "An elegant theme inspired by The Great Wave off Kanagawa by Katsushika Hokusa.")
 
-(defconst kanagawa-dark-palette
+(cl-eval-when (compile load eval)
+  (defconst kanagawa-dark-palette
   `((fuji-white       ,(if (true-color-p) "#DCD7BA" "#ffffff"))
     (old-white        ,(if (true-color-p) "#C8C093" "#ffffff"))
     (sumi-ink-0       ,(if (true-color-p) "#16161D" "#000000"))
@@ -127,16 +129,16 @@
     (peach-red        ,(if (true-color-p) "#FF5D62" "#717C7C"))
     (surimi-orange    ,(if (true-color-p) "#FFA066" "#717C7C"))
     (katana-gray      ,(if (true-color-p) "#717C7C" "#717C7C"))
-    (comet            ,(if (true-color-p) "#54536D" "#4e4e4e"))))
+    (comet            ,(if (true-color-p) "#54536D" "#4e4e4e")))))
 
-(defmacro define-kanagawa-dark-theme (theme &rest faces)
+(defmacro define-kanagawa-theme (theme &rest faces)
   `(let ((class '((class color) (min-colors 89)))
          ,@kanagawa-dark-palette)
      (cl-loop for (cvar . val) in kanagawa-theme-custom-colors
               do (set cvar val))
      (custom-theme-set-faces ,theme ,@faces)))
 
-(define-kanagawa-dark-theme
+(define-kanagawa-theme
  'kanagawa
  ;; Customize faces
  `(default                                       ((,class (:background ,sumi-ink-1b :foreground ,fuji-white))))
@@ -487,8 +489,11 @@
  `(hydra-face-red                                ((,class (:foreground ,peach-red))))
  `(hydra-face-teal                               ((,class (:foreground ,light-blue))))
 
+ ;; tab-bar
+ `(tab-bar                                       ((,class (:background ,sumi-ink-1b))))
+ `(tab-bar-tab-inactive                          ((,class (:foreground ,sumi-ink-4 :background ,sumi-ink-1b))))
+ 
  ;; centaur-tabs
-
  `(centaur-tabs-active-bar-face                  ((,class (:background ,spring-blue :foreground ,fuji-white))))
  `(centaur-tabs-selected                         ((,class (:background ,sumi-ink-1b :foreground ,fuji-white :weight bold))))
  `(centaur-tabs-selected-modified                ((,class (:background ,sumi-ink-1b :foreground ,fuji-white))))

@@ -371,6 +371,9 @@ Position is calculated base on WIDTH and HEIGHT of childframe text window"
 The coordinate is relative to the native frame.
 
 WINDOW nil means use selected window."
+  (unless point
+    ;; Handle edge case. See https://debbugs.gnu.org/cgi/bugreport.cgi?bug=69259.
+    (setq point (window-point window)))
   (let* ((pos (pos-visible-in-window-p point window t))
          (x (car pos))
          (en (frame-char-width))
@@ -790,6 +793,17 @@ height."
                            (match-end 2)
                            '( face (:weight bold)
                               font-lock-face (:weight bold)))
+      (put-text-property (match-beginning 1) (match-end 1)
+                         'invisible t)
+      (put-text-property (match-beginning 3) (match-end 3)
+                         'invisible t))
+    ;; Don't show these tags.
+    (goto-char (point-min))
+    (while (re-search-forward
+            (rx (group "<p>")
+                (group (*? anychar))
+                (group "</p>"))
+            nil t)
       (put-text-property (match-beginning 1) (match-end 1)
                          'invisible t)
       (put-text-property (match-beginning 3) (match-end 3)

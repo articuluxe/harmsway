@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -90,7 +90,7 @@ Takes the pull-request as only argument and must return a directory."
     ("b P" "pull-requests" forge-browse-pullreqs)]]
   [["Configure"
     :if forge--get-repository:tracked?
-    ("a  " forge-add-repository)
+    ("a  " "add another repository to database" forge-add-some-repository)
     ("R  " forge-add-pullreq-refspec)
     ("s r" forge-forge.remote)
     ("s l" forge-forge.graphqlItemLimit)
@@ -108,78 +108,48 @@ Takes the pull-request as only argument and must return a directory."
 ;;; Pull
 
 ;;;###autoload
-(defun forge-pull (&optional repo until interactive callback)
-  "Pull topics from the forge repository.
-
-With a prefix argument and if the repository has not been fetched
-before, then read a date from the user and limit pulled topics to
-those that have been updated since then.
-
-If pulling is too slow, then also consider setting the Git variable
-`forge.omitExpensive' to `true'.
-\n(fn &optional REPO UNTIL)"
-  (interactive
-   (list nil
-         (and current-prefix-arg
-              (let ((repo (forge-current-repository)))
-                (or (not repo) (oref repo sparse-p)))
-              (forge-read-date "Limit pulling to topics updates since: "))
-         t))
-  (let (create)
-    (when (or (not repo) (oref repo sparse-p))
-      (setq repo (forge-current-repository))
-      (unless repo
-        (setq repo (forge-get-repository :insert!))
-        (setq create t)))
-    (when (or create interactive (magit-git-config-p "forge.autoPull" t))
-      (when (and interactive
-                 (oref repo selective-p)
-                 (yes-or-no-p
-                  (format "Always pull all of %s/%s's topics going forward?"
-                          (oref repo owner)
-                          (oref repo name))))
-        (oset repo selective-p nil))
-      (setq forge--mode-line-buffer (current-buffer))
-      (when-let* ((remote  (oref repo remote))
-                  (refspec (oref repo pullreq-refspec)))
-        (when (and create
-                   (not (member refspec (magit-get-all "remote" remote "fetch")))
-                   (or (eq forge-add-pullreq-refspec t)
-                       (and (eq forge-add-pullreq-refspec 'ask)
-                            (y-or-n-p (format "Also add %S refspec? " refspec)))))
-          (magit-call-git "config" "--add"
-                          (format "remote.%s.fetch" remote)
-                          refspec)))
-      (forge--msg repo t nil "Pulling REPO")
-      (when-let ((worktree (oref repo worktree)))
-        (let ((default-directory worktree))
-          (forge--pull repo until callback))))))
+(defun forge-pull ()
+  "Pull forge topics for the current repository if it is already tracked.
+If the current repository is still untracked locally, or the current
+repository cannot be determined, instead invoke `forge-add-repository'."
+  (interactive)
+  (if-let ((repo (forge-get-repository :tracked?)))
+      (forge--pull repo)
+    (transient-setup 'forge-add-repository nil nil
+                     :scope (forge-get-repository :stub))))
 
 (defun forge-read-date (prompt)
-  (cl-block nil
-    (while t
-      (let ((str (read-from-minibuffer prompt)))
-        (cond ((string-equal str "")
-               (cl-return nil))
-              ((string-match-p
-                "\\`[0-9]\\{4\\}[-/][0-9]\\{2\\}[-/][0-9]\\{2\\}\\'" str)
-               (cl-return str))))
-      (message "Please enter a date in the format YYYY-MM-DD.")
-      (sit-for 1))))
+  (require (quote org) nil)
+  (if (fboundp 'org-read-date)
+      (org-read-date nil nil nil prompt)
+    (cl-block nil
+      (while t
+        (let ((str (read-from-minibuffer prompt)))
+          (cond ((string-equal str "")
+                 (cl-return nil))
+                ((string-match-p
+                  "\\`[0-9]\\{4\\}[-/][0-9]\\{2\\}[-/][0-9]\\{2\\}\\'" str)
+                 (cl-return str))))
+        (message "Please enter a date in the format YYYY-MM-DD.")
+        (sit-for 1)))))
 
-(cl-defmethod forge--pull ((repo forge-noapi-repository) _until) ; NOOP
+(cl-defmethod forge--pull ((repo forge-noapi-repository) &rest _)
   (forge--msg repo t t "Pulling from REPO is not supported"))
 
-(cl-defmethod forge--pull ((repo forge-unusedapi-repository) _until)
-  (oset repo sparse-p nil)
+(cl-defmethod forge--pull ((repo forge-unusedapi-repository) &rest _)
   (magit-git-fetch (oref repo remote) (magit-fetch-arguments)))
 
-(defun forge--git-fetch (buf dir repo)
-  (if (buffer-live-p buf)
-      (with-current-buffer buf
+(defun forge--maybe-git-fetch (repo &optional buffer)
+  (if (and (buffer-live-p buffer)
+           (with-current-buffer buffer
+             (and (derived-mode-p 'magit-mode)
+                  (forge-repository-equal (forge-get-repository :stub?) repo))))
+      (with-current-buffer buffer
         (magit-git-fetch (oref repo remote) (magit-fetch-arguments)))
-    (let ((default-directory dir))
-      (magit-git-fetch (oref repo remote) (magit-fetch-arguments)))))
+    (when-let ((worktree (forge-get-worktree repo)))
+      (let ((default-directory worktree)
+            (magit-inhibit-refresh t))
+        (magit-git-fetch (oref repo remote) (magit-fetch-arguments))))))
 
 ;;;###autoload
 (defun forge-pull-notifications ()
@@ -201,9 +171,7 @@ If pulling is too slow, then also consider setting the Git variable
    (list (read-number "Pull topic: "
                       (and-let* ((topic (forge-current-topic)))
                         (oref topic number)))))
-  (let ((repo (forge-get-repository :tracked)))
-    (forge--pull-topic
-     repo (forge-issue :repository (oref repo id) :number number))))
+  (forge--pull-topic (forge-get-repository :tracked) number))
 
 ;;;###autoload (autoload 'forge-pull-this-topic "forge-commands" nil t)
 (transient-define-suffix forge-pull-this-topic ()
@@ -431,14 +399,14 @@ with a prefix argument also closed topics."
   "Visit the repository at point."
   (interactive)
   (let* ((repo (forge-repository-at-point))
-         (worktree (oref repo worktree)))
+         (worktree (forge-get-worktree repo)))
     (cond
      ((eq transient-current-command 'forge-repositories-menu)
       (if-let ((buffer (forge-topic-get-buffer repo)))
           (switch-to-buffer buffer)
         (forge-list-topics repo))
       (transient-setup 'forge-topics-menu))
-     ((and worktree (file-directory-p worktree))
+     (worktree
       (magit-status-setup-buffer worktree))
      ((forge-list-topics repo)))))
 
@@ -1025,32 +993,89 @@ upstream remote.  Also fetch from REMOTE."
 ;;; Add repositories
 
 ;;;###autoload (autoload 'forge-add-repository "forge-commands" nil t)
-(transient-define-suffix forge-add-repository (url)
-  "Add a repository to the database.
-Offer to either pull topics (now and in the future) or to only
-pull individual topics when the user invokes `forge-pull-topic'."
-  :description (lambda ()
-                 (format "add %srepository to database"
-                         (if (forge-get-repository :known?) "another " "")))
+(transient-define-prefix forge-add-repository (&optional repo limit)
+  "Add a repository to the database."
+  [:class transient-subgroups
+   [:if (lambda () (forge-get-repository (transient-scope) nil :tracked?))
+    (:info
+     (lambda ()
+       (format
+        (propertize "%s is already being tracked" 'face 'transient-heading)
+        (propertize (forge-get-url (transient-scope)) 'face 'bold)))
+     :format "%d")]
+   [:if-not (lambda () (forge-get-repository (transient-scope) nil :tracked?))
+    :description
+    (lambda ()
+      (format
+       (propertize "Adding %s to database," 'face 'transient-heading)
+       (propertize (forge-get-url (transient-scope)) 'face 'bold)))
+    ("a" "pulling all topics"
+     (lambda (repo)
+       (interactive (list (transient-scope)))
+       (forge-add-repository repo)))
+    ("s" "pulling only topics since <date>"
+     (lambda (repo date)
+       (interactive
+        (list (transient-scope)
+              (forge-read-date "Limit pulling to topics updated since: ")))
+       (forge-add-repository repo date)))
+    ("i" "to allow pulling of individual topics"
+     (lambda (repo)
+       (interactive (list (transient-scope)))
+       (forge-add-repository repo :selective)))]
+   [("o" "Add another repository" forge-add-some-repository)
+    (7 "U" "Add all source repositories belonging to a user"
+       forge-add-user-repositories)
+    (7 "O" "Add all source repositories belonging to an organization"
+       forge-add-organization-repositories)]]
+  (declare (interactive-only nil))
+  (interactive)
+  (cond
+   ((not repo)
+    (transient-setup 'forge-add-repository nil nil
+                     :scope (forge-get-repository :stub?)))
+   ((stringp repo)
+    (transient-setup 'forge-add-repository nil nil
+                     :scope (forge-get-repository repo nil :stub?)))
+   (t
+    (when-let*
+        (((not (eq limit :selective)))
+         ((magit-git-config-p "forge.autoPull" t))
+         (remote  (oref repo remote))
+         (refspec (oref repo pullreq-refspec))
+         ((and (not (member refspec (magit-get-all "remote" remote "fetch")))
+               (or (eq forge-add-pullreq-refspec t)
+                   (and (eq forge-add-pullreq-refspec 'ask)
+                        (y-or-n-p (format "Also add %S refspec? " refspec)))))))
+      (magit-call-git "config" "--add"
+                      (format "remote.%s.fetch" remote)
+                      refspec))
+    (setq repo (forge-get-repository repo nil :insert!))
+    (when (eq limit :selective)
+      (oset repo selective-p t)
+      (setq limit nil))
+    (forge--pull repo nil limit))))
+
+(defun forge-add-some-repository (url)
+  "Read a repository and add it to the database."
   (interactive
-   (let ((str (magit-read-string-ns
-               "Add repository to database (url or name)"
-               (and-let* ((repo (forge-get-repository :stub))
-                          (remote (oref repo remote)))
-                 (magit-git-string "remote" "get-url" remote)))))
-     (if (string-match-p "\\(://\\|@\\)" str)
-         (list str)
-       (list (magit-clone--name-to-url str)))))
-  (if (forge-get-repository url nil :tracked?)
-      (user-error "%s is already tracked in Forge database" url)
-    (let ((repo (forge-get-repository url nil :insert!)))
-      (oset repo sparse-p nil)
-      (magit-read-char-case "Pull " nil
-        (?a "[a]ll topics"
-            (forge-pull repo))
-        (?i "[i]ndividual topics (useful for casual contributors)"
-            (oset repo selective-p t)
-            (forge--pull repo nil))))))
+   (let (ret url)
+     (while (not ret)
+       (setq url (magit-read-string-ns
+                  "Add repository to database (url, owner/name, or name)" url))
+       (unless (string-match-p "\\(://\\|@\\)" url)
+         (setq url (magit-clone--name-to-url url)))
+       (cond ((forge-get-repository url nil :tracked?)
+              (message "%s is already being tracked locally"
+                       (propertize url 'face 'bold))
+              (sit-for 3))
+             ((not (forge-get-repository url nil :valid?))
+              (message "%s does not exist or is inaccessible"
+                       (propertize url 'face 'bold))
+              (sit-for 3))
+             ((setq ret url))))
+     (list ret)))
+  (forge-add-repository url))
 
 ;;;###autoload
 (defun forge-add-user-repositories (host user)

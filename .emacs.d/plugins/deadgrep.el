@@ -1058,7 +1058,8 @@ underlying file."
   (when (eq major-mode 'deadgrep-edit-mode)
     (save-mark-and-excursion
       (goto-char beg)
-      (-let* ((column (+ (deadgrep--current-column) length))
+      (-let* ((column (+ (or (deadgrep--current-column) 0)
+                         length))
               (filename (deadgrep--filename))
               (line-number (deadgrep--line-number))
               ((buf . opened) (deadgrep--find-file filename))
@@ -1112,9 +1113,13 @@ deadgrep results buffer.
   (run-mode-hooks 'deadgrep-edit-mode-hook))
 
 (defun deadgrep--current-column ()
-  "Get the current column position in char terms.
-This treats tabs as 1 and ignores the line numbers in the results
-buffer."
+  "When point is on a result in a results buffer, return the column offset
+of the underlying file. Treats tabs as 1.
+
+foo.el
+123 h|ello world
+
+In this example, the column is 1."
   (let* ((line-start (line-beginning-position))
          (line-number
           (get-text-property line-start 'deadgrep-line-number))
@@ -1126,9 +1131,9 @@ buffer."
       (while (not (equal (point) line-start))
         (cl-incf char-count)
         (backward-char 1)))
-    (max
-     (- char-count line-number-width)
-     0)))
+    (if (< char-count line-number-width)
+        nil
+      (- char-count line-number-width))))
 
 (defun deadgrep--flash-column-offsets (start end)
   "Temporarily highlight column offset from START to END."
@@ -1137,14 +1142,15 @@ buffer."
                    (+ line-start start)
                    (+ line-start end))))
     (overlay-put overlay 'face 'highlight)
-    (run-with-timer 1.0 nil 'delete-overlay overlay)))
+    (run-with-timer 1.5 nil 'delete-overlay overlay)))
 
 (defun deadgrep--match-face-p (pos)
   "Is there a match face at POS?"
   (eq (get-text-property pos 'face) 'deadgrep-match-face))
 
 (defun deadgrep--match-positions ()
-  "Return a list of indexes of the current line's matches."
+  "Return a list of column offsets of the current line's matches.
+Each item in the list has the form (START-OFFSET END-OFFSET)."
   (let (positions)
     (save-excursion
       (beginning-of-line)
@@ -1176,7 +1182,7 @@ buffer."
     (nreverse positions)))
 
 (defun deadgrep--buffer-position (line-number column-offset)
-  "Return the position equivalent to LINE-NUMBER at COLUMN-OFFSET
+  "Calculate the buffer position that corresponds to LINE-NUMBER at COLUMN-OFFSET
 in the current buffer."
   (save-excursion
     (save-restriction
@@ -1217,6 +1223,14 @@ If POS is nil, use the beginning position of the current line."
       (goto-char (point-min))
 
       (when line-number
+        ;; If point was on the line number rather than a specific
+        ;; position on the line, go the first match. This is generally
+        ;; what users want, especially when there are long lines.
+        (unless column-offset
+          (if-let (first-match-pos (car match-positions))
+              (setq column-offset (car first-match-pos))
+            (setq column-offset 0)))
+
         (-let [destination-pos (deadgrep--buffer-position
                                 line-number column-offset)]
           ;; Put point on the position of the match, widening the
@@ -1262,13 +1276,16 @@ Keys are interned filenames, so they compare with `eq'.")
 (defun deadgrep-toggle-all-file-results ()
   "Show/hide the results of all files."
   (interactive)
-  (let ((should-show (cl-some #'cdr deadgrep--hidden-files)))
+  (let ((should-show (cl-some #'cdr deadgrep--hidden-files))
+        (seen-files nil))
     (save-excursion
       (goto-char (point-min))
       (while (not (eq (point) (point-max)))
         (goto-char (or (next-single-property-change (point) 'deadgrep-filename)
                        (point-max)))
-        (when (deadgrep--filename)
+        (when (and (deadgrep--filename)
+                   (not (member (deadgrep--filename) seen-files)))
+          (push (deadgrep--filename) seen-files)
           (if should-show
               (deadgrep--show)
             (deadgrep--hide)))))))

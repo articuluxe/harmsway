@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -340,9 +340,9 @@ what this command will do.  To add it use something like:
                             ((not (string-match "/" ref))
                              (magit--propertize-face (format "%s/%s" remote ref)
                                                      'magit-branch-remote))
-                            (t (format "%s as %s"
-                                       (magit--propertize-face remote 'bold)
-                                       (magit--propertize-face ref 'bold)))))
+                            ((format "%s as %s"
+                                     (magit--propertize-face remote 'bold)
+                                     (magit--propertize-face ref 'bold)))))
                  "nothing (no upstream)")))
             ("matching" (format "all matching to %s"
                                 (magit--propertize-face remote 'bold)))))))))

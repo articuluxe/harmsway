@@ -4,7 +4,7 @@
 
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
 ;; URL: https://github.com/monkeyjunglejuice/matrix-emacs-theme
-;; Version: 1.2
+;; Version: 1.4
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT
@@ -69,7 +69,7 @@ You'll have to see it for yourself. --Morpheus")
    `(transient-key-stay ((t (:foreground ,color-blue))))
    `(header-line ((t (:foreground ,color-dark))))
    `(shadow ((t (:foreground ,color-dark))))
-   `(show-paren-match ((t (:foreground ,color-hl :weight bold))))
+   `(show-paren-match ((t (:foreground ,color-hl :weight bold :underline t))))
    `(show-paren-match-expression ((t (:underline (:color ,color-dark)))))
    `(show-paren-mismatch ((t (:inherit error))))
    `(highlight ((t (:background ,color-darkest :underline (:color ,color-hl)))))
@@ -85,9 +85,10 @@ You'll have to see it for yourself. --Morpheus")
    `(font-lock-builtin-face ((t (:foreground ,color-fg :slant italic))))
    `(font-lock-comment-face ((t (:foreground ,color-dark :slant italic :inherit fixed-pitch-serif))))
    `(font-lock-constant-face ((t (:foreground ,color-fg))))
-   `(font-lock-doc-face ((t (:background ,color-darkest :foreground ,color-dark :slant italic :inherit fixed-pitch-serif))))
-   `(font-lock-function-name-face ((t (:foreground ,color-fg :weight bold))))
-   `(font-lock-keyword-face ((t (:foreground ,color-bright :slant italic))))
+   `(font-lock-doc-face ((t (:foreground ,color-dark :slant italic :inherit fixed-pitch-serif))))
+   `(font-lock-function-name-face ((t (:foreground ,color-bright :weight bold))))
+   `(font-lock-keyword-face ((t (:foreground ,color-fg :slant italic))))
+   `(font-lock-operator-face ((t (:foreground ,color-middle :weight bold))))
    `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-middle))))
    `(font-lock-regexp-grouping-construct ((t (:foreground ,color-middle))))
    `(font-lock-string-face ((t (:background ,color-darkest :inherit fixed-pitch-serif))))
@@ -95,8 +96,15 @@ You'll have to see it for yourself. --Morpheus")
    `(font-lock-variable-name-face ((t (:foreground ,color-fg))))
    `(font-lock-warning-face ((t (:foreground ,color-red :slant italic))))
 
-   ;; ansi colors
-   `(ansi-color-names-vector [,color-bg ,color-red ,color-middle ,color-middle ,color-blue ,color-middle ,color-middle ,color-fg])
+   ;; ansi-colors
+   `(ansi-color-black ((t (:foreground ,color-dark :background ,color-dark))))
+   `(ansi-color-red ((t (:foreground ,color-red :background ,color-red))))
+   `(ansi-color-green ((t (:foreground ,color-bright :background ,color-bright))))
+   `(ansi-color-yellow ((t (:foreground ,color-bright :background ,color-bright))))
+   `(ansi-color-blue ((t (:foreground ,color-blue :background ,color-blue))))
+   `(ansi-color-magenta ((t (:foreground ,color-middle :background ,color-middle))))
+   `(ansi-color-cyan ((t (:foreground ,color-middle :background ,color-middle))))
+   `(ansi-color-white ((t (:foreground ,color-fg :background ,color-fg))))
 
    ;; term colors
    `(term ((t (:inherit default))))
@@ -127,12 +135,12 @@ You'll have to see it for yourself. --Morpheus")
    `(dired-special ((t (:foreground ,color-middle))))
 
    ;; dired-subtree
-   `(dired-subtree-depth-1-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-2-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-3-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-4-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-5-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-6-face ((t (:background ,color-bg-alt :extend t))))
+   `(dired-subtree-depth-1-face ((t (:background unspecified))))
+   `(dired-subtree-depth-2-face ((t (:background unspecified))))
+   `(dired-subtree-depth-3-face ((t (:background unspecified))))
+   `(dired-subtree-depth-4-face ((t (:background unspecified))))
+   `(dired-subtree-depth-5-face ((t (:background unspecified))))
+   `(dired-subtree-depth-6-face ((t (:background unspecified))))
 
    ;; eldoc
    `(eldoc-highlight-function-argument ((t (:inherit lazy-highlight))))
@@ -227,14 +235,14 @@ You'll have to see it for yourself. --Morpheus")
    `(font-latex-script-char-face ((t (:inherit font-latex-math-face))))
 
    ;; outline
-   `(outline-1 ((t (:foreground ,color-fg :weight bold :height 1.2))))
-   `(outline-2 ((t (:foreground ,color-fg :weight bold))))
-   `(outline-3 ((t (:foreground ,color-fg :weight bold))))
-   `(outline-4 ((t (:foreground ,color-fg :weight bold))))
-   `(outline-5 ((t (:foreground ,color-fg :weight bold))))
-   `(outline-6 ((t (:foreground ,color-fg :weight bold))))
-   `(outline-7 ((t (:foreground ,color-fg :weight bold))))
-   `(outline-8 ((t (:foreground ,color-fg :weight bold))))
+   `(outline-1 ((t (:foreground ,color-bright :weight bold :height 1.2))))
+   `(outline-2 ((t (:foreground ,color-middle :weight bold))))
+   `(outline-3 ((t (:foreground ,color-middle :weight bold))))
+   `(outline-4 ((t (:foreground ,color-middle :weight bold))))
+   `(outline-5 ((t (:foreground ,color-middle :weight bold))))
+   `(outline-6 ((t (:foreground ,color-middle :weight bold))))
+   `(outline-7 ((t (:foreground ,color-middle :weight bold))))
+   `(outline-8 ((t (:foreground ,color-middle :weight bold))))
 
    ;; org-mode
    `(org-archived ((t (:foreground ,color-dark))))
@@ -268,11 +276,13 @@ You'll have to see it for yourself. --Morpheus")
    `(shortdoc-heading ((t (:inherit outline-1))))
 
    ;; compilation
+   `(compilation-column-number ((t (:foreground ,color-hl :underline t))))
    `(compilation-error ((t (:foreground ,color-red))))
+   `(compilation-info ((t (:foreground ,color-bright))))
+   `(compilation-line-number ((t (:foreground ,color-hl :weight bold :underline t))))
+   `(compilation-mode-line-fail ((t (:foreground ,color-red))))
+   `(compilation-mode-line-exit ((t (:foreground ,color-blue))))
    `(compilation-warning ((t (:foreground ,color-blue))))
-   `(compilation-info ((t (:foreground ,color-middle))))
-   `(compilation-line-number ((t (:inherit default :underline t))))
-   `(compilation-column-number ((t (:inherit default :underline t))))
 
    ;; whitespace
    `(whitespace-trailing ((t (:background ,color-bg-red))))
@@ -351,8 +361,8 @@ You'll have to see it for yourself. --Morpheus")
    `(company-preview-common ((t (:foreground ,color-fg :background unspecified))))
    `(company-tooltip-search ((t (:inherit lazy-highlight))))
    `(company-tooltip-search-selection ((t (:inherit company-tooltip-search))))
-   `(company-tooltip ((t (:foreground ,color-bright :background ,color-darker))))
-   `(company-tooltip-annotation ((t (:foreground ,color-middle))))
+   `(company-tooltip ((t (:foreground ,color-middle :background ,color-darkest))))
+   `(company-tooltip-annotation ((t (:foreground ,color-fg))))
    `(company-tooltip-annotation-selection ((t (:weight normal))))
    `(company-tooltip-common ((t (:foreground ,color-fg))))
    `(company-tooltip-common-selection ((t (:foreground ,color-middle))))
@@ -361,6 +371,15 @@ You'll have to see it for yourself. --Morpheus")
    `(company-tooltip-scrollbar-track ((t (:background ,color-darker))))
    `(company-scrollbar-fg ((t (:inherit company-tooltip-scrollbar-thumb))))  ; obsolete
    `(company-scrollbar-bg ((t (:inherit company-tooltip-scrollbar-track))))  ; obsolete
+
+   ;; corfu
+   `(corfu-annotations ((t (:foreground ,color-fg :slant normal :inherit completions-annotations))))
+   `(corfu-bar ((t (:background ,color-bright))))
+   `(corfu-border ((t (:background ,color-darker))))
+   `(corfu-current ((t (:inherit highlight))))
+   `(corfu-default ((t (:background ,color-darkest))))
+   `(corfu-deprecated ((t (:strike-through t :inherit shadow))))
+   `(corfu-popupinfo ((t (:background ,color-darkest))))
 
    ;; flymake
    `(flymake-error ((t (:underline (:color ,color-red :style wave)))))
@@ -383,6 +402,8 @@ You'll have to see it for yourself. --Morpheus")
    `(lsp-headerline-breadcrumb-separator-face ((t (:foreground ,color-dark))))
 
    ;; eglot
+   `(eglot-diagnostic-tag-deprecated-face ((t (:inherit shadow :strike-through t))))
+   `(eglot-diagnostic-tag-unnecessary-face ((t (:inherit flymake-warning))))
    `(eglot-mode-line ((t (:foreground ,color-fg :weight bold))))
    `(eglot-highlight-symbol-face ((t (:inherit lazy-highlight))))
 
@@ -460,14 +481,14 @@ You'll have to see it for yourself. --Morpheus")
    `(tuareg-font-double-semicolon-face ((t (:inherit tuareg-font-lock-interactive-directive-face))))
    `(tuareg-font-double-colon-face ((t (:inherit tuareg-font-double-semicolon-face))))
    `(tuareg-font-lock-error-face ((t (:inherit error))))
-   `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold))))
+   `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold :slant italic))))
    `(tuareg-font-lock-label-face ((t (:inherit shadow))))
    `(tuareg-font-lock-interactive-output-face ((t (:foreground ,color-bright))))
    `(tuareg-font-lock-interactive-error-face ((t (:inherit font-lock-warning-face))))
    `(tuareg-font-lock-interactive-directive-face ((t (:foreground ,color-middle))))
    `(tuareg-font-lock-line-number-face ((t (:inherit linum))))
    `(tuareg-font-lock-module-face ((t (:inherit shadow))))
-   `(tuareg-font-lock-operator-face ((t (:foreground ,color-middle :weight bold))))
+   `(tuareg-font-lock-operator-face ((t (:inherit font-lock-operator-face))))
 
    ;; caml
    `(ocaml-help-face ((t (:inherit lazy-highlight))))
@@ -487,7 +508,7 @@ You'll have to see it for yourself. --Morpheus")
    `(utop-stdout ((t (:inherit tuareg-font-lock-interactive-output-face))))
 
    ;; haskell-mode
-   `(haskell-operator-face ((t (:foreground ,color-middle :weight bold))))
+   `(haskell-operator-face ((t (:inherit font-lock-operator-face))))
    `(haskell-warning-face ((t (:inherit flymake-warning))))
    `(haskell-interactive-face-compile-warning ((t (:inherit compilation-warning))))
 
@@ -585,6 +606,7 @@ You'll have to see it for yourself. --Morpheus")
    `(notmuch-message-summary-face ((t (:foreground ,color-dark))))
 
    ;; switch-window
+   `(switch-window-background ((t (:foreground ,color-darker))))
    `(switch-window-label ((t (:foreground ,color-bright :height 3.0))))
 
    ;; telega
@@ -639,6 +661,9 @@ You'll have to see it for yourself. --Morpheus")
    `(orderless-match-face-1 ((t (:inherit match :foreground ,color-middle))))
    `(orderless-match-face-2 ((t (:inherit match :foreground ,color-middle))))
    `(orderless-match-face-3 ((t (:inherit match :foreground ,color-middle))))
+
+   ;; yasnippet
+   `(yas-field-highlight-face ((t (:inherit lazy-highlight))))
 
    ))
 

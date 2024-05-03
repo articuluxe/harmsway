@@ -156,7 +156,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
       (fg-dim        "#D8DEE9")
       (fg-inactive   "#6c7b8b")
       ;; (fg-region     haki-region)
-      (cursor        "#8470ff")
+      (cursor        "#00ffff")
 
       ;; --- Common logics
       (error      "#ee6363")
@@ -274,6 +274,7 @@ Respected Only in GUI frame"
    `(mode-line-highlight     ((,class :inherit highlight)))
 
    `(header-line             ((,class :foreground ,title)))
+   ;; `(minibuffer-prompt       ((,class :inherit haki-region :inverse-video t :foreground ,bg-dim)))
 
    ;; Structural
    `(bold                      ((,class :weight bold)))
@@ -291,6 +292,7 @@ Respected Only in GUI frame"
    `(link                      ((,class :font ,haki-link-font  :weight medium :underline t :foreground ,link)))
    `(button                    ((,class :inherit (bold link) :foreground ,c-operator)))
    `(separator-line            ((,class :inherit underline)))
+   `(shadow                    ((,class :foreground ,fg-comment)))
 
    ;; --- completions
    `(completions-annotations         ((,class :inherit italic :foreground ,warning)))
@@ -418,7 +420,7 @@ Respected Only in GUI frame"
    `(org-special-keyword                     ((,class :foreground ,fg-inactive)))
    `(org-table                               ((,class :inherit fixed-pitch :foreground ,c-string)))
    `(org-table-header                        ((,class :inherit org-table :foreground ,title )))
-   `(org-tag                                 ((,class :height 0.9 :box ,cursor :background ,bg-tag :foreground ,bg-main)))
+   `(org-tag                                 ((,class :height 0.9 :background ,bg-tag :foreground ,bg-main)))
    `(org-tag-group                           ((,class :background ,cursor)))
    `(org-target                              ((,class :inherit button)))
    `(org-time-grid                           ((,class :foreground ,clock)))
@@ -426,7 +428,7 @@ Respected Only in GUI frame"
    `(org-warning                             ((,class :inherit font-lock-warning-face)))
    `(org-agenda-calendar-event               ((,class :foreground ,info-doc)))
    `(org-agenda-calendar-sexp                ((,class :inherit org-agenda-calendar-event)))
-   `(org-agenda-clocking                     ((,class :foreground ,clock)))
+   `(org-agenda-clocking                     ((,class :background ,clock)))
    `(org-agenda-column-dateline              ((,class :foreground ,date)))
    `(org-agenda-current-time                 ((,class :background ,clock :foreground ,bg-main)))
    `(org-agenda-date                         ((,class :foreground ,date)))
@@ -919,6 +921,77 @@ Respected Only in GUI frame"
    `(erc-timestamp-face                 ((,class :foreground ,date)))
    `(erc-underline-face                 ((,class :underline t)))
 
+;;; --- gnus
+   `(gnus-button                              ((,class :inherit button)))
+   `(gnus-cite-1                              ((,class :inherit message-cited-text-1)))
+   `(gnus-cite-2                              ((,class :inherit message-cited-text-2)))
+   `(gnus-cite-3                              ((,class :inherit message-cited-text-3)))
+   `(gnus-cite-4                              ((,class :inherit message-cited-text-4)))
+   `(gnus-cite-5                              ((,class :inherit message-cited-text-1)))
+   `(gnus-cite-6                              ((,class :inherit message-cited-text-2)))
+   `(gnus-cite-7                              ((,class :inherit message-cited-text-3)))
+   `(gnus-cite-8                              ((,class :inherit message-cited-text-4)))
+   `(gnus-cite-9                              ((,class :inherit message-cited-text-1)))
+   `(gnus-cite-10                             ((,class :inherit message-cited-text-2)))
+   `(gnus-cite-11                             ((,class :inherit message-cited-text-3)))
+   `(gnus-cite-attribution                    ((,class :inherit italic)))
+   `(gnus-emphasis-bold                       ((,class :inherit bold)))
+   `(gnus-emphasis-bold-italic                ((,class :inherit bold-italic)))
+   `(gnus-emphasis-highlight-words            ((,class :inherit warning)))
+   `(gnus-emphasis-italic                     ((,class :inherit italic)))
+   `(gnus-emphasis-underline-bold             ((,class :inherit gnus-emphasis-bold :underline t)))
+   `(gnus-emphasis-underline-bold-italic      ((,class :inherit gnus-emphasis-bold-italic :underline t)))
+   `(gnus-emphasis-underline-italic           ((,class :inherit gnus-emphasis-italic :underline t)))
+   `(gnus-group-news-1                        ((,class :inherit (bold gnus-group-news-1-empty))))
+   `(gnus-group-news-1-empty                  ((,class :foreground ,heading-1)))
+   `(gnus-group-news-2                        ((,class :inherit (bold gnus-group-news-2-empty))))
+   `(gnus-group-news-2-empty                  ((,class :foreground ,heading-2)))
+   `(gnus-group-news-3                        ((,class :inherit (bold gnus-group-news-3-empty))))
+   `(gnus-group-news-3-empty                  ((,class :foreground ,heading-3)))
+   `(gnus-group-news-4                        ((,class :inherit (bold gnus-group-news-4-empty))))
+   `(gnus-group-news-4-empty                  ((,class :foreground ,heading-4)))
+   `(gnus-group-news-5                        ((,class :inherit (bold gnus-group-news-5-empty))))
+   `(gnus-group-news-5-empty                  ((,class :foreground ,heading-5)))
+   `(gnus-group-news-6                        ((,class :inherit (bold gnus-group-news-6-empty))))
+   `(gnus-group-news-6-empty                  ((,class :foreground ,heading-6)))
+   `(gnus-group-news-low                      ((,class :inherit (bold gnus-group-news-low-empty))))
+   `(gnus-group-news-low-empty                ((,class :foreground ,fg-dim)))
+   `(gnus-header-content                      ((,class :inherit message-header-other)))
+   `(gnus-header-from                         ((,class :inherit message-header-to :underline nil)))
+   `(gnus-header-name                         ((,class :inherit message-header-name)))
+   `(gnus-header-newsgroups                   ((,class :inherit message-header-newsgroups)))
+   `(gnus-header-subject                      ((,class :inherit message-header-subject)))
+   `(gnus-server-agent                        ((,class :inherit bold)))
+   `(gnus-server-closed                       ((,class :inherit italic)))
+   `(gnus-server-cloud                        ((,class :inherit bold :foreground ,fg-dim)))
+   `(gnus-server-cloud-host                   ((,class :inherit bold :foreground ,fg-dim :underline t)))
+   `(gnus-server-denied                       ((,class :inherit error)))
+   `(gnus-server-offline                      ((,class :inherit shadow)))
+   `(gnus-server-opened                       ((,class :inherit success)))
+   `(gnus-summary-cancelled                   ((,class :inherit italic :foreground ,warning)))
+   `(gnus-summary-high-ancient                ((,class :inherit bold :foreground ,fg-inactive)))
+   `(gnus-summary-high-read                   ((,class :inherit bold :foreground ,fg-dim)))
+   `(gnus-summary-high-ticked                 ((,class :inherit bold :foreground ,error)))
+   `(gnus-summary-high-undownloaded           ((,class :inherit bold-italic :foreground ,warning)))
+   `(gnus-summary-high-unread                 ((,class :inherit bold)))
+   `(gnus-summary-low-ancient                 ((,class :inherit italic)))
+   `(gnus-summary-low-read                    ((,class :inherit (shadow italic))))
+   `(gnus-summary-low-ticked                  ((,class :inherit italic :foreground ,error)))
+   `(gnus-summary-low-undownloaded            ((,class :inherit italic :foreground ,warning)))
+   `(gnus-summary-low-unread                  ((,class :inherit italic)))
+   `(gnus-summary-normal-ancient              (( )))
+   `(gnus-summary-normal-read                 ((,class :inherit shadow)))
+   `(gnus-summary-normal-ticked               ((,class :foreground ,error)))
+   `(gnus-summary-normal-undownloaded         ((,class :foreground ,warning)))
+   `(gnus-summary-normal-unread               (( )))
+   `(gnus-summary-selected                    ((,class :inherit highlight)))
+
+;;; --- newsticker
+   `(newsticker-treeview-selection-face       ((,class :inherit highlight)))
+   `(newsticker-feed-face                     ((,class :inherit bold)))
+   `(newsticker-treeview-old-face             ((,class :inherit shadow)))
+   `(newsticker-treeview-new-face             ((,class :inherit bold)))
+
 ;;; --- nano modeline
    `(nano-modeline-active-status-RW     ((,class :inherit region :foreground ,fg-main)))
    `(nano-modeline-active-status-**     ((,class :inherit region :foreground ,fg-dim)))
@@ -1013,7 +1086,9 @@ Respected Only in GUI frame"
    `(magit-tag                             ((,class :background ,bg-tag :foreground ,bg-main)))
 
 ;;; --- Transient
-   `(transient-key                         ((,class :inherit help-key-binding)))
+   `(transient-key                         ((,class :inherit help-key-binding :underline nil)))
+   `(transient-key-stay                    ((,class :inherit transient-key :foreground ,info-doc)))
+   `(transient-key-exit                    ((,class :inherit transient-key)))
 
 ;;; --- Markdown
    `(markdown-blockquote-face              ((,class :font ,haki-code-font :weight medium :height 1.1 :foreground ,verbatim)))
@@ -1106,6 +1181,14 @@ Respected Only in GUI frame"
    `(centaur-tabs-selected-modified             ((,class :inherit (italic centaur-tabs-selected))))
    `(centaur-tabs-unselected                    ((,class :background ,bg-dim :foreground ,fg-comment)))
    `(centaur-tabs-unselected-modified           ((,class :inherit (italic centaur-tabs-unselected))))
+
+;;; --- battery
+   `(battery-load-low         ((,class :inherit highlight)))
+   `(battery-load-critical    ((,class :inherit error)))
+
+;;; --- tooltip
+   `(tooltip                  ((,class :inherit highlight)))
+   `(tool-bar                 ((,class :inherit default :background ,bg-inactive)))
 
 ;;; --- solaire-mode
    `(solaire-default-face                       ((,class :inherit default :background ,bg-dim)))

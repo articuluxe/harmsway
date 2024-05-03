@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -33,7 +33,7 @@
 ;;; Code:
 
 (defconst magit--minimal-git "2.2.0")
-(defconst magit--minimal-emacs "25.1")
+(defconst magit--minimal-emacs "26.1")
 
 (require 'cl-lib)
 (require 'compat)
@@ -471,36 +471,41 @@ and delay of your graphical environment or operating system."
 
 ;;; Section Classes
 
-(defclass magit-commit-section (magit-section) ())
+(defclass magit-commit-section (magit-section)
+  ((keymap :initform 'magit-commit-section-map)))
 
 (setf (alist-get 'commit magit--section-type-alist) 'magit-commit-section)
 
-(defclass magit-diff-section (magit-section) () :abstract t)
+(defclass magit-diff-section (magit-section)
+  ((keymap :initform 'magit-diff-section-map))
+  :abstract t)
 
 (defclass magit-file-section (magit-diff-section)
   ((keymap :initform 'magit-file-section-map)
-   (source :initform nil)
-   (header :initform nil)
-   (binary :initform nil)))
+   (source :initform nil :initarg :source)
+   (header :initform nil :initarg :header)
+   (binary :initform nil :initarg :binary)))
 
 (defclass magit-module-section (magit-file-section)
   ((keymap :initform 'magit-module-section-map)
-   (range  :initform nil)))
+   (range  :initform nil :initarg :range)))
 
 (defclass magit-hunk-section (magit-diff-section)
   ((keymap      :initform 'magit-hunk-section-map)
    (refined     :initform nil)
-   (combined    :initform nil)
-   (from-range  :initform nil)
+   (combined    :initform nil :initarg :combined)
+   (from-range  :initform nil :initarg :from-range)
    (from-ranges :initform nil)
-   (to-range    :initform nil)
-   (about       :initform nil)))
+   (to-range    :initform nil :initarg :to-range)
+   (about       :initform nil :initarg :about)))
 
 (setf (alist-get 'file   magit--section-type-alist) 'magit-file-section)
 (setf (alist-get 'module magit--section-type-alist) 'magit-module-section)
 (setf (alist-get 'hunk   magit--section-type-alist) 'magit-hunk-section)
 
-(defclass magit-log-section (magit-section) () :abstract t)
+(defclass magit-log-section (magit-section)
+  ((keymap :initform 'magit-log-section-map))
+  :abstract t)
 (defclass magit-unpulled-section (magit-log-section) ())
 (defclass magit-unpushed-section (magit-log-section) ())
 (defclass magit-unmerged-section (magit-log-section) ())
@@ -518,6 +523,25 @@ and delay of your graphical environment or operating system."
 (defvar vertico-sort-function)
 
 (defvar magit-completing-read--silent-default nil)
+
+(defvar magit-completing-read-default-prompt-predicate
+  (lambda ()
+    (and (eq magit-completing-read-function
+             'magit-builtin-completing-read)
+         (not (or (bound-and-true-p helm-mode)
+                  (bound-and-true-p ivy-mode)
+                  (bound-and-true-p selectrum-mode)
+                  (bound-and-true-p vertico-mode)))))
+  "Function used to determine whether to add default to prompt.
+
+This is used by `magit-completing-read' (which see).
+
+The default function returns nil, when a completion frameworks is used
+for which this is undesirable.  More precisely, it returns nil, when
+`magit-completing-read-function' is not `magit-builtin-completing-read',
+or one of `helm-mode', `ivy-mode', `selectrum-mode' or `vertico-mode'
+is enabled.  When this function returns nil, then nil is passed to
+`format-prompt' (which see), instead of the default (DEF or FALLBACK).")
 
 (defun magit-completing-read ( prompt collection &optional
                                predicate require-match initial-input
@@ -558,13 +582,11 @@ acts similarly to `completing-read', except for the following:
   is not, then this function always asks the user to choose a
   candidate, just as if both defaults were nil.
 
-- \": \" is appended to PROMPT.
-
-- PROMPT is modified to end with \" (default DEF|FALLBACK): \"
-  provided that DEF or FALLBACK is non-nil, that neither
-  `ivy-mode' nor `helm-mode' is enabled, and that
-  `magit-completing-read-function' is set to its default value of
-  `magit-builtin-completing-read'."
+- `format-prompt' is called on PROMPT and DEF (or FALLBACK if
+  DEF is nil).  This appends \": \" to the prompt and may also
+  add the default to the prompt, using the format specified by
+  `minibuffer-default-prompt-format' and depending on
+  `magit-completing-read-default-prompt-predicate'."
   (setq magit-completing-read--silent-default nil)
   (if-let ((dwim (and def
                       (nth 2 (seq-find (pcase-lambda (`(,cmd ,re ,_))
@@ -581,15 +603,19 @@ acts similarly to `completing-read', except for the following:
     (unless def
       (setq def fallback))
     (let ((command this-command)
-          (reply (funcall magit-completing-read-function
-                          (concat prompt ": ")
-                          (if (and (not (functionp collection))
-                                   def
-                                   (not (member def collection)))
-                              (cons def collection)
-                            collection)
-                          predicate
-                          require-match initial-input hist def)))
+          (reply (funcall
+                  magit-completing-read-function
+                  (format-prompt
+                   prompt
+                   (and (funcall magit-completing-read-default-prompt-predicate)
+                        def))
+                  (if (and (not (functionp collection))
+                           def
+                           (not (member def collection)))
+                      (cons def collection)
+                    collection)
+                  predicate
+                  require-match initial-input hist def)))
       (setq this-command command)
       ;; Note: Avoid `string=' to support `helm-comp-read-use-marked'.
       (if (equal reply "")
@@ -608,22 +634,13 @@ acts similarly to `completing-read', except for the following:
     (prompt choices &optional predicate require-match initial-input hist def)
   "Magit wrapper for standard `completing-read' function."
   (unless (or (bound-and-true-p helm-mode)
-              (bound-and-true-p ivy-mode)
-              (bound-and-true-p vertico-mode)
-              (bound-and-true-p selectrum-mode))
-    (setq prompt (magit-prompt-with-default prompt def)))
-  (unless (or (bound-and-true-p helm-mode)
               (bound-and-true-p ivy-mode))
     (setq choices (magit--completion-table choices)))
-  (cl-letf (((symbol-function #'completion-pcm--all-completions)))
-    (when (< emacs-major-version 26)
-      (fset 'completion-pcm--all-completions
-            'magit-completion-pcm--all-completions))
-    (let ((ivy-sort-functions-alist nil)
-          (vertico-sort-function nil))
-      (completing-read prompt choices
-                       predicate require-match
-                       initial-input hist def))))
+  (let ((ivy-sort-functions-alist nil)
+        (vertico-sort-function nil))
+    (completing-read prompt choices
+                     predicate require-match
+                     initial-input hist def)))
 
 (define-obsolete-function-alias 'magit-completing-read-multiple*
   'magit-completing-read-multiple "Magit-Section 4.0.0")
@@ -653,12 +670,6 @@ third-party completion frameworks."
                      (equal omit-nulls t))
             (setq input string))
           (funcall split-string string separators omit-nulls trim)))
-       ;; In Emacs 25 this function has a bug, so we use a copy of the
-       ;; version from Emacs 26. bef9c7aa3
-       ((symbol-function #'completion-pcm--all-completions)
-        (if (< emacs-major-version 26)
-            'magit-completion-pcm--all-completions
-          (symbol-function #'completion-pcm--all-completions)))
        ;; Prevent `BUILT-IN' completion from messing up our existing
        ;; order of the completion candidates. aa5f098ab
        (table (magit--completion-table table))
@@ -698,12 +709,6 @@ back to built-in `completing-read' for now." :error)
     (magit-builtin-completing-read prompt choices predicate require-match
                                    initial-input hist def)))
 
-(defun magit-prompt-with-default (prompt def)
-  (if (and def (length> prompt 2)
-           (string-equal ": " (substring prompt -2)))
-      (format "%s (default %s): " (substring prompt 0 -2) def)
-    prompt))
-
 (defvar-keymap magit-minibuffer-local-ns-map
   :parent minibuffer-local-map
   "SPC" #'magit-whitespace-disallowed
@@ -726,7 +731,7 @@ This is similar to `read-string', but
   which case that is returned,
 * whitespace is not allowed and leading and trailing whitespace is
   removed automatically if NO-WHITESPACE is non-nil,
-* \": \" is appended to PROMPT, and
+* `format-prompt' is used internally.
 * an invalid DEFAULT-VALUE is silently ignored."
   (when default-value
     (when (consp default-value)
@@ -735,7 +740,7 @@ This is similar to `read-string', but
       (setq default-value nil)))
   (let* ((minibuffer-completion-table nil)
          (val (read-from-minibuffer
-               (magit-prompt-with-default (concat prompt ": ") default-value)
+               (format-prompt prompt default-value)
                initial-input (and no-whitespace magit-minibuffer-local-ns-map)
                nil history default-value inherit-input-method))
          (trim (lambda (regexp string)
@@ -1015,13 +1020,6 @@ This function should be named `version>=' and be part of Emacs."
 
 ;;; Kludges for Emacs Bugs
 
-(defun magit-file-accessible-directory-p (filename)
-  "Like `file-accessible-directory-p' but work around an Apple bug.
-See http://debbugs.gnu.org/cgi/bugreport.cgi?bug=21573#17
-and https://github.com/magit/magit/issues/2295."
-  (and (file-directory-p filename)
-       (file-accessible-directory-p filename)))
-
 (when (< emacs-major-version 27)
   ;; Work around https://debbugs.gnu.org/cgi/bugreport.cgi?bug=21559.
   ;; Fixed by cb55ccae8be946f1562d74718086a4c8c8308ee5 in Emacs 27.1.
@@ -1064,27 +1062,6 @@ and https://github.com/magit/magit/issues/2295."
       (funcall fn)))
   (advice-add 'auto-revert-handler :around 'auto-revert-handler@bug21559)
   )
-
-(when (< emacs-major-version 26)
-  ;; In Emacs 25 `completion-pcm--all-completions' reverses the
-  ;; completion list.  This is the version from Emacs 26, which
-  ;; fixes that issue.  bug#24676
-  (defun magit-completion-pcm--all-completions (prefix pattern table pred)
-    (if (completion-pcm--pattern-trivial-p pattern)
-        (all-completions (concat prefix (car pattern)) table pred)
-      (let* ((regex (completion-pcm--pattern->regex pattern))
-             (case-fold-search completion-ignore-case)
-             (completion-regexp-list (cons regex completion-regexp-list))
-             (compl (all-completions
-                     (concat prefix
-                             (if (stringp (car pattern)) (car pattern) ""))
-                     table pred)))
-        (if (not (functionp table))
-            compl
-          (let ((poss ()))
-            (dolist (c compl)
-              (when (string-match-p regex c) (push c poss)))
-            (nreverse poss)))))))
 
 (defun magit-which-function ()
   "Return current function name based on point.

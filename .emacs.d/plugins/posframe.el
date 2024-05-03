@@ -5,11 +5,11 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 1.4.2
+;; Version: 1.4.3
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26.1"))
 
-;; This file is part of GNU Emacs.
+;; This file is not part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -693,7 +693,7 @@ ACCEPT-FOCUS."
                        (undecorated . t)
                        (visibility . nil)
                        (cursor-type . nil)
-                       (minibuffer . nil)
+                       (minibuffer . ,(minibuffer-window parent-frame))
                        (left . ,(if (consp position) (car position) 0))
                        (top . ,(if (consp position) (cdr position) 0))
                        (width . 1)

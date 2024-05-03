@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -41,7 +41,7 @@
    (author               :initarg :author)
    (title                :initarg :title)
    (created              :initarg :created)
-   (updated              :initarg :updated)
+   (updated              :initarg :updated :initform nil)
    (closed               :initarg :closed)
    (status               :initarg :status :initform nil)
    (locked-p             :initarg :locked-p)
@@ -268,7 +268,7 @@ Also see option `forge-topic-list-limit'."
 
 (defun forge-insert-authored-issues ()
   "Insert a list of open issues that are authored by you."
-  (forge--insert-issues "Authored issues" #'forge--ls-assigned-issues))
+  (forge--insert-issues "Authored issues" #'forge--ls-authored-issues))
 
 (defun forge--insert-issues (heading getter)
   (when-let ((repo (forge--assert-insert-topics-get-repository t)))

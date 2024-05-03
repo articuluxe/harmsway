@@ -154,9 +154,6 @@ tags for."
 (defvar ac-php-ctags-executable (concat ac-php-root-directory "phpctags")
   "Set the Phpctags executable path.  Don't change the value of this variable.")
 
-(defvar ac-php-common-json-file (concat ac-php-root-directory "ac-php-comm-tags-data.el")
-  "Default tags file.
-Will be used as a fallback when unable to obtain the project related tags.")
 
 (defvar ac-php-debug-flag nil
   "Non-nil means enable verbose mode when processing autocomplete.
@@ -405,6 +402,12 @@ ac-php developer only."
   (beginning-of-line)
   (forward-char (1- column)))
 
+
+(defun  ac-php--get-common-json-file ()
+  "Doc LINE COLUMN."
+  (concat ac-php-tags-path "/common.el"  )
+  )
+
 (defun ac-php-current-location (&optional offset)
   "Doc OFFSET."
   (format "%s:%d:%d" (or (buffer-file-name) (buffer-name))
@@ -470,18 +473,25 @@ It can be either: file,12 or file:13:14 or plain file LOCATION OTHER-WINDOW."
   "Doc TAG-NAME."
   (s-matches-p "(" tag-name))
 
+;; "Split STR into substrings bounded by REGEXP.
+
+;; This function is a tool like `split-string', but it treat separator as an
+;; element of returned list for example:
+
+;;   \(ac-php-split-string-with-separator 'abc.def.g' '\\.' '.')
+
+;; will return:
+
+;;   '('abc' '.' 'def' '.' 'g')
+
+;; The REPLACEMENT may used to return instead of REGEXP.  For OMIT-NULLS
+;; refer to original `split-string' function.
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
 (defun ac-php-split-string-with-separator (str regexp &optional replacement omit-nulls)
   "Split STR into substrings bounded by REGEXP.
-
-This function is a tool like `split-string', but it treat separator as an
-element of returned list for example:
-
-  \(ac-php-split-string-with-separator 'abc.def.g' '\\.' '.')
-
-will return:
-
-  '('abc' '.' 'def' '.' 'g')
-
 The REPLACEMENT may used to return instead of REGEXP.  For OMIT-NULLS
 refer to original `split-string' function.
 
@@ -503,27 +513,30 @@ been replaced by '."
         (setq split-list (list str)))
       split-list)))
 
+;; "Clean PARSER-DATA from unnecessary elements.
+
+;; This function is used to drop all elements before ';'.  For example:
+
+;;   \(ac-php--get-clean-node '('A' ';' 'B'))
+
+;; will return:
+
+;;   \('B')
+
+;; The CHECK-LEN may be passed to indicate the limit to analyze items:
+
+;;   \(ac-php--get-clean-node '('A' 'B' 'C' 'D') 2)
+
+;; will return:
+
+;;   \('A' 'B')
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
 (defun ac-php--get-clean-node (parser-data &optional check-len)
   "Clean PARSER-DATA from unnecessary elements.
-
-This function is used to drop all elements before ';'.  For example:
-
-  \(ac-php--get-clean-node '('A' ';' 'B'))
-
-will return:
-
-  \('B')
-
-The CHECK-LEN may be passed to indicate the limit to analyze items:
-
-  \(ac-php--get-clean-node '('A' 'B' 'C' 'D') 2)
-
-will return:
-
-  \('A' 'B')
-
-Note: To conveniently describe in the documentation, double quotes (\") have
-been replaced by '."
+The CHECK-LEN may be passed to indicate the limit to analyze items."
   (ac-php--debug "Going to clean parser data: %S" parser-data)
   (let ((i 0) ret-data item)
     (unless check-len
@@ -592,21 +605,32 @@ been replaced by '."
        (t (setq i (1+ i)))))
     ret))
 
+;; "Remove unnecessary items in the SPLITED-LINE-ITEMS.
+
+;; Used to sanitize auto completion data.  Below are some examples for possible
+;; return values:
+
+;;   :-------------------------------:------------------------:
+;;   | SPLITED-LINE-ITEMS            | Will return            |
+;;   :-------------------------------------------:------------:
+;;   | ('foo' '.' 'bar' '(' ')' '.') | ('foo' '.' 'bar(' '.') |
+;;   | ('foo' '.' 'bar' '(' 'a')     | ('a')                  |
+;;   | ('foo' '.' 'bar')             | ('foo' '.' 'bar')      |
+;;   | ('foo' '.')                   | ('foo' '.')            |
+;;   | ('foo')                       | ('foo')                |
+;;   :-------------------------------:------------------------:
+
+;; Meant for `ac-php-get-class-at-point' .
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
 (defun ac-php-remove-unnecessary-items-4-complete-method (splited-line-items)
   "Remove unnecessary items in the SPLITED-LINE-ITEMS.
 
 Used to sanitize auto completion data.  Below are some examples for possible
 return values:
 
-  :-------------------------------:------------------------:
-  | SPLITED-LINE-ITEMS            | Will return            |
-  :-------------------------------------------:------------:
-  | ('foo' '.' 'bar' '(' ')' '.') | ('foo' '.' 'bar(' '.') |
-  | ('foo' '.' 'bar' '(' 'a')     | ('a')                  |
-  | ('foo' '.' 'bar')             | ('foo' '.' 'bar')      |
-  | ('foo' '.')                   | ('foo' '.')            |
-  | ('foo')                       | ('foo')                |
-  :-------------------------------:------------------------:
 
 Meant for `ac-php-get-class-at-point' .
 
@@ -695,7 +719,7 @@ been replaced by '."
           (unless (ac-php--check-global-name tmp-name)
             (let ((tmp-name-as-global (concat "\\" tmp-name))
                   (cur-namepace-tmp-name (concat (ac-php-get-cur-namespace-name) tmp-name)))
-              (ac-php--debug " check as cur namespace %s " tmp-name)
+              (ac-php--debug " check as cur namespace %s "  cur-namepace-tmp-name )
               (if (ac-php--get-item-from-funtion-map cur-namepace-tmp-name function-map)
                   (setq tmp-name cur-namepace-tmp-name)
                 (setq tmp-name tmp-name-as-global))))
@@ -704,8 +728,9 @@ been replaced by '."
 
     (when tmp-name
       (setq tmp-name (ac-php--as-global-name tmp-name))
+
       (setq tmp-ret (ac-php--get-item-from-funtion-map tmp-name function-map))
-      (ac-php--debug "11 tmp-ret %S" tmp-ret)
+      (ac-php--debug "11 tmp-re %s=> %S" tmp-name tmp-ret)
       (if tmp-ret
           (if get-return-type-flag
               (setq ret-name (aref tmp-ret 4))
@@ -722,6 +747,20 @@ been replaced by '."
             (setq ret-name (aref tmp-ret 1)))))
     (ac-php--debug " ac-php--get-class-full-name-in-cur-buffer ret-name %s" ret-name)
     ret-name))
+;; "This function is used to tokinize PHP string.
+
+;; First this function will split LINE-STRING to small items.
+
+;; For example, suppose LINE-STRING is:
+
+;;   '$class->method($parameter)'
+
+;; then this function split it to:
+
+;;   'class' '.' 'method' '(' 'parameter' ')'
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
 
 (defun ac-php-split-line-4-complete-method (line-string)
   "This function is used to tokinize PHP string.
@@ -729,12 +768,6 @@ been replaced by '."
 First this function will split LINE-STRING to small items.
 
 For example, suppose LINE-STRING is:
-
-  '$class->method($parameter)'
-
-then this function split it to:
-
-  'class' '.' 'method' '(' 'parameter' ')'
 
 Note: To conveniently describe in the documentation, double quotes (\") have
 been replaced by '."
@@ -1578,6 +1611,8 @@ work for multi class hint:
   "Doc FILE-PATH CACHE1-FILES."
   (ac-php--json-save-data file-path (list :cache1-files cache1-files)))
 
+
+
 (defun ac-php--ctags-opts (project-root-dir rebuild)
   "Create phpctags command options.
 
@@ -1717,7 +1752,7 @@ This function is used internally by the function `ac-php--remake-tags'."
       (setq ac-php-gen-tags-flag nil))))
 
 (defun ac-php-gen-el-func (doc)
-  "Example doc 'xxx($x1,$x2)' => $x1 , $x2 DOC."
+  "Example doc \"xxx($x1,$x2)\" => $x1 , $x2 DOC."
   (let (func-str)
     (if (string-match "[^(]*(\\(.*\\))[^)]*" doc)
         (progn
@@ -1777,13 +1812,19 @@ If it is outdated, a re-index process will be performed."
   (ac-php--debug "Retrieving tags file...")
   (let ((project-root-dir (ac-php--get-project-root-dir))
         tags-file
+        tags-vendor-file
         file-attr
         file-last-time
+        tags-save-dir
         now)
     (if project-root-dir
         (progn
-          (setq tags-file (concat (ac-php--get-tags-save-dir project-root-dir) "tags.el")
-                file-attr (file-attributes tags-file))
+          (setq
+           tags-save-dir  (ac-php--get-tags-save-dir project-root-dir)
+           tags-file (concat tags-save-dir "tags.el")
+           tags-vendor-file (concat tags-save-dir "tags-vendor.el")
+           file-attr (file-attributes tags-file)
+           )
 
           (when file-attr
             (progn
@@ -1796,7 +1837,7 @@ If it is outdated, a re-index process will be performed."
                 (ac-php--debug "The tags file is out of date")
                 (ac-php--remake-tags project-root-dir nil))))
 
-          (list project-root-dir tags-file))
+          (list project-root-dir tags-file tags-vendor-file ))
       nil)))
 
 (defun ac-php--get-config-path-noti-str (project-root-dir path-str)
@@ -1915,7 +1956,7 @@ file in case of its absence, or if it is empty."
 (define-hash-table-test 'case-fold
   'case-fold-string= 'case-fold-string-hash)
 
-(defun ac-php-load-data (tags-file project-root-dir)
+(defun ac-php-load-data (tags-file tags-vendor-file project-root-dir)
   "Return the autocompleted data for the project.
 
 This function tries to use the `ac-php-tag-last-data-list' variable to query the
@@ -1924,11 +1965,15 @@ in-memory storage of all the tags.
 
 The TAGS-FILE argument is used as an assoc key to search the data for the
 project located at the PROJECT-ROOT-DIR.
+The TAGS-VENDOR-FILE argument is used as an assoc key to search the data for the
+project located at the PROJECT-ROOT-DIR.
+
 
 If no data is found for the autocomplete, or the data is outdated, the tags file
 will be loaded and the in-memory storage will be updated."
   (let ((file-attr (file-attributes tags-file))
         file-data
+        vendor-tags-data
         tags-old-mtime
         tags-new-mtime
         class-map
@@ -1944,9 +1989,20 @@ will be loaded and the in-memory storage will be updated."
       (when (or (null tags-old-mtime) (> tags-new-mtime tags-old-mtime))
         (message (concat "ac-php: Reloading the autocompletion "
                          "data from the tags file..."))
-        (load tags-file nil t)
 
         ;; `g-ac-php-tmp-tags' will be populated from tags.el file
+        ;; 加载 vendor
+        (setq vendor-tags-data (list
+                                (make-hash-table :test 'case-fold)
+                                (make-hash-table :test 'case-fold)
+                                (make-hash-table :test 'case-fold)
+                                []
+                                ) )
+        (when  tags-vendor-file
+          (setq vendor-tags-data  (ac-php-load-data tags-vendor-file nil project-root-dir ))
+          )
+
+        (load tags-file nil t)
         (setq file-data g-ac-php-tmp-tags)
 
         (assq-delete-all tags-file ac-php-tag-last-data-list)
@@ -1958,33 +2014,36 @@ will be loaded and the in-memory storage will be updated."
         ;; - inherit map (list):   (aref file-data 2)
         ;; - file list (array):    (aref file-data 3)
         ;;
-        (setq class-map (make-hash-table :test 'case-fold)
-              function-map (make-hash-table :test 'case-fold)
-              inherit-map (make-hash-table :test 'case-fold))
+
+        (setq class-map (copy-hash-table  (ac-php-g--class-map vendor-tags-data))
+              function-map (copy-hash-table  (ac-php-g--function-map vendor-tags-data) )
+              inherit-map  (copy-hash-table  (ac-php-g--inherit-map vendor-tags-data))
+              )
 
         (mapc
          (lambda (class-item)
            (puthash (format "%s" (car class-item)) (cdr class-item) class-map))
 
-         (aref file-data 0))
+         (aref file-data 0) )
 
         (mapc
          (lambda (function-item)
+           (ac-php--debug "add function: %s" (aref function-item 1) )
            (puthash (aref function-item 1) function-item function-map))
-         (aref file-data 1))
+         (aref file-data 1) )
 
         (mapc
          (lambda (inherit-item)
            (puthash (format "%s" (car inherit-item))
                     (cdr inherit-item) inherit-map))
-         (aref file-data 2))
+         (aref file-data 2) )
 
         (push (list tags-file
                     tags-new-mtime
                     (list class-map
                           function-map
                           inherit-map
-                          (aref file-data 3)
+                          (vconcat (ac-php-g--file-list vendor-tags-data )  (aref file-data 3) )
                           project-root-dir))
 
               ac-php-tag-last-data-list)
@@ -2008,15 +2067,27 @@ will be loaded and the in-memory storage will be updated."
 
 (defun ac-php-get-tags-data ()
   "Load a tags data for the particular project."
-  (let (tags-file project-root-dir (tags-definition (ac-php-get-tags-file)))
+  (let (tags-file tags-vendor-file project-root-dir (tags-definition (ac-php-get-tags-file)))
     (if tags-definition
         (progn
-          (setq tags-file (nth 1 tags-definition)
-                project-root-dir (nth 0 tags-definition)))
-      (setq tags-file ac-php-common-json-file))
+          (setq
+           project-root-dir (nth 0 tags-definition)
+           tags-file (nth 1 tags-definition)
+           tags-vendor-file (nth 2 tags-definition)
+           ))
+      (setq tags-file (ac-php--get-common-json-file))
+      (unless(f-exists?  tags-file )
+        ;;gen
+        (shell-command-to-string
+         (concat  ac-php-php-executable " " ac-php-ctags-executable " "
+                  "--save-common-el=" tags-file
+                  )
+        ))
+      )
     (ac-php--debug "Loading tags file: %s" (ac-php--reduce-path tags-file 60))
-    (if (file-exists-p tags-file)
-        (ac-php-load-data tags-file project-root-dir)
+    (if (and  (file-exists-p tags-file )
+              (or (not tags-vendor-file) (file-exists-p tags-vendor-file ) ) )
+        (ac-php-load-data tags-file tags-vendor-file  project-root-dir )
       (progn
         (ac-php--debug (concat "The per-project tags file doesn't exist. "
                                "Starting create a new one..."))
@@ -2123,8 +2194,8 @@ property.  Return a cons cell `(MEMBER . TYPE)' where TYPE will be either
 \"m\" (method) or \"p\" (property).
 
 Note that this function does not perform in-depth analysis and its main task is
-to determine whether the current MEMBER is a 'method call'.  All other cases are
-considered at this stage as a 'property usage',
+to determine whether the current MEMBER is a \"method call\".
+All other cases are considered at this stage as a \"property usage\",
 although in fact they may not be."
   (ac-php--debug "Recognize current member type")
   (let (type-str)
@@ -2152,11 +2223,12 @@ although in fact they may not be."
                (ac-php--debug "member %s class=%s, %S" member opt-class class-member-list)
                (let ((i 0) (list-length (length class-member-list)) member-info member-name)
                  (ac-php--debug "55")
-                 (while (and (< i list-length) (not ret))
+                 (setq i (1-  list-length) )
+                 (while (and (>= i 0) (not ret))
                    (setq member-info (aref class-member-list i))
                    (when(ac-php--string=-ignore-care (aref member-info 1) member)
                      (setq ret member-info))
-                   (setq i (1+ i))))
+                   (setq i (1- i))))
                (if ret (cl-return))))
 
     (ac-php--debug "ac-php-get-class-member-info ret=%S" ret)
@@ -2344,7 +2416,7 @@ although in fact they may not be."
   (interactive "P")
   ;; 检查是类还是 符号
   (let ((tags-data (ac-php-get-tags-data))
-        symbol-ret type jump-pos local-var local-var-flag)
+        symbol-ret type jump-pos local-var local-var-flag (jump-flag t ) )
     (setq local-var (ac-php-get-cur-word-with-dollar))
     (setq local-var-flag (s-matches-p "^\\$" local-var))
 
@@ -2380,18 +2452,9 @@ although in fact they may not be."
                 (cond
                  ((s-matches-p "sys" (nth 0 tmp-arr))
                   (let((sys-item-name (aref (nth 3 symbol-ret) 1))) ;; system function
-                    ;; \trim(=> trim
-                    (if (string= type "user_function")
-                        (setq sys-item-name
-                              (substring-no-properties
-                               sys-item-name 1
-                               (if (string= "(" (substring sys-item-name -1))
-                                   -1 nil)))
-                      ;; class name
-                      (setq sys-item-name (nth 2 symbol-ret)))
-                    (if (fboundp 'php-search-documentation)
-                        (php-search-documentation sys-item-name)
-                      (message "Unable to find php-search-documentation function"))))
+                    (goto-char (1+ (point)))
+                    (message "need install : composer require jetbrains/phpstorm-stubs ")
+                    ))
                  (t
                   (let ((file-list (ac-php-g--file-list tags-data)))
                     ;; from get index
@@ -2473,24 +2536,36 @@ although in fact they may not be."
         (ac-php-candidate-class tags-data key-str-list)
       (ac-php-candidate-other tags-data))))
 
-(defun ac-php--get-cur-word ()
-  "Return a 'word' before current point.
+;; "Return a 'word' before current point.
 
-The word 'word' means a combination of characters that forms a valid identifier
+;; The word 'word' means a combination of characters that forms a valid identifier
+;; in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
+
+;; Examples:
+
+;;   :-------------------------:--------------------:
+;;   | If the point at the end | Will return        |
+;;   :-------------------------:--------------------:
+;;   | $someVariable           | someWariable       |
+;;   | Acme\\Service\\Foo      | Acme\\Service\\Foo |
+;;   | foo()->bar              | bar                |
+;;   | foo()?->bar             | bar                |
+;;   | foo()                   |                    |
+;;   | 'some string'           |                    |
+;;   :-------------------------:--------------------:
+
+;; Return empty string if there is no valid sequence of characters.
+
+;; Note: To conveniently describe in the documentation, double quotes (\") have
+;; been replaced by '."
+
+(defun ac-php--get-cur-word ()
+  "Return a `word' before current point.
+
+The word `word' means a combination of characters that forms a valid identifier
 in PHP except the dollar sign.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:
-
-  :-------------------------:--------------------:
-  | If the point at the end | Will return        |
-  :-------------------------:--------------------:
-  | $someVariable           | someWariable       |
-  | Acme\\Service\\Foo      | Acme\\Service\\Foo |
-  | foo()->bar              | bar                |
-  | foo()?->bar             | bar                |
-  | foo()                   |                    |
-  | 'some string'           |                    |
-  :-------------------------:--------------------:
 
 Return empty string if there is no valid sequence of characters.
 
@@ -2503,10 +2578,13 @@ been replaced by '."
       (skip-chars-forward "a-z0-9A-Z_\\\\")
       (buffer-substring-no-properties start-pos (point)))))
 
-(defun ac-php--get-cur-word-with-function-flag ()
-  "Return a 'function' name before current point.
 
-The word 'function' means a combination of characters that forms a valid
+;; Return empty string if there is no valid sequence of characters."
+
+(defun ac-php--get-cur-word-with-function-flag ()
+  "Return a `function' name before current point.
+
+The word `function' means a combination of characters that forms a valid
 function name.  Meant for `ac-php-find-symbol-at-point-pri'.
 
 Examples:
@@ -2517,7 +2595,7 @@ Examples:
   | function foo()#         |                    |
   | function foo(#          |                    |
   | function foo#()         | foo(               |
-  | foo()?->bar# ();         | bar(               |
+  | foo()?->bar# ();         | bar(              |
   | fo#o()->bar ();         | foo(               |
   :-------------------------:--------------------:
 
@@ -2583,7 +2661,7 @@ Return empty string if there is no valid sequence of characters."
         (setq file-pos (aref function-item 3))
 
         (setq return-type (aref function-item 4))
-        (popup-tip (concat "[" (if (string= "S" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
+        (popup-tip (concat "[" (if (string= "sys" file-pos) "system" "user") "]:" (ac-php-clean-document doc) "\n[  type]:" return-type)))))))
 
 (defun ac-php-cscope-find-egrep-pattern (symbol)
   "Set `cscope-initial-directory' and run egrep over the cscope database SYMBOL."
@@ -2662,24 +2740,38 @@ supposed to do."
 (defun ac-php-show-cur-project-info ()
   "Show current project ac-php info ."
   (interactive)
-  (let ((tags-arr (ac-php-get-tags-file)) tags-file project-root-dir file-attr file-last-time)
+  (let ((tags-arr (ac-php-get-tags-file)) tags-file tags-vendor-file project-root-dir file-attr file-last-time ( tags-data  (ac-php-get-tags-data ) )  vendor-tags-data)
     (if tags-arr
         (progn
+
           (setq tags-file (nth 1 tags-arr))
-          (setq project-root-dir (nth 0 tags-arr)))
-      (setq tags-file ac-php-common-json-file))
+          (setq tags-vendor-file (nth 2 tags-arr))
+          (setq project-root-dir (nth 0 tags-arr))
+          (setq vendor-tags-data ( ac-php-load-data tags-vendor-file nil project-root-dir ))
+          )
+      (setq tags-file  (ac-php--get-common-json-file)))
     (when tags-file
       (setq file-attr (file-attributes tags-file))
       (setq file-last-time (format-time-string "%Y-%m-%d %H:%M:%S" (nth 5 file-attr))))
-    (message (concat "root dir          : %s\n"
-                     "config file       : %s%s\n"
-                     "tags file         : %s\n"
-                     "tags last gen time: %s")
+    (message (concat "root dir           : %s\n"
+                     "config file        : %s%s\n"
+                     "tags file          : %s\n"
+                     "tags last gen time : %s\n"
+                     "file count         : %s\n"
+                     "define count       : %s\n"
+                     "vendor file count  : %s\n"
+                     "vendor define count: %s\n"
+                     )
              project-root-dir
              project-root-dir
              ac-php-config-file
              tags-file
-             file-last-time)))
+             file-last-time
+             (length   (ac-php-g--file-list tags-data) )
+             ( hash-table-count (ac-php-g--function-map tags-data) )
+             (length   (ac-php-g--file-list vendor-tags-data) )
+             ( hash-table-count (ac-php-g--function-map vendor-tags-data) )
+             )))
 
 ;;; Initialization
 

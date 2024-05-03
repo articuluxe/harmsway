@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -31,6 +31,7 @@
 (require 'magit-base)
 (require 'magit-git)
 
+(require 'browse-url)
 (require 'format-spec)
 (require 'help-mode)
 
@@ -272,8 +273,19 @@ then fall back to regular region highlighting."
   :options '(magit-diff-update-hunk-region))
 
 (defcustom magit-create-buffer-hook nil
-  "Normal hook run after creating a new `magit-mode' buffer."
+  "Normal hook run while creating a new `magit-mode' buffer.
+Runs before the buffer is populated with sections.  Also see
+`magit-post-create-buffer-hook'."
   :package-version '(magit . "2.90.0")
+  :group 'magit-refresh
+  :type 'hook)
+
+(defcustom magit-post-create-buffer-hook nil
+  "Normal hook run after creating a new `magit-mode' buffer.
+Runs after the buffer is populated with sections for the first
+time.  Also see `magit-create-buffer-hook' (which runs earlier)
+and `magit-refresh-buffer-hook' (which runs on every refresh)."
+  :package-version '(magit . "4.0.0")
   :group 'magit-refresh
   :type 'hook)
 
@@ -411,6 +423,8 @@ Where applicable, other keymaps remap this command to another,
 which actually deletes the thing at point."
   (interactive)
   (user-error "There is no thing at point that could be deleted"))
+;; Starting with Emacs 28.1 we could use (declare (completion ignore)).
+(put 'magit-delete-thing 'completion-predicate #'ignore)
 
 (defun magit-visit-thing ()
   "This is a placeholder command, which may signal an error if called.
@@ -419,7 +433,10 @@ which actually visits the thing at point."
   (interactive)
   (if (eq transient-current-command 'magit-dispatch)
       (call-interactively (key-binding (this-command-keys)))
-    (user-error "There is no thing at point that could be visited")))
+    (if-let ((url (browse-url-url-at-point)))
+        (browse-url url)
+      (user-error "There is no thing at point that could be visited"))))
+(put 'magit-visit-thing 'completion-predicate #'ignore)
 
 (defun magit-edit-thing ()
   "This is a placeholder command, which may signal an error if called.
@@ -430,13 +447,17 @@ buffer."
   (if (eq transient-current-command 'magit-dispatch)
       (call-interactively (key-binding (this-command-keys)))
     (user-error "There is no thing at point that could be edited")))
+(put 'magit-edit-thing 'completion-predicate #'ignore)
 
 (defun magit-browse-thing ()
-  "This is a placeholder command, which signals an error if called.
+  "This is a placeholder command, which may signal an error if called.
 Where applicable, other keymaps remap this command to another,
 which actually visits thing at point using `browse-url'."
   (interactive)
-  (user-error "There is no thing at point that could be browsed"))
+  (if-let ((url (browse-url-url-at-point)))
+      (browse-url url)
+    (user-error "There is no thing at point that could be browsed")))
+(put 'magit-browse-thing 'completion-predicate #'ignore)
 
 (defun magit-copy-thing ()
   "This is a placeholder command, which signals an error if called.
@@ -445,6 +466,7 @@ which actually copies some representation of the thing at point
 to the kill ring."
   (interactive)
   (user-error "There is no thing at point that we know how to copy"))
+(put 'magit-copy-thing 'completion-predicate #'ignore)
 
 ;;;###autoload
 (defun magit-info ()
@@ -590,15 +612,16 @@ The buffer's major-mode should derive from `magit-section-mode'."
                            `(list ',var ,form))
                          bindings))))
 
-(defun magit-setup-buffer-internal (mode locked bindings &optional buffer-name)
+(defun magit-setup-buffer-internal ( mode locked bindings
+                                     &optional buffer-or-name)
   (let* ((value   (and locked
                        (with-temp-buffer
                          (pcase-dolist (`(,var ,val) bindings)
                            (set (make-local-variable var) val))
                          (let ((major-mode mode))
                            (magit-buffer-value)))))
-         (buffer  (if buffer-name
-                      (get-buffer-create buffer-name)
+         (buffer  (if buffer-or-name
+                      (get-buffer-create buffer-or-name)
                     (magit-get-mode-buffer mode value)))
          (section (and buffer (magit-current-section)))
          (created (not buffer)))
@@ -615,7 +638,9 @@ The buffer's major-mode should derive from `magit-section-mode'."
     (magit-display-buffer buffer)
     (with-current-buffer buffer
       (run-hooks 'magit-setup-buffer-hook)
-      (magit-refresh-buffer))
+      (magit-refresh-buffer)
+      (when created
+        (run-hooks 'magit-post-create-buffer-hook)))
     buffer))
 
 ;;; Display Buffer
@@ -1052,6 +1077,18 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
         (message "Refreshing buffer `%s'...done (%.3fs)" (buffer-name)
                  (float-time (time-subtract (current-time)
                                             magit-refresh-start-time)))))))
+
+(defun magit-profile-refresh-buffer ()
+  "Profile refreshing the current Magit buffer."
+  (interactive)
+  (require (quote elp))
+  (when (fboundp 'elp-reset-all)
+    (elp-reset-all)
+    (elp-instrument-package "magit-")
+    (elp-instrument-package "forge-")
+    (magit-refresh-buffer)
+    (elp-results)
+    (elp-reset-all)))
 
 ;;; Save File-Visiting Buffers
 

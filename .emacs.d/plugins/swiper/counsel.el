@@ -179,6 +179,10 @@ Return a list or string depending on input."
                        formatter)))
    (t (apply #'format formatter args))))
 
+(defalias 'counsel--null-device
+  (if (fboundp 'null-device) #'null-device (lambda () null-device))
+  "Compatibility shim for Emacs 28 function `null-device'.")
+
 ;;* Async Utility
 (defvar counsel--async-time nil
   "Store the time when a new process was started.
@@ -2651,7 +2655,9 @@ library, which see."
 (defun counsel-locate-cmd-mdfind (input)
   "Return a `mdfind' shell command based on INPUT."
   (counsel-require-program "mdfind")
-  (format "mdfind -name %s" (shell-quote-argument input)))
+  (format "mdfind -name %s 2>%s"
+          (shell-quote-argument input)
+          (shell-quote-argument (counsel--null-device))))
 
 (defun counsel-locate-cmd-es (input)
   "Return a `es' shell command based on INPUT."
@@ -3368,14 +3374,12 @@ relative to the last position stored here.")
             (swiper--add-overlays (ivy--regex ivy-text))))))))
 
 (defun counsel-grep-occur (&optional _cands)
-  "Generate a custom occur buffer for `counsel-grep'."
-  (counsel-grep-like-occur
-   (format
-    "grep -niE %%s %s /dev/null"
-    (shell-quote-argument
-     (file-name-nondirectory
-      (buffer-file-name
-       (ivy-state-buffer ivy-last)))))))
+  "Generate a custom Occur buffer for `counsel-grep'."
+  (let ((file (buffer-file-name (ivy-state-buffer ivy-last))))
+    (counsel-grep-like-occur
+     (format "grep -niE %%s %s %s"
+             (if file (shell-quote-argument (file-name-nondirectory file)) "")
+             (shell-quote-argument (counsel--null-device))))))
 
 (defvar counsel-grep-history nil
   "History for `counsel-grep'.")
@@ -4180,13 +4184,13 @@ point to indicarte where the candidate mark is."
                   marks))))))
 
 (defun counsel-mark--ivy-read (prompt candidates caller)
-  "call `ivy-read' with sane defaults for traversing marks.
+  "Call `ivy-read' with sane defaults for traversing marks.
 CANDIDATES should be an alist with the `car' of the list being
-the string displayed by ivy and the `cdr' being the point that
+the completion candidate string and the `cdr' being the point that
 mark should take you to.
 
-NOTE This has been abstracted out into it's own method so it can
-be used by both `counsel-mark-ring' and `counsel-evil-marks'"
+This subroutine is intended to be used by both `counsel-mark-ring' and
+`counsel-evil-marks'."
   (ivy-read prompt candidates
             :require-match t
             :update-fn #'counsel--mark-ring-update-fn
@@ -4459,19 +4463,29 @@ Additional actions:\\<ivy-minibuffer-map>
    cand-pairs
    (propertize counsel-yank-pop-separator 'face 'ivy-separator)))
 
+;; Macro to leverage `compiler-macro' of `cl-member' in Emacs >= 24.
+(defmacro counsel--idx-of (elt list test)
+  "Return index of ELT in LIST, comparing with TEST.
+Typically faster than `cl-position' using `equal' on large LIST."
+  ;; No `macroexp-let2*' before Emacs 25.
+  (macroexp-let2 nil elt elt
+    (macroexp-let2 nil list list
+      (macroexp-let2 nil tail `(cl-member ,elt ,list :test ,test)
+        `(and ,tail (- (length ,list) (length ,tail)))))))
+
 (defun counsel--yank-pop-position (s)
   "Return position of S in `kill-ring' relative to last yank."
-  (or (cl-position s kill-ring-yank-pointer :test #'equal-including-properties)
-      (cl-position s kill-ring-yank-pointer :test #'equal)
-      (+ (or (cl-position s kill-ring :test #'equal-including-properties)
-             (cl-position s kill-ring :test #'equal))
+  (or (counsel--idx-of s kill-ring-yank-pointer #'equal-including-properties)
+      (counsel--idx-of s kill-ring-yank-pointer #'equal)
+      (+ (or (counsel--idx-of s kill-ring #'equal-including-properties)
+             (counsel--idx-of s kill-ring #'equal))
          (- (length kill-ring-yank-pointer)
             (length kill-ring)))))
 
 (defun counsel-string-non-blank-p (s)
   "Return non-nil if S includes non-blank characters.
 Newlines and carriage returns are considered blank."
-  (not (string-match-p "\\`[\n\r[:blank:]]*\\'" s)))
+  (string-match-p "[^\n\r[:blank:]]" s))
 
 (defcustom counsel-yank-pop-filter #'counsel-string-non-blank-p
   "Unary filter function applied to `counsel-yank-pop' candidates.
@@ -4480,8 +4494,52 @@ will be destructively removed from `kill-ring' before completion.
 All blank strings are deleted from `kill-ring' by default."
   :type '(radio
           (function-item counsel-string-non-blank-p)
-          (function-item identity)
+          (function-item identity) ;; Faster than the newer `always'.
           (function :tag "Other")))
+
+(defun counsel--equal-w-props ()
+  "Return a `hash-table-test' using `equal-including-properties'.
+If not available, return nil."
+  ;; Added in Emacs 28.
+  (when (fboundp 'sxhash-equal-including-properties)
+    (let ((name 'counsel--equal-w-props))
+      ;; Define the test only once.
+      (unless (get name 'hash-table-test)
+        (define-hash-table-test name #'equal-including-properties
+                                #'sxhash-equal-including-properties))
+      name)))
+
+(defun counsel--yank-pop-filter (kills)
+  "Apply `counsel-yank-pop-filter' to and deduplicate KILLS.
+Equality is defined by `equal-including-properties' for some consistency
+with `kill-do-not-save-duplicates' (which is otherwise ignored).  This
+function tries to be faster than `cl-delete-duplicates' when possible."
+  (let* ((pred counsel-yank-pop-filter)
+         (len (length kills))
+         ;; Same threshold as `delete-dups'.
+         (test (and (> len 100) (counsel--equal-w-props))))
+    (if (not test) ;; Slow fallback.
+        (cl-delete-duplicates (cl-delete-if-not pred kills)
+                              :test #'equal-including-properties
+                              :from-end t)
+      ;; The rest is `delete-dups' combined with `delete' in a single pass.
+      ;; Find first (or no) element that passes through filter.
+      (while (unless (funcall pred (car kills))
+               (cl-decf len)
+               (setq kills (cdr kills))))
+      (let ((ht (make-hash-table :test test :size len))
+            (tail kills)
+            retail)
+        ;; Mark it and continue with the rest.
+        (puthash (car tail) t ht)
+        (while (setq retail (cdr tail))
+          (let ((elt (car retail)))
+            (if (or (gethash elt ht)
+                    (not (funcall pred elt)))
+                (setcdr tail (cdr retail))
+              (puthash elt t ht)
+              (setq tail retail)))))
+      kills)))
 
 (defun counsel--yank-pop-kills ()
   "Return filtered `kill-ring' for `counsel-yank-pop' completion.
@@ -4493,11 +4551,9 @@ and incorporate `interprogram-paste-function'."
   ;; `interprogram-paste-function' both being nil
   (ignore-errors (current-kill 0))
   ;; Keep things consistent with the rest of Emacs
-  (dolist (sym '(kill-ring kill-ring-yank-pointer))
-    (set sym (cl-delete-duplicates
-              (cl-delete-if-not counsel-yank-pop-filter (symbol-value sym))
-              :test #'equal-including-properties :from-end t)))
-  kill-ring)
+  (prog1 (setq kill-ring (counsel--yank-pop-filter kill-ring))
+    (setq kill-ring-yank-pointer
+          (counsel--yank-pop-filter kill-ring-yank-pointer))))
 
 (defcustom counsel-yank-pop-after-point nil
   "Whether `counsel-yank-pop' yanks after point.
@@ -4535,9 +4591,10 @@ buffer position."
 
 (defun counsel-yank-pop-action-remove (s)
   "Remove all occurrences of S from the kill ring."
-  (dolist (sym '(kill-ring kill-ring-yank-pointer))
-    (set sym (cl-delete s (symbol-value sym)
-                        :test #'equal-including-properties)))
+  (setq kill-ring
+        (cl-delete s kill-ring :test #'equal-including-properties))
+  (setq kill-ring-yank-pointer
+        (cl-delete s kill-ring-yank-pointer :test #'equal-including-properties))
   ;; Update collection and preselect for next `ivy-call'
   (setf (ivy-state-collection ivy-last) kill-ring)
   (setf (ivy-state-preselect ivy-last)
@@ -6428,8 +6485,13 @@ Use `projectile-project-root' to determine the root."
 (defun counsel--project-current ()
   "Return root of current project or nil on failure.
 Use `project-current' to determine the root."
-  (and (fboundp 'project-current)
-       (cdr (project-current))))
+  (let ((proj (and (fboundp 'project-current)
+                   (project-current))))
+    (cond ((not proj) nil)
+          ((fboundp 'project-root)
+           (project-root proj))
+          ((fboundp 'project-roots)
+           (car (project-roots proj))))))
 
 (defun counsel--configure-root ()
   "Return root of current project or nil on failure.

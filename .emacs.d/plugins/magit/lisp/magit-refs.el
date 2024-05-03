@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -357,7 +357,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
            (and-let* ((buffer (magit-get-mode-buffer
                                'magit-refs-mode nil
                                (eq use-buffer-args 'selected))))
-             (progn ; work around debbugs#31840
+             (progn
                (setq args (buffer-local-value 'magit-buffer-arguments buffer))
                t))))
      (t
@@ -620,9 +620,9 @@ line is inserted at all."
     (dolist (line (magit-refs--format-local-branches))
       (pcase-let ((`(,branch . ,strings) line))
         (magit-insert-section
-          ((eval (if branch 'branch 'commit))
-           (or branch (magit-rev-parse "HEAD"))
-           t)
+            ((eval (if branch 'branch 'commit))
+             (or branch (magit-rev-parse "HEAD"))
+             t)
           (apply #'magit-insert-heading strings)
           (when (magit-buffer-margin-p)
             (magit-refs--format-margin branch))

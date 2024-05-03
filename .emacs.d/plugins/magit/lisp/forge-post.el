@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2018-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -207,9 +207,7 @@ an error."
           (if (buffer-live-p prevbuf) prevbuf (current-buffer))
         (if (and topic
                  (forge--childp repo 'forge-github-repository)
-                 (or (and (fboundp 'forge-pullreq-p)
-                          (forge-pullreq-p topic))
-                     (oref repo selective-p)))
+                 (oref repo selective-p))
             (forge--pull-topic repo topic)
           (forge-pull))))))
 

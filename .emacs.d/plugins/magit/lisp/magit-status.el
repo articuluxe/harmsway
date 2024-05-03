@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -404,7 +404,7 @@ Type \\[magit-commit] to create a commit.
   :group 'magit-status
   (hack-dir-local-variables-non-file-buffer)
   (when magit-status-initial-section
-    (add-hook 'magit-refresh-buffer-hook
+    (add-hook 'magit-post-create-buffer-hook
               #'magit-status-goto-initial-section nil t))
   (setq magit--imenu-group-types '(not branch commit)))
 
@@ -465,9 +465,7 @@ Type \\[magit-commit] to create a commit.
                                magit-section-initial-visibility-alist))))
       (if (eq vis 'hide)
           (magit-section-hide section)
-        (magit-section-show section))))
-  (remove-hook 'magit-refresh-buffer-hook
-               #'magit-status-goto-initial-section t))
+        (magit-section-show section)))))
 
 (defun magit-status-maybe-update-revision-buffer (&optional _)
   "When moving in the status buffer, update the revision buffer.
@@ -706,7 +704,8 @@ remote in alphabetic order."
   "<2>" (magit-menu-item "Discard files" #'magit-discard)
   "<1>" (magit-menu-item "Stage files"   #'magit-stage))
 
-(magit-define-section-jumper magit-jump-to-untracked "Untracked files" untracked)
+(magit-define-section-jumper magit-jump-to-untracked
+  "Untracked files" untracked)
 
 (defun magit-insert-untracked-files ()
   "Maybe insert a list or tree of untracked files.
@@ -772,7 +771,8 @@ of that variable can be set using \"D -- DIRECTORY RET g\"."
         (magit-insert-files files base)
         (insert ?\n)))))
 
-(magit-define-section-jumper magit-jump-to-skip-worktree "Skip-worktree files" skip-worktree)
+(magit-define-section-jumper magit-jump-to-skip-worktree
+  "Skip-worktree files" skip-worktree)
 
 (defun magit-insert-skip-worktree-files ()
   "Insert a tree of skip-worktree files.
@@ -788,7 +788,8 @@ of that variable can be set using \"D -- DIRECTORY RET g\"."
         (magit-insert-files files base)
         (insert ?\n)))))
 
-(magit-define-section-jumper magit-jump-to-assume-unchanged "Assume-unchanged files" assume-unchanged)
+(magit-define-section-jumper magit-jump-to-assume-unchanged
+  "Assume-unchanged files" assume-unchanged)
 
 (defun magit-insert-assume-unchanged-files ()
   "Insert a tree of files that are assumed to be unchanged.

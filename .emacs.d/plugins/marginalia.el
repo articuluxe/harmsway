@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.5
+;; Version: 1.6
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.4"))
 ;; Homepage: https://github.com/minad/marginalia
 ;; Keywords: docs, help, matching, completion
@@ -883,11 +883,13 @@ The string is transformed according to `marginalia--bookmark-type-transforms'."
 
 (defun marginalia-annotate-buffer (cand)
   "Annotate buffer CAND with modification status, file name and major mode."
-  (when-let (buffer (get-buffer cand))
-    (marginalia--fields
-     ((marginalia--buffer-status buffer))
-     ((marginalia--buffer-file buffer)
-      :truncate -0.5 :face 'marginalia-file-name))))
+  (when-let ((buffer (get-buffer cand)))
+    (if (buffer-live-p buffer)
+        (marginalia--fields
+         ((marginalia--buffer-status buffer))
+         ((marginalia--buffer-file buffer)
+          :truncate -0.5 :face 'marginalia-file-name))
+      (marginalia--fields ("(dead buffer)" :face 'error)))))
 
 (defun marginalia--full-candidate (cand)
   "Return completion candidate CAND in full.

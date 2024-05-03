@@ -2,7 +2,7 @@
 ;; Copyright (C) 2021–2024 Dan Dee
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
 ;; URL: https://github.com/monkeyjunglejuice/beach-theme-emacs
-;; Version: 1.0
+;; Version: 1.3
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT
@@ -22,31 +22,31 @@
 (deftheme beach "A light, sunny and calm Emacs theme.")
 
 ;; Colors
-(let* ((color-bg           "#fff8dc")
-       (color-bg-alt       "#f4efd2")
-       (color-fg           "#43402d")
-       (color-fg-alt       "#000000")
+(let* ((color-bg           "#fef7dc")
+       (color-bg-alt       "#f4edd2")
+       (color-fg           "#46432f")
+       (color-fg-alt       "#181611")
        (color-fg-dim       "#9b957d")
        (color-fg-dimmer    "#d9d5b5")
-       (color-light        "#d3f7e0")
-       (color-middle       "#54b2ad")
-       (color-dark         "#0e7b80")
-       (color-bright       "#de8621")
-       (color-strong       "#a93308")
-       (color-strong-light "#fcd3be")
-       (color-bright-light "#ffefc2")
-       (color-dark-soft    "#83c5c7")
-       (color-bright-soft  "#fab360")
-       (color-strong-soft  "#ef845d")
-       (color-shade-1      "#d9d5b5")
-       (color-shade-2      "#c6c2a4")
+       (color-light        "#d3f7e1")
+       (color-middle       "#4ba7a5")
+       (color-dark         "#0e7881")
+       (color-dark-soft    "#78beb8")
+       (color-bright       "#e68f4c")
+       (color-bright-soft  "#f4ad67")
+       (color-bright-light "#ffefb6")
+       (color-strong       "#ac390c")
+       (color-strong-soft  "#f0885e")
+       (color-strong-light "#ffdac2")
+       (color-shade-1      "#d9d5b5")   ; color-fg-dimmer
+       (color-shade-2      "#c4c0a1")
        (color-shade-3      "#b0ad90")
-       (color-shade-4      "#9b957d")
+       (color-shade-4      "#9b957d")   ; color-fg-dim
        (color-shade-5      "#838067")
        (color-shade-6      "#6e6b54")
        (color-shade-7      "#595641")
-       (color-shade-8      "#43402d")
-       (color-shade-9      "#000000"))
+       (color-shade-8      "#46432f")   ; color-fg
+       (color-shade-9      "#181611"))  ; color-fg-alt
 
   (custom-theme-set-faces
    'beach
@@ -57,9 +57,9 @@
    `(warning ((t (:foreground ,color-bright))))
    `(error ((t (:foreground ,color-strong))))
    `(secondary-selection ((t (:background ,color-bg-alt))))
-   `(mode-line ((t (:background ,color-fg :foreground ,color-bg :box nil))))
+   `(mode-line ((t (:background ,color-fg :foreground ,color-bg :box ,color-fg))))
    `(mode-line-buffer-id ((t (:foreground ,color-bg :weight bold))))
-   `(mode-line-inactive ((t (:background ,color-fg-dim :foreground ,color-bg))))
+   `(mode-line-inactive ((t (:background ,color-fg-dim :foreground ,color-bg :box ,color-fg-dim))))
    `(fringe ((t (:background ,color-bg-alt))))
    `(vertical-border ((t (:foreground ,color-fg :background unspecified))))
    `(minibuffer-prompt ((t (:foreground ,color-fg-alt :weight bold))))
@@ -75,9 +75,9 @@
    `(header-line ((t (:foreground ,color-fg-dim :background ,color-bg-alt))))
    `(shadow ((t (:foreground ,color-fg-dim))))
    `(widget-inactive ((t (:foreground ,color-fg-dim :background ,color-fg-dimmer))))
-   `(show-paren-match ((t (:foreground ,color-fg-alt :background ,color-bright-light :weight bold))))
+   `(show-paren-match ((t (:foreground ,color-fg-alt :background ,color-bright-light :weight bold :underline t))))
    `(show-paren-match-expression ((t (:background ,color-bright-light))))
-   `(show-paren-mismatch ((t (:inherit error :weight bold))))
+   `(show-paren-mismatch ((t (:foreground ,color-strong :background ,color-strong-light :weight bold))))
    `(highlight ((t (:background ,color-light :underline (:color ,color-fg-alt)))))
    `(match ((t (:weight bold))))
    `(hl-line ((t (:underline (:color ,color-fg-dim) :extend t))))
@@ -88,17 +88,30 @@
 
    `(font-lock-face ((t (:foreground ,color-middle))))
    `(font-lock-builtin-face ((t (:foreground ,color-fg :slant italic))))
-   `(font-lock-comment-face ((t (:foreground ,color-fg-dim :slant italic :inherit fixed-pitch-serif))))
-   `(font-lock-constant-face ((t (:foreground ,color-fg))))
-   `(font-lock-doc-face ((t (:foreground ,color-middle :slant italic :inherit fixed-pitch-serif))))
-   `(font-lock-function-name-face ((t (:weight bold))))
-   `(font-lock-keyword-face ((t (:foreground ,color-bright :slant italic))))
+   `(font-lock-comment-face ((t (:foreground ,color-fg-dim :inherit fixed-pitch-serif))))
+   `(font-lock-constant-face ((t (:foreground ,color-shade-5 :weight bold))))
+   `(font-lock-doc-face ((t (:foreground ,color-fg-dim :slant italic :inherit fixed-pitch-serif))))
+   `(font-lock-function-name-face ((t (:foreground ,color-fg :weight bold))))
+   `(font-lock-keyword-face ((t (:foreground ,color-bright))))
+   `(font-lock-number-face ((t (:foreground ,color-dark))))
+   `(font-lock-operator-face ((t (:foreground ,color-fg-alt :weight bold))))
+   `(font-lock-preprocessor-face ((t (:foreground ,color-middle))))
    `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-middle))))
    `(font-lock-regexp-grouping-construct ((t (:foreground ,color-middle))))
    `(font-lock-string-face ((t (:foreground ,color-dark :inherit fixed-pitch-serif))))
-   `(font-lock-type-face ((t (:foreground ,color-fg :weight bold))))
+   `(font-lock-type-face ((t (:weight bold))))
    `(font-lock-variable-name-face ((t (:foreground ,color-fg))))
    `(font-lock-warning-face ((t (:foreground ,color-strong :slant italic))))
+
+   ;; ansi-colors
+   `(ansi-color-black ((t (:foreground ,color-fg :background ,color-fg))))
+   `(ansi-color-red ((t (:foreground ,color-strong :background ,color-strong))))
+   `(ansi-color-green ((t (:foreground ,color-dark :background ,color-dark))))
+   `(ansi-color-yellow ((t (:foreground ,color-bright :background ,color-bright))))
+   `(ansi-color-blue ((t (:foreground ,color-middle :background ,color-middle))))
+   `(ansi-color-magenta ((t (:foreground ,color-strong :background ,color-strong))))
+   `(ansi-color-cyan ((t (:foreground ,color-dark :background ,color-dark))))
+   `(ansi-color-white ((t (:foreground ,color-fg-dim :background ,color-fg-dim))))
 
    ;; shell-mode
    `(sh-heredoc ((t (:foreground nil :inherit font-lock-string-face))))
@@ -116,15 +129,18 @@
    `(dired-special ((t (:foreground ,color-middle))))
 
    ;; dired-subtree
-   `(dired-subtree-depth-1-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-2-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-3-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-4-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-5-face ((t (:background ,color-bg-alt :extend t))))
-   `(dired-subtree-depth-6-face ((t (:background ,color-bg-alt :extend t))))
+   `(dired-subtree-depth-1-face ((t (:background unspecified))))
+   `(dired-subtree-depth-2-face ((t (:background unspecified))))
+   `(dired-subtree-depth-3-face ((t (:background unspecified))))
+   `(dired-subtree-depth-4-face ((t (:background unspecified))))
+   `(dired-subtree-depth-5-face ((t (:background unspecified))))
+   `(dired-subtree-depth-6-face ((t (:background unspecified))))
 
    ;; eldoc
    `(eldoc-highlight-function-argument ((t (:inherit lazy-highlight))))
+
+   ;; elixir-mode
+   `(elixir-number-face ((t (:inherit font-lock-number-face))))
 
    ;; proced
    `(proced-mark ((t (:inherit dired-mark))))
@@ -147,6 +163,7 @@
    `(comint-highlight-input ((t (:foreground ,color-fg))))
 
    ;; completions
+   `(completions-annotations ((t (:inherit font-lock-comment-face))))
    `(completions-common-part ((t (:weight bold))))
    `(icomplete-first-match ((t (:weight bold :underline t))))
 
@@ -215,14 +232,14 @@
    `(font-latex-script-char-face ((t (:inherit font-latex-math-face))))
 
    ;; outline
-   `(outline-1 ((t (:foreground ,color-bright :weight bold :height 1.2))))
+   `(outline-1 ((t (:foreground ,color-strong :weight bold :height 1.2))))
    `(outline-2 ((t (:foreground ,color-bright :weight bold))))
-   `(outline-3 ((t (:foreground ,color-bright :weight bold))))
-   `(outline-4 ((t (:foreground ,color-bright :weight bold))))
-   `(outline-5 ((t (:foreground ,color-bright :weight bold))))
-   `(outline-6 ((t (:foreground ,color-bright :weight bold))))
-   `(outline-7 ((t (:foreground ,color-bright :weight bold))))
-   `(outline-8 ((t (:foreground ,color-bright :weight bold))))
+   `(outline-3 ((t (:foreground ,color-dark :weight bold))))
+   `(outline-4 ((t (:foreground ,color-fg-alt :weight bold))))
+   `(outline-5 ((t (:foreground ,color-fg-alt :weight bold))))
+   `(outline-6 ((t (:foreground ,color-fg-alt :weight bold))))
+   `(outline-7 ((t (:foreground ,color-fg-alt :weight bold))))
+   `(outline-8 ((t (:foreground ,color-fg-alt :weight bold))))
 
    ;; org-mode
    `(org-archived ((t (:foreground ,color-fg-dim))))
@@ -259,13 +276,15 @@
    `(compilation-column-number ((t (:foreground ,color-fg :underline t))))
    `(compilation-error ((t (:foreground ,color-strong))))
    `(compilation-info ((t (:foreground ,color-dark))))
-   `(compilation-line-number ((t (:foreground ,color-fg :underline t))))
+   `(compilation-line-number ((t (:foreground ,color-fg :weight bold :underline t))))
+   `(compilation-mode-line-fail ((t (:foreground ,color-strong :background ,color-strong-light))))
+   `(compilation-mode-line-exit ((t (:foreground ,color-dark :background ,color-light))))
    `(compilation-warning ((t (:foreground ,color-bright))))
 
    ;; whitespace
    `(whitespace-trailing ((t (:background ,color-strong-light))))
    `(whitespace-line ((t (:inherit whitespace-trailing))))
-   `(whitespace-space (( t(:foreground ,color-middle))))
+   `(whitespace-space (( t(:foreground ,color-dark-soft))))
    `(whitespace-newline ((t (:inherit whitespace-space))))
    `(whitespace-empty ((t (:inherit whitespace-line))))
 
@@ -283,7 +302,7 @@
    `(rainbow-delimiters-depth-7-face ((t (:foreground ,color-dark-soft))))
    `(rainbow-delimiters-depth-8-face ((t (:foreground ,color-strong-soft))))
    `(rainbow-delimiters-depth-9-face ((t (:foreground ,color-fg-dim))))
-   `(rainbow-delimiters-unmatched-face ((t (:inherit error))))
+   `(rainbow-delimiters-unmatched-face ((t (:inherit show-paren-mismatch))))
 
    ;; paren-face
    `(parenthesis ((t (:foreground ,color-fg-dim :weight light))))
@@ -335,15 +354,24 @@
    `(company-tooltip-search ((t (:inherit lazy-highlight))))
    `(company-tooltip-search-selection ((t (:foreground ,color-fg-alt :inherit company-tooltip-search))))
    `(company-tooltip ((t (:foreground ,color-fg :background ,color-bright-light))))
-   `(company-tooltip-annotation ((t (:foreground ,color-fg))))
-   `(company-tooltip-annotation-selection ((t (:foreground ,color-fg-alt :weight normal))))
-   `(company-tooltip-common ((t (:foreground ,color-bright))))
-   `(company-tooltip-common-selection ((t (:foreground ,color-bright))))
-   `(company-tooltip-selection ((t (:foreground ,color-fg-alt :background ,color-bright-light :weight bold :underline (:color ,color-bright)))))
+   `(company-tooltip-annotation ((t (:slant normal :inherit completions-annotations))))
+   `(company-tooltip-annotation-selection ((t (:foreground ,color-fg-alt :slant normal :inherit completions-annotations))))
+   `(company-tooltip-common ((t (:slant normal :inherit completions-common-part))))
+   `(company-tooltip-common-selection ((t (:weight bold))))
+   `(company-tooltip-selection ((t (:inherit highlight))))
    `(company-tooltip-scrollbar-thumb ((t (:background ,color-bright))))
    `(company-tooltip-scrollbar-track ((t (:background ,color-bright-light))))
    `(company-scrollbar-fg ((t (:inherit company-tooltip-scrollbar-thumb))))  ; obsolete
    `(company-scrollbar-bg ((t (:inherit company-tooltip-scrollbar-track))))  ; obsolete
+
+   ;; corfu
+   `(corfu-annotations ((t (:foreground ,color-fg))))
+   `(corfu-bar ((t (:background ,color-bright))))
+   `(corfu-border ((t (:background ,color-fg-dimmer))))
+   `(corfu-current ((t (:inherit highlight))))
+   `(corfu-default ((t (:background ,color-bright-light))))
+   `(corfu-deprecated ((t (:strike-through t :inherit shadow))))
+   `(corfu-popupinfo ((t (:background ,color-bright-light))))
 
    ;; flymake
    `(flymake-error ((t (:underline (:color ,color-strong :style wave)))))
@@ -366,8 +394,10 @@
    `(lsp-headerline-breadcrumb-separator-face ((t (:foreground ,color-fg))))
 
    ;; eglot
-   `(eglot-mode-line ((t (:foreground ,color-bg :weight bold))))
+   `(eglot-diagnostic-tag-deprecated-face ((t (:inherit shadow :strike-through t))))
+   `(eglot-diagnostic-tag-unnecessary-face ((t (:inherit flymake-warning))))
    `(eglot-highlight-symbol-face ((t (:inherit lazy-highlight))))
+   `(eglot-mode-line ((t (:foreground ,color-bg :weight bold))))
 
    ;; csv
    `(csv-separator-face ((t (:foreground ,color-strong))))
@@ -450,7 +480,7 @@
    `(tuareg-font-lock-label-face ((t (:inherit shadow))))
    `(tuareg-font-lock-line-number-face ((t (:inherit linum))))
    `(tuareg-font-lock-module-face ((t (:inherit shadow))))
-   `(tuareg-font-lock-operator-face ((t (:foreground ,color-fg-alt :weight bold))))
+   `(tuareg-font-lock-operator-face ((t (:inherit font-lock-operator-face))))
    
    ;; caml
    `(ocaml-help-face ((t (:inherit highlight))))
@@ -470,7 +500,7 @@
    `(utop-stdout ((t (:inherit tuareg-font-lock-interactive-output-face))))
 
    ;; haskell-mode
-   `(haskell-operator-face ((t (:foreground ,color-fg-alt :weight bold))))
+   `(haskell-operator-face ((t (:inherit font-lock-operator-face))))
    `(haskell-warning-face ((t (:inherit flymake-warning))))
    `(haskell-interactive-face-compile-warning ((t (:inherit compilation-warning))))
 
@@ -571,6 +601,7 @@
    `(notmuch-message-summary-face ((t (:foreground ,color-dark))))
 
    ;; switch-window
+   `(switch-window-background ((t (:foreground ,color-fg-dim))))
    `(switch-window-label ((t (:foreground ,color-strong :height 3.0))))
 
    ;; telega
@@ -625,6 +656,9 @@
    `(orderless-match-face-1 ((t (:inherit match :foreground ,color-bright))))
    `(orderless-match-face-2 ((t (:inherit match :foreground ,color-dark))))
    `(orderless-match-face-3 ((t (:inherit match :foreground ,color-strong))))
+
+   ;; yasnippet
+   `(yas-field-highlight-face ((t (:background ,color-bright-light))))
 
    ))
 

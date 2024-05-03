@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.4
+;; Version: 1.5
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.4"))
 ;; Homepage: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -279,7 +279,7 @@ Can be either a string, or a list of strings or expressions."
   :type '(choice string (repeat (choice string sexp))))
 
 (defcustom consult-find-args
-  "find . -not ( -iwholename */.[a-z]* -prune )"
+  "find . -not ( -path */.[A-Za-z]* -prune )"
   "Command line arguments for find, see `consult-find'.
 The dynamically computed arguments are appended.
 Can be either a string, or a list of strings or expressions."
@@ -591,7 +591,7 @@ We use invalid characters outside the Unicode range.")
               (setq result
                     (mapcar
                      (lambda (x)
-                       (if (and (string-suffix-p (symbol-name (car-safe x)) "-function") (cdr x))
+                       (if (and (string-suffix-p "-function" (symbol-name (car-safe x))) (cdr x))
                            (cons (car x) (consult--in-buffer (cdr x)))
                          x))
                      result)))
@@ -697,7 +697,7 @@ The line beginning/ending BEG/END is bound in BODY."
   (declare (indent 2))
   (cl-with-gensyms (max)
     `(save-excursion
-       (let ((,beg (point-min)) (,max (point-max)) end)
+       (let ((,beg (point-min)) (,max (point-max)) ,end)
          (while (< ,beg ,max)
            (goto-char ,beg)
            (setq ,end (pos-eol))
@@ -1366,7 +1366,7 @@ ORIG is the original function, HOOKS the arguments."
                   (kill-buffer buf))
                 (setq temporary-buffers nil)
                 (pcase-dolist (`(,file . ,wins) live-files)
-                  (when-let (buf (find-file-noselect file))
+                  (when-let (buf (consult--file-action file))
                     (push buf orig-buffers)
                     (pcase-dolist (`(,win . ,state) wins)
                       (setf (car (alist-get 'buffer state)) buf)
@@ -2808,13 +2808,15 @@ KEYMAP is a command-specific keymap."
              (items (plist-get src :items))
              (items (if (functionp items) (funcall items) items)))
         (dolist (item items)
-          (let ((cand (consult--tofu-append item idx)))
+          (let* ((str (or (car-safe item) item))
+                 (cand (consult--tofu-append str idx)))
             ;; Preserve existing `multi-category' datum of the candidate.
-            (if (get-text-property 0 'multi-category cand)
-                (when face (add-text-properties 0 (length item) face cand))
+            (if (and (eq str item) (get-text-property 0 'multi-category str))
+                (when face (add-text-properties 0 (length str) face cand))
               ;; Attach `multi-category' datum and face.
-              (add-text-properties 0 (length item)
-                                   `(multi-category (,cat . ,item) ,@face) cand))
+              (add-text-properties
+               0 (length str)
+               `(multi-category (,cat . ,(or (cdr-safe item) item)) ,@face) cand))
             (push cand candidates))))
       (cl-incf idx))
     (nreverse candidates)))
@@ -3719,7 +3721,10 @@ command respects narrowing and the settings
 
 (defun consult--file-action (file)
   "Open FILE via `consult--buffer-action'."
-  (consult--buffer-action (find-file-noselect file)))
+  ;; Try to preserve the buffer as is, if it has already been opened, for
+  ;; example in literal or raw mode.
+  (setq file (abbreviate-file-name (expand-file-name file)))
+  (consult--buffer-action (or (get-file-buffer file) (find-file-noselect file))))
 
 (consult--define-state file)
 
@@ -4433,6 +4438,10 @@ AS is a conversion function."
   "Return hash table of all buffer file names."
   (consult--string-hash (consult--buffer-query :as #'buffer-file-name)))
 
+(defun consult--buffer-pair (buffer)
+  "Return a pair of name of BUFFER and BUFFER."
+  (cons (buffer-name buffer) buffer))
+
 (defun consult--buffer-preview ()
   "Buffer preview function."
   (let ((orig-buf (window-buffer (consult--original-window)))
@@ -4488,7 +4497,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
        (when-let (root (consult--project-root))
          (consult--buffer-query :sort 'visibility
                                 :directory root
-                                :as #'buffer-name))))
+                                :as #'consult--buffer-pair))))
   "Project buffer candidate source for `consult-buffer'.")
 
 (defvar consult--source-project-recent-file
@@ -4545,7 +4554,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
     :items
     ,(lambda () (consult--buffer-query :sort 'visibility
                                        :filter 'invert
-                                       :as #'buffer-name)))
+                                       :as #'consult--buffer-pair)))
   "Hidden buffer candidate source for `consult-buffer'.")
 
 (defvar consult--source-modified-buffer
@@ -4558,7 +4567,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
     :state    ,#'consult--buffer-state
     :items
     ,(lambda () (consult--buffer-query :sort 'visibility
-                                       :as #'buffer-name
+                                       :as #'consult--buffer-pair
                                        :predicate
                                        (lambda (buf)
                                          (and (buffer-modified-p buf)
@@ -4575,7 +4584,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
     :default  t
     :items
     ,(lambda () (consult--buffer-query :sort 'visibility
-                                       :as #'buffer-name)))
+                                       :as #'consult--buffer-pair)))
   "Buffer candidate source for `consult-buffer'.")
 
 (defun consult--file-register-p (reg)
@@ -4742,7 +4751,7 @@ FIND-FILE is the file open function, defaulting to `find-file-noselect'."
            (file (substring-no-properties cand 0 file-end))
            (line (string-to-number (substring-no-properties cand (+ 1 file-end) line-end))))
       (when-let (pos (consult--marker-from-line-column
-                      (funcall (or find-file #'find-file-noselect) file)
+                      (funcall (or find-file #'consult--file-action) file)
                       line (or (car matches) 0)))
         (cons pos (cdr matches))))))
 

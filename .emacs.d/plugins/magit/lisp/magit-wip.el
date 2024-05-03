@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2008-2024 The Magit Project Contributors
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
-;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
+;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -359,9 +359,9 @@ commit message."
         (setq msg (concat
                    (cond ((= len 0) "autosave tracked files")
                          ((> len 1) (format "autosave %s files" len))
-                         (t (concat "autosave "
-                                    (file-relative-name (car files)
-                                                        (magit-toplevel)))))
+                         ((concat "autosave "
+                                  (file-relative-name (car files)
+                                                      (magit-toplevel)))))
                    msg))))
     (magit-update-ref wipref msg
                       (magit-git-string "commit-tree" "--no-gpg-sign"

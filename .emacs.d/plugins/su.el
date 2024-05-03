@@ -316,6 +316,8 @@ Optional argument ARGS Any other args to `find-file-noselect'."
                            (nth 3 (file-attributes buffer-file-name 'string))))
              (not (su--root-file-name-p buffer-file-name)))
 
+    (when view-mode
+      (view-mode -1))
     (setq buffer-read-only nil)
     (add-hook 'first-change-hook #'su-auto-save-mode nil t)
 
@@ -328,7 +330,7 @@ Optional argument ARGS Any other args to `find-file-noselect'."
 (defun su ()
   "Open the current file as root."
   (interactive)
-  (find-alternate-file (su--make-root-file-name buffer-file-name)))
+  (find-alternate-file (su--make-root-file-name (or buffer-file-name default-directory))))
 
 ;;;###autoload
 (defun su-find-file (filename &optional wildcards)

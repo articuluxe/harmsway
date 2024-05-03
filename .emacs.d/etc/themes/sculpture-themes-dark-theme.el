@@ -1,12 +1,12 @@
 ;;; sculpture-themes-dark-theme.el --- Dark theme with vivid colors -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021 t-e-r-m
+;; Copyright (C) 2024 Precompute
 
-;; Author: t-e-r-m <newenewen@tutanota.com>
-;; URL: https://github.com/t-e-r-m/sculpture-theme
+;; Author: Precompute <git@precompute.net>
+;; URL: https://github.com/precompute/sculpture-theme
 ;; Created: January 06, 2021
-;; Modified: March 7, 2022
-;; Version: 1.4.3
+;; Modified: April 24, 2024
+;; Version: 1.5.1
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -15,7 +15,7 @@
 ;; sculpture-themes-dark : A dark theme for emacs with vivid colors, inspired by
 ;; coloring pigments.
 
-;; Copyright (C) 2021 t-e-r-m
+;; Copyright (C) 2024 Precompute
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@
       (bw02 "#222222")
       (bw03 "#333333")
       (bw04 "#444444")
-      ;; (bw05 "#555555")
+      (bw05 "#555555")
       (bw06 "#666666")
       (bw07 "#777777")
       (bw08 "#888888")
@@ -269,6 +269,9 @@
 
 ;;;;;; Info mode
    `(helpful-heading ((,class (:inherit variable-pitch :foreground ,ha02 :height 1.1 :underline t))))
+
+;;;;;; Eldoc
+   `(eldoc-highlight-function-argument ((,class (:inherit (bold region)))))
 
 ;;;;;; evil
    `(evil-ex-info                   ((,class (:foreground ,bw13 :slant italic))))
@@ -622,16 +625,22 @@
 
 ;;;;;; transient
    `(transient-unreachable       ((,class (:foreground ,bw04))))
-   `(transient-inactive-value    ((,class (:foreground ,bw04))))
-   `(transient-unreachable-key   ((,class (:foreground ,bw04))))
+   `(transient-inactive-value    ((,class (:foreground ,bw05))))
    `(transient-inactive-argument ((,class (:foreground ,bw04))))
    `(transient-inapt-suffix      ((,class (:foreground ,bw04 :inherit italic))))
    `(transient-heading           ((,class (:foreground ,ot05 :inherit variable-pitch :height 1.2 :overline t :extend t))))
-   `(transient-key               ((,class (:foreground ,ot09 :underline t))))
    `(transient-active-infix      ((,class (:inherit lazy-highlight :underline t))))
+   `(transient-key               ((,class (:foreground ,ha12 :inherit bold))))
+   `(transient-key-exit          ((,class (:foreground ,ot09 :inherit bold))))
+   `(transient-key-noop          ((,class (:foreground ,bw05 :inherit bold))))
+   `(transient-key-stay          ((,class (:foreground ,ot05 :inherit bold))))
+   `(transient-key-return        ((,class (:foreground ,ot01 :inherit bold))))
+   `(transient-mismatched-key    ((,class (:foreground ,ot09 :inherit bold))))
+   `(transient-nonstandard-key   ((,class (:foreground ,cs02 :inherit bold))))
+   `(transient-unreachable-key   ((,class (:foreground ,bw04))))
 
 ;;;;;; magit
-   `(magit-section-heading        ((,class (:foreground ,ot01 :inherit variable-pitch :height 1.2))))
+   ;; `(magit-section-heading        ((,class (:foreground ,ot01 :inherit variable-pitch :height 1.2))))
    `(magit-hash                   ((,class (:foreground ,cs01))))
    `(magit-branch-local           ((,class (:foreground ,cs01 :background ,ot05 :inherit variable-pitch))))
    `(magit-branch-remote          ((,class (:foreground ,bg :background ,ot12 :inherit variable-pitch))))
@@ -648,6 +657,11 @@
    `(magit-blame-margin           ((,class (:inherit head-outline-3 :background ,bw03))))
    `(magit-blame-heading          ((,class (:inherit head-outline-3 :background ,bw03))))
    `(magit-blame-highlight        ((,class (:inherit head-outline-3 :background ,bw03))))
+
+;;;;;; diff
+   `(diff-refine-removed ((,class (:inherit magit-diff-removed-highlight))))
+   `(diff-refine-changed ((,class (:foreground ,ot05 :background ,ot30))))
+   `(diff-refine-added   ((,class (:inherit magit-diff-added-highlight))))
 
 ;;;;;; orderless
    `(orderless-match-face-0 ((,class (:inherit (sculpture-themes-dark-head-outline-2 bold)))))
@@ -872,7 +886,37 @@
    `(vundo-default     ((,class (:foreground ,fg))))
    `(vundo-highlight   ((,class (:foreground ,cs02))))
    `(vundo-last-saved  ((,class (:foreground ,ot01))))
-   `(vundo-branch-stem ((,class (:foreground ,ot08))))))
+   `(vundo-branch-stem ((,class (:foreground ,ot08))))
+
+;;;;;; eldoc-box
+   `(eldoc-box-border ((,class (:background ,ot05))))
+   `(eldoc-box-body   ((,class (:background ,ot27))))
+
+;;;;;; tuareg (OCaml)
+   `(tuareg-opam-error-face                      ((,class (:inherit error :background ,ot22))))
+   `(tuareg-font-lock-error-face                 ((,class (:inherit error))))
+   `(tuareg-font-lock-operator-face              ((,class (:inherit font-lock-operator-face))))
+   `(tuareg-font-lock-governing-face             ((,class (:inherit font-lock-builtin-face))))
+   `(tuareg-font-lock-multistage-face            ((,class (:inherit font-lock-misc-punctuation-face))))
+   `(tuareg-font-double-semicolon-face           ((,class (:inherit font-lock-number-face))))
+   `(tuareg-font-lock-constructor-face           ((,class (:inherit font-lock-punctuation-face))))
+   `(tuareg-font-lock-line-number-face           ((,class (:inherit line-number))))
+   `(tuareg-font-lock-doc-verbatim-face          ((,class (:inherit font-lock-property-use-face))))
+   `(tuareg-font-lock-interactive-output-face    ((,class (:background ,ot26 :inherit font-lock-doc-face))))
+   `(tuareg-font-lock-extension-node-face        ((,class (:inherit tuareg-font-lock-infix-extension-node-face))))
+   `(tuareg-font-lock-interactive-directive-face ((,class (:background ,ot26 :inherit font-lock-doc-face))))
+
+;;;;;; caml
+   `(caml-types-def-face   ((,class (:background ,ot13 :inherit font-lock-function-name-face))))
+   `(caml-types-occ-face   ((,class (:background ,ot13 :inherit font-lock-builtin-face))))
+   `(caml-types-expr-face  ((,class (:background ,ot13 :inherit font-lock-keyword-face))))
+   `(caml-types-scope-face ((,class (:background ,ot13 :inherit font-lock-property-use-face))))
+   `(caml-types-typed-face ((,class (:background ,ot13 :inherit font-lock-type-face))))
+
+;;;;;; merlin
+   `(merlin-type-face ((,class (:inherit font-lock-type-face))))
+   `(merlin-compilation-error-face ((,class (:inherit error))))
+   `(merlin-compilation-warning-face ((,class (:inherit font-lock-warning-face))))))
 
 (provide-theme 'sculpture-themes-dark)
 

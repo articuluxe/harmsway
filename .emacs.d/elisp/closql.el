@@ -2,14 +2,14 @@
 
 ;; Copyright (C) 2016-2024 Jonas Bernoulli
 
-;; Author: Jonas Bernoulli <jonas@bernoul.li>
+;; Author: Jonas Bernoulli <emacs.closql@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/emacscollective/closql
 ;; Keywords: extensions
 
 ;; Package-Requires: (
 ;;     (emacs "25.1")
-;;     (compat "29.1.4.2")
-;;     (emacsql "20230220"))
+;;     (compat "29.1.4.5")
+;;     (emacsql "20240124"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
