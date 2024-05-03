@@ -132,7 +132,7 @@ rustup-init
 brew install luarocks
 luarocks install luacheck
 
-brew install sql-lint proselint vale yamllint sqlfluff
+brew install sql-lint proselint vale yamllint sqlfluff kube-linter
 
 # Local Variables:
 # mode: sh
