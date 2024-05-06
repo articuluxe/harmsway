@@ -1,0 +1,2 @@
+cp src/base-*.el ../../../../.emacs.d/plugins
+cp src/tomorrow-*.el ../../../../.emacs.d/etc/themes
