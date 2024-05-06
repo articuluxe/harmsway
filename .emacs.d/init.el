@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-06 11:39:01 dharms>
+;; Modified Time-stamp: <2024-05-06 11:59:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1829,6 +1829,14 @@ ARGS are the additional arguments."
   :bind ("C-c gd" . deadgrep)
   :init
   (setq deadgrep-project-root-function #'proviso-current-project-root))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lasgun ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package lasgun
+  :disabled
+  :bind (("\e\em" . lasgun-mark-char-timer)
+         ("\e\eM" . lasgun-make-multiple-cursors)) ;not working
+  )
+;; (global-set-key [?\C-| ?\C-|] #'lasgun-make-multiple-cursors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
