@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2024-03-08 11:48:22 dharms>
+# Modified Time-stamp: <2024-03-21 09:54:45 dharms>
 # Modified by: Dan Harms
 # Keywords: tools
 
@@ -17,6 +17,9 @@ if [ "$OS" = "Darwin" ]; then
 else
     TAR=$(which tar)
 fi
+
+mkdir -p ~/.gnupg
+chmod 700 ~/.gnupg
 
 mkdir -p "$HOME/src"
 cd "$HOME/src" || exit 1

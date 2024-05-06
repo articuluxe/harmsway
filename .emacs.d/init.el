@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-03 14:12:35 dharms>
+;; Modified Time-stamp: <2024-05-06 11:39:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -166,6 +166,8 @@ up to 10 times."
               #'my/multi-pop-to-mark))
 (electric-pair-mode 1)
 ;; show current function
+(setq which-func-unknown "?")
+(setq which-func-maxout 2000000)
 (which-function-mode 1)
 ;; winner mode
 (winner-mode 1)
@@ -2070,7 +2072,11 @@ ARGS are the additional arguments."
   (setq lambda-line-visual-bell t)
   (setq lambda-line-status-invert nil)
   (setq lambda-line-syntax t)
+  ;; time display
+  (setq lambda-line-icon-time t)
   :config
+  (lambda-line-clockface-update-fontset "ClockFaceSolid")
+  (display-time-mode)
   (lambda-line-mode)
   )
 
