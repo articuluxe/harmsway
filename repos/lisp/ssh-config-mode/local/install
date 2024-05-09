@@ -1,0 +1,2 @@
+cp src/*.el ../../../.emacs.d/modes
+cp src/*.txt ../../../.emacs.d/modes

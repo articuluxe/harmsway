@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-09 11:57:20 dharms>
+;; Modified Time-stamp: <2024-05-09 17:30:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4819,6 +4819,17 @@ This function's result only has value if it is preceded by any font changes."
   (add-hook 'sql-mode-hook #'sqlind-minor-mode))
 
 (use-package dbcnx-mode :mode "\\.dbcnx$")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ssh-config-mode
+  :mode (("/\\.ssh/config\\(\\.d/.*\\.conf\\)?$" . ssh-config-mode)
+         ("/sshd?_config\\(\\.d/.*\\.conf\\)?$" . ssh-config-mode)
+         ("/known_hosts$" . ssh-known-hosts-mode)
+         ("/authorized_keys2?$" . ssh-authorized-keys-mode)
+         )
+  :init
+  (add-hook 'ssh-config-mode-hook #'turn-on-font-lock)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package strace-mode :mode "\\.strace$")
