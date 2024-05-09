@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-06 11:59:21 dharms>
+;; Modified Time-stamp: <2024-05-09 11:57:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2069,23 +2069,30 @@ ARGS are the additional arguments."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lambda-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-enable-lambda-line ()
+  "Enable `lambda-line'."
+  (display-time-mode)
+  (lambda-line-clockface-update-fontset
+   "ClockFaceFatSquareSolid"))
+
 (use-package lambda-line
   :init
   (setq lambda-line-position 'bottom)
   (setq lambda-line-abbrev t)
   (setq lambda-line-hspace "  ")
   (setq lambda-line-prefix t)
-  (setq lambda-line-padding t)
+  (setq lambda-line-prefix-padding t)
   (setq lambda-line-vc-symbol "  ")
   (setq lambda-line-visual-bell t)
   (setq lambda-line-status-invert nil)
   (setq lambda-line-syntax t)
-  ;; time display
-  (setq lambda-line-icon-time t)
+  (setq lambda-line-icon-time t)        ;only show clock icon
   :config
-  (lambda-line-clockface-update-fontset "ClockFaceSolid")
-  (display-time-mode)
   (lambda-line-mode)
+  (add-hook 'window-setup-hook #'harmsway-enable-lambda-line)
+  ;; NB: the window-setup-hook is not sufficient for emacs daemon,
+  ;; so we set the clockface in choose-font.el: `choose-font-set-font'
+  ;; after setting the frame font.
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

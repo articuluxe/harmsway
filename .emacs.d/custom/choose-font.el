@@ -1,8 +1,8 @@
 ;;; choose-font.el --- choose among a list of fonts
-;; Copyright (C) 2018-2019, 2022  Dan Harms (dharms)
+;; Copyright (C) 2018-2019, 2022, 2024  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2022-09-14 04:50:47 dharms>
+;; Modified Time-stamp: <2024-05-09 11:40:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -78,7 +78,9 @@ line is given priority as the preferred font to activate."
 (defun choose-font-set-font (font)
   "Activate a font specified by FONT."
   (interactive)
-  (set-frame-font font t t))
+  (set-frame-font font t t)
+  (when (featurep 'lambda-line)
+    (lambda-line-clockface-update-fontset "ClockFaceFatSquareSolid")))
 
 ;;;###autoload
 (defun choose-font (&optional font)
