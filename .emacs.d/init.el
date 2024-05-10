@@ -1540,6 +1540,11 @@ ARGS are the additional arguments."
   (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; format-all-the-code ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package format-all
+  :disabled
+  :hook prog-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eww ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-browse-last-url ()
   "Open prior link in `eww'."
