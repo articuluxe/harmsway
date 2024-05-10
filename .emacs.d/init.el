@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-09 17:30:03 dharms>
+;; Modified Time-stamp: <2024-05-10 11:30:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1178,7 +1178,7 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package makefile-executor
-  :hook (makefile-mode . makefile-executor-mode)
+  :hook makefile-mode
   :config
   (define-key makefile-executor-mode-map "\C-c\C-c" nil t)
   (define-key makefile-executor-mode-map "\C-c\C-l" 'makefile-executor-execute-last)
@@ -4819,6 +4819,9 @@ This function's result only has value if it is preceded by any font changes."
   (add-hook 'sql-mode-hook #'sqlind-minor-mode))
 
 (use-package dbcnx-mode :mode "\\.dbcnx$")
+
+(use-package sqlite-mode-extras
+  :hook (sqlite-mode . sqlite-extras-minor-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ssh-config-mode
