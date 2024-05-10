@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-10 11:30:45 dharms>
+;; Modified Time-stamp: <2024-05-10 11:45:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1544,6 +1544,13 @@ ARGS are the additional arguments."
 (use-package format-all
   :disabled
   :hook prog-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fmo-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package fmo-mode
+  :disabled
+  :hook ((prog-mode . fmo-mode)
+         (fmo-mode . format-all-ensure-formatter))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eww ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-browse-last-url ()
