@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-10 11:45:54 dharms>
+;; Modified Time-stamp: <2024-05-17 09:42:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2089,6 +2089,7 @@ ARGS are the additional arguments."
 
 (use-package lambda-line
   :init
+  (setq lambda-line-git-diff-mode-line nil) ;conflicts with magit rebases
   (setq lambda-line-position 'bottom)
   (setq lambda-line-abbrev t)
   (setq lambda-line-hspace "  ")
