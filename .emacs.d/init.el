@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-17 09:42:02 dharms>
+;; Modified Time-stamp: <2024-05-20 11:22:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -182,6 +182,7 @@ up to 10 times."
 (size-indication-mode 1)
 (setq next-error-message-highlight t)
 (setq next-error-found-function #'next-error-quit-window)
+(global-set-key "\e\eg" #'next-error-select-buffer)
 ;; don't add new-lines to end of buffer on scroll
 (setq next-line-add-newlines nil)
 ;; allow converting regions to upper/lower case
