@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-22 14:28:03 dharms>
+;; Modified Time-stamp: <2024-05-22 14:51:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2372,6 +2372,7 @@ ARGS are the additional arguments."
      (sql . t)
      (sqlite . t)
      (verb . t)
+     (mermaid . t)
      ))
   (if (< emacs-major-version 26)
       (progn
@@ -4552,13 +4553,13 @@ This function's result only has value if it is preceded by any font changes."
                      t)
                 (eglot-ensure))
               )
-            (good-word/init-word-processor)
+            ;; (good-word/init-word-processor)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mermaid-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mermaid-mode
   :mode ("\\.mmd$")
-  :init
+  :config
   (setq mermaid-mode-map
         (let ((map mermaid-mode-map))
           (define-key map (kbd "C-c C-c") nil)
@@ -4573,7 +4574,11 @@ This function's result only has value if it is preceded by any font changes."
           (define-key map (kbd "C-c C-d r") 'mermaid-compile-region)
           (define-key map (kbd "C-c C-d o") 'mermaid-open-browser)
           (define-key map (kbd "C-c C-d d") 'mermaid-open-doc)
-          map)))
+          map))
+  (use-package ob-mermaid
+    :if (executable-find "mmdc")
+    :init
+    (setq ob-mermaid-cli-path (executable-find "mmdc"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nhexl-mode :defer t)

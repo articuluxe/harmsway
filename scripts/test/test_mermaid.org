@@ -1,0 +1,14 @@
+#+TITLE:Mermaid
+
+* Transform a markdown file with mermaid diagrams
+#+begin_example
+mmdc -i readme.template.md -o readme.md
+#+end_example
+
+#+begin_src mermaid :file test.png
+   sequenceDiagram
+   A-->B: Works!
+#+end_src
+
+#+RESULTS:
+[[file:test.png]]
