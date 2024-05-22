@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-20 11:22:07 dharms>
+;; Modified Time-stamp: <2024-05-22 14:28:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4554,6 +4554,26 @@ This function's result only has value if it is preceded by any font changes."
               )
             (good-word/init-word-processor)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mermaid-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package mermaid-mode
+  :mode ("\\.mmd$")
+  :init
+  (setq mermaid-mode-map
+        (let ((map mermaid-mode-map))
+          (define-key map (kbd "C-c C-c") nil)
+          (define-key map (kbd "C-c C-f") nil)
+          (define-key map (kbd "C-c C-b") nil)
+          (define-key map (kbd "C-c C-r") nil)
+          (define-key map (kbd "C-c C-o") nil)
+          (define-key map (kbd "C-c C-d") nil)
+          (define-key map (kbd "C-c C-d c") 'mermaid-compile)
+          (define-key map (kbd "C-c C-d f") 'mermaid-compile-file)
+          (define-key map (kbd "C-c C-d b") 'mermaid-compile-buffer)
+          (define-key map (kbd "C-c C-d r") 'mermaid-compile-region)
+          (define-key map (kbd "C-c C-d o") 'mermaid-open-browser)
+          (define-key map (kbd "C-c C-d d") 'mermaid-open-doc)
+          map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nhexl-mode :defer t)

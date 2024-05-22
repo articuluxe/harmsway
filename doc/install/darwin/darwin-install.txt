@@ -134,6 +134,8 @@ luarocks install luacheck
 
 brew install sql-lint proselint vale yamllint sqlfluff kube-linter
 
+npm install -g @mermaid-js/mermaid-cli
+
 # Local Variables:
 # mode: sh
 # End:
