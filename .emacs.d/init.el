@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-22 14:51:05 dharms>
+;; Modified Time-stamp: <2024-05-22 15:08:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -947,7 +947,7 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package which-key
   :demand 1
   :init
-  (setq which-key-idle-delay 2.0)
+  (setq which-key-idle-delay 8.0)
   (setq which-key-idle-secondary-delay 1.0)
   :config
   (which-key-mode 1))
@@ -958,7 +958,9 @@ From `manuel-oberti.github.io' on 20190806."
          ([end] . home-end-end)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
+(use-package discover-my-major
+  :disabled
+  :bind ("C-h C-m" . discover-my-major))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fancy-narrow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package fancy-narrow
