@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-22 15:08:37 dharms>
+;; Modified Time-stamp: <2024-05-23 09:58:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3917,7 +3917,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;; highlight-indent-guides ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package highlight-indent-guides
-  :bind ("C-c C-h" . highlight-indent-guides-mode)
+  :bind ("C-c 0hg" . highlight-indent-guides-mode)
   :init
   (setq highlight-indent-guides-method 'column)
   (setq highlight-indent-guides-responsive 'top)
