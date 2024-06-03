@@ -282,7 +282,9 @@ Likewise those faces should not set `:weight' or `:slant'."
     (oset topic status 'pending)))
 
 (cl-defmethod forge--set-topic-marks ((_repo forge-repository) topic marks)
-  (oset topic marks marks)
+  (oset topic marks
+        (mapcar #'car (forge-sql [:select id :from mark :where (in name $v1)]
+                                 (vconcat marks))))
   (forge-refresh-buffer))
 
 ;;; Query
@@ -325,19 +327,17 @@ Likewise those faces should not set `:weight' or `:slant'."
 If there is no such topic and DEMAND is non-nil, then signal
 an error."
   (or (forge-topic-at-point)
-      (and (derived-mode-p 'forge-topic-mode)
-           forge-buffer-topic)
+      forge-buffer-topic
       (and demand (user-error "No current topic"))))
 
-(defun forge-topic-at-point (&optional demand not-thingatpt)
+(defun forge-topic-at-point (&optional demand)
   "Return the topic at point.
 If there is no such topic and DEMAND is non-nil, then signal
 an error.  If NOT-THINGATPT is non-nil, then don't use
 `thing-at-point'."
-  (or (and (not not-thingatpt)
-           (thing-at-point 'forge-topic))
+  (or (thing-at-point 'forge-topic)
       (magit-section-value-if '(issue pullreq))
-      (forge-get-pullreq :branch (magit-branch-at-point))
+      (forge-get-pullreq :branch)
       (and (derived-mode-p 'forge-topic-list-mode)
            (and-let* ((id (tabulated-list-get-id)))
              (forge-get-topic id)))
@@ -354,13 +354,6 @@ an error.  If NOT-THINGATPT is non-nil, then don't use
                       #'forge-get-pullreq
                     #'forge-get-topic)
                   repo (string-to-number (match-string-no-properties 1))))))
-
-(defun forge--repo-for-thingatpt ()
-  (or (forge-repository-at-point)
-      (and-let* ((topic (forge-topic-at-point nil 'not-thingatpt)))
-        (forge-get-repository topic))
-      (and (not forge-buffer-unassociated-p)
-           (forge-get-repository :known?))))
 
 (defun forge-region-topics ()
   (cond
@@ -570,11 +563,12 @@ can be selected from the start."
 (defun forge-read-topic-title (topic)
   (read-string "Title: " (oref topic title)))
 
-(defun forge-read-topic-milestone (topic)
+(defun forge-read-topic-milestone (&optional topic)
   (forge--completing-read
    "Milestone"
-   (mapcar #'caddr (oref (forge-get-repository topic) milestones))
-   nil t (forge--format-topic-milestone topic)))
+   (mapcar #'caddr (oref (forge-get-repository (or topic :tracked)) milestones))
+   nil t
+   (and topic (forge--format-topic-milestone topic))))
 
 (defun forge-read-topic-label (&optional prompt repository)
   (magit-completing-read (or prompt "Label")
@@ -582,21 +576,25 @@ can be selected from the start."
                           (or repository (forge-get-repository :tracked)))
                          nil t))
 
-(defun forge-read-topic-labels (topic)
-  (let* ((repo (forge-get-repository topic))
+(defun forge-read-topic-labels (&optional topic)
+  (let* ((repo (forge-get-repository (or topic :tracked)))
          (crm-separator ","))
     (magit-completing-read-multiple
      "Labels: "
      (mapcar #'cadr (oref repo labels))
      nil t
-     (mapconcat #'car (closql--iref topic 'labels) ","))))
+     (and topic (mapconcat #'car (closql--iref topic 'labels) ",")))))
 
-(defun forge-read-topic-marks (topic)
-  (forge-read-marks "Marks: " topic))
+(defun forge-read-topic-marks (&optional topic)
+  (let ((marks (mapcar #'car (forge-sql [:select name :from mark])))
+        (crm-separator ","))
+    (magit-completing-read-multiple
+     "Marks: " marks nil t
+     (and topic (mapconcat #'car (closql--iref topic 'marks) ",")))))
 
-(defun forge-read-topic-assignees (topic)
-  (let* ((repo (forge-get-repository topic))
-         (value (closql--iref topic 'assignees))
+(defun forge-read-topic-assignees (&optional topic)
+  (let* ((repo (forge-get-repository (or topic :tracked)))
+         (value (and topic (closql--iref topic 'assignees)))
          (choices (mapcar #'cadr (oref repo assignees)))
          (crm-separator ","))
     (magit-completing-read-multiple
@@ -606,9 +604,9 @@ can be selected from the start."
        'confirm)
      (mapconcat #'car value ","))))
 
-(defun forge-read-topic-review-requests (topic)
-  (let* ((repo (forge-get-repository topic))
-         (value (closql--iref topic 'review-requests))
+(defun forge-read-topic-review-requests (&optional topic)
+  (let* ((repo (forge-get-repository (or topic :tracked)))
+         (value (and topic (closql--iref topic 'review-requests)))
          (choices (mapcar #'cadr (oref repo assignees)))
          (crm-separator ","))
     (magit-completing-read-multiple
@@ -726,9 +724,9 @@ can be selected from the start."
                  (let* ((background (forge--sanitize-color color))
                         (foreground (forge--contrast-color background)))
                    (magit--propertize-face
-                    name `(forge-tablist-topic-label
-                           ( :background ,background
-                             :foreground ,foreground)))))
+                    name `(( :background ,background
+                             :foreground ,foreground)
+                           forge-tablist-topic-label))))
                labels " ")))
 
 (defun forge--format-topic-label-choices (repo)
@@ -791,13 +789,14 @@ can be selected from the start."
 (defun forge--format-boolean (slot name)
   ;; Booleans are formatted differently in transients and headers.
   ;; Use this to format the (complete) description of suffix commands.
-  (if-let ((topic (forge-current-topic)))
-      (format (propertize "[%s]" 'face 'transient-delimiter)
-              (propertize name 'face
-                          (if (eieio-oref topic slot)
-                              'transient-value
-                            'transient-inactive-value)))
-    (format "[%s]" name)))
+  (let ((topic (forge-current-topic)))
+    (if (and topic (slot-exists-p topic slot))
+        (format (propertize "[%s]" 'face 'transient-delimiter)
+                (propertize name 'face
+                            (if (eieio-oref topic slot)
+                                'transient-value
+                              'transient-inactive-value)))
+      (format "[%s]" name))))
 
 ;;; Insert
 
@@ -829,7 +828,8 @@ can be selected from the start."
     (when (and (slot-exists-p topic 'merged)
                (not (oref topic merged)))
       (magit-insert-heading)
-      (forge--insert-pullreq-commits topic))))
+      (magit-insert-section-body
+        (forge--insert-pullreq-commits topic)))))
 
 (defun forge--insert-topic-labels (topic &optional separate)
   (and-let* ((labels (closql--iref topic 'labels)))
@@ -1152,7 +1152,7 @@ This mode itself is never used directly."
                   (if (and (not (forge-region-topics))
                            (and-let* ((topic (funcall getter)))
                              (eq (oref topic state) state)))
-                      'forge-active-suffix
+                      'forge-suffix-active
                     'transient-inapt-suffix))))))
 
 (transient-define-suffix forge-topic-state-set-open ()
@@ -1213,7 +1213,7 @@ This mode itself is never used directly."
    (inapt-face
     :initform (lambda ()
                 (if (forge-current-topic)
-                    'forge-active-suffix
+                    'forge-suffix-active
                   'transient-inapt-suffix)))))
 
 (transient-define-suffix forge-topic-status-set-unread ()
@@ -1249,10 +1249,9 @@ This mode itself is never used directly."
                 (with-slots (slot inapt-if-not) obj
                   (if-let* ((topic (if inapt-if-not
                                        (funcall inapt-if-not)
-                                     (forge-current-topic))))
-                      (format "%s %s" slot
-                              (or (funcall (oref obj formatter) topic)
-                                  (propertize "none" 'face 'magit-dimmed)))
+                                     (forge-current-topic)))
+                            (value (funcall (oref obj formatter) topic)))
+                      (format "%s %s" slot value)
                     (format "%s" slot)))))))
 
 (cl-defmethod initialize-instance :after

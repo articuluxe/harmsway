@@ -148,6 +148,9 @@ A time value as returned by `current-time'.")
 (defvar-local magit-todos-item-cache nil
   "Items found by most recent scan.")
 
+(defvar-local magit-todos-branch-item-cache nil
+  "Items found by most recent branch scan.")
+
 (defvar magit-todos-scanners nil
   "Scanners defined by `magit-todos-defscanner'.")
 
@@ -203,6 +206,14 @@ items."
   :type '(choice (const :tag "Automatically, when the Magit status buffer is refreshed" t)
                  (integer :tag "Automatically, but cache items for N seconds")
                  (const :tag "Manually" nil)))
+
+(defcustom magit-todos-update-remote nil
+  "Automatically scan in remote repositories.
+If nil, remote repos are only scanned when a manual scan is
+initiated (see command `magit-todos-update').  Remote repos
+include ones accessed via TRAMP (i.e. any path for which
+`file-remote-p' returns non-nil)."
+  :type 'boolean)
 
 (defcustom magit-todos-fontify-keyword-headers t
   "Apply keyword faces to group keyword headers."
@@ -418,6 +429,7 @@ Only necessary when option `magit-todos-update' is nil."
 (defun magit-todos-branch-list-toggle ()
   "Toggle branch diff to-do list in current Magit buffer."
   (interactive)
+  ;; FIXME: If `magit-todos-branch-list' is not just nil/t, the value is lost.
   (setq-local magit-todos-branch-list (not magit-todos-branch-list))
   (magit-todos-update))
 
@@ -658,6 +670,7 @@ filenames to be excluded."
                       (push item items)))
                   (cl-incf line-number))))))
         (let ((magit-todos-section-heading heading))
+          (setf (buffer-local-value 'magit-todos-branch-item-cache magit-status-buffer) items)
           (magit-todos--insert-items magit-status-buffer items :branch-p t))))))
 
 (defun magit-todos--delete-section (condition)
@@ -706,46 +719,66 @@ Assumes current buffer is ITEM's buffer."
   "Insert to-do items into current buffer.
 This function should be called from inside a ‘magit-status’ buffer."
   (declare (indent defun))
-  (when magit-todos-active-scan
-    ;; Avoid running multiple scans for a single magit-status buffer.
-    (let ((buffer (process-buffer magit-todos-active-scan)))
-      (when (process-live-p magit-todos-active-scan)
-        (delete-process magit-todos-active-scan))
-      (when (buffer-live-p buffer)
-        (kill-buffer buffer)))
-    (setq magit-todos-active-scan nil))
-  (pcase magit-todos-update
-    ((or 't  ; Automatic
-         ;; Manual and updating now
-         (and 'nil (guard magit-todos-updating))
-         ;; Caching and cache expired
-         (and (pred integerp) (guard (or magit-todos-updating  ; Forced update
-                                         (>= (float-time
-                                              (time-subtract (current-time)
-                                                             magit-todos-last-update-time))
-                                             magit-todos-update)
-                                         (null magit-todos-last-update-time)))))
-     ;; Scan and insert.
-     ;; HACK: I don't like setting a special var here, because it seems like lexically binding a
-     ;; special var should follow down the chain, but it isn't working, so we'll do this.
-     (setq magit-todos-updating t)
-     (setq magit-todos-active-scan (funcall magit-todos-scanner
-                                            :callback #'magit-todos--insert-items
-                                            :magit-status-buffer (current-buffer)
-                                            :directory default-directory
-                                            :depth magit-todos-depth)))
-    (_ ; Caching and cache not expired, or not automatic and not manually updating now
-     (magit-todos--insert-items (current-buffer) magit-todos-item-cache)))
+  (when (or magit-todos-update-remote
+            magit-todos-updating
+            (not (file-remote-p default-directory)))
+    (when magit-todos-active-scan
+      ;; Avoid running multiple scans for a single magit-status buffer.
+      (let ((buffer (process-buffer magit-todos-active-scan)))
+        (when (process-live-p magit-todos-active-scan)
+          (delete-process magit-todos-active-scan))
+        (when (buffer-live-p buffer)
+          (kill-buffer buffer)))
+      (setq magit-todos-active-scan nil))
+    (pcase magit-todos-update
+      ((or 't                           ; Automatic
+           ;; Manual and updating now
+           (and 'nil (guard magit-todos-updating))
+           ;; Caching and cache expired
+           (and (pred integerp) (guard (or magit-todos-updating ; Forced update
+                                           (>= (float-time
+                                                (time-subtract (current-time)
+                                                               magit-todos-last-update-time))
+                                               magit-todos-update)
+                                           (null magit-todos-last-update-time)))))
+       ;; Scan and insert.
+       ;; HACK: I don't like setting a special var here, because it seems like lexically binding a
+       ;; special var should follow down the chain, but it isn't working, so we'll do this.
+       (setq magit-todos-updating t)
+       (setq magit-todos-active-scan (funcall magit-todos-scanner
+                                              :callback #'magit-todos--insert-items
+                                              :magit-status-buffer (current-buffer)
+                                              :directory default-directory
+                                              :depth magit-todos-depth))
+       (magit-todos--maybe-insert-branch-todos 'rescan))
+      (_ ; Caching and cache not expired, or not automatic and not manually updating now
+       (magit-todos--insert-items (current-buffer) magit-todos-item-cache)
+       (magit-todos--maybe-insert-branch-todos 'cached)))))
+
+(defun magit-todos--maybe-insert-branch-todos (&optional type)
+  "Insert branch todos when appropriate.
+If TYPE is `rescan', rescan for items; if `cached', only insert
+cached items, if any; otherwise, use cached items if any, or
+rescan."
   (when (or (eq magit-todos-branch-list t)
             (and (eq magit-todos-branch-list 'branch)
                  (not (equal (or magit-todos-branch-list-merge-base-ref (magit-main-branch))
                              (magit-get-current-branch)))))
-    ;; Insert branch-local items.
-    (magit-todos--scan-with-git-diff :magit-status-buffer (current-buffer)
-                                     :directory default-directory
-                                     :depth magit-todos-depth
-                                     :heading (format "TODOs (branched from %s)"
-                                                      (or magit-todos-branch-list-merge-base-ref (magit-main-branch))))))
+    (if (or (eq 'rescan type)
+            (and (not (eq 'cached type))
+                 (null magit-todos-branch-item-cache)))
+        ;; TODO: Refactor to just return items and then insert separately.
+        (magit-todos--scan-with-git-diff
+         :magit-status-buffer (current-buffer)
+         :directory default-directory
+         :depth magit-todos-depth
+         :heading (format "TODOs (branched from %s)"
+                          (or magit-todos-branch-list-merge-base-ref (magit-main-branch))))
+      ;; Just insert cached items, if any.
+      (let ((magit-todos-section-heading
+             (format "TODOs (branched from %s)"
+                     (or magit-todos-branch-list-merge-base-ref (magit-main-branch)))))
+        (magit-todos--insert-items (current-buffer) magit-todos-branch-item-cache :branch-p t)))))
 
 (cl-defun magit-todos--insert-items (magit-status-buffer items &key branch-p)
   "Insert to-do ITEMS into MAGIT-STATUS-BUFFER.

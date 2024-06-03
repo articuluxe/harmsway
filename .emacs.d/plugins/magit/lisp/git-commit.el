@@ -114,7 +114,7 @@
 (require 'compat)
 (require 'subr-x)
 
-(when (and (featurep' seq)
+(when (and (featurep 'seq)
            (not (fboundp 'seq-keep)))
   (unload-feature 'seq 'force))
 (require 'seq)
@@ -141,6 +141,8 @@
 (defvar font-lock-beg)
 (defvar font-lock-end)
 (defvar recentf-exclude)
+
+(defvar git-commit-need-summary-line)
 
 (define-obsolete-variable-alias
   'git-commit-known-pseudo-headers
@@ -710,9 +712,16 @@ the input isn't tacked to the comment."
   (setq-local paragraph-start (concat paragraph-start "\\|\\*\\|(")))
 
 (defun git-commit-turn-on-auto-fill ()
-  "Unconditionally turn on Auto Fill mode."
+  "Unconditionally turn on Auto Fill mode.
+Ensure auto filling happens everywhere, except in the summary line."
+  (turn-on-auto-fill)
   (setq-local comment-auto-fill-only-comments nil)
-  (turn-on-auto-fill))
+  (when git-commit-need-summary-line
+    (setq-local auto-fill-function #'git-commit-auto-fill-except-summary)))
+
+(defun git-commit-auto-fill-except-summary ()
+  (unless (eq (line-beginning-position) 1)
+    (do-auto-fill)))
 
 (defun git-commit-turn-on-orglink ()
   "Turn on Orglink mode if it is available.
@@ -1256,8 +1265,8 @@ Added to `font-lock-extend-region-functions'."
                  (font-lock-ensure)
                (with-no-warnings
                  (font-lock-fontify-buffer))))
-           (let (next (pos (point-min)))
-             (while (setq next (next-single-property-change pos 'face))
+           (let ((pos (point-min)))
+             (while-let ((next (next-single-property-change pos 'face)))
                (put-text-property pos next 'font-lock-face
                                   (get-text-property pos 'face))
                (setq pos next))

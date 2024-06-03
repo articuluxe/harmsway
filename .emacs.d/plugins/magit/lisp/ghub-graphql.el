@@ -335,9 +335,9 @@ data as the only argument."
   (query-str nil :read-only nil)
   (variables nil :read-only t)
   (until     nil :read-only t)
-  (buffer    nil :read-only t)
   (pages     0   :read-only nil)
-  (paginate  nil :read-only nil))
+  (paginate  nil :read-only nil)
+  (narrow    nil :read-only t))
 
 (cl-defun ghub--graphql-vacuum ( query variables callback
                                  &optional until
@@ -363,27 +363,14 @@ See Info node `(ghub)GraphQL Support'."
     :variables variables
     :until     until
     :buffer    (current-buffer)
+    :narrow    narrow
     :paginate  (or paginate
                    (and-let* ((p (and (eq auth 'forge)
                                       (fboundp 'magit-get)
                                       (magit-get "forge.graphqlItemLimit"))))
                      (string-to-number p)))
-    :callback  (and (not (eq callback 'synchronous))
-                    (let ((buf (current-buffer)))
-                      (if narrow
-                          (lambda (data)
-                            (let ((path narrow) key)
-                              (while (setq key (pop path))
-                                (setq data (cdr (assq key data)))))
-                            (ghub--graphql-set-mode-line buf nil)
-                            (funcall (or callback #'ghub--graphql-pp-response)
-                                     data))
-                        (lambda (data)
-                          (ghub--graphql-set-mode-line buf nil)
-                          (funcall (or callback #'ghub--graphql-pp-response)
-                                   data)))))
-    :errorback (and (not (eq callback 'synchronous))
-                    errorback))))
+    :callback  (and (not (eq callback 'synchronous)) callback)
+    :errorback (and (not (eq callback 'synchronous)) errorback))))
 
 (defvar ghub--graphql-synchronous-value nil)
 
@@ -478,12 +465,30 @@ See Info node `(ghub)GraphQL Support'."
                  (errors  (cdr (assq 'errors payload)))
                  (errors  (and errors (cons 'ghub-graphql-error errors))))
             (if (or err errors)
-                (if-let ((errorback (ghub--req-errorback req)))
-                    (funcall errorback (or err errors) headers status req)
-                  (ghub--signal-error (or err errors)))
+                (ghub--graphql-handle-failure
+                 req (or err errors) headers status)
               (ghub--graphql-walk-response req (assq 'data payload)))))
       (when (buffer-live-p buffer)
         (kill-buffer buffer)))))
+
+(defun ghub--graphql-handle-failure (req errors headers status)
+  (if-let ((errorback (ghub--req-errorback req)))
+      (let ((buffer (ghub--req-buffer req)))
+        (with-current-buffer
+            (if (buffer-live-p buffer) buffer (current-buffer))
+          (funcall errorback errors headers status req)))
+    (ghub--signal-error errors)))
+
+(defun ghub--graphql-handle-success (req data)
+  (let ((callback (ghub--req-callback req))
+        (buffer   (ghub--req-buffer req))
+        (narrow   (ghub--graphql-req-narrow req)))
+    (while-let ((key (pop narrow)))
+      (setq data (cdr (assq key data))))
+    (with-current-buffer
+        (if (buffer-live-p buffer) buffer (current-buffer))
+      (funcall (or callback #'ghub--graphql-pp-response)
+               data))))
 
 (defun ghub--graphql-walk-response (req data)
   (let* ((loc (ghub--req-value req))
@@ -525,8 +530,8 @@ See Info node `(ghub)GraphQL Support'."
         (cond ((not (treepy-end-p loc))
                (setq loc (treepy-next loc)))
               ((ghub--req-callback req)
-               (funcall (ghub--req-callback req)
-                        (treepy-root loc))
+               (ghub--graphql-handle-success req (treepy-root loc))
+               (ghub--graphql-set-mode-line req nil)
                (cl-return))
               (t
                (setq ghub--graphql-synchronous-value (treepy-root loc))
@@ -540,12 +545,11 @@ See Info node `(ghub)GraphQL Support'."
     lineage))
 
 (defun ghub--graphql-narrow-data (data lineage)
-  (let (key)
-    (while (setq key (pop lineage))
-      (if (consp (car lineage))
-          (progn (pop lineage)
-                 (setf data (cadr data)))
-        (setq data (assq key (cdr data))))))
+  (while-let ((key (pop lineage)))
+    (if (consp (car lineage))
+        (progn (pop lineage)
+               (setf data (cadr data)))
+      (setq data (assq key (cdr data)))))
   data)
 
 (defun ghub--graphql-narrow-query (query lineage &optional cursor)
@@ -594,14 +598,13 @@ See Info node `(ghub)GraphQL Support'."
         (make-node (lambda (_ children) children)))
     (treepy-zipper branchp #'identity make-node root)))
 
-(defun ghub--graphql-set-mode-line (buf string &rest args)
-  (when (ghub--graphql-req-p buf)
-    (setq buf (ghub--graphql-req-buffer buf)))
-  (when (buffer-live-p buf)
-    (with-current-buffer buf
-      (setq mode-line-process
-            (and string (concat " " (apply #'format string args))))
-      (force-mode-line-update t))))
+(defun ghub--graphql-set-mode-line (req string &rest args)
+  (let ((buffer (ghub--graphql-req-buffer req)))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (setq mode-line-process
+              (and string (concat " " (apply #'format string args))))
+        (force-mode-line-update t)))))
 
 (defun ghub--graphql-pp-response (data)
   (require 'pp) ; needed for Emacs < 29.

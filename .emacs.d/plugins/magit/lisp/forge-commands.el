@@ -72,9 +72,10 @@ Takes the pull-request as only argument and must return a directory."
     ("f f" "all topics       " forge-pull)
     ("f t" "one topic        " forge-pull-topic)
     ("f n" "notifications    " forge-pull-notifications)]
-   ["API Commands"
+   ["Do"
     :if forge--get-repository:tracked?
-    (7 "M" "merge" forge-merge)]]
+    ("C" "configure"       forge-configure)
+    ("M" "merge w/api"     forge-merge :level 7)]]
   [:if forge--get-repository:tracked?
    ["Visit"
     ("v t" "topic"         forge-visit-topic)
@@ -88,14 +89,6 @@ Takes the pull-request as only argument and must return a directory."
     ("b r" "remote"        forge-browse-remote)
     ("b I" "issues"        forge-browse-issues)
     ("b P" "pull-requests" forge-browse-pullreqs)]]
-  [["Configure"
-    :if forge--get-repository:tracked?
-    ("a  " "add another repository to database" forge-add-some-repository)
-    ("R  " forge-add-pullreq-refspec)
-    ("s r" forge-forge.remote)
-    ("s l" forge-forge.graphqlItemLimit)
-    ("s s" forge-toggle-display-in-status-buffer)
-    ("s c" forge-toggle-closed-visibility)]]
   [[:description (lambda ()
                    (if (magit-gitdir)
                        "Forge doesn't know about this Git repository yet"
@@ -104,6 +97,18 @@ Takes the pull-request as only argument and must return a directory."
     ("a" "add repository to database" forge-add-repository)
     ("f" "fetch notifications"        forge-pull-notifications)
     ("l" "list notifications"         forge-list-notifications)]])
+
+;;;###autoload (autoload 'forge-configure "forge-commands" nil t)
+(transient-define-prefix forge-configure ()
+  "Configure current repository and global settings."
+  [["Configure"
+    :if forge--get-repository:tracked?
+    ("a  " "add another repository to database" forge-add-some-repository)
+    ("R  " forge-add-pullreq-refspec)
+    ("s r" forge-forge.remote)
+    ("s l" forge-forge.graphqlItemLimit)
+    ("s s" forge-toggle-display-in-status-buffer)
+    ("s c" forge-toggle-closed-visibility)]])
 
 ;;; Pull
 
@@ -776,8 +781,11 @@ information."
 (defun forge-edit-mark (id name face description)
   "Define a new mark that topics can be marked with."
   (interactive
-   (pcase-let ((`(,id ,name ,face ,description)
-                (forge-read-mark "Edit mark")))
+   (pcase-let*
+       ((marks (forge-sql [:select [name id face description] :from mark]))
+        (`(,name ,id ,face ,description)
+         (assoc (completing-read "Edit mark" (mapcar #'car marks) nil t)
+                marks)))
      (list id
            (read-string "Name: " name)
            (magit-read-char-case "Set appearance using " nil
@@ -796,33 +804,6 @@ information."
               :set (= [name face description] $v1)
               :where (= id $s2)]
              (vector name face description) id))
-
-(defun forge-read-mark (prompt)
-  "Read a topic.  Return (ID NAME FACE DESCRIPTION)."
-  (let* ((marks (forge-sql [:select [id name face description] :from mark]))
-         (name (completing-read prompt (mapcar #'cadr marks) nil t)))
-    (--first (equal (cadr it) name) marks)))
-
-(defun forge-read-marks (prompt &optional topic)
-  "Read multiple mark names and return the respective ids."
-  (let ((marks (forge-sql [:select [name id] :from mark]))
-        (crm-separator ","))
-    (--map (cadr (assoc it marks))
-           (magit-completing-read-multiple
-            prompt (mapcar #'car marks) nil t
-            (and topic
-                 (mapconcat #'car (closql--iref topic 'marks) ","))))))
-
-(defun forge-toggle-mark (mark)
-  "Toggle MARK for the current topic."
-  (let* ((topic (forge-current-topic t))
-         (value (mapcar #'car (closql--iref topic 'marks)))
-         (value (if (member mark value)
-                    (delete mark value)
-                  (cons mark value)))
-         (marks (forge-sql [:select [name id] :from mark])))
-    (oset topic marks (--map (cadr (assoc it marks)) value))
-    (forge-refresh-buffer)))
 
 ;;; Remotely
 

@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.5
+;; Version: 1.7
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.4"))
 ;; Homepage: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -340,9 +340,11 @@ chunk from the beginning of the file is previewed."
   :type '(repeat regexp))
 
 (defcustom consult-preview-allowed-hooks
-  '(global-font-lock-mode-check-buffers
+  '(global-font-lock-mode
     save-place-find-file-hook)
-  "List of `find-file' hooks, which should be executed during file preview."
+  "List of hooks, which should be executed during file preview.
+This variable applies to `find-file-hook', `change-major-mode-hook' and
+mode hooks, e.g., `prog-mode-hook'."
   :type '(repeat symbol))
 
 (defcustom consult-preview-variables
@@ -1263,14 +1265,29 @@ Return the location marker."
 
 ;;;; Preview support
 
+(defun consult--preview-allowed-p (fun)
+  "Return non-nil if FUN is an allowed preview mode hook."
+  (or (memq fun consult-preview-allowed-hooks)
+      (when-let (((symbolp fun))
+                 (name (symbol-name fun))
+                 ;; Global modes in Emacs 29 are activated via a
+                 ;; `find-file-hook' ending with `-check-buffers'. This has been
+                 ;; changed in Emacs 30. Now a `change-major-mode-hook' is used
+                 ;; instead with the suffix `-check-buffers'.
+                 (suffix (if (eval-when-compile (>= emacs-major-version 30))
+                             "-enable-in-buffer"
+                           "-check-buffers"))
+                 ((string-suffix-p suffix name)))
+        (memq (intern (string-remove-suffix suffix name))
+              consult-preview-allowed-hooks))))
+
 (defun consult--filter-find-file-hook (orig &rest hooks)
   "Filter `find-file-hook' by `consult-preview-allowed-hooks'.
 This function is an advice for `run-hooks'.
 ORIG is the original function, HOOKS the arguments."
   (if (memq 'find-file-hook hooks)
       (cl-letf* (((default-value 'find-file-hook)
-                  (seq-filter (lambda (x)
-                                (memq x consult-preview-allowed-hooks))
+                  (seq-filter #'consult--preview-allowed-p
                               (default-value 'find-file-hook)))
                  (find-file-hook (default-value 'find-file-hook)))
         (apply orig hooks))
@@ -1313,6 +1330,12 @@ ORIG is the original function, HOOKS the arguments."
             (when (bound-and-true-p so-long-detected-p)
               (error "No preview of file `%s' with long lines"
                      (file-name-nondirectory name)))
+            ;; Run delayed hooks listed in `consult-preview-allowed-hooks'.
+            (dolist (hook (reverse (cons 'after-change-major-mode-hook delayed-mode-hooks)))
+              (run-hook-wrapped hook (lambda (fun)
+                                       (when (consult--preview-allowed-p fun)
+                                         (funcall fun))
+                                       nil)))
             (setq success (current-buffer)))
         (unless success
           (kill-buffer buffer))))))
@@ -4352,14 +4375,14 @@ The command supports previewing the currently selected theme."
 (defun consult--buffer-sort-visibility (buffers)
   "Sort BUFFERS by visibility."
   (let ((hidden)
-        (current (current-buffer)))
+        (current (car (memq (current-buffer) buffers))))
     (consult--keep! buffers
       (unless (eq it current)
         (if (get-buffer-window it 'visible)
             it
           (push it hidden)
           nil)))
-    (nconc (nreverse hidden) buffers (list current))))
+    (nconc (nreverse hidden) buffers (and current (list current)))))
 
 (defun consult--normalize-directory (dir)
   "Normalize directory DIR.
@@ -4387,7 +4410,8 @@ to search and is passed to `consult--buffer-query'."
           buffers)))
 
 (cl-defun consult--buffer-query (&key sort directory mode as predicate (filter t)
-                                      include (exclude consult-buffer-filter))
+                                      include (exclude consult-buffer-filter)
+                                      (buffer-list t))
   "Query for a list of matching buffers.
 The function supports filtering by various criteria which are
 used throughout Consult.  In particular it is the backbone of
@@ -4399,16 +4423,17 @@ EXCLUDE is a list of regexps.
 INCLUDE is a list of regexps.
 MODE can be a mode or a list of modes to restrict the returned buffers.
 PREDICATE is a predicate function.
+BUFFER-LIST is the unfiltered list of buffers.
 AS is a conversion function."
-  (let ((root (consult--normalize-directory directory))
-        (buffers (buffer-list)))
+  (let ((root (consult--normalize-directory directory)))
+    (setq buffer-list (if (eq buffer-list t) (buffer-list) (copy-sequence buffer-list)))
     (when sort
-      (setq buffers (funcall (intern (format "consult--buffer-sort-%s" sort)) buffers)))
+      (setq buffer-list (funcall (intern (format "consult--buffer-sort-%s" sort)) buffer-list)))
     (when (or filter mode as root)
       (let ((exclude-re (consult--regexp-filter exclude))
             (include-re (consult--regexp-filter include))
             (case-fold-search))
-        (consult--keep! buffers
+        (consult--keep! buffer-list
           (and
            (or (not mode)
                (let ((mm (buffer-local-value 'major-mode it)))
@@ -4432,7 +4457,7 @@ AS is a conversion function."
                                     (expand-file-name dir)))))
            (or (not predicate) (funcall predicate it))
            (if as (funcall as it) it)))))
-    buffers))
+    buffer-list))
 
 (defun consult--buffer-file-hash ()
   "Return hash table of all buffer file names."
@@ -5018,7 +5043,7 @@ regarding the asynchronous search and the arguments."
           (pcase-let ((`(,re . ,hl) (funcall consult--regexp-compiler arg 'pcre ignore-case)))
             (when re
               (cons (append cmd
-                            (cdr (mapcan (lambda (x) `("--and" ,x)) re))
+                            (mapcan (lambda (x) `("--and" ,x)) re)
                             opts paths)
                     hl))))))))
 

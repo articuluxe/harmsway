@@ -27,6 +27,7 @@
 
 (require 'consult)
 (require 'xref)
+(eval-when-compile (require 'subr-x))
 
 (defvar consult-xref--history nil)
 
@@ -40,11 +41,8 @@ The fetch is stored globally such that it can be accessed by
   (let ((root (consult--project-root)))
     (mapcar (lambda (xref)
               (let* ((loc (xref-item-location xref))
-                     (group (if (fboundp 'xref--group-name-for-display)
-                                ;; This function is available in xref 1.3.2
-                                (xref--group-name-for-display
-                                 (xref-location-group loc) root)
-                              (xref-location-group loc)))
+                     (group (xref-location-group loc))
+                     (group (if root (string-remove-prefix root group) group))
                      (cand (consult--format-file-line-match
                             group
                             (or (xref-location-line loc) 0)

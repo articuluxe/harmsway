@@ -801,6 +801,7 @@ Changes take effect only when a new session is started."
     ("^go\\.mod\\'" . "go.mod")
     ("^settings\\.json$" . "jsonc")
     ("^yang\\.settings$" . "jsonc")
+    ("^meson\\(_options\\.txt\\|\\.\\(build\\|format\\)\\)\\'" . "meson")
     (ada-mode . "ada")
     (ada-ts-mode . "ada")
     (gpr-mode . "gpr")
@@ -914,6 +915,7 @@ Changes take effect only when a new session is started."
     (context-mode . "context")
     (cypher-mode . "cypher")
     (latex-mode . "latex")
+    (LaTeX-mode . "latex")
     (v-mode . "v")
     (vhdl-mode . "vhdl")
     (vhdl-ts-mode . "vhdl")
@@ -967,6 +969,7 @@ Changes take effect only when a new session is started."
     (protobuf-mode . "protobuf")
     (nushell-mode . "nushell")
     (nushell-ts-mode . "nushell")
+    (meson-mode . "meson")
     (yang-mode . "yang"))
   "Language id configuration.")
 
@@ -3931,10 +3934,11 @@ If any filters, checks if it applies for PATH."
 (defun lsp--suggest-project-root ()
   "Get project root."
   (or
-   (when (featurep 'projectile) (condition-case nil
-                                    (projectile-project-root)
-                                  (error nil)))
-   (when (featurep 'project)
+   (when (fboundp 'projectile-project-root)
+     (condition-case nil
+         (projectile-project-root)
+       (error nil)))
+   (when (fboundp 'project-current)
      (when-let ((project (project-current)))
        (if (fboundp 'project-root)
            (project-root project)
@@ -4088,7 +4092,7 @@ yet."
 (defvar eldoc-documentation-default) ; CI
 (when (< emacs-major-version 28)
   (unless (boundp 'eldoc-documentation-functions)
-    (load "eldoc"))
+    (load "eldoc" nil 'nomessage))
   (when (memq (default-value 'eldoc-documentation-function) '(nil ignore))
     ;; actually `eldoc-documentation-strategy', but CI was failing
     (setq-default eldoc-documentation-function 'eldoc-documentation-default)))
@@ -5157,11 +5161,12 @@ identifier and the position respectively."
                             (max (min end-char len) 0)
                             'xref-match t line)
     ;; LINE is nil when FILENAME is not being current visited by any buffer.
-    (xref-make (or line filename)
-               (xref-make-file-location
-                filename
-                (lsp-translate-line (1+ start-line))
-                (lsp-translate-column start-char)))))
+    (xref-make-match (or line filename)
+                     (xref-make-file-location
+                      filename
+                      (lsp-translate-line (1+ start-line))
+                      (lsp-translate-column start-char))
+                     (- end-char start-char))))
 
 (defun lsp--location-uri (loc)
   (if (lsp-location? loc)
@@ -5255,7 +5260,7 @@ If EXCLUDE-DECLARATION is non-nil, request the server to include declarations."
           lsp--eldoc-saved-message nil)
     (if (looking-at-p "[[:space:]\n]")
         (setq lsp--eldoc-saved-message nil) ; And returns nil.
-      (when (and lsp-eldoc-enable-hover (lsp--capability :hoverProvider))
+      (when (and lsp-eldoc-enable-hover (lsp-feature? "textDocument/hover"))
         (lsp-request-async
          "textDocument/hover"
          (lsp--text-document-position-params)

@@ -54,8 +54,8 @@
  `(mode-line          ((t :box ( :line-width -1 :style released-button))))
  `(mode-line-inactive ((t :box ( :line-width -1 :style released-button))))
 
- `(cursor  ((t :background "#909090")))
- `(hl-line ((t :background ,(if vs-light-theme-graphic-p "#E6E6E6" "#99C9EF"))))
+ `(cursor  ((t :background "#A3A3A3")))
+ `(hl-line ((t :background ,(if vs-light-theme-graphic-p "#F1F1F1" "#99C9EF"))))
  `(region  ((t :background "#99C9EF")))
  `(fringe  ((t :background "#E6E7E8")))
 
@@ -137,6 +137,12 @@
  `(tree-sitter-hl-face:attribute             ((t :foreground "#808080")))
  `(tree-sitter-hl-face:noise                 ((t :foreground "#808080")))
 
+ `(ts-fold-replacement-face ((t :foreground "#808080" :box (:line-width (-1 . -1) :style pressed-button))))
+ `(ts-fold-fringe-face      ((t :foreground "#919191")))
+
+ `(treesit-fold-replacement-face ((t :foreground "#808080" :box (:line-width (-1 . -1) :style pressed-button))))
+ `(treesit-fold-fringe-face      ((t :foreground "#919191")))
+
  `(company-tooltip-annotation       ((t :foreground "#41474D")))
  `(company-fuzzy-annotation-face    ((t :foreground "#5E85AB")))
  `(company-preview                  ((t :foreground "dark gray" :underline t)))
@@ -191,7 +197,13 @@
  `(modablist-select-face ((t :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
  `(modablist-insert-face ((t :background "#565136" :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
 
- `(ts-fold-replacement-face ((t :foreground "#808080" :box (:line-width (-1 . -1) :style pressed-button))))
+ `(lsp-flycheck-info-unnecessary-face    ((t :inherit flycheck-info    :foreground "#858585")))
+ `(lsp-flycheck-warning-unnecessary-face ((t :inherit flycheck-warning :foreground "#858585")))
+ `(lsp-flycheck-error-unnecessary-face   ((t :inherit flycheck-error   :foreground "#858585")))
+
+ `(lsp-inlay-hint-face           ((t :background "#ECECFB" :foreground "#7A6C7F")))
+ `(lsp-inlay-hint-type-face      ((t :background "#ECECFB" :foreground "#7A6C7F")))
+ `(lsp-inlay-hint-parameter-face ((t :background "#ECECFB" :foreground "#7A6C7F")))
 
  `(dap-ui-breakpoint-verified-fringe ((t :foreground "#E71F2D")))
  `(breakpoint-disabled               ((t :foreground "#C55159")))

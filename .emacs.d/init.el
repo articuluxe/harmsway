@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-05-23 09:58:22 dharms>
+;; Modified Time-stamp: <2024-06-03 10:45:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1157,15 +1157,10 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; go-translate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package go-translate
-  :bind (("C-c 0T" . gts-do-translate))
+  :bind (("C-c 0T" . gt-do-translate))
   :init
-  (setq gts-translate-list '(("fr" "en") ("it" "en")))
-  :config
-  (setq gts-default-translator
-        (gts-translator
-         :picker (gts-prompt-picker)
-         :engines (list (gts-google-engine) (gts-google-rpc-engine))
-         :render (gts-buffer-render)))
+  (setq gt-langs '(en it fr))
+  (setq gt-default-translator (gt-translator :engines (gt-google-engine)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

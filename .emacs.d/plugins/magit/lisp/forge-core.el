@@ -68,8 +68,6 @@
     ;; Forges (API unsupported)
     ("codeberg.org" "codeberg.org/api/v1"
      "codeberg.org" forge-gitea-repository)
-    ("code.orgmode.org" "code.orgmode.org/api/v1"
-     "code.orgmode.org" forge-gogs-repository)
     ("bitbucket.org" "api.bitbucket.org/2.0"
      "bitbucket.org" forge-bitbucket-repository)
     ;; Semi-Forges
@@ -273,7 +271,8 @@ is non-nil."
 (cl-defgeneric forge--object-id (class &rest args)
   "Return the database id for the CLASS object specified by ARGS.")
 
-(cl-defgeneric forge--repository-ids (class host owner name &optional stub)
+(cl-defgeneric forge--repository-ids ( class host owner name
+                                       &optional stub noerror)
   "Return the database and forge ids for the specified CLASS object.")
 
 (cl-defmethod magit-section-ident-value ((obj forge-object))
