@@ -132,6 +132,7 @@ rustup-init
 brew install luarocks
 luarocks install luacheck
 
+brew install python-lsp-server pycodestyle
 brew install sql-lint proselint vale yamllint sqlfluff kube-linter
 
 npm install -g @mermaid-js/mermaid-cli
