@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-03 10:45:07 dharms>
+;; Modified Time-stamp: <2024-06-13 15:09:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2656,6 +2656,12 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired-duplicates ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dired-duplicates
   :bind ("C-c 0dp" . dired-duplicates))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired-open-with ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dired-open-with
+  :after dired
+  :bind (:map dired-mode-map
+              ("@" . dired-open-with)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dwim-shell-command ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun dwim-dwim ()
