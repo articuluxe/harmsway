@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-13 15:26:27 dharms>
+;; Modified Time-stamp: <2024-06-17 10:31:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3786,6 +3786,13 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ytdl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ytdl
   :commands (ytdl-download ytdl-show-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; chatgpt-shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package shell-maker)
+(use-package chatgpt-shell
+  :init
+  (setq chatgpt-shell-openai-key
+        (auth-source-pick-first-password :host "api.openai.com")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
