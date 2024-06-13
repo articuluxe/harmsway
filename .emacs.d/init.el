@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-13 15:14:46 dharms>
+;; Modified Time-stamp: <2024-06-13 15:26:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -65,6 +65,7 @@
                      ,(concat my/user-directory "ext/xfer/")
                      ,(concat my/plugins-directory "auctex/")
                      ,(concat my/plugins-directory "auto-complete/")
+                     ,(concat my/plugins-directory "casual/")
                      ,(concat my/plugins-directory "company/")
                      ,(concat my/plugins-directory "ccls/")
                      ,(concat my/plugins-directory "cquery/")
@@ -2767,6 +2768,12 @@ ARGS are the additional arguments."
 (use-package calc-prog-utils
   :after calc
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; casual ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package casual
+  :after calc
+  :bind (:map calc-mode-map
+              ("C-o" . casual-main-menu)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft
