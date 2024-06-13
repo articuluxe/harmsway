@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-13 15:09:48 dharms>
+;; Modified Time-stamp: <2024-06-13 15:14:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1883,6 +1883,10 @@ ARGS are the additional arguments."
          )
   :config
   (global-set-key "\e\eia" 'avy-resume))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; casual-avy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package casual-avy
+  :bind ("\e\ea" . casual-avy-tmenu))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
