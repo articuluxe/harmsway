@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-17 10:31:03 dharms>
+;; Modified Time-stamp: <2024-06-17 10:37:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1213,6 +1213,14 @@ From `manuel-oberti.github.io' on 20190806."
   (ediff-buffers (magit-find-file-noselect (magit-get-previous-branch)
                                            (buffer-file-name))
                  (current-buffer)))
+
+(defun harmsway-magit-find-file-as-of (datetime)
+  "Open a file with a relative timestamp DATETIME.
+Based on `https://emacs.ch/@bram85/112365691040649759'."
+  (interactive (list (org-read-date)))
+  (let ((rev (format "HEAD@{%s}" datetime)))
+    (magit-find-file rev (magit-read-file-from-rev rev "File: "))))
+(define-key harmsway-git-keymap "@" #'harmsway-magit-find-file-as-of)
 
 (use-package magit
   :if (not (version< emacs-version "25.1"))
