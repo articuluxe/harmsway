@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-17 10:37:40 dharms>
+;; Modified Time-stamp: <2024-06-19 11:08:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3798,9 +3798,11 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; chatgpt-shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-maker)
 (use-package chatgpt-shell
+  :bind ("C-c 0#")
   :init
   (setq chatgpt-shell-openai-key
-        (auth-source-pick-first-password :host "api.openai.com")))
+        (lambda ()
+          (auth-source-pick-first-password :host "api.openai.com"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
