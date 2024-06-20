@@ -1,0 +1,1 @@
+cp src/grid.el ../../../.emacs.d/plugins
