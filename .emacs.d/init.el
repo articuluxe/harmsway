@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-20 09:22:17 dharms>
+;; Modified Time-stamp: <2024-06-20 09:41:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1644,6 +1644,20 @@ ARGS are the additional arguments."
             ("Other"
              ("Projects" project-switch-project "p"))))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleandesk ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(with-eval-after-load 'dired
+  (setq date-string "%Y%m%d-")
+  (unless (executable-find "fd")
+    (setq cleandesk-search-tool "find"))
+  (load (concat my/plugins-directory "cleandesk.el"))
+  (define-key dired-mode-map "J" #'cleandesk-jump-to-folder)
+  (define-key dired-mode-map "M" #'cleandesk-move-files)
+  (define-key dired-mode-map "z" #'cleandesk-prepend-date)
+  (define-key dired-mode-map "r" #'cleandesk-rename)
+  (if (eq (system-type 'darwin))
+      (define-key dired-mode-map "S" #'cleandesk-search)))
+(global-set-key (kbd "C-c 0C") #'cleandesk-open-inbox)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bm
