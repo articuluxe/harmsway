@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-21 14:01:23 dharms>
+;; Modified Time-stamp: <2024-06-21 14:07:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1655,7 +1655,7 @@ ARGS are the additional arguments."
   (define-key dired-mode-map "M" #'cleandesk-move-files)
   (define-key dired-mode-map "z" #'cleandesk-prepend-date)
   (define-key dired-mode-map "r" #'cleandesk-rename)
-  (if (eq (system-type 'darwin))
+  (if (eq system-type 'darwin)
       (define-key dired-mode-map "S" #'cleandesk-search)))
 (global-set-key (kbd "C-c 0C") #'cleandesk-open-inbox)
 
