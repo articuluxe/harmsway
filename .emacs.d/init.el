@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-20 09:41:20 dharms>
+;; Modified Time-stamp: <2024-06-21 14:01:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1629,20 +1629,20 @@ ARGS are the additional arguments."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; enlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package enlight-menu)
 (use-package enlight
   :commands enlight-open
-  :init
-  (setq initial-buffer-choice #'enlight)
-  (setq enlight-content
-        (concat
-         (propertize "MENU" 'face 'highlight)
-         "\n"
-         (enlight-menu
-          '(("Downloads"
-             ("Downloads Folder" (dired "~/Downloads") "w")
-             ("Desktop Folder" (dired "~/Desktop") "k"))
-            ("Other"
-             ("Projects" project-switch-project "p"))))))
+  :custom
+  (enlight-content
+   (concat
+    (propertize "MENU" 'face 'highlight)
+    "\n\n"
+    (enlight-menu
+     '(("Downloads"
+        ("Downloads Folder" (dired "~/Downloads") "w")
+        ("Desktop Folder" (dired "~/Desktop") "k"))
+       ("Other"
+        ("Projects" project-switch-project "p"))))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleandesk ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
