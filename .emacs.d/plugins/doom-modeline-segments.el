@@ -206,6 +206,12 @@
 (declare-function lsp-workspaces "ext:lsp-mode")
 (declare-function lv-message "ext:lv")
 (declare-function mc/num-cursors "ext:multiple-cursors-core")
+(declare-function meow--current-state "ext:meow")
+(declare-function meow-beacon-mode-p "ext:meow")
+(declare-function meow-insert-mode-p "ext:meow")
+(declare-function meow-keypad-mode-p "ext:meow")
+(declare-function meow-motion-mode-p "ext:meow")
+(declare-function meow-normal-mode-p "ext:meow")
 (declare-function minions--prominent-modes "ext:minions")
 (declare-function mlscroll-mode-line "ext:mlscroll")
 (declare-function mu4e--modeline-string "ext:mu4e-modeline")
@@ -797,7 +803,7 @@ level."
                                                    (doom-modeline-check-icon "nf-md-alert_circle_outline" "⚠" "!" face)
                                                    vsep
                                                    (doom-modeline-check-text (number-to-string count) face)))
-                                              (doom-modeline-check-icon "nf-md-check_circle_outline" "✔" "" 'doom-modeline-info)))
+                                              (doom-modeline-check-icon "nf-md-check_circle_outline" "✔" "*" 'doom-modeline-info)))
                               ('running     (concat
                                              (doom-modeline-check-icon "nf-md-timer_sand" "⏳" "*" 'doom-modeline-debug)
                                              (when (> count 0)
@@ -933,33 +939,36 @@ level."
                                ((null known) (doom-modeline-check-icon "nf-md-alert_box_outline" "⚠" "!" 'doom-modeline-urgent))
                                (all-disabled (doom-modeline-check-icon "nf-md-alert_box_outline" "⚠" "!" 'doom-modeline-warning))
                                (t (if (> count 0)
-                                      (let ((face (if (> .error 0) 'doom-modeline-urgent 'doom-modeline-warning)))
+                                      (let ((face (cond ((> .error 0) 'doom-modeline-urgent)
+                                                        ((> .warning 0) 'doom-modeline-warning)
+                                                        (t 'doom-modeline-info))))
                                         (concat
                                          (doom-modeline-check-icon "nf-md-alert_circle_outline" "⚠" "!" face)
                                          vsep
                                          (doom-modeline-check-text (number-to-string count) face)))
-                                    (doom-modeline-check-icon "nf-md-check_circle_outline" "✔" "" 'doom-modeline-info)))))
-                          (concat (doom-modeline-check-icon "nf-md-close_circle_outline" "⮾" "!" 'doom-modeline-urgent)
-                                  vsep
-                                  (doom-modeline-check-text (number-to-string .error) 'doom-modeline-urgent)
-                                  vsep
-                                  (doom-modeline-check-icon "nf-md-alert_outline" "⚠" "!" 'doom-modeline-warning)
-                                  vsep
-                                  (doom-modeline-check-text (number-to-string .warning) 'doom-modeline-warning)
-                                  vsep
-                                  (doom-modeline-check-icon "nf-md-information_outline" "🛈" "!" 'doom-modeline-info)
-                                  vsep
-                                  (doom-modeline-check-text (number-to-string .note) 'doom-modeline-info)))))
+                                    (doom-modeline-check-icon "nf-md-check_circle_outline" "✔" "*" 'doom-modeline-info)))))
+                          (concat
+                           (doom-modeline-check-icon "nf-md-close_circle_outline" "⮾" "!" 'doom-modeline-urgent)
+                           vsep
+                           (doom-modeline-check-text (number-to-string .error) 'doom-modeline-urgent)
+                           vsep
+                           (doom-modeline-check-icon "nf-md-alert_outline" "⚠" "!" 'doom-modeline-warning)
+                           vsep
+                           (doom-modeline-check-text (number-to-string .warning) 'doom-modeline-warning)
+                           vsep
+                           (doom-modeline-check-icon "nf-md-information_outline" "🛈" "!" 'doom-modeline-info)
+                           vsep
+                           (doom-modeline-check-text (number-to-string .note) 'doom-modeline-info)))))
               (propertize
                seg
-               'help-echo (concat "Flymake\n"
-                                  (cond
-                                   (some-waiting "Checking...")
-                                   ((null known) "No Checker")
-                                   (all-disabled "All Checkers Disabled")
-                                   (t (format "%d/%d backends running\nerror: %d, warning: %d, note: %d"
-                                              (length running) (length known) .error .warning .note)))
-                                  "\nmouse-1: Display minor mode menu\nmouse-2: Show help for minor mode")
+               'help-echo (concat
+                           "Flymake\n"
+                           (cond (some-waiting "Checking...")
+                                 ((null known) "No Checker")
+                                 (all-disabled "All Checkers Disabled")
+                                 (t (format "%d/%d backends running\nerror: %d, warning: %d, note: %d"
+                                            (length running) (length known) .error .warning .note)))
+                           "\nmouse-1: Display minor mode menu\nmouse-2: Show help for minor mode")
                'mouse-face 'doom-modeline-highlight
                'local-map (let ((map (make-sparse-keymap)))
                             (define-key map [mode-line down-mouse-1]
@@ -1034,9 +1043,9 @@ level."
                                    vsep)
                          (doom-modeline-display-icon s)))))
        (propertize str
-                   'help-echo (get-text-property 1 'help-echo seg)
+                   'help-echo (get-text-property 0 'help-echo seg)
                    'mouse-face 'doom-modeline-highlight
-                   'local-map (get-text-property 1 'local-map seg)))
+                   'local-map (get-text-property 0 'local-map seg)))
      sep)))
 
 
@@ -1132,10 +1141,11 @@ block selection."
 ;; mode-line.
 (defun doom-modeline-fix-anzu-count (positions here)
   "Calulate anzu count via POSITIONS and HERE."
-  (cl-loop for (start . end) in positions
-           collect t into before
+  (cl-loop with i = 0
+           for (start . end) in positions
+           do (cl-incf i)
            when (and (>= here start) (<= here end))
-           return (length before)
+           return i
            finally return 0))
 
 (advice-add #'anzu--where-is-here :override #'doom-modeline-fix-anzu-count)
@@ -1781,11 +1791,30 @@ TEXT is alternative if icon is not available."
 (defsubst doom-modeline--meow ()
   "The current Meow state. Requires `meow-mode' to be enabled."
   (when (bound-and-true-p meow-mode)
-    (if (doom-modeline--active)
-	    meow--indicator
-	  (propertize (substring-no-properties meow--indicator)
-		          'face
-		          'mode-line-inactive))))
+    (doom-modeline--modal-icon
+     (symbol-name (meow--current-state))
+     (cond
+      ((meow-normal-mode-p) 'doom-modeline-evil-normal-state)
+      ((meow-insert-mode-p) 'doom-modeline-evil-insert-state)
+      ((meow-beacon-mode-p) 'doom-modeline-evil-visual-state)
+      ((meow-motion-mode-p) 'doom-modeline-evil-motion-state)
+      ((meow-keypad-mode-p) 'doom-modeline-evil-operator-state)
+      (t 'doom-modeline-evil-normal-state))
+     (symbol-name (meow--current-state))
+     (cond
+      ((meow-normal-mode-p) "nf-md-alpha_n_circle")
+      ((meow-insert-mode-p) "nf-md-alpha_i_circle")
+      ((meow-beacon-mode-p) "nf-md-alpha_b_circle")
+      ((meow-motion-mode-p) "nf-md-alpha_m_circle")
+      ((meow-keypad-mode-p) "nf-md-alpha_k_circle")
+      (t "nf-md-alpha_n_circle"))
+     (cond
+      ((meow-normal-mode-p) "🅝")
+      ((meow-insert-mode-p) "🅘")
+      ((meow-beacon-mode-p) "🅑")
+      ((meow-motion-mode-p) "🅜")
+      ((meow-keypad-mode-p) "🅚")
+      (t "🅝")))))
 
 (doom-modeline-def-segment modals
   "Displays modal editing states.

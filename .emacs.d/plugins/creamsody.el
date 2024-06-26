@@ -4,7 +4,7 @@
 ;;
 ;; Authors: Jason Milkins <jasonm23@gmail.com>
 ;; URL: http://github.com/emacsfodder/emacs-theme-creamsody
-;; Version: 1.0.9
+;; Version: 1.0.11
 ;; Package-Requires: ((autothemer "0.2") (emacs "24"))
 ;;
 ;;; Commentary:
@@ -369,9 +369,9 @@
        (company-preview-common                    (:inherit 'font-lock-comment-face))
        (company-tooltip-common                    (:foreground creamsody-foreground0 :background creamsody-background1))
        (company-tooltip-annotation                (:foreground creamsody-bright_blue :background creamsody-background1))
-       (company-tooltip-common-selection          (:foreground creamsody-foreground0 :background creamsody-faded_blue))
+       (company-tooltip-common-selection          (:foreground creamsody-foreground0 :background creamsody-background_yellow))
        (company-tooltip-mouse                     (:foreground creamsody-background0 :background creamsody-bright_blue))
-       (company-tooltip-selection                 (:foreground creamsody-foreground0 :background creamsody-faded_blue))
+       (company-tooltip-selection                 (:foreground creamsody-foreground0 :background creamsody-background_yellow))
 
        ;; MODE SUPPORT: dired+)
        (diredp-file-name                          (:foreground creamsody-foreground2))

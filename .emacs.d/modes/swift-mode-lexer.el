@@ -614,7 +614,7 @@ return non-nil."
                  "isolated" "each"))
        (member (swift-mode:token:text next-token)
                '("any" "some" "inout" "borrowing" "consuming" "throws"
-                 "rethrows" "in" "where" "isolated")))
+                 "rethrows" "in" "where" "isolated" "each")))
       nil)
 
      ;; Before async
@@ -641,6 +641,13 @@ return non-nil."
                                       (swift-mode:forward-token-simple)
                                       (swift-mode:forward-token-simple)))
              "let"))
+
+     ;; After async
+     ;;
+     ;; Suppresses implicit semicolon if before let.
+     ((and (equal (swift-mode:token:text previous-token) "async")
+           (equal (swift-mode:token:text next-token) "let"))
+      nil)
 
      ;; Suppress implicit semicolon around else
      ((or
@@ -721,7 +728,13 @@ return non-nil."
      ;; Suppress implicit semicolon after keywords that cannot end statements.
      ((member (swift-mode:token:text previous-token)
               '("while" "for" "switch" "case" "default" "catch" "if" "guard"
-                "let" "var" "throw" "import" "async"))
+                "let" "var" "throw" "import"))
+      nil)
+
+     ;; Suppress import semicolon after `repeat' unless followed by a open
+     ;; curly bracket.
+     ((and (equal (swift-mode:token:text previous-token) "repeat")
+           (not (eq (swift-mode:token:type next-token) '{)))
       nil)
 
      ;; Inserts implicit semicolon before keywords that starts a new

@@ -596,9 +596,8 @@ instead of in the one whose root `magit-root-section' is."
 
 (defun magit-section-lineage (section &optional raw)
   "Return the lineage of SECTION.
-If optional RAW is non-nil, return a list of section object
-beginning with SECTION, otherwise return a list of section
-types."
+If optional RAW is non-nil, return a list of section objects, beginning
+with SECTION, otherwise return a list of section types."
   (cons (if raw section (oref section type))
         (and-let* ((parent (oref section parent)))
           (magit-section-lineage parent raw))))
@@ -774,12 +773,11 @@ Slight trimmed down."
                   (magit--menu-bar-keymap keymap))))
   menu)
 
-(advice-add 'context-menu-region :around
-            (lambda (fn menu click)
-              "Disable in `magit-section-mode' buffers."
-              (if (derived-mode-p 'magit-section-mode)
-                  menu
-                (funcall fn menu click))))
+(define-advice context-menu-region (:around (fn menu click) magit-section-mode)
+  "Disable in `magit-section-mode' buffers."
+  (if (derived-mode-p 'magit-section-mode)
+      menu
+    (funcall fn menu click)))
 
 ;;; Commands
 ;;;; Movement
@@ -882,14 +880,24 @@ If there is no previous sibling section, then move to the parent."
   (unless (pos-visible-in-window-p (oref section end))
     (set-window-start (selected-window) (oref section start))))
 
-(defmacro magit-define-section-jumper (name heading type &optional value)
+(defmacro magit-define-section-jumper
+    (name heading type &optional value inserter &rest properties)
   "Define an interactive function to go some section.
 Together TYPE and VALUE identify the section.
 HEADING is the displayed heading of the section."
   (declare (indent defun))
-  `(defun ,name (&optional expand)
+  `(transient-define-suffix ,name (&optional expand)
      ,(format "Jump to the section \"%s\".
 With a prefix argument also expand it." heading)
+     ,@properties
+     ,@(and (not (plist-member properties :description))
+            (list :description heading))
+     ,@(and inserter
+            `(:if (lambda () (memq ',inserter
+                              (bound-and-true-p magit-status-sections-hook)))))
+     :inapt-if-not (lambda () (magit-get-section
+                          (cons (cons ',type ,value)
+                                (magit-section-ident magit-root-section))))
      (interactive "P")
      (if-let ((section (magit-get-section
                         (cons (cons ',type ,value)
@@ -1527,16 +1535,31 @@ its body cannot be collapsed.  If a section does have a heading,
 then its height must be exactly one line, including a trailing
 newline character.  This isn't enforced, you are responsible for
 getting it right.  The only exception is that this function does
-insert a newline character if necessary."
+insert a newline character if necessary
+
+If provided, optional CHILD-COUNT must evaluate to an integer or
+boolean.  If t, then the count is determined once the children have been
+inserted, using `magit-insert-child-count' (which see).  For historic
+reasons, if the heading ends with \":\", the count is substituted for
+that, at this time as well.  If `magit-section-show-child-count' is nil,
+no counts are inserted
+
+\n(fn [CHILD-COUNT] &rest STRINGS)"
   (declare (indent defun))
   (when args
-    (let ((heading (apply #'concat args)))
+    (let ((count (and (or (integerp (car args))
+                          (booleanp (car args)))
+                      (pop args)))
+          (heading (apply #'concat args)))
       (insert (if (or (text-property-not-all 0 (length heading)
                                              'font-lock-face nil heading)
                       (text-property-not-all 0 (length heading)
                                              'face nil heading))
                   heading
-                (propertize heading 'font-lock-face 'magit-section-heading)))))
+                (propertize heading 'font-lock-face 'magit-section-heading)))
+      (when (and count magit-section-show-child-count)
+        (insert (propertize (format " (%s)" count)
+                            'font-lock-face 'magit-section-child-count)))))
   (unless (bolp)
     (insert ?\n))
   (when (fboundp 'magit-maybe-make-margin-overlay)
@@ -1624,16 +1647,25 @@ with \" (N)\", where N is the number of child sections.
 This function is called by `magit-insert-section' after that has
 evaluated its BODY.  Admittedly that's a bit of a hack."
   (let (content count)
-    (when (and magit-section-show-child-count
-               (setq content (oref section content))
-               (setq count (length (oref section children)))
-               (> count 0)
-               (eq (char-before (1- content)) ?:))
+    (cond
+     ((not (and magit-section-show-child-count
+                (setq content (oref section content))
+                (setq count (length (oref section children)))
+                (> count 0))))
+     ((eq (char-before (- content 1)) ?:)
       (save-excursion
         (goto-char (- content 2))
         (insert (magit--propertize-face (format " (%s)" count)
                                         'magit-section-child-count))
-        (delete-char 1)))))
+        (delete-char 1)))
+     ((and (eq (char-before (- content 4)) ?\s)
+           (eq (char-before (- content 3)) ?\()
+           (eq (char-before (- content 2)) ?t )
+           (eq (char-before (- content 1)) ?\)))
+      (save-excursion
+        (goto-char (- content 3))
+        (delete-char 1)
+        (insert (format "%s" count)))))))
 
 ;;; Highlight
 
@@ -1762,10 +1794,10 @@ invisible."
   (kill-local-variable 'redisplay-unhighlight-region-function)
   (when magit-show-long-lines-warning
     (setq magit-show-long-lines-warning nil)
-    (display-warning 'magit "\
+    (display-warning 'magit (format "\
 Emacs has enabled redisplay shortcuts
 in this buffer because there are lines whose length go beyond
-`long-line-treshold' \(%s characters).  As a result, section
+`long-line-threshold' \(%s characters).  As a result, section
 highlighting and the special appearance of the region has been
 disabled.  Some existing highlighting might remain in effect.
 
@@ -1775,7 +1807,7 @@ and recreate the buffer.
 
 This message won't be shown for this session again.  To disable
 it for all future sessions, set `magit-show-long-lines-warning'
-to nil." :warning)))
+to nil." (bound-and-true-p long-line-threshold)) :warning)))
 
 (cl-defgeneric magit-section-get-relative-position (section))
 
@@ -1981,7 +2013,7 @@ When `magit-section-preserve-visibility' is nil, do nothing."
   (or (eq search-invisible t)
       (not (isearch-range-invisible beg end))))
 
-(defun isearch-clean-overlays@magit-mode (fn)
+(define-advice isearch-clean-overlays (:around (fn) magit-mode)
   (if (derived-mode-p 'magit-mode)
       (let ((pos (point)))
         (dolist (section magit-section--opened-sections)
@@ -1989,9 +2021,6 @@ When `magit-section-preserve-visibility' is nil, do nothing."
             (magit-section-hide section)))
         (setq magit-section--opened-sections nil))
     (funcall fn)))
-
-(advice-add 'isearch-clean-overlays :around
-            #'isearch-clean-overlays@magit-mode)
 
 ;;; Utilities
 
@@ -2411,7 +2440,7 @@ with the variables' values as arguments, which were recorded by
 
 ;;; Bitmaps
 
-(when (fboundp 'define-fringe-bitmap)
+(when (fboundp 'define-fringe-bitmap) ;for Emacs 26
   (define-fringe-bitmap 'magit-fringe-bitmap+
     [#b00000000
      #b00011000
@@ -2421,6 +2450,7 @@ with the variables' values as arguments, which were recorded by
      #b00011000
      #b00011000
      #b00000000])
+
   (define-fringe-bitmap 'magit-fringe-bitmap-
     [#b00000000
      #b00000000
@@ -2440,6 +2470,7 @@ with the variables' values as arguments, which were recorded by
      #b00110000
      #b01100000
      #b00000000])
+
   (define-fringe-bitmap 'magit-fringe-bitmapv
     [#b00000000
      #b10000010
@@ -2459,6 +2490,7 @@ with the variables' values as arguments, which were recorded by
      #b00111000
      #b01110000
      #b11100000])
+
   (define-fringe-bitmap 'magit-fringe-bitmap-boldv
     [#b10000001
      #b11000011

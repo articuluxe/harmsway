@@ -5,7 +5,7 @@
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.17
+;; Version: 1.18
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -333,6 +333,7 @@ quote, for example.")
     (java-mode       c/c++/java    c-basic-offset)       ; Java
     (jde-mode        c/c++/java    c-basic-offset)       ; Java (JDE)
     (js-mode         javascript    js-indent-level)      ; JavaScript
+    (js-json-mode    javascript    js-indent-level)      ; JSON
     (js2-mode        javascript    js2-basic-offset)     ; JavaScript-IDE
     (js3-mode        javascript    js3-indent-level)     ; JavaScript-IDE
     (json-mode       javascript    js-indent-level)      ; JSON
@@ -1038,6 +1039,41 @@ Indentation offset set with file variable; not adjusted")
             (message "Note: indent-tabs-mode not adjusted"))
           nil))
         ))))
+
+(defun dtrt-indent-set (indent)
+  "Force the indentation offset for the current buffer to INDENT."
+  (interactive "nIndentation offset: ")
+  (let ((language-and-variable (cdr (dtrt-indent--search-hook-mapping major-mode))))
+    (when language-and-variable
+      (when (string= (car language-and-variable) "default")
+        (error "Unsupported mode: %s" major-mode))
+      (let* ((indent-offset-mode-variables
+              (let ((v (nth 1 language-and-variable)))
+                (if (listp v) v (list v))))
+             (indent-offset-variables
+              (append
+               indent-offset-mode-variables
+               (remove nil
+                       (mapcar
+                        (lambda (x)
+                          (let ((mode (car x))
+                                (variable (cadr x)))
+                            (when (and (boundp mode)
+                                       (symbol-value mode))
+                              variable)))
+                        dtrt-indent-hook-generic-mapping-list)))))
+        (setq dtrt-indent-original-indent
+              (mapcar
+               (lambda (x)
+                 (list x (symbol-value x) (local-variable-p x)))
+               indent-offset-variables))
+        (dolist (x indent-offset-variables)
+          (set (make-local-variable x)
+               indent))
+        (when (>= dtrt-indent-verbosity 1)
+          (message "%s set to %d"
+                   (mapconcat 'symbol-name indent-offset-variables ", ")
+                   indent))))))
 
 (defun dtrt-indent-adapt ()
   "Try adjusting indentation settings for the current buffer."

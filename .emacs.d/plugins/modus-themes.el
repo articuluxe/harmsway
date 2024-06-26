@@ -641,6 +641,20 @@ In user configuration files the form may look like this:
   :initialize #'custom-initialize-default
   :link '(info-link "(modus-themes) Command prompts"))
 
+
+(defcustom modus-themes-common-palette-user nil
+  "Common user-defined colors to extend all the themes' palettes.
+This is meant to extend the palette of the active Modus theme with
+custom named colors and/or semantic palette mappings.  Those may then be
+used in combination with palette overrides (see
+`modus-themes-common-palette-overrides')."
+  :group 'modus-themes
+  :package-version '(modus-themes . "4.5.0")
+  :type '(repeat (list symbol (choice symbol string)))
+  :set #'modus-themes--set-option
+  :initialize #'custom-initialize-default
+  :link '(info-link "(modus-themes) Extend the palette for use with overrides"))
+
 (defcustom modus-themes-common-palette-overrides nil
   "Set palette overrides for all the Modus themes.
 
@@ -1068,22 +1082,22 @@ C1 and C2 are color values written in hexadecimal RGB."
   (car (or (modus-themes--list-enabled-themes)
            (modus-themes--list-known-themes))))
 
-(defun modus-themes--palette-symbol (theme &optional overrides)
-  "Return THEME palette as a symbol.
-With optional OVERRIDES, return THEME palette overrides as a
-symbol."
-  (when-let ((suffix (cond
-                      ((and theme overrides)
-                       "palette-overrides")
-                      (theme
-                       "palette"))))
-    (intern (format "%s-%s" theme suffix))))
+(defun modus-themes--palette-symbol (theme &optional suffix)
+  "Return THEME palette as a symbol of the form THEME-palette.
+With optional SUFFIX, return THEME-palette-SUFFIX as a symbol."
+  (when theme
+    (intern
+     (if suffix
+         (format "%s-palette-%s" theme suffix)
+       (format "%s-palette" theme)))))
 
 (defun modus-themes--palette-value (theme &optional overrides)
   "Return palette value of THEME with optional OVERRIDES."
-  (let ((base-value (symbol-value (modus-themes--palette-symbol theme))))
+  (let* ((core-palette (symbol-value (modus-themes--palette-symbol theme)))
+         (user-palette (symbol-value (modus-themes--palette-symbol theme "user")))
+         (base-value (append user-palette modus-themes-common-palette-user core-palette)))
     (if overrides
-        (append (symbol-value (modus-themes--palette-symbol theme :overrides))
+        (append (symbol-value (modus-themes--palette-symbol theme "overrides"))
                 modus-themes-common-palette-overrides
                 base-value)
       base-value)))
@@ -1650,6 +1664,10 @@ FG and BG are the main colors."
     `(shadow ((,c :foreground ,fg-dim)))
     `(success ((,c :inherit bold :foreground ,info)))
     `(trailing-whitespace ((,c :background ,bg-space-err)))
+    ;; NOTE 2024-06-22: I use `list' here to suppress a bogus warning
+    ;; from the compiler: it says I should depend on Emacs 29 to use
+    ;; vtable.
+    (list 'vtable `((,c :inherit modus-themes-fixed-pitch)))
     `(warning ((,c :inherit bold :foreground ,warning)))
 ;;;;; buttons, links, widgets
     `(button ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
@@ -1768,7 +1786,7 @@ FG and BG are the main colors."
     `(font-latex-italic-face ((,c :inherit italic)))
     `(font-latex-math-face ((,c :inherit font-lock-constant-face)))
     `(font-latex-script-char-face ((,c :inherit font-lock-builtin-face)))
-    `(font-latex-sectioning-5-face ((,c :inherit (bold modus-themes-variable-pitch) :foreground ,fg-alt)))
+    `(font-latex-sectioning-5-face ((,c :inherit bold :foreground ,fg-alt)))
     `(font-latex-sedate-face ((,c :inherit font-lock-keyword-face)))
     `(font-latex-slide-title-face ((,c :inherit modus-themes-heading-1)))
     `(font-latex-string-face ((,c :inherit font-lock-string-face)))
@@ -3686,9 +3704,9 @@ FG and BG are the main colors."
     `(telega-username ((,c :foreground ,cyan-cooler)))
     `(telega-webpage-chat-link ((,c :background ,bg-inactive)))
     `(telega-webpage-fixed ((,c :inherit modus-themes-fixed-pitch :height 0.85)))
-    `(telega-webpage-header ((,c :inherit modus-themes-variable-pitch :height 1.3)))
+    `(telega-webpage-header ((,c :height 1.3)))
     `(telega-webpage-preformatted ((,c :inherit modus-themes-fixed-pitch :background ,bg-inactive)))
-    `(telega-webpage-subheader ((,c :inherit modus-themes-variable-pitch :height 1.15)))
+    `(telega-webpage-subheader ((,c :height 1.15)))
 ;;;;; terraform-mode
     `(terraform--resource-name-face ((,c :foreground ,keyword)))
     `(terraform--resource-type-face ((,c :foreground ,type)))
@@ -3970,6 +3988,10 @@ FG and BG are the main colors."
     `(window-divider ((,c :foreground ,border)))
     `(window-divider-first-pixel ((,c :foreground ,bg-inactive)))
     `(window-divider-last-pixel ((,c :foreground ,bg-inactive)))
+;;;;; window-tool-bar-mode
+    `(window-tool-bar-button ((,c :inherit modus-themes-button)))
+    `(window-tool-bar-button-hover ((,c :inherit (highlight modus-themes-button))))
+    `(window-tool-bar-button-disabled ((,c :inherit modus-themes-button :background ,bg-button-inactive :foreground ,fg-button-inactive)))
 ;;;;; widget
     `(widget-button ((,c :inherit bold :foreground ,fg-link)))
     `(widget-button-pressed ((,c :inherit widget-button :foreground ,fg-link-visited)))

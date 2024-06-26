@@ -40,6 +40,7 @@
                  :foreground ,color-bg))))
    `(region ((t (:background ,color-fg
                  :foreground ,color-bg))))
+   `(secondary-selection ((t (:background ,color-light))))
    `(mode-line ((t (:background ,color-dark
                     :foreground ,color-bg
                     :box nil))))
@@ -48,6 +49,8 @@
                              :foreground ,color-bg))))
    `(fringe ((t (:background ,color-bg))))
    `(minibuffer-prompt ((t (:inherit italic :foreground ,color-dark))))
+   `(warning ((t (:foreground ,color-fg :background ,color-bright
+                  :weight unspecified))))
    `(font-lock-builtin-face ((t (:foreground ,color-dark))))
    `(font-lock-comment-face ((t (:inherit italic :foreground ,color-middle))))
    `(font-lock-doc-face ((t (:inherit font-lock-comment-face))))
@@ -265,6 +268,15 @@
    `(org-block-begin-line ((t (:inherit font-lock-comment-face))))
    `(org-block-end-line ((t (:inherit font-lock-comment-face))))
    `(org-archived ((t (:foreground ,color-middle))))
+   `(org-warning ((t (:background ,color-bright))))
+
+   `(org-agenda-structure ((t (:foreground ,color-dark))))
+   `(org-agenda-done ((t (:foreground ,color-middle))))
+   `(org-scheduled-today ((t (:foreground nil :inherit default))))
+   `(org-scheduled-previously ((t (:foreground nil :inherit italic))))
+   `(org-upcoming-deadline ((t (:foreground ,color-dark :inherit italic))))
+   `(org-scheduled ((t (:foreground nil :inherit org-scheduled-today))))
+   `(org-time-grid ((t (:foreground ,color-middle))))
 
    ;; org-tree-slide
    `(org-tree-slide-header-overlay-face
@@ -322,8 +334,12 @@
    `(flymake-warning ((t (:underline (:style wave :color ,color-middle)))))
 
    ;; Flycheck
-   `(flycheck-error ((t (:inherit flymake-error))))
-   `(flycheck-warning ((t (:inherit flymake-warning))))
+   `(flycheck-error ((t (:underline (:style wave :color ,color-bright)))))
+   `(flycheck-warning ((t (:underline (:style wave :color ,color-middle)))))
+
+   ;; Flyspell
+   `(flyspell-duplicate ((t (:underline (:style wave :color ,color-middle)))))
+   `(flyspell-incorrect ((t (:underline (:style wave :color ,color-bright)))))
 
    ;; Mail
    `(message-separator ((t (:foreground ,color-middle))))

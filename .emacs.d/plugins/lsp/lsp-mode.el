@@ -177,7 +177,7 @@ As defined by the Language Server Protocol 3.16."
      lsp-autotools lsp-awk lsp-bash lsp-beancount lsp-bufls lsp-clangd
      lsp-clojure lsp-cmake lsp-cobol lsp-credo lsp-crystal lsp-csharp lsp-css
      lsp-cucumber lsp-cypher lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile
-     lsp-elixir lsp-elm lsp-emmet lsp-erlang lsp-eslint lsp-fortran lsp-fsharp
+     lsp-earthly lsp-elixir lsp-elm lsp-emmet lsp-erlang lsp-eslint lsp-fortran lsp-fsharp
      lsp-gdscript lsp-gleam lsp-glsl lsp-go lsp-golangci-lint lsp-grammarly
      lsp-graphql lsp-groovy lsp-hack lsp-haskell lsp-haxe lsp-idris lsp-java
      lsp-javascript lsp-jq lsp-json lsp-kotlin lsp-latex lsp-lisp lsp-ltex
@@ -185,7 +185,7 @@ As defined by the Language Server Protocol 3.16."
      lsp-mojo lsp-move lsp-mssql lsp-nginx lsp-nim lsp-nix lsp-nushell lsp-ocaml
      lsp-openscad lsp-pascal lsp-perl lsp-perlnavigator lsp-php lsp-pls
      lsp-purescript lsp-pwsh lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms
-     lsp-qml lsp-r lsp-racket lsp-remark lsp-rf lsp-rubocop lsp-ruby-lsp
+     lsp-qml lsp-r lsp-racket lsp-remark lsp-rf lsp-roslyn lsp-rubocop lsp-ruby-lsp
      lsp-ruby-syntax-tree lsp-ruff-lsp lsp-rust lsp-semgrep lsp-shader
      lsp-solargraph lsp-solidity lsp-sonarlint lsp-sorbet lsp-sourcekit
      lsp-sql lsp-sqls lsp-steep lsp-svelte lsp-tailwindcss lsp-terraform
@@ -769,6 +769,7 @@ Changes take effect only when a new session is started."
     ("\\.cs\\'" . "csharp")
     ("\\.css$" . "css")
     ("\\.cypher$" . "cypher")
+    ("Earthfile" . "earthfile")
     ("\\.ebuild$" . "shellscript")
     ("\\.go\\'" . "go")
     ("\\.html$" . "html")
@@ -901,6 +902,7 @@ Changes take effect only when a new session is started."
     (ruby-mode . "ruby")
     (enh-ruby-mode . "ruby")
     (ruby-ts-mode . "ruby")
+    (feature-mode . "cucumber")
     (fortran-mode . "fortran")
     (f90-mode . "fortran")
     (elm-mode . "elm")
@@ -956,6 +958,7 @@ Changes take effect only when a new session is started."
     (idris-mode . "idris")
     (idris2-mode . "idris2")
     (gleam-mode . "gleam")
+    (gleam-ts-mode . "gleam")
     (graphviz-dot-mode . "dot")
     (tiltfile-mode . "tiltfile")
     (solidity-mode . "solidity")
@@ -1625,6 +1628,13 @@ return value of `body' or nil if interrupted."
   ;; to the server.
   (action-handlers (make-hash-table :test 'equal))
 
+  ;; `action-filter' can be set to a function that modifies any incoming
+  ;; `CodeAction' in place before it is executed. The return value is ignored.
+  ;; This can be used to patch up broken code action requests before they are
+  ;; sent back to the LSP server. See `lsp-fix-code-action-booleans' for an
+  ;; example of a function that can be useful here.
+  (action-filter nil)
+
   ;; major modes supported by the client.
   major-modes
   ;; Function that will be called to decide if this language client
@@ -2151,7 +2161,7 @@ PARAMS - the data sent from WORKSPACE."
           (goto-char (lsp--position-to-point (lsp:range-start selection?))))
         t))))
 
-(defcustom lsp-progress-prefix " ⌛ "
+(defcustom lsp-progress-prefix "⌛ "
   "Progress prefix."
   :group 'lsp-mode
   :type 'string
@@ -2194,7 +2204,7 @@ PARAMS - the data sent from WORKSPACE."
                    "|"))))
             (lsp-workspaces)))))
     (unless (s-blank? progress-status)
-      (concat lsp-progress-prefix progress-status))))
+      (concat lsp-progress-prefix progress-status " "))))
 
 (lsp-defun lsp-on-progress-modeline (workspace (&ProgressParams :token :value
                                                                 (value &as &WorkDoneProgress :kind)))
@@ -6005,7 +6015,49 @@ Request codeAction/resolve for more info if server supports."
 
   (cond
    ((stringp command?) (lsp--execute-command action))
-   ((lsp-command? command?) (lsp--execute-command command?))))
+   ((lsp-command? command?) (progn
+                              (when-let ((action-filter (->> (lsp-workspaces)
+                                                             (cl-first)
+                                                             (or lsp--cur-workspace)
+                                                             (lsp--workspace-client)
+                                                             (lsp--client-action-filter))))
+                                (funcall action-filter command?))
+                              (lsp--execute-command command?)))))
+
+(lsp-defun lsp-fix-code-action-booleans ((&Command :arguments?) boolean-action-arguments)
+  "Patch incorrect boolean argument values in the provided `CodeAction' command
+in place, based on the BOOLEAN-ACTION-ARGUMENTS list. The values
+in this list can be either symbols or lists of symbols that
+represent paths to boolean arguments in code actions:
+
+> (lsp-fix-code-action-booleans command `(:foo :bar (:some :nested :boolean)))
+
+When there are available code actions, the server sends
+`lsp-mode' a list of possible command names and arguments as
+JSON. `lsp-mode' parses all boolean false values as `nil'. As a
+result code action arguments containing falsy values don't
+roundtrip correctly because `lsp-mode' will end up sending null
+values back to the client. This list makes it possible to
+selectively transform `nil' values back into `:json-false'."
+  (seq-doseq (path boolean-action-arguments)
+    (seq-doseq (args arguments?)
+      (lsp--fix-nested-boolean args (if (listp path) path (list path))))))
+
+(defun lsp--fix-nested-boolean (structure path)
+  "Traverse STRUCTURE using the paths from the PATH list, changing the value to
+`:json-false' if it was `nil'. PATH should be a list containing
+one or more symbols, and STRUCTURE should be compatible with
+`lsp-member?', `lsp-get', and `lsp-put'."
+  (let ((key (car path))
+        (rest (cdr path)))
+    (if (null rest)
+        ;; `lsp-put' returns `nil' both when the key doesn't exist and when the
+        ;; value is `nil', so we need to explicitly check its presence here
+        (when (and (lsp-member? structure key) (not (lsp-get structure key)))
+          (lsp-put structure key :json-false))
+      ;; If `key' does not exist, then we'll silently ignore it
+      (when-let ((child (lsp-get structure key)))
+        (lsp--fix-nested-boolean child rest)))))
 
 (defvar lsp--formatting-indent-alist
   ;; Taken from `dtrt-indent-mode'

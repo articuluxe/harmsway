@@ -134,11 +134,19 @@ standard)."
       (bg-magenta-nuanced "#f8e6f5")
       (bg-cyan-nuanced    "#e0f2fa")
 
-;;; Uncommon accent backgrounds
+;;; Uncommon accent background and foreground pairs
 
-      (bg-ochre    "#f0e0cc")
-      (bg-lavender "#dfdbfa")
+      (bg-clay     "#f1c8b5")
+      (fg-clay     "#63192a")
+
+      (bg-ochre    "#f0e3c0")
+      (fg-ochre    "#573a30")
+
+      (bg-lavender "#dfcdfa")
+      (fg-lavender "#443379")
+
       (bg-sage     "#c0e7d4")
+      (fg-sage     "#124b41")
 
 ;;; Graphs
 
@@ -482,6 +490,19 @@ as a symbol and the latter as a string.
 Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a named color that already
 exists in the palette and is associated with a HEX-VALUE.")
+
+  (defcustom modus-operandi-deuteranopia-palette-user nil
+    "Like the `modus-operandi-deuteranopia-palette' for user-defined entries.
+This is meant to extend the palette with custom named colors and/or
+semantic palette mappings.  Those may then be used in combination with
+palette overrides (also see `modus-themes-common-palette-overrides' and
+`modus-operandi-deuteranopia-palette-overrides')."
+    :group 'modus-themes
+    :package-version '(modus-themes . "4.5.0")
+    :type '(repeat (list symbol (choice symbol string)))
+    :set #'modus-themes--set-option
+    :initialize #'custom-initialize-default
+    :link '(info-link "(modus-themes) Option to extend the palette for use with overrides"))
 
   (defcustom modus-operandi-deuteranopia-palette-overrides nil
     "Overrides for `modus-operandi-deuteranopia-palette'.

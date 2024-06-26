@@ -2,10 +2,10 @@
 
 ;; This file is not part of GNU Emacs.
 ;; Copyright (C) 2013 Amirreza Ghaderi
-;; Copyright (C) 2017-21 Simon Zelazny
+;; Copyright (C) 2017-24 Simon Zelazny
 ;; Authors: Amirreza Ghaderi <amirreza.blog@gmail.com>,
 ;;          Simon Zelazny <zelazny@mailbox.org>
-;; Version: 0.4.1
+;; Version: 0.5
 ;; URL: https://github.com/pzel/commentary-theme
 ;; Package-Requires: ((emacs "24"))
 
@@ -13,10 +13,10 @@
 
 ;; This is a high-contrast theme designed to accentuate three visual 'layers':
 ;;
-;; 1) Comments are in red.  The intent is for comments to stand out!
+;; 1) Comments are set in red italics. The intent is for comments to stand out!
 ;;
-;; 2) Strings are furnished with a light yellow background, so it's easier to
-;; track where they start and end.
+;; 2) Strings are italic and furnished with a light yellow background, so it's
+;; easier to track where they start and end.
 ;;
 ;; 3) Function definitions are in bold.
 
@@ -49,8 +49,10 @@
        (region-background dark-yellow)
 
        (default-layer `((t (:foreground ,black :background ,(face-attribute 'default :background)))))
-       (commentary-layer `((t (:foreground ,red :background ,(face-attribute 'default :background)))))
-       (string-layer `((t (:foreground ,black :background ,light-yellow))))
+       (commentary-layer
+        `((t (:foreground ,red :background ,(face-attribute 'default :background) :slant italic))))
+       (string-layer
+        `((t (:foreground ,black :background ,light-yellow :slant italic))))
        (bold-layer `((t (:foreground ,black :weight bold)))))
 
   ;; Set faces
@@ -94,12 +96,10 @@
    ;;; Coloring for other major modes
    ;; Elixir-mode
    `(elixir-attribute-face ,default-layer)
-   `(elixir-atom-face ,default-layer)
-   )
+   `(elixir-atom-face ,default-layer))
 
   ;; Set variables
-  (custom-theme-set-variables 'commentary)
-)
+  (custom-theme-set-variables 'commentary))
 
 ;;;###autoload
 (when load-file-name

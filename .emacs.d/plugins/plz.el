@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/plz.el
-;; Version: 0.9-pre
+;; Version: 0.9
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: comm, network, http
 
@@ -46,13 +46,14 @@
 
 ;;;; Usage:
 
-;; FIXME(v0.8): Remove the following note.
+;; FIXME(v0.10): Remove the following note.
 
-;; NOTE: In v0.8 of plz, only one error will be signaled: `plz-error'.
-;; The existing errors, `plz-curl-error' and `plz-http-error', inherit
-;; from `plz-error' to allow applications to update their code while
-;; using v0.7 (i.e. any `condition-case' forms should now handle only
-;; `plz-error', not the other two).
+;; NOTE: In a future version of plz, only one error will be signaled:
+;; `plz-error'.  The existing errors, `plz-curl-error' and
+;; `plz-http-error', inherit from `plz-error' to allow applications to
+;; update their code while using earlier versions (i.e. any
+;; `condition-case' forms should now handle only `plz-error', not the
+;; other two).
 
 ;; Call function `plz' to make an HTTP request.  Its docstring
 ;; explains its arguments.  `plz' also supports other HTTP methods,
@@ -382,11 +383,12 @@ structure.  If ELSE is nil, a `plz-curl-error' or
 `plz-error' structure as the error data.  For synchronous
 requests, this argument is ignored.
 
-NOTE: In v0.8 of `plz', only one error will be signaled:
-`plz-error'.  The existing errors, `plz-curl-error' and
+NOTE: In a future version of `plz', only one error will be
+signaled: `plz-error'.  The existing errors, `plz-curl-error' and
 `plz-http-error', inherit from `plz-error' to allow applications
-to update their code while using v0.7 (i.e. any `condition-case'
-forms should now handle only `plz-error', not the other two).
+to update their code while using earlier versions (i.e. any
+`condition-case' forms should now handle only `plz-error', not
+the other two).
 
 FINALLY is an optional function called without argument after
 THEN or ELSE, as appropriate.  For synchronous requests, this
@@ -408,8 +410,8 @@ FILTER function should at least insert output up to the HTTP body
 into the process buffer.
 
 \(To silence checkdoc, we mention the internal argument REST.)"
-  ;; FIXME(v0.8): Remove the note about error changes from the docstring.
-  ;; FIXME(v0.8): Update error signals in docstring.
+  ;; FIXME(v0.10): Remove the note about error changes from the docstring.
+  ;; FIXME(v0.10): Update error signals in docstring.
   (declare (indent defun))
   (setf decode (if (and decode-s (not decode))
                    nil decode))
@@ -419,7 +421,8 @@ into the process buffer.
   ;; the empty string.  See <https://gms.tf/when-curl-sends-100-continue.html>.
   ;; TODO: Handle "100 Continue" responses and remove this workaround.
   (push (cons "Expect" "") headers)
-  (let* ((data-arg (pcase-exhaustive body-type
+  (let* (filename
+         (data-arg (pcase-exhaustive body-type
                      ('binary "--data-binary")
                      ('text "--data")))
          (curl-command-line-args (append plz-curl-default-args
@@ -443,21 +446,49 @@ into the process buffer.
                                    ;; method.
                                    (pcase method
                                      ('get
-                                      (list (cons "--dump-header" "-")))
+                                      (append (list (cons "--dump-header" "-"))
+                                              (pcase as
+                                                ('file
+                                                 (setf filename (make-temp-file "plz-"))
+                                                 (list (cons "--output" filename)))
+                                                (`(file ,(and (pred stringp) as-filename))
+                                                 (when (file-exists-p as-filename)
+                                                   (error "File exists, will not overwrite: %S" as-filename))
+                                                 (setf filename as-filename)
+                                                 (list (cons "--output" filename))))))
                                      ((or 'put 'post)
-                                      (list (cons "--dump-header" "-")
-                                            (cons "--request" (upcase (symbol-name method)))
-                                            ;; It appears that this must be the last argument
-                                            ;; in order to pass data on the rest of STDIN.
-                                            (pcase body
-                                              (`(file ,filename)
-                                               ;; Use `expand-file-name' because curl doesn't
-                                               ;; expand, e.g. "~" into "/home/...".
-                                               (cons "--upload-file" (expand-file-name filename)))
-                                              (_ (cons data-arg "@-")))))
+                                      (append (list (cons "--dump-header" "-")
+                                                    (cons "--request" (upcase (symbol-name method))))
+                                              (pcase as
+                                                ('file
+                                                 (setf filename (make-temp-file "plz-"))
+                                                 (list (cons "--output" filename)))
+                                                (`(file ,(and (pred stringp) as-filename))
+                                                 (when (file-exists-p as-filename)
+                                                   (error "File exists, will not overwrite: %S" as-filename))
+                                                 (setf filename as-filename)
+                                                 (list (cons "--output" filename))))
+                                              (list
+                                               ;; It appears that this must be the last argument
+                                               ;; in order to pass data on the rest of STDIN.
+                                               (pcase body
+                                                 (`(file ,filename)
+                                                  ;; Use `expand-file-name' because curl doesn't
+                                                  ;; expand, e.g. "~" into "/home/...".
+                                                  (cons "--upload-file" (expand-file-name filename)))
+                                                 (_ (cons data-arg "@-"))))))
                                      ('delete
-                                      (list (cons "--dump-header" "-")
-                                            (cons "--request" (upcase (symbol-name method)))))
+                                      (append (list (cons "--dump-header" "-")
+                                                    (cons "--request" (upcase (symbol-name method))))
+                                              (pcase as
+                                                ('file
+                                                 (setf filename (make-temp-file "plz-"))
+                                                 (list (cons "--output" filename)))
+                                                (`(file ,(and (pred stringp) as-filename))
+                                                 (when (file-exists-p as-filename)
+                                                   (error "File exists, will not overwrite: %S" as-filename))
+                                                 (setf filename as-filename)
+                                                 (list (cons "--output" filename))))))
                                      ('head
                                       (list (cons "--head" "")
                                             (cons "--request" "HEAD"))))))
@@ -520,39 +551,11 @@ into the process buffer.
                                       (make-plz-error :message (format "response is nil for buffer:%S  buffer-string:%S"
                                                                        process-buffer (buffer-string)))))))
        ('file (lambda ()
-                (set-buffer-multibyte nil)
-                (plz--narrow-to-body)
-                (let ((filename (make-temp-file "plz-")))
-                  (condition-case err
-                      (progn
-                        ;; FIXME: Separate condition-case for writing the file.
-                        (write-region (point-min) (point-max) filename)
-                        (funcall then filename))
-                    (file-already-exists
-                     (funcall then (make-plz-error :message (format "error while writing to file %S: %S" filename err))))
-                    ;; In case of an error writing to the file, delete the temp file
-                    ;; and signal the error.  Ignore any errors encountered while
-                    ;; deleting the file, which would obscure the original error.
-                    (error (ignore-errors
-                             (delete-file filename))
-                           (funcall then (make-plz-error :message (format "error while writing to file %S: %S" filename err))))))))
+                (funcall then filename)))
        (`(file ,(and (pred stringp) filename))
+        ;; This requires a separate clause due to the FILENAME binding.
         (lambda ()
-          (set-buffer-multibyte nil)
-          (plz--narrow-to-body)
-          (condition-case err
-              (progn
-                (write-region (point-min) (point-max) filename nil nil nil 'excl)
-                (funcall then filename))
-            (file-already-exists
-             (funcall then (make-plz-error :message (format "error while writing to file %S: %S" filename err))))
-            ;; Since we are creating the file, it seems sensible to delete it in case of an
-            ;; error while writing to it (e.g. a disk-full error).  And we ignore any errors
-            ;; encountered while deleting the file, which would obscure the original error.
-            (error (ignore-errors
-                     (when (file-exists-p filename)
-                       (delete-file filename)))
-                   (funcall then (make-plz-error :message (format "error while writing to file %S: %S" filename err)))))))
+          (funcall then filename)))
        ((pred functionp) (lambda ()
                            (let ((coding-system (or (plz--coding-system) 'utf-8)))
                              (plz--narrow-to-body)
@@ -606,15 +609,15 @@ into the process buffer.
                  ;; into a `plz-error' struct: re-signal the error here,
                  ;; outside of the sentinel.
                  (if (plz-error-response data)
-                     ;; FIXME(v0.8): Signal only plz-error.
+                     ;; FIXME(v0.10): Signal only plz-error.
                      (signal 'plz-http-error (list "HTTP error" data))
                    (signal 'plz-curl-error (list "Curl error" data))))
                 (else
                  ;; The AS function returned a value: return it.
                  else)))
           (unless (eq as 'buffer)
-            (kill-buffer process-buffer))
-          (kill-buffer (process-buffer stderr-process)))
+            (plz--kill-buffer process-buffer))
+          (plz--kill-buffer (process-buffer stderr-process)))
       ;; Async request: return the process object.
       process)))
 
@@ -736,7 +739,7 @@ QUEUE should be a `plz-queue' structure."
                              (setf (plz-queue-active queue) (delq request (plz-queue-active queue)))
                              (plz-run queue))))
                    (else (lambda (arg)
-                           ;; FIXME(v0.8): This should be done in `plz-queue' because
+                           ;; FIXME(v0.10): This should be done in `plz-queue' because
                            ;; `plz-clear' will call the second queued-request's ELSE
                            ;; before it can be set by `plz-run'.
                            (unwind-protect
@@ -869,7 +872,7 @@ argument passed to `plz--sentinel', which see."
               ;; TODO: If using ":as 'response", the HTTP response
               ;; should be passed to the THEN function, regardless
               ;; of the status code.  Only for curl errors should
-              ;; the ELSE function be called.  (Maybe in v0.8.)
+              ;; the ELSE function be called.  (Maybe in v0.10.)
 
               ;; Any other status code is considered unsuccessful
               ;; (for now, anyway).
@@ -910,7 +913,7 @@ argument passed to `plz--sentinel', which see."
       (funcall finally))
     (unless (or (process-get process :plz-sync)
                 (eq 'buffer (process-get process :plz-as)))
-      (kill-buffer buffer))))
+      (plz--kill-buffer buffer))))
 
 (defun plz--stderr-sentinel (process status)
   "Sentinel for STDERR buffer.
@@ -919,7 +922,14 @@ Arguments are PROCESS and STATUS (ok, checkdoc?)."
     ((or "finished\n" "killed\n" "interrupt\n"
          (pred numberp)
          (rx "exited abnormally with code " (1+ digit)))
-     (kill-buffer (process-buffer process)))))
+     (plz--kill-buffer (process-buffer process)))))
+
+(defun plz--kill-buffer (&optional buffer)
+  "Kill BUFFER unconditionally, without asking for confirmation.
+Binds `kill-buffer-query-functions' to nil."
+  ;; TODO(emacs-28): Remove this workaround when requiring Emacs 28+.
+  (let (kill-buffer-query-functions)
+    (kill-buffer buffer)))
 
 ;;;;;; HTTP Responses
 

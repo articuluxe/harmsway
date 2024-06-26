@@ -6,8 +6,8 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.6.0
-;; Package-Requires: ((emacs "26.1") (compat "29.1.4.4") (seq "2.24"))
+;; Package-Version: 0.7.2
+;; Package-Requires: ((emacs "26.1") (compat "29.1.4.5") (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -41,7 +41,7 @@
 (require 'format-spec)
 
 (eval-and-compile
-  (when (and (featurep' seq)
+  (when (and (featurep 'seq)
              (not (fboundp 'seq-keep)))
     (unload-feature 'seq 'force)))
 (require 'seq)
@@ -838,6 +838,11 @@ Technically a suffix object with no associated command.")
 All remaining arguments are treated as files.
 They become the value of this argument.")
 
+(defclass transient-value-preset (transient-suffix)
+  ((transient :initform t)
+   (set :initarg := :initform nil))
+  "Class used by the `transient-preset' suffix command.")
+
 ;;;; Group
 
 (defclass transient-group (transient-child)
@@ -919,8 +924,9 @@ to the setup function:
                     [&optional ("interactive" interactive) def-body]))
            (indent defun)
            (doc-string 3))
-  (pcase-let ((`(,class ,slots ,suffixes ,docstr ,body ,interactive-only)
-               (transient--expand-define-args args arglist)))
+  (pcase-let
+      ((`(,class ,slots ,suffixes ,docstr ,body ,interactive-only)
+        (transient--expand-define-args args arglist 'transient-define-prefix)))
     `(progn
        (defalias ',name
          ,(if body
@@ -959,8 +965,9 @@ ARGLIST.  The infix arguments are usually accessed by using
                     [&optional ("interactive" interactive) def-body]))
            (indent defun)
            (doc-string 3))
-  (pcase-let ((`(,class ,slots ,_ ,docstr ,body ,interactive-only)
-               (transient--expand-define-args args arglist)))
+  (pcase-let
+      ((`(,class ,slots ,_ ,docstr ,body ,interactive-only)
+        (transient--expand-define-args args arglist 'transient-define-suffix)))
     `(progn
        (defalias ',name
          ,(if (and (not body) class (oref-default class definition))
@@ -970,6 +977,18 @@ ARGLIST.  The infix arguments are usually accessed by using
        (put ',name 'function-documentation ,docstr)
        (put ',name 'transient--suffix
             (,(or class 'transient-suffix) :command ',name ,@slots)))))
+
+(defmacro transient-augment-suffix (name &rest args)
+  "Augment existing command NAME with a new transient suffix object.
+Similar to `transient-define-suffix' but define a suffix object only.
+\n\(fn NAME [KEYWORD VALUE]...)"
+  (declare (debug (&define name [&rest keywordp sexp]))
+           (indent defun))
+  (pcase-let
+      ((`(,class ,slots)
+        (transient--expand-define-args args nil 'transient-augment-suffix t)))
+    `(put ',name 'transient--suffix
+          (,(or class 'transient-suffix) :command ',name ,@slots))))
 
 (defmacro transient-define-infix (name arglist &rest args)
   "Define NAME as a transient infix command.
@@ -1008,8 +1027,9 @@ keyword.
                     [&rest keywordp sexp]))
            (indent defun)
            (doc-string 3))
-  (pcase-let ((`(,class ,slots ,_ ,docstr ,_ ,interactive-only)
-               (transient--expand-define-args args arglist t)))
+  (pcase-let
+      ((`(,class ,slots ,_ ,docstr ,_ ,interactive-only)
+        (transient--expand-define-args args arglist 'transient-define-infix t)))
     `(progn
        (defalias ',name #'transient--default-infix-command)
        (put ',name 'interactive-only ,interactive-only)
@@ -1052,7 +1072,8 @@ falling back to that of the same aliased command."
 (put 'transient--default-infix-command 'completion-predicate
      #'transient--suffix-only)
 
-(defun transient--find-function-advised-original (fn func)
+(define-advice find-function-advised-original
+    (:around (fn func) transient-default-infix)
   "Return nil instead of `transient--default-infix-command'.
 When using `find-function' to jump to the definition of a transient
 infix command/argument, then we want to actually jump to that, not to
@@ -1060,11 +1081,12 @@ the definition of `transient--default-infix-command', which all infix
 commands are aliases for."
   (let ((val (funcall fn func)))
     (and val (not (eq val 'transient--default-infix-command)) val)))
-(advice-add 'find-function-advised-original :around
-            #'transient--find-function-advised-original)
 
-(eval-and-compile
-  (defun transient--expand-define-args (args &optional arglist nobody)
+(eval-and-compile ;transient--expand-define-args
+  (defun transient--expand-define-args (args &optional arglist form nobody)
+    ;; ARGLIST and FORM are only optional for backward compatibility.
+    ;; This is necessary because "emoji.el" from Emacs 29 calls this
+    ;; function directly, with just one argument.
     (unless (listp arglist)
       (error "Mandatory ARGLIST is missing"))
     (let (class keys suffixes docstr declare (interactive-only t))
@@ -1092,9 +1114,9 @@ commands are aliases for."
       (cond
        ((not args))
        (nobody
-        (error "transient-define-infix: No function body allowed"))
+        (error "%s: No function body allowed" form))
        ((not (eq (car-safe (nth (if declare 1 0) args)) 'interactive))
-        (error "transient-define-*: Interactive form missing")))
+        (error "%s: Interactive form missing" form)))
       (list (if (eq (car-safe class) 'quote)
                 (cadr class)
               class)
@@ -2009,7 +2031,7 @@ transient.  In that case NAME is mandatory, LAYOUT and EDIT must
 be nil and PARAMS may be (but usually is not) used to set, e.g.,
 the \"scope\" of the transient (see `transient-define-prefix').
 
-This function is also called internally in which case LAYOUT and
+This function is also called internally, in which case LAYOUT and
 EDIT may be non-nil."
   (transient--debug 'setup)
   (transient--with-emergency-exit :setup
@@ -2264,6 +2286,12 @@ value.  Otherwise return CHILDREN as is."
   (transient--pop-keymap 'transient--predicate-map)
   (transient--pop-keymap 'transient--transient-map)
   (transient--pop-keymap 'transient--redisplay-map)
+  (if (eq transient--refreshp 'updated-value)
+      ;; Preserve the prefix value this once, because the
+      ;; invoked suffix indicates that it has updated that.
+      (setq transient--refreshp (oref transient--prefix refresh-suffixes))
+    ;; Otherwise update the prefix value from suffix values.
+    (oset transient--prefix value (transient-get-value)))
   (transient--init-objects)
   (transient--init-keymaps)
   (transient--push-keymap 'transient--transient-map)
@@ -2513,7 +2541,7 @@ value.  Otherwise return CHILDREN as is."
                   ;; We cannot use `current-prefix-arg' because it is set
                   ;; too late (in `command-execute'), and if it were set
                   ;; earlier, then we likely still would not be able to
-                  ;; rely on it and `prefix-command-preserve-state-hook'
+                  ;; rely on it, and `prefix-command-preserve-state-hook'
                   ;; would have to be used to record that a universal
                   ;; argument is in effect.
                   (not prefix-arg)))
@@ -2525,7 +2553,11 @@ value.  Otherwise return CHILDREN as is."
                  (transient--pop-keymap 'transient--redisplay-map)
                  (setq transient--redisplay-map new)
                  (transient--push-keymap 'transient--redisplay-map))
-               (transient--redisplay)))))))
+               (transient--redisplay))))))
+  (transient--debug 'clear-current)
+  (setq transient-current-prefix nil)
+  (setq transient-current-command nil)
+  (setq transient-current-suffixes nil))
 
 (defun transient--post-exit (&optional command)
   (transient--debug 'post-exit)
@@ -2548,9 +2580,6 @@ value.  Otherwise return CHILDREN as is."
     (remove-hook 'pre-command-hook  #'transient--pre-command)
     (remove-hook 'post-command-hook #'transient--post-command)
     (advice-remove 'recursive-edit #'transient--recursive-edit))
-  (setq transient-current-prefix nil)
-  (setq transient-current-command nil)
-  (setq transient-current-suffixes nil)
   (let ((resume (and transient--stack
                      (not (memq transient--exitp '(replace suspend))))))
     (unless (or resume (eq transient--exitp 'replace))
@@ -3070,6 +3099,12 @@ transient is active."
       (oset obj value (nth pos hst))
       (mapc #'transient-init-value transient--suffixes))))
 
+(transient-define-suffix transient-preset ()
+  "Put this preset into action."
+  :class transient-value-preset
+  (interactive)
+  (transient-prefix-set (oref (transient-suffix-object) set)))
+
 ;;;; Auxiliary
 
 (defun transient-toggle-common ()
@@ -3247,7 +3282,7 @@ it\", in which case it is pointless to preserve history.)"
              (reader (oref obj reader))
              (choices (if (functionp choices) (funcall choices) choices))
              (prompt (transient-prompt obj))
-             (value (if multi-value (mapconcat #'identity value ",") value))
+             (value (if multi-value (string-join value ",") value))
              (history-key (or (oref obj history-key)
                               (oref obj command)))
              (transient--history (alist-get history-key transient-history))
@@ -3394,10 +3429,10 @@ prompt."
 ;;;; Set
 
 (cl-defgeneric transient-infix-set (obj value)
-  "Set the value of infix object OBJ to value.")
+  "Set the value of infix object OBJ to VALUE.")
 
 (cl-defmethod transient-infix-set ((obj transient-infix) value)
-  "Set the value of infix object OBJ to value."
+  "Set the value of infix object OBJ to VALUE."
   (oset obj value value))
 
 (cl-defmethod transient-infix-set :after ((obj transient-argument) value)
@@ -3427,8 +3462,16 @@ prompt."
                          (member arg incomp)))))
         (transient-infix-set obj nil)))))
 
+(defun transient-prefix-set (value)
+  "Set the value of the active transient prefix to VALUE.
+Intended for use by transient suffix commands."
+  (oset transient--prefix value value)
+  (setq transient--refreshp 'updated-value))
+
 (cl-defgeneric transient-set-value (obj)
-  "Set the value of the transient prefix OBJ.")
+  "Persist the value of the transient prefix OBJ.
+Only intended for use by `transient-set'.
+Also see `transient-prefix-set'.")
 
 (cl-defmethod transient-set-value ((obj transient-prefix))
   (oset (oref obj prototype) value (transient-get-value))
@@ -3484,7 +3527,7 @@ the set, saved or default value for PREFIX."
                  (and (or (not (slot-exists-p obj 'unsavable))
                           (not (oref obj unsavable)))
                       (transient--get-wrapped-value obj)))
-               transient-current-suffixes)))
+               (or transient--suffixes transient-current-suffixes))))
 
 (defun transient--get-wrapped-value (obj)
   (and-let* ((value (transient-infix-value obj)))
@@ -3696,7 +3739,7 @@ have a history of their own.")
             (propertize "\n" 'face face 'line-height t))))
 
 (defmacro transient-with-shadowed-buffer (&rest body)
-  "While in the transient buffer, temporarly make the shadowed buffer current."
+  "While in the transient buffer, temporarily make the shadowed buffer current."
   (declare (indent 0) (debug t))
   `(with-current-buffer (or transient--shadowed-buffer (current-buffer))
      ,@body))
@@ -3752,9 +3795,9 @@ have a history of their own.")
              (transient-with-shadowed-buffer
                (let* ((transient--pending-group column)
                       (rows (mapcar #'transient-format (oref column suffixes))))
-                 (when-let ((desc (transient-format-description column)))
-                   (push desc rows))
-                 (flatten-tree rows))))
+                 (if-let ((desc (transient-format-description column)))
+                     (cons desc rows)
+                   rows))))
            (oref group suffixes)))
          (vp (or (oref transient--prefix variable-pitch)
                  transient-align-variable-pitch))
@@ -3771,7 +3814,7 @@ have a history of their own.")
                                   col))))
                      columns))
          (cc (transient--seq-reductions-from
-              (apply-partially #'+ (* 3 (if vp (transient--pixel-width " ") 1)))
+              (apply-partially #'+ (* 2 (if vp (transient--pixel-width " ") 1)))
               cw 0)))
     (if transient-force-single-column
         (dotimes (c cs)
@@ -3942,6 +3985,24 @@ as a button."
 called inside the correct buffer (see `transient--insert-group')
 and its value is returned to the caller."
   (transient--get-description obj))
+
+(cl-defmethod transient-format-description ((obj transient-value-preset))
+  (pcase-let* (((eieio description key set) obj)
+               ((eieio value) transient--prefix)
+               (active (seq-set-equal-p set value)))
+    (format
+     "%s %s"
+     (propertize (or description (format "Preset %s" key))
+                 'face (and active 'transient-argument))
+     (format (propertize "(%s)" 'face 'transient-delimiter)
+             (mapconcat (lambda (arg)
+                          (propertize
+                           arg 'face (cond (active 'transient-argument)
+                                           ((member arg value)
+                                            '((:weight demibold)
+                                              transient-inactive-argument))
+                                           ('transient-inactive-argument))))
+                        set " ")))))
 
 (cl-defmethod transient-format-description ((obj transient-group))
   "Format the description by calling the next method.  If the result

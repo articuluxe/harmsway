@@ -6,8 +6,8 @@
 ;; Homepage: https://github.com/tarsius/keycast
 ;; Keywords: multimedia
 
-;; Package-Requires: ((emacs "25.3") (compat "29.1.4.1"))
-;; Package-Version: 1.3.3
+;; Package-Requires: ((emacs "25.3") (compat "29.1.4.5"))
+;; Package-Version: 1.4.0
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -496,11 +496,11 @@ t to show the actual COMMAND, or a symbol to be shown instead."
                    (?r . ,r)
                    (?R . ,(propertize r 'face 'shadow)))))))))
 
-(defun keycast--read-passwd (fn prompt &optional confirm default)
+(define-advice read-passwd
+    (:around (fn prompt &optional confirm default) keycast)
+  "Suppress echoing keys while reading passwords."
   (let ((keycast--reading-passwd t))
     (funcall fn prompt confirm default)))
-
-(advice-add 'read-passwd :around #'keycast--read-passwd)
 
 (defun keycast-bottom-right-window-p ()
   (and (window-at-side-p nil 'right)

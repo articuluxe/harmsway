@@ -203,13 +203,17 @@
     (sideline--delete-ovs)
     (setq-local sideline--overlays (make-hash-table)))
   (setq sideline--render-data-wapp (make-hash-table)
-        sideline--ex-bound-or-point t  ; render immediately
+        sideline--ex-bound-or-point t  ; reset, render immediately
         sideline--text-scale-mode-amount text-scale-mode-amount)
-  (add-hook 'post-command-hook #'sideline--post-command -90 t))
+  (add-hook 'post-command-hook #'sideline--post-command -90 t)
+  (add-hook 'before-revert-hook #'sideline--before-revert nil t)
+  ;; Render immediately after reopened file!
+  (sideline--post-command))
 
 (defun sideline--disable ()
   "Disable `sideline' in current buffer."
   (remove-hook 'post-command-hook #'sideline--post-command t)
+  (remove-hook 'before-revert-hook #'sideline--before-revert t)
   (sideline--reset))
 
 ;;;###autoload
@@ -661,6 +665,7 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
   "Render sideline once in the BUFFER."
   (sideline--with-buffer (or buffer (current-buffer))
     (unless (funcall sideline-inhibit-display-function)
+      (force-window-update (selected-window))
       (setq sideline--render-data
             `( :eol ,(sideline--window-end)
                :bol ,(window-start)
@@ -710,6 +715,10 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
             sideline--ex-face-remapping-alist remapping-alist
             sideline-render-this-command nil)
       t)))
+
+(defun sideline--before-revert (&rest _)
+  "Before revert."
+  (sideline--reset))
 
 (defun sideline--post-command ()
   "Post command."

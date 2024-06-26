@@ -213,10 +213,6 @@ This variable only applies if `verb-handler-json' is being used to
 handle JSON responses."
   :type 'function)
 
-(defcustom verb-enable-log t
-  "When non-nil, log different events in the *Verb Log* buffer."
-  :type 'boolean)
-
 (defcustom verb-post-response-hook nil
   "Hook run after receiving an HTTP response.
 The hook is run with the response body buffer as the current buffer.
@@ -275,6 +271,11 @@ Note the the point must be between the two code tag delimiters
 A preview of the value of a Verb variable will be shown in the
 minibuffer, when the point is moved over a code tag containing only
 a call to `verb-var'."
+  :type 'boolean)
+
+(defcustom verb-enable-log t
+  "When non-nil, log different events in the *Verb Log* buffer."
+  :group :verb
   :type 'boolean)
 
 (defface verb-http-keyword '((t :inherit font-lock-constant-face
@@ -456,7 +457,7 @@ If REMOVE is nil, add the necessary keywords to
         ["Export request to websocat" verb-export-request-on-point-websocat]
         "--"
         ["Customize Verb" verb-customize-group]
-        ["Show log" verb-show-log]))
+        ["Show log" verb-util-show-log]))
     map)
   "Keymap for `verb-mode'.")
 
@@ -480,12 +481,12 @@ more details on how to use it."
                     nil 'local))
         (add-hook 'post-command-hook #'verb--var-preview nil t)
         (when (buffer-file-name)
-          (verb--log nil 'I
-                     "Verb mode enabled in buffer: %s"
-                     (buffer-name))
-          (verb--log nil 'I "Org version: %s, GNU Emacs version: %s"
-                     (org-version)
-                     emacs-version)))
+          (verb-util--log nil 'I
+                          "Verb mode enabled in buffer: %s"
+                          (buffer-name))
+          (verb-util--log nil 'I "Org version: %s, GNU Emacs version: %s"
+                          (org-version)
+                          emacs-version)))
     ;; Disable verb-mode
     (verb--setup-font-lock-keywords t)
     (remove-hook 'completion-at-point-functions
@@ -803,9 +804,9 @@ Respects `org-use-property-inheritance'.  Matching is case-insensitive."
     ;; property already `upcase''d, but only if there is no `string=' the
     ;; `upcase''d value
     (seq-reduce (lambda (properties property)
-                 (if (string-prefix-p prefix property t)
-                     (cl-pushnew (upcase property) properties :test #'string=)
-                   properties))
+                  (if (string-prefix-p prefix property t)
+                      (cl-pushnew (upcase property) properties :test #'string=)
+                    properties))
                 (org-buffer-property-keys)
                 '())
     ;; 2) Get the value for each of those properties and return an alist
@@ -924,7 +925,7 @@ empty string, return nil.  KEY must NOT have the prefix
     (concat verb--metadata-prefix key)
     (assoc-string (oref rs metadata) t)
     cdr
-    verb--nonempty-string))
+    verb-util--nonempty-string))
 
 (defun verb--request-spec-post-process (rs)
   "Validate and prepare request spec RS to be used.
@@ -1411,7 +1412,8 @@ explicitly.  Lisp code tags are evaluated when exporting."
             (when (or (string= name (nth 0 x))
                       (equal choice (nth 1 x)))
               (funcall (nth 2 x) rs)
-              (verb--log nil 'I "Exported request to %s format" (nth 0 x))))
+              (verb-util--log nil 'I "Exported request to %s format"
+                              (nth 0 x))))
           verb-export-functions)))
 
 ;;;###autoload
@@ -1666,8 +1668,8 @@ NUM is this request's identification number."
       (kill-buffer response-buf)
       (let ((msg (format "Request error: could not connect to %s:%s"
                          (url-host url) (url-port url))))
-        (verb--log num 'E msg)
-        (verb--log num 'E "Error details: %s" http-error)
+        (verb-util--log num 'E msg)
+        (verb-util--log num 'E "Error details: %s" http-error)
         (user-error "%s" msg))))
 
   ;; No errors, continue to read response
@@ -1679,15 +1681,15 @@ NUM is this request's identification number."
     (widen)
     (goto-char (point-min))
     ;; Skip HTTP/1.X status line
-    (setq status-line (verb--nonempty-string
+    (setq status-line (verb-util--nonempty-string
                        (buffer-substring-no-properties (point)
                                                        (line-end-position))))
 
-    (verb--log num 'I "%s" status-line)
+    (verb-util--log num 'I "%s" status-line)
 
     (forward-line)
     ;; Skip all HTTP headers
-    (while (re-search-forward verb--http-header-parse-regexp
+    (while (re-search-forward verb-util--http-header-parse-regexp
                               (line-end-position) t)
       (let ((key (string-trim (match-string 1)))
             (value (string-trim (match-string 2))))
@@ -1756,7 +1758,7 @@ NUM is this request's identification number."
     (if binary-handler
         (progn
           ;; Response content is a binary format:
-          (verb--log num 'I "Using binary handler: %s" binary-handler)
+          (verb-util--log num 'I "Using binary handler: %s" binary-handler)
 
           (set-buffer-multibyte nil)
           (set-buffer-file-coding-system 'binary)
@@ -1764,7 +1766,7 @@ NUM is this request's identification number."
           (funcall binary-handler))
 
       ;; else: Response content is text:
-      (verb--log num 'I "Using text handler: %s" text-handler)
+      (verb-util--log num 'I "Using text handler: %s" text-handler)
 
       ;; Choose corresponding coding system for charset
       (setq coding-system (or (mm-charset-to-coding-system charset)
@@ -1817,7 +1819,7 @@ Return a new alist, does not modify HEADERS."
     (when accept
       (setq headers (cl-delete "Accept" headers
                                :key #'car
-                               :test #'verb--string=)))
+                               :test #'verb-util--string=)))
     ;; Encode all text to `us-ascii'
     (mapcar (lambda (e)
               (cons (verb--to-ascii (car e))
@@ -1884,7 +1886,7 @@ For more information, see `verb-advice-url'."
     (advice-remove 'url-http-handle-authentication
                    #'verb--http-handle-authentication)
     (when (and (fboundp 'zlib-available-p)
-	       (zlib-available-p))
+	           (zlib-available-p))
       (advice-remove 'zlib-decompress-region
                      #'verb--zlib-decompress-region))))
 
@@ -1977,22 +1979,22 @@ loaded into."
     ;; Look for headers that might get duplicated by url.el
     (dolist (h verb--url-pre-defined-headers)
       (when (assoc-string h url-request-extra-headers t)
-        (verb--log num 'W (concat "Header \"%s\" will appear duplicated "
-                                  "in the request, as url.el adds its "
-                                  "own version of it")
-                   h)))
+        (verb-util--log num 'W (concat "Header \"%s\" will appear duplicated "
+                                       "in the request, as url.el adds its "
+                                       "own version of it")
+                        h)))
 
     ;; Maybe log a warning if body is present but method usually
     ;; doesn't take one (like GET)
     (when (and (member url-request-method verb--bodyless-http-methods)
                url-request-data)
-      (verb--log num 'W "Body is present but request method is %s"
-                 url-request-method))
+      (verb-util--log num 'W "Body is present but request method is %s"
+                      url-request-method))
 
     ;; Workaround for "localhost" not working on Emacs 25
     (when (and (< emacs-major-version 26)
                (string= (url-host url) "localhost"))
-      (verb--log num 'W "Replacing localhost with 127.0.0.1")
+      (verb-util--log num 'W "Replacing localhost with 127.0.0.1")
       (setf (url-host url) "127.0.0.1"))
 
     ;; Send the request!
@@ -2020,7 +2022,7 @@ loaded into."
 
                (let ((msg (format "Error sending request: %s" (cadr err))))
                  ;; Log the error
-                 (verb--log num 'E msg)
+                 (verb-util--log num 'E msg)
                  ;; Signal it
                  (user-error "%s" msg)))))
 
@@ -2030,9 +2032,9 @@ loaded into."
              (verb-request-spec-url-to-string rs))
 
     ;; Log the request
-    (verb--log num 'I "%s %s"
-               (oref rs method)
-               (verb-request-spec-url-to-string rs))
+    (verb-util--log num 'I "%s %s"
+                    (oref rs method)
+                    (verb-request-spec-url-to-string rs))
 
     (pcase where
       ('other-window (switch-to-buffer-other-window response-buf))
@@ -2095,14 +2097,10 @@ buffer must contain the response's processed body."
 This function should be run `verb-show-timeout-warning' seconds after
 an HTTP request has been sent.  Show the warning only when response
 buffer BUFFER is live.  NUM is the request's identification number."
-  (verb--log num 'W "%s" "Request is taking longer than expected.")
+  (verb-util--log num 'W "%s" "Request is taking longer than expected.")
   (when (buffer-live-p buffer)
     (message "Request to %s is taking longer than expected"
              (verb-request-spec-url-to-string rs))))
-
-(defun verb--string= (s1 s2)
-  "Return non-nil if strings S1 and S2 are equal, ignoring case."
-  (string= (downcase s1) (downcase s2)))
 
 (defun verb--override-alist (original other &optional case-fold)
   "Override alist ORIGINAL with OTHER.
@@ -2123,7 +2121,7 @@ alist.  If CASE-FOLD is non-nil, ignore case when comparing KEYs."
           (setq result (cl-delete key result
                                   :key #'car
                                   :test (if case-fold
-                                            #'verb--string=
+                                            #'verb-util--string=
                                           #'string=))))
         (push key-value result)
         ;; Remember we deleted this key from ORIGINAL so that we don't
@@ -2351,7 +2349,7 @@ tags are delimited with `verb-code-tag-delimiters'."
         (let ((result (verb--eval-string (match-string 1) context)))
           (cond
            ((stringp result)
-            (replace-match result))
+            (replace-match result nil t))
            ((bufferp result)
             (goto-char (match-beginning 0))
             (delete-region (match-beginning 0) (match-end 0))
@@ -2359,7 +2357,7 @@ tags are delimited with `verb-code-tag-delimiters'."
             (when (buffer-local-value 'verb-kill-this-buffer result)
               (kill-buffer result)))
            (t
-            (replace-match (format "%s" result)))))))))
+            (replace-match (format "%s" result) nil t))))))))
 
 (defun verb--eval-code-tags-in-string (s &optional context)
   "Like `verb--eval-code-tags-in-buffer', but in a string S.
@@ -2410,7 +2408,7 @@ and fragment component of a URL with no host or scheme defined."
     url-obj))
 
 (define-error 'verb-empty-spec
-  "Request specification has no contents.")
+              "Request specification has no contents.")
 
 (defun verb-request-spec-from-string (text &optional metadata)
   "Create and return a request specification from string TEXT.
@@ -2437,14 +2435,18 @@ be \"http\" or \"https\".  If the scheme is not present, the URL will
 be interpreted as a path, plus (if present) query string and fragment.
 Therefore, using just \"example.org\" (note no scheme present) as URL
 will result in a URL with its path set to \"example.org\", not as its
-host.
+host.  URL may end in a backslash, in which case the following line
+will be appended to it (ignoring its leading whitespace).  The process
+is repeated as long as the current line ends with a backslash.
 
 Each HEADER must be in the form of KEY: VALUE.  KEY must be a nonempty
 string, VALUE can be the empty string.  HEADER may also start with
 \"#\", in which case it will be ignored.
 
 BODY can contain arbitrary data.  Note that there must be a blank
-line between the HEADER list and BODY.
+line between the HEADER list and BODY.  If BODY contains a properly
+formatted Babel source block, the block beginning and end lines will
+be removed.
 
 As a special case, if the text specification consists exclusively of
 comments and/or whitespace, or is the empty string, signal
@@ -2461,7 +2463,7 @@ METADATA."
       (insert text)
       (goto-char (point-min))
 
-      ;;; COMMENTS / PROPERTIES
+      ;;; COMMENTS + PROPERTIES
 
       ;; Skip initial blank lines, comments and properties
       (while (and (re-search-forward "^\\s-*\\(\\(:\\|#\\).*\\)?$"
@@ -2478,23 +2480,48 @@ METADATA."
 
       ;; Read HTTP method and URL line
       ;; First, expand any code tags on it (if any)
-      (let ((case-fold-search t)
-            (line (verb--eval-code-tags-in-string
-                   (buffer-substring-no-properties (point)
-                                                   (line-end-position))
-                   context)))
+      (let* ((case-fold-search t)
+             (get-line-fn (lambda ()
+                            (verb--eval-code-tags-in-string
+                             (buffer-substring-no-properties
+                              (point) (line-end-position))
+                             context)))
+             (line (funcall get-line-fn)))
+        ;; Try to match:
+        ;; A) METHOD URL
+        ;; B) METHOD
         (if (string-match (concat "^\\s-*\\("
                                   (verb--http-methods-regexp)
                                   "\\)\\s-+\\(.+\\)$")
                           line)
-            ;; Matched method + URL, store them
-            (setq method (upcase (match-string 1 line))
-                  url (match-string 2 line))
+            ;; A) Matched method + URL, store them
+            (progn
+              (setq method (upcase (match-string 1 line))
+                    url (string-remove-suffix "\\" (match-string 2 line)))
+
+              ;; Subcase:
+              ;; If URL ends with '\', append following lines to it
+              ;; until one of them does not end with '\' (ignoring
+              ;; leading whitespace, for alignment).
+              (while (string-suffix-p "\\" line)
+                (end-of-line)
+                (if (eobp)
+                    (user-error
+                     "Backslash in URL not followed by additional line")
+                  (forward-char))
+                (back-to-indentation)
+                (setq line (funcall get-line-fn))
+                (when (string-empty-p line)
+                  (user-error
+                   "Backslash in URL not followed by additional content"))
+
+                (setq url (concat url (string-remove-suffix "\\" line)))))
+
           (when (string-match (concat "^\\s-*\\("
                                       (verb--http-methods-regexp)
                                       "\\)\\s-*$")
                               line)
-            ;; Matched method only, store it
+            ;; B) Matched method only, store it
             (setq method (upcase (match-string 1 line))))))
 
       ;; We've processed the URL line, move to the end of it
@@ -2532,7 +2559,7 @@ METADATA."
       (while (re-search-forward "^\\(.+\\)$" (line-end-position) t)
         (let ((line (match-string 1)))
           ;; Check if line matches KEY: VALUE
-          (if (string-match verb--http-header-parse-regexp line)
+          (if (string-match verb-util--http-header-parse-regexp line)
               ;; Line matches, trim KEY and VALUE and store them
               (push (cons (string-trim (match-string 1 line))
                           (string-trim (match-string 2 line)))
@@ -2569,7 +2596,7 @@ METADATA."
                           (concat verb-trim-body-end "$") "" rest)
                        rest))))
       (when (buffer-local-value 'verb--multipart-boundary context)
-        (verb--log nil 'W "Detected an unfinished multipart form"))
+        (verb-util--log nil 'W "Detected an unfinished multipart form"))
       ;; Return a `verb-request-spec'
       (verb-request-spec :method method
                          :url (unless (string-empty-p (or url ""))

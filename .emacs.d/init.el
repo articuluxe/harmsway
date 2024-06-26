@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-21 14:07:32 dharms>
+;; Modified Time-stamp: <2024-06-26 10:00:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2142,6 +2142,7 @@ ARGS are the additional arguments."
   (setq lambda-line-status-invert nil)
   (setq lambda-line-syntax t)
   (setq lambda-line-icon-time t)        ;only show clock icon
+  (setq lambda-line-which-func t)
   :config
   (lambda-line-mode)
   (add-hook 'window-setup-hook #'harmsway-enable-lambda-line)

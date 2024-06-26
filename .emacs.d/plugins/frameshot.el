@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/tarsius/frameshot
 ;; Keywords: multimedia
 
-;; Package-Requires: ((emacs "25.3") (compat "29.1.4.1"))
+;; Package-Requires: ((emacs "25.3") (compat "29.1.4.5"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -221,7 +221,7 @@ The drop shadow details are taken from `frameshot-config'."
     (setq frameshot-buffer (get-buffer-create " *frameshot*")))
   (with-current-buffer frameshot-buffer
     (goto-char (point-max))
-    (insert "\n$ " (mapconcat #'identity (cons program args) " ") "\n"))
+    (insert "\n$ " (string-join (cons program args) " ") "\n"))
   (apply #'call-process program nil frameshot-buffer nil args))
 
 ;;; Hook functions

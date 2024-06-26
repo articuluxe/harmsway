@@ -251,6 +251,14 @@
  '(magit-diff-file-heading-highlight     ((t (:inherit (aircon-header)))))
  '(magit-diff-revision-summary-highlight ((t (:inherit (aircon-header)))))
 
+ '(magit-process-ok              ((t (:inherit (success)))))
+ '(magit-process-ng              ((t (:inherit (error)))))
+
+ '(transient-key-exit            ((t (:inherit (error)))))
+ '(transient-key-noop            ((t (:inherit (shadow)))))
+ '(transient-key-return          ((t (:inherit (warning)))))
+ '(transient-key-stay            ((t (:inherit (success)))))
+
  '(dired-directory      ((t (:inherit (aircon-cello bold)))))
  '(dired-header         ((t (:inherit (dired-directory)))))
  '(dired-symlink        ((t (:inherit (italic link)))))
@@ -340,6 +348,8 @@
  '(elfeed-log-info-level-face      ((t (:inherit (aircon-sapphire)))))
  '(elfeed-log-warn-level-face      ((t (:inherit (warning)))))
 
+ '(sh-heredoc                      ((t (:inherit (aircon-goblin italic)))))
+ '(sh-quoted-exec                  ((t (:inherit (aircon-hibiscus)))))
  )
 
 ;;;###autoload

@@ -4,8 +4,8 @@
 
 ;; Author: Jakub Kadlčík <frostyx@email.cz>
 ;; URL: https://github.com/FrostyX/dired-open-with
-;; Version: 1.0
-;; Package-Requires: ((emacs "27.1"))
+;; Version: 1.1
+;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: files, dired, xdg, open-with
 
 ;;; License:
@@ -57,7 +57,7 @@ Such dialogs are known from GUI file managers, when right-clicking a file."
             "You are running an unsupported operating system or desktop "
             "environment. It doesn't comply with the XDG specification.")))
 
-  (let* ((path (dired-get-file-for-visit))
+  (let* ((path (file-truename (dired-get-file-for-visit)))
          (apps (dired-open-with--applications-for-file path))
          (app (dired-open-with--completing-read apps))
          (cmd (dired-open-with--xdg-format-exec (gethash "Exec" app) path)))
@@ -82,9 +82,14 @@ selected application."
                  (concat
                   (make-string (- (+ max-length 2) (length name)) ?\s)
                   annotation)))))
-         (value (completing-read
-                 "Open with: "
-                 (mapcar (lambda (item) (gethash "Name" (cdr item))) items))))
+         (coll (mapcar (lambda (item) (gethash "Name" (cdr item))) items))
+         (value
+          (completing-read
+           "Open with: "
+           (lambda (string pred action)
+             (if (eq action 'metadata)
+                 `(metadata (display-sort-function . identity))
+               (complete-with-action action coll string pred))))))
     (cdr (assoc value items))))
 
 (defun dired-open-with--applications-for-file (path)
@@ -108,7 +113,7 @@ Every application is represented as a Hash Table."
   "Format XDG application EXEC string with PATH and return an executable command.
 For the list of keys and their meaning, please see
 https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s07.html"
-  (let* ((path (shell-quote-argument (file-truename path)))
+  (let* ((path (shell-quote-argument path))
          (url path)
          (spec `((?f . ,path)
                  (?F . ,path)

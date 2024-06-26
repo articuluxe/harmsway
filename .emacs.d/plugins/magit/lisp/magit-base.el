@@ -772,7 +772,7 @@ This is similar to `read-string', but
                   (let ((parts (nconc (list ,@(mapcar #'cadr clauses))
                                       ,(and verbose '(list "[C-g] to abort")))))
                     (concat ,prompt
-                            (mapconcat #'identity (butlast parts) ", ")
+                            (string-join (butlast parts) ", ")
                             ", or "  (car (last parts)) " "))
                   ',(mapcar #'car clauses))
             ,@(--map `(,(car it) ,@(cddr it)) clauses))
@@ -816,7 +816,7 @@ ACTION is a member of option `magit-slow-confirm'."
             ((length= items 1)
              (and (magit-y-or-n-p prompt action) items))
             ((length> items 1)
-             (and (magit-y-or-n-p (concat (mapconcat #'identity items "\n")
+             (and (magit-y-or-n-p (concat (string-join items "\n")
                                           "\n\n" prompt-n)
                                   action)
                   items)))
@@ -861,16 +861,12 @@ See info node `(magit)Debugging Tools' for more information."
                    (delete-dups
                     (cl-mapcan
                      (lambda (lib)
-                       (let ((path (locate-library lib)))
-                         (cond
-                          (path
-                           (list (file-name-directory path)))
-                          ((not (equal lib "libgit"))
-                           (error "Cannot find mandatory dependency %s" lib)))))
+                       (if-let ((path (locate-library lib)))
+                           (list (file-name-directory path))
+                         (error "Cannot find mandatory dependency %s" lib)))
                      '(;; Like `LOAD_PATH' in `default.mk'.
                        "compat"
                        "dash"
-                       "libgit"
                        "transient"
                        "with-editor"
                        ;; Obviously `magit' itself is needed too.
@@ -1121,7 +1117,7 @@ the value in the symbol's `saved-value' property if any, or
 ;;; Kludges for Info Manuals
 
 ;;;###autoload
-(defun Info-follow-nearest-node--magit-gitman (fn &optional fork)
+(define-advice Info-follow-nearest-node (:around (fn &optional fork) gitman)
   (let ((node (Info-get-token
                (point) "\\*note[ \n\t]+"
                "\\*note[ \n\t]+\\([^:]*\\):\\(:\\|[ \n\t]*(\\)?")))
@@ -1132,19 +1128,12 @@ the value in the symbol's `saved-value' property if any, or
                   (man (match-string 1 node)))
           ('woman (require 'woman)
                   (woman (match-string 1 node)))
-          (_
-           (user-error "Invalid value for `magit-view-git-manual-method'")))
+          (_ (user-error "Invalid value for `magit-view-git-manual-method'")))
       (funcall fn fork))))
-
-;;;###autoload
-(advice-add 'Info-follow-nearest-node :around
-            #'Info-follow-nearest-node--magit-gitman)
 
 ;; When making changes here, then also adjust the copy in docs/Makefile.
 ;;;###autoload
-(advice-add 'org-man-export :around #'org-man-export--magit-gitman)
-;;;###autoload
-(defun org-man-export--magit-gitman (fn link description format)
+(define-advice org-man-export (:around (fn link description format) gitman)
   (if (and (eq format 'texinfo)
            (string-prefix-p "git" link))
       (string-replace "%s" link "
@@ -1198,10 +1187,9 @@ Magit."
                                     default-directory)))
                           (list (tramp-get-method-parameter
                                  vec 'tramp-remote-shell)
-                                (mapconcat #'identity
-                                           (tramp-get-method-parameter
-                                            vec 'tramp-remote-shell-args)
-                                           " "))))))
+                                (string-join (tramp-get-method-parameter
+                                              vec 'tramp-remote-shell-args)
+                                             " "))))))
            ,@body)
        ,@body)))
 

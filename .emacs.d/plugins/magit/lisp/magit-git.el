@@ -65,41 +65,6 @@
   (cl-pushnew 'orig-rev eieio--known-slot-names)
   (cl-pushnew 'number eieio--known-slot-names))
 
-;;; Git implementations
-
-(defvar magit-inhibit-libgit t
-  "Whether to inhibit the use of libgit.
-Use of libgit is inhibited by default because support for libgit
-in magit is only a stub for now.  There is no benefit in using
-it.")
-
-(defvar magit--libgit-available-p 'unknown
-  "Whether libgit is available.
-Use the function by the same name instead of this variable.")
-
-(defun magit--libgit-available-p ()
-  (if (eq magit--libgit-available-p 'unknown)
-      (setq magit--libgit-available-p
-            (and module-file-suffix
-                 (let ((libgit (locate-library "libgit")))
-                   (and libgit
-                        (or (locate-library "libegit2")
-                            (let ((load-path
-                                   (cons (expand-file-name
-                                          (convert-standard-filename "build")
-                                          (file-name-directory libgit))
-                                         load-path)))
-                              (locate-library "libegit2")))))))
-    magit--libgit-available-p))
-
-(defun magit-gitimpl ()
-  "Return the Git implementation used in this repository."
-  (if (and (not magit-inhibit-libgit)
-           (not (file-remote-p default-directory))
-           (magit--libgit-available-p))
-      'libgit
-    'git))
-
 ;;; Options
 
 ;; For now this is shared between `magit-process' and `magit-git'.
@@ -772,7 +737,7 @@ See info node `(magit)Debugging Tools' for more information."
         (arg (and (or (null (car keys))
                       (string-prefix-p "--" (car keys)))
                   (pop keys)))
-        (key (mapconcat #'identity keys ".")))
+        (key (string-join keys ".")))
     (if (and magit--refresh-cache (not arg))
         (magit-config-get-from-cached-list key)
       (magit-git-items "config" arg "-z" "--get-all" key))))
@@ -783,7 +748,7 @@ Also see `magit-git-config-p'."
   (let ((arg (and (or (null (car keys))
                       (string-prefix-p "--" (car keys)))
                   (pop keys)))
-        (key (mapconcat #'identity keys ".")))
+        (key (string-join keys ".")))
     (equal (if magit--refresh-cache
                (car (last (magit-config-get-from-cached-list key)))
              (magit-git-str "config" arg "--bool" key))
@@ -794,7 +759,7 @@ Also see `magit-git-config-p'."
   (let ((arg (and (or (null (car keys))
                       (string-prefix-p "--" (car keys)))
                   (pop keys)))
-        (key (mapconcat #'identity keys ".")))
+        (key (string-join keys ".")))
     (if value
         (magit-git-success "config" arg key value)
       (magit-git-success "config" arg "--unset" key))
@@ -808,7 +773,7 @@ Also see `magit-git-config-p'."
   (let ((arg (and (or (null (car keys))
                       (string-prefix-p "--" (car keys)))
                   (pop keys)))
-        (var (mapconcat #'identity keys ".")))
+        (var (string-join keys ".")))
     (when (magit-get var)
       (magit-call-git "config" arg "--unset-all" var))
     (dolist (v values)
@@ -1088,10 +1053,16 @@ tracked file."
 (defun magit-tracked-files ()
   (magit-list-files "--cached"))
 
-(defun magit-untracked-files (&optional all files)
-  (magit-list-files "--other"
-                    (and (not all) "--exclude-standard")
-                    "--" files))
+(defun magit-untracked-files (&optional all files compact)
+  (if compact
+      (--mapcat (and (eq (aref it 0) ??)
+                     (list (substring it 3)))
+                (magit-git-items "status" "-z" "--porcelain"
+                                 (magit-ignore-submodules-p t)
+                                 "--" files))
+    (magit-list-files "--other"
+                      (and (not all) "--exclude-standard")
+                      "--" files)))
 
 (defun magit-modified-files (&optional nomodules files)
   (magit-git-items "diff-index" "-z" "--name-only"
@@ -2425,15 +2396,14 @@ and this option only controls what face is used.")
                  0 (length target) 'magit-branch-upstream nil target)
                 (setq upstream target)
                 (setq combined (delete target combined))))))
-        (mapconcat #'identity
-                   (flatten-tree `(,state
-                                   ,head
-                                   ,upstream
-                                   ,@(nreverse tags)
-                                   ,@(nreverse combined)
-                                   ,@(nreverse remotes)
-                                   ,@other))
-                   " ")))))
+        (string-join (flatten-tree `(,state
+                                     ,head
+                                     ,upstream
+                                     ,@(nreverse tags)
+                                     ,@(nreverse combined)
+                                     ,@(nreverse remotes)
+                                     ,@other))
+                     " ")))))
 
 (defun magit-object-type (object)
   (magit-git-string "cat-file" "-t" object))

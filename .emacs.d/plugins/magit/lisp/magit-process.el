@@ -516,7 +516,7 @@ and still alive), as well as the respective Magit status buffer.
 
 See `magit-start-process' for more information."
   (message "Running %s %s" (magit-git-executable)
-           (let ((m (mapconcat #'identity (flatten-tree args) " ")))
+           (let ((m (string-join (flatten-tree args) " ")))
              (remove-list-of-text-properties 0 (length m) '(face) m)
              m))
   (magit-start-git nil args))
@@ -717,7 +717,7 @@ Magit status buffer."
        " "
        (propertize (magit--ellipsis)
                    'font-lock-face 'magit-section-heading
-                   'help-echo (mapconcat #'identity (seq-take args global) " "))
+                   'help-echo (string-join (seq-take args global) " "))
        " "
        (propertize (mapconcat #'shell-quote-argument (seq-drop args global) " ")
                    'font-lock-face 'magit-section-heading))))
@@ -1015,8 +1015,9 @@ as argument."
 
 (add-hook 'magit-credential-hook #'magit-maybe-start-credential-cache-daemon)
 
-(defun tramp-sh-handle-start-file-process--magit-tramp-process-environment
-    (fn name buffer program &rest args)
+(define-advice tramp-sh-handle-start-file-process
+    (:around (fn name buffer program &rest args)
+             magit-tramp-process-environment)
   (if magit-tramp-process-environment
       (apply fn name buffer
              (car magit-tramp-process-environment)
@@ -1024,19 +1025,14 @@ as argument."
                      (cons program args)))
     (apply fn name buffer program args)))
 
-(advice-add 'tramp-sh-handle-start-file-process :around
-            #'tramp-sh-handle-start-file-process--magit-tramp-process-environment)
-
-(defun tramp-sh-handle-process-file--magit-tramp-process-environment
-    (fn program &optional infile destination display &rest args)
+(define-advice tramp-sh-handle-process-file
+    (:around (fn program &optional infile destination display &rest args)
+             magit-tramp-process-environment)
   (if magit-tramp-process-environment
       (apply fn "env" infile destination display
              (append magit-tramp-process-environment
                      (cons program args)))
     (apply fn program infile destination display args)))
-
-(advice-add 'tramp-sh-handle-process-file :around
-            #'tramp-sh-handle-process-file--magit-tramp-process-environment)
 
 (defvar-keymap magit-mode-line-process-map
   :doc "Keymap for `mode-line-process'."
@@ -1288,7 +1284,7 @@ Limited by `magit-process-error-tooltip-max-lines'."
       (let ((inhibit-message t))
         (when heading
           (setq lines (cons heading lines)))
-        (message (mapconcat #'identity lines "\n"))))))
+        (message (string-join lines "\n"))))))
 
 ;;; _
 (provide 'magit-process)
