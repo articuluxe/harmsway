@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2024-03-18 19:30:51 dharms>
+;; Modified Time-stamp: <2024-06-27 13:58:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -41,6 +41,15 @@
                             "Essential PragmataPro 14"
                             "mononoki 12"
                             "D2Coding 14"
+                            "BitstromWera Nerd Font Mono 14"
+                            "CommitMono Nerd Font Mono 14"
+                            "GeistMono Nerd Font Mono 14"
+                            "IntoneMono Nerd Font Mono 14"
+                            "Lilex Nerd Font Mono 14"
+                            "MartianMono Nerd Font Mono 14"
+                            "MonaspiceAr Nerd Font Mono 14"
+                            "UbuntuSansMono Nerd Font Mono 14"
+                            "ZedMono Nerd Font Mono 14"
                             "Victor Mono 14"
                             "Hasklig 14"
                             "Source Code Pro 13"
