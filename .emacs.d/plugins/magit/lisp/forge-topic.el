@@ -892,7 +892,7 @@ can be selected from the start."
 (defun forge--insert-topics (type heading topics)
   (when topics
     (let ((width (apply #'max (--map (length (oref it slug)) topics))))
-      (magit-insert-section ((eval type) nil t)
+      (magit-insert-section ((eval type) heading t)
         (magit-insert-heading
           (concat (magit--propertize-face (concat heading " ")
                                           'magit-section-heading)
@@ -1054,9 +1054,9 @@ This mode itself is never used directly."
           (insert (forge--fontify-markdown note) "\n\n")))
       (dolist (post (cons topic (oref topic posts)))
         (with-slots (author created body) post
-          (magit-insert-section section (post post)
-            (oset section heading-highlight-face
-                  'magit-diff-hunk-heading-highlight)
+          (magit-insert-section
+              ( post post nil
+                :heading-highlight-face 'magit-diff-hunk-heading-highlight)
             (let ((heading
                    (format-spec
                     forge-post-heading-format
