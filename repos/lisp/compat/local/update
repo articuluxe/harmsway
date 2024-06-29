@@ -1,1 +1,2 @@
 git checkout externals/compat
+git pull
