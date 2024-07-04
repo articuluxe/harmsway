@@ -1,2 +1,2 @@
-cp src/nano-theme.el ../../../../.emacs.d/plugins
+cp src/nano-theme*.el ../../../../.emacs.d/plugins
 cp src/nano-*-theme.el ../../../../.emacs.d/etc/themes
