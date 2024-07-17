@@ -7,7 +7,8 @@
 ;; Keywords: files
 ;; Version: 0.0.1
 ;; Created: 14th February 2014
-;; Package-Requires: ((dash "2.5.0"))
+;; Package-Requires: ((dash "2.5.0") (emacs "24.3"))
+;; URL: https://github.com/Fuco1/dired-hacks
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -41,6 +42,7 @@
 
 (require 'dash)
 (require 'dired)
+(require 'dired-aux) ;; for dired-dwim-target-directory
 
 (defgroup dired-hacks ()
   "Collection of useful dired additions."

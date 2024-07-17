@@ -1,7 +1,7 @@
 ;; base16-eva-dim-theme.el -- A base16 colorscheme
 
 ;;; Commentary:
-;; Base16: (https://github.com/tinted-theming/home)
+;; Base16: (https://github.com/chriskempson/base16)
 
 ;;; Authors:
 ;; Scheme: kjakapat (https://github.com/kjakapat)
@@ -11,7 +11,7 @@
 
 (require 'base16-theme)
 
-(defvar base16-eva-dim-theme-colors
+(defvar base16-eva-dim-colors
   '(:base00 "#2a3b4d"
     :base01 "#3d566f"
     :base02 "#4b6988"
@@ -34,7 +34,7 @@
 (deftheme base16-eva-dim)
 
 ;; Add all the faces to the theme
-(base16-theme-define 'base16-eva-dim base16-eva-dim-theme-colors)
+(base16-theme-define 'base16-eva-dim base16-eva-dim-colors)
 
 ;; Mark the theme as provided
 (provide-theme 'base16-eva-dim)

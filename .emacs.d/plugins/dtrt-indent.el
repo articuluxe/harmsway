@@ -5,7 +5,7 @@
 
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
-;; Version: 1.18
+;; Version: 1.19
 ;; Keywords: convenience files languages c
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -376,6 +376,7 @@ quote, for example.")
     (scala-mode      c/c++/java    scala-indent:step)    ; Scala
 
     ;; modes with treesitter enabled
+    (ada-ts-mode     ada           ada-ts-mode-indent-offset)
     (c-ts-mode       c/c++/java    c-ts-mode-indent-offset)
     (c++-ts-mode     c/c++/java    c-ts-mode-indent-offset)
     (go-ts-mode      c/c++/java    go-ts-mode-indent-offset)

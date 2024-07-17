@@ -858,7 +858,7 @@ not be evaluated safely."
        ;; Functions taking a function as first argument,
        ;; and with functions as keyword arguments :test, :test-not, :key
        ((memq head '(cl-reduce cl-remove-if cl-remove-if-not
-                     cl-find-if cl-find-if not
+                     cl-find-if cl-find-if-not
                      cl-position-if cl-position-if-not
                      cl-count-if cl-count-if-not
                      cl-member-if cl-member-if-not
@@ -2309,12 +2309,10 @@ directly."
                               (symbol-name name))
               (relint--check-alist-any re-arg name pos (cons 2 path))
               (push name relint--checked-variables))
-             ((string-match-p (rx "-mode-alist" eos)
-                              (symbol-name name))
+             ((string-suffix-p "-mode-alist" (symbol-name name))
               (relint--check-list-any re-arg name pos (cons 2 path))
               (push name relint--checked-variables))
-             ((string-match-p (rx "-rules-list" eos)
-                              (symbol-name name))
+             ((string-suffix-p "-rules-list" (symbol-name name))
               (relint--check-rules-list re-arg name pos (cons 2 path))
               (push name relint--checked-variables))
              ((string-match-p (rx (or (seq (or bos ?-) "treesit")

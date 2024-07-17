@@ -333,6 +333,12 @@ an error."
 (defvar-local forge--buffer-topics-spec nil)
 (put 'forge--buffer-topics-spec 'permanent-local t)
 
+(defun forge--init-buffer-topics-spec ()
+  (unless forge--buffer-topics-spec
+    (setq forge--buffer-topics-spec
+          (clone forge-status-buffer-default-topic-filters))))
+(add-hook 'magit-status-mode-hook #'forge--init-buffer-topics-spec)
+
 (defclass forge--topics-spec ()
   ((type        :documentation "\
 Limit list based on topic type."
@@ -671,25 +677,25 @@ can be selected from the start."
    nil t
    (and topic (forge--format-topic-milestone topic))))
 
-(defun forge-read-topic-labels (&optional topic)
-  (let* ((repo (forge-get-repository (or topic :tracked)))
-         (crm-separator ","))
+(defun forge-read-topic-labels (&optional obj)
+  (let ((crm-separator ","))
     (magit-completing-read-multiple
      "Labels: "
-     (mapcar #'cadr (oref repo labels))
+     (forge--format-labels (and obj (forge-get-repository obj)))
      nil t
-     (and topic (mapconcat #'car (closql--iref topic 'labels) ",")))))
+     (and (forge-topic-p obj)
+          (forge--format-labels obj crm-separator)))))
 
-(defun forge-read-topic-marks (&optional topic)
-  (let ((marks (mapcar #'car (forge-sql [:select name :from mark])))
-        (crm-separator ","))
+(defun forge-read-topic-marks (&optional obj)
+  (let ((crm-separator ","))
     (magit-completing-read-multiple
-     "Marks: " marks nil t
-     (and topic (mapconcat #'car (closql--iref topic 'marks) ",")))))
+     "Marks: " (forge--format-marks) nil t
+     (and (forge-topic-p obj)
+          (forge--format-marks obj crm-separator)))))
 
 (defun forge-read-topic-assignees (&optional topic)
   (let* ((repo (forge-get-repository (or topic :tracked)))
-         (value (and topic (closql--iref topic 'assignees)))
+         (value (and topic (oref topic assignees)))
          (choices (mapcar #'cadr (oref repo assignees)))
          (crm-separator ","))
     (magit-completing-read-multiple
@@ -697,17 +703,17 @@ can be selected from the start."
      (if (forge--childp repo 'forge-gitlab-repository)
          t ; Selecting something else would fail later on.
        'confirm)
-     (mapconcat #'car value ","))))
+     (mapconcat #'cadr value ","))))
 
 (defun forge-read-topic-review-requests (&optional topic)
   (let* ((repo (forge-get-repository (or topic :tracked)))
-         (value (and topic (closql--iref topic 'review-requests)))
+         (value (and topic (oref topic review-requests)))
          (choices (mapcar #'cadr (oref repo assignees)))
          (crm-separator ","))
     (magit-completing-read-multiple
      "Request review from: " choices nil
      'confirm
-     (mapconcat #'car value ","))))
+     (mapconcat #'cadr value ","))))
 
 (defun forge--completing-read ( prompt collection &optional
                                 predicate require-match initial-input
@@ -816,23 +822,56 @@ can be selected from the start."
                                    id))))
     (magit--propertize-face str 'forge-topic-label)))
 
-(defun forge--format-topic-labels (topic)
-  (and-let* ((labels (closql--iref topic 'labels)))
-    (mapconcat (pcase-lambda (`(,name ,color ,_description))
-                 (let* ((background (forge--sanitize-color color))
-                        (foreground (forge--contrast-color background)))
-                   (magit--propertize-face
-                    name `(( :background ,background
-                             :foreground ,foreground)
-                           forge-topic-label))))
-               labels " ")))
+(defun forge--format-labels (&optional arg concat)
+  (and-let*
+      ((local t)
+       (labels (cond
+                ((eieio-object-p arg)
+                 (oref arg labels))
+                ((forge-buffer-repository)
+                 (forge-sql-cdr `[:select label:* :from label :where
+                                  ,(if arg
+                                       '(and (= repository $s1)
+                                             (in name $v2))
+                                     '(= repository $s1))
+                                  :order-by [(asc name)]]
+                                forge-buffer-repository
+                                (vconcat arg)))
+                (t
+                 (setq local nil)
+                 (forge-sql `[:select :distinct name :from label
+                             ,@(and arg '(:where (in name $v1)))
+                              :order-by [(asc name)]]
+                            (vconcat arg)))))
+       (format (if local
+                   (pcase-lambda (`(,_id ,name ,color ,_description))
+                     (let* ((background (forge--sanitize-color color))
+                            (foreground (forge--contrast-color background)))
+                       (magit--propertize-face
+                        name `(( :background ,background
+                                 :foreground ,foreground)
+                               forge-topic-label))))
+                 (pcase-lambda (`(,name))
+                   (magit--propertize-face name 'forge-topic-label)))))
+    (if concat
+        (mapconcat format labels (if (stringp concat) concat " "))
+      (mapcar format labels))))
 
-(defun forge--format-topic-marks (topic)
-  (and-let* ((marks (closql--iref topic 'marks)))
-    (mapconcat (pcase-lambda (`(,name ,face ,_description))
-                 (magit--propertize-face
-                  name (list 'forge-topic-label face)))
-               marks " ")))
+(defun forge--format-marks (&optional arg concat)
+  (and-let* ((marks (if (forge-topic--eieio-childp arg)
+                        (oref arg marks)
+                      ;; Unlike labels, marks are not repo-specific.
+                      (when (forge-repository-p arg) (setq arg nil))
+                      (forge-sql-cdr `[:select * :from mark
+                                       ,@(and arg '(:where (in name $v1)))
+                                       :order-by [(asc name)]]
+                                     (vconcat arg))))
+             (format (pcase-lambda (`(,_id ,name ,face ,_description))
+                       (magit--propertize-face
+                        name (list face 'forge-topic-label)))))
+    (if concat
+        (mapconcat format marks (if (stringp concat) concat " "))
+      (mapcar format marks))))
 
 (defun forge--format-topic-state (topic)
   (with-slots (state) topic
@@ -857,15 +896,15 @@ can be selected from the start."
        ('done    'forge-topic-done)))))
 
 (defun forge--format-topic-assignees (topic)
-  (and-let* ((assignees (closql--iref topic 'assignees)))
+  (and-let* ((assignees (oref topic assignees)))
     (mapconcat #'forge--format-person assignees ", ")))
 
 (defun forge--format-topic-review-requests (topic)
-  (and-let* ((review-requests (closql--iref topic 'review-requests)))
+  (and-let* ((review-requests (oref topic review-requests)))
     (mapconcat #'forge--format-person review-requests ", ")))
 
 (defun forge--format-person (person)
-  (pcase-let ((`(,login ,name) person))
+  (pcase-let ((`(,_id ,login ,name) person))
     (format "%s%s (@%s)"
             (forge--format-avatar login)
             name login)))
@@ -921,9 +960,9 @@ can be selected from the start."
         (forge--insert-pullreq-commits topic)))))
 
 (defun forge--insert-topic-labels (topic &optional separate)
-  (and-let* ((labels (closql--iref topic 'labels)))
+  (and-let* ((labels (oref topic labels)))
     (prog1 t
-      (pcase-dolist (`(,name ,color ,description) labels)
+      (pcase-dolist (`(,_id ,name ,color ,description) labels)
         (let* ((background (forge--sanitize-color color))
                (foreground (forge--contrast-color background)))
           (if separate (insert " ") (setq separate t))
@@ -939,9 +978,9 @@ can be selected from the start."
               (overlay-put o 'help-echo description))))))))
 
 (defun forge--insert-topic-marks (topic &optional separate)
-  (and-let* ((marks (closql--iref topic 'marks)))
+  (and-let* ((marks (oref topic marks)))
     (prog1 t
-      (pcase-dolist (`(,name ,face ,description) marks)
+      (pcase-dolist (`(,_id ,name ,face ,description) marks)
         (if separate (insert " ") (setq separate t))
         (insert name)
         (let ((o (make-overlay (- (point) (length name)) (point))))
@@ -1031,9 +1070,8 @@ This mode itself is never used directly."
          (magit-generate-buffer-name-function (lambda (_mode _value) name)))
     (magit-setup-buffer-internal
      (if (forge-issue-p topic) #'forge-issue-mode #'forge-pullreq-mode)
-     t `((forge-buffer-topic ,topic)
-         (default-directory ,(or (forge-get-worktree repo) "/")))
-     name)
+     t `((forge-buffer-topic ,topic))
+     name (or (forge-get-worktree repo) "/"))
     (forge-topic-mark-read topic)))
 
 (defun forge-topic-refresh-buffer ()
@@ -1413,11 +1451,13 @@ This mode itself is never used directly."
 
 (transient-define-suffix forge-topic-set-labels (labels)
   "Edit the LABELS of the current topic."
-  :class 'forge--topic-set-slot-command :slot 'labels)
+  :class 'forge--topic-set-slot-command :slot 'labels
+  :formatter (lambda (topic) (forge--format-labels topic t)))
 
 (transient-define-suffix forge-topic-set-marks (marks)
   "Edit the MARKS of the current topic."
-  :class 'forge--topic-set-slot-command :slot 'marks)
+  :class 'forge--topic-set-slot-command :slot 'marks
+  :formatter (lambda (topic) (forge--format-marks topic t)))
 
 (transient-define-suffix forge-topic-set-assignees (assignees)
   "Edit the ASSIGNEES of the current topic."

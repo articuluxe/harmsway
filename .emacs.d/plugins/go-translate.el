@@ -6,7 +6,7 @@
 ;; URL: https://github.com/lorniu/go-translate
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: convenience
-;; Version: 3.0.5
+;; Version: 3.0.8
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -69,13 +69,9 @@
 (require 'gt-engine-stardict)
 (require 'gt-engine-youdao)
 (require 'gt-engine-chatgpt)
+(require 'gt-engine-libre)
 (require 'gt-engine-echo)
 (require 'gt-text-utility)
-
-;; Compat old version
-(ignore-errors
-  (add-to-list 'load-path (expand-file-name "v2" (file-name-directory (or load-file-name (buffer-file-name)))))
-  (require 'go-translate-v2))
 
 ;;; Mask these commands in M-x
 (dolist (cmd '(gt-prompt-next-target
@@ -91,7 +87,7 @@
                gt-posframe-render-auto-close-handler
                gt-stardict-switch-dict
                gt-overlay-render-save-to-kill-ring))
-  (put cmd 'completion-predicate (lambda (&rest _) nil)))
+  (put cmd 'completion-predicate #'ignore))
 
 
 ;;; Presets
@@ -137,6 +133,7 @@ of `gt-default-translator' at any time in `gt-do-setup'."
       (Youdao-Dict          . ,(gt-youdao-dict-engine))
       (Youdao-Suggest       . ,(gt-youdao-suggest-engine))
       (StarDict             . ,(gt-stardict-engine))
+      (LibreTranslate       . ,(gt-libre-engine))
       (GoogleRPC            . ,(gt-google-rpc-engine))
       (Google-Summary       . ,(gt-google-engine :parse (gt-google-summary-parser)))
       (Bionic_Reading       . ,(gt-echo-engine :do '(clean br) :tag "Bionic Reading"))))
@@ -229,13 +226,15 @@ will be used as the default translator."
                          (if (gt-functionp ,name)
                              (replace-regexp-in-string "[ \n\t]+" " " (format "%s" ,name))
                            ,@body)))))
-      (list (desc1 taker (cl-flet ((desc2 (slot) (when (slot-boundp taker slot)
-                                                   (format "%s: %s" slot (slot-value taker slot)))))
-                           (format "<%s> %s" (eieio-object-class taker)
-                                   (string-join (remove nil (mapcar #'desc2 '(langs text pick prompt))) ", "))))
+      (list (desc1 taker (if (consp taker) (format "%s" taker)
+                           (cl-flet ((desc2 (slot) (when (slot-boundp taker slot)
+                                                     (format "%s: %s" slot (slot-value taker slot)))))
+                             (format "<%s> %s" (gt-desc taker)
+                                     (string-join (remove nil (mapcar #'desc2 '(langs text pick prompt))) ", ")))))
             (desc1 engines (mapconcat (lambda (en) (concat (format "%s" (oref en tag)) (if (gt-stream-p en) " (stream)")))
                                       (ensure-list (gt-ensure-plain engines)) ", "))
-            (desc1 render (format "<%s>" (eieio-object-class (gt-ensure-plain render))))))))
+            (desc1 render (if (consp render) (format "%s" render)
+                            (gt-desc (gt-ensure-plain render))))))))
 
 (defun gt-set-taker (&optional translator taker)
   "Set TRANSLATOR's TAKER to one from `gt-preset-takers'."
@@ -327,7 +326,7 @@ Define your default translator like this:
     (gt-translator :engines (gt-bing-engine)))
 
   (setq gt-default-translator
-    (gt-translator :taker (gt-taker :langs `(en fr) :text `sentence :prompt t)
+    (gt-translator :taker (gt-taker :langs '(en fr) :text 'sentence :prompt t)
                    :engines (list (gt-google-engine) (gt-deepl-engine))
                    :render (gt-buffer-render)))
 

@@ -6,8 +6,8 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.7.2
-;; Package-Requires: ((emacs "26.1") (compat "29.1.4.5") (seq "2.24"))
+;; Package-Version: 0.7.3
+;; Package-Requires: ((emacs "26.1") (compat "30.0.0.0") (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -84,17 +84,6 @@ similar defect.") :emergency))
 
 (defvar Man-notify-method)
 (defvar pp-default-function) ; since Emacs 29.1
-
-(defmacro static-if (condition then-form &rest else-forms)
-  "A conditional compilation macro.
-Evaluate CONDITION at macro-expansion time.  If it is non-nil,
-expand the macro to THEN-FORM.  Otherwise expand it to ELSE-FORMS
-enclosed in a `progn' form.  ELSE-FORMS may be empty."
-  (declare (indent 2)
-           (debug (sexp sexp &rest sexp)))
-  (if (eval condition lexical-binding)
-      then-form
-    (cons 'progn else-forms)))
 
 (defmacro transient--with-emergency-exit (id &rest body)
   (declare (indent defun))
@@ -2553,11 +2542,10 @@ value.  Otherwise return CHILDREN as is."
                  (transient--pop-keymap 'transient--redisplay-map)
                  (setq transient--redisplay-map new)
                  (transient--push-keymap 'transient--redisplay-map))
-               (transient--redisplay))))))
-  (transient--debug 'clear-current)
-  (setq transient-current-prefix nil)
-  (setq transient-current-command nil)
-  (setq transient-current-suffixes nil))
+               (transient--redisplay)))))
+    (setq transient-current-prefix nil)
+    (setq transient-current-command nil)
+    (setq transient-current-suffixes nil)))
 
 (defun transient--post-exit (&optional command)
   (transient--debug 'post-exit)
@@ -3779,68 +3767,39 @@ have a history of their own.")
     (insert "   "))
   (insert ?\n))
 
-(cl-defmethod transient--insert-group ((group transient-column))
+(cl-defmethod transient--insert-group ((group transient-column)
+                                       &optional skip-empty)
   (transient--maybe-pad-keys group)
   (dolist (suffix (oref group suffixes))
     (let ((str (transient-with-shadowed-buffer (transient-format suffix))))
-      (insert str)
-      (unless (string-match-p ".\n\\'" str)
-        (insert ?\n)))))
+      (unless (and (not skip-empty) (equal str ""))
+        (insert str)
+        (unless (string-match-p ".\n\\'" str)
+          (insert ?\n))))))
 
 (cl-defmethod transient--insert-group ((group transient-columns))
-  (let* ((columns
-          (mapcar
-           (lambda (column)
-             (transient--maybe-pad-keys column group)
-             (transient-with-shadowed-buffer
-               (let* ((transient--pending-group column)
-                      (rows (mapcar #'transient-format (oref column suffixes))))
-                 (if-let ((desc (transient-format-description column)))
-                     (cons desc rows)
-                   rows))))
-           (oref group suffixes)))
-         (vp (or (oref transient--prefix variable-pitch)
-                 transient-align-variable-pitch))
-         (rs (apply #'max (mapcar #'length columns)))
-         (cs (length columns))
-         (cw (mapcar (let ((widths (oref transient--prefix column-widths)))
-                       (lambda (col)
-                         (apply
-                          #'max
-                          (if-let ((min (pop widths)))
-                              (if vp (* min (transient--pixel-width " ")) min)
-                            0)
-                          (mapcar (if vp #'transient--pixel-width #'length)
-                                  col))))
-                     columns))
-         (cc (transient--seq-reductions-from
-              (apply-partially #'+ (* 2 (if vp (transient--pixel-width " ") 1)))
-              cw 0)))
-    (if transient-force-single-column
-        (dotimes (c cs)
-          (dotimes (r rs)
-            (when-let ((cell (nth r (nth c columns))))
-              (unless (equal cell "")
-                (insert cell ?\n))))
-          (unless (= c (1- cs))
-            (insert ?\n)))
-      (dotimes (r rs)
-        (dotimes (c cs)
-          (if vp
-              (progn
-                (when-let ((cell (nth r (nth c columns))))
-                  (insert cell))
-                (if (= c (1- cs))
-                    (insert ?\n)
-                  (insert (propertize " " 'display
-                                      `(space :align-to (,(nth (1+ c) cc)))))))
-            (when (> c 0)
-              (insert (make-string (max 1 (- (nth c cc) (current-column)))
-                                   ?\s)))
-            (when-let ((cell (nth r (nth c columns))))
-              (insert cell))
-            (when (= c (1- cs))
-              (insert ?\n))))))))
+  (if transient-force-single-column
+      (dolist (group (oref group suffixes))
+        (transient--insert-group group t))
+    (let* ((columns
+            (mapcar
+             (lambda (column)
+               (transient--maybe-pad-keys column group)
+               (transient-with-shadowed-buffer
+                 `(,@(and-let* ((desc (transient-format-description column)))
+                       (list desc))
+                   ,@(let ((transient--pending-group column))
+                       (mapcar #'transient-format (oref column suffixes))))))
+             (oref group suffixes)))
+           (stops (transient--column-stops columns)))
+      (dolist (row (apply #'transient--mapn #'list columns))
+        (let ((stops stops))
+          (dolist (cell row)
+            (let ((stop (pop stops)))
+              (when cell
+                (transient--align-to stop)
+                (insert cell)))))
+        (insert ?\n)))))
 
 (cl-defmethod transient--insert-group ((group transient-subgroups))
   (let ((subgroups (oref group suffixes)))
@@ -4154,6 +4113,28 @@ If the OBJ's `key' is currently unreachable, then apply the face
       (set-window-buffer nil (current-buffer))
       (car (window-text-pixel-size
             nil (line-beginning-position) (point))))))
+
+(defun transient--column-stops (columns)
+  (let* ((var-pitch (or transient-align-variable-pitch
+                        (oref transient--prefix variable-pitch)))
+         (char-width (and var-pitch (transient--pixel-width " "))))
+    (transient--seq-reductions-from
+     (apply-partially #'+ (* 2 (if var-pitch char-width 1)))
+     (transient--mapn
+      (lambda (cells min)
+        (apply #'max
+               (if min (if var-pitch (* min char-width) min) 0)
+               (mapcar (if var-pitch #'transient--pixel-width #'length) cells)))
+      columns
+      (oref transient--prefix column-widths))
+     0)))
+
+(defun transient--align-to (stop)
+  (unless (zerop stop)
+    (insert (if (or transient-align-variable-pitch
+                    (oref transient--prefix variable-pitch))
+                (propertize " " 'display `(space :align-to (,stop)))
+              (make-string (max 0 (- stop (current-column))) ?\s)))))
 
 (defun transient-command-summary-or-name (obj)
   "Return the summary or name of the command represented by OBJ.
@@ -4508,6 +4489,17 @@ we stop there."
     (seq-doseq (elt sequence)
       (push (funcall function (car acc) elt) acc))
     (nreverse acc)))
+
+(defun transient--mapn (function &rest lists)
+  "Apply FUNCTION to elements of LISTS.
+Like `cl-mapcar' but while that stops when the shortest list
+is exhausted, continue until the longest list is, using nil
+as stand-in for elements of exhausted lists."
+  (let (result)
+    (while (catch 'more (mapc (lambda (l) (and l (throw 'more t))) lists) nil)
+      (push (apply function (mapcar #'car-safe lists)) result)
+      (setq lists (mapcar #'cdr lists)))
+    (nreverse result)))
 
 ;;; Font-Lock
 

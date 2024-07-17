@@ -217,13 +217,13 @@
   (tooltip                                       (:foreground background-color :background number-color :bold t))
   
   ;; company-box
-  (company-tooltip                               (:background comment-color))
+  (company-tooltip                               (:background background-color))
   (company-tooltip-common                        (:foreground number-color))
   (company-tooltip-quick-access                  (:foreground string-color))
   (company-tooltip-scrollbar-thumb               (:background keyword-color))
   (company-tooltip-scrollbar-track               (:background comment-color))
   (company-tooltip-search                        (:background number-color :foreground background-color :distant-foreground text-color))
-  (company-tooltip-selection                     (:background keyword-color :foreground keyword-color :bold t))
+  (company-tooltip-selection                     (:background comment-color :foreground nil :bold t))
   (company-tooltip-mouse                         (:background comment-color :foreground background-color :distant-foreground text-color))
   (company-tooltip-annotation                    (:foreground keyword-color :distant-foreground background-color))
   (company-scrollbar-bg                          (:inherit 'tooltip))

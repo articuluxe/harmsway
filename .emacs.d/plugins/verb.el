@@ -32,6 +32,7 @@
 
 ;;; Code:
 (require 'org)
+(require 'org-element)
 (require 'ob)
 (require 'eieio)
 (require 'subr-x)
@@ -278,6 +279,14 @@ a call to `verb-var'."
   :group :verb
   :type 'boolean)
 
+(defcustom verb-suppress-load-unsecure-prelude-warning nil
+  "When set to a non-nil, suppress warning about loading Emacs Lisp Preludes.
+Loading Emacs Lisp (.el) configuration files as a prelude is
+potentially unsafe, so if this setting is nil a warning prompt is
+shown asking user to allow it to be loaded and evaluated.  If non-nil,
+no warning will be shown when loading Emacs Lisp external files."
+  :type 'boolean)
+
 (defface verb-http-keyword '((t :inherit font-lock-constant-face
                                 :weight bold))
   "Face for highlighting HTTP methods.")
@@ -350,8 +359,9 @@ This variable is only set on buffers showing HTTP response bodies.")
 (defvar-local verb-kill-this-buffer nil
   "If non-nil, kill this buffer after readings its contents.
 When Verb evaluates Lisp code tags, a tag may produce a buffer as a
-result. If the buffer-local value of this variable is non-nil for that
-buffer, Verb will kill it after it has finished reading its contents.")
+result.  If the buffer-local value of this variable is non-nil for
+that buffer, Verb will kill it after it has finished reading its
+contents.")
 
 (defvar-local verb--multipart-boundary nil
   "Current multipart form boundary available for use in specs.")
@@ -484,6 +494,7 @@ more details on how to use it."
           (verb-util--log nil 'I
                           "Verb mode enabled in buffer: %s"
                           (buffer-name))
+          (verb-util--log nil 'I "Verb version: %s" verb-version)
           (verb-util--log nil 'I "Org version: %s, GNU Emacs version: %s"
                           (org-version)
                           emacs-version)))
@@ -815,8 +826,14 @@ Respects `org-use-property-inheritance'.  Matching is case-insensitive."
     ;; 3) Discard all (key . nil) elements in the list.
     (seq-filter #'cdr)))
 
-(defun verb--heading-contents ()
-  "Return the current heading's text contents.
+(defun verb--heading-contents (&optional point)
+  "Return text under the current heading, with some conditions.
+If one or more Babel source blocks are present in the text, and the
+point is located inside one of them, return the content of that source
+block.  Otherwise, simply return the all the text content under the
+current heading.
+Additionally, assume point was at position POINT before it was moved
+to the heading.
 If not on a heading, signal an error."
   (unless (org-at-heading-p)
     (user-error "%s" "Can't get heading text contents: not at a heading"))
@@ -830,53 +847,58 @@ If not on a heading, signal an error."
                           (not (eobp)))
                  (backward-char))
                (point))))
-    (if (<= start end)
-        (buffer-substring-no-properties start end)
-      "")))
+    (when (< end start) (setq end start))
+    (verb--maybe-extract-babel-src-block point start end)))
 
-(defun verb--request-spec-from-heading ()
+(defun verb--maybe-extract-babel-src-block (point start end)
+  "Return the text between START and END, with some exceptions.
+If there are one or more Babel source blocks within the text, and the
+position POINT lies within one of these blocks, return that block's
+text contents.
+If POINT is nil, set it to START.  Also, clamp POINT between START and
+END."
+  (unless point (setq point start))
+  (when (< point start) (setq point start))
+  (when (< end point) (setq point end))
+  (save-excursion
+    (save-match-data
+      (goto-char point)
+      (let ((case-fold-search t)
+            block-start)
+        (when (re-search-backward "#\\+begin_src\\s-+verb" start t)
+          ;; Found the start.
+          (end-of-line)
+          (forward-char)
+          (setq block-start (point))
+          (goto-char point)
+          (when (re-search-forward "#\\+end_src" end t)
+            ;; Found the end.
+            (beginning-of-line)
+            (backward-char)
+            (setq start block-start)
+            (setq end (point))))
+        (buffer-substring-no-properties start end)))))
+
+(defun verb--request-spec-from-heading (point)
   "Return a request spec from the current heading's text contents.
 If a heading is found, get its contents using
-`verb--heading-contents'.  After getting the heading's text content,
-run it through `verb--maybe-extract-babel-src-block'.  From that
-result, try to parse a request specification.  Return nil if the
-heading has no text contents, if contains only comments, or if the
-heading does not have the tag `verb-tag'.
+`verb--heading-contents'.  From that result, try to parse a request
+specification.  Return nil if the heading has no text contents, if
+contains only comments, or if the heading does not have the tag
+`verb-tag'.
+Additionally, assume point was at position POINT before it was moved
+to the heading.
 If not on a heading, signal an error."
   (unless (org-at-heading-p)
     (user-error "%s" "Can't read request spec: not at a heading"))
   (when (or (member verb-tag (verb--heading-tags))
             (eq verb-tag t))
-    (let ((text (verb--maybe-extract-babel-src-block
-                 (verb--heading-contents)))
+    (let ((text (verb--heading-contents point))
           (metadata (verb--heading-properties verb--metadata-prefix)))
       (unless (string-empty-p text)
         (condition-case nil
             (verb-request-spec-from-string text metadata)
           (verb-empty-spec nil))))))
-
-(defun verb--maybe-extract-babel-src-block (text)
-  "Return contents of the first Verb Babel source block in TEXT.
-If no Verb Babel source blocks are found, return TEXT."
-  (with-temp-buffer
-    (insert text)
-    (goto-char (point-min))
-    (let ((case-fold-search t)
-          start result)
-      (when (re-search-forward "#\\+begin_src +verb" nil t)
-        ;; Found the start.
-        (end-of-line)
-        (forward-char)
-        (setq start (point))
-        (when (search-forward "#+end_src" nil t)
-          ;; Found the end.
-          (beginning-of-line)
-          (backward-char)
-          (setq result
-                (if (<= start (point))
-                    (buffer-substring-no-properties start (point))
-                  ""))))
-      (or result text))))
 
 (defun verb--request-spec-from-babel-src-block (pos body vars)
   "Return a request spec generated from a Babel source block.
@@ -889,6 +911,7 @@ Note that the entire buffer is considered when generating the request
 spec, not only the section contained by the source block.
 
 This function is called from ob-verb.el (`org-babel-execute:verb')."
+  (verb-load-prelude-files-from-hierarchy)
   (save-excursion
     (goto-char pos)
     (let* ((verb--vars (append vars verb--vars))
@@ -939,7 +962,8 @@ After that, return RS."
   ;; Use `verb-base-headers' if necessary.
   (when verb-base-headers
     (setq rs (verb-request-spec-override
-              (verb-request-spec :headers verb-base-headers)
+              (verb-request-spec :headers verb-base-headers
+                                 :url (oref rs url))
               rs)))
   ;; Apply the request mapping function, if present.
   (when-let ((form (verb--request-spec-metadata-get rs "map-request"))
@@ -963,7 +987,12 @@ Once all the request specs have been collected, override them in
 inverse order according to the rules described in
 `verb-request-spec-override'.  After that, override that result with
 all the request specs in SPECS, in the order they were passed in."
-  (let (done final-spec)
+  ;; Load all prelude verb-var's before rest of the spec to be complete, unless
+  ;; specs already exists which means called from ob-verb block and loaded.
+  (unless specs
+    (verb-load-prelude-files-from-hierarchy))
+  (let ((p (point))
+        done final-spec)
     (save-restriction
       (widen)
       (save-excursion
@@ -973,7 +1002,7 @@ all the request specs in SPECS, in the order they were passed in."
         ;; If there's at least one heading above us, go up through the
         ;; headings tree taking a request specification from each level.
         (while (not done)
-          (let ((spec (verb--request-spec-from-heading)))
+          (let ((spec (verb--request-spec-from-heading p)))
             (when spec (push spec specs)))
           (setq done (not (verb--up-heading))))))
     (if specs
@@ -990,6 +1019,39 @@ all the request specs in SPECS, in the order they were passed in."
       (user-error (concat "No request specifications found\n"
                           "Remember to tag your headlines with :%s:")
                   verb-tag))))
+
+(defun verb-load-prelude-files-from-hierarchy ()
+  "Load all Verb-Prelude's of current heading and up, including buffer level.
+Children with same named verb-vars as parents, will override the parent
+settings."
+  (save-restriction
+    (widen)
+    (save-excursion
+      (let (preludes)
+        (while
+            (progn
+              (let* ((spec (verb-request-spec
+                            :metadata (verb--heading-properties
+                                       verb--metadata-prefix)))
+                     (prelude (verb--request-spec-metadata-get spec
+                                                               "prelude")))
+                (when prelude
+                  (push prelude preludes)))
+              (verb--up-heading)))
+        (let* ((prelude (car (org-element-map (org-element-parse-buffer)
+                                 'keyword
+                               (lambda (keyword)
+                                 (when (string= (upcase (concat
+                                                         verb--metadata-prefix
+                                                         "prelude"))
+                                                (org-element-property
+                                                 :key keyword))
+                                   (org-element-property :value keyword)))))))
+          (when prelude
+            (push prelude preludes)))
+        ;; Lower-level prelude files override same settings in hierarchy
+        (dolist (file preludes)
+          (verb-load-prelude-file file))))))
 
 (defun verb-kill-response-buffer-and-window (&optional keep-window)
   "Delete response window and kill its buffer.
@@ -1112,6 +1174,44 @@ This affects only the current buffer."
             (yes-or-no-p "Unset all Verb variables for current buffer? "))
     (setq verb--vars nil)))
 
+(defun verb-load-prelude-file (filename)
+  "Load Emacs Lisp or JSON configuration file FILENAME into Verb variables."
+  (interactive)
+  (save-excursion
+    (let ((file-extension (file-name-extension filename)))
+      (when (member file-extension '("gpg" "gz" "z" "7z"))
+        (setq file-extension (file-name-extension (file-name-base filename))))
+      (cond
+       ((string= "el" file-extension) ; file is Emacs Lisp
+        (when (or verb-suppress-load-unsecure-prelude-warning
+                  (yes-or-no-p
+                   (concat (format "File %s may contain code " filename)
+                           "that may not be safe\nLoad it anyways? ")))
+          (load-file filename)))
+       ((string-match-p "^json.*" file-extension) ; file is JSON(C)
+        (let* ((file-contents
+                (with-temp-buffer
+                  (insert-file-contents filename)
+                  (set-auto-mode)
+                  (goto-char (point-min))
+                  ;; If a modern JSON / JavaScript package not
+                  ;; installed, then comments cannot be removed or
+                  ;; supported. Also, not likely to have JSON comments
+                  ;; if this is the case.
+                  (when comment-start
+                    (comment-kill (count-lines (point-min) (point-max))))
+                  (verb--buffer-string-no-properties)))
+               (json-object-type 'plist)
+               (data (json-read-from-string file-contents)))
+          ;; Search for values on the topmost container, and one level down.
+          (cl-loop for (k v) on data by #'cddr
+                   do (verb-set-var (substring (symbol-name k) 1) v)
+                   if (and (listp v) (cl-evenp (length v)))
+                   do (cl-loop for (subk subv) on v by #'cddr
+                               do (verb-set-var
+                                   (substring (symbol-name subk) 1) subv)))))
+       (t (user-error "Unable to determine file type for %s" filename))))))
+
 (defun verb-show-vars ()
   "Show values of variables set with `verb-var' or `verb-set-var'.
 Values correspond to variables set in the current buffer.  Return the
@@ -1140,11 +1240,15 @@ buffer used to show the values."
   "Return a buffer with the contents of FILE.
 If CODING-SYSTEM system is a valid coding system, use it when reading
 the file contents (see `coding-system-for-read' for more information).
-Set the buffer's `verb-kill-this-buffer' variable locally to t."
+Set the buffer's `verb-kill-this-buffer' variable locally to t.
+Additionally, add the `verb-lf-keep' property to all of the resulting
+buffer's text, to prevent function `verb-body-lf-to-crlf' from
+potentially modifying it."
   (with-current-buffer (generate-new-buffer " *verb-temp*")
     (buffer-disable-undo)
     (let ((coding-system-for-read coding-system))
       (insert-file-contents file))
+    (add-text-properties (point-min) (point-max) '(verb-lf-keep t))
     (setq verb-kill-this-buffer t)
     (current-buffer)))
 
@@ -1991,12 +2095,6 @@ loaded into."
       (verb-util--log num 'W "Body is present but request method is %s"
                       url-request-method))
 
-    ;; Workaround for "localhost" not working on Emacs 25.
-    (when (and (< emacs-major-version 26)
-               (string= (url-host url) "localhost"))
-      (verb-util--log num 'W "Replacing localhost with 127.0.0.1")
-      (setf (url-host url) "127.0.0.1"))
-
     ;; Send the request!
     (condition-case err
         (url-retrieve url
@@ -2231,6 +2329,23 @@ Do this using the rules described in `verb-request-spec-override'."
                              port path fragment
                              attributes fullness))))
 
+(cl-defmethod verb--request-spec-url-origin ((rs verb-request-spec))
+  "Return the origin of RS's URL.
+The URL origin consists of the scheme, user, password host and port
+properties.
+Return nil instead if RS has no URL, or if all of the properties
+making up for the origin are themselves nil."
+  (when-let ((rs)
+             (url (oref rs url)))
+    (let ((type (url-type url))
+          (user (url-user url))
+          (password (url-password url))
+          (host (url-host url))
+          (port (url-port url)))
+      (when (or type user password host port)
+        (url-parse-make-urlobj type user password
+                               host port)))))
+
 (cl-defmethod verb-request-spec-override ((original verb-request-spec) other)
   "Override request spec ORIGINAL with OTHER, return the result.
 Override each member of request ORIGINAL with one from OTHER in the
@@ -2266,14 +2381,19 @@ metadata
 Modify neither request specification, return a new one."
   (unless (object-of-class-p other 'verb-request-spec)
     (user-error "%s" "Argument OTHER must be a `verb-request-spec'"))
-  (verb-request-spec :method (or (oref other method)
-                                 (oref original method))
-                     :url (verb--override-url (oref original url)
-                                              (oref other url))
-                     :headers (verb--override-headers (oref original headers)
-                                                      (oref other headers))
-                     :body (or (oref other body) (oref original body))
-                     :metadata (oref other metadata)))
+  (if (let ((original-origin (verb--request-spec-url-origin original))
+            (other-origin (verb--request-spec-url-origin other)))
+        (and other-origin
+             (not (equal original-origin other-origin))))
+      other
+    (verb-request-spec :method (or (oref other method)
+                                   (oref original method))
+                       :url (verb--override-url (oref original url)
+                                                (oref other url))
+                       :headers (verb--override-headers (oref original headers)
+                                                        (oref other headers))
+                       :body (or (oref other body) (oref original body))
+                       :metadata (oref other metadata))))
 
 (defun verb--http-methods-regexp ()
   "Return a regexp to match an HTTP method.
@@ -2324,9 +2444,23 @@ part, insert the final boundary delimiter."
       (concat "--" boundary "--"))))
 
 (defun verb-body-lf-to-crlf (rs)
-  "Prepend a carriage-return before all line-feeds in RS's body."
-  (oset rs body (replace-regexp-in-string "\n" "\r\n" (oref rs body)))
-  rs)
+  "Prepend a carriage-return before all line-feeds in RS's body.
+Do this only for intervals of the string not having the `verb-lf-keep'
+property."
+  (let* ((body (oref rs body))
+         (intervals (verb-util--object-intervals body))
+         parts)
+    (dolist (elem intervals)
+      (let* ((start (nth 0 elem))
+             (end (nth 1 elem))
+             (props (nth 2 elem))
+             (s (substring body start end)))
+        (push (if (plist-member props 'verb-lf-keep)
+                  s
+                (replace-regexp-in-string "\n" "\r\n" s))
+              parts)))
+    (oset rs body (string-join (nreverse parts)))
+    rs))
 
 (defun verb--eval-string (s &optional context)
   "Eval S as Lisp code and return the result.

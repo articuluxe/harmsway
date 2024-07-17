@@ -6,7 +6,7 @@
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
 ;; Version: 1.7
-;; Package-Requires: ((emacs "27.1") (compat "29.1.4.4"))
+;; Package-Requires: ((emacs "27.1") (compat "30"))
 ;; Homepage: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
 
@@ -207,6 +207,8 @@ for navigation commands like `consult-line'."
     "\\`\\*Completions\\*\\'"
     "\\`\\*Flymake log\\*\\'"
     "\\`\\*Semantic SymRef\\*\\'"
+    "\\`\\*vc\\*\\'"
+    "\\`newsrc-dribble\\'" ;; Gnus
     "\\`\\*tramp/.*\\*\\'")
   "Filter regexps for `consult-buffer'.
 
@@ -333,6 +335,12 @@ chunk from the beginning of the file is previewed."
 (defcustom consult-preview-max-count 10
   "Number of file buffers to keep open temporarily during preview."
   :type '(natnum :tag "Number of buffers"))
+
+(defcustom consult-preview-excluded-buffers nil
+  "Buffers excluded from preview.
+The value should conform to the predicate format demanded by the
+function `buffer-match-p'."
+  :type 'sexp)
 
 (defcustom consult-preview-excluded-files
   '("\\`/[^/|:]+:") ;; Do not preview remote files
@@ -1274,7 +1282,7 @@ Return the location marker."
                  ;; `find-file-hook' ending with `-check-buffers'. This has been
                  ;; changed in Emacs 30. Now a `change-major-mode-hook' is used
                  ;; instead with the suffix `-check-buffers'.
-                 (suffix (if (eval-when-compile (>= emacs-major-version 30))
+                 (suffix (static-if (>= emacs-major-version 30)
                              "-enable-in-buffer"
                            "-check-buffers"))
                  ((string-suffix-p suffix name)))
@@ -2987,10 +2995,10 @@ corresponding customization options."
           (setq args (cddr args)))))
     (macroexp-progn setter)))
 
-(defun consult--customize-get (&optional cmd)
-  "Get configuration from `consult--customize-alist' for CMD."
+(defun consult--customize-get ()
+  "Get configuration from `consult--customize-alist' for `this-command'."
   (mapcar (lambda (x) (eval x 'lexical))
-          (alist-get (or cmd this-command) consult--customize-alist)))
+          (alist-get this-command consult--customize-alist)))
 
 ;;;; Commands
 
@@ -4485,7 +4493,8 @@ AS is a conversion function."
            (setq other-win (selected-window)))
          (let ((win (or other-win (selected-window)))
                (buf (or (and cand (get-buffer cand)) orig-buf)))
-           (when (and (window-live-p win) (buffer-live-p buf))
+           (when (and (window-live-p win) (buffer-live-p buf)
+                      (not (buffer-match-p consult-preview-excluded-buffers buf)))
              (with-selected-window win
                (unless (or orig-prev orig-next)
                  (setq orig-prev (copy-sequence (window-prev-buffers))
@@ -5044,7 +5053,8 @@ regarding the asynchronous search and the arguments."
             (when re
               (cons (append cmd
                             (mapcan (lambda (x) `("--and" ,x)) re)
-                            opts paths)
+                            opts
+                            (mapcan (lambda (x) `("--search-path" ,x)) paths))
                     hl))))))))
 
 ;;;###autoload

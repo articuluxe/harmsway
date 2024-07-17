@@ -265,7 +265,8 @@ as argument that return a length.")
       (cons (point) (point-max)))))
 
 (defun gt-buffer-insert-source-text (text &optional fold)
-  "Propertize and insert the source TEXT into render buffer."
+  "Propertize and insert the source TEXT into render buffer.
+If FOLD non nil, only make part of the text visible."
   (let* ((text (string-trim text "\n+"))
          (beg (point))
          (end (progn (insert (substring-no-properties text)) (point))))
@@ -815,6 +816,9 @@ Otherwise, join the results use the default logic."
                              (list (string-join (ensure-list res) "\n")))))))
       (gt-insert-text-at-marker insert-text beg end))))
 
+(cl-defmethod gt-desc ((render gt-insert-render))
+  (format "gt-insert-render/%s" (oref render type)))
+
 
 ;;; [Render] Render with Overlay
 
@@ -956,7 +960,7 @@ Otherwise, join the results use the default logic."
 (cl-defmethod gt-init ((render gt-overlay-render) translator)
   (with-slots (bounds state) translator
     (unless (cdr bounds)
-      (error "%s only works for buffer bounds, abort" (eieio-object-class render)))
+      (error "%s only works for buffer bounds, abort" (gt-desc render)))
     (unless (buffer-live-p (car bounds))
       (error "Source buffer is unavailable, abort"))))
 
@@ -1007,6 +1011,9 @@ Otherwise, join the results use the default logic."
           (deactivate-mark)
           (message "ok."))))))
 
+(cl-defmethod gt-desc ((render gt-overlay-render))
+  (format "gt-overlay-render/%s" (oref render type)))
+
 
 ;;; [Render] Alert Render
 
@@ -1046,6 +1053,10 @@ It depends on the `alert' package.")
 (defvar gt-buffer-prompt-name "*gt-taker*")
 
 (defvar gt-buffer-prompt-map (make-sparse-keymap))
+
+(defvar gt-buffer-prompt-after-init-function nil
+  "Function with no argument, executed after prompt buffer init.
+Can do extra setup works for the buffer through this function.")
 
 (declare-function gt-set-render "ext:go-translate")
 (declare-function gt-set-engines "ext:go-translate")
@@ -1112,22 +1123,106 @@ target, engines and render in the buffer for the following translation."
                   (local-set-key (kbd "C-c C-p") #'cycle-prev-target)
                   (local-set-key (kbd "C-c C-e") #'set-engines)
                   (local-set-key (kbd "C-c C-r") #'set-render)))
-      (let* ((ori (gt-collect-bounds-to-text (ensure-list text)))
-             (newtext (gt-read-from-buffer
+      (let* ((newtext (gt-read-from-buffer
                        :buffer gt-buffer-prompt-name
-                       :initial-contents (or (car ori) "")
+                       :initial-contents (or (car text) "")
                        :catch 'gt-buffer-prompt
                        :window-config gt-buffer-prompt-window-config
                        :keymap gt-buffer-prompt-map
                        (set-head-line)
                        (set-mode-line)
-                       (set-local-keys))))
+                       (set-local-keys)
+                       (when gt-buffer-prompt-after-init-function
+                         (funcall gt-buffer-prompt-after-init-function)))))
         (when (null newtext)
           (user-error ""))
-        (when (zerop (length (string-trim newtext)))
+        (when (string-blank-p newtext)
           (user-error "Text should not be null, abort"))
-        (unless (equal ori (list newtext))
-          (setf text (ensure-list newtext)))))))
+        (setf text (ensure-list newtext))))))
+
+
+;;; [Taker] Pick only fresh words
+
+(defvar gt-fresh-word-class 'gt-fresh-word-with-file)
+
+(defvar gt-ripe-words-file (locate-user-emacs-file "gt-known-words.txt"))
+
+(defmacro gt-with-ripe-words-file (&rest form)
+  `(let* ((case-fold-search t)
+          (bufname " gt-known-words")
+          (buf (or (get-buffer bufname)
+                   (progn
+                     (unless (file-exists-p gt-ripe-words-file)
+                       (write-region 1 1 gt-ripe-words-file))
+                     (find-file-noselect gt-ripe-words-file)))))
+     (with-current-buffer buf
+       (unless (equal (buffer-name) bufname)
+         (rename-buffer bufname))
+       (goto-char (point-min))
+       (prog1 (progn ,@form) (basic-save-buffer)))))
+
+(cl-defgeneric gt-word-fresh-p (word)
+  (:method ((_ (eql 'gt-fresh-word-with-file)) word)
+           (gt-with-ripe-words-file
+            (not (re-search-forward (concat "^" word "$") nil t))))
+  (gt-word-fresh-p gt-fresh-word-class word))
+
+(cl-defgeneric gt-fresh-word (&rest words)
+  (:method ((_ (eql 'gt-fresh-word-with-file)) &rest words)
+           (gt-with-ripe-words-file
+            (if (equal words (list t)) ; clear ripes
+                (erase-buffer)
+              (dolist (word words) ; remove from ripes
+                (goto-char (point-min))
+                (while (re-search-forward (concat "^" word "$") nil t)
+                  (delete-region (match-beginning 0) (match-end 0))
+                  (if (looking-at "\n") (delete-char 1)))))))
+  (apply #'gt-fresh-word gt-fresh-word-class words))
+
+(cl-defgeneric gt-ripen-word (&rest words)
+  (:method ((_ (eql 'gt-fresh-word-with-file)) &rest words)
+           (gt-with-ripe-words-file ; add to ripes
+            (dolist (word words)
+              (goto-char (point-min))
+              (unless (re-search-forward (concat "^" word "$") nil t)
+                (insert (downcase word) "\n")))))
+  (apply #'gt-ripen-word gt-fresh-word-class words))
+
+(defvar gt-fresh-words-last nil)
+
+(defun gt-record-words-as-known ()
+  "Record the words as known."
+  (interactive)
+  (let* ((si (string-join
+              (sort (delete-dups
+                     (mapcar #'downcase
+                             (or gt-fresh-words-last
+                                 (ensure-list (thing-at-point 'word))))))
+              " "))
+         (ss (read-string "Words to record as known: " si))
+         (ws (split-string ss)))
+    (apply #'gt-ripen-word ws)))
+
+(defun gt-record-words-as-unknown ()
+  "Record the words as unknown."
+  (interactive)
+  (let* ((ss (read-string "Words to record as unknown: " (thing-at-point 'word)))
+         (ws (split-string ss)))
+    (apply #'gt-fresh-word ws)))
+
+;; (gt-taker :pick 'fresh-word)
+
+(cl-defmethod gt-pick ((_ (eql 'fresh-word)) translator)
+  (with-slots (text bounds taker) translator
+    (setq gt-fresh-words-last nil)
+    (let* ((car (if (cdr bounds) (cl-subseq bounds 0 2) (car text)))
+           (pred (lambda (word)
+                   (and (if-let (p (oref taker pick-pred)) (funcall p word) t)
+                        (> (string-bytes word) 2)
+                        (not (string-match-p "^[0-9]+$" word))
+                        (gt-word-fresh-p word)
+                        (push word gt-fresh-words-last)))))
+      (gt-pick-items-by-thing car 'word pred))))
 
 
 ;;; [Taker] pdf-view-mode

@@ -17,7 +17,11 @@
 ;;; Code:
 (require 'flexoki-themes)
 
-(deftheme flexoki-themes-light "Flexoki theme, light version.")
+(deftheme flexoki-themes-light
+  "Flexoki theme, light version."
+  :family 'flexoki
+  :kind 'color-scheme
+  :background-mode 'light)
 
 (flexoki-themes-create 'light 'flexoki-themes-light)
 

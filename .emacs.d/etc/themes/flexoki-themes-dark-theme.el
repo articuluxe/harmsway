@@ -17,7 +17,11 @@
 ;;; Code:
 (require 'flexoki-themes)
 
-(deftheme flexoki-themes-dark "Flexoki theme, dark version.")
+(deftheme flexoki-themes-dark
+  "Flexoki theme, dark version."
+  :family 'flexoki
+  :kind 'color-scheme
+  :background-mode 'dark)
 
 (flexoki-themes-create 'dark 'flexoki-themes-dark)
 

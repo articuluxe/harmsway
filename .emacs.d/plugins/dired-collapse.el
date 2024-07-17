@@ -6,8 +6,9 @@
 ;; Maintainer: Matúš Goljer <matus.goljer@gmail.com>
 ;; Version: 1.1.0
 ;; Created: 15th July 2017
-;; Package-Requires: ((dash "2.10.0") (f "0.19.0") (dired-hacks-utils "0.0.1"))
+;; Package-Requires: ((f "0.19.0") (s "1.13.1") (dired-hacks-utils "0.0.1") (emacs "24"))
 ;; Keywords: files
+;; URL: https://github.com/Fuco1/dired-hacks
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -42,7 +43,8 @@
 ;; directory with some actual content.
 
 ;; To enable or disable this functionality use `dired-collapse-mode'
-;; to toggle it for the current dired buffer.
+;; to toggle it for the current dired buffer.  To enable the mode
+;; globally in all dired buffers, use `global-dired-collapse-mode'.
 
 ;; If the deepest directory contains only a single file this file is
 ;; displayed instead of the last directory.  This way we can get
@@ -54,19 +56,19 @@
 ;; have updated permissions, file sizes and modification dates so
 ;; they truly correspond to the properties of the file being shown.
 
-;; The path to the deepest file is dimmed with the `shadow' face so
-;; that it does not distract but at the same time is still available
-;; for inspection.
+;; The path to the deepest file is dimmed with the
+;; `dired-collapse-shadow' face so that it does not distract but at
+;; the same time is still available for inspection.
 
 ;; The mode is integrated with `dired-rainbow' so the nested files
 ;; are properly colored according to user's rules.
 
 ;;; Code:
 
-(require 'dash)
 (require 'dired)
 (require 'f)
 (require 'dired-hacks-utils)
+(require 's)                 ; for s-chop-prefix
 
 (defgroup dired-collapse ()
   "Collapse unique nested paths in dired listing."
@@ -81,6 +83,11 @@
 (defcustom dired-collapse-fontify t
   "If non-nil, fontify with a shaded overlay."
   :type 'boolean
+  :group 'dired-collapse)
+
+(defface dired-collapse-shadow
+  '((t :inherit shadow))
+  "Face for the shadow overlay."
   :group 'dired-collapse)
 
 ;;;###autoload
@@ -102,6 +109,15 @@
     (remove-hook 'dired-omit-mode-hook 'dired-collapse 'local)
     (revert-buffer)))
 
+(defun turn-on-dired-collapse-mode ()
+  (when (derived-mode-p 'dired-mode)
+    (dired-collapse-mode)))
+
+(define-globalized-minor-mode global-dired-collapse-mode
+  dired-collapse-mode
+  turn-on-dired-collapse-mode
+  :group 'dired-collapse)
+
 (defun dired-collapse--replace-file (file)
   "Replace file on the current line with FILE."
   (delete-region (line-beginning-position) (1+ (line-end-position)))
@@ -109,13 +125,16 @@
   (insert-directory file dired-listing-switches nil nil)
   (forward-line -1)
   (dired-align-file (line-beginning-position) (1+ (line-end-position)))
-  (-when-let (replaced-file (dired-utils-get-filename))
+  (when-let (replaced-file (dired-utils-get-filename))
     (when (file-remote-p replaced-file)
       (while (search-forward (dired-current-directory) (line-end-position) t)
         (replace-match "")))))
 
 (defun dired-collapse--create-ov (&optional to-eol)
   "Create the shadow overlay which marks the collapsed path.
+
+To customize the face properties, theme the
+`dired-collapse-shadow' face.
 
 If TO-EOL is non-nil, extend the overlay over the whole
 filename (for example when the final directory is empty)."
@@ -128,18 +147,19 @@ filename (for example when the final directory is empty)."
                       (point)
                     (1+ (search-backward "/")))))
            (ov (make-overlay beg end)))
-      (overlay-put ov 'face 'shadow)
+      (overlay-put ov 'face 'dired-collapse-shadow)
       ov)))
 
 (defun dired-collapse ()
   "Collapse unique nested paths in dired listing."
   (when (or (not (file-remote-p default-directory)) dired-collapse-remote)
-    (-let* (;; dired-hide-details-mode hides details by assigning a special invisibility text property
-            ;; to them, while dired-collapse requires all the details. So we disable invisibility here
-            ;; temporarily.
-            (buffer-invisibility-spec nil)
-            (inhibit-read-only t)
-            (rgx (and (bound-and-true-p dired-omit-mode) (dired-omit-regexp))))
+    (let (;; dired-hide-details-mode hides details by assigning a
+          ;; special invisibility text property to them, while
+          ;; dired-collapse requires all the details. So we disable
+          ;; invisibility here temporarily.
+          (buffer-invisibility-spec nil)
+          (inhibit-read-only t)
+          (rgx (and (bound-and-true-p dired-omit-mode) (dired-omit-regexp))))
       (save-excursion
         (goto-char (point-min))
         (while (not (eobp))

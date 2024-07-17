@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 1.0.13
+;; Version: 1.0.18
 ;; Package-Requires: ((emacs "27.1") (shell-maker "0.50.5"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -1173,26 +1173,31 @@ If region is active, append to prompt."
   (let ((question (concat header "\n\n" (buffer-substring (region-beginning) (region-end)))))
     (chatgpt-shell-send-to-buffer question nil)))
 
+;;;###autoload
 (defun chatgpt-shell-refactor-code ()
   "Refactor code from region using ChatGPT."
   (interactive)
   (chatgpt-shell-send-region-with-header chatgpt-shell-prompt-header-refactor-code))
 
+;;;###autoload
 (defun chatgpt-shell-write-git-commit ()
   "Write commit from region using ChatGPT."
   (interactive)
   (chatgpt-shell-send-region-with-header chatgpt-shell-prompt-header-write-git-commit))
 
+;;;###autoload
 (defun chatgpt-shell-generate-unit-test ()
   "Generate unit-test for the code from region using ChatGPT."
   (interactive)
   (chatgpt-shell-send-region-with-header chatgpt-shell-prompt-header-generate-unit-test))
 
+;;;###autoload
 (defun chatgpt-shell-proofread-region ()
   "Proofread English from region using ChatGPT."
   (interactive)
   (chatgpt-shell-send-region-with-header chatgpt-shell-prompt-header-proofread-region))
 
+;;;###autoload
 (defun chatgpt-shell-eshell-whats-wrong-with-last-command ()
   "Ask ChatGPT what's wrong with the last eshell command."
   (interactive)
@@ -1204,6 +1209,7 @@ If region is active, append to prompt."
              "\n\n"
              (buffer-substring-no-properties (eshell-beginning-of-output) (eshell-end-of-output))))))
 
+;;;###autoload
 (defun chatgpt-shell-eshell-summarize-last-command-output ()
   "Ask ChatGPT to summarize the last command output."
   (interactive)
@@ -1215,6 +1221,7 @@ If region is active, append to prompt."
              "\n\n"
              (buffer-substring-no-properties (eshell-beginning-of-output) (eshell-end-of-output))))))
 
+;;;###autoload
 (defun chatgpt-shell-send-region (review)
   "Send region to ChatGPT.
 With prefix REVIEW prompt before sending to ChatGPT."
@@ -1228,6 +1235,7 @@ With prefix REVIEW prompt before sending to ChatGPT."
          (concat "\n\n" region-text)
        region-text) review)))
 
+;;;###autoload
 (defun chatgpt-shell-send-and-review-region ()
   "Send region to ChatGPT, review before submitting."
   (interactive)
@@ -2432,6 +2440,9 @@ t if invoked from a transient frame (quitting closes the frame).")
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") #'chatgpt-shell-prompt-compose-send-buffer)
     (define-key map (kbd "C-c C-k") #'chatgpt-shell-prompt-compose-cancel)
+    (define-key map (kbd "C-c C-s") #'chatgpt-shell-prompt-compose-swap-system-prompt)
+    (define-key map (kbd "C-c C-v") #'chatgpt-shell-prompt-compose-swap-model-version)
+    (define-key map (kbd "C-c C-o") #'chatgpt-shell-prompt-compose-other-buffer)
     (define-key map (kbd "M-r") #'chatgpt-shell-prompt-compose-search-history)
     (define-key map (kbd "M-p") #'chatgpt-shell-prompt-compose-previous-history)
     (define-key map (kbd "M-n") #'chatgpt-shell-prompt-compose-next-history)
@@ -2459,6 +2470,12 @@ t if invoked from a transient frame (quitting closes the frame).")
   "Like `view-mode`, but extended for ChatGPT Compose."
   :lighter "ChatGPT view"
   :keymap chatgpt-shell-prompt-compose-view-mode-map)
+
+(define-minor-mode chatgpt-shell-prompt-compose-view-mode
+  "Like `view-mode`, but extended for ChatGPT Compose."
+  :lighter "ChatGPT view"
+  :keymap chatgpt-shell-prompt-compose-view-mode-map
+  (setq buffer-read-only chatgpt-shell-prompt-compose-view-mode))
 
 (defun chatgpt-shell-prompt-compose (prefix)
   "Compose and send prompt from a dedicated buffer.
@@ -2551,9 +2568,8 @@ Set TRANSIENT-FRAME-P to also close frame on exit."
       (setq-local chatgpt-shell-prompt-compose--exit-on-submit exit-on-submit)
       (setq-local chatgpt-shell-prompt-compose--transient-frame-p transient-frame-p)
       (visual-line-mode +1)
-      (when chatgpt-shell-prompt-compose-view-mode
-        (chatgpt-shell-prompt-compose-view-mode -1))
       (when erase-buffer
+        (chatgpt-shell-prompt-compose-view-mode -1)
         (erase-buffer))
       (when region
         (save-excursion
@@ -2726,13 +2742,33 @@ Set TRANSIENT-FRAME-P to also close frame on exit."
     (user-error "Not in a shell compose buffer"))
   (chatgpt-shell-prompt-compose-quit-and-close-frame))
 
+(defun chatgpt-shell-prompt-compose-buffer-name ()
+  "Generate compose buffer name."
+  (concat (chatgpt-shell--minibuffer-prompt) "compose"))
+
+(defun chatgpt-shell-prompt-compose-swap-system-prompt ()
+  "Swap the compose buffer's system prompt."
+  (interactive)
+  (unless (eq major-mode 'chatgpt-shell-prompt-compose-mode)
+    (user-error "Not in a shell compose buffer"))
+  (with-current-buffer (chatgpt-shell--primary-buffer)
+    (chatgpt-shell-swap-system-prompt))
+  (rename-buffer (chatgpt-shell-prompt-compose-buffer-name)))
+
+(defun chatgpt-shell-prompt-compose-swap-model-version ()
+  "Swap the compose buffer's model version."
+  (interactive)
+  (unless (eq major-mode 'chatgpt-shell-prompt-compose-mode)
+    (user-error "Not in a shell compose buffer"))
+  (with-current-buffer (chatgpt-shell--primary-buffer)
+    (chatgpt-shell-swap-model-version))
+  (rename-buffer (chatgpt-shell-prompt-compose-buffer-name)))
+
 (defun chatgpt-shell-prompt-compose-buffer ()
   "Get the available shell compose buffer."
   (unless (chatgpt-shell--primary-buffer)
     (error "No shell to compose to"))
-  (let* ((buffer-name (concat (chatgpt-shell--minibuffer-prompt)
-                              "compose"))
-         (buffer (get-buffer-create buffer-name)))
+  (let* ((buffer (get-buffer-create (chatgpt-shell-prompt-compose-buffer-name))))
     (unless buffer
       (error "No compose buffer available"))
     buffer))

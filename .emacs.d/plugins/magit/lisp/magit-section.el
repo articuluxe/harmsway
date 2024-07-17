@@ -11,7 +11,7 @@
 ;; Package-Version: 3.3.0.50-git
 ;; Package-Requires: (
 ;;     (emacs "26.1")
-;;     (compat "29.1.4.5")
+;;     (compat "30.0.0.0")
 ;;     (dash "2.19.1")
 ;;     (seq "2.24"))
 
@@ -2396,6 +2396,7 @@ and the buffer-local values of the variables referenced in its
         bookmark)
     (user-error "Bookmarking is not implemented for %s buffers" major-mode)))
 
+;;;###autoload
 (defun magit--handle-bookmark (bookmark)
   "Open a bookmark created by `magit--make-bookmark'.
 
@@ -2405,6 +2406,7 @@ the appropriate buffer without displaying it.
 Then call the `magit-*-setup-buffer' function of the the major-mode
 with the variables' values as arguments, which were recorded by
 `magit--make-bookmark'."
+  (require (quote magit-bookmark) nil t)
   (let ((buffer (magit-bookmark-get-buffer-create
                  bookmark
                  (bookmark-prop-get bookmark 'mode))))

@@ -29,9 +29,10 @@
 
 (deftheme carp "Carp theme.")
 
-(let* ((fg "#b8b8b8")
-       (bg "#262626")
+(let* ((fg "#d6deeb")
+       (bg "#011627")
        (shadow "#808898")
+       (region "#1d3b53")
        (blue-0 "#78b0d3")
        (blue-1 "#178da8")
        (blue-2 "#6172c6")
@@ -52,8 +53,7 @@
        (yellow-0 "#fcfa6c")
        (yellow-1 "#eedc82")
        (black-0 "#161616")
-       (black-1 "#080808")
-       (black-2 "#333333"))
+       (black-1 "#080808"))
 
   (custom-theme-set-faces
    'carp
@@ -121,7 +121,7 @@
    `(org-meta-line ((t (:foreground ,grey-0))))
    `(org-special-keyword ((t (:foreground ,purple-0))))
    `(org-todo ((t (:foreground ,red-3))))
-   `(region ((t (:foreground unspecified :background ,black-2))))
+   `(region ((t (:foreground unspecified :background ,region))))
    `(trailing-whitespace ((t (:background ,red-1))))
    `(vertical-border ((t (:foreground ,black-1 :foreground ,black-1))))
    `(warning ((t (:foreground ,orange-0))))

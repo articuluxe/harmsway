@@ -272,7 +272,7 @@ Optional argument ARGS as per `browse-url-default-browser'"
                           (or (seq-first (dwim-shell-command--file-extensions)) "png"))))
     (dwim-shell-command-on-marked-files
      "Join images horizontally"
-     (format "convert -verbose '<<*>>' -gravity center -append '<<%s(u)>>'"
+     (format "convert -verbose '<<*>>' +append '<<%s(u)>>'"
              (dwim-shell-command-read-file-name
               (format "Join as image named (default \"%s\"): " filename)
               :default filename))
@@ -315,22 +315,52 @@ Optional argument ARGS as per `browse-url-default-browser'"
    "ffmpeg -i '<<f>>' -movflags faststart -pix_fmt yuv420p -vf 'scale=trunc(iw/2)*2:trunc(ih/2)*2' '<<fne>>.mp4'"
    :utils "ffmpeg"))
 
-(defun dwim-shell-commands-macos-ocr ()
-  "Select a macOS desktop area to OCR and copy to kill ring."
+(defun dwim-shell-commands-macos-empty-trash ()
+  "Empty macOS trash."
+  (interactive)
+  (when (y-or-n-p "Empty macOS trash? ")
+    (dwim-shell-command-on-marked-files
+     "Empty macOS trash"
+     "trash -e -y"
+     :silent-success t
+     :utils "trash")))
+
+(defun dwim-shell-commands-macos-ocr-desktop-region ()
+  "Select a macOS desktop area to OCR and copy recognized text to kill ring."
   (interactive)
   (dwim-shell-command-on-marked-files
    "OCR area"
-   "ocr"
-   ;; brew install schappim/ocr/ocr
-   :utils "ocr"
+   "macosrec --ocr"
+   ;; brew install xenodium/macosrec/macosrec
+   :utils "macosrec"
    :on-completion
    (lambda (buffer process)
      (when-let ((success (= (process-exit-status process) 0))
                 (text (with-current-buffer buffer
                         (string-trim (buffer-string)))))
        (progn
-         (kill-buffer buffer)
          (kill-new text)
+         (switch-to-buffer buffer)
+         (goto-char (point-min))
+         (message "OCR copied to clipboard"))))))
+
+(defun dwim-shell-commands-macos-ocr-file ()
+  "OCR file and copy recognized text to kill ring."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "OCR area"
+   "macosrec --ocr --clipboard --input '<<f>>'"
+   ;; brew install xenodium/macosrec/macosrec
+   :utils "macosrec"
+   :on-completion
+   (lambda (buffer process)
+     (when-let ((success (= (process-exit-status process) 0))
+                (text (with-current-buffer buffer
+                        (string-trim (buffer-string)))))
+       (progn
+         (kill-new text)
+         (switch-to-buffer buffer)
+         (goto-char (point-min))
          (message "OCR copied to clipboard"))))))
 
 (defun dwim-shell-commands-macos-convert-to-mp4 ()
