@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2022, 2024  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2024-01-31 17:25:08 dharms>
+;; Modified Time-stamp: <2024-07-17 09:30:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -259,6 +259,8 @@
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "PaleGoldenrod"))))))
           ((eq sym 'yoshi)
            (harmsway/make-comment-delimiter-face-same-as-comment-face))
+          ((eq sym 'zenburn)
+           (custom-theme-set-faces sym '(region ((t (:background "#5F5F5F"))))))
           ((memq sym '(nordless lavenderless broceliande chocolateless seagreenless nofrils-darkless
                                 hydrangealess einkless darkless))
            (custom-theme-set-faces
