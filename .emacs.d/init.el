@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-06-26 10:00:54 dharms>
+;; Modified Time-stamp: <2024-08-01 17:02:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -948,7 +948,7 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package which-key
   :demand 1
   :init
-  (setq which-key-idle-delay 8.0)
+  (setq which-key-idle-delay 4.0)
   (setq which-key-idle-secondary-delay 1.0)
   :config
   (which-key-mode 1))
