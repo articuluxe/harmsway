@@ -38,7 +38,7 @@
 (declare-function magit-insert-upstream-branch-header "magit-status"
                   (&optional branch pull keyword))
 (declare-function magit-read-file-from-rev "magit-files"
-                  (rev prompt &optional default))
+                  (rev prompt &optional default include-dirs))
 (declare-function magit-rebase--get-state-lines "magit-sequence"
                   (file))
 (declare-function magit-show-commit "magit-diff"
@@ -1060,6 +1060,7 @@ Type \\[magit-cherry-pick] to apply the commit at point.
 Type \\[magit-reset] to reset `HEAD' to the commit at point.
 
 \\{magit-log-mode-map}"
+  :interactive nil
   :group 'magit-log
   (magit-hack-dir-local-variables)
   (setq magit--imenu-item-types 'commit))
@@ -1724,8 +1725,14 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
    (append args
            (car (magit-log--get-value 'magit-log-select-mode
                                       magit-direct-use-buffer-arguments))))
-  (when initial
-    (magit-log-goto-commit-section initial))
+  (if initial
+      (magit-log-goto-commit-section initial)
+    (while-let ((rev (magit-section-value-if 'commit))
+                ((string-match-p "\\`\\(fixup\\|squash\\)!"
+                                 (magit-rev-format "%s" rev)))
+                (section (magit-current-section))
+                (next (car (magit-section-siblings section 'next))))
+      (magit-section-goto next)))
   (setq magit-log-select-pick-function pick)
   (setq magit-log-select-quit-function quit)
   (when magit-log-select-show-usage
@@ -1789,6 +1796,7 @@ to visit the commit at point.
 Type \\[magit-cherry-pick] to apply the commit at point.
 
 \\{magit-cherry-mode-map}"
+  :interactive nil
   :group 'magit-log
   (magit-hack-dir-local-variables)
   (setq magit--imenu-group-types 'cherries))

@@ -31,7 +31,7 @@
   "Filters initially used to limit topics listed in list buffers.
 
 This option controls which topics are listed when initially creating
-a `forge-topics-mode' buffer.  To temporarly change which topics are
+a `forge-topics-mode' buffer.  To temporarily change which topics are
 listed in a given buffer, instead use \\`N m' (`forge-topics-menu')."
   :package-version '(forge . "0.4.0")
   :group 'forge
@@ -42,7 +42,7 @@ listed in a given buffer, instead use \\`N m' (`forge-topics-menu')."
   "Filters initially used to limit topics listed in status buffers.
 
 This option controls which topics are listed when initially creating
-a `magit-status-mode' buffer.  To temporarly change which topics are
+a `magit-status-mode' buffer.  To temporarily change which topics are
 listed in a given buffer, instead use \\<forge-topics-mode-map> \
 \\[forge-topics-menu] (`forge-topics-menu').
 
@@ -87,7 +87,7 @@ This is a list of package names.  Used by the commands
   "Face used for suffixes whose effects is currently active and implied."
   :group 'forge-faces)
 
-(defface forge--suffix-implied
+(defface forge-suffix-implied
   '((t :inherit transient-value :weight normal))
   "Face used for suffixes whose effects is currently implied."
   :group 'forge-faces)
@@ -110,7 +110,8 @@ Must be set before `forge-topics' is loaded.")
 
 (define-derived-mode forge-topics-mode magit-mode forge-topics-mode-name
   "Major mode for browsing a list of topics."
-  (hack-dir-local-variables-non-file-buffer))
+  :interactive nil
+  (magit-hack-dir-local-variables))
 
 (defun forge-topics-setup-buffer (&optional repo spec &rest params)
   (let* ((global (or (plist-get params :global)
@@ -218,9 +219,12 @@ Must be set before `forge-topics' is loaded.")
     ("-H" forge-toggle-topic-legend)]]
   [forge--topic-legend-group]
   (interactive)
-  (if (derived-mode-p 'forge-topics-mode 'magit-status-mode)
-      (transient-setup 'forge-topics-menu)
-    (forge-list-topics)))
+  (cond ((derived-mode-p 'forge-topics-mode 'magit-status-mode)
+         (transient-setup 'forge-topics-menu))
+        ((derived-mode-p 'forge-notifications-mode)
+         (setq this-command 'forge-notifications-menu)
+         (transient-setup 'forge-notifications-menu))
+        ((forge-list-topics))))
 
 (transient-augment-suffix forge-topics-menu
   :transient #'transient--do-replace
@@ -411,7 +415,7 @@ then display the respective menu, otherwise display no menu."
                               (eq want 'open))
                          (if (eq have want)
                              'forge-suffix-active-and-implied
-                           'forge--suffix-implied))))))))
+                           'forge-suffix-implied))))))))
 
 (transient-define-suffix forge-topics-filter-state-open ()
   "Limit topic list to open topics."
@@ -458,7 +462,7 @@ then display the respective menu, otherwise display no menu."
                               (memq want '(inbox unread pending)))
                          (if (eq have want)
                              'forge-suffix-active-and-implied
-                           'forge--suffix-implied))))))))
+                           'forge-suffix-implied))))))))
 
 (transient-define-suffix forge-topics-filter-status-inbox ()
   "Limit topic list to unread and pending topics."

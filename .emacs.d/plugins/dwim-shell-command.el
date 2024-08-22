@@ -5,7 +5,7 @@
 ;; Author: Alvaro Ramirez
 ;; Package-Requires: ((emacs "28.1"))
 ;; URL: https://github.com/xenodium/dwim-shell-command
-;; Version: 0.61
+;; Version: 0.62.2
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@
 (require 'dired-aux)
 (require 'map)
 (require 'seq)
-(require 'shell)
 (require 'simple)
 (require 'subr-x)
 (require 'view)
@@ -121,6 +120,7 @@ Use `identify' to remove formatting."
   error-autofocus
   monitor-directory)
 
+;;;###autoload
 (defun dwim-shell-command (prefix)
   "Execute DWIM shell command asynchronously using noweb templates.
 
@@ -459,7 +459,7 @@ This is implied when <<td>> appears in the script.
     (with-current-buffer proc-buffer
       (let ((inhibit-message t))
       ;; Silence noise of entering shell-mode.
-        (shell-mode))
+        (comint-mode))
       (setq default-directory default-directory)
       (shell-command-save-pos-or-erase)
       (view-mode +1)

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-08-01 17:02:51 dharms>
+;; Modified Time-stamp: <2024-08-22 13:49:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2810,10 +2810,12 @@ ARGS are the additional arguments."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; casual ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package casual
+(use-package casual-calc
   :after calc
   :bind (:map calc-mode-map
-              ("C-o" . casual-main-menu)))
+              ("C-o" . casual-calc-tmenu)
+              :map calc-alg-map
+              ("C-o" . casual-calc-tmenu)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft

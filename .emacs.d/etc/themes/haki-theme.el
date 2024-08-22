@@ -267,7 +267,7 @@ Respected Only in GUI frame"
    `(default                 ((,class :foreground ,fg-main :background ,bg-main)))
 
 ;;; -- Base
-   `(mode-line               ((,class :inherit fixed-pitch :background ,bg-dim :box (:line-width (5 . 1) :color ,cursor) :weight medium :height 0.9)))
+   `(mode-line               ((,class :inherit (fixed-pitch region) :height 0.9)))
    `(mode-line-inactive      ((,class :foreground ,fg-inactive :height 0.9)))
    `(mode-line-emphasis      ((,class :inherit bold :foreground ,heading-2)))
    `(mode-line-active        ((,class :inherit mode-line)))

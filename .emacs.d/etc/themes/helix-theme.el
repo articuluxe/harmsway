@@ -1,4 +1,4 @@
-;;; helix-theme.el ---  Emacs color theme inspired by Helix editor's default colors -*- lexical-binding: t; -*-
+;;; helix-theme.el ---  Color theme inspired by Helix editor's default colors
 
 ;; Copyright (c) 2024 Dmitry Osipov
 
@@ -6,7 +6,6 @@
 ;; Version: 1.0
 ;; Keywords: faces
 ;; URL: https://github.com/ibakepunk/helix-theme
-;; Package-Requires: ((emacs "24.1"))
 
 ;;; License:
 
@@ -41,7 +40,7 @@
  'helix
  '(default ((t (:inherit nil :extend nil :stipple nil :background "#3B224C" :foreground "#A4A0E8" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 100 :width normal :foundry "outline"))))
  '(cursor ((t (:background "#6F44F0"))))
- '(fixed-pitch ((t (:family "Monospace"))))
+ '(fixed-pitch ((t (:family "Monospace" :foreground "#eccdba"))))
  '(variable-pitch ((((type w32)) (:foundry "outline" :family "Arial")) (t (:family "Sans Serif"))))
  '(escape-glyph ((t (:foreground "#efba5d"))))
  '(homoglyph ((t (:foreground "#efba5d"))))
@@ -96,7 +95,11 @@
  '(next-error ((t (:inherit region))))
  '(query-replace ((t (:inherit (isearch))))))
 
+;;;###autoload
+(when load-file-name
+  (add-to-list 'custom-theme-load-path
+               (file-name-as-directory (file-name-directory load-file-name))))
+
 (provide-theme 'helix)
 
-;; End:
 ;;; helix-theme.el ends here

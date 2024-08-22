@@ -31,16 +31,35 @@
 (transient-define-prefix casual-calc-logarithmic-tmenu ()
   "Casual logarithmic functions."
   ["Logarithmic Functions"
-   :pad-keys t
-    ("l" "𝑙𝑛" calc-ln :transient nil)
-    ("e" "𝑒^𝑥" calc-exp :transient nil)
-    ("L" "𝑙𝑜𝑔𝟣𝟢" calc-log10 :transient nil)
-    ("M-l" "𝑙𝑜𝑔" calc-log :transient nil)
-    ("M-e" "𝑒^𝑥 - 𝟣" calc-expm1 :transient nil)]
-  [:class transient-row
-          (casual-lib-quit-one)
-          (casual-lib-quit-all)
-          (casual-calc-undo-suffix)])
+   ["Logarithm"
+    ("l" "𝑙𝑛" calc-ln
+     :description (lambda () (casual-calc-unicode-get :ln))
+     :transient t)
+    ("p" "𝑙𝑛(𝑥+𝟣)" calc-lnp1
+     :description (lambda () (casual-calc-unicode-get :lnp1))
+     :transient t)
+    ("1" "𝑙𝑜𝑔₁₀" calc-log10
+     :description (lambda () (casual-calc-unicode-get :log10))
+     :transient t)
+    ("L" "𝑙𝑜𝑔ₐ(𝑥)" calc-log
+     :description (lambda () (casual-calc-unicode-get :log))
+     :transient t)]
+
+   ["Exponential"
+    ("^" "𝑒ˣ" calc-exp
+     :description (lambda () (casual-calc-unicode-get :exp))
+     :transient t)
+    ("m" "𝑒ˣ-𝟣" calc-expm1
+     :description (lambda () (casual-calc-unicode-get :expm1))
+     :transient t)]
+
+   ["Constant"
+    ("e" "𝑒" casual-calc--e-constant
+     :description (lambda () (casual-calc-unicode-get :e))
+     :transient t)]]
+
+  casual-calc-operators-group-row
+  casual-calc-navigation-group)
 
 (provide 'casual-calc-logarithmic)
 ;;; casual-calc-logarithmic.el ends here

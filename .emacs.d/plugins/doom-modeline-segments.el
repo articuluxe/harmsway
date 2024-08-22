@@ -690,9 +690,10 @@ Uses `nerd-icons-octicon' to fetch the icon."
                              ((memq state '(removed conflict unregistered))
                               (doom-modeline-icon 'octicon "nf-oct-alert" "⚠" "!" :face 'doom-modeline-urgent))
                              (t (doom-modeline-vcs-icon "nf-dev-git_branch" "" "@" 'doom-modeline-info))))
-                 (str (if vc-display-status
-                          (substring vc-mode (+ (if (eq backend 'Hg) 2 3) 2))
-                        ""))
+                 (str (or (and vc-display-status
+                               (functionp #'doom-modeline-vcs-name)
+                               (funcall #'doom-modeline-vcs-name))
+                          ""))
                  (face (cond ((eq state 'needs-update)
                               '(doom-modeline-warning bold))
                              ((memq state '(removed conflict unregistered))
@@ -732,6 +733,15 @@ Uses `nerd-icons-octicon' to fetch the icon."
  (lambda (_sym val op _where)
    (when (eq op 'set)
      (setq doom-modeline-vcs-icon val)
+     (dolist (buf (buffer-list))
+       (with-current-buffer buf
+         (doom-modeline-update-vcs))))))
+
+(doom-modeline-add-variable-watcher
+ 'vc-display-status
+ (lambda (_sym val op _where)
+   (when (eq op 'set)
+     (setq vc-display-status val)
      (dolist (buf (buffer-list))
        (with-current-buffer buf
          (doom-modeline-update-vcs))))))
@@ -1720,7 +1730,7 @@ TEXT is alternative if icon is not available."
       ((evil-visual-state-p) 'doom-modeline-evil-visual-state)
       ((evil-operator-state-p) 'doom-modeline-evil-operator-state)
       ((evil-replace-state-p) 'doom-modeline-evil-replace-state)
-      (t 'doom-modeline-evil-normal-state))
+      (t 'doom-modeline-evil-user-state))
      (evil-state-property evil-state :name t)
      (cond
       ((evil-normal-state-p) "nf-md-alpha_n_circle")
@@ -1730,7 +1740,7 @@ TEXT is alternative if icon is not available."
       ((evil-visual-state-p) "nf-md-alpha_v_circle")
       ((evil-operator-state-p) "nf-md-alpha_o_circle")
       ((evil-replace-state-p) "nf-md-alpha_r_circle")
-      (t "nf-md-alpha_n_circle"))
+      (t "nf-md-alpha_u_circle"))
      (cond
       ((evil-normal-state-p) "🅝")
       ((evil-emacs-state-p) "🅔")
@@ -1739,7 +1749,7 @@ TEXT is alternative if icon is not available."
       ((evil-visual-state-p) "🅥")
       ((evil-operator-state-p) "🅞")
       ((evil-replace-state-p) "🅡")
-      (t "🅝")))))
+      (t "🅤")))))
 
 (defsubst doom-modeline--overwrite ()
   "The current overwrite state which is enabled by command `overwrite-mode'."
@@ -1792,14 +1802,14 @@ TEXT is alternative if icon is not available."
   "The current Meow state. Requires `meow-mode' to be enabled."
   (when (bound-and-true-p meow-mode)
     (doom-modeline--modal-icon
-     (symbol-name (meow--current-state))
+     (substring-no-properties meow--indicator)
      (cond
-      ((meow-normal-mode-p) 'doom-modeline-evil-normal-state)
-      ((meow-insert-mode-p) 'doom-modeline-evil-insert-state)
-      ((meow-beacon-mode-p) 'doom-modeline-evil-visual-state)
-      ((meow-motion-mode-p) 'doom-modeline-evil-motion-state)
-      ((meow-keypad-mode-p) 'doom-modeline-evil-operator-state)
-      (t 'doom-modeline-evil-normal-state))
+      ((meow-normal-mode-p) 'doom-modeline-meow-normal-state)
+      ((meow-insert-mode-p) 'doom-modeline-meow-insert-state)
+      ((meow-beacon-mode-p) 'doom-modeline-meow-beacon-state)
+      ((meow-motion-mode-p) 'doom-modeline-meow-motion-state)
+      ((meow-keypad-mode-p) 'doom-modeline-meow-keypad-state)
+      (t 'doom-modeline-meow-normal-state))
      (symbol-name (meow--current-state))
      (cond
       ((meow-normal-mode-p) "nf-md-alpha_n_circle")
@@ -2572,19 +2582,23 @@ mouse-1: Toggle Debug on Quit"
 ;; IRC notifications
 ;;
 
-(defun doom-modeline--shorten-irc (name)
-  "Wrapper for `tracking-shorten' and `erc-track-shorten-function' with NAME.
+(defun doom-modeline-shorten-irc (name)
+  "Shorten IRC buffer `name' according to IRC mode.
 
-One key difference is that when `tracking-shorten' and
-`erc-track-shorten-function' returns nil we will instead return the original
-value of name. This is necessary in cases where the user has stylized the name
-to be an icon and we don't want to remove that so we just return the original."
-  (or (and (boundp 'tracking-shorten)
+Calls the mode specific function to return the shortened
+version of `NAME' if applicable:
+- Circe: `tracking-shorten'
+- ERC: `erc-track-shorten-function'
+- rcirc: `rcirc-shorten-buffer-name'
+
+The specific function will decide how to stylize the buffer name,
+read the individual functions documentation for more."
+  (or (and (fboundp 'tracking-shorten)
            (car (tracking-shorten (list name))))
       (and (boundp 'erc-track-shorten-function)
            (functionp erc-track-shorten-function)
 	       (car (funcall erc-track-shorten-function (list name))))
-      (and (boundp 'rcirc-short-buffer-name)
+      (and (fboundp 'rcirc-short-buffer-name)
            (rcirc-short-buffer-name name))
       name))
 
@@ -2593,7 +2607,7 @@ to be an icon and we don't want to remove that so we just return the original."
   (mapconcat
    (lambda (b)
      (propertize
-      (doom-modeline--shorten-irc (funcall doom-modeline-irc-stylize b))
+      (funcall doom-modeline-irc-stylize b)
       'face '(:inherit (doom-modeline-unread-number doom-modeline-notification))
       'help-echo (format "IRC Notification: %s\nmouse-1: Switch to buffer" b)
       'mouse-face 'doom-modeline-highlight

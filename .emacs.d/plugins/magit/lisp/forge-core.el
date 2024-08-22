@@ -144,7 +144,7 @@ repository.  (Forge repositories are also Git repositories, but not the
 other way around.)
 
 A `:known' repository has an entry in the local database.  All other
-repositories are unknown.  `:known' repositories are devided into two
+repositories are unknown.  `:known' repositories are divided into two
 subgroups: `:tracked' and \"untracked\" repositories.
 
 A `:tracked' repository was previously explicitly added to the database
@@ -246,25 +246,39 @@ is non-nil."
       (and demand
            (error "No entry for \"%s\" in `forge-alist'" host))))
 
-(defun forge--split-forge-url (url)
+(defun forge--split-forge-url (url &optional relax)
   (save-match-data
-    (and (string-match
-          (concat "\\`"
-                  "\\(?:git://\\|"
-                  "[^/@]+@\\|"
-                  "\\(?:ssh\\|ssh\\+git\\|git\\+ssh\\)://\\(?:[^/@]+@\\)?\\|"
-                  "https?://\\(?:[^/@]+@\\)?\\)?"
-                  (regexp-opt (mapcar #'car forge-alist) t)
-                  "\\(?::[0-9]+\\)?"
-                  "\\(?:/\\|:/?\\)"
-                  "~?\\(.+?\\)/"
-                  "\\([^/]+?\\)"
-                  "\\(?:\\.git\\|/\\)?"
-                  "\\'")
-          url)
-         (list (caddr (forge--get-forge-host (match-string 1 url) t))
-               (match-string 2 url)
-               (match-string 3 url)))))
+    (cond
+     ((string-match
+       (concat "\\`"
+               "\\(?:git://\\|"
+               "[^/@]+@\\|"
+               "\\(?:ssh\\|ssh\\+git\\|git\\+ssh\\)://\\(?:[^/@]+@\\)?\\|"
+               "https?://\\(?:[^/@]+@\\)?\\)?"
+               (if relax
+                   "\\(?1:[^:/]+\\)"
+                 (regexp-opt (mapcar #'car forge-alist) t))
+               "\\(?::[0-9]+\\)?"
+               "\\(?:/\\|:/?\\)"
+               "~?\\(?2:.+?\\)/"
+               "\\(?3:[^/]+?\\)"
+               "\\(?:\\.git\\|/\\)?"
+               "\\'")
+       url)
+      (and-let* ((elt (forge--get-forge-host (match-string 1 url) (not relax))))
+        ;; Return the WEBHOST (not the GITHOST, URLs passed to this
+        ;; function usually contain a GITHOST) because the IDs used to
+        ;; identify a repository in the database are based on WEBHOSTs.
+        (list (caddr elt)
+              (match-string 2 url)
+              (match-string 3 url))))
+     ((not relax)
+      ;; The host part didn't match any GITHOST in `forge-alist', but it
+      ;; might be a ssh host alias.  We have to relax strictness; in the
+      ;; extremely unlikely case that there is a common path between the
+      ;; HOST and the OWNER for this forge, we would incorrectly end up
+      ;; making that path part of the owner.
+      (forge--split-forge-url url t)))))
 
 ;;; Identity
 

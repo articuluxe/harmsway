@@ -11,13 +11,13 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: git tools vc
 
-;; Package-Version: 3.3.0.50-git
+;; Package-Version: 4.0.0
 ;; Package-Requires: (
 ;;     (emacs "26.1")
 ;;     (compat "30.0.0.0")
 ;;     (seq "2.24")
-;;     (transient "0.7.2")
-;;     (with-editor "3.3.4"))
+;;     (transient "0.7.4")
+;;     (with-editor "3.4.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -1259,11 +1259,9 @@ Added to `font-lock-extend-region-functions'."
                 (delete-region (point) (point-max)))))
            (let ((diff-default-read-only nil))
              (diff-mode))
-           (let (font-lock-verbose font-lock-support-mode)
-             (if (fboundp 'font-lock-ensure)
-                 (font-lock-ensure)
-               (with-no-warnings
-                 (font-lock-fontify-buffer))))
+           (let ((font-lock-verbose nil)
+                 (font-lock-support-mode nil))
+             (font-lock-ensure))
            (let ((pos (point-min)))
              (while-let ((next (next-single-property-change pos 'face)))
                (put-text-property pos next 'font-lock-face

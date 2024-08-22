@@ -29,7 +29,6 @@
 
 (require 'cl-lib)
 (require 'subr-x)
-(require 'url)
 (require 'dom)
 (require 'eieio)
 (require 'text-property-search)
@@ -546,16 +545,6 @@ That is: 1) define the translator 2) executable `gt-start'.")
   `(list ,@(cl-loop for slot in slots
                     collect `(slot-value ,instance ',slot))))
 
-(defun gt-format-params (data)
-  "Format DATA to k=v style query string.
-DATA should be list of (key . value)."
-  (if (or (null data) (stringp data)) data
-    (mapconcat (lambda (arg)
-                 (format "%s=%s"
-                         (url-hexify-string (format "%s" (car arg)))
-                         (url-hexify-string (format "%s" (or (cdr arg) 1)))))
-               (delq nil data) "&")))
-
 (defun gt-ensure-plain (obj &rest args)
   "Ensure OBJ is non-function and non-symbol.
 If OBJ is a function, call it with ARGS and return the result.
@@ -849,38 +838,36 @@ translator or a list to provide more validation data."
 (defvar gt-log-buffer-name "*gt-log*"
   "Log buffer for translator.")
 
-(defmacro gt-log (tag &rest messages)
+(defun gt-log (tag &rest messages)
   "Log MESSAGES to `gt-log-buffer-name'.
 TAG is a label for message being logged."
   (declare (indent 1))
-  `(if gt-debug-p (gt-do-log ,tag ,@messages)))
-
-(defun gt-do-log (tag &rest messages)
-  (with-current-buffer (get-buffer-create gt-log-buffer-name)
-    (goto-char (point-max))
-    (if (and (null messages) (stringp tag))
-        (insert tag)
-      (let* ((tag (when tag
-                    (concat
-                     (gt-face-lazy (cl-subseq (format "%-.1f" (time-to-seconds)) 6) 'gt-logger-buffer-timestamp-face)
-                     (gt-face-lazy (if (ignore-errors (string-blank-p tag)) tag (format " [%s]" tag)) 'gt-logger-buffer-tag-face)
-                     " ")))
-             (count (if (numberp (car messages)) (pop messages) (length tag)))
-             (messages (mapconcat (lambda (s) (format "%s" s)) (delq nil messages) "\n"))
-             (msg (if (string-blank-p messages)
-                      messages
-                    (with-temp-buffer
-                      (insert messages)
-                      (goto-char (point-min))
-                      (unless (= (length tag) count)
-                        (insert "\n")
-                        (goto-char (point-min)))
-                      (while (re-search-forward "\n" nil t)
-                        (save-excursion
-                          (beginning-of-line)
-                          (insert (make-string count ? ))))
-                      (buffer-string)))))
-        (insert (or tag "") (or msg "") "\n")))))
+  (when gt-debug-p
+    (with-current-buffer (get-buffer-create gt-log-buffer-name)
+      (goto-char (point-max))
+      (if (and (null messages) (stringp tag))
+          (insert tag)
+        (let* ((tag (when tag
+                      (concat
+                       (gt-face-lazy (cl-subseq (format "%-.1f" (time-to-seconds)) 6) 'gt-logger-buffer-timestamp-face)
+                       (gt-face-lazy (if (ignore-errors (string-blank-p tag)) tag (format " [%s]" tag)) 'gt-logger-buffer-tag-face)
+                       " ")))
+               (count (if (numberp (car messages)) (pop messages) (length tag)))
+               (messages (mapconcat (lambda (s) (format "%s" s)) (delq nil messages) "\n"))
+               (msg (if (string-blank-p messages)
+                        messages
+                      (with-temp-buffer
+                        (insert messages)
+                        (goto-char (point-min))
+                        (unless (= (length tag) count)
+                          (insert "\n")
+                          (goto-char (point-min)))
+                        (while (re-search-forward "\n" nil t)
+                          (save-excursion
+                            (beginning-of-line)
+                            (insert (make-string count ? ))))
+                        (buffer-string)))))
+          (insert (or tag "") (or msg "") "\n"))))))
 
 (defmacro gt-log-funcall (fmt &rest objects)
   `(gt-log ""
@@ -1007,149 +994,36 @@ If ONLY-EXPIRED not nil, purge caches expired only.")
 
 ;;; Http Client
 
-(defvar gt-default-http-client nil)
+(require 'gt-httpx)
 
-(defvar gt-http-client-max-retry 3)
+(defvar plz-curl-program)
 
-(defvar-local gt-http-client-stream-abort-flag nil
-  "Used in callback of http filter.
-Set this to non-nil to ignore the following stream progress.")
+(defvar gt-default-http-client
+  (if (and (require 'plz nil t) (executable-find plz-curl-program))
+      (gt-plz-http-client)
+    (gt-url-http-client)))
 
-(defclass gt-http-client (gt-single)
-  ((user-agent :initarg :user-agent :initform nil :type (or string null)))
-  "Used to send a request and get the response."
-  :abstract t)
-
-(cl-defgeneric gt-request (http-client &key url filter done fail data headers cache retry)
-  "Send HTTP request using the given HTTP-CLIENT.
-
-Optional keyword arguments:
-  - URL: The URL to send the request to.
-  - FILTER: A function to be called every time when some data returned.
-  - DONE: A function to be called when the request succeeds.
-  - FAIL: A function to be called when the request fails.
-  - DATA: The data to include in the request.
-  - HEADERS: Additional headers to include in the request.
-  - CACHE: enable get and set results in cache for current request.
-  - RETRY: how many times it can retry for timeout
-
-It should return the process of this request."
-  (:method :around ((client gt-http-client) &key url filter done fail data headers retry)
-           (cl-assert (and url (or filter done)))
-           (let* ((tag (gt-desc client))
-                  (failfn (lambda (status)
-                            (unless retry (setq retry gt-http-client-max-retry))
-                            (if (and (string-match-p "Operation timeout" (format "%s" status)) (cl-plusp retry))
-                                (progn (gt-log tag (format "request timeout, retrying (remains %d times)..." retry))
-                                       (gt-request client
-                                                   :url url :filter filter :done done :fail fail
-                                                   :data data :headers headers :retry (1- retry)))
-                              (gt-log tag (format "Request FAIL: (%s) %s" url status))
-                              (if fail (funcall fail status)
-                                (signal (car status) (cdr status))))))
-                  (filterfn (when filter
-                              (lambda ()
-                                (unless gt-http-client-stream-abort-flag
-                                  (condition-case err
-                                      (funcall filter)
-                                    (error
-                                     (setq gt-http-client-stream-abort-flag t)
-                                     (gt-log tag (format "Error in filter: (%s) %s" url err))
-                                     (funcall failfn err)))))))
-                  (donefn (lambda (raw)
-                            (gt-log tag (format "✓ %s" url))
-                            (when done (funcall done raw)))))
-             (gt-log tag
-               (format "> %s\n> %s" client url)
-               (if headers (format "> HEADER: %s" headers))
-               (if data (format "> DATA:   %s" data)))
-             (cl-call-next-method client :url url :headers headers :data data :filter filterfn :done donefn :fail failfn )))
-  (:method (&key url filter done fail data headers cache retry)
-           (ignore retry)
-           (let ((client (gt-ensure-plain gt-default-http-client (url-host (url-generic-parse-url url)))))
-             (if (and client (eieio-object-p client) (object-of-class-p client 'gt-http-client))
-                 (let* ((tag (gt-desc client))
-                        (data (gt-format-params data))
-                        (ckey (sha1 (format "%s%s" url data)))
-                        (donefn (when done
-                                  (lambda (raw)
-                                    (when cache ; cache the result for url if :cache exist
-                                      (let ((gt-cache-alive-time (if (numberp cache) cache gt-cache-alive-time)))
-                                        (gt-cache-set gt-default-cacher ckey raw)))
-                                    (condition-case err
-                                        (funcall done raw)
-                                      (error
-                                       (gt-log tag (format "Request SUCCESS but FAIL in callback: (%s) %s" url err))
-                                       (funcall fail err)))))))
-                   (if-let (r (and cache (gt-cache-get gt-default-cacher ckey)))
-                       (progn
-                         (gt-log 'cacher (format "Find %s in cache..." ckey))
-                         (funcall donefn r))
-                     (gt-request client :url url :headers headers :data data :filter filter :done donefn :fail fail)))
-               (let ((errmsg "Make sure `gt-default-http-client' is available. eg:\n\n(setq gt-default-http-client (gt-url-http-client))\n\n\n"))
-                 (if fail (funcall fail errmsg) (user-error errmsg)))))))
-
-;; http client implemented using `url.el'
-
-(defclass gt-url-http-client (gt-http-client)
-  ((proxy-services
-    :initarg :proxies
-    :initform nil
-    :type (or list null)
-    :documentation "Proxy services passed to `url.el', see `url-proxy-services' for details."))
-  :documentation "Http Client implemented using `url.el'.")
-
-(defcustom gt-user-agent "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
-  "The default user agent used when send a request."
-  :type 'string
-  :group 'go-translate)
-
-(defvar url-http-end-of-headers)
-
-(defvar url-http-transfer-encoding)
-
-(defvar gt-url-extra-filter nil)
-
-(defun gt-url-http-extra-filter (beg end len)
-  (when (and gt-url-extra-filter (bound-and-true-p url-http-end-of-headers)
-             (if (equal url-http-transfer-encoding "chunked") (= beg end) ; when delete
-               (= len 0))) ; when insert
-    (save-excursion
-      (save-restriction
-        (narrow-to-region url-http-end-of-headers (point-max))
-        (funcall gt-url-extra-filter)))))
-
-(cl-defmethod gt-request ((client gt-url-http-client) &key url filter done fail data headers retry)
-  (ignore retry)
-  (let* ((inhibit-message t)
-         (message-log-max nil)
-         (url-debug gt-debug-p)
-         (url-user-agent (or (oref client user-agent) gt-user-agent))
-         (url-proxy-services (or (oref client proxy-services) url-proxy-services))
-         (url-request-extra-headers headers)
-         (url-request-method (if data "POST" "GET"))
-         (url-request-data data)
-         (url-mime-encoding-string "identity")
-         (buf (url-retrieve
-               url (lambda (status)
-                     (let ((cb (current-buffer)))
-                       (set-buffer-multibyte t)
-                       (remove-hook 'after-change-functions #'gt-url-http-extra-filter t)
-                       (unwind-protect
-                           (if-let (err (or (cdr-safe (plist-get status :error))
-                                            (when (or (null url-http-end-of-headers) (= 1 (point-max)))
-                                              "Nothing responsed from server")))
-                               (if fail (funcall fail err)
-                                 (signal 'user-error err))
-                             (when done
-                               (funcall done (buffer-substring-no-properties url-http-end-of-headers (point-max)))))
-                         (kill-buffer cb))))
-               nil t)))
-    (when (and filter (buffer-live-p buf))
-      (with-current-buffer buf
-        (setq-local gt-url-extra-filter filter)
-        (add-hook 'after-change-functions #'gt-url-http-extra-filter nil t)))
-    (get-buffer-process buf)))
+(cl-defmethod gt-request (&rest args &key url method headers data filter done fail sync retry cache)
+  "Simple wrapper for http client, and add cache support."
+  (ignore method headers filter sync retry)
+  (let ((client (gt-ensure-plain gt-default-http-client (url-host (url-generic-parse-url url)))))
+    (if (and client (eieio-object-p client) (object-of-class-p client 'gt-http-client))
+        (let* ((ckey (sha1 (format "%s%s" url data)))
+               (donefn (when done
+                         (lambda (raw)
+                           ;; try to cache the result
+                           (when cache
+                             (let ((gt-cache-alive-time (if (numberp cache) cache gt-cache-alive-time)))
+                               (gt-cache-set gt-default-cacher ckey raw)))
+                           (funcall done raw)))))
+          ;; try to get from cache first
+          (if-let (r (and cache (gt-cache-get gt-default-cacher ckey)))
+              (progn (gt-log 'cacher (format "Find %s in cache..." ckey))
+                     (if donefn (funcall donefn r) r))
+            (cl-remf args :cache)
+            (apply #'gt-request client `(:done ,donefn ,@args))))
+      (let ((errmsg "Make sure `gt-default-http-client' is available. eg:\n\n(setq gt-default-http-client (gt-url-http-client))\n\n\n"))
+        (if fail (funcall fail errmsg) (user-error errmsg))))))
 
 
 ;;; Taker
@@ -1523,7 +1397,7 @@ previous one. This is non-destructive."
   "Switch to next target in prompt minibuffer.
 If BACKWARDP is not nil then switch to previous one."
   (interactive)
-  (let ((gt-skip-lang-rules-p current-prefix-arg))
+  (let ((gt-skip-lang-rules-p (or current-prefix-arg (string-blank-p (minibuffer-contents)))))
     (setq gt-prompt-target
           (gt-target (oref gt-current-translator taker)
                      (make-instance (eieio-object-class gt-current-translator)
@@ -1723,11 +1597,10 @@ This is used for streaming output for _RENDER."
 
 ;;; Text to Speech
 
-(defcustom gt-tts-speaker (or (executable-find "mpv")
-                              (executable-find "mplayer")
-                              (executable-find "cvlc"))
+(defcustom gt-tts-speaker (cl-find-if #'executable-find (list "mpv" "mplayer" "cvlc"))
   "The program used to speak the translation result.
-It also can be a command with options like `mpv --af=xxx'."
+It also can be a command with options like `mpv --af=xxx'.
+The value should not contain any space in the command path."
   :type 'string
   :group 'go-translate)
 
@@ -1757,7 +1630,7 @@ If WAIT is not nil, play after current process finished."
   (cl-flet ((speak ()
               (let ((proc (make-process
                            :name (format "gt-tts-process-%s" (+ 1000 (random 1000)))
-                           :command (append (split-string gt-tts-speaker) (list "-"))
+                           :command (append (split-string-shell-command gt-tts-speaker) (list "-"))
                            :buffer nil
                            :noquery t
                            :sentinel (lambda (_ s) (if (string-match-p "finished" s) (message "")))
@@ -1859,7 +1732,7 @@ When TTS with specific engine, you can specify the language with `lang.' prefix.
               ;; 2. play current task
               (setq engine (oref task engine))
               (unless (cl-find-method #'gt-speak '() `(,(eieio-object-class engine) t t))
-                (user-error "No TTS service found at point"))
+                (user-error "No TTS service found on current engine `%s'" (oref engine tag)))
               (let ((part (or (get-char-property (point) 'gt-part) 0))
                     (col (lambda (l c) (push (format "%s. %s" l (substring-no-properties c)) items))))
                 (if (use-region-p)
@@ -1870,7 +1743,9 @@ When TTS with specific engine, you can specify the language with `lang.' prefix.
                   (when-let (r (and (not err) (or (get-pos-property (point) 'gt-brief) (nth part (ensure-list res)))))
                     (funcall col tgt r)))
                 (when items
-                  (let* ((cand (completing-read "Text to Speech: " (gt-make-completion-table items)))
+                  (let* ((cand (completing-read
+                                (format "Text to Speech (with %s): " (oref engine tag))
+                                (gt-make-completion-table items)))
                          (lang (if (string-match (format "^ *\\(%s\\)\\." (mapconcat #'symbol-name (mapcar #'car gt-lang-codes) "\\|")) cand)
                                    (prog1 (intern-soft (match-string 1 cand))
                                      (setq cand (substring cand (match-end 0))))

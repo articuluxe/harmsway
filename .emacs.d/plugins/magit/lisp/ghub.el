@@ -6,6 +6,13 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
+;; Package-Version: 4.0.0
+;; Package-Requires: (
+;;     (emacs "26.3")
+;;     (compat "30.0.0.0")
+;;     (let-alist "1.0.6")
+;;     (treepy "0.1.2"))
+
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
 ;; This file is free software: you can redistribute it and/or modify
@@ -131,6 +138,7 @@ See https://github.com/magit/ghub/pull/149.")
 
 (define-error 'ghub-error "Ghub/Url Error" 'error)
 (define-error 'ghub-http-error "HTTP Error" 'ghub-error)
+(define-error 'ghub-http-timeout "HTTP Timeout" 'ghub-http-error)
 
 (defvar ghub-response-headers nil
   "The headers returned in response to the last request.
@@ -504,24 +512,28 @@ Also see https://github.com/magit/ghub/wiki/Known-Issues.")
     (if (or (ghub--req-callback  req)
             (ghub--req-errorback req))
         (url-retrieve url handler (list req) silent)
-      (if-let ((buf (url-retrieve-synchronously url silent)))
-          (with-current-buffer buf
-            (funcall handler (car url-callback-arguments) req))
-        (error "ghub--retrieve: No buffer returned")))))
+      (let ((buf (url-retrieve-synchronously url silent)))
+        (funcall handler
+                 (and buf (buffer-local-value 'url-callback-arguments buf))
+                 req buf)))))
 
-(defun ghub--handle-response (status req)
-  (let ((buffer (current-buffer)))
+(cl-defun ghub--handle-response (status req &optional (buffer nil sbuf))
+  (let ((buf (if sbuf
+                 (and (buffer-live-p buffer) buffer)
+               (and status (current-buffer)))))
     (unwind-protect
-        (progn
-          (set-buffer-multibyte t)
+        (save-current-buffer
+          (when buf
+            (set-buffer buf)
+            (set-buffer-multibyte t))
           (let* ((unpaginate (ghub--req-unpaginate req))
-                 (headers    (ghub--handle-response-headers status req))
-                 (payload    (ghub--handle-response-payload req))
-                 (payload    (ghub--handle-response-error status payload req))
-                 (value      (ghub--handle-response-value payload req))
-                 (prev       (ghub--req-url req))
-                 (next       (cdr (assq 'next (ghub-response-link-relations
-                                               req headers payload)))))
+                 (headers (and buf (ghub--handle-response-headers status req)))
+                 (payload (and buf (ghub--handle-response-payload req)))
+                 (payload (ghub--handle-response-error status payload req))
+                 (value   (ghub--handle-response-value payload req))
+                 (prev    (ghub--req-url req))
+                 (next    (cdr (assq 'next (ghub-response-link-relations
+                                            req headers payload)))))
             (when (numberp unpaginate)
               (cl-decf unpaginate))
             (setf (ghub--req-url req)
@@ -532,7 +544,7 @@ Also see https://github.com/magit/ghub/wiki/Known-Issues.")
                      (or (eq unpaginate t)
                          (>  unpaginate 0))
                      (ghub-continue req))
-                (let ((buffer    (ghub--req-buffer req))
+                (let ((req-buf   (ghub--req-buffer req))
                       (callback  (ghub--req-callback req))
                       (errorback (ghub--req-errorback req))
                       (err       (plist-get status :error)))
@@ -543,45 +555,48 @@ Also see https://github.com/magit/ghub/wiki/Known-Issues.")
                                     errorback)
                                   err headers status req))
                         (callback
-                         (with-current-buffer
-                             (if (buffer-live-p buffer) buffer (current-buffer))
+                         (save-current-buffer
+                           (when (buffer-live-p req-buf)
+                             (set-buffer req-buf))
                            (funcall callback value headers status req)))
                         (t value))))))
-      (when (buffer-live-p buffer)
-        (kill-buffer buffer)))))
+      (when (buffer-live-p buf)
+        (kill-buffer buf)))))
 
-(defun ghub--handle-response-headers (_status req)
-  (goto-char (point-min))
-  (forward-line 1)
-  (let (headers)
-    (when (memq url-http-end-of-headers '(nil 0))
-      (setq url-debug t)
-      (error "BUG: missing headers; but there's a patch for that \
-see https://github.com/magit/ghub/wiki/Known-Issues"))
-    (while (re-search-forward "^\\([^:]*\\): \\(.+\\)"
-                              url-http-end-of-headers t)
-      (push (cons (match-string 1)
-                  (match-string 2))
-            headers))
-    (setq headers (nreverse headers))
-    (goto-char (1+ url-http-end-of-headers))
-    (if (and req (or (ghub--req-callback req)
-                     (ghub--req-errorback req)))
-        (setq-local ghub-response-headers headers)
-      (setq-default ghub-response-headers headers))
-    headers))
+(defun ghub--handle-response-headers (status req)
+  (and status ; Request did not time out.
+       (let ((headers ()))
+         (when (memq url-http-end-of-headers '(nil 0))
+           (error "Ghub: BUG: No headers in response buffer: %S"
+                  (current-buffer)))
+         (goto-char (point-min))
+         (forward-line 1)
+         (while (re-search-forward "^\\([^:]*\\): \\(.+\\)"
+                                   url-http-end-of-headers t)
+           (push (cons (match-string 1)
+                       (match-string 2))
+                 headers))
+         (setq headers (nreverse headers))
+         (goto-char (1+ url-http-end-of-headers))
+         (if (and req (or (ghub--req-callback req)
+                          (ghub--req-errorback req)))
+             (setq-local ghub-response-headers headers)
+           (setq-default ghub-response-headers headers))
+         headers)))
 
 (defun ghub--handle-response-error (status payload req)
-  (let ((noerror (ghub--req-noerror req))
-        (err (plist-get status :error)))
-    (if err
-        (if noerror
-            (if (eq noerror 'return)
-                payload
-              (setcdr (last err) (list payload))
-              nil)
-          (ghub--signal-error err payload req))
-      payload)))
+  (if-let ((err (or (plist-get status :error)
+                    (and (not status) 'timeout))))
+      (if-let ((noerror (ghub--req-noerror req)))
+          (cond ((eq noerror 'return) payload)
+                ((eq err 'timeout) nil)
+                (t (setcdr (last err) (list payload))
+                   nil))
+        (if (eq err 'timeout)
+            (signal 'ghub-http-timeout
+                    (list nil nil (url-recreate-url (ghub--req-url req)) nil))
+          (ghub--signal-error err payload req)))
+    payload))
 
 (defun ghub--signal-error (err &optional payload req)
   (pcase-let ((`(,symb . ,data) err))
@@ -591,7 +606,7 @@ see https://github.com/magit/ghub/wiki/Known-Issues"))
                     (let ((code (car (cdr-safe data))))
                       (list code
                             (nth 2 (assq code url-http-codes))
-                            (and req (url-filename (ghub--req-url req)))
+                            (and req (url-recreate-url (ghub--req-url req)))
                             payload)))
           (signal 'ghub-error data))
       (signal symb data))))

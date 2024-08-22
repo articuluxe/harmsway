@@ -51,12 +51,14 @@
  `(font-lock-type-face          ((t (:foreground "#2B91AF"))))
  `(font-lock-variable-name-face ((t (:foreground "#000000"))))
 
+ `(header-line ((t (:background "#F6F6F6" :foreground "#000000"))))
+
  `(mode-line          ((t :box ( :line-width -1 :style released-button))))
  `(mode-line-inactive ((t :box ( :line-width -1 :style released-button))))
 
  `(cursor  ((t :background "#A3A3A3")))
  `(hl-line ((t :background ,(if vs-light-theme-graphic-p "#F1F1F1" "#99C9EF"))))
- `(region  ((t :background "#99C9EF")))
+ `(region  ((t :background "#8AB6DF")))
  `(fringe  ((t :background "#E6E7E8")))
 
  `(completions-annotations ((t :inherit (shadow))))
@@ -76,6 +78,8 @@
                          `((t :box ( :line-width (-1 . -1) :style released-button
                                      :color "#A4A4A4")))
                        `((t :background "#0055FF"))))
+
+ `(show-eof-mode-marker-face ((t :background "#ECECFB" :foreground "#7A6C7F")))
 
  `(highlight-indent-guides-odd-face             ((t :foreground "#D0D0D0")))
  `(highlight-indent-guides-even-face            ((t :foreground "#D0D0D0")))

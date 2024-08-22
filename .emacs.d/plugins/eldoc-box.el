@@ -292,6 +292,7 @@ comes in, the at-point doc pop-up can be updated.
 
 For DOCS, see ‘eldoc-display-functions’."
   (when (and eldoc-box--frame
+             (frame-live-p eldoc-box--frame)
              (frame-visible-p eldoc-box--frame)
              (eq eldoc-box--help-at-point-last-point (point)))
     (let ((eldoc-box-position-function
@@ -343,10 +344,12 @@ STR has to be a proper documentation, not empty string, not nil, etc."
       (setq-local cursor-type t)
       (when (bound-and-true-p global-tab-line-mode)
         (setq tab-line-format nil))
-      ;; without this, clicking childframe will make doc buffer the current buffer
-      ;; and `eldoc-box--maybe-cleanup' in `eldoc-box--cleanup-timer' will clear the childframe
+      ;; Without this, clicking childframe will make doc buffer the
+      ;; current buffer and `eldoc-box--maybe-cleanup' in
+      ;; `eldoc-box--cleanup-timer' will clear the childframe
       (buffer-face-set 'eldoc-box-body)
       (setq eldoc-box-hover-mode t)
+      (set-window-margins nil nil nil)
       (erase-buffer)
       (insert str)
       (goto-char (point-min))

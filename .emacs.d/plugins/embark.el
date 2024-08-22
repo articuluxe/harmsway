@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 1.1
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
+;; Package-Requires: ((emacs "27.1") (compat "30"))
 
 ;; This file is part of GNU Emacs.
 
@@ -500,7 +500,7 @@ used for other types of action hooks, for more details see
                         (const :tag "Always" :always))
                 :value-type hook))
 
-(when (version-list-< (version-to-list emacs-version) '(29 1))
+(static-if (< emacs-major-version 29)
   ;; narrow to target for duration of action
   (setf (alist-get 'repunctuate-sentences embark-around-action-hooks)
         '(embark--narrow-to-target)))
@@ -3947,7 +3947,7 @@ argument), no quoting is used for strings."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
-(when (< emacs-major-version 29)
+(static-if (< emacs-major-version 29)
   (defun embark-elp-restore-package (prefix)
     "Remove instrumentation from functions with names starting with PREFIX."
     (interactive "SPrefix: ")
@@ -3982,9 +3982,13 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
     (insert encoded)))
 
 (defun embark-decode-url (start end)
-  "Decode the URI-encoded region between START and END in current buffer."
+  "Decode the URI-encoded region between START and END in current buffer.
+It assumes the URL was encoded in UTF-8."
   (interactive "r")
-  (let ((decoded (url-unhex-string (buffer-substring-no-properties start end))))
+  (let ((decoded (decode-coding-string
+                  (url-unhex-string
+                   (buffer-substring-no-properties start end))
+                  'utf-8)))
     (delete-region start end)
     (insert decoded)))
 
@@ -4006,7 +4010,7 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
     (access-file dir "Download failed")
     (url-retrieve
      url #'eww-download-callback
-     (if (>= emacs-major-version 28) (list url dir) (list url)))))
+     (static-if (>= emacs-major-version 28) (list url dir) (list url)))))
 
 ;;; Setup and pre-action hooks
 

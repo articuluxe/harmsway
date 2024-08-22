@@ -163,7 +163,7 @@ an error."
   "Read an active issue with completion using PROMPT.
 
 Open, unread and pending issues are considered active.
-Default to the current issue even if it isn't active.
+Default to the current issue, even if it isn't active.
 
 \\<forge-read-topic-minibuffer-map>While completion is in \
 progress, \\[forge-read-topic-lift-limit] lifts the limit, extending
@@ -174,7 +174,7 @@ can be selected from the start."
   (forge--read-topic prompt
                      #'forge-current-issue
                      (forge--topics-spec :type 'issue :active t)
-                     (forge--topics-spec :type 'issue :active nil)))
+                     (forge--topics-spec :type 'issue :active nil :state nil)))
 
 (defun forge-read-open-issue (prompt)
   "Read an open issue with completion using PROMPT."
@@ -196,12 +196,13 @@ can be selected from the start."
   "<remap> <magit-browse-thing>" #'forge-browse-issues
   "<remap> <magit-visit-thing>"  #'forge-list-issues
   "<remap> <forge--list-menu>"   #'forge-topics-menu
-  "<remap> <forge--item-menu>"   #'forge-topics-menu
+  "<remap> <forge--item-menu>"   #'forge-topic-menu
   "C-c C-n"                      #'forge-create-issue)
 
 (defvar-keymap forge-issue-section-map
   :parent forge-common-map
   "<remap> <magit-visit-thing>"  #'forge-visit-this-topic
+  "<remap> <forge--list-menu>"   #'forge-topics-menu
   "<remap> <forge--item-menu>"   #'forge-topic-menu)
 
 (cl-defun forge-insert-issues (&optional (spec nil sspec) heading)
@@ -211,7 +212,7 @@ and optional HEADING to change the section heading."
   (when-let (((forge-db t))
              (repo (forge-get-repository :tracked?))
              ((oref repo issues-p))
-             (spec (if sspec spec (clone forge--buffer-topics-spec)))
+             (spec (if sspec spec (forge--clone-buffer-topics-spec)))
              ((memq (oref spec type) '(topic issue))))
     (oset spec type 'issue)
     (forge--insert-topics 'issues

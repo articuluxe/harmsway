@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.6
+;; Version: 1.7
 ;; Package-Requires: ((emacs "27.1") (compat "30"))
 ;; Homepage: https://github.com/minad/marginalia
 ;; Keywords: docs, help, matching, completion
@@ -136,7 +136,7 @@ determine it."
     ("\\<color\\>" . color)
     ("\\<face\\>" . face)
     ("\\<environment variable\\>" . environment-variable)
-    ("\\<function\\|hook to remove\\>" . function)
+    ("\\<function\\|\\(?:hook\\|advice\\) to remove\\>" . function)
     ("\\<variable\\>" . variable)
     ("\\<input method\\>" . input-method)
     ("\\<charset\\>" . charset)

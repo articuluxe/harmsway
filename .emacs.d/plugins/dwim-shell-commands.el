@@ -118,7 +118,7 @@ Optional argument ARGS as per `browse-url-default-browser'"
    "exiftool '<<f>>'"
    :utils "exiftool"))
 
-(defun dwim-shell-commands-ocr-text-from-image ()
+(defun dwim-shell-commands-tesseract-ocr-text-from-image ()
   "Extract text from image via tesseract."
   (interactive)
   (dwim-shell-command-on-marked-files
@@ -325,7 +325,7 @@ Optional argument ARGS as per `browse-url-default-browser'"
      :silent-success t
      :utils "trash")))
 
-(defun dwim-shell-commands-macos-ocr-desktop-region ()
+(defun dwim-shell-commands-macos-ocr-text-from-desktop-region ()
   "Select a macOS desktop area to OCR and copy recognized text to kill ring."
   (interactive)
   (dwim-shell-command-on-marked-files
@@ -344,7 +344,7 @@ Optional argument ARGS as per `browse-url-default-browser'"
          (goto-char (point-min))
          (message "OCR copied to clipboard"))))))
 
-(defun dwim-shell-commands-macos-ocr-file ()
+(defun dwim-shell-commands-macos-ocr-text-from-image ()
   "OCR file and copy recognized text to kill ring."
   (interactive)
   (dwim-shell-command-on-marked-files
@@ -406,7 +406,7 @@ Optional argument ARGS as per `browse-url-default-browser'"
   (interactive)
   (dwim-shell-command-on-marked-files
    "Convert webp to video"
-   "convert '<<f>>' '<<fne>>.gif''"
+   "convert '<<f>>' '<<fne>>.gif'"
    :utils '("convert")
    :extensions "webp"))
 
@@ -707,12 +707,88 @@ EOF"
                              skipping-every)) " "))
 
 (defun dwim-shell-commands-video-to-mp3 ()
-  "Drop audio from all marked videos."
+  "Convert video(s) to mp3."
   (interactive)
   (dwim-shell-command-on-marked-files
    "Convert to mp3"
    "ffmpeg -i '<<f>>' -vn -ab 128k -ar 44100 -y '<<fne>>.mp3'"
    :utils "ffmpeg"))
+
+(defun dwim-shell-commands-video-to-mp3-with-artwork ()
+  "Convert video(s) to mp3 (keep frame as artwork)."
+  (interactive)
+  (dwim-shell-command-on-marked-files
+   "Convert to mp3"
+   "ffmpeg -i '<<f>>' -vf 'select=eq(n\\,0)' -q:v 3 cover.jpg -i '<<f>>' -vn -ab 128k -ar 44100 -y -map_metadata 0 -id3v2_version 3 -write_id3v1 1 -metadata:s:v title='Album cover' -metadata:s:v comment='Cover (front)' '<<fne>>.mp3'"
+   :utils "ffmpeg"))
+
+(defun dwim-shell-commands-ndjson-to-org ()
+  "Convert ndjson file to org."
+  (interactive)
+  (unless (eq (length (dwim-shell-command--files)) 1)
+    (error "Only 1 file supported"))
+  (let* ((emacs-bin (file-truename (expand-file-name invocation-name
+                                                     invocation-directory)))
+         (source (nth 0 (dwim-shell-command--files)))
+         (destination (concat (file-name-sans-extension
+                               source) ".org"))
+         (fields (with-temp-buffer
+                   (insert-file-contents source)
+                   (buffer-substring-no-properties (point-min) (line-end-position))
+                   (read-string "Fields: " (mapconcat 'identity (mapcar (lambda (item)
+                                                                          (symbol-name (car item)))
+                                                                        (json-read-from-string
+                                                                         (buffer-substring-no-properties
+                                                                          (point-min) (line-end-position))))
+                                                      " ")))))
+    (dwim-shell-command-on-marked-files
+     "Convert ndjson to org"
+     (format "%s --quick --batch --eval \"%s\"" emacs-bin
+             (replace-regexp-in-string
+              "\"" "\\\\\""
+              (prin1-to-string
+               `(progn
+                  (require 'org)
+                  (require 'json)
+                  (defun convert-to-org-table (ndjson)
+                    (let ((rows (mapcar #'json-read-from-string
+                                        (split-string ndjson "\n" t))))
+                      (orgtbl-to-orgtbl
+                       (append
+                        (list (split-string ,fields))
+                        '(hline)
+                        (mapcar (lambda (obj)
+                                  (mapcar (lambda (key)
+                                            (or (alist-get (intern key) obj) ""))
+                                          (split-string ,fields)))
+                                rows)) nil)))
+                  (with-temp-buffer
+                    (insert-file-contents ,source)
+                    (let ((org (convert-to-org-table (buffer-string))))
+                      (with-temp-file ,destination
+                        (insert org))))))))
+     :extensions "ndjson")))
+
+(defun dwim-shell-commands-set-media-artwork-image-metadata ()
+  "Set image artwork metadata for media file(s)."
+  (interactive)
+  (let ((artwork-file (file-name-unquote
+                       (read-file-name "Select artwork image: "
+                                       nil nil t)))
+        (should-backup (y-or-n-p "Create backup files? ")))
+    (unless (file-regular-p artwork-file)
+      (user-error "Not a file"))
+    (unless should-backup
+      (unless (y-or-n-p "Override file(s)? ")
+        (user-error "Aborted")))
+    (dwim-shell-command-on-marked-files
+     "Set album artwork"
+     (format (if should-backup
+                 "ffmpeg -i '<<f>>' -i '%s' -map_metadata 0 -map 0:a -map 1 -c copy -disposition:v:0 attached_pic '<<f>>.tmp.<<e>>' && mv -f '<<f>>' '<<f>>.bak' && mv '<<f>>.tmp.<<e>>' '<<f>>'"
+               "ffmpeg -i '<<f>>' -i '%s' -map_metadata 0 -map 0:a -map 1 -c copy -disposition:v:0 attached_pic '<<f>>.tmp.<<e>>' && mv -f '<<f>>.tmp.<<e>>' '<<f>>'")
+             artwork-file)
+     :utils "AtomicParsley"
+     :silent-success t)))
 
 (defun dwim-shell-commands-video-trim-beginning ()
   "Drop audio from all marked videos."

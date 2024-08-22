@@ -309,6 +309,7 @@ Used when `magit-process-display-mode-line-error' is non-nil."
 
 (define-derived-mode magit-process-mode magit-mode "Magit Process"
   "Mode for looking at Git process output."
+  :interactive nil
   :group 'magit-process
   (magit-hack-dir-local-variables)
   (setq magit--imenu-item-types 'process))
@@ -389,11 +390,11 @@ as well as the current repository's status buffer are refreshed.
 Process output goes into a new section in the buffer returned by
 `magit-process-buffer'."
   (let ((magit--refresh-cache (list (cons 0 0))))
-    (magit-call-git args)
-    (when (member (car args) '("init" "clone"))
-      ;; Creating a new repository invalidates the cache.
-      (setq magit--refresh-cache nil))
-    (magit-refresh)))
+    (prog1 (magit-call-git args)
+      (when (member (car args) '("init" "clone"))
+        ;; Creating a new repository invalidates the cache.
+        (setq magit--refresh-cache nil))
+      (magit-refresh))))
 
 (defvar magit-pre-call-git-hook nil)
 
@@ -450,8 +451,7 @@ conversion."
 (defun magit-process-environment ()
   ;; The various w32 hacks are only applicable when running on the local
   ;; machine.  A local binding of process-environment different from the
-  ;; top-level value affects the environment used in
-  ;; tramp-sh-handle-{start-file-process,process-file}.
+  ;; top-level value affects the environment used by Tramp.
   (let ((local (not (file-remote-p default-directory))))
     (append magit-git-environment
             (and local
@@ -651,18 +651,21 @@ Magit status buffer."
 (defun magit-parse-git-async (&rest args)
   (setq args (magit-process-git-arguments args))
   (let ((command-buf (current-buffer))
-        (process-buf (generate-new-buffer " *temp*"))
+        (stdout-buf (generate-new-buffer " *git-stdout*"))
+        (stderr-buf (generate-new-buffer " *git-stderr*"))
         (toplevel (magit-toplevel)))
-    (with-current-buffer process-buf
+    (with-current-buffer stdout-buf
       (setq default-directory toplevel)
       (let ((process
-             (let ((process-connection-type nil)
-                   (process-environment (magit-process-environment))
-                   (default-process-coding-system
-                    (magit--process-coding-system)))
-               (apply #'start-file-process "git" process-buf
-                      (magit-git-executable) args))))
+             (let ((process-environment (magit-process-environment)))
+               (make-process :name "git"
+                             :buffer stdout-buf
+                             :stderr stderr-buf
+                             :command (cons (magit-git-executable) args)
+                             :coding (magit--process-coding-system)
+                             :file-handler t))))
         (process-put process 'command-buf command-buf)
+        (process-put process 'stderr-buf stderr-buf)
         (process-put process 'parsed (point))
         (setq magit-this-process process)
         process))))
@@ -1014,25 +1017,6 @@ as argument."
                               #'magit-maybe-start-credential-cache-daemon)))))))
 
 (add-hook 'magit-credential-hook #'magit-maybe-start-credential-cache-daemon)
-
-(define-advice tramp-sh-handle-start-file-process
-    (:around (fn name buffer program &rest args)
-             magit-tramp-process-environment)
-  (if magit-tramp-process-environment
-      (apply fn name buffer
-             (car magit-tramp-process-environment)
-             (append (cdr magit-tramp-process-environment)
-                     (cons program args)))
-    (apply fn name buffer program args)))
-
-(define-advice tramp-sh-handle-process-file
-    (:around (fn program &optional infile destination display &rest args)
-             magit-tramp-process-environment)
-  (if magit-tramp-process-environment
-      (apply fn "env" infile destination display
-             (append magit-tramp-process-environment
-                     (cons program args)))
-    (apply fn program infile destination display args)))
 
 (defvar-keymap magit-mode-line-process-map
   :doc "Keymap for `mode-line-process'."

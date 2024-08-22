@@ -306,6 +306,22 @@
                     ".dll"
                     (dape-cwd))))
      :stopAtEntry nil)
+    (ocamlearlybird
+     ensure dape-ensure-command
+     modes (tuareg-mode caml-mode)
+     command "ocamlearlybird"
+     command-args ("debug")
+     :type "ocaml"
+     :program (lambda ()
+                (file-name-concat
+                 (dape-cwd)
+                 "_build" "default" "bin"
+                 (concat
+                  (file-name-base (dape-buffer-default))
+                  ".bc")))
+     :console "internalConsole"
+     :stopOnEntry nil
+     :arguments [])
     (rdbg
      modes (ruby-mode ruby-ts-mode)
      ensure dape-ensure-command
@@ -496,8 +512,8 @@ Each element should look like (MIME-TYPE . MODE) where
   `((display-buffer-use-some-window display-buffer-pop-up-window)
     (some-window
      . (lambda (&rest _)
-         (cl-loop for w in (window-list) unless
-                  (buffer-match-p '(or "\*dape-shell\*"
+         (cl-loop for w in (window-list nil 'skip-minibuffer) unless
+                  (buffer-match-p '(or (derived-mode . dape-shell-mode)
                                        (derived-mode . dape-repl-mode)
                                        (derived-mode . dape-memory-mode)
                                        (derived-mode . dape-info-parent-mode))
@@ -1112,7 +1128,7 @@ On SKIP-PROCESS-BUFFERS skip deletion of buffers which has processes."
                    (cons '(display-buffer-in-side-window)
                          (pcase (cons mode group)
                            (`(dape-repl-mode . ,_) '((side . bottom) (slot . -1)))
-                           (`(shell-mode . ,_) '((side . bottom) (slot . 0)))
+                           (`(dape-shell-mode . ,_) '((side . bottom) (slot . 0)))
                            (`(,_ . 0) `((side . ,dape-buffer-window-arrangement) (slot . -1)))
                            (`(,_ . 1) `((side . ,dape-buffer-window-arrangement) (slot . 0)))
                            (`(,_ . 2) `((side . ,dape-buffer-window-arrangement) (slot . 1)))
@@ -1121,7 +1137,7 @@ On SKIP-PROCESS-BUFFERS skip deletion of buffers which has processes."
                    (pcase (cons mode group)
                      (`(dape-repl-mode . ,_)
                       '((display-buffer-in-side-window) (side . top) (slot . -1)))
-                     (`(shell-mode . ,_)
+                     (`(dape-shell-mode . ,_)
                       '((display-buffer-pop-up-window)
                         (direction . right) (dedicated . t)))
                      (`(,_ . 0)
@@ -1809,6 +1825,9 @@ selected stack frame."
 (cl-defgeneric dape-handle-request (_conn _command _arguments)
   "Sink for all unsupported requests." nil)
 
+(define-derived-mode dape-shell-mode shell-mode "Shell"
+  "Major mode for interacting with an debugged program.")
+
 (cl-defmethod dape-handle-request (conn (_command (eql runInTerminal)) arguments)
   "Handle runInTerminal requests.
 Starts a new adapter CONNs from ARGUMENTS."
@@ -1825,7 +1844,7 @@ Starts a new adapter CONNs from ARGUMENTS."
              process-environment))
         (buffer (get-buffer-create "*dape-shell*")))
     (with-current-buffer buffer
-      (shell-mode)
+      (dape-shell-mode)
       (shell-command-save-pos-or-erase))
     (let ((process
            (make-process :name "dape shell"
@@ -2198,10 +2217,9 @@ symbol `dape-connection'."
            (while (process-live-p server-process)
              (accept-process-output nil nil 0.1))))
        ;; ui
-       (run-with-timer 1 nil (lambda ()
-                               (when (eq dape--connection conn)
-                                 (dape-active-mode -1)
-                                 (force-mode-line-update t)))))
+       (when (eq dape--connection conn)
+         (dape-active-mode -1)
+         (force-mode-line-update t)))
      :request-dispatcher 'dape-handle-request
      :notification-dispatcher 'dape-handle-event
      :process process)))
@@ -2630,8 +2648,6 @@ Using BUFFER and STR."
   "Start compilation for CONFIG."
   (let ((default-directory (dape--guess-root config))
         (command (plist-get config 'compile)))
-    ;; TODO Is it really necessary to have `dape-compile-fn' as an
-    ;;      option as `default-directory' is set.
     (funcall dape-compile-fn command)
     (with-current-buffer (compilation-find-buffer)
       (setq dape--compile-config config)
@@ -4122,15 +4138,19 @@ or `prefix' part of variable string."
              ((zerop (or (plist-get object :variablesReference) 0))
               (concat prefix "  "))
              ((and expanded (plist-get object :variables))
-              (propertize (concat prefix "- ")
-                          'mouse-face 'highlight
-                          'help-echo "mouse-2: contract"
-                          'keymap map))
+              (concat
+               (propertize (concat prefix "-")
+                           'mouse-face 'highlight
+                           'help-echo "mouse-2: contract"
+                           'keymap map)
+               " "))
              (t
-              (propertize (concat prefix "+ ")
-                          'mouse-face 'highlight
-                          'help-echo "mouse-2: expand"
-                          'keymap map)))))
+              (concat
+               (propertize (concat prefix "+")
+                           'mouse-face 'highlight
+                           'help-echo "mouse-2: expand"
+                           'keymap map)
+               " ")))))
     (setq row (dape--info-locals-table-columns-list
                `((name  . ,name)
                  (type  . ,type)
@@ -4147,7 +4167,8 @@ or `prefix' part of variable string."
       ;; TODO Should be paged
       (dolist (variable (plist-get object :variables))
         (dape--info-scope-add-variable
-         table variable (plist-get object :variablesReference) path expanded-p maps)))))
+         table variable (plist-get object :variablesReference)
+         path expanded-p maps)))))
 
 ;; FIXME Empty header line when adapter is killed
 (define-derived-mode dape-info-scope-mode dape-info-parent-mode "Scope"
@@ -4455,7 +4476,13 @@ Send INPUT to DUMMY-PROCESS."
                 (and dape-repl-use-shorthand
                      (cdr (assoc input (dape--repl-shorthand-alist))))))
       (dape--repl-insert-prompt)
-      (call-interactively cmd))
+      ;; HACK: Special handing of `dape-quit', `comint-send-input'
+      ;;       expects buffer to be still live after calling
+      ;;       `comint-input-sender'.  Kill buffer with timer instead
+      ;;       to avoid error signal.
+      (if (eq 'dape-quit cmd)
+          (run-with-timer 0 nil 'call-interactively #'dape-quit)
+	(call-interactively cmd)))
      ;; Evaluate expression
      (t
       (dape--repl-insert-prompt)
@@ -5223,7 +5250,7 @@ See `eldoc-documentation-functions', for more information."
     ["Next" dape-next :enable (dape--live-connection 'stopped)]
     ["Step in" dape-step-in :enable (dape--live-connection 'stopped)]
     ["Step out" dape-step-out :enable (dape--live-connection 'stopped)]
-    ["Pause" dape-pause :enable (not (dape--live-connection 'stopped))]
+    ["Pause" dape-pause :enable (not (dape--live-connection 'stopped t))]
     ["Quit" dape-quit]
     "--"
     ["REPL" dape-repl]

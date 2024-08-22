@@ -477,6 +477,16 @@ It respects option `doom-modeline-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-vcs-max-length 15
+  "The maximum displayed length of the branch name of version control."
+  :type 'integer
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-vcs-display-function #'doom-modeline-vcs-name
+  "The function to display the branch name."
+  :type 'function
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-check-icon t
   "Whether display the icon of check segment.
 
@@ -496,11 +506,6 @@ It respects option `doom-modeline-icon'."
 
 (defcustom doom-modeline-number-limit 99
   "The maximum number displayed for notifications."
-  :type 'integer
-  :group 'doom-modeline)
-
-(defcustom doom-modeline-vcs-max-length 12
-  "The maximum displayed length of the branch name of version control."
   :type 'integer
   :group 'doom-modeline)
 
@@ -630,7 +635,7 @@ Groups' names list in `gnus-newsrc-alist'`"
 (defcustom doom-modeline-irc t
   "Whether display the irc notifications.
 
-It requires `circe' or `erc' package."
+It requires either `circe' , `erc' or `rcirc' package."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -639,9 +644,22 @@ It requires `circe' or `erc' package."
   :type 'boolean
   :group 'doom-modeline)
 
-(defcustom doom-modeline-irc-stylize 'identity
-  "Function to stylize the irc buffer names."
-  :type 'function
+(defcustom doom-modeline-irc-stylize #'doom-modeline-shorten-irc
+  "Which function to call to stylize IRC buffer names.
+
+Buffer names are stylized using the selected `function'.
+By default buffer names are shortened, you may want to disable or call
+your own function.
+The function must accept `buffer-name' and return `shortened-name'."
+  :type '(radio (function-item :tag "Shorten"
+                               :format "%t: %v\n %h"
+                               doom-modeline-shorten-irc)
+                (function-item
+                 :tag "Leave unchanged"
+                 :format "%t: %v\n"
+                 identity)
+                (function
+                 :tag "Other function"))
   :group 'doom-modeline)
 
 (defcustom doom-modeline-battery t
@@ -854,6 +872,11 @@ Also see the face `doom-modeline-unread-number'."
   "Face for the replace state tag in evil indicator."
   :group 'doom-modeline-faces)
 
+(defface doom-modeline-evil-user-state
+  '((t (:inherit doom-modeline-warning)))
+  "Face for the replace state tag in evil indicator."
+  :group 'doom-modeline-faces)
+
 (defface doom-modeline-overwrite
   '((t (:inherit doom-modeline-urgent)))
   "Face for overwrite indicator."
@@ -897,6 +920,31 @@ Also see the face `doom-modeline-unread-number'."
 (defface doom-modeline-boon-off-state
   '((t (:inherit (doom-modeline mode-line))))
   "Face for the off state tag in boon indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-meow-normal-state
+  '((t (:inherit doom-modeline-evil-normal-state)))
+  "Face for the normal state in meow-edit indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-meow-insert-state
+  '((t (:inherit doom-modeline-evil-insert-state)))
+  "Face for the insert state in meow-edit indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-meow-beacon-state
+  '((t (:inherit doom-modeline-evil-visual-state)))
+  "Face for the beacon state in meow-edit indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-meow-motion-state
+  '((t (:inherit doom-modeline-evil-motion-state)))
+  "Face for the motion state in meow-edit indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-meow-keypad-state
+  '((t (:inherit doom-modeline-evil-operator-state)))
+  "Face for the keypad state in meow-edit indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-persp-name
@@ -990,6 +1038,7 @@ Also see the face `doom-modeline-unread-number'."
 
 (defvar mode-line-right-align-edge)
 
+(declare-function doom-modeline-shorten-irc "doom-modeline-segments")
 (declare-function face-remap-remove-relative "face-remap")
 (declare-function ffip-project-root "ext:find-file-in-project")
 (declare-function project-root "project")
@@ -1398,6 +1447,10 @@ ARGS is same as `nerd-icons-octicon' and others."
       text
     (propertize text 'face `(:inherit (mode-line-inactive
                                        ,(get-text-property 0 'face text))))))
+
+(defun doom-modeline-vcs-name ()
+  "Display the vcs name."
+  (and vc-mode (cadr (split-string (string-trim vc-mode) "^[A-Z]+[-:]+"))))
 
 (defun doom-modeline--create-bar-image (face width height)
   "Create the bar image.

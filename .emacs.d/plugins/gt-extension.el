@@ -33,81 +33,6 @@
 (require 'gt-faces)
 
 
-;;; [Http Client] request with curl instead of `url.el'
-
-;; implements via package `plz', you should install it before use this
-
-(defclass gt-plz-http-client (gt-http-client)
-  ((extra-args
-    :initarg :args
-    :type list
-    :documentation "Extra arguments passed to curl programe.")))
-
-(defvar plz-curl-program)
-(defvar plz-curl-default-args)
-(defvar plz-http-end-of-headers-regexp)
-
-(declare-function plz "ext:plz.el" t t)
-(declare-function plz-error-message "ext:plz.el" t t)
-(declare-function plz-error-curl-error "ext:plz.el" t t)
-(declare-function plz-error-response "ext:plz.el" t t)
-(declare-function plz-response-status "ext:plz.el" t t)
-(declare-function plz-response-body "ext:plz.el" t t)
-
-(defvar gt-plz-initialize-error-message
-  "\n\nTry to install curl and specify the program like this to solve the problem:\n
-  (setq plz-curl-program \"c:/msys64/usr/bin/curl.exe\")\n
-Or switch http client to `gt-url-http-client' instead:\n
-  (setq gt-default-http-client (gt-url-http-client))")
-
-(cl-defmethod gt-request :before ((_ gt-plz-http-client) &rest _)
-  (unless (and (require 'plz nil t) (executable-find plz-curl-program))
-    (error "You should have `plz.el' and `curl' installed before using `gt-plz-http-client'")))
-
-(cl-defmethod gt-request ((client gt-plz-http-client) &key url filter done fail data headers retry)
-  (ignore retry)
-  (let ((plz-curl-default-args
-         (if (slot-boundp client 'extra-args)
-             (append (oref client extra-args) plz-curl-default-args)
-           plz-curl-default-args)))
-    (plz (if data 'post 'get) url
-      :headers (cons `("User-Agent" . ,(or (oref client user-agent) gt-user-agent)) headers)
-      :body data
-      :as 'string
-      :filter (when filter
-                (lambda (proc string)
-                  (with-current-buffer (process-buffer proc)
-                    (save-excursion
-                      (goto-char (point-max))
-                      (insert string)
-                      (goto-char (point-min))
-                      (when (re-search-forward plz-http-end-of-headers-regexp nil t)
-                        (save-restriction
-                          (narrow-to-region (point) (point-max))
-                          (funcall filter)))))))
-      :then (lambda (raw)
-              (when done (funcall done raw)))
-      :else (lambda (err)
-              (let ((ret ;; try to compat with error object of url.el, see `url-retrieve' for details
-                     (or (plz-error-message err)
-                         (when-let (r (plz-error-curl-error err))
-                           (list 'curl-error
-                                 (concat (format "%s" (or (cdr r) (car r)))
-                                         (pcase (car r)
-                                           (2 (when (memq system-type '(cygwin windows-nt ms-dos))
-                                                gt-plz-initialize-error-message))))))
-                         (when-let (r (plz-error-response err))
-                           (list 'http (plz-response-status r) (plz-response-body r))))))
-                (if fail (funcall fail ret)
-                  (signal 'user-error ret)))))))
-
-;; Prefer plz/curl as backend
-
-(when (and (null gt-default-http-client)
-           (and (require 'plz nil t) (executable-find plz-curl-program)))
-  (setq gt-default-http-client (gt-plz-http-client)))
-
-
 ;;; [Render] buffer render
 
 (defclass gt-buffer-render (gt-render)
@@ -404,7 +329,7 @@ TAG is extra message show in the middle if not nil."
   "Define keybinds for `gt-buffer-render-local-map'."
   (gt-buffer-render-key ("t" "Cycle Next")        #'gt-buffer-render--cycle-next)
   (gt-buffer-render-key ("T" "Toggle Polyglot")   #'gt-buffer-render--toggle-polyglot)
-  (gt-buffer-render-key ("y" "TTS")               #'gt-do-speak)
+  (gt-buffer-render-key ("y" "TTS")               (lambda () (interactive) (let (gt-tts-last-engine) (gt-do-speak))))
   (gt-buffer-render-key ("O" "Browser")           #'gt-buffer-render--browser)
   (gt-buffer-render-key ("c" "Del Cache")         #'gt-buffer-render--delete-cache)
   (gt-buffer-render-key ("C")                     #'gt-purge-cache)
@@ -891,7 +816,13 @@ If called interactively, delete overlays around point or in region. With
 `current-prefix-arg' non nil, delete all overlays in the buffer."
   (interactive (cond (current-prefix-arg (list (point-min) (point-max)))
                      ((use-region-p) (list (region-beginning) (region-end)))
-                     (t (list (point) nil))))
+                     (t (list
+                         (if (and (> (point) 1) ; for overlay before point
+                                  (not (gt-overlay-render-get-overlays (point)))
+                                  (gt-overlay-render-get-overlays (1- (point))))
+                             (1- (point))
+                           (point))
+                         nil))))
   (mapc #'delete-overlay (gt-overlay-render-get-overlays beg end)))
 
 (defun gt-overlay-render-save-to-kill-ring ()
@@ -976,6 +907,7 @@ Otherwise, join the results use the default logic."
                                      (types '(help-echo replace after before)))
                                  (if (memq type types) type
                                    (intern (completing-read "Display with overlay as: " types nil t))))
+                   with hooks = `((lambda (o &rest _) (delete-overlay o)))
                    for (beg . end) in (cdr bounds) for i from 0
                    do (save-excursion
                         (goto-char beg)
@@ -986,27 +918,30 @@ Otherwise, join the results use the default logic."
                         (setq end (point)))
                    do (gt-delete-render-overlays beg end)
                    for src = (buffer-substring beg end)
-                   do (goto-char end)
-                   for fres = (gt-overlay-render-format
-                               render src
-                               (mapcar (lambda (tr) (nth i (plist-get tr :result))) ret)
-                               (mapcar (lambda (tr) (plist-get tr :prefix)) ret))
-                   for ov = (make-overlay beg (point) nil t)
-                   do (let* ((sface (oref render sface))
-                             (sface (unless (eq type 'replace) (gt-ensure-plain sface src))))
-                        (pcase type
-                          ('help-echo (overlay-put ov 'help-echo fres))
-                          ('after (overlay-put ov 'after-string fres))
-                          ('before (overlay-put ov 'before-string fres)))
-                        (overlay-put ov 'gt fres)
-                        (overlay-put ov 'evaporate t)
-                        (overlay-put ov 'pointer 'arrow)
-                        (overlay-put ov 'modification-hooks `((lambda (o &rest _) (delete-overlay o))))
-                        (overlay-put ov 'keymap gt-overlay-render-map)
-                        (if (eq type 'replace)
-                            (progn (overlay-put ov 'display fres)
-                                   (overlay-put ov 'help-echo src))
-                          (if sface (overlay-put ov 'face sface))))
+                   do (save-excursion
+                        (goto-char end)
+                        (let* ((ov (make-overlay beg (point) nil t t))
+                               (fres (gt-overlay-render-format
+                                      render src
+                                      (mapcar (lambda (tr) (nth i (plist-get tr :result))) ret)
+                                      (mapcar (lambda (tr) (plist-get tr :prefix)) ret)))
+                               (sface (oref render sface))
+                               (sface (unless (eq type 'replace) (gt-ensure-plain sface src))))
+                          (pcase type
+                            ('help-echo (overlay-put ov 'help-echo fres))
+                            ('after (overlay-put ov 'after-string fres))
+                            ('before (overlay-put ov 'before-string fres)))
+                          (overlay-put ov 'gt fres)
+                          (overlay-put ov 'evaporate t)
+                          (overlay-put ov 'pointer 'arrow)
+                          (overlay-put ov 'insert-in-front-hooks hooks)
+                          (overlay-put ov 'insert-behind-hooks hooks)
+                          (overlay-put ov 'modification-hooks hooks)
+                          (overlay-put ov 'keymap gt-overlay-render-map)
+                          (if (eq type 'replace)
+                              (progn (overlay-put ov 'display fres)
+                                     (overlay-put ov 'help-echo src))
+                            (if sface (overlay-put ov 'face sface)))))
                    finally (if (cddr bounds) (goto-char start)))
           (deactivate-mark)
           (message "ok."))))))
@@ -1153,7 +1088,7 @@ target, engines and render in the buffer for the following translation."
           (buf (or (get-buffer bufname)
                    (progn
                      (unless (file-exists-p gt-ripe-words-file)
-                       (write-region 1 1 gt-ripe-words-file))
+                       (write-region (point-min) (point-min) gt-ripe-words-file))
                      (find-file-noselect gt-ripe-words-file)))))
      (with-current-buffer buf
        (unless (equal (buffer-name) bufname)

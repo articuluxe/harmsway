@@ -95,9 +95,8 @@
 (cl-defmethod closql-dref ((obj forge-pullreq) (_(eql review-requests)))
   (forge-sql-cdr
    [:select assignee:* :from assignee
-    :join pullreq-review-request
-    :on (= pullreq-review-request:id :id assignee:id)
-    :where (= pullreq-review-request:pullreq :pullreq $s1)
+    :join pullreq-review-request :on (= pullreq-review-request:id assignee:id)
+    :where (= pullreq-review-request:pullreq $s1)
     :order-by [(asc login)]]
    (closql--oref obj 'id)))
 
@@ -199,7 +198,7 @@ an error."
   "Read an active pull-request with completion using PROMPT.
 
 Open, unread and pending pull-requests are considered active.
-Default to the current pull-request even if it isn't active.
+Default to the current pull-request, even if it isn't active.
 
 \\<forge-read-topic-minibuffer-map>While completion is in \
 progress, \\[forge-read-topic-lift-limit] lifts the limit, extending
@@ -210,7 +209,7 @@ can be selected from the start."
   (forge--read-topic prompt
                      #'forge-current-pullreq
                      (forge--topics-spec :type 'pullreq :active t)
-                     (forge--topics-spec :type 'pullreq :active nil)))
+                     (forge--topics-spec :type 'pullreq :active nil :state nil)))
 
 ;;; Utilities
 
@@ -250,12 +249,13 @@ can be selected from the start."
   "<remap> <magit-browse-thing>" #'forge-browse-pullreqs
   "<remap> <magit-visit-thing>"  #'forge-list-pullreqs
   "<remap> <forge--list-menu>"   #'forge-topics-menu
-  "<remap> <forge--item-menu>"   #'forge-topics-menu
+  "<remap> <forge--item-menu>"   #'forge-topic-menu
   "C-c C-n"                      #'forge-create-pullreq)
 
 (defvar-keymap forge-pullreq-section-map
   :parent forge-common-map
   "<remap> <magit-visit-thing>"  #'forge-visit-this-topic
+  "<remap> <forge--list-menu>"   #'forge-topics-menu
   "<remap> <forge--item-menu>"   #'forge-topic-menu)
 
 (cl-defun forge-insert-pullreqs (&optional (spec nil sspec) heading)
@@ -264,7 +264,7 @@ Optional SPEC can be used to override that filtering specification,
 and optional HEADING to change the section heading."
   (when-let (((forge-db t))
              (repo (forge-get-repository :tracked?))
-             (spec (if sspec spec (clone forge--buffer-topics-spec)))
+             (spec (if sspec spec (forge--clone-buffer-topics-spec)))
              ((memq (oref spec type) '(topic pullreq))))
     (oset spec type 'pullreq)
     (forge--insert-topics 'pullreqs

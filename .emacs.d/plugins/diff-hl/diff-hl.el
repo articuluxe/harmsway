@@ -5,7 +5,7 @@
 ;; Author:   Dmitry Gutov <dmitry@gutov.dev>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
-;; Version:  1.9.2
+;; Version:  1.10.0
 ;; Package-Requires: ((cl-lib "0.2") (emacs "25.1"))
 
 ;; This file is part of GNU Emacs.
@@ -1146,7 +1146,7 @@ CONTEXT-LINES is the size of the unified diff context, defaults to 0."
 
 (defun diff-hl-git-index-revision (file object-name)
   (let ((filename (diff-hl-make-temp-file-name file
-                                               (concat ":" object-name)
+                                               (concat ";" object-name)
                                                'manual))
         (filebuf (get-file-buffer file)))
     (unless (file-exists-p filename)

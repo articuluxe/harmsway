@@ -3,8 +3,8 @@
 ;; Copyright (C) 2019-2024 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.24
-;; Package-Requires: ((xr "1.25") (emacs "26.1"))
+;; Version: 2.0
+;; Package-Requires: ((xr "2.0") (emacs "27.1"))
 ;; URL: https://github.com/mattiase/relint
 ;; Keywords: lisp, regexps
 
@@ -27,97 +27,6 @@
 ;; including deprecated syntax and bad practice. See the README file
 ;; for more information.
 
-;;; News:
-
-;; Version 1.24
-;; - Fix a `next-error' bug
-;; - Some performance improvements
-;; Version 1.23
-;; - New defcustom `relint-xr-checks' that enables optional xr checks.
-;; - Add regexp detection in uses of the treesit API.
-;; - Better backquote expansion inside rx forms.
-;; Version 1.22
-;; - String char escape check now detects \8, \9, and \x without hex digit
-;; Version 1.21
-;; - Check for duplicates in rx or-forms
-;; - Robustness improvements
-;; Version 1.20
-;; - More compact distribution
-;; Version 1.19
-;; - Progress indicator in `relint-directory'
-;; - Some performance improvements
-;; - Fix some false positives in the regexp provenance detector
-;; - Scan assignments to `font-lock-defaults' correctly
-;; - Recognise regexp arguments to functions in the s.el package
-;; Version 1.18:
-;; - New check for ineffective backslashes in all strings (not just regexps)
-;; - Warnings emitted in order of their position in file or buffer
-;; - Performance improvements
-;; Version 1.17:
-;; - Fixed message display on Emacs 26
-;; Version 1.16:
-;; - Suppression comments now use regexp matching of messages
-;; - New filename-specific checks in calls to `directory-files' etc
-;; - Check some keyword arguments (:regexp and :regex)
-;; - Improved rx checks
-;; - `relint-directory' now displays number of files found
-;; Version 1.15:
-;; - Improved position accuracy in various lists of regexps
-;; - Check for mistake in rx `any' forms
-;; - `relint-buffer' now also returns severity (warning, error)
-;; - Relint can now also check the *scratch* buffer
-;; Version 1.14:
-;; - Added `relint-buffer'
-;; - Report error position inside string literals when possible
-;; - Scan arguments to `search-forward-regexp' and `search-backward-regexp'
-;; - Use text quoting for messages
-;; Version 1.13:
-;; - Look in function/macro doc strings to find regexp arguments and
-;;   return values
-;; - Detect binding and mutation of some known regexp variables
-;; - Detect regexps as arguments to `syntax-propertize-rules'
-;; - More font-lock-keywords variables are scanned for regexps
-;; - `relint-batch' no longer outputs a summary if there were no errors
-;; Version 1.12:
-;; - Improved detection of regexps in defcustom declarations
-;; - Better suppression of false positives
-;; - Nonzero exit status upon error in `relint-batch'
-;; Version 1.11:
-;; - Improved evaluator, now handling limited local variable mutation
-;; - Bug fixes
-;; - Test suite
-;; Version 1.10:
-;; - Check arguments to `skip-syntax-forward' and `skip-syntax-backward'
-;; - Add error suppression mechanism
-;; Version 1.9:
-;; - Limited tracking of local variables in regexp finding
-;; - Recognise new variable `literal' and `regexp' rx clauses
-;; - Detect more regexps in defcustom declarations
-;; - Requires xr 1.13
-;; Version 1.8:
-;; - Updated diagnostics list
-;; - Requires xr 1.12
-;; Version 1.7:
-;; - Expanded regexp-generating heuristics
-;; - Some `defalias' are now followed
-;; - All diagnostics are now documented (see README.org)
-;; Version 1.6:
-;; - Add `relint-current-buffer'
-;; - Show relative file names in *relint*
-;; - Extended regexp-generating heuristics, warning about suspiciously-named
-;;   variables used as skip-sets
-;; - "-patterns" and "-pattern-list" are no longer interesting variable
-;;   suffixes
-;; Version 1.5:
-;; - Substantially improved evaluator, able to evaluate some functions and
-;;   macros defined in the same file, even when passed as parameters
-;; - Detect regexps spliced into [...]
-;; - Check bad skip-set provenance
-;; - The *relint* buffer now uses a new relint-mode for better usability,
-;;   with "g" bound to `relint-again'
-;; Version 1.4:
-;; - First version after name change to `relint'
-
 ;;; Code:
 
 (require 'xr)
@@ -133,6 +42,57 @@ false positives, or `all', enabling all checks."
   :group 'relint
   :type '(choice (const :tag "Standard checks only" nil)
                  (const :tag "All checks" all)))
+
+(defface relint-buffer-highlight
+  '((t (:inherit highlight)))
+  "Face for highlight the string part warned about in the `*relint*' buffer."
+  :group 'relint)
+
+;; FIXME: default to underline or reverse? Or `caret' if stdout is non-tty?
+(defcustom relint-batch-highlight '("\e[7m" . "\e[m")
+  "How to emphasise part of a string warned about in batch output.
+The value is one of the following:
+
+  A pair of strings for turning on and off highlighting in
+  the terminal; these are typically escape sequences.
+
+  `caret', which adds an ASCII caret on the line under the string.
+
+  `nil', which disables highlighting.
+
+The default value produces reverse video in a VT100-compatible terminal.
+
+In interactive mode, relint uses the `relint-buffer-highlight' face instead."
+  :group 'relint
+  :type '(choice
+          (const :tag "Terminal reverse" ("\e[7m" . "\e[m"))
+          (const :tag "Terminal underline" ("\e[4m" . "\e[m"))
+          (cons :tag "Escape sequences"
+                (string :tag "Sequence for turning highlighting on" "\e[7m")
+                (string :tag "Sequence for turning highlighting off" "\e[m"))
+          (const :tag "ASCII caret" caret)
+          (const :tag "Highlighting disabled" nil)))
+
+(defvar relint--force-batch-output nil)  ; for testing only
+
+(cl-defstruct (relint-diag
+               (:constructor nil)
+               (:constructor
+                relint--make-diag (message beg-pos end-pos pos-type
+                                   string beg-idx end-idx severity))
+               (:copier nil)
+               (:type vector))
+  message    ; string of message
+  beg-pos    ; first buffer position
+  end-pos    ; last buffer position, or nil if only the start available
+  pos-type   ; `string' if buffer at BEG-POS..END-POS is inside a string literal
+             ; corresponding to STRING at BEG-IDX..END-IDX;
+             ; any other value means that BEG-POS..END-POS just point to code
+  string     ; string inside which the complaint occurs, or nil
+  beg-idx    ; first index into STRING, or nil
+  end-idx    ; last index into STRING, or nil
+  severity   ; `error', `warning' or `info'
+  )
 
 (defun relint--get-error-buffer ()
   "Buffer to which errors are printed, or nil if noninteractive."
@@ -231,13 +191,18 @@ list indices to follow to target)."
       (goto-char (match-end 0)))
     (point)))
 
-(defun relint--string-pos (pos n)
+(defun relint--string-pos (pos n endp)
   "Position of character N in a string expression at POS,
-or nil if no position could be determined."
+or nil if no position could be determined.
+If ENDP is true, use the last position of the character, otherwise the first,
+in case it occupies more than one position in the buffer."
   (save-excursion
     (goto-char pos)
     (pcase (read (current-buffer))
-      ((pred stringp) (relint--literal-string-pos pos n))
+      ((pred stringp)
+       (if endp
+           (1- (relint--literal-string-pos pos (1+ n)))
+         (relint--literal-string-pos pos n)))
       (`(concat . ,args)
        ;; Find out in which argument the sought position is.
        (let ((index 1))
@@ -248,7 +213,9 @@ or nil if no position could be determined."
          (and args (stringp (car args))
               (let ((string-pos
                      (relint--pos-from-start-pos-path pos (list index))))
-                (relint--literal-string-pos string-pos n))))))))
+                (if endp
+                    (1- (relint--literal-string-pos string-pos (1+ n)))
+                  (relint--literal-string-pos string-pos n)))))))))
 
 (defun relint--suppression (pos message)
   "Whether there is a suppression for MESSAGE at POS."
@@ -284,49 +251,120 @@ or nil if no position could be determined."
       (relint--add-to-error-buffer error-buffer (concat string "\n"))
     (message "%s" string)))
 
-(cl-defun relint--output-report (error-buffer file
-                                 (message expr-pos error-pos
-                                  str str-idx severity))
-  (let* ((pos (or error-pos expr-pos))
-         (line (line-number-at-pos pos t))
-         (col (save-excursion
-                (goto-char pos)
-                (1+ (current-column)))))
+(defun relint--col-at-pos (pos)
+ (save-excursion
+   (goto-char pos)
+   (1+ (current-column))))
+
+(defun relint--output-complaint (error-buffer file diag)
+  (let* ((str (relint-diag-string diag))
+         (beg-idx (relint-diag-beg-idx diag))
+         (end-idx (relint-diag-end-idx diag))
+         (severity (relint-diag-severity diag))
+         (beg (relint-diag-beg-pos diag))
+         (end (relint-diag-end-pos diag))
+         (beg-line (line-number-at-pos beg t))
+         (end-line (cond ((eq beg end) beg-line)
+                         (end (line-number-at-pos end t))))
+         (beg-col (relint--col-at-pos beg))
+         (end-col (cond ((eq beg end) beg-col)
+                        (end (relint--col-at-pos end))))
+         (loc-str (cond
+                   ((and end-line (< beg-line end-line))
+                    (format "%d.%d-%d.%d" beg-line beg-col end-line end-col))
+                   (end-col
+                    (format "%d:%d-%d" beg-line beg-col end-col))
+                   (t
+                    (format "%d:%d" beg-line beg-col))))
+         (quoted-str (and str (relint--quote-string str)))
+         (caret-str nil))
+
+    (when beg-idx
+      (let* ((bounds (relint--caret-bounds str beg-idx end-idx))
+             ;; Indices into quoted-str, which includes double quotes:
+             (beg-qs (+ (car bounds) 1))
+             (end-qs (+ (cdr bounds) 2)))  ; exclusive
+        (cond ((and error-buffer (not relint--force-batch-output))
+               ;; Output to buffer: apply highlight face to part of string.
+               (put-text-property
+                beg-qs end-qs 'font-lock-face 'relint-buffer-highlight
+                quoted-str))
+              ((eq relint-batch-highlight 'caret)
+               (let* ((col-from (car bounds))
+                      (col-to (cdr bounds)))
+                 (setq caret-str (concat
+                                  (make-string col-from ?.)
+                                  (make-string (- col-to col-from -1) ?^)))))
+              ((consp relint-batch-highlight)
+               (setq quoted-str
+                     (concat (substring quoted-str 0 beg-qs)
+                             (car relint-batch-highlight)
+                             (substring quoted-str beg-qs end-qs)
+                             (cdr relint-batch-highlight)
+                             (substring quoted-str end-qs)))))))
+
     (relint--output-message
      error-buffer
      (concat
-      (format "%s:%d:%d: " file line col)
-      (and (eq severity 'error) "error: ")
-      message
-      (and str-idx (format " (pos %d)" str-idx))
-      (and str     (format "\n  %s" (relint--quote-string str)))
-      (and str-idx (format "\n   %s" (relint--caret-string str str-idx)))))))
+      (format "%s:%s: " file loc-str)
+      (cond ((eq severity 'error) "error: ")
+            ((eq severity 'info) "info: "))
+      (relint-diag-message diag)
+      (cond ((and beg-idx end-idx (< beg-idx end-idx))
+             (format " (pos %d..%d)" beg-idx end-idx))
+            (beg-idx (format " (pos %d)" beg-idx)))
+      (and quoted-str (format "\n  %s" quoted-str))
+      (and caret-str  (format "\n   %s" caret-str))))))
   
 (defun relint--output-complaints (buffer file complaints error-buffer)
   (with-current-buffer buffer
-    (dolist (complaint complaints)
-      (relint--output-report error-buffer file complaint))))
+    (dolist (group complaints)
+      (dolist (complaint group)
+        (relint--output-complaint error-buffer file complaint)))))
 
 (defvar relint--suppression-count)
-(defvar relint--complaints)
+(defvar relint--complaints
+  ;; list of lists of `relint-diag' objects
+  )
 
-(defun relint--report (start-pos path message str str-idx severity)
-  (let* ((expr-pos (relint--pos-from-start-pos-path start-pos path))
-         (error-pos (and str-idx (relint--string-pos expr-pos str-idx))))
-    (if (relint--suppression expr-pos message)
-        (setq relint--suppression-count (1+ relint--suppression-count))
-      (push (list message expr-pos error-pos str str-idx severity)
-            relint--complaints))))
+(defun relint--report-group (group)
+  (let ((diag (car group)))
+    (if (relint--suppression (relint-diag-beg-pos diag)
+                             (relint-diag-message diag))
+      (setq relint--suppression-count (1+ relint--suppression-count))
+    (push group relint--complaints))))
 
-(defun relint--warn (start-pos path message &optional str str-idx)
-  (relint--report start-pos path message str str-idx 'warning))
+(defun relint--report-nonstring (message beg-pos end-pos severity)
+  (relint--report-group
+   (list (relint--make-diag message beg-pos end-pos nil nil nil nil severity))))
 
-(defun relint--err (start-pos path message &optional str str-idx)
-  (relint--report start-pos path message str str-idx 'error))
+(defun relint--diag-on-string (expr-pos string message beg-idx end-idx severity)
+  (let* ((beg-pos (and beg-idx (relint--string-pos expr-pos beg-idx nil)))
+         (end-pos (and end-idx (relint--string-pos expr-pos end-idx t))))
+    (relint--make-diag message (or beg-pos expr-pos) end-pos
+                       (and beg-pos end-pos 'string)
+                       string beg-idx end-idx severity)))
+
+(defun relint--report-at-path (start-pos path msg str beg-idx end-idx severity)
+  (let ((expr-pos (relint--pos-from-start-pos-path start-pos path)))
+    (relint--report-group
+     (list (relint--diag-on-string
+            expr-pos str msg beg-idx end-idx severity)))))
+
+;; FIXME: if all we have is the start of a Lisp sexp, it should be easy to
+;; find where it ends!
+
+(defun relint--warn-at-pos (beg-pos end-pos message)
+  (relint--report-nonstring message beg-pos end-pos 'warning))
+
+(defun relint--warn (start-pos path message &optional str str-beg str-end)
+  (relint--report-at-path start-pos path message str str-beg str-end 'warning))
+
+(defun relint--err-at-pos (pos message)
+  (relint--report-nonstring message pos nil 'error))
 
 (defun relint--escape-string (str escape-printable)
   (replace-regexp-in-string
-   ;; Use pair notation for raw chars; "\200-\377" is buggy in Emacs 26.
    (rx (any cntrl ?\177 (#x3fff80 . #x3fffff) ?\\ ?\"))
    (lambda (s)
      (let ((c (logand (string-to-char s) #xff)))
@@ -345,10 +383,16 @@ or nil if no position could be determined."
 (defun relint--quote-string (str)
   (concat "\"" (relint--escape-string str t) "\""))
 
-(defun relint--caret-string (string pos)
-  (let ((quoted-pos
-         (length (relint--escape-string (substring string 0 pos) t))))
-    (concat (make-string quoted-pos ?.) "^")))
+(defun relint--caret-bounds (string beg end)
+  (let* ((beg-col
+          (length (relint--escape-string (substring string 0 beg) t)))
+         (end-col
+          (if end
+              ;; handle escaped chars such as \n
+              (1- (length (relint--escape-string
+                           (substring string 0 (1+ end)) t)))
+            beg-col)))
+    (cons beg-col end-col)))
 
 (defun relint--expand-name (name)
   (pcase-exhaustive name
@@ -358,34 +402,42 @@ or nil if no position could be determined."
     ((pred stringp) name)
     ((pred symbolp) (symbol-name name))))
 
-(defun relint--check-string (string checker name pos path)
-  (let ((complaints
-         (condition-case err
-             (funcall checker string)
-           (error
-            (relint--err pos path
-                         (format "In %s: %s"
-                                 (relint--expand-name name) (cadr err))
-                         string nil)
-            nil))))
-    (dolist (c complaints)
-      (relint--warn pos path
-                    (format "In %s: %s" (relint--expand-name name) (cdr c))
-                    string (car c)))))
+(defun relint--message-with-context (msg name)
+  (format "In %s: %s" (relint--expand-name name) msg))
 
-(defun relint--check-skip-set (skip-set-string name pos path)
-  (relint--check-string skip-set-string #'xr-skip-set-lint name pos path))
+(defun relint--string-complaints (complaints string name start-pos path)
+  (when complaints
+    (let ((expr-pos (relint--pos-from-start-pos-path start-pos path)))
+      (dolist (cg complaints)
+        (relint--report-group
+         (mapcar (lambda (c)
+                   (let* ((beg (nth 0 c))
+                          (end (nth 1 c))
+                          (msg (nth 2 c))
+                          (severity (nth 3 c))
+                          ;; Only use message-with-context for non-info diags
+                          (message (if (eq severity 'info)
+                                       msg
+                                     (relint--message-with-context msg name))))
+                     (relint--diag-on-string expr-pos string
+                                             message beg end severity)))
+                 cg))))))
+
+(defun relint--check-skip-set (skip-set name pos path)
+  (relint--string-complaints (xr-skip-set-lint skip-set)
+                             skip-set name pos path))
 
 (defun relint--check-re-string (re name pos path)
-  (relint--check-string re (lambda (x) (xr-lint x nil relint-xr-checks))
-                        name pos path))
+  (relint--string-complaints (xr-lint re nil relint-xr-checks)
+                             re name pos path))
   
 (defun relint--check-file-re-string (re name pos path)
-  (relint--check-string re (lambda (x) (xr-lint x 'file relint-xr-checks))
-                        name pos path))
+  (relint--string-complaints (xr-lint re 'file relint-xr-checks)
+                             re name pos path))
   
 (defun relint--check-syntax-string (syntax name pos path)
-  (relint--check-string syntax #'relint--syntax-string-lint name pos path))
+  (relint--string-complaints (relint--syntax-string-lint syntax)
+                             syntax name pos path))
 
 (defconst relint--syntax-codes
   '((?-  . whitespace)
@@ -407,27 +459,32 @@ or nil if no position could be determined."
     (?!  . comment-delimiter)))
 
 (defun relint--syntax-string-lint (syntax)
-  "Check the syntax-skip string SYNTAX.  Return list of complaints."
+  "Check the syntax-skip string SYNTAX.
+Return list of complaint groups, each a list of (BEG END MESSAGE SEVERITY)."
   (let ((errs nil)
         (start (if (string-prefix-p "^" syntax) 1 0)))
     (when (member syntax '("" "^"))
-      (push (cons start "Empty syntax string") errs))
+      (push (list start nil "Empty syntax string" 'warning) errs))
     (let ((seen nil))
       (dolist (i (number-sequence start (1- (length syntax))))
         (let* ((c (aref syntax i))
                (sym (cdr (assq c relint--syntax-codes))))
           (if sym
               (if (memq sym seen)
-                  (push (cons i (relint--escape-string
-                                 (format-message
-                                  "Duplicated syntax code `%c'" c)
-                                 nil))
+                  (push (list (list i i
+                                    (relint--escape-string
+                                     (format-message
+                                      "Duplicated syntax code `%c'" c)
+                                     nil)
+                                    'warning))
                         errs)
                 (push sym seen))
-            (push (cons i (relint--escape-string
-                           (format-message
-                            "Invalid char `%c' in syntax string" c)
-                           nil))
+            (push (list (list i i
+                              (relint--escape-string
+                               (format-message
+                                "Invalid char `%c' in syntax string" c)
+                               nil)
+                              'warning))
                   errs)))))
     (nreverse errs)))
 
@@ -884,6 +941,7 @@ not be evaluated safely."
 
        ;; sort: accept missing items in the list argument.
        ((eq head 'sort)
+        ;; FIXME: handle new-style `sort' args
         (let* ((arg (relint--eval-list (car body)))
                (seq (cond ((listp arg) (remq nil arg))
                           ((sequencep arg) (copy-sequence arg))
@@ -1698,9 +1756,7 @@ than just to a surrounding or producing expression."
            (push (cons arg arg) ranges))
 
           ((stringp arg)
-           ;; `string-to-multibyte' was marked obsolete in Emacs 26,
-           ;; but no longer is.
-           (let* ((s (with-no-warnings (string-to-multibyte arg)))
+           (let* ((s (string-to-multibyte arg))
                   (j 0)
                   (len (length s)))
              (while (< j len)
@@ -1718,20 +1774,20 @@ than just to a surrounding or producing expression."
                           pos (if exact-path (cons i path) path)
                           (format-message "Suspect range `%s'"
                                           (relint--pretty-range from to))
-                          s j))
+                          s j (+ j 2)))
                         ((= to from)
                          (relint--warn
                           pos (if exact-path (cons i path) path)
                           (format-message
                            "Single-character range `%s'"
                            (relint--escape-string (format "%c-%c" from to) nil))
-                          s j))
+                          s j j))
                         ((= to (1+ from))
                          (relint--warn
                           pos (if exact-path (cons i path) path)
                           (format-message "Two-character range `%s'"
                                           (relint--pretty-range from to))
-                          s j)))
+                          s j (+ j 2))))
                        ;; Take care to split ASCII-raw ranges; they do not
                        ;; include anything in-between.
                        (let* ((split (and (<= from #x7f) (>= to #x3fff80)))
@@ -1749,7 +1805,7 @@ than just to a surrounding or producing expression."
                                             (relint--pretty-range from to)
                                             (relint--pretty-range
                                              (car overlap) (cdr overlap)))
-                            s j))
+                            s j (+ j 2)))
                          (if split
                              (progn
                                (push (cons from #x7f) ranges)
@@ -1763,7 +1819,7 @@ than just to a surrounding or producing expression."
                      (relint--warn
                       pos (if exact-path (cons i path) path)
                       (format-message "Literal `-' not first or last")
-                      s j))
+                      s j j))
                    (let ((overlap
                           (relint--intersecting-range from from ranges)))
                      (when overlap
@@ -1776,7 +1832,7 @@ than just to a surrounding or producing expression."
                            "Character `%s' included in range `%s'"
                            (relint--pretty-range from from)
                            (relint--pretty-range (car overlap) (cdr overlap))))
-                        s j)))
+                        s j j)))
                    (push (cons from from) ranges)
                    (setq j (1+ j)))))))
 
@@ -1969,25 +2025,6 @@ return (NAME); on syntax error, return nil."
                      nil
                    val))))))
 
-(defun relint--check-let* (bindings body mutables pos path index)
-  "Check the BINDINGS and BODY of a `let*' form."
-  (if bindings
-      (let ((b (relint--check-and-eval-let-binding
-                (car bindings) mutables pos (cons index (cons 1 path)))))
-        (if b
-            (let ((relint--locals (cons b relint--locals)))
-              (relint--check-let* (cdr bindings) body (cons (car b) mutables)
-                                  pos path (1+ index)))
-          (relint--check-let* (cdr bindings) body mutables
-                              pos path (1+ index))))
-    (let ((index 2))
-      (while (consp body)
-        (when (consp (car body))
-          (relint--check-form-recursively-2
-           (car body) mutables pos (cons index path)))
-        (setq body (cdr body))
-        (setq index (1+ index))))))
-
 (defun relint--check-form-recursively-2 (form mutables pos path)
   "Check FORM (at POS, PATH) recursively.
 MUTABLES is a list of lexical variables in a scope which FORM may mutate
@@ -2005,35 +2042,34 @@ directly."
           (setq form (cdr form))
           (setq index (1+ index)))))
      ;; now we can assume that `args' is a proper list
-     ((eq head 'let)
+     ((memq head '(let let*))
       (let ((bindings (car args)))
         (when (listp bindings)
-          (let* ((body (cdr args))
+          (let* ((relint--locals relint--locals)
+                 (new-bindings nil)
+                 (let* (eq head 'let*))
                  (i 0)
                  (bindings-path (cons 1 path))
-                 (new-bindings nil)
                  (body-mutables mutables))
             (while (consp bindings)
               (let ((b (relint--check-and-eval-let-binding
                         (car bindings) mutables pos (cons i bindings-path))))
                 (when b
-                  (push b new-bindings)
+                  (push b (if let* relint--locals new-bindings))
                   (push (car b) body-mutables))
                 (setq i (1+ i))
                 (setq bindings (cdr bindings))))
-            (let ((relint--locals
-                   (append new-bindings relint--locals))
-                  (index 2))
+            (when new-bindings
+              (setq relint--locals (append (nreverse new-bindings)
+                                           relint--locals)))
+            (let ((index 2)
+                  (body (cdr args)))
               (while body
                 (when (consp (car body))
                   (relint--check-form-recursively-2
                    (car body) body-mutables pos (cons index path)))
                 (setq body (cdr body))
                 (setq index (1+ index))))))))
-     ((eq head 'let*)
-      (let ((bindings (car args)))
-        (when (listp bindings)
-          (relint--check-let* bindings (cdr args) mutables pos path 0))))
      ((memq head '(setq setq-local))
       ;; Only mutate lexical variables in the mutation list, which means
       ;; that this form will be executed exactly once during their remaining
@@ -2503,10 +2539,10 @@ Return a list of (FORM . STARTING-POSITION)."
              (goto-char pos)
              (forward-sexp 1))
             (t
-             (relint--err (point) nil (prin1-to-string err))
+             (relint--err-at-pos (point) (prin1-to-string err))
              (setq keep-going nil))))
           (error
-           (relint--err (point) nil (prin1-to-string err))
+           (relint--err-at-pos (point) (prin1-to-string err))
            (setq keep-going nil)))
         (when (consp form)
           (push (cons form pos) forms))))
@@ -2555,13 +2591,12 @@ STRING-START is the start of the string literal (first double quote)."
     (unless (or (bolp)
                 (and (memq c '(?\( ?\) ?\[ ?\] ?\'))
                      (relint--in-doc-string-p string-start)))
-      (relint--warn (point) nil
-                    (if (eq c ?x)
-                        (format-message
-                         "Character escape `\\x' not followed by hex digit")
-                      (format-message
-                       "Ineffective string escape `\\%s'"
-                       (relint--escape-string (char-to-string c) nil)))))))
+      (relint--warn-at-pos
+       (point) (1+ (point))
+       (if (eq c ?x)
+           (format-message "Character escape `\\x' not followed by hex digit")
+         (format-message "Ineffective string escape `\\%s'"
+                         (relint--escape-string (char-to-string c) nil)))))))
 
 (defun relint--check-for-misplaced-backslashes ()
   "Check for misplaced backslashes in the current buffer."
@@ -2591,6 +2626,18 @@ STRING-START is the start of the string literal (first double quote)."
         (unless (eobp)
           (forward-char 1))))))
 
+(defalias 'relint--sort-with-key
+  (if (>= emacs-major-version 30)
+      (lambda (key-fun list)
+        (with-suppressed-warnings ((callargs sort))  ; hush emacs <30
+          (sort list :key key-fun :in-place t)))
+    (lambda (key-fun list) 
+      (mapcar #'cdr (sort (mapcar (lambda (x) (cons (funcall key-fun x) x))
+                                  list)
+                          #'car-less-than-car))))
+  "Sort LIST using KEY-FUN for each element as the key.
+The keys are sorted numerically, in ascending order.")
+
 (defun relint--scan-current-buffer ()
   (let* ((relint--suppression-count 0)
          (relint--complaints nil)
@@ -2612,16 +2659,8 @@ STRING-START is the start of the string literal (first double quote)."
     (relint--check-for-misplaced-backslashes)
     (let ((complaints (nreverse relint--complaints)))
       (cons
-       (sort complaints
-             ;; Sort by error position if available, expression position
-             ;; otherwise.
-             (lambda (a b)
-               (let ((expr-pos-a (nth 1 a))
-                     (expr-pos-b (nth 1 b))
-                     (error-pos-a (nth 2 a))
-                     (error-pos-b (nth 2 b)))
-                 (< (or error-pos-a expr-pos-a)
-                    (or error-pos-b expr-pos-b)))))
+       (relint--sort-with-key (lambda (g) (relint-diag-beg-pos (car g)))
+                              complaints)
        relint--suppression-count))))
 
 (defvar relint-last-target nil
@@ -2715,17 +2754,15 @@ TARGET is the file or directory to use for a repeated run."
 
 (defun relint--tree-files (dir)
   (let ((re (rx bos (not (any ".")) (* anything) ".el" eos)))
-    (if (eval-when-compile (>= emacs-major-version 27))
-        (directory-files-recursively
-         dir re nil
-         ;; Save time by not pointlessly descending into huge .git directories.
-         (lambda (s) (not (string-suffix-p "/.git" s))))
-      (directory-files-recursively dir re))))
+    (directory-files-recursively
+     dir re nil
+     ;; Save time by not pointlessly descending into huge .git directories.
+     (lambda (s) (not (string-suffix-p "/.git" s))))))
 
 (defun relint--scan-buffer (buffer)
   "Scan BUFFER; return (COMPLAINTS . SUPPRESSED) where
 COMPLAINTS is a list of (unsuppressed) diagnostics each on the form
-   (MESSAGE EXPR-POS ERROR-POS STRING STRING-IDX SEVERITY)
+   (MESSAGE BEG-POS END-POS STRING BEG-IDX END-IDX SEVERITY)
 and SUPPRESSED is the number of suppressed diagnostics."
   (with-current-buffer buffer
     (unless (derived-mode-p 'emacs-lisp-mode)
@@ -2773,20 +2810,27 @@ The buffer must be in emacs-lisp-mode."
 
 ;;;###autoload
 (defun relint-buffer (buffer)
-  "Scan BUFFER for regexp errors. Return list of diagnostics.
-Each element in the returned list has the form
+  "Scan BUFFER for regexp mistakes. Return list of diagnostics.
+Each element in the returned list is an object with the slots
 
-  (MESSAGE EXPR-POS ERROR-POS STRING STRING-IDX SEVERITY),
+  message    the message string
+  beg-pos    starting position in the buffer
+  end-pos    ending position the buffer (inclusive), or nil
+  pos-type   if `string', then the buffer at BEG-POS..END-POS is inside
+             a string literal corresponding to STRING at BEG-IDX..END-IDX;
+             otherwise BEG-POS..END-POS just point to code
+  string     the string the message is about, or nil
+  beg-idx    starting offset in STRING, or nil
+  end-idx    ending offset in STRING (inclusive), or nil
+  severity   `error', `warning' or `info'
 
-where MESSAGE is the message string, EXPR-POS the location of the
-flawed expression, ERROR-POS the exact position of the error or
-nil if unavailable, STRING is nil or a string to which the
-message pertains, STRING-IDX is nil or an index into STRING,
-and SEVERITY is `error' or `warning'.
-The intent is that ERROR-POS is the position in the buffer that
-corresponds to STRING at STRING-IDX, if such a location can be
-determined."
-  (car (relint--scan-buffer buffer)))
+Accessors are prefixed by `relint-diag-': eg, (relint-diag-message D) returns
+the message of object D.
+
+BEG-POS..END-POS is the range of interest in the buffer, and may
+correspond to the range BEG-IDX..END-IDX in STRING but not necessarily so."
+  (let ((groups (car (relint--scan-buffer buffer))))
+    (apply #'append groups)))           ; flatten groups
 
 (defun relint-batch ()
   "Scan elisp source files for regexp-related errors.
@@ -2794,7 +2838,9 @@ Call this function in batch mode with files and directories as
 command-line arguments.  Files are scanned; directories are
 searched recursively for *.el files to scan.
 When done, Emacs terminates with a nonzero status if anything worth
-complaining about was found, zero otherwise."
+complaining about was found, zero otherwise.
+
+The output appearance is controlled by the variable `relint-batch-highlight'."
   (unless noninteractive
     (error "`relint-batch' is only for use with -batch"))
   (let* ((err-supp

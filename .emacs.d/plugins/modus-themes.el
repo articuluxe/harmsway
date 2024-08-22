@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/modus-themes
-;; Version: 4.4.0
+;; Version: 4.5.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -1635,7 +1635,7 @@ FG and BG are the main colors."
     `(comint-highlight-prompt ((,c :inherit modus-themes-prompt)))
     `(confusingly-reordered ((,c :inherit modus-themes-lang-error)))
     `(edmacro-label ((,c :inherit bold :foreground ,accent-0)))
-    `(elisp-shorthand-font-lock-face ((,c :inherit font-lock-variable-name-face)))
+    `(elisp-shorthand-font-lock-face ((,c :inherit (italic font-lock-preprocessor-face))))
     `(error ((,c :inherit bold :foreground ,err)))
     `(escape-glyph ((,c :foreground ,err)))
     `(file-name-shadow ((,c :inherit shadow)))
@@ -2802,6 +2802,10 @@ FG and BG are the main colors."
 ;;;;; keycast
     `(keycast-command ((,c :inherit bold)))
     `(keycast-key ((,c :inherit modus-themes-bold :background ,keybind :foreground ,bg-main)))
+;;;;; kmacro-menu
+    `(kmacro-menu-mark ((,c :inherit bold)))
+    `(kmacro-menu-marked ((,c :inherit modus-themes-mark-sel)))
+    `(kmacro-menu-flagged ((,c :inherit modus-themes-mark-del)))
 ;;;;; ledger-mode
     `(ledger-font-auto-xact-face ((,c :inherit font-lock-builtin-face)))
     `(ledger-font-account-name-face ((,c :foreground ,name)))
@@ -2999,6 +3003,8 @@ FG and BG are the main colors."
     `(markup-title-4-face ((,c :inherit modus-themes-heading-5)))
     `(markup-title-5-face ((,c :inherit modus-themes-heading-6)))
     `(markup-verbatim-face ((,c :inherit modus-themes-prose-verbatim)))
+;;;;; mbdepth
+    `(minibuffer-depth-indicator ((,c :inherit modus-themes-mark-alt)))
 ;;;;; mct
     `(mct-highlight-candidate ((,c :inherit modus-themes-completion-selected)))
 ;;;;; messages
@@ -3173,7 +3179,8 @@ FG and BG are the main colors."
     `(notmuch-tag-unread ((,c :foreground ,accent-1)))
     `(notmuch-tree-match-author-face ((,c :inherit notmuch-search-matching-authors)))
     `(notmuch-tree-match-date-face ((,c :inherit notmuch-search-date)))
-    `(notmuch-tree-match-face ((,c :foreground ,fg-main)))
+    `(notmuch-tree-match-face ((,c :foreground ,fg-dim)))
+    `(notmuch-tree-match-subject-face ((,c :foreground ,fg-main)))
     `(notmuch-tree-match-tag-face ((,c :inherit notmuch-tag-face)))
     `(notmuch-tree-no-match-face ((,c :inherit shadow)))
     `(notmuch-tree-no-match-date-face ((,c :inherit shadow)))
@@ -3856,6 +3863,12 @@ FG and BG are the main colors."
     `(vimish-fold-fringe ((,c :foreground ,cyan)))
     `(vimish-fold-mouse-face ((,c :inherit modus-themes-intense-blue)))
     `(vimish-fold-overlay ((,c :background ,bg-inactive)))
+;;;;; viper
+    `(viper-search ((,c :inherit modus-themes-search-current)))
+    `(viper-replace-overlay ((,c :inherit modus-themes-search-replace)))
+    `(viper-minibuffer-emacs (( )))
+    `(viper-minibuffer-insert (( )))
+    `(viper-minibuffer-vi (( )))
 ;;;;; visible-mark
     `(visible-mark-active ((,c :background ,bg-blue-intense)))
     `(visible-mark-face1 ((,c :background ,bg-cyan-intense)))
@@ -3918,7 +3931,7 @@ FG and BG are the main colors."
     `(web-mode-css-string-face ((,c :inherit web-mode-string-face)))
     `(web-mode-css-variable-face ((,c :inherit font-lock-variable-name-face)))
     `(web-mode-current-column-highlight-face ((,c :background ,bg-inactive)))
-    `(web-mode-current-element-highlight-face ((,c :inherit modus-themes-cyan-subtle)))
+    `(web-mode-current-element-highlight-face ((,c :inherit modus-themes-subtle-cyan)))
     `(web-mode-doctype-face ((,c :inherit font-lock-doc-face)))
     `(web-mode-error-face ((,c :inherit error)))
     `(web-mode-filter-face ((,c :inherit font-lock-function-name-face)))
@@ -4124,6 +4137,10 @@ FG and BG are the main colors."
        ,fg-term-magenta
        ,fg-term-cyan
        ,fg-term-white])
+;;;; viper
+    `(viper-replace-overlay-cursor-color ,err)
+    `(viper-insert-state-cursor-color ,info)
+    `(viper-emacs-state-cursor-color ,fg-main)
 ;;;; xterm-color
     `(xterm-color-names
       [,fg-term-black

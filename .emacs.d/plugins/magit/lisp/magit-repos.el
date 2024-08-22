@@ -65,7 +65,8 @@ This option controls which repositories are being listed by
   :options '(hl-line-mode))
 
 (defcustom magit-repolist-columns
-  '(("Name"    25 magit-repolist-column-ident nil)
+  '(("Name"    25 magit-repolist-column-ident
+     ())
     ("Version" 25 magit-repolist-column-version
      ((:sort magit-repolist-version<)))
     ("B<U"      3 magit-repolist-column-unpulled-from-upstream
@@ -76,7 +77,8 @@ This option controls which repositories are being listed by
      (;; (:help-echo "Local changes not in upstream")
       (:right-align t)
       (:sort <)))
-    ("Path"    99 magit-repolist-column-path nil))
+    ("Path"    99 magit-repolist-column-path
+     ()))
   "List of columns displayed by `magit-list-repositories'.
 
 Each element has the form (HEADER WIDTH FORMAT PROPS).
@@ -265,6 +267,8 @@ If it contains \"%s\" then the directory is substituted for that."
 
 (define-derived-mode magit-repolist-mode tabulated-list-mode "Repos"
   "Major mode for browsing a list of Git repositories."
+  :interactive nil
+  :group 'magit-repolist
   (setq-local x-stretch-cursor nil)
   (setq tabulated-list-padding 0)
   (add-hook 'tabulated-list-revert-hook #'magit-repolist-refresh nil t)

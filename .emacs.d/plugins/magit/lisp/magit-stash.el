@@ -348,7 +348,7 @@ When the region is active offer to drop all contained stashes."
 (defun magit-stash-clear (ref)
   "Remove all stashes saved in REF's reflog by deleting REF."
   (interactive (let ((ref (or (magit-section-value-if 'stashes) "refs/stash")))
-                 (magit-confirm t (format "Drop all stashes in %s" ref))
+                 (magit-confirm t (list "Drop all stashes in %s" ref))
                  (list ref)))
   (magit-run-git "update-ref" "-d" ref))
 
@@ -511,6 +511,7 @@ instead of \"Stashes:\"."
 
 (define-derived-mode magit-stashes-mode magit-reflog-mode "Magit Stashes"
   "Mode for looking at lists of stashes."
+  :interactive nil
   :group 'magit-log
   (magit-hack-dir-local-variables))
 
@@ -572,6 +573,7 @@ If there is no stash buffer in the same frame, then do nothing."
 
 (define-derived-mode magit-stash-mode magit-diff-mode "Magit Stash"
   "Mode for looking at individual stashes."
+  :interactive nil
   :group 'magit-diff
   (magit-hack-dir-local-variables)
   (setq magit--imenu-group-types '(commit)))

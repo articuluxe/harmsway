@@ -120,8 +120,9 @@ signal an error."
   "<remap> <forge--list-menu>" #'forge-notifications-menu)
 
 (define-derived-mode forge-notifications-mode magit-mode "Forge Notifications"
-  "Mode for looking at forge notifications."
-  (hack-dir-local-variables-non-file-buffer))
+  "Major mode for looking at forge notifications."
+  :interactive nil
+  (magit-hack-dir-local-variables))
 
 (defun forge-notifications-setup-buffer ()
   (magit-setup-buffer-internal #'forge-notifications-mode nil

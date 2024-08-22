@@ -1866,6 +1866,7 @@ end of the match."
                          :width icon-size
                          :height icon-size
                          :ascent 'center
+                         ;; Transparency requires Emacs 28+.
                          :background (unless (eq bkg 'unspecified)
                                        bkg)))
              (spacer-px-width (- (* company-icon-margin dfw) icon-size)))
@@ -3418,7 +3419,9 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
     (when (or (stringp prefix) (consp prefix))
       (let ((company-backend backend))
         (condition-case nil
-            (setq cc (company-call-backend 'candidates (company--prefix-str prefix))
+            (setq cc (company-call-backend 'candidates
+                                           (company--prefix-str prefix)
+                                           (company--suffix-str prefix))
                   annotations
                   (mapcar
                    (lambda (c) (cons c (company-call-backend 'annotation c)))

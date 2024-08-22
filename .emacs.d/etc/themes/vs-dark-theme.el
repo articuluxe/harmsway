@@ -51,6 +51,8 @@
  `(font-lock-type-face          ((t (:foreground "#38EFCA"))))
  `(font-lock-variable-name-face ((t (:foreground "#D2D2D2"))))
 
+ `(header-line ((t (:background "#383838" :foreground "#FAFAFA"))))
+
  `(mode-line          ((t :box ( :line-width -1 :style released-button))))
  `(mode-line-inactive ((t :box ( :line-width -1 :style released-button))))
 
@@ -76,6 +78,8 @@
                          `((t :box ( :line-width (-1 . -1) :style released-button
                                      :color "#464646")))
                        `((t :background "#72A4FF"))))
+
+ `(show-eof-mode-marker-face ((t :background "#252525" :foreground "#888581")))
 
  `(highlight-indent-guides-odd-face             ((t :foreground "#414141")))
  `(highlight-indent-guides-even-face            ((t :foreground "#414141")))

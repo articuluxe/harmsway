@@ -50,12 +50,11 @@
 
   ;;("r" "Random number within [0..𝑛)" calc-random :transient nil)
 
-  [("a" "Random number again" calc-random-again :transient t)]
-  [:class transient-row
-          (casual-lib-quit-one)
-          (casual-lib-quit-all)
-          (casual-calc-undo-suffix)])
+  ["Repeat"
+   ("a" "Random number again" calc-random-again :transient t)]
 
+  casual-calc-operators-group-row
+  casual-calc-navigation-group)
 
 (provide 'casual-calc-random)
 ;;; casual-calc-random.el ends here

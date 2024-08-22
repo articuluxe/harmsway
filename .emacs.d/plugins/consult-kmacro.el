@@ -27,6 +27,7 @@
 
 (require 'consult)
 (require 'kmacro)
+(eval-when-compile (require 'subr-x))
 
 (defvar consult-kmacro--history nil)
 
