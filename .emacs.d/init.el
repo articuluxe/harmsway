@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-08-22 13:49:55 dharms>
+;; Modified Time-stamp: <2024-08-22 15:06:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1559,7 +1559,13 @@ ARGS are the additional arguments."
          (fmo-mode . format-all-ensure-formatter))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-link ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package git-link
+  :bind ("C-c 0o" . git-link)
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eww ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq browse-url-new-window-flag t)
 (defun harmsway-browse-last-url ()
   "Open prior link in `eww'."
   (interactive)
