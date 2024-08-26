@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-08-22 15:06:37 dharms>
+;; Modified Time-stamp: <2024-08-25 20:07:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1559,13 +1559,25 @@ ARGS are the additional arguments."
          (fmo-mode . format-all-ensure-formatter))
   )
 
+(defvar harmsway-web-keymap)
+(define-prefix-command 'harmsway-web-keymap)
+(global-set-key "\C-c0o" 'harmsway-web-keymap)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-link ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-link
-  :bind ("C-c 0o" . git-link)
+  :bind (:map harmsway-web-keymap
+              ("l" . git-link))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; browse-url ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package browse-url
+  :bind (:map harmsway-web-keymap
+              ("o" . browse-url-default-macosx-browser))
+  :init
+  (setq browse-url-new-window-flag t)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eww ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq browse-url-new-window-flag t)
 (defun harmsway-browse-last-url ()
   "Open prior link in `eww'."
   (interactive)
