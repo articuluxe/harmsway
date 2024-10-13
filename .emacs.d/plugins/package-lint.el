@@ -6,7 +6,7 @@
 ;;         Fanael Linithien <fanael4@gmail.com>
 ;; URL: https://github.com/purcell/package-lint
 ;; Keywords: lisp
-;; Version: 0.23
+;; Version: 0.24
 ;; Package-Requires: ((emacs "24.4") (let-alist "1.0.6"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1204,7 +1204,7 @@ The returned list is of the form (SYMBOL-NAME . POSITION)."
          (save-excursion
            ;; Use the default imenu expression list so that we're not confused
            ;; by user customizations.
-           (let ((imenu-generic-expression lisp-imenu-generic-expression)
+           (let ((imenu-generic-expression (default-value 'lisp-imenu-generic-expression))
                  ;; In case it's actually Semantic, tell it not to decorate
                  ;; symbol names.
                  (semantic-imenu-summary-function 'semantic-format-tag-name))

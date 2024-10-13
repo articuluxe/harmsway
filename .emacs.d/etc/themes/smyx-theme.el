@@ -558,9 +558,9 @@
                                    :box (:line-width 1 :style released-button)))))
    `(org-date ((,class (:foreground ,smyx-green))))
    `(org-done ((,class (:bold t :weight bold :foreground ,smyx-green-1
-                              :box (:line-width 1 :style none)))))
+                              :box (:line-width 1 :style nil)))))
    `(org-todo ((,class (:bold t :foreground ,smyx-yellow-org-todo :weight bold
-                              :box (:line-width 1 :style none)))))
+                              :box (:line-width 1 :style nil)))))
 
    `(org-level-1 ((,class (:foreground ,smyx-blue ))))
    `(org-level-2 ((,class (:foreground ,smyx-green ))))

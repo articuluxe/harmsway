@@ -34,7 +34,7 @@
 ;; - C# (clang-format, astyle, csharpier)
 ;; - Cabal (cabal-fmt)
 ;; - Caddyfile (caddy fmt)
-;; - Clojure/ClojureScript (zprint, node-cljfmt)
+;; - Clojure/ClojureScript (cljfmt, zprint)
 ;; - CMake (cmake-format)
 ;; - Crystal (crystal tool format)
 ;; - CSS/Less/SCSS (prettier, prettierd)
@@ -60,7 +60,7 @@
 ;; - HLSL (clang-format)
 ;; - HTML/XHTML/XML (tidy)
 ;; - Hy (Emacs)
-;; - Java (clang-format, astyle)
+;; - Java (astyle, clang-format, google-java-format)
 ;; - JavaScript/JSON/JSX (prettier, standard, prettierd, deno)
 ;; - Jsonnet (jsonnetfmt)
 ;; - Kotlin (ktlint)
@@ -162,7 +162,7 @@
     ("HTML+EEX" mix-format)
     ("HTML+ERB" erb-format)
     ("Hy" emacs-hy)
-    ("Java" clang-format)
+    ("Java" google-java-format)
     ("JavaScript" prettier)
     ("JSON" prettier)
     ("JSON5" prettier)
@@ -743,6 +743,14 @@ Consult the existing formatters for examples of BODY."
   (:features)
   (:format (format-all--buffer-easy executable "fmt" "-")))
 
+(define-format-all-formatter cargo-fmt
+  ;; This is the same formatter as rustfmt, but run via `cargo fmt`.
+  (:executable "cargo")
+  (:install "rustup component add rustfmt")
+  (:languages "Rust")
+  (:features)
+  (:format (format-all--buffer-easy executable "fmt")))
+
 (define-format-all-formatter clang-format
   (:executable "clang-format")
   (:install
@@ -771,7 +779,7 @@ Consult the existing formatters for examples of BODY."
 
 (define-format-all-formatter cljfmt
   (:executable "cljfmt")
-  (:install "npm install --global node-cljfmt")
+  (:install)
   (:languages "Clojure")
   (:features)
   (:format (format-all--buffer-easy executable)))
@@ -984,6 +992,13 @@ Consult the existing formatters for examples of BODY."
   (:languages "Go")
   (:features)
   (:format (format-all--buffer-easy executable)))
+
+(define-format-all-formatter google-java-format
+  (:executable "google-java-format")
+  (:install)
+  (:languages "Java")
+  (:features)
+  (:format (format-all--buffer-easy executable "-")))
 
 (define-format-all-formatter hclfmt
   (:executable "hclfmt")

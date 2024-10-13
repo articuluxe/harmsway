@@ -177,8 +177,8 @@ As defined by the Language Server Protocol 3.16."
      lsp-autotools lsp-awk lsp-bash lsp-beancount lsp-bufls lsp-clangd
      lsp-clojure lsp-cmake lsp-cobol lsp-credo lsp-crystal lsp-csharp lsp-css
      lsp-cucumber lsp-cypher lsp-d lsp-dart lsp-dhall lsp-docker lsp-dockerfile
-     lsp-earthly lsp-elixir lsp-elm lsp-emmet lsp-erlang lsp-eslint lsp-fortran lsp-fsharp
-     lsp-gdscript lsp-gleam lsp-glsl lsp-go lsp-golangci-lint lsp-grammarly
+     lsp-earthly lsp-elixir lsp-elm lsp-emmet lsp-erlang lsp-eslint lsp-fortran lsp-futhark
+     lsp-fsharp lsp-gdscript lsp-gleam lsp-glsl lsp-go lsp-golangci-lint lsp-grammarly
      lsp-graphql lsp-groovy lsp-hack lsp-haskell lsp-haxe lsp-idris lsp-java
      lsp-javascript lsp-jq lsp-json lsp-kotlin lsp-latex lsp-lisp lsp-ltex
      lsp-lua lsp-magik lsp-markdown lsp-marksman lsp-mdx lsp-meson lsp-metals lsp-mint
@@ -186,7 +186,7 @@ As defined by the Language Server Protocol 3.16."
      lsp-openscad lsp-pascal lsp-perl lsp-perlnavigator lsp-php lsp-pls
      lsp-purescript lsp-pwsh lsp-pyls lsp-pylsp lsp-pyright lsp-python-ms
      lsp-qml lsp-r lsp-racket lsp-remark lsp-rf lsp-roslyn lsp-rubocop lsp-ruby-lsp
-     lsp-ruby-syntax-tree lsp-ruff-lsp lsp-rust lsp-semgrep lsp-shader
+     lsp-ruby-syntax-tree lsp-ruff lsp-rust lsp-semgrep lsp-shader
      lsp-solargraph lsp-solidity lsp-sonarlint lsp-sorbet lsp-sourcekit
      lsp-sql lsp-sqls lsp-steep lsp-svelte lsp-tailwindcss lsp-terraform
      lsp-tex lsp-tilt lsp-toml lsp-trunk lsp-ttcn3 lsp-typeprof lsp-v
@@ -871,6 +871,7 @@ Changes take effect only when a new session is started."
     (go-ts-mode . "go")
     (graphql-mode . "graphql")
     (haskell-mode . "haskell")
+    (haskell-ts-mode . "haskell")
     (hack-mode . "hack")
     (php-mode . "php")
     (php-ts-mode . "php")
@@ -892,6 +893,7 @@ Changes take effect only when a new session is started."
     (reason-mode . "reason")
     (caml-mode . "ocaml")
     (tuareg-mode . "ocaml")
+    (futhark-mode . "futhark")
     (swift-mode . "swift")
     (elixir-mode . "elixir")
     (elixir-ts-mode . "elixir")
@@ -938,12 +940,13 @@ Changes take effect only when a new session is started."
     (robot-mode . "robot")
     (racket-mode . "racket")
     (nix-mode . "nix")
-    (nix-ts-mode . "Nix")
+    (nix-ts-mode . "nix")
     (prolog-mode . "prolog")
     (vala-mode . "vala")
     (actionscript-mode . "actionscript")
     (d-mode . "d")
     (zig-mode . "zig")
+    (zig-ts-mode . "zig")
     (text-mode . "plaintext")
     (markdown-mode . "markdown")
     (gfm-mode . "markdown")
@@ -4120,7 +4123,8 @@ yet."
     (cond
      ((and (or (equal lsp-signature-auto-activate t)
                (memq :on-trigger-char lsp-signature-auto-activate))
-           signature-help-handler)
+           signature-help-handler
+           (not cleanup?))
       (add-hook 'post-self-insert-hook signature-help-handler nil t))
 
      ((or cleanup?
@@ -5243,11 +5247,11 @@ identifier and the position respectively."
 type Location, LocationLink, Location[] or LocationLink[]."
   (setq locations
         (pcase locations
-          ((seq (or (Location)
-                    (LocationLink)))
+          ((seq (or (lsp-interface Location)
+                    (lsp-interface LocationLink)))
            (append locations nil))
-          ((or (Location)
-               (LocationLink))
+          ((or (lsp-interface Location)
+               (lsp-interface LocationLink))
            (list locations))))
 
   (cl-labels ((get-xrefs-in-file
@@ -5614,9 +5618,9 @@ When language is nil render as markup if `markdown-mode' is loaded."
   (let ((inhibit-message t))
     (or
      (pcase content
-       ((MarkedString :value :language)
+       ((lsp-interface MarkedString :value :language)
         (lsp--render-string value language))
-       ((MarkupContent :value :kind)
+       ((lsp-interface MarkupContent :value :kind)
         (lsp--render-string value kind))
        ;; plain string
        ((pred stringp) (lsp--render-string content "markdown"))
@@ -6260,15 +6264,15 @@ A reference is highlighted only if it is visible in a window."
        (-map
         (-lambda ((start-window . end-window))
           ;; Make the overlay only if the reference is visible
-          (let ((start-point (lsp--position-to-point start))
-                (end-point (lsp--position-to-point end)))
-            (when (and (> (1+ start-line) start-window)
-                       (< (1+ end-line) end-window)
-                       (not (and lsp-symbol-highlighting-skip-current
-                                 (<= start-point (point) end-point))))
-              (-doto (make-overlay start-point end-point)
-                (overlay-put 'face (cdr (assq (or kind? 1) lsp--highlight-kind-face)))
-                (overlay-put 'lsp-highlight t)))))
+          (when (and (> (1+ start-line) start-window)
+                     (< (1+ end-line) end-window))
+            (let ((start-point (lsp--position-to-point start))
+                  (end-point (lsp--position-to-point end)))
+              (when (not (and lsp-symbol-highlighting-skip-current
+                              (<= start-point (point) end-point)))
+                (-doto (make-overlay start-point end-point)
+                  (overlay-put 'face (cdr (assq (or kind? 1) lsp--highlight-kind-face)))
+                  (overlay-put 'lsp-highlight t))))))
         wins-visible-pos))
      highlights)))
 
@@ -6406,11 +6410,11 @@ perform the request synchronously."
   (-mapcat
    (-lambda (sym)
      (pcase-exhaustive sym
-       ((DocumentSymbol :name :children? :selection-range (Range :start))
+       ((lsp-interface DocumentSymbol :name :children? :selection-range (lsp-interface Range :start))
         (cons (cons (concat path name)
                     (lsp--position-to-point start))
               (lsp--xref-elements-index children? (concat path name " / "))))
-       ((SymbolInformation :name :location (Location :range (Range :start)))
+       ((lsp-interface SymbolInformation :name :location (lsp-interface Location :range (lsp-interface Range :start)))
         (list (cons (concat path name)
                     (lsp--position-to-point start))))))
    symbols))
@@ -8447,7 +8451,11 @@ archive (e.g. when the archive has multiple files)"
 
 ;; unzip
 
-(defconst lsp-ext-pwsh-script "powershell -noprofile -noninteractive \
+(defconst lsp-ext-pwsh-script "pwsh -noprofile -noninteractive \
+-nologo -ex bypass -c Expand-Archive -Path '%s' -DestinationPath '%s'"
+  "Pwsh script to unzip file.")
+
+(defconst lsp-ext-powershell-script "powershell -noprofile -noninteractive \
 -nologo -ex bypass -command Expand-Archive -path '%s' -dest '%s'"
   "Powershell script to unzip file.")
 
@@ -8455,8 +8463,14 @@ archive (e.g. when the archive has multiple files)"
   "Unzip script to unzip file.")
 
 (defcustom lsp-unzip-script (lambda ()
-                              (cond ((executable-find "unzip") lsp-ext-unzip-script)
-                                    ((executable-find "powershell") lsp-ext-pwsh-script)
+                              (cond ((and (eq system-type 'windows-nt)
+                                          (executable-find "pwsh"))
+                                     lsp-ext-pwsh-script)
+                                    ((and (eq system-type 'windows-nt)
+                                          (executable-find "powershell"))
+                                     lsp-ext-powershell-script)
+                                    ((executable-find "unzip") lsp-ext-unzip-script)
+                                    ((executable-find "pwsh") lsp-ext-pwsh-script)
                                     (t nil)))
   "The script to unzip."
   :group 'lsp-mode

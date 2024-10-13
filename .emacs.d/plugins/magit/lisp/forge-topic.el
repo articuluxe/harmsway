@@ -372,7 +372,11 @@ Limit list based on topic (public) state.
 State is the \"public condition\".  I.e., is the topic still open?"
                 :initarg :state
                 :initform 'open
-                :type (member open (completed merged) (unplanned rejected) nil)
+                :type (satisfies (lambda (val)
+                                   (member val '(open
+                                                 (completed merged)
+                                                 (unplanned rejected)
+                                                 nil))))
                 :custom (choice
                          (const open)
                          (const (completed merged))
@@ -870,7 +874,7 @@ can be selected from the start."
        (format (if local
                    (pcase-lambda (`(,_id ,name ,color ,_description))
                      (let* ((background (forge--sanitize-color color))
-                            (foreground (forge--contrast-color background)))
+                            (foreground (readable-foreground-color background)))
                        (magit--propertize-face
                         name `(( :background ,background
                                  :foreground ,foreground)
@@ -1016,7 +1020,7 @@ what subset of KIND is being listed."
     (prog1 t
       (pcase-dolist (`(,_id ,name ,color ,description) labels)
         (let* ((background (forge--sanitize-color color))
-               (foreground (forge--contrast-color background)))
+               (foreground (readable-foreground-color background)))
           (if separate (insert " ") (setq separate t))
           (insert name)
           (let ((o (make-overlay (- (point) (length name)) (point))))
@@ -1301,7 +1305,7 @@ This mode itself is never used directly."
 
 ;;;; Menus
 
-;;;###autoload (autoload 'forge-topic-menu "forge-topic" nil t)
+;;;###autoload(autoload 'forge-topic-menu "forge-topic" nil t)
 (transient-define-prefix forge-topic-menu ()
   "Edit the topic at point."
   :transient-suffix t
@@ -1341,12 +1345,12 @@ This mode itself is never used directly."
                         'transient-inapt-suffix
                       'forge-suffix-active)))
 
-;;;###autoload (autoload 'forge-topic-state-menu "forge-topic" nil t)
+;;;###autoload(autoload 'forge-topic-state-menu "forge-topic" nil t)
 (transient-define-prefix forge-topic-state-menu ()
   "Set state of the current topic."
   [forge--topic-set-state-group])
 
-;;;###autoload (autoload 'forge-topic-status-menu "forge-topic" nil t)
+;;;###autoload(autoload 'forge-topic-status-menu "forge-topic" nil t)
 (transient-define-prefix forge-topic-status-menu ()
   "Set status of the current topic."
   [forge--topic-set-status-group])
@@ -1550,26 +1554,6 @@ This mode itself is never used directly."
         ((string-match-p "\\`#.\\{4\\}\\'" color) (substring color 0 3))
         ((string-match-p "\\`#.\\{8\\}\\'" color) (substring color 0 6))
         (t "#000000"))) ; Use fallback instead of invalid color.
-
-(defun forge--contrast-color (color)
-  "Return black or white depending on the luminance of COLOR."
-  (if (> (forge--x-color-luminance color) 0.5) "black" "white"))
-
-;; Copy of `rainbow-x-color-luminance'.
-(defun forge--x-color-luminance (color)
-  "Calculate the luminance of a color string (e.g., \"#ffaa00\", \"blue\").
-Return a value between 0 and 1."
-  (let ((values (color-values color)))
-    (forge--color-luminance (/ (nth 0 values) 256.0)
-                            (/ (nth 1 values) 256.0)
-                            (/ (nth 2 values) 256.0))))
-
-;; Copy of `rainbow-color-luminance'.
-;; Also see https://en.wikipedia.org/wiki/Relative_luminance.
-(defun forge--color-luminance (red green blue)
-  "Calculate the luminance of color composed of RED, GREEN and BLUE.
-Return a value between 0 and 1."
-  (/ (+ (* .2126 red) (* .7152 green) (* .0722 blue)) 256))
 
 ;;; Markdown Utilities
 

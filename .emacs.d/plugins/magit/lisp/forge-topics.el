@@ -136,7 +136,8 @@ Must be set before `forge-topics' is loaded.")
     (unless (or repo global)
       (error "Cannot determine repository"))
     (magit-setup-buffer-internal #'forge-topics-mode nil
-                                 `((forge--buffer-topics-spec   ,spec)
+                                 `((forge-buffer-repository     ,(oref repo id))
+                                   (forge--buffer-topics-spec   ,spec)
                                    (forge-buffer-unassociated-p ,global))
                                  (get-buffer-create buf)
                                  dir)))
@@ -177,7 +178,7 @@ Must be set before `forge-topics' is loaded.")
 ;;; Commands
 ;;;; Menu
 
-;;;###autoload (autoload 'forge-topics-menu "forge-topics" nil t)
+;;;###autoload(autoload 'forge-topics-menu "forge-topics" nil t)
 (transient-define-prefix forge-topics-menu ()
   "Control list of topics displayed in the current buffer."
   :transient-suffix t
@@ -268,21 +269,9 @@ then display the respective menu, otherwise display no menu."
 
 ;;;; List
 
-(defclass forge--topics-list-command (transient-suffix)
-  ((type :initarg :type :initform nil)
-   (global :initarg :global :initform nil)
-   (definition
-    :initform (lambda (&optional repo)
-                (interactive)
-                (with-slots (type global) (transient-suffix-object)
-                  (forge-topics-setup-buffer
-                   repo nil :type type :global global))
-                (transient-setup 'forge-topics-menu)))))
-
-;;;###autoload (autoload 'forge-list-topics "forge-topics" nil t)
-(transient-define-suffix forge-list-topics ()
+;;;###autoload(autoload 'forge-list-topics "forge-topics" nil t)
+(transient-define-suffix forge-list-topics (&optional repo)
   "List topics of the current repository."
-  :class 'forge--topics-list-command :global nil :type nil
   :description "topics"
   :inapt-if (lambda () (or (not (forge--get-repository:tracked?))
                       (and (eq major-mode 'forge-topics-mode)
@@ -290,45 +279,58 @@ then display the respective menu, otherwise display no menu."
   :inapt-face (lambda () (if (not (forge--get-repository:tracked?))
                         'transient-inapt-suffix
                       'forge-suffix-active))
-  (declare (interactive-only nil)))
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo)
+  (transient-setup 'forge-topics-menu))
 
-;;;###autoload (autoload 'forge-list-issues "forge-topics" nil t)
-(transient-define-suffix forge-list-issues ()
+;;;###autoload(autoload 'forge-list-issues "forge-topics" nil t)
+(transient-define-suffix forge-list-issues (&optional repo)
   "List issues of the current repository."
-  :class 'forge--topics-list-command :global nil :type 'issue
   :description "issues"
-  (declare (interactive-only nil)))
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo nil :type 'issue)
+  (transient-setup 'forge-topics-menu))
 
-;;;###autoload (autoload 'forge-list-pullreqs "forge-topics" nil t)
-(transient-define-suffix forge-list-pullreqs ()
+;;;###autoload(autoload 'forge-list-pullreqs "forge-topics" nil t)
+(transient-define-suffix forge-list-pullreqs (&optional repo)
   "List pull-requests of the current repository."
-  :class 'forge--topics-list-command :global nil :type 'pullreq
   :description "pull-requests"
-  (declare (interactive-only nil)))
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo nil :type 'pullreq)
+  (transient-setup 'forge-topics-menu))
 
-;;;###autoload (autoload 'forge-list-global-topics "forge-topics" nil t)
-(transient-define-suffix forge-list-global-topics ()
+;;;###autoload(autoload 'forge-list-global-topics "forge-topics" nil t)
+(transient-define-suffix forge-list-global-topics (&optional repo)
   "List topics across all tracked repository."
-  :class 'forge--topics-list-command :global t :type nil
   :description "topics"
   :inapt-if (lambda () (and (eq major-mode 'forge-topics-mode)
                        (oref forge--buffer-topics-spec global)))
   :inapt-face 'forge-suffix-active
-  (declare (interactive-only nil)))
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo nil :global t)
+  (transient-setup 'forge-topics-menu))
 
-;;;###autoload (autoload 'forge-list-global-issues "forge-topics" nil t)
-(transient-define-suffix forge-list-global-issues ()
+;;;###autoload(autoload 'forge-list-global-issues "forge-topics" nil t)
+(transient-define-suffix forge-list-global-issues (&optional repo)
   "List issues across all tracked repository."
-  :class 'forge--topics-list-command :global t :type 'issue
   :description "issues"
-  (declare (interactive-only nil)))
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo nil :global t :type 'issue)
+  (transient-setup 'forge-topics-menu))
 
-;;;###autoload (autoload 'forge-list-global-pullreqs "forge-topics" nil t)
-(transient-define-suffix forge-list-global-pullreqs ()
+;;;###autoload(autoload 'forge-list-global-pullreqs "forge-topics" nil t)
+(transient-define-suffix forge-list-global-pullreqs (&optional repo)
   "List pull-requests across all tracked repository."
-  :class 'forge--topics-list-command :global t :type 'pullreq
   :description "pull-requests"
-  (declare (interactive-only nil)))
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo nil :global t :type 'pullreq)
+  (transient-setup 'forge-topics-menu))
 
 ;;;; Type
 

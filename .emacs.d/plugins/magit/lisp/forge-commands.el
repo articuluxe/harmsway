@@ -52,7 +52,7 @@ Takes the pull-request as only argument and must return a directory."
 
 ;;; Dispatch
 
-;;;###autoload (autoload 'forge-dispatch "forge-commands" nil t)
+;;;###autoload(autoload 'forge-dispatch "forge-commands" nil t)
 (transient-define-prefix forge-dispatch ()
   "Dispatch a forge command."
   :transient-non-suffix #'transient--do-call
@@ -76,9 +76,11 @@ Takes the pull-request as only argument and must return a directory."
                      "Forge does not yet track this repository")
                     ("Not inside a Git repository")))
     ("/a" forge-add-repository
-     :description (lambda () (if (forge--get-repository:tracked?)
+     :description (lambda () (let ((repo (forge-get-repository :stub?)))
+                          (if (or (not repo)
+                                  (eq (oref repo condition) :tracked))
                             "track some repo"
-                          "track this repository")))
+                          "track this repository"))))
     ("/M" "merge with api" forge-merge
      :if forge--get-repository:tracked? :level 7)]]
   [forge--lists-group
@@ -109,7 +111,7 @@ Takes the pull-request as only argument and must return a directory."
   :inapt-if (lambda () (eq (oref transient--prefix command) 'forge-dispatch))
   :inapt-face 'forge-suffix-active)
 
-;;;###autoload (autoload 'forge-configure "forge-commands" nil t)
+;;;###autoload(autoload 'forge-configure "forge-commands" nil t)
 (transient-define-prefix forge-configure ()
   "Configure current repository and global settings."
   :transient-non-suffix #'transient--do-call
@@ -128,7 +130,7 @@ Takes the pull-request as only argument and must return a directory."
 
 ;;; Pull
 
-;;;###autoload (autoload 'forge-pull "forge-commands" nil t)
+;;;###autoload(autoload 'forge-pull "forge-commands" nil t)
 (transient-define-suffix forge-pull ()
   "Pull forge topics for the current repository if it is already tracked.
 If the current repository is still untracked locally, or the current
@@ -137,13 +139,12 @@ repository cannot be determined, instead invoke `forge-add-repository'."
                  (if (forge-get-repository :tracked?)
                      "forge topics"
                    "new forge repository"))
-  :inapt-if-not #'forge--get-repository:tracked?
   (declare (interactive-only nil))
   (interactive)
   (if-let ((repo (forge-get-repository :tracked?)))
       (forge--pull repo)
     (transient-setup 'forge-add-repository nil nil
-                     :scope (forge-get-repository :stub?))))
+                     :scope (forge-add-repository--scope))))
 
 (defun forge-read-date (prompt)
   (require (quote org) nil)
@@ -167,18 +168,19 @@ repository cannot be determined, instead invoke `forge-add-repository'."
   (magit-git-fetch (oref repo remote) (magit-fetch-arguments)))
 
 (defun forge--maybe-git-fetch (repo &optional buffer)
-  (if (and (buffer-live-p buffer)
-           (with-current-buffer buffer
-             (and (derived-mode-p 'magit-mode)
-                  (forge-repository-equal (forge-get-repository :stub?) repo))))
+  (if (buffer-live-p buffer)
       (with-current-buffer buffer
-        (magit-git-fetch (oref repo remote) (magit-fetch-arguments)))
+        (if (and (derived-mode-p 'magit-mode)
+                 (forge-repository-equal (forge-get-repository :stub?) repo)
+                 (magit-toplevel))
+            (magit-git-fetch (oref repo remote) (magit-fetch-arguments))
+          (magit-refresh-buffer)))
     (when-let ((worktree (forge-get-worktree repo)))
       (let ((default-directory worktree)
             (magit-inhibit-refresh t))
         (magit-git-fetch (oref repo remote) (magit-fetch-arguments))))))
 
-;;;###autoload (autoload 'forge-pull-notifications "forge-commands" nil t)
+;;;###autoload(autoload 'forge-pull-notifications "forge-commands" nil t)
 (transient-define-suffix forge-pull-notifications ()
   "Fetch notifications for all repositories from the current forge."
   :description "forge notifications"
@@ -191,7 +193,7 @@ repository cannot be determined, instead invoke `forge-add-repository'."
                       (oref repo forge))))
     (forge--pull-notifications 'forge-github-repository "github.com")))
 
-;;;###autoload (autoload 'forge-pull-topic "forge-commands" nil t)
+;;;###autoload(autoload 'forge-pull-topic "forge-commands" nil t)
 (transient-define-suffix forge-pull-topic (number)
   "Read a topic TYPE and NUMBER pull data about it from its forge."
   :inapt-if-not (lambda () (and (forge--get-repository:tracked?)
@@ -202,7 +204,7 @@ repository cannot be determined, instead invoke `forge-add-repository'."
                         (oref topic number)))))
   (forge--pull-topic (forge-get-repository :tracked) number))
 
-;;;###autoload (autoload 'forge-pull-this-topic "forge-commands" nil t)
+;;;###autoload(autoload 'forge-pull-this-topic "forge-commands" nil t)
 (transient-define-suffix forge-pull-this-topic ()
   "Pull data about the topic at point from its forge."
   :inapt-if-not #'forge--get-github-repository
@@ -289,7 +291,7 @@ argument also offer closed pull-requests."
   (interactive (list (forge-read-repository "Browse repository")))
   (browse-url (forge-get-url repository)))
 
-;;;###autoload (autoload 'forge-browse-this-topic "forge-commands" nil t)
+;;;###autoload(autoload 'forge-browse-this-topic "forge-commands" nil t)
 (transient-define-suffix forge-browse-this-topic ()
   "Visit the topic at point using a browser."
   :description "browse"
@@ -446,10 +448,10 @@ With prefix argument MENU, also show the topic menu."
     (cond
      ((and (eq transient-current-command 'forge-repositories-menu)
            (forge-get-repository repo nil :tracked?))
-      (if-let ((buffer (forge-topics-buffer-name repo)))
-          (switch-to-buffer buffer)
-        (forge-list-topics repo))
-      (transient-setup 'forge-topics-menu))
+      (if-let ((buffer (get-buffer (forge-topics-buffer-name repo))))
+          (progn (switch-to-buffer buffer)
+                 (transient-setup 'forge-topics-menu))
+        (forge-list-topics repo)))
      (worktree
       (magit-status-setup-buffer worktree))
      ((forge-get-repository repo nil :tracked?)
@@ -771,7 +773,7 @@ Please see the manual for more information."
   (magit--checkout (forge--branch-pullreq (forge-get-pullreq pullreq)))
   (forge-refresh-buffer))
 
-;;;###autoload (autoload 'forge-checkout-this-pullreq "forge-commands" nil t)
+;;;###autoload(autoload 'forge-checkout-this-pullreq "forge-commands" nil t)
 (transient-define-suffix forge-checkout-this-pullreq ()
   "Checkout the current pull-request.
 If the branch for that pull-request does not exist yet, then create and
@@ -883,7 +885,7 @@ is added anyway.  Currently this only supports Github and Gitlab."
                                                (oref repo name))
                       (list "--fetch"))))
 
-;;;###autoload (autoload 'forge-merge "forge-commands" nil t)
+;;;###autoload(autoload 'forge-merge "forge-commands" nil t)
 (transient-define-suffix forge-merge (pullreq method)
   "Merge the current pull-request using METHOD using the forge's API.
 
@@ -994,7 +996,7 @@ upstream remotes of local branches accordingly."
        (not (eq major-mode 'forge-topics-mode))
        (forge-get-repository :tracked?)))
 
-;;;###autoload (autoload 'forge-add-pullreq-refspec "forge-commands" nil t)
+;;;###autoload(autoload 'forge-add-pullreq-refspec "forge-commands" nil t)
 (transient-define-suffix forge-add-pullreq-refspec ()
   "Configure Git to fetch all pull-requests.
 This is done by adding \"+refs/pull/*/head:refs/pullreqs/*\"
@@ -1023,7 +1025,7 @@ upstream remote."
 
 ;;; Add repositories
 
-;;;###autoload (autoload 'forge-add-repository "forge-commands" nil t)
+;;;###autoload(autoload 'forge-add-repository "forge-commands" nil t)
 (transient-define-prefix forge-add-repository (&optional repo limit)
   "Add a repository to the database."
   :refresh-suffixes t

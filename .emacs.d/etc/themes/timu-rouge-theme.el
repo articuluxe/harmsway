@@ -111,7 +111,7 @@
 ;;     By default the border is turned off.
 ;;     To turn this on add the following to your =~/.emacs.d/init.el= or =~/.emacs=:
 ;;       (customize-set-variable 'timu-rouge-mode-line-border t)
-
+;;
 ;; III. Utility functions
 ;;   A. Toggle between intense and non intense colors for `org-mode'
 ;;       M-x timu-rouge-toggle-org-colors-intensity RET.
@@ -1496,9 +1496,9 @@ Sourced other themes to get information about font faces for packages.")
    `(org-ref-ref-face ((,class (:foreground ,red :underline t :weight bold))))
 
 ;;;; outline
-   `(outline-1 ((,class (:foreground ,blue :weight ultra-bold))))
-   `(outline-2 ((,class (:foreground ,magenta :weight bold))))
-   `(outline-3 ((,class (:foreground ,green :weight bold))))
+   `(outline-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-1 1.3)))))
+   `(outline-2 ((,class (:foreground ,magenta :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-2 1.2)))))
+   `(outline-3 ((,class (:foreground ,green :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-3 1.1)))))
    `(outline-4 ((,class (:foreground ,darkred))))
    `(outline-5 ((,class (:foreground ,purple))))
    `(outline-6 ((,class (:foreground ,purple))))
@@ -1506,9 +1506,9 @@ Sourced other themes to get information about font faces for packages.")
    `(outline-8 ((,class (:foreground ,fg))))
 
 ;;;; outline-minor-faces
-     `(outline-minor-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.2)))))
-     `(outline-minor-2 ((,class (:foreground ,red :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.2)))))
-     `(outline-minor-3 ((,class (:foreground ,orange :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-document-info 1.1)))))
+     `(outline-minor-1 ((,class (:foreground ,blue :weight ultra-bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-1 1.3)))))
+     `(outline-minor-2 ((,class (:foreground ,red :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-2 1.2)))))
+     `(outline-minor-3 ((,class (:foreground ,orange :weight bold ,@(timu-rouge-do-scale timu-rouge-scale-org-level-3 1.1)))))
      `(outline-minor-4 ((,class (:foreground ,darkred))))
      `(outline-minor-5 ((,class (:foreground ,green))))
      `(outline-minor-6 ((,class (:foreground ,teal))))

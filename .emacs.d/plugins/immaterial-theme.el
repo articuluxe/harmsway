@@ -5,7 +5,7 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.9.1
+;; Version: 0.9.2
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -326,25 +326,50 @@ NAME and VARIANT should be symbols."
 
        `(slime-repl-inputed-output-face ((,class (:foreground ,sec))))
        `(trailing-whitespace ((,class :background ,warning)))
+
        ;;
-       ;; ansi-term/term/vterm
+       ;; Faces used by `term', `ansi-term', `vterm' and `shell'.
        ;;
-       `(term-default-fg-color ((,class (:foreground ,fg1, :background ,bg-prim))))
-       `(term-default-bg-color ((,class (:foreground ,fg1 :background ,bg-prim))))
-       ;; used for most terminal text
-       `(term-color-black      ((,class (:foreground ,fg1))))
-       `(term-color-white      ((,class (:foreground ,bg-prim))))
-       ;; for example used for directories
-       `(term-color-blue       ((,class (:foreground ,sec-lo))))
-       ;; for example used for symlinks
-       `(term-color-cyan       ((,class (:foreground ,error))))
-       ;; for example used for scripts (.sh)
-       `(term-color-green      ((,class (:foreground ,prim))))
-       ;; for example used for archives (zip, deb, ...)
-       `(term-color-red        ((,class (:foreground ,sec))))
-       `(term-color-yellow     ((,class (:foreground ,warning))))
-       ;; for example used for media (images, audio, video)
-       `(term-color-magenta    ((,class (:foreground ,tert))))
+       ;; Face used to highlight prompts.
+       `(comint-highlight-prompt ((,class (:foreground ,warning :weight semi-bold))))
+       ;; Face used to render different terminal color codes.
+       `(ansi-color-black ((,class (:foreground ,bg-prim))))
+       `(ansi-color-bright-black ((,class (:foreground ,bg-on))))
+       `(ansi-color-white ((,class (:foreground ,fg1))))
+       `(ansi-color-bright-white ((,class (:foreground ,fg2))))
+       ;; Red is used for archives (zip, tar.gz, deb).
+       `(ansi-color-red ((,class (:foreground ,error))))
+       `(ansi-color-bright-red ((,class (:foreground ,error))))
+       ;; Green is used for executables.
+       `(ansi-color-green ((,class (:foreground ,sec))))
+       `(ansi-color-bright-green ((,class (:foreground ,sec-hi))))
+       ;; Blue is used for directories.
+       `(ansi-color-blue ((,class (:foreground ,tert))))
+       `(ansi-color-bright-blue ((,class (:foreground ,tert-hi))))
+       ;; Cyan is used for symlinks.
+       `(ansi-color-cyan ((,class (:foreground ,cursor))))
+       `(ansi-color-bright-cyan ((,class (:foreground ,cursor))))
+       ;; Yellow is used for devices.
+       `(ansi-color-yellow ((,class (:foreground ,warning))))
+       `(ansi-color-bright-yellow ((,class (:foreground ,warning))))
+       ;; Magenta is used for image files.
+       `(ansi-color-magenta ((,class (:foreground ,prim))))
+       `(ansi-color-bright-magenta ((,class (:foreground ,prim-hi))))
+       ;;
+       ;; Faces used by `eshell'.
+       ;;
+       `(eshell-ls-archive ((,class (:inherit ansi-color-red))))
+       `(eshell-ls-backup ((,class (:inherit discrete))))
+       `(eshell-ls-clutter ((,class (:inherit ansi-color-red))))
+       `(eshell-ls-directory ((,class (:inherit ansi-color-blue))))
+       `(eshell-ls-executable ((,class (:inherit ansi-color-green))))
+       `(eshell-ls-missing ((,class (:inherit ansi-color-red))))
+       `(eshell-ls-product ((,class (:inherit ansi-color-ellow))))
+       `(eshell-ls-special ((,class (:inherit ansi-color-yellow))))
+       `(eshell-ls-symlink ((,class (:inherit ansi-color-cyan))))
+       `(eshell-ls-unreadable ((,class (:inherit ansi-color-red))))
+       `(eshell-prompt ((,class (:inherit comint-highlight-prompt))))
+
        ;;
        ;; company -- "complete any" completion engine
        ;;
@@ -419,6 +444,43 @@ NAME and VARIANT should be symbols."
        `(markdown-html-tag-face ((,class (:foreground ,sec))))
        `(markdown-url-face ((,class (:foreground ,tert))))
        `(markdown-plain-url-face ((,class (:foreground ,tert))))
+
+       ;;
+       ;; adoc-mode
+       ;;
+       `(adoc-gen-face ((,class (:foreground ,prim))))
+       `(adoc-title-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-title-0-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-title-1-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-title-2-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-title-3-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-title-4-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-title-4-face ((,class (:foreground ,prim :weight bold))))
+       `(adoc-comment-face ((,class (:foreground ,comment))))
+       `(adoc-meta-face ((,class (:foreground ,fg3))))
+       `(adoc-meta-hide-face ((,class (:inherit adoc-meta-face))))
+       `(adoc-attribute-face ((,class (:inherit adoc-meta-face))))
+       `(adoc-secondary-text-face ((,class (:inherit adoc-meta-face))))
+       ;; Used for code blocks.
+       `(adoc-code-face ((,class (:foreground ,sec))))
+       `(adoc-preprocessor-face ((,class (:foreground ,warning))))
+       `(adoc-command-face ((,class (:foreground ,warning))))
+       ;; An replacement macro such as "{doctitle}".
+       `(adoc-replacement-face ((,class (:foreground ,warning))))
+       ;; Used for [WARNING], [CAUTION], etc
+       `(adoc-complex-replacement-face ((,class (:foreground ,warning))))
+       `(adoc-bold-face ((,class (:weight bold))))
+       `(adoc-emphasis-face ((,class (:slant italic))))
+       ;; The LINK part of "PATH[LINK]" and "<<LINK>>".
+       `(adoc-reference-face ((,class (:foreground ,tert))))
+       ;; The PATH part of "PATH[LINK]".
+       `(adoc-internal-reference-face ((,class (:foreground ,tert))))
+       `(adoc-anchor-face ((,class (:inherit adoc-meta-face :underline t))))
+       `(adoc-list-face ((,class (:foreground ,sec))))
+       `(adoc-table-face ((,class (:foreground ,sec))))
+       ;; Used for text within backticks.
+       `(adoc-verbatim-face ((,class (:foreground ,sec))))
+       `(adoc-typewriter-face ((,class (:foreground ,sec))))
 
        ;;
        ;; treemacs

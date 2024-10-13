@@ -5,7 +5,7 @@
 ;; Author: Artur Yaroshenko <artawower@protonmail.com>
 ;; URL: https://github.com/artawower/blamer.el
 ;; Package-Requires: ((emacs "27.1") (posframe "1.1.7") (async "1.9.8"))
-;; Version: 0.9.2
+;; Version: 0.9.4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@
 3 - date
 3 - time")
 
-(defconst blamer--commit-message-regexp "\n\n[\s]+\\(\\(?:.\\|\n\\)+\\):?"
+(defconst blamer--commit-message-regexp "\r?\n\r?\n[\s]+\\(\\(?:.\\|\r?\n\\)+\\):?"
   "Regexp for commit message parsing.")
 
 (defconst blamer--git-author-cmd '("config" "--get" "user.name")
@@ -542,7 +542,8 @@ avatar will be downloaded and included in the plist.
 Run CALLBACK after async process is done."
 
   (string-match blamer--regexp-info blame-msg)
-  (let* ((commit-hash (string-trim (match-string 1 blame-msg)))
+  (let* ((commit-hash (blamer--remove-commit-hash-caret
+                       (string-trim (match-string 1 blame-msg))))
          (raw-commit-author (match-string 2 blame-msg))
          (uncommitted (string= raw-commit-author "Not Committed Yet"))
          (commit-author (if (and (string= raw-commit-author blamer--current-author) blamer-self-author-name)
@@ -584,8 +585,11 @@ Run CALLBACK after async process is done."
                          :commit-message ,commit-message
                          :commit-description ,commit-description
                          :raw-commit-message ,raw-commit-message
-                         :line-number ,line-number)))))
-    ))
+                         :line-number ,line-number)))))))
+
+(defun blamer--remove-commit-hash-caret (commit-hash)
+  "Remove caret from COMMIT-HASH."
+  (replace-regexp-in-string "^\\^" "" commit-hash))
 
 (defun blamer--github-avatar-uploader (remote-url file-path author-email)
   "Download the author avatar from REMOTE-URL using the AUTHOR-EMAIL to FILE-PATH."

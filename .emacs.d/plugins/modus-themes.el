@@ -1741,12 +1741,12 @@ FG and BG are the main colors."
     `(all-the-icons-silver ((,c :foreground "gray50")))
     `(all-the-icons-yellow ((,c :foreground ,yellow)))
 ;;;;; all-the-icons-dired
-    `(all-the-icons-dired-dir-face ((,c :foreground ,cyan-faint)))
+    `(all-the-icons-dired-dir-face ((,c :foreground ,accent-0)))
 ;;;;; all-the-icons-ibuffer
-    `(all-the-icons-ibuffer-dir-face ((,c :foreground ,cyan-faint)))
-    `(all-the-icons-ibuffer-file-face ((,c :foreground ,blue-faint)))
-    `(all-the-icons-ibuffer-mode-face ((,c :foreground ,cyan)))
-    `(all-the-icons-ibuffer-size-face ((,c :foreground ,cyan-cooler)))
+    `(all-the-icons-ibuffer-dir-face ((,c :foreground ,accent-0)))
+    `(all-the-icons-ibuffer-file-face ((,c :foreground ,docstring)))
+    `(all-the-icons-ibuffer-mode-face ((,c :foreground ,type)))
+    `(all-the-icons-ibuffer-size-face ((,c :foreground ,variable)))
 ;;;;; annotate
     `(annotate-annotation ((,c :inherit modus-themes-subtle-blue)))
     `(annotate-annotation-secondary ((,c :inherit modus-themes-subtle-magenta)))
@@ -1942,7 +1942,7 @@ FG and BG are the main colors."
     `(company-scrollbar-bg ((,c :background ,bg-active)))
     `(company-scrollbar-fg ((,c :background ,fg-main)))
     `(company-template-field ((,c :background ,bg-active)))
-    `(company-tooltip ((,c :background ,bg-dim)))
+    `(company-tooltip ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim)))
     `(company-tooltip-annotation ((,c :inherit completions-annotations)))
     `(company-tooltip-common ((,c :inherit company-echo-common)))
     `(company-tooltip-deprecated ((,c :inherit company-tooltip :strike-through t)))
@@ -1978,7 +1978,7 @@ FG and BG are the main colors."
     `(corfu-current ((,c :inherit modus-themes-completion-selected)))
     `(corfu-bar ((,c :background ,fg-dim)))
     `(corfu-border ((,c :background ,bg-active)))
-    `(corfu-default ((,c :background ,bg-dim)))
+    `(corfu-default ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim)))
 ;;;;; corfu-candidate-overlay
     `(corfu-candidate-overlay-face ((t :inherit shadow)))
 ;;;;; corfu-quick
@@ -2269,8 +2269,10 @@ FG and BG are the main colors."
     `(elpher-gemini-heading2 ((,c :inherit modus-themes-heading-2)))
     `(elpher-gemini-heading3 ((,c :inherit modus-themes-heading-3)))
 ;;;;; embark
+    `(embark-collect-group-title ((,c :inherit bold :foreground ,name)))
     `(embark-keybinding ((,c :inherit modus-themes-key-binding)))
-    `(embark-collect-marked ((,c :inherit modus-themes-mark-sel)))
+    `(embark-keybinding-repeat ((,c :inherit bold)))
+    `(embark-selected ((,c :inherit modus-themes-mark-sel)))
 ;;;;; ement (ement.el)
     `(ement-room-fully-read-marker ((,c :inherit success)))
     `(ement-room-membership ((,c :inherit shadow)))
@@ -2439,6 +2441,23 @@ FG and BG are the main colors."
     `(font-lock-type-face ((,c :inherit modus-themes-bold :foreground ,type)))
     `(font-lock-variable-name-face ((,c :foreground ,variable)))
     `(font-lock-warning-face ((,c :inherit modus-themes-bold :foreground ,warning)))
+;;;;; forge
+    `(forge-dimmed ((,c :inherit shadow)))
+    `(forge-issue-completed ((,c :inherit shadow)))
+    `(forge-issue-open (( )))
+    `(forge-issue-unplanned ((,c :inherit shadow :strike-through t)))
+    `(forge-post-author ((,c :inherit bold :foreground ,name)))
+    `(forge-post-date ((,c :inherit bold :foreground ,date-common)))
+    `(forge-pullreq-merged ((,c :foreground ,fg-alt)))
+    `(forge-pullreq-open ((,c :foreground ,info)))
+    `(forge-pullreq-rejected ((,c :foreground ,err :strike-through t)))
+    `(forge-topic-done ((,c :foreground ,info)))
+    `(forge-topic-pending ((,c :foreground ,warning)))
+    `(forge-topic-slug-completed ((,c :inherit shadow)))
+    `(forge-topic-slug-open ((,c :inherit shadow)))
+    `(forge-topic-slug-saved ((,c :inherit success)))
+    `(forge-topic-slug-unplanned ((,c :inherit shadow :strike-through t)))
+    `(forge-topic-unread ((,c :inherit bold)))
 ;;;;; geiser
     `(geiser-font-lock-autodoc-current-arg ((,c :inherit bold :background ,bg-active-argument :foreground ,fg-active-argument)))
     `(geiser-font-lock-autodoc-identifier ((,c :foreground ,docstring)))
@@ -2562,6 +2581,9 @@ FG and BG are the main colors."
     `(golden-ratio-scroll-highlight-line-face ((,c :background ,bg-cyan-subtle :foreground ,fg-main)))
 ;;;;; helpful
     `(helpful-heading ((,c :inherit modus-themes-heading-1)))
+;;;;; hexl-mode
+    `(hexl-address-region ((,c :foreground ,constant)))
+    `(hexl-ascii-region ((,c :foreground ,variable)))
 ;;;;; highlight region or ad-hoc regexp
     ;; HACK 2022-06-23: The :inverse-video prevents hl-line-mode from
     ;; overriding the background.  Such an override really defeats the
@@ -2620,6 +2642,11 @@ FG and BG are the main colors."
     `(hydra-face-pink ((,c :inherit bold :foreground ,magenta)))
     `(hydra-face-red ((,c :inherit bold :foreground ,red-faint)))
     `(hydra-face-teal ((,c :inherit bold :foreground ,cyan-cooler)))
+;;;;; hyperbole
+    `(hbut-item-face ((,c :foreground ,info)))
+    `(hbut-face ((,c :inherit modus-themes-button)))
+    `(hbut-flash ((,c :background ,bg-search-replace)))
+    `(ibut-face ((,c :inherit button :background ,bg-link-symbolic :foreground ,fg-link-symbolic :underline ,underline-link-symbolic)))
 ;;;;; icomplete
     `(icomplete-first-match ((,c :inherit modus-themes-completion-match-0)))
     `(icomplete-selected-match ((,c :inherit modus-themes-completion-selected)))
@@ -3128,14 +3155,14 @@ FG and BG are the main colors."
     `(nerd-icons-silver ((,c :foreground "gray50")))
     `(nerd-icons-yellow ((,c :foreground ,yellow)))
 ;;;;; nerd-icons-completion
-    `(nerd-icons-completion-dir-face ((,c :foreground ,cyan-faint)))
+    `(nerd-icons-completion-dir-face ((,c :foreground ,accent-0)))
 ;;;;; nerd-icons-dired
-    `(nerd-icons-dired-dir-face ((,c :foreground ,cyan-faint)))
+    `(nerd-icons-dired-dir-face ((,c :foreground ,accent-0)))
 ;;;;; nerd-icons-ibuffer
-    `(nerd-icons-ibuffer-dir-face ((,c :foreground ,cyan-faint)))
-    `(nerd-icons-ibuffer-file-face ((,c :foreground ,blue-faint)))
-    `(nerd-icons-ibuffer-mode-face ((,c :foreground ,cyan)))
-    `(nerd-icons-ibuffer-size-face ((,c :foreground ,cyan-cooler)))
+    `(nerd-icons-ibuffer-dir-face ((,c :foreground ,accent-0)))
+    `(nerd-icons-ibuffer-file-face ((,c :foreground ,docstring)))
+    `(nerd-icons-ibuffer-mode-face ((,c :foreground ,type)))
+    `(nerd-icons-ibuffer-size-face ((,c :foreground ,variable)))
 ;;;;; neotree
     `(neo-banner-face ((,c :foreground ,accent-0)))
     `(neo-button-face ((,c :inherit button)))

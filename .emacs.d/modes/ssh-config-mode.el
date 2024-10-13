@@ -1,17 +1,13 @@
 ;;; ssh-config-mode.el --- Mode for fontification of ~/.ssh/config
-;;
-;; ssh-config-mode-el/ssh-config-mode.el ---
-;;
-;; $Id: ssh-config-mode.el,v 1.14 2012/05/14 05:29:26 harley Exp $
-;;
 
-;; SPDX-License-Identifier: GPL v3+ (https://www.gnu.org/licenses/gpl-3.0.txt)
+;; SPDX-License-Identifier: GPL-3.0-or-later
 ;; Author:    Harley Gorrell <harley@panix.com>
-;; URL:       https://github.com/jhgorrell/ssh-config-mode-el
-;; Github:    https://raw.github.com/jhgorrell/ssh-config-mode-el/master/ssh-config-mode.el
-;; Keywords:  ssh, config, emacs
-;; Version:   $Revision: 1.14 $
-;; Tag:       20170413T0010
+;; Maintainer: Peter Hoeg <peter@hoeg.com>
+;; URL:       https://github.com/peterhoeg/ssh-config-mode-el
+;; Github:    https://raw.github.com/peterhoeg/ssh-config-mode-el/master/ssh-config-mode.el
+;; Keywords:  comm, files
+;; Version:   1.14
+;; Package-Requires: ((emacs "24.3"))
 
 ;;; Commentary:
 ;; * Fontifys the ssh config keywords.
@@ -51,16 +47,17 @@
 ;; We use eval-and-compile so we can use them at compile
 ;; time and call regexp-opt during compliation.
 
-(eval-and-compile
-  (defun ssh-config-ssh-config-keywords-path ()
-    "Find the path to 'ssh-config-keywords.txt'.
-It should be next to 'ssh-config-mode.el'.
-When testing add '.' to load-path so you find the local copy."
-    (let ((path (locate-library "ssh-config-keywords.txt" nil)))
-      ;;(message "ssh-config-keywords.txt is %s" path)
-      path)))
+(require 'rx)
 
 (eval-and-compile
+  (defun ssh-config-ssh-config-keywords-path ()
+    "Find the path to `ssh-config-keywords.txt'.
+It should be next to `ssh-config-mode.el'.
+When testing add `.' to load-path so you find the local copy."
+    (let ((path (locate-library "ssh-config-keywords.txt" nil)))
+      ;;(message "ssh-config-keywords.txt is %s" path)
+      path))
+
   (defun ssh-config-read-keywords (&optional file-path)
     "Read the list of ssh keywords, returning them as a list."
     ;; (message "ssh-config-read-keywords")
@@ -69,22 +66,20 @@ When testing add '.' to load-path so you find the local copy."
                (ssh-config-ssh-config-keywords-path))))
       (with-temp-buffer
         (insert-file-contents file-path)
-        (split-string (buffer-string) "\n" t)))))
+        (split-string (buffer-string) "\n" t))))
 
-(eval-and-compile
   (defvar ssh-config-keywords
     (eval-when-compile
       (ssh-config-read-keywords)))
-  "A list of keywords allowed in a user ssh config file.")
+  "A list of keywords allowed in a user ssh config file."
 
-(eval-and-compile
   (defvar ssh-config-font-lock-keywords
     (eval-when-compile
       `((
          ,(regexp-opt ssh-config-keywords 'words)
-         (1 font-lock-keyword-face)
-         )))
+         (1 font-lock-keyword-face))))
     "Expressions to hilight in `ssh-config-mode'."))
+
 ;; ssh-config-font-lock-keywords
 
 ;; Setup
@@ -141,9 +136,9 @@ Comments right above a 'Host' are considered to be about that Host."
     (cond
      ;; Start of file and "Host" and "Match" should be at 0
      ((or (looking-at ssh-config-host-regexp)
-	  (looking-at ssh-config-match-regexp)
+          (looking-at ssh-config-match-regexp)
           (and (not (ssh-config-in-host-block-p))
-	       (not (ssh-config-in-match-block-p))))
+               (not (ssh-config-in-match-block-p))))
       0)
      ;; Comment line
      ((looking-at "\\s-*#")
@@ -151,8 +146,8 @@ Comments right above a 'Host' are considered to be about that Host."
       (while (looking-at "\\s-*#")
         (forward-line))
       (if (or (looking-at ssh-config-host-regexp)
-	      (looking-at ssh-config-match-regexp))
-        0
+              (looking-at ssh-config-match-regexp))
+          0
         ssh-config-mode-indent))
      ;; default.
      (t
@@ -169,13 +164,13 @@ Comments right above a 'Host' are considered to be about that Host."
 (defvar ssh-config-mode-map
   (let ((map (make-sparse-keymap)))
     ;; Ctrl bindings
-    (define-key map [C-down]    'ssh-config-host-next)
-    (define-key map [C-up]      'ssh-config-host-prev)
+    (define-key map [C-down]    #'ssh-config-host-next)
+    (define-key map [C-up]      #'ssh-config-host-prev)
     ;;
-    (define-key map "\C-c}"     'ssh-config-host-next)
-    (define-key map "\C-c{"     'ssh-config-host-prev)
+    (define-key map "\C-c}"     #'ssh-config-host-next)
+    (define-key map "\C-c{"     #'ssh-config-host-prev)
     ;;
-    (define-key map (kbd "TAB") 'indent-for-tab-command)
+    (define-key map (kbd "TAB") #'indent-for-tab-command)
     map)
   "The local keymap for `ssh-config-mode'.")
 
@@ -221,16 +216,16 @@ Only show the first hostname in the menu.")
    ;; cause our keywords are all lower case.
    font-lock-keywords-case-fold-search t)
   ;;
-  (setq-local indent-line-function 'ssh-config-indent-line)
-  (setq-local imenu-generic-expression ssh-config-imenu-generic-expression)
-  (add-hook 'completion-at-point-functions 'ssh-config-completion-at-point nil 'local))
+  (setq-local indent-line-function 'ssh-config-indent-line
+              imenu-generic-expression ssh-config-imenu-generic-expression)
+  (add-hook 'completion-at-point-functions #'ssh-config-completion-at-point nil 'local))
 
 ;;;###autoload
 (progn
-  (add-to-list 'auto-mode-alist '("/\\.ssh/config\\(\\.d/.*\\.conf\\)?\\'" . ssh-config-mode))
-  (add-to-list 'auto-mode-alist '("/sshd?_config\\(\\.d/.*\\.conf\\)?\\'" . ssh-config-mode))
-  (add-to-list 'auto-mode-alist '("/known_hosts\\'" . ssh-known-hosts-mode))
-  (add-to-list 'auto-mode-alist '("/authorized_keys\\'" . ssh-authorized-keys-mode)))
+  (add-to-list 'auto-mode-alist `(,(rx "/.ssh/config" (* ".d/" (+ alnum) ".conf") eos) . ssh-config-mode))
+  (add-to-list 'auto-mode-alist `(,(rx "/ssh" (* "d") "_config" (* ".d/" (+ alnum) ".conf") eos) . ssh-config-mode))
+  (add-to-list 'auto-mode-alist `(,(rx "/known_hosts" eos) . ssh-known-hosts-mode))
+  (add-to-list 'auto-mode-alist `(,(rx "/authorized_keys" (* "2" ".d/" alnum) eos) . ssh-authorized-keys-mode)))
 
 ;;;;;
 
@@ -249,7 +244,7 @@ Only show the first hostname in the menu.")
     (modify-syntax-entry ?\n ">" table)
     table)
   "Syntax table for `ssh-known-hosts-mode'.
-Just sets the comment syntax.")
+  Just sets the comment syntax.")
 
 ;;;;;
 
@@ -284,7 +279,7 @@ Just sets the comment syntax.")
 (defvar ssh-known-hosts-regex-hostname
   "\\(?:\\(?:[a-zA-Z0-9_][-a-zA-Z0-9_]*[.]\\)*[a-zA-Z_][-a-zA-Z0-9_]*\\)"
   "Regex for matching hostnames.
-We permit underscores.")
+  We permit underscores.")
 
 ;; :2222
 (defvar ssh-known-hosts-regex-port
@@ -299,6 +294,17 @@ We permit underscores.")
    ssh-known-hosts-regex-ip
    "\\|"
    ssh-known-hosts-regex-hostname
+   "\\)"))
+
+(defvar ssh-known-hosts-regex-hostname-pattern
+  (concat
+   "\\(?:"
+   ssh-known-hosts-regex-hostname
+   "\\|"
+   ssh-known-hosts-regex-ip
+   "\\|"
+   ;; [host-or-ip]:222
+   "\\(?:\\[" ssh-known-hosts-regex-host "\\]:" ssh-known-hosts-regex-port "\\)"
    "\\)"))
 
 ;; NOTE: font-lock-studio might be of help when making changes.
@@ -320,27 +326,11 @@ We permit underscores.")
        ssh-known-hosts-regex-hashed
        "\\|"
 
-       ;; hostname-only
-       ssh-known-hosts-regex-hostname
-       "\\|"
-
-       ;; ip-only
-       ssh-known-hosts-regex-ip
-       "\\|"
-
-       ;; hostname "," ip
-       "\\(?:" ssh-known-hosts-regex-hostname "," ssh-known-hosts-regex-ip "\\)"
-       "\\|"
-
-       ;; [host-or-ip]:222
-       "\\(?:\\[" ssh-known-hosts-regex-host "\\]:" ssh-known-hosts-regex-port "\\)"
-       "\\|"
-
-       ;; We arent matching ports, but they should be the same.
-       ;; [ssh.github.com]:443,[192.1.2.3]:443
-       "\\(?:"
-       "\\[" ssh-known-hosts-regex-hostname "\\]:" ssh-known-hosts-regex-port ","
-       "\\[" ssh-known-hosts-regex-ip       "\\]:" ssh-known-hosts-regex-port "\\)"
+       ;; list of comma separated hostname patterns
+       ssh-known-hosts-regex-hostname-pattern
+       "\\(?:,"
+       ssh-known-hosts-regex-hostname-pattern
+       "\\)*"
 
        "\\)"
        "[ \t]+"
@@ -352,21 +342,19 @@ We permit underscores.")
 
        ;; public key:
        ;; base64data==
-       "\\(AA[0-9A-Za-z/+]+=*\\)"
-       )
+       "\\(AA[0-9A-Za-z/+]+=*\\)")
      (1 font-lock-warning-face)
      (2 font-lock-function-name-face)
      (3 font-lock-keyword-face)
-     (4 font-lock-string-face)
-     ))
+     (4 font-lock-string-face)))
   "Expressions to hilight in `ssh-known-hosts-mode'.
-We want to try and be a good match, so misformatted ones stand out.
-So we dont just match .* for the hostname.")
+  We want to try and be a good match, so misformatted ones stand out.
+  So we dont just match .* for the hostname.")
 
 ;;;###autoload
 (defun ssh-known-hosts-mode ()
   "Major mode for fontifiying ssh known_hosts files.
-\\{ssh-known-hosts-mode}"
+  \\{ssh-known-hosts-mode}"
   (interactive)
   (kill-all-local-variables)
   (set-syntax-table ssh-known-hosts-mode-syntax-table)
@@ -396,7 +384,7 @@ So we dont just match .* for the hostname.")
        ;; ignore options
        ;; double quoted string will be fontified by generic mode.
        ;; key type
-       "\\(\\(?:ecdsa\\|ssh\\)-[^[:space:]]+\\)\\s-+"
+       "\\(\\(?:ecdsa\\|sk\\|ssh\\)-[^[:space:]]+\\)\\s-+"
        ;; base64
        "\\([0-9A-Za-z+/]+=*\\)"
        ;; comment in public key
@@ -404,8 +392,7 @@ So we dont just match .* for the hostname.")
        "$")
       '(1 font-lock-keyword-face)
       '(2 font-lock-string-face)
-      '(3 font-lock-comment-face nil t)
-      )))
+      '(3 font-lock-comment-face nil t))))
   ;; Not define `auto-mode-alist' obey the other mode in this elisp.
   nil
   nil)

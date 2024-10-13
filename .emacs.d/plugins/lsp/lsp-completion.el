@@ -102,6 +102,14 @@ This will help minimize popup flickering issue in `company-mode'."
   :group 'lsp-completion
   :package-version '(lsp-mode . "8.0.0"))
 
+(defcustom lsp-completion-default-behaviour :replace
+  "Default behaviour of `InsertReplaceEdit'."
+  :type '(choice
+          (const :tag "Default completion inserts" :insert)
+          (const :tag "Default completion replaces" :replace))
+  :group 'lsp-completion
+  :package-version '(lsp-mode . "8.0.0"))
+
 (defconst lsp-completion--item-kind
   [nil
    "Text"
@@ -210,14 +218,6 @@ KEEP-LAST-RESULT if specified."
     (set-marker nil))
   (setq lsp-completion--cache nil)
   (unless keep-last-result (setq lsp-completion--last-result nil)))
-
-(defcustom lsp-completion-default-behaviour :replace
-  "Default behaviour of `InsertReplaceEdit'."
-  :type '(choice
-          (const :insert :tag "Default completion inserts")
-          (const :replace :tag "Default completion replaces"))
-  :group 'lsp-mode
-  :package-version '(lsp-mode . "8.0.0"))
 
 (lsp-defun lsp-completion--guess-prefix ((item &as &CompletionItem :text-edit?))
   "Guess ITEM's prefix start point according to following heuristics:
@@ -575,8 +575,8 @@ Others: CANDIDATES"
           (apply #'delete-region markers)
           (insert prefix)
           (pcase text-edit?
-            ((TextEdit) (lsp--apply-text-edit text-edit?))
-            ((InsertReplaceEdit :insert :replace :new-text)
+            ((lsp-interface TextEdit) (lsp--apply-text-edit text-edit?))
+            ((lsp-interface InsertReplaceEdit :insert :replace :new-text)
              (lsp--apply-text-edit
               (lsp-make-text-edit
                :new-text new-text

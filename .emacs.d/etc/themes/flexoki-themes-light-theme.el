@@ -1,10 +1,10 @@
 ;;; flexoki-themes-light-theme.el --- Light variant of flexoki-theme -*- lexical-binding:t -*-
 
-;; Copyright (C) 2023 Andrew Jose, Steph Ango
+;; Copyright (C) 2024 Andrew Jose, Steph Ango
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Author: Andrew Jose <arnav.jose@gmail.com>
-;; Maintainer: Andrew Jose <arnav.jose@gmail.com>
+;; Author: Andrew Jose <mail@drewsh.com>
+;; Maintainer: Andrew Jose <mail@drewsh.com>
 ;; URL: https://github.com/crmsnbleyd/flexoki-emacs-theme
 ;; Keywords: faces, theme
 

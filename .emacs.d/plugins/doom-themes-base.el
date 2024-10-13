@@ -121,6 +121,7 @@
     (font-latex-bold-face         :inherit 'bold)
     (font-latex-italic-face       :inherit 'italic)
     (font-latex-math-face         :foreground blue)
+    (font-latex-sedate-face       :inherit 'font-lock-keyword-face)
     (font-latex-sectioning-0-face :foreground blue    :weight 'ultra-bold)
     (font-latex-sectioning-1-face :foreground magenta :weight 'semi-bold)
     (font-latex-sectioning-2-face :foreground violet  :weight 'semi-bold)
@@ -747,9 +748,10 @@
     ;; (hi-black-b  :weight 'bold)
     ;; (hi-black-hb :inherit 'variable-pitch :weight 'bold :height 1.67)
     ;;;; hideshow <built-in>
-    (+fold-hideshow-folded-face :inherit 'font-lock-comment-face
-                                :weight 'light
-                                :background (doom-darken bg 0.125))
+    (+fold-hideshow-folded-face  ; this is defined in Doom Emacs, only
+     :inherit 'font-lock-comment-face
+     :weight 'light
+     :background (doom-darken bg 0.15))
     ;;;; highlight-numbers-mode
     (highlight-numbers-number :inherit 'bold :foreground numbers)
     ;;;; highlight-indentation-mode
@@ -1449,6 +1451,11 @@
     ;;;; treemacs-nerd-icons
     (treemacs-nerd-icons-file-face :foreground doc-comments)
     (treemacs-nerd-icons-root-face :inherit 'font-lock-string-face :weight 'bold :height 1.2)
+    ;;;; ts-fold
+    (ts-fold-fringe-face)
+    ((ts-fold-replacement-face &inherit +fold-hideshow-folded-face))
+    ((ts-fold-replacement-mouse-face &inherit +fold-hideshow-folded-face)
+     :box '(:line-width -1 :style released-button))
     ;;;; twittering-mode
     (twitter-divider  ; custom face in Doom Emacs
      (&light :underline `(:color ,(doom-lighten vertical-bar 0.2)))

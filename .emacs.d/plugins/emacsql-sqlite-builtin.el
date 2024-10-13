@@ -32,9 +32,7 @@
   (require (quote sqlite))
   (oset connection handle
         (sqlite-open (oref connection file)))
-  (when emacsql-global-timeout
-    (emacsql connection [:pragma (= busy-timeout $s1)]
-             (/ (* emacsql-global-timeout 1000) 2)))
+  (emacsql-sqlite-set-busy-timeout connection)
   (emacsql connection [:pragma (= foreign-keys on)])
   (emacsql-register connection))
 
@@ -60,14 +58,18 @@ buffer. This is for debugging purposes."
 (cl-defmethod emacsql-send-message
   ((connection emacsql-sqlite-builtin-connection) message)
   (condition-case err
-      (mapcar (lambda (row)
-                (mapcar (lambda (col)
-                          (cond ((null col) nil)
-                                ((equal col "") "")
-                                ((numberp col) col)
-                                (t (read col))))
-                        row))
-              (sqlite-select (oref connection handle) message nil nil))
+      (let ((include-header emacsql-include-header))
+        (mapcar (lambda (row)
+                  (prog1 (mapcar (lambda (col)
+                                   (cond (include-header col)
+                                         ((null col) nil)
+                                         ((equal col "") "")
+                                         ((numberp col) col)
+                                         (t (read col))))
+                                 row)
+                    (setq include-header nil)))
+                (sqlite-select (oref connection handle) message nil
+                               (and emacsql-include-header 'full))))
     ((sqlite-error sqlite-locked-error)
      (if (stringp (cdr err))
          (signal 'emacsql-error (list (cdr err)))

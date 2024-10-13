@@ -194,6 +194,19 @@ childframe, and should return a (X . Y) cons cell.")
   "T means fringe's background color is set to as same as that of default."
   :type 'boolean)
 
+(defvar-local eldoc-box-buffer-setup-function #'eldoc-box-buffer-setup
+  "Function that setups the doc buffer.
+
+This function is given the original buffer as the sole argument, and
+runs with the eldoc-box buffer as the current buffer.
+
+Everytime eldoc-box displays a documentation, it inserts the doc and
+calls this function to setup the buffer.
+
+This is a buffer-local variable, and eldoc-box takes the value of this
+variable from the origin buffer, and runs it in the doc buffer. This
+allows different major modes to run different setup functions.")
+
 (defvar eldoc-box-buffer-hook '(eldoc-box--prettify-markdown-separator
                                 eldoc-box--replace-en-space
                                 eldoc-box--remove-linked-images
@@ -298,10 +311,10 @@ For DOCS, see ‘eldoc-display-functions’."
     (let ((eldoc-box-position-function
            eldoc-box-at-point-position-function))
       (eldoc-box--display
-       (concat (mapcar #'car docs)
-               (concat "\n"
-                       (or eldoc-doc-buffer-separator "---")
-                       "\n"))))))
+       (string-join (mapcar #'car docs)
+                    (concat "\n"
+                            (or eldoc-doc-buffer-separator "---")
+                            "\n"))))))
 
 ;;;###autoload
 (defun eldoc-box-help-at-point ()
@@ -332,29 +345,35 @@ For DOCS, see ‘eldoc-display-functions’."
 ;; Please compiler.
 (defvar eldoc-box-hover-mode)
 
+(defun eldoc-box-buffer-setup (_orig-buffer)
+  "Setup the doc buffer."
+  (setq mode-line-format nil)
+  (setq header-line-format nil)
+  ;; WORKAROUND: (issue#66) If cursor-type is ‘box’, sometimes the
+  ;; cursor is still shown for some reason.
+  (setq-local cursor-type t)
+  (when (bound-and-true-p global-tab-line-mode)
+    (setq tab-line-format nil))
+  ;; Without this, clicking childframe will make doc buffer the
+  ;; current buffer and `eldoc-box--maybe-cleanup' in
+  ;; `eldoc-box--cleanup-timer' will clear the childframe
+  (buffer-face-set 'eldoc-box-body)
+  (setq eldoc-box-hover-mode t)
+  (visual-line-mode)
+  (run-hook-with-args 'eldoc-box-buffer-hook))
+
 (defun eldoc-box--display (str)
   "Display STR in childframe.
 STR has to be a proper documentation, not empty string, not nil, etc."
-  (let ((doc-buffer (get-buffer-create eldoc-box--buffer)))
+  (let ((doc-buffer (get-buffer-create eldoc-box--buffer))
+        (origin-buffer (current-buffer))
+        (setup-function eldoc-box-buffer-setup-function))
     (with-current-buffer doc-buffer
-      (setq mode-line-format nil)
-      (setq header-line-format nil)
-      ;; WORKAROUND: (issue#66) If cursor-type is ‘box’, sometimes the
-      ;; cursor is still shown for some reason.
-      (setq-local cursor-type t)
-      (when (bound-and-true-p global-tab-line-mode)
-        (setq tab-line-format nil))
-      ;; Without this, clicking childframe will make doc buffer the
-      ;; current buffer and `eldoc-box--maybe-cleanup' in
-      ;; `eldoc-box--cleanup-timer' will clear the childframe
-      (buffer-face-set 'eldoc-box-body)
-      (setq eldoc-box-hover-mode t)
-      (set-window-margins nil nil nil)
-      (erase-buffer)
-      (insert str)
-      (goto-char (point-min))
-      (visual-line-mode)
-      (run-hook-with-args 'eldoc-box-buffer-hook))
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert str)
+        (goto-char (point-min))
+        (funcall setup-function origin-buffer)))
     (eldoc-box--get-frame doc-buffer)))
 
 (defun eldoc-box--window-side ()
@@ -535,6 +554,7 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
                              (face-attribute 'eldoc-box-border :background nil t)
                              frame))
       (eldoc-box--update-childframe-geometry frame window)
+      (set-window-margins window nil nil)
       (setq eldoc-box--frame frame)
       (with-selected-frame frame
         (run-hook-with-args 'eldoc-box-frame-hook main-frame))

@@ -179,7 +179,7 @@ signal an error."
   :inapt-if (lambda () (eq (oref transient--prefix command) 'forge-notifications-menu))
   :inapt-face 'forge-suffix-active)
 
-;;;###autoload (autoload 'forge-list-notifications "forge-notify" nil t)
+;;;###autoload(autoload 'forge-list-notifications "forge-notify" nil t)
 (transient-define-suffix forge-list-notifications ()
   "List notifications."
   :inapt-if-mode 'forge-notifications-mode
@@ -284,10 +284,7 @@ signal an error."
           (let ((repo (forge-get-repository (car notifs))))
             (magit-insert-section (forge-repo repo)
               (magit-insert-heading
-                (concat (propertize (format "%s/%s"
-                                            (oref repo owner)
-                                            (oref repo name))
-                                    'font-lock-face 'bold)
+                (concat (propertize (oref repo slug) 'font-lock-face 'bold)
                         (format " (%s)" (length notifs))))
               (magit-insert-section-body
                 (dolist (notif notifs)

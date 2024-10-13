@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.7.4
+;; Package-Version: 0.7.7
 ;; Package-Requires: ((emacs "26.1") (compat "30.0.0.0") (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -1138,8 +1138,8 @@ commands are aliases for."
       (when (stringp car)
         (setq args (plist-put args :description pop)))
       (while (keywordp car)
-        (let ((key pop)
-              (val pop))
+        (let* ((key pop)
+               (val (if spec pop (error "No value for `%s'" key))))
           (cond ((eq key :class)
                  (setq class (macroexp-quote val)))
                 ((or (symbolp val)
@@ -1184,29 +1184,28 @@ commands are aliases for."
       (cond
        ((memq car '(:info :info*)))
        ((keywordp car)
-        (error "Need command, `:info' or `:info*', got `%s'" car))
+        (error "Need command, argument, `:info' or `:info*'; got `%s'" car))
        ((symbolp car)
         (setq args (plist-put args :command (macroexp-quote pop))))
+       ;; During macro-expansion this is expected to be a `lambda'
+       ;; expression (i.e., source code).  When this is called from a
+       ;; `:setup-children' function, it may also be a function object
+       ;; (a.k.a a function value).  However, we never treat a string
+       ;; as a command, so we have to check for that explicitly.
        ((and (commandp car)
              (not (stringp car)))
         (let ((cmd pop)
               (sym (intern
-                    (format "transient:%s:%s"
-                            prefix
-                            (let ((desc (plist-get args :description)))
-                              (if (and (stringp desc)
-                                       (length< desc 16))
-                                  desc
-                                (plist-get args :key)))))))
+                    (format
+                     "transient:%s:%s:%d" prefix
+                     (replace-regexp-in-string (plist-get args :key) " " "")
+                     (prog1 gensym-counter (cl-incf gensym-counter))))))
           (setq args (plist-put
                       args :command
                       `(prog1 ',sym
                          (put ',sym 'interactive-only t)
                          (put ',sym 'completion-predicate #'transient--suffix-only)
-                         (defalias ',sym
-                           ,(if (eq (car-safe cmd) 'lambda)
-                                cmd
-                              (macroexp-quote cmd))))))))
+                         (defalias ',sym ,cmd))))))
        ((or (stringp car)
             (and car (listp car)))
         (let ((arg pop)
@@ -1232,13 +1231,11 @@ commands are aliases for."
                  (setq args (plist-put args :reader (macroexp-quote pop))))
                 ((not (string-suffix-p "=" arg))
                  (setq class 'transient-switch))
-                (t
-                 (setq class 'transient-option)))))
-       (t
-        (error "Needed command or argument, got %S" car)))
+                ((setq class 'transient-option)))))
+       ((error "Need command, argument, `:info' or `:info*'; got %s" car)))
       (while (keywordp car)
-        (let ((key pop)
-              (val pop))
+        (let* ((key pop)
+               (val (if spec pop (error "No value for `%s'" key))))
           (cond ((eq key :class) (setq class val))
                 ((eq key :level) (setq level val))
                 ((eq key :info)
@@ -1252,10 +1249,12 @@ commands are aliases for."
                 ((or (symbolp val)
                      (and (listp val) (not (eq (car val) 'lambda))))
                  (setq args (plist-put args key (macroexp-quote val))))
-                ((setq args (plist-put args key val)))))))
-    (unless (plist-get args :key)
-      (when-let ((shortarg (plist-get args :shortarg)))
-        (setq args (plist-put args :key shortarg))))
+                ((setq args (plist-put args key val))))))
+      (when spec
+        (error "Need keyword, got %S" car)))
+    (when-let* (((not (plist-get args :key)))
+                (shortarg (plist-get args :shortarg)))
+      (setq args (plist-put args :key shortarg)))
     (list 'list
           (or level transient--default-child-level)
           (macroexp-quote (or class 'transient-suffix))
@@ -1601,13 +1600,13 @@ that is run directly by a command that is invoked while a transient
 is current, this function is also suitable for use in asynchronous
 code, such as timers and callbacks (this function's main use-case).
 
-If optional PREFIXES is non-nil, it must be a list of prefix command
-symbols, in which case the active transient object is only returned
-if it matches one of the PREFIXES."
+If optional PREFIXES is non-nil, it must be a prefix command symbol
+or a list of symbols, in which case the active transient object is
+only returned if it matches one of PREFIXES."
   (and transient--showp
        transient--prefix
        (or (not prefixes)
-           (memq (oref transient--prefix command) prefixes))
+           (memq (oref transient--prefix command) (ensure-list prefixes)))
        (or (memq 'transient--pre-command pre-command-hook)
            (and (memq t pre-command-hook)
                 (memq 'transient--pre-command
@@ -1739,20 +1738,25 @@ to `transient-predicate-map'."
   "<next>"  #'transient-scroll-up
   "<prior>" #'transient-scroll-down)
 
-(defvar-keymap transient-map
-  :doc "Top-level keymap used by all transients.
+(defvar transient-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map transient-base-map)
+    (keymap-set map "C-u"   #'universal-argument)
+    (keymap-set map "C--"   #'negative-argument)
+    (keymap-set map "C-t"   #'transient-show)
+    (keymap-set map "?"     #'transient-help)
+    (keymap-set map "C-h"   #'transient-help)
+    ;; Also bound to "C-x p" and "C-x n" in transient-common-commands.
+    (keymap-set map "C-M-p" #'transient-history-prev)
+    (keymap-set map "C-M-n" #'transient-history-next)
+    (when (fboundp 'other-frame-prefix) ;Emacs >= 28.1
+      (keymap-set map "C-x 5 5" 'other-frame-prefix)
+      (keymap-set map "C-x 4 4" 'other-window-prefix))
+    map)
+  "Top-level keymap used by all transients.
 
 If you add a new command here, then you must also add a binding
-to `transient-predicate-map'.  Also see `transient-base-map'."
-  :parent transient-base-map
-  "C-u"   #'universal-argument
-  "C--"   #'negative-argument
-  "C-t"   #'transient-show
-  "?"     #'transient-help
-  "C-h"   #'transient-help
-  ;; Also bound to "C-x p" and "C-x n" in transient-common-commands.
-  "C-M-p" #'transient-history-prev
-  "C-M-n" #'transient-history-next)
+to `transient-predicate-map'.  Also see `transient-base-map'.")
 
 (defvar-keymap transient-edit-map
   :doc "Keymap that is active while a transient in is in \"edit mode\"."
@@ -1859,6 +1863,8 @@ of the corresponding object."
   "<universal-argument-more>"     #'transient--do-stay
   "<negative-argument>"           #'transient--do-minus
   "<digit-argument>"              #'transient--do-stay
+  "<other-frame-prefix>"          #'transient--do-stay
+  "<other-window-prefix>"         #'transient--do-stay
   "<top-level>"                   #'transient--do-quit-all
   "<transient-quit-all>"          #'transient--do-quit-all
   "<transient-quit-one>"          #'transient--do-quit-one
@@ -2198,9 +2204,9 @@ value.  Otherwise return CHILDREN as is."
 (cl-defmethod transient--init-suffix-key ((obj transient-argument))
   (if (transient-switches--eieio-childp obj)
       (cl-call-next-method obj)
-    (unless (slot-boundp obj 'shortarg)
-      (when-let ((shortarg (transient--derive-shortarg (oref obj argument))))
-        (oset obj shortarg shortarg)))
+    (when-let* (((not (slot-boundp obj 'shortarg)))
+                (shortarg (transient--derive-shortarg (oref obj argument))))
+      (oset obj shortarg shortarg))
     (unless (slot-boundp obj 'key)
       (if (slot-boundp obj 'shortarg)
           (oset obj key (oref obj shortarg))
@@ -4226,16 +4232,25 @@ manpage, then try to jump to the correct location."
   "Show the command doc-string."
   (transient--describe-function cmd))
 
+(defmacro transient-with-help-window (&rest body)
+  "Evaluate BODY, send output to *Help* buffer, and display it in a window.
+Select the help window, and make the help buffer current and return it."
+  (declare (indent 0))
+  `(let ((buffer nil)
+         (help-window-select t))
+     (with-help-window (help-buffer)
+       ,@body
+       (setq buffer (current-buffer)))
+     (set-buffer buffer)))
+
 (defun transient--describe-function (fn)
-  (describe-function fn)
-  (unless (derived-mode-p 'help-mode)
-    (when-let* ((buf (get-buffer "*Help*"))
-                (win (or (and buf (get-buffer-window buf))
-                         (cl-find-if (lambda (win)
-                                       (with-current-buffer (window-buffer win)
-                                         (derived-mode-p 'help-mode)))
-                                     (window-list)))))
-      (select-window win))))
+  (let* ((buffer nil)
+         (help-window-select t)
+         (temp-buffer-window-setup-hook
+          (cons (lambda () (setq buffer (current-buffer)))
+                temp-buffer-window-setup-hook)))
+    (describe-function fn)
+    (set-buffer buffer)))
 
 (defun transient--show-manual (manual)
   (info manual))
@@ -4314,7 +4329,7 @@ Type %s to exit help.\n"
 Type a %s to set level for that suffix command.
 Type %s to set what levels are available for this prefix command.\n"
                            'face 'transient-heading)
-               (propertize "<KEY>"   'face 'transient-key)
+               (propertize "<KEY>" 'face 'transient-key)
                (propertize "C-x l" 'face 'transient-key))))
     (with-slots (level) transient--prefix
       (insert
@@ -4463,7 +4478,7 @@ search instead."
                   2)
             lisp-imenu-generic-expression :test #'equal)
 
-(declare-function which-key-mode "which-key" (&optional arg))
+(declare-function which-key-mode "ext:which-key" (&optional arg))
 
 (defun transient--suspend-which-key-mode ()
   (when (bound-and-true-p which-key-mode)

@@ -1,11 +1,11 @@
 ;;; flexoki-themes.el --- An inky color scheme for prose and code -*- lexical-binding:t -*-
 ;;; Version: 0.20
 
-;; Copyright (C) 2023 Andrew Jose, Jayaram, Steph Ango
+;; Copyright (C) 2024 Andrew Jose, Jayaram, Steph Ango
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Author: Andrew Jose <arnav.jose@gmail.com>
-;; Maintainer: Andrew Jose <arnav.jose@gmail.com>
+;; Author: Andrew Jose <mail@drewsh.com>
+;; Maintainer: Andrew Jose <mail@drewsh.com>
 ;; URL: https://github.com/crmsnbleyd/flexoki-emacs-theme
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces, theme

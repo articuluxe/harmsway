@@ -378,6 +378,7 @@ FLAVOR defaults to the value of `catppuccin-flavor'."
          (solaire-header-line-face :inherit 'solaire-mode-line-face)
 
          ;; evil
+         (evil-search-highlight-persist-highlight-face :inherit lazy-highlight)
          (evil-ex-lazy-highlight :inherit lazy-highlight)
          (evil-ex-substitute-matches :foreground ,ctp-red :underline t)
          (evil-ex-substitute-replacement :foreground ,ctp-green
@@ -463,9 +464,12 @@ FLAVOR defaults to the value of `catppuccin-flavor'."
          (completions-first-difference :foreground ,ctp-text)
 
          ;; diff-hl
-         (diff-hl-change :inherit fringe :foreground ,ctp-blue)
-         (diff-hl-delete :inherit fringe :foreground ,ctp-red)
-         (diff-hl-insert :inherit fringe :foreground ,ctp-green)
+         (diff-hl-change :background ,ctp-blue
+           :foreground ,(catppuccin-darken ctp-blue 50))
+         (diff-hl-delete :background ,ctp-red
+           :foreground ,(catppuccin-darken ctp-red 50))
+         (diff-hl-insert :background ,ctp-green
+           :foreground ,(catppuccin-darken ctp-green 50))
 
          ;; diff-mode
          (diff-header :foreground ,ctp-blue)
@@ -1511,11 +1515,6 @@ FLAVOR defaults to the value of `catppuccin-flavor'."
     (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'catppuccin)
-
-;; Unbind functions used for internal use
-(fmakunbound 'catppuccin-quantize-color)
-(fmakunbound 'catppuccin-lighten-color)
-(fmakunbound 'catppuccin-darken-color)
 
 ;; Local Variables:
 ;; indent-tabs-mode: nil

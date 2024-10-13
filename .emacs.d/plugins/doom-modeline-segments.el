@@ -61,6 +61,9 @@
 (defvar display-time-string)
 (defvar edebug-execution-mode)
 (defvar eglot--managed-mode)
+(defvar eglot-menu)
+(defvar eglot-menu-string)
+(defvar eglot-server-menu)
 (defvar erc-modified-channels-alist)
 (defvar evil-ex-active-highlights-alist)
 (defvar evil-ex-argument)
@@ -85,13 +88,11 @@
 (defvar meow--indicator)
 (defvar minions-mode-line-lighter)
 (defvar minions-mode-line-minor-modes-map)
-(defvar mlscroll-minimum-current-width)
 (defvar mlscroll-right-align)
 (defvar mu4e--modeline-item)
 (defvar mu4e-alert-mode-line)
 (defvar mu4e-alert-modeline-formatter)
 (defvar mu4e-modeline-mode)
-(defvar nyan-minimum-window-width)
 (defvar objed--obj-state)
 (defvar objed--object)
 (defvar objed-modeline-setup-func)
@@ -100,9 +101,7 @@
 (defvar phi-search--overlays)
 (defvar phi-search--selection)
 (defvar phi-search-mode-line-format)
-(defvar poke-line-minimum-window-width)
 (defvar rcirc-activity)
-(defvar sml-modeline-len)
 (defvar symbol-overlay-keywords-alist)
 (defvar symbol-overlay-temp-symbol)
 (defvar text-scale-mode-amount)
@@ -139,17 +138,11 @@
 (declare-function edebug-help "edebug")
 (declare-function edebug-next-mode "edebug")
 (declare-function edebug-stop "edebug")
-(declare-function eglot "ext:eglot")
-(declare-function eglot--major-modes "ext:eglot" t t)
-(declare-function eglot--project-nickname "ext:eglot" t t)
-(declare-function eglot-clear-status "ext:eglot")
-(declare-function eglot-current-server "ext:eglot")
-(declare-function eglot-events-buffer "ext:eglot")
-(declare-function eglot-forget-pending-continuations "ext:eglot")
-(declare-function eglot-managed-p "ext:glot")
-(declare-function eglot-reconnect "ext:eglot")
-(declare-function eglot-shutdown "ext:eglot")
-(declare-function eglot-stderr-buffer "ext:eglot")
+(declare-function eglot--major-modes "eglot")
+(declare-function eglot--server-info "eglot" t t)
+(declare-function eglot-current-server "eglot")
+(declare-function eglot-managed-p "eglot")
+(declare-function eglot-project-nickname "eglot" t t)
 (declare-function erc-switch-to-buffer "erc")
 (declare-function erc-track-switch-buffer "erc-track")
 (declare-function evil-delimited-arguments "ext:evil-common")
@@ -171,18 +164,18 @@
 (declare-function flycheck-list-errors "ext:flycheck")
 (declare-function flycheck-next-error "ext:flycheck")
 (declare-function flycheck-previous-error "ext:flycheck")
-(declare-function flymake--diag-type "ext:flymake" t t)
-(declare-function flymake--handle-report "ext:flymake")
-(declare-function flymake--lookup-type-property "ext:flymake")
-(declare-function flymake--state-diags "ext:flymake" t t)
-(declare-function flymake-disabled-backends "ext:flymake")
-(declare-function flymake-goto-next-error "ext:flymake")
-(declare-function flymake-goto-prev-error "ext:flymake")
-(declare-function flymake-reporting-backends "ext:flymake")
-(declare-function flymake-running-backends "ext:flymake")
-(declare-function flymake-show-buffer-diagnostics "ext:flymake")
-(declare-function flymake-show-buffer-diagnostics "ext:flymake")
-(declare-function flymake-start "ext:flymake")
+(declare-function flymake--diag-type "flymake" t t)
+(declare-function flymake--handle-report "flymake")
+(declare-function flymake--lookup-type-property "flymake")
+(declare-function flymake--state-diags "flymake" t t)
+(declare-function flymake-disabled-backends "flymake")
+(declare-function flymake-goto-next-error "flymake")
+(declare-function flymake-goto-prev-error "flymake")
+(declare-function flymake-reporting-backends "flymake")
+(declare-function flymake-running-backends "flymake")
+(declare-function flymake-show-buffer-diagnostics "flymake")
+(declare-function flymake-show-buffer-diagnostics "flymake")
+(declare-function flymake-start "flymake")
 (declare-function follow-all-followers "follow")
 (declare-function gnus-demon-add-handler "gnus-demon")
 (declare-function grip--preview-url "ext:grip-mode")
@@ -194,8 +187,9 @@
 (declare-function iedit-find-current-occurrence-overlay "ext:iedit-lib")
 (declare-function iedit-prev-occurrence "ext:iedit-lib")
 (declare-function image-get-display-property "image-mode")
-(declare-function jsonrpc--request-continuations "ext:jsonrpc" t t)
-(declare-function jsonrpc-last-error "ext:jsonrpc" t t)
+(declare-function jsonrpc--request-continuations "jsonrpc" t t)
+(declare-function jsonrpc-last-error "jsonrpc" t t)
+(declare-function jsonrpc-name "jsonrpc" t t)
 (declare-function kele-current-context-name "ext:kele")
 (declare-function kele-current-namespace "ext:kele")
 (declare-function lsp--workspace-print "ext:lsp-mode")
@@ -218,7 +212,7 @@
 (declare-function mu4e-alert-default-mode-line-formatter "ext:mu4e-alert")
 (declare-function mu4e-alert-enable-mode-line-display "ext:mu4e-alert")
 (declare-function nyan-create "ext:nyan-mode")
-(declare-function org-edit-src-save "ext:org-src")
+(declare-function org-edit-src-save "org-src")
 (declare-function parrot-create "ext:parrot")
 (declare-function pdf-cache-number-of-pages "ext:pdf-cache" t t)
 (declare-function persp-add-buffer "ext:persp-mode")
@@ -248,8 +242,6 @@
 (declare-function tracking-next-buffer "ext:tracking")
 (declare-function tracking-previous-buffer "ext:tracking")
 (declare-function tracking-shorten "ext:tracking")
-(declare-function undo-tree-redo-1 "ext:undo-tree")
-(declare-function undo-tree-undo-1 "ext:undo-tree")
 (declare-function warning-numeric-level "warnings")
 (declare-function window-numbering-clear-mode-line "ext:window-numbering")
 (declare-function window-numbering-get-number-string "ext:window-numbering")
@@ -302,7 +294,12 @@ Uses `nerd-icons-mdicon' to fetch the icon."
         (when doom-modeline-buffer-state-icon
           (ignore-errors
             (concat
-             (cond (buffer-read-only
+             (cond ((not (or (and (buffer-file-name) (file-remote-p buffer-file-name))
+                             (verify-visited-file-modtime (current-buffer))))
+                    (doom-modeline-buffer-file-state-icon
+                     "nf-md-reload_alert" "⟳" "%1*"
+                     'doom-modeline-warning))
+                   (buffer-read-only
                     (doom-modeline-buffer-file-state-icon
                      "nf-md-lock" "🔒" "%1*"
                      'doom-modeline-warning))
@@ -691,8 +688,8 @@ Uses `nerd-icons-octicon' to fetch the icon."
                               (doom-modeline-icon 'octicon "nf-oct-alert" "⚠" "!" :face 'doom-modeline-urgent))
                              (t (doom-modeline-vcs-icon "nf-dev-git_branch" "" "@" 'doom-modeline-info))))
                  (str (or (and vc-display-status
-                               (functionp #'doom-modeline-vcs-name)
-                               (funcall #'doom-modeline-vcs-name))
+                               (functionp doom-modeline-vcs-display-function)
+                               (funcall doom-modeline-vcs-display-function))
                           ""))
                  (face (cond ((eq state 'needs-update)
                               '(doom-modeline-warning bold))
@@ -1611,11 +1608,10 @@ mouse-2: Show help for minor mode"
 (doom-modeline-def-segment misc-info
   "Mode line construct for miscellaneous information.
 By default, this shows the information specified by `global-mode-string'."
-  (when (and (doom-modeline--segment-visible 'misc-info)
-             (or doom-modeline-display-misc-in-all-mode-lines
-                 (doom-modeline--active)))
+  (when (or doom-modeline-display-misc-in-all-mode-lines
+            (doom-modeline--segment-visible 'misc-info))
     (doom-modeline-display-text
-     (format-mode-line mode-line-misc-info))))
+     (string-replace "%" "%%" (format-mode-line mode-line-misc-info)))))
 
 
 ;;
@@ -1649,7 +1645,8 @@ mouse-1: Display Line and Column Mode Menu")
            ,(string-replace
              "%c" "%C" (car doom-modeline-position-column-format)))))
         (doom-modeline-total-line-number
-         ,(format "/%d" (line-number-at-pos (point-max)))))
+         ,(and doom-modeline-total-line-number
+               (format "/%d" (line-number-at-pos (point-max))))))
        face ,face
        help-echo ,help-echo
        mouse-face ,mouse-face
@@ -1661,21 +1658,16 @@ mouse-1: Display Line and Column Mode Menu")
       ;; Position
       (,visible
        ,(cond
-         ((and (bound-and-true-p nyan-mode)
-               (>= (window-width) nyan-minimum-window-width))
+         ((bound-and-true-p nyan-mode)
           (concat sep (nyan-create) sep))
-         ((and (bound-and-true-p poke-line-mode)
-               (>= (window-width) poke-line-minimum-window-width))
+         ((bound-and-true-p poke-line-mode)
           (concat sep (poke-line-create) sep))
-         ((and (bound-and-true-p mlscroll-mode)
-               (>= (window-width) mlscroll-minimum-current-width))
-          (concat
-           sep
-           (let ((mlscroll-right-align nil))
-             (format-mode-line (mlscroll-mode-line)))
-           sep))
-         ((and (bound-and-true-p sml-modeline-mode)
-               (>= (window-width) sml-modeline-len))
+         ((bound-and-true-p mlscroll-mode)
+          (concat sep
+                  (let ((mlscroll-right-align nil))
+                    (format-mode-line (mlscroll-mode-line)))
+                  sep))
+         ((bound-and-true-p sml-modeline-mode)
           (concat sep (sml-modeline-create) sep))
          (t "")))
 
@@ -2008,7 +2000,7 @@ mouse-3: Describe current input method")
           (propertize icon
                       'help-echo
                       (if workspaces
-                          (concat "LSP Connected "
+                          (concat "LSP connected "
                                   (string-join
                                    (mapcar (lambda (w)
                                              (format "[%s]\n" (lsp--workspace-print w)))
@@ -2051,50 +2043,30 @@ mouse-1: Reload to start server")
 
 (defvar-local doom-modeline--eglot nil)
 (defun doom-modeline-update-eglot ()
-  "Update `eglot' state."
+  "Update eglot state."
   (setq doom-modeline--eglot
-        (pcase-let* ((server (and (eglot-managed-p) (eglot-current-server)))
-                     (nick (and server (eglot--project-nickname server)))
-                     (pending (and server (doom-modeline--eglot-pending-count server)))
-                     (last-error (and server (jsonrpc-last-error server)))
-                     (face (cond (last-error 'doom-modeline-lsp-error)
-                                 ((and pending (cl-plusp pending)) 'doom-modeline-lsp-warning)
-                                 (nick 'doom-modeline-lsp-success)
-                                 (t 'doom-modeline-lsp-warning)))
-                     (icon (doom-modeline-lsp-icon "EGLOT" face)))
+        (let* ((server (and (eglot-managed-p) (eglot-current-server)))
+               (nick (and server (eglot-project-nickname server)))
+               (pending (and server (doom-modeline--eglot-pending-count server)))
+               (last-error (and server (jsonrpc-last-error server)))
+               (face (cond (last-error 'doom-modeline-lsp-error)
+                           ((and pending (cl-plusp pending)) 'doom-modeline-lsp-warning)
+                           (nick 'doom-modeline-lsp-success)
+                           (t 'doom-modeline-lsp-warning)))
+               (server-info (and server (eglot--server-info server)))
+               (server-name (or (plist-get server-info :name)
+                                (and server (jsonrpc-name server)) ""))
+               (major-modes (or (and server (eglot--major-modes server)) ""))
+               (icon (doom-modeline-lsp-icon eglot-menu-string face)))
           (propertize icon
-                      'help-echo (cond
-                                  (last-error
-                                   (format "EGLOT\nAn error occured: %s
-mouse-3: Clear this status" (plist-get last-error :message)))
-                                  ((and pending (cl-plusp pending))
-                                   (format "EGLOT\n%d outstanding requests" pending))
-                                  (nick (format "EGLOT Connected (%s/%s)
-C-mouse-1: Go to server errors
-mouse-1: Go to server events
-mouse-2: Quit server
-mouse-3: Reconnect to server" nick (eglot--major-modes server)))
-                                  (t "EGLOT Disconnected
-mouse-1: Start server"))
+                      'help-echo (format "Eglot connected [%s]\n%s %s
+mouse-1: Display minor mode menu
+mouse-3: LSP server control menu"
+                                         nick server-name major-modes)
                       'mouse-face 'doom-modeline-highlight
                       'local-map (let ((map (make-sparse-keymap)))
-                                   (cond (last-error
-                                          (define-key map [mode-line mouse-3]
-                                            #'eglot-clear-status))
-                                         ((and pending (cl-plusp pending))
-                                          (define-key map [mode-line mouse-3]
-                                            #'eglot-forget-pending-continuations))
-                                         (nick
-                                          (define-key map [mode-line C-mouse-1]
-                                            #'eglot-stderr-buffer)
-                                          (define-key map [mode-line mouse-1]
-                                            #'eglot-events-buffer)
-                                          (define-key map [mode-line mouse-2]
-                                            #'eglot-shutdown)
-                                          (define-key map [mode-line mouse-3]
-                                            #'eglot-reconnect))
-                                         (t (define-key map [mode-line mouse-1]
-                                              #'eglot)))
+                                   (define-key map [mode-line mouse-1] eglot-menu)
+                                   (define-key map [mode-line mouse-3] eglot-server-menu)
                                    map)))))
 (add-hook 'eglot-managed-mode-hook #'doom-modeline-update-eglot)
 
@@ -2103,8 +2075,8 @@ mouse-1: Start server"))
   "Update tags state."
   (setq doom-modeline--tags
         (propertize
-         (doom-modeline-lsp-icon "TAGS" 'doom-modeline-lsp-success)
-         'help-echo "TAGS: Citre mode
+         (doom-modeline-lsp-icon "Tags" 'doom-modeline-lsp-success)
+         'help-echo "Tags: Citre mode
 mouse-1: Toggle citre mode"
          'mouse-face 'doom-modeline-highlight
          'local-map (make-mode-line-mouse-map 'mouse-1 #'citre-mode))))
@@ -3174,7 +3146,9 @@ When the svg library is not available, return nil."
   (if (and doom-modeline-time
            (bound-and-true-p doom-modeline-mode))
       (setq global-mode-string (delq 'display-time-string global-mode-string))
-    (setq global-mode-string (append global-mode-string '(display-time-string)))))
+    (or (memq 'display-time-string global-mode-string)
+	    (setq global-mode-string
+		      (append global-mode-string '(display-time-string))))))
 (add-hook 'display-time-mode-hook #'doom-modeline-override-time)
 (add-hook 'doom-modeline-mode-hook #'doom-modeline-override-time)
 

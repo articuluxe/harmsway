@@ -515,23 +515,24 @@ that it can be made part of an inputrc file.")
            (bol (line-beginning-position))
            (set-p)
            (cmd-p)
-           (beg (condition-case nil
-                    (save-excursion
-                      (backward-sexp 1)
-                      (setq set-p (ignore-errors
-                                    (looking-back "^\\s-*set\\s-+" bol)))
-                      (prog1 (point)
-                        (skip-syntax-backward " " bol)
-                        (setq cmd-p (eq ?: (char-before)))))
-                  (scan-error nil)))
-           (cond-p (eq ?$ (char-after beg))))
-      (when (and pos beg (> pos beg)
+           (beg (save-excursion
+                  (skip-syntax-backward "w_" bol)
+                  (setq set-p (ignore-errors
+                                (looking-back "^\\s-*set\\s-+" bol)))
+                  (prog1 (point)
+                    (skip-syntax-backward " " bol)
+                    (setq cmd-p (eq ?: (char-before))))))
+           (end (save-excursion
+                  (skip-syntax-forward "w_")
+                  (point)))
+           (cond-p (eq ?$ (char-before beg))))
+      (when (and beg end (>= end beg)
                  (or set-p cond-p cmd-p))
-        (nconc (list beg pos)
+        (nconc (list beg end)
                (cond
                 (cond-p
                  (list (completion-table-dynamic
-                        (lambda (_s) (list "$if" "$endif" "$else" "$include")))))
+                        (lambda (_s) (list "if" "endif" "else" "include")))))
                 (cmd-p
                  (list (completion-table-dynamic (lambda (_s) inputrc-mode-commands))
                        :annotation-function #'inputrc-mode--annotation
@@ -563,12 +564,13 @@ See `smie-rules-function' for description of KIND and TOKEN."
 
 (defun inputrc-mode-backward-token ()
   "Function for `smie-backward-token-function' to find previous token."
-  (forward-comment (- (point)))
-  (beginning-of-line)
-  (skip-syntax-forward " " (line-end-position))
-  (if (looking-at (rx (or "$if" "$else" "$endif")))
-      (match-string 0)
-    "\n"))
+  (if (bobp) ""
+    (forward-comment (- (point)))
+    (forward-line 0)
+    (skip-syntax-forward " " (line-end-position))
+    (if (looking-at (rx "$" (or "if" "else" "endif") eow))
+        (match-string-no-properties 0)
+      "\n")))
 
 ;;; Font-locking
 

@@ -6,7 +6,7 @@
 ;; Maintainer: Daniel Pettersson <daniel@dpettersson.net>
 ;; Created: 2023
 ;; License: GPL-3.0-or-later
-;; Version: 0.14.0
+;; Version: 0.16.0
 ;; Homepage: https://github.com/svaante/dape
 ;; Package-Requires: ((emacs "29.1") (jsonrpc "1.0.25"))
 
@@ -37,8 +37,8 @@
 ;; minibuffer prompt, enter a debug adapter configuration name from
 ;; `dape-configs'.
 
-; For complete functionality, make sure to enable `eldoc-mode' in your
-; source buffers and `repeat-mode' for more pleasant key mappings.
+;; For complete functionality, make sure to enable `eldoc-mode' in your
+;; source buffers and `repeat-mode' for more pleasant key mappings.
 
 ;; Package looks is heavily inspired by gdb-mi.el
 
@@ -70,6 +70,13 @@
 (define-obsolete-variable-alias 'dape-compile-compile-hooks 'dape-compile-hook "0.13.0")
 
 
+;;; Forward declarations
+(defvar hl-line-mode)
+(defvar hl-line-sticky-flag)
+(declare-function global-hl-line-highlight  "hl-line" ())
+(declare-function hl-line-highlight         "hl-line" ())
+
+
 ;;; Custom
 (defgroup dape nil
   "Debug Adapter Protocol for Emacs."
@@ -96,18 +103,45 @@
               (unless (plist-get config 'command)
                 (user-error "Missing `command' property")))
      :request "launch")
+    ,(let* ((extension-directory
+             (expand-file-name
+              (file-name-concat dape-adapter-dir "bash-debug" "extension")))
+            (bashdb-dir (file-name-concat extension-directory "bashdb_dir")))
+       `(bash-debug
+         modes (sh-mode bash-ts-mode)
+         ensure (lambda (config)
+                  (dape-ensure-command config)
+                  (let ((dap-debug-server-path
+                         (car (plist-get config 'command-args))))
+                    (unless (file-exists-p dap-debug-server-path)
+                      (user-error "File %S does not exist" dap-debug-server-path))))
+         command "node"
+         command-args (,(file-name-concat extension-directory "out" "bashDebug.js"))
+         fn (lambda (config)
+              (thread-first config
+                            (plist-put :pathBashdbLib ,bashdb-dir)
+                            (plist-put :pathBashdb (file-name-concat ,bashdb-dir "bashdb"))
+                            (plist-put :env `(:BASHDB_HOME ,,bashdb-dir . ,(plist-get config :env)))))
+         :type "bashdb"
+         :cwd dape-cwd
+         :program dape-buffer-default
+         :args []
+         :pathBash "bash"
+         :pathCat "cat"
+         :pathMkfifo "mkfifo"
+         :pathPkill "pkill"))
     ,@(let ((codelldb
-             `(ensure dape-ensure-command
-               command-cwd dape-command-cwd
-               command ,(file-name-concat dape-adapter-dir
-                                          "codelldb"
-                                          "extension"
-                                          "adapter"
-                                          "codelldb")
-               port :autoport
-               :type "lldb"
-               :request "launch"
-               :cwd "."))
+             `( ensure dape-ensure-command
+                command-cwd dape-command-cwd
+                command ,(file-name-concat dape-adapter-dir
+                                           "codelldb"
+                                           "extension"
+                                           "adapter"
+                                           "codelldb")
+                port :autoport
+                :type "lldb"
+                :request "launch"
+                :cwd "."))
             (common `(:args [] :stopOnEntry nil)))
         `((codelldb-cc
            modes (c-mode c-ts-mode c++-mode c++-ts-mode)
@@ -152,26 +186,26 @@
      :program "a.out"
      :MIMode ,(seq-find 'executable-find '("lldb" "gdb")))
     ,@(let ((debugpy
-             `(modes (python-mode python-ts-mode)
-               ensure (lambda (config)
-                        (dape-ensure-command config)
-                        (let ((python (dape-config-get config 'command)))
-                          (unless (zerop
-                                   (call-process-shell-command
-                                    (format "%s -c \"import debugpy.adapter\"" python)))
-                            (user-error "%s module debugpy is not installed" python))))
-               command "python"
-               command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
-               port :autoport
-               :request "launch"
-               :type "python"
-               :cwd dape-cwd))
+             `( modes (python-mode python-ts-mode)
+                ensure (lambda (config)
+                         (dape-ensure-command config)
+                         (let ((python (dape-config-get config 'command)))
+                           (unless (zerop
+                                    (call-process-shell-command
+                                     (format "%s -c \"import debugpy.adapter\"" python)))
+                             (user-error "%s module debugpy is not installed" python))))
+                command "python"
+                command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
+                port :autoport
+                :request "launch"
+                :type "python"
+                :cwd dape-cwd))
             (common
-             `(:args []
-               :justMyCode nil
-               :console "integratedTerminal"
-               :showReturnValue t
-               :stopOnEntry nil)))
+             `( :args []
+                :justMyCode nil
+                :console "integratedTerminal"
+                :showReturnValue t
+                :stopOnEntry nil)))
         `((debugpy ,@debugpy
                    :program dape-buffer-default
                    ,@common)
@@ -189,6 +223,7 @@
      command "dlv"
      command-args ("dap" "--listen" "127.0.0.1::autoport")
      command-cwd dape-command-cwd
+     command-insert-stderr t
      port :autoport
      :request "launch"
      :type "debug"
@@ -210,7 +245,8 @@
               (let* ((default-directory
                       (or (dape-config-get config 'command-cwd)
                           default-directory))
-                     (output (shell-command-to-string "gdb --version"))
+                     (command (dape-config-get config 'command))
+                     (output (shell-command-to-string (format "%s --version" command)))
                      (version (save-match-data
                                 (when (string-match "GNU gdb \\(?:(.*) \\)?\\([0-9.]+\\)" output)
                                   (string-to-number (match-string 1 output))))))
@@ -220,6 +256,7 @@
      command-cwd dape-command-cwd
      command "gdb"
      command-args ("--interpreter=dap")
+     defer-launch-attach t
      :request "launch"
      :program "a.out"
      :args []
@@ -228,26 +265,25 @@
      modes (gdscript-mode)
      port 6006
      :request "launch"
-     :type "server"
-     :cwd dape-cwd)
+     :type "server")
     ,@(let ((js-debug
-             `(ensure ,(lambda (config)
-                         (dape-ensure-command config)
-                         (when-let ((runtime-executable
-                                     (dape-config-get config :runtimeExecutable)))
-                           (dape--ensure-executable runtime-executable))
-                         (let ((dap-debug-server-path
-                                (car (plist-get config 'command-args))))
-                           (unless (file-exists-p dap-debug-server-path)
-                             (user-error "File %S does not exist" dap-debug-server-path))))
-               command "node"
-               command-args (,(expand-file-name
-                               (file-name-concat dape-adapter-dir
-                                                 "js-debug"
-                                                 "src"
-                                                 "dapDebugServer.js"))
-                             :autoport)
-               port :autoport)))
+             `( ensure ,(lambda (config)
+                          (dape-ensure-command config)
+                          (when-let ((runtime-executable
+                                      (dape-config-get config :runtimeExecutable)))
+                            (dape--ensure-executable runtime-executable))
+                          (let ((dap-debug-server-path
+                                 (car (plist-get config 'command-args))))
+                            (unless (file-exists-p dap-debug-server-path)
+                              (user-error "File %S does not exist" dap-debug-server-path))))
+                command "node"
+                command-args (,(expand-file-name
+                                (file-name-concat dape-adapter-dir
+                                                  "js-debug"
+                                                  "src"
+                                                  "dapDebugServer.js"))
+                              :autoport)
+                port :autoport)))
         `((js-debug-node
            modes (js-mode js-ts-mode)
            ,@js-debug
@@ -276,11 +312,11 @@
            :url "http://localhost:3000"
            :webRoot dape-cwd)))
     ,@(let ((lldb-common
-             `(modes (c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode rustic-mode)
-               ensure dape-ensure-command
-               command-cwd dape-command-cwd
-               :cwd "."
-               :program "a.out")))
+             `( modes (c-mode c-ts-mode c++-mode c++-ts-mode rust-mode rust-ts-mode rustic-mode)
+                ensure dape-ensure-command
+                command-cwd dape-command-cwd
+                :cwd "."
+                :program "a.out")))
         `((lldb-vscode
            command "lldb-vscode"
            :type "lldb-vscode"
@@ -420,7 +456,7 @@
                                        "phpDebug.js")))
      :type "php"
      :port 9003))
-   "This variable holds the dape configurations as an alist.
+  "This variable holds the dape configurations as an alist.
 In this alist, the car element serves as a symbol identifying each
 configuration.  Each configuration, in turn, is a property list (plist)
 where keys can be symbols or keywords.
@@ -434,6 +470,11 @@ Symbol keys (Used by dape):
 - command-args: List of string arguments for the command.
 - command-cwd: Working directory for the command, if not supplied
   `default-directory' will be used.
+- command-env: Property list (plist) of environment variables to
+  set when running the command.  Keys can be strings, symbols or
+  keywords.
+- command-insert-stderr: If non nil treat stderr from adapter as
+  stderr output from debugged program.
 - prefix-local: Path prefix for Emacs file access.
 - prefix-remote: Path prefix for debugger file access.
 - host: Host of the debug adapter.
@@ -441,6 +482,12 @@ Symbol keys (Used by dape):
 - modes: List of modes where the configuration is active in `dape'
   completions.
 - compile: Executes a shell command with `dape-compile-fn'.
+- defer-launch-attach: If launch/attach request should be sent
+  after initialize or configurationDone.  If nil launch/attach are
+  sent after initialize request else it's sent after
+  configurationDone.  This key exist to accommodate the two different
+  interpretations of the DAP specification.
+  See: GDB bug 32090.
 
 Connection to Debug Adapter:
 - If command is specified and not port, dape communicates with the
@@ -459,22 +506,27 @@ Functions and symbols:
   - If a value is a function, its return value replaces the key's
     value before execution.  The function is called with no arguments.
   - If a value is a symbol, it resolves recursively before execution."
-   :type '(alist :key-type (symbol :tag "Name")
-                 :value-type
-                 (plist :options
-                        (((const :tag "List of modes where config is active in `dape' completions" modes) (repeat function))
-                         ((const :tag "Ensures adapter availability" ensure) function)
-                         ((const :tag "Transforms configuration at runtime" fn) (choice function (repeat function)))
-                         ((const :tag "Shell command to initiate the debug adapter" command) (choice string symbol))
-                         ((const :tag "List of string arguments for command" command-args) (repeat string))
-                         ((const :tag "Working directory for command" command-cwd) (choice string symbol))
-                         ((const :tag "Path prefix for Emacs file access" prefix-local) string)
-                         ((const :tag "Path prefix for debugger file access" prefix-remote) string)
-                         ((const :tag "Host of debug adapter" host) string)
-                         ((const :tag "Port of debug adapter" port) natnum)
-                         ((const :tag "Compile cmd" compile) string)
-                         ((const :tag "Adapter type" :type) string)
-                         ((const :tag "Request type launch/attach" :request) string)))))
+  :type '(alist :key-type (symbol :tag "Name")
+                :value-type
+                (plist :options
+                       (((const :tag "List of modes where config is active in `dape' completions" modes) (repeat function))
+                        ((const :tag "Ensures adapter availability" ensure) function)
+                        ((const :tag "Transforms configuration at runtime" fn) (choice function (repeat function)))
+                        ((const :tag "Shell command to initiate the debug adapter" command) (choice string symbol))
+                        ((const :tag "List of string arguments for command" command-args) (repeat string))
+                        ((const :tag "List of environment variables to set when running the command" command-env)
+                         (plist :key-type (restricted-sexp :match-alternatives (stringp symbolp keywordp) :tag "Variable")
+                                :value-type (string :tag "Value")))
+                        ((const :tag "Treat stderr from adapter as program output" command-insert-stderr) boolean)
+                        ((const :tag "Working directory for command" command-cwd) (choice string symbol))
+                        ((const :tag "Path prefix for Emacs file access" prefix-local) string)
+                        ((const :tag "Path prefix for debugger file access" prefix-remote) string)
+                        ((const :tag "Host of debug adapter" host) string)
+                        ((const :tag "Port of debug adapter" port) natnum)
+                        ((const :tag "Compile cmd" compile) string)
+                        ((const :tag "Use configurationDone as trigger for launch/attach" defer-launch-attach) boolean)
+                        ((const :tag "Adapter type" :type) string)
+                        ((const :tag "Request type launch/attach" :request) string)))))
 
 (defcustom dape-default-config-functions
   '(dape-config-autoport dape-config-tramp)
@@ -578,7 +630,7 @@ present in an group."
   :type 'boolean)
 
 (defcustom dape-info-variable-table-row-config
-  `((name . 20) (value . 50) (type . 20))
+  `((name . 0) (value . 0) (type . 0))
   "Configuration for table rows of variables.
 
 An alist that controls the display of the name, type and value of
@@ -618,12 +670,6 @@ left-to-right display order of the properties."
   "How variables are formatted in *dape-info* buffer."
   :type '(choice (const :tag "Truncate string at new line" line)
                  (const :tag "No formatting" nil)))
-
-(defcustom dape-info-breakpoint-source-line-max 14
-  "Max length of source line in info breakpoint buffer."
-  :type '(choice
-          (const :tag "Don't show source line" nil)
-          integer))
 
 (defcustom dape-info-header-scope-max-name 15
   "Max length of scope name in `header-line-format'."
@@ -672,7 +718,7 @@ See `dape-breakpoint-load' and `dape-breakpoint-save'."
   "Function to get current working directory.
 The function should return a string representing the absolute
 file path of the current working directory, usually the current
-project's root. See `dape--default-cwd'."
+project's root.  See `dape--default-cwd'."
   :type 'function)
 
 (defcustom dape-compile-hook nil
@@ -681,12 +727,19 @@ The hook is run with one argument, the compilation buffer."
   :type 'hook)
 
 (defcustom dape-minibuffer-hint-ignore-properties
-  '(ensure fn modes command command-args :type :request)
+  '( ensure fn modes command command-args command-env command-insert-stderr
+     defer-launch-attach :type :request)
   "Properties to be hidden in `dape--minibuffer-hint'."
   :type '(repeat symbol))
 
 (defcustom dape-minibuffer-hint t
   "Show `dape-configs' hints in minibuffer."
+  :type 'boolean)
+
+(defcustom dape-history-evaluated t
+  "Keep `dape-history' configurations evaluated.
+Non-nil means each configuration read in command `dape' will be
+evaluated before being pushed to `dape-history'."
   :type 'boolean)
 
 (defcustom dape-ui-debounce-time 0.1
@@ -725,10 +778,6 @@ The hook is run with one argument, the compilation buffer."
 (defface dape-source-line-face '((t))
   "Face used to display stack frame source line overlays.")
 
-(defface dape-repl-success-face '((t :inherit compilation-mode-line-exit
-                                     :extend t))
-  "Face used in repl for exit code 0.")
-
 (defface dape-repl-error-face '((t :inherit compilation-mode-line-fail
                                    :extend t))
   "Face used in repl for non 0 exit codes.")
@@ -739,6 +788,8 @@ The hook is run with one argument, the compilation buffer."
 (defvar dape-history nil
   "History variable for `dape'.")
 
+;; FIXME `dape--source-buffers' should be moved into connection as
+;; source references are not globally scoped.
 (defvar dape--source-buffers nil
   "Plist of sources reference to buffer.")
 (defvar dape--breakpoints nil
@@ -756,12 +807,6 @@ The hook is run with one argument, the compilation buffer."
 If valid connection, this connection will be of highest priority when
 querying for connections with `dape--live-connection'.")
 
-(defvar-local dape--source nil
-  "Store source plist in fetched source buffer.")
-
-(defvar dape--repl-insert-text-guard nil
-  "Guard var for *dape-repl* buffer text updates.")
-
 (define-minor-mode dape-active-mode
   "On when dape debugging session is active.
 Non interactive global minor mode."
@@ -770,6 +815,14 @@ Non interactive global minor mode."
 
 
 ;;; Utils
+
+(defun dape--warn (format &rest args)
+  "Display warning/error message with FORMAT and ARGS."
+  (dape--repl-insert-error (format "* %s *" (apply #'format format args))))
+
+(defun dape--message (format &rest args)
+  "Display message with FORMAT and ARGS."
+  (dape--repl-insert (format "* %s *" (apply #'format format args))))
 
 (defmacro dape--with-request-bind (vars fn-args &rest body)
   "Call FN with ARGS and execute BODY on callback with VARS bound.
@@ -824,6 +877,15 @@ Helper macro for `dape--call-with-debounce'."
   (declare (indent 2))
   `(dape--call-with-debounce ,timer ,backoff (lambda () ,@body)))
 
+(defmacro dape--with-line (buffer line &rest body)
+  "Save point, and current buffer; execute BODY on LINE in BUFFER."
+  (declare (indent 2))
+  `(with-current-buffer ,buffer
+     (save-excursion
+       (goto-char (point-min))
+       (forward-line (1- ,line))
+       ,@body)))
+
 (defun dape--next-like-command (conn command)
   "Helper for interactive step like commands.
 Run step like COMMAND on CONN.  If ARG is set run COMMAND ARG times."
@@ -874,17 +936,16 @@ Ignore status update if UPDATE-HANDLE is not the last handle created
 by `dape--threads-make-update-handle'."
   (when (> update-handle (dape--threads-last-update-handle conn))
     (setf (dape--threads-last-update-handle conn) update-handle)
-    (cond
-     ((not status) nil)
-     (all-threads
-      (cl-loop for thread in (dape--threads conn)
-               do (plist-put thread :status status)))
-     (thread-id
-      (plist-put
-       (cl-find-if (lambda (thread)
-                     (equal (plist-get thread :id) thread-id))
-                   (dape--threads conn))
-       :status status)))))
+    (cond ((not status) nil)
+          (all-threads
+           (cl-loop for thread in (dape--threads conn)
+                    do (plist-put thread :status status)))
+          (thread-id
+           (plist-put
+            (cl-find-if (lambda (thread)
+                          (equal (plist-get thread :id) thread-id))
+                        (dape--threads conn))
+            :status status)))))
 
 (defun dape--thread-id-object (conn)
   "Construct a thread id object for CONN."
@@ -893,35 +954,36 @@ by `dape--threads-make-update-handle'."
 
 (defun dape--stopped-threads (conn)
   "List of stopped threads for CONN."
-  (and conn
-       (mapcan (lambda (thread)
-                 (when (equal (plist-get thread :status) 'stopped)
-                   (list thread)))
-               (dape--threads conn))))
+  (when conn
+    (mapcan (lambda (thread)
+              (when (equal (plist-get thread :status) 'stopped)
+                (list thread)))
+            (dape--threads conn))))
 
 (defun dape--current-thread (conn)
   "Current thread plist for CONN."
-  (and conn
-       (seq-find (lambda (thread)
-                   (eq (plist-get thread :id) (dape--thread-id conn)))
-                 (dape--threads conn))))
+  (when conn
+    (cl-find-if (lambda (thread)
+                  (eq (plist-get thread :id) (dape--thread-id conn)))
+                (dape--threads conn))))
 
-(defun dape--path (conn path format)
+(defun dape--path-1 (conn path format)
   "Return translate absolute PATH in FORMAT from CONN config.
 Accepted FORMAT values are local and remote.
 See `dape-configs' symbols prefix-local prefix-remote."
-  (if-let* ((config (dape--config
-                     ;; Fallback to last connection
-                     (or conn dape--connection)))
-            (path
-             (expand-file-name
-              path
-              (let ((command-cwd (plist-get config 'command-cwd)))
-                (pcase format
-                  ('local (tramp-file-local-name command-cwd))
-                  ('remote command-cwd)))))
+  (if-let* (;; Fallback to last connection
+            (config (dape--config (or conn dape--connection)))
+            ;; If neither `prefix-local' or `prefix-remote' is set there is
+            ;; no work to be done
             ((or (plist-member config 'prefix-local)
                  (plist-member config 'prefix-remote)))
+            (absolute-path
+             ;; `command-cwd' is always set in `dape--launch-or-attach'
+             (let ((command-cwd (plist-get config 'command-cwd)))
+               (expand-file-name path
+                                 (pcase format
+                                   ('local (tramp-file-local-name command-cwd))
+                                   ('remote command-cwd)))))
             (prefix-local (or (plist-get config 'prefix-local) ""))
             (prefix-remote (or (plist-get config 'prefix-remote) ""))
             (mapping (pcase format
@@ -929,10 +991,20 @@ See `dape-configs' symbols prefix-local prefix-remote."
                        ('remote (cons prefix-local prefix-remote))
                        (_ (error "Unknown format"))))
             ;; Substitute prefix if there is an match or nil
-            ((string-prefix-p (car mapping) path)))
+            ((string-prefix-p (car mapping) absolute-path)))
       (concat (cdr mapping)
-              (string-remove-prefix (car mapping) path))
+              (string-remove-prefix (car mapping) absolute-path))
     path))
+
+(defun dape--path-local (conn path)
+  "Return translate PATH to local format by CONN.
+See `dape--path-1'."
+  (dape--path-1 conn path 'local))
+
+(defun dape--path-remote (conn path)
+  "Return translate PATH to remote format by CONN.
+See `dape--path-1'."
+  (dape--path-1 conn path 'remote))
 
 (defun dape--capable-p (conn thing)
   "Return non nil if CONN capable of THING."
@@ -952,24 +1024,22 @@ Marker is created from PLIST keys :source and :line.
 Note requires `dape--source-ensure' if source is by reference."
   (when-let ((source (plist-get plist :source))
              (line (or (plist-get plist :line) 1))
-             (buffer
-              (cond
-               ((and-let* ((ref (plist-get source :sourceReference))
-                           (buffer (plist-get dape--source-buffers ref))
-                           ((buffer-live-p buffer)))
-                  buffer))
-               ((and-let* ((path (plist-get source :path))
-                           (path (dape--path conn path 'local))
-                           ((file-exists-p path)))
-                  (find-file-noselect path t))))))
-    (with-current-buffer buffer
-      (save-excursion
-        (goto-char (point-min))
-        (forward-line (1- line))
-        (when-let ((column (plist-get plist :column)))
-          (when (> column 0)
-            (forward-char (1- column))))
-        (point-marker)))))
+             (buffer (or
+                      ;; Take buffer by source reference
+                      (when-let* ((reference (plist-get source :sourceReference))
+                                  (buffer (plist-get dape--source-buffers reference))
+                                  ((buffer-live-p buffer)))
+                        buffer)
+                      ;; Take buffer by path
+                      (when-let* ((remote-path (plist-get source :path))
+                                  (path (dape--path-local conn remote-path))
+                                  ((file-exists-p path)))
+                        (find-file-noselect path t)))))
+    (dape--with-line buffer line
+      (when-let ((column (plist-get plist :column)))
+        (when (> column 0)
+          (forward-char (1- column))))
+      (point-marker))))
 
 (defun dape--default-cwd ()
   "Try to guess current project absolute file path with `project'."
@@ -998,8 +1068,11 @@ Note requires `dape--source-ensure' if source is by reference."
     (dape-command-cwd)))
 
 (defun dape-config-autoport (config)
-  "Replace :autoport in CONFIG keys `command-args' and `port'.
-If `port' is not `:autoport' return config as is."
+  "Handle :autoport in CONFIG keys `port', `command-args', and `command-env'.
+If `port' is the symbol `:autoport', replace it with a random free port
+number.  In addition, replace all occurences of `:autoport' (symbol or
+string) in `command-args' and all property values of `command-env' with
+the value of config key `port'."
   (when (eq (plist-get config 'port) :autoport)
     ;; Stolen from `Eglot'
     (let ((port-probe
@@ -1012,18 +1085,20 @@ If `port' is not `:autoport' return config as is."
                  (unwind-protect
                      (process-contact port-probe :service)
                    (delete-process port-probe)))))
-  (when-let* ((command-args (plist-get config 'command-args))
-              (port (plist-get config 'port))
-              (port-string (number-to-string port)))
-    (plist-put
-     config
-     'command-args
-     (seq-map (lambda (arg)
-                (cond
-                 ((eq arg :autoport) port-string)
-                 ((stringp arg) (string-replace ":autoport" port-string arg))
-                 (t arg)))
-              command-args)))
+  (when-let* ((port (plist-get config 'port))
+              (port-string (number-to-string port))
+              (replace-fn (lambda (arg)
+                            (cond
+                             ((eq arg :autoport) port-string)
+                             ((stringp arg) (string-replace ":autoport" port-string arg))
+                             (t arg)))))
+    (when-let ((command-args (plist-get config 'command-args)))
+      (plist-put config 'command-args (seq-map replace-fn command-args)))
+    (when-let ((command-env (plist-get config 'command-env)))
+      (plist-put config 'command-env
+                 (cl-loop for (key value) on command-env by #'cddr
+                          collect key
+                          collect (apply replace-fn (list value))))))
   config)
 
 (defun dape-config-tramp (config)
@@ -1045,22 +1120,15 @@ as is."
               (tramp-file-name-user parts)
               (tramp-file-name-host parts)
               "")))
-        (dape--repl-message
-         (format "* Remote connection detected, setting %s to %S *"
-                 (propertize "prefix-local"
-                             'font-lock-face 'font-lock-keyword-face)
-                 prefix-local))
+        (dape--message "Remote connection detected, setting prefix-local to %S"
+                       prefix-local)
         (plist-put config 'prefix-local prefix-local)))
     (when (and (plist-get config 'command)
                (plist-get config 'port)
                (not (plist-get config 'host))
                (equal (tramp-file-name-method parts) "ssh"))
       (let ((host (file-remote-p default-directory 'host)))
-        (dape--repl-message
-         (format "* Remote connection detected, setting %s to %S *"
-                 (propertize "host"
-                             'font-lock-face 'font-lock-keyword-face)
-                 host))
+        (dape--message "Remote connection detected, setting host to %S" host)
         (plist-put config 'host host))))
   config)
 
@@ -1100,13 +1168,13 @@ as is."
        (format ":%d" line)))))
 
 (defun dape--kill-buffers (&optional skip-process-buffers)
-  "Kill all Dape related buffers.
+  "Kill all dape buffers.
 On SKIP-PROCESS-BUFFERS skip deletion of buffers which has processes."
   (thread-last (buffer-list)
                (seq-filter (lambda (buffer)
                              (unless (and skip-process-buffers
                                           (get-buffer-process buffer))
-                               (string-match-p "\\*dape-.+\\*$"
+                               (string-match-p "\\*dape-.+\\*"
                                                (buffer-name buffer)))))
                (seq-do (lambda (buffer)
                          (condition-case err
@@ -1222,26 +1290,25 @@ See `dape--connection-selected'."
          (selected (cl-find dape--connection-selected connections))
          (ordered
           `(,@(when selected
-               (list selected))
+                (list selected))
             ,@(unless (and require-selected selected)
                 (reverse connections))))
          (conn
           (pcase type
-            ('parent
-             (car connections))
-            ('last
-             (seq-find 'dape--thread-id ordered))
-            ('running
-             (seq-find (lambda (conn)
-                         (and (dape--thread-id conn)
-                              (not (dape--stopped-threads conn))))
-                       ordered))
-            ('stopped
-             (seq-find (lambda (conn)
-                         (and (dape--stopped-threads conn)))
-                       ordered)))))
+            ('parent (car connections))
+            ('last (seq-find #'dape--thread-id ordered))
+            ('running (seq-find (lambda (conn)
+                                  (and (dape--thread-id conn)
+                                       (not (dape--stopped-threads conn))))
+                                ordered))
+            ('stopped (seq-find (lambda (conn)
+                                  (and (dape--stopped-threads conn)))
+                                ordered)))))
     (unless (or nowarn conn)
-      (user-error "No %s debug connection live" type))
+      (user-error "No %sdebug connection live"
+                  ;; `parent' and `last' does not make sense to the user
+                  (if (memq type '(running stopped))
+                      (format "%s " type) "")))
     conn))
 
 (defun dape--live-connections ()
@@ -1318,6 +1385,9 @@ See `dape--connection-selected'."
   :documentation
   "Represents a DAP debugger. Wraps a process for DAP communication.")
 
+(cl-defstruct (dape--breakpoint (:constructor dape--breakpoint-make))
+  overlay-or-cons type value hits verified id)
+
 (cl-defmethod jsonrpc-convert-to-endpoint ((conn dape-connection)
                                            message subtype)
   "Convert jsonrpc CONN MESSAGE with SUBTYPE to DAP format."
@@ -1391,18 +1461,16 @@ On failure, ERROR will be an string."
                          :timeout-fn
                          (when (functionp cb)
                            (lambda ()
-                             (dape--repl-message
-                              (format
-                               "* Command %s timed out after %d seconds, the \
-timeout period is configurable with `dape-request-timeout' *"
-                               command
-                               dape-request-timeout)
-                              'dape-repl-error-face)
+                             (dape--warn
+                              "Command %S timed out after %d seconds, the \
+timeout period is configurable with `dape-request-timeout'"
+                              command
+                              dape-request-timeout)
                              (funcall cb nil dape--timeout-error)))
                          :timeout dape-request-timeout))
 
 (defun dape--initialize (conn)
-  "Initialize and launch/attach adapter CONN."
+  "Initialize CONN."
   (dape--with-request-bind
       (body error)
       (dape-request conn
@@ -1427,102 +1495,92 @@ timeout period is configurable with `dape-request-timeout' *"
                           ))
     (if error
         (progn
-          (dape--repl-message (format "Initialize failed due to: %s"
-                                      error)
-                              'dape-repl-error-face)
+          (dape--warn "Initialize failed with %S" error)
           (dape-kill conn))
       (setf (dape--capabilities conn) body)
-      (dape--with-request-bind
-          (_body error)
-          (dape-request
-           conn
-           (or (plist-get (dape--config conn) :request) "launch")
-           ;; Transform config to jsonrpc serializable format
-           ;; Remove all non `keywordp' keys and transform null to
-           ;; :json-false
-           (cl-labels
-               ((transform-value (value)
-                  (pcase value
-                    ('nil :json-false)
-                    ;; FIXME Need a way to create json null values
-                    ;;       see #72, :null could be an candidate.
-                    ;;       Using :null is quite harmless as it has
-                    ;;       no friction with `dape-configs'
-                    ;;       evaluation.  So it should be fine to keep
-                    ;;       supporting it even if it's not the way
-                    ;;       forwards.
-                    (:null
-                     nil)
-                    ((pred vectorp)
-                     (cl-map 'vector #'transform-value value))
-                    ((pred listp)
-                     (create-body value))
-                    (_ value)))
-                (create-body (config)
-                  (cl-loop for (key value) on config by 'cddr
-                           when (keywordp key)
-                           append (list key (transform-value value)))))
-             (create-body (dape--config conn))))
-        (if error
-            (progn (dape--repl-message error 'dape-repl-error-face)
-                   (dape-kill conn))
-          (setf (dape--initialized-p conn) t))))))
+      ;; See GDB bug 32090
+      (unless (plist-get (dape--config conn) 'defer-launch-attach)
+        (dape--launch-or-attach conn)))))
 
-(defun dape--set-breakpoints-in-buffer (conn buffer &optional cb)
-  "Set breakpoints in BUFFER for adapter CONN.
+(defun dape--launch-or-attach (conn)
+  "Launch or attach CONN."
+  (dape--with-request-bind
+      (_body error)
+      (dape-request
+       conn
+       (or (plist-get (dape--config conn) :request) "launch")
+       ;; Transform config to jsonrpc serializable format
+       ;; Remove all non `keywordp' keys and transform null to
+       ;; :json-false
+       (cl-labels
+           ((transform-value (value)
+              (pcase value
+                ('nil :json-false)
+                ;; FIXME Need a way to create json null values
+                ;;       see #72, :null could be an candidate.
+                ;;       Using :null is quite harmless as it has
+                ;;       no friction with `dape-configs'
+                ;;       evaluation.  So it should be fine to keep
+                ;;       supporting it even if it's not the way
+                ;;       forwards.
+                (:null
+                 nil)
+                ((pred vectorp)
+                 (cl-map 'vector #'transform-value value))
+                ((pred listp)
+                 (create-body value))
+                (_ value)))
+            (create-body (config)
+              (cl-loop for (key value) on config by 'cddr
+                       when (keywordp key)
+                       append (list key (transform-value value)))))
+         (create-body (dape--config conn))))
+    (when error
+      (dape--warn "%s" error)
+      (dape-kill conn))))
+
+(defun dape--set-breakpoints-in-source (conn source &optional cb)
+  "Set breakpoints in SOURCE for adapter CONN.
 See `dape-request' for expected CB signature."
-  (let* ((overlays
-          (alist-get buffer
-                     (seq-group-by 'overlay-buffer
-                                   dape--breakpoints)))
-         (lines
-          (mapcan (lambda (overlay)
-                    (when-let* ((buffer (overlay-buffer overlay))
-                                ((buffer-live-p buffer)))
-                      (with-current-buffer buffer
-                        (list
-                         (line-number-at-pos (overlay-start overlay))))))
-                  overlays))
-         (source
-          (when (buffer-live-p buffer)
-            (with-current-buffer buffer
-              (or dape--source
-                  (list
-                   :name (file-name-nondirectory (buffer-file-name buffer))
-                   :path (dape--path conn (buffer-file-name buffer) 'remote)))))))
-    (dape--with-request-bind
-        ((&key breakpoints &allow-other-keys) error)
-        (dape-request
-         conn
-         "setBreakpoints"
-         (list
-          :source source
-          :breakpoints
-          (cl-map 'vector
-                  (lambda (overlay line)
-                    (let (plist it)
-                      (setq plist (list :line line))
-                      (cond
-                       ((setq it (overlay-get overlay :log))
-                        (if (dape--capable-p conn :supportsLogPoints)
-                            (setq plist (plist-put plist :logMessage it))
-                          (dape--repl-message "* Adapter does not support log breakpoints *")))
-                       ((setq it (overlay-get overlay :expression))
-                        (if (dape--capable-p conn :supportsConditionalBreakpoints)
-                            (setq plist (plist-put plist :condition it))
-                          (dape--repl-message "* Adapter does not support expression breakpoints *")))
-                       ((setq it (overlay-get overlay :hits))
-                        (if (dape--capable-p conn :supportsHitConditionalBreakpoints)
-                            (setq plist (plist-put plist :hitCondition it))
-                          (dape--repl-message "* Adapter does not support hits breakpoints *"))))
-                      plist))
-                  overlays
-                  lines)
-          :lines (apply 'vector lines)))
-      (cl-loop for breakpoint across breakpoints
-               for overlay in overlays
-               do (dape--breakpoint-update conn overlay breakpoint))
-      (dape--request-return cb error))))
+  (cl-loop for breakpoint in dape--breakpoints
+           for (buffer-or-path . line) =
+           (dape--breakpoint-buffer-or-path-line breakpoint)
+           when (equal source buffer-or-path)
+           collect breakpoint into breakpoints and
+           collect line into lines and collect
+           (let ((source-breakpoint `(:line ,line)))
+             (pcase (dape--breakpoint-type breakpoint)
+               ('log
+                (if (dape--capable-p conn :supportsLogPoints)
+                    (plist-put source-breakpoint
+                               :logMessage (dape--breakpoint-value breakpoint))
+                  (dape--message "Adapter does not support log breakpoints")))
+               ('expression
+                (if (dape--capable-p conn :supportsConditionalBreakpoints)
+                    (plist-put source-breakpoint
+                               :condition (dape--breakpoint-value breakpoint))
+                  (dape--message "Adapter does not support expression breakpoints")))
+               ('hits
+                (if (dape--capable-p conn :supportsHitConditionalBreakpoints)
+                    (plist-put source-breakpoint
+                               :hitCondition (dape--breakpoint-value breakpoint))
+                  (dape--message "Adapter does not support hits breakpoints"))))
+             source-breakpoint)
+           into source-breakpoints finally do
+           (dape--with-request-bind
+               ((&key ((:breakpoints updates)) &allow-other-keys) error)
+               (dape-request
+                conn "setBreakpoints"
+                `( :source ,(dape--breakpoint-source-plist conn source)
+                   :breakpoints ,(apply 'vector source-breakpoints)
+                   :lines ,(apply 'vector lines)))
+             (if error
+                 (dape--warn "Failed to set breakpoints in %s; %s"
+                             source error)
+               (cl-loop for update across updates
+                        for breakpoint in breakpoints do
+                        (dape--breakpoint-update conn breakpoint update))
+               (dape--request-return cb error)))))
 
 (defun dape--set-exception-breakpoints (conn &optional cb)
   "Set the exception breakpoints for adapter CONN.
@@ -1530,17 +1588,16 @@ The exceptions are derived from `dape--exceptions'.
 See `dape-request' for expected CB signature."
   (if (not dape--exceptions)
       (dape--request-return cb)
-    (dape-request conn
-                  "setExceptionBreakpoints"
-                  (list
-                   :filters
-                   (cl-map 'vector
-                           (lambda (exception)
-                             (plist-get exception :filter))
-                           (seq-filter (lambda (exception)
-                                         (plist-get exception :enabled))
-                                       dape--exceptions)))
-                  cb)))
+    (dape-request
+     conn "setExceptionBreakpoints"
+     `(:filters
+       ,(cl-map 'vector
+                (lambda (exception)
+                  (plist-get exception :filter))
+                (seq-filter (lambda (exception)
+                              (plist-get exception :enabled))
+                            dape--exceptions)))
+     cb)))
 
 (defun dape--configure-exceptions (conn &optional cb)
   "Configure exception breakpoints for adapter CONN.
@@ -1571,16 +1628,16 @@ See `dape-request' for expected CB signature."
 (defun dape--set-breakpoints (conn cb)
   "Set breakpoints for adapter CONN.
 See `dape-request' for expected CB signature."
-  (if-let ((buffers
+  (if-let ((buffer-or-path-s
             (thread-last dape--breakpoints
-                         (seq-group-by 'overlay-buffer)
+                         (seq-group-by #'dape--breakpoint-buffer-or-path)
                          (mapcar 'car))))
-      (let ((responses 0))
-        (dolist (buffer buffers)
-          (dape--with-request (dape--set-breakpoints-in-buffer conn buffer)
-            (setf responses (1+ responses))
-            (when (eq responses (length buffers))
-              (dape--request-return cb)))))
+      (cl-loop with responses = 0
+               for buffer-or-path in buffer-or-path-s do
+               (dape--with-request (dape--set-breakpoints-in-source conn buffer-or-path)
+                 (setf responses (1+ responses))
+                 (when (eq responses (length buffer-or-path-s))
+                   (dape--request-return cb))))
     (dape--request-return cb)))
 
 (defun dape--set-data-breakpoints (conn cb)
@@ -1608,10 +1665,9 @@ See `dape-request' for expected CB signature."
          collect req-breakpoint into unverfied-breakpoints
          finally do
          (when unverfied-breakpoints
-           (dape--repl-message
-            (format "Failed setting data breakpoints for %s"
-                    (mapconcat (lambda (plist) (plist-get plist :name))
-                               unverfied-breakpoints ", "))))
+           (dape--warn "Failed setting data breakpoints for %s"
+                       (mapconcat (lambda (plist) (plist-get plist :name))
+                                  unverfied-breakpoints ", ")))
          ;; FIXME Should not remove unverified-breakpoints as they
          ;;       might be verified by another live connection.
          (setq dape--data-breakpoints verfied-breakpoints))
@@ -1634,7 +1690,7 @@ See `dape-request' for expected CB signature."
                                           (plist-get old-thread :id)))
                                    (dape--threads conn))))
                  (plist-put old-thread :name (plist-get new-thread :name))
-             new-thread))
+               new-thread))
            (append threads nil)))
     (dape--request-return cb error)))
 
@@ -1807,12 +1863,12 @@ selected stack frame."
   (let ((current-thread (dape--current-thread conn)))
     (dolist (thread (dape--threads conn))
       (pcase clear
-       ('stack-frames
-        (plist-put thread :stackFrames nil)
-        (plist-put thread :totalFrames nil))
-       ('variables
-        (dolist (frame (plist-get thread :stackFrames))
-          (plist-put frame :scopes nil)))))
+        ('stack-frames
+         (plist-put thread :stackFrames nil)
+         (plist-put thread :totalFrames nil))
+        ('variables
+         (dolist (frame (plist-get thread :stackFrames))
+           (plist-put frame :scopes nil)))))
     (dape--with-request (dape--stack-trace conn current-thread 1)
       (when display
         (dape--stack-frame-display conn))
@@ -1833,14 +1889,11 @@ selected stack frame."
 Starts a new adapter CONNs from ARGUMENTS."
   (let ((default-directory
          (or (when-let ((cwd (plist-get arguments :cwd)))
-               (dape--path conn cwd 'local))
+               (dape--path-local conn cwd))
              default-directory))
         (process-environment
          (or (cl-loop for (key value) on (plist-get arguments :env) by 'cddr
-                      collect
-                      (format "%s=%s"
-                              (substring (format "%s" key) 1)
-                              value))
+                      collect (format "%s=%s" (substring (format "%s" key) 1) value))
              process-environment))
         (buffer (get-buffer-create "*dape-shell*")))
     (with-current-buffer buffer
@@ -1883,11 +1936,15 @@ Starts a new adapter connection as per request of the debug adapter."
 
 (cl-defmethod dape-handle-event (conn (_event (eql initialized)) _body)
   "Handle adapter CONNs initialized events."
+  (setf (dape--initialized-p conn) t)
   (dape--update-state conn 'initialized)
   (dape--with-request (dape--configure-exceptions conn)
     (dape--with-request (dape--set-breakpoints conn)
       (dape--with-request (dape--set-data-breakpoints conn)
-        (dape-request conn "configurationDone" nil)))))
+        (dape--with-request (dape-request conn "configurationDone" nil)
+          ;; See GDB bug 32090
+          (when (plist-get (dape--config conn) 'defer-launch-attach)
+            (dape--launch-or-attach conn)))))))
 
 (cl-defmethod dape-handle-event (conn (_event (eql capabilities)) body)
   "Handle adapter CONNs capabilities events.
@@ -1898,12 +1955,15 @@ BODY is an plist of adapter capabilities."
 (cl-defmethod dape-handle-event (conn (_event (eql breakpoint)) body)
   "Handle adapter CONNs breakpoint events.
 Update `dape--breakpoints' according to BODY."
-  (when-let* ((breakpoint (plist-get body :breakpoint))
-              (id (plist-get breakpoint :id))
-              (overlay (seq-find (lambda (ov)
-                                   (equal (overlay-get ov 'dape-id) id))
-                                 dape--breakpoints)))
-    (dape--breakpoint-update conn overlay breakpoint)))
+  (when-let ((update (plist-get body :breakpoint))
+             (id (plist-get update :id)))
+    (if-let ((breakpoint
+              (cl-find id dape--breakpoints
+                       :key (lambda (breakpoint)
+                              (plist-get (dape--breakpoint-id breakpoint) conn)))))
+        (dape--breakpoint-update conn breakpoint update)
+      ;; TODO Breakpoint event should be able to create breakpoints
+      )))
 
 (cl-defmethod dape-handle-event (conn (_event (eql module)) body)
   "Handle adapter CONNs module events.
@@ -1945,11 +2005,9 @@ Stores `dape--sources' from BODY."
   "Handle adapter CONNs process events.
 Logs and sets state based on BODY contents."
   (let ((start-method
-         (format "%sed" (or (plist-get body :startMethod)
-                            "start"))))
+         (format "%sed" (or (plist-get body :startMethod) "start"))))
     (dape--update-state conn (intern start-method))
-    (dape--repl-message
-     (format "Process %s %s" start-method (plist-get body :name)))))
+    (dape--message "Process %s %s" start-method (plist-get body :name))))
 
 (cl-defmethod dape-handle-event (conn (_event (eql thread)) body)
   "Handle adapter CONNs thread events.
@@ -2001,9 +2059,16 @@ Sets `dape--thread-id' from BODY and invokes ui refresh with
                                 (plist-get body :description))))
              (str (mapconcat 'identity texts ":\n\t")))
         (setf (dape--exception-description conn) str)
-        (dape--repl-message str 'dape-repl-error-face)))
+        (dape--repl-insert-error str)))
     ;; Update breakpoints hits
-    (dape--breakpoints-stopped hitBreakpointIds)
+    (cl-loop for id across hitBreakpointIds
+             for breakpoint =
+             (cl-find id dape--breakpoints
+                      :key (lambda (breakpoint)
+                             (plist-get (dape--breakpoint-id breakpoint) conn)))
+             when breakpoint do
+             (with-slots (hits) breakpoint
+               (setf hits (1+ (or hits 0)))))
     ;; Update `dape--threads'
     (let ((update-handle
            ;; Need to store handle before threads request to guard
@@ -2031,22 +2096,17 @@ Sets `dape--thread-id' from BODY if not set."
 
 (cl-defmethod dape-handle-event (_conn (_event (eql output)) body)
   "Handle output events by printing BODY with `dape--repl-message'."
-  (pcase (plist-get body :category)
-    ((or "stdout" "console" "output")
-     (dape--repl-message (plist-get body :output)))
-    ("stderr"
-     (dape--repl-message (plist-get body :output) 'dape-repl-error-face))))
+  (when-let ((output (plist-get body :output)))
+    (pcase (plist-get body :category)
+      ((or "stdout" "console" "output") (dape--repl-insert output))
+      ("stderr" (dape--repl-insert-error output)))))
 
 (cl-defmethod dape-handle-event (conn (_event (eql exited)) body)
   "Handle adapter CONNs exited events.
 Prints exit code from BODY."
   (dape--update-state conn 'exited)
   (dape--stack-frame-cleanup)
-  (dape--repl-message
-   (format "* Exit code: %d *" (plist-get body :exitCode))
-   (if (zerop (plist-get body :exitCode))
-       'dape-repl-success-face
-     'dape-repl-error-face)))
+  (dape--message "Exit code %d" (plist-get body :exitCode)))
 
 (cl-defmethod dape-handle-event (conn (_event (eql terminated)) _body)
   "Handle adapter CONNs terminated events.
@@ -2054,9 +2114,9 @@ Killing the adapter and it's CONN."
   (let ((child-conn-p (dape--parent conn)))
     (dape--with-request (dape-kill conn)
       (when (not child-conn-p)
-        ;; HACK remove dubble terminated print for dlv
+        ;; HACK remove duplicated terminated print for dlv
         (unless (eq (dape--state conn) 'terminated)
-          (dape--repl-message "* Session terminated *"))
+          (dape--message "Session terminated"))
         (dape--update-state conn 'terminated)))))
 
 
@@ -2070,8 +2130,7 @@ Killing the adapter and it's CONN."
     (cl-loop for (_ buffer) on dape--source-buffers by 'cddr
              when (buffer-live-p buffer)
              do (kill-buffer buffer))
-    (setq dape--source-buffers nil
-          dape--repl-insert-text-guard nil)
+    (setq dape--source-buffers nil)
     (unless dape-active-mode
       (dape-active-mode +1))
     (dape--update-state conn 'starting)
@@ -2085,15 +2144,27 @@ symbol `dape-connection'."
   (unless (plist-get config 'command-cwd)
     (plist-put config 'command-cwd default-directory))
   (let ((default-directory (plist-get config 'command-cwd))
+        (process-environment (cl-copy-list process-environment))
         (retries 30)
         process server-process)
+    (cl-loop for (key value) on (plist-get config 'command-env) by 'cddr
+             do (setenv (pcase key
+                          ((pred keywordp) (substring (format "%s" key) 1))
+                          ((or (pred symbolp) (pred stringp)) (format "%s" key))
+                          (_ (user-error "Bad type for `command-env' key %S" key)))
+                        (format "%s" value)))
     (cond
-     ;; socket conn
+     ;; Socket type connection
      ((plist-get config 'port)
-      ;; start server
+      ;; Start server
       (when (plist-get config 'command)
-        (let ((stderr-buffer
-               (get-buffer-create "*dape-server stderr*"))
+        (let ((stderr-pipe
+               (apply #'make-pipe-process
+                      :name "dape adapter stderr"
+                      :buffer (get-buffer-create " *dape-server stderr*")
+                      (when (plist-get config 'command-insert-stderr)
+                        `(:filter ,(lambda (_process string)
+                                     (dape--repl-insert-error string))))))
               (command
                (cons (plist-get config 'command)
                      (cl-map 'list 'identity
@@ -2102,22 +2173,20 @@ symbol `dape-connection'."
                 (make-process :name "dape adapter"
                               :command command
                               :filter (lambda (_process string)
-                                        (dape--repl-message string))
+                                        (dape--repl-insert string))
                               :noquery t
                               :file-handler t
-                              :stderr stderr-buffer))
-          (process-put server-process 'stderr-buffer stderr-buffer)
+                              :stderr stderr-pipe))
+          (process-put server-process 'stderr-pipe stderr-pipe)
           (when dape-debug
-            (dape--repl-message (format "* Adapter server started with %S *"
-                                        (mapconcat 'identity
-                                                   command " ")))))
+            (dape--message "Adapter server started with %S"
+                           (mapconcat 'identity command " "))))
         ;; FIXME Why do I need this?
         (when (file-remote-p default-directory)
           (sleep-for 0.300)))
-      ;; connect to server
+      ;; Connect to server
       (let ((host (or (plist-get config 'host) "localhost")))
-        (while (and (not process)
-                    (> retries 0))
+        (while (and (not process) (> retries 0))
           (ignore-errors
             (setq process
                   (make-network-process :name
@@ -2131,27 +2200,23 @@ symbol `dape-connection'."
           (setq retries (1- retries)))
         (if (zerop retries)
             (progn
-              (dape--repl-message (format "* Unable to connect to dap server at %s:%d *"
-                                          host (plist-get config 'port))
-                                  'dape-repl-error-face)
-              (dape--repl-message
-               (format "* Connection is configurable by %s and %s keys *"
-                       (propertize "host" 'font-lock-face 'font-lock-keyword-face)
-                       (propertize "port" 'font-lock-face 'font-lock-keyword-face)))
-              ;; barf server std-err
-              (when-let ((buffer
-                          (and server-process
-                               (process-get server-process 'stderr-buffer))))
-                (with-current-buffer buffer
-                  (dape--repl-message (buffer-string) 'dape-repl-error-face)))
+              (dape--warn "Unable to connect to dap server at %s:%d"
+                          host (plist-get config 'port))
+              (dape--message "Connection is configurable by `host' and `port' keys")
+              ;; Barf server stderr
+              (when-let* (server-process
+                          (buffer (process-buffer (process-get server-process 'stderr-pipe)))
+                          (content (with-current-buffer buffer (buffer-string)))
+                          ((not (string-empty-p content))))
+                (dape--warn "Dumping content of <%s>" (buffer-name buffer))
+                (dape--repl-insert-error content))
               (delete-process server-process)
               (user-error "Unable to connect to server"))
           (when dape-debug
-            (dape--repl-message
-             (format "* %s to adapter established at %s:%s *"
-                     (if parent "Child connection" "Connection")
-                     host (plist-get config 'port)))))))
-     ;; stdio conn
+            (dape--message "%s to adapter established at %s:%s"
+                           (if parent "Child connection" "Connection")
+                           host (plist-get config 'port))))))
+     ;; Pipe type connection
      (t
       (let ((command
              (cons (plist-get config 'command)
@@ -2163,60 +2228,49 @@ symbol `dape-connection'."
                             :connection-type 'pipe
                             :coding 'utf-8-emacs-unix
                             :noquery t
+                            :stderr (get-buffer-create "*dape-connection stderr*")
                             :file-handler t))
         (when dape-debug
-          (dape--repl-message (format "* Adapter started with %S *"
-                                      (mapconcat 'identity command " ")))))))
+          (dape--message "Adapter started with %S"
+                         (mapconcat 'identity command " "))))))
     (make-instance
      'dape-connection
      :name "dape-connection"
      :config config
      :parent parent
      :server-process server-process
-     :events-buffer-config `(:size ,(if dape-debug nil 0)
-                                   :format full)
+     :events-buffer-config `(:size ,(if dape-debug nil 0) :format full)
      :on-shutdown
      (lambda (conn)
-       ;; error prints
+       ;; Initialization error prints
        (unless (dape--initialized-p conn)
-         (dape--repl-message
-          (concat "* Adapter "
-                  (when (dape--parent conn)
-                    "child ")
-                  "connection shutdown without successfully initializing *")
-          'dape-repl-error-face)
-         ;; barf config
-         (dape--repl-message
-          (format "Configuration:\n%s"
-                  (cl-loop for (key value) on (dape--config conn) by 'cddr
-                           unless (eq key '(ensure modes))
-                           concat (format "  %s %S\n" key value)))
-          'dape-repl-error-face)
-         ;; barf connection stdout
-         (when-let* ((proc (jsonrpc--process conn))
-                     (buffer (process-buffer proc))
-                     ((buffer-live-p buffer)))
-           (dape--repl-message (with-current-buffer buffer (buffer-string))))
-         ;; barf connection stderr
-         (when-let* ((proc (jsonrpc--process conn))
-                     (buffer (process-get proc 'jsonrpc-stderr))
-                     ((buffer-live-p buffer))
-                     (stderr (with-current-buffer buffer (buffer-string))))
-           (dape--repl-message stderr 'dape-repl-error-face))
-         ;; barf server stderr
-         (when-let* ((server-proc (dape--server-process conn))
-                     (buffer (process-get server-proc 'stderr-buffer)))
-           (with-current-buffer buffer
-             (dape--repl-message (buffer-string) 'dape-repl-error-face))))
-       ;; cleanup server process
+         (dape--warn "Adapter %sconnection shutdown without successfully initializing"
+                     (if (dape--parent conn) "child " ""))
+         ;; Barf the various error buffers
+         (cl-loop
+          with process = (jsonrpc--process conn)
+          with server-process = (dape--server-process conn)
+          with buffers =
+          (list (when process (process-buffer process))
+                (when process (process-get process 'jsonrpc-stderr))
+                (when server-process
+                  (process-buffer (process-get server-process 'stderr-pipe))))
+          for buffer in buffers do
+          (when-let* (((buffer-live-p buffer))
+                      (content (with-current-buffer buffer (buffer-string)))
+                      ((not (string-empty-p content))))
+            (dape--warn "Dumping content of <%s>" (buffer-name buffer))
+            (dape--repl-insert-error content))))
        (unless (dape--parent conn)
+         ;; When connection w/o parent cleanup in source buffer UI
          (dape--stack-frame-cleanup)
-         (when-let ((server-process
-                     (dape--server-process conn)))
+         ;; Cleanup server process
+         (when-let ((server-process (dape--server-process conn)))
+           (delete-process (process-get server-process 'stderr-pipe))
            (delete-process server-process)
            (while (process-live-p server-process)
              (accept-process-output nil nil 0.1))))
-       ;; ui
+       ;; Update UI
        (when (eq dape--connection conn)
          (dape-active-mode -1)
          (force-mode-line-update t)))
@@ -2286,21 +2340,19 @@ CONN is inferred for interactive invocations."
 CONN is inferred for interactive invocations."
   (interactive (list (dape--live-connection 'last t)))
   (dape--stack-frame-cleanup)
-  (dape--breakpoints-reset)
-  (cond
-   ((and conn
-         (dape--capable-p conn :supportsRestartRequest))
-    (setq dape--connection-selected nil)
-    (setf (dape--threads conn) nil)
-    (setf (dape--thread-id conn) nil)
-    (setf (dape--modules conn) nil)
-    (setf (dape--sources conn) nil)
-    (setf (dape--restart-in-progress-p conn) t)
-    (dape--with-request (dape-request conn "restart" nil)
-      (setf (dape--restart-in-progress-p conn) nil)))
-   (dape-history
-    (dape (apply 'dape--config-eval (dape--config-from-string (car dape-history)))))
-   ((user-error "Unable to derive session to restart, run `dape'"))))
+  (cond ((and conn (dape--capable-p conn :supportsRestartRequest))
+         (dape--breakpoints-reset 'from-restart)
+         (setq dape--connection-selected nil)
+         (setf (dape--threads conn) nil
+               (dape--thread-id conn) nil
+               (dape--modules conn) nil
+               (dape--sources conn) nil
+               (dape--restart-in-progress-p conn) t)
+         (dape--with-request (dape-request conn "restart" nil)
+           (setf (dape--restart-in-progress-p conn) nil)))
+        (dape-history
+         (dape (apply 'dape--config-eval (dape--config-from-string (car dape-history)))))
+        ((user-error "Unable to derive session to restart, run `dape'"))))
 
 (defun dape-kill (conn &optional cb with-disconnect)
   "Kill debug session.
@@ -2324,10 +2376,9 @@ terminate.  CONN is inferred for interactive invocations."
    ((and conn (jsonrpc-running-p conn))
     (dape--with-request
         (dape-request conn "disconnect"
-                      `(:restart
-                        :json-false
-                        ,@(when (dape--capable-p conn :supportTerminateDebuggee)
-                            (list :terminateDebuggee t))))
+                      `( :restart :json-false
+                         ,@(when (dape--capable-p conn :supportTerminateDebuggee)
+                             '(:terminateDebuggee t))))
       (jsonrpc-shutdown conn)
       (dape--request-return cb)))
    (t
@@ -2361,120 +2412,99 @@ CONN is inferred for interactive invocations."
 (defun dape-breakpoint-toggle ()
   "Add or remove breakpoint at current line."
   (interactive)
-  (cond
-   ((not (seq-filter (lambda (ov)
-                       (overlay-get ov :breakpoint))
-                     (dape--breakpoints-at-point)))
-    (dape--breakpoint-place))
-   (t
-    (dape-breakpoint-remove-at-point))))
+  (if (cl-member nil (dape--breakpoints-at-point)
+                 :key #'dape--breakpoint-type)
+      (dape-breakpoint-remove-at-point)
+    (dape--breakpoint-place)))
 
-(defun dape-breakpoint-log (log-message)
-  "Add log breakpoint at line.
-Argument LOG-MESSAGE contains string to print to *dape-repl*.
+(defun dape-breakpoint-log (message)
+  "Add log breakpoint at line with MESSAGE.
 Expressions within `{}` are interpolated."
   (interactive
    (list
     (read-string "Log (Expressions within `{}` are interpolated): "
-                 (when-let ((prev-log-breakpoint
-                             (seq-find (lambda (ov)
-                                         (overlay-get ov :log))
-                                       (dape--breakpoints-at-point))))
-                   (overlay-get prev-log-breakpoint :log)))))
-  (cond
-   ((string-empty-p log-message)
-    (dape-breakpoint-remove-at-point))
-   (t
-    (dape--breakpoint-place :log log-message))))
+                 (when-let ((breakpoint
+                             (cl-find 'log (dape--breakpoints-at-point)
+                                      :key #'dape--breakpoint-type)))
+                   (dape--breakpoint-value breakpoint)))))
+  (if (string-empty-p message)
+      (dape-breakpoint-remove-at-point)
+    (dape--breakpoint-place 'log message)))
 
-(defun dape-breakpoint-expression (expr-message)
-  "Add expression breakpoint at current line.
-When EXPR-MESSAGE is evaluated as true threads will pause at current line."
+(defun dape-breakpoint-expression (expression)
+  "Add expression breakpoint at current line with EXPRESSION."
+  ;; FIXME: Rename to condition
   (interactive
    (list
     (read-string "Condition: "
-                 (when-let ((prev-expr-breakpoint
-                             (seq-find (lambda (ov)
-                                         (overlay-get ov :expression))
-                                       (dape--breakpoints-at-point))))
-                   (overlay-get prev-expr-breakpoint :expression)))))
-  (cond
-   ((string-empty-p expr-message)
-    (dape-breakpoint-remove-at-point))
-   (t
-    (dape--breakpoint-place :expression expr-message))))
+                 (when-let ((breakpoint
+                             (cl-find 'expression (dape--breakpoints-at-point)
+                                      :key #'dape--breakpoint-type)))
+                   (dape--breakpoint-value breakpoint)))))
+  (if (string-empty-p expression)
+      (dape-breakpoint-remove-at-point)
+    (dape--breakpoint-place 'expression expression)))
 
-(defun dape-breakpoint-hits (hits)
-  "Add hits breakpoint at line.
+(defun dape-breakpoint-hits (condition)
+  "Add hits breakpoint at line with CONDITION.
 An hit HITS is an string matching regex:
-\"\\(!=\\|==\\|[%<>]\\) [:digit:]\"
-
-When HITS-EXPRESSION is evaluated as true threads will pause at current line."
+\"\\(!=\\|==\\|[%<>]\\) [:digit:]\""
   (interactive
    (list
     (pcase-let ((`(_ ,operator)
                  (let (use-dialog-box)
                    (read-multiple-choice
-                    "Operator"
-                    '((?= "==" "Equals") (?! "!=" "Not equals")
-                      (?< "<" "Less then") (?> ">" "Greater then")
-                      (?% "%" "Modulus"))))))
+                    "Operator" '((?= "==" "Equals") (?! "!=" "Not equals")
+                                 (?< "<" "Less then") (?> ">" "Greater then")
+                                 (?% "%" "Modulus"))))))
       (thread-last operator
                    (format "Breakpoint hit condition %s ")
                    (read-number)
                    (format "%s %d" operator)))))
-  (cond
-   ((string-empty-p hits)
-    (dape-breakpoint-remove-at-point))
-   (t
-    (dape--breakpoint-place :hits hits))))
+  (if (string-empty-p condition)
+      (dape-breakpoint-remove-at-point)
+    (dape--breakpoint-place 'hits condition)))
 
 (defun dape-breakpoint-remove-at-point (&optional skip-update)
   "Remove breakpoint, log breakpoint and expression at current line.
 When SKIP-UPDATE is non nil, does not notify adapter about removal."
   (interactive)
-  (dolist (breakpoint (dape--breakpoints-at-point))
-    (dape--breakpoint-remove breakpoint skip-update)))
+  (cl-loop for breakpoint in (dape--breakpoints-at-point) do
+           (dape--breakpoint-remove breakpoint skip-update)))
 
 (defun dape-breakpoint-remove-all ()
   "Remove all breakpoints."
   (interactive)
-  (let ((buffers-breakpoints
-         (seq-group-by 'overlay-buffer dape--breakpoints)))
-    (pcase-dolist (`(,buffer . ,breakpoints) buffers-breakpoints)
-      (dolist (breakpoint breakpoints)
-        (dape--breakpoint-remove breakpoint t))
-      (dolist (conn (dape--live-connections))
-        (dape--set-breakpoints-in-buffer conn buffer)))))
+  (cl-loop for (buffer-or-path . breakpoints) in
+           (seq-group-by #'dape--breakpoint-buffer-or-path dape--breakpoints) do
+           (cl-loop for breakpoint in breakpoints do
+                    (dape--breakpoint-remove breakpoint 'skip-update))
+           (dape--breakpoint-broadcast-update buffer-or-path)))
 
 (defun dape-select-thread (conn thread-id)
   "Select current thread for adapter CONN by THREAD-ID."
   (interactive
    (let* ((conn (dape--live-connection 'last))
           (collection
-           (cl-loop
-            with conns = (dape--live-connections)
-            with conn-prefix-p = (length>
-                                  (cl-remove-if-not 'dape--threads conns) 1)
-            for conn in conns
-            for index upfrom 1
-            append (cl-loop
-                    for thread in (dape--threads conn)
-                    for name = (concat
-                                (when conn-prefix-p
-                                  (format "%s: " index))
-                                (format "%s %s"
-                                        (plist-get thread :id)
-                                        (plist-get thread :name)))
-                    collect (list name conn (plist-get thread :id)))))
+           (cl-loop with conns = (dape--live-connections)
+                    with conn-prefix-p =
+                    (length> (cl-remove-if-not 'dape--threads conns) 1)
+                    for conn in conns for index upfrom 1 append
+                    (cl-loop for thread in (dape--threads conn) collect
+                             `(,(concat (when conn-prefix-p
+                                          (format "%s: " index))
+                                        (format "%s %s"
+                                                (plist-get thread :id)
+                                                (plist-get thread :name)))
+                               ,conn
+                               ,(plist-get thread :id)))))
           (thread-name
            (completing-read
             (format "Select thread (current %s): "
                     ;; TODO Show current thread with connection prefix
                     (thread-first conn (dape--current-thread)
                                   (plist-get :name)))
-            collection
-            nil t)))
+            collection nil t)))
      (alist-get thread-name collection nil nil 'equal)))
   (setf (dape--thread-id conn) thread-id)
   (setq dape--connection-selected conn)
@@ -2488,11 +2518,11 @@ When SKIP-UPDATE is non nil, does not notify adapter about removal."
           (current-thread (dape--current-thread conn))
           (collection
            (let (done)
-             ;; Need to fetch all frames as might only have 1 frame
-             ;; fetches see `dape--stack-trace' and
-             ;; `:supportsDelayedStackTraceLoading'.
              (dape--with-request
                  (dape--stack-trace conn current-thread dape-stack-trace-levels)
+               ;; Only one stack frame is guaranteed to be available,
+               ;; so we need to reach out to make sure we got the full set.
+               ;; See `dape--stack-trace'.
                (setf done t))
              (with-timeout (5 nil)
                (while (not done) (accept-process-output nil 0.1)))
@@ -2504,8 +2534,7 @@ When SKIP-UPDATE is non nil, does not notify adapter about removal."
                                     (thread-first conn
                                                   (dape--current-stack-frame)
                                                   (plist-get :name)))
-                            collection
-                            nil t)))
+                            collection nil t)))
      (list conn (alist-get stack-name collection nil nil 'equal))))
   (setf (dape--stack-id conn) stack-id)
   (dape--update conn nil t))
@@ -2516,10 +2545,8 @@ When SKIP-UPDATE is non nil, does not notify adapter about removal."
   (if (dape--stopped-threads conn)
       (let* ((current-stack (dape--current-stack-frame conn))
              (stacks (plist-get (dape--current-thread conn) :stackFrames))
-             (i (cl-loop for i upfrom 0
-                         for stack in stacks
-                         when (equal stack current-stack)
-                         return (+ i n))))
+             (i (cl-loop for i upfrom 0 for stack in stacks
+                         when (equal stack current-stack) return (+ i n))))
         (if (not (and (<= 0 i) (< i (length stacks))))
             (message "Index %s out of range" i)
           (dape-select-stack conn (plist-get (nth i stacks) :id))))
@@ -2542,8 +2569,7 @@ Optional argument SKIP-REMOVE limits usage to only adding watched vars."
           (completing-read "Watch or unwatch symbol: "
                            (mapcar (lambda (plist) (plist-get plist :name))
                                    dape--watched)
-                           nil
-                           nil
+                           nil nil
                            (or (and (region-active-p)
                                     (buffer-substring (region-beginning)
                                                       (region-end)))
@@ -2565,31 +2591,32 @@ Optional argument SKIP-REMOVE limits usage to only adding watched vars."
 
 (defun dape-evaluate-expression (conn expression)
   "Evaluate EXPRESSION, if region is active evaluate region.
-EXPRESSION can be an expression or adapter command, as it's evaluated in
-repl context.  CONN is inferred for interactive invocations."
+EXPRESSION should be and string which can be evaluated in REPL.
+CONN is inferred by either last stopped or last created connection."
   (interactive
    (list
-    (or (dape--live-connection 'stopped t)
-        (dape--live-connection 'last))
+    (or (dape--live-connection 'stopped t) (dape--live-connection 'last))
     (if (region-active-p)
-        (buffer-substring (region-beginning)
-                          (region-end))
-      (read-string "Evaluate: "
-                   (thing-at-point 'symbol)))))
-  (let ((interactive-p (called-interactively-p 'any)))
-    (dape--with-request-bind
-        ((&key result &allow-other-keys) error)
-        (dape--evaluate-expression conn
-                                   (plist-get (dape--current-stack-frame conn) :id)
-                                   (substring-no-properties expression)
-                                   "repl")
-      (when interactive-p
-        (if error
-            (message "Evaluation failed %s" error)
-          (message "%s" (or (and (stringp result)
-                                 (not (string-empty-p result))
-                                 result)
-                            "Evaluation done")))))))
+        (buffer-substring (region-beginning) (region-end))
+      (read-string "Evaluate: " (thing-at-point 'symbol)))))
+  (dape--with-request-bind
+      ((&whole body &key variablesReference result &allow-other-keys) error)
+      (dape--evaluate-expression conn (plist-get (dape--current-stack-frame conn) :id)
+                                 expression "repl")
+    (cond
+     (error
+      (if (string-empty-p error)
+          (dape--warn "Failed to evaluate %S" (substring-no-properties expression))
+        (dape--repl-insert-error error)))
+     ((and (get-buffer "*dape-repl*")
+           (numberp variablesReference)
+           (not (zerop variablesReference)))
+      (dape--repl-create-variable-table
+       conn (plist-put body :name expression) #'dape--repl-insert))
+     (t
+      ;; Refresh is needed as evaluate can change values
+      (dape--update conn 'variables nil)
+      (dape--repl-insert result)))))
 
 ;;;###autoload
 (defun dape (config &optional skip-compile)
@@ -2610,8 +2637,8 @@ Use SKIP-COMPILE to skip compilation."
   (interactive (list (dape--read-config)))
   (dape--with-request (dape-kill (dape--live-connection 'parent t))
     (dape--config-ensure config t)
-    ;; Hooks need to be run before any repl messaging but after we
-    ;; have ensured that config is executable.
+    ;; Hooks need to be run before any REPL messaging but after we
+    ;; have tried ensured that config is executable.
     (run-hooks 'dape-start-hook)
     (when-let ((fn (or (plist-get config 'fn) 'identity))
                (fns (or (and (functionp fn) (list fn))
@@ -2622,8 +2649,7 @@ Use SKIP-COMPILE to skip compilation."
                         (copy-tree config))))
     (if (and (not skip-compile) (plist-get config 'compile))
         (dape--compile config)
-      (setq dape--connection
-            (dape--create-connection config))
+      (setq dape--connection (dape--create-connection config))
       (dape--start-debugging dape--connection))))
 
 
@@ -2640,9 +2666,7 @@ Using BUFFER and STR."
    ((equal "finished\n" str)
     (dape dape--compile-config 'skip-compile)
     (run-hook-with-args 'dape-compile-hook buffer))
-   (t
-    (dape--repl-message (format "* Compilation failed %s *"
-                                (string-trim-right str))))))
+   (t (dape--message "Compilation failed %s" (string-trim-right str)))))
 
 (defun dape--compile (config)
   "Start compilation for CONFIG."
@@ -2694,8 +2718,7 @@ Using BUFFER and STR."
             (insert (base64-decode-string data))
             (let (buffer-undo-list)
               (hexlify-buffer))
-            ;; Now we need to translate the address fields after the
-            ;; fact ugghh
+            ;; Now we need to apply offset to the addresses, ughh
             (goto-char (point-min))
             (while (re-search-forward "^[0-9a-f]+" nil t)
               (let ((address
@@ -2808,6 +2831,60 @@ of memory read."
 
 ;;; Breakpoints
 
+(defun dape--breakpoint-buffer-or-path-line (breakpoint)
+  "Return (BUFFER-OR-PATH . LINE) of BREAKPOINT."
+  (pcase (dape--breakpoint-overlay-or-cons breakpoint)
+    ((and overlay (pred overlayp))
+     (when-let* ((buffer (overlay-buffer overlay))
+                 ((buffer-live-p buffer)))
+       (cons buffer (with-current-buffer buffer
+                      (line-number-at-pos (overlay-start overlay))))))
+    ((and cons (pred consp)) cons)))
+
+(defun dape--breakpoint-buffer-or-path (breakpoint)
+  "Return buffer or path of BREAKPOINT."
+  (car (dape--breakpoint-buffer-or-path-line breakpoint)))
+
+(defun dape--breakpoints-in-buffer ()
+  "Return breakpoints in current buffer."
+  (thread-last dape--breakpoints (seq-group-by #'dape--breakpoint-buffer-or-path)
+               (alist-get (current-buffer))))
+
+(defun dape--breakpoint-set-overlay (breakpoint)
+  "Create and set overlay on BREAKPOINT."
+  (add-hook 'kill-buffer-hook #'dape--breakpoint-buffer-kill nil t)
+  (with-slots (type value overlay-or-cons) breakpoint
+    (cl-flet ((after-string (label face mouse-1-help mouse-1-def)
+                (concat " "
+                        (propertize
+                         (format "%s: %s" label value)
+                         'face face
+                         'mouse-face 'highlight
+                         'help-echo (format "mouse-1: %s" mouse-1-help)
+                         'keymap (let ((map (make-sparse-keymap)))
+                                   (define-key map [mouse-1] mouse-1-def)
+                                   map)))))
+      (let ((ov (apply 'make-overlay (dape--overlay-region))))
+        (overlay-put ov 'modification-hooks '(dape--breakpoint-freeze))
+        (overlay-put ov 'window t)
+        (pcase type
+          ('log
+           (overlay-put ov 'after-string
+                        (after-string "Log" 'dape-log-face "edit log message"
+                                      #'dape-mouse-breakpoint-log)))
+          ('expression
+           (overlay-put ov 'after-string
+                        (after-string "Cond" 'dape-expression-face "edit break expression"
+                                      #'dape-mouse-breakpoint-log)))
+          ('hits
+           (overlay-put ov 'after-string
+                        (after-string "Hits" 'dape-hits-face "edit break hits"
+                                      #'dape-mouse-breakpoint-hits)))
+          (_
+           (dape--overlay-icon ov dape-breakpoint-margin-string
+                               'breakpoint 'dape-breakpoint-face 'in-margin)))
+        (setf overlay-or-cons ov)))))
+
 (dape--mouse-command dape-mouse-breakpoint-toggle
   "Toggle breakpoint at line."
   dape-breakpoint-toggle)
@@ -2842,24 +2919,22 @@ of memory read."
   :global t
   :lighter nil)
 
+(defun dape--breakpoint-find-file ()
+  "Convert cons breakpoints into overlay breakpoints.
+Used as an hook on `find-file-hook'."
+  (cl-loop with breakpoints-in-buffer =
+           (alist-get (buffer-file-name)
+                      (seq-group-by #'dape--breakpoint-buffer-or-path
+                                    dape--breakpoints)
+                      nil nil 'equal)
+           for breakpoint in breakpoints-in-buffer
+           for (buffer-or-path . line) = (dape--breakpoint-buffer-or-path-line breakpoint)
+           when (stringp buffer-or-path) do
+           (dape--with-line (current-buffer) line
+             (dape--breakpoint-set-overlay breakpoint))))
+
 (defvar dape--original-margin nil
   "Bookkeeping for buffer margin width.")
-
-(defun dape--margin-cleanup (buffer)
-  "Reset BUFFERs margin if it's unused."
-  (when buffer
-    (with-current-buffer buffer
-      (when (and dape--original-margin ;; Buffer has been touched by Dape
-                 (not (thread-last dape--breakpoints
-                                   (seq-filter (lambda (ov)
-                                                 (not (overlay-get ov 'after-string))))
-                                   (seq-group-by 'overlay-buffer)
-                                   (alist-get buffer))))
-        (setq-local left-margin-width dape--original-margin
-                    dape--original-margin nil)
-        ;; Update margin
-        (when-let ((window (get-buffer-window buffer)))
-          (set-window-buffer window buffer))))))
 
 (defun dape--overlay-icon (overlay string bitmap face &optional in-margin)
   "Put STRING or BITMAP on OVERLAY with FACE.
@@ -2895,173 +2970,146 @@ contents."
       (overlay-put overlay 'before-string before-string))))
 
 (defun dape--breakpoint-freeze (overlay _after _begin _end &optional _len)
-  "Make sure that dape OVERLAY region covers line."
+  "Make sure that OVERLAY region covers line."
   (apply 'move-overlay overlay (dape--overlay-region)))
 
-(defun dape--breakpoints-reset ()
-  "Reset breakpoints hits."
-  (cl-loop for ov in dape--breakpoints do
-           (overlay-put ov 'dape-verified-plist nil)
-           (overlay-put ov 'dape-hits nil)))
-
-(defun dape--breakpoints-stopped (hit-breakpoint-ids)
-  "Increment `dape-hits' from array of HIT-BREAKPOINT-IDS."
-  (cl-loop for id across hit-breakpoint-ids
-           for ov = (cl-find id dape--breakpoints
-                             :key (lambda (ov) (overlay-get ov 'dape-id)))
-           when ov
-           do (overlay-put ov 'dape-hits
-                           (1+ (or (overlay-get ov 'dape-hits) 0)))))
+(defun dape--breakpoints-reset (&optional from-restart)
+  "Reset breakpoints hits.
+If FROM-RESTART is non nil keep id and verified."
+  (cl-loop for breakpoint in dape--breakpoints do
+           (with-slots (verified id hits) breakpoint
+             (unless from-restart
+               (setf verified nil id nil))
+             (setf hits nil))))
 
 (defun dape--breakpoints-at-point ()
-  "Dape overlay breakpoints at point."
-  (seq-filter (lambda (overlay)
-                (eq 'dape-breakpoint (overlay-get overlay 'category)))
-              (overlays-in (line-beginning-position) (line-end-position))))
+  "Breakpoints at point."
+  (cl-loop with current-line = (line-number-at-pos (point))
+           for breakpoint in dape--breakpoints
+           for (buffer-or-path . line) =
+           (dape--breakpoint-buffer-or-path-line breakpoint)
+           when (and (eq (current-buffer) buffer-or-path)
+                     (equal current-line line))
+           collect breakpoint))
 
-(defun dape--breakpoint-buffer-kill-hook (&rest _)
+(defun dape--breakpoint-broadcast-update (&rest buffer-or-path-s)
+  "Broadcast BUFFER-OR-PATH-S breakpoints to all connections."
+  (cl-loop for buffer-or-path in
+           (cl-remove-duplicates buffer-or-path-s :test 'equal)
+           when buffer-or-path do
+           (cl-loop for conn in (dape--live-connections)
+                    when (dape--initialized-p conn) do
+                    (dape--set-breakpoints-in-source conn buffer-or-path))
+           finally do (run-hooks 'dape-update-ui-hook)))
+
+(defun dape--breakpoint-buffer-kill (&rest _)
   "Hook to remove breakpoint on buffer killed."
-  (let ((breakpoints
-         (alist-get (current-buffer)
-                    (seq-group-by 'overlay-buffer
-                                  dape--breakpoints))))
-    (dolist (breakpoint breakpoints)
-      (setq dape--breakpoints (delq breakpoint dape--breakpoints)))
-    (dolist (conn (dape--live-connections))
-      (when (dape--initialized-p conn)
-        (dape--set-breakpoints-in-buffer conn (current-buffer)))))
-  (run-hooks 'dape-update-ui-hook))
+  (cl-loop for breakpoint in (dape--breakpoints-in-buffer)
+           for (buffer-or-path . line) =
+           (dape--breakpoint-buffer-or-path-line breakpoint) do
+           (if-let* ((buffer (and (bufferp buffer-or-path) buffer-or-path))
+                     ((buffer-file-name buffer)))
+               (with-slots (overlay-or-cons) breakpoint
+                 ;; TODO Remove find-file-hook function at some point
+                 (add-hook 'find-file-hook #'dape--breakpoint-find-file)
+                 (delete-overlay overlay-or-cons)
+                 (setf overlay-or-cons (cons (buffer-file-name buffer) line)))
+             (dape--breakpoint-remove breakpoint))))
 
-(cl-defun dape--breakpoint-place (&key log expression hits)
+(cl-defun dape--breakpoint-place (&optional type value)
   "Place breakpoint at current line.
-If LOG is non nil place log breakpoint with LOG string.
-If EXPRESSION is non nil place conditional breakpoint with EXPRESSION
-string.
-If HITS is non nil place conditional breakpoint with HITS string.
-
-LOG, EXPRESSION and HITS are mutually exclusive.
+Valid values for TYPE is nil, `log', `expression' and `hits'.
+If TYPE is none nil VALUE is expected to be an string.
 
 If there are breakpoints at current line remove those breakpoints from
-`dape--breakpoints'.
-Updates all breakpoints in all known connections."
+`dape--breakpoints'.  Updates all breakpoints in all known connections."
   (unless (derived-mode-p 'prog-mode)
     (user-error "Trying to set breakpoint in none `prog-mode' buffer"))
-  (when-let ((prev-breakpoints (dape--breakpoints-at-point)))
-    (dolist (prev-breakpoint prev-breakpoints)
-      (dape--breakpoint-remove prev-breakpoint 'skip-update)))
-  (let ((breakpoint (apply 'make-overlay (dape--overlay-region))))
-    (overlay-put breakpoint 'window t)
-    (overlay-put breakpoint 'category 'dape-breakpoint)
-    (cond
-     (log
-      (overlay-put breakpoint :log log)
-      (overlay-put breakpoint 'after-string
-                   (concat
-                    " "
-                    (propertize (format "Log: %s" log)
-                                'face 'dape-log-face
-                                'mouse-face 'highlight
-                                'help-echo "mouse-1: edit log message"
-                                'keymap
-                                (let ((map (make-sparse-keymap)))
-                                  (define-key map [mouse-1]
-                                              #'dape-mouse-breakpoint-log)
-                                  map)))))
-     (expression
-      (overlay-put breakpoint :expression expression)
-      (overlay-put breakpoint 'after-string
-                   (concat
-                    " "
-                    (propertize
-                     (format "Cond: %s" expression)
-                     'face 'dape-expression-face
-                     'mouse-face 'highlight
-                     'help-echo "mouse-1: edit break expression"
-                     'keymap
-                     (let ((map (make-sparse-keymap)))
-                       (define-key map [mouse-1] #'dape-mouse-breakpoint-expression)
-                       map)))))
-     (hits
-      (overlay-put breakpoint :hits hits)
-      (overlay-put breakpoint 'after-string
-                   (concat
-                    " "
-                    (propertize
-                     (format "Hit %s" hits)
-                     'face 'dape-hits-face
-                     'mouse-face 'highlight
-                     'help-echo "mouse-1: edit break hits"
-                     'keymap
-                     (let ((map (make-sparse-keymap)))
-                       (define-key map [mouse-1] #'dape-mouse-breakpoint-hits)
-                       map)))))
-     (t
-      (overlay-put breakpoint :breakpoint t)
-      (dape--overlay-icon breakpoint dape-breakpoint-margin-string
-                          'breakpoint 'dape-breakpoint-face 'in-margin)))
-    (overlay-put breakpoint 'modification-hooks '(dape--breakpoint-freeze))
-    (push breakpoint dape--breakpoints)
-    (dolist (conn (dape--live-connections))
-      (dape--set-breakpoints-in-buffer conn (current-buffer)))
-    (add-hook 'kill-buffer-hook 'dape--breakpoint-buffer-kill-hook nil t)
-    (run-hooks 'dape-update-ui-hook)
-    breakpoint))
+  ;; Remove breakpoints at line
+  (dape-breakpoint-remove-at-point 'skip-update)
+  ;; Create breakpoint
+  (let ((breakpoint (dape--breakpoint-make :type type :value value)))
+    (dape--breakpoint-set-overlay breakpoint)
+    (push breakpoint dape--breakpoints))
+  ;; Push breakpoint to adapter
+  (dape--breakpoint-broadcast-update (current-buffer)))
 
-(defun dape--breakpoint-remove (overlay &optional skip-update)
-  "Remove OVERLAY breakpoint from buffer and session.
+(defun dape--breakpoint-delete-overlay (breakpoint)
+  (let ((buffer-or-path (dape--breakpoint-buffer-or-path breakpoint)))
+    (when-let ((buffer (and (bufferp buffer-or-path) buffer-or-path)))
+      (delete-overlay (dape--breakpoint-overlay-or-cons breakpoint))
+      (when (and
+             ;; Buffer margin has been touched
+             dape--original-margin
+             ;; Buffer has no breakpoint in margin
+             (not (cl-some (lambda (breakpoint)
+                             (not (dape--breakpoint-type breakpoint)))
+                           (dape--breakpoints-in-buffer))))
+        ;; Reset margin
+        (setq-local left-margin-width dape--original-margin
+                    dape--original-margin nil)
+        (when-let ((window (get-buffer-window buffer)))
+          (set-window-buffer window buffer))))))
+
+(defun dape--breakpoint-remove (breakpoint &optional skip-update)
+  "Remove BREAKPOINT breakpoint from buffer and session.
 When SKIP-UPDATE is non nil, does not notify adapter about removal."
-  (setq dape--breakpoints (delq overlay dape--breakpoints))
-  (let ((buffer (overlay-buffer overlay)))
-    (delete-overlay overlay)
-    (unless skip-update
-      (dolist (conn (dape--live-connections))
-        (dape--set-breakpoints-in-buffer conn buffer)))
-    (dape--margin-cleanup buffer))
+  (setq dape--breakpoints (delq breakpoint dape--breakpoints))
+  (unless skip-update
+    (dape--breakpoint-broadcast-update (dape--breakpoint-buffer-or-path breakpoint)))
+  (dape--breakpoint-delete-overlay breakpoint)
   (run-hooks 'dape-update-ui-hook))
 
-(defun dape--breakpoint-update (conn overlay breakpoint)
-  "Update breakpoint OVERLAY with BREAKPOINT plist from CONN."
-  (let ((id (plist-get breakpoint :id))
-        (verified (eq (plist-get breakpoint :verified) t)))
-    (overlay-put overlay 'dape-id id)
-    (overlay-put overlay 'dape-verified-plist
-                 (plist-put (overlay-get overlay 'dape-verified-plist)
-                            conn verified))
-    (run-hooks 'dape-update-ui-hook))
-  (when-let* ((old-buffer (overlay-buffer overlay))
-              (old-line (with-current-buffer old-buffer
-                          (line-number-at-pos (overlay-start overlay))))
-              (breakpoint
-               (append breakpoint
-                       ;; Default to current overlay as `:source'
-                       `(:source
-                         ,(or (when-let ((path (buffer-file-name old-buffer)))
-                                `(:path ,(dape--path conn path 'remote)))
-                              (with-current-buffer old-buffer
-                                dape--source))))))
-    (dape--with-request (dape--source-ensure conn breakpoint)
-      (when-let* ((marker (dape--object-to-marker conn breakpoint))
-                  (new-buffer (marker-buffer marker))
-                  (new-line (plist-get breakpoint :line)))
-        (unless (and (= old-line new-line)
-                     (eq old-buffer new-buffer))
-          (with-current-buffer new-buffer
-            (save-excursion
-              (goto-char (point-min))
-              (forward-line (1- new-line))
-              (dape-breakpoint-remove-at-point)
-              (pcase-let ((`(,beg ,end) (dape--overlay-region)))
-                (move-overlay overlay beg end new-buffer))
-              (pulse-momentary-highlight-region (line-beginning-position)
-                                                (line-beginning-position 2)
-                                                'next-error)))
-          (dape--repl-message
-           (format "* Breakpoint in %s moved from line %s to %s *"
-                   old-buffer old-line new-line))
-          (run-hooks 'dape-update-ui-hook))))))
+(defun dape--breakpoint-source-plist (conn buffer-or-path)
+  "Return source plist for CONN from BUFFER-OR-PATH."
+  (pcase buffer-or-path
+    ((and buffer (pred bufferp))
+     (or (cl-loop for (reference source-buffer) on dape--source-buffers by #'cddr
+                  when (eq buffer source-buffer) return
+                  `(:sourceReference ,reference))
+         `(:path ,(dape--path-remote conn (buffer-file-name buffer)))))
+    ((and path (pred stringp))
+     `(:path ,(dape--path-remote conn path)))))
 
-(defconst dape--breakpoint-args '(:log :expression :hits)
-  "Plist keys for breakpoint serialization.")
+(defun dape--breakpoint-update (conn breakpoint update)
+  "Update BREAKPOINT with UPDATE plist from CONN."
+  (with-slots (id verified type value) breakpoint
+    ;; Update struct
+    (setf id (plist-put id conn (plist-get update :id))
+          verified (plist-put verified conn
+                              (eq (plist-get update :verified) t)))
+    (run-hooks 'dape-update-ui-hook)
+    ;; Move breakpoints
+    (pcase-let ((`(,buffer-or-path . ,line)
+                 (dape--breakpoint-buffer-or-path-line breakpoint)))
+      ;; XXX Breakpoint overlay might be dead at this point as
+      ;;     another invocation of `dape--breakpoint-update' might
+      ;;     have deleted it.  If that is the reason for missing
+      ;;     buffer we are fine.
+      (when-let* (buffer-or-path
+                  ;; TODO Here we go opening buffers anyway, no good.
+                  (buffer (if (bufferp buffer-or-path) buffer-or-path
+                            (find-file-noselect buffer-or-path))))
+        (dape--with-request
+            (dape--source-ensure
+             conn (append ;; Default to current overlay as `:source'
+                   update `(:source ,(dape--breakpoint-source-plist conn buffer-or-path))))
+          (when-let* ((marker (dape--object-to-marker conn update))
+                      (new-buffer (marker-buffer marker))
+                      (new-line (plist-get update :line))
+                      ;; Should be a no op if buffer and line is the same
+                      ((not (and (= line new-line) (eq buffer new-buffer)))))
+            (dape--breakpoint-delete-overlay breakpoint)
+            (dape--with-line new-buffer new-line
+              (dape-breakpoint-remove-at-point 'skip-update)
+              (dape--breakpoint-set-overlay breakpoint)
+              (pulse-momentary-highlight-region
+               (line-beginning-position) (line-beginning-position 2) 'next-error))
+            ;; Sync breakpoint state (both from and to buffer)
+            (dape--breakpoint-broadcast-update buffer new-buffer)
+            (dape--message "Breakpoint in %s moved from line %s to %s"
+                           buffer line new-line))
+          (run-hooks 'dape-update-ui-hook))))))
 
 (defun dape-breakpoint-load (&optional file)
   "Load breakpoints from FILE.
@@ -3071,22 +3119,27 @@ Will use `dape-default-breakpoints-file' if FILE is nil."
   (interactive
    (list
     (read-file-name "Load breakpoints from file: ")))
-  (setq file
-        (or file dape-default-breakpoints-file))
+  (setq file (or file dape-default-breakpoints-file))
   (when (file-exists-p file)
     (dape-breakpoint-remove-all)
-    (cl-loop
-     with breakpoints = (with-temp-buffer
-                          (insert-file-contents file)
-                          (goto-char (point-min))
-                          (nreverse (read (current-buffer))))
-     for (file point . args) in breakpoints
-     for plist = (cl-mapcan 'list dape--breakpoint-args args)
-     do (ignore-errors
-          (with-current-buffer (find-file-noselect file)
-            (save-excursion
-              (goto-char point)
-              (apply #'dape--breakpoint-place plist)))))))
+    (cl-loop with breakpoints =
+             (with-temp-buffer
+               (insert-file-contents file)
+               (goto-char (point-min))
+               (nreverse (read (current-buffer))))
+             for (file line type value) in breakpoints do
+             (cond
+              ((find-buffer-visiting file)
+               (dape--with-line (find-file-noselect file) line
+                 (dape--breakpoint-place type value)))
+              (t ;; TODO Remove find-file-hook function at some point
+               (add-hook 'find-file-hook #'dape--breakpoint-find-file)
+               (push (dape--breakpoint-make
+                      :overlay-or-cons (cons file line)
+                      :type type :value value)
+                     dape--breakpoints))))
+    (apply #'dape--breakpoint-broadcast-update
+           (mapcar #'dape--breakpoint-buffer-or-path dape--breakpoints))))
 
 (defun dape-breakpoint-save (&optional file)
   "Save breakpoints to FILE.
@@ -3094,71 +3147,66 @@ Will use `dape-default-breakpoints-file' if FILE is nil."
   (interactive
    (list
     (read-file-name "Save breakpoints to file: ")))
-  (setq file
-        (or file dape-default-breakpoints-file))
+  (setq file (or file dape-default-breakpoints-file))
   (with-temp-buffer
     (insert
      ";; Generated by `dape-breakpoint-save'\n"
      ";; Load breakpoints with `dape-breakpoint-load'\n\n")
-    (cl-loop
-     for ov in dape--breakpoints
-     for file = (buffer-file-name (overlay-buffer ov))
-     for point = (overlay-start ov)
-     for args = (mapcar (apply-partially 'overlay-get ov) dape--breakpoint-args)
-     when (and file point)
-     collect (append (list file point) args) into breakpoints
-     finally do (prin1 breakpoints (current-buffer)))
+    (cl-loop for breakpoint in dape--breakpoints
+             for (buffer-or-path . line) =
+             (dape--breakpoint-buffer-or-path-line breakpoint)
+             for path = (if (bufferp buffer-or-path)
+                            (buffer-file-name buffer-or-path)
+                          buffer-or-path)
+             when path collect
+             `( ,path ,line
+                ,(dape--breakpoint-type breakpoint)
+                ,(dape--breakpoint-value breakpoint))
+             into serialized finally do
+             (prin1 serialized (current-buffer)))
     (write-file file)))
 
 
 ;;; Source buffers
 
-(defun dape--source (conn plist)
-  "Return source from PLIST for adapter CONN.
-Source is a number, string, buffer or nil if not available."
-  (let* ((source (plist-get plist :source))
-         (path (plist-get source :path))
-         (ref (plist-get source :sourceReference))
-         (buffer (plist-get dape--source-buffers ref)))
-    (or (and path (file-exists-p (dape--path conn path 'local)) path)
-        (and buffer (buffer-live-p buffer) buffer)
-        (and (numberp ref) (< 0 ref) ref))))
-
 (defun dape--source-ensure (conn plist cb)
   "Ensure that source object in PLIST exist for adapter CONN.
 See `dape-request' for expected CB signature."
-  (pcase (dape--source conn plist)
-    ((or (pred stringp) (pred bufferp)) (dape--request-return cb))
-    ((and (pred numberp) source-reference)
-     (let ((source (plist-get plist :source)))
-       (dape--with-request-bind
-           ((&key content mimeType &allow-other-keys) error)
-           (dape-request conn "source"
-                         (list :source source :sourceReference source-reference))
-         (cond
-          (error (dape--repl-message (format "%s" error) 'dape-repl-error-face))
-          (content
-           (let ((buffer
-                  (generate-new-buffer (format "*dape-source %s*"
-                                               (plist-get source :name)))))
-             (setq dape--source-buffers
-                   (plist-put dape--source-buffers
-                              (plist-get source :sourceReference) buffer))
-             (with-current-buffer buffer
-               (when mimeType
-                 (if-let ((mode
-                           (alist-get mimeType dape-mime-mode-alist nil nil 'equal)))
-                     (unless (eq major-mode mode)
-                       (funcall mode))
-                   (message "Unknown mime type %s, see `dape-mime-mode-alist'"
-                            mimeType)))
-               (setq-local buffer-read-only t
-                           dape--source source)
-               (let ((inhibit-read-only t))
-                 (erase-buffer)
-                 (insert content))
-               (goto-char (point-min)))
-             (dape--request-return cb)))))))))
+  (let* ((source (plist-get plist :source))
+         (path (plist-get source :path))
+         (refrence (plist-get source :sourceReference))
+         (buffer (plist-get dape--source-buffers refrence)))
+    (cond
+     ((or (and (stringp path) (file-exists-p (dape--path-local conn path)) path)
+          (and (buffer-live-p buffer) buffer))
+      (dape--request-return cb))
+     ((and (numberp refrence) (< 0 refrence) refrence)
+      (dape--with-request-bind
+          ((&key content mimeType &allow-other-keys) error)
+          (dape-request conn "source"
+                        (list :source source :sourceReference refrence))
+        (cond (error (dape--warn "%s" error))
+              (content
+               (let ((buffer
+                      (generate-new-buffer
+                       (format "*dape-source %s*" (plist-get source :name)))))
+                 (setq dape--source-buffers
+                       (plist-put dape--source-buffers
+                                  (plist-get source :sourceReference) buffer))
+                 (with-current-buffer buffer
+                   (when mimeType
+                     (if-let ((mode
+                               (alist-get mimeType dape-mime-mode-alist nil nil 'equal)))
+                         (unless (eq major-mode mode)
+                           (funcall mode))
+                       (message "Unknown mime type %s, see `dape-mime-mode-alist'"
+                                mimeType)))
+                   (setq buffer-read-only t)
+                   (let ((inhibit-read-only t))
+                     (erase-buffer)
+                     (insert content))
+                   (goto-char (point-min)))
+                 (dape--request-return cb)))))))))
 
 
 ;;; Stack frame source
@@ -3181,61 +3229,86 @@ See `dape-request' for expected CB signature."
     (delete-overlay dape--stack-position-overlay))
   (set-marker dape--overlay-arrow-position nil))
 
+(defun dape--stack-frame-display-1 (conn frame deepest-p)
+  "Display FRAME for adapter CONN as if DEEPEST-p.
+Helper for `dape--stack-frame-display'."
+  (dape--with-request (dape--source-ensure conn frame)
+    ;; An update event could have fired between call to
+    ;; `dape--stack-frame-cleanup' and callback, we have make sure
+    ;; that overlay is deleted before we are dropping the overlay
+    ;; reference
+    (dape--stack-frame-cleanup)
+    (when-let ((marker (dape--object-to-marker conn frame)))
+      (with-current-buffer (marker-buffer marker)
+        (dape--add-eldoc-hook)
+        (save-excursion
+          (goto-char (marker-position marker))
+          (setq dape--stack-position-overlay
+                (let ((ov (make-overlay (line-beginning-position)
+                                        (line-beginning-position 2))))
+                  (overlay-put ov 'face 'dape-source-line-face)
+                  (when deepest-p
+                    (when-let ((exception-description
+                                (dape--exception-description conn)))
+                      (overlay-put ov 'after-string
+                                   (propertize (concat exception-description "\n")
+                                               'face
+                                               'dape-exception-description-face))))
+                  ov)
+                fringe-indicator-alist
+                (unless deepest-p
+                  '((overlay-arrow . hollow-right-triangle))))
+          ;; Finally lets move arrow to point
+          (move-marker dape--overlay-arrow-position
+                       (line-beginning-position)))
+        (when-let ((window
+                    (display-buffer (marker-buffer marker)
+                                    dape-display-source-buffer-action)))
+          ;; Change selected window if not `dape-repl' buffer is selected
+          (unless (with-current-buffer (window-buffer)
+                    (memq major-mode '(dape-repl-mode)))
+            (select-window window))
+          (with-selected-window window
+            ;; XXX This code is running within timer context, which
+            ;;     does not play nice with `post-command-hook'.
+            ;;     Since hooks are runn'ed before the point is
+            ;;     actually moved.
+            (goto-char (marker-position marker))
+            ;; Here we are manually intervening to account for this.
+            ;; The following logic borrows from gud.el to interact
+            ;; with `hl-line'.
+            (when (featurep 'hl-line)
+	      (cond
+               (global-hl-line-mode (global-hl-line-highlight))
+	       ((and hl-line-mode hl-line-sticky-flag) (hl-line-highlight))))
+            (run-hooks 'dape-display-source-hook)))))))
+
 (defun dape--stack-frame-display (conn)
   "Update stack frame arrow marker for adapter CONN.
-`dape-display-source-buffer-action'."
+Buffer is displayed with `dape-display-source-buffer-action'."
   (dape--stack-frame-cleanup)
-  (when-let* (((dape--stopped-threads conn))
-              (frames (plist-get (dape--current-thread conn) :stackFrames))
-              (selected (dape--current-stack-frame conn))
-              (frame (cl-loop for cell on frames for (frame) = cell
-                              when (eq frame selected) return
-                              (cl-loop for frame in cell when
-                                       (dape--source conn frame)
-                                       return frame))))
-    (let ((deepest-p (eq selected (car frames))))
-      (dape--with-request (dape--source-ensure conn frame)
-        ;; An update event could have fired between call to
-        ;; `dape--stack-frame-cleanup' and callback, we have make
-        ;; sure that overlay is deleted before we are dropping the
-        ;; reference
-        (dape--stack-frame-cleanup)
-        (when-let ((marker (dape--object-to-marker conn frame)))
-          (with-current-buffer (marker-buffer marker)
-            (dape--add-eldoc-hook)
-            (save-excursion
-              (goto-char (marker-position marker))
-              (setq dape--stack-position-overlay
-                    (let ((ov (make-overlay (line-beginning-position)
-                                            (line-beginning-position 2))))
-                      (overlay-put ov 'face 'dape-source-line-face)
-                      (when deepest-p
-                        (when-let ((exception-description
-                                    (dape--exception-description conn)))
-                          (overlay-put ov 'after-string
-                                       (propertize (concat exception-description "\n")
-                                                   'face
-                                                   'dape-exception-description-face))))
-                      ov)
-                    fringe-indicator-alist
-                    (unless deepest-p
-                      '((overlay-arrow . hollow-right-triangle))))
-              ;; Finally lets move arrow to point
-              (move-marker dape--overlay-arrow-position
-                           (line-beginning-position)))
-            (when-let ((window
-                        (display-buffer (marker-buffer marker)
-                                        dape-display-source-buffer-action)))
-              ;; Change selected window if not dape-repl buffer is selected
-              (unless (with-current-buffer (window-buffer)
-                        (memq major-mode '(dape-repl-mode)))
-                (select-window window))
-              ;; FIXME Should be called with idle-timer as to
-              ;;       guarantee that we are not in `save-excursion'
-              ;;       context.  But this makes tests to hard write.
-              (with-selected-window window
-                (goto-char (marker-position marker))
-                (run-hooks 'dape-display-source-hook)))))))))
+  (when (dape--stopped-threads conn)
+    (let* ((selected (dape--current-stack-frame conn))
+           (thread (dape--current-thread conn))
+           (deepest-p (eq selected (car (plist-get thread :stackFrames)))))
+      (cl-flet ((displayable-frame ()
+                  (cl-loop with frames = (plist-get thread :stackFrames)
+                           for cell on frames for (frame . _rest) = cell
+                           when (eq frame selected) return
+                           (cl-loop for frame in cell
+                                    for source = (plist-get frame :source) when
+                                    (or (and-let* ((reference (plist-get source :sourceReference))
+                                                   ((< 0 reference))))
+                                        (and-let* ((remote-path (plist-get source :path))
+                                                   (path (dape--path-local conn remote-path))
+                                                   ((file-exists-p path)))))
+                                    return frame))))
+        ;; Check if frame source should be available, otherwise fetch all
+        (if-let ((frame (displayable-frame)))
+            (dape--stack-frame-display-1 conn frame deepest-p)
+          (dape--with-request (dape--stack-trace conn thread dape-stack-trace-levels)
+            (when-let ((frame (displayable-frame)))
+              (dape--stack-frame-display-1 conn frame deepest-p))))))))
 
 
 ;;; Info Buffers
@@ -3252,7 +3325,7 @@ Used there as scope index.")
 (defun dape--info-buffer-list ()
   "Return all live `dape-info-parent-mode'."
   (setq dape--info-buffers
-        (seq-filter 'buffer-live-p dape--info-buffers)))
+        (cl-delete-if-not #'buffer-live-p dape--info-buffers)))
 
 (defun dape--info-buffer-p (mode &optional identifier)
   "Is buffer of MODE with IDENTIFIER.
@@ -3460,12 +3533,14 @@ displayed."
 
 (defun dape--info-buffer-name (mode &optional identifier)
   "Create buffer name from MODE and IDENTIFIER."
-  (format "*dape-info %s*"
-          (if (eq 'dape-info-scope-mode mode)
-              (format "Scope <%s>" identifier)
-            (if-let ((name (alist-get mode dape--info-buffer-name-alist)))
-                name
-              (error "Unable to create mode from %s with %s" mode identifier)))))
+  (cond
+   ((eq 'dape-info-scope-mode mode)
+    (concat "*dape-info Scope*"
+            (unless (zerop identifier)
+              (format "<%s>" identifier))))
+   ((format "*dape-info %s*"
+            (or (alist-get mode dape--info-buffer-name-alist)
+                (error "Unable to create mode from %s with %s" mode identifier))))))
 
 (defun dape--info-set-related-buffers ()
   "Store related buffers in `dape--info-buffer-related'."
@@ -3504,9 +3579,13 @@ displayed."
 
 (dape--command-at-line dape-info-breakpoint-goto (dape--info-breakpoint)
   "Goto breakpoint at line in dape info buffer."
-  (when-let* ((buffer (overlay-buffer dape--info-breakpoint)))
+  (pcase-let* ((`(,buffer-or-path . ,line)
+                (dape--breakpoint-buffer-or-path-line dape--info-breakpoint))
+               (buffer (if (bufferp buffer-or-path) buffer-or-path
+                         (find-file-noselect buffer-or-path))))
     (with-selected-window (display-buffer buffer dape-display-source-buffer-action)
-      (goto-char (overlay-start dape--info-breakpoint)))))
+      (goto-char (point-min))
+      (forward-line (1- line)))))
 
 (dape--command-at-line dape-info-breakpoint-delete (dape--info-breakpoint)
   "Delete breakpoint at line in dape info buffer."
@@ -3515,19 +3594,19 @@ displayed."
 
 (dape--command-at-line dape-info-breakpoint-log-edit (dape--info-breakpoint)
   "Edit breakpoint at line in dape info buffer."
-  (let ((edit-fn
-         (cond
-          ((overlay-get dape--info-breakpoint :log)
-           'dape-breakpoint-log)
-          ((overlay-get dape--info-breakpoint :expression)
-           'dape-breakpoint-expression)
-          ((overlay-get dape--info-breakpoint :hits)
-           'dape-breakpoint-hits)
-          ((user-error "Unable to edit breakpoint on line without log or expression breakpoint")))))
-    (when-let* ((buffer (overlay-buffer dape--info-breakpoint)))
-      (with-selected-window (display-buffer buffer dape-display-source-buffer-action)
-        (goto-char (overlay-start dape--info-breakpoint))
-        (call-interactively edit-fn)))))
+  (pcase-let* ((`(,buffer-or-path . ,line)
+                (dape--breakpoint-buffer-or-path-line dape--info-breakpoint))
+               (buffer (if (bufferp buffer-or-path) buffer-or-path
+                         (find-file-noselect buffer-or-path))))
+    (with-selected-window (display-buffer buffer dape-display-source-buffer-action)
+      (goto-char (point-min))
+      (forward-line (1- line))
+      (call-interactively
+       (pcase (dape--breakpoint-type dape--info-breakpoint)
+         ('log #'dape-breakpoint-log)
+         ('expression #'dape-breakpoint-expression)
+         ('hits #'dape-breakpoint-hits)
+         (_ (user-error "Unable to edit breakpoint on line without log or expression breakpoint")))))))
 
 (dape--buffer-map dape-info-breakpoints-line-map dape-info-breakpoint-goto
   (define-key map "D" 'dape-info-breakpoint-delete)
@@ -3544,8 +3623,8 @@ displayed."
   (run-hooks 'dape-update-ui-hook))
 
 (dape--buffer-map dape-info-data-breakpoints-line-map nil
-  (define-key map "D" 'dape-info-data-breakpoint-delete
-  (define-key map "d" 'dape-info-data-breakpoint-delete)))
+  (define-key map "D" 'dape-info-data-breakpoint-delete)
+  (define-key map "d" 'dape-info-data-breakpoint-delete))
 
 (dape--command-at-line dape-info-exceptions-toggle (dape--info-exception)
   "Toggle exception at line in dape info buffer."
@@ -3559,102 +3638,83 @@ displayed."
 
 (define-derived-mode dape-info-breakpoints-mode dape-info-parent-mode
   "Breakpoints"
-  :interactive nil
-  "Major mode for Dape info breakpoints.")
+  "Major mode for Dape info breakpoints."
+  :interactive nil)
 
 (cl-defmethod dape--info-revert (&context (major-mode (eql dape-info-breakpoints-mode))
                                           &optional _ignore-auto _noconfirm _preserve-modes)
   "Revert buffer function for MAJOR-MODE `dape-info-breakpoints-mode'."
   (dape--info-update-with
-    (let ((table (make-gdb-table))
-          ;; Show Hits only when it's supported e.i. when breakpoint
-          ;; id is included in the "stopped" event.
-          (with-hits-p
-           (cl-find-if (lambda (ov)
-                         (when-let ((hits (overlay-get ov 'dape-hits)))
-                           (> hits 0)))
-                       dape--breakpoints)))
-      (gdb-table-add-row table
-                         (list "A" "Type" "Where/On" (when with-hits-p "Hit")))
+    (let ((table (make-gdb-table)))
+      (gdb-table-add-row table (list "A" "Type " "Where/On"))
       (cl-loop
        for breakpoint in dape--breakpoints
-       for buffer = (overlay-buffer breakpoint)
-       for verified-plist = (overlay-get breakpoint 'dape-verified-plist)
-       for verified-p = (or
-                         ;; No live connection show every breakpoint
-                         ;; as verified
-                         (not (dape--live-connection 'last t))
-                         (cl-find-if (apply-partially 'plist-get verified-plist)
-                                     (dape--live-connections)))
-       for line = (with-current-buffer buffer
-                    (line-number-at-pos (overlay-start breakpoint)))
-       do (gdb-table-add-row
-           table
-           (list
-            (if verified-p
-                (propertize "y" 'font-lock-face font-lock-warning-face)
-              "n")
-            (cond
-             ((overlay-get breakpoint :log) "Log")
-             ((overlay-get breakpoint :hits) "Hits")
-             ((overlay-get breakpoint :expression) "Cond")
-             (t "Break"))
+       for (buffer-or-path . line) =
+       (dape--breakpoint-buffer-or-path-line breakpoint)
+       for verified-plist = (dape--breakpoint-verified breakpoint)
+       for verified-p =
+       (or ;; No live connection show every breakpoint as verified
+        (not (dape--live-connection 'last t))
+        (cl-find-if (apply-partially 'plist-get verified-plist)
+                    (dape--live-connections)))
+       do
+       (gdb-table-add-row
+        table
+        (list
+         (if-let ((hits (dape--breakpoint-hits breakpoint)))
+             (format "%s" hits)
+           (if verified-p
+               (propertize "y" 'font-lock-face 'font-lock-warning-face)
+             (propertize "n" 'font-lock-face 'font-lock-doc-face)))
+         (pcase (dape--breakpoint-type breakpoint)
+           ('log        "Log  ")
+           ('hits       "Hits ")
+           ('expression "Cond ")
+           (_           "Break"))
+         (pcase buffer-or-path
+           ((and buffer (pred bufferp))
             (concat
-             (if-let (file (buffer-file-name buffer))
+             (if-let ((file (buffer-file-name buffer)))
                  (dape--format-file-line file line)
-               (buffer-name buffer))
-             (with-current-buffer buffer
-               (save-excursion
-                 (goto-char (overlay-start breakpoint))
-                 (truncate-string-to-width
-                  (concat " " (string-trim (or (thing-at-point 'line) "")))
-                  dape-info-breakpoint-source-line-max))))
-            (when-let* (with-hits-p
-                        (hits (overlay-get breakpoint 'dape-hits)))
-              (format "%s" hits)))
-           (append
-              (list
-               'dape--info-breakpoint breakpoint
-               'keymap dape-info-breakpoints-line-map
-               'mouse-face 'highlight
-               'help-echo "mouse-2, RET: visit breakpoint")
-              (unless verified-p
-                '(face shadow)))))
+               (format "%s:%d" (buffer-name buffer) line))
+             (dape--with-line buffer line
+               (concat " " (string-trim (or (thing-at-point 'line) ""))))))
+           ((and path (pred stringp))
+            (dape--format-file-line path line))))
+        `( dape--info-breakpoint ,breakpoint
+           keymap ,dape-info-breakpoints-line-map
+           mouse-face highlight
+           help-echo "mouse-2, RET: visit breakpoint"
+           ,@(unless verified-p '(face shadow)))))
       (cl-loop
        for plist in dape--data-breakpoints do
        (gdb-table-add-row
         table
-        (list
-         (propertize "y" 'font-lock-face font-lock-warning-face)
-         "Data"
-         (format "%s %s %s"
-                 (propertize
-                  (plist-get plist :name)
-                  'font-lock-face
-                  'font-lock-variable-name-face)
-                 (plist-get plist :accessType)
-                 (when-let ((data-id (plist-get plist :dataId)))
-                   (format "(%s)" data-id)))
-         nil)
+        (list (propertize "y" 'font-lock-face 'font-lock-warning-face)
+              "Data "
+              (format "%s %s %s"
+                      (propertize
+                       (plist-get plist :name)
+                       'font-lock-face
+                       'font-lock-variable-name-face)
+                      (plist-get plist :accessType)
+                      (when-let ((data-id (plist-get plist :dataId)))
+                        (format "(%s)" data-id))))
         (list 'dape--info-data-breakpoint plist
               'keymap dape-info-data-breakpoints-line-map)))
       (cl-loop
        for exception in dape--exceptions do
        (gdb-table-add-row
         table
-        (list
-         (if (plist-get exception :enabled)
-             (propertize "y" 'font-lock-face font-lock-warning-face)
-           (propertize "n" 'font-lock-face font-lock-doc-face))
-         "Excep"
-         (format "%s" (plist-get exception :label))
-         nil)
-        (list
-         'dape--info-exception exception
-         'mouse-face 'highlight
-         'keymap dape-info-exceptions-line-map
-         'help-echo "mouse-2, RET: toggle exception")))
-      (setf (gdb-table-right-align table) t)
+        (list (if (plist-get exception :enabled)
+                  (propertize "y" 'font-lock-face 'font-lock-warning-face)
+                (propertize "n" 'font-lock-face 'font-lock-doc-face))
+              "Excep"
+              (format "%s" (plist-get exception :label)))
+        (list 'dape--info-exception exception
+              'mouse-face 'highlight
+              'keymap dape-info-exceptions-line-map
+              'help-echo "mouse-2, RET: toggle exception")))
       (insert (gdb-table-string table " ")))))
 
 
@@ -3711,9 +3771,10 @@ See `dape-request' for expected CB signature."
                                      start-time dape-info--threads-tt-bench)
                                     (current-time))
                        (not (member conn dape-info--threads-bench)))
-              (dape--repl-message
-               "* Disabling stack trace info in Threads buffer for connection (slow) *"
-               'dape-repl-error-face)
+              ;; TODO Apply to all future connections independent on
+              ;;      type
+              (dape--warn
+               "Disabling stack trace info in Threads buffer for connection (slow)")
               (push conn dape-info--threads-bench))
             ;; When all request have resolved return
             (when (length= threads (setf responses (1+ responses)))
@@ -3775,7 +3836,7 @@ See `dape-request' for expected CB signature."
                                (path (thread-first top-stack
                                                    (plist-get :source)
                                                    (plist-get :path)))
-                               (path (dape--path conn path 'local))
+                               (path (dape--path-local conn path))
                                (line (plist-get top-stack :line)))
                      (concat " of " (dape--format-file-line path line)))
                    (when-let ((dape-info-thread-buffer-addresses)
@@ -3827,8 +3888,7 @@ See `dape-request' for expected CB signature."
 Create table from CURRENT-STACK-FRAME and STACK-FRAMES and insert into
 current buffer with CONN config."
   (cl-loop with table = (make-gdb-table)
-           for frame in stack-frames
-           do
+           for frame in stack-frames do
            (gdb-table-add-row
             table
             (list
@@ -3839,10 +3899,9 @@ current buffer with CONN config."
                           (path (thread-first frame
                                               (plist-get :source)
                                               (plist-get :path)))
-                          (path (dape--path conn path 'local)))
+                          (path (dape--path-local conn path)))
                 (concat " of "
-                        (dape--format-file-line path
-                                                (plist-get frame :line))))
+                        (dape--format-file-line path (plist-get frame :line))))
               (when-let ((dape-info-stack-buffer-addresses)
                          (ref
                           (plist-get frame :instructionPointerReference)))
@@ -3978,14 +4037,13 @@ current buffer with CONN config."
                          dape--connection)))
       (cl-loop with sources = (dape--sources conn)
                with table = (make-gdb-table)
-               for source in (reverse sources)
-               do (gdb-table-add-row table
-                                     (list (concat (plist-get source :name) " "))
-                                     (list
-                                      'dape--info-source source
-                                      'mouse-face 'highlight
-                                      'keymap dape-info-sources-line-map
-                                      'help-echo "mouse-2, RET: goto source"))
+               for source in (reverse sources) do
+               (gdb-table-add-row
+                table (list (concat (plist-get source :name) " "))
+                (list 'dape--info-source source
+                      'mouse-face 'highlight
+                      'keymap dape-info-sources-line-map
+                      'help-echo "mouse-2, RET: goto source"))
                finally (insert (gdb-table-string table " "))))))
 
 
@@ -4048,7 +4106,6 @@ current buffer with CONN config."
         ;;      supporting it.
         ((&key dataId description accessTypes &allow-other-keys) error)
         (dape-request conn "dataBreakpointInfo"
-                      ;; TODO Find and test
                       (if (eq dape--info-ref 'watch)
                           (list :name name
                                 :frameId (plist-get (dape--current-stack-frame conn) :id))
@@ -4337,81 +4394,65 @@ or \\[dape-info-watch-abort-changes] to abort changes")))
 (defvar dape--repl-prompt "> "
   "Dape repl prompt.")
 
-(defun dape--repl-message (msg &optional face)
-  "Insert MSG with FACE in *dape-repl* buffer.
-Handles newline."
-  (when (and (stringp msg) (not (string-empty-p msg)))
-    (when (eql (aref msg (1- (length msg))) ?\n)
-      (setq msg (substring msg 0 (1- (length msg)))))
-    (setq msg (concat "\n" msg))
-    (if (not (get-buffer-window "*dape-repl*"))
-        (when (stringp msg)
-          (message "%s" (propertize (format "%s" (string-trim msg)) 'face face)))
-      (cond
-       (dape--repl-insert-text-guard
-        (run-with-timer 0.1 nil 'dape--repl-message msg))
-       (t
-        (let ((dape--repl-insert-text-guard t))
-          (when-let ((buffer (get-buffer "*dape-repl*")))
-            (with-current-buffer buffer
-              (let (start)
-                (if comint-last-prompt
-                    (goto-char (1- (marker-position (car comint-last-prompt))))
-                  (goto-char (point-max)))
-                (setq start (point-marker))
-                (let ((inhibit-read-only t))
-                  (insert (apply 'propertize msg
-                                 (when face (list 'font-lock-face face)))))
-                (goto-char (point-max))
-                ;; HACK Run hooks as if comint-output-filter was executed
-                ;;      Could not get comint-output-filter to work by moving
-                ;;      process marker. Comint removes forgets last prompt
-                ;;      and everything goes to shit.
-                (when-let ((process (get-buffer-process buffer)))
-                  (set-marker (process-mark process)
-                              (point-max)))
-                (let ((comint-last-output-start start))
-                  (run-hook-with-args 'comint-output-filter-functions msg)))))))))))
+(defun dape--repl-insert (string)
+  "Insert STRING into REPL.
+If REPL buffer is not live STRING will be displayed in minibuffer."
+  (when (and (stringp string) (not (string-empty-p string)))
+    ;; Pop duplicate newline
+    (when (eql (aref string (1- (length string))) ?\n)
+      (setq string (substring string 0 (1- (length string)))))
+    (setq string (concat "\n" string))
+    (if-let ((buffer (get-buffer "*dape-repl*")))
+        (with-current-buffer buffer
+          (let (start)
+            (if comint-last-prompt
+                (goto-char (1- (marker-position (car comint-last-prompt))))
+              (goto-char (point-max)))
+            (setq start (point-marker))
+            (let ((inhibit-read-only t))
+              (insert string))
+            (goto-char (point-max))
+            ;; HACK Run hooks as if comint-output-filter was executed
+            ;;      Could not get comint-output-filter to work by moving
+            ;;      process marker. Comint removes forgets last prompt
+            ;;      and everything goes to shit.
+            (when-let ((process (get-buffer-process buffer)))
+              (set-marker (process-mark process)
+                          (point-max)))
+            (let ((comint-last-output-start start))
+              (run-hook-with-args 'comint-output-filter-functions string))))
+      ;; Fallback to `message' if repl buffer closed
+      (message (string-trim string)))))
+
+(defun dape--repl-insert-error (string)
+  "Insert STRING into REPL with error face."
+  (dape--repl-insert (propertize string 'font-lock-face 'dape-repl-error-face)))
 
 (defun dape--repl-insert-prompt ()
   "Insert `dape--repl-insert-prompt' into repl."
-  (cond
-   (dape--repl-insert-text-guard
-    (run-with-timer 0.01 nil 'dape--repl-insert-prompt))
-   (t
-    (let ((dape--repl-insert-text-guard t))
-      (when-let* ((buffer (get-buffer "*dape-repl*"))
-                  (dummy-process (get-buffer-process buffer)))
-        (comint-output-filter dummy-process dape--repl-prompt))))))
+  (when-let* ((buffer (get-buffer "*dape-repl*"))
+              (dummy-process (get-buffer-process buffer)))
+    (comint-output-filter dummy-process dape--repl-prompt)))
 
 (defun dape--repl-update-variable (point variable)
   "Insert VARIABLE at POINT in *dape-repl* buffer.
 VARIABLE is expected to be the string representation of a varable."
-  (cond
-   (dape--repl-insert-text-guard
-    (run-with-timer 0.01 nil 'dape--repl-update-variable
-                    point variable))
-   (t
-    (let ((dape--repl-insert-text-guard t))
-      (when-let ((buffer (get-buffer "*dape-repl*")))
-        (with-current-buffer buffer
-          (when-let ((start
-                      (save-excursion
-                        (previous-single-property-change point
-                                                         'dape--repl-variable)))
-                     (end
-                      (save-excursion
-                        (next-single-property-change point
-                                                     'dape--repl-variable))))
-            (save-window-excursion
-              (let ((inhibit-read-only t)
-                    (line (line-number-at-pos (point) t)))
-                (delete-region start end)
-                (goto-char start)
-                (insert variable)
-                (ignore-errors
-                  (goto-char (point-min))
-                  (forward-line (1- line))))))))))))
+  (when-let ((buffer (get-buffer "*dape-repl*")))
+    (with-current-buffer buffer
+      (when-let ((start (save-excursion
+                          (previous-single-property-change
+                           point 'dape--repl-variable)))
+                 (end (save-excursion (next-single-property-change
+                                       point 'dape--repl-variable))))
+        (save-window-excursion
+          (let ((inhibit-read-only t)
+                (line (line-number-at-pos (point) t)))
+            (delete-region start end)
+            (goto-char start)
+            (insert variable)
+            (ignore-errors
+              (goto-char (point-min))
+              (forward-line (1- line)))))))))
 
 (dape--command-at-line dape-repl-scope-toggle (dape--info-path
                                                dape--repl-variable)
@@ -4486,24 +4527,10 @@ Send INPUT to DUMMY-PROCESS."
      ;; Evaluate expression
      (t
       (dape--repl-insert-prompt)
-      (let ((conn (or (dape--live-connection 'stopped t)
-                      (dape--live-connection 'last)))
-            (input (string-trim (substring-no-properties input))))
-        (dape--with-request-bind
-            ((&whole body &key variablesReference result &allow-other-keys) error)
-            (dape--evaluate-expression conn (plist-get (dape--current-stack-frame conn) :id)
-                                       input "repl")
-          (cond
-           (error
-            (dape--repl-message error 'dape-repl-error-face))
-           ((and-let* (((numberp variablesReference))
-                       ((not (zerop variablesReference)))))
-            (dape--repl-create-variable-table conn
-                                              (plist-put body :name input)
-                                              #'dape--repl-message))
-           (t
-            (dape--update conn 'variables nil)
-            (dape--repl-message result)))))))))
+      (dape-evaluate-expression
+       (or (dape--live-connection 'stopped t)
+           (dape--live-connection 'last))
+       (string-trim (substring-no-properties input)))))))
 
 (defun dape--repl-completion-at-point ()
   "Completion at point function for *dape-repl* buffer."
@@ -4717,69 +4744,68 @@ Empty input will rerun last command.\n\n"
     (setq dape--inlay-hint-overlays
           (cl-loop for inlay-hint in (cons new-head dape--inlay-hint-overlays)
                    for i from 0
-                   if (< i (if (eq dape-inlay-hints t)
-                               2
-                             dape-inlay-hints))
+                   if (< i (if (eq dape-inlay-hints t) 2 dape-inlay-hints))
                    collect inlay-hint
                    else do (delete-overlay inlay-hint)))))
 
 (defun dape--inlay-hint-update-1 (scopes)
   "Helper for `dape--inlay-hint-update-1'.
 Update `dape--inlay-hint-overlays' from SCOPES."
-  (cl-loop with symbols =
-           (cl-loop for inlay-hint in dape--inlay-hint-overlays
-                    when (overlayp inlay-hint)
-                    append (overlay-get inlay-hint 'dape-symbols))
-           for scope in scopes do
-           (cl-loop for variable in (plist-get scope :variables)
-                    while symbols do
-                    (cl-loop for name = (plist-get variable :name)
-                             for cons = (assoc name symbols)
-                             while cons
-                             for (_ old-value) = cons
-                             for value = (plist-get variable :value)
-                             for updated-p = (and old-value
-                                                  (not (equal old-value value)))
-                             do
-                             (setcdr cons (list value updated-p))
-                             (setf symbols (delq cons symbols)))))
+  ;; Match variables with inlay hints and mark update
+  (cl-loop
+   with symbols =
+   (cl-loop for inlay-hint in dape--inlay-hint-overlays
+            when (overlayp inlay-hint)
+            append (overlay-get inlay-hint 'dape-symbols))
+   for scope in (reverse scopes) do
+   (cl-loop for variable in (plist-get scope :variables)
+            for new = (plist-get variable :value)
+            for var-name = (plist-get variable :name) do
+            (cl-loop for cons in symbols for (hint-name old) = cons
+                     for updated-p = (and old (not (equal old new)))
+                     when (equal var-name hint-name) do
+                     (setcdr cons (list new updated-p)))))
+  ;; Format strings
   (cl-loop
    for inlay-hint in dape--inlay-hint-overlays
    when (overlayp inlay-hint) do
-   (cl-loop
-    with symbols = (overlay-get inlay-hint 'dape-symbols)
-    for (symbol value update) in  symbols
-    when value collect
-    (concat
-     (propertize (format "%s:" symbol)
-                 'face 'dape-inlay-hint-face
-                 'mouse-face 'highlight
-                 'keymap
-                 (let ((map (make-sparse-keymap))
-                       (sym symbol))
-                   (define-key map [mouse-1]
-                               (lambda (event)
-                                 (interactive "e")
-                                 (save-selected-window
-                                   (let ((start (event-start event)))
-                                     (select-window (posn-window start))
-                                     (save-excursion
-                                       (goto-char (posn-point start))
-                                       (dape-watch-dwim sym nil t))))))
-                   map)
-                 'help-echo
-                 (format "mouse-2: add `%s' to watch" symbol))
-     " "
-     (propertize (truncate-string-to-width
-                  (substring value 0 (string-match-p "\n" value))
-                  dape-inlay-hints-variable-name-max nil nil t)
-                 'help-echo value
-                 'face (if update 'dape-inlay-hint-highlight-face
-                         'dape-inlay-hint-face)))
-    into after-string finally do
-    (thread-last (mapconcat 'identity after-string dape--inlay-hint-seperator)
-                 (format "  %s")
-                 (overlay-put inlay-hint 'after-string)))))
+   (cl-loop with symbols = (overlay-get inlay-hint 'dape-symbols)
+            for (symbol value update) in symbols
+            when value collect
+            (concat
+             (propertize
+              (format "%s:" symbol)
+              'face 'dape-inlay-hint-face
+              'mouse-face 'highlight
+              'keymap
+              (let ((map (make-sparse-keymap))
+                    (sym symbol))
+                (define-key map [mouse-1]
+                            (lambda (event)
+                              (interactive "e")
+                              (save-selected-window
+                                (let ((start (event-start event)))
+                                  (select-window (posn-window start))
+                                  (save-excursion
+                                    (goto-char (posn-point start))
+                                    (dape-watch-dwim sym nil t))))))
+                map)
+              'help-echo
+              (format "mouse-2: add `%s' to watch" symbol))
+             " "
+             (propertize
+              (truncate-string-to-width
+               (substring value 0 (string-match-p "\n" value))
+               dape-inlay-hints-variable-name-max nil nil t)
+              'help-echo value
+              'face (if update 'dape-inlay-hint-highlight-face
+                      'dape-inlay-hint-face)))
+            into after-string finally do
+            (when after-string
+              (thread-last (mapconcat 'identity after-string
+                                      dape--inlay-hint-seperator)
+                           (format "  %s")
+                           (overlay-put inlay-hint 'after-string))))))
 
 (defun dape-inlay-hints-update ()
   "Update inlay hints."
@@ -4834,7 +4860,7 @@ Update `dape--inlay-hint-overlays' from SCOPES."
   (pcase-let*
       ((`(,key ,config ,error-message ,hint-rows) dape--minibuffer-cache)
        (str (string-trim (buffer-substring (minibuffer-prompt-end) (point-max))))
-       (`(,hint-key ,hint-config) (ignore-errors (dape--config-from-string str t)))
+       (`(,hint-key ,hint-config) (ignore-errors (dape--config-from-string str)))
        (default-directory
         (or (with-current-buffer dape--minibuffer-last-buffer
               (ignore-errors (dape--guess-root hint-config)))
@@ -4915,7 +4941,7 @@ Update `dape--inlay-hint-overlays' from SCOPES."
              ((zerop (% len 2))))))
 
 (defun dape--config-eval-value (value &optional skip-functions check
-                                skip-interactive)
+                                      skip-interactive)
   "Return recursively evaluated VALUE.
 If SKIP-FUNCTIONS is non nil return VALUE as is if `functionp' is non
 nil.
@@ -4983,11 +5009,11 @@ configurations: %s"
                                      (seq-partition options 2)
                                      (copy-tree base-config)))))
 
-(defun dape--config-from-string (str &optional loose-parsing)
-  "Return list of ALIST-KEY CONFIG from STR.
-Expects STR format of \”ALIST-KEY PLIST-KEY PLIST-VALUE\” etc.
-Where ALIST-KEY exists in `dape-configs'.
-If LOOSE-PARSING is non nil ignore arg parsing failures."
+(defun dape--config-from-string (str)
+  "Return list of (KEY CONFIG) from STR.
+Expects STR format:
+\”ALIST-KEY KEY VALUE ... - ENV= PROGRAM ARG ...\”
+Where ALIST-KEY exists in `dape-configs'."
   (let ((buffer (current-buffer))
         name read-config base-config)
     (with-temp-buffer
@@ -5003,28 +5029,46 @@ If LOOSE-PARSING is non nil ignore arg parsing failures."
       (unless (alist-get name dape-configs)
         (user-error "No configuration named `%s'" name))
       (setq base-config (copy-tree (alist-get name dape-configs)))
-      (condition-case _
-          (while
-              ;; Do we have non whitespace chars after `point'?
-              (thread-first (buffer-substring (point) (point-max))
-                            (string-trim)
-                            (string-empty-p)
-                            (not))
-            (push (read (current-buffer))
-                  read-config))
-        (error
-         (unless loose-parsing
-           (user-error "Unable to parse options %s"
-                       (buffer-substring (point) (point-max)))))))
-    (when (and loose-parsing
-               (not (dape--plistp read-config)))
-      (pop read-config))
-    (setq read-config (nreverse read-config))
-    (unless (dape--plistp read-config)
-      (user-error "Bad options format, see `dape-configs'"))
-    (cl-loop for (key value) on read-config by 'cddr
-             do (setq base-config (plist-put base-config key value)))
-    (list name base-config)))
+      (ignore-errors
+        (while
+            ;; Do we have non whitespace chars after `point'?
+            (thread-first (buffer-substring (point) (point-max))
+                          (string-trim)
+                          (string-empty-p)
+                          (not))
+          (let ((thing (read (current-buffer))))
+            (cond
+             ((eq thing '-)
+              (cl-loop
+               with command = (split-string-shell-command
+                               (buffer-substring (point) (point-max)))
+               with setvar = "\\`\\([A-Za-z_][A-Za-z0-9_]*\\)=\\(.*\\)\\'"
+               for cell on command for (program . args) = cell
+               when (string-match setvar program)
+               append `(,(intern (concat ":" (match-string 1 program)))
+                        ,(match-string 2 program))
+               into env and do (setq program nil)
+               when (or (and (not program) (not args)) program) do
+               (setq read-config
+                     (append (nreverse
+                              (append (when program `(:program ,program))
+                                      (when args `(:args ,(apply 'vector args)))
+                                      (when env `(:env ,env))))
+                             read-config))
+               ;; Stop and eat rest of buffer
+               and return (goto-char (point-max))))
+             (t
+              (push thing read-config))))))
+      ;; Try to save half baked plist (value missing)
+      (when (not (dape--plistp read-config))
+        (pop read-config))
+      (unless (dape--plistp read-config)
+        (user-error "Bad options format, see `dape-configs'"))
+      (setq read-config (nreverse read-config))
+      ;; Apply properties from parsed PLIST to `dape-configs' item
+      (cl-loop for (key value) on read-config by 'cddr do
+               (setq base-config (plist-put base-config key value)))
+      (list name base-config))))
 
 (defun dape--config-diff (key post-eval)
   "Create a diff of config KEY and POST-EVAL config."
@@ -5083,15 +5127,12 @@ nil."
   (let (key args args-bounds last-p)
     (save-excursion
       (goto-char (minibuffer-prompt-end))
-      (setq key
-            (ignore-errors (read (current-buffer))))
+      (setq key (ignore-errors (read (current-buffer))))
       (ignore-errors
         (while t
           (setq last-p (point))
-          (push (read (current-buffer))
-                args)
-          (push (cons last-p (point))
-                args-bounds))))
+          (push (read (current-buffer)) args)
+          (push (cons last-p (point)) args-bounds))))
     (setq args (nreverse args)
           args-bounds (nreverse args-bounds))
     (cond
@@ -5106,7 +5147,8 @@ nil."
               (mapcar (lambda (suggestion) (format "%s " suggestion))
                       dape--minibuffer-suggestions))))
      ;; Complete config args
-     ((and (alist-get key dape-configs)
+     ((and (not (plist-member args '-))
+           (alist-get key dape-configs)
            (or (and (plistp args)
                     (thing-at-point 'whitespace))
                (cl-loop with p = (point)
@@ -5123,9 +5165,7 @@ nil."
                        for (key _) on plist by 'cddr
                        collect (format "%s " key)))))
      (t
-      (list (point) (point)
-            nil
-            :exclusive 'no)))))
+      (list (point) (point) nil :exclusive 'no)))))
 
 (defun dape--read-config ()
   "Read config from minibuffer.
@@ -5147,14 +5187,19 @@ See `dape--config-mode-p' how \"valid\" is defined."
            ;; Take first valid history item
            (seq-find (lambda (str)
                        (ignore-errors
-                         (member (thread-first (dape--config-from-string str)
-                                               (car)
-                                               (dape--config-to-string nil))
-                                 suggested-configs)))
+                         (thread-first (dape--config-from-string str) (car)
+                                       (dape--config-to-string nil)
+                                       (member suggested-configs))))
                      dape-history)
            ;; Take first suggested config if only one exist
            (and (length= suggested-configs 1)
-                (car suggested-configs)))))
+                (car suggested-configs))))
+         (default-value
+          (when initial-contents
+            (pcase-let ((`(,key ,config) (dape--config-from-string initial-contents)))
+              (if dape-history-evaluated (format "%s " key)
+                (dape--config-to-string
+                 key (ignore-errors (dape--config-eval key config))))))))
     (setq dape--minibuffer-last-buffer (current-buffer)
           dape--minibuffer-cache nil)
     (minibuffer-with-setup-hook
@@ -5176,31 +5221,36 @@ See `dape--config-mode-p' how \"valid\" is defined."
           (add-hook 'after-change-functions
                     #'dape--minibuffer-hint nil t)
           (dape--minibuffer-hint))
-      (pcase-let* ((str
-                    (let ((history-add-new-input nil))
-                      (read-from-minibuffer
-                       "Run adapter: "
-                       initial-contents
-                       (let ((map (make-sparse-keymap)))
-                         (set-keymap-parent map minibuffer-local-map)
-                         (define-key map (kbd "C-M-i") #'completion-at-point)
-                         (define-key map "\t" #'completion-at-point)
-                         (define-key map (kbd "C-c C-k")
-                                     (lambda ()
-                                       (interactive)
-                                       (pcase-let* ((str (buffer-substring (minibuffer-prompt-end)
-                                                                           (point-max)))
-                                                    (`(,key) (dape--config-from-string str t)))
-                                         (delete-region (minibuffer-prompt-end) (point-max))
-                                         (insert (format "%s" key) " "))))
-                         map)
-                       nil 'dape-history initial-contents)))
-                   (`(,key ,config)
-                    (dape--config-from-string (substring-no-properties str) t))
-                   (evaled-config (dape--config-eval key config)))
-        (setq dape-history
-              (cons (dape--config-to-string key evaled-config)
-                    dape-history))
+      (pcase-let*
+          ((str
+            (let ((history-add-new-input (not dape-history-evaluated)))
+              (read-from-minibuffer
+               "Run adapter: "
+               initial-contents
+               (let ((map (make-sparse-keymap)))
+                 (set-keymap-parent map minibuffer-local-map)
+                 (define-key map (kbd "C-M-i") #'completion-at-point)
+                 (define-key map "\t" #'completion-at-point)
+                 ;; This mapping is shadowed by `next-history-element'
+                 ;; future history (default-value)
+                 (define-key map (kbd "C-c C-k")
+                             (lambda ()
+                               (interactive)
+                               (pcase-let*
+                                   ((str (buffer-substring (minibuffer-prompt-end)
+                                                           (point-max)))
+                                    (`(,key) (dape--config-from-string str)))
+                                 (delete-region (minibuffer-prompt-end)
+                                                (point-max))
+                                 (insert (format "%s" key) " "))))
+                 map)
+               nil 'dape-history default-value)))
+           (`(,key ,config)
+            (dape--config-from-string (substring-no-properties str)))
+           (evaled-config (dape--config-eval key config)))
+        (when dape-history-evaluated
+          (setq dape-history (cons (dape--config-to-string key evaled-config)
+                                   dape-history)))
         evaled-config))))
 
 
@@ -5210,27 +5260,28 @@ See `dape--config-mode-p' how \"valid\" is defined."
   "Hook function to produce doc strings for `eldoc'.
 On success calls CB with the doc string.
 See `eldoc-documentation-functions', for more information."
-       (and-let* ((conn (dape--live-connection 'last t))
-                  ((dape--capable-p conn :supportsEvaluateForHovers))
-                  (symbol (thing-at-point 'symbol)))
-         (dape--with-request-bind
-             (body error)
-             (dape--evaluate-expression conn
-                                        (plist-get (dape--current-stack-frame conn) :id)
-                                        (substring-no-properties symbol)
-                                        "hover")
-           (unless error
-             (funcall cb
-                      (format "%s %s"
-                              (or (plist-get body :value)
-                                  (plist-get body :result)
-                                  "")
-                              (propertize
-                               (or (plist-get body :type) "")
-                               'face 'font-lock-type-face))
-                      :thing symbol
-                      :face 'font-lock-variable-name-face))))
-       t)
+  (and-let* ((conn (dape--live-connection 'last t))
+             ((dape--capable-p conn :supportsEvaluateForHovers))
+             (symbol (thing-at-point 'symbol)))
+    (dape--with-request-bind
+        (body error)
+        (dape--evaluate-expression
+         conn
+         (plist-get (dape--current-stack-frame conn) :id)
+         (substring-no-properties symbol)
+         "hover")
+      (unless error
+        (funcall cb
+                 (format "%s %s"
+                         (or (plist-get body :value)
+                             (plist-get body :result)
+                             "")
+                         (propertize
+                          (or (plist-get body :type) "")
+                          'face 'font-lock-type-face))
+                 :thing symbol
+                 :face 'font-lock-variable-name-face))))
+  t)
 
 (defun dape--add-eldoc-hook ()
   "Add `dape-hover-function' from eldoc hook."
@@ -5278,14 +5329,14 @@ See `eldoc-documentation-functions', for more information."
   (let ((conn (or (dape--live-connection 'last t)
                   dape--connection)))
     (setq dape--mode-line-format
-          `((:propertize "dape"
-                         face font-lock-constant-face
-                         mouse-face mode-line-highlight
-                         help-echo "Dape: Debug Adapter Protocol for Emacs\n\
+          `(( :propertize "dape"
+              face font-lock-constant-face
+              mouse-face mode-line-highlight
+              help-echo "Dape: Debug Adapter Protocol for Emacs\n\
 mouse-1: Display minor mode menu"
-                         keymap ,(let ((map (make-sparse-keymap)))
-                                  (define-key map [mode-line down-mouse-1] dape-menu)
-                                  map))
+              keymap ,(let ((map (make-sparse-keymap)))
+                        (define-key map [mode-line down-mouse-1] dape-menu)
+                        map))
             ":"
             (:propertize ,(format "%s" (or (and conn (dape--state conn))
                                            'unknown))
@@ -5296,9 +5347,9 @@ mouse-1: Display minor mode menu"
                           (nof-conns
                            (length (cl-remove-if-not 'dape--threads conns)))
                           ((> nof-conns 1)))
-                `((:propertize ,(format "(%s)" nof-conns)
-                               face shadow
-                               help-echo "Active child connections")))))))
+                `(( :propertize ,(format "(%s)" nof-conns)
+                    face shadow
+                    help-echo "Active child connections")))))))
 
 (add-to-list 'mode-line-misc-info
              `(dape-active-mode ("[" dape--mode-line-format "]")))

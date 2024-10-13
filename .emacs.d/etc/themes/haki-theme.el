@@ -128,6 +128,11 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
   :group 'haki-theme
   :type 'string)
 
+(defcustom haki-bg-oled nil
+  "Apply pure black background for OLED display."
+  :group 'haki-theme
+  :type 'boolean)
+
 ;;; - declare optional function
 (declare-function meow-insert-mode-p "ext:meow")
 (declare-function meow-beacon-mode-p "ext:meow")
@@ -148,7 +153,7 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
 (let ((class '((class color)))
 
       ;;; -- Sane defaults
-      (bg-main       "#050505")
+      (bg-main        (if haki-bg-oled "#000000" "#050505") )
       (bg-dim        "#121212")
       (bg-inactive   "#303030")
       (fg-comment    "#b4aeae")
@@ -240,14 +245,14 @@ Tip: Use 'VictorMono' or 'Maple Mono'."
   (defun haki-modal-mode-line ()
     "Changes mode-line border accordingly to meow/evil states
 Respected Only in GUI frame"
-    (when (require 'meow nil t)
+    (when (featurep 'meow)
       (cond
        ((meow-beacon-mode-p) (set-face-attribute 'mode-line nil :box heading-5))
        ((meow-insert-mode-p) (set-face-attribute 'mode-line nil :box heading-4))
        ((meow-normal-mode-p) (set-face-attribute 'mode-line nil :box cursor))
        ((meow-motion-mode-p) (set-face-attribute 'mode-line nil :box heading-2))
        ((meow-keypad-mode-p) (set-face-attribute 'mode-line nil :box heading-3))))
-    (when (require 'evil nil t)
+    (when (featurep 'evil)
       (cond
        ((evil-visual-state-p) (set-face-attribute 'mode-line nil :box heading-5))
        ((evil-insert-state-p) (set-face-attribute 'mode-line nil :box heading-4))
@@ -1167,7 +1172,11 @@ Respected Only in GUI frame"
    `(tab-bar-tab-group-inactive          ((,class :box (:line-width (2 . -2) :color ,cursor))))
    `(tab-bar-tab                         ((,class :inherit region)))
    `(tab-bar-tab-inactive                ((,class :inherit mode-line-inactive)))
+;;; --- tab-line
    `(tab-line                            ((,class :background ,bg-main)))
+   `(tab-line-tab-current                ((,class :inherit region)))
+   `(tab-line-highlight                  ((,class :inherit highlight)))
+   `(tab-line-tab-inactive               ((,class :inherit shadow)))
 
 ;;; --- centaur-tabs
    `(centaur-tabs-active-bar-face               ((,class :background ,bg-inactive)))
@@ -1189,6 +1198,15 @@ Respected Only in GUI frame"
 ;;; --- tooltip
    `(tooltip                  ((,class :inherit highlight)))
    `(tool-bar                 ((,class :inherit default :background ,bg-inactive)))
+
+;;; --- whitespace
+   `(whitespace-space         ((,class :background ,bg-main :foreground ,fg-inactive)))
+   `(whitespace-tab           ((,class :inherit whitespace-space)))
+   `(whitespace-line          ((,class :inherit whitespace-space :foreground ,clock)))
+   `(whitespace-big-indent    ((,class :background ,error)))
+   `(whitespace-empty         ((,class :background ,bg-inactive)))
+   `(whitespace-hspace        ((,class :background ,bg-inactive :foreground ,fg-comment)))
+   `(whitespace-trailing      ((,class :foreground ,error)))
 
 ;;; --- solaire-mode
    `(solaire-default-face                       ((,class :inherit default :background ,bg-dim)))

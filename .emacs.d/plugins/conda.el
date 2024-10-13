@@ -1,10 +1,10 @@
 ;;; conda.el --- Work with your conda environments
 
-;; Copyright (C) 2016-2022 Rami Chowdhury
+;; Copyright (C) 2016-2024 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
-;; Version: 0.4
-;; Package-Version: 0.4
+;; Version: 0.5
+;; Package-Version: 0.5
 ;; Keywords: languages, local, tools, python, environment, conda
 ;; Package-Requires: ((emacs "25.1") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
@@ -31,7 +31,23 @@
   :group 'python)
 
 (defcustom conda-home-candidates
-  '("~/.anaconda3" "~/miniconda3" "~/mambaforge" "~/anaconda" "~/miniconda" "~/mamba" "~/.conda")
+  (list "~/.anaconda"
+        "~/.anaconda3"
+        "~/.miniconda"
+        "~/.miniconda3"
+        "~/.miniforge3"
+        "~/.mambaforge"
+        "~/anaconda3"
+        "~/miniconda3"
+        "~/miniforge3"
+        "~/mambaforge"
+        "~/opt/miniconda3"
+        "/opt/miniconda3"
+        "/usr/bin/anaconda3"
+        "/usr/local/anaconda3"
+        "/usr/local/miniconda3"
+        "/usr/local/Caskroom/miniconda/base"
+        "~/.conda")
   "Location of possible candidates for conda environment directory."
   :type '(list string)
   :group 'conda)
@@ -39,11 +55,11 @@
 ;; TODO: find some way to replace this with `(alist-get 'root_prefix (conda--get-config))`
 ;; unfortunately right now (conda--get-executable-path) relies on this!
 (defcustom conda-anaconda-home
-  (expand-file-name (or (getenv "ANACONDA_HOME")
-                        (catch 'conda-catched-home
-                          (dolist (candidate conda-home-candidates)
-                            (when (f-dir? (expand-file-name candidate))
-                              (throw 'conda-catched-home candidate))))))
+  (or (cl-loop for dir in (cons (getenv "ANACONDA_HOME") conda-home-candidates)
+               if (and dir (file-directory-p dir))
+               return (setq conda-anaconda-home (expand-file-name dir)
+                            conda-env-home-directory (expand-file-name dir)))
+      (message "Cannot find Anaconda installation"))
   "Location of your conda installation.
 
 Iterate over default locations in CONDA-HOME-CANDIDATES, or read from the
@@ -149,7 +165,9 @@ Set for the lifetime of the process.")
 Cached for the lifetime of the process."
   (if (not (eq conda--installed-version nil))
       conda--installed-version
-    (let ((version-output (shell-command-to-string (format "\"%s\" -V" (conda--get-executable-path)))))
+    (let ((version-output (with-temp-buffer
+                            (call-process (conda--get-executable-path) nil '(t nil) nil "-V")
+                            (buffer-string))))
       (condition-case err
           (s-with version-output
             (s-trim)
@@ -164,37 +182,32 @@ See https://github.com/conda/conda/blob/master/CHANGELOG.md#484-2020-08-06."
   (version< "4.8.3" (conda--get-installed-version)))
 
 (defun conda--supports-old-activate-format ()
-  "Does the installed Conda version support the deprecated `..activate' command format?"
+  "Does the installed Conda support the deprecated `..activate' command format?"
   (version<= (conda--get-installed-version) "4.12.0"))
 
 (defun conda--call-json (&rest args)
   "Call Conda with ARGS, assuming we return JSON."
   (let* ((conda (conda--get-executable-path))
-         (fmt (format "shell.%s+json"  (if (eq system-type 'windows-nt) "cmd.exe" "posix")))
-         (process-file-args (append (list conda nil t nil) args))
-         (output (with-output-to-string
-                   (with-current-buffer
-                       standard-output
-                     (apply #'process-file process-file-args)))))
+         (output (with-temp-buffer
+                   ;; We set the `destination' to ignore stderr -- this may come
+                   ;; back to bite us if anything important is communicated
+                   ;; there
+                   (apply #'call-process
+                          (append (list conda nil '(t nil) nil) args))
+                   (buffer-string))))
     (condition-case err
-        ;; (if (version< emacs-version "27.1")
-        ;;     (json-read-from-string output)
-        ;;   (json-parse-string output :object-type 'alist :null-object nil))
-        (if (progn
-              (require 'json)
-              (fboundp 'json-parse-string))
-	    (json-parse-string output :object-type 'alist :null-object nil)
+        (if (and (require 'json) (fboundp 'json-parse-string))
+            (json-parse-string output :object-type 'alist :null-object nil)
           (json-read-from-string output))
       (error "Could not parse %s as JSON: %s" output err))))
-
 
 (defvar conda--config nil
   "Cached copy of configuration that Conda sees (including `condarc', etc).
 Set for the lifetime of the process.")
 
-(defun conda--get-config()
-  "Return current Conda configuration.  Cached for the lifetime of the process."
-  (if (not (eq conda--config nil))
+(defun conda--get-config (&optional force-reload)
+  "Return current configuration. Cached for the process' lifetime, unless FORCE-RELOAD."
+  (if (and (not force-reload) (not (eq conda--config nil)))
       conda--config
     (let ((cfg (conda--call-json "config" "--show" "--json")))
       (setq conda--config cfg))))
@@ -209,15 +222,27 @@ Set for the lifetime of the process.")
             (let ((inhibit-message t))
 	      (message "About to set %s to %s" (car pair) (cdr pair)))
             (setenv (format "%s" (car pair)) (format "%s" (cdr pair))))
-          exports)))
+          exports))
+  (let ((unsets (or (conda-env-params-vars-unset params) '())))
+    (mapc (lambda (arg)
+            (let ((inhibit-message t))
+	      (message "About to unset %s" arg))
+            (setenv (format "%s" arg) nil))
+          unsets))
+  (let ((sets (or (conda-env-params-vars-set params) '())))
+    (mapc (lambda (pair)
+            (let ((inhibit-message t))
+	      (message "About to set %s to %s" (car pair) (cdr pair)))
+            (setenv (format "%s" (car pair)) (format "%s" (cdr pair))))
+          sets)))
 
 (defun conda--set-env-gud-pdb-command-name ()
   "When in a conda environment, call pdb as \\[python -m pdb]."
-  (setq gud-pdb-command-name "python -m pdb"))
+  (setq-default gud-pdb-command-name "python -m pdb"))
 
 (defun conda--set-system-gud-pdb-command-name ()
   "Set the system \\[pdb] command."
-  (setq gud-pdb-command-name conda-system-gud-pdb-command-name))
+  (setq-default gud-pdb-command-name conda-system-gud-pdb-command-name))
 
 (defun conda--env-dir-is-valid (candidate)
   "Confirm that CANDIDATE is a valid conda environment."
@@ -358,6 +383,12 @@ Use the platform's native path separator.  Don't use this -- prefer
            (unless (= 0 return-code)
              (error (format "Error: executing command \"%s\" produced error code %d" command return-code)))))))))
 
+(defun conda--eshell-update-path ()
+  "Update `eshell-path-env' from the current `PATH'."
+  (if (version<= emacs-version "29.1")
+      (setq eshell-path-env (getenv "PATH"))
+    (setq-default eshell-get-path (getenv "PATH"))))
+
 ;; "public" functions
 
 (defun conda-env-clear-history ()
@@ -448,6 +479,12 @@ Returns a list of new path elements."
 
 ;; potentially interactive user-exposed functions
 
+(defun conda-reload-config ()
+  "Force-reloads the Conda configuration and displays it."
+  (interactive)
+  (let ((cfg (conda--get-config t)))
+    (message cfg)))
+
 ;;;###autoload
 (defun conda-env-deactivate ()
   "Deactivate the current conda env."
@@ -466,7 +503,7 @@ Returns a list of new path elements."
       (setenv "PATH" (conda-env-params-path params)))
     (setq conda-env-current-path nil)
     (setq conda-env-current-name nil)
-    (setq eshell-path-env (getenv "PATH"))
+    (conda--eshell-update-path)
     (conda--set-system-gud-pdb-command-name)
     (run-hooks 'conda-postdeactivate-hook)
     (when (called-interactively-p 'interactive)
@@ -515,9 +552,8 @@ Returns a list of new path elements."
               (setenv "CONDA_PREFIX" env-dir)))
           (setq exec-path (s-split (if (eq system-type 'windows-nt) ";" ":")
                                    (conda-env-params-path params)))
-          (message "new path? %s" (conda-env-params-path params))
           (setenv "PATH" (conda-env-params-path params)))
-        (setq eshell-path-env (getenv "PATH"))
+        (conda--eshell-update-path)
         (conda--set-env-gud-pdb-command-name)
         (run-hooks 'conda-postactivate-hook)))
     (if (or conda-message-on-environment-switch (called-interactively-p 'interactive))
@@ -623,9 +659,9 @@ Returns a list of new path elements."
 (defun conda-env-initialize-eshell ()
   "Configure eshell for use with conda.el."
   ;; make emacs and eshell share an environment
-  (setq eshell-modify-global-environment t)
+  (setq-default eshell-modify-global-environment t)
   ;; set eshell path
-  (setq eshell-path-env (getenv "PATH"))
+  (conda--eshell-update-path)
   ;; alias functions
   (defun eshell/activate (arg) (conda-env-activate arg))
   (defun eshell/deactivate () (conda-env-deactivate))
@@ -670,11 +706,11 @@ This can be set by a buffer-local or project-local variable (e.g. a
 This mode automatically tries to activate a conda environment for the current
 buffer."
   ;; The initial value.
-  nil
+  :init-value nil
   ;; The indicator for the mode line.
-  nil
+  :lighter nil
   ;; The minor mode bindings.
-  nil
+  :keymap nil
   ;; Kwargs
   :group 'conda
   :global t
@@ -686,3 +722,8 @@ buffer."
 (provide 'conda)
 
 ;;; conda.el ends here
+
+;;;; Helper snippet to validate Elisp code
+;; (checkdoc)
+;; (byte-compile-file (buffer-file-name))
+;; (package-buffer-info)

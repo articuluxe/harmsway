@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 0.50.5
+;; Version: 0.53.1
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -69,7 +69,7 @@ Enable it for troubleshooting issues."
   :group 'shell-maker)
 
 (defcustom shell-maker-prompt-before-killing-buffer t
-  "If t, confirm killing buffer without saving."
+  "If non-nil, confirm killing buffer without saving."
   :type 'boolean
   :group 'shell-maker)
 
@@ -95,6 +95,11 @@ For example:
 (defcustom shell-maker-root-path user-emacs-directory
   "Root path location to store internal shell files."
   :type 'directory
+  :group 'shell-maker)
+
+(defcustom shell-maker-forget-file-after-clear nil
+  "If non-nil, reset file path after clear command."
+  :type 'boolean
   :group 'shell-maker)
 
 (defvar-local shell-maker--input nil)
@@ -314,6 +319,14 @@ Set BUFFER-NAME to override the buffer name."
     (user-error "Not in a shell"))
   (shell-maker--send-input))
 
+(defun shell-maker-clear-buffer ()
+  "Clear the current shell buffer."
+  (interactive)
+  (when shell-maker-forget-file-after-clear
+
+    (setq shell-maker--file nil))
+  (comint-clear-buffer))
+
 (defun shell-maker-search-history ()
   "Search previous input history."
   (interactive)
@@ -345,18 +358,31 @@ Set BUFFER-NAME to override the buffer name."
 ;; Thanks to https://www.n16f.net/blog/making-ielm-more-comfortable
 (defun shell-maker--read-input-ring-history (config)
   "Read input ring history from file using CONFIG."
-  (let ((path (shell-maker-history-file-path config)))
+  (let ((path (shell-maker-history-file-path config))
+        (ring))
     (make-directory
      (file-name-directory path) t)
-    (setq-local comint-input-ring-file-name path))
-  (setq-local comint-input-ring-size 10000)
-  (setq-local comint-input-ignoredups t)
-  (comint-read-input-ring t))
+    (setq-local comint-input-ring-file-name nil)
+    (setq-local comint-input-ignoredups t)
+    (setq ring (ignore-errors
+                 (with-temp-buffer
+                   (insert-file-contents path)
+                   (read (current-buffer)))))
+    (unless (ring-p ring)
+      (setq ring (make-ring (min 1500 comint-input-ring-size))))
+    (setq comint-input-ring ring)))
 
-(defun shell-maker--write-input-ring-history ()
-  "Write input ring history to file."
-  (with-file-modes #o600
-    (comint-write-input-ring)))
+(defun shell-maker--write-input-ring-history (config)
+  "Write input ring history to file using CONFIG."
+  (let ((path (shell-maker-history-file-path config))
+        (ring comint-input-ring)
+        (print-length nil)
+        (print-level nil))
+    (make-directory
+     (file-name-directory path) t)
+    (with-temp-file path
+      (insert (prin1-to-string (or ring
+                                  (make-ring (min 1500 comint-input-ring-size))))))))
 
 (defun shell-maker--output-at-point ()
   "Output at point range with cons of start and end."
@@ -593,7 +619,7 @@ NO-ANNOUNCEMENT skips announcing response when in background."
         (shell-maker--print-help)
         (setq shell-maker--busy nil))
        ((string-equal "clear" (string-trim input-string))
-        (call-interactively #'comint-clear-buffer)
+        (call-interactively #'shell-maker-clear-buffer)
         (shell-maker--output-filter (shell-maker--process) (shell-maker-prompt shell-maker--config))
         (setq shell-maker--busy nil)
         (set-buffer-modified-p nil))
@@ -646,7 +672,7 @@ NO-ANNOUNCEMENT skips announcing response when in background."
                          (unless no-announcement
                            (shell-maker--announce-response buffer))
                          (setq shell-maker--busy nil)
-                         (shell-maker--write-input-ring-history)
+                         (shell-maker--write-input-ring-history shell-maker--config)
                          (when (shell-maker-config-on-command-finished shell-maker--config)
                            ;; FIXME use (concat prefix-newline response suffix-newline) if not streaming.
                            (when on-output
@@ -902,7 +928,7 @@ NO-ANNOUNCEMENT skips announcing response when in background."
                     (shell-maker-prompt shell-maker--config))))
         (cl-assert (or (seq-empty-p items)
                        (eq (length items) 1)))
-        items))))
+        (seq-first items)))))
 
 (defun shell-maker--write-output-to-log-buffer (output config)
   "Write OUTPUT to log buffer using CONFIG."
@@ -959,6 +985,30 @@ Each marker is of the form (START . END)."
       (while (search-forward "<shell-maker-end-of-prompt>" nil t)
         (push (cons (match-beginning 0) (match-end 0)) matches))
       (reverse matches))))
+
+(defun shell-maker-next-command-and-response (&optional backwards)
+  "Move to next prompt and return interaction.  Return a command/response cons.
+
+If BACKWARDS is non-nil, move backwards."
+  (when-let* ((point-before (point))
+              (point-after (save-excursion
+                             (comint-previous-prompt (if backwards 1 -1))
+                             ;; Point could be away from current prompt.
+                             (when (eq (line-number-at-pos point-before)
+                                       (line-number-at-pos (point)))
+                               (comint-previous-prompt (if backwards 1 -1)))
+                             ;; Try going back again if on the last response.
+                             (when-let* ((going-back backwards)
+                                         (response (cdr (shell-maker--command-and-response-at-point)))
+                                         (same (equal (string-trim response)
+                                                      (string-trim (shell-maker-last-output)))))
+                               (comint-previous-prompt (if backwards 1 -1)))
+                             (point)))
+              (moved (and (not (eq point-before point-after))
+                          (not (eq (line-number-at-pos point-before)
+                                   (line-number-at-pos point-after))))))
+    (goto-char point-after)
+    (shell-maker--command-and-response-at-point)))
 
 (defun shell-maker--extract-history (text prompt-regexp)
   "Extract all commands and respective output in TEXT with PROMPT-REGEXP.

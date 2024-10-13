@@ -8,7 +8,7 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: tools
 
-;; Package-Version: 4.0.0
+;; Package-Version: 4.1.1
 ;; Package-Requires: (
 ;;     (emacs "26.1")
 ;;     (compat "30.0.0.0")
@@ -1597,9 +1597,7 @@ is explicitly expanded."
           (cons (lambda ()
                   (push magit-insert-section--current
                         header-sections))
-                (if (listp magit-insert-section-hook)
-                    magit-insert-section-hook
-                  (list magit-insert-section-hook)))))
+                (ensure-list magit-insert-section-hook))))
     (magit-run-section-hook hook)
     (when header-sections
       (insert "\n")
@@ -1635,7 +1633,8 @@ is explicitly expanded."
 (defun magit-section-maybe-remove-heading-map (section)
   (with-slots (start content end keymap) section
     (when (= content end)
-      (put-text-property start end 'keymap keymap))))
+      (put-text-property start end 'keymap
+                         (if (symbolp keymap) (symbol-value keymap) keymap)))))
 
 (defun magit-insert-child-count (section)
   "Modify SECTION's heading to contain number of child sections.
@@ -2268,16 +2267,20 @@ Configuration'."
 
 (defun magit--add-face-text-property (beg end face &optional append object)
   "Like `add-face-text-property' but for `font-lock-face'."
+  (when (stringp object)
+    (unless beg (setq beg 0))
+    (unless end (setq end (length object))))
   (while (< beg end)
     (let* ((pos (next-single-property-change beg 'font-lock-face object end))
            (val (get-text-property beg 'font-lock-face object))
-           (val (if (listp val) val (list val))))
+           (val (ensure-list val)))
       (put-text-property beg pos 'font-lock-face
                          (if append
                              (append val (list face))
                            (cons face val))
                          object)
-      (setq beg pos))))
+      (setq beg pos)))
+  object)
 
 (defun magit--propertize-face (string face)
   (propertize string 'face face 'font-lock-face face))
