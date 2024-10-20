@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-08-25 20:07:02 dharms>
+;; Modified Time-stamp: <2024-10-21 09:13:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3748,6 +3748,11 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (require 'flymake-collection-define)
   )
 
+(use-package flymake-bashate
+  :after flymake
+  :init
+  (setq flymake-bashate-max-line-length 90))
+
 (use-package flymake-popon
   :after flymake
   :disabled
@@ -4895,6 +4900,8 @@ This function's result only has value if it is preceded by any font changes."
                 ;; set completion
                 (setq-local company-alt-backend 'company-shell)
                 (require 'flymake-collection-shellcheck)
+                (require 'flymake-bashate)
+                (flymake-bashate-setup)
                 (flymake-mode 1))
               (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
               ))
