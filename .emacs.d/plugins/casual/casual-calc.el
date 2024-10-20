@@ -1,12 +1,9 @@
-;;; casual-calc.el --- Transient UI for Calc              -*- lexical-binding: t; -*-
+;;; casual-calc.el --- Transient UI for Calc -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024  Charles Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
-;; URL: https://github.com/kickingvegas/casual-calc
 ;; Keywords: tools
-;; Version: 1.11.4
-;; Package-Requires: ((emacs "29.1") (casual-lib "1.1.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -57,7 +54,7 @@
 (require 'transient)
 (require 'casual-lib)
 (require 'casual-calc-utils)
-(require 'casual-calc-version)
+
 (require 'casual-calc-binary)
 (require 'casual-calc-complex)
 (require 'casual-calc-conversion)

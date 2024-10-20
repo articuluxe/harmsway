@@ -468,7 +468,7 @@ add a section in the respective process buffer."
   (apply #'magit--git-insert nil args))
 
 (defun magit--git-insert (return-error &rest args)
-  (setq args (magit-process-git-arguments args))
+  (setq args (flatten-tree args))
   (if (or return-error magit-git-debug)
       (let (log)
         (unwind-protect
@@ -488,9 +488,10 @@ add a section in the respective process buffer."
                   (unless return-error
                     (let ((magit-git-debug nil))
                       (with-current-buffer (magit-process-buffer t)
-                        (magit-process-insert-section default-directory
-                                                      magit-git-executable
-                                                      args exit log)))))
+                        (magit-process-insert-section
+                         default-directory magit-git-executable
+                         (magit-process-git-arguments args)
+                         exit log)))))
                 (unless return-error
                   (if errmsg
                       (message "%s" errmsg)
@@ -1649,10 +1650,10 @@ The amount of time spent searching is limited by
                           (magit-git-lines
                            "for-each-ref" "refs/heads"
                            "--format=%(refname:short)\t%(upstream:short)"))))
-    (when-let ((old (assoc oldname branches)))
-      (unless (assoc newname branches)
-        (magit-call-git "branch" "-m" oldname newname)
-        (setcar old newname)))
+    (when-let ((old (assoc oldname branches))
+               ((not (assoc newname branches))))
+      (magit-call-git "branch" "-m" oldname newname)
+      (setcar old newname))
     (let ((new (if (magit-branch-p newname)
                    newname
                  (concat remote "/" newname))))
@@ -2439,10 +2440,11 @@ and this option only controls what face is used.")
                     (expand-file-name "index.magit." (magit-gitdir))))))
        (unwind-protect
            (magit-with-toplevel
-             (when-let ((tree ,tree))
-               (unless (magit-git-success "read-tree" ,arg tree
-                                          (concat "--index-output=" ,file))
-                 (error "Cannot read tree %s" tree)))
+             (when-let* ((tree ,tree)
+                         ((not (magit-git-success
+                                "read-tree" ,arg tree
+                                (concat "--index-output=" ,file)))))
+               (error "Cannot read tree %s" tree))
              (with-environment-variables (("GIT_INDEX_FILE" ,file))
                ,@body))
          (ignore-errors

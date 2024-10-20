@@ -1,12 +1,12 @@
-;;; casual.el --- Transient UI for Calc              -*- lexical-binding: t; -*-
+;;; casual.el --- Transient user interfaces for various modes -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Charles Choi
+;; Copyright (C) 2024 Charles Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; URL: https://github.com/kickingvegas/casual
-;; Keywords: tools
-;; Version: 1.7.0
-;; Package-Requires: ((emacs "29.1"))
+;; Keywords: tools, wp
+;; Version: 2.0.2
+;; Package-Requires: ((emacs "29.1") (transient "0.6.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,109 +23,144 @@
 
 ;;; Commentary:
 
-;; Casual Calc is an opinionated Transient-based porcelain for Emacs Calc.
+;; Casual is a collection of opinionated Transient-based keyboard driven user
+;; interfaces for various built-in modes.
 
 ;; INSTALLATION
-;; (require 'casual)
-;; (define-key calc-mode-map (kbd "C-o") #'casual-calc-tmenu)
+
+;; Casual is organized into different user interface (UI) libraries tuned for
+;; different modes. Different user interfaces for the following modes are
+;; supported:
+
+;; - Agenda (Elisp library: `casual-agenda')
+;;   An interface for Org Agenda to help you plan your day.
+;;   URL `https://github.com/kickingvegas/casual/blob/main/docs/agenda.org'
+
+;; - Bookmarks (Elisp library: `casual-bookmarks')
+;;   An interface for editing your bookmark collection.
+;;   URL `https://github.com/kickingvegas/casual/blob/main/docs/bookmarks.org'
+
+;; - Calc (Elisp library: `casual-calc')
+;;   An interface for Emacs Calc, an embarrasingly feature-rich calculator.
+;;   URL `https://github.com/kickingvegas/casual/blob/main/docs/calc.org'
+
+;; - Dired (Elisp library: `casual-dired')
+;;   An interface for the venerable file manager Dired.
+;;   URL `https://github.com/kickingvegas/casual/blob/main/docs/dired.org'
+
+;; - EditKit (Elisp library: `casual-editkit')
+;;   A cornucopia of interfaces for the different editing features (e.g.
+;;   marking, copying, killing, duplicating, transforming, deleting) of Emacs.
+;;   Included are interfaces for rectangle, register, macro, and project
+;;   commands.
+;;   URL `https://github.com/kickingvegas/casual/blob/main/docs/editkit.org'
+
+;; - Info (Elisp library: `casual-info')
+;;   An interface for the Info documentation system.
+;;   URL: `https://github.com/kickingvegas/casual/blob/main/docs/info.org'
+
+;; - I-Search (Elisp library: `casual-isearch')
+;;   An interface for the many commands supported by I-Search.
+;;   URL: `https://github.com/kickingvegas/casual/blob/main/docs/isearch.org'
+
+;; - Re-Builder (Elisp library: `casual-re-builder')
+;;   An interface for the Emacs regular expression tool.
+;;   URL: `https://github.com/kickingvegas/casual/blob/main/docs/re-builder.org'
+
+;; Users can choose any or all of the user interfaces made available by Casual
+;; at their pleasure.
+
+;; UPGRADING to Casual 2.x
+
+;; If you have installed any Casual package that is version 1.x, you should
+;; immediately run the following commands upon installation of casual.
+
+;; M-x load-libary casual
+;; M-x casual-upgrade-base-to-version-2
+
+;; This command will uninstall any Casual v1.x packages that have been
+;; superseded by this package.
 
 ;;; Code:
+(require 'package)
+(require 'casual-lib)
 
-(require 'calc)
-(require 'calc-math) ; needed to reference some symbols not loaded in `calc'.
-(require 'transient)
-(require 'casual-calc-utils)
-(require 'casual-calc--calc)
-(require 'casual-calc-version)
-(require 'casual-calc-binary)
-(require 'casual-calc-complex)
-(require 'casual-calc-conversion)
-(require 'casual-calc-logarithmic)
-(require 'casual-calc-random)
-(require 'casual-calc-rounding)
-(require 'casual-calc-settings)
-(require 'casual-calc-time)
-(require 'casual-calc-trigonometric)
-(require 'casual-calc-units)
-(require 'casual-calc-vector)
-(require 'casual-calc-graphics)
-(require 'casual-calc-trail)
-(require 'casual-calc-stack)
-(require 'casual-calc-financial)
-(require 'casual-calc-symbolic)
-(require 'casual-calc-variables)
+(defun casual-upgrade-base-to-version-2 (enable)
+  "Upgrade base Casual packages to version 2 if ENABLE is t.
 
-;; Menus
-;;;###autoload (autoload 'casual-calc-tmenu "casual" nil t)
-(transient-define-prefix casual-calc-tmenu ()
-  "Casual main menu."
-  [["Casual"
-    :pad-keys t
-    ("&" "1/𝑥" casual-calc--calc-inv :transient nil)
-    ("Q" " √" casual-calc--calc-sqrt :transient nil)
-    ("n" "+∕− " casual-calc--calc-change-sign :transient nil)
-    ("^" "𝑦^𝑥" casual-calc--calc-power :transient nil)
-    ("=" " =" casual-calc--calc-evaluate :transient nil)]
-   [""
-    ("A" "|𝑥|" casual-calc--calc-abs :transient nil)
-    ("!" " !" casual-calc--calc-factorial :transient nil)
-    ("%" " ٪" casual-calc--calc-percent :transient nil)
-    ("D" " Δ%" casual-calc--calc-percent-change :transient nil)]
-   ["Constants"
-    ("p" "𝜋" casual-calc--calc-pi :transient nil)
-    ("e" "𝑒" casual-calc--e-constant :transient nil)]
-   ["Settings"
-    :pad-keys t
-    ("m" "Modes, Displays, Angles›" casual-calc-modes-tmenu :transient nil)
-    ("M-s" "Stack›" casual-calc-stack-display-tmenu :transient nil)
-    ("M-t" "Trail›" casual-calc-trail-tmenu :transient nil)]]
+Use this command to migrate your current Casual version 1.x
+packages to the consolidated organization of version 2.x.
 
-  [["Arithmetic"
-    :pad-keys t
-    ("o" "Rounding›" casual-calc-rounding-tmenu :transient nil)
-    ("c" "Conversion›" casual-calc-conversions-tmenu :transient nil)
-    ("T" "Time›" casual-calc-time-tmenu :transient nil)
-    ("i" "Complex›" casual-calc-complex-number-tmenu :transient nil)
-    ("R" "Random›" casual-calc-random-number-tmenu :transient nil)]
+This will delete the following packages:
 
-   ["Functions" ; test if anything is on the stack calc-stack-size 0
-    ("t" "Trigonometric›" casual-calc-trig-tmenu :transient nil)
-    ("l" "Logarithmic›" casual-calc-logarithmic-tmenu :transient nil)
-    ("b" "Binary›" casual-calc-binary-tmenu :transient nil)
-    ("v" "Vector/Matrix›" casual-calc-vector-tmenu :transient nil)
-    ("u" "Units›" casual-calc-units-tmenu :transient nil)
-    ("f" "Financial›" casual-calc-financial-tmenu :transient nil)
-    ("g" "Graphics›" casual-calc-plot-tmenu :transient nil)
-    ("a" "Algebra›" casual-calc-symbolic-tmenu :transient nil)]
+casual-agenda, casual-bookmarks, casual-calc, casual-dired,
+casual-editkit, casual-ibuffer, casual-info, casual-isearch,
+casual-re-builder, casual-lib.
 
-   ["Stack"
-    :pad-keys t
-    ("s" "Swap" casual-calc--stack-swap :transient t)
-    ("r" "Roll" casual-calc--stack-roll-all :transient t)
-    ("d" "Drop" casual-calc--stack-drop :transient t)
-    ("C" "Clear" casual-calc--stack-clear :transient t)
-    ("L" "Last" casual-calc--stack-last :transient t)
-    ("w" "Copy" casual-calc--calc-copy-as-kill :transient nil)
-    ("z" "Variables›" casual-calc-variable-crud-tmenu :transient nil)]]
+Note that the package casual-lib will not be deleted if any of the packages
+casual-suite, casual-avy, or casual-symbol-overlay is installed."
+  (interactive
+   (list (y-or-n-p "Upgrade Casual to version 2?")))
 
-  [:class transient-row
-          ;; Note: no need to C-g for main menu
-          (casual-calc-quit-all)
-          (casual-calc-undo-suffix)
-          ("q" "Quit Calc" calc-quit)])
+  (when enable
+    (let ((pkglist (list
+                    'casual-agenda
+                    'casual-bookmarks
+                    'casual-calc
+                    'casual-dired
+                    'casual-editkit
+                    'casual-ibuffer
+                    'casual-info
+                    'casual-isearch
+                    'casual-re-builder)))
+      (mapc (lambda (pkg)
+              (when (package-installed-p pkg)
+                (display-warning
+                 :warning
+                 (format
+                  "Casual 2.0 Migration: Deleting obsolete package %s"
+                  (symbol-name pkg)))
+                (package-delete (package-get-descriptor pkg) t)
+                (package-refresh-contents)))
+            pkglist))
 
-;;;###autoload (autoload 'casual-main-menu "casual" nil t)
-(transient-define-prefix casual-main-menu ()
-  "OBSOLETE: Use `casual-calc-tmenu' instead."
+    (let* ((pkglist (list
+                     'casual-suite
+                     'casual-avy
+                     'casual-symbol-overlay))
+           (test (seq-reduce (lambda (a b) (or a b))
+                             (mapcar #'package-installed-p pkglist)
+                             nil)))
+      ;; TODO: add this logic to upgrade existing 3rd party packages when they are ready.
+      ;; (mapc (lambda (pkg)
+      ;;         (when (package-installed-p pkg)
+      ;;           (display-warning
+      ;;            :warning
+      ;;            (format
+      ;;             "Casual 2.0 Migration: Upgrading package %s"
+      ;;             (symbol-name pkg)))
+      ;;           (package-upgrade pkg)))
+      ;;       pkglist)
 
-  [:class transient-row
-          ;; Note: no need to C-g for main menu
-          (casual-calc-quit-all)
-          (casual-calc-undo-suffix)])
+      ;; TODO: change logic to delete casual-lib when 3rd party packages are updated.
+      (when (and (not test) (package-installed-p 'casual-lib))
+        (display-warning
+                 :warning
+                 (format
+                  "Casual 2.0 Migration: Deleting obsolete package %s"
+                  (symbol-name 'casual-lib)))
+        (package-delete (package-get-descriptor 'casual-lib) t)
+        (package-refresh-contents)))))
 
-(define-obsolete-function-alias #'casual-main-menu #'casual-calc-tmenu
-  "v1.6.0"
-  "Naming changed to conform with Casual Suite.")
+(defun casual-get-package-version (pkg)
+  "Get package version of symbol PKG."
+  (let* ((pkg-name (symbol-name pkg))
+         (pkg-buf (find-library pkg-name))
+         (buflist (list pkg-name)))
+    (with-current-buffer pkg-buf
+      (push (package-get-version) buflist))
+    (kill-buffer pkg-buf)
+    (string-join (reverse buflist) "-")))
 
 (provide 'casual)
 ;;; casual.el ends here

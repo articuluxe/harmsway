@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 1.8.1
+;; Version: 1.15.1
 ;; Package-Requires: ((emacs "27.1") (shell-maker "0.53.1"))
-(defconst chatgpt-shell--version "1.8.1")
+(defconst chatgpt-shell--version "1.15.1")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@
 (require 'flymake)
 (require 'ielm)
 (require 'shell-maker)
+(require 'smerge-mode)
 
 (defcustom chatgpt-shell-openai-key nil
   "OpenAI key as a string or a function that loads and returns it."
@@ -574,12 +575,12 @@ Set NEW-SESSION to start a separate new session.
 
 Set IGNORE-AS-PRIMARY to avoid making new buffer the primary one.
 
-Set MODEL-VERSION to override variable `chatgpt-shell-system-prompt'.
+Set MODEL-VERSION to override variable `chatgpt-shell-model-version'.
 
 Set SYSTEM-PROMPT to override variable `chatgpt-shell-system-prompt'"
   (let* ((chatgpt-shell--config
           (let ((config (copy-sequence chatgpt-shell--config))
-                (chatgpt-shell-model-version (or model-version chatgpt-shell-system-prompt))
+                (chatgpt-shell-model-version (or model-version chatgpt-shell-model-version))
                 (chatgpt-shell-system-prompt (or system-prompt chatgpt-shell-system-prompt)))
             (setf (shell-maker-config-prompt config)
                   (car (chatgpt-shell--prompt-pair)))
@@ -1224,12 +1225,9 @@ If region is active, append to prompt."
 
 See `chatgpt-shell-prompt-header-proofread-region' to change prompt or language."
   (interactive)
-  (chatgpt-shell-request-and-insert-response
+  (chatgpt-shell-request-and-insert-merged-response
    :system-prompt chatgpt-shell-prompt-header-proofread-region
-   :streaming t
-   :query (if (region-active-p)
-              (buffer-substring (region-beginning) (region-end))
-            (error "No active region"))))
+   :query ""))
 
 ;;;###autoload
 (defun chatgpt-shell-eshell-whats-wrong-with-last-command ()
@@ -1420,7 +1418,8 @@ END (optional): End of region to replace (overrides active region)."
                      (copy-marker (max delete-from delete-to))
                    (copy-marker (point))))
          (response "")
-         (progress-reporter (make-progress-reporter "ChatGPT ")))
+         (progress-reporter (unless streaming
+                              (make-progress-reporter "ChatGPT "))))
     (chatgpt-shell-send-contextless-request
      :model-version model-version
      :system-prompt system-prompt
@@ -1483,6 +1482,7 @@ STREAMING (optional): non-nil to received streamed ON-OUTPUT events."
   (let ((shell-buffer (chatgpt-shell-start t t t model-version system-prompt)))
     (with-current-buffer shell-buffer
       (setq-local shell-maker-prompt-before-killing-buffer nil)
+      (setq-local kill-buffer-query-functions nil)
       (setq-local chatgpt-shell-streaming streaming)
       (insert query)
       (shell-maker--send-input
@@ -2137,24 +2137,31 @@ lang-start lang-end body-start body-end quotes2-start quotes2-end)
 Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
  BODY-END QUOTES2-START and QUOTES2-END."
   ;; Overlay beginning "```" with a copy block button.
-  (overlay-put (make-overlay quotes1-start
-                             quotes1-end)
-               'display
-               (propertize "📋 "
-                           'pointer 'hand
-                           'keymap (shell-maker--make-ret-binding-map
-                                    (lambda ()
-                                      (interactive)
-                                      (kill-ring-save body-start body-end)
-                                      (message "Copied")))))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay quotes1-start quotes1-end)
+   'evaporate t
+   'display
+   (propertize "📋 "
+               'pointer 'hand
+               'keymap (shell-maker--make-ret-binding-map
+                        (lambda ()
+                          (interactive)
+                          (kill-ring-save body-start body-end)
+                          (message "Copied")))))
   ;; Hide end "```" altogether.
-  (overlay-put (make-overlay quotes2-start
-                             quotes2-end) 'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay quotes2-start quotes2-end)
+   'evaporate t
+   'invisible 'chatgpt-shell)
   (unless (eq lang-start lang-end)
-    (overlay-put (make-overlay lang-start
-                               lang-end) 'face '(:box t))
-    (overlay-put (make-overlay lang-end
-                               (1+ lang-end)) 'display "\n\n"))
+    (chatgpt-shell--overlay-put-all
+     (make-overlay lang-start lang-end)
+     'evaporate t
+     'face '(:box t))
+    (chatgpt-shell--overlay-put-all
+     (make-overlay lang-end (1+ lang-end))
+     'evaporate t
+     'display "\n\n"))
   (let ((lang-mode (intern (concat (or
                                     (chatgpt-shell--resolve-internal-language lang)
                                     (downcase (string-trim lang)))
@@ -2187,103 +2194,162 @@ Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
             (setq overlay (make-overlay (+ body-start pos)
                                         (+ body-start (1+ pos))
                                         buf))
-            (overlay-put overlay 'face (plist-get props 'face))
+            (chatgpt-shell--overlay-put-all
+             overlay
+             'evaporate t
+             'face (plist-get props 'face))
             (setq pos (1+ pos))))
-      (overlay-put (make-overlay body-start body-end buf)
-                   'face 'font-lock-doc-markup-face))))
+      (chatgpt-shell--overlay-put-all
+       (make-overlay body-start body-end buf)
+       'evaporate t
+       'face 'font-lock-doc-markup-face))))
+
+(defun chatgpt-shell--overlay-put-all (overlay &rest props)
+  "Set multiple properties on OVERLAY via PROPS."
+  (unless (= (mod (length props) 2) 0)
+    (error "Props missing a property or value"))
+  (while props
+    (overlay-put overlay (pop props) (pop props))))
 
 (defun chatgpt-shell--fontify-divider (start end)
   "Display text between START and END as a divider."
-  (overlay-put (make-overlay start end
-                             (if (and (boundp 'shell-maker--config)
-                                      shell-maker--config)
-                                 (shell-maker-buffer shell-maker--config)
-                               (current-buffer)))
-               'display
-               (concat (propertize (concat (make-string (window-body-width) ? ) "")
-                                   'face '(:underline t)) "\n")))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay start end
+                 (if (and (boundp 'shell-maker--config)
+                          shell-maker--config)
+                     (shell-maker-buffer shell-maker--config)
+                   (current-buffer)))
+   'evaporate t
+   'display
+   (concat (propertize (concat (make-string (window-body-width) ? ) "")
+                       'face '(:underline t)) "\n")))
 
 ;; TODO: Move to shell-maker.
 (defun chatgpt-shell--fontify-link (start end title-start title-end url-start url-end)
   "Fontify a markdown link.
 Use START END TITLE-START TITLE-END URL-START URL-END."
   ;; Hide markup before
-  (overlay-put (make-overlay start title-start) 'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay start title-start)
+   'evaporate t
+   'invisible 'chatgpt-shell)
   ;; Show title as link
-  (overlay-put (make-overlay title-start title-end) 'face 'link)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay title-start title-end)
+   'evaporate t
+   'face 'link)
   ;; Make RET open the URL
   (define-key (let ((map (make-sparse-keymap)))
                 (define-key map [mouse-1]
-                  (lambda () (interactive)
-                    (browse-url (buffer-substring-no-properties url-start url-end))))
+                            (lambda () (interactive)
+                              (browse-url (buffer-substring-no-properties url-start url-end))))
                 (define-key map (kbd "RET")
-                  (lambda () (interactive)
-                    (browse-url (buffer-substring-no-properties url-start url-end))))
-                (overlay-put (make-overlay title-start title-end) 'keymap map)
+                            (lambda () (interactive)
+                              (browse-url (buffer-substring-no-properties url-start url-end))))
+                (chatgpt-shell--overlay-put-all
+                 (make-overlay title-start title-end)
+                 'evaporate t
+                 'keymap map)
                 map)
-    [remap self-insert-command] 'ignore)
+              [remap self-insert-command] 'ignore)
   ;; Hide markup after
-  (overlay-put (make-overlay title-end end) 'invisible 'chatgpt-shell))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay title-end end)
+   'evaporate t
+   'invisible 'chatgpt-shell))
 
 ;; TODO: Move to shell-maker.
 (defun chatgpt-shell--fontify-bold (start end text-start text-end)
   "Fontify a markdown bold.
 Use START END TEXT-START TEXT-END."
   ;; Hide markup before
-  (overlay-put (make-overlay start text-start) 'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay start text-start)
+   'evaporate t
+   'invisible 'chatgpt-shell)
   ;; Show title as bold
-  (overlay-put (make-overlay text-start text-end) 'face 'bold)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay text-start text-end)
+   'evaporate t
+   'face 'bold)
   ;; Hide markup after
-  (overlay-put (make-overlay text-end end) 'invisible 'chatgpt-shell))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay text-end end)
+   'evaporate t
+   'invisible 'chatgpt-shell))
 
 ;; TODO: Move to shell-maker.
 (defun chatgpt-shell--fontify-header (start _end level-start level-end title-start title-end)
   "Fontify a markdown header.
 Use START END LEVEL-START LEVEL-END TITLE-START TITLE-END."
   ;; Hide markup before
-  (overlay-put (make-overlay start title-start) 'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay start title-start)
+   'evaporate t
+   'invisible 'chatgpt-shell)
   ;; Show title as header
-  (overlay-put (make-overlay title-start title-end) 'face
-               (cond ((eq (- level-end level-start) 1)
-                      'org-level-1)
-                     ((eq (- level-end level-start) 2)
-                      'org-level-2)
-                     ((eq (- level-end level-start) 3)
-                      'org-level-3)
-                     ((eq (- level-end level-start) 4)
-                      'org-level-4)
-                     ((eq (- level-end level-start) 5)
-                      'org-level-5)
-                     ((eq (- level-end level-start) 6)
-                      'org-level-6)
-                     ((eq (- level-end level-start) 7)
-                      'org-level-7)
-                     ((eq (- level-end level-start) 8)
-                      'org-level-8)
-                     (t
-                      'org-level-1))))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay title-start title-end)
+   'evaporate t
+   'face
+   (cond ((eq (- level-end level-start) 1)
+          'org-level-1)
+         ((eq (- level-end level-start) 2)
+          'org-level-2)
+         ((eq (- level-end level-start) 3)
+          'org-level-3)
+         ((eq (- level-end level-start) 4)
+          'org-level-4)
+         ((eq (- level-end level-start) 5)
+          'org-level-5)
+         ((eq (- level-end level-start) 6)
+          'org-level-6)
+         ((eq (- level-end level-start) 7)
+          'org-level-7)
+         ((eq (- level-end level-start) 8)
+          'org-level-8)
+         (t
+          'org-level-1))))
 
 ;; TODO: Move to shell-maker.
 (defun chatgpt-shell--fontify-italic (start end text-start text-end)
   "Fontify a markdown italic.
 Use START END TEXT-START TEXT-END."
   ;; Hide markup before
-  (overlay-put (make-overlay start text-start) 'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay start text-start)
+   'evaporate t
+   'invisible 'chatgpt-shell)
   ;; Show title as italic
-  (overlay-put (make-overlay text-start text-end) 'face 'italic)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay text-start text-end)
+   'evaporate t
+   'face 'italic)
   ;; Hide markup after
-  (overlay-put (make-overlay text-end end) 'invisible 'chatgpt-shell))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay text-end end)
+   'evaporate t
+   'invisible 'chatgpt-shell))
 
 ;; TODO: Move to shell-maker.
 (defun chatgpt-shell--fontify-strikethrough (start end text-start text-end)
   "Fontify a markdown strikethrough.
 Use START END TEXT-START TEXT-END."
   ;; Hide markup before
-  (overlay-put (make-overlay start text-start) 'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay start text-start)
+   'evaporate t
+   'invisible 'chatgpt-shell)
   ;; Show title as strikethrough
-  (overlay-put (make-overlay text-start text-end) 'face '(:strike-through t))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay text-start text-end)
+   'evaporate t
+   'face '(:strike-through t))
   ;; Hide markup after
-  (overlay-put (make-overlay text-end end) 'invisible 'chatgpt-shell))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay text-end end)
+   'evaporate t
+   'invisible 'chatgpt-shell))
 
 ;; TODO: Move to shell-maker.
 (defun chatgpt-shell--fontify-inline-code (body-start body-end)
@@ -2291,16 +2357,25 @@ Use START END TEXT-START TEXT-END."
 Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
  BODY-END QUOTES2-START and QUOTES2-END."
   ;; Hide ```
-  (overlay-put (make-overlay (1- body-start)
-                             body-start) 'invisible 'chatgpt-shell)
-  (overlay-put (make-overlay body-end
-                             (1+ body-end)) 'invisible 'chatgpt-shell)
-  (overlay-put (make-overlay body-start body-end
-                             (if (and (boundp 'shell-maker--config)
-                                      shell-maker--config)
-                                 (shell-maker-buffer shell-maker--config)
-                               (current-buffer)))
-               'face 'font-lock-doc-markup-face))
+  (chatgpt-shell--overlay-put-all
+   (make-overlay (1- body-start)
+                 body-start)
+   'evaporate t
+   'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay body-end
+                 (1+ body-end))
+   'evaporate t
+   'invisible 'chatgpt-shell)
+  (chatgpt-shell--overlay-put-all
+   (make-overlay body-start body-end
+                 (if (and (boundp 'shell-maker--config)
+                          shell-maker--config)
+                     (shell-maker-buffer shell-maker--config)
+                   (current-buffer)))
+   'evaporate t
+
+   'face 'font-lock-doc-markup-face))
 
 (defun chatgpt-shell-rename-block-at-point ()
   "Rename block at point (perhaps a different language)."
@@ -2729,7 +2804,8 @@ compiling source blocks."
 
 (defun chatgpt-shell--flymake-context ()
   "Return flymake diagnostic context if available.  Nil otherwise."
-  (when-let* ((diagnostic (flymake-diagnostics (point)))
+  (when-let* ((point (point))
+              (diagnostic (flymake-diagnostics (point)))
               (line-start (line-beginning-position))
               (line-end (line-end-position))
               (top-context-start (max (line-beginning-position -5) (point-min)))
@@ -2738,6 +2814,7 @@ compiling source blocks."
               (bottom-context-end (min (line-beginning-position 7) (point-max)))
               (current-line (buffer-substring line-start line-end)))
     (list
+     (cons :point (point))
      (cons :start top-context-start)
      (cons :end bottom-context-end)
      (cons :diagnostic (mapconcat #'flymake-diagnostic-text diagnostic "\n"))
@@ -2755,15 +2832,136 @@ compiling source blocks."
 (defun chatgpt-shell-fix-error-at-point ()
   "Fixes flymake error at point."
   (interactive)
-  (if-let ((flymake-context (chatgpt-shell--flymake-context)))
-      (chatgpt-shell-request-and-insert-response
-       :system-prompt "Fix the error highlighted in code and show the entire snippet rewritten with the fix. Do not give explanations. Do not wrap snippets in markdown blocks.\n\n"
-       :start (map-elt flymake-context :start)
-       :end (map-elt flymake-context :end)
-       :query (concat (map-elt flymake-context :diagnostic) "\n\n"
-                      "Code: \n\n"
-                      (map-elt flymake-context :content)))
+  (if-let ((flymake-context (chatgpt-shell--flymake-context))
+           (progress-reporter (make-progress-reporter "ChatGPT "))
+           (response "")
+           (buffer (current-buffer))
+           (prog-mode-p (derived-mode-p 'prog-mode)))
+      ;; TODO: Add a helper that facilitates applying changes interactively
+      ;; and reuse between chatgpt-shell-fix-error-at-point and
+      ;; chatgpt-shell-quick-modify-region.
+      (progn
+        (fader-start-fading-region (save-excursion
+                                     (goto-char (map-elt flymake-context :point))
+                                     (line-beginning-position))
+                                   (save-excursion
+                                     (goto-char (map-elt flymake-context :point))
+                                     (line-end-position)))
+        (progress-reporter-update progress-reporter)
+        (chatgpt-shell-send-contextless-request
+         :system-prompt "Fix the error highlighted in code and show the entire snippet rewritten with the fix.
+Do not give explanations. Do not add comments.
+Do not balance unbalanced brackets or parenthesis at beginning or end of text.
+Do not wrap snippets in markdown blocks.\n\n"
+         :query (concat (map-elt flymake-context :diagnostic) "\n\n"
+                        "Code: \n\n"
+                        (map-elt flymake-context :content))
+         :streaming t
+         :on-output (lambda (_command output error finished)
+                      (progn
+                        (progress-reporter-update progress-reporter)
+                        (setq response (concat response output))
+                        (when finished
+                          ;; In prog mode, remove unnecessary
+                          ;; markdown blocks prior to insertion.
+                          (when prog-mode-p
+                            (setq response
+                                  (chatgpt-shell--remove-source-block-markers response)))
+                          (fader-stop-fading)
+                          (progress-reporter-done progress-reporter)
+                          (with-current-buffer buffer
+                            (deactivate-mark))
+                          (pretty-smerge-insert
+                           :text response
+                           :start (map-elt flymake-context :start)
+                           :end (map-elt flymake-context :end)
+                           :buffer buffer))
+                        (when error
+                          (unless (string-empty-p (string-trim output))
+                            (message "%s" output)))))))
     (error "Nothing to fix")))
+
+(cl-defun chatgpt-shell-request-and-insert-merged-response (&key query
+                                                                 (buffer (current-buffer))
+                                                                 model-version
+                                                                 system-prompt
+                                                                 remove-block-markers)
+  "Send a contextless request (no history) and merge into BUFFER:
+
+QUERY: Request query text.
+BUFFER (optional): Buffer to insert to or omit to insert to current buffer.
+MODEL-VERSION (optional): Index from `chatgpt-shell-model-versions' or string.
+SYSTEM-PROMPT (optional): As string."
+  (unless query
+    (error "Missing mandatory \"query\" param"))
+  (unless (region-active-p)
+    (error "No region selected"))
+  (let ((start (save-excursion
+                 ;; Always select from beginning of line.
+                 (goto-char (region-beginning))
+                 (line-beginning-position)))
+        (end (region-end))
+        (progress-reporter (make-progress-reporter "ChatGPT "))
+        (response ""))
+    ;; Barf trailing space from selection.
+    (when (string-match "[ \n\t]+$"
+                        (buffer-substring-no-properties
+                         start
+                         end))
+      (setq end (- end (length (match-string 0)))))
+    (setq query (concat query "\n\n" (buffer-substring start end)))
+    (fader-start-fading-region start end)
+    (progress-reporter-update progress-reporter)
+    (chatgpt-shell-send-contextless-request
+     :model-version model-version
+     :system-prompt system-prompt
+     :query query
+     :streaming t
+     :on-output (lambda (_command output error finished)
+                  (progn
+                    (progress-reporter-update progress-reporter)
+                    (setq response (concat response output))
+                    (when finished
+                      (when remove-block-markers
+                        (setq response
+                              (chatgpt-shell--remove-source-block-markers response)))
+                      (fader-stop-fading)
+                      (progress-reporter-done progress-reporter)
+                      (pretty-smerge-insert
+                       :text response
+                       :start start
+                       :end end
+                       :buffer buffer))
+                    (when error
+                      (unless (string-empty-p (string-trim output))
+                        (message "%s" output))))))))
+
+(defun chatgpt-shell-quick-modify-region ()
+  "Request from minibuffer to modify selection."
+  (interactive)
+  (unless (region-active-p)
+    (error "No region selected"))
+  (let ((system-prompt "Follow my instruction and only my instruction.
+Do not explain nor wrap in a markdown block.
+Do not balance unbalanced brackets or parenthesis at beginning or end of text.
+Write solutions in their entirety."))
+    (when (derived-mode-p 'prog-mode)
+      (setq system-prompt (format "%s\nUse `%s` programming language."
+                                  system-prompt
+                                  (string-trim-right (symbol-name major-mode) "-mode"))))
+    (chatgpt-shell-request-and-insert-merged-response
+     :system-prompt system-prompt
+     :query (concat (read-string "ChatGPT request to modify: ")
+                    "\n\n"
+                    "Apply my instruction to:")
+     :remove-block-markers t)))
+
+(defun chatgpt-shell--remove-source-block-markers (text)
+  "Remove markdown code block markers TEXT."
+  (replace-regexp-in-string
+   (rx (optional "\n") bol "```" (zero-or-more (or alphanumeric "-" "+"))
+       (zero-or-more space) eol (optional "\n"))
+   "" text t))
 
 ;;; TODO: Move to chatgpt-shell-prompt-compose.el, but first update
 ;;; the MELPA recipe, so it can load additional files other than chatgpt-shell.el.
@@ -2820,15 +3018,21 @@ t if invoked from a transient frame (quitting closes the frame).")
   (setq buffer-read-only chatgpt-shell-prompt-compose-view-mode))
 
 ;;;###autoload
-(defun chatgpt-shell-quick-request ()
+(defun chatgpt-shell-quick-insert()
   "Request from minibuffer and insert response into current buffer."
   (interactive)
-  (let ((query (read-string "ChatGPT request insert: ")))
+  (let ((query (read-string "ChatGPT request insert: "))
+        (system-prompt (format "Follow my instruction and only my instruction.
+Preferred programming language: %s
+Do NOT explain.
+Do NOT wrap text in markdown blocks.
+Write solutions in their entirety."
+                               (if (derived-mode-p 'prog-mode)
+                                   (string-trim-right (symbol-name major-mode) "-mode")
+                                 "none"))))
     (chatgpt-shell-request-and-insert-response
      :streaming t
-     :system-prompt "Follow my instruction and only my instruction.
-Do not explain nor wrap in a markdown block unless I ask for them.
-Write solutions in their entirety."
+     :system-prompt system-prompt
      :query (if (region-active-p)
                 (concat query ":\n\n"
                         (buffer-substring (region-beginning)
@@ -3288,6 +3492,210 @@ Useful if sending a request failed, perhaps from failed connectivity."
   (unless (eq major-mode 'chatgpt-shell-prompt-compose-mode)
     (user-error "Not in a shell compose buffer"))
   (switch-to-buffer (chatgpt-shell--primary-buffer)))
+
+;; pretty smerge start
+
+(cl-defun pretty-smerge-insert (&key text start end buffer)
+  "Insert TEXT, replacing content of START and END at BUFFER."
+  (unless (and text (stringp text))
+    (error ":text is missing or not a string"))
+  (unless (and buffer (bufferp buffer))
+    (error ":buffer is missing or not a buffer"))
+  (unless (and start (integerp start))
+    (error ":start is missing or not an integer"))
+  (unless (and end (integerp end))
+    (error ":end is missing or not an integer"))
+  (with-current-buffer buffer
+    (let* ((orig-start (copy-marker start))
+           (orig-end (copy-marker end))
+           (orig-text (buffer-substring-no-properties orig-start
+                                                      orig-end))
+           (diff (pretty-smerge--make-merge-patch
+                  :old-label "Before" :old orig-text
+                  :new-label "After" :new text)))
+      (delete-region orig-start orig-end)
+      (when (looking-at-p "\n")
+        (delete-char 1))
+      (goto-char orig-start)
+      (insert diff)
+      (smerge-mode +1)
+      (ignore-errors
+        (smerge-prev))
+      (pretty-smerge-mode +1)
+      (condition-case nil
+          (unwind-protect
+              (progn
+                (if (y-or-n-p "Keep change?")
+                    (smerge-keep-lower)
+                  (smerge-keep-upper))
+                (smerge-mode -1))
+            (pretty-smerge-mode -1))
+        (quit
+         (pretty-smerge-mode -1))
+        (error nil)))))
+
+(cl-defun pretty-smerge--make-merge-patch (&key old new old-label new-label)
+  "Write OLD and NEW to temporary files, run diff3, and return merge patch.
+OLD-LABEL (optional): To display for old text.
+NEW-LABEL (optional): To display for new text."
+  (let ((base-file (make-temp-file "base"))
+        (old-file (make-temp-file "old"))
+        (new-file (make-temp-file "new")))
+    (with-temp-file old-file
+      (insert old)
+      (unless (string-suffix-p "\n" old)
+        (insert "\n")))
+    (with-temp-file new-file
+      (insert new)
+      (unless (string-suffix-p "\n" new)
+        (insert "\n")))
+    (with-temp-buffer
+      (let ((retval (call-process "diff3" nil t nil "-m" old-file base-file new-file)))
+        (delete-file base-file)
+        (delete-file old-file)
+        (delete-file new-file)
+        ;; 0: No differences or no conflicts.
+        ;; 1: Merge conflicts.
+        ;; 2: Error occurred.
+        (when (= retval 2)
+          (error (buffer-substring-no-properties (point-min)
+                                                 (point-max))))
+        (goto-char (point-min))
+        (while (search-forward old-file nil t)
+          (replace-match (or old-label "old")))
+        (goto-char (point-min))
+        (while (search-forward new-file nil t)
+          (replace-match (or new-label "new")))
+        (goto-char (point-min))
+        (flush-lines "^|||||||")
+        (buffer-substring-no-properties (point-min)
+                                        (point-max))))))
+
+(define-minor-mode pretty-smerge-mode
+  "Minor mode to display overlays for conflict markers."
+  :lighter " PrettySmerge"
+  (if pretty-smerge-mode
+      (progn
+        (pretty-smerge--refresh)
+        (add-hook 'after-change-functions
+                  #'pretty-smerge--autodisable
+                  nil t))
+    (pretty-smerge-mode-remove--overlays)
+    (remove-hook 'after-change-functions
+                 #'pretty-smerge--autodisable
+                 t)))
+
+(defun pretty-smerge--autodisable (_beg _end _len)
+  "Disable `pretty-smerge-mode' on edit."
+  (pretty-smerge-mode -1)
+  (remove-hook 'after-change-functions
+               #'pretty-smerge--autodisable
+               t))
+
+(defun pretty-smerge--refresh ()
+  "Apply overlays to conflict markers."
+  (pretty-smerge-mode-remove--overlays)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward
+            (concat
+             "^\\(<<<<<<<[ \t]*\\)" ;; begin marker
+             "\\(.*\\)\n"           ;; begin label
+             "\\(\\(?:.*\n\\)*?\\)"     ;; upper content
+             "\\(=======\n\\)"      ;; maker
+             "\\(\\(?:.*\n\\)*?\\)"     ;; lower content
+             "\\(>>>>>>>[ \t]*\\)"  ;; end marker
+             "\\(.*\\)\n")          ;; end label
+            nil t)
+      (let ((overlay (make-overlay (match-beginning 1)
+                                   (match-end 2))))
+        (overlay-put overlay 'category 'conflict-marker)
+        (overlay-put overlay 'display
+                     (concat (propertize (concat " " (match-string 2) " ")
+                                         'face '(:inherit default :box t))
+                             "\n"))
+        (overlay-put overlay 'evaporate t))
+      (let ((overlay (make-overlay (match-beginning 4)
+                                   (match-end 4))))
+        (overlay-put overlay 'category 'conflict-marker)
+        (overlay-put overlay 'display
+                     (concat "\n" (propertize (concat " " (match-string 7) " ")
+                                              'face '(:inherit default :box t)) "\n\n"))
+        (overlay-put overlay 'evaporate t))
+      (let ((overlay (make-overlay (match-beginning 6)
+                                   (match-end 7))))
+        (overlay-put overlay 'category 'conflict-marker)
+        (overlay-put overlay 'display "")
+        (overlay-put overlay 'face 'warning)
+        (overlay-put overlay 'evaporate t)))))
+
+(defun pretty-smerge-mode-remove--overlays ()
+  "Remove all conflict marker overlays."
+  (remove-overlays (point-min) (point-max) 'category 'conflict-marker))
+
+;; pretty smerge end
+
+;; fader start
+
+(defvar-local fader-timer nil
+  "Timer object for animating the region.")
+
+(defvar-local fader-overlays nil
+  "List of overlays for the animated regions.")
+
+(defun fader-start-fading-region (start end)
+  "Animate the background color of the region between START and END."
+  (deactivate-mark)
+  (fader-stop-fading)
+  (let ((colors (append (fader-palette)
+                        (reverse (fader-palette)))))
+    (dolist (ov fader-overlays) (delete-overlay ov))
+    (setq fader-overlays (list (make-overlay start end)))
+    (setq fader-timer
+          (run-with-timer 0 0.01
+                          (lambda ()
+                            (let* ((color (pop colors)))
+                              (if (and color
+                                       fader-overlays)
+                                  (progn
+                                    (overlay-put (car fader-overlays) 'face `(:background ,color :extend t))
+                                    (setq colors (append colors (list color))))
+                                (fader-stop-fading))))))))
+
+(defun fader-palette ()
+  "Generate a gradient palette from the `region' face to the `default' face."
+  (let* ((start-color (face-background 'region))
+         (end-color (face-background 'default))
+         (start-rgb (color-name-to-rgb start-color))
+         (end-rgb (color-name-to-rgb end-color))
+         (steps 50))
+    (mapcar (lambda (step)
+              (apply 'color-rgb-to-hex
+                     (cl-mapcar (lambda (start end)
+                                  (+ start (* step (/ (- end start) (1- steps)))))
+                                start-rgb end-rgb)))
+            (number-sequence 0 (1- steps)))))
+
+(defun fader-start ()
+  "Start animating the currently active region."
+  (interactive)
+  (if (use-region-p)
+      (progn
+        (deactivate-mark)
+        (fader-start-fading-region (region-beginning) (region-end)))
+    (message "No active region")))
+
+(defun fader-stop-fading ()
+  "Stop animating and remove all overlays."
+  (interactive)
+  (when fader-timer
+    (cancel-timer fader-timer)
+    (setq fader-timer nil))
+  (dolist (ov fader-overlays)
+    (delete-overlay ov))
+  (setq fader-overlays nil))
+
+;; fader end
 
 (provide 'chatgpt-shell)
 

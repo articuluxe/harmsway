@@ -353,9 +353,9 @@ commits before and half after."
   (pcase-let ((`(,args ,files)
                (magit-log--get-value 'magit-log-mode
                                      magit-prefix-use-buffer-arguments)))
-    (unless (eq transient-current-command 'magit-dispatch)
-      (when-let ((file (magit-file-relative-name)))
-        (setq files (list file))))
+    (when-let ((not (eq transient-current-command 'magit-dispatch))
+               (file (magit-file-relative-name)))
+      (setq files (list file)))
     (oset obj value (if files `(("--" ,@files) ,args) args))))
 
 (cl-defmethod transient-init-value ((obj magit-log-refresh-prefix))
@@ -387,13 +387,13 @@ commits before and half after."
            (eq major-mode mode))
       (setq args  magit-buffer-log-args)
       (setq files magit-buffer-log-files))
-     ((and (memq use-buffer-args '(always selected))
-           (when-let ((buffer (magit-get-mode-buffer
-                               mode nil
-                               (eq use-buffer-args 'selected))))
-             (setq args  (buffer-local-value 'magit-buffer-log-args buffer))
-             (setq files (buffer-local-value 'magit-buffer-log-files buffer))
-             t)))
+     ((when-let (((memq use-buffer-args '(always selected)))
+                 (buffer (magit-get-mode-buffer
+                          mode nil
+                          (eq use-buffer-args 'selected))))
+        (setq args  (buffer-local-value 'magit-buffer-log-args buffer))
+        (setq files (buffer-local-value 'magit-buffer-log-files buffer))
+        t))
      ((plist-member (symbol-plist mode) 'magit-log-current-arguments)
       (setq args (get mode 'magit-log-current-arguments)))
      ((when-let ((elt (assq (intern (format "magit-log:%s" mode))
@@ -937,20 +937,20 @@ is displayed in the current frame."
 (defun magit-log-move-to-parent (&optional n)
   "Move to the Nth parent of the current commit."
   (interactive "p")
-  (when (derived-mode-p 'magit-log-mode)
-    (when (magit-section-match 'commit)
-      (let* ((section (magit-current-section))
-             (parent-rev (format "%s^%s" (oref section value) (or n 1))))
-        (if-let ((parent-hash (magit-rev-parse "--short" parent-rev)))
-            (if-let ((parent (--first (equal (oref it value)
-                                             parent-hash)
-                                      (magit-section-siblings section 'next))))
-                (magit-section-goto parent)
-              (user-error
-               (substitute-command-keys
-                (concat "Parent " parent-hash " not found.  Try typing "
-                        "\\[magit-log-double-commit-limit] first"))))
-          (user-error "Parent %s does not exist" parent-rev))))))
+  (when (and (derived-mode-p 'magit-log-mode)
+             (magit-section-match 'commit))
+    (let* ((section (magit-current-section))
+           (parent-rev (format "%s^%s" (oref section value) (or n 1))))
+      (if-let ((parent-hash (magit-rev-parse "--short" parent-rev)))
+          (if-let ((parent (--first (equal (oref it value)
+                                           parent-hash)
+                                    (magit-section-siblings section 'next))))
+              (magit-section-goto parent)
+            (user-error
+             (substitute-command-keys
+              (concat "Parent " parent-hash " not found.  Try typing "
+                      "\\[magit-log-double-commit-limit] first"))))
+        (user-error "Parent %s does not exist" parent-rev)))))
 
 (defun magit-log-move-to-revision (rev)
   "Read a revision and move to it in current log buffer.
@@ -1888,15 +1888,15 @@ in the pushremote case."
 (defun magit-insert-unpulled-from-pushremote ()
   "Insert commits that haven't been pulled from the push-remote yet."
   (when-let* ((target (magit-get-push-branch))
-              (range  (concat ".." target)))
-    (when (magit--insert-pushremote-log-p)
-      (magit-insert-section (unpulled range t)
-        (magit-insert-heading
-          (format (propertize "Unpulled from %s."
-                              'font-lock-face 'magit-section-heading)
-                  (propertize target 'font-lock-face 'magit-branch-remote)))
-        (magit--insert-log nil range magit-buffer-log-args)
-        (magit-log-insert-child-count)))))
+              (range  (concat ".." target))
+              ((magit--insert-pushremote-log-p)))
+    (magit-insert-section (unpulled range t)
+      (magit-insert-heading
+        (format (propertize "Unpulled from %s."
+                            'font-lock-face 'magit-section-heading)
+                (propertize target 'font-lock-face 'magit-branch-remote)))
+      (magit--insert-log nil range magit-buffer-log-args)
+      (magit-log-insert-child-count))))
 
 (cl-defmethod magit-section-ident-value ((section magit-unpushed-section))
   "\"..@{push}\" cannot be used as the value because that is
@@ -1968,15 +1968,15 @@ Show the last `magit-log-section-commit-count' commits."
 (defun magit-insert-unpushed-to-pushremote ()
   "Insert commits that haven't been pushed to the push-remote yet."
   (when-let* ((target (magit-get-push-branch))
-              (range  (concat target "..")))
-    (when (magit--insert-pushremote-log-p)
-      (magit-insert-section (unpushed range t)
-        (magit-insert-heading
-          (format (propertize "Unpushed to %s."
-                              'font-lock-face 'magit-section-heading)
-                  (propertize target 'font-lock-face 'magit-branch-remote)))
-        (magit--insert-log nil range magit-buffer-log-args)
-        (magit-log-insert-child-count)))))
+              (range  (concat target ".."))
+              ((magit--insert-pushremote-log-p)))
+    (magit-insert-section (unpushed range t)
+      (magit-insert-heading
+        (format (propertize "Unpushed to %s."
+                            'font-lock-face 'magit-section-heading)
+                (propertize target 'font-lock-face 'magit-branch-remote)))
+      (magit--insert-log nil range magit-buffer-log-args)
+      (magit-log-insert-child-count))))
 
 (defun magit--insert-pushremote-log-p ()
   (magit--with-refresh-cache

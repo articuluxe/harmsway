@@ -600,20 +600,19 @@ prompt is confusing."
        (setq branches
              (list (magit-read-branch-prefer-other
                     (if force "Force delete branch" "Delete branch")))))
-     (unless force
-       (when-let ((unmerged (seq-remove #'magit-branch-merged-p branches)))
-         (if (magit-confirm 'delete-unmerged-branch
-               "Delete unmerged branch %s"
-               "Delete %d unmerged branches"
-               'noabort unmerged)
-             (setq force branches)
-           (or (setq branches
-                     (cl-set-difference branches unmerged :test #'equal))
-               (user-error "Abort")))))
+     (when-let (((not force))
+                (unmerged (seq-remove #'magit-branch-merged-p branches)))
+       (if (magit-confirm 'delete-unmerged-branch
+             "Delete unmerged branch %s"
+             "Delete %d unmerged branches"
+             'noabort unmerged)
+           (setq force branches)
+         (or (setq branches
+                   (cl-set-difference branches unmerged :test #'equal))
+             (user-error "Abort"))))
      (list branches force)))
-  (let* ((refs (mapcar #'magit-ref-fullname branches))
-         (ambiguous (--remove it refs)))
-    (when ambiguous
+  (let ((refs (mapcar #'magit-ref-fullname branches)))
+    (when-let ((ambiguous (--remove it refs)))
       (user-error
        "%s ambiguous.  Please cleanup using git directly."
        (let ((len (length ambiguous)))
