@@ -1,1 +1,2 @@
-cp src/*.el ../../../../.emacs.d/etc/themes
+cp src/kanagawa-themes.el ../../../../.emacs.d/plugins
+find src -maxdepth 1 -name \*.el | grep -v themes | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
