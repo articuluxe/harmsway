@@ -25,6 +25,6 @@ use_clang()
 
 use_gcc()
 {
-    export CC=${CSTDLIB_BIN}/gcc-13
-    export CXX=${CSTDLIB_BIN}/g++-13
+    export CC=${CSTDLIB_BIN}/gcc-14
+    export CXX=${CSTDLIB_BIN}/g++-14
 }
