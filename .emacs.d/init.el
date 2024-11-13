@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2024  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-10-21 09:13:20 dharms>
+;; Modified Time-stamp: <2024-10-24 09:34:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3751,7 +3751,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package flymake-bashate
   :after flymake
   :init
-  (setq flymake-bashate-max-line-length 90))
+  (setq flymake-bashate-max-line-length 132))
 
 (use-package flymake-popon
   :after flymake
