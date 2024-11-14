@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2022, 2024  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2024-10-21 10:56:36 dharms>
+;; Modified Time-stamp: <2024-11-14 12:50:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -198,6 +198,8 @@
            (harmsway/make-all-font-sizes-the-same-please))
           ((eq sym 'metalheart)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow2"))))))
+          ((eq sym 'miasma)
+           (custom-theme-set-faces sym '(cursor ((t (:background "#fbec9f"))))))
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
           ((eq sym 'naquadah)
