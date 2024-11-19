@@ -60,6 +60,7 @@
   "Consulting `completing-read'."
   :link '(info-link :tag "Info Manual" "(consult)")
   :link '(url-link :tag "Website" "https://github.com/minad/consult")
+  :link '(url-link :tag "Wiki" "https://github.com/minad/consult/wiki")
   :link '(emacs-library-link :tag "Library Source" "consult.el")
   :group 'files
   :group 'outlines
@@ -369,7 +370,7 @@ mode hooks, e.g., `prog-mode-hook'."
 (defcustom consult-bookmark-narrow
   `((?f "File" bookmark-default-handler)
     (?h "Help" help-bookmark-jump Info-bookmark-jump
-               Man-bookmark-jump woman-bookmark-jump)
+        Man-bookmark-jump woman-bookmark-jump)
     (?p "Picture" image-bookmark-jump)
     (?d "Docview" doc-view-bookmark-jump)
     (?m "Mail" gnus-summary-bookmark-jump)
@@ -652,11 +653,18 @@ Turn ARG into a list, and for each element either:
 CATEGORY is the completion category, used to find the completion style via
 `completion-category-defaults' and `completion-category-overrides'.
 HIGHLIGHT must be non-nil if the resulting strings should be highlighted."
-  ;; completion-all-completions returns an improper list
-  ;; where the last link is not necessarily nil.
-  (nconc (completion-all-completions pattern cands nil (length pattern)
-                                     `(metadata (category . ,category)))
-         nil))
+  ;; Ensure that the global completion style settings are used for
+  ;; `consult-line', `consult-focus-lines' and `consult-keep-lines' filtering.
+  ;; This override is necessary since users may want to override the settings
+  ;; buffer-locally for in-buffer completion via Corfu.
+  (let ((completion-styles (default-value 'completion-styles))
+        (completion-category-defaults (default-value 'completion-category-defaults))
+        (completion-category-overrides (default-value 'completion-category-overrides)))
+    ;; `completion-all-completions' returns an improper list where the last link
+    ;; is not necessarily nil.
+    (nconc (completion-all-completions pattern cands nil (length pattern)
+                                       `(metadata (category . ,category)))
+           nil)))
 
 (defun consult--completion-filter-complement (pattern cands category _highlight)
   "Filter CANDS with complement of PATTERN.
@@ -782,29 +790,29 @@ asked for the directories or files to search via
             ((pred stringp) dir)
             ((or 'nil '(16)) (or (consult--project-root dir) default-directory))
             (_
-               (pcase (if (stringp (car-safe dir))
-                          dir
-                        ;; Preserve this-command across `completing-read-multiple' call,
-                        ;; such that `consult-customize' continues to work.
-                        (let ((this-command this-command)
-                              (def (abbreviate-file-name default-directory))
-                              ;; TODO: `minibuffer-completing-file-name' is
-                              ;; mostly deprecated, but still in use. Packages
-                              ;; should instead use the completion metadata.
-                              (minibuffer-completing-file-name t)
-                              (ignore-case read-file-name-completion-ignore-case))
-                          (minibuffer-with-setup-hook
-                              (lambda ()
-                                (setq-local completion-ignore-case ignore-case)
-                                (set-syntax-table minibuffer-local-filename-syntax))
-                            (completing-read-multiple "Directories or files: "
-                                                      #'completion-file-name-table
-                                                      nil t def 'consult--path-history def))))
-                 ((and `(,p) (guard (file-directory-p p))) p)
-                 (ps (setq paths (mapcar (lambda (p)
-                                           (file-relative-name (expand-file-name p)))
-                                         ps))
-                     default-directory)))))
+             (pcase (if (stringp (car-safe dir))
+                        dir
+                      ;; Preserve this-command across `completing-read-multiple' call,
+                      ;; such that `consult-customize' continues to work.
+                      (let ((this-command this-command)
+                            (def (abbreviate-file-name default-directory))
+                            ;; TODO: `minibuffer-completing-file-name' is
+                            ;; mostly deprecated, but still in use. Packages
+                            ;; should instead use the completion metadata.
+                            (minibuffer-completing-file-name t)
+                            (ignore-case read-file-name-completion-ignore-case))
+                        (minibuffer-with-setup-hook
+                            (lambda ()
+                              (setq-local completion-ignore-case ignore-case)
+                              (set-syntax-table minibuffer-local-filename-syntax))
+                          (completing-read-multiple "Directories or files: "
+                                                    #'completion-file-name-table
+                                                    nil t def 'consult--path-history def))))
+               ((and `(,p) (guard (file-directory-p p))) p)
+               (ps (setq paths (mapcar (lambda (p)
+                                         (file-relative-name (expand-file-name p)))
+                                       ps))
+                   default-directory)))))
          (edir (file-name-as-directory (expand-file-name dir)))
          (pdir (let ((default-directory edir))
                  ;; Bind default-directory in order to find the project
@@ -974,10 +982,10 @@ TOFU suffix for disambiguation."
 ;; we cannot use it here since it excludes too much (e.g., invisible)
 ;; and at the same time not enough (e.g., cursor-sensor-functions).
 (defconst consult--remove-text-properties
-  '(category cursor cursor-intangible cursor-sensor-functions field follow-link
-    fontified front-sticky help-echo insert-behind-hooks insert-in-front-hooks
-    intangible keymap local-map modification-hooks mouse-face pointer read-only
-    rear-nonsticky yank-handler)
+  '( category cursor cursor-intangible cursor-sensor-functions field follow-link
+     fontified front-sticky help-echo insert-behind-hooks insert-in-front-hooks
+     intangible keymap local-map modification-hooks mouse-face pointer read-only
+     rear-nonsticky yank-handler)
   "List of text properties to remove from buffer strings.")
 
 (defsubst consult--buffer-substring (beg end &optional fontify)
@@ -1297,8 +1305,8 @@ ORIG is the original function, HOOKS the arguments."
           (with-current-buffer buffer
             (if (not partial)
                 (when (or (eq major-mode 'hexl-mode)
-                        (and (eq major-mode 'fundamental-mode)
-                             (save-excursion (search-forward "\0" nil 'noerror))))
+                          (and (eq major-mode 'fundamental-mode)
+                               (save-excursion (search-forward "\0" nil 'noerror))))
                   (error "No preview of binary file `%s'"
                          (file-name-nondirectory name)))
               (with-silent-modifications
@@ -2700,7 +2708,7 @@ input method."
         (lambda (_narrow inp _cand) (funcall transform inp))
         (lambda () "")
         history
-        (read-from-minibuffer prompt initial nil nil history default inherit-input-method))))
+      (read-from-minibuffer prompt initial nil nil history default inherit-input-method))))
 
 (cl-defun consult--prompt (&rest options &key prompt history add-history initial default
                                  keymap state preview-key transform inherit-input-method)
@@ -2743,7 +2751,8 @@ KEYMAP is a command-specific keymap."
 
 (defun consult--multi-narrow (sources)
   "Return narrow list from SOURCES."
-  (thread-last sources
+  (thread-last
+    sources
     (mapcar (lambda (src)
               (when-let (narrow (plist-get src :narrow))
                 (if (consp narrow)
@@ -3357,9 +3366,9 @@ CANDIDATES is the list of candidates."
 If TRANSFORM non-nil, return transformed CAND, otherwise return title."
   (if transform cand
     (let* ((marker (car (get-text-property 0 'consult-location cand)))
-          (buf (if (consp marker)
-                   (car marker) ;; Handle cheap marker
-                 (marker-buffer marker))))
+           (buf (if (consp marker)
+                    (car marker) ;; Handle cheap marker
+                  (marker-buffer marker))))
       (if buf (buffer-name buf) "Dead buffer"))))
 
 (defun consult--line-multi-candidates (buffers input)
@@ -4483,64 +4492,64 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
 (consult--define-state buffer)
 
 (defvar consult--source-bookmark
-  `(:name     "Bookmark"
-    :narrow   ?m
-    :category bookmark
-    :face     consult-bookmark
-    :history  bookmark-history
-    :items    ,#'bookmark-all-names
-    :state    ,#'consult--bookmark-state)
+  `( :name     "Bookmark"
+     :narrow   ?m
+     :category bookmark
+     :face     consult-bookmark
+     :history  bookmark-history
+     :items    ,#'bookmark-all-names
+     :state    ,#'consult--bookmark-state)
   "Bookmark candidate source for `consult-buffer'.")
 
 (defvar consult--source-project-buffer
-  `(:name     "Project Buffer"
-    :narrow   ?b
-    :category buffer
-    :face     consult-buffer
-    :history  buffer-name-history
-    :state    ,#'consult--buffer-state
-    :enabled  ,(lambda () consult-project-function)
-    :items
-    ,(lambda ()
-       (when-let (root (consult--project-root))
-         (consult--buffer-query :sort 'visibility
-                                :directory root
-                                :as #'consult--buffer-pair))))
+  `( :name     "Project Buffer"
+     :narrow   ?b
+     :category buffer
+     :face     consult-buffer
+     :history  buffer-name-history
+     :state    ,#'consult--buffer-state
+     :enabled  ,(lambda () consult-project-function)
+     :items
+     ,(lambda ()
+        (when-let (root (consult--project-root))
+          (consult--buffer-query :sort 'visibility
+                                 :directory root
+                                 :as #'consult--buffer-pair))))
   "Project buffer candidate source for `consult-buffer'.")
 
 (defvar consult--source-project-recent-file
-  `(:name     "Project File"
-    :narrow   ?f
-    :category file
-    :face     consult-file
-    :history  file-name-history
-    :state    ,#'consult--file-state
-    :new
-    ,(lambda (file)
-       (consult--file-action
-        (expand-file-name file (consult--project-root))))
-    :enabled
-    ,(lambda ()
-       (and consult-project-function
-            recentf-mode))
-    :items
-    ,(lambda ()
-       (when-let (root (consult--project-root))
-         (let ((len (length root))
-               (ht (consult--buffer-file-hash))
-               items)
-           (dolist (file (bound-and-true-p recentf-list) (nreverse items))
-             ;; Emacs 29 abbreviates file paths by default, see
-             ;; `recentf-filename-handlers'.  I recommend to set
-             ;; `recentf-filename-handlers' to nil to avoid any slow down.
-             (unless (eq (aref file 0) ?/)
-               (let (file-name-handler-alist) ;; No Tramp slowdown please.
-                 (setq file (expand-file-name file))))
-             (when (and (not (gethash file ht)) (string-prefix-p root file))
-               (let ((part (substring file len)))
-                 (when (equal part "") (setq part "./"))
-                 (put-text-property 0 1 'multi-category `(file . ,file) part)
-                 (push part items))))))))
+  `( :name     "Project File"
+     :narrow   ?f
+     :category file
+     :face     consult-file
+     :history  file-name-history
+     :state    ,#'consult--file-state
+     :new
+     ,(lambda (file)
+        (consult--file-action
+         (expand-file-name file (consult--project-root))))
+     :enabled
+     ,(lambda ()
+        (and consult-project-function
+             recentf-mode))
+     :items
+     ,(lambda ()
+        (when-let (root (consult--project-root))
+          (let ((len (length root))
+                (ht (consult--buffer-file-hash))
+                items)
+            (dolist (file (bound-and-true-p recentf-list) (nreverse items))
+              ;; Emacs 29 abbreviates file paths by default, see
+              ;; `recentf-filename-handlers'.  I recommend to set
+              ;; `recentf-filename-handlers' to nil to avoid any slow down.
+              (unless (eq (aref file 0) ?/)
+                (let (file-name-handler-alist) ;; No Tramp slowdown please.
+                  (setq file (expand-file-name file))))
+              (when (and (not (gethash file ht)) (string-prefix-p root file))
+                (let ((part (substring file len)))
+                  (when (equal part "") (setq part "./"))
+                  (put-text-property 0 1 'multi-category `(file . ,file) part)
+                  (push part items))))))))
   "Project file candidate source for `consult-buffer'.")
 
 (defvar consult--source-project-buffer-hidden
@@ -4552,47 +4561,47 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
   "Like `consult--source-project-recent-file' but hidden by default.")
 
 (defvar consult--source-hidden-buffer
-  `(:name     "Hidden Buffer"
-    :narrow   ?\s
-    :hidden   t
-    :category buffer
-    :face     consult-buffer
-    :history  buffer-name-history
-    :action   ,#'consult--buffer-action
-    :items
-    ,(lambda () (consult--buffer-query :sort 'visibility
-                                       :filter 'invert
-                                       :as #'consult--buffer-pair)))
+  `( :name     "Hidden Buffer"
+     :narrow   ?\s
+     :hidden   t
+     :category buffer
+     :face     consult-buffer
+     :history  buffer-name-history
+     :action   ,#'consult--buffer-action
+     :items
+     ,(lambda () (consult--buffer-query :sort 'visibility
+                                        :filter 'invert
+                                        :as #'consult--buffer-pair)))
   "Hidden buffer candidate source for `consult-buffer'.")
 
 (defvar consult--source-modified-buffer
-  `(:name     "Modified Buffer"
-    :narrow   ?*
-    :hidden   t
-    :category buffer
-    :face     consult-buffer
-    :history  buffer-name-history
-    :state    ,#'consult--buffer-state
-    :items
-    ,(lambda () (consult--buffer-query :sort 'visibility
-                                       :as #'consult--buffer-pair
-                                       :predicate
-                                       (lambda (buf)
-                                         (and (buffer-modified-p buf)
-                                              (buffer-file-name buf))))))
+  `( :name     "Modified Buffer"
+     :narrow   ?*
+     :hidden   t
+     :category buffer
+     :face     consult-buffer
+     :history  buffer-name-history
+     :state    ,#'consult--buffer-state
+     :items
+     ,(lambda () (consult--buffer-query :sort 'visibility
+                                        :as #'consult--buffer-pair
+                                        :predicate
+                                        (lambda (buf)
+                                          (and (buffer-modified-p buf)
+                                               (buffer-file-name buf))))))
   "Modified buffer candidate source for `consult-buffer'.")
 
 (defvar consult--source-buffer
-  `(:name     "Buffer"
-    :narrow   ?b
-    :category buffer
-    :face     consult-buffer
-    :history  buffer-name-history
-    :state    ,#'consult--buffer-state
-    :default  t
-    :items
-    ,(lambda () (consult--buffer-query :sort 'visibility
-                                       :as #'consult--buffer-pair)))
+  `( :name     "Buffer"
+     :narrow   ?b
+     :category buffer
+     :face     consult-buffer
+     :history  buffer-name-history
+     :state    ,#'consult--buffer-state
+     :default  t
+     :items
+     ,(lambda () (consult--buffer-query :sort 'visibility
+                                        :as #'consult--buffer-pair)))
   "Buffer candidate source for `consult-buffer'.")
 
 (defun consult--file-register-p (reg)
@@ -4601,36 +4610,36 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
 
 (autoload 'consult-register--candidates "consult-register")
 (defvar consult--source-file-register
-  `(:name     "File Register"
-    :narrow   (?r . "Register")
-    :category file
-    :state    ,#'consult--file-state
-    :enabled  ,(lambda () (seq-some #'consult--file-register-p register-alist))
-    :items    ,(lambda () (consult-register--candidates #'consult--file-register-p)))
+  `( :name     "File Register"
+     :narrow   (?r . "Register")
+     :category file
+     :state    ,#'consult--file-state
+     :enabled  ,(lambda () (seq-some #'consult--file-register-p register-alist))
+     :items    ,(lambda () (consult-register--candidates #'consult--file-register-p)))
   "File register source.")
 
 (defvar consult--source-recent-file
-  `(:name     "File"
-    :narrow   ?f
-    :category file
-    :face     consult-file
-    :history  file-name-history
-    :state    ,#'consult--file-state
-    :new      ,#'consult--file-action
-    :enabled  ,(lambda () recentf-mode)
-    :items
-    ,(lambda ()
-       (let ((ht (consult--buffer-file-hash))
-             items)
-         (dolist (file (bound-and-true-p recentf-list) (nreverse items))
-           ;; Emacs 29 abbreviates file paths by default, see
-           ;; `recentf-filename-handlers'.  I recommend to set
-           ;; `recentf-filename-handlers' to nil to avoid any slow down.
-           (unless (eq (aref file 0) ?/)
-             (let (file-name-handler-alist) ;; No Tramp slowdown please.
-               (setq file (expand-file-name file))))
-           (unless (gethash file ht)
-             (push (consult--fast-abbreviate-file-name file) items))))))
+  `( :name     "File"
+     :narrow   ?f
+     :category file
+     :face     consult-file
+     :history  file-name-history
+     :state    ,#'consult--file-state
+     :new      ,#'consult--file-action
+     :enabled  ,(lambda () recentf-mode)
+     :items
+     ,(lambda ()
+        (let ((ht (consult--buffer-file-hash))
+              items)
+          (dolist (file (bound-and-true-p recentf-list) (nreverse items))
+            ;; Emacs 29 abbreviates file paths by default, see
+            ;; `recentf-filename-handlers'.  I recommend to set
+            ;; `recentf-filename-handlers' to nil to avoid any slow down.
+            (unless (eq (aref file 0) ?/)
+              (let (file-name-handler-alist) ;; No Tramp slowdown please.
+                (setq file (expand-file-name file))))
+            (unless (gethash file ht)
+              (push (consult--fast-abbreviate-file-name file) items))))))
   "Recent file candidate source for `consult-buffer'.")
 
 ;;;###autoload
@@ -5157,20 +5166,17 @@ automatically previewed."
 
 (defun consult--default-completion-list-candidate ()
   "Return current candidate at point from completions buffer."
-  (let (beg end)
+  ;; See feature request bug#74408 for `completion-list-candidate-at-point'.
+  (let (beg)
     (when (and
            (derived-mode-p 'completion-list-mode)
-           ;; Logic taken from `choose-completion'.
-           ;; TODO Upstream a `completion-list-get-candidate' function.
            (cond
-            ((and (not (eobp)) (get-text-property (point) 'mouse-face))
-             (setq end (point) beg (1+ (point))))
-            ((and (not (bobp)) (get-text-property (1- (point)) 'mouse-face))
-             (setq end (1- (point)) beg (point)))))
-      (setq beg (previous-single-property-change beg 'mouse-face)
-            end (or (next-single-property-change end 'mouse-face) (point-max)))
-      (or (get-text-property beg 'completion--string)
-          (buffer-substring-no-properties beg end)))))
+            ((and (not (eobp)) (get-text-property (point) 'completion--string))
+             (setq beg (1+ (point))))
+            ((and (not (bobp)) (get-text-property (1- (point)) 'completion--string))
+             (setq beg (point)))))
+      (get-text-property (previous-single-property-change beg 'completion--string)
+                         'completion--string))))
 
 ;;;;; Integration: Vertico
 

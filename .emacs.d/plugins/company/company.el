@@ -7,7 +7,7 @@
 ;; URL: http://company-mode.github.io/
 ;; Version: 1.0.2
 ;; Keywords: abbrev, convenience, matching
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is part of GNU Emacs.
 
@@ -781,11 +781,11 @@ See `company-quick-access-keys' for more details."
 
 (defun company-keymap--quick-access-modifier ()
   "Return string representation of the `company-quick-access-modifier'."
-  (if-let ((modifier (assoc-default company-quick-access-modifier
-                                    '((meta . "M")
-                                      (super . "s")
-                                      (hyper . "H")
-                                      (control . "C")))))
+  (if-let* ((modifier (assoc-default company-quick-access-modifier
+                                     '((meta . "M")
+                                       (super . "s")
+                                       (hyper . "H")
+                                       (control . "C")))))
       modifier
     (warn "company-quick-access-modifier value unknown: %S"
           company-quick-access-modifier)
@@ -903,8 +903,9 @@ asynchronous call into synchronous.")
     (define-key keymap [up-mouse-3] 'ignore)
     (define-key keymap [return] 'company-complete-selection)
     (define-key keymap (kbd "RET") 'company-complete-selection)
-    (define-key keymap [tab] 'company-complete-common)
-    (define-key keymap (kbd "TAB") 'company-complete-common)
+    (define-key keymap [tab] 'company-complete-common-or-cycle)
+    (define-key keymap (kbd "TAB") 'company-complete-common-or-cycle)
+    (define-key keymap [backtab] 'company-cycle-backward)
     (define-key keymap (kbd "<f1>") 'company-show-doc-buffer)
     (define-key keymap (kbd "C-h") 'company-show-doc-buffer)
     (define-key keymap "\C-w" 'company-show-location)
@@ -1986,11 +1987,11 @@ end of the match."
   :type 'integer)
 
 (defun company--render-icons-margin (icon-mapping root-dir candidate selected)
-  (if-let ((ws (window-system))
-           (candidate candidate)
-           (kind (company-call-backend 'kind candidate))
-           (icon-file (or (alist-get kind icon-mapping)
-                          (alist-get t icon-mapping))))
+  (if-let* ((ws (window-system))
+            (candidate candidate)
+            (kind (company-call-backend 'kind candidate))
+            (icon-file (or (alist-get kind icon-mapping)
+                           (alist-get t icon-mapping))))
       (let* ((bkg (face-attribute (if selected
                                       'company-tooltip-selection
                                     'company-tooltip)
@@ -2115,10 +2116,10 @@ See `company-text-icons-mapping'."
 
 (defun company-text-icons-margin (candidate selected)
   "Margin function which returns unicode icons."
-  (when-let ((candidate candidate)
-             (kind (company-call-backend 'kind candidate))
-             (conf (or (alist-get kind company-text-icons-mapping)
-                       (alist-get t company-text-icons-mapping))))
+  (when-let* ((candidate candidate)
+              (kind (company-call-backend 'kind candidate))
+              (conf (or (alist-get kind company-text-icons-mapping)
+                        (alist-get t company-text-icons-mapping))))
     (cl-destructuring-bind (icon &optional fg bg) conf
       (propertize
        (format company-text-icons-format icon)
@@ -2180,9 +2181,9 @@ PROPERTY return nil."
 
 (defun company-dot-icons-margin (candidate selected)
   "Margin function that uses a colored dot to display completion kind."
-  (when-let ((kind (company-call-backend 'kind candidate))
-             (conf (or (assoc-default kind company-text-icons-mapping)
-                       (assoc-default t company-text-icons-mapping))))
+  (when-let* ((kind (company-call-backend 'kind candidate))
+              (conf (or (assoc-default kind company-text-icons-mapping)
+                        (assoc-default t company-text-icons-mapping))))
     (cl-destructuring-bind (_icon &optional fg bg) conf
       (propertize company-dot-icons-format
                   'face
@@ -2436,7 +2437,7 @@ For more details see `company-insertion-on-trigger' and
       (if company-abort-manual-when-too-short
           ;; Must not be less than minimum or initial length.
           (min company-minimum-prefix-length
-               (if-let ((mp-len-override (cdr-safe company--manual-prefix)))
+               (if-let* ((mp-len-override (cdr-safe company--manual-prefix)))
                    (if (numberp mp-len-override)
                        mp-len-override
                      (length (car-safe company--manual-prefix)))
@@ -2491,7 +2492,6 @@ For more details see `company-insertion-on-trigger' and
 (defun company--begin-new ()
   (let ((min-prefix (company--prefix-min-length))
         entity c)
-    (company-cache-expire)
     (cl-dolist (backend (if company-backend
                             ;; prefer manual override
                             (list company-backend)
@@ -2545,6 +2545,7 @@ For more details see `company-insertion-on-trigger' and
    (company-candidates
     (company--continue))
    ((company--should-complete)
+    (company-cache-expire)
     (company--begin-new)))
   (if (not company-candidates)
       (setq company-backend nil)
@@ -2595,8 +2596,21 @@ For more details see `company-insertion-on-trigger' and
   (pcase-let ((`(,prefix . ,suffix) (company--boundaries result)))
     (company--insert-candidate result (or prefix company-prefix))
     (and (> (length suffix) 0)
-         (delete-region (point) (+ (point) (length suffix)))))
-  (company-cancel result))
+         (delete-region (point) (+ (point) (length suffix))))
+    (let ((tick (buffer-chars-modified-tick))
+          (backend company-backend))
+      ;; Call backend's `post-completion' and run other hooks, then exit.
+      (company-cancel result)
+      ;; Try restarting completion, to see if we moved into a new field.
+      ;; Most commonly, this would be after entering a dir in file completion.
+      (when (= (buffer-chars-modified-tick) tick)
+        (let (company-require-match)
+          (setq company-backend backend
+                company--manual-prefix 0)
+          (company--begin-new))
+        (unless (and company-candidates
+                     (equal (company--boundaries) '("" . "")))
+          (company-cancel))))))
 
 (defsubst company-keep (command)
   (and (symbolp command) (get command 'company-keep)))
@@ -3075,7 +3089,11 @@ For use in the `select-mouse' frontend action.  `let'-bound.")
     (company-complete-selection)))
 
 (defun company-complete-selection ()
-  "Insert the selected candidate."
+  "Insert the selected candidate.
+
+Restart completion if a new field is entered. A field is indicated by
+`adjust-boundaries' as implemented in the backend. If both adjusted prefix
+and adjusted suffix are empty strings, that means a new field."
   (interactive)
   (when (and (company-manual-begin) company-selection)
     (let ((result (nth company-selection company-candidates)))
@@ -3154,6 +3172,11 @@ With ARG, move by that many elements."
         (let ((company-selection-wrap-around t)
               (current-prefix-arg arg))
           (call-interactively 'company-select-next))))))
+
+(defun company-cycle-backward (&optional arg)
+  (interactive "p")
+  (let ((company-selection-wrap-around t))
+    (company-select-previous arg)))
 
 (defun company-complete-common-or-show-delayed-tooltip ()
   "Insert the common part of all candidates, or show a tooltip."

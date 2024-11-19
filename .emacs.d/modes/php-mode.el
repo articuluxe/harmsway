@@ -191,7 +191,7 @@ Turning this on will open it whenever `php-mode' is loaded."
                        #'php-flymake))
   "Flymake function to replace, if NIL do not replace."
   :tag "PHP Mode Replace Flymake Diag Function"
-  :type '(choice 'function
+  :type '(choice function
                  (const :tag "Disable to replace" nil)))
 
 (define-obsolete-variable-alias 'php-do-not-use-semantic-imenu 'php-mode-do-not-use-semantic-imenu "1.20.0")
@@ -253,7 +253,7 @@ mumamo-mode turned on.  Detects if there are any HTML tags in the
 buffer before warning, but this is is not very smart; e.g. if you
 have any tags inside a PHP string, it will be fooled."
   :tag "PHP Mode Warn If MuMaMo Off"
-  :type '(choice (const :tag "Warn" t) (const "Don't warn" nil)))
+  :type '(choice (const :tag "Warn" t) (const :tag "Don't warn" nil)))
 
 (defcustom php-mode-coding-style 'pear
   "Select default coding style to use with `php-mode'.
@@ -1038,17 +1038,24 @@ HEREDOC-START."
       (unwind-protect
           (let (new-start new-end)
             (goto-char start)
+            ;; Consider bounding this backwards search by `beginning-of-defun'.
+            ;; (Benchmarking for a wide range of cases may be needed to decide
+            ;; whether that's an improvement, as `php-beginning-of-defun' also
+            ;; uses `re-search-backward'.)
             (when (re-search-backward php-heredoc-start-re nil t)
               (let ((maybe (point)))
                 (when (and (re-search-forward (php-heredoc-end-re (match-string 0)) nil t)
                            (> (point) start))
-                  (setq new-start maybe))))
-            (goto-char end)
-            (when (re-search-backward php-heredoc-start-re nil t)
-              (if (re-search-forward (php-heredoc-end-re (match-string 0)) nil t)
+                  (setq new-start maybe)
                   (when (> (point) end)
-                    (setq new-end (point)))
-                (setq new-end (point-max))))
+                    (setq new-end (point))))))
+            (unless new-end
+              (goto-char end)
+              (when (re-search-backward php-heredoc-start-re start t)
+                (if (re-search-forward (php-heredoc-end-re (match-string 0)) nil t)
+                    (when (> (point) end)
+                      (setq new-end (point)))
+                  (setq new-end (point-max)))))
             (when (or new-start new-end)
               (cons (or new-start start) (or new-end end))))
         ;; Cleanup

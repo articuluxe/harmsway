@@ -4,7 +4,7 @@
 
 ;; Author: Oleh Krehel
 ;; URL: https://github.com/abo-abo/org-download
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "24.3") (async "1.2"))
 ;; Keywords: multimedia images screenshots download
 
@@ -134,9 +134,9 @@ will be used."
           (const :tag "scrot" "scrot -s %s")
           (const :tag "flameshot" "flameshot gui --raw > %s")
           (const :tag "gm" "gm import %s")
-          (const :tag "imagemagick/import" "import %s")
+          (const :tag "imagemagick/import" "magick import %s")
           (const :tag "imagemagick/import + xclip to save to clipboard"
-           "export filename=\"%s\"; import png:\"$filename\" ;xclip -selection clipboard -target image/png -filter < \"$filename\" &>/dev/null")
+                 "export filename=\"%s\"; import png:\"$filename\" ;xclip -selection clipboard -target image/png -filter < \"$filename\" &>/dev/null")
           (const :tag "xfce4-screenshooter" "xfce4-screenshooter -r -o cat > %s")
           ;; screenshot method in ms-windows, /capture=4 stands for interactive.
           (const :tag "IrfanView" "i_view64 /capture=4 /convert=\"%s\"")
@@ -148,10 +148,10 @@ will be used."
           (const :tag "spectacle" "spectacle -br -o %s")
           ;; take an image that is already on the clipboard, for Linux
           (const :tag "xclip"
-           "xclip -selection clipboard -t image/png -o > %s")
+                 "xclip -selection clipboard -t image/png -o > %s")
           ;; take an image that is already on the clipboard, for Windows
-          (const :tag "imagemagick/convert" "convert clipboard: %s")
-          ; capture region, for Wayland
+          (const :tag "imagemagick/convert" "magick clipboard: %s")
+          ;; capture region, for Wayland
           (const :tag "grim + slurp" "grim -g \"$(slurp)\" %s")
           (function :tag "Custom function")))
 
@@ -289,7 +289,7 @@ EXT can hold the file extension, in case LINK doesn't provide it."
     (when (string-match ".*?\\.\\(?:png\\|jpg\\)\\(.*\\)$" filename)
       (setq filename (replace-match "" nil nil filename 1)))
     (when ext
-      (setq filename (concat filename "." ext)))
+      (setq filename (concat (file-name-sans-extension filename) "." ext)))
     (abbreviate-file-name
      (expand-file-name
       (funcall org-download-file-format-function filename)
@@ -409,15 +409,16 @@ The screenshot tool is determined by `org-download-screenshot-method'."
                 (user-error
                  "Please install the \"xclip\" program"))))
            ((windows-nt cygwin)
-            (if (executable-find "convert")
-                "convert clipboard: %s"
+            (if (executable-find "magick")
+                "magick convert clipboard: %s"
               (user-error
-               "Please install the \"convert\" program included in ImageMagick")))
+               "Please install the \"magick\" program included in ImageMagick")))
            ((darwin berkeley-unix)
             (if (executable-find "pngpaste")
                 "pngpaste %s"
               (user-error
                "Please install the \"pngpaste\" program from Homebrew."))))))
+    (org-id-get-create)
     (org-download-screenshot basename)))
 
 (declare-function org-attach-dir "org-attach")
@@ -555,7 +556,7 @@ It's inserted before the image link and is used to annotate it.")
       (org-download--display-inline-images))))
 
 (defun org-download-replace-all (oldpath newpath)
-  "Function to search for the OLDPATH inside the buffer and replace it by the NEWPATH."
+  "Search for OLDPATH inside the buffer and replace it by NEWPATH."
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward oldpath nil t)

@@ -1,10 +1,10 @@
 ;;; kanagawa-themes.el --- Elegant theme inspired by The Great Wave off Kanagawa -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2023 Mikael Konradsson
-;; Copyright (C) 2023-2024 Meritamen <meritamen@sdf.org>
+;; Copyright (C) 2023-2024 Sion Eltnam Sokaris <meritamen@sdf.org>
 
-;; Author: Meritamen <meritamen@sdf.org>
-;; Maintainer: Fabio Kleis <fabiohkrc@gmail.com>
+;; Author: Sion Eltnam Sokaris <meritamen@sdf.org>
+;; Maintainer: Fabio Kleis <fabiohkrc@gmail.com>, Sion Eltnam Sokaris <meritamen@sdf.org>
 ;; URL: https://github.com/Fabiokleis/kanagawa-emacs
 ;; Version: 1.0.0
 ;; Package-Requires: ((emacs "24.3"))
@@ -649,7 +649,49 @@ names to which it refers are bound."
 ;;;;;;; ivy-posframe
       (ivy-posframe (:background ,bg-m1))
       (ivy-posframe-border (:background ,bg))
-;;;;;; treemacs
+;;;;;;; helm
+      (helm-bookmark-directory (:inherit helm-ff-directory))
+      (helm-bookmark-file (:foreground ,magenta))
+      (helm-bookmark-gnus (:foreground ,magenta))
+      (helm-bookmark-info (:foreground ,magenta))
+      (helm-bookmark-man (:foreground ,magenta))
+      (helm-bookmark-w3m (:foreground ,magenta))
+      (helm-buffer-directory (:foreground ,fg :background ,bg))
+      (helm-buffer-file (:foreground ,fg :background ,bg))
+      (helm-buffer-not-saved (:foreground ,magenta :background ,bg))
+      (helm-buffer-process (:foreground ,syn-keyword :background ,bg))
+      (helm-buffer-saved-out (:foreground ,fg :background ,bg))
+      (helm-buffer-size (:foreground ,fg :background ,bg))
+      (helm-candidate-number (:background ,bg :foreground ,syn-keyword :inherit bold))
+      (helm-ff-directory (:foreground ,syn-keyword :background ,bg :inherit bold))
+      (helm-ff-dotted-directory (:foreground ,syn-keyword :background ,bg :inherit bold))
+      (helm-ff-dotted-symlink-directory (:foreground ,cyan :background ,bg :inherit bold))
+      (helm-ff-executable (:foreground ,diag-ok :background ,bg :weight normal))
+      (helm-ff-file (:foreground ,fg :background ,bg :weight normal))
+      (helm-ff-invalid-symlink (:foreground ,red :background ,bg :inherit bold))
+      (helm-ff-prefix (:foreground ,bg :background ,syn-keyword :weight normal))
+      (helm-ff-symlink (:foreground ,cyan :background ,bg :inherit bold))
+      (helm-grep-cmd-line (:foreground ,fg :background ,bg))
+      (helm-grep-file (:foreground ,fg :background ,bg))
+      (helm-grep-finish (:foreground ,fg :background ,bg))
+      (helm-grep-lineno (:foreground ,syn-type :background ,bg :inherit bold))
+      (helm-grep-match (:foreground unspecified :background unspecified :inherit helm-match))
+      (helm-header (:foreground ,fg :background ,bg :underline nil :box nil))
+      (helm-match (:foreground ,green))
+      (helm-match-item (:foreground ,green))
+      (helm-moccur-buffer (:foreground ,syn-variable :background ,bg))
+      (helm-selection (:background ,bg-visual))
+      (helm-selection-line (:background ,bg-m1))
+      (helm-separator (:foreground ,magenta :background ,bg))
+      (helm-source-header (:background ,magenta :foreground ,bg :inherit bold))
+      (helm-time-zone-current (:foreground ,syn-keyword :background ,bg))
+      (helm-time-zone-home (:foreground ,magenta :background ,bg))
+      (helm-visible-mark (:foreground ,syn-keyword :background ,bg-m3))
+;;;;;;; helm-swoop
+      (helm-swoop-target-line-block-face (:foreground ,fg :background ,bg-dim))
+      (helm-swoop-target-line-face (:background ,bg-dim))
+      (helm-swoop-target-word-face (:background ,bg-dim :foreground ,diag-warning))
+;;;;;;; treemacs
       (treemacs-directory-collapsed-face (:foreground ,fg))
       (treemacs-directory-face (:inherit treemacs-directory-collapsed-face))
       (treemacs-file-face (:inherit treemacs-directory-face))
@@ -785,15 +827,15 @@ names to which it refers are bound."
 ;;;;;;; ace
       (ace-jump-face-background (:foreground ,bright-blue))
       (ace-jump-face-foreground (:foreground ,extend-color-2 :background ,bg-m3 :weight bold))
-;;;;;;; vertigo
+;;;;;;; vertico
       (vertico-multiline (:background ,diag-error))
       (vertico-group-title ( :foreground ,blue :background ,diff-change :weight bold))
       (vertico-group-separator (:inherit vertico-group-title :strike-through t))
       (vertico-current (:foreground ,bright-yellow :background ,fg-reverse :weight bold :slant italic))
-;;;;;;; vertico-posfram
+;;;;;;; vertico-posframe
       (vertico-posframe-border (:background ,bg))
       (vertico-posframe (:background ,bg-m1))
-;;;;;;; vertico
+;;;;;;; marginalia
       (marginalia-file-priv-no (:background unspecified))
 ;;;;;;; hydra
       (hydra-face-amaranth (:foreground ,vcs-removed))
@@ -853,7 +895,50 @@ names to which it refers are bound."
       (orderless-match-face-0 (:foreground ,green))
       (orderless-match-face-1 (:foreground ,magenta))
       (orderless-match-face-2 (:foreground ,blue))
-      (orderless-match-face-3 (:foreground ,cyan)))))
+      (orderless-match-face-3 (:foreground ,cyan))
+;;;;;;; magit
+      (magit-blame-culprit (:background ,vcs-changed :foreground ,yellow))
+      (magit-blame-date (:background ,vcs-changed :foreground ,green))
+      (magit-blame-hash (:background ,vcs-changed :foreground ,syn-fun))
+      (magit-blame-header (:background ,vcs-changed :foreground ,green))
+      (magit-blame-heading (:background ,vcs-changed :foreground ,green))
+      (magit-blame-name (:background ,vcs-changed :foreground ,yellow))
+      (magit-blame-sha1 (:background ,vcs-changed :foreground ,syn-fun))
+      (magit-blame-subject (:background ,vcs-changed :foreground ,yellow))
+      (magit-blame-summary (:background ,vcs-changed :foreground ,yellow :extend t))
+      (magit-blame-time (:background ,vcs-changed :foreground ,green))
+      (magit-branch (:foreground ,syn-constant :inherit bold))
+      (magit-branch-current (:background ,bg-p1 :foreground ,blue :inherit bold :box t))
+      (magit-branch-local (:background ,bg-p1 :foreground ,blue :inherit bold))
+      (magit-branch-remote (:background ,bg-p2 :foreground ,blue :inherit bold))
+      (magit-diff-context-highlight (:background ,bg-m1 :foreground ,fg :extend t))
+      (magit-diff-hunk-heading (:background ,pmenu-bg :foreground ,pmenu-fg :extend t))
+      (magit-diff-hunk-heading-highlight (:background ,pmenu-bg-sel :foreground unspecified :extend t))
+      (magit-hash (:foreground ,syn-variable))
+      (magit-hunk-heading (:background ,bg-m3 :extend t))
+      (magit-hunk-heading-highlight (:background ,bg-p2 :extend t))
+      (magit-item-highlight (:background ,bg-p2 :extend t))
+      (magit-log-author (:foreground ,syn-fun))
+      (magit-log-head-label-head (:background ,yellow :foreground ,bg :inherit bold))
+      (magit-log-head-label-local (:background ,syn-keyword :foreground ,bg :inherit bold))
+      (magit-log-head-label-remote (:background ,diag-ok :foreground ,bg :inherit bold))
+      (magit-log-head-label-tags (:background ,magenta :foreground ,bg :inherit bold))
+      (magit-log-head-label-wip (:background ,cyan :foreground ,bg :inherit bold))
+      (magit-log-sha1 (:foreground ,syn-string))
+      (magit-process-ng (:foreground ,diag-warning :inherit bold))
+      (magit-process-ok (:foreground ,syn-fun :inherit bold))
+      (magit-reflog-amend (:foreground ,magenta))
+      (magit-reflog-checkout (:foreground ,blue))
+      (magit-reflog-cherry-pick (:foreground ,green))
+      (magit-reflog-commit (:foreground ,green))
+      (magit-reflog-merge (:foreground ,green))
+      (magit-reflog-other (:foreground ,cyan))
+      (magit-reflog-rebase (:foreground ,magenta))
+      (magit-reflog-remote (:foreground ,cyan))
+      (magit-reflog-reset (:foreground ,red))
+      (magit-section-heading (:foreground ,syn-keyword :inherit bold :extend t))
+      (magit-section-highlight (:background ,bg-m2 :extend t))
+      (magit-section-title (:background ,bg :foreground ,syn-keyword :inherit bold)))))
 
 (defmacro kanagawa-themes--with-variant-colors (variant &rest body)
   "Execute BODY with the color palette of a specified theme VARIANT."

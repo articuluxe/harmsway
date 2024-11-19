@@ -2,6 +2,7 @@
 
 ;; Author: Bozidar Dautovic
 ;; URL: http://github.com/daut/miasma-theme.el
+;; Version: 1.0.1
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -127,6 +128,7 @@
    `(org-todo ((,class (:foreground ,miasma-brass :weight bold))))
    `(org-date ((,class (:foreground ,miasma-sky :underline (:style line)))))
    `(org-document-title ((,class (:foreground ,miasma-copper))))
+
 
    ;;;;; line numbers
    `(line-number ((,class (:inherit default :foreground ,miasma-dark-gray))))
@@ -270,6 +272,9 @@
    `(magit-signature-untrusted ((,class (:foreground ,miasma-reseda))))
    `(magit-tag ((,class (:foreground ,miasma-lemon))))
 
+   ;;;;; olivetti
+   `(olivetti-fringe ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal nil)))))
+
    ;;;;; org-modern
    `(org-modern-done ((,class (:foreground ,miasma-olive :background ,miasma-light-gray :inverse-video t :inherit (org-done org-modern-label)))))
    `(org-modern-tag ((,class (:foreground ,miasma-light-gray :inherit (secondary-selection org-modern-label)))))
@@ -320,17 +325,14 @@
    `(web-mode-html-attr-engine-face ((,class (:foreground ,miasma-reseda))))
    `(web-mode-html-attr-name-face ((,class (:foreground ,miasma-reseda))))
    `(web-mode-html-tag-bracket-face ((,class (:foreground ,miasma-eucalyptus))))
-   `(web-mode-html-tag-face ((,class (:foreground ,miasma-eucalyptus))))
-   ))
+   `(web-mode-html-tag-face ((,class (:foreground ,miasma-eucalyptus))))))
 
 ;;; Footer
 
 ;;;###autoload
-(when load-file-name
+(when (and (boundp 'custom-theme-load-path) load-file-name)
   (add-to-list 'custom-theme-load-path
-               (boundp 'custom-theme-load-path)
-               (file-name-as-directory
-                (file-name-directory load-file-name))))
+               (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'miasma)
 

@@ -303,7 +303,7 @@ Respected Only in GUI frame"
    `(completions-annotations         ((,class :inherit italic :foreground ,warning)))
    `(completions-common-part         ((,class :foreground ,heading-1)))
    `(completions-first-difference    ((,class :foreground ,heading-2)))
-   `(completions-highlight           ((,class :inherit highlight)))
+   `(completions-highlight           ((,class :extend t :inherit (region))))
    `(completions-group-title         ((,class :inherit shadow)))
 
    ;; Modeline
@@ -386,7 +386,7 @@ Respected Only in GUI frame"
    `(org-checkbox-statistics-done            ((,class :foreground ,done)))
    `(org-checkbox-statistics-todo            ((,class :foreground ,todo)))
    `(org-clock-overlay                       ((,class :foreground ,clock)))
-   `(org-code                                ((,class :font ,haki-code-font :weight medium :height 1.1 :foreground ,code)))
+   `(org-code                                ((,class :font ,haki-code-font :weight medium :foreground ,code)))
    `(org-verbatim                            ((,class :inherit org-code :foreground ,verbatim)))
    `(org-column                              ((,class :background ,fg-inactive)))
    `(org-column-title                        ((,class :background ,bg-inactive :underline t :weight bold)))

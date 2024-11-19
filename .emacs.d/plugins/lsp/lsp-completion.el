@@ -177,17 +177,83 @@ This will help minimize popup flickering issue in `company-mode'."
                 'lsp-completion-markers markers
                 'lsp-completion-prefix prefix)))
 
+(defun lsp-completion--fix-resolve-data (item)
+  "Patch `CompletionItem' ITEM for rust-analyzer otherwise resolve will fail.
+See #2675"
+  (let ((data (lsp:completion-item-data? item)))
+    (when (lsp-member? data :import_for_trait_assoc_item)
+      (unless (lsp-get data :import_for_trait_assoc_item)
+        (lsp-put data :import_for_trait_assoc_item :json-false)))))
+
+(defun lsp-completion--resolve (item)
+  "Resolve completion ITEM.
+ITEM can be string or a CompletionItem"
+  (cl-assert item nil "Completion item must not be nil")
+  (-let (((completion-item . resolved)
+          (pcase item
+            ((pred stringp) (cons (get-text-property 0 'lsp-completion-item item)
+                                  (get-text-property 0 'lsp-completion-resolved item)))
+            (_ (cons item nil)))))
+    (if resolved item
+      (lsp-completion--fix-resolve-data completion-item)
+      (setq completion-item
+            (or (ignore-errors
+                  (when (lsp-feature? "completionItem/resolve")
+                    (lsp-request "completionItem/resolve"
+                                 (lsp-delete (lsp-copy completion-item) :_emacsStartPoint))))
+                completion-item))
+      (pcase item
+        ((pred stringp)
+         (let ((len (length item)))
+           (put-text-property 0 len 'lsp-completion-item completion-item item)
+           (put-text-property 0 len 'lsp-completion-resolved t item)
+           item))
+        (_ completion-item)))))
+
+(defun lsp-completion--resolve-async (item callback &optional cleanup-fn)
+  "Resolve completion ITEM asynchronously with CALLBACK.
+The CLEANUP-FN will be called to cleanup."
+  (cl-assert item nil "Completion item must not be nil")
+  (-let (((completion-item . resolved)
+          (pcase item
+            ((pred stringp) (cons (get-text-property 0 'lsp-completion-item item)
+                                  (get-text-property 0 'lsp-completion-resolved item)))
+            (_ (cons item nil)))))
+    (ignore-errors
+      (if (and (lsp-feature? "completionItem/resolve") (not resolved))
+          (progn
+            (lsp-completion--fix-resolve-data completion-item)
+            (lsp-request-async "completionItem/resolve"
+                               (lsp-delete (lsp-copy completion-item) :_emacsStartPoint)
+                               (lambda (completion-item)
+                                 (when (stringp item)
+                                   (let ((len (length item)))
+                                     (put-text-property 0 len 'lsp-completion-item completion-item item)
+                                     (put-text-property 0 len 'lsp-completion-resolved t item)
+                                     item))
+                                 (funcall callback completion-item)
+                                 (when cleanup-fn (funcall cleanup-fn)))
+                               :error-handler (lambda (err)
+                                                (when cleanup-fn (funcall cleanup-fn))
+                                                (error (lsp:json-error-message err)))
+                               :cancel-handler cleanup-fn
+                               :mode 'alive))
+        (funcall callback completion-item)
+        (when cleanup-fn (funcall cleanup-fn))))))
+
 (defun lsp-completion--annotate (item)
   "Annotate ITEM detail."
-  (-let (((&CompletionItem :detail? :kind? :label-details?) (plist-get (text-properties-at 0 item)
-                                                       'lsp-completion-item)))
+  (-let (((completion-item &as &CompletionItem :detail? :kind? :label-details?)
+          (get-text-property 0 'lsp-completion-item item)))
+    (lsp-completion--resolve-async item #'ignore)
+
     (concat (when (and lsp-completion-show-detail detail?)
               (concat " " (s-replace "\r" "" detail?)))
             (when (and lsp-completion-show-label-description label-details?)
-              (when-let ((description (and label-details? (lsp:label-details-description label-details?))))
+              (when-let* ((description (and label-details? (lsp:label-details-description label-details?))))
                 (format " %s" description)))
             (when lsp-completion-show-kind
-              (when-let ((kind-name (and kind? (aref lsp-completion--item-kind kind?))))
+              (when-let* ((kind-name (and kind? (aref lsp-completion--item-kind kind?))))
                 (format " (%s)" kind-name))))))
 
 (defun lsp-completion--looking-back-trigger-characterp (trigger-characters)
@@ -346,7 +412,7 @@ The MARKERS and PREFIX value will be attached to each candidate."
 
 (defun lsp-completion--company-match (candidate)
   "Return highlight of typed prefix inside CANDIDATE."
-  (if-let ((md (cddr (plist-get (text-properties-at 0 candidate) 'match-data))))
+  (if-let* ((md (cddr (plist-get (text-properties-at 0 candidate) 'match-data))))
       (let (matches start end)
         (while (progn (setq start (pop md) end (pop md))
                       (and start end))
@@ -388,15 +454,8 @@ The MARKERS and PREFIX value will be attached to each candidate."
 
 (defun lsp-completion--get-documentation (item)
   "Get doc comment for completion ITEM."
-  (unless (get-text-property 0 'lsp-completion-resolved item)
-    (let ((resolved-item
-           (-some->> item
-             (get-text-property 0 'lsp-completion-item)
-             (lsp-completion--resolve)))
-          (len (length item)))
-      (put-text-property 0 len 'lsp-completion-item resolved-item item)
-      (put-text-property 0 len 'lsp-completion-resolved t item)))
   (-some->> item
+    (lsp-completion--resolve)
     (get-text-property 0 'lsp-completion-item)
     (lsp:completion-item-documentation?)
     (lsp--render-element)))
@@ -556,6 +615,12 @@ Others: CANDIDATES"
                                            'lsp-completion-item)
                              candidate
                            (cl-find candidate (funcall candidates) :test #'equal)))
+              (candidate
+               ;; see #3498 typescript-language-server does not provide the
+               ;; proper insertText without resolving.
+               (if (lsp-completion--find-workspace 'ts-ls)
+                   (lsp-completion--resolve candidate)
+                 candidate))
               ((&plist 'lsp-completion-item item
                        'lsp-completion-start-point start-point
                        'lsp-completion-markers markers
@@ -564,12 +629,7 @@ Others: CANDIDATES"
                (text-properties-at 0 candidate))
               ((&CompletionItem? :label :insert-text? :text-edit? :insert-text-format?
                                  :additional-text-edits? :insert-text-mode? :command?)
-               ;; see #3498 typescript-language-server does not provide the
-               ;; proper insertText without resolving.
-               (if (and (lsp-completion--find-workspace 'ts-ls)
-                        (not resolved))
-                   (lsp-completion--resolve item)
-                 item)))
+               item))
         (cond
          (text-edit?
           (apply #'delete-region markers)
@@ -597,7 +657,7 @@ Others: CANDIDATES"
                                (point)))
 
         (when lsp-completion-enable-additional-text-edit
-          (if (or (get-text-property 0 'lsp-completion-resolved candidate)
+          (if (or resolved
                   (not (seq-empty-p additional-text-edits?)))
               (lsp--apply-text-edits additional-text-edits? 'completion)
             (-let [(callback cleanup-fn) (lsp--create-apply-text-edits-handlers)]
@@ -606,8 +666,7 @@ Others: CANDIDATES"
                (-compose callback #'lsp:completion-item-additional-text-edits?)
                cleanup-fn))))
 
-        (if (or (get-text-property 0 'lsp-completion-resolved candidate)
-                command?)
+        (if (or resolved command?)
             (when command? (lsp--execute-command command?))
           (lsp-completion--resolve-async
            item
@@ -705,44 +764,6 @@ The return is nil or in range of (0, inf)."
     (unless (zerop len)
       (/ score-numerator (1+ score-denominator) 1.0))))
 
-(defun lsp-completion--fix-resolve-data (item)
-  "Patch `CompletionItem' ITEM for rust-analyzer otherwise resolve will fail.
-See #2675"
-  (let ((data (lsp:completion-item-data? item)))
-    (when (lsp-member? data :import_for_trait_assoc_item)
-      (unless (lsp-get data :import_for_trait_assoc_item)
-        (lsp-put data :import_for_trait_assoc_item :json-false)))))
-
-(defun lsp-completion--resolve (item)
-  "Resolve completion ITEM."
-  (cl-assert item nil "Completion item must not be nil")
-  (lsp-completion--fix-resolve-data item)
-  (or (ignore-errors
-        (when (lsp-feature? "completionItem/resolve")
-          (lsp-request "completionItem/resolve"
-                       (lsp-delete (lsp-copy item) :_emacsStartPoint))))
-      item))
-
-(defun lsp-completion--resolve-async (item callback &optional cleanup-fn)
-  "Resolve completion ITEM asynchronously with CALLBACK.
-The CLEANUP-FN will be called to cleanup."
-  (cl-assert item nil "Completion item must not be nil")
-  (lsp-completion--fix-resolve-data item)
-  (ignore-errors
-    (if (lsp-feature? "completionItem/resolve")
-        (lsp-request-async "completionItem/resolve"
-                           (lsp-delete (lsp-copy item) :_emacsStartPoint)
-                           (lambda (result)
-                             (funcall callback result)
-                             (when cleanup-fn (funcall cleanup-fn)))
-                           :error-handler (lambda (err)
-                                            (when cleanup-fn (funcall cleanup-fn))
-                                            (error (lsp:json-error-message err)))
-                           :cancel-handler cleanup-fn
-                           :mode 'alive)
-      (funcall callback item)
-      (when cleanup-fn (funcall cleanup-fn)))))
-
 
 ;;;###autoload
 (defun lsp-completion--enable ()
@@ -754,6 +775,20 @@ The CLEANUP-FN will be called to cleanup."
 (defun lsp-completion--disable ()
   "Disable LSP completion support."
   (lsp-completion-mode -1))
+
+(defun lsp-completion-passthrough-try-completion (string table pred point)
+  (let* ((completion-ignore-case t)
+         (try (completion-basic-try-completion string table pred point))
+         (newstr (car try))
+         (newpoint (cdr try))
+         (beforepoint (and try (substring newstr 0 newpoint))))
+    (if (and beforepoint
+             (string-prefix-p
+              beforepoint
+              (try-completion "" table pred)
+              t))
+        try
+      (cons string point))))
 
 (defun lsp-completion-passthrough-all-completions (_string table pred _point)
   "Passthrough all completions from TABLE with PRED."
@@ -790,7 +825,7 @@ The CLEANUP-FN will be called to cleanup."
       (setf (alist-get 'lsp-capf completion-category-defaults) '((styles . (lsp-passthrough))))
       (make-local-variable 'completion-styles-alist)
       (setf (alist-get 'lsp-passthrough completion-styles-alist)
-            '(completion-basic-try-completion
+            '(lsp-completion-passthrough-try-completion
               lsp-completion-passthrough-all-completions
               "Passthrough completion."))
 

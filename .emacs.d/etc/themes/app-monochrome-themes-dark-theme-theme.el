@@ -64,19 +64,26 @@
  'app-monochrome-themes-dark-theme
  ;; Basic faces
  '(default ((t (:inherit nil :extend nil :stipple nil :background "grey24" :foreground "white" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 98 :width normal :foundry "CTDB" :family "Fira Code"))))
+
+ '(dired-directory ((t (:weight bold))))
+ '(dirvish-media-info-property-key ((t nil)))
+ '(dired-flagged ((t (:foreground "Red" :box (:line-width (2 . 2) :color "Red" :style released-button) :weight bold))))
+ '(dired-set-id ((t (:underline t))))
+
  '(variable-pitch ((t (:family "IBM Plex Serif"))))
  '(highlight ((t (:background "#bcc" :foreground "black"))))
  '(italic ((t (:slant italic :weight normal :family "IBM Plex Sans"))))
  '(error ((t (:box (:line-width (2 . 2) :color "Red" :style released-button) :weight bold))))
- '(warning ((t (:foreground "red4"))))
+ '(warning ((t (:foreground "gold"))))
  '(success ((t (:foreground "white" :weight bold))))
  '(bookmark-face ((t (:background "Black" :foreground "Gold"))))
  '(isearch ((t (:inherit link))))
  '(custom-link ((t (:inherit link :box (:line-width (2 . 2) :color "grey75" :style released-button)))))
  '(link ((t (:underline t :foreground "#5cacac"))))
- '(line-number ((t (:inherit shadow :family "Victor Mono"))))
+ '(line-number ((t (:inherit shadow :family "VictorMono Nerd Font"))))
 
- '(font-lock-type-face ((t (:weight bold :family "Victor Mono"))))
+ '(font-lock-comment-face ((t (:foreground "#aaa"))))
+ '(font-lock-type-face ((t (:weight bold :family "VictorMono Nerd Font"))))
  '(font-lock-builtin-face ((t (:family "Linux Libertine Mono" :background "grey16"))))
  '(font-lock-function-name-face ((t (:slant italic :family "IBM Plex Mono"))))
  '(font-lock-keyword-face ((t (:weight bold :family "Ubuntu Mono"))))
@@ -84,6 +91,7 @@
  '(font-lock-string-face ((t (:foreground "grey62" :family "IBM Plex Mono"))))
  '(font-lock-negation-char-face ((t (:weight bold))))
  '(font-lock-doc-face ((t (:slant italic :inherit font-lock-string-face))))
+ '(font-lock-doc-markup-face ((t (:inherit (font-lock-constant-face)))))
  '(font-lock-variable-name-face ((t (:foreground "white" :weight thin))))
  '(font-lock-preprocessor-face ((t (:inherit (font-lock-builtin-face)))))
 
@@ -97,8 +105,6 @@
  '(lsp-face-semhl-type ((t (:inherit (font-lock-type-face)))))
  '(lsp-face-semhl-implementation ((t (:weight bold :inherit (font-lock-function-name-face)))))
 
- '(font-lock-comment-face ((t (:foreground "grey55"))))
- '(font-lock-doc-markup-face ((t (:inherit (font-lock-constant-face)))))
  '(counsel-outline-1 ((t (:inherit (org-level-1)))))
  '(counsel-application-name ((t (:inherit (font-lock-builtin-face)))))
  '(counsel-active-mode ((t (:inherit (font-lock-builtin-face)))))
@@ -108,12 +114,15 @@
  '(swiper-background-match-face-3 ((t (:inherit (swiper-match-face-3)))))
  '(swiper-line-face ((t (:inherit highlight :box (:line-width (2 . 2) :color "grey75" :style released-button)))))
 
+ '(lsp-ui-doc-background ((t (:background "grey10"))))
  '(lsp-ui-doc-highlight-hover ((t (:inherit highlight))))
  '(lsp-ui-doc-background ((t (:background "grey90"))))
  '(lsp-ui-sideline-global ((t nil)))
  '(lsp-ui-sideline-symbol ((t (:height 0.99 :box (:line-width (1 . -1) :color "grey" :style nil) :foreground "grey"))))
  '(lsp-ui-peek-list ((((background light)) (:background "light gray")) (t (:background "#181818"))))
  '(lsp-ui-peek-line-number ((t (:foreground "grey25"))))
+
+ '(flymake-error ((t (:underline (:color "Red1" :style dashes :position nil)))))
 
  '(flycheck-fringe-warning ((t (:inherit (warning)))))
  '(flycheck-info ((t (:inherit success :underline t))))
@@ -205,6 +214,7 @@
  '(markdown-header-face-4 ((t (:inherit markdown-header-face-3 :height 0.8))))
  '(markdown-header-face-5 ((t (:inherit markdown-header-face-4 :height 0.8))))
  '(markdown-header-face-6 ((t (:inherit markdown-header-face-4 :height 0.8))))
+ '(markdown-inline-code-face ((t (:inherit org-code))))
 
  '(org-level-1 ((t (:inherit markdown-header-face))))
  '(org-level-2 ((t (:inherit markdown-header-face-1))))
@@ -215,7 +225,7 @@
  '(org-level-7 ((t (:inherit markdown-header-face-4 :height 0.75))))
  '(org-level-8 ((t (:inherit markdown-header-face-4 :height 0.65))))
 
- '(org-code ((t (:family "Victor Mono" :foreground "grey75" :background "grey10"))))
+ '(org-code ((t (:family "VictorMono Nerd Font" :foreground "grey75" :background "grey10"))))
  '(org-verbatim ((t (:inherit org-code :weight light))))
  '(org-done ((t (:inherit org-headline :foreground "white" :background "#048" :box t))))
  '(org-todo ((t (:foreground "white" :background "#800" :box t))))

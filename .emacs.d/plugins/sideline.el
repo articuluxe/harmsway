@@ -82,6 +82,21 @@
   :type 'boolean
   :group 'sideline)
 
+(defcustom sideline-truncate nil
+  "Truncate sideline if the line width are wider than the window width."
+  :type 'boolean
+  :group 'sideline)
+
+(defcustom sideline-truncate-min-available-space-ratio 0.5
+  "Minimum available space to allow truncation."
+  :type 'number
+  :group 'sideline)
+
+(defcustom sideline-truncate-suffix "..."
+  "Truncation suffix."
+  :type 'string
+  :group 'sideline)
+
 (defface sideline-default
   '((((background light)) :foreground "DarkOrange")
     (t :foreground "yellow"))
@@ -405,7 +420,7 @@ calculate to the right side."
   (setq str-len (+ str-len opposing-str-len))
   ;; Start the calculation!
   (when-let* ((win-width (sideline--render-data :win-width))
-              ((or sideline-force-display-if-exceeds
+              ((or sideline-force-display-if-exceeds sideline-truncate
                    (<= str-len win-width)))
               (column-start (sideline--render-data :hscroll))
               (pos-end (max (sideline--line-width) column-start)))
@@ -417,9 +432,13 @@ calculate to the right side."
               ((= pos-first pos-end)
                (cons column-start win-width)))))
      (t
-      (let ((column-end (+ column-start win-width)))
+      (let* ((column-end (+ column-start win-width))
+             (remain-spaces (- column-end pos-end)))
         (cond ((or sideline-force-display-if-exceeds
-                   (<= str-len (- column-end pos-end)))
+                   (<= str-len remain-spaces)
+                   (and sideline-truncate
+                        (< (* win-width sideline-truncate-min-available-space-ratio)
+                           remain-spaces)))
                (cons column-end pos-end))))))))
 
 (defun sideline--find-line (str-len on-left &optional direction exceeded)
@@ -576,6 +595,20 @@ FACE, NAME, ON-LEFT, and ORDER for details."
        (data (sideline--find-line len-title on-left order))
        (pos-start (nth 0 data)) (pos-end (nth 1 data)) (occ-pt (nth 2 data))
        (offset (- 0 (sideline--render-data :hscroll)))
+       ;; Truncate
+       (title (and sideline-truncate
+                   (let* ((win-width (sideline--render-data :win-width))
+                          (used-space (- pos-start occ-pt))
+                          (available-space (- win-width used-space))
+                          (suffix nil))
+                     (when (and sideline-truncate-suffix
+                                (> available-space (sideline--render-data :suffix-width)))
+                       (setq suffix (copy-sequence sideline-truncate-suffix))
+                       (set-text-properties 0 (length suffix)
+                                            (text-properties-at (1- (length title)) title)
+                                            suffix))
+                     (truncate-string-to-width title available-space 0 nil suffix))))
+       ;; Align left/right
        (str (concat
              (unless on-left
                (propertize " "
@@ -584,6 +617,7 @@ FACE, NAME, ON-LEFT, and ORDER for details."
                                       (space :width 0))
                            `cursor t))
              title)))
+
     ;; Create overlay
     (let* ((len-str (length str))
            (empty-ln (= pos-start pos-end))
@@ -678,10 +712,12 @@ If argument ON-LEFT is non-nil, it will align to the left instead of right."
   (sideline--with-buffer-window (or buffer (current-buffer))
     (unless (funcall sideline-inhibit-display-function)
       (setq sideline--render-data
-            `( :eol ,(sideline--window-end)
-               :bol ,(window-start)
-               :hscroll ,(sideline--window-hscroll)
-               :win-width ,(sideline--window-width)))
+            `( :eol          ,(sideline--window-end)
+               :bol          ,(window-start)
+               :hscroll      ,(sideline--window-hscroll)
+               :win-width    ,(sideline--window-width)
+               :suffix-width ,(and sideline-truncate-suffix
+                                   (sideline--str-len sideline-truncate-suffix))))
       (run-hooks 'sideline-pre-render-hook)
       (sideline--render-backends sideline-backends-left t)
       (sideline--render-backends sideline-backends-right nil)

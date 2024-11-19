@@ -4,8 +4,8 @@
 
 ;; Author: Damien Cassou <damien@cassou.me>
 ;; URL: https://github.com/DamienCassou/json-navigator
-;; Version: 0.1.1
-;; Package-Requires: ((emacs "25.1") (hierarchy "0.6.0"))
+;; Version: 1.0.0
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is not part of GNU Emacs.
 

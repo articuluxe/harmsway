@@ -334,6 +334,14 @@ to 'auto, tags may not be properly aligned. "
      `(dired-symlink ((,class (:foreground ,cyan :background ,bg1 :inherit bold))))
      `(dired-warning ((,class (:foreground ,war))))
 
+;;;;; dired-subtree
+     `(dired-subtree-depth-1-face ((,class (:background ,bg1))))
+     `(dired-subtree-depth-2-face ((,class (:background ,bg1))))
+     `(dired-subtree-depth-3-face ((,class (:background ,bg1))))
+     `(dired-subtree-depth-4-face ((,class (:background ,bg1))))
+     `(dired-subtree-depth-5-face ((,class (:background ,bg1))))
+     `(dired-subtree-depth-6-face ((,class (:background ,bg1))))
+
 ;;;;; doom-modeline
      `(doom-modeline-bar ((,class (:background ,keyword))))
 
@@ -569,6 +577,19 @@ to 'auto, tags may not be properly aligned. "
      `(helm-swoop-target-line-block-face ((,class (:foreground ,base :background ,highlight))))
      `(helm-swoop-target-line-face ((,class (:background ,highlight))))
      `(helm-swoop-target-word-face ((,class (:background ,highlight :foreground ,mat))))
+
+;;;;; helm-rg
+     `(helm-rg-active-arg-face ((,class (:foreground ,green))))
+     `(helm-rg-base-rg-cmd-face ((,class (:foreground ,keyword :inherit bold))))
+     `(helm-rg-colon-separator-ripgrep-output-face ((,class (:foreground ,border))))
+     `(helm-rg-directory-cmd-face ((,class (:inherit helm-rg-base-rg-cmd-face))))
+     `(helm-rg-directory-header-face ((,class (:inherit helm-rg-base-rg-cmd-face))))
+     `(helm-rg-error-message ((,class (:foreground ,red :inherit bold))))
+     `(helm-rg-extra-arg-face ((,class (:foreground ,yellow :inherit bold))))
+     `(helm-rg-file-match-face ((,class (:foreground ,blue :inherit bold))))
+     `(helm-rg-inactive-arg-face ((,class (:foreground ,base-dim :inherit bold))))
+     `(helm-rg-line-number-match-face ((,class (:foreground ,base :inherit bold))))
+     `(helm-rg-title-face ((,class (:foreground ,bg4 :inherit bold))))
 
 ;;;;; highlights
      `(hi-green  ((,class (:foreground ,green :background ,green-bg))))

@@ -56,7 +56,14 @@
                    (casual-lib-checkbox-label
                     dired-vc-rename-file
                     "Rename via VC"))
-     :transient nil)]
+     :transient nil)
+
+    ("v" "Visit Truename"
+     casual-dired--customize-find-file-visit-truename
+     :description (lambda ()
+                    (casual-lib-checkbox-label
+                     find-file-visit-truename
+                     "Visit Truename")))]
 
    ["GNU ‘ls’"
     ("l" "Use GNU ‘ls’ with “--dired”"
@@ -176,9 +183,18 @@ If non-nil, the permissions bits of the files are editable."
   "Customize `wdired-allow-to-redirect-links'.
 
 Customize the variable `wdired-allow-to-redirect-links'.
-If non-nil, the permissions bits of the files are editable."
+If non-nil, the target of the symbolic links are editable."
   (interactive)
   (customize-variable 'wdired-allow-to-redirect-links))
+
+(defun casual-dired--customize-find-file-visit-truename ()
+  "Customize `find-file-visit-truename'.
+
+Customize the variable `find-file-visit-truename'. If non-nil,
+visiting a file uses its truename as the visited-file name. This
+effectively follows a symlink to its actual location."
+  (interactive)
+  (customize-variable 'find-file-visit-truename))
 
 (defun casual-dired--customize-dired-group ()
   "Call the Dired customization group."
@@ -190,11 +206,11 @@ If non-nil, the permissions bits of the files are editable."
 
 Learn more about using Casual Dired at our discussion group on GitHub.
 Any questions or comments about Casual should be made there.
-URL `https://github.com/kickingvegas/casual-dired/discussions'
+URL `https://github.com/kickingvegas/casual/discussions'
 
 If you find a bug or have an enhancement request, please file an issue.
 Our best effort will be made to answer it.
-URL `https://github.com/kickingvegas/casual-dired/issues'
+URL `https://github.com/kickingvegas/casual/issues'
 
 If you enjoy using Casual Dired, consider making a modest financial
 contribution to help support its development and maintenance.

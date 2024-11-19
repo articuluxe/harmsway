@@ -249,6 +249,11 @@ Keys are UUID.
   :type 'hook
   :group 'ytdl)
 
+(defcustom ytdl-download-finished-functions nil
+  "Abnormal hook run when a file has finished download. This hook will run after the normal hook. The arguments are the filename and UUID of the downloaded file."
+  :type 'hook
+  :group 'ytdl)
+
 ;; Functions
 (defun ytdl--concat (&rest sequences)
   "Like `concat' but prefix the result with this package name."
@@ -594,7 +599,8 @@ UUID is the key of the list item in `ytdl--download-list'."
                                     filename))))
   (ytdl--eval-mode-line-string -1)
   (ytdl--message "Video downloaded: " filename)
-  (run-hooks 'ytdl-download-finished-hook))
+  (run-hooks 'ytdl-download-finished-hook)
+  (run-hook-with-args 'ytdl-download-finished-functions filename uuid))
 
 
 (defun ytdl--get-args (&optional no-filename)
@@ -736,7 +742,7 @@ destination folder and extra arguments, see
          (dl-type-name (nth 3 out)))
     (with-temp-buffer
       (call-process ytdl-command nil t nil
-                    "--dump-json" "--flat-playlist"
+                    "--dump-json" "--flat-playlist" "--no-warnings"
                     url)
       (goto-char (point-min))
       (if (search-forward-regexp "^ERROR" nil t)

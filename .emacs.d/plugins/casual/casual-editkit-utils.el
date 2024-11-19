@@ -136,6 +136,13 @@ also available from here."
     ("V" "Visit other…" find-file-read-only-other-window)
     ("M-v" "Visit in frame…" find-file-read-only-other-frame)]
 
+   ["Rename"
+    :pad-keys t
+    ("r" "File…" rename-visited-file
+     :inapt-if-not buffer-file-name)
+    ("R" "Buffer…" rename-buffer)
+    ("M-r" "Buffer Uniquely" rename-uniquely)]
+
    ["Project"
     ("p" "Project›" casual-editkit-project-tmenu)]]
 
@@ -554,7 +561,7 @@ accessed here."
 
 Commands pertaining to invoking different tools can be accessed here."
   ["Tools"
-   ["Shells & Interpreters"
+   ["Shells & REPLs"
     ("s" "Shell" shell)
     ("e" "Eshell" eshell)
     ("i" "IELM" ielm)
@@ -563,11 +570,21 @@ Commands pertaining to invoking different tools can be accessed here."
 
    ["Utilities"
     ("c" "Calc" calc)
-    ;;("W" "Weather" weather)
     ("r" "RE-Builder" re-builder)
-    ("w" "Word Count" (lambda () (interactive) (call-interactively #'count-words)))
+    ("w" "Word Count" (lambda ()
+                        (interactive)
+                        (call-interactively #'count-words)))]
+
+   ["Almanac"
+    :pad-keys t
+    ("a" "Calendar" calendar)
     ("C" "World Clock" world-clock)
     ("S" "Sunrise/Sunset" sunrise-sunset)]
+
+   ["Misc"
+    :pad-keys t
+    ("E" "erc" erc)
+    ("M-e" "eww" eww)]
 
    ["Fun"
     ("T" "Tetris" tetris)
@@ -626,11 +643,11 @@ Commands pertaining to rectangle operations can be accessed here."
      :transient t)]
 
    ["Replace"
-    ("s" "String" string-rectangle
+    ("s" "String…" string-rectangle
      :if-not casual-editkit-buffer-read-only-p
      :inapt-if-not use-region-p
      :transient t)
-    ("i" "String Insert" string-insert-rectangle
+    ("i" "String Insert…" string-insert-rectangle
      :if-not casual-editkit-buffer-read-only-p
      :inapt-if-not use-region-p
      :transient t)
@@ -885,8 +902,8 @@ with no space between."
              (end (region-end))
              (content (string-trim (buffer-substring start end))))
         (delete-region start end)
-        (insert (concat open-quote content close-quote)))
-    (insert (concat open-quote close-quote))))
+        (insert open-quote content close-quote))
+    (insert open-quote close-quote)))
 
 (defun casual-editkit-smart-single-quote-dwim ()
   "Insert or enclose a region with smart single quotes."

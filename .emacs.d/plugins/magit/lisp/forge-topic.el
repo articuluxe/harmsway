@@ -140,28 +140,28 @@ were closed without being merged."
        :box ( :line-width ,(if (>= emacs-major-version 28) (cons -1 -1) -1)
               :style nil)))
   "Face used for summaries of entities with unread notifications.
-This face is always used together with, and takes preference
-over, a `forge[-fancy]-{issue,pullreq}-STATE' face and should not
-specify any attribute that is specified by any of those faces.
-Likewise those faces should not set `:weight' or `:slant'."
+This face is always used together with, and takes preference over,
+a `forge-{issue,pullreq}-STATE' face and should not specify any
+attribute that is specified by any of those faces.  Likewise those
+faces should not set `:weight' or `:slant'."
   :group 'forge-faces)
 
 (defface forge-topic-pending
   '((t :weight bold))
   "Face used for summaries of entities with open notifications.
-This face is always used together with, and takes preference
-over, a `forge[-fancy]-{issue,pullreq}-STATE' face and should not
-specify any attribute that is specified by any of those faces.
-Likewise those faces should not set `:weight' or `:slant'."
+This face is always used together with, and takes preference over,
+a `forge-{issue,pullreq}-STATE' face and should not specify any
+attribute that is specified by any of those faces.  Likewise those
+faces should not set `:weight' or `:slant'."
   :group 'forge-faces)
 
 (defface forge-topic-done
-  '((t :slant italic))
+  '((t))
   "Face used for summaries of entities with no unread or open notification.
-This face is always used together with, and takes preference
-over, a `forge[-fancy]-{issue,pullreq}-STATE' face and should not
-specify any attribute that is specified by any of those faces.
-Likewise those faces should not set `:weight' or `:slant'."
+This face is always used together with, and takes preference over,
+a `forge-{issue,pullreq}-STATE' face and should not specify any
+attribute that is specified by any of those faces.  Likewise those
+faces should not set `:weight' or `:slant'."
   :group 'forge-faces)
 
 ;;;;; Issues
@@ -196,6 +196,13 @@ Likewise those faces should not set `:weight' or `:slant'."
 (defface forge-pullreq-rejected
   '((t :foreground "MediumPurple" :strike-through t))
   "Face used for summaries of closed pull-requests, that weren't merged."
+  :group 'forge-faces)
+
+(defface forge-pullreq-draft
+  '((t :slant italic))
+  "Face used for summaries of draft pull-requests.
+A face attribute should be used that is not already used by any
+`forge-topic-STATUS' or `forge-{issue,pullreq}-STATE' face."
   :group 'forge-faces)
 
 ;;;; Labels
@@ -830,7 +837,10 @@ can be selected from the start."
      nil
      (magit--propertize-face
       title
-      `(,(pcase status
+      `(,@(and (forge-pullreq-p topic)
+               (oref topic draft-p)
+               '(forge-pullreq-draft))
+        ,(pcase status
            ('unread  'forge-topic-unread)
            ('pending 'forge-topic-pending)
            ('done    'forge-topic-done))
@@ -1091,6 +1101,7 @@ This mode itself is never used directly."
   (setq-local markdown-translate-filename-function
               #'forge--markdown-translate-filename-function))
 
+(defvar-keymap forge-issue-mode-map :parent forge-topic-mode-map)
 (define-derived-mode forge-issue-mode forge-topic-mode "Issue"
   "Major mode for looking at a Forge issue."
   :interactive nil)
@@ -1104,6 +1115,7 @@ This mode itself is never used directly."
     forge-insert-topic-marks
     forge-insert-topic-assignees))
 
+(defvar-keymap forge-pullreq-mode-map :parent forge-topic-mode-map)
 (define-derived-mode forge-pullreq-mode forge-topic-mode "Pull-request"
   "Major mode for looking at a Forge pull-request."
   :interactive nil)
@@ -1289,7 +1301,9 @@ This mode itself is never used directly."
     ["" :if-non-nil forge--show-topic-legend
      (:info* (lambda () (propertize "unread"           'face 'forge-topic-unread)))
      (:info* (lambda () (propertize "pending"          'face 'forge-topic-pending)))
-     (:info* (lambda () (propertize "done"             'face 'forge-topic-done)))]))
+     (:info* (lambda () (propertize "done"             'face 'forge-topic-done)))]
+    ["" :if-non-nil forge--show-topic-legend
+     (:info* (lambda () (propertize "draft"            'face 'forge-pullreq-draft)))]))
 
 (defvar forge--show-topic-legend t)
 

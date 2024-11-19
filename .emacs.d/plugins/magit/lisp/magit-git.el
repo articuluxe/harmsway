@@ -55,9 +55,11 @@
 (declare-function magit-process-buffer "magit-process" (&optional nodisplay))
 (declare-function magit-process-file "magit-process"
                   (process &optional infile buffer display &rest args))
+(declare-function magit-process-finish-section "magit-process"
+                  (section exit-code))
 (declare-function magit-process-git "magit-process" (destination &rest args))
 (declare-function magit-process-insert-section "magit-process"
-                  (pwd program args &optional errcode errlog))
+                  (pwd program args &optional errcode errlog face))
 (defvar magit-this-error)
 (defvar magit-process-error-message-regexps)
 
@@ -398,7 +400,8 @@ still subject to major changes.  Also see `magit-git-string-p'."
             (with-current-buffer (magit-process-buffer t)
               (magit-process-insert-section default-directory
                                             magit-git-executable args
-                                            status buf)))
+                                            status buf
+                                            'magit-section-secondary-heading)))
           (when-let ((status-buf (magit-get-mode-buffer 'magit-status-mode)))
             (let ((msg (magit--locate-error-message)))
               (with-current-buffer status-buf
@@ -462,9 +465,9 @@ a boolean, then raise an error."
             (signal 'magit-invalid-git-boolean (list output))))))))
 
 (defun magit-git-insert (&rest args)
-  "Execute Git with ARGS, inserting its output at point.
-If Git exits with a non-zero exit status, then show a message and
-add a section in the respective process buffer."
+  "Execute Git with ARGS, insert stdout at point and return exit code.
+If `magit-git-debug' in non-nil and the exit code is non-zero, then
+insert the run command and stderr into the process buffer."
   (apply #'magit--git-insert nil args))
 
 (defun magit--git-insert (return-error &rest args)
@@ -476,26 +479,31 @@ add a section in the respective process buffer."
               (setq log (make-temp-file "magit-stderr"))
               (delete-file log)
               (setq exit (magit-process-git (list t log) args))
-              (when (> exit 0)
+              (when (or (> exit 0) (eq magit-git-debug 'all))
                 (when (file-exists-p log)
                   (with-temp-buffer
                     (insert-file-contents log)
                     (goto-char (point-max))
                     (setq errmsg
-                          (if (functionp magit-git-debug)
-                              (funcall magit-git-debug (buffer-string))
-                            (magit--locate-error-message))))
-                  (unless return-error
+                          (cond
+                           ((eq return-error 'full)
+                            (buffer-string))
+                           ((functionp magit-git-debug)
+                            (funcall magit-git-debug (buffer-string)))
+                           ((magit--locate-error-message)))))
+                  (when magit-git-debug
                     (let ((magit-git-debug nil))
                       (with-current-buffer (magit-process-buffer t)
-                        (magit-process-insert-section
-                         default-directory magit-git-executable
-                         (magit-process-git-arguments args)
-                         exit log)))))
-                (unless return-error
-                  (if errmsg
-                      (message "%s" errmsg)
-                    (message "Git returned with exit-code %s" exit))))
+                        (magit-process-finish-section
+                         (magit-process-insert-section
+                          default-directory magit-git-executable
+                          (magit-process-git-arguments args)
+                          exit log 'magit-section-secondary-heading)
+                         exit)))))
+                (cond ((not magit-git-debug))
+                      (errmsg (message "%s" errmsg))
+                      ((zerop exit))
+                      ((message "Git returned with exit-code %s" exit))))
               (or errmsg exit))
           (ignore-errors (delete-file log))))
     (magit-process-git (list t nil) args)))
@@ -538,7 +546,7 @@ message and add a section in the respective process buffer."
     (apply #'magit-git-insert args)
     (split-string (buffer-string) "\0" t)))
 
-(defvar magit--git-wash-keep-error nil) ; experimental
+(defvar magit--git-wash-keep-error t)
 
 (defun magit-git-wash (washer &rest args)
   "Execute Git with ARGS, inserting washed output at point.
@@ -553,12 +561,11 @@ call function WASHER with ARGS as its sole argument."
   (declare (indent 2))
   (setq args (flatten-tree args))
   (let ((beg (point))
-        (exit (magit--git-insert keep-error args)))
+        (exit (magit--git-insert (and keep-error 'full) args)))
     (when (stringp exit)
       (goto-char beg)
       (insert (propertize exit 'face 'error))
-      (unless (bolp)
-        (insert "\n")))
+      (insert (if (bolp) "\n" "\n\n")))
     (if (= (point) beg)
         (magit-cancel-section)
       (unless (bolp)
@@ -1253,10 +1260,15 @@ Sorted from longest to shortest CYGWIN name."
   "Return t if there are any staged changes.
 If optional FILES is non-nil, then only changes to those files
 are considered."
+  ;; The "--submodule=short" is needed to work around a bug in Git v2.46.0
+  ;; and v2.46.1.  See #5212 and #5221.  There are actually two related
+  ;; bugs, both of which are fixed in v2.46.2, with the following commits,
+  ;; but there is no workaround for the second bug.
+  ;; 11591850dd diff: report dirty submodules as changes in builtin_diff()
+  ;; 87cf96094a diff: report copies and renames as changes in run_diff_cmd()
   (magit-git-failure "diff" "--quiet" "--cached"
                      (if ignore-submodules
                          "--ignore-submodules"
-                       ;; Work around a bug in Git v2.46.0. See #5212 and #5221.
                        "--submodule=short")
                      "--" files))
 

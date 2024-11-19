@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.7.7
+;; Package-Version: 0.7.9
 ;; Package-Requires: ((emacs "26.1") (compat "30.0.0.0") (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -140,8 +140,11 @@ TYPE is a type descriptor as accepted by `cl-typep', which see."
                  (const  :tag "on demand (no summary)" 0)
                  (number :tag "after delay" 1)))
 
-(defcustom transient-enable-popup-navigation t
+(defcustom transient-enable-popup-navigation 'verbose
   "Whether navigation commands are enabled in the transient popup.
+
+If the value is `verbose', additionally show brief documentation
+about the command under point in the echo area.
 
 While a transient is active the transient popup buffer is not the
 current buffer, making it necessary to use dedicated commands to
@@ -162,12 +165,14 @@ bindings are available:
 All other bindings are in `transient-popup-navigation-map'.
 
 By default \\`M-RET' is bound to `transient-push-button', instead of
-\\`RET', because if a transient allows the invocation of non-suffixes
-then it is likely that you would want \\`RET' to do what it would do
+\\`RET', because if a transient allows the invocation of non-suffixes,
+then it is likely, that you would want \\`RET' to do what it would do
 if no transient were active."
-  :package-version '(transient . "0.4.0")
+  :package-version '(transient . "0.7.8")
   :group 'transient
-  :type 'boolean)
+  :type '(choice (const :tag "enable navigation and echo summary" verbose)
+                 (const :tag "enable navigation commands" t)
+                 (const :tag "disable navigation commands" nil)))
 
 (defcustom transient-display-buffer-action
   '(display-buffer-in-side-window
@@ -225,15 +230,14 @@ If nil, then the buffer has no mode-line.  If the buffer is not
 displayed right above the echo area, then this probably is not
 a good value.
 
-If `line' (the default) or a natural number, then the buffer
-has no mode-line, but a line is drawn is drawn in its place.
-If a number is used, that specifies the thickness of the line.
-On termcap frames we cannot draw lines, so there `line' and
-numbers are synonyms for nil.
+If `line' (the default) or a natural number, then the buffer has no
+mode-line, but a line is drawn in its place.  If a number is used,
+that specifies the thickness of the line.  On termcap frames we
+cannot draw lines, so there `line' and numbers are synonyms for nil.
 
 The color of the line is used to indicate if non-suffixes are
 allowed and whether they exit the transient.  The foreground
-color of `transient-key-noop' (if non-suffix are disallowed),
+color of `transient-key-noop' (if non-suffixes are disallowed),
 `transient-key-stay' (if allowed and transient stays active), or
 `transient-key-exit' (if allowed and they exit the transient) is
 used to draw the line.
@@ -762,8 +766,8 @@ the prototype is stored in the clone's `prototype' slot.")
     :documentation "Inapt if major-mode does not derive from value."))
   "Abstract superclass for group and suffix classes.
 
-It is undefined what happens if more than one `if*' predicate
-slot is non-nil."
+It is undefined which predicates are used if more than one `if*'
+predicate slots or more than one `inapt-if*' slots are non-nil."
   :abstract t)
 
 (defclass transient-suffix (transient-child)
@@ -774,7 +778,8 @@ slot is non-nil."
    (format      :initarg :format      :initform " %k %d")
    (description :initarg :description :initform nil)
    (face        :initarg :face        :initform nil)
-   (show-help   :initarg :show-help   :initform nil))
+   (show-help   :initarg :show-help   :initform nil)
+   (summary     :initarg :summary     :initform nil))
   "Superclass for suffix command.")
 
 (defclass transient-information (transient-suffix)
@@ -1696,13 +1701,19 @@ probably use this instead:
                         this-command))))
             (or transient--suffixes
                 transient-current-suffixes))))
-      (or (and (cdr suffixes)
-               (cl-find-if
-                (lambda (obj)
-                  (equal (listify-key-sequence (transient--kbd (oref obj key)))
-                         (listify-key-sequence (this-command-keys))))
-                suffixes))
-          (car suffixes))))
+      (or (if (cdr suffixes)
+              (cl-find-if
+               (lambda (obj)
+                 (equal (listify-key-sequence (transient--kbd (oref obj key)))
+                        (listify-key-sequence (this-command-keys))))
+               suffixes)
+            (car suffixes))
+          ;; COMMAND is only provided if `this-command' is meaningless, in
+          ;; which case `this-command-keys' is also meaningless, making it
+          ;; impossible to disambiguate redundant bindings.
+          (if command
+              (car suffixes)
+            (error "BUG: Cannot determine suffix object")))))
    ((and-let* ((obj (transient--suffix-prototype (or command this-command)))
                (obj (clone obj)))
       (progn ; work around debbugs#31840
@@ -2013,8 +2024,9 @@ of the corresponding object."
         (pcase this-command
           ('transient-update
            (setq transient--showp t)
-           (setq unread-command-events
-                 (listify-key-sequence (this-single-command-raw-keys))))
+           (let ((keys (listify-key-sequence (this-single-command-raw-keys))))
+             (setq unread-command-events (mapcar (lambda (key) (cons t key)) keys))
+             keys))
           ('transient-quit-seq
            (setq unread-command-events
                  (butlast (listify-key-sequence
@@ -2123,7 +2135,8 @@ value.  Otherwise return CHILDREN as is."
       (setq transient--prefix (transient--init-prefix name params))
     (setq name (oref transient--prefix command)))
   (setq transient--refreshp (oref transient--prefix refresh-suffixes))
-  (setq transient--layout (or layout (transient--init-suffixes name)))
+  (setq transient--layout (or (and (not transient--refreshp) layout)
+                              (transient--init-suffixes name)))
   (setq transient--suffixes (transient--flatten-suffixes transient--layout)))
 
 (defun transient--init-prefix (name &optional params)
@@ -2451,7 +2464,7 @@ value.  Otherwise return CHILDREN as is."
     (funcall fn) ; Already unwind protected.
     (cond ((memq this-command '(top-level abort-recursive-edit))
            (setq transient--exitp t)
-           (transient--post-exit)
+           (transient--post-exit this-command)
            (transient--delete-window))
           (transient--prefix
            (transient--resume-override)))))
@@ -2625,6 +2638,10 @@ value.  Otherwise return CHILDREN as is."
     (setq transient--all-levels-p nil)
     (setq transient--minibuffer-depth 0)
     (run-hooks 'transient-exit-hook)
+    (when command
+      (setq transient-current-prefix nil)
+      (setq transient-current-command nil)
+      (setq transient-current-suffixes nil))
     (when resume
       (transient--stack-pop))))
 
@@ -2711,7 +2728,7 @@ exit."
     (setq transient--stack nil)
     (setq transient--exitp t)
     (transient--pre-exit)
-    (transient--post-exit)))
+    (transient--post-exit this-command)))
 
 ;;; Pre-Commands
 
@@ -3719,7 +3736,7 @@ have a history of their own.")
       (run-hooks 'transient-setup-buffer-hook)
       (when transient-force-fixed-pitch
         (transient--force-fixed-pitch))
-      (setq window-size-fixed t)
+      (setq window-size-fixed (if (window-full-height-p) 'width t))
       (when (bound-and-true-p tab-line-format)
         (setq tab-line-format nil))
       (setq header-line-format nil)
@@ -3901,6 +3918,7 @@ as a button."
                (slot-boundp obj 'command))
       (setq str (make-text-button str nil
                                   'type 'transient
+                                  'suffix obj
                                   'command (oref obj command))))
     str))
 
@@ -4359,6 +4377,37 @@ Suffixes on levels %s and %s are unavailable.\n"
                (propertize (format ">=%s" (1+ level))
                            'face 'transient-disabled-suffix))))))
 
+(cl-defgeneric transient-show-summary (obj &optional return)
+  "Show brief summary about the command at point in the echo area.
+
+If OBJ's `summary' slot is a string, use that.  If it is a function,
+call that with OBJ as the only argument and use the returned string.
+If `summary' is or returns something other than a string or nil,
+show no summary.  If `summary' is or returns nil, use the first line
+of the documentation string, if any.
+
+If RETURN is non-nil, return the summary instead of showing it.
+This is used when a tooltip is needed.")
+
+(cl-defmethod transient-show-summary ((obj transient-suffix) &optional return)
+  (with-slots (command summary) obj
+    (when-let*
+        ((doc (cond ((functionp summary)
+                     (funcall summary obj))
+                    (summary)
+                    ((car (split-string (documentation command) "\n")))))
+         ((stringp doc))
+         ((not (equal doc
+                      (car (split-string (documentation
+                                          'transient--default-infix-command)
+                                         "\n"))))))
+      (when (string-suffix-p "." doc)
+        (setq doc (substring doc 0 -1)))
+      (if return
+          doc
+        (let ((message-log-max nil))
+          (message "%s" doc))))))
+
 ;;; Popup Navigation
 
 (defun transient-scroll-up (&optional arg)
@@ -4382,18 +4431,27 @@ around `scroll-down-command' (which see)."
 See `backward-button' for information about N."
   (interactive "p")
   (with-selected-window transient--window
-    (backward-button n t)))
+    (backward-button n t)
+    (when (eq transient-enable-popup-navigation 'verbose)
+      (transient-show-summary (get-text-property (point) 'suffix)))))
 
 (defun transient-forward-button (n)
   "Move to the next button in the transient popup buffer.
 See `forward-button' for information about N."
   (interactive "p")
   (with-selected-window transient--window
-    (forward-button n t)))
+    (forward-button n t)
+    (when (eq transient-enable-popup-navigation 'verbose)
+      (transient-show-summary (get-text-property (point) 'suffix)))))
 
 (define-button-type 'transient
   'face nil
-  'keymap transient-button-map)
+  'keymap transient-button-map
+  'help-echo (lambda (win buf pos)
+               (with-selected-window win
+                 (with-current-buffer buf
+                   (transient-show-summary
+                    (get-text-property pos 'suffix) t)))))
 
 (defun transient--goto-button (command)
   (cond
@@ -4401,11 +4459,14 @@ See `forward-button' for information about N."
     (when (re-search-forward (concat "^" (regexp-quote command)) nil t)
       (goto-char (match-beginning 0))))
    (command
-    (while (and (ignore-errors (forward-button 1))
-                (not (eq (button-get (button-at (point)) 'command) command))))
-    (unless (eq (button-get (button-at (point)) 'command) command)
-      (goto-char (point-min))
-      (forward-button 1)))))
+    (cl-flet ((found () (eq (button-get (button-at (point)) 'command) command)))
+      (while (and (ignore-errors (forward-button 1))
+                  (not (found))))
+      (unless (found)
+        (goto-char (point-min))
+        (ignore-errors (forward-button 1))
+        (unless (found)
+          (goto-char (point-min))))))))
 
 (defun transient--heading-at-point ()
   (and (eq (get-text-property (point) 'face) 'transient-heading)

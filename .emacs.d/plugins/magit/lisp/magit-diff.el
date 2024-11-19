@@ -55,9 +55,9 @@
 (declare-function magit-merge-in-progress-p "magit-merge" ())
 (declare-function magit--merge-range "magit-merge" (&optional head))
 ;; For `magit-diff--dwim'
-(declare-function forge--pullreq-range "forge-pullreq"
+(declare-function forge--pullreq-range "ext:forge-pullreq"
                   (pullreq &optional endpoints))
-(declare-function forge--pullreq-ref "forge-pullreq" (pullreq))
+(declare-function forge--pullreq-ref "ext:forge-pullreq" (pullreq))
 ;; For `magit-diff-wash-diff'
 (declare-function ansi-color-apply-on-region "ansi-color")
 ;; For `magit-diff-wash-submodule'
@@ -2156,7 +2156,9 @@ keymap is the parent of their keymaps."
             (append magit-diff--reset-non-color-moved
                     magit-git-global-arguments)))
     (magit--git-wash #'magit-diff-wash-diffs
-        (if (member "--no-index" args) 'wash-anyway keep-error)
+        (if (member "--no-index" args)
+            'wash-anyway
+          (or keep-error magit--git-wash-keep-error))
       cmd args)))
 
 (defun magit-diff--maybe-add-stat-arguments (args)
@@ -3195,24 +3197,26 @@ are highlighted."
     (_     (magit-section-highlight section nil))))
 
 (defun magit-diff-highlight-list (section &optional selection)
-  (let ((beg (oref section start))
-        (cnt (oref section content))
-        (end (oref section end)))
-    (when (or (eq this-command #'mouse-drag-region)
-              (not selection))
-      (unless (and (region-active-p)
-                   (<= (region-beginning) beg))
-        (magit-section-make-overlay beg cnt 'magit-section-highlight))
-      (if (oref section hidden)
-          (oset section washer #'ignore)
-        (dolist (child (oref section children))
-          (when (or (eq this-command #'mouse-drag-region)
-                    (not (and (region-active-p)
-                              (<= (region-beginning)
-                                  (oref child start)))))
-            (magit-diff-highlight-recursive child selection)))))
-    (when magit-diff-highlight-hunk-body
-      (magit-section-make-overlay (1- end) end 'magit-section-highlight))))
+  (if (oref section children)
+      (let ((beg (oref section start))
+            (cnt (oref section content))
+            (end (oref section end)))
+        (when (or (eq this-command #'mouse-drag-region)
+                  (not selection))
+          (unless (and (region-active-p)
+                       (<= (region-beginning) beg))
+            (magit-section-make-overlay beg cnt 'magit-section-highlight))
+          (if (oref section hidden)
+              (oset section washer #'ignore)
+            (dolist (child (oref section children))
+              (when (or (eq this-command #'mouse-drag-region)
+                        (not (and (region-active-p)
+                                  (<= (region-beginning)
+                                      (oref child start)))))
+                (magit-diff-highlight-recursive child selection)))))
+        (when magit-diff-highlight-hunk-body
+          (magit-section-make-overlay (1- end) end 'magit-section-highlight)))
+    (magit-section-highlight section nil)))
 
 (defun magit-diff-highlight-file (section &optional selection)
   (magit-diff-highlight-heading section selection)

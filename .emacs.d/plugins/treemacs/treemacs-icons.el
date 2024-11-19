@@ -301,10 +301,10 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "asciidoc.png"      :extensions ("adoc" "asciidoc"))
     (treemacs-create-icon :file "rust.png"          :extensions ("rs"))
     (treemacs-create-icon :file "image.png"         :extensions ("jpg" "jpeg" "bmp" "svg" "png" "xpm" "gif"))
-    (treemacs-create-icon :file "clojure.png"       :extensions ("clj" "cljs" "cljc" "edn"))
+    (treemacs-create-icon :file "clojure.png"       :extensions ("clj" "cljs" "cljc" "cljd" "edn"))
     (treemacs-create-icon :file "ts.png"            :extensions ("ts" "tsx"))
     (treemacs-create-icon :file "vue.png"           :extensions ("vue"))
-    (treemacs-create-icon :file "css.png"           :extensions ("css"))
+    (treemacs-create-icon :file "css.png"           :extensions ("css" "rasi"))
     (treemacs-create-icon :file "conf.png"          :extensions ("properties" "conf" "config" "cfg" "ini" "xdefaults" "xresources" "terminalrc" "ledgerrc"))
     (treemacs-create-icon :file "html.png"          :extensions ("html" "htm"))
     (treemacs-create-icon :file "git.png"           :extensions ("git" "gitignore" "gitconfig" "gitmodules" "gitattributes"))
@@ -575,7 +575,7 @@ be assigned which treemacs icon, for example
                icon))))
 
 (treemacs-only-during-init
-  (treemacs-load-theme "Default"))
+ (treemacs-load-theme "Default"))
 
 (provide 'treemacs-icons)
 

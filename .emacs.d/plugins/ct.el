@@ -1,11 +1,11 @@
 ;;; ct.el --- Color Tools - a color api -*- coding: utf-8; lexical-binding: t -*-
 
-;; Copyright (c) 2022 neeasade
+;; Copyright (c) 2024 neeasade
 ;; SPDX-License-Identifier: MIT
 ;;
-;; Version: 0.2
+;; Version: 0.3
 ;; Author: neeasade
-;; Keywords: convenience color theming rgb hsv hsl cie-lab background
+;; Keywords: convenience color theming rgb hsv hsl lab oklab background
 ;; URL: https://github.com/neeasade/ct.el
 ;; Package-Requires: ((emacs "26.1") (dash "2.18.0") (hsluv "1.0.0"))
 
@@ -39,6 +39,11 @@
   :type 'boolean
   :group 'ct)
 
+(defcustom ct-verbose-p nil
+  "Enable logs. Logs will be prefixed with 'ct: '."
+  :type 'boolean
+  :group 'ct)
+
 (defcustom ct-interactive-step-interval 3
   "Interval to use for the ct-point-* interactive functions.
 If set to nil the smallest amount needed to affect a change is used."
@@ -49,24 +54,41 @@ If set to nil the smallest amount needed to affect a change is used."
 ;;; helpers to build color space functions
 ;;;
 
-(defun ct-clamp (value min max)
-  "Make sure VALUE is a number between MIN and MAX inclusive."
-  (min max (max min value)))
+(defun ct-clamp (value &optional min max)
+  "Make sure VALUE is a number between MIN and MAX inclusive.
 
-(defun ct-shorten (c)
-  "Optionally shorten C #HHHHHHHHHHHH to #HHHHHH."
-  (if (= (length c) 7)
-    c
-    (--> c
+MIN and MAX default to 0 and 100."
+  (let* ((min (or min 0.0))
+          (max (or max 100.0))
+          (result (min max (max min value))))
+    (when (and ct-verbose-p
+            (not (= result value))
+            (< 0.001 (abs (- result value))))
+      (message "ct: ct-clamped %s -> %s" value result))
+    result))
+
+(defun ct--rgb-to-name (red green blue)
+  "Transform RED GREEN BLUE integer properties into a hex string.
+
+Values should be between 0 and 1."
+  (color-rgb-to-hex red green blue
+    (if ct-always-shorten 2 4)))
+
+;; https://git.savannah.gnu.org/cgit/emacs.git/commit/lisp/color.el?id=c5e5940ba40b801270bbe02b92576eac36f73222
+(when (functionp 'color-oklab-to-xyz)
+  ;; note: tested this by comparing ct-make-oklab against the values of
+  ;; https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/oklab
+  (defun ct-edit-oklab (color edit-fn)
+    "Edit COLOR in by calling edit-fn with it's okLAB properties."
+    (--> color
       (color-name-to-rgb it)
-      `(color-rgb-to-hex ,@ it 2)
-      (eval it))))
-
-(defun ct-maybe-shorten (c)
-  "Internal function for optionally shortening color C -- see variable 'ct-always-shorten'."
-  (if ct-always-shorten
-    (ct-shorten c)
-    c))
+      (apply #'color-srgb-to-oklab it)
+      (--map (* it 100.0) it)
+      (apply edit-fn it)
+      (--map (/ it 100.0) it)
+      (apply #'color-oklab-to-srgb it)
+      (-map #'color-clamp it)
+      (apply #'ct--rgb-to-name it))))
 
 ;; utility function from: https://github.com/emacsfodder/kurecolor/blob/d17a77d9210b3e7b8141d03c04d1898bcab2b876/kurecolor.el#L201-L220
 (defun ct--replace-current (fn &rest args)
@@ -112,7 +134,7 @@ Use TOLERANCE-FN to check if ARG1 can be updated further."
     next))
 
 (defun ct-name-to-lab (name &optional white-point)
-  "Transform NAME into LAB colorspace with optional lighting assumption WHITE-POINT."
+  "Transform NAME into cieLAB colorspace with optional lighting assumption WHITE-POINT."
   (--> name
     (color-name-to-rgb it)
     (apply #'color-srgb-to-xyz it)
@@ -121,14 +143,12 @@ Use TOLERANCE-FN to check if ARG1 can be updated further."
 
 (defun ct-lab-to-name (lab &optional white-point)
   "Convert LAB color to #HHHHHH with optional lighting assumption WHITE-POINT."
-  (->>
-    (-snoc lab (or white-point color-d65-xyz))
+  (->> (-snoc lab (or white-point color-d65-xyz))
     (apply #'color-lab-to-xyz)
     (apply #'color-xyz-to-srgb)
     ;; when pulling it out we might die (srgb is not big enough to hold all possible values)
     (-map #'color-clamp)
-    (apply #'color-rgb-to-hex)
-    (ct-maybe-shorten)))
+    (apply #'ct--rgb-to-name)))
 
 (defun ct-hsv-to-rgb (H S V)
   "Convert HSV to RGB. Expected values: H: radian, S,V: 0 to 1."
@@ -156,102 +176,94 @@ Use TOLERANCE-FN to check if ARG1 can be updated further."
 ;;; color space functions
 ;;;
 
-(defun ct-edit-rgb (c transform)
-  "Work with a color C in the RGB space using function TRANSFORM. Ranges for RGB are all 0-100."
-  (->> c
+(defun ct-edit-rgb (color edit-fn)
+  "Edit COLOR in the RGB colorspace by calling EDIT-FN with it's RGB properties."
+  (->> color
     (color-name-to-rgb)
-    (-map (-partial #'* 100.0))
-    (apply transform)
-    (-map (-rpartial #'/ 100.0))
-    (-map #'color-clamp)
-    (apply #'color-rgb-to-hex)
-    (ct-maybe-shorten)))
+    (--map (* it 100.0))
+    (apply edit-fn)
+    (-map #'ct-clamp)
+    (--map (/ it 100.0))
+    (apply #'ct--rgb-to-name)))
 
-(defun ct-edit-lab (c transform)
-  "Work with a color C in the LAB space using function TRANSFORM.
-Ranges for LAB are {0-100,-100-100,-100-100}."
-  (->> c
+(defun ct-edit-lab (color edit-fn)
+  "Edit COLOR in the cieLAB colorspace by calling EDIT-FN with it's LAB properties."
+  (->> color
     (ct-name-to-lab)
-    (apply transform)
+    (apply edit-fn)
     (apply (lambda (L A B)
              (list
-               (ct-clamp L 0 100)
+               (ct-clamp L)
                (ct-clamp A -100 100)
                (ct-clamp B -100 100))))
     (ct-lab-to-name)))
 
-(defun ct-edit-lch (c transform)
-  "Work with a color C in the LCH space using function TRANSFORM.
-Ranges for LCH are {0-100,0-100,0-360}."
-  (ct-edit-lab c
+(defun ct-edit-lch (color edit-fn)
+  "Edit COLOR in the cieLCH colorspace by calling EDIT-FN with it's LCH properties.
+EDIT-FN is called with values in ranges: {0-100, 0-100, 0-360}."
+  (ct-edit-lab color
     (lambda (&rest lab)
       (->> lab
         (apply #'color-lab-to-lch)
         (apply (lambda (L C H) (list L C (radians-to-degrees H))))
-        (apply transform)
+        (apply edit-fn)
         (apply (lambda (L C H) (list L C (degrees-to-radians (mod H 360)))))
         (apply #'color-lch-to-lab)))))
 
-(defun ct-edit-hsl (c transform)
-  "Work with a color C in the HSL space using function TRANSFORM.
-Ranges for HSL are {0-360,0-100,0-100}."
-  (->> c
+(defun ct-edit-hsl (color edit-fn)
+  "Edit COLOR in the HSL colorspace by calling EDIT-FN with it's HSL properties.
+EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
+  (->> color
     (color-name-to-rgb)
     (apply #'color-rgb-to-hsl)
     (apply (lambda (H S L) (list (* 360.0 H) (* 100.0 S) (* 100.0 L))))
-    (apply transform)
+    (apply edit-fn)
     (apply (lambda (H S L) (list (/ (mod H 360) 360.0) (/ S 100.0) (/ L 100.0))))
     (apply #'color-hsl-to-rgb)
     (-map #'color-clamp)
-    (apply #'color-rgb-to-hex)
-    (ct-maybe-shorten)))
+    (apply #'ct--rgb-to-name)))
 
-(defun ct-edit-hsv (c transform)
-  "Work with a color C in the HSV space using function TRANSFORM.
-Ranges for HSV are {0-360,0-100,0-100}."
-  (->> (color-name-to-rgb c)
+(defun ct-edit-hsv (color edit-fn)
+  "Edit COLOR in the HSV colorspace by calling EDIT-FN with it's HSV properties.
+EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
+  (->> (color-name-to-rgb color)
     (apply #'color-rgb-to-hsv)
     (funcall (-lambda ((H S V))
-               (apply transform
-                 (list
-                   (radians-to-degrees H)
+               (apply edit-fn
+                 (list (radians-to-degrees H)
                    (* 100.0 S)
                    (* 100.0 V)))))
     ;; from transformed to what our function expects
     (funcall (-lambda ((H S V))
-               (list
-                 (degrees-to-radians H)
+               (list (degrees-to-radians H)
                  (color-clamp (/ S 100.0))
                  (color-clamp (/ V 100.0)))))
     (apply #'ct-hsv-to-rgb)
-    (apply #'color-rgb-to-hex)
-    (ct-maybe-shorten)))
+    (apply #'ct--rgb-to-name)))
 
-(defun ct-edit-hpluv (c transform)
-  "Work with a color C in the HPLUV space using function TRANSFORM.
-Ranges for HPLUV are {0-360,0-100,0-100}."
-  (ct-maybe-shorten
-    (apply #'color-rgb-to-hex
-      (-map #'color-clamp
-        (hsluv-hpluv-to-rgb
-          (-let (((H P L) (apply transform (-> c ct-shorten hsluv-hex-to-hpluv))))
-            (list
-              (mod H 360.0)
-              (ct-clamp P 0 100)
-              (ct-clamp L 0 100))))))))
+(defun ct-edit-hpluv (color edit-fn)
+  "Edit COLOR in the HPLuv colorspace by calling EDIT-FN with it's HPL properties.
+EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
+  (apply #'ct--rgb-to-name
+    (-map #'color-clamp
+      (hsluv-hpluv-to-rgb
+        (-let (((H P L) (apply edit-fn (-> color hsluv-hex-to-hpluv))))
+          (list
+            (mod H 360.0)
+            (ct-clamp P)
+            (ct-clamp L)))))))
 
-(defun ct-edit-hsluv (c transform)
-  "Work with a color C in the HSLUV space using function TRANSFORM.
-Ranges for HSLUV are {0-360,0-100,0-100}."
-  (ct-maybe-shorten
-    (apply #'color-rgb-to-hex
-      (-map #'color-clamp
-        (hsluv-hsluv-to-rgb
-          (let ((result (apply transform (-> c ct-shorten hsluv-hex-to-hsluv))))
-            (list
-              (mod (-first-item result) 360.0)
-              (ct-clamp (-second-item result) 0 100)
-              (ct-clamp (-third-item result) 0 100))))))))
+(defun ct-edit-hsluv (color edit-fn)
+  "Edit COLOR in the HSLuv colorspace by calling EDIT-FN with it's HSL properties.
+EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
+  (apply #'ct--rgb-to-name
+    (-map #'color-clamp
+      (hsluv-hsluv-to-rgb
+        (let ((result (apply edit-fn (-> color hsluv-hex-to-hsluv))))
+          (list
+            (mod (-first-item result) 360.0)
+            (ct-clamp (-second-item result))
+            (ct-clamp (-third-item result))))))))
 
 (eval-and-compile
   (defun ct--colorspace-map (&optional label)
@@ -266,29 +278,50 @@ Ranges for HSLUV are {0-360,0-100,0-100}."
 
 (defmacro ct--make-transform-property-functions (colorspace)
   "Build the functions for tweaking individual properties of colors in COLORSPACE."
-  (-let* (((&plist :transform transform :get get) (ct--colorspace-map colorspace))
+  (-let* (((&plist :transform transform :get get :make make) (ct--colorspace-map colorspace))
            (result '(progn))
-           (collect (lambda (sexp) (setq result (-snoc result sexp)))))
+           (collect (lambda (sexp) (setq result (-snoc result sexp))))
+           (properties (cond
+                         ((string= colorspace "hpluv") '("Hue" "Percentage-Saturation" "Lightness"))
+                         ((string= colorspace "hsl") '("Hue" "Saturation" "Lightness"))
+                         ((string= colorspace "hsluv") '("Hue" "Saturation" "Lightness"))
+                         ((string= colorspace "hsv") '("Hue" "Saturation" "Value"))
+                         ((string= colorspace "lab")   '("Lightness" "A" "B"))
+                         ((string= colorspace "oklab") '("Lightness" "A" "B"))
+                         ((string= colorspace "lch")   '("Lightness" "Chroma" "Hue"))
+                         ((string= colorspace "rgb")   '("Red" "Green" "Blue"))
+                         ((t (throw 'no-colorspace t)))))
+           (properties-desc (mapconcat 'identity properties ", ")))
+
     (funcall collect
-      `(defun ,get (c)
-         ,(format "Get %s representation of color C." colorspace)
+      `(defun ,get (color)
+         ,(format "Get %s representation (%s) of COLOR." colorspace properties-desc)
          (let ((return))
-           (,transform c
+           (,transform color
              (lambda (&rest props)
                (setq return props)
                props))
            return)))
 
+    (funcall collect
+      `(defun ,make ,(--map (-> it downcase intern) properties)
+         ,(format "Make a %s color using properties: %s." colorspace (upcase properties-desc))
+         (,transform "#cccccc"
+           (lambda (&rest props)
+             (list ,@(--map (-> it downcase intern) properties))))))
+
     (->> '(0 1 2)
       (-map
         (lambda (index)
-          (let* ((prop-single (substring colorspace index (+ index 1)))
-                  (prop-name (format "%s-%s" colorspace prop-single))
-                  (transform-prop-fn (format "ct-edit-%s" prop-name)))
+          (let* ((property (nth index properties))                     ; Lightness
+		              (prop-single (downcase (substring property 0 1)))    ; l
+		              (prop-name (format "%s-%s" colorspace prop-single))  ; lab-l
+		              (transform-prop-fn (format "ct-edit-%s" prop-name))) ; ct-edit-lab-l
+
             (funcall collect
-              `(defun ,(intern transform-prop-fn) (c func-or-val)
-                 ,(format "Transform property %s of C using FUNC-OR-VAL." prop-name)
-                 (,transform c
+              `(defun ,(intern transform-prop-fn) (color func-or-val)
+                 ,(format "Transform %s %s of COLOR using FUNC-OR-VAL." colorspace property)
+                 (,transform color
                    (lambda (&rest color-props)
                      (-replace-at ,index
                        (if (functionp func-or-val)
@@ -297,28 +330,26 @@ Ranges for HSLUV are {0-360,0-100,0-100}."
                        color-props)))))
 
             (funcall collect
-              `(defun ,(intern (format "ct-get-%s" prop-name)) (c)
-                 ,(format "Get %s representation of color C." prop-name)
-                 (nth ,index (,get c))))
+              `(defun ,(intern (format "ct-get-%s" prop-name)) (color)
+                 ,(format "Get %s %s value of COLOR." colorspace property)
+                 (nth ,index (,get color))))
 
             (funcall collect
-              `(defun ,(intern (format "%s-inc" transform-prop-fn)) (c &optional v)
-                 ,(format "Increase %s value of C by V (defaults to the minimum amount needed to change C)." prop-name)
-                 (if v (,(intern transform-prop-fn) c (-partial #'+ v))
-                   (ct--amp-value c
-                     (lambda (color amount)
-                       (,(intern transform-prop-fn) color (-partial #'+ amount)))
+              `(defun ,(intern (format "%s-inc" transform-prop-fn)) (color &optional amount)
+                 ,(format "Increase %s property of COLOR by AMOUNT (defaults to minimum increase amount)." prop-name)
+                 (if amount
+                   (,(intern transform-prop-fn) color (-partial #'+ amount))
+                   (ct--amp-value color (lambda (c v) (,(intern transform-prop-fn) color (-partial #'+ v)))
                      0.1 (-partial #'+ 0.1)
                      ;; nb: 30% limit is arbitrary
                      (lambda (arg) (ct--within arg 30 0.1))))))
 
             (funcall collect
-              `(defun ,(intern (format "%s-dec" transform-prop-fn)) (c &optional v)
-                 ,(format "Decrease %s value of C by V (defaults to the minimum amount needed to change C)." prop-name)
-                 (if v (,(intern transform-prop-fn) c (-rpartial #'- v))
-                   (ct--amp-value c
-                     (lambda (color amount)
-                       (,(intern transform-prop-fn) color (-partial #'+ amount)))
+              `(defun ,(intern (format "%s-dec" transform-prop-fn)) (color &optional amount)
+                 ,(format "Decrease %s property of COLOR by AMOUNT (defaults to minimum decrease amount)." prop-name)
+                 (if amount
+                   (,(intern transform-prop-fn) color (-rpartial #'- amount))
+                   (ct--amp-value color (lambda (c v) (,(intern transform-prop-fn) color (-partial #'+ v)))
                      -0.1 (-rpartial #'- 0.1)
                      ;; nb: 30% limit is arbitrary
                      (lambda (arg) (ct--within arg 30 0.1))))))
@@ -337,11 +368,10 @@ Ranges for HSLUV are {0-360,0-100,0-100}."
 
             (when (string= prop-single "h")
               (funcall collect
-                `(defun ,(intern (format "ct-rotation-%s" colorspace)) (c interval)
-                   ,(format "Perform a hue rotation in %s space starting with color C by INTERVAL degrees." colorspace)
-                   (-map (-partial #',(intern (format "%s-inc" transform-prop-fn)) c)
-                     (-iota (abs (/ 360 interval))
-                       0 interval))))))))) result))
+                `(defun ,(intern (format "ct-rotation-%s" colorspace)) (count color)
+                   ,(format "Perform a hue rotation in %s space starting with COLOR, generating COUNT colors." colorspace)
+                   (-map (-partial #',(intern (format "%s-inc" transform-prop-fn)) color)
+                     (-iota (abs count) 0 (/ 360 count)))))))))) result))
 
 (ct--make-transform-property-functions "rgb")
 (ct--make-transform-property-functions "hsl")
@@ -351,53 +381,51 @@ Ranges for HSLUV are {0-360,0-100,0-100}."
 (ct--make-transform-property-functions "hpluv")
 (ct--make-transform-property-functions "hsluv")
 
-;; make colors within our normalized transform functions:
-(defmacro ct--make-color-meta (transform properties)
-  "Internal macro for creating a color using TRANSFORM function forcing PROPERTIES."
-  `(,transform "#cccccc" (lambda (&rest _) ,properties)))
+(when (functionp 'color-oklab-to-xyz)
+  (ct--make-transform-property-functions "oklab")
+  (defmacro ct-aedit-oklab (color body) "An anaphoric version of `ct-edit-oklab' with COLOR properties bound to (l a b) in BODY." `(ct-edit-oklab ,color (lambda (l a b) ,body))))
 
-(defun ct-make-rgb (R G B) "Make a color using R*G*B properties." (ct--make-color-meta ct-edit-rgb (list R G B)))
-(defun ct-make-hsl (H S L) "Make a color using H*S*L properties." (ct--make-color-meta ct-edit-hsl (list H S L)))
-(defun ct-make-hsv (H S V) "Make a color using H*S*V properties." (ct--make-color-meta ct-edit-hsv (list H S V)))
-(defun ct-make-hsluv (H S L) "Make a color using H*S*L*uv properties." (ct--make-color-meta ct-edit-hsluv (list H S L)))
-(defun ct-make-hpluv (H P L) "Make a color using H*P*L*uv properties." (ct--make-color-meta ct-edit-hpluv (list H P L)))
-(defun ct-make-lab (L A B) "Make a color using L*A*B properties." (ct--make-color-meta ct-edit-lab (list L A B)))
-(defun ct-make-lch (L C H) "Make a color using L*C*H properties." (ct--make-color-meta ct-edit-lch (list L C H)))
+;; couldn't figure out how to nest this defmacro call
+(defmacro ct-aedit-rgb (color body) "An anaphoric version of `ct-edit-rgb' with COLOR properties bound to (r g b) in BODY." `(ct-edit-rgb ,color (lambda (r g b) ,body)))
+(defmacro ct-aedit-hsl (color body) "An anaphoric version of `ct-edit-hsl' with COLOR properties bound to (h s l) in BODY." `(ct-edit-hsl ,color (lambda (h s l) ,body)))
+(defmacro ct-aedit-hsv (color body) "An anaphoric version of `ct-edit-hsv' with COLOR properties bound to (h s v) in BODY." `(ct-edit-hsv ,color (lambda (h s v) ,body)))
+(defmacro ct-aedit-lch (color body) "An anaphoric version of `ct-edit-lch' with COLOR properties bound to (l c h) in BODY." `(ct-edit-lch ,color (lambda (l c h) ,body)))
+(defmacro ct-aedit-lab (color body) "An anaphoric version of `ct-edit-lab' with COLOR properties bound to (l a b) in BODY." `(ct-edit-lab ,color (lambda (l a b) ,body)))
+(defmacro ct-aedit-hpluv (color body) "An anaphoric version of `ct-edit-hpluv' with COLOR properties bound to (h p l) in BODY." `(ct-edit-hpluv ,color (lambda (h p l) ,body)))
+(defmacro ct-aedit-hsluv (color body) "An anaphoric version of `ct-edit-hsluv' with COLOR properties bound to (h s l) in BODY." `(ct-edit-hsluv ,color (lambda (h s l) ,body)))
 
 ;;;
 ;;; other color functions
 ;;;
 
-(defun ct-format-rbga (C &optional opacity)
+(defun ct-format-rbga (color &optional opacity)
   "RGBA formatting:
-Pass in C and OPACITY 0-100, get a string
-representation of C as follows: 'rgba(R, G, B, OPACITY)', where
+Pass in COLOR and OPACITY 0-100, get a string
+representation of COLOR as follows: 'rgba(R, G, B, OPACITY)', where
 values RGB are 0-255, and OPACITY is 0-1.0 (default 1.0)."
-  (->>
-    (ct-get-rgb C)
+  (->> (ct-get-rgb color)
     (-map (-partial '* (/ 255.0 100)))
     (-map #'round)
     (funcall (lambda (coll) (-snoc coll
                               (/
-                                (ct-clamp (or opacity 100) 0 100)
+                                (ct-clamp (or opacity 100))
                                 100.0))))
     (apply (-partial 'format "rgba(%s, %s, %s, %s)"))))
 
-(defun ct-format-argb (C &optional opacity end)
+(defun ct-format-argb (color &optional opacity end)
   "Argb formatting:
-Pass in C and OPACITY 0-100, get a string representation of C
-as follows: '#AAFFFFFF', where AA is a hex pair for the alpha,
-followed by FF times 3 hex pairs for red, green, blue. If END is
-truthy, then format will be '#FFFFFFAA'."
-  (->>
-    (ct-clamp (or opacity 100) 0 100)
+Pass in COLOR and OPACITY 0-100, get a string representation of COLOR as
+follows: '#AAFFFFFF', where AA is a hex pair for the alpha, followed by FF times
+3 hex pairs for red, green, blue. If END is truthy, then format will be
+'#FFFFFFAA'."
+  (->> (ct-clamp (or opacity 100))
     (* (/ 255.0 100))
     (round)
     (format "%02x")
     (funcall (lambda (A)
                (if end
-                 (format "#%s%s" (-> C ct-shorten (substring 1)) A)
-                 (format "#%s%s" A (-> C ct-shorten (substring 1))))))))
+                 (format "#%s%s" (-> color (substring 1)) A)
+                 (format "#%s%s" A (-> color (substring 1))))))))
 
 ;; sRGB <-> linear RGB conversion
 ;; https://en.wikipedia.org/wiki/SRGB#The_forward_transformation_(CIE_XYZ_to_sRGB)
@@ -420,24 +448,22 @@ Component value in 0-100 range."
            (* c 12.92)
          (- (* 1.055 (expt c (/ 1 2.4))) 0.055)))))
 
-(defun ct-srgb-to-rgb (c)
-  "Convert color C from sRGB color space to linear RGB.
-Ranges for sRGB color are all 0-100."
-  (ct-edit-rgb c
+(defun ct-srgb-to-rgb (color)
+  "Convert COLOR from sRGB color space to linear RGB."
+  (ct-edit-rgb color
     (lambda (&rest comps)
       (-map 'ct--linearize comps))))
 
-(defun ct-rgb-to-srgb (c)
-  "Convert linear color C to sRGB color space.
-Ranges for RGB color are all 0-100."
-  (ct-edit-rgb c
+(defun ct-rgb-to-srgb (color)
+  "Convert linear COLOR to sRGB color space."
+  (ct-edit-rgb color
     (lambda (&rest comps)
       (-map 'ct--delinearize comps))))
 
-(defun ct-pastel (c &optional Smod Vmod)
-  "Make a color C more 'pastel' in the hsluv space -- optionally change the rate of change with SMOD and VMOD."
+(defun ct-pastel (color &optional Smod Vmod)
+  "Make COLOR more 'pastel' using the hsluv space -- optionally change the rate of change with SMOD and VMOD."
   ;; ref https://en.wikipedia.org/wiki/Pastel_(color)
-  (ct-edit-hsl c
+  (ct-edit-hsl color
     (lambda (H S L)
       (let ((new-S (- S (or Smod 1)))
              (new-L (+ L (or Vmod 1))))
@@ -449,8 +475,8 @@ Ranges for RGB color are all 0-100."
           (ct-clamp new-S 0 40)
           (ct-clamp new-L 60 100))))))
 
-(defun ct-luminance-srgb (c)
-  "Get the srgb luminance value of C."
+(defun ct-luminance-srgb (color)
+  "Get the srgb luminance value of COLOR."
   ;; ref https://www.w3.org/TR/2008/REC-WCAG20-20081211/#relativeluminancedef
   (let ((rgb (-map
                (lambda (part)
@@ -458,75 +484,76 @@ Ranges for RGB color are all 0-100."
                        0.03928)
                    (/ part 12.92)
                    (expt (/ (+ 0.055 part) 1.055) 2.4)))
-               (color-name-to-rgb c))))
+               (color-name-to-rgb color))))
     (+
       (* (nth 0 rgb) 0.2126)
       (* (nth 1 rgb) 0.7152)
       (* (nth 2 rgb) 0.0722))))
 
-(defun ct-contrast-ratio (c1 c2)
-  "Get the contrast ratio between C1 and C2."
+(defun ct-contrast-ratio (color1 color2)
+  "Get the contrast ratio between COLOR1 and COLOR2."
   ;; ref https://peteroupc.github.io/colorgen.html#Contrast_Between_Two_Colors
-  (let ((rl1 (ct-luminance-srgb c1))
-         (rl2 (ct-luminance-srgb c2)))
+  (let ((rl1 (ct-luminance-srgb color1))
+         (rl2 (ct-luminance-srgb color2)))
     (/ (+ 0.05 (max rl1 rl2))
       (+ 0.05 (min rl1 rl2)))))
 
-(defun ct-lab-change-whitepoint (c w1 w2)
-  "Convert a color C wrt white points W1 and W2 through the lab colorspace."
-  (ct-lab-to-name (ct-name-to-lab c w1) w2))
+(defun ct-lab-change-whitepoint (color white-point white-point-new)
+  "Transform COLOR by changing it's cieLAB WHITE-POINT property to WHITE-POINT-NEW."
+  (ct-lab-to-name (ct-name-to-lab color white-point) white-point-new))
 
-(defun ct-distance (c1 c2)
-  "Get cie-DE2000 distance between C1 and C2 -- value is 0-100."
+(defun ct-distance (color1 color2)
+  "Get cie-DE2000 distance between COLOR1 and COLOR2, range 0-100."
   ;; note: there are 3 additional optional params to cie-de2000: compensation for
   ;; {lightness,chroma,hue} (all 0.0-1.0)
   ;; https://en.wikipedia.org/wiki/Color_difference#CIEDE2000
-  (apply #'color-cie-de2000 (-map 'ct-name-to-lab (list c1 c2))))
+  (apply #'color-cie-de2000 (-map 'ct-name-to-lab (list color1 color2))))
 
-(defun ct-light-p (c &optional scale)
-  "Determine if C is a light color with lightness in the LAB space.
-Optionally override SCALE comparison value."
+(defun ct-light-p (color &optional threshold)
+  "Determine if a COLOR passes a cieLAB lightness THRESHOLD."
   ;; nb: 65 here is arbitrary
-  (> (ct-get-lab-l c) (or scale 65)))
+  (> (ct-get-lab-l color) (or threshold 65)))
 
-(defun ct-iterations (start op condition)
-  "Do OP on START color until CONDITION is met or op has no effect - return all intermediate parts."
-  (let ((colors (list start))
+(defun ct-iterations (color edit-fn condition)
+  "Change COLOR using EDIT-FN until CONDITION is met, returning each step.
+Will return early if calling EDIT-FN results in no change."
+  (let ((colors (list color))
          (iterations 0))
     (while (and (not (funcall condition (-last-item colors)))
-             (not (string= (funcall op (-last-item colors)) (-last-item colors)))
+             (not (string= (funcall edit-fn (-last-item colors)) (-last-item colors)))
              (< iterations 10000))
       (setq iterations (+ iterations 1)
-        colors (-snoc colors (funcall op (-last-item colors)))))
+        colors (-snoc colors (funcall edit-fn (-last-item colors)))))
     colors))
 
-(defun ct-iterate (start op condition)
-  "Do OP on START color until CONDITION is met or op has no effect.
-
-CONDITION is a function that takes the current color value being iterated."
-  (let ((color start)
+(defun ct-iterate (color edit-fn condition)
+  "Change COLOR using EDIT-FN until CONDITION is met.
+Will return early if calling EDIT-FN results in no change."
+  (let ((color color)
          (iterations 0))
     (while (and (not (funcall condition color))
-             (not (string= (funcall op color) color))
+             (not (string= (funcall edit-fn color) color))
              (< iterations 10000))
       (setq iterations (+ iterations 1)
-        color (funcall op color)))
+        color (funcall edit-fn color)))
     color))
 
-(defmacro ct-aiterate (start op condition)
-  "Do OP on START color until CONDITION is met or op has no effect.
+(defmacro ct-aiterate (color edit-fn condition)
+  "Transform COLOR using EDIT-FN until CONDITION is met.
+Will return early if calling EDIT-FN results in no change.
 
-This is an anaphoric version of ct-iterations - the current color value is bound
-to 'C', and the START color is bound to C0."
-  `(ct-iterate ,start ,op
-     (lambda (C) (let ((C0 ,start)) ,condition))))
+This is an anaphoric version of `ct-iterate' wrt. CONDITION - the current color
+value is bound to C, and the START color is bound to C0."
+  `(ct-iterate ,color ,edit-fn
+     (lambda (C) (let ((C0 ,color)) ,condition))))
 
-(defmacro ct-aiterations (start op condition)
-  "Do OP on START color until CONDITION is met or op has no effect - return all intermediate parts.
+(defmacro ct-aiterations (color edit-fn condition)
+  "Transform COLOR using EDIT-FN until CONDITION is met, returning each step.
+Will return early if calling EDIT-FN results in no change.
 
-This is an anaphoric version of ct-iterations - the current color value is bound
-to 'C', and the START color is bound to C0."
-  `(ct-iterations ,start ,op
+This is an anaphoric version of `ct-iterations' wrt. CONDITION - the current
+color value is bound to C, and the START color is bound to C0."
+  `(ct-iterations ,color ,edit-fn
      (lambda (C) (let ((C0 ,start)) ,condition))))
 
 (defun ct-contrast-min (foreground background contrast-ratio &optional color-property)
@@ -596,29 +623,35 @@ results."
                    `(,start ,@result ,end)
                    result))))))
 
-(defun ct-mix (colors &optional space)
-  "Mix COLORS in space SPACE. See also: 'ct--colorspace-map'."
+(defun ct-mix (colors &optional colorspace)
+  "Mix COLORS in COLORSPACE. See also: 'ct--colorspace-map'."
   (-reduce (lambda (color new)
-             (-second-item (ct-gradient 3 color new t space)))
+             (-second-item (ct-gradient 3 color new t colorspace)))
     colors))
 
-(defun ct-complement (c)
-  "Return a complement color of C in the HSLUV space."
-  (ct-edit-hsluv-h-inc c 180))
+(defun ct-complement (color)
+  "Return a color complement of COLOR in the HSLUV space."
+  (ct-edit-hsluv-h-inc color 180))
 
-(defun ct-greaten (c &optional percent)
-  "Make a light color C lighter, a dark color C darker (by PERCENT)."
-  (ct-edit-lab-l-inc c
-    (* percent (if (ct-light-p c) 1 -1))))
+(defun ct-greaten (color &optional percent)
+  "Make a light COLOR lighter, a dark COLOR darker (by PERCENT)."
+  (ct-edit-lab-l-inc color
+    (* percent (if (ct-light-p color) 1 -1))))
 
-(defun ct-lessen (c &optional percent)
-  "Make a light color C darker, a dark color C lighter (by PERCENT)."
-  (ct-edit-lab-l-inc c
-    (* percent (if (ct-light-p c) -1 1))))
+(defun ct-lessen (color &optional percent)
+  "Make a light COLOR darker, or a dark COLOR lighter (by PERCENT)."
+  (ct-edit-lab-l-inc color
+    (* percent (if (ct-light-p color) -1 1))))
+
+(defmacro ct-steal (color property color2)
+  "Steal PROPERTY of COLOR2 and set it on COLOR.
+
+PROPERTY is a symbol of a colorspace property, such as 'hsluv-l"
+  (let ((name (substring  (prin1-to-string property) 1)))
+    `(,(intern (format "ct-edit-%s" name)) ,color
+       (,(intern (format "ct-get-%s" name)) ,color2))))
 
 (define-obsolete-function-alias 'ct-name-distance 'ct-distance "2022-06-03")
-(define-obsolete-function-alias 'ct-lab-lighten 'ct-edit-lab-l-inc "2022-06-03")
-(define-obsolete-function-alias 'ct-lab-darken 'ct-edit-lab-l-dec "2022-06-03")
 (define-obsolete-function-alias 'ct-is-light-p 'ct-light-p "2022-06-03")
 (define-obsolete-function-alias 'ct-tint-ratio 'ct-contrast-min "2023-05-18")
 
