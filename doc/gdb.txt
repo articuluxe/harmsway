@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2024-07-25 13:24:11 dharms>
+# Modified Time-stamp: <2024-12-02 14:18:55 dharms>
 # Modified by: Dan Harms
 # Keywords: gdb help doc
 
@@ -39,6 +39,8 @@ p ('Scope::Class'*) ptr
 # print a type
 ptype <object>
 whatis <object>
+# print as a string
+x /s <addr>
 # show last instruction
 x/i $pc
 disas $pc
