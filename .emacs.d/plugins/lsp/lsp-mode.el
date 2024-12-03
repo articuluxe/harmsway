@@ -524,18 +524,10 @@ supported by the language server."
   :group 'lsp-mode)
 
 (defcustom lsp-eldoc-render-all nil
-  "Display all of the info returned by document/onHover.
+  "Display all of the info returned by textDocument/hover.
 If this is set to nil, `eldoc' will show only the symbol information."
   :type 'boolean
   :group 'lsp-mode)
-
-(define-obsolete-variable-alias 'lsp-enable-completion-at-point
-  'lsp-completion-enable "lsp-mode 7.0.1")
-
-(defcustom lsp-completion-enable t
-  "Enable `completion-at-point' integration."
-  :type 'boolean
-  :group 'lsp-completion)
 
 (defcustom lsp-enable-symbol-highlighting t
   "Highlight references of the symbol at point."
@@ -1010,6 +1002,7 @@ directory")
                       (with-lsp-workspace wk
                         (lsp:completion-options-resolve-provider?
                          (lsp--capability-for-method "textDocument/completion")))))
+    ("textDocument/inlineCompletion" :capability :inlineCompletionProvider)
     ("textDocument/declaration" :capability :declarationProvider)
     ("textDocument/definition" :capability :definitionProvider)
     ("textDocument/documentColor" :capability :colorProvider)
@@ -1406,6 +1399,33 @@ Symlinks are not followed."
   (unless (lsp-f-same? path-a path-b)
     (s-prefix? (concat (lsp-f-canonical path-a) (f-path-separator))
                (lsp-f-canonical path-b))))
+
+;; compat
+(if (version< emacs-version "29.1")
+    ;; Undo macro probably introduced in 29.1
+    (defmacro lsp-with-undo-amalgamate (&rest body)
+      "Like `progn' but perform BODY with amalgamated undo barriers.
+
+This allows multiple operations to be undone in a single step.
+When undo is disabled this behaves like `progn'."
+      (declare (indent 0) (debug t))
+      (let ((handle (make-symbol "--change-group-handle--")))
+        `(let ((,handle (prepare-change-group))
+               ;; Don't truncate any undo data in the middle of this,
+               ;; otherwise Emacs might truncate part of the resulting
+               ;; undo step: we want to mimic the behavior we'd get if the
+               ;; undo-boundaries were never added in the first place.
+               (undo-outer-limit nil)
+               (undo-limit most-positive-fixnum)
+               (undo-strong-limit most-positive-fixnum))
+           (unwind-protect
+               (progn
+                 (activate-change-group ,handle)
+                 ,@body)
+             (progn
+               (accept-change-group ,handle)
+               (undo-amalgamate-change-group ,handle))))))
+  (defalias 'lsp-with-undo-amalgamate 'with-undo-amalgamate))
 
 (defun lsp--merge-results (results method)
   "Merge RESULTS by filtering the empty hash-tables and merging
@@ -4949,6 +4969,12 @@ Added to `after-change-functions'."
              lsp-managed-mode)
     (run-hooks 'lsp-on-change-hook)))
 
+
+(defvar-local lsp--after-change-vals nil
+  "plist that stores the buffer state when `lsp--after-change' has ben activated. Since the
+functions in `lsp-on-change-hook' are called with a timer, mouse
+movements may have changed the position")
+
 (defun lsp--after-change (buffer)
   "Called after most textDocument/didChange events."
   (setq lsp--signature-last-index nil
@@ -4964,6 +4990,9 @@ Added to `after-change-functions'."
     (lsp--semantic-tokens-refresh-if-enabled buffer))
   (when lsp--on-change-timer
     (cancel-timer lsp--on-change-timer))
+
+  (setq lsp--after-change-vals (list :point (point)
+                                     :buffer (current-buffer)))
   (setq lsp--on-change-timer (run-with-idle-timer
                               lsp-idle-delay
                               nil
@@ -5429,9 +5458,9 @@ If EXCLUDE-DECLARATION is non-nil, request the server to include declarations."
               (lsp-help-mode)
               (with-help-window lsp-help-buf-name
                 (insert
-		 (mapconcat 'string-trim-right
-			    (split-string (lsp--render-on-hover-content contents t) "\n")
-			    "\n"))))
+                 (mapconcat 'string-trim-right
+                            (split-string (lsp--render-on-hover-content contents t) "\n")
+                            "\n"))))
             (run-mode-hooks)))
       (lsp--info "No content at point."))))
 
@@ -5693,7 +5722,7 @@ When language is nil render as markup if `markdown-mode' is loaded."
   (car (s-lines (s-trim (lsp--render-element contents)))))
 
 (defun lsp--render-on-hover-content (contents render-all)
-  "Render the content received from `document/onHover' request.
+  "Render the content received from `textDocument/hover' request.
 CONTENTS  - MarkedString | MarkedString[] | MarkupContent
 RENDER-ALL - nil if only the signature should be rendered."
   (cond
@@ -6287,7 +6316,10 @@ A reference is highlighted only if it is visible in a window."
 
   (let* ((wins-visible-pos (-map (lambda (win)
                                    (cons (1- (line-number-at-pos (window-start win) t))
-                                         (1+ (line-number-at-pos (window-end win) t))))
+                                         (1+ (line-number-at-pos (min (window-end win)
+                                                                      (with-current-buffer (window-buffer win)
+                                                                        (buffer-end +1)))
+                                                                 t))))
                                  (get-buffer-window-list nil nil 'visible))))
     (setq lsp--have-document-highlights t)
     (-map

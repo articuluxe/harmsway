@@ -46,5 +46,9 @@
   "Cleanup configuration."
   :group 'syncthing)
 
+(defgroup syncthing-themes nil
+  "Theme configuration."
+  :group 'syncthing)
+
 (provide 'syncthing-groups)
 ;;; syncthing-groups.el ends here

@@ -17,6 +17,7 @@
 (require 'syncthing-custom)
 (require 'syncthing-faces)
 (require 'syncthing-state)
+(require 'syncthing-widgets)
 
 
 (defun syncthing--draw-folders-header (&optional &key before after)
@@ -27,7 +28,9 @@
      (get-buffer-create (syncthing-buffer-name syncthing-buffer)))
     (when before
       (widget-insert (syncthing--title "\n")))
-    (widget-insert (syncthing--title " Folders\n"))
+    (widget-insert
+     (syncthing--title (format "%s Folders\n"
+                               (syncthing--fallback-ascii "folder"))))
     (when after
       (widget-insert (syncthing--title "\n")))))
 
@@ -39,7 +42,9 @@
      (get-buffer-create (syncthing-buffer-name syncthing-buffer)))
     (when before
       (widget-insert (syncthing--title "\n")))
-    (widget-insert (syncthing--title " Devices\n"))
+    (widget-insert
+     (syncthing--title (format "%s Devices\n"
+                               (syncthing--fallback-ascii "laptop"))))
     (when after
       (widget-insert (syncthing--title "\n")))))
 
@@ -51,7 +56,9 @@
      (get-buffer-create (syncthing-buffer-name syncthing-buffer)))
     (when before
       (widget-insert (syncthing--title "\n")))
-    (widget-insert (syncthing--title "✉ Logs\n"))
+    (widget-insert
+     (syncthing--title (format "%s Logs\n"
+                               (syncthing--fallback-ascii "envelope"))))
     (when after
       (widget-insert (syncthing--title "\n")))))
 
@@ -63,7 +70,9 @@
      (get-buffer-create (syncthing-buffer-name syncthing-buffer)))
     (when before
       (widget-insert (syncthing--title "\n")))
-    (widget-insert (syncthing--title "⌛ Recent Changes\n"))
+    (widget-insert
+     (syncthing--title (format "%s Recent Changes\n"
+                               (syncthing--fallback-ascii "hourglass"))))
     (when after
       (widget-insert (syncthing--title "\n")))))
 
@@ -172,198 +181,245 @@
          (perc (or (alist-get 'completion completion) 0))
          (order (alist-get 'order folder))
          (stats (alist-get 'stats folder))
-         (text ""))
+         items)
     (when (and (syncthing-buffer-collapse-after-start syncthing-buffer)
                (not (member id (syncthing-buffer-skip-fold-folders
                                 syncthing-buffer))))
       (push id (syncthing-buffer-fold-folders syncthing-buffer)))
 
-    (setq text
-          (format "%s %sFolder ID%s%s\n %sFolder Path%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-folder-headers)
-                  (syncthing--space syncthing-align-folder-values)
-                  id
-                  (syncthing--space syncthing-align-folder-headers)
-                  (syncthing--space syncthing-align-folder-values)
-                  path))
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sFolder ID%s"
+                        (syncthing--fallback-ascii "info")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value id)
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sFolder Path%s"
+                        (syncthing--fallback-ascii "folder-open")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value path)
+          items)
     (unless paused
-      (setq text
-            (format "%s %sGlobal State%s%s\n %sLocal State%s%s\n"
-                    text
-                    (syncthing--space syncthing-align-folder-headers)
-                    (syncthing--space syncthing-align-folder-values)
-                    (format "%s %s %s"
-                          (format
-                           syncthing-format-count-local-files
-                           (syncthing--num-group
-                            (alist-get 'globalFiles (alist-get 'status folder))
-                            :dec-sep syncthing-decimal-separator
-                            :ths-sep syncthing-thousands-separator))
-                          (format
-                           syncthing-format-count-local-folders
-                           (syncthing--num-group
-                            (alist-get 'globalDirectories
-                                       (alist-get 'status folder))
-                            :dec-sep syncthing-decimal-separator
-                            :ths-sep syncthing-thousands-separator))
-                          (format
-                           syncthing-format-count-local-bytes
-                           (syncthing--scale-bytes
-                            (alist-get 'globalBytes
-                                       (alist-get 'status folder)) 2)))
-                    (syncthing--space syncthing-align-folder-headers)
-                    (syncthing--space syncthing-align-folder-values)
-                    (format "%s %s %s"
-                          (format
-                           syncthing-format-count-local-files
-                           (syncthing--num-group
-                            (alist-get 'localFiles (alist-get 'status folder))
-                            :dec-sep syncthing-decimal-separator
-                            :ths-sep syncthing-thousands-separator))
-                          (format
-                           syncthing-format-count-local-folders
-                           (syncthing--num-group
-                            (alist-get 'localDirectories
-                                       (alist-get 'status folder))
-                            :dec-sep syncthing-decimal-separator
-                            :ths-sep syncthing-thousands-separator))
-                          (format
-                           syncthing-format-count-local-bytes
-                           (syncthing--scale-bytes
-                            (alist-get 'localBytes
-                                       (alist-get 'status folder)) 2))))))
-    (setq text
-          (format
-           "%s %sFolder Type%s%s\n"
-           text
-           (syncthing--space syncthing-align-folder-headers)
-           (syncthing--space syncthing-align-folder-values)
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sGlobal State%s"
+                          (syncthing--fallback-ascii "world")
+                          (syncthing--space syncthing-align-folder-headers)
+                          (syncthing--space syncthing-align-folder-values))
+             :value
+             (format "%s %s %s"
+                     (format
+                      (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "files")
+                       syncthing-format-count-local-files)
+                      (syncthing--num-group
+                       (alist-get 'globalFiles (alist-get 'status folder))
+                       :dec-sep syncthing-decimal-separator
+                       :ths-sep syncthing-thousands-separator))
+                     (format
+                      (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "folder")
+                       syncthing-format-count-local-folders)
+                      (syncthing--num-group
+                       (alist-get 'globalDirectories
+                                  (alist-get 'status folder))
+                       :dec-sep syncthing-decimal-separator
+                       :ths-sep syncthing-thousands-separator))
+                     (format
+                      (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "drive")
+                       syncthing-format-count-local-bytes)
+                      (syncthing--scale-bytes
+                       (alist-get 'globalBytes
+                                  (alist-get 'status folder)) 2))))
+            items)
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sLocal State%s"
+                          (syncthing--fallback-ascii "house")
+                          (syncthing--space syncthing-align-folder-headers)
+                          (syncthing--space syncthing-align-folder-values))
+             :value
+             (format "%s %s %s"
+                     (format
+                      (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "files")
+                       syncthing-format-count-local-files)
+                      (syncthing--num-group
+                       (alist-get 'localFiles (alist-get 'status folder))
+                       :dec-sep syncthing-decimal-separator
+                       :ths-sep syncthing-thousands-separator))
+                     (format
+                      (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "folder")
+                       syncthing-format-count-local-folders)
+                      (syncthing--num-group
+                       (alist-get 'localDirectories
+                                  (alist-get 'status folder))
+                       :dec-sep syncthing-decimal-separator
+                       :ths-sep syncthing-thousands-separator))
+                     (format
+                      (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "drive")
+                       syncthing-format-count-local-bytes)
+                      (syncthing--scale-bytes
+                       (alist-get 'localBytes
+                                  (alist-get 'status folder)) 2))))
+            items))
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sFolder Type%s"
+                        (syncthing--fallback-ascii "folder")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value
            (cond ((string= type "sendreceive") "Send & Receive")
                  ((string= type "sendonly") "Send Only")
                  ((string= type "receiveonly") "Receive Only")
-                 ((string= type "receiveencrypted") "Receive Encrypted"))))
-    (setq
-     text
-     (format
-      "%s %sRescans%s%s\n"
-      text
-      (syncthing--space syncthing-align-folder-headers)
-      (syncthing--space syncthing-align-folder-values)
-      (format " %s  %s"
-              (format (syncthing--sec-to-uptime
-                       (alist-get 'rescanIntervalS folder)
-                       :full (or (string= syncthing-header-uptime-type
-                                          syncthing-header-uptime-full)
-                                 (string= syncthing-header-uptime-type
-                                          syncthing-header-uptime-padded-full))
-                       :pad (or (string= syncthing-header-uptime-type
+                 ((string= type "receiveencrypted") "Receive Encrypted")))
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sRescans%s"
+                        (syncthing--fallback-ascii "sync")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value
+           (format "%s %s %s %s"
+                   (syncthing--fallback-ascii "watch")
+                   (format (syncthing--sec-to-uptime
+                            (alist-get 'rescanIntervalS folder)
+                            :full
+                            (or (string= syncthing-header-uptime-type
+                                         syncthing-header-uptime-full)
+                                (string= syncthing-header-uptime-type
+                                         syncthing-header-uptime-padded-full))
+                            :pad
+                            (or (string= syncthing-header-uptime-type
                                          syncthing-header-uptime-padded-short)
                                 (string=
                                  syncthing-header-uptime-type
                                  syncthing-header-uptime-padded-full))))
-              (if (alist-get 'fsWatcherEnabled folder)
-                  "Enabled" "Disabled"))))
-    (setq text
-          (format "%s %sFile Pull Order%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-folder-headers)
-                  (syncthing--space syncthing-align-folder-values)
-                  (cond ((string= order "random") "Random")
+                   (syncthing--fallback-ascii "eye")
+                   (if (alist-get 'fsWatcherEnabled folder)
+                       "Enabled" "Disabled")))
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sFile Pull Order%s"
+                        (syncthing--fallback-ascii "lift")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value (cond ((string= order "random") "Random")
                         ((string= order "alphabetic") "Alphabetic")
                         ((string= order "smallestFirst") "Smallest First")
                         ((string= order "largestFirst") "Largest First")
                         ((string= order "oldestFirst") "Oldest First")
-                        ((string= order "newestFirst") "Newest First"))))
-    (setq text
-          (format "%s %sShared With%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-folder-headers)
-                  (syncthing--space syncthing-align-folder-values)
-                  (string-join
+                        ((string= order "newestFirst") "Newest First")))
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sShared With%s"
+                        (syncthing--fallback-ascii "share")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value (string-join
                    (mapcar (lambda (dev)
                              (alist-get
                               (intern `,(alist-get 'deviceID dev))
                               (alist-get 'device-map data)))
                            devices)
-                   ", ")))
-    (setq text
-          (format "%s %sLast Scan%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-folder-headers)
-                  (syncthing--space syncthing-align-folder-values)
-                  (format-time-string
-                            "%F %T"
-                            (encode-time
-                             (iso8601-parse
-                              (alist-get 'stateChanged
-                                         (alist-get 'status folder)))))))
-    (setq text
-          (format "%s ⇄%sLatest Change%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-folder-headers)
-                  (syncthing--space syncthing-align-folder-values)
-                  (when stats
-                    (concat
-                     (if (alist-get 'deleted (alist-get 'lastFile stats))
-                         "Deleted " "Updated ")
-                     (if (file-name-extension
-                          (alist-get 'filename
-                                     (alist-get 'lastFile stats)))
+                   ", "))
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sLast Scan%s"
+                        (syncthing--fallback-ascii "watch")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value (format-time-string
+                   "%F %T"
+                   (encode-time
+                    (iso8601-parse
+                     (alist-get 'stateChanged
+                                (alist-get 'status folder))))))
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sLatest Change%s"
+                        (syncthing--fallback-ascii "swap")
+                        (syncthing--space syncthing-align-folder-headers)
+                        (syncthing--space syncthing-align-folder-values))
+           :value
+           (when stats
+             (concat
+              (if (alist-get 'deleted (alist-get 'lastFile stats))
+                  "Deleted " "Updated ")
+              (if (file-name-extension
+                   (alist-get 'filename (alist-get 'lastFile stats)))
 
-                         (let ((extn
-                                (string-remove-prefix
-                                 "."
-                                 (file-name-extension
-                                  (alist-get 'filename
-                                             (alist-get 'lastFile stats))))))
-                           (concat (file-name-sans-extension
-                                    (file-name-base
-                                     (alist-get 'filename
-                                                (alist-get 'lastFile stats))))
-                                   "." extn))
-                       (file-name-base
-                        (alist-get 'filename
-                                   (alist-get 'lastFile stats))))))))
+                  (let ((extn
+                         (string-remove-prefix
+                          "."
+                          (file-name-extension
+                           (alist-get 'filename
+                                      (alist-get 'lastFile stats))))))
+                    (concat (file-name-sans-extension
+                             (file-name-base
+                              (alist-get 'filename
+                                         (alist-get 'lastFile stats))))
+                            "." extn))
+                (file-name-base
+                 (alist-get 'filename (alist-get 'lastFile stats)))))))
+          items)
     (save-window-excursion
       (switch-to-buffer
        (get-buffer-create (syncthing-buffer-name syncthing-buffer)))
       (widget-create
-       'push-button
-       :button-face "menu"
-       :button-suffix
+       'syncthing-collapsible
+       :value
+       (not (member id (syncthing-buffer-fold-folders syncthing-buffer)))
+       :tag
        (concat
         " "
         (syncthing--color-perc perc)
         (format "%s%s"
                 (syncthing--bold
                  (format " %s" name))
-                (if paused (syncthing--italic " (Paused)") ""))
-        (unless (member id (syncthing-buffer-fold-folders syncthing-buffer))
-          (concat "\n" (syncthing--prop text))))
+                (if paused (syncthing--italic " (Paused)") "")))
+       :items (nreverse items)
+       :spacing syncthing-align-folder-values
        :action
-       `(lambda (&rest _event)
+       `(lambda (widget &optional event)
+         ;; "super"
+         (apply 'widget-toggle-action `(,widget ,event))
+
          (if (member ,id (syncthing-buffer-fold-folders syncthing-buffer))
              (progn
                (setf (syncthing-buffer-fold-folders syncthing-buffer)
-                     (delete ,id
-                             (syncthing-buffer-fold-folders syncthing-buffer)))
-               (push ,id (syncthing-buffer-skip-fold-folders syncthing-buffer))
-               (save-excursion
-                 (widget-delete (syncthing--get-widget (point)))
-                 (syncthing--list-37-folder ',folder)))
+                     (delete ,id (syncthing-buffer-fold-folders
+                                  syncthing-buffer)))
+               (push ,id (syncthing-buffer-skip-fold-folders
+                          syncthing-buffer)))
            (progn
              (push ,id (syncthing-buffer-fold-folders syncthing-buffer))
              (setf (syncthing-buffer-skip-fold-folders syncthing-buffer)
                    (delete ,id (syncthing-buffer-skip-fold-folders
-                               syncthing-buffer)))
-             (save-excursion
-               (widget-delete (syncthing--get-widget (point)))
-               (syncthing--list-37-folder ',folder)))))
-
-       (if (member id (syncthing-buffer-fold-folders syncthing-buffer))
-           (syncthing--bold ">")
-         (syncthing--bold "v"))))))
+                                syncthing-buffer))))))))))
 
 (defun syncthing--list-37-device (device)
   "Render single DEVICE item in a widget."
@@ -383,12 +439,12 @@
           'aggregate
           (alist-get (intern `,id)
                      (syncthing-server-completion syncthing-server))))
-        (text "")
         (conn-type "Disconnected")
         (sync-state 0)
         dev-conn
         connected
-        folders)
+        folders
+        items)
     (dolist (item conns)
       (when (string= id (car item))
         (setq dev-conn (cdr item))))
@@ -422,133 +478,176 @@
           (push (alist-get 'label folder-cfg) folders))))
 
     (if connected
-        (setq text
-              (concat text
-                      (format " %sDownload Rate%s%s\n"
+        (progn
+          (push (widget-convert
+                 'item
+                 :format "%t %v\n"
+                 :tag (format "%s%sDownload Rate%s"
+                              (syncthing--fallback-ascii "download")
                               (syncthing--space syncthing-align-device-headers)
-                              (syncthing--space syncthing-align-device-values)
-                              (syncthing--bytes-to-rate
-                               (or (alist-get 'rate-download device) -1)))
-                      (format " %sUpload Rate%s%s\n"
+                              (syncthing--space syncthing-align-device-values))
+                 :value (syncthing--bytes-to-rate
+                         (or (alist-get 'rate-download device) -1)))
+                items)
+          (push (widget-convert
+                 'item
+                 :format "%t %v\n"
+                 :tag (format "%s%sUpload Rate%s"
+                              (syncthing--fallback-ascii "upload")
                               (syncthing--space syncthing-align-device-headers)
-                              (syncthing--space syncthing-align-device-values)
-                              (syncthing--bytes-to-rate
-                               (or (alist-get 'rate-upload device) -1)))))
-      (setq text
-            (format "%s %sLast seen%s%s\n %sSync Status%s%s\n"
-                    text
-                    (syncthing--space syncthing-align-device-headers)
-                    (syncthing--space syncthing-align-device-values)
-                    (format-time-string
+                              (syncthing--space syncthing-align-device-values))
+                 :value (syncthing--bytes-to-rate
+                         (or (alist-get 'rate-upload device) -1)))
+                items))
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sLast seen%s"
+                          (syncthing--fallback-ascii "eye")
+                          (syncthing--space syncthing-align-device-headers)
+                          (syncthing--space syncthing-align-device-values))
+             :value (format-time-string
                      "%F %T"
-                     (encode-time (iso8601-parse (alist-get 'lastSeen stats))))
-                    (syncthing--space syncthing-align-device-headers)
-                    (syncthing--space syncthing-align-device-values)
-                    (if (< (floor sync-state) 100)
+                     (encode-time
+                      (iso8601-parse (alist-get 'lastSeen stats)))))
+            items)
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sSync Status%s"
+                          (syncthing--fallback-ascii "cloud")
+                          (syncthing--space syncthing-align-device-headers)
+                          (syncthing--space syncthing-align-device-values))
+             :value (if (< (floor sync-state) 100)
                         (format "Out of Sync (%.2f%%)" sync-state)
-                      "Up to Date")))
+                      "Up to Date"))
+            items)
       (when (< (floor sync-state) 100)
-        (setq text
-              (format "%s ⇄%sOut of Sync Items%s%s items, ~%s\n"
-                      text
-                      (syncthing--space syncthing-align-device-headers)
-                      (syncthing--space syncthing-align-device-values)
-                      (syncthing--num-group
-                       (+ (alist-get 'needItems completion)
-                          (alist-get 'needDeletes completion))
-                       :dec-sep syncthing-decimal-separator
-                       :ths-sep syncthing-thousands-separator)
-                      (syncthing--scale-bytes
-                       (alist-get 'needBytes completion) 2)))))
-    (setq text
-          (format "%s %sAddress%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-device-headers)
-                  (syncthing--space syncthing-align-device-values)
-                  (or (unless (string= "" (alist-get 'address dev-conn))
+        (push (widget-convert
+               'item
+               :format "%t %v\n"
+               :tag (format "%s%sOut of Sync Items%s"
+                            (syncthing--fallback-ascii "swap")
+                            (syncthing--space syncthing-align-device-headers)
+                            (syncthing--space syncthing-align-device-values))
+               :value (format "%s items, ~%s"
+                              (syncthing--num-group
+                               (+ (alist-get 'needItems completion)
+                                  (alist-get 'needDeletes completion))
+                               :dec-sep syncthing-decimal-separator
+                               :ths-sep syncthing-thousands-separator)
+                              (syncthing--scale-bytes
+                               (alist-get 'needBytes completion) 2)))
+              items)))
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sAddress%s"
+                        (syncthing--fallback-ascii "link")
+                        (syncthing--space syncthing-align-device-headers)
+                        (syncthing--space syncthing-align-device-values))
+           :value (or (unless (string= "" (alist-get 'address dev-conn))
                         (alist-get 'address dev-conn))
                       (string-join
                        addresses
-                       (format "\n%s"
+                       (format "\n%s "
                                (syncthing--space
-                                syncthing-align-device-values))))))
+                                syncthing-align-device-values)))))
+          items)
     (when connected
-      (setq text
-            (format
-             "%s %sConnection Type%s%s\n %sNumber of Connections%s%s\n"
-             text
-             (syncthing--space syncthing-align-device-headers)
-             (syncthing--space syncthing-align-device-values)
-             conn-type
-             (syncthing--space syncthing-align-device-headers)
-             (syncthing--space syncthing-align-device-values)
-             (+ 1 (length (alist-get 'secondary dev-conn))))))
-    (setq text
-          (format "%s %sCompression%s%s\n %sIdentification%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-device-headers)
-                  (syncthing--space syncthing-align-device-values)
-                  (cond ((string= compression "always") "All Data")
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sConnection Type%s"
+                          (syncthing--fallback-ascii "signal")
+                          (syncthing--space syncthing-align-device-headers)
+                          (syncthing--space syncthing-align-device-values))
+             :value conn-type)
+            items)
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sNumber of Connections%s"
+                          (syncthing--fallback-ascii "switch")
+                          (syncthing--space syncthing-align-device-headers)
+                          (syncthing--space syncthing-align-device-values))
+             :value (number-to-string
+                     (+ 1 (length (alist-get 'secondary dev-conn)))))
+            items))
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sCompression%s"
+                        (syncthing--fallback-ascii "press")
+                        (syncthing--space syncthing-align-device-headers)
+                        (syncthing--space syncthing-align-device-values))
+           :value (cond ((string= compression "always") "All Data")
                         ((string= compression "metadata") "Metadata Only")
-                        ((string= compression "never") "Off"))
-                  (syncthing--space syncthing-align-device-headers)
-                  (syncthing--space syncthing-align-device-values)
-                  (substring id 0 syncthing-device-short-length)))
+                        ((string= compression "never") "Off")))
+          items)
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sIdentification%s"
+                        (syncthing--fallback-ascii "qr")
+                        (syncthing--space syncthing-align-device-headers)
+                        (syncthing--space syncthing-align-device-values))
+           :value (substring id 0 syncthing-device-short-length))
+          items)
     (when (alist-get 'connected dev-conn)
-      (setq text
-            (format "%s %sVersion%s%s\n"
-                    text
-                    (syncthing--space syncthing-align-device-headers)
-                    (syncthing--space syncthing-align-device-values)
-                    (alist-get 'clientVersion dev-conn))))
-    (setq text
-          (format "%s %sFolders%s%s\n"
-                  text
-                  (syncthing--space syncthing-align-device-headers)
-                  (syncthing--space syncthing-align-device-values)
-                  (string-join
+      (push (widget-convert
+             'item
+             :format "%t %v\n"
+             :tag (format "%s%sVersion%s"
+                          (syncthing--fallback-ascii "tag")
+                          (syncthing--space syncthing-align-device-headers)
+                          (syncthing--space syncthing-align-device-values))
+             :value (alist-get 'clientVersion dev-conn))
+            items))
+    (push (widget-convert
+           'item
+           :format "%t %v\n"
+           :tag (format "%s%sFolders%s"
+                        (syncthing--fallback-ascii "folder")
+                        (syncthing--space syncthing-align-device-headers)
+                        (syncthing--space syncthing-align-device-values))
+           :value (string-join
                    folders
-                   (format "\n%s"
-                           (syncthing--space syncthing-align-device-values)))))
+                   (format "\n%s "
+                           (syncthing--space syncthing-align-device-values))))
+          items)
     (save-window-excursion
       (switch-to-buffer
        (get-buffer-create (syncthing-buffer-name syncthing-buffer)))
       (widget-create
-       'push-button
-       :button-face "menu"
-       :button-suffix
+       'syncthing-collapsible
+       :value (not (member id (syncthing-buffer-fold-devices
+                               syncthing-buffer)))
+       :tag
        (concat
         " "
         (syncthing--color-perc (alist-get 'completion completion))
-        (format "%s%s"
-                (syncthing--bold
-                 (format " %s" name))
-                (if paused (syncthing--italic " (Paused)") ""))
-        (unless (member id (syncthing-buffer-fold-devices syncthing-buffer))
-          (concat "\n" (syncthing--prop text))))
+        (format "%s%s" (syncthing--bold (format " %s" name))
+                (if paused (syncthing--italic " (Paused)") "")))
+       :items (nreverse items)
+       :spacing syncthing-align-device-values
        :action
-       `(lambda (&rest _event)
-         (if (member ,id (syncthing-buffer-fold-devices syncthing-buffer))
-             (progn
-               (setf (syncthing-buffer-fold-devices syncthing-buffer)
-                     (delete ,id
-                             (syncthing-buffer-fold-devices syncthing-buffer)))
-               (push ,id (syncthing-buffer-skip-fold-devices syncthing-buffer))
-               (save-excursion
-                 (widget-delete (syncthing--get-widget (point)))
-                 (syncthing--list-37-device ',device)))
-           (progn
-             (push ,id (syncthing-buffer-fold-devices syncthing-buffer))
-             (setf (syncthing-buffer-skip-fold-devices syncthing-buffer)
-                   (delete ,id (syncthing-buffer-skip-fold-devices
-                               syncthing-buffer)))
-             (save-excursion
-               (widget-delete (syncthing--get-widget (point)))
-               (syncthing--list-37-device ',device)))))
+       `(lambda (widget &optional event)
+          ;; "super"
+          (apply 'widget-toggle-action `(,widget ,event))
 
-       (if (member id (syncthing-buffer-fold-devices syncthing-buffer))
-           (syncthing--bold ">")
-         (syncthing--bold "v"))))))
+          (if (member ,id (syncthing-buffer-fold-devices syncthing-buffer))
+              (progn
+                (setf (syncthing-buffer-fold-devices syncthing-buffer)
+                      (delete ,id (syncthing-buffer-fold-devices
+                                   syncthing-buffer)))
+                (push ,id (syncthing-buffer-skip-fold-devices
+                           syncthing-buffer)))
+            (progn
+              (push ,id (syncthing-buffer-fold-devices syncthing-buffer))
+              (setf (syncthing-buffer-skip-fold-devices syncthing-buffer)
+                    (delete ,id (syncthing-buffer-skip-fold-devices
+                                 syncthing-buffer))))))))))
 
 (defun syncthing--header-line (server)
   "Return SERVER `header-line-format' string."
@@ -560,20 +659,26 @@
     (dolist (item syncthing-header-items)
       (when (string= item syncthing-header-rate-download)
         (push (syncthing--rate-download
-               (format syncthing-format-rate-download
+               (format (replace-regexp-in-string
+                        "<icon>" (syncthing--fallback-ascii "download")
+                        syncthing-format-rate-download)
                        (syncthing--bytes-to-rate
                         (or (alist-get 'rate-download data) -1))))
               line))
       (when (string= item syncthing-header-rate-upload)
         (push (syncthing--rate-upload
-               (format syncthing-format-rate-upload
+               (format (replace-regexp-in-string
+                        "<icon>" (syncthing--fallback-ascii "upload")
+                        syncthing-format-rate-upload)
                        (syncthing--bytes-to-rate
                         (or (alist-get 'rate-upload data) -1))))
               line))
       (when (string= item syncthing-header-count-local-files)
         (push (syncthing--count-local-files
                (format
-                syncthing-format-count-local-files
+                (replace-regexp-in-string
+                 "<icon>" (syncthing--fallback-ascii "files")
+                 syncthing-format-count-local-files)
                 (syncthing--num-group
                  (cl-reduce
                   #'+ (alist-get 'folders data)
@@ -586,7 +691,9 @@
       (when (string= item syncthing-header-count-local-folders)
         (push (syncthing--count-local-folders
                (format
-                syncthing-format-count-local-folders
+                (replace-regexp-in-string
+                 "<icon>" (syncthing--fallback-ascii "folder")
+                 syncthing-format-count-local-folders)
                 (syncthing--num-group
                  (cl-reduce
                   #'+ (alist-get 'folders data)
@@ -599,7 +706,9 @@
       (when (string= item syncthing-header-count-local-bytes)
         (push (syncthing--count-local-bytes
                (format
-                syncthing-format-count-local-bytes
+                (replace-regexp-in-string
+                 "<icon>" (syncthing--fallback-ascii "drive")
+                 syncthing-format-count-local-bytes)
                 (syncthing--scale-bytes
                  (cl-reduce
                   #'+ (alist-get 'folders data)
@@ -611,7 +720,9 @@
       (when (string= item syncthing-header-count-listeners)
         (push (syncthing--count-listeners
                (format
-                syncthing-format-count-listeners
+                (replace-regexp-in-string
+                 "<icon>" (syncthing--fallback-ascii "network")
+                 syncthing-format-count-listeners)
                 (format
                  "%s/%s"
                  (cl-reduce
@@ -624,7 +735,9 @@
       (when (string= item syncthing-header-count-discovery)
         (push (syncthing--count-discovery
                (format
-                syncthing-format-count-discovery
+                (replace-regexp-in-string
+                 "<icon>" (syncthing--fallback-ascii "sign")
+                 syncthing-format-count-discovery)
                 (format
                  "%s/%s"
                  (cl-reduce
@@ -636,7 +749,9 @@
               line))
       (when (string= item syncthing-header-uptime)
         (push (syncthing--uptime
-               (format syncthing-format-uptime
+               (format (replace-regexp-in-string
+                        "<icon>" (syncthing--fallback-ascii "watch")
+                        syncthing-format-uptime)
                        (syncthing--sec-to-uptime
                         uptime
                         :full (or (string= syncthing-header-uptime-type
@@ -652,13 +767,17 @@
               line))
       (when (string= item syncthing-header-my-id)
         (push (syncthing--my-id
-               (format syncthing-format-my-id
+               (format (replace-regexp-in-string
+                        "<icon>" (syncthing--fallback-ascii "qr")
+                        syncthing-format-my-id)
                        (substring
                         (alist-get 'myID (alist-get 'system-status data)
                                    "n/a") 0 syncthing-device-short-length)))
               line))
       (when (string= item syncthing-header-version)
-        (push (format syncthing-format-version
+        (push (format (replace-regexp-in-string
+                       "<icon>" (syncthing--fallback-ascii "tag")
+                       syncthing-format-version)
                       (alist-get 'system-version data "n/a"))
               line)))
     (if line (string-join (reverse line) " ") nil)))

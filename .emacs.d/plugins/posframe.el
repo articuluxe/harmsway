@@ -610,6 +610,7 @@ ACCEPT-FOCUS."
         (after-make-frame-functions nil)
         (x-gtk-resize-child-frames posframe-gtk-resize-child-frames)
         (args (list "args"
+                    (display-graphic-p)
                     foreground-color
                     background-color
                     right-fringe
@@ -702,8 +703,9 @@ ACCEPT-FOCUS."
                        (unsplittable . t)
                        (no-other-frame . t)
                        ;; NOTE: TTY child frame use undecorated to control border.
-                       (undecorated . ,(not (and (> border-width 0)
-                                                 (featurep 'tty-child-frames))))
+                       (undecorated . ,(or (display-graphic-p)
+                                           (not (and (> border-width 0)
+                                                     (featurep 'tty-child-frames)))))
                        (visibility . nil)
                        (cursor-type . nil)
                        (tty-non-selected-cursor . ,tty-non-selected-cursor)

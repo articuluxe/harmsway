@@ -763,7 +763,13 @@ to obtain ripgrep results."
 
     (unless deadgrep--skip-if-hidden
       (push "--hidden" args))
-    (unless deadgrep--skip-if-vcs-ignore
+    (if deadgrep--skip-if-vcs-ignore
+        ;; By default, ripgrep searches .git even when it's respecting
+        ;; .gitignore, if --hidden is set. Ignore .git when we're
+        ;; using .gitignore.
+        ;;
+        ;; https://github.com/BurntSushi/ripgrep/issues/713
+        (push "--glob=!/.git" args)
       (push "--no-ignore-vcs" args))
 
     (push "--" args)
@@ -1698,12 +1704,16 @@ don't actually start the search."
                    (buffer-file-name))))
          (last-results-buf (car-safe (deadgrep--buffers)))
          prev-search-type
-         prev-search-case)
+         prev-search-case
+         prev-skip-if-hidden
+         prev-skip-if-vcs-ignore)
     ;; Find out what search settings were used last time.
     (when last-results-buf
       (with-current-buffer last-results-buf
         (setq prev-search-type deadgrep--search-type)
-        (setq prev-search-case deadgrep--search-case)))
+        (setq prev-search-case deadgrep--search-case)
+        (setq prev-skip-if-hidden deadgrep--skip-if-hidden)
+        (setq prev-skip-if-vcs-ignore deadgrep--skip-if-vcs-ignore)))
 
     (funcall deadgrep-display-buffer-function buf)
 
@@ -1716,7 +1726,9 @@ don't actually start the search."
       ;; search results buffer.
       (when last-results-buf
         (setq deadgrep--search-type prev-search-type)
-        (setq deadgrep--search-case prev-search-case))
+        (setq deadgrep--search-case prev-search-case)
+        (setq deadgrep--skip-if-hidden prev-skip-if-hidden)
+        (setq deadgrep--skip-if-vcs-ignore prev-skip-if-vcs-ignore))
 
       (deadgrep--write-heading)
 

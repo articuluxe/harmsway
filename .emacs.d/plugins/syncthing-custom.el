@@ -40,66 +40,6 @@
   :group 'syncthing-format
   :type 'string)
 
-(defcustom syncthing-format-rate-download
-  " %s"
-  "Format for displaying download rate in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-rate-upload
-  " %s"
-  "Format for displaying upload rate in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-count-local-files
-  " %s"
-  "Format for displaying local files count in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-count-local-folders
-  " %s"
-  "Format for displaying local folders count in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-count-local-bytes
-  " ~%s"
-  "Format for displaying local size in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-count-listeners
-  " %s"
-  "Format for displaying listeners count in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-count-discovery
-  " %s"
-  "Format for displaying discovery count in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-uptime
-  " %s"
-  "Format for displaying Syncthing server uptime in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-my-id
-  " %s"
-  "Format for displaying current device's ID in header line."
-  :group 'syncthing-format
-  :type 'string)
-
-(defcustom syncthing-format-version
-  " %s"
-  "Format for displaying version in header line."
-  :group 'syncthing-format
-  :type 'string)
-
 (defcustom syncthing-cleanup-priority
   0
   "`add-hook' priority."
@@ -116,6 +56,12 @@
   t
   "Start all items collapsed."
   :group 'syncthing-startup
+  :group 'syncthing-display
+  :type 'boolean)
+
+(defcustom syncthing-prefer-unicode
+  t
+  "Prefer unicode characters when rendering."
   :group 'syncthing-display
   :type 'boolean)
 
@@ -306,10 +252,76 @@ Special meaning for empty list / nil to skip rendering the header line."
   :type 'number)
 
 (defcustom syncthing-align-device-values
-  20
+  22
   "`:align-to' value for aligning text block for values in device widget."
   :group 'syncthing-display
   :type 'number)
+
+(defcustom syncthing-format-rate-download
+  "<icon> %s"
+  "Format for displaying download rate in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-rate-upload
+  "<icon> %s"
+  "Format for displaying upload rate in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-count-local-files
+  "<icon> %s"
+  "Format for displaying local files count in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-count-local-folders
+  "<icon> %s"
+  "Format for displaying local folders count in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-count-local-bytes
+  "<icon> ~%s"
+  "Format for displaying local size in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-count-listeners
+  "<icon> %s"
+  "Format for displaying listeners count in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-count-discovery
+  "<icon> %s"
+  "Format for displaying discovery count in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-uptime
+  "<icon> %s"
+  "Format for displaying Syncthing server uptime in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-my-id
+  "<icon> %s"
+  "Format for displaying current device's ID in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-format-version
+  "<icon> %s"
+  "Format for displaying version in header line."
+  :group 'syncthing-format
+  :type 'string)
+
+(defcustom syncthing-old-tab-behavior nil
+  "Allow old TAB keyboard navigation to open collapsible widgets."
+  :group 'syncthing-display
+  :type 'boolean)
+
 
 (provide 'syncthing-custom)
 ;;; syncthing-custom.el ends here

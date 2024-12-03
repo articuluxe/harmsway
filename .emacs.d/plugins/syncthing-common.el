@@ -10,6 +10,7 @@
 
 (require 'syncthing-constants)
 (require 'syncthing-custom)
+(require 'syncthing-themes)
 (require 'syncthing-state)
 
 
@@ -210,14 +211,28 @@ Optional argument THS-SEP custom thousands separator or default of ` '."
       (string-join out ""))))
 
 (defun syncthing--init-state ()
-  "Reset all variables holding initial state.
-Optional argument SKIP-CANCEL Skip removing auto-refresh."
+  "Reset all variables holding initial state."
   (syncthing-trace)
   ;; everything += or appendable has to reset in each update
   (setf (syncthing-buffer-collapse-after-start syncthing-buffer)
         syncthing-start-collapsed
         (syncthing-buffer-fold-folders syncthing-buffer) (list))
   (setf (syncthing-buffer-fold-devices syncthing-buffer) (list)))
+
+(defun syncthing--can-display (char)
+  "Check if CHAR can be rendered with the current font."
+  (fontp (char-displayable-p (string-to-char char))))
+
+(defun syncthing--fallback-ascii (name)
+  "Try rendering NAME with the current font or fallback into ASCII."
+  (let* ((theme (symbol-value (if (consp syncthing-theme)
+                                  (cadr syncthing-theme)
+                                syncthing-theme)))
+         (key (intern (format ":%s" name)))
+         (utf (plist-get (plist-get theme :icons) key)))
+    (if (and syncthing-prefer-unicode (syncthing--can-display utf)) utf
+      (plist-get (plist-get theme :text) key))))
+
 
 (provide 'syncthing-common)
 ;;; syncthing-common.el ends here

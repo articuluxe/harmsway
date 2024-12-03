@@ -1,11 +1,10 @@
-;;; chatgpt-shell.el --- ChatGPT shell + buffer insert commands  -*- lexical-binding: t -*-
+;;; chatgpt-shell-openai.el --- OpenAI-specific logic  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2023 Alvaro Ramirez
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 1.23.1
-;; Package-Requires: ((emacs "28.1") (shell-maker "0.62.1"))
+;; Package-Requires: ((emacs "28.1") (shell-maker "0.72.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,22 +25,94 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'cl-lib))
+(require 'map)
+(require 'shell-maker)
+
+(declare-function chatgpt-shell-crop-context "chatgpt-shell")
+(declare-function chatgpt-shell--make-chatgpt-url "chatgpt-shell")
+
+(cl-defun chatgpt-shell-openai-make-model (&key version short-version token-width context-window validate-command)
+  "Create an OpenAI model.
+
+Set VERSION, SHORT-VERSION, TOKEN-WIDTH, CONTEXT-WINDOW and
+VALIDATE-COMMAND handler."
+  (unless version
+    (error "Missing mandatory :version param"))
+  (unless token-width
+    (error "Missing mandatory :token-width param for %s" version))
+  (unless context-window
+    (error "Missing mandatory :context-window param for %s" version))
+  (unless (integerp token-width)
+    (error ":token-width must be an integer"))
+  (unless (integerp context-window)
+    (error ":context-window must be an integer"))
+  `((:version . ,version)
+    (:short-version . ,short-version)
+    (:label . "ChatGPT")
+    (:provider . "OpenAI")
+    (:path . "/v1/chat/completions")
+    (:token-width . ,token-width)
+    (:context-window . ,context-window)
+    (:handler . chatgpt-shell-openai--handle-chatgpt-command)
+    (:filter . chatgpt-shell-openai--filter-output)
+    (:payload . chatgpt-shell-openai--make-payload)
+    (:headers . chatgpt-shell-openai--make-headers)
+    (:url . chatgpt-shell-openai--make-url)
+    (:key . chatgpt-shell-openai-key)
+    (:url-base . chatgpt-shell-api-url-base)
+    (:validate-command . ,(or validate-command 'chatgpt-shell-openai--validate-command))))
+
+(defun chatgpt-shell-openai-models ()
+  "Build a list of all OpenAI LLM models available."
+  ;; Context windows have been verified as of 11/26/2024.
+  (list (chatgpt-shell-openai-make-model
+         :version "chatgpt-4o-latest"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4o
+         :context-window 128000)
+        (chatgpt-shell-openai-make-model
+         :version "o1-preview"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-01
+         :context-window 128000
+         :validate-command
+         ;; TODO: Standardize whether or not a model supports system prompts.
+         (lambda (command model settings)
+           (or (chatgpt-shell-openai--validate-command command model settings)
+               (when (map-elt settings :system-prompt)
+                 (format "Model \"%s\" does not support system prompts. Please unset via \"M-x chatgpt-shell-swap-system-prompt\" by selecting None."
+                         (map-elt model :version))))))
+        (chatgpt-shell-openai-make-model
+         :version "o1-mini"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-01-mini
+         :context-window 128000
+         :validate-command
+         ;; TODO: Standardize whether or not a model supports system prompts.
+         (lambda (command model settings)
+           (or (chatgpt-shell-openai--validate-command command model settings)
+               (when (map-elt settings :system-prompt)
+                 (format "Model \"%s\" does not support system prompts. Please unset via \"M-x chatgpt-shell-swap-system-prompt\" by selecting None."
+                         (map-elt model :version))))))
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4o"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-40
+         :context-window 128000)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-3.5-turbo"
+         :token-width 4
+         ;; https://platform.openai.com/docs/models/gpt-3.5-turbo#gpt-3-5-turbo
+         :context-window 16385)))
+
 (defcustom chatgpt-shell-api-url-base "https://api.openai.com"
   "OpenAI API's base URL.
 
-`chatgpt-shell--chatgpt-api-url' =
-   `chatgpt-shell--chatgpt-api-url-base' + `chatgpt-shell--chatgpt-api-url-path'
+API url = base + path.
 
 If you use ChatGPT through a proxy service, change the URL base."
-  :type 'string
-  :safe #'stringp
-  :group 'chatgpt-shell)
-
-(defcustom chatgpt-shell-api-url-path "/v1/chat/completions"
-  "OpenAI API's URL path.
-
-`chatgpt-shell--chatgpt-api-url' =
-   `chatgpt-shell--chatgpt-api-url-base' + `chatgpt-shell--chatgpt-api-url-path'"
   :type 'string
   :safe #'stringp
   :group 'chatgpt-shell)
@@ -52,59 +123,75 @@ If you use ChatGPT through a proxy service, change the URL base."
                  (string :tag "String"))
   :group 'chatgpt-shell)
 
-(defcustom chatgpt-shell-auth-header
-  (lambda ()
-    (format "Authorization: Bearer %s" (chatgpt-shell-openai-key)))
-  "Function to generate the request's `Authorization' header string."
-  :type '(function :tag "Function")
-  :group 'chatgpt-shell)
+(cl-defun chatgpt-shell-openai--make-chatgpt-messages (&key model system-prompt prompt prompt-url context)
+  "Create ChatGPT messages using MODEL.
 
-(defun chatgpt-shell--chatgpt-api-url ()
-  "The complete URL OpenAI's API.
+SYSTEM-PROMPT: string.
 
-`chatgpt-shell--api-url' =
-   `chatgpt-shell--api-url-base' + `chatgpt-shell--api-url-path'"
-  (concat chatgpt-shell-api-url-base chatgpt-shell-api-url-path))
+PROMPT: string.
 
-(cl-defun chatgpt-shell--make-chatgpt-payload (&key prompt context version temperature streaming)
-  "Create a ChatGPT request payload.
+PROMPT-URL: string.
 
-PROMPT: The new prompt (should not be in CONTEXT).
-VERSION: The model version.
-CONTEXT: All previous interactions.
-TEMPERATURE: Model temperature.
-STREAMING: When non-nil, request streamed response."
-  (chatgpt-shell-make-chatgpt-request-data
-   :messages (vconcat
-              (when (chatgpt-shell-system-prompt)
-                `(((role . "system")
-                   (content . ,(chatgpt-shell-system-prompt)))))
-              (chatgpt-shell--user-assistant-messages
-               (chatgpt-shell-crop-context context))
-              (when prompt
-                `(((role . "user")
-                   (content . ,prompt)))))
-   :version version
-   :temperature temperature
-   :streaming streaming))
+CONTEXT: Excludes PROMPT."
+  (when prompt-url
+    (setq prompt-url (chatgpt-shell--make-chatgpt-url prompt-url)))
+  (vconcat
+   (when system-prompt
+     `(((role . "system")
+        (content . ,system-prompt))))
+   (when context
+     (chatgpt-shell-openai--user-assistant-messages
+      (if model
+          (chatgpt-shell-crop-context
+           :model model
+           :command prompt
+           :context context)
+        context)))
+   (when (or prompt
+             prompt-url)
+     `(((role . "user")
+        (content . ,(vconcat
+                     (append
+                      (when prompt
+                        `(((type . "text")
+                           (text . ,prompt))))
+                      (when prompt-url
+                        `(((type . "image_url")
+                           (image_url . ,prompt-url))))))))))))
 
-(cl-defun chatgpt-shell-make-chatgpt-request-data (&key messages version temperature streaming other-params)
+(defun chatgpt-shell-openai-key ()
+  "Get the ChatGPT key."
+  (cond ((stringp chatgpt-shell-openai-key)
+         chatgpt-shell-openai-key)
+        ((functionp chatgpt-shell-openai-key)
+         (condition-case _err
+             (funcall chatgpt-shell-openai-key)
+           (error
+            "KEY-NOT-FOUND")))
+        (t
+         nil)))
+
+(cl-defun chatgpt-shell-openai-make-chatgpt-request-data (&key system-prompt prompt prompt-url context version temperature streaming other-params)
   "Make request data with MESSAGES.
 
-Optionally set VERSION, TEMPERATURE, STREAMING, and OTHER-PARAMS (list)."
-  (unless messages
-    (error "Missing mandatory :messages param"))
-  (setq temperature (or temperature chatgpt-shell-model-temperature))
+Optionally set PROMPT, VERSION, TEMPERATURE, STREAMING, SYSTEM-PROMPT,
+and OTHER-PARAMS (list)."
+  (unless version
+    (error "Missing mandatory :version param"))
   (append
-   `((model . ,(or version (chatgpt-shell-model-version)))
-     (messages . ,(vconcat messages)))
+   `((model . ,version)
+     (messages . ,(vconcat (chatgpt-shell-openai--make-chatgpt-messages
+                            :system-prompt system-prompt
+                            :prompt prompt
+                            :prompt-url prompt-url
+                            :context context))))
    (when temperature
      `((temperature . ,temperature)))
    (when streaming
      `((stream . t)))
    other-params))
 
-(defun chatgpt-shell-filter-chatgpt-output (raw-response)
+(defun chatgpt-shell-openai--filter-output (raw-response)
   "Extract ChatGPT response from RAW-RESPONSE.
 
 When ChatGPT responses are streamed, they arrive in the form:
@@ -125,7 +212,7 @@ Otherwise:
                                                .message.content)))
                                        .choices)))))
       response
-    (when-let ((chunks (chatgpt-shell--split-response raw-response)))
+    (when-let ((chunks (shell-maker--split-text raw-response)))
       (let ((response)
             (pending)
             (result))
@@ -155,6 +242,83 @@ Otherwise:
                                       response))
                     (cons :pending pending)))
         result))))
+
+(cl-defun chatgpt-shell-openai--make-url (&key _command model _settings)
+  "Create the API URL using MODEL."
+  (concat (symbol-value (or (map-elt model :url-base)
+                            (error "Model :url-base not found")))
+          (or (map-elt model :path)
+              (error "Model :path not found"))))
+
+(cl-defun chatgpt-shell-openai--make-headers (&key _model _settings)
+  "Create the API headers."
+  (list "Content-Type: application/json; charset=utf-8"
+        (format "Authorization: Bearer %s" (chatgpt-shell-openai-key))))
+
+(defun chatgpt-shell-openai--validate-command (_command _model _settings)
+  "Return error string if command/setup isn't valid."
+  (unless chatgpt-shell-openai-key
+    "Variable `chatgpt-shell-openai-key' needs to be set to your key.
+
+Try M-x set-variable chatgpt-shell-openai-key
+
+or
+
+(setq chatgpt-shell-openai-key \"my-key\")"))
+
+(cl-defun chatgpt-shell-openai--make-payload (&key model context settings)
+  "Create the API payload using MODEL CONTEXT and SETTINGS."
+  (chatgpt-shell-openai-make-chatgpt-request-data
+   :system-prompt (map-elt settings :system-prompt)
+   :context context
+   :version (map-elt model :version)
+   :temperature (map-elt settings :temperature)
+   :streaming (map-elt settings :streaming)))
+
+(cl-defun chatgpt-shell-openai--handle-chatgpt-command (&key model command context shell settings)
+  "Handle ChatGPT COMMAND (prompt) using MODEL, CONTEXT, SHELL, and SETTINGS."
+  (unless (chatgpt-shell-openai-key)
+    (funcall (map-elt shell :write-output) "Your chatgpt-shell-openai-key is missing")
+    (funcall (map-elt shell :finish-output) nil))
+  (shell-maker-make-http-request
+   :async t
+   :url (concat chatgpt-shell-api-url-base
+                (or (map-elt model :path)
+                    (error "Model :path not found")))
+   :data (chatgpt-shell-openai-make-chatgpt-request-data
+          :prompt command
+          :system-prompt (map-elt settings :system-prompt)
+          :context context
+          :version (map-elt model :version)
+          :temperature (map-elt settings :temperature)
+          :streaming (map-elt settings :streaming))
+   :headers (list "Content-Type: application/json; charset=utf-8"
+                  (format "Authorization: Bearer %s" (chatgpt-shell-openai-key)))
+   :filter #'chatgpt-shell-openai--filter-output
+   :shell shell))
+
+(defun chatgpt-shell-openai--user-assistant-messages (history)
+  "Convert HISTORY to ChatGPT format.
+
+Sequence must be a vector for json serialization.
+
+For example:
+
+ [
+   ((role . \"user\") (content . \"hello\"))
+   ((role . \"assistant\") (content . \"world\"))
+ ]"
+  (let ((result))
+    (mapc
+     (lambda (item)
+       (when (car item)
+         (push (list (cons 'role "user")
+                     (cons 'content (car item))) result))
+       (when (cdr item)
+         (push (list (cons 'role "assistant")
+                     (cons 'content (cdr item))) result)))
+     history)
+    (nreverse result)))
 
 (provide 'chatgpt-shell-openai)
 

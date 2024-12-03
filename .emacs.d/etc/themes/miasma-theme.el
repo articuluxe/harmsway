@@ -2,7 +2,7 @@
 
 ;; Author: Bozidar Dautovic
 ;; URL: http://github.com/daut/miasma-theme.el
-;; Version: 1.0.1
+;; Version: 1.4.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@
       ;; Palette
       (miasma-light-charcoal "#222222")
       (miasma-charcoal "#1c1c1c")
-      (miasma-onyx "#101010")
       (miasma-obsidian "#151515")
       (miasma-graphite "#444444")
       (miasma-dark-gray "#666666")
@@ -43,6 +42,7 @@
       (miasma-forest "#242d1d")
       (miasma-moss "#2f361f")
       (miasma-olive "#43492a")
+      (miasma-ivy "#335533")
       (miasma-eucalyptus "#5f875f")
       (miasma-reseda "#78834b")
       (miasma-walnut "#685742")
@@ -50,7 +50,8 @@
       (miasma-copper "#bb7744")
       (miasma-cedar "#b36d43")
       (miasma-terracota "#c86448")
-      (miasma-fire "#661010")
+      (miasma-chestnut "#553333")
+      (miasma-fire "#824040")
       (miasma-lemon "#fbec9f")
       (miasma-ecru "#d7c483")
       (miasma-brass "#c9a554"))
@@ -60,6 +61,7 @@
    ;;;; Built-in packages
    ;;;;; Basic
    `(cursor ((,class (:background ,miasma-reseda))))
+   `(default ((,class (:foreground ,miasma-light-gray :background ,miasma-light-charcoal))))
    `(error ((,class (:foreground ,miasma-terracota))))
    `(fringe ((,class (:background ,miasma-light-charcoal))))
    `(highlight ((,class (:background ,miasma-olive))))
@@ -71,12 +73,23 @@
    `(shadow ((,class (:foreground ,miasma-dark-gray))))
    `(success ((,class (:foreground ,miasma-eucalyptus))))
    `(trailing-whitespace ((,class (:background ,miasma-fire))))
+   `(vertical-border ((,class (:foreground ,miasma-olive))))
    `(warning ((,class (:foreground ,miasma-tangerine))))
-   `(default ((,class (:foreground ,miasma-light-gray :background ,miasma-light-charcoal))))
+
+   ;;;;; compilation
+   `(compilation-mode-line-exit ((,class (:foreground ,miasma-eucalyptus))))
+   `(compilation-mode-line-fail ((,class (:foreground ,miasma-terracota))))
 
    ;;;;; completions
    `(completions-annotations ((,class (:foreground ,miasma-reseda))))
    `(completions-common-part ((,class (:foreground ,miasma-eucalyptus))))
+
+
+   ;;;;; diff
+   `(diff-added ((,class (:extend t :background ,miasma-ivy :foreground ,miasma-marble))))
+   `(diff-removed ((,class (:extend t :background ,miasma-chestnut :foreground ,miasma-marble))))
+   `(diff-refine-added ((,class (:background ,miasma-eucalyptus))))
+   `(diff-refine-removed ((,class (:background ,miasma-fire))))
 
    ;;;;; dired
    `(dired-directory ((,class (:foreground ,miasma-eucalyptus))))
@@ -99,11 +112,18 @@
    `(font-lock-warning-face ((,class (:foreground ,miasma-tangerine))))
    `(font-lock-builtin-face ((,class (:foreground ,miasma-light-gray))))
 
+   ;;;;; info
+   `(info-menu-star ((,class (:foreground ,miasma-terracota))))
+
    ;;;;; isearch
    `(isearch ((,class (:foreground ,miasma-light-charcoal :background ,miasma-tangerine))))
    `(isearch-group-1 ((,class (:foreground ,miasma-light-charcoal :background ,miasma-ecru))))
    `(isearch-group-2 ((,class (:foreground ,miasma-light-charcoal :background ,miasma-brass))))
    `(isearch-fail ((,class (:background ,miasma-fire))))
+
+   ;;;;; line numbers
+   `(line-number ((,class (:inherit default :foreground ,miasma-dark-gray))))
+   `(line-number-current-line ((,class (:background ,miasma-charcoal :inherit default))))
 
    ;;;;; message
    `(message-cited-text ((,class (:foreground ,miasma-dark-gray))))
@@ -122,17 +142,32 @@
    `(mode-line-inactive ((,class (:foreground ,miasma-light-gray :background ,miasma-graphite))))
 
    ;;;;; org
+   `(org-block ((,class (:background ,miasma-obsidian, :extend t))))
+   `(org-date ((,class (:foreground ,miasma-sky :underline (:style line)))))
+   `(org-document-title ((,class (:foreground ,miasma-copper))))
    `(org-done ((,class (:foreground ,miasma-olive :weight bold))))
+   `(org-footnote ((,class (:foreground ,miasma-sky :underline t))))
    `(org-headline-done ((,class (:foreground ,miasma-dark-gray :weight bold))))
    `(org-headline-todo ((,class (:foreground ,miasma-eucalyptus :weight bold))))
    `(org-todo ((,class (:foreground ,miasma-brass :weight bold))))
-   `(org-date ((,class (:foreground ,miasma-sky :underline (:style line)))))
-   `(org-document-title ((,class (:foreground ,miasma-copper))))
 
+   ;;;;; whitespace-mode
+   `(whitespace-space ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal miasma-light-charcoal) :foreground ,miasma-dark-gray))))
+   `(whitespace-tab ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal miasma-light-charcoal) :foreground ,miasma-dark-gray))))
+   `(whitespace-line ((,class (:background ,miasma-forest))))
+   `(whitespace-trailing ((,class (:background ,miasma-chestnut))))
+   `(whitespace-empty ((,class (:background ,miasma-fire))))
+   `(whitespace-newline ((,class (:foreground ,miasma-dark-gray))))
+   `(whitespace-big-indent ((,class (:foreground ,miasma-terracota :background ,miasma-fire))))
+   `(whitespace-indentation ((,class (:foreground ,miasma-chestnut :background ,miasma-lemon))))
+   `(whitespace-space-after-tab ((,class (:foreground ,miasma-chestnut :background ,miasma-lemon))))
+   `(whitespace-space-before-tab ((,class (:foreground ,miasma-chestnut :background ,miasma-tangerine))))
+   `(whitespace-missing-newline-at-eof ((,class (:foreground ,miasma-charcoal :background ,miasma-lemon))))
 
-   ;;;;; line numbers
-   `(line-number ((,class (:inherit default :foreground ,miasma-dark-gray))))
-   `(line-number-current-line ((,class (:background ,miasma-charcoal :inherit default))))
+   ;;;;; window-divider-mode
+   `(window-divider ((,class (:foreground ,miasma-olive))))
+   `(window-divider-first-pixel ((,class (:foreground ,miasma-olive))))
+   `(window-divider-last-pixel ((,class (:foreground ,miasma-olive))))
 
    ;;;; Third-party packages
 
@@ -146,6 +181,9 @@
    `(avy-lead-face-1 ((,class :foreground ,miasma-light-gray :background ,miasma-dark-gray :weight bold)))
    `(avy-lead-face-2 ((,class :background ,miasma-lemon :weight bold)))
    `(avy-lead-face ((,class :foreground ,miasma-light-gray :background ,miasma-terracota :weight bold)))
+
+   ;;;;; beacon
+   `(beacon-fallback-background ((,class :background ,miasma-ivy)))
 
    ;;;;; company
    `(company-echo-common ((,class (:inherit company-tooltip-common))))
@@ -214,6 +252,7 @@
 
    ;;;;; lsp
    `(lsp-modeline-code-actions-face ((,class (:foreground ,miasma-olive))))
+   `(lsp-face-highlight-read ((,class (:underline t :background ,miasma-moss))))
 
    ;;;;; magit
    `(magit-bisect-bad ((,class (:foreground ,miasma-fire))))
@@ -228,6 +267,7 @@
    `(magit-cherry-equivalent ((,class (:foreground ,miasma-terracota))))
    `(magit-cherry-equivalent ((,class (:foreground ,miasma-terracota))))
    `(magit-cherry-unmatched ((,class (:foreground ,miasma-sky))))
+   `(magit-diff-added-highlight ((,class (:inherit diff-added))))
    `(magit-diff-base ((,class (:foreground ,miasma-lemon :background ,miasma-walnut :extend t))))
    `(magit-diff-base-highlight ((,class (:foreground ,miasma-lemon :background ,miasma-olive))))
    `(magit-diff-context ((,class (:foreground ,miasma-dark-gray :extend t))))
@@ -237,6 +277,7 @@
    `(magit-diff-hunk-heading-highlight ((,class (:foreground ,miasma-light-gray :background ,miasma-graphite :extend t))))
    `(magit-diff-hunk-heading-selection ((,class (:foreground ,miasma-cedar :extend t :inherit magit-diff-heading-highlight))))
    `(magit-diff-lines-heading ((,class (:foreground ,miasma-light-gray :background ,miasma-copper))))
+   `(magit-diff-removed-highlight ((,class (:inherit diff-removed))))
    `(magit-diffstat-added ((,class (:foreground ,miasma-olive))))
    `(magit-diffstat-removed ((,class (:foreground ,miasma-fire))))
    `(magit-dimmed ((,class (:foreground ,miasma-graphite))))
@@ -316,6 +357,7 @@
    `(transient-key-stay ((,class :foreground ,miasma-ecru)))
 
    ;;;;; vertico
+   `(vertico-current ((,class (:background ,miasma-olive :extend t))))
    `(vertico-posframe-border ((,class (:background ,miasma-walnut))))
    `(vertico-posframe-border-2 ((,class (:background ,miasma-tangerine))))
    `(vertico-posframe-border-3 ((,class (:background ,miasma-cedar))))

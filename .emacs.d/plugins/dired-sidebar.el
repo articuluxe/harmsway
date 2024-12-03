@@ -108,13 +108,15 @@ This only takes effect if on a local connection. (e.g. Not Tramp)"
 (defcustom dired-sidebar-width 35
   "Width of the `dired-sidebar' buffer.
 This option does not have effect if `dired-sidebar-resize-on-open' is nil.
-If you set `dired-sidebar-resize-on-open' to nil, you can customize `dired-sidebar-display-alist'
+If you set `dired-sidebar-resize-on-open' to nil, you can customize
+`dired-sidebar-display-alist'
 to control the width anyway."
   :type 'integer
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-window-fixed 'width
-  "Whether the width or height of the sidebar window should be fixed (to prevent from resizing)."
+  "Whether the width or height of the sidebar window should be fixed
+(to prevent from resizing)."
   :type '(choice (const nil)
                  (const width)
                  (const height))
@@ -161,6 +163,14 @@ When finding file to point at for
 in `magit' buffer.
 
 When finding root directory for sidebar, use directory specified by `magit'."
+  :type 'boolean
+  :group 'dired-sidebar)
+
+(defcustom dired-sidebar-use-omit-mode-integration t
+  "Whether to integrate with `dired-omit-mode'.
+
+When true: Attempt to handle `dired-omit-mode' around
+`dired-subtree-cycle' and `dired-subtree-toggle'."
   :type 'boolean
   :group 'dired-sidebar)
 
@@ -272,7 +282,8 @@ with a prefix arg or when `dired-sidebar-find-file-alt' is called."
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-resize-on-open t
-  "When dired sidebar window is showed, automatically adjust its width according to `dired-sidebar-width'"
+  "When dired sidebar window is showed, automatically adjust its width
+according to `dired-sidebar-width'"
   :type 'boolean
   :group 'dired-sidebar)
 
@@ -299,7 +310,7 @@ with a prefix arg or when `dired-sidebar-find-file-alt' is called."
 (defcustom dired-sidebar-display-alist '((side . left) (slot . -1))
   "Alist used in `display-buffer-in-side-window'.
 
-e.g. (display-buffer-in-side-window buffer '((side . left) (slot . -1)))"
+e.g. (display-buffer-in-side-window buffer \\'((side . left) (slot . -1)))"
   :type 'alist
   :group 'dired-sidebar)
 
@@ -311,11 +322,6 @@ a file."
   :type 'boolean
   :group 'dired-sidebar)
 
-(defcustom dired-sidebar-icon-scale .18
-  "The scale of icons \(currently only applies to vscode theme.\)."
-  :type 'number
-  :group 'dired-sidebar)
-
 (defcustom dired-sidebar-no-delete-other-windows nil
   "Whether or not to add `no-delete-other-window' parameter to window.
 
@@ -325,7 +331,6 @@ will continue showing.
 For more information, look up `delete-other-windows'."
   :type 'boolean
   :group 'dired-sidebar)
-
 
 (defcustom dired-sidebar-use-one-instance nil
   "Only show one buffer instance for dired-sidebar for each frame."
@@ -532,6 +537,15 @@ Works around marker pointing to wrong buffer in Emacs 25."
            dired-sidebar-follow-file-idle-delay
            t #'dired-sidebar-follow-file)))
 
+  (when dired-sidebar-use-omit-mode-integration
+    (unless (memq 'dired-omit-mode
+                  dired-sidebar-special-refresh-commands)
+      (push 'dired-omit-mode dired-sidebar-special-refresh-commands))
+    (advice-add 'dired-subtree-cycle
+                :around 'dired-sidebar-omit-after-dired-subtree-cycle)
+    (advice-add 'dired-subtree-toggle
+                :around 'dired-sidebar-omit-after-dired-subtree-cycle))
+
   ;; This comment is taken from `dired-readin'.
   ;; Begin --- Copied comment from dired.el.
   ;; Must first make alist buffer local and set it to nil because
@@ -702,7 +716,7 @@ If it's not showing, act as `dired-sidebar-toggle-sidebar'."
 
 (defun dired-sidebar-find-file (&optional dir)
   "Wrapper over `dired-find-file'.
-Optional argument DIR Fine file using DIR of available.
+Optional argument DIR: Find file using DIR if available.
 
 With prefix argument, use `dired-sidebar-alternate-select-window-function' for
 window selection."
@@ -929,7 +943,13 @@ Return buffer if so."
 
 This can return nil if the buffer has been killed."
   (let* ((frame (or f (selected-frame)))
-         (buffer (alist-get frame dired-sidebar-alist)))
+         (buffer
+          (or
+           ;; FIXME: I think we can remove all the `dired-sidebar-alist'
+           ;; just checking against this window list instead.
+           ;; Add this here for now, revisit later if it seems stable.
+           (dired-sidebar-get-buffer-from-window-list)
+           (alist-get frame dired-sidebar-alist))))
     ;; The buffer can be killed for a variety of reasons.
     ;; This side effect is kind of messy but it's the simplest place
     ;; to put the clean up code for `dired-sidebar-alist'.
@@ -946,6 +966,18 @@ This can return nil if the buffer has been killed."
       (setq dired-sidebar-alist
             (assq-delete-all frame dired-sidebar-alist))
       nil)))
+
+(defun dired-sidebar-get-buffer-from-window-list ()
+  "Return the current sidebar buffer using `window-list'."
+  (if-let* ((windows
+             (seq-filter
+              (lambda (window)
+                (with-current-buffer (window-buffer window)
+                  (eq major-mode 'dired-sidebar-mode)))
+              (window-list)))
+            (buffer (window-buffer (car windows))))
+      buffer
+    nil))
 
 (defun dired-sidebar-switch-to-dir (dir)
   "Update buffer with DIR as root."
@@ -1110,6 +1142,20 @@ after."
                ;; since we made it buffer local earlier.
                (not (memq mode (default-value 'dired-mode-hook))))
              dired-sidebar-block-icon-display-modes)))
+
+(defvar dired-omit-mode)
+(defun dired-sidebar-omit-after-dired-subtree-cycle (f &rest args)
+  "Attempt to handle `dired-omit-mode' when applying F.
+
+If `dired-omit-mode' is null, the user isn't interested, so continue as normal.
+Otherwise, try to call `dired-omit-mode' after function runs."
+  (if (fboundp 'dired-omit-mode)
+      (if (null dired-omit-mode)
+          (apply f args)
+        (let ((result (apply f args)))
+          (dired-omit-mode)
+          result))
+    (apply f args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Text User Interface ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

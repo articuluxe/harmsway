@@ -57,16 +57,16 @@ buffer. This is for debugging purposes."
 (cl-defmethod emacsql-send-message
   ((connection emacsql-sqlite-builtin-connection) message)
   (condition-case err
-      (let ((include-header emacsql-include-header))
+      (let ((headerp emacsql-include-header))
         (mapcar (lambda (row)
-                  (prog1 (mapcar (lambda (col)
-                                   (cond (include-header col)
-                                         ((null col) nil)
-                                         ((equal col "") "")
-                                         ((numberp col) col)
-                                         (t (read col))))
-                                 row)
-                    (setq include-header nil)))
+                  (cond
+                   (headerp (setq headerp nil) row)
+                   ((mapcan (lambda (col)
+                              (cond ((null col)     (list nil))
+                                    ((equal col "") (list ""))
+                                    ((numberp col)  (list col))
+                                    ((emacsql-sqlite-read-column col))))
+                            row))))
                 (sqlite-select (oref connection handle) message nil
                                (and emacsql-include-header 'full))))
     ((sqlite-error sqlite-locked-error)

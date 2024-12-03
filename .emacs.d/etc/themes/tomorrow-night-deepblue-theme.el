@@ -34,6 +34,26 @@
 ;; distinguish between different elements of your code. The
 ;; tomorrow-night-deepblue theme is also a great choice for programmer who miss
 ;; the blue themes that were trendy a few years ago.
+;;
+;; The theme was inspired by classic text editors such as QuickBASIC, RHIDE, and
+;; Turbo Pascal, as well as tools such as Midnight Commander which featured blue
+;; backgrounds by default. There's something special about the early days of
+;; programming and the tools we used that brings back fond memories.
+;;
+;; Installation from MELPA:
+;; ------------------------
+;; (use-package tomorrow-night-deepblue-theme
+;;   :ensure t
+;;   :config
+;;   ;; Disable all themes and load the Tomorrow Night Deep Blue theme
+;;   (mapc #'disable-theme custom-enabled-themes)
+;;   ;; Load the tomorrow-night-deepblue theme
+;;   (load-theme 'tomorrow-night-deepblue t))
+;;
+;; Links:
+;; ------
+;; - GitHub: https://github.com/jamescherti/tomorrow-night-deepblue-theme.el
+;;
 
 ;;; Code:
 
@@ -515,7 +535,7 @@ names to which it refers are bound."
    (font-latex-string-face ((,class (:foreground ,yellow))))
    (font-latex-verbatim-face ((,class (:foreground ,orange))))
    (font-latex-warning-face ((,class (:inherit warning))))
-   (fringe ((,class (:foregound ,comment))))
+   (fringe ((,class (:inherit font-lock-comment-face))))
    (git-gutter+-added ((,class (:foreground ,green :weight bold))))
    (git-gutter+-deleted ((,class (:foreground ,red :weight bold))))
    (git-gutter+-modified ((,class (:foreground ,purple :weight bold))))

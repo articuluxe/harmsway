@@ -6,11 +6,11 @@
 ;; Homepage: https://github.com/emacscollective/closql
 ;; Keywords: extensions
 
-;; Package-Version: 2.0.0
+;; Package-Version: 2.1.0
 ;; Package-Requires: (
 ;;     (emacs "26.1")
 ;;     (compat "30.0.0.0")
-;;     (emacsql "4.0.0"))
+;;     (emacsql "4.1.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -41,7 +41,7 @@
 (require 'eieio)
 (require 'eieio-base)
 (require 'emacsql)
-(require 'emacsql-sqlite-common)
+(require 'emacsql-sqlite)
 
 (eval-when-compile (require 'subr-x))
 
@@ -315,9 +315,6 @@
                   (conn (make-instance connection-class :file file))
                   (db (make-instance class))) ; ignores slot arguments
              (oset db connection conn)
-             (when (and (slot-boundp conn 'handle)
-                        (processp (oref conn handle)))
-               (set-process-query-on-exit-flag (oref conn handle) nil))
              (emacsql conn [:pragma (= foreign-keys on)])
              (if (not (emacsql-sqlite-list-tables db))
                  (closql--db-create-schema db)
@@ -570,15 +567,15 @@
       (vconcat abbrevs)))
    ((vconcat
      (mapcar #'closql--abbrev-class
-             (cl-mapcan (lambda (sym)
-                          (let ((str (symbol-name sym)))
-                            (cond ((string-suffix-p "--eieio-childp" str)
-                                   (closql--list-subclasses
-                                    (intern (substring str 0 -14)) nil))
-                                  ((string-suffix-p "-p" str)
-                                   (list (intern (substring str 0 -2))))
-                                  ((list sym)))))
-                        args))))))
+             (mapcan (lambda (sym)
+                       (let ((str (symbol-name sym)))
+                         (cond ((string-suffix-p "--eieio-childp" str)
+                                (closql--list-subclasses
+                                 (intern (substring str 0 -14)) nil))
+                               ((string-suffix-p "-p" str)
+                                (list (intern (substring str 0 -2))))
+                               ((list sym)))))
+                     args))))))
 
 (defun closql--list-subclasses (class &optional result)
   (unless (class-abstract-p class)
@@ -597,7 +594,7 @@
            (nconc (and (not (class-abstract-p class)) (list abbrev))
                   (and wildcards children
                        (list (if abbrev (intern (format "%s*" abbrev)) '*)))
-                  (cl-mapcan #'types children)))))
+                  (mapcan #'types children)))))
     (sort (types class) #'string<)))
 
 (cl-defmethod closql--set-object-class ((db closql-database) obj class)

@@ -169,10 +169,11 @@ itself from the hook, to avoid further futile attempts."
   '("^\\(Enter \\)?[Pp]assphrase\\( for \\(RSA \\)?key '.*'\\)?: ?$"
     ;; Match-group 99 is used to identify the "user@host" part.
     "^\\(Enter \\|([^) ]+) \\)?\
-[Pp]assword\\( for '?\\(https?://\\)?\\(?99:[^']*\\)'?\\)?: ?$"
+[Pp]assword\\( for '?\\(https?://\\)?\\(?99:[^']+\\)'?\\)?: ?$"
     "Please enter the passphrase for the ssh key"
     "Please enter the passphrase to unlock the OpenPGP secret key"
-    "^.*'s password: ?$"
+    "^\\(?99:[^']+\\)\\('s\\)? password: ?$"
+    "^.+ password: ?$"
     "^Token: $" ; For git-credential-manager-core (#4318).
     "^Yubikey for .*: ?$"
     "^Enter PIN for .*: ?$")
@@ -881,10 +882,6 @@ PARENT is used as the parent of the returned keymap."
 (defun magit-process-password-auth-source (key)
   "Use `auth-source-search' to get a password.
 If found, return the password.  Otherwise, return nil.
-
-To use this function add it to the appropriate hook
-  (add-hook \\='magit-process-find-password-functions
-            \\='magit-process-password-auth-source)
 
 KEY typically derives from a prompt such as:
   Password for \\='https://yourname@github.com\\='
