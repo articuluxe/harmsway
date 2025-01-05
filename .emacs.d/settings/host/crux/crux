@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; crux --- host file
-;; Copyright (C) 2015-2024  Dan Harms (dharms)
+;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2024-06-27 13:58:35 dharms>
+;; Modified Time-stamp: <2025-01-05 12:08:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -53,6 +53,10 @@
                             "Victor Mono 14"
                             "Hasklig 14"
                             "Source Code Pro 13"
+                            "Azeret Mono 14"
+                            "DM Mono 14"
+                            "Red Hat Mono 14"
+                            "Syne Mono 14"
                             "Inconsolata 14"
                             "NanumGothicCoding 14"
                             "Iosevka 16"

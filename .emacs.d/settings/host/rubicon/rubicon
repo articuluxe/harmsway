@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; rubicon --- host file
-;; Copyright (C) 2015-2024  Dan Harms (dharms)
+;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2024-06-27 13:59:14 dharms>
+;; Modified Time-stamp: <2025-01-04 19:00:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -67,6 +67,10 @@
                             "UbuntuSansMono Nerd Font Mono 14"
                             "ZedMono Nerd Font Mono 14"
                             "JuliaMono 13"
+                            "Azeret Mono 14"
+                            "DM Mono 14"
+                            "Red Hat Mono 14"
+                            "Syne Mono 14"
                             "Droid Sans Mono 14"
                             "Ricty Diminished 15"
                             "QuickType Mono 14"
