@@ -1,6 +1,6 @@
 ;;; consult-info.el --- Search through the info manuals -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2024 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2025 Free Software Foundation, Inc.
 
 ;; This file is part of GNU Emacs.
 
@@ -27,63 +27,62 @@
 
 (require 'consult)
 (require 'info)
+(eval-when-compile (require 'cl-lib))
 
+(defvar-local consult-info--manual nil)
 (defvar consult-info--history nil)
 
-(defun consult-info--candidates (manuals input)
-  "Dynamically find lines in MANUALS matching INPUT."
-  (pcase-let* ((`(,regexps . ,hl)
-                (funcall consult--regexp-compiler input 'emacs t))
+(defun consult-info--candidates (buffers input callback)
+  "Collect matching candidates from info buffers.
+INPUT is the user input which should be matched.
+BUFFERS is the list of buffers.
+CALLBACK receives the candidates."
+  (pcase-let* ((`(,regexps . ,hl) (consult--compile-regexp input 'emacs t))
                (re (concat "\\(\^_\n\\(?:.*Node:[ \t]*\\([^,\t\n]+\\)\\)?.*\n\\)\\|" (car regexps)))
                (candidates nil)
                (cand-idx 0)
                (last-node nil)
                (full-node nil))
-    (pcase-dolist (`(,manual . ,buf) manuals)
-      (with-current-buffer buf
-        (setq last-node nil full-node nil)
-        (widen)
-        (goto-char (point-min))
-        ;; TODO Info has support for subfiles, which is currently not supported
-        ;; by the `consult-info' search routine.  Fortunately most (or all?)
-        ;; Emacs info files are generated with the --no-split option.  See the
-        ;; comment in doc/emacs/Makefile.in.  Given the computing powers these
-        ;; days split info files are probably also not necessary anymore.
-        ;; However it could happen that info files installed as part of the
-        ;; Linux distribution are split.
-        (while (and (not (eobp)) (re-search-forward re nil t))
-          (if (match-end 1)
-              (progn
-                (if-let ((node (match-string 2)))
-                    (unless (equal node last-node)
-                      (setq full-node (concat "(" manual ")" node)
-                            last-node node))
-                  (setq last-node nil full-node nil))
-                (goto-char (1+ (pos-eol))))
-            (let ((bol (pos-bol))
-                  (eol (pos-eol)))
-              (goto-char bol)
-              (when (and
-                     full-node
-                     ;; Information separator character
-                     (>= (- (point) 2) (point-min))
-                     (not (eq (char-after (- (point) 2)) ?\^_))
-                     ;; Non-blank line, only printable characters on the line.
-                     (not (looking-at-p "^\\s-*$"))
-                     (looking-at-p "^[[:print:]]*$")
-                     ;; Matches all regexps
-                     (seq-every-p (lambda (r)
-                                    (goto-char bol)
-                                    (re-search-forward r eol t))
-                                  (cdr regexps)))
-                (let ((cand (concat
-                             (funcall hl (buffer-substring-no-properties bol eol))
-                             (consult--tofu-encode cand-idx))))
-                  (put-text-property 0 1 'consult--info (list full-node bol buf) cand)
-                  (cl-incf cand-idx)
-                  (push cand candidates)))
-              (goto-char (1+ eol)))))))
-    (nreverse candidates)))
+    (when regexps
+      (dolist (buf buffers)
+        (with-current-buffer buf
+          (setq last-node nil full-node nil)
+          (widen)
+          (goto-char (point-min))
+          (while (and (not (eobp)) (re-search-forward re nil t))
+            (if (match-end 1)
+                (progn
+                  (if-let ((node (match-string 2)))
+                      (unless (equal node last-node)
+                        (setq full-node (concat consult-info--manual node)
+                              last-node node))
+                    (setq last-node nil full-node nil))
+                  (goto-char (1+ (pos-eol))))
+              (let ((bol (pos-bol))
+                    (eol (pos-eol)))
+                (goto-char bol)
+                (when (and
+                       full-node
+                       ;; Information separator character
+                       (>= (- (point) 2) (point-min))
+                       (not (eq (char-after (- (point) 2)) ?\^_))
+                       ;; Non-blank line, only printable characters on the line.
+                       (not (looking-at-p "^\\s-*$"))
+                       (looking-at-p "^[[:print:]]*$")
+                       ;; Matches all regexps
+                       (cl-loop for r in (cdr regexps) always
+                                (progn
+                                  (goto-char bol)
+                                  (re-search-forward r eol t))))
+                  (let ((cand (concat
+                               (funcall hl (buffer-substring-no-properties bol eol))
+                               (consult--tofu-encode cand-idx))))
+                    (put-text-property 0 1 'consult--info (list full-node bol buf) cand)
+                    (cl-incf cand-idx)
+                    (push cand candidates)))
+                (goto-char (1+ eol))))))
+        (funcall callback (nreverse candidates))
+        (setq candidates nil)))))
 
 (defun consult-info--position (cand)
   "Return position information for CAND."
@@ -123,6 +122,22 @@
   (if transform cand
     (car (get-text-property 0 'consult--info cand))))
 
+(defun consult-info--buffer (manual init)
+  "Make preview buffer for MANUAL and call INIT."
+  (let (buf)
+    (unwind-protect
+        (with-current-buffer (setq buf (generate-new-buffer
+                                        (format "*info-%s*" manual)))
+          (let (Info-history Info-history-list Info-history-forward)
+            (Info-mode)
+            (Info-find-node manual "Top")
+            (setq consult-info--manual (concat "(" manual ")"))
+            (and (ignore-errors (funcall init))
+                 (prog1 buf
+                   (consult--preview-rename-buffer buf)
+                   (setq buf nil)))))
+      (when buf (kill-buffer buf)))))
+
 (defun consult-info--prepare-buffers (manuals fun)
   "Prepare buffers for MANUALS and call FUN with buffers."
   (declare (indent 1))
@@ -130,20 +145,29 @@
     (unwind-protect
         (let ((reporter (make-progress-reporter "Preparing" 0 (length manuals))))
           (consult--with-increased-gc
-           (seq-do-indexed
-            (lambda (manual idx)
-              (push (cons manual (generate-new-buffer (format "*info-preview-%s*" manual)))
-                    buffers)
-              (with-current-buffer (cdar buffers)
-                (let (Info-history Info-history-list Info-history-forward)
-                  (Info-mode)
-                  (Info-find-node manual "Top")))
-              (progress-reporter-update reporter (1+ idx) manual))
-            manuals))
+           (cl-loop
+            for idx from 0 for manual in manuals do
+            (push (consult-info--buffer manual #'always) buffers)
+            ;; Create a separate buffer if the info manual has subfiles. They
+            ;; are present on my system and have names like
+            ;; /usr/share/info/texinfo.info-2.gz.
+            (while-let
+                ((sub (buffer-local-value 'Info-current-subfile (car buffers)))
+                 (pos (string-match-p "-\\([0-9]+\\)\\'" sub))
+                 (buf (consult-info--buffer
+                       manual
+                       (lambda ()
+                         (ignore-errors
+                           (Info-read-subfile
+                            (format "%s%s" (substring sub 0 pos)
+                                    (1- (string-to-number (substring sub pos)))))
+                           (Info-select-node)
+                           t)))))
+              (push buf buffers))
+            (progress-reporter-update reporter (1+ idx) manual)))
           (progress-reporter-done reporter)
           (funcall fun (reverse buffers)))
-      (dolist (buf buffers)
-        (kill-buffer (cdr buf))))))
+      (mapc #'kill-buffer buffers))))
 
 ;;;###autoload
 (defun consult-info (&rest manuals)
@@ -173,8 +197,7 @@
        :category 'consult-info
        :history '(:input consult-info--history)
        :group #'consult-info--group
-       :initial (consult--async-split-initial "")
-       :add-history (consult--async-split-thingatpt 'symbol)
+       :add-history (thing-at-point 'symbol)
        :lookup #'consult--lookup-member))))
 
 (provide 'consult-info)

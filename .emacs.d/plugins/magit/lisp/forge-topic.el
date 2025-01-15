@@ -1,6 +1,6 @@
 ;;; forge-topic.el --- Topics support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -59,11 +59,24 @@ The following %-sequences are supported:
   :group 'forge
   :type 'boolean)
 
+(defcustom forge-topic-wash-title-hook
+  (list #'magit-highlight-bracket-keywords)
+  "Functions used to highlight parts of each individual topic title.
+
+These functions are called in order, in a buffer that containing the
+topic title.  They should set text properties as they see fit, usually
+just `font-lock-face'.  Before each function is called, point is at the
+beginning of the buffer."
+  :package-version '(forge . "0.4.7")
+  :group 'forge
+  :type 'hook
+  :options (list #'magit-highlight-bracket-keywords))
+
 (defcustom forge-topic-repository-slug-width 28
   "Width of repository slugs (i.e., \"OWNER/NAME\")."
   :package-version '(forge . "0.4.0")
   :group 'forge
-  :type (if (>= emacs-major-version 28) 'natnum 'number))
+  :type 'natnum)
 
 (defcustom forge-bug-reference-hooks
   '(find-file-hook
@@ -98,8 +111,7 @@ does not inherit from `magit-dimmed'."
   :group 'forge-faces)
 
 (defface forge-topic-header-line
-  `((t :inherit magit-header-line
-       ,@(and (>= emacs-major-version 29) '(:foreground reset))))
+  '((t :inherit magit-header-line :foreground reset))
   "Face for the `header-line' in `forge-topic-mode' buffers."
   :group 'forge-faces)
 
@@ -136,9 +148,8 @@ were closed without being merged."
 ;;;;; Notifications
 
 (defface forge-topic-unread
-  `((t :weight bold
-       :box ( :line-width ,(if (>= emacs-major-version 28) (cons -1 -1) -1)
-              :style nil)))
+  '((t :weight bold
+       :box (:line-width (-1 . -1) :style nil)))
   "Face used for summaries of entities with unread notifications.
 This face is always used together with, and takes preference over,
 a `forge-{issue,pullreq}-STATE' face and should not specify any
@@ -208,9 +219,8 @@ A face attribute should be used that is not already used by any
 ;;;; Labels
 
 (defface forge-topic-label
-  `((t :inherit secondary-selection
-       :box ( :line-width ,(if (>= emacs-major-version 28) (cons -1 -1) -1)
-              :style released-button)))
+  '((t :inherit secondary-selection
+       :box (:line-width (-1 . -1) :style released-button)))
   "Face used for topic labels, marks and milestones."
   :group 'forge-faces)
 
@@ -322,15 +332,14 @@ an error."
 
 (put 'forge-topic 'thing-at-point #'forge-thingatpt--topic)
 (defun forge-thingatpt--topic ()
-  (and-let* ((repo (forge--repo-for-thingatpt)))
-    (and (thing-at-point-looking-at
-          (if (forge-gitlab-repository--eieio-childp repo)
-              "\\(?2:[#!]\\)\\(?1:[0-9]+\\)\\_>"
-            "#\\([0-9]+\\)\\_>"))
-         (funcall (if (equal (match-string 2) "!")
-                      #'forge-get-pullreq
-                    #'forge-get-topic)
-                  repo (string-to-number (match-string-no-properties 1))))))
+  (and-let* (((thing-at-point-looking-at "\\([#!]\\)\\([0-9]+\\)\\_>"))
+             (prefix (match-string-no-properties 1))
+             (number (string-to-number (match-string-no-properties 2)))
+             (repo (forge--repo-for-thingatpt)))
+    (cond ((equal prefix "#")
+           (forge-get-topic repo number))
+          ((forge-gitlab-repository--eieio-childp repo)
+           (forge-get-pullreq repo number)))))
 
 (defun forge-region-topics ()
   (magit-region-values '(issue pullreq)))
@@ -718,14 +727,14 @@ can be selected from the start."
      "Labels: "
      (forge--format-labels (and obj (forge-get-repository obj)))
      nil t
-     (and (forge-topic-p obj)
+     (and (cl-typep obj 'forge-topic)
           (forge--format-labels obj crm-separator)))))
 
 (defun forge-read-topic-marks (&optional obj)
   (let ((crm-separator ","))
     (magit-completing-read-multiple
      "Marks: " (forge--format-marks) nil t
-     (and (forge-topic-p obj)
+     (and (cl-typep obj 'forge-topic)
           (forge--format-marks obj crm-separator)))))
 
 (defun forge-read-topic-assignees (&optional topic)
@@ -743,7 +752,8 @@ can be selected from the start."
 (defun forge-read-topic-review-requests (&optional topic)
   (let* ((repo (forge-get-repository (or topic :tracked)))
          (value (and topic (oref topic review-requests)))
-         (choices (mapcar #'cadr (oref repo assignees)))
+         (choices (nconc (mapcar #'cadr (oref repo assignees))
+                         (oref repo teams)))
          (crm-separator ","))
     (magit-completing-read-multiple
      "Request review from: " choices nil
@@ -832,25 +842,29 @@ can be selected from the start."
     (magit--propertize-face "no" 'magit-dimmed)))
 
 (defun forge--format-topic-title (topic)
-  (with-slots (title status state) topic
-    (magit-log-propertize-keywords
-     nil
-     (magit--propertize-face
-      title
-      `(,@(and (forge-pullreq-p topic)
-               (oref topic draft-p)
-               '(forge-pullreq-draft))
-        ,(pcase status
-           ('unread  'forge-topic-unread)
-           ('pending 'forge-topic-pending)
-           ('done    'forge-topic-done))
-        ,(pcase (list (eieio-object-class topic) state)
-           (`(forge-issue   open)      'forge-issue-open)
-           (`(forge-issue   completed) 'forge-issue-completed)
-           (`(forge-issue   unplanned) 'forge-issue-unplanned)
-           (`(forge-pullreq open)      'forge-pullreq-open)
-           (`(forge-pullreq merged)    'forge-pullreq-merged)
-           (`(forge-pullreq rejected)  'forge-pullreq-rejected)))))))
+  (with-temp-buffer
+    (save-excursion
+      (with-slots (title status state) topic
+        (insert
+         (magit--propertize-face
+          title
+          `(,@(and (forge-pullreq-p topic)
+                   (oref topic draft-p)
+                   '(forge-pullreq-draft))
+            ,(pcase status
+               ('unread  'forge-topic-unread)
+               ('pending 'forge-topic-pending)
+               ('done    'forge-topic-done))
+            ,(pcase (list (eieio-object-class topic) state)
+               (`(forge-issue   open)      'forge-issue-open)
+               (`(forge-issue   completed) 'forge-issue-completed)
+               (`(forge-issue   unplanned) 'forge-issue-unplanned)
+               (`(forge-pullreq open)      'forge-pullreq-open)
+               (`(forge-pullreq merged)    'forge-pullreq-merged)
+               (`(forge-pullreq rejected)  'forge-pullreq-rejected)))))))
+    (run-hook-wrapped 'forge-topic-wash-title-hook
+                      (lambda (fn) (prog1 nil (save-excursion (funcall fn)))))
+    (buffer-string)))
 
 (defun forge--format-topic-milestone (topic)
   (and-let* ((id (oref topic milestone))
@@ -1335,7 +1349,9 @@ This mode itself is never used directly."
    ["Actions"
     ("/f" forge-pull-this-topic)
     ("/b" forge-browse-this-topic)
-    ("/c" forge-checkout-this-pullreq)]]
+    ("/c" forge-checkout-this-pullreq)
+    ("/A" forge-approve-pullreq)
+    ("/R" forge-request-changes)]]
   [forge--lists-group
    ["Set                                         "
     ("-m" forge-topic-set-milestone)
@@ -1716,38 +1732,9 @@ alist, containing just `text' and `position'.")
 
 ;;; Bug-Reference
 
-(when (< emacs-major-version 28)
-  (defun bug-reference-fontify (start end)
-    "Apply bug reference overlays to region."
-    (save-excursion
-      (let ((beg-line (progn (goto-char start) (line-beginning-position)))
-            (end-line (progn (goto-char end) (line-end-position))))
-        ;; Remove old overlays.
-        (bug-reference-unfontify beg-line end-line)
-        (goto-char beg-line)
-        (while (and (< (point) end-line)
-                    (re-search-forward bug-reference-bug-regexp end-line 'move))
-          (when (and (or (not bug-reference-prog-mode)
-                         ;; This tests for both comment and string syntax.
-                         (nth 8 (syntax-ppss)))
-                     ;; This is the part where this redefinition differs
-                     ;; from the original defined in "bug-reference.el".
-                     (not (and (derived-mode-p 'magit-status-mode
-                                               'forge-notifications-mode)
-                               (= (match-beginning 0)
-                                  (line-beginning-position))))
-                     ;; End of additions.
-                     )
-            (let ((overlay (make-overlay (match-beginning 0) (match-end 0)
-                                         nil t nil)))
-              (overlay-put overlay 'category 'bug-reference)
-              ;; Don't put a link if format is undefined
-              (when bug-reference-url-format
-                (overlay-put overlay 'bug-reference-url
-                             (if (stringp bug-reference-url-format)
-                                 (format bug-reference-url-format
-                                         (match-string-no-properties 2))
-                               (funcall bug-reference-url-format)))))))))))
+(defvar forge-bug-reference-remote-files t
+  "Whether forge may enable `bug-reference-mode' in remote files.
+See also `forge-bug-reference-setup'.")
 
 (defun forge-bug-reference-setup ()
   "Setup `bug-reference' in the current buffer.
@@ -1756,38 +1743,27 @@ enable `bug-reference-mode' or `bug-reference-prog-mode' and
 modify `bug-reference-bug-regexp' if appropriate."
   (unless (or bug-reference-url-format
               (not (forge-db t))
+              (and buffer-file-name
+                   (not forge-bug-reference-remote-files)
+                   (file-remote-p buffer-file-name))
               ;; TODO Allow use in these modes again.
               (derived-mode-p 'forge-topics-mode 'forge-notifications-mode))
     (magit--with-safe-default-directory nil
       (when-let ((repo (forge-get-repository :tracked?)))
-        (if (>= emacs-major-version 28)
-            (when (derived-mode-p 'magit-status-mode
-                                  'forge-notifications-mode)
-              (setq-local
-               bug-reference-auto-setup-functions
-               (let ((hook bug-reference-auto-setup-functions))
-                 (list (lambda ()
-                         ;; HOOK is not allowed to be a lexical var:
-                         ;; (run-hook-with-args-until-success 'hook)
-                         (catch 'success
-                           (dolist (f hook)
-                             (when (funcall f)
-                               (setq bug-reference-bug-regexp
-                                     (concat "." bug-reference-bug-regexp))
-                               (throw 'success t)))))))))
-          (setq-local bug-reference-url-format
-                      (if (forge--childp repo 'forge-gitlab-repository)
-                          (lambda ()
-                            (forge--format repo
-                                           (if (equal (match-string 3) "#")
-                                               'issue-url-format
-                                             'pullreq-url-format)
-                                           `((?i . ,(match-string 2)))))
-                        (forge--format repo 'issue-url-format '((?i . "%s")))))
-          (setq-local bug-reference-bug-regexp
-                      (if (forge--childp repo 'forge-gitlab-repository)
-                          "\\(?3:[!#]\\)\\(?2:[0-9]+\\)"
-                        "#\\(?2:[0-9]+\\)")))
+        (when (derived-mode-p 'magit-status-mode
+                              'forge-notifications-mode)
+          (setq-local
+           bug-reference-auto-setup-functions
+           (let ((hook bug-reference-auto-setup-functions))
+             (list (lambda ()
+                     ;; HOOK is not allowed to be a lexical var:
+                     ;; (run-hook-with-args-until-success 'hook)
+                     (catch 'success
+                       (dolist (f hook)
+                         (when (funcall f)
+                           (setq bug-reference-bug-regexp
+                                 (concat "." bug-reference-bug-regexp))
+                           (throw 'success t)))))))))
         (if (derived-mode-p 'prog-mode)
             (bug-reference-prog-mode 1)
           (bug-reference-mode 1))

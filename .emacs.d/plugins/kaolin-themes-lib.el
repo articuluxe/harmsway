@@ -532,7 +532,10 @@
     (kaolin-blue    capri3)
     (kaolin-magenta magenta3)
     (kaolin-cyan    cyan3)
-    (kaolin-white   fg1))
+    (kaolin-white   fg1)
+
+    (verbatim-fg   (if kaolin-themes-distinct-verbatim adaptive-fg kaolin-blue))
+    (verbatim-bg   (if kaolin-themes-distinct-verbatim hl-bg 'unspecified)))
   )
 
 ;; Predefined Kaolin face specifications
@@ -620,7 +623,7 @@
     (custom-variable-tag            (:foreground var))
     (custom-variable-obsolete       (:inherit 'shadow))
     (widget-documentation           (:background 'unspecified :foreground var))
-    ;; (widget-button                  (:background nil :foreground keyword))
+    ;; (widget-button                  (:background 'unspecified :foreground keyword))
     (widget-button-pressed          (:background 'unspecified :foreground builtin))
     (widget-field                   (:background bg3 :foreground fg2 :box (:line-width 2 :color bg4 :style nil)))
     (widget-single-line-field       (:inherit 'widget-field))
@@ -709,9 +712,25 @@
     (diredfl-tagged-autofile-name   (:foreground num :underline underline))
     (diredfl-write-priv             (:foreground diff-mod))
 
-    ;; TODO: ERC - IRC client for Emacs
-    (erc-timestamp-face (:foreground num))
-    (erc-error-face     (:inherit 'font-lock-error-face))
+    ;; ERC - IRC client for Emacs (builtin)
+    (erc-button                 (:inherit 'button))
+    (erc-command-indicator-face (:foreground doc))
+    (erc-current-nick-face      (:foreground hl))
+    (erc-dangerous-host-name    (:inherit 'error))
+    (erc-default-face           (:inherit 'default))
+    (erc-direct-msg-face        (:foreground functions))
+    (erc-error-face             (:inherit 'error))
+    (erc-fool-face              (:inherit 'shadow))
+    (erc-header-line            (:inherit 'header-line))
+    (erc-input-face             (:foreground str))
+    (erc-inverse-face           (:inherit 'erc-default-face :inverse-video t))
+    (erc-my-nick-face           (:foreground str))
+    (erc-my-nick-prefix-face    (:inherit 'erc-my-nick-face))
+    (erc-nick-msg-face          (:foreground prep))
+    (erc-nick-prefix-face       (:inherit 'erc-nick-msg-face))
+    (erc-notice-face            (:foreground comment))
+    (erc-prompt-face            (:foreground prompt :weight 'bold))
+    (erc-timestamp-face         (:foreground num))
 
     ;; Jabber
     (jabber-activity-face          (:foreground todo   :weight 'bold))
@@ -1234,7 +1253,7 @@
     (font-latex-sectioning-3-face        (:foreground str))
     (font-latex-sectioning-4-face        (:foreground const))
     (font-latex-sectioning-5-face        (:foreground var))
-    (font-latex-verbatim-face         (:inherit 'fixed-pitch :foreground kaolin-blue))
+    (font-latex-verbatim-face            (:background verbatim-bg :foreground verbatim-fg))
 
     (TeX-error-description-tex-said (:inherit 'success :weight 'bold))
     (TeX-error-description-warning  (:inherit 'warning :weight 'bold))
@@ -1491,7 +1510,7 @@
     (org-date-selected             (:background bg4 :foreground hl :weight 'bold))
     (org-link                      (:inherit 'link))
     (org-code                      (:foreground amber3))
-    (org-verbatim                  (:foreground kaolin-blue))
+    (org-verbatim                  (:background verbatim-bg :foreground verbatim-fg))
     (org-hide                      (:foreground bg1))
     (org-drawer                    (:foreground functions))
     (org-special-keyword           (:foreground prep))

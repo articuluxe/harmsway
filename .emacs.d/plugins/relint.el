@@ -3,7 +3,7 @@
 ;; Copyright (C) 2019-2024 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 2.0
+;; Version: 2.1
 ;; Package-Requires: ((xr "2.0") (emacs "27.1"))
 ;; URL: https://github.com/mattiase/relint
 ;; Keywords: lisp, regexps
@@ -44,8 +44,8 @@ false positives, or `all', enabling all checks."
                  (const :tag "All checks" all)))
 
 (defface relint-buffer-highlight
-  '((t (:inherit highlight)))
-  "Face for highlight the string part warned about in the `*relint*' buffer."
+  '((t :inherit highlight))
+  "Face for highlighting the string part warned about in the `*relint*' buffer."
   :group 'relint)
 
 ;; FIXME: default to underline or reverse? Or `caret' if stdout is non-tty?
@@ -522,6 +522,8 @@ or (NAME val VAL), for values.")
 (defvar relint--eval-mutables nil
   "List of local variables mutable in the current evaluation context.")
 
+(eval-and-compile
+
 (defconst relint--safe-functions
   '(cons list append
     concat
@@ -567,13 +569,17 @@ or (NAME val VAL), for values.")
     sequencep vectorp arrayp type-of
     + - * / % mod 1+ 1- max min < <= = > >= /= abs expt sqrt
     ash lsh logand logior logxor lognot logb logcount
-    floor ceiling round truncate float)
+    floor ceiling round truncate float
+    cl--block-wrapper  ; alias for `identity'
+    )
   "Functions that are safe to call during evaluation.
 Except for altering the match state, these are side-effect-free
 and reasonably pure (some depend on variables in fairly uninteresting ways,
 like `case-fold-search').
 More functions could be added if there is evidence that it would
 help in evaluating more regexp strings.")
+
+)
 
 (defconst relint--safe-alternatives
   '((nconc    . append)
@@ -761,7 +767,7 @@ not be evaluated safely."
         form)
 
        ;; Functions considered safe.
-       ((memq head relint--safe-functions)
+       ((memq head (eval-when-compile relint--safe-functions))
         (let ((args (mapcar #'relint--eval body)))
           ;; Catching all errors isn't wonderful, but sometimes a global
           ;; variable argument has an unsuitable default value which is
@@ -857,26 +863,35 @@ not be evaluated safely."
         (let ((arg (relint--eval (car body))))
           (delete-dups (copy-sequence arg))))
 
+       ;; `cl-flet', `cl-flet*' and `cl-labels': these macroexpand their bodies
+       ;; eagerly which would be unsafe, so instead we transform them into
+       ;; `let' etc, as if it were a Lisp-1. Calls to local functions are then
+       ;; transformed as we encounter them.
+       ((memq head '(cl-flet cl-flet* cl-labels))
+        (let ((f (cdr (assq head '((cl-flet . let)
+                                   (cl-flet* . let*)
+                                   (cl-labels . letrec)))))
+              (bindings (mapcar (lambda (b)
+                                  (if (and (consp b)
+                                           (symbolp (car b))
+                                           (> (length b) 2))
+                                      `(,(car b)
+                                        (lambda ,(cadr b) ,@(cddr b)))
+                                    b))
+                                (car body))))
+          (relint--eval `(,f ,bindings ,@(cdr body)))))
+
        ;; Safe macros that expand to pure code, and their auxiliary macros.
-       ;; FIXME: Some of these aren't actually safe at all, since they
-       ;; may expand their arguments eagerly, running arbitrary code!
+       ;; FIXME: Is this safe?
        ((memq head '(when unless
                      \` backquote-list*
                      letrec
-                     cl-case cl-loop cl-block cl-flet cl-flet* cl-labels))
+                     cl-case cl-block cl-loop))
         (relint--eval
          ;; Suppress any warning message arising from macro-expansion;
          ;; it will just confuse the user and we can't give a good location.
          (let ((inhibit-message t))
            (macroexpand-1 form))))
-
-       ;; Expanding pcase can fail if it uses user-defined pcase macros.
-       ((memq head '(pcase pcase-let pcase-let* pcase--flip))
-        (relint--eval
-         (condition-case nil
-             (let ((inhibit-message t))
-               (macroexpand-1 form))
-           (error (throw 'relint-eval 'no-value)))))
 
        ;; catch: as long as nobody throws, this naïve code is fine.
        ((eq head 'catch)
@@ -885,10 +900,6 @@ not be evaluated safely."
        ;; condition-case: as long as there is no error...
        ((eq head 'condition-case)
         (relint--eval (cadr body)))
-
-       ;; cl--block-wrapper: works like identity, more or less.
-       ((eq head 'cl--block-wrapper)
-        (relint--eval (car body)))
 
        ;; Functions taking a function as first argument.
        ((memq head '(apply funcall mapconcat
@@ -1110,6 +1121,15 @@ not be evaluated safely."
         (relint--eval (cons (cdr (assq head relint--safe-cl-alternatives))
                             body)))
        
+       ;; Pretend that we are using a Lisp-1 for calls to functions that are
+       ;; locally bound, to make `cl-labels' etc work.  This should be good
+       ;; enough in practice.
+       ((assq head relint--locals)
+        (let ((fval (car-safe (cdr (assq head relint--locals)))))
+          (if (eq (car-safe fval) 'lambda)
+              (relint--eval `(funcall ,fval ,@body))
+            (throw 'relint-eval 'no-value))))
+
        (t
         (throw 'relint-eval 'no-value))))))
 
@@ -1207,7 +1227,7 @@ source."
        (dolist (arg args)
          (relint--eval-list-iter fun arg (cons i path))
          (setq i (1+ i)))))
-    (`(\` ,args)
+    (`(,'\` ,args)
      (when (consp args)
        (let ((i 0))
          (let ((p0 (cons 1 path)))
@@ -2677,8 +2697,9 @@ The keys are sorted numerically, in ascending order.")
       (setq default-directory base-dir))))
 
 (defun relint--finish (errors suppressed error-buffer quiet)
-  (let* ((msg (format "%d error%s%s"
-                      errors (if (= errors 1) "" "s")
+  (let* ((problems (- errors suppressed))
+         (msg (format "%d problem%s%s"
+                      problems (if (= problems 1) "" "s")
                       (if (zerop suppressed)
                           ""
                         (format " (%s suppressed)" suppressed)))))

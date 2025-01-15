@@ -1,6 +1,6 @@
 ;;; git-commit.el --- Edit Git commit messages  -*- lexical-binding:t; coding:utf-8 -*-
 
-;; Copyright (C) 2008-2024 The Magit Project Contributors
+;; Copyright (C) 2008-2025 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;;     Sebastian Wiesner <lunaryorn@gmail.com>
@@ -100,7 +100,9 @@
 
 ;;; Code:
 
+(require 'magit-git)
 (require 'magit-mode)
+(require 'magit-process)
 
 (require 'log-edit)
 (require 'ring)
@@ -649,8 +651,7 @@ the input isn't tacked to the comment."
 
 (defun git-commit-setup-changelog-support ()
   "Treat ChangeLog entries as unindented paragraphs."
-  (when (fboundp 'log-indent-fill-entry) ; New in Emacs 27.
-    (setq-local fill-paragraph-function #'log-indent-fill-entry))
+  (setq-local fill-paragraph-function #'log-edit-fill-entry)
   (setq-local fill-indent-according-to-mode t)
   (setq-local paragraph-start (concat paragraph-start "\\|\\*\\|(")))
 
@@ -739,7 +740,7 @@ conventions are checked."
 
 (defun git-commit-prev-message (arg)
   "Cycle backward through message history, after saving current message.
-With a numeric prefix ARG, go back ARG comments."
+With a numeric prefix ARG, go back ARG messages."
   (interactive "*p")
   (let ((len (ring-length log-edit-comment-ring)))
     (if (<= len 0)
@@ -767,7 +768,7 @@ With a numeric prefix ARG, go back ARG comments."
 
 (defun git-commit-next-message (arg)
   "Cycle forward through message history, after saving current message.
-With a numeric prefix ARG, go forward ARG comments."
+With a numeric prefix ARG, go forward ARG messages."
   (interactive "*p")
   (git-commit-prev-message (- arg)))
 

@@ -1,6 +1,6 @@
 ;;; casual-ibuffer-utils.el --- Casual IBuffer Utils -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024 Charles Choi
+;; Copyright (C) 2024-2025 Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -31,7 +31,7 @@
     (:next . '("↓" "Next"))
     (:jump . '("🚀" "Jump"))
     (:marked . '("❯" "Marked"))
-    (:group . '("[]" ""))
+    (:group . '("[]" "Group"))
     (:jumpgroup . '("🚀[]" "Jump to Group")))
 
   "Unicode symbol DB to use for IBuffer Transient menus.")

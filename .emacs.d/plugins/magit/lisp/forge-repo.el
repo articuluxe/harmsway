@@ -1,6 +1,6 @@
 ;;; forge-repo.el --- Repository support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -41,6 +41,7 @@
    (commit-url-format         :initform nil :allocation :class)
    (branch-url-format         :initform nil :allocation :class)
    (remote-url-format         :initform nil :allocation :class)
+   (blob-url-format           :initform nil :allocation :class)
    (create-issue-url-format   :initform nil :allocation :class)
    (create-pullreq-url-format :initform nil :allocation :class)
    (pullreq-refspec           :initform nil :allocation :class)
@@ -79,7 +80,8 @@
    (worktree                  :initform nil)
    (milestones                :closql-table milestone)
    (issues-until              :initform nil)
-   (pullreqs-until            :initform nil))
+   (pullreqs-until            :initform nil)
+   (teams                     :initform nil))
   :abstract t)
 
 (defclass forge-unusedapi-repository (forge-repository) () :abstract t)
@@ -303,6 +305,9 @@ an error."
       (and (derived-mode-p 'forge-repository-list-mode)
            (and-let* ((id (tabulated-list-get-id)))
              (forge-get-repository :id id)))
+      (and (derived-mode-p 'magit-repolist-mode)
+           (and-let* ((dir (tabulated-list-get-id)))
+             (forge-get-repository :dir dir)))
       (and demand (user-error "No repository at point"))))
 
 (defun forge--repo-for-thingatpt ()

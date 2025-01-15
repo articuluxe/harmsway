@@ -1,25 +1,25 @@
 ;;; forge.el --- Access Git forges from Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/magit/forge
 ;; Keywords: git tools vc
 
-;; Package-Version: 0.4.4
+;; Package-Version: 0.4.6
 ;; Package-Requires: (
-;;     (emacs "27.1")
-;;     (compat "30.0.0.0")
-;;     (closql "2.0.0")
+;;     (emacs "29.1")
+;;     (compat "30.0.1.0")
+;;     (closql "2.1.0")
 ;;     (dash "2.19.1")
-;;     (emacsql "4.0.3")
-;;     (ghub "4.1.1")
+;;     (emacsql "4.1.0")
+;;     (ghub "4.2.1-git")
 ;;     (let-alist "1.0.6")
-;;     (magit "4.1.1")
+;;     (magit "4.2.1-git")
 ;;     (markdown-mode "2.6")
 ;;     (seq "2.24")
-;;     (transient "0.7.6")
+;;     (transient "0.8.2")
 ;;     (yaml "0.5.5"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -64,6 +64,7 @@
 (require 'forge-revnote)
 (require 'forge-notify)
 
+(require 'forge-forgejo)
 (require 'forge-github)
 (require 'forge-gitlab)
 (require 'forge-gitea)
@@ -108,6 +109,11 @@ is loaded, then `magit-mode-map' ends up being modified anyway.")
                 #'forge-copy-url-at-point-as-kill)))
 
 ;;;###autoload
+(with-eval-after-load 'magit-repos
+  (when forge-add-default-bindings
+    (keymap-set magit-repolist-mode-map "N" #'forge-dispatch)))
+
+;;;###autoload
 (with-eval-after-load 'git-commit
   (when forge-add-default-bindings
     (keymap-set git-commit-mode-map "C-c C-v" #'forge-visit-topic)))
@@ -133,6 +139,8 @@ is loaded, then `magit-mode-map' ends up being modified anyway.")
   (transient-suffix-put 'magit-remote 'magit-update-default-branch :key "b u")
   (transient-append-suffix 'magit-remote "b u"
     '("b r" "Rename default branch" forge-rename-default-branch))
+  (transient-append-suffix 'magit-remote "b u"
+    '("b s" "Set default branch" forge-set-default-branch))
 
   (transient-append-suffix 'magit-worktree "c"
     '("n" "pull-request worktree" forge-checkout-worktree))

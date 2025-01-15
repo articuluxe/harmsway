@@ -553,15 +553,14 @@ The order is reversed by calling as follows:
               (c-backward-token-2 1 nil))
          collect
          (cond
-          ((when-let (bounds (php--thing-at-point-bounds-of-string-at-point))
+          ((when-let* ((bounds (php--thing-at-point-bounds-of-string-at-point)))
              (prog1 (buffer-substring-no-properties (car bounds) (cdr bounds))
                (goto-char (car bounds)))))
           ((looking-at php-re-token-symbols)
            (prog1 (match-string-no-properties 0)
              (goto-char (match-beginning 0))))
-          (t
-             (buffer-substring-no-properties (point)
-                                             (save-excursion (php--c-end-of-token) (point))))))))))
+          ((buffer-substring-no-properties (point)
+                                           (save-excursion (php--c-end-of-token) (point))))))))))
 
 (defun php-get-pattern ()
   "Find the pattern we want to complete.
@@ -665,17 +664,15 @@ Currently there are `php-mode' and `php-ts-mode'."
 (defun php-current-class ()
   "Insert current class name if cursor in class context."
   (interactive)
-  (let ((matched (php-get-current-element php--re-classlike-pattern)))
-    (when matched
-      (insert (concat matched php-class-suffix-when-insert)))))
+  (when-let* ((matched (php-get-current-element php--re-classlike-pattern)))
+    (insert (concat matched php-class-suffix-when-insert))))
 
 ;;;###autoload
 (defun php-current-namespace ()
   "Insert current namespace if cursor in namespace context."
   (interactive)
-  (let ((matched (php-get-current-element php--re-namespace-pattern)))
-    (when matched
-      (insert (concat matched php-namespace-suffix-when-insert)))))
+  (when-let* ((matched (php-get-current-element php--re-namespace-pattern)))
+    (insert (concat matched php-namespace-suffix-when-insert))))
 
 ;;;###autoload
 (defun php-copyit-fqsen ()

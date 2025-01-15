@@ -1,6 +1,6 @@
 ;;; ghub-graphql.el --- Access Github API using GrapthQL  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2016-2024 Jonas Bernoulli
+;; Copyright (C) 2016-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.ghub@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/magit/ghub
@@ -27,12 +27,6 @@
 (require 'gsexp)
 (require 'treepy)
 
-;; Needed for Emacs < 27.
-(eval-when-compile (require 'json))
-(declare-function json-read-from-string "json" (string))
-(declare-function json-encode "json" (object))
-
-(eval-when-compile (require 'pp)) ; Needed for Emacs < 29.
 (eval-when-compile (require 'subr-x))
 
 ;;; Api
@@ -204,7 +198,8 @@ behave as for `ghub-request' (which see)."
                                 updatedAt
                                 body)
                      (labels    [(:edges t)]
-                                id)))))
+                                id))
+     (owner "... on Organization { " (teams [(:edges t)] combinedSlug) " }\n"))))
 
 (defconst ghub-fetch-repository-review-threads
   '(query
@@ -453,17 +448,13 @@ See Info node `(ghub)GraphQL Support'."
               (cl-return node))
           (setq loc (treepy-next loc)))))))
 
-(cl-defun ghub--graphql-handle-response (status req &optional (buffer nil sbuf))
-  (let ((buf (if sbuf
-                 (and (buffer-live-p buffer) buffer)
-               (and status (current-buffer)))))
+(defun ghub--graphql-handle-response (status req)
+  (let ((buf (current-buffer)))
     (unwind-protect
-        (save-current-buffer
-          (when buf
-            (set-buffer buf)
-            (set-buffer-multibyte t))
-          (let* ((headers (and buf (ghub--handle-response-headers status req)))
-                 (payload (and buf (ghub--handle-response-payload req)))
+        (progn
+          (set-buffer-multibyte t)
+          (let* ((headers (ghub--handle-response-headers status req))
+                 (payload (ghub--handle-response-payload req))
                  (payload (ghub--handle-response-error status payload req))
                  (err     (plist-get status :error))
                  (errors  (cdr (assq 'errors payload)))
@@ -611,7 +602,6 @@ See Info node `(ghub)GraphQL Support'."
         (force-mode-line-update t)))))
 
 (defun ghub--graphql-pp-response (data)
-  (require 'pp) ; needed for Emacs < 29.
   (pp-display-expression data "*Pp Eval Output*"))
 
 ;;; _

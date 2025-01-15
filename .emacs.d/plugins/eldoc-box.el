@@ -66,9 +66,12 @@
 ;;; Code:
 
 (eval-when-compile
-  (require 'cl-lib)
-  (require 'pcase)
-  (require 'seq))
+  (require 'pcase))
+
+(require 'cl-lib)
+(require 'seq)
+;; For ‘eldoc-doc-buffer-separator’.
+(require 'eldoc)
 
 ;;;; Userland
 ;;;;; Variable
@@ -118,7 +121,9 @@ sources, this separator is used to separate documentation from
 different sources.
 
 This separator is used for the documentation shown in
-‘eldoc-box-bover-mode’ but not ‘eldoc-box-help-at-point’."
+‘eldoc-box-bover-mode’ but not ‘eldoc-box-help-at-point’.
+‘eldoc-box-help-at-point’ just shows Eldoc doc buffer, which uses
+‘eldoc-doc-buffer-separator’."
   :type 'string)
 
 (defvar eldoc-box-frame-parameters
@@ -206,6 +211,12 @@ calls this function to setup the buffer.
 This is a buffer-local variable, and eldoc-box takes the value of this
 variable from the origin buffer, and runs it in the doc buffer. This
 allows different major modes to run different setup functions.")
+
+(defvar eldoc-box-buffer-setup-hook nil
+  "Hooks that runs in the doc buffer before ‘eldoc-box-buffer-hook’.
+
+Functions in this hook are also passed the original buffer as the sole
+argument.")
 
 (defvar eldoc-box-buffer-hook '(eldoc-box--prettify-markdown-separator
                                 eldoc-box--replace-en-space
@@ -327,10 +338,11 @@ For DOCS, see ‘eldoc-display-functions’."
     (let ((eldoc-box-position-function
            eldoc-box-at-point-position-function))
       (eldoc-box--display
-       (string-join (mapcar #'car docs)
-                    (concat "\n"
-                            (or eldoc-doc-buffer-separator "---")
-                            "\n"))))))
+       (string-join
+        (mapcar #'car docs)
+        (concat "\n"
+                (or (bound-and-true-p eldoc-doc-buffer-separator) "---")
+                "\n"))))))
 
 ;;;###autoload
 (defun eldoc-box-help-at-point ()
@@ -361,7 +373,7 @@ For DOCS, see ‘eldoc-display-functions’."
 ;; Please compiler.
 (defvar eldoc-box-hover-mode)
 
-(defun eldoc-box-buffer-setup (_orig-buffer)
+(defun eldoc-box-buffer-setup (orig-buffer)
   "Setup the doc buffer."
   (setq mode-line-format nil)
   (setq header-line-format nil)
@@ -376,6 +388,7 @@ For DOCS, see ‘eldoc-display-functions’."
   (buffer-face-set 'eldoc-box-body)
   (setq eldoc-box-hover-mode t)
   (visual-line-mode)
+  (run-hook-with-args 'eldoc-box-buffer-setup-hook orig-buffer)
   (run-hook-with-args 'eldoc-box-buffer-hook))
 
 (defun eldoc-box--display (str)
@@ -894,6 +907,82 @@ This allows any change in childframe parameter to take effect."
 
 (with-eval-after-load 'tab-line
   (add-hook 'tab-line-mode-hook #'eldoc-box-reset-frame))
+
+;;;; Prettify Typescript error message
+
+(defun eldoc-box-prettify-ts-errors (orig-buffer)
+  "Quick-and-dirty prettification for Typescript errors.
+
+ORIG-BUFFER is used to get the Typescript major mode for fontification
+and indentation.
+
+The ‘noErrorTruncation’ compiler option must be set to true, otherwise
+the compiler truncates the types and formatting wouldn’t work."
+  (goto-char (point-min))
+  (let ((workbuf (get-buffer-create " *eldoc-box--prettify-ts-errors*"))
+        type-text
+        fontified-type
+        multi-line)
+    (with-current-buffer workbuf
+      (funcall (buffer-local-value orig-buffer 'major-mode)))
+    ;; 1. Prettify types.
+    (while (re-search-forward
+            ;; Typescript uses doble quotes for literal unions like
+            ;; type A = "A" | "AA", so we don’t need to worry about
+            ;; single quotes in the type.
+            (rx (or "Type" "type") " "
+                (group "'" (group (+? anychar)) "'"))
+            nil t)
+      (save-match-data
+        (setq type-text (match-string 2))
+        (setq fontified-type
+              (with-current-buffer workbuf
+                (erase-buffer)
+                (insert "type A = ")
+                (insert type-text)
+
+                (goto-char (point-min))
+                (while (re-search-forward (rx (or "{" ";")) nil t)
+                  (insert "\n"))
+                (goto-char (point-min))
+                (while (search-forward "|" nil t)
+                  (when (equal "}" (char-before (max (point-min) (- (point) 2))))
+                    (replace-match "\n|")))
+                (indent-region (point-min) (point-max))
+
+                (font-lock-fontify-region (point-min) (point-max))
+                ;; Make sure the type are in monospace font.
+                (font-lock-append-text-property
+                 (point-min) (point-max)
+                 'face `(:family ,(face-attribute 'fixed-pitch :family)))
+
+                ;; Don’t include the "type A = " we inserted earlier.
+                (string-trim
+                 (buffer-substring (+ (point-min) 9) (point-max)))))
+        (setq multi-line (string-search "\n" fontified-type))
+        ;; Indent and add newline at the beginning and the end.
+        (when multi-line
+          (setq fontified-type
+                (concat "\n"
+                        (mapconcat (lambda (line)
+                                     (concat "  " line))
+                                   (string-split fontified-type "\n")
+                                   "\n")
+                        "\n"))))
+      (if (not multi-line)
+          (replace-match fontified-type nil nil nil 2)
+        (replace-match fontified-type nil nil nil 1)
+        ;; Remove the first whitespace on the next line after the
+        ;; multi-line type.
+        (delete-char 1)))
+    ;; 2. Prettify properties.
+    (goto-char (point-min))
+    (while (re-search-forward
+            (rx (or "Property" "property") " "
+                (group "'" (group (+? anychar)) "'"))
+            nil t)
+      (put-text-property (match-beginning 2) (match-end 2)
+                         'face 'font-lock-property-name-face))))
 
 (provide 'eldoc-box)
 

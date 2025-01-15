@@ -1,6 +1,6 @@
 ;;; casual-calc-utils.el --- Casual Calc Utils       -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Charles Choi
+;; Copyright (C) 2024-2025  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -35,7 +35,7 @@
     (:power . '("𝑦ˣ" "y^x"))
     (:abs . '("|𝑥|" "|x|"))
     (:factorial . '(" !" "!"))
-    (:percent . '(" ٪" "%"))
+    (:percent . '("%" "%"))
     (:percent-change . '(" Δ%" "% change"))
     (:pi . '("𝜋" "pi"))
     (:e . '("𝑒" "e"))
@@ -112,6 +112,16 @@ plain ASCII-range string."
   (interactive)
   (call-interactively #'calc-edit))
 
+(transient-define-suffix casual-calc-roll-down ()
+  "Roll stack down.
+
+Invokes command `calc-roll-down'."
+  :transient t
+  :key "TAB"
+  :description "Roll↓"
+  (interactive)
+  (call-interactively #'calc-roll-down))
+
 (defconst casual-calc-operators-group
   ["Operators"
     ("+" "add" casual-calc--plus :transient t)
@@ -141,9 +151,32 @@ plain ASCII-range string."
           (casual-lib-quit-one)
           (casual-calc-algebraic-entry)
           (casual-calc-enter)
+          (casual-calc-roll-down)
           (casual-calc-pop)
           (casual-calc-undo-suffix)
           (casual-lib-quit-all)])
+
+(defun casual-calc--percent-of ()
+  "Apply percentage at top of stack (1:) to value above it (2:).
+
+Given an example stack:
+
+    2: a
+    1: b
+
+Executing this function will leave the resultant values on the
+stack:
+
+    2: a
+    1: a * b%
+
+The result in (1:) can then be added or subtracted from (2:)."
+  (interactive)
+  (calc-percent)
+  (calc-roll-up 2)
+  (calc-enter 1)
+  (calc-roll-up 3)
+  (calc-times 2))
 
 (provide 'casual-calc-utils)
 ;;; casual-calc-utils.el ends here

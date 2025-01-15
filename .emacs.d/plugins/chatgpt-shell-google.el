@@ -30,6 +30,8 @@
 (require 'shell-maker)
 (require 'map)
 
+(defvar chatgpt-shell-proxy)
+
 (defcustom chatgpt-shell-google-key nil
   "Google API key as a string or a function that loads and returns it."
   :type '(choice (function :tag "Function")
@@ -88,11 +90,26 @@ VALIDATE-COMMAND handler."
                                          :path "/v1beta/models/gemini-1.5-pro-latest"
                                          :token-width 4
                                          :context-window 2097152)
-        (chatgpt-shell-google-make-model :version "gemini-1.5-flash"
-                                         :short-version "1.5-flash"
-                                         :path "/v1beta/models/gemini-1.5-flash"
+        (chatgpt-shell-google-make-model :version "gemini-exp-1206"
+                                         :short-version "exp-1206"
+                                         :path "/v1beta/models/gemini-exp-1206"
                                          :token-width 4
-                                         :context-window 1048576)))
+                                         :context-window 2097152)
+        (chatgpt-shell-google-make-model :version "gemini-1.5-flash-latest"
+                                         :short-version "1.5-flash-latest"
+                                         :path "/v1beta/models/gemini-1.5-flash-latest"
+                                         :token-width 4
+                                         :context-window 1048576)
+        (chatgpt-shell-google-make-model :version "gemini-2.0-flash-exp"
+                                         :short-version "2.0-flash-exp"
+                                         :path "/v1beta/models/gemini-2.0-flash-exp"
+                                         :token-width 4
+                                         :context-window 1048576)
+        (chatgpt-shell-google-make-model :version "gemini-2.0-flash-thinking-exp-1219"
+                                         :short-version "2.0-flash-thinking-exp"
+                                         :path "/v1beta/models/gemini-2.0-flash-thinking-exp-1219"
+                                         :token-width 4
+                                         :context-window 32767)))
 
 (defun chatgpt-shell-google--validate-command (_command _model _settings)
   "Return error string if command/setup isn't valid."
@@ -151,6 +168,7 @@ or
    :async t
    :url (chatgpt-shell-google--make-url :model model
                                         :settings settings)
+   :proxy chatgpt-shell-proxy
    :data (chatgpt-shell-google--make-gemini-payload
           :prompt command
           :context context
@@ -211,7 +229,7 @@ For example:
                                          (let-alist choice
                                            (or .delta.content
                                                .message.content)))
-                                       .choices)))))
+                                       .choices "")))))
       response
     (if-let ((chunks (shell-maker--split-text raw-response)))
       (let ((response)

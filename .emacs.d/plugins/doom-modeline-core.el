@@ -123,6 +123,16 @@ displayed. It can be an integer or a float number. nil means no limit."
                  (const :tag "Disable" nil))
   :group 'doom-modeline)
 
+(defcustom doom-modeline-spc-face-overrides nil
+  "Property list of face attributes for whitespace in the modeline.
+
+These face attributes override any attributes for spacing produced by
+`doom-modeline-spc', `doom-modeline-wspc', and `doom-modeline-vspc'.
+
+See `defface' for possible attributes and values in this property list."
+  :type 'plist
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-project-detection 'auto
   "How to detect the project root.
 
@@ -1342,16 +1352,16 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 
 (defsubst doom-modeline-spc ()
   "Whitespace."
-  (propertize " " 'face (doom-modeline-face)))
+  (propertize " " 'face (doom-modeline-spc-face)))
 
 (defsubst doom-modeline-wspc ()
   "Wide Whitespace."
-  (propertize "  " 'face (doom-modeline-face)))
+  (propertize "  " 'face (doom-modeline-spc-face)))
 
 (defsubst doom-modeline-vspc ()
   "Thin whitespace."
   (propertize " "
-              'face (doom-modeline-face)
+              'face (doom-modeline-spc-face)
               'display '((space :relative-width 0.5))))
 
 (defun doom-modeline-face (&optional face inactive-face)
@@ -1364,6 +1374,12 @@ If INACTIVE-FACE is nil, `mode-line-inactive' face will be used."
           '(:inherit (doom-modeline mode-line)))
     (or (and (facep inactive-face) `(:inherit (doom-modeline ,inactive-face)))
         '(:inherit (doom-modeline mode-line-inactive)))))
+
+(defun doom-modeline-spc-face ()
+  "Apply `doom-modeline-spc-face-overrides' to `doom-modeline-face'."
+  (append
+   `(:inherit ,(doom-modeline-face))
+   doom-modeline-spc-face-overrides))
 
 (defun doom-modeline-string-pixel-width (str)
   "Return the width of STR in pixels."
@@ -1459,10 +1475,11 @@ ARGS is same as `nerd-icons-octicon' and others."
 
 (defun doom-modeline-display-text (text)
   "Display TEXT in mode-line."
-  (if (doom-modeline--active)
-      text
-    (propertize text 'face `(:inherit (mode-line-inactive
-                                       ,(get-text-property 0 'face text))))))
+  (let ((text (string-replace "%" "%%" text)))
+    (if (doom-modeline--active)
+        text
+      (propertize text 'face `(:inherit (mode-line-inactive
+                                         ,(get-text-property 0 'face text)))))))
 
 (defun doom-modeline-vcs-name ()
   "Display the vcs name."
@@ -1598,7 +1615,7 @@ Return `default-directory' if no project was found."
             ('auto
              (if (doom-modeline-project-p)
                  (doom-modeline--buffer-file-name buffer-file-name buffer-file-truename 'shrink 'shrink 'hide)
-               (propertize "%b" 'face 'doom-modeline-buffer-file)))
+               (propertize (buffer-name) 'face 'doom-modeline-buffer-file)))
             ('truncate-upto-project
              (doom-modeline--buffer-file-name buffer-file-name buffer-file-truename 'shrink))
             ('truncate-from-project
@@ -1628,10 +1645,8 @@ Return `default-directory' if no project was found."
                      (propertize (file-name-nondirectory buffer-file-name)
                                  'face 'doom-modeline-buffer-file)))
             ((or 'buffer-name _)
-             (propertize "%b" 'face 'doom-modeline-buffer-file)))))
-    (propertize (if (string-empty-p file-name)
-                    (propertize "%b" 'face 'doom-modeline-buffer-file)
-                  file-name)
+             (propertize (buffer-name) 'face 'doom-modeline-buffer-file)))))
+    (propertize file-name
                 'mouse-face 'mode-line-highlight
                 'help-echo (concat buffer-file-truename
                                    (unless (string= (file-name-nondirectory buffer-file-truename)
@@ -1646,7 +1661,7 @@ Return `default-directory' if no project was found."
 If TRUNCATE-TAIL is t also truncate the parent directory of the file."
   (let ((dirs (shrink-path-prompt (file-name-directory true-file-path))))
     (if (null dirs)
-        (propertize "%b" 'face 'doom-modeline-buffer-file)
+        (propertize (buffer-name) 'face 'doom-modeline-buffer-file)
       (let ((dirname (car dirs))
             (basename (cdr dirs)))
         (concat (propertize (concat dirname
@@ -1662,7 +1677,7 @@ If TRUNCATE-TAIL is t also truncate the parent directory of the file."
 If INCLUDE-PROJECT is non-nil, the project path will be included."
   (let ((root (file-local-name (doom-modeline-project-root))))
     (if (null root)
-        (propertize "%b" 'face 'doom-modeline-buffer-file)
+        (propertize (buffer-name) 'face 'doom-modeline-buffer-file)
       (let ((relative-dirs (file-relative-name (file-name-directory true-file-path)
                                                (if include-project (concat root "../") root))))
         (and (equal "./" relative-dirs) (setq relative-dirs ""))

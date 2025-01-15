@@ -107,6 +107,8 @@
 (defvar symbol-overlay-temp-symbol)
 (defvar text-scale-mode-amount)
 (defvar tracking-buffers)
+(defvar visual-replace--calling-buffer)
+(defvar visual-replace--match-ovs)
 (defvar winum-auto-setup-mode-line)
 (defvar xah-fly-insert-state-p)
 
@@ -335,7 +337,7 @@ Uses `nerd-icons-mdicon' to fetch the icon."
           (save-match-data
             (if buffer-file-name
                 (doom-modeline-buffer-file-name)
-              (propertize "%b"
+              (propertize (buffer-name)
                           'face 'doom-modeline-buffer-file
                           'mouse-face 'doom-modeline-highlight
                           'help-echo "Buffer name
@@ -398,7 +400,7 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
 
 (defsubst doom-modeline--buffer-simple-name ()
   "The buffer simple name."
-  (propertize "%b"
+  (propertize (buffer-name)
               'face (doom-modeline-face
                      (if (and doom-modeline-highlight-modified-buffer-name
                               (buffer-modified-p))
@@ -1192,6 +1194,25 @@ Requires `anzu', also `evil-anzu' if using `evil-mode' for compatibility with
               (format " %s/%d " here total))))
      'face (doom-modeline-face 'doom-modeline-panel))))
 
+(defsubst doom-modeline--visual-replace ()
+  "Show the match index and total number of `visual-replace'.
+It respects `visual-replace-display-total'."
+  (when (and (bound-and-true-p visual-replace--match-ovs)
+             (not (bound-and-true-p iedit-mode))
+             (fboundp 'visual-replace--preview-is-complete)
+             (visual-replace--preview-is-complete))
+    (propertize
+     (let ((total (length visual-replace--match-ovs)))
+       (format " %s "
+               (if-let* ((ov
+                          (seq-find
+                           (lambda (ov) (overlay-get ov 'visual-replace-idx))
+                           (with-current-buffer visual-replace--calling-buffer
+                             (overlays-at (point))))))
+                   (format "%d/%d" (1+ (overlay-get ov 'visual-replace-idx)) total)
+                 (number-to-string total))))
+     'face (doom-modeline-face 'doom-modeline-panel))))
+
 (defsubst doom-modeline--evil-substitute ()
   "Show number of matches for `evil-ex' in real time.
 The number of matches contains substitutions and highlightings."
@@ -1318,6 +1339,7 @@ regions, 5. The current/total for the highlight term (with `symbol-overlay'),
 6. The number of active `multiple-cursors'."
   (let ((meta (concat (doom-modeline--macro-recording)
                       (doom-modeline--anzu)
+                      (doom-modeline--visual-replace)
                       (doom-modeline--phi-search)
                       (doom-modeline--evil-substitute)
                       (doom-modeline--iedit)
@@ -1598,9 +1620,8 @@ Requires `eyebrowse-mode' to be enabled or `tab-bar-mode' tabs to be created."
                         (explicit-name (alist-get 'explicit-name current-tab))
                         (tab-name (alist-get 'name current-tab)))
                    (if explicit-name tab-name (+ 1 tab-index)))))))
-      (unless (string-empty-p name)
-        (propertize (format " %s " name)
-                    'face (doom-modeline-face 'doom-modeline-workspace-name))))))
+      (propertize (format " %s " name)
+                  'face (doom-modeline-face 'doom-modeline-workspace-name)))))
 
 
 ;;
@@ -1664,8 +1685,7 @@ mouse-2: Show help for minor mode"
 By default, this shows the information specified by `global-mode-string'."
   (when (or doom-modeline-display-misc-in-all-mode-lines
             (doom-modeline--segment-visible 'misc-info))
-    (doom-modeline-display-text
-     (string-replace "%" "%%" (format-mode-line mode-line-misc-info)))))
+    (doom-modeline-display-text (format-mode-line mode-line-misc-info))))
 
 
 ;;

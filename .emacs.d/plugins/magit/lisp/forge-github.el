@@ -1,6 +1,6 @@
 ;;; forge-github.el --- Github support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -40,6 +40,7 @@
    (commit-url-format         :initform "https://%h/%o/%n/commit/%r")
    (branch-url-format         :initform "https://%h/%o/%n/commits/%r")
    (remote-url-format         :initform "https://%h/%o/%n")
+   (blob-url-format           :initform "https://%h/%o/%n/blob/%r/%f")
    (create-issue-url-format   :initform "https://%h/%o/%n/issues/new")
    (create-pullreq-url-format :initform "https://%h/%o/%n/compare")
    (pullreq-refspec           :initform "+refs/pull/*/head:refs/pullreqs/*")))
@@ -103,7 +104,8 @@
     (oset repo issues-p       .hasIssuesEnabled)
     (oset repo wiki-p         .hasWikiEnabled)
     (oset repo stars          .stargazers.totalCount)
-    (oset repo watchers       .watchers.totalCount)))
+    (oset repo watchers       .watchers.totalCount)
+    (oset repo teams          (mapcar #'cdar .owner.teams))))
 
 (cl-defmethod forge--update-revnotes ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
@@ -647,6 +649,22 @@
     :callback  (forge--post-submit-callback)
     :errorback (forge--post-submit-errorback)))
 
+(cl-defmethod forge--submit-approve-pullreq ((_ forge-github-repository) repo)
+  (let ((body (magit--buffer-string nil nil t)))
+    (forge--ghub-post repo "/repos/:owner/:repo/pulls/:number/reviews"
+      `((event . "APPROVE")
+        ,@(and (not (equal body "")) `((body . ,body))))
+      :callback  (forge--post-submit-callback)
+      :errorback (forge--post-submit-errorback))))
+
+(cl-defmethod forge--submit-request-changes ((_ forge-github-repository) repo)
+  (let ((body (magit--buffer-string nil nil t)))
+    (forge--ghub-post repo "/repos/:owner/:repo/pulls/:number/reviews"
+      `((event . "REQUEST_CHANGES")
+        ,@(and (not (equal body "")) `((body . ,body))))
+      :callback  (forge--post-submit-callback)
+      :errorback (forge--post-submit-errorback))))
+
 (cl-defmethod forge--set-topic-title
   ((_repo forge-github-repository) topic title)
   (forge--ghub-patch topic
@@ -725,15 +743,27 @@
   (let ((value (mapcar #'cadr (oref topic review-requests))))
     ;; FIXME Only refresh once.
     (when-let ((add (cl-set-difference reviewers value :test #'equal)))
-      (forge--ghub-post topic
-        "/repos/:owner/:repo/pulls/:number/requested_reviewers"
-        `((reviewers . ,add))
-        :callback (forge--set-field-callback topic)))
+      (let (users teams)
+        (dolist (reviewer add)
+          (if (string-match "/" reviewer)
+              (push (substring reviewer (match-end 0)) teams)
+            (push reviewer users)))
+        (forge--ghub-post topic
+          "/repos/:owner/:repo/pulls/:number/requested_reviewers"
+          `(,@(and users `((reviewers      . ,users)))
+            ,@(and teams `((team_reviewers . ,teams))))
+          :callback (forge--set-field-callback topic))))
     (when-let ((remove (cl-set-difference value reviewers :test #'equal)))
-      (forge--ghub-delete topic
-        "/repos/:owner/:repo/pulls/:number/requested_reviewers"
-        `((reviewers . ,remove))
-        :callback (forge--set-field-callback topic)))))
+      (let (users teams)
+        (dolist (reviewer remove)
+          (if (string-match "/" reviewer)
+              (push (substring reviewer (match-end 0)) teams)
+            (push reviewer users)))
+        (forge--ghub-delete topic
+          "/repos/:owner/:repo/pulls/:number/requested_reviewers"
+          `(,@(and users `((reviewers      . ,users)))
+            ,@(and teams `((team_reviewers . ,teams))))
+          :callback (forge--set-field-callback topic))))))
 
 (cl-defmethod forge--delete-comment
   ((_repo forge-github-repository) post)
@@ -774,16 +804,26 @@
         ;; so Forge doesn't support them either.
         ))))
 
-(cl-defmethod forge--set-default-branch ((repo forge-github-repository)
-                                         newname oldname)
+(cl-defmethod forge--set-default-branch ((repo forge-github-repository) branch)
+  (forge--ghub-patch repo
+    "/repos/:owner/:repo"
+    `((default_branch . ,branch)))
+  (message "Waiting 5 seconds for GitHub to complete update...")
+  (sleep-for 5)
+  (message "Waiting 5 seconds for GitHub to complete update...done")
+  (let ((remote (oref repo remote)))
+    (magit-call-git "fetch" "--prune" remote)
+    (magit-call-git "remote" "set-head" "--auto" remote)))
+
+(cl-defmethod forge--rename-branch ((repo forge-github-repository)
+                                    newname oldname)
   (forge--ghub-post repo
     (format "/repos/:owner/:name/branches/%s/rename" oldname)
     `((new_name . ,newname)))
   (message "Waiting 5 seconds for GitHub to complete rename...")
   (sleep-for 5)
   (message "Waiting 5 seconds for GitHub to complete rename...done")
-  (magit-call-git "fetch" "--prune" (oref repo remote))
-  (magit--set-default-branch newname oldname))
+  (magit-call-git "fetch" "--prune" (oref repo remote)))
 
 (cl-defmethod forge--fork-repository ((repo forge-github-repository) fork)
   (with-slots (owner name) repo

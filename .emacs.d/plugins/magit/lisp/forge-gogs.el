@@ -1,6 +1,6 @@
 ;;; forge-gogs.el --- Gogs support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -37,6 +37,7 @@
    (commit-url-format         :initform "https://%h/%o/%n/commit/%r")
    (branch-url-format         :initform "https://%h/%o/%n/commits/%r")
    (remote-url-format         :initform "https://%h/%o/%n")
+   (blob-url-format           :initform "https://%h/%o/%n/src/%r/%f")
    (create-issue-url-format   :initform "https://%h/%o/%n/issues/new")
    (create-pullreq-url-format :initform "https://%h/%o/%n/pulls") ; sic
    (pullreq-refspec :initform "+refs/pull/*/head:refs/pullreqs/*")))

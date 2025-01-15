@@ -1,6 +1,6 @@
 ;;; forge-issue.el --- Issue support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -153,9 +153,10 @@ an error."
 
 (put 'forge-issue 'thing-at-point #'forge-thingatpt--issue)
 (defun forge-thingatpt--issue ()
-  (and-let* ((repo (forge--repo-for-thingatpt)))
-    (and (thing-at-point-looking-at "#\\([0-9]+\\)\\_>")
-         (forge-get-issue repo (string-to-number (match-string 1))))))
+  (and-let* (((thing-at-point-looking-at "#\\([0-9]+\\)\\_>"))
+             (number (string-to-number (match-string 1)))
+             (repo (forge--repo-for-thingatpt)))
+    (forge-get-issue repo number)))
 
 ;;; Read
 

@@ -327,7 +327,8 @@ the same as using the command `modus-themes-select'."
   :version "31.1"
   :group 'modus-themes)
 
-(defvaralias 'modus-themes-post-load-hook 'modus-themes-after-load-theme-hook)
+(defvaralias 'modus-themes-post-load-hook 'modus-themes-after-load-theme-hook
+  "Alias for `modus-themes-after-load-theme-hook'.")
 
 (defcustom modus-themes-after-load-theme-hook nil
   "Hook that runs after loading a Modus theme.
@@ -1209,15 +1210,15 @@ symbol, which is safe when used as a face attribute's value."
   "Render `modus-themes--list-known-themes' as completion with theme category."
   (modus-themes--completion-table 'theme (modus-themes--list-known-themes)))
 
-(defun modus-themes--select-prompt ()
-  "Minibuffer prompt to select a Modus theme."
+(defun modus-themes--select-prompt (&optional prompt)
+  "Minibuffer prompt to select a Modus theme.
+With optional PROMPT string, use it.  Else use a generic prompt."
   (let ((completion-extra-properties `(:annotation-function ,#'modus-themes--annotate-theme)))
     (intern
      (completing-read
-      "Select Modus theme: "
+      (or prompt "Select Modus theme: ")
       (modus-themes--completion-table-candidates)
-      nil t nil
-      'modus-themes--select-theme-history))))
+      nil t nil 'modus-themes--select-theme-history))))
 
 ;;;###autoload
 (defun modus-themes-select (theme)
@@ -1231,13 +1232,13 @@ Disable other themes per `modus-themes-disable-other-themes'."
 
 (defun modus-themes--toggle-theme-p ()
   "Return non-nil if `modus-themes-to-toggle' are valid."
-  (mapc
-   (lambda (theme)
-     (if (or (memq theme modus-themes-items)
-             (memq theme (modus-themes--list-known-themes)))
-         theme
-       (user-error "`%s' is not part of `modus-themes-items'" theme)))
-   modus-themes-to-toggle))
+  (condition-case nil
+      (dolist (theme modus-themes-to-toggle)
+        (or (memq theme modus-themes-items)
+            (memq theme (modus-themes--list-known-themes))
+            (error "`%s' is not part of `modus-themes-items'" theme)))
+    (error nil)
+    (:success modus-themes-to-toggle)))
 
 ;;;###autoload
 (defun modus-themes-toggle ()
@@ -1339,7 +1340,13 @@ PALETTE is the value of a variable like `modus-operandi-palette'."
   "Preview the palette of the Modus THEME of choice.
 With optional prefix argument for MAPPINGS preview only the semantic
 color mappings instead of the complete palette."
-  (interactive (list (modus-themes--select-prompt) current-prefix-arg))
+  (interactive
+   (let ((prompt (if current-prefix-arg
+                     "Preview palette mappings of THEME: "
+                   "Preview palette of THEME: ")))
+     (list
+      (modus-themes--select-prompt prompt)
+      current-prefix-arg)))
   (let ((buffer (get-buffer-create (format (if mappings "*%s-list-mappings*" "*%s-list-all*") theme))))
     (with-current-buffer buffer
       (let ((modus-themes-current-preview theme)
@@ -1843,6 +1850,7 @@ FG and BG are the main colors."
     `(TeX-error-description-warning ((,c :inherit warning)))
 ;;;;; auto-dim-other-buffers
     `(auto-dim-other-buffers-face ((,c :background ,bg-inactive)))
+    `(auto-dim-other-buffers-hide-face ((,c :foreground ,bg-inactive :background ,bg-inactive)))
 ;;;;; avy
     `(avy-background-face ((,c :background ,bg-dim :foreground ,fg-dim :extend t)))
     `(avy-goto-char-timer-face ((,c :inherit bold :background ,bg-active)))
@@ -2695,8 +2703,8 @@ FG and BG are the main colors."
     `(ido-incomplete-regexp ((,c :inherit error)))
     `(ido-indicator ((,c :inherit bold)))
     `(ido-only-match ((,c :inherit ido-first-match)))
-    `(ido-subdir ((,c :foreground ,accent-0)))
-    `(ido-virtual ((,c :foreground ,accent-1)))
+    `(ido-subdir ((,c :foreground ,keyword)))
+    `(ido-virtual ((,c :foreground ,warning)))
 ;;;;; iedit
     `(iedit-occurrence ((,c :inherit modus-themes-search-lazy)))
     `(iedit-read-only-occurrence ((,c :inherit modus-themes-search-current)))
@@ -2797,8 +2805,8 @@ FG and BG are the main colors."
     `(ivy-minibuffer-match-face-4 ((,c :inherit modus-themes-completion-match-2)))
     `(ivy-remote ((,c :inherit italic)))
     `(ivy-separator ((,c :inherit shadow)))
-    `(ivy-subdir ((,c :foreground ,accent-0)))
-    `(ivy-virtual ((,c :foreground ,accent-1)))
+    `(ivy-subdir ((,c :foreground ,keyword)))
+    `(ivy-virtual ((,c :foreground ,warning)))
 ;;;;; ivy-posframe
     `(ivy-posframe-border ((,c :background ,border)))
     `(ivy-posframe-cursor ((,c :background ,fg-main :foreground ,bg-main)))
@@ -3700,6 +3708,9 @@ FG and BG are the main colors."
     `(smerge-refined-changed (()))
     `(smerge-refined-removed ((,c :inherit diff-refine-removed)))
     `(smerge-upper ((,c :inherit diff-removed)))
+;;;;; spacious-padding
+    `(spacious-padding-subtle-mode-line-active ((,c :foreground ,keybind)))
+    `(spacious-padding-subtle-mode-line-inactive ((,c :foreground ,border)))
 ;;;;; speedbar
     `(speedbar-button-face ((,c :inherit button)))
     `(speedbar-directory-face ((,c :inherit bold :foreground ,accent-0)))
@@ -3990,20 +4001,24 @@ FG and BG are the main colors."
     `(vr/match-1 ((,c :inherit modus-themes-search-lazy)))
     `(vr/match-separator-face ((,c :inherit bold :background ,bg-active)))
 ;;;;; vterm
-    ;; NOTE 2023-08-10: `vterm-color-black' and `vterm-color-white'
-    ;; use the "bright" semantic color mappings to make sure they are
-    ;; distinct from `vterm-color-default'.
     `(vterm-color-black ((,c :background ,bg-term-black :foreground ,fg-term-black)))
-    `(vterm-color-blue ((,c :background ,bg-term-blue :foreground ,fg-term-blue)))
-    `(vterm-color-cyan ((,c :background ,bg-term-cyan :foreground ,fg-term-cyan)))
-    `(vterm-color-default ((,c :background ,bg-main :foreground ,fg-main)))
-    `(vterm-color-green ((,c :background ,bg-term-green :foreground ,fg-term-green)))
-    `(vterm-color-inverse-video ((,c :background ,bg-main :inverse-video t)))
-    `(vterm-color-magenta ((,c :background ,bg-term-magenta :foreground ,fg-term-magenta)))
+    `(vterm-color-bright-black ((,c :background ,bg-term-black-bright :foreground ,fg-term-black-bright)))
     `(vterm-color-red ((,c :background ,bg-term-red :foreground ,fg-term-red)))
-    `(vterm-color-underline ((,c :underline t)))
-    `(vterm-color-white ((,c :background ,bg-term-white :foreground ,fg-term-white)))
+    `(vterm-color-bright-red ((,c :background ,bg-term-red-bright :foreground ,fg-term-red-bright)))
+    `(vterm-color-green ((,c :background ,bg-term-green :foreground ,fg-term-green)))
+    `(vterm-color-bright-green ((,c :background ,bg-term-green-bright :foreground ,fg-term-green-bright)))
     `(vterm-color-yellow ((,c :background ,bg-term-yellow :foreground ,fg-term-yellow)))
+    `(vterm-color-bright-yellow ((,c :background ,bg-term-yellow-bright :foreground ,fg-term-yellow-bright)))
+    `(vterm-color-blue ((,c :background ,bg-term-blue :foreground ,fg-term-blue)))
+    `(vterm-color-bright-blue ((,c :background ,bg-term-blue-bright :foreground ,fg-term-blue-bright)))
+    `(vterm-color-magenta ((,c :background ,bg-term-magenta :foreground ,fg-term-magenta)))
+    `(vterm-color-bright-magenta ((,c :background ,bg-term-magenta-bright :foreground ,fg-term-magenta-bright)))
+    `(vterm-color-cyan ((,c :background ,bg-term-cyan :foreground ,fg-term-cyan)))
+    `(vterm-color-bright-cyan ((,c :background ,bg-term-cyan-bright :foreground ,fg-term-cyan-bright)))
+    `(vterm-color-white ((,c :background ,bg-term-white :foreground ,fg-term-white)))
+    `(vterm-color-bright-white ((,c :background ,bg-term-white-bright :foreground ,fg-term-white-bright)))
+    `(vterm-color-inverse-video ((,c :background ,bg-main :inverse-video t)))
+    `(vterm-color-underline ((,c :underline t)))
 ;;;;; vundo
     `(vundo-default ((,c :inherit shadow)))
     `(vundo-highlight ((,c :inherit (bold vundo-node) :foreground ,red)))

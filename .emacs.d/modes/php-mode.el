@@ -627,8 +627,7 @@ but only if the setting is enabled."
    ((assq 'defun-block-intro c-syntactic-context) nil)
    ((assq 'defun-close c-syntactic-context) nil)
    ((assq 'statement-cont c-syntactic-context) nil)
-   (t
-    (save-excursion
+   ((save-excursion
       (beginning-of-line)
       (let ((beginning-of-langelem (cdr langelem))
             (beginning-of-current-line (point))
@@ -651,8 +650,10 @@ but only if the setting is enabled."
               (skip-chars-backward " 	\r\n")
               (backward-char 1))
             (and (not (eq (point) beginning-of-current-line))
+                 (not (php-in-string-or-comment-p))
                  (not (looking-at-p ","))
-                 (not (php-in-string-or-comment-p))))
+                 (save-excursion
+                   (backward-char) (not (looking-at-p ",")))))
           '+)
          (t nil)))))))
 
@@ -1301,18 +1302,20 @@ for \\[find-tag] (which see)."
 
 ;; Font Lock
 (defconst php-phpdoc-type-names
-  (list "string" "integer" "int" "boolean" "bool" "float"
-        "double" "object" "mixed" "array" "resource"
-        "void" "null" "false" "true" "self" "static"
-        "callable" "iterable" "number"
-        ;; PHPStan and Psalm types
-        "array-key" "associative-array" "callable-array" "callable-object"
-        "callable-string" "class-string" "empty" "enum-string" "list"
-        "literal-string" "negative-int" "non-positive-int" "non-negative-int"
-        "never" "never-return" "never-returns" "no-return" "non-empty-array"
-        "non-empty-list" "non-empty-string" "non-falsy-string"
-        "numeric" "numeric-string" "positive-int" "scalar"
-        "trait-string" "truthy-string" "key-of" "value-of")
+  '(;; PHPStan and Psalm types
+    "__stringandstringable" "array" "array-key" "associative-array" "bool" "boolean"
+    "callable" "callable-array" "callable-object" "callable-string" "class-string"
+    "closed-resource" "double" "empty" "empty-scalar" "enum-string" "false" "float"
+    "int" "integer" "interface-string" "iterable" "list" "literal-string" "lowercase-string"
+    "mixed" "negative-int" "never" "never-return" "never-returns" "no-return" "non-empty-array"
+    "non-empty-list" "non-empty-literal-string" "non-empty-lowercase-string" "non-empty-mixed"
+    "non-empty-scalar" "non-empty-string" "non-empty-uppercase-string" "non-falsy-string"
+    "non-negative-int" "non-positive-int" "non-zero-int" "noreturn" "null" "number" "numeric"
+    "numeric-string" "object" "open-resource" "parent" "positive-int" "pure-callable"
+    "pure-closure" "resource" "scalar" "self" "static" "string" "trait-string" "true"
+    "truthy-string" "uppercase-string" "void"
+    ;; PHPStan Generic Types
+    "key-of" "value-of" "int-mask-of" "int-mask" "__benevolent" "template-type" "new")
   "A list of type and pseudotype names that can be used in PHPDoc.")
 
 (make-obsolete-variable 'php-phpdoc-type-keywords 'php-phpdoc-type-names "1.24.2")
@@ -1517,7 +1520,9 @@ for \\[find-tag] (which see)."
      ;; Not operator (!) is defined in "before cc-mode" section above.
      ("\\(&&\\|||\\)" 1 'php-logical-op)
      ;; string interpolation ("$var, ${var}, {$var}")
-     (php-mode--string-interpolated-variable-font-lock-find 0 nil)))
+     (php-mode--string-interpolated-variable-font-lock-find 0 nil)
+     (,(rx symbol-start (group (or "get" "set")) (+ (syntax whitespace)) (or "{" "=>"))
+      1 'php-builtin)))
   "Detailed highlighting for PHP Mode.")
 
 (defvar php-font-lock-keywords php-font-lock-keywords-3

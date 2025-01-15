@@ -1,6 +1,6 @@
 ;;; magit-branch.el --- Branch support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2024 The Magit Project Contributors
+;; Copyright (C) 2008-2025 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -225,8 +225,7 @@ has to be used to view and change branch related variables."
     :inapt-if-not magit-get-some-remote)]
   ["Arguments"
    (7 "-r" "Recurse submodules when checking out an existing branch"
-      "--recurse-submodules"
-      :if (lambda () (magit-git-version>= "2.13")))]
+      "--recurse-submodules")]
   [["Checkout"
     ("b" "branch/revision"   magit-checkout)
     ("l" "local branch"      magit-branch-checkout)

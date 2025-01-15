@@ -1,6 +1,6 @@
 ;;; casual-calc.el --- Transient UI for Calc -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Charles Choi
+;; Copyright (C) 2024-2025  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -85,9 +85,7 @@
     ("!" " !" casual-calc--factorial
      :description (lambda () (casual-calc-unicode-get :factorial))
      :transient t)
-    ("%" " ٪" casual-calc--percent
-     :description (lambda () (casual-calc-unicode-get :percent))
-     :transient t)
+    ("%" "𝑎𝑏%" casual-calc--percent-of :transient t)
     ("D" " Δ%" casual-calc--percent-change
      :description (lambda () (casual-calc-unicode-get :percent-change))
      :transient t)]
@@ -144,6 +142,7 @@
           (casual-lib-quit-one)
           (casual-calc-algebraic-entry)
           (casual-calc-enter)
+          (casual-calc-roll-down)
           (casual-calc-pop)
           (casual-calc-undo-suffix)
           ("q" "Quit" calc-quit)])

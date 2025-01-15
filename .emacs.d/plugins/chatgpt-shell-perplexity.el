@@ -33,6 +33,7 @@
 (require 'seq)
 (require 'subr-x)
 
+(defvar chatgpt-shell-proxy)
 (declare-function chatgpt-shell-openai--make-payload "chatgpt-shell-openai")
 
 (cl-defun chatgpt-shell-perplexity-make-model (&key version
@@ -112,11 +113,14 @@ If you use Perplexity through a proxy service, change the URL base."
         (format "Authorization: Bearer %s" (chatgpt-shell-perplexity-key))))
 
 (cl-defun chatgpt-shell-perplexity--handle-perplexity-command (&key model command context shell settings)
-  "Handle Perplexity shell COMMAND (prompt) using MODEL, CONTEXT, SHELL, and SETTINGS."
+  "Handle Perplexity shell COMMAND (prompt).
+
+Uses MODEL, CONTEXT, SHELL, and SETTINGS."
   (shell-maker-make-http-request
    :async t
    :url (chatgpt-shell-perplexity--make-url :model model
-                                           :settings settings)
+                                            :settings settings)
+   :proxy chatgpt-shell-proxy
    :data (chatgpt-shell-openai--make-payload :model model
                                              :context
                                              (append
@@ -156,7 +160,7 @@ Otherwise:
                                                   .message.content)
                                                  (t
                                                   ""))))
-                                       .choices)))))
+                                       .choices "")))))
       (let ((citations (let-alist whole
                          .citations)))
         (chatgpt-shell-perplexity--expand-citations
@@ -181,7 +185,7 @@ Otherwise:
                                                   (let-alist choice
                                                     (or .delta.content
                                                         .message.content)))
-                                                .choices)))))
+                                                .choices "")))))
                       (progn
                         (setq citations (let-alist obj
                                           .citations))

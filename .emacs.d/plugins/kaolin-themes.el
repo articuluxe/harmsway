@@ -1,6 +1,6 @@
 ;;; kaolin-themes.el --- A set of eye pleasing themes  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2023 ogdenwebb
+;; Copyright (C) 2017-2025 ogdenwebb
 
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
@@ -137,6 +137,10 @@
 
 (defcustom kaolin-themes-distinct-parentheses nil
   "Enable distinct colors for parentheses (i.e. rainbow delimiters package)."
+  :group 'kaolin-themes)
+
+(defcustom kaolin-themes-distinct-verbatim nil
+  "Use distinct background color for verbatim face (org-mode) instead of colorful text."
   :group 'kaolin-themes)
 
 (defcustom kaolin-themes-org-scale-headings t

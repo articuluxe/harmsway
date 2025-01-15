@@ -29,6 +29,8 @@
    ;; TODO: add other fg vars
    ;; (fg1 blue9)
 
+   (verbatim-fg   (if kaolin-themes-distinct-verbatim adaptive-fg aquamarine3))
+
    ;; Root colors
    (kaolin-black   bg1)
    (kaolin-red     crimson3)
@@ -42,11 +44,12 @@
    (keyword     cyan3)
    (builtin     teal3)
    (functions   magenta3)
+   ;; (functions   pink3)
    (var         amber3)
    (const       orange3)
    (type        crimson3)
-   ;; (prep        teal0)
-   (prep        ultramarine1)
+   ;; (prep        capri3)
+   (prep        ultramarine3)
 
    (num         capri3)
    (bool        num)
@@ -56,8 +59,10 @@
    (comment-contrast ultramarine8)
 
    (str         spring-green3)
-   ;; TODO:
-   (str-alt     harlequin3)
+   ;; (str-alt     harlequin3)
+   ;; (str-alt     azure4)
+   ;; (str-alt     teal7)
+   (str-alt     aquamarine4)
    (doc         str-alt)
    (warning     orange3)
    (err         crimson0)
@@ -95,10 +100,10 @@
    (diff-rem red3)
 
    ;; Mode-line
-   (line-fg           fg4)
-   (line-bg1          bg2)
-   (line-bg2          bg3)
-   (line-color2       keyword)
+   (line-fg     fg4)
+   (line-bg1    bg2)
+   (line-bg2    bg3)
+   (line-color2 keyword)
    (line-border (if kaolin-themes-modeline-border bg3 line-bg1))
 
    (segment-active    gray3)
@@ -123,7 +128,6 @@
    (org-document-info   (:foreground type))
    (org-date            (:foreground spring-green3 :underline underline))
    (org-code            (:foreground erin3))
-   (org-verbatim        (:foreground aquamarine3))
    (org-quote           (:foreground blue9))
    )
 

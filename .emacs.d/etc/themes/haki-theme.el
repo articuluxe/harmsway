@@ -485,7 +485,7 @@ Respected Only in GUI frame"
    `(dired-broken-symlink       ((,class :background ,error :underline t :foreground ,fg-main)))
    `(dired-directory            ((,class :inherit bold :foreground ,heading-4)))
    `(dired-flagged              ((,class :inherit highlight :background ,error)))
-   `(dired-header               ((,class :height 1.1 :weight bold :inherit region)))
+   `(dired-header               ((,class :height 1.1 :weight bold)))
    `(dired-ignored              ((,class :inherit shadow)))
    `(dired-mark                 ((,class :inherit dired-flagged)))
    `(dired-marked               ((,class :inherit highlight)))

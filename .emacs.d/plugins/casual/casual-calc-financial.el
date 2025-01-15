@@ -1,6 +1,6 @@
 ;;; casual-calc-financial.el --- Casual Financial Menu    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Charles Choi
+;; Copyright (C) 2024-2025  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -41,7 +41,8 @@
     ("r" "Rate of Return›" casual-calc-fin-rate-of-return-tmenu)]
 
    ["Percentages"
-    ("%" "%" calc-percent :transient t)
+    ("%" "𝑎𝑏%" casual-calc--percent-of :transient t)
+    ("P" "%" casual-calc--percent :transient t)
     ("c" "→%" calc-convert-percent :transient t)
     ("D" "Δ%" calc-percent-change :transient t)
     ("=" "=" calc-evaluate :transient t)]

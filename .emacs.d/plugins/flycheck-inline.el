@@ -229,9 +229,22 @@ POS defaults to point."
 
 ERRORS is a list of `flycheck-error' objects."
   (flycheck-inline-hide-errors)
-  (mapc #'flycheck-inline-display-error
-        (seq-uniq
-         (seq-mapcat #'flycheck-related-errors errors))))
+  (let* ((lines (mapcar 'flycheck-error-line errors))
+         (line-range (cons (apply 'min lines) (apply 'max lines)))
+         (columns (mapcar 'flycheck-error-column errors))
+         (column-range (cons (apply 'min columns) (apply 'max columns))))
+    (mapc #'flycheck-inline-display-error
+          (seq-filter
+           (lambda (error)
+             (let ((line (flycheck-error-line error))
+                   (column (flycheck-error-column error)))
+               (and
+                (>= line (car line-range))
+                (<= line (cdr line-range))
+                (>= column (car column-range))
+                (<= column (cdr column-range)))))
+           (seq-uniq
+            (seq-mapcat #'flycheck-related-errors errors))))))
 
 
 ;;; Global and local minor modes
@@ -256,11 +269,13 @@ directly below the error reported location."
   (cond
    ;; Use our display function.
    (flycheck-inline-mode
+    (setq-local flycheck-help-echo-function nil)
     (setq-local flycheck-display-errors-function #'flycheck-inline-display-errors)
     (setq-local flycheck-clear-displayed-errors-function #'flycheck-inline-hide-errors))
    ;; Reset the display function and remove ourselves from all hooks but only
    ;; if the mode is still active.
    ((not flycheck-inline-mode)
+    (kill-local-variable 'flycheck-help-echo-function)
     (kill-local-variable 'flycheck-display-errors-function)
     (kill-local-variable 'flycheck-clear-displayed-errors-function)
     (flycheck-inline-hide-errors))))

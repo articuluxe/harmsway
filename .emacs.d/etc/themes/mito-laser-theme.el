@@ -63,11 +63,13 @@
   (line-number                  (:foreground grey2))
   (line-number-current-line     (:background darker :foreground white :weight 'semi-bold))
   (region                       (:background one))
-  (mode-line                    (:background line))
-  (mode-line-inactive           (:background one2 :foreground purple))
-  (mode-line-active             (:background line :foreground purple))
-  (mode-line-highlight          (:foreground red))
+
+  (mode-line                    (:background line :foreground purple :box (:line-width 1 :color one3)))
+  (mode-line-inactive           (:background black2 :foreground purple))
+  (mode-line-active             (:inherit 'mode-line))
+  (mode-line-highlight          (:foreground purple3))
   (mode-line-buffer-id          (:foreground nord))
+
   (vertical-border              (:foreground one))
   (link                         (:foreground blue))
   (custom-link                  (:foreground blue))
@@ -83,10 +85,10 @@
   (corfu-annotations            (:background darkest))
   (corfu-default                (:background darkest :foreground white))
   (corfu-border                 (:background darkest))
-  (corfu-popupinfo              (:background darkest :foreground blue :box (:line-width 2 :color black)))
+  (corfu-popupinfo              (:background darkest :foreground blue :box (:line-width 1 :color black)))
   
   (eldoc-box-body               (:inherit 'vertico-posframe))
-  (eldoc-box-border             (:background grey2))
+  (eldoc-box-border             (:background black2))
 
   (orderless-match-face-0                        (:foreground pink :weight 'bold))
   (orderless-match-face-1                        (:foreground nord :weight 'bold))
@@ -100,16 +102,16 @@
 
   ;;treemacs
   (treemacs-window-background-face               (:background darker))
-  (treemacs-directory-face                       (:foreground purple))
-  (treemacs-file-face                            (:foreground purple))
-  (treemacs-nerd-icons-file-face                 (:inherit 'treemacs-file-face))
-  (treemacs-nerd-icons-root-face                 (:inherit 'treemacs-directory-face))
+  (treemacs-directory-face                       (:foreground nord))
+  (treemacs-file-face                            (:foreground nord))
+  ;; (treemacs-nerd-icons-file-face                 (:inherit 'treemacs-file-face))
+  ;; (treemacs-nerd-icons-root-face                 (:inherit 'treemacs-directory-face))
   (treemacs-git-added-face                       (:foreground teal))
   (treemacs-git-renamed-face                     (:foreground pink))
   (treemacs-git-ignored-face                     (:foreground grey3 :italic t))
-  (treemacs-git-unmodified-face                  (:foreground purple))
+  (treemacs-git-unmodified-face                  (:foreground white))
   (treemacs-git-untracked-face                   (:foreground vibrant))
-  (treemacs-git-modified-face                    (:foreground nord))
+  (treemacs-git-modified-face                    (:foreground purple3 :italic t))
 
   (elisp-shorthand-font-lock-face                (:foreground pink))
 
@@ -117,83 +119,49 @@
   (font-lock-builtin-face                        (:foreground blue))
   (font-lock-comment-delimiter-face              (:inherit 'font-lock-comment-face))
   (font-lock-comment-face                        (:foreground purple2 :italic t :weight 'thin))
-  (font-lock-constant-face                       (:foreground yellow :weight 'bold));;
-  (font-lock-delimiter-face                      (:foreground cyan));;
+  (font-lock-constant-face                       (:foreground yellow :weight 'semi-bold))
+  (font-lock-delimiter-face                      (:foreground baby))
   (font-lock-doc-face                            (:inherit 'font-lock-comment-face))
   (font-lock-doc-markup-face                     (:inherit 'font-lock-doc-face))
-  (font-lock-function-call-face                  (:foreground nord))
-  (font-lock-function-name-face                  (:foreground blue))
-  (font-lock-keyword-face                        (:foreground light :weight 'normal))
+  (font-lock-function-call-face                  (:foreground blue))
+  (font-lock-function-name-face                  (:foreground purple :italic t))
+  (font-lock-keyword-face                        (:foreground light :weight 'bold))
   (font-lock-misc-punctuation-face               (:foreground sun))
   (font-lock-negation-char-face                  (:foreground pink))
   (font-lock-number-face                         (:foreground purple :bold t))
   (font-lock-operator-face                       (:foreground teal))
   (font-lock-preprocessor-face	                 (:foreground orange))
-  (font-lock-property-name-face                  (:foreground purple3))
-  (font-lock-property-use-face                   (:foreground lemon))
+  (font-lock-property-name-face                  (:foreground teal))
+  (font-lock-property-use-face                   (:foreground purple3))
   (font-lock-punctuation-face                    (:foreground orange :weight 'normal))
   (font-lock-reference-face                      (:foreground yellow))
   (font-lock-regexp-regex-face                   (:foreground pink))
   (font-lock-regexp-grouping-backslash           (:foreground pink))
   (font-lock-regexp-grouping-construct           (:foreground pink))
-  (font-lock-string-face                         (:foreground green :italic t :weight 'normal))
-  (font-lock-type-face                           (:foreground pink :weight 'bold))
+  (font-lock-string-face                         (:foreground vibrant :italic t :weight 'normal))
+  (font-lock-type-face                           (:foreground pink :weight 'semi-bold))
   (font-lock-variable-name-face                  (:foreground purple3))
-  (font-lock-variable-use-face                   (:foreground cyan))
+  (font-lock-variable-use-face                   (:foreground teal))
   (font-lock-warning-face                        (:foreground sun))
 
-  (tree-sitter-hl-face:annotation                (:foreground blue :weight 'semi-bold))
-  (tree-sitter-hl-face:annotation.builtin        (:foreground nord :weight 'semi-bold))
-  (tree-sitter-hl-face:annotation.type           (:foreground pink))
+  (swift-ts-face-annotation                      (:foreground teal))
+  (swift-ts-face-annotation.builtin              (:inherit 'font-lock-builtin-face))
+  (swift-ts-face-annotation.type                 (:foreground green))
 
-  (tree-sitter-hl-face:function                  (:inherit 'font-lock-function-name-face))
-  (tree-sitter-hl-face:function.call             (:inherit 'font-lock-function-call-face))
-  (tree-sitter-hl-face:function.builtin          (:foreground orange :italic t))
-  (tree-sitter-hl-face:function.special          (:foreground green :italic t))
-  (tree-sitter-hl-face:function.macro            (:foreground blue))
-  (tree-sitter-hl-face:function.label            (:foreground sun))
+  (swift-ts-face-punctuation.type                (:inherit 'font-lock-punctuation-face))
+  (swift-ts-face-compiler                        (:inherit 'font-lock-builtin-face))
+  (swift-ts-face-constructor.call                (:inherit 'font-lock-function-call-face))
 
-  (tree-sitter-hl-face:method                    (:inherit 'tree-sitter-hl-face:function))
-  (tree-sitter-hl-face:method.call               (:inherit 'tree-sitter-hl-face:function.call))
+  (swift-ts-face-face-label                      (:foreground green))
+  (swift-ts-face-method.call                     (:inherit 'font-lock-function-call-face))
+  (swift-ts-face-method.name                     (:inherit 'font-lock-function-name-face))
+  (swift-ts-face-keyword.annotation              (:foreground pink :background green :weight 'bold))
+  (swift-ts-face-keyword.type                    (:inherit 'font-lock-type-face))
+  (swift-ts-face-variable.synthesized            (:foreground nord))
 
-  (tree-sitter-hl-face:type                      (:inherit 'font-lock-type-face))
-  (tree-sitter-hl-face:type.parameter            (:foreground orange :italic t))
-  (tree-sitter-hl-face:type.argument             (:foreground grey3))
-  (tree-sitter-hl-face:type.builtin              (:inherit 'font-lock-builtin-face))
-  (tree-sitter-hl-face:type.super                (:foreground pink))
-  (tree-sitter-hl-face:constructor               (:foreground blue :weight 'semi-bold))
-
-  (tree-sitter-hl-face:variable                  (:inherit 'font-lock-variable-name-face))
-  (tree-sitter-hl-face:variable.parameter        (:inherit 'tree-sitter-hl-face:type.parameter))
-  (tree-sitter-hl-face:variable.builtin          (:foreground orange))
-  (tree-sitter-hl-face:variable.special          (:foreground grey2 :italic t))
-  (tree-sitter-hl-face:variable.synthesized      (:foreground vibrant))
-
-  (tree-sitter-hl-face:property                  (:inherit 'font-lock-property-use-face))
-  (tree-sitter-hl-face:property.definition       (:inherit 'font-lock-property-name-face))
-
-  (tree-sitter-hl-face:comment                   (:inherit 'font-lock-comment-face))
-  (tree-sitter-hl-face:doc                       (:inherit 'font-lock-comment-face))
-  (tree-sitter-hl-face:string                    (:inherit 'font-lock-string-face))
-  (tree-sitter-hl-face:string.special            (:inherit 'font-lock-string-face))
-  (tree-sitter-hl-face:escape                    (:inherit 'font-lock-regexp-grouping-backslash))
-  (tree-sitter-hl-face:embedded                  (:foreground yellow))
-
-  (tree-sitter-hl-face:keyword                   (:inherit 'font-lock-keyword-face))
-  (tree-sitter-hl-face:keyword.compiler          (:foreground pink :weight 'bold))
-  (tree-sitter-hl-face:keyword.type              (:foreground pink))
-  (tree-sitter-hl-face:operator                  (:inherit 'font-lock-operator-face))
-  (tree-sitter-hl-face:label                     (:foreground grey2))
-  (tree-sitter-hl-face:constant                  (:inherit 'font-lock-constant-face))
-  (tree-sitter-hl-face:constant.builtin          (:inherit 'font-lock-constant-face))
-  (tree-sitter-hl-face:number                    (:inherit 'font-lock-number-face))
-
-  (tree-sitter-hl-face:punctuation               (:inherit 'font-lock-punctuation-face))
-  (tree-sitter-hl-face:punctuation.bracket       (:foreground red))
-  (tree-sitter-hl-face:punctuation.delimiter     (:foreground red))
-  (tree-sitter-hl-face:punctuation.special       (:foreground red))
-
-  (tree-sitter-hl-face:case-pattern              (:foreground sun))
+  (eglot-inlay-hint-face (:foreground purple3 :background black2 :height 0.8 :weight 'normal))
+  (eglot-parameter-hint-face (:inherit 'eglot-inlay-hint-face))
+  (eglot-type-hint-face (:inherit 'eglot-inlay-hint-face))
 
   ;;; Rainbow-delimiters
   (rainbow-delimiters-mismatched-face            (:foreground red))
@@ -201,8 +169,8 @@
   (rainbow-delimiters-base-error-face            (:foreground red))
   (rainbow-delimiters-base-face                  (:foreground vibrant))
 
-  (rainbow-delimiters-depth-1-face               (:foreground purple))
-  (rainbow-delimiters-depth-2-face               (:foreground red))
+  (rainbow-delimiters-depth-1-face               (:foreground red))
+  (rainbow-delimiters-depth-2-face               (:foreground purple3))
   (rainbow-delimiters-depth-3-face               (:foreground blue))
   (rainbow-delimiters-depth-4-face               (:foreground teal))
   (rainbow-delimiters-depth-5-face               (:foreground light))
@@ -211,26 +179,15 @@
   (rainbow-delimiters-depth-8-face               (:foreground orange))
   (rainbow-delimiters-depth-9-face               (:foreground blue))
 
-  (punch-line-evil-normal-face  (:foreground white
-                                   :background nord :weight 'bold
-                                   :box (:line-width 8 :color nord)))
-
-  (punch-line-evil-visual-face  (:foreground white
-                                   :background light :weight 'bold
-                                   :box (:line-width 8 :color light)))
-
-  (punch-line-evil-replace-face  (:foreground white
-                                   :background red :weight 'bold
-                                   :box (:line-width 8 :color red)))
-
-  (punch-line-evil-insert-face  (:foreground darker
-                                   :background teal :weight 'bold
-                                   :box (:line-width 8 :color teal)))
-
-  (punch-line-project-face        (:foreground purple :weight 'bold))
-  (punch-line-buffer-name-face    (:foreground white :weight 'bold))
-  (punch-line-time-face           (:foreground purple))
-  (punch-line-major-mode-face     (:foreground light))
+  (punch-line-evil-normal-face  (:foreground white :background nord :weight 'bold))
+  (punch-line-evil-visual-face  (:foreground white :background light :weight 'bold))
+  (punch-line-evil-replace-face (:foreground white :background red :weight 'bold))
+  (punch-line-evil-insert-face  (:foreground darker :background teal :weight 'bold))
+  (punch-line-project-face      (:foreground purple :weight 'bold))
+  (punch-line-buffer-name-face  (:foreground white :weight 'bold))
+  (punch-line-time-face         (:foreground purple))
+  (punch-line-major-mode-face   (:foreground light))
+  (punch-line-separator-face    (:foreground one3 :weight 'thin))
 
   (term                     (:background darkest :foreground purple))
   (term-color-black         (:background darkest :foreground darkest))
@@ -272,11 +229,14 @@
   (markdown-code-face (:foreground cyan :weight 'normal))
   (markdown-pre-face (:foreground blue))
 
-  (eglot-inlay-hint-face (:inherit 'font-lock-variable-use-face :background black2 :height 0.8 :weight 'normal))
-  (eglot-parameter-hint-face (:inherit 'eglot-inlay-hint-face))
-  (eglot-type-hint-face (:inherit 'eglot-inlay-hint-face))
+  (elfeed-search-tag-face (:foreground nord))
 
   ))
+
+;;;###autoload
+(when load-file-name
+  (add-to-list 'custom-theme-load-path
+               (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'mito-laser)
 ;;; mito-laser-theme.el ends here

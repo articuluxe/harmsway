@@ -1,6 +1,6 @@
 ;;; magit-commit.el --- Create Git commits  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2024 The Magit Project Contributors
+;; Copyright (C) 2008-2025 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -379,7 +379,7 @@ depending on the value of option `magit-commit-squash-confirm'."
     (user-error "Nothing staged (or unstaged)"))
    (magit-commit-ask-to-stage
     (when (eq magit-commit-ask-to-stage 'verbose)
-      (magit-diff-unstaged))
+      (apply #'magit-diff-unstaged (magit-diff-arguments)))
     (prog1 (when (or (eq magit-commit-ask-to-stage 'stage)
                      (y-or-n-p
                       "Nothing staged.  Commit all uncommitted changes? "))
@@ -456,9 +456,10 @@ With a prefix argument use a transient command to select infix
 arguments.  This command requires git-absorb executable, which
 is available from https://github.com/tummychow/git-absorb.
 See `magit-commit-autofixup' for an alternative implementation."
+  :value '("-v")
   ["Arguments"
-   ("-f" "Skip safety checks"       ("-f" "--force"))
-   ("-v" "Display more output"      ("-v" "--verbose"))]
+   ("-f" "Skip safety checks" ("-f" "--force"))
+   ("-v" "Increase verbosity" ("-v" "--verbose"))]
   ["Actions"
    ("x"  "Absorb" magit-commit-absorb)]
   (interactive (if current-prefix-arg
@@ -481,7 +482,7 @@ See `magit-commit-autofixup' for an alternative implementation."
     (when commit
       (setq commit (magit-rebase-interactive-assert commit t)))
     (if (and commit (eq phase 'run))
-        (progn (magit-run-git-async "absorb" "-v" args "-b" commit) t)
+        (progn (magit-run-git-async "absorb" args "-b" commit) t)
       (magit-log-select
         (lambda (commit)
           (with-no-warnings ; about non-interactive use
@@ -499,9 +500,11 @@ transient command to select infix arguments.
 This command requires the git-autofixup script, which is
 available from https://github.com/torbiak/git-autofixup.
 See `magit-commit-absorb' for an alternative implementation."
+  :value '("-vv")
   ["Arguments"
    (magit-autofixup:--context)
-   (magit-autofixup:--strict)]
+   (magit-autofixup:--strict)
+   ("-v" "Increase verbosity" "-vv")]
   ["Actions"
    ("x"  "Absorb" magit-commit-autofixup)]
   (interactive (if current-prefix-arg
@@ -519,7 +522,7 @@ See `magit-commit-absorb' for an alternative implementation."
     (when commit
       (setq commit (magit-rebase-interactive-assert commit t)))
     (if (and commit (eq phase 'run))
-        (progn (magit-run-git-async "autofixup" "-vv" args commit) t)
+        (progn (magit-run-git-async "autofixup" args commit) t)
       (magit-log-select
         (lambda (commit)
           (with-no-warnings ; about non-interactive use
@@ -541,11 +544,11 @@ See `magit-commit-absorb' for an alternative implementation."
   :reader #'transient-read-number-N0)
 
 (defvar magit-post-commit-hook-commands
-  '(magit-commit-extend
-    magit-commit-fixup
-    magit-commit-augment
-    magit-commit-instant-fixup
-    magit-commit-instant-squash))
+  (list #'magit-commit-extend
+        #'magit-commit-fixup
+        #'magit-commit-augment
+        #'magit-commit-instant-fixup
+        #'magit-commit-instant-squash))
 
 (defun magit-run-post-commit-hook ()
   (when (and (not this-command)

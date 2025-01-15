@@ -1,6 +1,6 @@
 ;;; casual-isearch.el --- Transient UI for I-Search -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023-2024  Charles Choi
+;; Copyright (C) 2023-2024-2025  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: wp
@@ -64,6 +64,7 @@
   (isearch-toggle-symbol)
   (isearch-edit-string))
 
+;;;###autoload (autoload 'casual-isearch-tmenu "casual-isearch" nil t)
 (transient-define-prefix casual-isearch-tmenu ()
   "Transient menu for I-Search."
   [["Edit Search String"

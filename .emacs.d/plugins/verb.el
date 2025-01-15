@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.16.0
+;; Package-Version: 3.0.0
 ;; Package-Requires: ((emacs "26.3"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -202,7 +202,7 @@ info node `(url)Retrieving URLs'."
                         "2024-04-02")
 
 (defcustom verb-json-max-pretty-print-size (* 1 1024 1024)
-  "Max JSON file size (bytes) to automatically prettify when received.
+  "Max JSON file size (# of chars) to automatically prettify when received.
 If nil, never prettify JSON files automatically.  This variable only applies
 if `verb-handler-json' is being used to handle JSON responses."
   :type '(choice (integer :tag "Max bytes")
@@ -331,7 +331,7 @@ Request templates are defined without HTTP methods, paths or hosts.")
   "Prefix for Verb metadata keys in heading properties.
 Matching is case insensitive.")
 
-(defconst verb-version "2.16.0"
+(defconst verb-version "3.0.0"
   "Verb package version.")
 
 (defconst verb--multipart-boundary-alphabet
@@ -566,7 +566,7 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
         :type (or null url)
         :documentation "Request URL.")
    (headers :initarg :headers
-            :initform ()
+            :initform nil
             :type verb--http-headers-type
             :documentation "HTTP headers.")
    (body :initarg :body
@@ -720,6 +720,9 @@ an error."
 
 (defalias 'verb-shell #'shell-command-to-string
   "Alias to `shell-command-to-string'.")
+
+(defalias 'verb-url #'url-encode-url
+  "Alias to `url-encode-url'.")
 
 (defun verb-unix-epoch ()
   "Return the current time as an integer number of seconds since the epoch."
@@ -919,7 +922,7 @@ Note that the entire buffer is considered when generating the request
 spec, not only the section contained by the source block.
 
 This function is called from ob-verb.el (`org-babel-execute:verb')."
-  (verb-load-prelude-files-from-hierarchy)
+  (verb--load-preludes-from-hierarchy)
   (save-excursion
     (goto-char pos)
     (let* ((verb--vars (append vars verb--vars))
@@ -943,7 +946,7 @@ CLASS must be an EIEIO class."
     (object-of-class-p obj class)))
 
 (defun verb--try-read-fn-form (form)
-  "Try `read'ing FORM and throw error if failed."
+  "Try `read'ing FORM, throwing an error if failed."
   (condition-case _err (read form)
     (end-of-file (user-error "`%s' is a malformed expression" form))))
 
@@ -952,11 +955,22 @@ CLASS must be an EIEIO class."
 If no value is found under KEY, or if the value associated is the
 empty string, return nil.  KEY must NOT have the prefix
 `verb--metadata-prefix' included."
-  (thread-first
-    (concat verb--metadata-prefix key)
-    (assoc-string (oref rs metadata) t)
-    cdr
-    verb-util--nonempty-string))
+  (let ((val (thread-first
+               (concat verb--metadata-prefix key)
+               (assoc-string (oref rs metadata) t)
+               cdr)))
+    (if (stringp val)
+        (verb-util--nonempty-string val)
+      val)))
+
+(defun verb--request-spec-metadata-set (rs key value)
+  "Set the metadata value under KEY for request spec RS to VALUE.
+KEY must NOT have the prefix `verb--metadata-prefix' included.  Return
+VALUE."
+  (let ((md (oref rs metadata)))
+    (push (cons (upcase (concat verb--metadata-prefix key)) value) md)
+    (oset rs metadata md)
+    value))
 
 (defun verb--request-spec-post-process (rs)
   "Validate and prepare request spec RS to be used.
@@ -964,7 +978,8 @@ empty string, return nil.  KEY must NOT have the prefix
 The following checks/preparations are run:
 1) Check if `verb-base-headers' needs to be applied.
 2) Apply request mapping function, if one was specified.
-3) Run validations with `verb-request-spec-validate'.
+3) Read any response mapping function, if one was specified.
+4) Run validations with `verb-request-spec-validate'.
 
 After that, return RS."
   ;; Use `verb-base-headers' if necessary.
@@ -978,11 +993,17 @@ After that, return RS."
              (fn (verb--try-read-fn-form form)))
     (if (functionp fn)
         (setq rs (funcall fn rs))
-      (user-error "`%s' is not a valid function" fn))
+      (user-error "`%s' is not a valid request mapping function" fn))
     (unless (verb--object-of-class-p rs 'verb-request-spec)
       (user-error (concat "Request mapping function `%s' must return a "
                           "`verb-request-spec' value")
                   fn)))
+  ;; Read the response mapping function, if present.
+  (when-let ((form (verb--request-spec-metadata-get rs "map-response"))
+             (fn (verb--try-read-fn-form form)))
+    (if (functionp fn)
+        (verb--request-spec-metadata-set rs "map-response" fn)
+      (user-error "`%s' is not a valid response mapping function" fn)))
   ;; Validate and return.
   (verb-request-spec-validate rs))
 
@@ -998,7 +1019,7 @@ all the request specs in SPECS, in the order they were passed in."
   ;; Load all prelude verb-var's before rest of the spec to be complete, unless
   ;; specs already exists which means called from ob-verb block and loaded.
   (unless specs
-    (verb-load-prelude-files-from-hierarchy))
+    (verb--load-preludes-from-hierarchy))
   (let ((p (point))
         done final-spec)
     (save-restriction
@@ -1028,9 +1049,9 @@ all the request specs in SPECS, in the order they were passed in."
                           "Remember to tag your headlines with :%s:")
                   verb-tag))))
 
-(defun verb-load-prelude-files-from-hierarchy ()
+(defun verb--load-preludes-from-hierarchy ()
   "Load all Verb-Prelude's of current heading and up, including buffer level.
-Children with same named verb-vars as parents, will override the parent
+Children setting same named Verb variables as parents will override the parent
 settings."
   (save-restriction
     (widen)
@@ -1046,20 +1067,21 @@ settings."
                 (when prelude
                   (push prelude preludes)))
               (verb--up-heading)))
-        (let* ((prelude (car (org-element-map (org-element-parse-buffer)
-                                 'keyword
-                               (lambda (keyword)
-                                 (when (string= (upcase (concat
-                                                         verb--metadata-prefix
-                                                         "prelude"))
-                                                (org-element-property
-                                                 :key keyword))
-                                   (org-element-property :value keyword)))))))
+        (let ((prelude (car (org-element-map
+                             (org-element-parse-buffer)
+                             'keyword
+                             (lambda (keyword)
+                               (when (string= (upcase (concat
+                                                       verb--metadata-prefix
+                                                       "prelude"))
+                                              (org-element-property
+                                               :key keyword))
+                                 (org-element-property :value keyword)))))))
           (when prelude
             (push prelude preludes)))
-        ;; Lower-level prelude files override same settings in hierarchy
-        (dolist (file preludes)
-          (verb-load-prelude-file file))))))
+        ;; Lower-level preludes override same settings in hierarchy
+        (dolist (prelude preludes)
+          (verb--load-prelude prelude))))))
 
 (defun verb-kill-response-buffer-and-window (&optional keep-window)
   "Delete response window and kill its buffer.
@@ -1182,8 +1204,25 @@ This affects only the current buffer."
             (yes-or-no-p "Unset all Verb variables for current buffer? "))
     (setq verb--vars nil)))
 
-(defun verb-load-prelude-file (filename)
-  "Load Emacs Lisp or JSON configuration file FILENAME into Verb variables."
+(defun verb--load-prelude (prelude)
+  "Load prelude PRELUDE from a file, or from string contents.
+PRELUDE is interpreted as a filename if and only if it is a single-line
+string containing no parenthesis nor curly brackets."
+  (if (and (= 1 (length (split-string prelude "\n")))
+           (not (string-match-p "[(){}]" prelude)))
+      (verb--load-prelude-from-file prelude)
+    (verb--load-prelude-from-string prelude)))
+
+(defun verb--load-prelude-from-string (value)
+  "Load Emacs Lisp or JSON prelude data from VALUE.
+First, try to read VALUE as JSON.  If that fails, evaluate the code as
+Emacs Lisp."
+  (condition-case nil
+      (verb--process-json-prelude value)
+    (json-readtable-error (verb--eval-string value))))
+
+(defun verb--load-prelude-from-file (filename)
+  "Load Emacs Lisp or JSON prelude file FILENAME into Verb variables."
   (interactive)
   (save-excursion
     (let ((file-extension (file-name-extension filename)))
@@ -1191,34 +1230,41 @@ This affects only the current buffer."
         (setq file-extension (file-name-extension (file-name-base filename))))
       (cond
        ((string= "el" file-extension) ; file is Emacs Lisp
-        (when (or verb-suppress-load-unsecure-prelude-warning
-                  (yes-or-no-p
-                   (concat (format "File %s may contain code " filename)
-                           "that may not be safe\nLoad it anyways? ")))
-          (load-file filename)))
-       ((string-match-p "^json.*" file-extension) ; file is JSON(C)
-        (let* ((file-contents
-                (with-temp-buffer
-                  (insert-file-contents filename)
-                  (set-auto-mode)
-                  (goto-char (point-min))
-                  ;; If a modern JSON / JavaScript package not
-                  ;; installed, then comments cannot be removed or
-                  ;; supported. Also, not likely to have JSON comments
-                  ;; if this is the case.
-                  (when comment-start
-                    (comment-kill (count-lines (point-min) (point-max))))
-                  (verb--buffer-string-no-properties)))
-               (json-object-type 'plist)
-               (data (json-read-from-string file-contents)))
-          ;; Search for values on the topmost container, and one level down.
-          (cl-loop for (k v) on data by #'cddr
-                   do (verb-set-var (substring (symbol-name k) 1) v)
-                   if (and (listp v) (cl-evenp (length v)))
-                   do (cl-loop for (subk subv) on v by #'cddr
-                               do (verb-set-var
-                                   (substring (symbol-name subk) 1) subv)))))
+        (if (or verb-suppress-load-unsecure-prelude-warning
+                (yes-or-no-p
+                 (concat (format "File %s may contain code " filename)
+                         "that may not be safe (see: "
+                         "`verb-suppress-load-unsecure-prelude-warning')"
+                         "\nLoad it anyways? ")))
+            (load-file filename)
+          (user-error "Operation cancelled")))
+       ((string-match-p "^json.?" file-extension) ; file is JSON(C)
+        (let ((file-contents
+               (with-temp-buffer
+                 (insert-file-contents filename)
+                 (set-auto-mode)
+                 (goto-char (point-min))
+                 ;; If a modern JSON / JavaScript package not
+                 ;; installed, then comments cannot be removed or
+                 ;; supported. Also, not likely to have JSON comments
+                 ;; if this is the case.
+                 (when comment-start
+                   (comment-kill (count-lines (point-min) (point-max))))
+                 (verb--buffer-string-no-properties))))
+          (verb--process-json-prelude file-contents)))
        (t (user-error "Unable to determine file type for %s" filename))))))
+
+(defun verb--process-json-prelude (json-string)
+  "Process JSON-STRING and set Verb variables accordingly."
+  (let* ((json-object-type 'plist)
+         (data (json-read-from-string json-string)))
+    ;; Search for values on the topmost container, and one level down.
+    (cl-loop for (k v) on data by #'cddr
+             do (verb-set-var (substring (symbol-name k) 1) v)
+             if (and (listp v) (cl-evenp (length v)))
+             do (cl-loop for (subk subv) on v by #'cddr
+                         do (verb-set-var
+                             (substring (symbol-name subk) 1) subv)))))
 
 (defun verb-show-vars ()
   "Show values of variables set with `verb-var' or `verb-set-var'.
@@ -1675,7 +1721,7 @@ non-nil, do not add the command to the kill ring."
   "Standard handler for the \"application/json\" text content type."
   (when verb-json-use-mode
     (funcall verb-json-use-mode))
-  (when (< (oref verb-http-response body-bytes)
+  (when (< (buffer-size)
            (or verb-json-max-pretty-print-size 0))
     (unwind-protect
         (unless (zerop (buffer-size))
@@ -1773,7 +1819,7 @@ NUM is this request's identification number."
              (error-info (cdr http-error))
              (url (oref rs url)))
     ;; If there's an HTTP error code (404, 405, etc.) in the error
-    ;; information, continue as normal.
+    ;; information, continue as usual.
     (unless (numberp (and (eq (car error-info) 'http)
                           (cadr error-info)))
       (kill-buffer (current-buffer))
@@ -1836,29 +1882,15 @@ NUM is this request's identification number."
     (forward-line)
     (delete-region (point-min) (point))
 
-    ;; Record body size in bytes.
-    (setq body-bytes (buffer-size))
-
     ;; Current buffer should be unibyte.
     (when enable-multibyte-characters
+      ;; If this fails, then something changed in url.el.
       (error "%s" "Expected a unibyte buffer for HTTP response"))
 
-    ;; Store details of request and response
-    ;; `verb-http-response' is a permanent buffer local variable.
-    (with-current-buffer response-buf
-      (setq verb-http-response
-            (verb-response :headers (nreverse headers)
-                           :request rs
-                           :status status-line
-                           :duration elapsed
-                           :body-bytes body-bytes))
-
-      ;; Update global last response variable.
-      (setq verb-last verb-http-response)
-
-      ;; Store the response separately as well depending on user
-      ;; metadata.
-      (verb--maybe-store-response verb-http-response))
+    ;; Record body size in bytes.
+    ;; Since the current buffer is unibyte, this will return the correct value
+    ;; (i.e. not number of characters).
+    (setq body-bytes (buffer-size))
 
     ;; Make RESPONSE-BUF the current buffer, as we'll need to change
     ;; its major mode, coding system, etc.
@@ -1897,12 +1929,44 @@ NUM is this request's identification number."
     ;; Kill original response buffer.
     (kill-buffer original-buffer)
 
-    ;; Now that the response content has been processed, update
-    ;; `verb-http-response's body slot.
-    (oset verb-http-response
-          body
-          (unless (zerop (oref verb-http-response body-bytes))
-            (verb--buffer-string-no-properties)))
+    ;; Store details of request and response
+    ;; `verb-http-response' is a permanent buffer local variable.
+    (setq verb-http-response
+          (verb-response :headers (nreverse headers)
+                         :request rs
+                         :status status-line
+                         :duration elapsed
+                         :body-bytes body-bytes
+                         ;; TODO: Could this potentially be expensive
+                         ;; for large responses?
+                         :body (unless (zerop body-bytes)
+                                 (verb--buffer-string-no-properties))))
+
+    ;; Apply the response mapping function, if one was specified.
+    (when-let ((map-response (verb--request-spec-metadata-get
+                              rs "map-response"))
+               (original-body (oref verb-http-response body)))
+      (setq verb-http-response (funcall map-response verb-http-response))
+      (unless (verb--object-of-class-p verb-http-response 'verb-response)
+        (user-error (concat "Response mapping function `%s' must return a "
+                            "`verb-response' value")
+                    map-response))
+
+      ;; If response mapping function updated the body, then update
+      ;; the buffer contents as well.
+      ;; Note that we compare using `eq' instead of `string='.
+      ;; Technically `string=' should be used since strings are
+      ;; mutable, but this is cheaper and probably good enough.
+      (unless (eq original-body (oref verb-http-response body))
+        (erase-buffer)
+        (insert (oref verb-http-response body))))
+
+    ;; Update global last response variable.
+    (setq verb-last verb-http-response)
+
+    ;; Store the response separately as well depending on user
+    ;; metadata.
+    (verb--maybe-store-response verb-http-response)
 
     (verb-response-body-mode)
 

@@ -1,10 +1,10 @@
 ;;; syncthing.el --- Client for Syncthing -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023 Peter Badida
+;; Copyright (C) 2024 Peter Badida
 
 ;; Author: Peter Badida <keyweeusr@gmail.com>
 ;; Keywords: convenience, syncthing, sync, client, view
-;; Version: 3.0.0
+;; Version: 3.0.1
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://github.com/KeyWeeUsr/emacs-syncthing
 

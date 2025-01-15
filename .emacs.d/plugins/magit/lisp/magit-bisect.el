@@ -1,6 +1,6 @@
 ;;; magit-bisect.el --- Bisect support for Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2024 The Magit Project Contributors
+;; Copyright (C) 2008-2025 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -63,10 +63,8 @@
     ("-n" "Don't checkout commits"              "--no-checkout")
     ("-p" "Follow only first parent of a merge" "--first-parent"
      :if (lambda () (magit-git-version>= "2.29")))
-    (6 magit-bisect:--term-old
-       :if (lambda () (magit-git-version>= "2.7")))
-    (6 magit-bisect:--term-new
-       :if (lambda () (magit-git-version>= "2.7")))]
+    (magit-bisect:--term-old :level 6)
+    (magit-bisect:--term-new :level 6)]
    ["Actions"
     ("B" "Start"        magit-bisect-start)
     ("s" "Start script" magit-bisect-run)]]
@@ -74,8 +72,7 @@
    :if magit-bisect-in-progress-p
    ("B" "Bad"          magit-bisect-bad)
    ("g" "Good"         magit-bisect-good)
-   (6 "m" "Mark"       magit-bisect-mark
-      :if (lambda () (magit-git-version>= "2.7")))
+   ("m" "Mark"         magit-bisect-mark :level 6)
    ("k" "Skip"         magit-bisect-skip)
    ("r" "Reset"        magit-bisect-reset)
    ("s" "Run script"   magit-bisect-run)])
@@ -208,7 +205,7 @@ bisect run'."
        (list :file (expand-file-name "BISECT_CMD_OUTPUT" (magit-gitdir)))
        "bisect" "start" bad good args)
       (magit-refresh)))
-  (magit--with-connection-local-variables
+  (with-connection-local-variables
     (magit-git-bisect "run" (list shell-file-name
                                   shell-command-switch cmdline))))
 

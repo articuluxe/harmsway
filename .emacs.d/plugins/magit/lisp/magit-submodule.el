@@ -1,6 +1,6 @@
 ;;; magit-submodule.el --- Submodule support for Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2024 The Magit Project Contributors
+;; Copyright (C) 2008-2025 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -29,11 +29,11 @@
 ;;; Options
 
 (defcustom magit-module-sections-hook
-  '(magit-insert-modules-overview
-    magit-insert-modules-unpulled-from-upstream
-    magit-insert-modules-unpulled-from-pushremote
-    magit-insert-modules-unpushed-to-upstream
-    magit-insert-modules-unpushed-to-pushremote)
+  (list #'magit-insert-modules-overview
+        #'magit-insert-modules-unpulled-from-upstream
+        #'magit-insert-modules-unpulled-from-pushremote
+        #'magit-insert-modules-unpushed-to-upstream
+        #'magit-insert-modules-unpushed-to-pushremote)
   "Hook run by `magit-insert-modules'.
 
 That function isn't part of `magit-status-sections-hook's default
@@ -248,8 +248,7 @@ it is nil, then PATH also becomes the name."
              (magit-process-sentinel process event)
            (process-put process 'inhibit-refresh t)
            (magit-process-sentinel process event)
-           (when (magit-git-version>= "2.12.0")
-             (magit-call-git "submodule" "absorbgitdirs" path))
+           (magit-call-git "submodule" "absorbgitdirs" path)
            (magit-refresh)))))))
 
 ;;;###autoload
@@ -385,8 +384,6 @@ to recover from making a mistake here, but don't count on it."
            (list (magit-read-module-path "Remove module")))
          (magit-submodule-arguments "--force")
          current-prefix-arg))
-  (when (magit-git-version< "2.12.0")
-    (error "This command requires Git v2.12.0"))
   (when magit-submodule-remove-trash-gitdirs
     (setq trash-gitdirs t))
   (magit-with-toplevel
@@ -621,8 +618,7 @@ These sections can be expanded to show the respective commits."
                     (msg (match-string 2 line)))
                 (magit-insert-section (module-commit rev t)
                   (insert (propertize rev 'font-lock-face 'magit-hash) " "
-                          (funcall magit-log-format-message-function rev msg)
-                          "\n")))))))
+                          (magit-log--wash-summary msg) "\n")))))))
       (magit-cancel-section 'if-empty)
       (insert ?\n))))
 
@@ -638,16 +634,12 @@ These sections can be expanded to show the respective commits."
   :doc "Local keymap for Magit-Submodule-List mode buffers."
   :parent magit-repolist-mode-map)
 
-(define-derived-mode magit-submodule-list-mode tabulated-list-mode "Modules"
+(define-derived-mode magit-submodule-list-mode magit-repolist-mode "Modules"
   "Major mode for browsing a list of Git submodules."
   :interactive nil
   :group 'magit-repolist
-  (setq-local x-stretch-cursor nil)
-  (setq tabulated-list-padding 0)
-  (add-hook 'tabulated-list-revert-hook #'magit-submodule-list-refresh nil t)
-  (setq imenu-prev-index-position-function
-        #'magit-repolist--imenu-prev-index-position)
-  (setq imenu-extract-index-name-function #'tabulated-list-get-id))
+  (setq-local tabulated-list-revert-hook
+              (list #'magit-submodule-list-refresh t)))
 
 (defvar-local magit-submodule-list-predicate nil)
 
@@ -671,7 +663,7 @@ These sections can be expanded to show the respective commits."
              (and (file-exists-p ".git")
                   (or (not magit-submodule-list-predicate)
                       (funcall magit-submodule-list-predicate module))
-                  (list module
+                  (list default-directory
                         (vconcat
                          (mapcar (pcase-lambda (`(,title ,width ,fn ,props))
                                    (or (funcall fn `((:path  ,module)

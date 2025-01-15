@@ -1,6 +1,6 @@
 ;;; casual-info.el --- Transient UI for Info -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Charles Choi
+;; Copyright (C) 2024-2025  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -62,7 +62,8 @@
     :pad-keys t
     ("C-s" "I-search…" isearch-forward)
     ("s" "Search…" Info-search)
-    ("S" "Case sensitive…" Info-search-case-sensitively)]
+    ("S" "Case sensitive…" Info-search-case-sensitively)
+    ("a" "Apropos…" info-apropos)]
 
    ["History"
     :pad-keys t

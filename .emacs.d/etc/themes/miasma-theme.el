@@ -2,7 +2,7 @@
 
 ;; Author: Bozidar Dautovic
 ;; URL: http://github.com/daut/miasma-theme.el
-;; Version: 1.4.0
+;; Version: 1.5.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -151,6 +151,17 @@
    `(org-headline-todo ((,class (:foreground ,miasma-eucalyptus :weight bold))))
    `(org-todo ((,class (:foreground ,miasma-brass :weight bold))))
 
+   ;;;;; smerge-mode
+   `(smerge-base ((,class (:background ,miasma-reseda :extend t))))
+   `(smerge-lower ((,class (:background ,miasma-ivy :extend t))))
+   `(smerge-markers ((,class (:background ,miasma-dark-gray :extend t))))
+   `(smerge-refined-added ((,class (:background ,miasma-eucalyptus))))
+   `(smerge-refined-removed ((,class (:background ,miasma-fire))))
+   `(smerge-upper ((,class (:background ,miasma-chestnut :extend t))))
+
+   ;;;;; tab-line
+   `(tab-line ((,class (:background ,miasma-charcoal :foreground ,miasma-light-gray))))
+
    ;;;;; whitespace-mode
    `(whitespace-space ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal miasma-light-charcoal) :foreground ,miasma-dark-gray))))
    `(whitespace-tab ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal miasma-light-charcoal) :foreground ,miasma-dark-gray))))
@@ -184,6 +195,19 @@
 
    ;;;;; beacon
    `(beacon-fallback-background ((,class :background ,miasma-ivy)))
+
+   ;;;;; centaur-tabs
+   `(centaur-tabs-default ((,class (:foreground ,miasma-light-gray :background ,miasma-light-charcoal))))
+   `(centaur-tabs-selected ((,class (:foreground ,miasma-light-gray :background ,miasma-light-charcoal))))
+   `(centaur-tabs-unselected ((,class (:foreground ,miasma-dark-gray :background ,miasma-charcoal))))
+   `(centaur-tabs-selected-modified ((,class (:foreground ,miasma-lemon :background ,miasma-light-charcoal))))
+   `(centaur-tabs-unselected-modified ((,class (:foreground ,miasma-brass :background ,miasma-charcoal))))
+   `(centaur-tabs-close-selected ((,class (:foreground ,miasma-light-gray :background ,miasma-light-charcoal))))
+   `(centaur-tabs-close-unselected ((,class (:foreground ,miasma-dark-gray :background ,miasma-charcoal))))
+   `(centaur-tabs-close-mouse-face ((,class (:background ,miasma-ivy))))
+   `(centaur-tabs-active-bar-face ((,class (:background ,miasma-ivy))))
+   `(centaur-tabs-modified-marker-selected ((,class (:foreground ,miasma-lemon :background ,miasma-light-charcoal))))
+   `(centaur-tabs-modified-marker-unselected ((,class (:foreground ,miasma-brass :background ,miasma-charcoal))))
 
    ;;;;; company
    `(company-echo-common ((,class (:inherit company-tooltip-common))))
@@ -367,7 +391,14 @@
    `(web-mode-html-attr-engine-face ((,class (:foreground ,miasma-reseda))))
    `(web-mode-html-attr-name-face ((,class (:foreground ,miasma-reseda))))
    `(web-mode-html-tag-bracket-face ((,class (:foreground ,miasma-eucalyptus))))
-   `(web-mode-html-tag-face ((,class (:foreground ,miasma-eucalyptus))))))
+   `(web-mode-html-tag-face ((,class (:foreground ,miasma-eucalyptus))))
+
+   ;;;;; wgrep
+   `(wgrep-face ((,class (:background ,miasma-brass :foreground ,miasma-light-charcoal))))
+   `(wgrep-done-face ((,class (:foreground ,miasma-brass))))
+   `(wgrep-delete-face ((,class (:background ,miasma-terracota))))
+   `(wgrep-file-face ((,class (:background ,miasma-graphite))))
+   `(wgrep-reject-face ((,class (:foreground ,miasma-terracota))))))
 
 ;;; Footer
 
