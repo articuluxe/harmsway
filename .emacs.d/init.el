@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2024  Dan Harms (dharms)
+;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2024-10-24 09:34:59 dharms>
+;; Modified Time-stamp: <2025-01-14 14:56:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1235,6 +1235,7 @@ Based on `https://emacs.ch/@bram85/112365691040649759'."
   (setq magit-no-confirm '())
   (setq magit-show-long-lines-warning nil)
   (setq magit-version "unknown")
+  (setq magit-show-long-lines-warning nil)
   (setq magit-process-find-password-functions 'magit-process-password-auth-source)
   (setq magit-auto-revert-tracked-only t)
   (setq magit-prefer-remote-upstream t)

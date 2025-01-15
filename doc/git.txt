@@ -165,6 +165,10 @@ git pull origin master
 cd ..; git status
 git add sub
 git commit -m "updated submodule sub"
+# reset all submodules
+git submodule foreach --recursive git clean -dfx
+git submodule foreach --recursive git reset --hard
+git submodule update --init --recursive
 
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
