@@ -198,8 +198,7 @@ behave as for `ghub-request' (which see)."
                                 updatedAt
                                 body)
                      (labels    [(:edges t)]
-                                id))
-     (owner "... on Organization { " (teams [(:edges t)] combinedSlug) " }\n"))))
+                                id)))))
 
 (defconst ghub-fetch-repository-review-threads
   '(query
@@ -589,7 +588,7 @@ See Info node `(ghub)GraphQL Support'."
                 child))))))
 
 (defun ghub--alist-zip (root)
-  (let ((branchp (lambda (elt) (and (listp elt) (listp (cdr elt)))))
+  (let ((branchp (##and (listp %) (listp (cdr %))))
         (make-node (lambda (_ children) children)))
     (treepy-zipper branchp #'identity make-node root)))
 

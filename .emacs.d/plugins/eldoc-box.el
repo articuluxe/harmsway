@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Yuan Fu
 
-;; Version: 1.12.1
+;; Version: 1.13.2
 
 ;; Author: Yuan Fu <casouri@gmail.com>
 ;; URL: https://github.com/casouri/eldoc-box
@@ -388,6 +388,10 @@ For DOCS, see ‘eldoc-display-functions’."
   (buffer-face-set 'eldoc-box-body)
   (setq eldoc-box-hover-mode t)
   (visual-line-mode)
+  ;; Use buffer-local binding in the original buffer
+  ;; for the setup hook to allow original mode-specific setup.
+  (setq-local eldoc-box-buffer-setup-hook
+              (buffer-local-value 'eldoc-box-buffer-setup-hook orig-buffer))
   (run-hook-with-args 'eldoc-box-buffer-setup-hook orig-buffer)
   (run-hook-with-args 'eldoc-box-buffer-hook))
 
@@ -924,7 +928,7 @@ the compiler truncates the types and formatting wouldn’t work."
         fontified-type
         multi-line)
     (with-current-buffer workbuf
-      (funcall (buffer-local-value orig-buffer 'major-mode)))
+      (funcall (buffer-local-value 'major-mode orig-buffer)))
     ;; 1. Prettify types.
     (while (re-search-forward
             ;; Typescript uses doble quotes for literal unions like

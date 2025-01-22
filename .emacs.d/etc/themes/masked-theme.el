@@ -24,39 +24,25 @@
           "A Masked - low-contrast - color theme for GNU Emacs.")
 
 ;; colors with `+c' are lighter; and with `-c' darker
-(let ((masked-bg+3        "#41417b")
-      (masked-bg+2        "#2f2f4d")
-      (masked-bg+1        "#222238")
-      (masked-bg+01       "#0f0f10")
-      (masked-bg+00       "#121212")
-      (masked-bg          "#0f0f0f")
-      (masked-bg-alt      "#0e0e0e")
+(let ((masked-fg          "#fafadf")
 
-      (masked-ws          "#232332")
+      (masked-bg+2        "#208448")
+      (masked-bg+1        "#227260")
+      (masked-bg          "#215854")
+      (masked-bg-1        "#1e4c4b")
 
-      (masked-red         "#a34443")
-      (masked-green       "#7c9924")
-      (masked-yellow      "#c3b185")
-      (masked-blue        "#518a8a")
-      (masked-magenta     "#897399")
-      (masked-cyan        "#278b8e")
-
-      (masked-fg          "#b8ae93")
-      (masked-fg-0        "#bbbbbb")
-      (masked-fg-1        "#969696")
-      (masked-fg-2        "#696969")
-      (masked-blue-alt    "#004daa")
-      (masked-magenta-alt "#c617e6")
+      (masked-warning     "#441144")
 
       (masked-black       "#000000")
       (masked-white       "#ffffff")
 
-      (unmasked-red       "#ffd9d9")
-      (unmasked-orange    "#ffeed9")
-      (unmasked-yellow    "#fff9d9")
-      (unmasked-green     "#dbffd9")
-      (unmasked-blue      "#d9e9ff")
-      (unmasked-magenta   "#f4d9ff")
+      (masked-red         "#ffd9d9")
+      (masked-orange      "#ffeed9")
+      (masked-yellow      "#fff9d9")
+      (masked-green       "#dbffd9")
+      (masked-blue        "#d9e9ff")
+      (masked-magenta     "#f4d9ff")
+      (masked-cyan        "#d9ffff")
 
       ;; to disable bold/italic change these to 'normal'
       (bold               'bold)
@@ -75,6 +61,9 @@
    `(term-color-cyan ((t (:foreground ,masked-cyan :background ,masked-cyan))))
    `(term-color-white ((t (:foreground ,masked-fg :background ,masked-fg))))
 
+   ;; company
+   `(company-preview ((t (:foreground ,masked-bg+1 :background ,masked-bg-1))))
+
    ;; compilation
    `(compilation-info ((t (:foreground ,masked-green))))
    `(compilation-warning ((t (:foreground ,masked-yellow))))
@@ -85,59 +74,59 @@
    ;; diff
    `(diff-refine-added ((t (:background ,masked-green :weight ,bold))))
    `(diff-refine-removed ((t (:background ,masked-red :weight ,bold))))
-   `(diff-refine-changed ((t (:foreground ,masked-fg-0 :background ,unmasked-green :weight ,bold))))
+   `(diff-refine-changed ((t (:foreground ,masked-bg+1 :background ,masked-green :weight ,bold))))
 
    ;; dired
-   `(dired-directory ((t (:foreground ,masked-blue :weight ,bold))))
+   `(dired-directory ((t (:foreground ,masked-green :weight ,bold))))
    `(dired-ignored ((t (:foreground ,masked-cyan))))
 
    ;; font-lock
-   `(font-lock-builtin-face ((t (:foreground ,masked-green))))
-   `(font-lock-comment-face ((t (:foreground ,masked-blue :slant ,italic))))
-   `(font-lock-comment-delimiter-face ((t (:foreground ,masked-blue :slant ,italic))))
-   `(font-lock-constant-face ((t (:foreground ,masked-cyan))))
-   `(font-lock-doc-face ((t (:foreground ,masked-blue))))
+   `(font-lock-builtin-face ((t (:foreground ,masked-green :weight ,bold))))
+   `(font-lock-comment-face ((t (:foreground ,masked-bg+2 :slant ,italic :weight ,bold))))
+   `(font-lock-comment-delimiter-face ((t (:inherit font-lock-comment-face))))
+   `(font-lock-constant-face ((t (:foreground ,masked-green))))
+   `(font-lock-doc-face ((t (:foreground ,masked-blue :slant ,italic))))
    `(font-lock-function-name-face ((t (:foreground ,masked-fg))))
    `(font-lock-keyword-face ((t (:foreground ,masked-yellow :weight ,bold))))
    `(font-lock-preprocessor-face ((t (:foreground ,masked-magenta))))
    `(font-lock-string-face ((t (:foreground ,masked-red))))
-   `(font-lock-type-face ((t (:foreground ,masked-magenta))))
+   `(font-lock-type-face ((t (:foreground ,masked-cyan))))
    `(font-lock-variable-name-face ((t (:foreground ,masked-fg))))
    `(font-lock-warning-face ((t (:foreground ,masked-red))))
    `(font-lock-negation-char-face ((t (:foreground ,masked-red))))
 
    ;; general
-   `(cursor ((t (:background ,unmasked-orange))))
+   `(cursor ((t (:background ,masked-white))))
    `(default ((t (:foreground ,masked-fg :background ,masked-bg))))
-   `(fringe ((t (:foreground ,masked-fg :background ,masked-bg+00))))
-   `(minibuffer-prompt ((t (:foreground ,unmasked-yellow :weight ,bold))))
-   `(region ((t (:foreground ,masked-black :background ,unmasked-yellow))))
-   `(link ((t (:foreground ,masked-magenta-alt :underline t))))
-   `(link-visited ((t (:foreground ,masked-magenta :underline t))))
-   `(show-paren-match ((t (:foreground ,unmasked-red :italic t :underline t))))
-   `(show-paren-mismatch ((t (:foreground ,masked-red :underline t))))
+   `(fringe ((t (:foreground ,masked-fg :background ,masked-bg))))
+   `(minibuffer-prompt ((t (:foreground ,masked-yellow :weight ,bold))))
+   `(region ((t (:background ,masked-bg-1))))
+   `(link ((t (:foreground ,masked-yellow :underline t))))
+   `(link-visited ((t (:foreground ,masked-yellow :underline t))))
+   `(show-paren-match ((t (:foreground ,masked-white :background ,masked-bg+2 :bold t))))
+   `(show-paren-mismatch ((t (:background ,masked-warning :bold t))))
 
    ;; highlight-numbers
    `(highlight-numbers-number ((t (:foreground ,masked-cyan))))
 
-   ;; line-numbers
-   `(line-number ((t (:inherit default :foreground ,masked-bg+1 :background ,masked-bg-alt))))
-   `(line-number-current-line ((t (:inherit line-number :foreground ,masked-bg+2 :background ,masked-bg-alt :weight ,bold))))
-
    ;; isearch
    `(isearch ((t (:foreground ,masked-white :background ,masked-red))))
+
+   ;; line-numbers
+   `(line-number ((t (:inherit default :foreground ,masked-bg+1 :background ,masked-bg-1))))
+   `(line-number-current-line ((t (:inherit line-number :weight ,bold))))
+
+   ;; mode-line
+   `(mode-line ((t (:foreground ,masked-green :background ,masked-bg-1 :box (:line-width (1 . 1) :color ,masked-bg+1)))))
+   `(mode-line-inactive ((t (:foreground ,masked-bg+2 :background ,masked-bg-1 :box (:line-width (1 . 1) :color ,masked-bg+1)))))
+   `(mode-line-buffer-id ((t (:weight normal))))
 
    ;; multiple cursors
    `(mc/cursor-face ((t (:inherit cursor))))
 
-   ;; mode-line
-   `(mode-line ((t (:foreground ,unmasked-blue :background ,masked-bg-alt :box (:line-width (1 . 1) :color ,masked-bg+1)))))
-   `(mode-line-inactive ((t (:foreground ,masked-fg-0 :background ,masked-bg-alt :box (:line-width (1 . 1) :color ,masked-bg+1)))))
-   `(mode-line-buffer-id ((t (:weight normal))))
-
    ;; org
    `(org-date ((t (:foreground ,masked-blue :background ,masked-bg))))
-   `(org-hide ((t (:foreground ,masked-fg-1 :background ,masked-bg))))
+   `(org-hide ((t (:foreground ,masked-bg+1 :background ,masked-bg))))
    `(org-todo ((t (:foreground ,masked-red :background ,masked-bg))))
    `(org-done ((t (:foreground ,masked-green :background ,masked-bg))))
    `(org-level-1 ((t (:foreground ,masked-red :background ,masked-bg))))
@@ -146,34 +135,39 @@
    `(org-level-4 ((t (:foreground ,masked-cyan :background ,masked-bg))))
    `(org-level-5 ((t (:foreground ,masked-green :background ,masked-bg))))
    `(org-level-6 ((t (:foreground ,masked-yellow :background ,masked-bg))))
-   `(org-level-7 ((t (:foreground ,masked-bg+3 :background ,masked-bg))))
+   `(org-level-7 ((t (:foreground ,masked-white :background ,masked-bg))))
    `(org-headline-done ((t (:inherit org-done))))
 
    ;; powerline
    `(powerline-active0 ((t (:foreground ,masked-white :background ,masked-bg+1))))
-   `(powerline-active1 ((t (:foreground ,masked-white :background ,masked-bg-alt))))
-   `(powerline-active2 ((t (:foreground ,masked-white :background ,masked-bg-alt))))
-   `(powerline-inactive0 ((t (:foreground ,masked-fg-1 :background ,masked-bg-alt))))
-   `(powerline-inactive1 ((t (:foreground ,masked-fg-1 :background ,masked-bg-alt))))
-   `(powerline-inactive2 ((t (:foreground ,masked-fg-1 :background ,masked-bg-alt))))
+   `(powerline-active1 ((t (:foreground ,masked-white :background ,masked-bg-1))))
+   `(powerline-active2 ((t (:foreground ,masked-white :background ,masked-bg-1))))
+   `(powerline-inactive0 ((t (:foreground ,masked-bg+1 :background ,masked-bg-1))))
+   `(powerline-inactive1 ((t (:foreground ,masked-bg+1 :background ,masked-bg-1))))
+   `(powerline-inactive2 ((t (:foreground ,masked-bg+1 :background ,masked-bg-1))))
 
    ;; rainbow delimiters
-   `(rainbow-delimiters-depth-1-face ((t (:foreground ,unmasked-orange))))
-   `(rainbow-delimiters-depth-2-face ((t (:foreground ,unmasked-yellow))))
-   `(rainbow-delimiters-depth-3-face ((t (:foreground ,unmasked-green))))
-   `(rainbow-delimiters-depth-4-face ((t (:foreground ,unmasked-blue))))
-   `(rainbow-delimiters-depth-5-face ((t (:foreground ,unmasked-magenta))))
-   `(rainbow-delimiters-depth-6-face ((t (:foreground ,unmasked-red))))
-   `(rainbow-delimiters-depth-7-face ((t (:foreground ,unmasked-orange))))
-   `(rainbow-delimiters-depth-8-face ((t (:foreground ,unmasked-yellow))))
-   `(rainbow-delimiters-depth-9-face ((t (:foreground ,unmasked-green))))
-   `(rainbow-delimiters-depth-10-face ((t (:foreground ,unmasked-blue))))
-   `(rainbow-delimiters-depth-11-face ((t (:foreground ,unmasked-magenta))))
-   `(rainbow-delimiters-depth-12-face ((t (:foreground ,unmasked-red))))
+   `(rainbow-delimiters-depth-1-face ((t (:foreground ,masked-orange))))
+   `(rainbow-delimiters-depth-2-face ((t (:foreground ,masked-yellow))))
+   `(rainbow-delimiters-depth-3-face ((t (:foreground ,masked-green))))
+   `(rainbow-delimiters-depth-4-face ((t (:foreground ,masked-blue))))
+   `(rainbow-delimiters-depth-5-face ((t (:foreground ,masked-magenta))))
+   `(rainbow-delimiters-depth-6-face ((t (:foreground ,masked-red))))
+   `(rainbow-delimiters-depth-7-face ((t (:foreground ,masked-orange))))
+   `(rainbow-delimiters-depth-8-face ((t (:foreground ,masked-yellow))))
+   `(rainbow-delimiters-depth-9-face ((t (:foreground ,masked-green))))
+   `(rainbow-delimiters-depth-10-face ((t (:foreground ,masked-blue))))
+   `(rainbow-delimiters-depth-11-face ((t (:foreground ,masked-magenta))))
+   `(rainbow-delimiters-depth-12-face ((t (:foreground ,masked-red))))
+
+   ;; tab-bar
+   `(tab-bar ((t (:inherit mode-line))))
+   `(tab-bar-tab ((t (:inherit mode-line :foreground ,masked-cyan  :background ,masked-bg+1))))
+   `(tab-bar-tab-inactive ((t (:inherit mode-line-inactive))))
 
    ;; whitespace
-   `(whitespace-space ((t (:foreground ,masked-ws :background ,masked-bg ))))
-   `(whitespace-tab ((t (:foreground ,masked-ws :background ,masked-bg ))))))
+   `(whitespace-space ((t (:foreground ,masked-bg+2 :background ,masked-bg ))))
+   `(whitespace-tab ((t (:foreground ,masked-bg+2 :background ,masked-bg ))))))
 
 ;;;###autoload
 (when load-file-name

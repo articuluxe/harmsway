@@ -1317,7 +1317,8 @@ PALETTE is the value of a variable like `modus-operandi-palette'."
                            (color (modus-themes-get-color-value name mappings theme))) ; resolve a semantic mapping
                 (list name
                       (vector
-                       (if (symbolp value)
+                       (if (and (symbolp value)
+                                (not (eq value 'unspecified)))
                            "Yes"
                          "")
                        name-string
@@ -3328,7 +3329,7 @@ FG and BG are the main colors."
     `(org-clock-overlay ((,c :inherit secondary-selection)))
     `(org-code ((,c :inherit modus-themes-prose-code)))
     `(org-column ((,c :inherit default :background ,bg-dim)))
-    `(org-column-title ((,c :inherit (bold default) :underline t :background ,bg-dim)))
+    `(org-column-title ((,c :inherit (modus-themes-fixed-pitch bold default) :underline t :background ,bg-dim)))
     `(org-date ((,c :inherit modus-themes-fixed-pitch :foreground ,date-common)))
     `(org-date-selected ((,c :foreground ,date-common :inverse-video t)))
     ;; NOTE 2024-03-17: Normally we do not want to add this padding

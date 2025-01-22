@@ -1202,10 +1202,8 @@ On SKIP-PROCESS-BUFFERS skip deletion of buffers which has processes."
                          (pcase (cons mode group)
                            (`(dape-repl-mode . ,_) '((side . bottom) (slot . -1)))
                            (`(dape-shell-mode . ,_) '((side . bottom) (slot . 0)))
-                           (`(,_ . 0) `((side . ,dape-buffer-window-arrangement) (slot . -1)))
-                           (`(,_ . 1) `((side . ,dape-buffer-window-arrangement) (slot . 0)))
-                           (`(,_ . 2) `((side . ,dape-buffer-window-arrangement) (slot . 1)))
-                           (_ (error "Unable to display buffer of mode `%s'" mode)))))
+                           (`(,_ . ,index) `((side . ,dape-buffer-window-arrangement)
+                                             (slot . ,(1- index)))))))
                   ('gud
                    (pcase (cons mode group)
                      (`(dape-repl-mode . ,_)
@@ -1988,7 +1986,9 @@ Starts a new adapter connection as per request of the debug adapter."
 (cl-defmethod dape-handle-event (conn (_event (eql capabilities)) body)
   "Handle adapter CONNs capabilities events.
 BODY is an plist of adapter capabilities."
-  (setf (dape--capabilities conn) (plist-get body :capabilities))
+  (setf (dape--capabilities conn)
+        ;; Only changed capabilities needs to be included in body
+        (append (plist-get body :capabilities) (dape--capabilities conn)))
   (dape--configure-exceptions conn))
 
 (cl-defmethod dape-handle-event (conn (_event (eql breakpoint)) body)
@@ -2163,7 +2163,8 @@ Killing the adapter and it's CONN."
         ;; HACK remove duplicated terminated print for dlv
         (unless (eq (dape--state conn) 'terminated)
           (dape--message "Session terminated"))
-        (dape--update-state conn 'terminated)))))
+        (dape--update-state conn 'terminated)
+        (run-hooks 'dape-update-ui-hook)))))
 
 
 ;;; Startup/Setup

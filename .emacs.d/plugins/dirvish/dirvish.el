@@ -80,7 +80,10 @@ Credit: copied from `consult-preview-variables' in `consult.el'."
 
 (defcustom dirvish-default-layout '(1 0.11 0.55)
   "Default layout recipe for fullscreen Dirvish sessions.
-The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH).
+The value has the form (DEPTH MAX-PARENT-WIDTH PREVIEW-WIDTH),
+if not nil.  Neither the parent windows or the preview windows are
+shown if the value is nil.
+
 DEPTH controls the number of windows displaying parent
 directories.  It can be 0 if you don't need the parent
 directories.  MAX-PARENT-WIDTH controls the max width allocated
@@ -88,9 +91,11 @@ to each parent windows.  PREVIEW-WIDTH controls the width
 allocated to preview window.  The default value provides a
 1:3:5 (approximately) pane ratio.  Also see
 `dirvish-layout-recipes' in `dirvish-extras.el'."
-  :group 'dirvish :type '(list (integer :tag "number of parent windows")
-                               (float :tag "max width of parent windows")
-                               (float :tag "width of preview windows")))
+  :group 'dirvish
+  :type '(choice (const :tag "no default layout" nil)
+                 (list (integer :tag "number of parent windows")
+                       (float :tag "max width of parent windows")
+                       (float :tag "width of preview windows"))))
 
 (defface dirvish-hl-line
   '((t :inherit highlight :extend t))
@@ -121,11 +126,11 @@ and H-FRAME represent the height of mode line in single window
 state and fullframe state respectively.  If this value is a
 integer INT, it is seen as a shorthand for (INT . INT)."
   :group 'dirvish
-  :type '(choice interger (cons integer integer)))
+  :type '(choice integer (cons integer integer)))
 
 (defcustom dirvish-header-line-height 30
   "Like `dirvish-mode-line-height', but for header line."
-  :type '(choice interger (cons integer integer)))
+  :type '(choice integer (cons integer integer)))
 
 (defcustom dirvish-mode-line-format
   '(:left (sort omit symlink) :right (index))
@@ -187,8 +192,8 @@ and its ARGS is issued to open the file externally.  The special
 placeholder \"%f\" in the ARGS is replaced by the FILENAME at
 runtime.  Set it to nil disables this feature."
   :group 'dirvish
-  :type '(alist :key-type ((repeat string) :tag "File extensions")
-                :value-type ((repeat string) :tag "External command and args")))
+  :type '(alist :key-type (repeat :tag "File extensions" string)
+                :value-type (repeat :tag "External command and args" string)))
 
 (defcustom dirvish-reuse-session t
   "Whether to reuse the hidden sessions.
@@ -262,7 +267,7 @@ input for `dirvish-redisplay-debounce' seconds."
 ;;;; Macros
 
 (defmacro dirvish-prop (prop &rest body)
-  "Retrive PROP from `dirvish--props'.
+  "Retrieve PROP from `dirvish--props'.
 Set the PROP with BODY if given."
   (declare (indent defun))
   `(let* ((pair (assq ,prop dirvish--props)) (val (cdr pair)))
@@ -676,9 +681,10 @@ buffer, it defaults to filename under the cursor when it is nil."
                           (with-current-buffer buf (dirvish--render-attrs)))))))
     (with-current-buffer buf (add-hook 'post-command-hook fun nil t)) buf))
 
-(defun dirvish-dired-noselect-a (fn dir &optional flags)
+(defun dirvish-dired-noselect-a (fn dir-or-list &optional flags)
   "Return buffer for DIR with FLAGS, FN is `dired-noselect'."
-  (let* ((key (file-name-as-directory (expand-file-name dir)))
+  (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
+         (key (file-name-as-directory (expand-file-name dir)))
          (this dirvish--this)
          (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
                (or this (car (dirvish--find-reusable)) (dirvish-new))))
@@ -691,9 +697,9 @@ buffer, it defaults to filename under the cursor when it is nil."
     (when new-buffer-p
       (if (not remote)
           (let ((dired-buffers nil)) ; disable reuse from dired
-            (setq buffer (apply fn (list dir flags))))
+            (setq buffer (apply fn (list dir-or-list flags))))
         (require 'dirvish-extras)
-        (setq buffer (dirvish-noselect-tramp fn dir flags remote)))
+        (setq buffer (dirvish-noselect-tramp fn dir-or-list flags remote)))
       (with-current-buffer buffer (dirvish-init-dired-buffer))
       (push (cons key buffer) (dv-roots dv))
       (push (cons key buffer) dired-buffers))
@@ -702,8 +708,8 @@ buffer, it defaults to filename under the cursor when it is nil."
             ((and (not remote) (not (equal flags dired-actual-switches)))
              (dired-sort-other flags))
             ((eq dired-auto-revert-buffer t) (revert-buffer))
-	    ((functionp dired-auto-revert-buffer)
-	     (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
+            ((functionp dired-auto-revert-buffer)
+             (when (funcall dired-auto-revert-buffer dir) (revert-buffer))))
       (dirvish-prop :dv (dv-name dv))
       (dirvish-prop :gui (display-graphic-p))
       (dirvish-prop :remote remote)
@@ -939,10 +945,10 @@ If HEADER, set the `dirvish--header-line-fmt' instead."
                            `(:eval (,(intern (format "dirvish-%s-ml" s)) (dirvish-curr))))))
               (get-font-scale ()
                 (let* ((face (if header 'header-line 'mode-line-inactive))
-                       (defualt (face-attribute 'default :height))
+                       (default (face-attribute 'default :height))
                        (ml-height (face-attribute face :height)))
                   (cond ((floatp ml-height) ml-height)
-                        ((integerp ml-height) (/ (float ml-height) defualt))
+                        ((integerp ml-height) (/ (float ml-height) default))
                         (t 1)))))
     `((:eval
        (let* ((dv (dirvish-curr))
@@ -1153,6 +1159,8 @@ LEVEL is the depth of current window."
   "Fetch data for files in DIR, stored locally in BUFFER.
 Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
   (let* ((buf (make-temp-name "dir-data-"))
+         (print-length nil)
+         (print-level nil)
          (c (format "%S" `(message "%s" ,(dirvish--dir-data-getter dir))))
          (proc (make-process :name "dir-data" :connection-type nil :buffer buf
                              :command (list dirvish-emacs-bin "-Q" "-batch" "--eval" c)

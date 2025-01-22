@@ -1147,7 +1147,10 @@ if IGNORE-CASE is non-nil."
    ;; since PCRE does not make this distinction.  Usually the
    ;; context determines if \b is the beginning or the end.
    '(("\\<" . "\\b") ("\\>" . "\\b")
-     ("\\_<" . "\\b") ("\\_>" . "\\b"))
+     ("\\_<" . "\\b") ("\\_>" . "\\b")
+     ("\\s-" . "[ \\n\\t\\r]") ("\\S-" . "[^ \\n\\t\\r]")
+     ("\\sw" . "[a-zA-Z0-9]") ("\\Sw" . "[^a-zA-Z0-0]")
+     ("\\s_" . "[a-zA-Z0-9_-]") ("\\S_" . "[^a-zA-Z0-0_-]"))
    ;; Treat \` and \' as beginning and end of line.  This is more
    ;; widely supported and makes sense for line-based commands.
    '(("\\`" . "^") ("\\'" . "$"))
@@ -1172,7 +1175,7 @@ if IGNORE-CASE is non-nil."
     ;; Support for Emacs regular expressions is fairly complete for basic
     ;; usage.  There are a few unsupported Emacs regexp features:
     ;; - \= point matching
-    ;; - Syntax classes \sx \Sx
+    ;; - Most syntax classes \sx \Sx
     ;; - Character classes \cx \Cx
     ;; - Explicitly numbered groups (?3:group)
     (replace-regexp-in-string
@@ -1182,6 +1185,7 @@ if IGNORE-CASE is non-nil."
              (seq (or bos "^") (any "*+?"))       ;; Historical: + or * at the beginning
              (seq (opt "\\") (any "(){|}"))       ;; Escape parens/braces/pipe
              (seq "\\" (any "'<>`"))              ;; Special escapes
+             (seq "\\" (any "Ss") (any "-w_"))    ;; Whitespace, word, symbol syntax class
              (seq "\\_" (any "<>"))))             ;; Beginning or end of symbol
      (lambda (x) (or (cdr (assoc x consult--convert-regexp-table)) x))
      regexp 'fixedcase 'literal)))
@@ -2219,7 +2223,8 @@ ASYNC is the asynchronous function or completion table."
   "Dynamic computation of candidates.
 FUN computes the candidates.  It takes either a single input argument or
 an input argument and a callback function, if computed candidates should
-be updated incrementally.
+be updated incrementally.  The callback function must not be called
+after FUN has returned.
 RESTART is the time after which an interrupted computation should be
 restarted and defaults to `consult-async-input-debounce'."
   (setq restart (or restart consult-async-input-debounce))
@@ -2234,22 +2239,25 @@ restarted and defaults to `consult-async-input-debounce'."
               (cancel-timer timer)
               (funcall sink [indicator running])
               (redisplay)
-              (let* ((flush t)
+              (let* ((state 'init)
                      (killed
                       (while-no-input
                         (funcall
                          fun input
                          (lambda (response)
+                           (when (eq state 'done)
+                             (error "consult--async-dynamic: Callback called too late"))
                            (let (throw-on-input)
-                             (when flush
+                             (when (eq state 'init)
                                (funcall sink 'flush)
-                               (setq flush nil))
+                               (setq state 'running))
                              (when response
                                (funcall sink response)
                                ;; Accept process input such that timers
                                ;; trigger and refresh the completion UI.
                                (accept-process-output)))))
-                        (setq current input)
+                        (setq current input
+                              state 'done)
                         nil)))
                 (funcall sink `[indicator ,(if killed 'killed 'finished)])
                 (funcall sink 'refresh)
@@ -2647,7 +2655,8 @@ FUN takes the input string and must return a transformation function."
   "Dynamic candidate computation pipeline.
 FUN computes the candidates.  It takes either a single input argument or
 an input argument and a callback function, if computed candidates should
-be updated incrementally.
+be updated incrementally.  The callback function must not be called
+after FUN has returned.
 MIN-INPUT is passed to `consult--async-min-input'.
 THROTTLE and DEBOUNCE are passed to `consult--async-throttle'.
 TRANSFORM is an optional async function transforming the candidate.

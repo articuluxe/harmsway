@@ -4,7 +4,7 @@
 
 ;; Maintainer: René Trappel <rtrappel@gmail.com>
 ;; URL: https://github.com/rtrppl/cleandesk
-;; Version: 0.4.1
+;; Version: 0.5.1
 ;; Package-Requires: ((emacs "26"))
 ;; Keywords: files
 
@@ -35,29 +35,32 @@
 
 (defvar cleandesk-inbox-folder "~/")  ;; Using the home folder as a default starting point
 (defvar cleandesk-date-string "%Y_%m_%d-%H%M%S-")
-(defvar cleandesk-search-tool "fd") ;; choose between find and fd; fd is much faster and standard
-(defvar cleandesk-fd-search-string "-t d --no-hidden .")
-(defvar cleandesk-find-search-string "-type d ! -name '.*' | sed 's@//@/@'")
+(defvar cleandesk-metadata-tool "fd") ;; choose between find and fd; fd is much faster and standard
+(defvar cleandesk-fd-metadata-cmd "fd -t d --no-hidden .")
+(defvar cleandesk-find-metadata-cmd "-type d ! -name '.*' | sed 's@//@/@'")
 (defvar cleandesk-folders nil "All folders cleandesk operates on.")
 (defvar cleandesk-name-directory (make-hash-table :test 'equal))
 (defvar cleandesk-data-folders nil "Includes all folders that cleandesk should opperate on (excluding subfolders).")
+(defvar cleandesk-fd4tree-cmd "fd -t d --no-ignore -L .")
+(defvar cleandesk-search-tool "mdfind") ;; choose between mdfind (macOS only), rg (text documents only) and rga (slower)
+(defvar cleandesk-tree-cmd "tree -d -f -R ")
 
 (defun cleandesk-is-mac-p ()
   "Return t if the current system is a Mac (Darwin)."
 ;; Cleandesk needs to check this because cleandesk-search uses mdfind (Mac-only).
   (eq system-type 'darwin))
 
-(defun cleandesk-prepapre-folder-list ()
+(defun cleandesk-prepare-folder-list ()
  "Preparing a list of all folders in the cleandesk folders for further tasks."
  (cleandesk-get-folder-list)
  (setq cleandesk-folders "")
  (setq cleandesk-data-folders (hash-table-values cleandesk-name-directory))
    (dolist (cleandesk-data-folder cleandesk-data-folders)
      (with-temp-buffer
-       (when (string-equal cleandesk-search-tool "fd")
-	 (insert (shell-command-to-string (concat "fd " cleandesk-fd-search-string " '" cleandesk-data-folder "' "))))
-       (when (string-equal cleandesk-search-tool "find")
-	 (insert (shell-command-to-string (concat "find " cleandesk-data-folder " " cleandesk-find-search-string))))
+       (when (string-equal cleandesk-metadata-tool "fd")
+	 (insert (shell-command-to-string (concat cleandesk-fd-metadata-cmd " '" cleandesk-data-folder "' "))))
+       (when (string-equal cleandesk-metadata-tool "find")
+	 (insert (shell-command-to-string (concat "find " cleandesk-data-folder " " cleandesk-find-metadata-cmd))))
        (let ((temp-folders (split-string (buffer-string) "\n" t)))
 	 (setq cleandesk-folders (append temp-folders cleandesk-folders)))))
 	 (setq cleandesk-folders (append cleandesk-data-folders cleandesk-folders)))
@@ -65,7 +68,7 @@
 (defun cleandesk-jump-to-folder ()
   "Selects a folder from the list of cleandesk folders and opens a dired view."
   (interactive)
-  (cleandesk-prepapre-folder-list)
+  (cleandesk-prepare-folder-list)
   (dired (completing-read "Select folder: " cleandesk-folders))
   (revert-buffer))
 	 
@@ -78,7 +81,7 @@
 (defun cleandesk-move-files ()
   "Move marked files in Dired to a data folder."
   (interactive)
-  (cleandesk-prepapre-folder-list)
+  (cleandesk-prepare-folder-list)
   (let ((cleandesk-target-folder (completing-read "Target folder: " cleandesk-folders))
 	(marked-files (dired-get-marked-files)))
     (dolist (file marked-files)
@@ -232,34 +235,48 @@ all Cleandesk directories."
   (when (cleandesk-is-mac-p)
     (when (equal arg '(4))
     (cleandesk-get-folder-list)
-    (let ((cleandesk-mdfind-folders (hash-table-values cleandesk-name-directory))
-          (mdfind-search-string (read-from-minibuffer "Search for: "))
+    (let ((cleandesk-search-folders (hash-table-values cleandesk-name-directory))
+          (search-string (read-from-minibuffer "Search for: "))
           cleandesk-search-results)  ; Initialize as empty list
-      (dolist (cleandesk-mdfind-folder cleandesk-mdfind-folders)
+      (dolist (cleandesk-mdfind-folder cleandesk-search-folders)
 	(with-temp-buffer
-          (let ((cmd (concat "mdfind " mdfind-search-string " -onlyin " cleandesk-mdfind-folder)))
-            (insert (shell-command-to-string cmd))
-            (let ((findings (split-string (buffer-string) "\n" t)))
-              (dolist (item findings)
-		(when (and (stringp item)
-                           (string-prefix-p "/" item))
-                  (push item cleandesk-search-results)))))))
-      (cleandesk-present-results cleandesk-search-results)))
-    (when (null arg)
-      (let ((current-folder default-directory)
-            (mdfind-search-string (read-from-minibuffer "Search for: "))
-            cleandesk-search-results) 
-	(with-temp-buffer
-          (let ((cmd (concat "mdfind " mdfind-search-string " -onlyin " current-folder)))
-            (insert (shell-command-to-string cmd))
+	  (when (string-equal cleandesk-search-tool "mdfind")
+            (let ((cmd (concat "mdfind " search-string " -onlyin " cleandesk-mdfind-folder)))
+              (insert (shell-command-to-string cmd))))
+	  (when (string-equal cleandesk-search-tool "rga")
+            (let ((cmd (concat "rga -l -e \"" search-string "\" " cleandesk-mdfind-folder)))
+              (insert (shell-command-to-string cmd))))
+	  (when (string-equal cleandesk-search-tool "rg")
+            (let ((cmd (concat "rg -l -e \"" search-string "\" " cleandesk-mdfind-folder)))
+              (insert (shell-command-to-string cmd))))
             (let ((findings (split-string (buffer-string) "\n" t)))
               (dolist (item findings)
 		(when (and (stringp item)
                            (string-prefix-p "/" item))
                   (push item cleandesk-search-results))))))
+      (cleandesk-present-results cleandesk-search-results))))
+    (when (null arg)
+      (let ((current-folder (shell-quote-argument (cleandesk-return-current-folder)))
+            (search-string (read-from-minibuffer "Search for: "))
+            cleandesk-search-results) 
+	(with-temp-buffer
+          (when (string-equal cleandesk-search-tool "mdfind")
+	    (let* ((cmd (concat "mdfind " search-string " -onlyin " current-folder)))
+              (insert (shell-command-to-string cmd))))
+	  (when (string-equal cleandesk-search-tool "rga")
+            (let* ((cmd (concat "rga -i -l -e \"" search-string "\" " current-folder)))
+              (insert (shell-command-to-string cmd))))
+	  (when (string-equal cleandesk-search-tool "rg")
+            (let* ((cmd (concat "rg -i -l -e \"" search-string "\" " current-folder)))
+	      (insert (shell-command-to-string cmd))))
+          (let* ((findings (split-string (buffer-string) "\n" t)))
+            (dolist (item findings)
+	      (when (and (stringp item)
+                         (string-prefix-p "/" item))
+                  (push item cleandesk-search-results)))))
 	(cleandesk-present-results cleandesk-search-results)))
   (when (not (cleandesk-is-mac-p))
-    (message "Unfortunately, Cleandesk-search currently requires mdfind (=Spotlight), which is macOS-only."))))
+    (message "Unfortunately, Cleandesk-search currently requires mdfind (=Spotlight), which is macOS-only.")))
 
 (defun cleandesk-present-results (results)
   "If there are results of the search they are presented in dired."
@@ -269,6 +286,96 @@ all Cleandesk directories."
 	(dired results))
       (when (not results)
 	(message "Search has produced no results."))))
+
+(defun cleandesk-return-current-folder ()
+  "Returns the current folder shown in Dired."
+  (let* ((folder dired-directory)
+	 (folder (expand-file-name folder)))
+    folder))
+
+(defun cleandesk-return-all-subfolders (folder)
+   "Returns all subfolders for the directory `folder' as a hashtable."
+  (let* ((cleandesk-subfolders (make-hash-table :test 'equal))
+	 (subfolder-list))
+    (with-temp-buffer
+       (when (string-equal cleandesk-metadata-tool "fd")
+	 (insert (shell-command-to-string (concat cleandesk-fd4tree-cmd " \"" folder "\" "))))
+       (when (string-equal cleandesk-metadata-tool "find")
+	 (insert (shell-command-to-string (concat "find " folder " " cleandesk-find-metadata-cmd))))
+       (let ((temp-folders (split-string (buffer-string) "\n" t)))
+	 (setq subfolder-list (append temp-folders subfolder-list))))
+    (dolist (item subfolder-list)
+      (when (and (stringp item)
+                 (string-prefix-p "/" item))
+	(let* ((value (directory-file-name item))
+	       (value (file-name-nondirectory value))
+	       (key (concat "\\" (directory-file-name item))))
+	(puthash key value cleandesk-subfolders))))
+    cleandesk-subfolders))
+
+(defun cleandesk-show-tree ()
+  "Presents a buffer for `tree' with directories as Orgmode links."
+  (interactive)
+  (let* ((folder (cleandesk-return-current-folder))
+	 (tree-buffer (concat "**tree for " folder "**")))
+   (with-current-buffer (get-buffer-create tree-buffer)
+     (erase-buffer)
+     (org-mode)
+     (cleandesk-tree-buffer-mode)
+     (switch-to-buffer tree-buffer)
+     (insert (concat "# Use n, p to navigate, o to open in Dired, O to open using system default,\n# and q for exit.\n\n"))
+     (insert (concat "\[\[file:" folder "\]\[" folder "\]\]\n\n"))  
+     (insert (cleandesk-compile-tree folder))
+     (goto-char (point-min))
+     (org-next-link)
+     (org-next-link))))
+
+(defun cleandesk-compile-tree (folder)
+  "Prepares the `tree' output for `cleandesk-show-tree'."
+  (let* ((tree)
+	(cleandesk-subfolders (cleandesk-return-all-subfolders folder))
+	(keys (hash-table-keys cleandesk-subfolders)))
+  (with-temp-buffer
+    (insert (shell-command-to-string (concat cleandesk-tree-cmd " \"" folder "\" ")))
+    (setq tree (buffer-string)))
+  (dolist (item keys)
+    (let* ((key item)
+	   (to-be-replaced (replace-regexp-in-string "^\\\\" "" item))
+	   (replacement (concat "\[\[file:" to-be-replaced "\]\[" (gethash key cleandesk-subfolders) "\]\]")))
+    (setq tree (string-replace (concat "─ " to-be-replaced) (concat "─ "replacement) tree))
+    (setq tree (replace-regexp-in-string "^[^├└│].*\n?" "" tree))
+    (setq tree (string-replace "│  " "│  " tree))))
+  tree))
+    
+(define-minor-mode cleandesk-tree-buffer-mode
+  "A minor mode for `tree' results buffers."
+  :lighter " cleandesk-tree-results-buffer"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "q") (lambda () (interactive) (kill-buffer (current-buffer))))
+	    (define-key map (kbd "n") 'org-next-link)
+	    (define-key map (kbd "p") 'org-previous-link)
+	    (define-key map (kbd "o") 'cleandesk-dired-open-at-point)
+	    (define-key map (kbd "O") 'org-open-at-point)
+            map))
+
+(defun cleandesk-dired-open-at-point ()
+  "Open the file or directory at point in Dired using the default handler 
+or open subdirectory in Dired."
+  (interactive)
+  (cond
+   ((derived-mode-p 'dired-mode)
+    (let ((file (dired-get-file-for-visit)))
+      (if (file-directory-p file)
+          (dired file)  
+        (find-file file))))  
+   ((derived-mode-p 'org-mode)
+    (let* ((link (org-element-context))
+           (type (org-element-property :type link))
+           (path (org-element-property :path link)))
+      (if (and (string= type "file")
+               (file-directory-p path))
+          (dired path)  
+        (org-open-at-point)))))) 
 
 (provide 'cleandesk)
 
