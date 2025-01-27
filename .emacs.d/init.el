@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-01-14 14:56:08 dharms>
+;; Modified Time-stamp: <2025-01-27 09:43:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -54,6 +54,8 @@
   (when (< emacs-major-version 29)
     (push (concat my/elisp-directory "compat/29/0/-/") load-path)
     (require 'eglot))
+  (when (< emacs-major-version 30)
+    (push (concat my/elisp-directory "compat/30/0/-/") load-path))
   (when (version< emacs-version "29.1")
     (push (concat my/elisp-directory "compat/29/1/-/") load-path))
   (setq load-path (append
