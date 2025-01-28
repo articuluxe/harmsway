@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++17 $(CXX_FLAGS) -Wno-unused-parameter -c -g
+CXXFLAGS=-std=c++20 $(CXX_FLAGS) -Wno-unused-parameter -c -g
 LDFLAGS=-g
 SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
