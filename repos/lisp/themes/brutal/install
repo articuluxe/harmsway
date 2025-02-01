@@ -1,2 +1,0 @@
-cp src/brutal-theme.el ../../../../.emacs.d/plugins
-cp src/brutal-*-theme.el ../../../../.emacs.d/etc/themes
