@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2025-01-04 19:00:04 dharms>
+;; Modified Time-stamp: <2025-02-01 11:00:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -51,6 +51,8 @@
                             "ProggyVector 14"
                             "Go Mono 14"
                             "Anka/Coder 14"
+                            "Operator Mono 14"
+                            "MonoLisa Trial 14"
                             "League Mono Variable 14"
                             "Ubuntu Mono 16"
                             "Andale Mono 14"
