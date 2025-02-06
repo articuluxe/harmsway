@@ -107,14 +107,14 @@
   :reader #'magit-transient-read-revision)
 
 (defun magit-subtree-prefix (transient prompt)
-  (if-let ((arg (--first (string-prefix-p "--prefix=" it)
-                         (transient-args transient))))
+  (if-let ((arg (seq-find (##string-prefix-p "--prefix=" %)
+                          (transient-args transient))))
       (substring arg 9)
     (magit-subtree-read-prefix prompt)))
 
 (defun magit-subtree-arguments (transient)
-  (--remove (string-prefix-p "--prefix=" it)
-            (transient-args transient)))
+  (seq-remove (##string-prefix-p "--prefix=" %)
+              (transient-args transient)))
 
 (defun magit-git-subtree (subcmd prefix &rest args)
   (magit-run-git-async "subtree" subcmd (concat "--prefix=" prefix) args))

@@ -292,9 +292,6 @@ See `forge-alist' for valid Git hosts."
       (error "(Maybe repository) is nil; `%s' not satisfied" demand)
     nil))
 
-(defun forge--get-repository:tracked? ()
-  (forge-get-repository :tracked?))
-
 (defun forge-repository-at-point (&optional demand)
   "Return the repository at point.
 If there is no such repository and DEMAND is non-nil, then signal
@@ -350,16 +347,12 @@ REPO, return it, else set the slot to nil and return nil."
 ;;;; List
 
 (defun forge--ls-repos ()
-  (mapcar (let ((db (forge-db)))
-            (lambda (row)
-              (closql--remake-instance 'forge-repository db row)))
+  (mapcar (partial #'closql--remake-instance 'forge-repository (forge-db))
           (forge-sql [:select * :from repository
                       :order-by [(asc owner) (asc name)]])))
 
 (defun forge--ls-owned-repos ()
-  (mapcar (let ((db (forge-db)))
-            (lambda (row)
-              (closql--remake-instance 'forge-repository db row)))
+  (mapcar (partial #'closql--remake-instance 'forge-repository (forge-db))
           (forge-sql [:select * :from repository
                       :where (and (in owner $v1)
                                   (not (in name $v2)))

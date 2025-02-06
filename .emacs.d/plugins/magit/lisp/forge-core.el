@@ -26,8 +26,8 @@
 
 (require 'cl-lib)
 (require 'compat)
-(require 'dash)
 (require 'eieio)
+(require 'llama)
 (require 'seq)
 (require 'subr-x)
 
@@ -295,16 +295,21 @@ Using OBJ itself would not be appropriate because multiple
 non-equal objects may exist, representing the same thing."
   (oref obj id))
 
-(defun forge--set-id-slot (repo object slot rows)
-  "Set the value in OBJECT for SLOT to VALUE, actually storing foreign keys."
-  ;; TODO Should CloSQL advice `oset' to make this unnecessary?
-  (let ((repo-id (oref repo id)))
-    (closql-oset
-     object slot
-     (mapcar (lambda (val)
-               (forge--object-id repo-id
-                                 (if (atom val) val (alist-get 'id val))))
-             rows))))
+(defun forge--set-connections (repo object slot list)
+  (closql-dset object slot
+               (let ((rid (oref repo id)))
+                 (mapcar (lambda (value)
+                           (forge--object-id
+                            rid
+                            (if (atom value)
+                                ;; For Gitlab labels we unfortunately only
+                                ;; get a string, the ambigious name of the
+                                ;; label.  See also the comment in the
+                                ;; Gitlab `forge--update-labels' method.
+                                value
+                              (alist-get 'id value))))
+                         list))
+               t))
 
 ;;; Format
 

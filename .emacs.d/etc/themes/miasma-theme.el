@@ -387,6 +387,24 @@
    `(vertico-posframe-border-3 ((,class (:background ,miasma-cedar))))
    `(vertico-posframe-border-4 ((,class (:background ,miasma-ecru))))
 
+   ;;;;; vterm
+   `(vterm-color-black ((,class (:foreground ,miasma-charcoal :background ,miasma-graphite))))
+   `(vterm-color-red ((,class (:foreground ,miasma-terracota :background ,miasma-chestnut))))
+   `(vterm-color-green ((,class (:foreground ,miasma-eucalyptus :background ,miasma-moss))))
+   `(vterm-color-yellow ((,class (:foreground ,miasma-ecru :background ,miasma-olive))))
+   `(vterm-color-blue ((,class (:foreground ,miasma-river :background ,miasma-obsidian))))
+   `(vterm-color-magenta ((,class (:foreground ,miasma-cedar :background ,miasma-chestnut))))
+   `(vterm-color-cyan ((,class (:foreground ,miasma-eucalyptus :background ,miasma-forest))))
+   `(vterm-color-white ((,class (:foreground ,miasma-marble :background ,miasma-dark-gray))))
+   `(vterm-color-bright-black ((,class (:foreground ,miasma-graphite :background ,miasma-dark-gray))))
+   `(vterm-color-bright-red ((,class (:foreground ,miasma-tangerine :background ,miasma-chestnut))))
+   `(vterm-color-bright-green ((,class (:foreground ,miasma-reseda :background ,miasma-ivy))))
+   `(vterm-color-bright-yellow ((,class (:foreground ,miasma-lemon :background ,miasma-brass))))
+   `(vterm-color-bright-blue ((,class (:foreground ,miasma-sky :background ,miasma-river))))
+   `(vterm-color-bright-magenta ((,class (:foreground ,miasma-tangerine :background ,miasma-cedar))))
+   `(vterm-color-bright-cyan ((,class (:foreground ,miasma-reseda :background ,miasma-forest))))
+   `(vterm-color-bright-white ((,class (:foreground ,miasma-marble :background ,miasma-light-gray))))
+
    ;;;;; web-mode
    `(web-mode-html-attr-engine-face ((,class (:foreground ,miasma-reseda))))
    `(web-mode-html-attr-name-face ((,class (:foreground ,miasma-reseda))))

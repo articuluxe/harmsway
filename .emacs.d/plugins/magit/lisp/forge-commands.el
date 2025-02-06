@@ -65,14 +65,14 @@ Takes the pull-request as only argument and must return a directory."
     ("f t" "one topic"      forge-pull-topic)
     ("f n" "notifications"  forge-pull-notifications)]
    ["Create"
-    :if forge--get-repository:tracked?
+    :if (##forge-get-repository :tracked?)
     ("c i" "issue"          forge-create-issue)
     ("c p" "pull-request"   forge-create-pullreq)
     ("c u" "pr from issue"  forge-create-pullreq-from-issue)
     ("c f" "fork or remote" forge-fork)]
    [:description (lambda ()
                    (cond
-                    ((forge--get-repository:tracked?) "Actions")
+                    ((forge-get-repository :tracked?) "Actions")
                     ((or (magit-gitdir) (forge-repository-at-point))
                      "Forge does not yet track this repository")
                     ("Not inside a Git repository")))
@@ -83,20 +83,21 @@ Takes the pull-request as only argument and must return a directory."
                             "track some repo"
                           "track this repository"))))
     ("/M" "merge with api" forge-merge
-     :if forge--get-repository:tracked? :level 7)]]
+     :if (##forge-get-repository :tracked?)
+     :level 7)]]
   [forge--lists-group
    ["Visit"
-    :inapt-if-not forge--get-repository:tracked?
+    :inapt-if-not (##forge-get-repository :tracked?)
     ("v t" "topic"          forge-visit-topic)
     ("v i" "issue"          forge-visit-issue)
     ("v p" "pull-request"   forge-visit-pullreq)]
    ["Browse"
     ("b t" "topic"          forge-browse-topic
-     :inapt-if-not forge--get-repository:tracked?)
+     :inapt-if-not (##forge-get-repository :tracked?))
     ("b i" "issue"          forge-browse-issue
-     :inapt-if-not forge--get-repository:tracked?)
+     :inapt-if-not (##forge-get-repository :tracked?))
     ("b p" "pull-request"   forge-browse-pullreq
-     :inapt-if-not forge--get-repository:tracked?)
+     :inapt-if-not (##forge-get-repository :tracked?))
     ("b r" "remote"         forge-browse-remote)
     ("b I" "issues"         forge-browse-issues)
     ("b P" "pull-requests"  forge-browse-pullreqs)
@@ -109,7 +110,7 @@ Takes the pull-request as only argument and must return a directory."
 
 (transient-augment-suffix forge-dispatch
   :transient #'transient--do-replace
-  :inapt-if (lambda () (eq (oref transient--prefix command) 'forge-dispatch))
+  :inapt-if (##eq (oref transient--prefix command) 'forge-dispatch)
   :inapt-face 'forge-suffix-active)
 
 ;;;###autoload(autoload 'forge-configure "forge-commands" nil t)
@@ -127,7 +128,7 @@ Takes the pull-request as only argument and must return a directory."
 
 (transient-augment-suffix forge-configure
   :transient #'transient--do-replace
-  :inapt-if (lambda () (eq (oref transient--prefix command) 'forge-configure))
+  :inapt-if (##eq (oref transient--prefix command) 'forge-configure)
   :inapt-face 'forge-suffix-active)
 
 ;;; Pull
@@ -198,7 +199,7 @@ repository cannot be determined, instead invoke `forge-add-repository'."
 ;;;###autoload(autoload 'forge-pull-topic "forge-commands" nil t)
 (transient-define-suffix forge-pull-topic (number)
   "Read a topic TYPE and NUMBER pull data about it from its forge."
-  :inapt-if-not (lambda () (and (forge--get-repository:tracked?)
+  :inapt-if-not (lambda () (and (forge-get-repository :tracked?)
                            (forge--get-github-repository)))
   (interactive
    (list (read-number "Pull topic: "
@@ -1111,7 +1112,7 @@ Also update the upstream branches of local branches accordingly."
   :class 'magit--git-variable
   :variable "forge.graphqlItemLimit"
   :reader #'read-string
-  :default (lambda () (number-to-string ghub-graphql-items-per-request)))
+  :default (##number-to-string ghub-graphql-items-per-request))
 
 (transient-define-suffix forge-toggle-display-in-status-buffer ()
   "Toggle whether to display topics in the current status buffer."
@@ -1168,7 +1169,7 @@ upstream remote."
   [:class transient-subgroups
 
    ;; Already tracked.
-   [:if (lambda () (forge--scope :tracked))
+   [:if (##forge--scope :tracked)
     (:info*
      (lambda ()
        (format
@@ -1177,7 +1178,7 @@ upstream remote."
      :format "%d")]
 
    ;; Nothing to tracked.
-   [:if-not (lambda () (forge--scope 'topdir))
+   [:if-not (##forge--scope 'topdir)
     (:info*
      (lambda ()
        (format
@@ -1186,7 +1187,7 @@ upstream remote."
      :format "%d")]
 
    ;; Cannot track.
-   [:if (lambda () (and (not (forge--scope 'repo)) (forge--scope 'topdir)))
+   [:if (##and (not (forge--scope 'repo)) (forge--scope 'topdir))
     :description
     (lambda ()
       (concat
@@ -1209,7 +1210,7 @@ upstream remote."
      (lambda () (interactive) (info "(forge)Setup a Partially Supported Host")))]
 
    ;; Track it!
-   [:if (lambda () (forge--scope :untracked))
+   [:if (##forge--scope :untracked)
     :description
     (lambda ()
       (format

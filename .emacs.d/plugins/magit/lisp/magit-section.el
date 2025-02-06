@@ -8,11 +8,11 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: tools
 
-;; Package-Version: 4.2.0
+;; Package-Version: 4.3.0
 ;; Package-Requires: (
 ;;     (emacs "27.1")
-;;     (compat "30.0.1.0")
-;;     (dash "2.19.1")
+;;     (compat "30.0.2.0")
+;;     (llama "0.6.0")
 ;;     (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -44,8 +44,8 @@
 
 (require 'cl-lib)
 (require 'compat)
-(require 'dash)
 (require 'eieio)
+(require 'llama)
 (require 'subr-x)
 
 ;; For older Emacs releases we depend on an updated `seq' release from GNU
@@ -970,7 +970,7 @@ With a prefix argument also expand it." heading)
   "Toggle visibility of bodies of children of the current section."
   (interactive (list (magit-current-section)))
   (let* ((children (oref section children))
-         (show (--any-p (oref it hidden) children)))
+         (show (seq-some (##oref % hidden) children)))
     (dolist (c children)
       (oset c hidden show)))
   (magit-section-show section))
@@ -1034,8 +1034,8 @@ global map, this involves advising `tab-bar--define-keys'."
     (magit-section-show section)
     (magit-section-hide-children section))
    ((let ((children (oref section children)))
-      (cond ((and (--any-p (oref it hidden)   children)
-                  (--any-p (oref it children) children))
+      (cond ((and (seq-some (##oref % hidden)   children)
+                  (seq-some (##oref % children) children))
              (magit-section-show-headings section))
             ((seq-some #'magit-section-hidden-body children)
              (magit-section-show-children section))
@@ -1045,8 +1045,8 @@ global map, this involves advising `tab-bar--define-keys'."
   "Cycle visibility of all sections in the current buffer."
   (interactive)
   (let ((children (oref magit-root-section children)))
-    (cond ((and (--any-p (oref it hidden)   children)
-                (--any-p (oref it children) children))
+    (cond ((and (seq-some (##oref % hidden)   children)
+                (seq-some (##oref % children) children))
            (magit-section-show-headings magit-root-section))
           ((seq-some #'magit-section-hidden-body children)
            (magit-section-show-children magit-root-section))
@@ -1055,7 +1055,7 @@ global map, this involves advising `tab-bar--define-keys'."
 
 (defun magit-section-hidden-body (section &optional pred)
   (if-let ((children (oref section children)))
-      (funcall (or pred #'-any-p) #'magit-section-hidden-body children)
+      (funcall (or pred #'seq-some) #'magit-section-hidden-body children)
     (and (oref section content)
          (oref section hidden))))
 
@@ -1264,7 +1264,7 @@ of course you want to be that precise."
   (cl-assert condition)
   (and section
        (if (listp condition)
-           (--first (magit-section-match-1 it section) condition)
+           (seq-find (##magit-section-match-1 % section) condition)
          (magit-section-match-2 (if (symbolp condition)
                                     (list condition)
                                   (cl-coerce condition 'list))
@@ -1381,7 +1381,7 @@ a section by washing Git's output and Git didn't actually output
 anything this time around.
 
 \(fn [NAME] (CLASS &optional VALUE HIDE) &rest BODY)"
-  (declare (indent 1)
+  (declare (indent defun)
            (debug ([&optional symbolp]
                    (&or [("eval" form) &optional form form &rest form]
                         [symbolp &optional form form &rest form])
@@ -1950,8 +1950,8 @@ When `magit-section-preserve-visibility' is nil, do nothing."
                              (setq magit--ellipses-sections
                                    (or (magit-region-sections)
                                        (list (magit-current-section))))))
-           (beg (--map (oref it start) sections))
-           (end (--map (oref it end)   sections)))
+           (beg (mapcar (##oref % start) sections))
+           (end (mapcar (##oref % end)   sections)))
       (when (region-active-p)
         ;; This ensures that the region face is removed from ellipses
         ;; when the region becomes inactive, but fails to ensure that
@@ -1969,8 +1969,8 @@ When `magit-section-preserve-visibility' is nil, do nothing."
            (propertize
             (car magit-section-visibility-indicator) 'font-lock-face
             (let ((pos (overlay-start ov)))
-              (delq nil (nconc (--map (overlay-get it 'font-lock-face)
-                                      (overlays-at pos))
+              (delq nil (nconc (mapcar (##overlay-get % 'font-lock-face)
+                                       (overlays-at pos))
                                (list (get-char-property
                                       pos 'font-lock-face))))))))))))
 
@@ -2047,8 +2047,8 @@ excluding SECTION itself."
 
 Return the values that themselves would be returned by
 `magit-region-sections' (which see)."
-  (--map (oref it value)
-         (magit-region-sections condition multiple)))
+  (mapcar (##oref % value)
+          (magit-region-sections condition multiple)))
 
 (defun magit-region-sections (&optional condition multiple)
   "Return a list of the selected sections.
@@ -2095,8 +2095,8 @@ forms CONDITION can take."
                            (setq siblings nil)))
                        (setq sections (nreverse sections))
                        (and (or (not condition)
-                                (--all-p (magit-section-match condition it)
-                                         sections))
+                                (seq-every-p (##magit-section-match condition %)
+                                             sections))
                             sections))))))))
 
 (defun magit-map-sections (function &optional section)
@@ -2419,10 +2419,10 @@ and the buffer-local values of the variables referenced in its
           (bookmark-prop-set bookmark var (symbol-value var)))
         (bookmark-prop-set
          bookmark 'magit-hidden-sections
-         (--keep (and (oref it hidden)
-                      (cons (oref it type)
-                            (magit-bookmark--get-child-value it)))
-                 (oref magit-root-section children)))
+         (seq-keep (##and (oref % hidden)
+                          (cons (oref % type)
+                                (magit-bookmark--get-child-value %)))
+                   (oref magit-root-section children)))
         bookmark)
     (user-error "Bookmarking is not implemented for %s buffers" major-mode)))
 

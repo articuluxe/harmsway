@@ -109,7 +109,7 @@
 
 (cl-defmethod forge--update-revnotes ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
-    (mapc (apply-partially #'forge--update-revnote repo) data)))
+    (mapc (##forge--update-revnote repo %) data)))
 
 (cl-defmethod forge--update-revnote ((repo forge-github-repository) data)
   (closql-with-transaction (forge-db)
@@ -251,11 +251,13 @@
                                     &optional bump)
   (closql-with-transaction (forge-db)
     (let ((initial-pull (not (oref repo issues-until))))
-      (mapc (lambda (e) (forge--update-issue repo e bump initial-pull)) data))))
+      (dolist (elt data)
+        (forge--update-issue repo elt bump initial-pull)))))
 
 (cl-defmethod forge--update-issue ((repo forge-github-repository) data
                                    &optional bump initial-pull)
-  (let (issue-id issue)
+  (let ((repo-id (oref repo id))
+        issue-id issue)
     (let-alist data
       (closql-with-transaction (forge-db)
         (setq issue-id (forge--object-id 'forge-issue repo .number))
@@ -263,7 +265,7 @@
                         (closql-insert
                          (forge-db)
                          (forge-issue :id         issue-id
-                                      :repository (oref repo id)
+                                      :repository repo-id
                                       :number     .number))))
         (oset issue their-id   .id)
         (oset issue slug       (format "#%s" .number))
@@ -278,9 +280,7 @@
         (oset issue created    .createdAt)
         (oset issue closed     .closedAt)
         (oset issue locked-p   .locked)
-        (oset issue milestone  (and .milestone.id
-                                    (forge--object-id (oref repo id)
-                                                      .milestone.id)))
+        (oset issue milestone  (forge--object-id repo-id .milestone.id))
         (oset issue body       (forge--sanitize-string .body))
         (dolist (c .comments)
           (let-alist c
@@ -296,11 +296,8 @@
               :body    (forge--sanitize-string .body))
              t)))
         (forge--update-status repo issue data bump initial-pull))
-      (ignore-errors
-        (forge--set-id-slot repo issue 'assignees .assignees))
-      (ignore-errors
-        (unless (magit-get-boolean "forge.kludge-for-issue-294")
-          (forge--set-id-slot repo issue 'labels .labels))))
+      (forge--set-connections repo issue 'assignees .assignees)
+      (forge--set-connections repo issue 'labels .labels))
     issue))
 
 ;;;; Pullreqs
@@ -309,11 +306,13 @@
                                       &optional bump)
   (closql-with-transaction (forge-db)
     (let ((initial-pull (not (oref repo pullreqs-until))))
-      (mapc (lambda (e) (forge--update-pullreq repo e bump initial-pull)) data))))
+      (dolist (elt data)
+        (forge--update-pullreq repo elt bump initial-pull)))))
 
 (cl-defmethod forge--update-pullreq ((repo forge-github-repository) data
                                      &optional bump initial-pull)
-  (let (pullreq-id pullreq)
+  (let ((repo-id (oref repo id))
+        pullreq-id pullreq)
     (let-alist data
       (closql-with-transaction (forge-db)
         (setq pullreq-id (forge--object-id 'forge-pullreq repo .number))
@@ -321,7 +320,7 @@
                           (closql-insert
                            (forge-db)
                            (forge-pullreq :id         pullreq-id
-                                          :repository (oref repo id)
+                                          :repository repo-id
                                           :number     .number))))
         (oset pullreq their-id     .id)
         (oset pullreq slug         (format "#%s" .number))
@@ -345,9 +344,7 @@
         (oset pullreq head-rev     .headRefOid)
         (oset pullreq head-user    .headRef.repository.owner.login)
         (oset pullreq head-repo    .headRef.repository.nameWithOwner)
-        (oset pullreq milestone    (and .milestone.id
-                                        (forge--object-id (oref repo id)
-                                                          .milestone.id)))
+        (oset pullreq milestone    (forge--object-id repo-id .milestone.id))
         (oset pullreq body         (forge--sanitize-string .body))
         (dolist (p .comments)
           (let-alist p
@@ -363,15 +360,11 @@
               :body    (forge--sanitize-string .body))
              t)))
         (forge--update-status repo pullreq data bump initial-pull))
-      (ignore-errors
-        (forge--set-id-slot repo pullreq 'assignees .assignees))
-      (ignore-errors
-        (forge--set-id-slot repo pullreq 'review-requests
-                            (--map (cdr (cadr (car it)))
-                                   .reviewRequests)))
-      (ignore-errors
-        (unless (magit-get-boolean "forge.kludge-for-issue-294")
-          (forge--set-id-slot repo pullreq 'labels .labels))))
+      (forge--set-connections repo pullreq 'assignees .assignees)
+      (forge--set-connections repo pullreq 'review-requests
+                              (mapcar (##alist-get 'requestedReviewer %)
+                                      .reviewRequests))
+      (forge--set-connections repo pullreq 'labels .labels))
     pullreq))
 
 ;;;; Notifications
@@ -397,7 +390,7 @@
                       `((all . t) ,@(and since `((since . ,since))))
                       :host apihost :unpaginate t)))
          ;; Split into multiple requests to reduce risk of timeouts.
-         (groups (-partition-all 50 notifs))
+         (groups (seq-partition notifs 50))
          (pages  (length groups))
          (page   0)
          (topics nil))
@@ -431,9 +424,8 @@
                                                (intern (cadr (assq 'path err)))))
                                         (cdr errors))))
                                  (progn
-                                   (setq query (cl-delete-if
-                                                (lambda (e) (memq e notfound))
-                                                query :key #'caar))
+                                   (setq query (cl-delete-if (##memq % notfound)
+                                                             query :key #'caar))
                                    (funcall vacuum))
                                (ghub--signal-error errors)))))
                    (cl-incf page)
@@ -517,13 +509,13 @@
   ((class (subclass forge-github-repository)) host user)
   (forge--fetch-user-repos
    class (forge--as-apihost host) user
-   (apply-partially #'forge--batch-add-callback (forge--as-githost host) user)))
+   (partial #'forge--batch-add-callback (forge--as-githost host) user)))
 
 (cl-defmethod forge--add-organization-repos
   ((class (subclass forge-github-repository)) host org)
   (forge--fetch-organization-repos
    class (forge--as-apihost host) org
-   (apply-partially #'forge--batch-add-callback (forge--as-githost host) org)))
+   (partial #'forge--batch-add-callback (forge--as-githost host) org)))
 
 (cl-defmethod forge--fetch-user-repos
   ((_ (subclass forge-github-repository)) host user callback)
@@ -537,8 +529,8 @@
    `((login . ,user))
    (lambda (d)
      (funcall callback
-              (--map (alist-get 'name it)
-                     (let-alist d .user.repositories))))
+              (mapcar (##alist-get 'name %)
+                      (let-alist d .user.repositories))))
    nil :auth 'forge :host host))
 
 (cl-defmethod forge--fetch-organization-repos
@@ -550,8 +542,8 @@
    `((login . ,org))
    (lambda (d)
      (funcall callback
-              (--map (alist-get 'name it)
-                     (let-alist d .organization.repositories))))
+              (mapcar (##alist-get 'name %)
+                      (let-alist d .organization.repositories))))
    nil :auth 'forge :host host))
 
 (defun forge--batch-add-callback (host owner names)
@@ -775,16 +767,15 @@
                                            (_ (subclass forge-issue)))
   (and-let* ((files (magit-revision-files (oref repo default-branch))))
     (let ((case-fold-search t))
-      (if-let ((file (--first (string-match-p "\
-\\`\\(\\|docs/\\|\\.github/\\)issue_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)
-                              files)))
+      (if-let ((file (seq-find (##string-match-p "\
+\\`\\(\\|docs/\\|\\.github/\\)issue_template\\(\\.[a-zA-Z0-9]+\\)?\\'" %)
+                               files)))
           (list file)
-        (setq files
-              (--filter (string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" it)
-                        files))
-        (if-let ((conf (cl-find-if
-                        (lambda (f)
-                          (equal (file-name-nondirectory f) "config.yml"))
+        (setq files (seq-filter
+                     (##string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" %)
+                     files))
+        (if-let ((conf (seq-find
+                        (##equal (file-name-nondirectory %) "config.yml")
                         files)))
             (nconc (delete conf files)
                    (list conf))
@@ -794,9 +785,9 @@
                                            (_ (subclass forge-pullreq)))
   (and-let* ((files (magit-revision-files (oref repo default-branch))))
     (let ((case-fold-search t))
-      (if-let ((file (--first (string-match-p "\
-\\`\\(\\|docs/\\|\\.github/\\)pull_request_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)
-                              files)))
+      (if-let ((file (seq-find (##string-match-p "\
+\\`\\(\\|docs/\\|\\.github/\\)pull_request_template\\(\\.[a-zA-Z0-9]+\\)?\\'" %)
+                               files)))
           (list file)
         ;; Unlike for issues, the web interface does not support
         ;; multiple pull-request templates.  The API does though,

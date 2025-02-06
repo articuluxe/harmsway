@@ -179,12 +179,13 @@ the now stale refspecs.  Other stale branches are not removed."
               (ours   (match-string 3 refspec)))
           (unless (if (string-match "\\*" theirs)
                       (let ((re (replace-match ".*" t t theirs)))
-                        (--some (string-match-p re it) remote-refs))
+                        (seq-some (##string-match-p re %) remote-refs))
                     (member theirs remote-refs))
             (push (cons refspec
                         (if (string-match "\\*" ours)
                             (let ((re (replace-match ".*" t t ours)))
-                              (--filter (string-match-p re it) tracking-refs))
+                              (seq-filter (##string-match-p re %)
+                                          tracking-refs))
                           (list (car (member ours tracking-refs)))))
                   stale)))))
     (if (not stale)
@@ -199,7 +200,7 @@ the now stale refspecs.  Other stale branches are not removed."
                  variable))
             (?r "[r]emove remote"
                 (magit-call-git "remote" "rm" remote))
-            (?a "or [a]abort"
+            (?a "[a]abort"
                 (user-error "Abort")))
         (if (if (length= stale 1)
                 (pcase-let ((`(,refspec . ,refs) (car stale)))

@@ -253,20 +253,21 @@ A face attribute should be used that is not already used by any
    t))
 
 (cl-defmethod forge--object-id ((prefix string) number-or-id)
-  (base64-encode-string
-   (encode-coding-string
-    (format "%s:%s"
-            (base64-decode-string prefix)
-            (if (numberp number-or-id)
-                number-or-id
-              ;; Currently every ID is base64 encoded.  Unfortunately
-              ;; we cannot use the IDs of Gitlab labels (see comment
-              ;; in the respective `forge--update-labels' method),
-              ;; and have to use their names, which are not encoded.
-              (or (ignore-errors (base64-decode-string number-or-id))
-                  number-or-id)))
-    'utf-8)
-   t))
+  (and number-or-id
+       (base64-encode-string
+        (encode-coding-string
+         (format "%s:%s"
+                 (base64-decode-string prefix)
+                 (if (numberp number-or-id)
+                     number-or-id
+                   ;; Currently every ID is base64 encoded.  Unfortunately
+                   ;; we cannot use the IDs of Gitlab labels (see comment
+                   ;; in the respective `forge--update-labels' method),
+                   ;; and have to use their names, which are not encoded.
+                   (or (ignore-errors (base64-decode-string number-or-id))
+                       number-or-id)))
+         'utf-8)
+        t)))
 
 (cl-defmethod forge-topic-mark-read ((topic forge-topic))
   (when (eq (oref topic status) 'unread)
@@ -499,17 +500,17 @@ Limit list to topics for which a review by the given user was requested."
       (pcase-let ((`(,pred ,slot) (pcase (oref spec order)
                                     ('newest             '(> number))
                                     ('oldest             '(< number))
-                                    ('recently-updated   '(> updated))
-                                    ('anciently-updated  '(< updated)))))
+                                    ('recently-updated   '(string> updated))
+                                    ('anciently-updated  '(string< updated)))))
         (cl-sort (nconc (forge--list-topics-1 spec repo 'issue)
                         (forge--list-topics-1 spec repo 'pullreq))
-                 pred :key (lambda (obj) (eieio-oref obj slot))))
+                 pred :key (##eieio-oref % slot)))
     (forge--list-topics-1 spec repo type)))
 
 (defun forge--list-topics-1 (spec repo type)
-  (mapcar (apply-partially #'closql--remake-instance
-                           (if (eq type 'issue) 'forge-issue 'forge-pullreq)
-                           (forge-db))
+  (mapcar (partial #'closql--remake-instance
+                   (if (eq type 'issue) 'forge-issue 'forge-pullreq)
+                   (forge-db))
           (forge-sql (forge--list-topics-2 spec repo type))))
 
 (defun forge--list-topics-2 (spec repo type)
@@ -561,8 +562,8 @@ Limit list to topics for which a review by the given user was requested."
           (`(,@(and state  `((in topic:state  ,(vconcat (ensure-list state)))))
              ,@(and status `((in topic:status ,(vconcat (ensure-list status))))))))
        ,@(and milestone '((= topic:milestone milestone:id)))
-       ,@(and labels    `((or ,@(mapcar (lambda (l) `(= label:name ,l)) labels))))
-       ,@(and marks     `((or ,@(mapcar (lambda (m) `(=  mark:name ,m))  marks))))
+       ,@(and labels    `((or ,@(mapcar (##`(= label:name ,%)) labels))))
+       ,@(and marks     `((or ,@(mapcar (##`(=  mark:name ,%))  marks))))
        ,@(and saved     '((= topic:saved-p  't)))
        ,@(and author    `((= topic:author   ,author)))
        ,@(and assignee  `((= assignee:login ,assignee)))
@@ -635,9 +636,8 @@ can be selected from the start."
     (cdr (assoc choice alist))))
 
 (defun forge--topic-collection (topics)
-  (mapcar (lambda (topic)
-            (cons (forge--format-topic-line topic)
-                  (oref topic id)))
+  (mapcar (##cons (forge--format-topic-line %)
+                  (oref % id))
           topics))
 
 (defvar-keymap forge-read-topic-minibuffer-map
@@ -709,7 +709,7 @@ can be selected from the start."
                                      :where (= repository $s1)
                                      :order-by [(desc updated)]]
                                     (oref repo id))))
-               :annotation-function (lambda (c) (get-text-property 0 :title c))))))
+               :annotation-function (##get-text-property 0 :title %)))))
 
 (defun forge-read-topic-title (topic)
   (read-string "Title: " (oref topic title)))
@@ -863,7 +863,7 @@ can be selected from the start."
                (`(forge-pullreq merged)    'forge-pullreq-merged)
                (`(forge-pullreq rejected)  'forge-pullreq-rejected)))))))
     (run-hook-wrapped 'forge-topic-wash-title-hook
-                      (lambda (fn) (prog1 nil (save-excursion (funcall fn)))))
+                      (##prog1 nil (save-excursion (funcall %))))
     (buffer-string)))
 
 (defun forge--format-topic-milestone (topic)
@@ -1010,7 +1010,7 @@ what subset of KIND is being listed."
 
 (defun forge--insert-topics (type heading topics)
   (when topics
-    (let ((width (apply #'max (--map (length (oref it slug)) topics))))
+    (let ((width (apply #'max (mapcar (##length (oref % slug)) topics))))
       (magit-insert-section ((eval type) heading t)
         (magit-insert-heading
           (concat (magit--propertize-face (concat heading " ")
@@ -1288,8 +1288,7 @@ This mode itself is never used directly."
    ""])
 
 (defconst forge--topic-set-state-group
-  [:description
-   (lambda () (if forge--show-topic-legend "Set public state" "Set state"))
+  [:description (##if forge--show-topic-legend "Set public state" "Set state")
    ("o" forge-topic-state-set-open)
    ("c" forge-issue-state-set-completed)
    ("x" forge-issue-state-set-unplanned)
@@ -1297,33 +1296,32 @@ This mode itself is never used directly."
    ("x" forge-pullreq-state-set-rejected)])
 
 (defconst forge--topic-set-status-group
-  [:description
-   (lambda () (if forge--show-topic-legend "Set private status" "Set status"))
+  [:description (##if forge--show-topic-legend "Set private status" "Set status")
    ("u" forge-topic-status-set-unread)
    ("p" forge-topic-status-set-pending)
    ("d" forge-topic-status-set-done)])
 
 (defconst forge--topic-legend-group
   '(["Legend" :if-non-nil forge--show-topic-legend
-     (:info* (lambda () (propertize "open issue"       'face 'forge-issue-open)))
-     (:info* (lambda () (propertize "completed issue"  'face 'forge-issue-completed)))
-     (:info* (lambda () (propertize "unplanned issue"  'face 'forge-issue-unplanned)))]
+     (:info* (##propertize "open issue"       'face 'forge-issue-open))
+     (:info* (##propertize "completed issue"  'face 'forge-issue-completed))
+     (:info* (##propertize "unplanned issue"  'face 'forge-issue-unplanned))]
     ["" :if-non-nil forge--show-topic-legend
-     (:info* (lambda () (propertize "open pullreq"     'face 'forge-pullreq-open)))
-     (:info* (lambda () (propertize "merged pullreq"   'face 'forge-pullreq-merged)))
-     (:info* (lambda () (propertize "rejected pullreq" 'face 'forge-pullreq-rejected)))]
+     (:info* (##propertize "open pullreq"     'face 'forge-pullreq-open))
+     (:info* (##propertize "merged pullreq"   'face 'forge-pullreq-merged))
+     (:info* (##propertize "rejected pullreq" 'face 'forge-pullreq-rejected))]
     ["" :if-non-nil forge--show-topic-legend
-     (:info* (lambda () (propertize "unread"           'face 'forge-topic-unread)))
-     (:info* (lambda () (propertize "pending"          'face 'forge-topic-pending)))
-     (:info* (lambda () (propertize "done"             'face 'forge-topic-done)))]
+     (:info* (##propertize "unread"           'face 'forge-topic-unread))
+     (:info* (##propertize "pending"          'face 'forge-topic-pending))
+     (:info* (##propertize "done"             'face 'forge-topic-done))]
     ["" :if-non-nil forge--show-topic-legend
-     (:info* (lambda () (propertize "draft"            'face 'forge-pullreq-draft)))]))
+     (:info* (##propertize "draft"            'face 'forge-pullreq-draft))]))
 
 (defvar forge--show-topic-legend t)
 
 (transient-define-suffix forge-toggle-topic-legend ()
   "Toggle whether to show legend for faces used in topic menus and lists."
-  :description (lambda () (if forge--show-topic-legend "hide legend" "show legend"))
+  :description (##if forge--show-topic-legend "hide legend" "show legend")
   :transient t
   (interactive)
   (customize-set-variable 'forge--show-topic-legend
@@ -1530,7 +1528,7 @@ This mode itself is never used directly."
     (let ((name (symbol-name slot)))
       (cond ((string-suffix-p "-p" name)
              (setq name (substring name 0 -2))
-             (oset obj reader (lambda (topic) (not (eieio-oref topic slot)))))
+             (oset obj reader (##not (eieio-oref % slot))))
             ((oset obj reader (intern (format "forge-read-topic-%s" name)))))
       (oset obj setter (intern (format "forge--set-topic-%s" name)))
       (unless (slot-boundp obj 'formatter)
@@ -1551,12 +1549,12 @@ This mode itself is never used directly."
 (transient-define-suffix forge-topic-set-labels (labels)
   "Edit the LABELS of the current topic."
   :class 'forge--topic-set-slot-command :slot 'labels
-  :formatter (lambda (topic) (forge--format-labels topic t)))
+  :formatter (##forge--format-labels % t))
 
 (transient-define-suffix forge-topic-set-marks (marks)
   "Edit the MARKS of the current topic."
   :class 'forge--topic-set-slot-command :slot 'marks
-  :formatter (lambda (topic) (forge--format-marks topic t)))
+  :formatter (##forge--format-marks % t))
 
 (transient-define-suffix forge-topic-set-assignees (assignees)
   "Edit the ASSIGNEES of the current topic."
@@ -1571,12 +1569,12 @@ This mode itself is never used directly."
   "Toggle whether the current pull-request is a draft."
   :class 'forge--topic-set-slot-command :slot 'draft-p
   :inapt-if-not #'forge-current-pullreq
-  :description (lambda () (forge--format-boolean 'draft-p "draft")))
+  :description (##forge--format-boolean 'draft-p "draft"))
 
 (transient-define-suffix forge-topic-toggle-saved ()
   "Toggle whether this topic is marked as saved."
   :class 'forge--topic-set-slot-command :slot 'saved-p
-  :description (lambda () (forge--format-boolean 'saved-p "saved"))
+  :description (##forge--format-boolean 'saved-p "saved")
   ;; Set only locally because Github's API does not support this.
   (interactive)
   (let ((topic (forge-current-topic t)))
@@ -1725,9 +1723,9 @@ alist, containing just `text' and `position'.")
                   (if (eq class 'forge-pullreq)
                       "Select pull-request template"
                     "Select issue template")
-                  (--map (alist-get 'prompt it) choices)
+                  (mapcar (##alist-get 'prompt %) choices)
                   nil t)))
-          (--first (equal (alist-get 'prompt it) c) choices))
+          (seq-find (##equal (alist-get 'prompt %) c) choices))
       (car choices))))
 
 ;;; Bug-Reference

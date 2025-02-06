@@ -6,10 +6,10 @@
 (require 'myron-themes)
 
 (defun myron-dogman-colors (background)
-  "get the foreground colors against a specific background"
-  (let* ((colors (--> (ct-make-hsl 240 80 43.596)
-                   (ct-rotation-hsv it 72)
-                   (--map (ct-contrast-clamp it background 4.1) it))))
+  "Get the dogman foreground colors against a specific BACKGROUND."
+  (let* ((colors (->> (ct-make-hsl 240 80 43.596)
+                   (ct-rotation-hsv 5)
+                   (--map (ct-contrast-clamp it background 4.1)))))
     (ht<-plist
       `(:background ,background
          :foreground ,(ct-contrast-min background background 6.0)
@@ -24,38 +24,38 @@
              (-select-by-indices '(0 4 3 3) colors))))))
 
 (defun myron-dogman-create ()
-  (-let*
-    ((background (ct-make-hsluv 180 100 94))
-      ;; (background "#fdf6e3")
-      ;; (background (ct-make-hsluv 180 100 90))
-      (normal-parts (myron-dogman-colors background))
-      ((&hash :alt :assumed :primary :faded :foreground) normal-parts)
+  "Create the colors for the dogman theme."
+  (-let* ((background (ct-make-hsluv 180 100 94))
+           ;; (background "#fdf6e3")
+           ;; (background (ct-make-hsluv 180 100 90))
 
-      (background> (myron-cdist background 4
-                     (-compose
-                       'ct-edit-hsv-v-dec
-                       'ct-edit-hsv-v-dec
-                       'ct-edit-lab-a-inc)))
+           (background> (ct-change background 4
+                          (-compose
+                            'ct-edit-hsv-v-dec
+                            'ct-edit-hsv-v-dec
+                            'ct-edit-lab-a-inc)))
 
-      (background>> (myron-cdist background> 6
-                      (-compose 'ct-edit-lab-a-inc 'ct-edit-lab-b-inc)))
+           (background>> (ct-change background> 6
+                           (-compose
+                             'ct-edit-lab-a-inc
+                             'ct-edit-lab-b-inc)))
 
-      (background+
-        (-> primary
-          (ct-edit-lch-c 80)
-          (ct-steal 'hsluv-l background>))))
+           (background+ (-> (myron-dogman-colors background)
+                          (ht-get :primary)
+                          (ct-edit-lch-c 80)
+                          (ct-steal 'hsluv-l background>))))
 
     (ht<-plist
       (list
         :focused (myron-dogman-colors background+)
-        :normal normal-parts
-        :weak (myron-dogman-colors background>)
-        :strong (myron-dogman-colors background>>)))))
+        :normal  (myron-dogman-colors background)
+        :weak    (myron-dogman-colors background>)
+        :strong  (myron-dogman-colors background>>)))))
 
 (deftheme myron-dogman)
-(myron-theme-define 'myron-dogman)
+(myron-themes--define 'myron-dogman)
 
-(myron-evil-cursor-color (myron-get :assumed))
+(myron-themes-evil-cursor-color (myron-themes-get :assumed))
 
 (provide-theme 'myron-dogman)
 (provide 'myron-dogman-theme)

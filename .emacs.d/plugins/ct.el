@@ -1,6 +1,6 @@
 ;;; ct.el --- Color Tools - a color api -*- coding: utf-8; lexical-binding: t -*-
 
-;; Copyright (c) 2024 neeasade
+;; Copyright (c) 2025 neeasade
 ;; SPDX-License-Identifier: MIT
 ;;
 ;; Version: 0.3
@@ -290,8 +290,9 @@ EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
                          ((string= colorspace "oklab") '("Lightness" "A" "B"))
                          ((string= colorspace "lch")   '("Lightness" "Chroma" "Hue"))
                          ((string= colorspace "rgb")   '("Red" "Green" "Blue"))
-                         ((t (throw 'no-colorspace t)))))
-           (properties-desc (mapconcat 'identity properties ", ")))
+                         (t (throw 'no-colorspace t))))
+           (properties-desc (mapconcat 'identity properties ", "))
+           (properties-short (--map (intern (downcase (substring it 0 1))) properties)))
 
     (funcall collect
       `(defun ,get (color)
@@ -307,8 +308,15 @@ EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
       `(defun ,make ,(--map (-> it downcase intern) properties)
          ,(format "Make a %s color using properties: %s." colorspace (upcase properties-desc))
          (,transform "#cccccc"
-           (lambda (&rest props)
+           (lambda (&rest _)
              (list ,@(--map (-> it downcase intern) properties))))))
+
+    (funcall collect
+      `(defmacro ,(intern (format "ct-aedit-%s" colorspace)) (color body)
+         ,(format "An anaphoric version of `%s' with COLOR properties bound to %s in BODY." transform properties-short)
+         `(,',transform ,color (lambda ,',properties-short
+                                 (ignore ,@',properties-short)
+                                 ,body))))
 
     (->> '(0 1 2)
       (-map
@@ -336,20 +344,22 @@ EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
 
             (funcall collect
               `(defun ,(intern (format "%s-inc" transform-prop-fn)) (color &optional amount)
-                 ,(format "Increase %s property of COLOR by AMOUNT (defaults to minimum increase amount)." prop-name)
+                 ,(format "Increase %s property of COLOR by AMOUNT
+If AMOUNT is nil, defaults to minimum value needed to change color." prop-name)
                  (if amount
                    (,(intern transform-prop-fn) color (-partial #'+ amount))
-                   (ct--amp-value color (lambda (c v) (,(intern transform-prop-fn) color (-partial #'+ v)))
+                   (ct--amp-value color (lambda (c v) (,(intern transform-prop-fn) c (-partial #'+ v)))
                      0.1 (-partial #'+ 0.1)
                      ;; nb: 30% limit is arbitrary
                      (lambda (arg) (ct--within arg 30 0.1))))))
 
             (funcall collect
               `(defun ,(intern (format "%s-dec" transform-prop-fn)) (color &optional amount)
-                 ,(format "Decrease %s property of COLOR by AMOUNT (defaults to minimum decrease amount)." prop-name)
+                 ,(format "Decrease %s property of COLOR by AMOUNT.
+If AMOUNT is nil, defaults to minimum value needed to change color." prop-name)
                  (if amount
                    (,(intern transform-prop-fn) color (-rpartial #'- amount))
-                   (ct--amp-value color (lambda (c v) (,(intern transform-prop-fn) color (-partial #'+ v)))
+                   (ct--amp-value color (lambda (c v) (,(intern transform-prop-fn) c (-partial #'+ v)))
                      -0.1 (-rpartial #'- 0.1)
                      ;; nb: 30% limit is arbitrary
                      (lambda (arg) (ct--within arg 30 0.1))))))
@@ -382,17 +392,7 @@ EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
 (ct--make-transform-property-functions "hsluv")
 
 (when (functionp 'color-oklab-to-xyz)
-  (ct--make-transform-property-functions "oklab")
-  (defmacro ct-aedit-oklab (color body) "An anaphoric version of `ct-edit-oklab' with COLOR properties bound to (l a b) in BODY." `(ct-edit-oklab ,color (lambda (l a b) ,body))))
-
-;; couldn't figure out how to nest this defmacro call
-(defmacro ct-aedit-rgb (color body) "An anaphoric version of `ct-edit-rgb' with COLOR properties bound to (r g b) in BODY." `(ct-edit-rgb ,color (lambda (r g b) ,body)))
-(defmacro ct-aedit-hsl (color body) "An anaphoric version of `ct-edit-hsl' with COLOR properties bound to (h s l) in BODY." `(ct-edit-hsl ,color (lambda (h s l) ,body)))
-(defmacro ct-aedit-hsv (color body) "An anaphoric version of `ct-edit-hsv' with COLOR properties bound to (h s v) in BODY." `(ct-edit-hsv ,color (lambda (h s v) ,body)))
-(defmacro ct-aedit-lch (color body) "An anaphoric version of `ct-edit-lch' with COLOR properties bound to (l c h) in BODY." `(ct-edit-lch ,color (lambda (l c h) ,body)))
-(defmacro ct-aedit-lab (color body) "An anaphoric version of `ct-edit-lab' with COLOR properties bound to (l a b) in BODY." `(ct-edit-lab ,color (lambda (l a b) ,body)))
-(defmacro ct-aedit-hpluv (color body) "An anaphoric version of `ct-edit-hpluv' with COLOR properties bound to (h p l) in BODY." `(ct-edit-hpluv ,color (lambda (h p l) ,body)))
-(defmacro ct-aedit-hsluv (color body) "An anaphoric version of `ct-edit-hsluv' with COLOR properties bound to (h s l) in BODY." `(ct-edit-hsluv ,color (lambda (h s l) ,body)))
+  (ct--make-transform-property-functions "oklab"))
 
 ;;;
 ;;; other color functions
@@ -401,7 +401,7 @@ EDIT-FN is called with values in ranges: {0-360, 0-100, 0-100}."
 (defun ct-format-rbga (color &optional opacity)
   "RGBA formatting:
 Pass in COLOR and OPACITY 0-100, get a string
-representation of COLOR as follows: 'rgba(R, G, B, OPACITY)', where
+representation of COLOR as follows: \"rgba(R, G, B, OPACITY)\", where
 values RGB are 0-255, and OPACITY is 0-1.0 (default 1.0)."
   (->> (ct-get-rgb color)
     (-map (-partial '* (/ 255.0 100)))
@@ -461,7 +461,9 @@ Component value in 0-100 range."
       (-map 'ct--delinearize comps))))
 
 (defun ct-pastel (color &optional Smod Vmod)
-  "Make COLOR more 'pastel' using the hsluv space -- optionally change the rate of change with SMOD and VMOD."
+  "\"pastelize\" COLOR using the hsluv colorspace.
+
+Optionally change the rate of change with SMOD and VMOD."
   ;; ref https://en.wikipedia.org/wiki/Pastel_(color)
   (ct-edit-hsl color
     (lambda (H S L)
@@ -509,6 +511,14 @@ Component value in 0-100 range."
   ;; https://en.wikipedia.org/wiki/Color_difference#CIEDE2000
   (apply #'color-cie-de2000 (-map 'ct-name-to-lab (list color1 color2))))
 
+(defun ct-distance-oklab (color1 color2)
+  "Get okLAB distance between COLOR1 and COLOR2, range 0-100."
+  (-let (((x1 y1 z1) (ct-get-oklab c1))
+          ((x2 y2 z2) (ct-get-oklab c2)))
+    (sqrt (+ (* (- x2 x1) (- x2 x1))
+            (* (- y2 y1) (- y2 y1))
+            (* (- z2 z1) (- z2 z1))))))
+
 (defun ct-light-p (color &optional threshold)
   "Determine if a COLOR passes a cieLAB lightness THRESHOLD."
   ;; nb: 65 here is arbitrary
@@ -543,9 +553,12 @@ Will return early if calling EDIT-FN results in no change."
 Will return early if calling EDIT-FN results in no change.
 
 This is an anaphoric version of `ct-iterate' wrt. CONDITION - the current color
-value is bound to C, and the START color is bound to C0."
+value is bound to C, and the initial value of COLOR is bound to C0."
   `(ct-iterate ,color ,edit-fn
-     (lambda (C) (let ((C0 ,color)) ,condition))))
+     (lambda (C)
+       (let ((C0 ,color))
+         (ignore C C0)
+         ,condition))))
 
 (defmacro ct-aiterations (color edit-fn condition)
   "Transform COLOR using EDIT-FN until CONDITION is met, returning each step.
@@ -554,12 +567,14 @@ Will return early if calling EDIT-FN results in no change.
 This is an anaphoric version of `ct-iterations' wrt. CONDITION - the current
 color value is bound to C, and the START color is bound to C0."
   `(ct-iterations ,color ,edit-fn
-     (lambda (C) (let ((C0 ,start)) ,condition))))
+     (lambda (C) (let ((C0 ,color))
+                   (ignore C C0)
+                   ,condition))))
 
 (defun ct-contrast-min (foreground background contrast-ratio &optional color-property)
   "Edit FOREGROUND to have a minimum CONTRAST-RATIO on BACKGROUND.
 
-Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
+Optionally specify the COLOR-PROPERTY used to tweak foreground (default `lab-l')"
   (-let* ((color-property (or color-property 'lab-l))
            (darken-fn (intern (format "ct-edit-%s-dec" color-property)))
            (lighten-fn (intern (format "ct-edit-%s-inc" color-property))))
@@ -570,7 +585,7 @@ Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
 (defun ct-contrast-max (foreground background contrast-ratio &optional color-property)
   "Edit FOREGROUND to have a maximum CONTRAST-RATIO on BACKGROUND.
 
-Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
+Optionally specify the COLOR-PROPERTY used to tweak foreground (default `lab-l')"
   (-let* ((color-property (or color-property 'lab-l))
            (darken-fn (intern (format "ct-edit-%s-dec" color-property)))
            (lighten-fn (intern (format "ct-edit-%s-inc" color-property))))
@@ -581,13 +596,15 @@ Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
 (defun ct-contrast-clamp (foreground background contrast-ratio &optional color-property)
   "Conform FOREGROUND to be CONTRAST-RATIO against BACKGROUND.
 
-Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
+Optionally specify the COLOR-PROPERTY used to tweak foreground (default `lab-l')"
   (if (< contrast-ratio (ct-contrast-ratio foreground background))
     (ct-contrast-max foreground background contrast-ratio color-property)
     (ct-contrast-min foreground background contrast-ratio color-property)))
 
 (defun ct-mix-opacity (top bottom opacity)
-  "Get resulting color of TOP color with OPACITY overlayed against BOTTOM. Opacity is expected to be 0.0-1.0."
+  "Get resulting color of TOP color with OPACITY overlayed against BOTTOM.
+
+OPACITY is expected to be 0.0-1.0."
   ;; ref https://stackoverflow.com/questions/12228548/finding-equivalent-color-with-opacity
   (seq-let (r1 g1 b1 r2 g2 b2)
     (append (ct-get-rgb top) (ct-get-rgb bottom))
@@ -600,7 +617,7 @@ Optionally specify the COLOR-PROPERTY used to tweak foreground (default 'lab-l)"
   "Create a gradient from color START to color END in STEP parts.
 Optionally include START and END in results using
 WITH-ENDS. Optionally choose a colorspace with SPACE (see
-'ct--colorspace-map'). Hue-inclusive colorspaces may see mixed
+`ct--colorspace-map'). Hue-inclusive colorspaces may see mixed
 results."
   ;; todo: consider hue
   (-let* (((&plist :make make-color :get get-color) (ct--colorspace-map space))
@@ -624,7 +641,7 @@ results."
                    result))))))
 
 (defun ct-mix (colors &optional colorspace)
-  "Mix COLORS in COLORSPACE. See also: 'ct--colorspace-map'."
+  "Mix COLORS in COLORSPACE. See also: `ct--colorspace-map'."
   (-reduce (lambda (color new)
              (-second-item (ct-gradient 3 color new t colorspace)))
     colors))
@@ -643,10 +660,14 @@ results."
   (ct-edit-lab-l-inc color
     (* percent (if (ct-light-p color) -1 1))))
 
+(defmacro ct-change (color distance edit-fn)
+  "Change COLOR using EDIT-FN until DISTANCE is reached."
+  `(ct-aiterate ,color ,edit-fn (> (ct-distance C C0) ,distance)))
+
 (defmacro ct-steal (color property color2)
   "Steal PROPERTY of COLOR2 and set it on COLOR.
 
-PROPERTY is a symbol of a colorspace property, such as 'hsluv-l"
+PROPERTY is a symbol of a colorspace property, such as \='hsluv-l"
   (let ((name (substring  (prin1-to-string property) 1)))
     `(,(intern (format "ct-edit-%s" name)) ,color
        (,(intern (format "ct-get-%s" name)) ,color2))))
@@ -657,3 +678,8 @@ PROPERTY is a symbol of a colorspace property, such as 'hsluv-l"
 
 (provide 'ct)
 ;;; ct.el ends here
+
+;; Local Variables:
+;; byte-compile-warnings: nil
+;; fill-column: 100
+;; End:

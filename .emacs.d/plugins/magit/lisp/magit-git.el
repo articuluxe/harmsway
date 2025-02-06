@@ -1045,19 +1045,16 @@ tracked file."
 (defun magit-list-files (&rest args)
   (apply #'magit-git-items "ls-files" "-z" "--full-name" args))
 
-(defun magit-tracked-files ()
-  (magit-list-files "--cached"))
+(defun magit-tracked-files (&rest args)
+  (magit-list-files "--cached" args))
 
-(defun magit-untracked-files (&optional all files compact)
-  (if compact
-      (--mapcat (and (eq (aref it 0) ??)
-                     (list (substring it 3)))
-                (magit-git-items "status" "-z" "--porcelain"
-                                 (magit-ignore-submodules-p t)
-                                 "--" files))
-    (magit-list-files "--other"
-                      (and (not all) "--exclude-standard")
-                      "--" files)))
+(defun magit-untracked-files (&optional all files &rest args)
+  (magit-list-files "--other" args
+                    (and (not all) "--exclude-standard")
+                    "--" files))
+
+(defun magit-ignored-files (&rest args)
+  (magit-list-files "--others" "--ignored" "--exclude-standard" args))
 
 (defun magit-modified-files (&optional nomodules files)
   (magit-git-items "diff-index" "-z" "--name-only"
@@ -1078,31 +1075,27 @@ tracked file."
                    (magit-headish) "--" files))
 
 (defun magit-binary-files (&rest args)
-  (--mapcat (and (string-match "^-\t-\t\\(.+\\)" it)
-                 (list (match-string 1 it)))
-            (apply #'magit-git-items
-                   "diff" "-z" "--numstat" "--ignore-submodules"
-                   args)))
+  (mapcan (##and (string-match "^-\t-\t\\(.+\\)" %)
+                 (list (match-string 1 %)))
+          (apply #'magit-git-items
+                 "diff" "-z" "--numstat" "--ignore-submodules"
+                 args)))
 
 (defun magit-unmerged-files ()
   (magit-git-items "diff-files" "-z" "--name-only" "--diff-filter=U"))
 
-(defun magit-ignored-files ()
-  (magit-git-items "ls-files" "-z" "--others" "--ignored"
-                   "--exclude-standard" "--directory"))
-
 (defun magit-stashed-files (stash)
   (magit-git-items "stash" "show" "-z" "--name-only" stash))
 
-(defun magit-skip-worktree-files ()
-  (--keep (and (= (aref it 0) ?S)
-               (substring it 2))
-          (magit-list-files "-t")))
+(defun magit-skip-worktree-files (&rest args)
+  (seq-keep (##and (= (aref % 0) ?S)
+                   (substring % 2))
+            (magit-list-files "-t" args)))
 
-(defun magit-assume-unchanged-files ()
-  (--keep (and (memq (aref it 0) '(?h ?s ?m ?r ?c ?k))
-               (substring it 2))
-          (magit-list-files "-v")))
+(defun magit-assume-unchanged-files (&rest args)
+  (seq-keep (##and (memq (aref % 0) '(?h ?s ?m ?r ?c ?k))
+                   (substring % 2))
+            (magit-list-files "-v" args)))
 
 (defun magit-revision-files (rev)
   (magit-with-toplevel
@@ -1159,21 +1152,23 @@ or if no rename is detected."
 
 (defcustom magit-cygwin-mount-points
   (and (eq system-type 'windows-nt)
-       (cl-sort (--map (if (string-match "^\\(.*\\) on \\(.*\\) type" it)
-                           (cons (file-name-as-directory (match-string 2 it))
-                                 (file-name-as-directory (match-string 1 it)))
-                         (lwarn '(magit) :error
-                                "Failed to parse Cygwin mount: %S" it))
-                       ;; If --exec-path is not a native Windows path,
-                       ;; then we probably have a cygwin git.
-                       (let ((process-environment
-                              (append magit-git-environment
-                                      process-environment)))
-                         (and (not (string-match-p
-                                    "\\`[a-zA-Z]:"
-                                    (car (process-lines
-                                          magit-git-executable "--exec-path"))))
-                              (ignore-errors (process-lines "mount")))))
+       (cl-sort (mapcar
+                 (lambda (mount)
+                   (if (string-match "^\\(.*\\) on \\(.*\\) type" mount)
+                       (cons (file-name-as-directory (match-string 2 mount))
+                             (file-name-as-directory (match-string 1 mount)))
+                     (lwarn '(magit) :error
+                            "Failed to parse Cygwin mount: %S" mount)))
+                 ;; If --exec-path is not a native Windows path,
+                 ;; then we probably have a cygwin git.
+                 (let ((process-environment
+                        (append magit-git-environment
+                                process-environment)))
+                   (and (not (string-match-p
+                              "\\`[a-zA-Z]:"
+                              (car (process-lines
+                                    magit-git-executable "--exec-path"))))
+                        (ignore-errors (process-lines "mount")))))
                 #'> :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
   "Alist of (CYGWIN . WIN32) directory names.
 Sorted from longest to shortest CYGWIN name."
@@ -1707,10 +1702,10 @@ according to the branch type."
     (and remote (not (equal remote "."))
          ;; The user has opted in...
          (or force
-             (--some (if (magit-git-success "check-ref-format" "--branch" it)
-                         (equal it branch)
-                       (string-match-p it branch))
-                     magit-branch-prefer-remote-upstream))
+             (seq-some (##if (magit-git-success "check-ref-format" "--branch" %)
+                           (equal % branch)
+                         (string-match-p % branch))
+                       magit-branch-prefer-remote-upstream))
          ;; and local BRANCH tracks a remote branch...
          (let ((upstream (magit-get-upstream-branch branch)))
            ;; whose upstream...
@@ -1930,10 +1925,10 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                 (and (not symrefp) value)))
             (magit-git-lines "for-each-ref"
                              (concat "--format=%(symref)" format)
-                             (--map (concat "--sort=" it)
-                                    (pcase (or sortby magit-list-refs-sortby)
-                                      ((and val (pred stringp)) (list val))
-                                      ((and val (pred listp)) val)))
+                             (mapcar (##concat "--sort=" %)
+                                     (pcase (or sortby magit-list-refs-sortby)
+                                       ((and val (pred stringp)) (list val))
+                                       ((and val (pred listp)) val)))
                              (or namespaces magit-list-refs-namespaces))))
 
 (defun magit-list-branches ()
@@ -1946,16 +1941,16 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
   (magit-list-refs (concat "refs/remotes/" remote)))
 
 (defun magit-list-related-branches (relation &optional commit &rest args)
-  (--remove (string-match-p "\\(\\`(HEAD\\|HEAD -> \\)" it)
-            (--map (substring it 2)
-                   (magit-git-lines "branch" args relation commit))))
+  (seq-remove (##string-match-p "\\(\\`(HEAD\\|HEAD -> \\)" %)
+              (mapcar (##substring % 2)
+                      (magit-git-lines "branch" args relation commit))))
 
 (defun magit-list-containing-branches (&optional commit &rest args)
   (magit-list-related-branches "--contains" commit args))
 
 (defun magit-list-publishing-branches (&optional commit)
-  (--filter (magit-rev-ancestor-p (or commit "HEAD") it)
-            magit-published-branches))
+  (seq-filter (##magit-rev-ancestor-p (or commit "HEAD") %)
+              magit-published-branches))
 
 (defun magit-list-merged-branches (&optional commit &rest args)
   (magit-list-related-branches "--merged" commit args))
@@ -1964,18 +1959,18 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
   (magit-list-related-branches "--no-merged" commit args))
 
 (defun magit-list-unmerged-to-upstream-branches ()
-  (--filter (and-let* ((upstream (magit-get-upstream-branch it)))
-              (member it (magit-list-unmerged-branches upstream)))
-            (magit-list-local-branch-names)))
+  (seq-filter (##and-let* ((upstream (magit-get-upstream-branch %)))
+                (member % (magit-list-unmerged-branches upstream)))
+              (magit-list-local-branch-names)))
 
 (defun magit-list-branches-pointing-at (commit)
   (let ((re (format "\\`%s refs/\\(heads\\|remotes\\)/\\(.*\\)\\'"
                     (magit-rev-verify commit))))
-    (--keep (and (string-match re it)
-                 (let ((name (match-string 2 it)))
-                   (and (not (string-suffix-p "HEAD" name))
-                        name)))
-            (magit-git-lines "show-ref"))))
+    (seq-keep (##and (string-match re %)
+                     (let ((name (match-string 2 %)))
+                       (and (not (string-suffix-p "HEAD" name))
+                            name)))
+              (magit-git-lines "show-ref"))))
 
 (defun magit-list-refnames (&optional namespaces include-special)
   (nconc (magit-list-refs namespaces "%(refname:short)")
@@ -2000,9 +1995,9 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
 (defun magit-list-remote-branch-names (&optional remote relative)
   (if (and remote relative)
       (let ((regexp (format "^refs/remotes/%s/\\(.+\\)" remote)))
-        (--mapcat (when (string-match regexp it)
-                    (list (match-string 1 it)))
-                  (magit-list-remote-branches remote)))
+        (mapcan (##when (string-match regexp %)
+                  (list (match-string 1 %)))
+                (magit-list-remote-branches remote)))
     (magit-list-refnames (concat "refs/remotes/" remote))))
 
 (defun magit-format-refs (format &rest args)
@@ -2010,7 +2005,7 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                 "for-each-ref" (concat "--format=" format)
                 (or args (list "refs/heads" "refs/remotes" "refs/tags")))))
     (if (string-search "\f" format)
-        (--map (split-string it "\f") lines)
+        (mapcar (##split-string % "\f") lines)
       lines)))
 
 (defun magit-list-remotes ()
@@ -2029,22 +2024,22 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                    (magit-get-all "notes.displayRef")))
 
 (defun magit-list-notes-refnames ()
-  (--map (substring it 6) (magit-list-refnames "refs/notes")))
+  (mapcar (##substring % 6) (magit-list-refnames "refs/notes")))
 
 (defun magit-remote-list-tags (remote)
-  (--keep (and (not (string-suffix-p "^{}" it))
-               (substring it 51))
-          (magit-git-lines "ls-remote" "--tags" remote)))
+  (seq-keep (##and (not (string-suffix-p "^{}" %))
+                   (substring % 51))
+            (magit-git-lines "ls-remote" "--tags" remote)))
 
 (defun magit-remote-list-branches (remote)
-  (--keep (and (not (string-suffix-p "^{}" it))
-               (substring it 52))
-          (magit-git-lines "ls-remote" "--heads" remote)))
+  (seq-keep (##and (not (string-suffix-p "^{}" %))
+                   (substring % 52))
+            (magit-git-lines "ls-remote" "--heads" remote)))
 
 (defun magit-remote-list-refs (remote)
-  (--keep (and (not (string-suffix-p "^{}" it))
-               (substring it 41))
-          (magit-git-lines "ls-remote" remote)))
+  (seq-keep (##and (not (string-suffix-p "^{}" %))
+                   (substring % 41))
+            (magit-git-lines "ls-remote" remote)))
 
 (defun magit-remote-head (remote)
   (and-let* ((line (cl-find-if
@@ -2055,15 +2050,15 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
     (match-string 1 line)))
 
 (defun magit-list-modified-modules ()
-  (--keep (and (string-match "\\`\\+\\([^ ]+\\) \\(.+\\) (.+)\\'" it)
-               (match-string 2 it))
-          (magit-git-lines "submodule" "status")))
+  (seq-keep (##and (string-match "\\`\\+\\([^ ]+\\) \\(.+\\) (.+)\\'" %)
+                   (match-string 2 %))
+            (magit-git-lines "submodule" "status")))
 
 (defun magit-list-module-paths ()
   (magit-with-toplevel
-    (--mapcat (and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" it)
-                   (list (match-string 1 it)))
-              (magit-git-items "ls-files" "-z" "--stage"))))
+    (mapcan (##and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" %)
+                   (list (match-string 1 %)))
+            (magit-git-items "ls-files" "-z" "--stage"))))
 
 (defun magit-list-module-names ()
   (mapcar #'magit-get-submodule-name (magit-list-module-paths)))
@@ -2235,13 +2230,12 @@ If `first-parent' is set, traverse only first parents."
   (magit-rev-parse (magit-abbrev-arg "short") rev))
 
 (defun magit-commit-children (commit &optional args)
-  (mapcar #'car
-          (--filter (member commit (cdr it))
-                    (--map (split-string it " ")
-                           (magit-git-lines
-                            "log" "--format=%H %P"
-                            (or args (list "--branches" "--tags" "--remotes"))
-                            "--not" commit)))))
+  (seq-keep (lambda (line)
+              (pcase-let ((`(,child . ,parents) (split-string line " ")))
+                (and (member commit parents) child)))
+            (magit-git-lines "log" "--format=%H %P"
+                             (or args (list "--branches" "--tags" "--remotes"))
+                             "--not" commit)))
 
 (defun magit-commit-parents (commit)
   (and-let* ((str (magit-git-string "rev-list" "-1" "--parents" commit)))
@@ -2314,8 +2308,8 @@ and this option only controls what face is used.")
                  ", " t))
           state head upstream tags branches remotes other combined)
       (dolist (ref refs)
-        (let* ((face (cdr (--first (string-match (car it) ref)
-                                   magit-ref-namespaces)))
+        (let* ((face (cdr (seq-find (##string-match (car %) ref)
+                                    magit-ref-namespaces)))
                (name (match-string 1 ref))
                (name (if (and name
                               (not (string-prefix-p "refs/tags/" ref))
@@ -2427,7 +2421,7 @@ and this option only controls what face is used.")
 
 (defun magit-commit-tree (message &optional tree &rest parents)
   (magit-git-string "commit-tree" "--no-gpg-sign" "-m" message
-                    (--mapcat (list "-p" it) (delq nil parents))
+                    (mapcan (##list "-p" %) (delq nil parents))
                     (or tree
                         (magit-git-string "write-tree")
                         (error "Cannot write tree"))))
@@ -2630,8 +2624,8 @@ and this option only controls what face is used.")
                  (cl-union (and local-branch
                                 (if remote
                                     (list local-branch)
-                                  (--map (concat it "/" local-branch)
-                                         (magit-list-remotes))))
+                                  (mapcar (##concat % "/" local-branch)
+                                          (magit-list-remotes))))
                            (magit-list-remote-branch-names remote t)
                            :test #'equal)
                  nil require-match nil 'magit-revision-history default)))
@@ -2726,7 +2720,7 @@ and this option only controls what face is used.")
                            (or (magit-section-value-if 'branch)
                                atpoint
                                (and (not (cdr atrev)) (car atrev))
-                               (--first (not (equal it current)) atrev)
+                               (seq-find (##not (equal % current)) atrev)
                                (magit-get-previous-branch)
                                (car atrev)))))
 

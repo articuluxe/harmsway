@@ -94,11 +94,11 @@
   'magit-diff-section-map "Magit 4.0.0")
 
 (define-obsolete-variable-alias 'magit-wash-message-hook
-  'magit-revision-wash-message-hook "Magit 4.2.1")
+  'magit-revision-wash-message-hook "Magit 4.3.0")
 
 (make-obsolete-variable 'magit-diff-highlight-keywords
                         'magit-revision-wash-message-hook
-                        "Magit 4.2.1")
+                        "Magit 4.3.0")
 
 ;;; Options
 ;;;; Diff Mode
@@ -115,8 +115,8 @@
   :type 'hook)
 
 (defcustom magit-diff-sections-hook
-  '(magit-insert-diff
-    magit-insert-xref-buttons)
+  (list #'magit-insert-diff
+        #'magit-insert-xref-buttons)
   "Hook run to insert sections into a `magit-diff-mode' buffer."
   :package-version '(magit . "2.3.0")
   :group 'magit-diff
@@ -317,7 +317,7 @@ here: `--stat-width', `--stat-name-width', `--stat-graph-width'
 and `--compact-summary'.  See the git-diff(1) manpage."
   :package-version '(magit . "3.0.0")
   :group 'magit-diff
-  :type '(radio (function-item magit-diff-use-window-width-as-stat-width)
+  :type `(radio (function-item ,#'magit-diff-use-window-width-as-stat-width)
                 function
                 (list string)
                 (const :tag "None" nil)))
@@ -339,8 +339,8 @@ and `--compact-summary'.  See the git-diff(1) manpage."
   :group 'magit-modes)
 
 (defcustom magit-revision-mode-hook
-  '(bug-reference-mode
-    goto-address-mode)
+  (list #'bug-reference-mode
+        #'goto-address-mode)
   "Hook run after entering Magit-Revision mode."
   :group 'magit-revision
   :type 'hook
@@ -371,7 +371,7 @@ beginning of the narrowed region of the buffer.
 
 See also the related `magit-log-wash-summary-hook'.  You likely want to
 use the same functions for both hooks."
-  :package-version '(magit . "4.2.1")
+  :package-version '(magit . "4.3.0")
   :group 'magit-log
   :type 'hook
   :options (list #'magit-highlight-squash-markers
@@ -817,12 +817,12 @@ and `:slant'."
     (when-let (((not (eq transient-current-command 'magit-dispatch)))
                (file (magit-file-relative-name)))
       (setq files (list file)))
-    (oset obj value (if files `(("--" ,@files) ,args) args))))
+    (oset obj value (if files `(("--" ,@files) ,@args) args))))
 
 (cl-defmethod transient-init-value ((obj magit-diff-refresh-prefix))
   (oset obj value (if magit-buffer-diff-files
                       `(("--" ,@magit-buffer-diff-files)
-                        ,magit-buffer-diff-args)
+                        ,@magit-buffer-diff-args)
                     magit-buffer-diff-args)))
 
 (cl-defmethod transient-set-value ((obj magit-diff-prefix))
@@ -1093,7 +1093,7 @@ and `:slant'."
   :if 'magit-diff-argument-predicate)
 
 (defun magit-diff-argument-predicate ()
-  (or (eq transient--prefix 'magit-diff)
+  (or (eq (oref transient--prefix command) 'magit-diff)
       (derived-mode-p 'magit-diff-mode)))
 
 ;;;; Setup Commands
@@ -1526,7 +1526,7 @@ instead."
                   (string-to-number context)
                 3))
          (val magit-buffer-diff-args)
-         (arg (--first (string-match "^-U\\([0-9]+\\)?$" it) val))
+         (arg (seq-find (##string-match "^-U\\([0-9]+\\)?$" %) val))
          (num (if-let ((str (and arg (match-string 1 arg))))
                   (string-to-number str)
                 def))
@@ -1538,18 +1538,18 @@ instead."
   (magit-refresh))
 
 (defun magit-diff-context-p ()
-  (if-let ((arg (--first (string-match "^-U\\([0-9]+\\)$" it)
-                         magit-buffer-diff-args)))
+  (if-let ((arg (seq-find (##string-match "^-U\\([0-9]+\\)$" %)
+                          magit-buffer-diff-args)))
       (not (equal arg "-U0"))
     t))
 
 (defun magit-diff-ignore-any-space-p ()
-  (--any-p (member it magit-buffer-diff-args)
-           '("--ignore-cr-at-eol"
-             "--ignore-space-at-eol"
-             "--ignore-space-change" "-b"
-             "--ignore-all-space" "-w"
-             "--ignore-blank-space")))
+  (seq-some (##member % magit-buffer-diff-args)
+            '("--ignore-cr-at-eol"
+              "--ignore-space-at-eol"
+              "--ignore-space-change" "-b"
+              "--ignore-all-space" "-w"
+              "--ignore-blank-space")))
 
 (defun magit-diff-toggle-refine-hunk (&optional style)
   "Turn diff-hunk refining on or off.
@@ -1952,23 +1952,24 @@ commit or stash at point, then prompt for a commit."
   (interactive)
   (when-let ((sections
               (cond ((derived-mode-p 'magit-status-mode)
-                     (--mapcat
-                      (when it
-                        (when (oref it hidden)
-                          (magit-section-show it))
-                        (oref it children))
-                      (list (magit-get-section '((staged)   (status)))
-                            (magit-get-section '((unstaged) (status))))))
+                     (mapcan (lambda (section)
+                               (and section
+                                    (progn
+                                      (when (oref section hidden)
+                                        (magit-section-show section))
+                                      (oref section children))))
+                             (list (magit-get-section '((staged)   (status)))
+                                   (magit-get-section '((unstaged) (status))))))
                     ((derived-mode-p 'magit-diff-mode)
                      (seq-filter #'magit-file-section-p
                                  (oref magit-root-section children))))))
-    (if (--any-p (oref it hidden) sections)
+    (if (seq-some (##oref % hidden) sections)
         (dolist (s sections)
           (magit-section-show s)
           (magit-section-hide-children s))
-      (let ((children (--mapcat (oref it children) sections)))
-        (cond ((and (--any-p (oref it hidden)   children)
-                    (--any-p (oref it children) children))
+      (let ((children (mapcan (##oref % children) sections)))
+        (cond ((and (seq-some (##oref % hidden)   children)
+                    (seq-some (##oref % children) children))
                (mapc #'magit-section-show-headings sections))
               ((seq-some #'magit-section-hidden-body children)
                (mapc #'magit-section-show-children sections))
@@ -2128,10 +2129,14 @@ keymap is the parent of their keymaps."
   "b"   #'magit-smerge-keep-base
   "l"   #'magit-smerge-keep-lower)
 
-(defvar-keymap magit-hunk-section-map
-  :doc "Keymap for `hunk' sections."
-  :parent magit-diff-section-base-map
-  (key-description smerge-command-prefix) magit-hunk-section-smerge-map)
+(defvar magit-hunk-section-map
+  (let ((map (make-sparse-keymap))
+        (key (key-description smerge-command-prefix)))
+    (when (key-valid-p key)
+      (keymap-set map key magit-hunk-section-smerge-map))
+    (set-keymap-parent map magit-diff-section-base-map)
+    map)
+  "Keymap for `hunk' sections.")
 
 (defconst magit-diff-conflict-headline-re
   (concat "^" (regexp-opt
@@ -3413,10 +3418,10 @@ are highlighted."
                magit-diff-highlight-indentation
              (setq-local
               magit-diff-highlight-indentation
-              (cdr (--first (string-match-p (car it) default-directory)
-                            (nreverse
-                             (default-value
-                              'magit-diff-highlight-indentation))))))))
+              (cdr (seq-find (##string-match-p (car %) default-directory)
+                             (nreverse
+                              (default-value
+                               'magit-diff-highlight-indentation))))))))
       (when (and magit-diff-highlight-trailing
                  (looking-at (concat prefix ".*?\\([ \t]+\\)?$")))
         (let ((ov (make-overlay (match-beginning 1) (match-end 1) nil t)))

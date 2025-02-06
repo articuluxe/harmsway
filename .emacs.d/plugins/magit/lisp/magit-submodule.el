@@ -53,37 +53,37 @@ is inserted.  If it is nil, then all sections listed in
   :group 'magit-status
   :type 'boolean)
 
-(defcustom magit-submodule-list-mode-hook '(hl-line-mode)
+(defcustom magit-submodule-list-mode-hook (list #'hl-line-mode)
   "Hook run after entering Magit-Submodule-List mode."
   :package-version '(magit . "2.9.0")
   :group 'magit-repolist
   :type 'hook
   :get 'magit-hook-custom-get
-  :options '(hl-line-mode))
+  :options (list #'hl-line-mode))
 
 (defcustom magit-submodule-list-columns
-  '(("Path"     25 magit-modulelist-column-path
+  `(("Path"     25 ,#'magit-modulelist-column-path
      ())
-    ("Version"  25 magit-repolist-column-version
+    ("Version"  25 ,#'magit-repolist-column-version
      ((:sort magit-repolist-version<)))
-    ("Branch"   20 magit-repolist-column-branch
+    ("Branch"   20 ,#'magit-repolist-column-branch
      ())
-    ("B<P" 3 magit-repolist-column-unpulled-from-pushremote
+    ("B<P" 3 ,#'magit-repolist-column-unpulled-from-pushremote
      ((:right-align t)
       (:sort <)))
-    ("B<U" 3 magit-repolist-column-unpulled-from-upstream
+    ("B<U" 3 ,#'magit-repolist-column-unpulled-from-upstream
      ((:right-align t)
       (:sort <)))
-    ("B>P" 3 magit-repolist-column-unpushed-to-pushremote
+    ("B>P" 3 ,#'magit-repolist-column-unpushed-to-pushremote
      ((:right-align t)
       (:sort <)))
-    ("B>U" 3 magit-repolist-column-unpushed-to-upstream
+    ("B>U" 3 ,#'magit-repolist-column-unpushed-to-upstream
      ((:right-align t)
       (:sort <)))
-    ("S"   3 magit-repolist-column-stashes
+    ("S"   3 ,#'magit-repolist-column-stashes
      ((:right-align t)
       (:sort <)))
-    ("B"   3 magit-repolist-column-branches
+    ("B"   3 ,#'magit-repolist-column-branches
      ((:right-align t)
       (:sort <))))
   "List of columns displayed by `magit-list-submodules'.
@@ -179,8 +179,8 @@ and also setting this variable to t will lead to tears."
    ("f" "Fetch modules" magit-fetch-modules)])
 
 (defun magit-submodule-arguments (&rest filters)
-  (--filter (and (member it filters) it)
-            (transient-args 'magit-submodule)))
+  (seq-filter (##and (member % filters) %)
+              (transient-args 'magit-submodule)))
 
 (defclass magit--git-submodule-suffix (transient-suffix)
   ())
@@ -258,10 +258,10 @@ it is nil, then PATH also becomes the name."
     (push (if prefer-short path name) minibuffer-history)
     (magit-read-string-ns
      "Submodule name" nil (cons 'minibuffer-history 2)
-     (or (--keep (pcase-let ((`(,var ,val) (split-string it "=")))
-                   (and (equal val path)
-                        (cadr (split-string var "\\."))))
-                 (magit-git-lines "config" "--list" "-f" ".gitmodules"))
+     (or (seq-keep (##pcase-let ((`(,var ,val) (split-string % "=")))
+                     (and (equal val path)
+                          (cadr (split-string var "\\."))))
+                   (magit-git-lines "config" "--list" "-f" ".gitmodules"))
          (if prefer-short name path)))))
 
 ;;;###autoload (autoload 'magit-submodule-register "magit-submodule" nil t)
@@ -416,9 +416,9 @@ to recover from making a mistake here, but don't count on it."
     (when modules
       (let ((alist
              (and trash-gitdirs
-                  (--map (split-string it "\0")
-                         (magit-git-lines "submodule" "foreach" "-q"
-                                          "printf \"$sm_path\\0$name\n\"")))))
+                  (mapcar (##split-string % "\0")
+                          (magit-git-lines "submodule" "foreach" "-q"
+                                           "printf \"$sm_path\\0$name\n\"")))))
         (magit-git "submodule" "absorbgitdirs" "--" modules)
         (magit-git "submodule" "deinit" args "--" modules)
         (magit-git "rm" args "--" modules)

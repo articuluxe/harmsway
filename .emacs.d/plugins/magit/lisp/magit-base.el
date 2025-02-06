@@ -32,13 +32,14 @@
 
 ;;; Code:
 
-(defconst magit--minimal-git "2.25.0")
+;; Also update EMACS_VERSION in "default.mk".
 (defconst magit--minimal-emacs "27.1")
+(defconst magit--minimal-git "2.25.0")
 
 (require 'cl-lib)
 (require 'compat)
-(require 'dash)
 (require 'eieio)
+(require 'llama)
 (require 'subr-x)
 
 ;; For older Emacs releases we depend on an updated `seq' release from
@@ -81,13 +82,14 @@ option to use `ivy-completing-read' or
 `ivy-completing-read', note that the items may always be shown in
 alphabetical order, depending on your version of Ivy."
   :group 'magit-essentials
-  :type '(radio (function-item magit-builtin-completing-read)
-                (function-item magit-ido-completing-read)
+  :type `(radio (function-item ,#'magit-builtin-completing-read)
+                (function-item ,#'magit-ido-completing-read)
                 (function-item ivy-completing-read)
                 (function-item helm--completing-read-default)
                 (function :tag "Other function")))
 
 (defcustom magit-dwim-selection
+  ;; Do not function-quote to avoid circular dependencies.
   '((magit-stash-apply        nil t)
     (magit-ediff-resolve-all  nil t)
     (magit-ediff-resolve-rest nil t)
@@ -780,7 +782,7 @@ This is similar to `read-string', but
                             (string-join (butlast parts) ", ")
                             ", or "  (car (last parts)) " "))
                   ',(mapcar #'car clauses))
-            ,@(--map `(,(car it) ,@(cddr it)) clauses))
+            ,@(mapcar (##`(,(car %) ,@(cddr %))) clauses))
      (message "")))
 
 (defun magit-y-or-n-p (prompt &optional action)
@@ -881,16 +883,15 @@ See info node `(magit)Debugging Tools' for more information."
                          (error "Cannot find mandatory dependency %s" lib)))
                      '(;; Like `LOAD_PATH' in `default.mk'.
                        "compat"
-                       "dash"
+                       "llama"
+                       "seq"
                        "transient"
                        "with-editor"
                        ;; Obviously `magit' itself is needed too.
                        "magit"
-                       ;; While these are part of the Magit repository,
-                       ;; they are distributed as separate packages.
-                       "magit-section"
-                       "git-commit"
-                       ))))
+                       ;; While this is part of the Magit repository,
+                       ;; it is distributed as a separate package.
+                       "magit-section"))))
                 ;; Avoid Emacs bug#16406 by using full path.
                 "-l" ,(file-name-sans-extension (locate-library "magit")))
               " ")))
@@ -1018,6 +1019,16 @@ one trailing newline is added."
         (concat (string-trim str)
                 (and (eq trim ?\n) "\n"))
       str)))
+
+(defun magit--separate (pred list)
+  "Separate elements of LIST that do and don't satisfy PRED.
+Return a list of two lists; the first containing the elements that
+do satisfy PRED and the second containing the elements that don't."
+  (let (y n)
+    (dolist (elt list)
+      (push elt (if (funcall pred elt) y n)))
+    (list (nreverse y)
+          (nreverse n))))
 
 (defun magit--version> (v1 v2)
   "Return t if version V1 is higher (younger) than V2.
@@ -1157,7 +1168,7 @@ See <https://github.com/raxod502/straight.el/issues/520>."
 Like `message', except that if the users configured option
 `magit-no-message' to prevent the message corresponding to
 FORMAT-STRING to be displayed, then don't."
-  (unless (--first (string-prefix-p it format-string) magit-no-message)
+  (unless (seq-find (##string-prefix-p % format-string) magit-no-message)
     (apply #'message format-string args)))
 
 (defun magit-msg (format-string &rest args)

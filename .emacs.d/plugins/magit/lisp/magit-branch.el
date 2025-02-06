@@ -355,10 +355,10 @@ when using `magit-branch-and-checkout'."
   (interactive
    (let* ((current (magit-get-current-branch))
           (local   (magit-list-local-branch-names))
-          (remote  (--filter (and (string-match "[^/]+/" it)
-                                  (not (member (substring it (match-end 0))
-                                               (cons "HEAD" local))))
-                             (magit-list-remote-branch-names)))
+          (remote  (seq-filter (##and (string-match "[^/]+/" %)
+                                      (not (member (substring % (match-end 0))
+                                                   (cons "HEAD" local))))
+                               (magit-list-remote-branch-names)))
           (choices (nconc (delete current local) remote))
           (atpoint (magit-branch-at-point))
           (choice  (magit-completing-read
@@ -608,7 +608,9 @@ prompt is confusing."
              (user-error "Abort"))))
      (list branches force)))
   (let ((refs (mapcar #'magit-ref-fullname branches)))
-    (when-let ((ambiguous (--remove it refs)))
+    ;; If a member of refs is nil, that means that
+    ;; the respective branch name is ambiguous.
+    (when-let ((ambiguous (seq-filter #'null refs)))
       (user-error
        "%s ambiguous.  Please cleanup using git directly."
        (let ((len (length ambiguous)))
@@ -642,7 +644,7 @@ prompt is confusing."
            "push"
            (and (or force magit-branch-delete-never-verify) "--no-verify")
            remote
-           (--map (concat ":" (substring it offset)) branches))
+           (mapcar (##concat ":" (substring % offset)) branches))
           ;; If that is not the case, then this deletes the tracking branches.
           (set-process-sentinel
            magit-this-process
@@ -729,11 +731,11 @@ prompt is confusing."
 (defun magit-delete-remote-branch-sentinel (remote refs process event)
   (when (memq (process-status process) '(exit signal))
     (if (= (process-exit-status process) 1)
-        (if-let ((on-remote (--map (concat "refs/remotes/" remote "/" it)
-                                   (magit-remote-list-branches remote)))
-                 (rest (--filter (and (not (member it on-remote))
-                                      (magit-ref-exists-p it))
-                                 refs)))
+        (if-let ((on-remote (mapcar (##concat "refs/remotes/" remote "/" %)
+                                    (magit-remote-list-branches remote)))
+                 (rest (seq-filter (##and (not (member % on-remote))
+                                          (magit-ref-exists-p %))
+                                   refs)))
             (progn
               (process-put process 'inhibit-refresh t)
               (magit-process-sentinel process event)
@@ -829,8 +831,8 @@ and also rename the respective reflog file."
   (interactive
    (list (magit-completing-read
           "Unshelve branch"
-          (--map (substring it 8)
-                 (magit-list-refnames "refs/shelved"))
+          (mapcar (##substring % 8)
+                  (magit-list-refnames "refs/shelved"))
           nil t)))
   (let ((old (concat "refs/shelved/" branch))
         (new (concat "refs/heads/"   branch)))

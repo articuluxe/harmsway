@@ -568,7 +568,7 @@ t cl-type"
 ;; Derived from elisp-get-fnsym-args-string
 (defun marginalia--function-args (sym)
   "Return function arguments for SYM."
-  (let ((tmp))
+  (let (tmp)
     (elisp-function-argstring
      (cond
       ((listp (setq tmp (gethash (indirect-function sym)
@@ -577,15 +577,12 @@ t cl-type"
       ((setq tmp (help-split-fundoc
                   (ignore-errors (documentation sym t))
                   sym))
-       (substitute-command-keys (car tmp)))
+       (car tmp))
       ((setq tmp (help-function-arglist sym))
-       (and
-        (if (and (stringp tmp)
-                 (string-search "Arg list not available" tmp))
-            ;; A shorter text fits better into the
-            ;; limited Marginalia space.
-            "[autoload]"
-          tmp)))))))
+       (if (and (stringp tmp) (string-search "not available" tmp))
+           ;; A shorter text fits better into the limited Marginalia space.
+           "[autoload]"
+         tmp))))))
 
 (defun marginalia-annotate-symbol (cand)
   "Annotate symbol CAND with its documentation string."
@@ -1304,6 +1301,7 @@ Remember `this-command' for `marginalia-classify-by-command-name'."
   ;; As a small optimization we track the base position only for file
   ;; completions, since `marginalia--full-candidate' is currently used only by
   ;; the file annotation function.
+  ;; bug#75910: category instead of `minibuffer-completing-file-name'
   (when minibuffer-completing-file-name
     (let ((base (or (cdr (last completions)) 0)))
       (unless (= marginalia--base-position base)

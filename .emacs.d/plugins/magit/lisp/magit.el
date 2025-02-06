@@ -17,14 +17,14 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: git tools vc
 
-;; Package-Version: 4.2.0
+;; Package-Version: 4.3.0
 ;; Package-Requires: (
 ;;     (emacs "27.1")
-;;     (compat "30.0.1.0")
-;;     (dash "2.19.1")
-;;     (magit-section "4.2.0")
+;;     (compat "30.0.2.0")
+;;     (llama "0.6.0")
+;;     (magit-section "4.3.0")
 ;;     (seq "2.24")
-;;     (transient "0.8.2")
+;;     (transient "0.8.4")
 ;;     (with-editor "3.4.3"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -501,13 +501,21 @@ is run in the top-level directory of the current working tree."
 
 ;;; Shared Infix Arguments
 
+(transient-define-argument magit:--signoff ()
+  :description "Add Signed-off-by trailer"
+  :class 'transient-switch
+  :shortarg "-s"
+  :argument "--signoff"
+  :level 6)
+
 (transient-define-argument magit:--gpg-sign ()
   :description "Sign using gpg"
   :class 'transient-option
   :shortarg "-S"
   :argument "--gpg-sign="
   :allow-empty t
-  :reader #'magit-read-gpg-signing-key)
+  :reader #'magit-read-gpg-signing-key
+  :level 5)
 
 (defvar magit-gpg-secret-key-hist nil)
 

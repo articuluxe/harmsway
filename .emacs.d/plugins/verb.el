@@ -313,7 +313,6 @@ no warning will be shown when loading Emacs Lisp external files."
                                           "Connection"
                                           "Host"
                                           "Accept-Encoding"
-                                          "Extension"
                                           "Content-Length")
   "List of HTTP headers which are automatically added by url.el.
 The values of these headers can't be easily modified by Verb, so a
@@ -386,6 +385,9 @@ here under its value.")
 
 (defvar verb--requests-count 0
   "Number of HTTP requests sent in the past.")
+
+(defvar verb--in-flight-requests 0
+  "Number of HTTP requests currently in-flight.")
 
 (defvar-local verb--response-number nil
   "The number of this particular HTTP response buffer.")
@@ -724,8 +726,13 @@ return nil)."
     (unless noerror
       (user-error "No value found for HTTP header \"%s\"" name))))
 
-(defalias 'verb-shell #'shell-command-to-string
-  "Alias to `shell-command-to-string'.")
+(defun verb-shell (command &optional trim)
+  "Return output of running `shell-command-to-string' with COMMAND.
+If TRIM is non-nil, trim leading and trailing whitespace before returning."
+  (let ((s (shell-command-to-string command)))
+    (if trim
+        (string-trim s)
+      s)))
 
 (defalias 'verb-url #'url-encode-url
   "Alias to `url-encode-url'.")
@@ -1074,15 +1081,15 @@ settings."
                   (push prelude preludes)))
               (verb--up-heading)))
         (let ((prelude (car (org-element-map
-                             (org-element-parse-buffer)
-                             'keyword
-                             (lambda (keyword)
-                               (when (string= (upcase (concat
-                                                       verb--metadata-prefix
-                                                       "prelude"))
-                                              (org-element-property
-                                               :key keyword))
-                                 (org-element-property :value keyword)))))))
+                                (org-element-parse-buffer)
+                                'keyword
+                              (lambda (keyword)
+                                (when (string= (upcase (concat
+                                                        verb--metadata-prefix
+                                                        "prelude"))
+                                               (org-element-property
+                                                :key keyword))
+                                  (org-element-property :value keyword)))))))
           (when prelude
             (push prelude preludes)))
         ;; Lower-level preludes override same settings in hierarchy
@@ -2052,12 +2059,33 @@ response body was actually not compressed."
   ;; Advice url.el functions.
   (verb--advice-url)
   ;; Configure proxy if needed.
-  (verb--setup-proxy rs))
+  (verb--setup-proxy rs)
+  ;; Set up url-max-redirections
+  (when-let ((max (verb--request-spec-metadata-get rs "max-redirections")))
+    (when (< 0 verb--in-flight-requests)
+      (verb-util--log nil 'W (concat "Setting global url-max-redirections "
+                                     "even though there are still in-flight "
+                                     "requests.")))
+    (verb--request-spec-metadata-set rs "original-max-redirections"
+                                     url-max-redirections)
+    (setq url-max-redirections (string-to-number max)))
+  ;; Increase number of in-flight requests.
+  (setq verb--in-flight-requests (1+ verb--in-flight-requests)))
 
 (defun verb--teardown-request-environment (rs)
   "Undo all operations made for sending request described by RS.
 This undoes all changes made by `verb--setup-request-environment' in
 reverse order."
+  ;; Decrease number of in-flight requests.
+  (setq verb--in-flight-requests (1- verb--in-flight-requests))
+  (when (< verb--in-flight-requests 0)
+    (verb-util--log
+     nil 'W "Environment setup may have been skipped for a request")
+    (setq verb--in-flight-requests 0))
+  ;; Undo changes to url-max-redirections
+  (when-let ((max (verb--request-spec-metadata-get
+                   rs "original-max-redirections")))
+    (setq url-max-redirections max))
   ;; Undo proxy setup.
   (verb--undo-setup-proxy rs)
   ;; Undo advice.
@@ -2091,12 +2119,12 @@ For more information, see `verb-advice-url'."
 (defun verb--setup-proxy (rs)
   "Set up any HTTP proxy configuration specified by RS."
   (when-let ((proxy (verb--request-spec-metadata-get rs "proxy")))
-    (push (cons "http" proxy) url-proxy-services)))
+    (add-to-list 'url-proxy-services (cons "http" proxy))))
 
 (defun verb--undo-setup-proxy (rs)
   "Undo any HTTP proxy configuration specified by RS."
   (when-let ((proxy (verb--request-spec-metadata-get rs "proxy")))
-    (setq url-proxy-services (cdr url-proxy-services))))
+    (setq url-proxy-services (delete (cons "http" proxy) url-proxy-services))))
 
 (defun verb--get-accept-header (headers)
   "Retrieve the value of the \"Accept\" header from alist HEADERS.
@@ -2108,9 +2136,9 @@ If the header is not present, return \"*/*\" as default."
   "Run validations on request spec RS and return it.
 If a validation does not pass, signal `user-error'."
   (unless (oref rs method)
-    (user-error "%s" (concat "No HTTP method specified\n"
-                             "Make sure you specify a concrete HTTP "
-                             "method (not " verb--template-keyword
+    (user-error "%s" (concat "No HTTP method specified\nMake sure you specify "
+                             "a concrete HTTP method (e.g. GET, not "
+                             verb--template-keyword
                              ") in the heading hierarchy")))
   (let ((url (oref rs url)))
     (unless url

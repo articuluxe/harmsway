@@ -6,12 +6,12 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 4.2.0
+;; Package-Version: 4.2.1
 ;; Package-Requires: (
 ;;     (emacs "29.1")
 ;;     (compat "30.0.2.0")
 ;;     (let-alist "1.0.6")
-;;     (llama "0.5.0")
+;;     (llama "0.6.0")
 ;;     (treepy "0.1.2"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -755,13 +755,13 @@ and call `auth-source-forget+'."
                            :user user)))))
     (unless (or token nocreate)
       (error "\
-Required %s token (%S for %s%sS) does not exist.
+Required %s token (%S for %s%S) does not exist.
 See https://magit.vc/manual/ghub/Getting-Started.html
 or (info \"(ghub)Getting Started\") for instructions."
              (capitalize (symbol-name (or forge 'github)))
              user
              (if (string-match "\\`\\([^/]+\\)" host)
-                 (format "either \"%s\" or"  (match-string 1 host))
+                 (format "either %S or " (match-string 1 host))
                "")
              host))
     (if (functionp token) (funcall token) token)))

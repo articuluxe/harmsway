@@ -128,8 +128,8 @@ Also see https://github.com/magit/magit/issues/4132."
    ("-R" "Claim authorship and reset author date" "--reset-author")
    (magit:--author :description "Override the author")
    (magit-commit:--date :level 7)
-   ("-s" "Add Signed-off-by line"                 ("-s" "--signoff"))
    (magit:--gpg-sign :level 5)
+   (magit:--signoff)
    (magit-commit:--reuse-message)]
   [["Create"
     ("c" "Commit"         magit-commit-create)]
@@ -430,7 +430,7 @@ Like `magit-commit-squash' but also run a `--autofixup' rebase."
 
 (defun magit-commit-assert (args &optional nopatch strict)
   (cond
-   (nopatch args)
+   (nopatch (or args (list "--")))
    ((or (magit-anything-staged-p)
         (and (magit-anything-unstaged-p)
              ;; ^ Everything of nothing is still nothing.
@@ -743,10 +743,10 @@ See `magit-commit-absorb' for an alternative implementation."
 (defun magit-commit-message-buffer ()
   (let* ((find-file-visit-truename t) ; git uses truename of COMMIT_EDITMSG
          (topdir (magit-toplevel)))
-    (--first (equal topdir (with-current-buffer it
-                             (and git-commit-mode (magit-toplevel))))
-             (append (buffer-list (selected-frame))
-                     (buffer-list)))))
+    (seq-find (##equal topdir (with-current-buffer %
+                                (and git-commit-mode (magit-toplevel))))
+              (append (buffer-list (selected-frame))
+                      (buffer-list)))))
 
 (defvar magit-commit-add-log-insert-function #'magit-commit-add-log-insert
   "Used by `magit-commit-add-log' to insert a single entry.")

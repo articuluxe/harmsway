@@ -1,9 +1,10 @@
 ;; -*- lexical-binding: t; -*-
+;; inspo: base16-grayscale
 
 (require 'myron-themes)
 
 (defun myron-grayscale-colors (background)
-  "get the foreground colors against a specific background"
+  "Get the grayscale foreground colors against a specific BACKGROUND."
   (->> '(:background 0
           :foreground 6
           :faded 3
@@ -17,10 +18,12 @@
     (ht<-plist)))
 
 (defun myron-grayscale-create ()
+  "Create the colors for the grayscale theme."
   (-let*
     ((background
        ;; "#e9e9e9"
-       "#f7f7f7"
+       "#f3f3f3"
+       ;; "#f7f7f7"
        ;; "#e0e0e0"
        ))
     (->> '(:focused 3
@@ -28,14 +31,14 @@
             :strong 7)
       (-partition 2)
       (-map (-lambda ((label distance))
-              (list label (myron-cdist background distance 'ct-edit-lab-l-dec))))
+              (list label (ct-change background distance 'ct-edit-lab-l-dec))))
       (append `((:normal ,background)))
       (-mapcat (-lambda ((label bg)) (list label (myron-grayscale-colors bg))))
       (ht<-plist))))
 
 (deftheme myron-grayscale)
-(myron-theme-define 'myron-grayscale)
-(myron-evil-cursor-color (myron-get :alt))
+(myron-themes--define 'myron-grayscale)
+(myron-themes-evil-cursor-color (myron-themes-get :alt))
 
 (provide-theme 'myron-grayscale)
 (provide 'myron-grayscale-theme)

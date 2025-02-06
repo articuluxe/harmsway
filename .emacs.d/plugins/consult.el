@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 1.9
+;; Version: 2.0
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -818,9 +818,7 @@ asked for the directories or files to search via
                       ;; such that `consult-customize' continues to work.
                       (let ((this-command this-command)
                             (def (abbreviate-file-name default-directory))
-                            ;; TODO: `minibuffer-completing-file-name' is
-                            ;; mostly deprecated, but still in use. Packages
-                            ;; should instead use the completion metadata.
+                            ;; bug#75910: category instead of `minibuffer-completing-file-name'
                             (minibuffer-completing-file-name t)
                             (ignore-case read-file-name-completion-ignore-case))
                         (minibuffer-with-setup-hook
@@ -2031,35 +2029,6 @@ PLIST is the splitter configuration, including the separator."
 
 ;;;; Asynchronous pipeline
 
-(defun consult--async-deprecation (&rest _)
-  "Show API deprecation error."
-  (message
-   "%s"
-   (string-fill
-    (format "%s `%S' uses the old async API convention and must be updated.
-The `consult--async-*' API has been updated in a backward-incompatible
-way.  For details, please see the Consult CHANGELOG, the relevant git
-commit message and the docstring of the `consult--async-pipeline' macro,
-which describes the updated API."
-            (propertize "CONSULT ERROR:" 'face 'error)
-            this-command)
-    70))
-  (sit-for 30)
-  (keyboard-quit))
-
-(define-obsolete-function-alias 'consult--async-split-initial #'consult--async-deprecation
-  "Not needed anymore, use INITIAL string directly.")
-(define-obsolete-function-alias 'consult--async-split-thingatpt #'consult--async-deprecation
-  "Not needed anymore, use `thing-at-point' instead.")
-(define-obsolete-function-alias 'consult--async-refresh-timer #'consult--async-deprecation
-  "Use `consult--async-refresh' instead.")
-(define-obsolete-function-alias 'consult--async-refresh-immediate #'consult--async-deprecation
-  "Use `consult--async-refresh' instead.")
-(define-obsolete-function-alias 'consult--dynamic-compute #'consult--async-deprecation
-  "Use `consult--async-dynamic' instead.")
-(define-obsolete-function-alias 'consult--async-command #'consult--async-deprecation
-  "Use `consult--process-collection' instead.")
-
 (defun consult--async-pipeline (&rest async)
   "Compose ASYNC pipeline.
 
@@ -2824,9 +2793,7 @@ PREVIEW-KEY are the preview keys."
                                  preview-key sort lookup group inherit-input-method async-wrap)
   "See `consult--read' for the documentation of the arguments."
   (when (and async-wrap (consult--async-p table))
-    (condition-case nil
-        (setq table (funcall (funcall async-wrap table) (consult--async-sink)))
-      (error (consult--async-deprecation))))
+    (setq table (funcall (funcall async-wrap table) (consult--async-sink))))
   (minibuffer-with-setup-hook
       (:append (lambda ()
                  (add-hook 'after-change-functions #'consult--tofu-hide-in-minibuffer nil 'local)
@@ -3323,8 +3290,7 @@ value for `completion-in-region-function'."
   (barf-if-buffer-read-only)
   (let* ((initial (buffer-substring-no-properties start end))
          (metadata (completion-metadata initial collection predicate))
-         ;; TODO: `minibuffer-completing-file-name' is mostly deprecated, but
-         ;; still in use. Packages should instead use the completion metadata.
+         ;; bug#75910: category instead of `minibuffer-completing-file-name'
          (minibuffer-completing-file-name
           (eq 'file (completion-metadata-get metadata 'category)))
          (threshold (completion--cycle-threshold metadata))

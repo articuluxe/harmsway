@@ -277,15 +277,15 @@ Also see option `magit-blame-styles'."
                    ((error "Buffer does not visit a tracked file")))))))
 
 (defun magit-blame-chunk-at (pos)
-  (--some (overlay-get it 'magit-blame-chunk)
-          (overlays-at pos)))
+  (seq-some (##overlay-get % 'magit-blame-chunk)
+            (overlays-at pos)))
 
 (defun magit-blame--overlay-at (&optional pos key)
   (unless pos
     (setq pos (point)))
-  (--first (overlay-get it (or key 'magit-blame-chunk))
-           (nconc (overlays-at pos)
-                  (overlays-in pos pos))))
+  (seq-find (##overlay-get % (or key 'magit-blame-chunk))
+            (nconc (overlays-at pos)
+                   (overlays-in pos pos))))
 
 ;;; Keymaps
 

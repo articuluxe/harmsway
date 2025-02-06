@@ -4,7 +4,7 @@
 
 ;; Author: James Ferguson <(concat "wjcferguson" at-sign "gmail.com")>
 ;; URL: https://github.com/WJCFerguson/emacs-faff-theme
-;; Version: 2.6
+;; Version: 3.7
 ;; Keywords: color theme
 
 ;; This file is not part of GNU Emacs.
@@ -59,6 +59,13 @@
  '(bookmark-face ((t (:background "cornsilk3" :foreground "DarkOrange1"))))
  '(breakpoint-disabled ((t (:foreground "grey40"))))
  '(eglot-highlight-symbol-face ((t (:background "cornsilk2" :inherit bold))))
+ '(eshell-ls-archive ((t (:foreground "Orchid4" :weight bold))))
+ '(eshell-ls-backup ((t (:foreground "OrangeRed4"))))
+ '(eshell-ls-clutter ((t (:foreground "OrangeRed4" :weight bold))))
+ '(eshell-ls-executable ((t (:foreground "DarkGreen" :weight bold))))
+ '(eshell-ls-product ((t (:foreground "OrangeRed4"))))
+ '(eshell-ls-special ((t (:foreground "Magenta4" :weight bold))))
+ '(eshell-prompt ((t (:background "cornsilk2" :weight bold))))
  '(match ((t (:background "yellow2"))))
  '(cursor ((t (:background "red3"))))
  '(variable-pitch ((t (:family "Sans Serif"))))
@@ -102,7 +109,7 @@
  '(js2-jsdoc-value ((t (:inherit font-lock-variable-name-face)))) '(dired-subtree-depth-1-face ((t (:background "cornsilk2"))))
  '(js2-object-property ((t (:inherit font-lock-variable-name-face))))
  '(tooltip ((t (:inherit nil :background "lightyellow" :foreground "black"))))
- '(mode-line ((t (:box nil :family "sans serif" :background "cornsilk4"))))
+ '(mode-line ((t (:box nil :family "sans serif" :background "#aca895"))))
  '(mode-line-active ((t (:inherit mode-line :background "gold"))))
  '(mode-line-buffer-id ((t (:weight bold))))
  '(mode-line-emphasis ((t (:weight bold))))
@@ -134,6 +141,7 @@
  '(flymake-note ((t (:underline (:color "green yellow" :style wave)))))
  '(flymake-warning ((t (:background "gray"))))
  '(dired-filetype-js ((t (:foreground "goldenrod4"))))
+ '(dired-filetype-program ((t (:foreground "green4"))))
  '(dired-subtree-depth-2-face ((t (:background "cornsilk1"))))
  '(dired-subtree-depth-3-face ((t (:background "white"))))
  '(dired-subtree-depth-4-face ((t (:background "cornsilk2"))))
@@ -141,6 +149,8 @@
  '(dired-subtree-depth-6-face ((t (:background "white")))) '(flymake-warnline ((t (:background "LightBlue3"))))
  '(elisp-shorthand-font-lock-face ((t (:inherit font-lock-keyword-face :foreground "cyan4"))))
  '(error ((t (:foreground "red3" :weight bold))))
+ '(go-test--ok-face ((t (:foreground "green4"))))
+ '(go-test--standard-face ((t (:weight bold))))
  '(hi-green-b ((t (:foreground "green4" :weight bold))))
  '(hl-line ((t (:extend t :background "#ddd8bd"))))
  '(hl-line-face ((t (:extend t :background "#ddd8bd"))))
@@ -150,6 +160,7 @@
  '(jabber-chat-text-local ((t (:foreground "red4"))))
  '(jabber-title-large ((t (:weight bold :height 2.0 :width expanded))))
  '(jabber-title-medium ((t (:background "#ffb" :box (:line-width 2 :color "grey75" :style released-button) :weight bold :height 1.2 :width expanded))))
+ '(kubernetes-namespace ((t (:foreground "Goldenrod4"))))
  '(lsp-face-highlight-read ((t (:background "cornsilk2"))))
  '(lsp-face-highlight-textual ((t (:background "cornsilk2"))))
  '(lsp-face-highlight-write ((t (:background "palegreen1"))))
@@ -185,6 +196,7 @@
  '(magit-tag ((t (:background "cornsilk2" :foreground "Goldenrod4" :box (:line-width 1 :color "gray25")))))
  '(markdown-code-face ((t (:inherit default :background "cornsilk2"))))
  '(menu ((((type x-toolkit)) (:background "gray92"))))
+ '(mmm-default-submode-face ((t (:background "#ddd8bd"))))
  '(org-agenda-date ((t (:inherit org-agenda-structure :background "cornsilk1" :box (:line-width 1 :color "grey75" :style pressed-button) :height 1.0))))
  '(org-agenda-date-today ((t (:inherit org-agenda-date :slant italic :weight bold :height 1.0))))
  '(org-agenda-dimmed-todo-face ((t (:background "yellow3" :foreground "black"))))
@@ -206,6 +218,7 @@
  '(powerline-active2 ((t (:inherit mode-line :background "gold3"))))
  '(powerline-inactive1 ((t (:inherit mode-line-inactive :background "grey11" :foreground "grey45"))))
  '(powerline-inactive2 ((t (:inherit mode-line-inactive :background "grey20" :foreground "grey55"))))
+ '(region ((t (:extend t :background "gold2"))))
  '(rjsx-tag ((t (:inherit font-lock-keyword-face))))
  '(rjsx-tag-bracket-face ((t (:inherit font-lock-keyword-face))))
  '(rst-level-1 ((t (:background "grey85" :weight bold))))
@@ -221,7 +234,7 @@
  '(symbol-overlay-face-3 ((t (:background "light blue" :foreground "black"))))
  '(symbol-overlay-face-4 ((t (:background "orchid1" :foreground "black"))))
  '(symbol-overlay-face-5 ((t (:background "red1" :foreground "black"))))
- '(tab-bar ((t (:background "cornsilk4" :height 0.9))))
+ '(tab-bar ((t (:background "#aca895" :height 0.9))))
  '(tab-bar-tab-inactive ((t (:inherit (variable-pitch tab-tar)))))
  '(tab-bar-tab ((t (:inherit (tab-bar-tab-inactive) :background "cornsilk3"))))
  '(term-color-green ((t (:background "green4" :foreground "green4"))))

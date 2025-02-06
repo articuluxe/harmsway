@@ -106,21 +106,22 @@ displays the text of `magit-process-error-summary' instead."
                  integer))
 
 (defcustom magit-credential-cache-daemon-socket
-  (--some (pcase-let ((`(,prog . ,args) (split-string it)))
-            (if (and prog
+  (seq-some (lambda (line)
+              (pcase-let ((`(,prog . ,args) (split-string line)))
+                (and prog
                      (string-match-p
-                      "\\`\\(?:\\(?:/.*/\\)?git-credential-\\)?cache\\'" prog))
-                (or (cl-loop for (opt val) on args
-                             if (string= opt "--socket")
-                             return val)
-                    (expand-file-name "~/.git-credential-cache/socket"))))
-          ;; Note: `magit-process-file' is not yet defined when
-          ;; evaluating this form, so we use `process-lines'.
-          (ignore-errors
-            (let ((process-environment
-                   (append magit-git-environment process-environment)))
-              (process-lines magit-git-executable
-                             "config" "--get-all" "credential.helper"))))
+                      "\\`\\(?:\\(?:/.*/\\)?git-credential-\\)?cache\\'" prog)
+                     (or (cl-loop for (opt val) on args
+                                  if (string= opt "--socket")
+                                  return val)
+                         (expand-file-name "~/.git-credential-cache/socket")))))
+            ;; Note: `magit-process-file' is not yet defined when
+            ;; evaluating this form, so we use `process-lines'.
+            (ignore-errors
+              (let ((process-environment
+                     (append magit-git-environment process-environment)))
+                (process-lines magit-git-executable
+                               "config" "--get-all" "credential.helper"))))
   "If non-nil, start a credential cache daemon using this socket.
 
 When using Git's cache credential helper in the normal way, Emacs
@@ -144,33 +145,41 @@ itself from the hook, to avoid further futile attempts."
                  (const :tag "Don't start a cache daemon" nil)))
 
 (defcustom magit-process-yes-or-no-prompt-regexp
-  (concat " [([]"
-          "\\([Yy]\\(?:es\\)?\\)"
-          "[/|]"
-          "\\([Nn]o?\\)"
-          ;; OpenSSH v8 prints this.  See #3969.
-          "\\(?:/\\[fingerprint\\]\\)?"
-          "[])] ?[?:]? ?$")
+  (eval-when-compile
+    (concat " [([]"
+            "\\([Yy]\\(?:es\\)?\\)"
+            "[/|]"
+            "\\([Nn]o?\\)"
+            ;; OpenSSH v8 prints this.  See #3969.
+            "\\(?:/\\[fingerprint\\]\\)?"
+            "[])] ?[?:]? ?$"))
   "Regexp matching Yes-or-No prompts of Git and its subprocesses."
   :package-version '(magit . "2.1.0")
   :group 'magit-process
   :type 'regexp)
 
 (defcustom magit-process-password-prompt-regexps
-  '("^\\(Enter \\)?[Pp]assphrase\\( for \\(RSA \\)?key '.*'\\)?: ?$"
-    ;; Match-group 99 is used to identify the "user@host" part.
-    "^\\(Enter \\|([^) ]+) \\)?\
-[Pp]assword\\( for '?\\(https?://\\)?\\(?99:[^']+\\)'?\\)?: ?$"
-    "Please enter the passphrase for the ssh key"
-    "Please enter the passphrase to unlock the OpenPGP secret key"
+  ;; See also history in test `magit-process:password-prompt-regexps'.
+  '(;; * CLI-prompt for passphrase for key:
+    "^\\(\\(Please e\\|E\\)nter \\(the \\)?p\\|P\\)assphrase.*: ?$"
+    ;; * Password for something other than a host:
+    "^\\(\\(Please e\\|E\\)nter \\(the \\)?p\\|P\\)assword: ?$"
+    ;; * Password for [user@]host (which we put in match group 99):
+    "^\\(\\(Please e\\|E\\)nter \\(the \\)?p\\|P\\)assword for \
+[\"']?\\(https?://\\)?\\(?99:[^\"']+\\)[\"']?: ?$"
+    "^(\\(?1:[^) ]+\\)) Password for \\(?99:\\1\\): ?$" ;#4992
     "^\\(?99:[^']+\\)\\('s\\)? password: ?$"
-    "^.+ password: ?$"
-    "^Token: $" ; For git-credential-manager-core (#4318).
+    ;; * Token for git-credential-manager-core (#4318):
+    "^Token: ?$"
+    ;; * Secret for card:
     "^Yubikey for .*: ?$"
-    "^Enter PIN for .*: ?$")
+    "^Enter PIN for .*: ?$"
+    ;; * Unanchored TUI-prompt for passphrase for key:
+    "Please enter the passphrase for the ssh key"
+    "Please enter the passphrase to unlock the OpenPGP secret key")
   "List of regexps matching password prompts of Git and its subprocesses.
 Also see `magit-process-find-password-functions'."
-  :package-version '(magit . "3.0.0")
+  :package-version '(magit . "4.3.0")
   :group 'magit-process
   :type '(repeat (regexp)))
 
@@ -328,10 +337,10 @@ optional NODISPLAY is non-nil also display it."
           (while (not (equal topdir prev))
             (setq prev topdir)
             (setq topdir (file-name-directory (directory-file-name topdir)))))))
-    (let ((buffer (or (--first (with-current-buffer it
-                                 (and (eq major-mode 'magit-process-mode)
-                                      (equal default-directory topdir)))
-                               (buffer-list))
+    (let ((buffer (or (seq-find (##with-current-buffer %
+                                  (and (eq major-mode 'magit-process-mode)
+                                       (equal default-directory topdir)))
+                                (buffer-list))
                       (magit-generate-new-buffer 'magit-process-mode
                                                  nil topdir))))
       (with-current-buffer buffer
@@ -990,8 +999,8 @@ from the user."
 
 (defun magit-process-match-prompt (prompts string)
   "Match STRING against PROMPTS and set match data.
-Return the matched string suffixed with \": \", if needed."
-  (when (--any-p (string-match it string) prompts)
+Return the matched string, appending \": \" if needed."
+  (when (seq-some (##string-match % string) prompts)
     (let ((prompt (match-string 0 string)))
       (cond ((string-suffix-p ": " prompt) prompt)
             ((string-suffix-p ":"  prompt) (concat prompt " "))
@@ -1023,12 +1032,13 @@ as argument."
               (memq magit-credential-cache-daemon-process
                     (list-system-processes)))
     (setq magit-credential-cache-daemon-process
-          (or (--first (let* ((attr (process-attributes it))
-                              (comm (cdr (assq 'comm attr)))
-                              (user (cdr (assq 'user attr))))
-                         (and (string= comm "git-credential-cache--daemon")
-                              (string= user user-login-name)))
-                       (list-system-processes))
+          (or (seq-find (lambda (process)
+                          (let* ((attr (process-attributes process))
+                                 (comm (cdr (assq 'comm attr)))
+                                 (user (cdr (assq 'user attr))))
+                            (and (string= comm "git-credential-cache--daemon")
+                                 (string= user user-login-name))))
+                        (list-system-processes))
               (condition-case nil
                   (start-process "git-credential-cache--daemon"
                                  " *git-credential-cache--daemon*"
@@ -1256,8 +1266,8 @@ Limited by `magit-process-error-tooltip-max-lines'."
           (delete-char -1)
           (oset section content nil))
       (when (and (= exit-code 0)
-                 (not (--any-p (eq (window-buffer it) buffer)
-                               (window-list))))
+                 (not (seq-some (##eq (window-buffer %) buffer)
+                                (window-list))))
         (magit-section-hide section)))))
 
 (defun magit-process-display-buffer (process)

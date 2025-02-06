@@ -1,6 +1,6 @@
 ;;; dirvish-yank.el --- Multi-stage and async copy/paste/link utilities -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2022 Alex Lu
+;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
 ;; Version: 2.0.53
 ;; Keywords: files, convenience
@@ -257,26 +257,36 @@ RANGE can be `buffer', `session', `all'."
             (if moving (goto-char (process-mark proc)))))))))
 
 (defun dirvish-yank--execute (cmd details &optional batch)
-  "Execute CMD, put DETAILS into the process.
-When BATCH, execute the command using `emacs -q -batch'."
-  (pcase-let* ((process-connection-type nil) (name "*dirvish-yank*")
-               (buf (dirvish--util-buffer
-                     (format "yank@%s" (current-time-string)) nil nil t))
-               (`(,_ ,_ ,dest ,_) details)
-               (proc (if batch
-                         (let* ((q (if (file-remote-p dest) "-q" "-Q"))
-                                (c (list dirvish-emacs-bin q "-batch" "--eval" cmd)))
-                           (make-process :name name :buffer buf :command c))
-                       (start-process-shell-command name buf cmd))))
-    (with-current-buffer buf (dirvish-prop :yank-details details))
-    (process-put proc 'details details)
-    (set-process-sentinel proc #'dirvish-yank-proc-sentinel)
-    (set-process-filter proc #'dirvish-yank-proc-filter)
+  "Handle execution of CMD.
+When BATCH, execute the command using `emacs -q -batch'. Propagate
+DETAILS to the process. Remove markers when `dirvish-yank-auto-unmark'
+is t."
+  (pcase-let* ((`(,_ ,_ ,dest ,_) details)
+               (command (if batch
+                            (let ((q (if (file-remote-p dest) "-q" "-Q")))
+                              (list dirvish-emacs-bin q "-batch" "--eval" cmd))
+                          cmd)))
+
+    (dirvish-yank--start-proc command details)
     (when dirvish-yank-auto-unmark
       (cl-loop for buf in (buffer-list)
                do (with-current-buffer buf
                     (when (eq major-mode 'dired-mode)
-                      (dired-unmark-all-marks)))))
+                      (dired-unmark-all-marks)))))))
+
+(defun dirvish-yank--start-proc (cmd details)
+  "Start a new process for CMD, put DETAILS into the process."
+  (let* ((process-connection-type nil)
+         (name "*dirvish-yank*")
+         (buf (dirvish--util-buffer
+               (format "yank@%s" (current-time-string)) nil nil t))
+         (proc (if (listp cmd)
+                   (make-process :name name :buffer buf :command cmd)
+                 (start-process-shell-command name buf cmd))))
+    (with-current-buffer buf (dirvish-prop :yank-details details))
+    (process-put proc 'details details)
+    (set-process-sentinel proc #'dirvish-yank-proc-sentinel)
+    (set-process-filter proc #'dirvish-yank-proc-filter)
     (push buf dirvish-yank-log-buffers)))
 
 (defun dirvish-yank--newbase (base-name fileset dest)
@@ -518,6 +528,9 @@ Returns list that contains (host user port localname)."
 
 (dirvish-define-mode-line yank
   "Progress of yank tasks."
+  (setq dirvish-yank-log-buffers
+        (cl-remove-if-not ; user may kill yank buffers
+         (lambda (buf) (buffer-live-p buf)) dirvish-yank-log-buffers))
   (let ((number-of-tasks (length dirvish-yank-log-buffers)))
     (cond ((= number-of-tasks 0))
           ((= number-of-tasks 1)
@@ -624,7 +637,7 @@ values."
   (if (and (slot-boundp obj 'value) (oref obj value))
       (oref obj value)
     ;; check saved values
-    (if-let ((saved (assq (oref obj command) transient-values)))
+    (if-let* ((saved (assq (oref obj command) transient-values)))
         (cdr saved)
       ;; use default value at last resort
       default-value)))

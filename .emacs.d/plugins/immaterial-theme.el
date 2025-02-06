@@ -5,7 +5,7 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.9.3
+;; Version: 0.9.4
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -895,7 +895,24 @@ NAME and VARIANT should be symbols."
        ;; Face for selected tab.
        `(tab-bar-tab ((,class (:foreground ,modeline-active-fg :background ,modeline-active-bg :box (:line-width 1 :color ,modeline-active-border)))))
        ;; Face for non-selected tab.
-       `(tab-bar-tab-inactive ((,class (:foreground ,modeline-inactive-fg :background ,modeline-inactive-bg :box (:line-width 1 :color ,bg-on)))))))))
+       `(tab-bar-tab-inactive ((,class (:foreground ,modeline-inactive-fg :background ,modeline-inactive-bg :box (:line-width 1 :color ,bg-on)))))
+       ;;
+       ;; dape
+       ;;
+       `(dape-breakpoint-face ((,class (:inherit warning) )))
+       `(dape-exception-description-face ((,class (:inherit error :italic t) )))
+       `(dape-repl-error-face ((,class (:inherit error :italic t) )))
+       ;;
+       ;; hydra
+       ;;
+       ;; Hydra heads that stay in the hydra.
+       `(hydra-face-red ((,class (:foreground ,prim :weight bold) )))
+       ;; Hydra heads that exit the hydra.
+       `(hydra-face-blue ((,class (:foreground ,sec :weight bold) )))
+       `(hydra-face-teal ((,class (:foreground ,tert :weight bold) )))
+       `(hydra-face-pink ((,class (:foreground ,warning :weight bold) )))
+       `(hydra-face-amaranth ((,class (:foreground ,error :weight bold) )))
+       ))))
 
 
 (defun immaterial-linear-rgb-component (col)
