@@ -1,3 +1,3 @@
-unzip src/MonoLisa-TrialVersion-2.008-ttf.zip -d src
+unzip -o src/MonoLisa-TrialVersion-2.008-ttf.zip -d src
 mkdir -p ../../../.fonts/monolisa
 cp src/ttf/MonoLisa*ttf ../../../.fonts/monolisa
