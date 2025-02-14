@@ -322,6 +322,21 @@ and `--compact-summary'.  See the git-diff(1) manpage."
                 (list string)
                 (const :tag "None" nil)))
 
+(defcustom magit-format-file-function #'magit-format-file-default
+  "Function used to format lines representing a file.
+
+This function is used for file headings in diffs, in diffstats and for
+lists of files (such as the untracked files).  Depending on the caller,
+it receives either three or five arguments; the signature has to be
+\(kind file face &optional status orig).  KIND is one of `diff',
+`module', `stat' and `list'."
+  :package-version '(magit . "4.3.1")
+  :group 'magit-diff
+  :type `(choice (function-item ,#'magit-format-file-default)
+                 (function-item ,#'magit-format-file-all-the-icons)
+                 (function-item ,#'magit-format-file-nerd-icons)
+                 function))
+
 ;;;; File Diff
 
 (defcustom magit-diff-buffer-file-locked t
@@ -1867,6 +1882,23 @@ the Magit-Status buffer for DIRECTORY."
               (throw 'found nil))))))
     (+ line offset)))
 
+;;;;; Movement
+
+(defun magit-jump-to-diffstat-or-diff ()
+  "Jump to the diffstat or diff.
+When point is on a file inside the diffstat section, then jump
+to the respective diff section, otherwise jump to the diffstat
+section or a child thereof."
+  (interactive)
+  (if-let ((section (magit-get-section
+                     (append (magit-section-case
+                               ([file diffstat] `((file . ,(oref it value))))
+                               (file `((file . ,(oref it value)) (diffstat)))
+                               (t '((diffstat))))
+                             (magit-section-ident magit-root-section)))))
+      (magit-section-goto section)
+    (user-error "No diffstat in this buffer")))
+
 ;;;; Scroll Commands
 
 (defun magit-diff-show-or-scroll-up ()
@@ -2232,23 +2264,8 @@ keymap is the parent of their keymaps."
     (magit-diff-wash-diffstat))
   (when (re-search-forward magit-diff-headline-re limit t)
     (goto-char (line-beginning-position))
-    (magit-wash-sequence (apply-partially #'magit-diff-wash-diff args))
+    (magit-wash-sequence (##magit-diff-wash-diff args))
     (insert ?\n)))
-
-(defun magit-jump-to-diffstat-or-diff ()
-  "Jump to the diffstat or diff.
-When point is on a file inside the diffstat section, then jump
-to the respective diff section, otherwise jump to the diffstat
-section or a child thereof."
-  (interactive)
-  (if-let ((section (magit-get-section
-                     (append (magit-section-case
-                               ([file diffstat] `((file . ,(oref it value))))
-                               (file `((file . ,(oref it value)) (diffstat)))
-                               (t '((diffstat))))
-                             (magit-section-ident magit-root-section)))))
-      (magit-section-goto section)
-    (user-error "No diffstat in this buffer")))
 
 (defun magit-diff-wash-signature (object)
   (cond
@@ -2283,8 +2300,8 @@ section or a child thereof."
       (magit-delete-match)
       (goto-char beg)
       (magit-insert-section (diffstat)
-        (insert (propertize heading 'font-lock-face 'magit-diff-file-heading))
-        (magit-insert-heading)
+        (magit-insert-heading
+          (propertize heading 'font-lock-face 'magit-diff-file-heading))
         (let (files)
           (while (looking-at "^[-0-9]+\t[-0-9]+\t\\(.+\\)$")
             (push (magit-decode-git-path
@@ -2310,8 +2327,8 @@ section or a child thereof."
                 (when (> le ld)
                   (setq sep (concat (make-string (- le ld) ?\s) sep))))
               (magit-insert-section (file (pop files))
-                (insert (propertize file 'font-lock-face 'magit-filename)
-                        sep cnt " ")
+                (insert (magit-format-file 'stat file 'magit-filename))
+                (insert sep cnt " ")
                 (when add
                   (insert (propertize add 'font-lock-face
                                       'magit-diffstat-added)))
@@ -2462,25 +2479,60 @@ section or a child thereof."
         :source (and (not (equal orig file)) orig)
         :header header
         :binary binary)
-    (insert (propertize (format "%-10s %s" status
-                                (if (or (not orig) (equal orig file))
-                                    file
-                                  (format "%s -> %s" orig file)))
-                        'font-lock-face 'magit-diff-file-heading))
-    (cond ((and binary long-status)
-           (insert (format " (%s, binary)" long-status)))
-          ((or binary long-status)
-           (insert (format " (%s)" (if binary "binary" long-status)))))
-    (magit-insert-heading)
+    (magit-insert-heading
+      (magit-format-file 'diff file 'magit-diff-file-heading status
+                         (and (not (equal orig file)) orig))
+      (cond ((and binary long-status)
+             (format " (%s, binary)" long-status))
+            ((or binary long-status)
+             (format " (%s)" (if binary "binary" long-status)))))
     (when modes
       (magit-insert-section (hunk '(chmod))
-        (insert modes)
-        (magit-insert-heading)))
+        (magit-insert-heading (propertize modes 'face 'default))))
     (when rename
       (magit-insert-section (hunk '(rename))
-        (insert rename)
-        (magit-insert-heading)))
+        (magit-insert-heading (propertize rename 'face 'default))))
     (magit-wash-sequence #'magit-diff-wash-hunk)))
+
+(defun magit-format-file (kind file face &optional status orig)
+  (funcall magit-format-file-function kind file face status orig))
+
+(defun magit-format-file-default (_kind file face &optional status orig)
+  (propertize (concat (and status (format "%-11s" status))
+                      (if orig (format "%s -> %s" orig file) file))
+              'font-lock-face face))
+
+(defun magit-format-file-all-the-icons (kind file face &optional status orig)
+  (cl-flet ((icon (if (or (eq kind 'module) (string-suffix-p "/" file))
+                      'all-the-icons-icon-for-dir
+                    'all-the-icons-icon-for-file)))
+    (cl-letf (((symbol-function 'all-the-icons-dir-is-submodule)
+               (if (eq kind 'module)
+                   (lambda (_) t)
+                 (symbol-function 'all-the-icons-dir-is-submodule))))
+      (propertize (concat (and status (format "%-11s" status))
+                          (if orig
+                              (format "%s %s -> %s %s"
+                                      (icon orig) orig
+                                      (icon file) file)
+                            (format "%s %s" (icon file) file)))
+                  'font-lock-face face))))
+
+(defun magit-format-file-nerd-icons (kind file face &optional status orig)
+  (cl-flet ((icon (if (or (eq kind 'module) (string-suffix-p "/" file))
+                      'nerd-icons-icon-for-dir
+                    'nerd-icons-icon-for-file)))
+    (cl-letf (((symbol-function 'nerd-icons-dir-is-submodule)
+               (if (eq kind 'module)
+                   (lambda (_) t)
+                 (symbol-function 'nerd-icons-dir-is-submodule))))
+      (propertize (concat (and status (format "%-11s" status))
+                          (if orig
+                              (format "%s %s -> %s %s"
+                                      (icon orig) orig
+                                      (icon file) file)
+                            (format "%s %s" (icon file) file)))
+                  'font-lock-face face))))
 
 (defun magit-diff-wash-submodule ()
   ;; See `show_submodule_summary' in submodule.c and "this" commit.
@@ -2505,8 +2557,8 @@ section or a child thereof."
                                                   "..." range t t 1)))
           (magit-insert-section (module module t)
             (magit-insert-heading
-              (propertize (concat "modified   " module)
-                          'font-lock-face 'magit-diff-file-heading)
+              (magit-format-file 'module module 'magit-diff-file-heading
+                                 "modified")
               " ("
               (cond (rewind "rewind")
                     ((string-search "..." range) "non-ff")
@@ -2531,14 +2583,14 @@ section or a child thereof."
           (magit-delete-line)
           (magit-insert-section (module module)
             (magit-insert-heading
-              (propertize (concat "submodule  " module)
-                          'font-lock-face 'magit-diff-file-heading)
+              (magit-format-file 'module module 'magit-diff-file-heading
+                                 "submodule")
               " (" msg ")"))))
        (t
         (magit-insert-section (module module)
           (magit-insert-heading
-            (propertize (concat "modified   " module)
-                        'font-lock-face 'magit-diff-file-heading)
+            (magit-format-file 'module module 'magit-diff-file-heading
+                               "modified")
             " ("
             (and modified "modified")
             (and modified untracked " and ")
@@ -2569,9 +2621,9 @@ section or a child thereof."
             :from-range (if combined (butlast ranges) (car ranges))
             :to-range (car (last ranges))
             :about about)
-        (insert (propertize (concat heading "\n")
-                            'font-lock-face 'magit-diff-hunk-heading))
-        (magit-insert-heading)
+        (magit-insert-heading
+          (propertize (concat heading "\n")
+                      'font-lock-face 'magit-diff-hunk-heading))
         (while (not (or (eobp) (looking-at "^[^-+\s\\]")))
           (forward-line))))
     t))
@@ -2673,9 +2725,9 @@ or a ref which is not a branch, then it inserts nothing."
                              (match-string 1)
                              (match-string 2))))
         (magit-delete-line)
-        (insert (propertize heading 'font-lock-face
-                            'magit-section-secondary-heading)))
-      (magit-insert-heading)
+        (magit-insert-heading
+          (propertize heading 'font-lock-face
+                      'magit-section-secondary-heading)))
       (forward-line)
       (magit-insert-section
           ( message nil nil
@@ -2825,13 +2877,13 @@ or a ref which is not a branch, then it inserts nothing."
 (defun magit-insert-revision-headers ()
   "Insert headers about the commit into a revision buffer."
   (magit-insert-section (headers)
-    (when-let ((string (magit-rev-format "%D" magit-buffer-revision
-                                         "--decorate=full")))
-      (insert (magit-format-ref-labels string) ?\s))
-    (insert (propertize
-             (magit-rev-parse (magit--rev-dereference magit-buffer-revision))
-             'font-lock-face 'magit-hash))
-    (magit-insert-heading)
+    (magit-insert-heading
+      (and-let* ((string (magit-rev-format "%D" magit-buffer-revision
+                                           "--decorate=full")))
+        (magit-format-ref-labels string) ?\s)
+      (propertize
+       (magit-rev-parse (magit--rev-dereference magit-buffer-revision))
+       'font-lock-face 'magit-hash))
     (let ((beg (point)))
       (magit-rev-insert-format magit-revision-headers-format
                                magit-buffer-revision)

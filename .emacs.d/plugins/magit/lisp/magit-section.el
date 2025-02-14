@@ -672,7 +672,7 @@ See `magit-menu-format-desc'."
     ,def
     ;; Without this, the keys for point would be shown instead
     ;; of the relevant ones from where the click occurred.
-    :keys ,(apply-partially #'magit--menu-position-keys def)
+    :keys ,(##magit--menu-position-keys def)
     ,@props))
 
 (defun magit--menu-position-keys (def)
@@ -1381,7 +1381,7 @@ a section by washing Git's output and Git didn't actually output
 anything this time around.
 
 \(fn [NAME] (CLASS &optional VALUE HIDE) &rest BODY)"
-  (declare (indent defun)
+  (declare (indent 1) ;sic
            (debug ([&optional symbolp]
                    (&or [("eval" form) &optional form form &rest form]
                         [symbolp &optional form form &rest form])
@@ -2105,7 +2105,7 @@ If optional SECTION is non-nil, only map over that section and
 its descendants, otherwise map over all sections in the current
 buffer, ending with `magit-root-section'."
   (let ((section (or section magit-root-section)))
-    (mapc (lambda (child) (magit-map-sections function child))
+    (mapc (##magit-map-sections function %)
           (oref section children))
     (funcall function section)))
 

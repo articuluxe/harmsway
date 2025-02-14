@@ -28,7 +28,6 @@ The value may be a string of options or nil which means the
 working switches of current buffer will be used."
   :type '(choice symbol string) :group 'dirvish)
 
-(define-obsolete-variable-alias 'dirvish-subtree-line-prefix 'dirvish-subtree-prefix "Sep 1, 2022")
 (defcustom dirvish-subtree-prefix " │"
   "A string put into each nested subtree.
 The prefix is repeated \"depth\" times."
@@ -213,7 +212,7 @@ creation even the entry is in nested subtree nodes."
   (let* ((dir (dired-get-filename))
          (listing (dirvish-subtree--readin dir))
          buffer-read-only beg end)
-    (dirvish-data-for-dir dir (current-buffer) nil)
+    (dirvish--dir-data-async dir (current-buffer) t)
     (with-silent-modifications
       (save-excursion
         (setq beg (progn (move-end-of-line 1) (insert "\n") (point)))

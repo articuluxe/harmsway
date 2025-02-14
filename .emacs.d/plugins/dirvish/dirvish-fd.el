@@ -75,7 +75,7 @@ should return a list of regular expressions."
 
 (defconst dirvish-fd-bufname "🔍%s📁%s📁%s")
 (defconst dirvish-fd-header
-  (dirvish--mode-line-fmt-setter '(fd-switches) '(fd-timestamp fd-pwd " ") t))
+  (dirvish--mode-line-composer '(fd-switches) '(fd-timestamp fd-pwd " ") t))
 (defvar dirvish-fd-input-history nil "History list of fd input in the minibuffer.")
 (defvar dirvish-fd-debounce-timer nil)
 (defvar-local dirvish-fd--output "")
@@ -218,8 +218,7 @@ Raise an error if fd executable is not available."
   "Return a formatted string showing the DIRVISH-FD-ACTUAL-SWITCHES."
   (pcase-let ((`(,globp ,casep ,ign-range ,types ,exts ,excludes)
                (dirvish-prop :fd-arglist))
-              (face (if (dirvish--window-selected-p dv)
-                        'dired-header 'shadow)))
+              (face (if (dirvish--selected-p) 'dired-header 'shadow)))
     (format "  %s | %s"
             (propertize "FD" 'face face)
             (if (not (dirvish-prop :fd-time))
@@ -246,14 +245,12 @@ Raise an error if fd executable is not available."
 
 (dirvish-define-mode-line fd-timestamp
   "Timestamp of search finished."
-  (when (car (dv-layout dv)) (dirvish-prop :fd-time)))
+  (when (dv-curr-layout (dirvish-curr)) (dirvish-prop :fd-time)))
 
 (dirvish-define-mode-line fd-pwd
   "Current working directory."
   (propertize (abbreviate-file-name default-directory) 'face 'dired-directory))
 
-(define-obsolete-function-alias 'dirvish-roam #'dirvish-fd-jump "Jun 08, 2022")
-(define-obsolete-function-alias 'dirvish-fd-roam #'dirvish-fd-jump "Jul 17, 2022")
 ;;;###autoload
 (defun dirvish-fd-jump (&optional current-dir-p)
   "Browse directories using `fd' command.
@@ -340,7 +337,7 @@ value 16, let the user choose the root directory of their search."
         (message "`fd' process terminated")))
     (with-selected-window (dv-root-window dv)
       (unless (eq (current-buffer) buf)
-        (dirvish--switch-to-buffer buf)))
+        (dirvish-save-dedication (switch-to-buffer buf))))
     (with-current-buffer buf
       (setq-local dirvish-fd--input input
                   dirvish-fd--output (dirvish-fd--parse-output)
@@ -452,12 +449,12 @@ The command run is essentially:
         (set-process-sentinel proc #'dirvish-fd-proc-sentinel)
         (dirvish-fd--argparser (split-string (or fd-switches "")))
         (process-put proc 'info (list pattern dir dv))))
-    (dirvish--switch-to-buffer buffer)))
+    (dirvish-save-dedication (switch-to-buffer buffer))))
 
 
 ;;;###autoload
 (defun dirvish-fd-ask (dir pattern)
-  "The same as `dirvish-fd' but ask initial `pattern' via prompt. "
+  "The same as `dirvish-fd' but ask initial DIR and PATTERN via prompt."
   (interactive (list (and current-prefix-arg
                           (read-directory-name "Fd target directory: " nil "" t))
                      (read-from-minibuffer "Pattern: ")))

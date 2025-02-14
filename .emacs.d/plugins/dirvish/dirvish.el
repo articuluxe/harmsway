@@ -23,9 +23,11 @@
 
 (require 'dired)
 (require 'transient)
+(eval-when-compile (require 'subr-x))
 (declare-function ansi-color-apply-on-region "ansi-color")
 (declare-function dirvish-fd-find "dirvish-fd")
 (declare-function dirvish-tramp-noselect "dirvish-tramp")
+(declare-function project-roots "project")
 
 ;;;; User Options
 
@@ -46,7 +48,8 @@ Dirvish ships with these attributes:
 - `file-time': Show file modification time before the `file-size'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish attribute")))
 
-(defcustom dirvish-preview-dispatchers '(image gif video audio epub archive pdf)
+(defcustom dirvish-preview-dispatchers
+  '(image gif video audio epub archive pdf dired)
   "List of preview dispatchers.
 Each dispatcher in this list handles the validation and preview
 content generation for the corresponding filetype.
@@ -59,7 +62,8 @@ The default value contains:
 - audio: preview audio files with metadata, requires `mediainfo'.
 - epub: preview epub documents, requires `epub-thumbnailer'.
 - pdf: preview pdf documents via `pdf-tools'.
-- archive: preview archive files such as .tar, .zip, requires `tar' / `unzip'."
+- archive: preview archive files such as .tar, .zip, requires `tar' / `unzip'.
+- dired: preview directories using `emacs --batch'."
   :group 'dirvish :type '(repeat (symbol :tag "Dirvish preview methods")))
 
 (defcustom dirvish-preview-disabled-exts '("iso" "bin" "exe" "gpg" "elc" "eln")
@@ -102,7 +106,6 @@ allocated to preview window.  The default value provides a
   "Face for Dirvish line highlighting."
   :group 'dirvish)
 
-(define-obsolete-variable-alias 'dirvish-mode-line-position 'dirvish-use-mode-line "Aug 5, 2022")
 (defcustom dirvish-use-mode-line t
   "Whether to display mode line in dirvish buffers.
 The valid value are:
@@ -114,7 +117,6 @@ The valid value are:
                  (const :tag "Display the mode line across directory panes" t)
                  (const :tag "Make the mode line span all panes" global)))
 
-(define-obsolete-variable-alias 'dirvish-header-line-position 'dirvish-use-header-line "Aug 5, 2022")
 (defcustom dirvish-use-header-line t
   "Like `dirvish-use-mode-line', but for header line."
   :group 'dirvish :type 'symbol)
@@ -161,12 +163,34 @@ Set it to nil to use the default `mode-line-format'."
   :group 'dirvish :type 'plist)
 
 (defcustom dirvish-hide-details t
-  "Whether to hide detailed information on session startup."
-  :group 'dirvish :type 'boolean)
+  "Whether to enable `dired-hide-details-mode' in Dirvish buffers.
+When sets to t, it is enabled for all Dirvish buffers.
+
+Alternatively, the value can be a list of symbols to instruct Dirvish in
+what contexts it should be enabled.  The accepted values are:
+ - `dired':        when opening a directory using `dired-*' commands.
+ - `dirvish':      when opening full-frame Dirvish.
+ - `dirvish-fd':   when the buffer is create by `dirvish-fd*' commands.
+ - `dirvish-side': when opening Dirvish in the sidebar."
+  :group 'dirvish
+  :type '(choice (boolean :tag "Apply to all Dirvish buffers")
+                 (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
 
 (defcustom dirvish-hide-cursor t
-  "Whether to hide cursor in dirvish buffers."
+  "Whether to hide cursor in dirvish buffers.
+Works all the same as `dirvish-hide-details' but for cursor."
+  :group 'dirvish
+  :type '(choice (boolean :tag "Apply to all Dirvish buffers")
+                 (repeat :tag "Apply to a list of buffer types: 'dired, 'dirvish, 'dirvish-fd or 'dirvish-side" symbol)))
+
+(defcustom dirvish-preview-dired-sync-omit nil
+  "If non-nil, `dired' preview buffers sync `dired-omit-mode' from root window.
+Notice that it only take effects on the built-in `dired' preview dispatcher."
   :group 'dirvish :type 'boolean)
+
+(defcustom dirvish-window-fringe 1
+  "Window fringe for dirvish windows."
+  :group 'dirvish :type 'integer)
 
 (defconst dirvish-emacs-bin
   (cond
@@ -212,9 +236,13 @@ The UI of dirvish is refreshed only when there has not been new
 input for `dirvish-redisplay-debounce' seconds."
   :group 'dirvish :type 'float)
 
-(defcustom dirvish-window-fringe 1
-  "Window fringe for dirvish windows."
-  :group 'dirvish :type 'integer)
+(defcustom dirvish-ensure-up-dir-undedicated t
+  "If t, `dired-up-directory' uses the same window when if it is dedicated."
+  :group 'dirvish :type 'boolean
+  :set
+  (lambda (k v) (set k v)
+    (if v (advice-add 'dired-up-directory :around #'dirvish-save-dedication-a)
+      (advice-remove 'dired-up-directory #'dirvish-save-dedication-a))))
 
 (cl-defgeneric dirvish-clean-cache () "Clean cache for selected files." nil)
 (cl-defgeneric dirvish-build-cache () "Build cache for current directory." nil)
@@ -294,6 +322,14 @@ seconds.  DEBOUNCE defaults to `dirvish-redisplay-debounce'."
        (and (timerp ,timer) (cancel-timer ,timer))
        (setq ,timer (run-with-idle-timer ,debounce nil ,fn)))))
 
+(defmacro dirvish-save-dedication (&rest body)
+  "Run BODY after undedicating window, restore dedication afterwards."
+  (declare (debug (&rest form)))
+  `(progn
+     (let ((dedicated (window-dedicated-p)))
+       (set-window-dedicated-p nil nil)
+       (prog1 ,@body (set-window-dedicated-p nil dedicated)))))
+
 (defmacro dirvish-define-attribute (name docstring &rest body)
   "Define a Dirvish attribute NAME.
 An attribute contains a pair of predicate/rendering functions
@@ -363,9 +399,13 @@ A dirvish preview dispatcher is a function consumed by
   "Define a mode line segment NAME with BODY and DOCSTRING."
   (declare (indent defun) (doc-string 2))
   (let ((ml-name (intern (format "dirvish-%s-ml" name))))
-    `(defun ,ml-name (dv) ,docstring (ignore dv) ,@body)))
+    `(defun ,ml-name () ,docstring ,@body)))
 
 ;;;; Helpers
+
+(defsubst dirvish-curr ()
+  "Return Dirvish session attached to current buffer, if there is any."
+  (gethash (dirvish-prop :dv) dirvish--session-hash))
 
 (defun dirvish--hide-dired-header ()
   "Hide the Dired header."
@@ -397,13 +437,6 @@ ALIST is window arguments passed to `window--display-buffer'."
          (new-window (split-window-no-error nil size side)))
     (window--display-buffer buffer new-window 'window alist)))
 
-(defun dirvish--switch-to-buffer (buffer)
-  "Switch to BUFFER with window undedicated."
-  (let ((dedicated (window-dedicated-p)) (win (selected-window)))
-    (set-window-dedicated-p win nil)
-    (prog1 (switch-to-buffer buffer)
-      (set-window-dedicated-p win dedicated))))
-
 (defun dirvish--kill-buffer (buffer)
   "Kill BUFFER without side effects."
   (and (buffer-live-p buffer)
@@ -414,8 +447,8 @@ ALIST is window arguments passed to `window--display-buffer'."
 (defun dirvish--get-project-root (&optional directory)
   "Get project root path of DIRECTORY."
   (when-let* ((pj (project-current nil directory))
-              (pj-root (car (with-no-warnings (project-roots pj)))))
-    (expand-file-name pj-root)))
+              (pj-roots (project-roots pj)))
+    (expand-file-name (car pj-roots))))
 
 (defun dirvish--get-parent-path (path)
   "Get parent directory of PATH."
@@ -431,10 +464,10 @@ ALIST is window arguments passed to `window--display-buffer'."
           entry
         (complete-with-action action completions string pred)))))
 
-(defun dirvish--window-selected-p (dv)
-  "Return t if session DV is selected."
-  (eq (if (car (dv-layout dv)) (dv-root-window dv) (frame-selected-window))
-      dirvish--selected-window))
+(defun dirvish--selected-p (&optional dv)
+  "Return t if session DV (defaults to `dirvish-curr') is selected."
+  (let ((dv (or dv (dirvish-curr))))
+    (eq (dv-root-window dv) dirvish--selected-window)))
 
 (defun dirvish--scopes ()
   "Return computed scopes according to `dirvish-scopes'."
@@ -452,12 +485,6 @@ When NOTE is non-nil, append it the next line."
                         'display '(space :align-to right))
             (propertize (if note (concat "\n" note) "") 'face 'font-lock-doc-face))))
 
-;;;; Core
-
-(defsubst dirvish-curr ()
-  "Get selected Dirvish session."
-  (gethash (dirvish-prop :dv) dirvish--session-hash))
-
 (defun dirvish--util-buffer (type &optional dv no-create inhibit-hiding)
   "Return session DV's utility buffer of TYPE (defaults to `temp').
 If NO-CREATE is non-nil, do not create the buffer.
@@ -466,30 +493,42 @@ If INHIBIT-HIDING is non-nil, do not hide the buffer."
          (name (format "%s*Dirvish-%s%s" (if inhibit-hiding "" " ") type id)))
     (if no-create (get-buffer name) (get-buffer-create name))))
 
+(defun dirvish--make-proc (form sentinel buffer-or-name &rest puts)
+  "Make process for shell or batch FORM in BUFFER-OR-NAME.
+Set process's SENTINEL and PUTS accordingly."
+  (let* ((buf (or buffer-or-name (make-temp-name "*dirvish-batch*")))
+         (print-length nil) (print-level nil)
+         (cmd (if (stringp (car form)) form
+                (list dirvish-emacs-bin
+                      "-Q" "-batch" "--eval" (prin1-to-string form))))
+         (proc (make-process :name "dirvish" :connection-type nil :buffer buf
+                             :command cmd :sentinel sentinel)))
+    (while-let ((k (pop puts)) (v (pop puts))) (process-put proc k v))))
+
+;;;; Core
+
 (cl-defstruct (dirvish (:conc-name dv-))
-  "Define dirvish data type."
-  (type () :documentation "is the (TYPE FIXED-WIDTH DEDICATED ROOT-WIN-FN FILE-OPEN-FN) struct.")
-  (layout (cons nil dirvish-default-layout) :documentation "is the working layouts.")
-  (ls-switches dired-listing-switches :documentation "is the listing switches.")
-  (root-window nil :documentation "is the main window created by ROOT-WINDOW-FN.")
-  (scopes () :documentation "are the \"environments\" such as init frame of this session.")
-  (preview-buffers () :documentation "holds all file preview buffers in this session.")
-  (preview-window nil :documentation "is the window to display preview buffer.")
-  (name (cl-gensym) :documentation "is an unique symbol for every session.")
-  (winconf (current-window-configuration) :documentation "is the saved window configuration.")
-  (index () :documentation "is a (DIR . CORRESPONDING-BUFFER) cons of ROOT-WINDOW.")
-  (roots () :documentation "is the list of all INDEXs."))
+  "Define dirvish session (`DV' for short) struct."
+  (type ()                :documentation "is the type of DV.")
+  (root-window ()         :documentation "is the root/main window of DV.")
+  (dedicated ()           :documentation "passes to `set-window-dedicated-p' for ROOT-WINDOW.")
+  (size-fixed ()          :documentation "passes to `window-size-fixed' for ROOT-WINDOW.")
+  (root-window-fn ()      :documentation "is a function used to create the ROOT-WINDOW for DV.")
+  (open-file-fn ()        :documentation "is a function used to open file under the cursor.")
+  (curr-layout ()         :documentation "is the working layout recipe of DV.")
+  (ff-layout
+   dirvish-default-layout :documentation "is a full-frame layout recipe.")
+  (ls-switches
+   dired-listing-switches :documentation "is the directory listing switches.")
+  (scopes ()              :documentation "are the environment of DV such as its init frame.")
+  (preview-buffers ()     :documentation "holds all file preview buffers of DV.")
+  (preview-window ()      :documentation "is the window to display preview buffer.")
+  (name (cl-gensym)       :documentation "is an unique symbol to identify DV.")
+  (winconf ()             :documentation "is a saved window configuration.")
+  (index ()               :documentation "is the current (cwd-str . buffer-obj) cons within ROOT-WINDOW.")
+  (roots ()               :documentation "is all the history INDEX entries in DV."))
 
-(defun dirvish--find-reusable (&optional type)
-  "Return the first matched reusable session with TYPE."
-  (when dirvish-reuse-session
-    (cl-loop with scopes = (dirvish--scopes)
-             for dv in (hash-table-values dirvish--session-hash)
-             when (and (eq type (car (dv-type dv)))
-                       (equal (dv-scopes dv) scopes))
-             collect dv)))
-
-(defun dirvish-new (&rest args)
+(defun dirvish--new (&rest args)
   "Create and save a new dirvish struct to `dirvish--session-hash'.
 ARGS is a list of keyword arguments for `dirvish' struct."
   (let (slots new)
@@ -499,18 +538,24 @@ ARGS is a list of keyword arguments for `dirvish' struct."
     (dirvish--check-deps)
     (dirvish--create-root-window new) new))
 
-(defun dirvish-kill (dv)
-  "Kill the dirvish instance DV."
+(defun dirvish--find-reusable (&optional type)
+  "Return the first matched reusable session with TYPE."
+  (when dirvish-reuse-session
+    (cl-loop with scopes = (dirvish--scopes)
+             for dv in (hash-table-values dirvish--session-hash)
+             when (and (eq type (dv-type dv))
+                       (equal (dv-scopes dv) scopes))
+             collect dv)))
+
+(defun dirvish--clear-session (dv)
+  "Reset DV's slot and kill its buffers."
   (let ((index (cdr (dv-index dv))))
-    (if (not (car (dv-layout dv)))
+    (if (not (dv-curr-layout dv))
         (cl-loop for (_d . b) in (dv-roots dv)
                  when (and (not (get-buffer-window b))
                            (not (with-current-buffer b server-buffer-clients)))
                  do (kill-buffer b)
                  finally (setf (dv-index dv) (car (dv-roots dv))))
-      (when dirvish-use-header-line
-        (with-current-buffer index
-          (setq header-line-format dirvish--header-line-fmt)))
       (cl-loop for (_d . b) in (dv-roots dv)
                when (not (eq b index)) do (kill-buffer b))
       (when-let* ((wconf (dv-winconf dv))) (set-window-configuration wconf)))
@@ -525,7 +570,8 @@ ARGS is a list of keyword arguments for `dirvish' struct."
 
 (defun dirvish--create-root-window (dv)
   "Create root window of DV."
-  (let* ((fn (or (nth 3 (dv-type dv)) 'frame-selected-window)) (w (funcall fn)))
+  (let* ((fn (or (dv-root-window-fn dv) #'frame-selected-window))
+         (w (funcall fn)))
     (setf (dv-root-window dv) w) w))
 
 (defun dirvish--preview-dps-validate (&optional dps)
@@ -533,7 +579,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   (cl-loop with dps = (or dps dirvish-preview-dispatchers)
            with res = (prog1 '() (require 'recentf) (require 'ansi-color))
            with fmt = "[Dirvish]: install '%s' executable to preview %s files."
-           for dp in (append '(disable) dps '(default))
+           for dp in (append '(disable) dps '(fallback))
            for info = (alist-get dp dirvish--available-preview-dispatchers)
            for requirements = (plist-get info :require)
            for met = t
@@ -565,22 +611,21 @@ ARGS is a list of keyword arguments for `dirvish' struct."
      (when (or m-attr feat-in-lib) (require lib))
      (and m-attr (setq attrs (append attrs m-attr))))
    finally
-   (setf dirvish--mode-line-fmt (dirvish--mode-line-fmt-setter ml-l ml-r))
-   (setf dirvish--header-line-fmt (dirvish--mode-line-fmt-setter hl-l hl-r t))
+   (setf dirvish--mode-line-fmt (dirvish--mode-line-composer ml-l ml-r))
+   (setf dirvish--header-line-fmt (dirvish--mode-line-composer hl-l hl-r t))
    (setf dirvish--working-preview-dispathchers (dirvish--preview-dps-validate))
    (setf dirvish--working-attrs (dirvish--attrs-expand attrs))))
 
-(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to)
-  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO."
+(defun dirvish--render-attrs-1 (height width pos remote fns ov align-to no-hl)
+  "HEIGHT WIDTH POS REMOTE FNS OV ALIGN-TO NO-HL."
   (forward-line (- 0 height))
-  (cl-dotimes (_ (* (if (eq major-mode 'dired-mode) 2 5) height))
+  (cl-dotimes (_ (* 2 height))
     (when (eobp) (cl-return))
     (let ((f-beg (dired-move-to-filename))
           (f-end (dired-move-to-end-of-filename t))
           (l-beg (line-beginning-position)) (l-end (line-end-position))
           (f-wid 0) f-str f-name f-attrs f-type hl-face left right)
-      (setq hl-face
-            (and (eq (or f-beg l-beg) pos) dirvish-hide-cursor 'dirvish-hl-line))
+      (setq hl-face (and (eq (or f-beg l-beg) pos) no-hl 'dirvish-hl-line))
       (when f-beg
         (setq f-str (buffer-substring f-beg f-end)
               f-wid (string-width f-str)
@@ -623,6 +668,7 @@ ARGS is a list of keyword arguments for `dirvish' struct."
   "Render or CLEAR attributes in DV's dirvish buffer."
   (cl-loop with remote = (dirvish-prop :remote) with gui = (dirvish-prop :gui)
            with fns = () with height = (frame-height)
+           with no-hl = (dirvish--apply-hiding-p dirvish-hide-cursor)
            with remain = (- (window-width) (if gui 1 2))
            for (_ width pred render ov) in dirvish--working-attrs
            do (remove-overlays (point-min) (point-max) ov t)
@@ -636,48 +682,49 @@ ARGS is a list of keyword arguments for `dirvish' struct."
              (unless clear
                (save-excursion
                  (dirvish--render-attrs-1 height remain (point)
-                                          remote fns ov (if gui 0 2)))))))
+                                          remote fns ov (if gui 0 2) no-hl))))))
 
 ;;;; Advices
 
-(defun dirvish-find-entry-a (&optional entry)
+(defun dirvish-save-dedication-a (fn args)
+  "Ensure FN and ARGS applied with window undedicated."
+  (dirvish-save-dedication (apply fn args)))
+
+(cl-defun dirvish-find-entry-a (&optional entry)
   "Find ENTRY in current dirvish session.
 ENTRY can be a filename or a string with format of
 `dirvish-fd-bufname' used to query or create a `fd' result
 buffer, it defaults to filename under the cursor when it is nil."
   (let* ((entry (or entry (dired-get-filename nil t)))
-         (buffer (cond ((string-prefix-p "🔍" entry) (dirvish-fd-find entry))
-                       ((file-directory-p entry) (dired-noselect entry))
-                       ((string-suffix-p "/" entry)
-                        (user-error
-                         (concat entry " is not a valid directory"))))))
-    (if buffer (dirvish--switch-to-buffer buffer)
-      (let* ((ext (downcase (or (file-name-extension entry) "")))
-             (file (expand-file-name entry))
-             (process-connection-type nil)
-             (ex (cl-loop
-                  for (exts . (cmd . args)) in dirvish-open-with-programs
-                  thereis (and (not (dirvish-prop :remote))
-                               (executable-find cmd)
-                               (member ext exts)
-                               (append (list cmd) args)))))
-        (if ex (apply #'start-process "" nil "nohup"
-                      (cl-substitute file "%f" ex :test 'string=))
-          (let* ((dv (dirvish-curr)) (fn (nth 4 (dv-type dv))))
-            (if fn (funcall fn) (dirvish-kill dv)))
-          (find-file file))))))
+         (buf (cond ((string-prefix-p "🔍" entry)
+                     (dirvish-fd-find entry))
+                    ((file-directory-p entry)
+                     (dired-noselect entry))
+                    ((string-suffix-p "/" entry)
+                     (user-error (concat entry " is not a directory")))))
+         (dv (dirvish-curr)) process-connection-type file)
+    (when buf (cl-return-from dirvish-find-entry-a
+                (dirvish-save-dedication (switch-to-buffer buf))))
+    (setq file (expand-file-name entry))
+    (cl-loop with e = (downcase (or (file-name-extension entry) ""))
+             for (es . (c . a)) in dirvish-open-with-programs
+             when (and (member e es) (executable-find c)) do
+             (cl-return-from dirvish-find-entry-a
+               (let ((a (cl-substitute file "%f" a :test #'string=)))
+                 (apply #'start-process "" nil "nohup" (append (list c) a)))))
+    (unless dv (cl-return-from dirvish-find-entry-a (find-file file)))
+    (if-let* ((fn (dv-open-file-fn dv))) (funcall fn)
+      (dirvish--clear-session dv))
+    (find-file file)))
 
 (defun dirvish-insert-subdir-a (dirname &rest _)
   "Setup newly inserted subdir DIRNAME for this Dirvish buffer."
   (dirvish--hide-dired-header)
-  (dirvish-data-for-dir dirname (current-buffer) nil))
+  (dirvish--dir-data-async dirname (current-buffer) t))
 
 (defun dirvish-wdired-enter-a (&rest _)
   "Advice for `wdired-change-to-wdired-mode'."
-  (when dirvish-hide-cursor (dired-move-to-end-of-filename t))
-  (setq-local cursor-type 'hollow)
-  (when (boundp 'evil-normal-state-cursor)
-    (setq-local evil-normal-state-cursor 'hollow))
+  (let (dirvish-hide-cursor) (dirvish--maybe-toggle-cursor 'hollow))
   (dirvish--render-attrs 'clear)
   (remove-hook 'window-configuration-change-hook #'dirvish-winconf-change-h t)
   (remove-hook 'post-command-hook #'dirvish-update-body-h t))
@@ -685,9 +732,9 @@ buffer, it defaults to filename under the cursor when it is nil."
 (defun dirvish-thumb-buf-a (fn)
   "Advice for FN `image-dired-create-thumbnail-buffer'."
   (when-let* ((dv dirvish--this) ((dv-preview-window dv)))
-    (dirvish--init-session dv)
+    (dirvish--build-layout dv)
     (with-selected-window (dv-preview-window dv)
-      (dirvish--switch-to-buffer image-dired-thumbnail-buffer)))
+      (switch-to-buffer image-dired-thumbnail-buffer)))
   (let ((buf (funcall fn))
         (fun (lambda () (let ((buf (get-text-property
                                (point) 'associated-dired-buffer)))
@@ -700,14 +747,13 @@ buffer, it defaults to filename under the cursor when it is nil."
   (let* ((dir (if (consp dir-or-list) (car dir-or-list) dir-or-list))
          (key (file-name-as-directory (expand-file-name dir)))
          (this dirvish--this)
-         (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish-new)
-               (or this (car (dirvish--find-reusable)) (dirvish-new))))
+         (dv (if (and this (eq this-command 'dired-other-frame)) (dirvish--new)
+               (or this (car (dirvish--find-reusable)) (dirvish--new))))
          (bname buffer-file-name)
          (remote (file-remote-p dir))
          (flags (or flags (dv-ls-switches dv)))
          (buffer (alist-get key (dv-roots dv) nil nil #'equal))
          (new-buffer-p (not buffer)))
-    (if this (set-window-dedicated-p nil nil) (setcar (dv-layout dv) nil))
     (when new-buffer-p
       (if (not remote)
           (let ((dired-buffers nil)) ; disable reuse from dired
@@ -744,12 +790,13 @@ buffer, it defaults to filename under the cursor when it is nil."
   "Update UI of current Dirvish.
 When FORCE, ensure the preview get refreshed."
   (when-let* ((dv (dirvish-curr)))
-    (cond ((not dirvish-hide-cursor))
+    (cond ((not (dirvish--apply-hiding-p dirvish-hide-cursor)))
           ((eobp) (forward-line -1))
           ((cdr dired-subdir-alist))
           ((and (bobp) dirvish-use-header-line)
            (goto-char (dirvish-prop :content-begin))))
-    (when dirvish-hide-cursor (dired-move-to-filename))
+    (when (dirvish--apply-hiding-p dirvish-hide-cursor)
+      (dired-move-to-filename))
     (dirvish--render-attrs)
     (when-let* ((filename (dired-get-filename nil t)))
       (dirvish-prop :index filename)
@@ -758,11 +805,11 @@ When FORCE, ensure the preview get refreshed."
             (last-index (dirvish-prop :last-index)))
         (dirvish-prop :last-index filename)
         (dirvish-debounce nil
-          (if (not (car (dv-layout dv)))
+          (if (not (dv-curr-layout dv))
               (and (< emacs-major-version 29) (force-mode-line-update))
-            (when (and dirvish-use-mode-line (buffer-live-p f-buf))
+            (when (buffer-live-p f-buf)
               (with-current-buffer f-buf (force-mode-line-update)))
-            (when (and dirvish-use-header-line (buffer-live-p h-buf))
+            (when (buffer-live-p h-buf)
               (with-current-buffer h-buf (force-mode-line-update)))
             (when (or force (not (equal last-index filename)))
               (dirvish--preview-update dv filename))))))))
@@ -776,11 +823,9 @@ When FORCE, ensure the preview get refreshed."
 (defun dirvish-kill-buffer-h ()
   "Remove buffer from session's buffer list."
   (when-let* ((dv (dirvish-curr)) (buf (current-buffer)))
-    (let ((win (get-buffer-window buf)))
-      (when (window-live-p win) (set-window-dedicated-p win nil)))
     (setf (dv-roots dv) (cl-remove-if (lambda (i) (eq (cdr i) buf)) (dv-roots dv)))
     (unless (dv-roots dv)
-      (when-let* ((layout (car (dv-layout dv)))
+      (when-let* ((layout (dv-curr-layout dv))
                   (wconf (dv-winconf dv))
                   ((eq buf (window-buffer (selected-window)))))
         (set-window-configuration wconf))
@@ -790,43 +835,38 @@ When FORCE, ensure the preview get refreshed."
                do (dirvish--kill-buffer b))
       (setq dirvish--this nil))))
 
-(defun dirvish-selection-change-h (&optional _frame-or-window)
-  "Save current session to frame parameters."
-  (let* ((w (frame-selected-window)) (b (window-buffer w)) (dv (dirvish-curr)))
-    (cond ((and dv (minibufferp (window-buffer dirvish--selected-window)))
-           (with-selected-window (dirvish--create-root-window dv)
-             (dirvish--switch-to-buffer b)
-             (dirvish--init-session dv)))
-          ((active-minibuffer-window))
-          (t (setq dirvish--this dv)))
-    (setq dirvish--selected-window w)))
+(defun dirvish-selection-change-h (&rest _)
+  "Record `dirvish--selected-window' and `dirvish--this'."
+  (unless (active-minibuffer-window) (setq dirvish--this (dirvish-curr)))
+  (setq dirvish--selected-window (frame-selected-window)))
 
 (defun dirvish-winconf-change-h ()
-  "Restore hidden sessions on buffer switching."
+  "Record root window and update its UI for current dirvish session."
   (let ((dv (dirvish-curr)))
     (setf (dv-root-window dv) (get-buffer-window (cdr (dv-index dv))))
     (dirvish-update-body-h 'force-preview-update)))
 
 (defun dirvish-winbuf-change-h (window)
   "Rebuild layout once buffer in WINDOW changed."
-  (with-current-buffer (window-buffer window)
-    (when-let* ((dv (dirvish-curr))) (dirvish--init-session dv))))
+  (with-selected-window window
+    (when-let* ((dv (dirvish-curr)))
+      (let ((saved-layout (dv-curr-layout dv))
+            (saved-winconf (dv-winconf dv)))
+        ;; rebuild a fullframe session as a single pane session temporarily, for
+        ;; cases when a buried dirvish buffers is selected by minibuffer
+        ;; commands such as `consult-buffer'.
+        (cond ((and (active-minibuffer-window) saved-layout)
+               (setf (dv-curr-layout dv) nil)
+               (dirvish--build-layout dv)
+               (setf (dv-curr-layout dv) saved-layout)
+               (setf (dv-winconf dv) saved-winconf))
+              (t (dirvish--build-layout dv)))))))
 
 (defun dirvish-tab-new-post-h (_tab)
   "Do not reuse sessions from other tabs."
   (setq dirvish--this nil))
 
 ;;;; Preview
-
-(dirvish-define-preview disable (file ext)
-  "Disable preview in some cases."
-  (cond
-   ((not (file-exists-p file))
-    `(info . ,(format "%s does not exist" file)))
-   ((not (file-readable-p file))
-    `(info . ,(format "%s is not readable" file)))
-   ((member ext dirvish-preview-disabled-exts)
-    `(info . ,(format "Preview for %s has been disabled" file)))))
 
 (defun dirvish--find-file-temporarily (name)
   "Open file NAME temporarily for preview."
@@ -844,23 +884,45 @@ When FORCE, ensure the preview get refreshed."
                     (set-default k d) (set k v)))))
       (cond ((ignore-errors (buffer-local-value 'so-long-detected-p buf))
              (kill-buffer buf)
-             `(info . ,(format "File `%s' with long lines not previewed" name)))
+             `(info . ,(format "File [ %s ] contains very long lines" name)))
             (t `(buffer . ,buf))))))
 
-(dirvish-define-preview default (file ext)
-  "Default preview dispatcher for FILE."
-  (when-let* ((attrs (ignore-errors (file-attributes file)))
-              (size (file-attribute-size attrs)))
-    (cond ((file-directory-p file) ; default directory previewer
-           (let* ((script `(with-current-buffer
-                               (progn (setq insert-directory-program
-                                            ,insert-directory-program)
-                                      (dired-noselect ,file "-AlGh"))
-                             (buffer-string)))
-                  (cmd (format "%S" `(message "\n%s" ,script))))
-             `(dired . (,dirvish-emacs-bin "-Q" "-batch" "--eval" ,cmd))))
+(dirvish-define-preview disable (file ext)
+  "Disable preview in some cases."
+  (cond
+   ((not (file-exists-p file))
+    `(info . ,(format "[ %s ] does not exist" file)))
+   ((not (file-readable-p file))
+    `(info . ,(format "[ %s ] is not readable" file)))
+   ((member ext dirvish-preview-disabled-exts)
+    `(info . ,(format "Preview for filetype [ %s ] has been disabled" ext)))))
+
+(dirvish-define-preview dired (file)
+  "Preview dispatcher for directory FILE."
+  (when (file-directory-p file)
+    `(dired . (let ,(mapcar (lambda (env) `(,(car env) ,(cdr env)))
+                            (remove (cons 'inhibit-message t)
+                                    dirvish-preview-environment))
+                (setq insert-directory-program ,insert-directory-program)
+                (setq dired-listing-switches ,dired-listing-switches)
+                (setq dired-omit-verbose ,(bound-and-true-p dired-omit-verbose))
+                (setq dired-omit-files ,(bound-and-true-p dired-omit-files))
+                (with-current-buffer (dired-noselect ,file)
+                  ,(and dirvish-preview-dired-sync-omit
+                        (bound-and-true-p dired-omit-mode)
+                        `(dired-omit-mode))
+                  (message "\n%s" (buffer-string)))))))
+
+(dirvish-define-preview fallback (file ext)
+  "Fallback preview dispatcher for FILE."
+  (let* ((attrs (ignore-errors (file-attributes file)))
+         (size (file-attribute-size attrs)))
+    (cond ((not attrs)
+           `(info . ,(format "Can not get attributes of [ %s ]." file)))
+          ((not size)
+           `(info . ,(format "Can not get file size of [ %s ]." file)))
           ((> size (or large-file-warning-threshold 10000000))
-           `(info . ,(format "File %s is too big for literal preview." file)))
+           `(info . ,(format "File [ %s ] is too big for literal preview." file)))
           ((member ext dirvish-media-exts)
            `(info . "Preview disabled for media files"))
           (t (dirvish--find-file-temporarily file)))))
@@ -900,13 +962,12 @@ When PROC finishes, fill preview buffer with process result."
 
 (defun dirvish--run-shell-for-preview (dv recipe)
   "Dispatch shell cmd with RECIPE for session DV."
-  (when-let* ((proc (get-buffer-process (get-buffer " *Dirvish-temp*"))))
-    (delete-process proc))
-  (let ((buf (dirvish--util-buffer 'preview dv nil t))
-        (proc (make-process :name "sh-out" :connection-type nil
-                            :buffer " *Dirvish-temp*" :command (cdr recipe)
-                            :sentinel 'dirvish-shell-preview-proc-s)))
-    (process-put proc 'cmd-info (car recipe))
+  (let ((proc (get-buffer-process (get-buffer " *dirvish-sh*")))
+        (buf (dirvish--util-buffer 'preview dv nil t)))
+    (when proc (delete-process proc))
+    (dirvish--make-proc
+     (cdr recipe) 'dirvish-shell-preview-proc-s " *dirvish-sh*"
+     'cmd-info (car recipe))
     (with-current-buffer buf (erase-buffer) (remove-overlays) buf)))
 
 (cl-defmethod dirvish-preview-dispatch ((recipe (head shell)) dv)
@@ -934,66 +995,68 @@ When PROC finishes, fill preview buffer with process result."
 
 (dirvish-define-attribute hl-line
   "Highlight current line.
-This attribute is enabled when `dirvish-hide-cursor' is non-nil."
+This attribute is disabled when cursor is visible."
   (when hl-face
     (let ((ov (make-overlay l-beg (1+ l-end))))
       (overlay-put ov 'face hl-face) `(ov . ,ov))))
 
 (dirvish-define-attribute symlink-target
   "Hide symlink target."
-  :when (or (eq major-mode 'dirvish-directory-view-mode)
+  :when (or (derived-mode-p 'dirvish-directory-view-mode)
             (and dired-hide-details-mode
                  (default-value 'dired-hide-details-hide-symlink-targets)))
   (when (< (+ f-end 4) l-end)
     (let ((ov (make-overlay f-end l-end)))
       (overlay-put ov 'invisible t) `(ov . ,ov))))
 
-(defun dirvish--mode-line-fmt-setter (left right &optional header)
-  "Set the `dirvish--mode-line-fmt'.
+(defun dirvish--mode-line-composer (left right &optional header)
+  "Set `dirvish--mode-line-fmt'.
 LEFT and RIGHT are segments aligned to left/right respectively.
 If HEADER, set the `dirvish--header-line-fmt' instead."
-  (cl-labels ((expand (segments)
-                (cl-loop for s in segments collect
-                         (if (stringp s) s
-                           `(:eval (,(intern (format "dirvish-%s-ml" s)) (dirvish-curr))))))
-              (get-font-scale ()
-                (let* ((face (if header 'header-line 'mode-line-inactive))
-                       (default (face-attribute 'default :height))
-                       (ml-height (face-attribute face :height)))
-                  (cond ((floatp ml-height) ml-height)
-                        ((integerp ml-height) (/ (float ml-height) default))
-                        (t 1)))))
-    `((:eval
-       (let* ((dv (dirvish-curr))
-              (buf (and (car (dv-layout dv)) (cdr (dv-index dv))))
-              (scale ,(get-font-scale))
-              (win-width (floor (/ (window-width) scale)))
-              (str-l (format-mode-line
-                      ',(or (expand left) mode-line-format) nil nil buf))
-              (str-r (format-mode-line ',(expand right) nil nil buf))
-              (len-r (string-width str-r)))
-         (concat
-          (dirvish--bar-image (car (dv-layout dv)) ,header)
-          (if (< (+ (string-width str-l) len-r) win-width)
-              str-l
-            (let ((trim (1- (- win-width len-r))))
-              (if (>= trim 0)
-                  (substring str-l 0 (min trim (1- (length str-l))))
-                "")))
-          (propertize
-           " " 'display
-           `((space :align-to (- (+ right right-fringe right-margin)
-                                 ,(ceiling (* scale (string-width str-r)))))))
-          str-r))))))
+  `((:eval
+     (let* ((dv (dirvish-curr))
+            (fullframe-p (and dv (dv-curr-layout dv)))
+            (buf (and dv (cdr (dv-index dv))))
+            (expand
+             (lambda (segs)
+               (cl-loop for s in segs collect
+                        (if (stringp s) s
+                          `(:eval (,(intern (format "dirvish-%s-ml" s))))))))
+            (face ',(if header 'header-line 'mode-line-inactive))
+            (default (face-attribute 'default :height))
+            (ml-height (face-attribute face :height))
+            (scale (cond ((floatp ml-height) ml-height)
+                         ((integerp ml-height) (/ (float ml-height) default))
+                         (t 1)))
+            (win-width (floor (/ (window-width) scale)))
+            (str-l "DIRVISH: Context buffer is not a Dirvish buffer")
+            (str-r (propertize "WARNING" 'face 'dired-warning))
+            (len-r 7))
+       (when (buffer-live-p buf)
+         (setq str-l (format-mode-line (funcall expand ',left) nil nil buf))
+         (setq str-r (format-mode-line (funcall expand ',right) nil nil buf))
+         (setq len-r (string-width str-r)))
+       (concat
+        (dirvish--mode-line-bar-img fullframe-p ,header)
+        (if (< (+ (string-width str-l) len-r) win-width)
+            str-l
+          (let ((trim (1- (- win-width len-r))))
+            (if (>= trim 0)
+                (substring str-l 0 (min trim (1- (length str-l))))
+              "")))
+        (propertize
+         " " 'display `((space :align-to (- (+ right right-fringe right-margin)
+                                            ,(ceiling (* scale len-r))))))
+        str-r)))))
 
 ;; Thanks to `doom-modeline'.
-(defun dirvish--bar-image (fullscreenp header)
+(defun dirvish--mode-line-bar-img (fullframe-p header)
   "Create a bar image with height of `dirvish-mode-line-height'.
-If FULLSCREENP, use the `cdr' of the value as height, otherwise
+If FULLFRAME-P, use the `cdr' of the value as height, otherwise
 use `car'.  If HEADER, use `dirvish-header-line-height' instead."
   (when (and (display-graphic-p) (image-type-available-p 'pbm))
     (let* ((hv (if header dirvish-header-line-height dirvish-mode-line-height))
-           (ht (cond ((numberp hv) hv) (fullscreenp (cdr hv)) (t (car hv)))))
+           (ht (cond ((numberp hv) hv) (fullframe-p (cdr hv)) (t (car hv)))))
       (propertize
        " " 'display
        (ignore-errors
@@ -1001,24 +1064,60 @@ use `car'.  If HEADER, use `dirvish-header-line-height' instead."
           (concat (format "P1\n%i %i\n" 2 ht) (make-string (* 2 ht) ?1) "\n")
           'pbm t :foreground "None" :ascent 'center))))))
 
-(defun dirvish--hide-cursor ()
-  "Hide cursor in dirvish buffer."
-  (when dirvish-hide-cursor
-    (setq-local cursor-type nil)
-    (cond ((bound-and-true-p evil-normal-state-cursor)
-           (setq-local evil-normal-state-cursor '(bar . 0)))
-          ((bound-and-true-p meow-cursor-type-default)
-           (setq-local meow-cursor-type-motion nil
-                       meow-cursor-type-default nil)))))
+(defun dirvish--apply-hiding-p (ctx)
+  "Return t when it should hide cursor/details within context CTX."
+  (cond ((booleanp ctx) ctx)
+        ((dirvish-prop :fd-switches)
+         (memq 'dirvish-fd ctx))
+        ((and dirvish--this (dv-curr-layout dirvish--this))
+         (memq 'dirvish ctx))
+        ((and dirvish--this (eq (dv-type dirvish--this) 'side))
+         (memq 'dirvish-side ctx))
+        (t (memq 'dired ctx))))
 
-(defun dirvish--setup-mode-line (layout)
-  "Setup the mode/header line according to LAYOUT."
-  (setq mode-line-format
-        (unless (or layout (not dirvish-use-mode-line))
-          dirvish--mode-line-fmt)
-        header-line-format
-        (cond ((or layout (not dirvish-use-header-line)) nil)
-              (t (or (dirvish-prop :cus-header) dirvish--header-line-fmt)))))
+(defun dirvish--maybe-toggle-cursor (&optional cursor)
+  "Toggle cursor's invisibility according to context.
+Optionally, use CURSOR as the enabled cursor type."
+  (if (dirvish--apply-hiding-p dirvish-hide-cursor)
+      (prog1 (setq-local cursor-type nil)
+        (cond ((bound-and-true-p evil-local-mode)
+               (setq-local evil-normal-state-cursor '(bar . 0)))
+              ((bound-and-true-p meow-motion-mode)
+               (setq-local meow-cursor-type-motion nil))))
+    (setq-local cursor-type (or cursor '(box . 4)))
+    (cond ((bound-and-true-p evil-local-mode)
+           (setq-local evil-normal-state-cursor (or cursor '(box . 4))))
+          ((bound-and-true-p meow-motion-mode)
+           (setq-local meow-cursor-type-motion (or cursor '(box . 4)))))))
+
+(defun dirvish--maybe-toggle-details ()
+  "Toggle `dired-hide-details-mode' according to context."
+  (if (dirvish--apply-hiding-p dirvish-hide-details)
+      (dired-hide-details-mode 1)
+    (dired-hide-details-mode -1)))
+
+(defun dirvish--setup-mode-line (dv)
+  "Setup the mode/header line for dirvish DV."
+  (let* ((idx-buf (cdr (dv-index dv)))
+         (hl (or (dirvish-prop :cus-header) dirvish--header-line-fmt))
+         (ml dirvish--mode-line-fmt)
+         (fullframe-p (dv-curr-layout dv)))
+    (cond ; setup `header-line-format'
+     ((and fullframe-p (not dirvish-use-header-line)))
+     (fullframe-p
+      (with-current-buffer idx-buf (setq header-line-format nil))
+      (with-current-buffer (dirvish--util-buffer 'header dv)
+        (setq header-line-format hl)))
+     (dirvish-use-header-line
+      (with-current-buffer idx-buf (setq header-line-format hl))))
+    (cond ; setup `mode-line-format'
+     ((and fullframe-p (not dirvish-use-mode-line)))
+     (fullframe-p
+      (with-current-buffer idx-buf (setq mode-line-format nil))
+      (with-current-buffer (dirvish--util-buffer 'footer dv)
+        (setq mode-line-format ml)))
+     (dirvish-use-mode-line
+      (with-current-buffer idx-buf (setq mode-line-format ml))))))
 
 (defun dirvish-revert (&optional ignore-auto _noconfirm)
   "Reread the Dirvish buffer.
@@ -1030,17 +1129,15 @@ Dirvish sets `revert-buffer-function' to this function."
   (dirvish--hide-dired-header)
   (when ignore-auto ; meaning it is called interactively from user
     (setq-local dirvish--attrs-hash (make-hash-table))
-    (dirvish-data-for-dir default-directory (current-buffer) t))
+    (dirvish--dir-data-async default-directory (current-buffer)))
   (run-hooks 'dirvish-after-revert-hook))
 
 (defun dirvish-init-dired-buffer ()
-  "Initialize a Dired buffer for dirvish."
+  "Initialize a Dired buffer for Dirvish."
   (when (file-remote-p default-directory)
     (setq-local dirvish--working-preview-dispathchers '(dirvish-tramp-dp)))
   (use-local-map dirvish-mode-map)
-  (dirvish--hide-cursor)
   (dirvish--hide-dired-header)
-  (and dirvish-hide-details (dired-hide-details-mode t))
   (setq-local dirvish--attrs-hash (or dirvish--attrs-hash (make-hash-table))
               revert-buffer-function #'dirvish-revert
               tab-bar-new-tab-choice "*scratch*"
@@ -1079,7 +1176,7 @@ LEVEL is the depth of current window."
                   '(dired-font-lock-keywords t nil nil beginning-of-line))
       (font-lock-mode 1)
       (dired-goto-file-1 (file-name-nondirectory index) index (point-max))
-      (dirvish--hide-cursor)
+      (dirvish--maybe-toggle-cursor '(box . 0)) ; always hide cursor in parents
       (setq-local dirvish--attrs-hash (make-hash-table)
                   dirvish--working-attrs (dirvish--attrs-expand attrs))
       (dirvish--render-attrs) buf)))
@@ -1089,12 +1186,11 @@ LEVEL is the depth of current window."
   (let* ((current (expand-file-name default-directory))
          (parent (dirvish--get-parent-path current))
          (parent-dirs ())
-         (depth (or (caar (dv-layout dv)) 0))
+         (depth (or (car (dv-curr-layout dv)) 0))
          (i 0))
-    (dirvish--setup-mode-line (car (dv-layout dv)))
-    (when-let* ((fixed (nth 1 (dv-type dv)))) (setq window-size-fixed fixed))
-    (set-window-dedicated-p
-     nil (and (or (car (dv-layout dv)) (nth 2 (dv-type dv))) t))
+    (when-let* ((fixed (dv-size-fixed dv))) (setq window-size-fixed fixed))
+    (when (or (dv-curr-layout dv) (dv-dedicated dv))
+      (set-window-dedicated-p nil t))
     (set-window-fringes nil dirvish-window-fringe dirvish-window-fringe)
     (while (and (< i depth) (not (string= current parent)))
       (cl-incf i)
@@ -1102,7 +1198,7 @@ LEVEL is the depth of current window."
       (setq current (dirvish--get-parent-path current))
       (setq parent (dirvish--get-parent-path parent)))
     (when (> depth 0)
-      (cl-loop with layout = (car (dv-layout dv))
+      (cl-loop with layout = (dv-curr-layout dv)
                with parent-width = (nth 1 layout)
                with remain = (- 1 (nth 2 layout) parent-width)
                with width = (min (/ remain depth) parent-width)
@@ -1124,68 +1220,52 @@ LEVEL is the depth of current window."
     (add-hook 'window-scroll-functions #'dirvish-apply-ansicolor-h nil t))
   (with-current-buffer (dirvish--util-buffer 'header dv)
     (dirvish-prop :dv (dv-name dv))
-    (setq cursor-type nil window-size-fixed 'height mode-line-format nil))
+    (setq cursor-type nil window-size-fixed 'height
+          mode-line-format nil header-line-format nil))
   (with-current-buffer (dirvish--util-buffer 'footer dv)
     (dirvish-prop :dv (dv-name dv))
-    (setq cursor-type nil window-size-fixed 'height)
-    (setq header-line-format nil mode-line-format dirvish--mode-line-fmt)))
+    (setq cursor-type nil window-size-fixed 'height
+          mode-line-format nil header-line-format nil)))
 
-(defsubst dirvish--dir-data-getter (dir)
-  "Script for DIR data retrieving."
-  `(with-temp-buffer
-     (let ((hash (make-hash-table))
-           (bk ,(and (featurep 'dirvish-vc)
-                     `(ignore-errors (vc-responsible-backend ,dir)))))
-       ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
-       (advice-add 'vc-git--git-status-to-vc-state :around
-                   (lambda (fn code-list)
-                     (apply fn (list (delete-dups code-list)))))
-       (dolist (file (directory-files ,dir t nil t))
-         (let* ((attrs (file-attributes file))
-                (state (and bk (vc-state-refresh file bk)))
-                (git (and (eq bk 'Git) ; TODO: refactor this
-                          (shell-command-to-string
-                           (format "git log -1 --pretty=%%s %s"
-                                   (shell-quote-argument file)))))
-                (tp (nth 0 attrs)))
-           (cond
-            ((eq t tp) (setq tp '(dir . nil)))
-            (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
-            (t (setq tp '(file . nil))))
+(defun dirvish--dir-data-async (dir buffer &optional inhibit-setup)
+  "Asynchronously fetch metadata for DIR, stored locally in BUFFER.
+INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
+  (dirvish--make-proc
+   `(prin1
+     (let* ((hs (make-hash-table))
+            (remote? (file-remote-p ,dir))
+            (bk (unless remote? (vc-responsible-backend ,dir t))))
+       (dolist (file (unless remote? (directory-files ,dir t nil t)))
+         (let* ((attrs (file-attributes file)) (tp (nth 0 attrs)))
+           (cond ((eq t tp) (setq tp '(dir . nil)))
+                 (tp (setq tp `(,(if (file-directory-p tp) 'dir 'file) . ,tp)))
+                 (t (setq tp '(file . nil))))
            (puthash (intern (secure-hash 'md5 file))
-                    `(:builtin ,attrs :type ,tp
-                               ,@(and state (list :vc-state state))
-                               ,@(and git (list :git-msg git)))
-                    hash)))
-       (prin1 (cons bk hash) (current-buffer)))
-     (buffer-substring-no-properties (point-min) (point-max))))
+                    `(:builtin ,attrs :type ,tp) hs)))
+       (cons bk hs)))
+   (lambda (p _)
+     (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
+                 (`(,vc . ,data)
+                  (with-current-buffer (process-buffer p)
+                    (read (buffer-string)))))
+       (when (buffer-live-p buf)
+         (with-current-buffer buf
+           (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) data)
+           (dirvish-prop :vc-backend (or vc 0)) ; for &context compat
+           (dirvish-data-for-dir dir buf inhibit-setup))))
+     (delete-process p)
+     (dirvish--kill-buffer (process-buffer p)))
+   nil 'meta (cons buffer inhibit-setup)))
 
-(defun dirvish-dir-data-proc-s (proc _exit)
-  "Parse the directory metadata from PROC's output STR."
-  (pcase-let ((`(,buf . ,setup) (process-get proc 'meta))
-              (`(,vc . ,data) (with-current-buffer (process-buffer proc)
-                                (read (buffer-string)))))
-    (when (buffer-live-p buf)
-      (with-current-buffer buf
-        (maphash (lambda (k v) (puthash k v dirvish--attrs-hash)) data)
-        (when setup
-          (dirvish-prop :vc-backend vc)
-          (run-hooks 'dirvish-setup-hook))
-        (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h)))))
-  (delete-process proc)
-  (dirvish--kill-buffer (process-buffer proc)))
-
-(cl-defgeneric dirvish-data-for-dir (dir buffer setup)
-  "Fetch data for files in DIR, stored locally in BUFFER.
-Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
-  (let* ((buf (make-temp-name "dir-data-"))
-         (print-length nil)
-         (print-level nil)
-         (c (format "%S" `(message "%s" ,(dirvish--dir-data-getter dir))))
-         (proc (make-process :name "dir-data" :connection-type nil :buffer buf
-                             :command (list dirvish-emacs-bin "-Q" "-batch" "--eval" c)
-                             :sentinel 'dirvish-dir-data-proc-s)))
-    (process-put proc 'meta (cons buffer setup))))
+(cl-defgeneric dirvish-data-for-dir (dir buffer inhibit-setup)
+  "Fetch data for DIR in BUFFER.
+It is called when neither `:vc-backend' nor `:remote' is included in
+DIRVISH-PROPs, i.e. DIR is in localhost and is not being
+version-controlled.  Run `dirvish-setup-hook' after data parsing unless
+INHIBIT-SETUP is non-nil."
+  (ignore dir buffer)
+  (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
+  (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))
 
 (defun dirvish--window-split-order ()
   "Compute the window split order."
@@ -1200,20 +1280,20 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
          (key (string-to-number (format "%s%s" (or h-pos 1) (or m-pos 1)))))
     (cdr (assq key ord))))
 
-(defun dirvish--init-session (dv)
+(defun dirvish--build-layout (dv)
   "Build layout for Dirvish session DV."
   (setf (dv-scopes dv) (dirvish--scopes))
   (setf (dv-index dv) (cons (dirvish-prop :root) (current-buffer)))
   (setf (dv-winconf dv) (or (dv-winconf dv) (current-window-configuration)))
-  (let* ((layout (car (dv-layout dv)))
+  (let* ((layout (dv-curr-layout dv))
          (w-args `((preview (side . right) (window-width . ,(nth 2 layout)))
                    (header (side . above) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))
                    (footer (side . below) (window-height . -2)
                            (window-parameters . ((no-other-window . t))))))
          (w-order (and layout (dirvish--window-split-order))) util-windows)
-    (setq dirvish--selected-window (selected-window))
     (dirvish--init-util-buffers dv)
+    (dirvish--setup-mode-line dv)
     (when w-order (let ((ignore-window-parameters t)) (delete-other-windows)))
     (dolist (pane w-order)
       (let* ((buf (dirvish--util-buffer pane dv nil (eq pane 'preview)))
@@ -1223,29 +1303,28 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
               (t (set-window-dedicated-p win t) (push win util-windows)))
         (set-window-buffer win buf)))
     (dirvish--create-parent-windows dv)
-    (let ((h-fmt (or (dirvish-prop :cus-header) dirvish--header-line-fmt)))
-      (with-current-buffer (dirvish--util-buffer 'header dv)
-        (setq header-line-format h-fmt))
-      (when (and (display-graphic-p) (> emacs-major-version 28))
-        (let ((window-safe-min-height 0) (window-resize-pixelwise t))
-          (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
-      (unless (dirvish-prop :cached)
-        (dirvish-data-for-dir default-directory (current-buffer) t)
-        (dirvish-prop :cached t)))
-    (setq dirvish--this dv)))
+    (when (and (display-graphic-p) (> emacs-major-version 28))
+      (let ((window-safe-min-height 0) (window-resize-pixelwise t))
+        (dolist (win util-windows) (fit-window-to-buffer win 2 1))))
+    (unless (dirvish-prop :cached)
+      (dirvish--dir-data-async default-directory (current-buffer))
+      (dirvish-prop :cached t))
+    (setq dirvish--this dv)
+    (dirvish--maybe-toggle-cursor)
+    (dirvish--maybe-toggle-details)))
 
 (defun dirvish--reuse-or-create (path layout)
   "Find PATH in a dirvish session and set its layout with LAYOUT."
   (let ((dir (or path default-directory))
         (dv (or dirvish--this (car (dirvish--find-reusable)))))
     (cond (dv (with-selected-window (dirvish--create-root-window dv)
-                (setcar (dv-layout dv) layout)
+                (setf (dv-curr-layout dv) layout)
                 (setq dirvish--this dv)
                 (dirvish-find-entry-a
                  (if (or path (not (eq dirvish-reuse-session 'resume))) dir
                    (car (dv-index dv))))
-                (dirvish--init-session dv)))
-          (t (dirvish-new :layout (cons layout dirvish-default-layout))
+                (dirvish--build-layout dv)))
+          (t (dirvish--new :curr-layout layout)
              (dirvish-find-entry-a dir)))))
 
 (define-derived-mode dirvish-directory-view-mode
@@ -1257,15 +1336,14 @@ Run `dirvish-setup-hook' afterwards when SETUP is non-nil."
 
 (defun dirvish-quit ()
   "Quit current Dirvish session.
-If the session is a full-framed one, the window layout is
-restored.  If `dirvish-reuse-session' is nil, all Dired buffers
-in the session are killed, otherwise only the invisible Dired
-buffers within the session are killed and the Dired buffer(s) in
-the selected window are buried."
+If the session is a full-framed one, the window layout is restored.  If
+`dirvish-reuse-session' is nil, all Dired buffers in the session are
+killed, otherwise only the invisible Dired buffers within the session
+are killed and the Dired buffer(s) in the selected window are buried."
   (interactive)
   (let ((dv (dirvish-curr)) (ct 0) (lst (window-list))
         (win (selected-window)) (frame (selected-frame)))
-    (dirvish-kill dv)
+    (dirvish--clear-session dv)
     (while (and (dirvish-curr) (eq (selected-window) win)
                 (<= (cl-incf ct) (length lst)))
       (quit-window))
@@ -1307,7 +1385,7 @@ otherwise it defaults to `default-directory'.
 If `one-window-p' returns nil, open PATH using regular Dired."
   (interactive (list (and current-prefix-arg (read-directory-name "Dirvish: "))))
   (dirvish--reuse-or-create
-   path (if dirvish--this (car (dv-layout dirvish--this))
+   path (if dirvish--this (dv-curr-layout dirvish--this)
           (and (one-window-p) dirvish-default-layout))))
 
 (transient-define-prefix dirvish-dispatch ()
@@ -1315,7 +1393,14 @@ If `one-window-p' returns nil, open PATH using regular Dired."
   [:description
    (lambda () (dirvish--format-menu-heading
           "Dirvish main menu"
-          "Press ? to see more info for the current menu"))
+          "NOTICE: these commands require relevant Dirvish extensions"))
+   "" "Actions & Essential commands"
+   ("u" "User interface setup"   dirvish-setup-menu)
+   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)
+   ("/" "Perform fd search"      dirvish-fd)
+   ("@" "Find all dirs by fd"    dirvish-fd-jump)
+   ("R" "Rsync marked files"     dirvish-rsync)
+   ("n" "Live narrowing"         dirvish-narrow)
    "Transient commands"
    ("a" "Quick access"           dirvish-quick-access)
    ("h" "Go to history entries"  dirvish-history-menu)
@@ -1323,19 +1408,14 @@ If `one-window-p' returns nil, open PATH using regular Dired."
    ("l" "Setup listing switches" dirvish-ls-switches-menu)
    ("f" "Setup fd-find switches" dirvish-fd-switches-menu
     :if (lambda () (dirvish-prop :fd-arglist)))
+   ("S" "Setup rsync switches"   dirvish-rsync-switches-menu)
    ("m" "Manage marks"           dirvish-mark-menu)
    ("e" "Manage emerged groups"  dirvish-emerge-menu)
    ("t" "Manage subtrees"        dirvish-subtree-menu)
    ("r" "Rename files"           dirvish-renaming-menu)
    ("v" "Version control system" dirvish-vc-menu)
    ("y" "Yank marked files"      dirvish-yank-menu)
-   ("i" "Get file information"   dirvish-file-info-menu)
-   "" "Actions | Essential commands"
-   ("/" "Perform fd search"      dirvish-fd)
-   ("@" "Find all dirs by fd"    dirvish-fd-jump)
-   ("n" "Live narrowing"         dirvish-narrow)
-   ("u" "User interface setup"   dirvish-setup-menu)
-   ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)])
+   ("i" "Get file information"   dirvish-file-info-menu)])
 
 (provide 'dirvish)
 ;;; dirvish.el ends here

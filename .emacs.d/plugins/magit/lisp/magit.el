@@ -504,6 +504,7 @@ is run in the top-level directory of the current working tree."
 (transient-define-argument magit:--signoff ()
   :description "Add Signed-off-by trailer"
   :class 'transient-switch
+  :key "+s"
   :shortarg "-s"
   :argument "--signoff"
   :level 6)
@@ -569,6 +570,7 @@ is run in the top-level directory of the current working tree."
        (1 'font-lock-keyword-face)
        (2 'font-lock-function-name-face nil t))
       (,(concat "(" (regexp-opt '("magit-insert-section"
+                                  "magit-insert-heading"
                                   "magit-section-case"
                                   "magit-bind-match-strings"
                                   "magit-with-temp-index"

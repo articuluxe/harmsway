@@ -1308,7 +1308,7 @@ See `dape--connection-selected'."
                                     (and (dape--stopped-threads conn)))
                                   ordered)))))
     (unless (or nowarn conn)
-      (user-error "No %sdebug connection live"
+      (user-error "No %sdebug connection"
                   ;; `parent' and `last' does not make sense to the user
                   (if (memq type '(running stopped))
                       (format "%s " type) "")))
@@ -1783,7 +1783,6 @@ See `dape-request' for expected CB signature."
                                 (seq-filter 'identity)))
         (dape--request-continue cb)))))
 
-
 (defun dape--variables-recursive (conn object path pred cb)
   "Update variables recursivly.
 Get variable data from CONN and put result on OBJECT until PRED is nil.
@@ -1936,12 +1935,16 @@ Starts a new adapter CONNs from ARGUMENTS."
                                (list shell-file-name shell-command-switch
                                      (mapconcat #'identity args " "))
                              args))
-                         :filter (if dape-repl-echo-shell-output
-                                     (lambda (process string)
-                                       (dape--repl-insert string)
-                                       (comint-output-filter process string))
-                                   #'comint-output-filter)
-                         :sentinel 'shell-command-sentinel
+                         :filter
+                         (if dape-repl-echo-shell-output
+                             (lambda (process string)
+                               (let ((before (marker-position (process-mark process))))
+                                 (comint-output-filter process string)
+                                 (dape--repl-insert
+                                  (with-current-buffer (process-buffer process)
+                                    (buffer-substring before (process-mark process))))))
+                           #'comint-output-filter)
+                         :sentinel #'shell-command-sentinel
                          :file-handler t)))
       (unless dape-repl-echo-shell-output (dape--display-buffer buffer))
       (list :processId (process-id process)))))

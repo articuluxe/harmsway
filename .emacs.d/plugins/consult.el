@@ -214,6 +214,7 @@ for navigation commands like `consult-line'."
 (defcustom consult-buffer-filter
   '("\\` "
     "\\`\\*Completions\\*\\'"
+    "\\`\\*Multiple Choice Help\\*\\'"
     "\\`\\*Flymake log\\*\\'"
     "\\`\\*Semantic SymRef\\*\\'"
     "\\`\\*vc\\*\\'"
@@ -357,7 +358,8 @@ function `buffer-match-p'."
   :type 'sexp)
 
 (defcustom consult-preview-excluded-files
-  '("\\`/[^/|:]+:") ;; Do not preview remote files
+  ;; Do not preview remote and gpg files
+  '("\\`/[^/|:]+:" "\\.gpg\\'")
   "List of regexps matched against names of files, which are not previewed."
   :type '(repeat regexp))
 
@@ -1343,10 +1345,8 @@ ORIG is the original function, HOOKS the arguments."
 
 (defun consult--find-file-temporarily-1 (name)
   "Open file NAME, helper function for `consult--find-file-temporarily'."
-  (when-let (((not (seq-find (lambda (x) (string-match-p x name))
-                             consult-preview-excluded-files)))
-             ;; file-attributes may throw permission denied error
-             (attrs (ignore-errors (file-attributes name)))
+  ;; file-attributes may throw permission denied error
+  (when-let ((attrs (ignore-errors (file-attributes name)))
              (size (file-attribute-size attrs)))
     (let* ((partial (>= size consult-preview-partial-size))
            (buffer (if partial
@@ -1442,7 +1442,8 @@ ORIG is the original function, HOOKS the arguments."
     (lambda (&optional name)
       (if name
           (let ((default-directory dir))
-            (setq name (abbreviate-file-name (expand-file-name name)))
+            (setq name (let (file-name-handler-alist)
+                         (abbreviate-file-name (expand-file-name name))))
             (or
              ;; Find existing fully initialized buffer (non-previewed).  We have
              ;; to check for fully initialized buffer before accessing the
@@ -1452,15 +1453,17 @@ ORIG is the original function, HOOKS the arguments."
              ;; one fully initialized.  In this case we prefer the fully
              ;; initialized buffer.  For directories `get-file-buffer' returns nil,
              ;; therefore we have to special case Dired.
-             (if (and (fboundp 'dired-find-buffer-nocreate) (file-directory-p name))
-                 (dired-find-buffer-nocreate name)
-               (get-file-buffer name))
+             (let (file-name-handler-alist)
+               (if (and (fboundp 'dired-find-buffer-nocreate) (file-directory-p name))
+                   (dired-find-buffer-nocreate name)
+                 (get-file-buffer name)))
              ;; Find existing previewed buffer.  Previewed buffers are not fully
              ;; initialized (hooks are delayed) in order to ensure fast preview.
              (cdr (assoc name temporary-buffers))
-             ;; Finally, if no existing buffer has been found, open the file for
-             ;; preview.
-             (when-let (buf (consult--find-file-temporarily name))
+             ;; If no existing buffer has been found, open the file for preview.
+             (when-let (((not (seq-find (lambda (x) (string-match-p x name))
+                                        consult-preview-excluded-files)))
+                        (buf (consult--find-file-temporarily name)))
                ;; Only add new buffer if not already in the list
                (unless (or (rassq buf temporary-buffers) (memq buf orig-buffers))
                  (add-hook 'window-selection-change-functions hook)

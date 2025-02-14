@@ -60,7 +60,6 @@ variable is nil, the auto caching is disabled."
            (setq dirvish-media--auto-cache-timer
                  (run-with-timer 0 0.25 #'dirvish-media--autocache)))))
 
-(define-obsolete-variable-alias 'dirvish-media-auto-properties 'dirvish-show-media-properties "Sep 28, 2022")
 (defcustom dirvish-show-media-properties
   (and (executable-find "mediainfo") (executable-find "pdfinfo") t)
   "Show media properties automatically in preview window."
@@ -308,7 +307,7 @@ GROUP-TITLES is a list of group titles."
   "Path of file under the cursor."
   (let* ((directory-abbrev-alist nil) ; TODO: support custom `directory-abbrev-alist'
          (index (dired-current-directory))
-         (face (if (dirvish--window-selected-p dv) 'dired-header 'shadow))
+         (face (if (dirvish--selected-p) 'dired-header 'shadow))
          (rmt (dirvish-prop :remote))
          (abvname (if rmt (file-local-name index) (abbreviate-file-name index)))
          (host (propertize (if rmt (concat " " (substring rmt 1)) "")
@@ -433,7 +432,7 @@ GROUP-TITLES is a list of group titles."
   "Cache image/video-thumbnail when `DISPLAY-GRAPHIC-P'."
   (when-let* ((dv (dirvish-curr))
               ((not (dirvish-prop :remote)))
-              ((car (dv-layout dv)))
+              ((dv-curr-layout dv))
               (win (dv-preview-window dv))
               ((window-live-p win))
               (width (window-width win))
@@ -617,8 +616,11 @@ Require: `epub-thumbnailer' (executable)"
   "Preview pdf files.
 Require: `pdf-tools' (Emacs package)"
   (when (equal ext "pdf")
-    (if (featurep 'pdf-tools) (dirvish--find-file-temporarily file)
-      '(info . "Emacs package 'pdf-tools' is required to preview pdf documents"))))
+    (if (and (require 'pdf-tools nil t)
+             (bound-and-true-p pdf-info-epdfinfo-program)
+             (file-exists-p pdf-info-epdfinfo-program))
+        (dirvish--find-file-temporarily file)
+      '(info . "`epdfinfo' program required to preview pdfs; run `M-x pdf-tools-install'"))))
 
 (dirvish-define-preview pdf-preface (file ext preview-window)
   "Display the preface image as preview for pdf files."
@@ -638,6 +640,9 @@ Require: `zipinfo' (executable)
 Require: `tar' (executable)"
   :require ("zipinfo" "tar")
   (cond ((equal ext "zip") `(shell . ("zipinfo" ,file)))
+        ;; Emacs source code files
+        ((string-suffix-p ".el.gz" file)
+         (dirvish--find-file-temporarily file))
         ((member ext '("tar" "zst" "bz2" "bz" "gz" "xz" "tgz"))
          `(shell . ("tar" "-tvf" ,file)))))
 

@@ -1154,7 +1154,7 @@ This function is used in the macros `modus-themes-theme',
           (eq value 'unspecified))
       value)
      ((and (symbolp value)
-           (memq value (mapcar #'car palette)))
+           value)
       (modus-themes--retrieve-palette-value value palette))
      (t
       'unspecified))))
@@ -1672,6 +1672,7 @@ FG and BG are the main colors."
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; basic and/or ungrouped styles
+    `(abbrev-table-name ((,c :inherit bold)))
     `(appt-notification ((,c :inherit bold :foreground ,modeline-err)))
     `(blink-matching-paren-offscreen ((,c :background ,bg-paren-match)))
     `(bold ((,c :weight bold)))
@@ -2925,8 +2926,8 @@ FG and BG are the main colors."
     `(magit-diff-base-highlight ((,c :background ,bg-changed :foreground ,fg-changed)))
     `(magit-diff-context ((,c :inherit shadow)))
     `(magit-diff-context-highlight ((,c :background ,bg-diff-context)))
-    `(magit-diff-file-heading ((,c :inherit bold :foreground ,accent-0)))
-    `(magit-diff-file-heading-highlight ((,c :inherit magit-diff-file-heading :background ,bg-inactive)))
+    `(magit-diff-file-heading (( )))
+    `(magit-diff-file-heading-highlight ((,c :inherit (bold magit-diff-file-heading) :background ,bg-inactive)))
     `(magit-diff-file-heading-selection ((,c :inherit bold :background ,bg-hover-secondary)))
     `(magit-diff-hunk-heading ((,c :background ,bg-inactive)))
     `(magit-diff-hunk-heading-highlight ((,c :inherit bold :background ,bg-active)))
