@@ -3,4 +3,4 @@
 # key: attribute
 # binding: direct-keybinding
 # --
-${1:$$(yas-choose-value '("[[nodiscard]]" "[[fallthrough]]" "[[maybe_unused]]" "[[likely]]" "[[unlikely]]"))}
+${1:$$(yas-choose-value '("[[noreturn]]" "[[deprecated]]" "[[nodiscard]]" "[[fallthrough]]" "[[maybe_unused]]" "[[likely]]" "[[unlikely]]" "[[no_unique_address]]" "[[assume()]]"))}
