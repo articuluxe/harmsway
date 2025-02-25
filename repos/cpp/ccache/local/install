@@ -1,0 +1,7 @@
+cd src
+git reset --hard e36ecc45f58a9f6cee
+mkdir bld && cd bld
+cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=$HOME/opt ..
+make 
+make install
+ccache --max-size 8G
