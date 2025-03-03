@@ -143,7 +143,7 @@
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 ;; (setq switch-to-visible-buffer nil)     ;obsolete in 27.1
-(setq switch-to-prev-buffer-skip 'this)
+(setq switch-to-prev-buffer-skip nil)
 (setq enable-recursive-minibuffers t)
 (minibuffer-depth-indicate-mode 1)
 ;;  truncate long lines

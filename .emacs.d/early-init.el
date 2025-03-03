@@ -1,8 +1,8 @@
 ;;; early-init.el --- Early initialization options for Emacs
-;; Copyright (C) 2020-2023  Dan.Harms (Dan.Harms)
+;; Copyright (C) 2020-2023, 2025  Dan.Harms (Dan.Harms)
 ;; Author: Dan.Harms <enniomore@icloud.com>
 ;; Created: Tuesday, January 14, 2020
-;; Modified Time-stamp: <2023-09-06 17:31:21 dharms>
+;; Modified Time-stamp: <2025-03-03 06:55:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -44,9 +44,12 @@
 (if (fboundp 'startup-redirect-eln-cache)
     (startup-redirect-eln-cache
      (expand-file-name "~/.local/cache/eln-cache/"))
-  (if (boundp 'native-comp-eln-load-path)
-      (add-to-list 'native-comp-eln-load-path
-                   (expand-file-name "~/.local/cache/eln-cache/"))))
+  ;; (if (and
+  ;;      (< emacs-major-version 30)
+  ;;      (boundp 'native-comp-eln-load-path))
+  ;;     (add-to-list 'native-comp-eln-load-path
+  ;;                  (expand-file-name "~/.local/cache/eln-cache/")))
+  )
 
 (when (display-graphic-p)
   (tool-bar-mode -1)
