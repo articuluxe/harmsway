@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-01-27 09:43:05 dharms>
+;; Modified Time-stamp: <2025-02-22 12:54:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3211,7 +3211,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (use-package smerge-mode
   :init
   (add-hook 'find-file-hook #'harmsway-try-smerge t)
-  ;; :config
+  :config
+  (define-key smerge-mode-map "." #'smerge-refine-exchange-point)
   ;; (define-key smerge-mode-map "h" #'harmsway-smerge-hydra)
   )
 (global-set-key "\C-xv^" #'smerge-vc-next-conflict)

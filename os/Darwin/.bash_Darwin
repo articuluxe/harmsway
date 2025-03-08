@@ -8,6 +8,16 @@ cdf() {
     test -n "$target" && cd "$target" && pwd
 }
 
+raise-emacs() {
+    osascript <<EOF
+tell application "System Events"
+     tell application process "Emacs"
+          set frontmost to true
+     end tell
+end tell
+EOF
+}
+
 function diff_dirs {
     test "$#" -ne 2 && echo "Need 2 directories" && return 0
     diff <(find "$1" -type f -exec stat -f '%N %z' '{}' \; | sort) \

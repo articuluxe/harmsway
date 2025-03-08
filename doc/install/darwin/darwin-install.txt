@@ -109,6 +109,9 @@ brew install emacs-head@28 --with-cocoa --with-native-comp --with-native-full-ao
 brew install emacs-head@29 --with-cocoa --with-native-comp --with-native-full-aot --with-tree-sitter --with-modern-icon-emacs-icon5
 brew install emacs-head@30 --with-cocoa --with-native-comp --with-native-full-aot --with-tree-sitter --with-modern-icon-emacs-icon6
 
+brew tap jimeh/emacs/builds
+brew install --cask emacs-app
+
 # Avoid malformed load-history entry ((defun . jump-to-cpp))
 # in Emacs 27.1, leading to (wrong-type-argument stringp)
 # Comment out
