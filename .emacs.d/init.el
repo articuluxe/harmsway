@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-02-22 12:54:45 dharms>
+;; Modified Time-stamp: <2025-03-12 12:09:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3825,7 +3825,12 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package sysctl :commands sysctl)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; syncthing ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package syncthing :bind ("C-c 0s" . syncthing))
+(use-package syncthing
+  :bind ("C-c 0s" . syncthing)
+  :init
+  (setq syncthing-default-server-token "")
+  (setq syncthing-thousands-separator ",")
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; request-deferred ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package request-deferred :commands request-deferred)
