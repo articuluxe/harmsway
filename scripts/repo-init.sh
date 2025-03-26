@@ -1,11 +1,11 @@
 #!/bin/sh
 # -*- Mode: sh -*-
 # repo-init.sh --- select a repo to initialize
-# Copyright (C) 2016, 2018, 2021  Dan Harms (dharms)
+# Copyright (C) 2016, 2018, 2021, 2025  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, September 15, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-10-19 11:02:00 dharms>
+# Modified Time-stamp: <2025-03-26 07:46:55 dharms>
 # Modified by: Dan Harms
 # Keywords: repo src
 
@@ -16,8 +16,7 @@ if [ -z "$proj" ]; then
     exit 1
 fi
 
-echo "Which version of $proj should be installed?"
-ver=$(_dirselect.sh "$HOME/config/repos/$proj" "Select a version: ")
+ver=$(_dirselect.sh "$HOME/config/repos/$proj" "Install which version of $proj? ")
 if [ -z "$ver" ]; then
     echo "!!! No version of $proj selected; exiting..."
     exit 1
