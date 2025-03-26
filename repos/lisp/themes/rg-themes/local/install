@@ -1,0 +1,2 @@
+cp src/rg-themes.el ../../../../.emacs.d/plugins
+find src -maxdepth 1 -name \*.el | grep -v rg-themes.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
