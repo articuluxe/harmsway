@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-03-12 12:09:25 dharms>
+;; Modified Time-stamp: <2025-03-27 15:07:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -48,6 +48,9 @@
                             ,(concat my/user-directory "modes/haskell/")
                             ,(concat my/user-directory "custom/"))
                           load-path))
+  (push "~/src/" trusted-content)
+  (push my/user-directory trusted-content)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (when (< emacs-major-version 27)
     (push (concat my/elisp-directory "compat/27/0/-/") load-path))
