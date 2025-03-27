@@ -6,7 +6,7 @@
 ;; URL: https://github.com/lorniu/go-translate
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: convenience
-;; Version: 3.0.8
+;; Version: 3.0.10
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -67,6 +67,7 @@
 (require 'gt-engine-google-rpc)
 (require 'gt-engine-deepl)
 (require 'gt-engine-stardict)
+(require 'gt-engine-osxdict)
 (require 'gt-engine-youdao)
 (require 'gt-engine-chatgpt)
 (require 'gt-engine-libre)
@@ -136,6 +137,7 @@ of `gt-default-translator' at any time in `gt-do-setup'."
       (LibreTranslate       . ,(gt-libre-engine))
       (GoogleRPC            . ,(gt-google-rpc-engine))
       (Google-Summary       . ,(gt-google-engine :parse (gt-google-summary-parser)))
+      (OSX-Dictionary       . ,(gt-osxdict-engine))
       (Bionic_Reading       . ,(gt-echo-engine :do '(clean br) :tag "Bionic Reading"))))
   "Preset engines.
 
@@ -222,7 +224,7 @@ will be used as the default translator."
   (with-slots (taker engines render _taker _engines _render) translator
     (cl-macrolet ((desc1 (name &rest body)
                     `(if (not (slot-boundp translator ',(intern (format "_%s" name)))) "unbound"
-                       (when-let (,name (or ,name ,(intern (format "_%s" name))))
+                       (when-let* ((,name (or ,name ,(intern (format "_%s" name)))))
                          (if (gt-functionp ,name)
                              (replace-regexp-in-string "[ \n\t]+" " " (format "%s" ,name))
                            ,@body)))))
@@ -326,7 +328,7 @@ Define your default translator like this:
     (gt-translator :engines (gt-bing-engine)))
 
   (setq gt-default-translator
-    (gt-translator :taker (gt-taker :langs '(en fr) :text 'sentence :prompt t)
+    (gt-translator :taker (gt-taker :langs \='(en fr) :text \='sentence :prompt t)
                    :engines (list (gt-google-engine) (gt-deepl-engine))
                    :render (gt-buffer-render)))
 

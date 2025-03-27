@@ -1,6 +1,6 @@
 ;;; pandoc-mode-utils.el --- Part of `pandoc-mode'  -*- lexical-binding: t -*-
 
-;; Copyright (c) 2009-2022 Joost Kremers
+;; Copyright (c) 2009-2025 Joost Kremers
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
@@ -406,7 +406,7 @@ it is assumed to be an external viewer, which is called with
   :type '(choice (const :tag "Use Emacs" emacs)
                  (string :tag "Use external viewer")))
 
-(defvar pandoc--pdf-able-formats '("latex" "context" "beamer" "html" "ms")
+(defvar pandoc--pdf-able-formats '("latex" "context" "beamer" "html" "ms" "typst")
   "List of output formats that can be used to generate pdf output.")
 
 (defvar pandoc--extensions

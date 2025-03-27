@@ -1,10 +1,10 @@
 ;;; lsp-mode.el --- LSP mode                              -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020-2024 emacs-lsp maintainers
+;; Copyright (C) 2020-2025 emacs-lsp maintainers
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "27.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
+;; Package-Requires: ((emacs "28.1") (dash "2.18.0") (f "0.20.0") (ht "2.3") (spinner "1.7.3") (markdown-mode "2.3") (lv "0") (eldoc "1.11"))
 ;; Version: 9.0.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
@@ -987,7 +987,9 @@ Changes take effect only when a new session is started."
     (nushell-ts-mode . "nushell")
     (meson-mode . "meson")
     (yang-mode . "yang")
-    (matlab-mode . "matlab"))
+    (matlab-mode . "matlab")
+    (message-mode . "plaintext")
+    (mu4e-compose-mode . "plaintext"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -3811,7 +3813,8 @@ disappearing, unset all the variables related to it."
                                                         (labelDetailsSupport . t)))
                                      (contextSupport . t)
                                      (dynamicRegistration . t)))
-                      (signatureHelp . ((signatureInformation . ((parameterInformation . ((labelOffsetSupport . t)))))
+                      (signatureHelp . ((signatureInformation . ((parameterInformation . ((labelOffsetSupport . t)))
+                                                                 (activeParameterSupport . t)))
                                         (dynamicRegistration . t)))
                       (documentLink . ((dynamicRegistration . t)
                                        (tooltipSupport . t)))
@@ -5922,6 +5925,8 @@ It will show up only if current point has signature help."
             (active-signature? (or lsp--signature-last-index active-signature? 0))
             (_ (setq lsp--signature-last-index active-signature?))
             ((signature &as &SignatureInformation? :label :parameters?) (seq-elt signatures active-signature?))
+            (active-parameter? (or (lsp:signature-information-active-parameter? signature)
+                                   active-parameter?))
             (prefix (if (= (length signatures) 1)
                         ""
                       (concat (propertize (format " %s/%s"
@@ -8395,7 +8400,7 @@ nil."
                                          (lsp-async-start-process callback
                                                                   error-callback
                                                                   (executable-find "npx")
-                                                                  "npm-install-peers")))))
+                                                                  "i-peers")))))
                                  error-callback
                                  npm-binary
                                  "-g"

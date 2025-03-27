@@ -33,12 +33,11 @@ buffer contents as untrusted.
 This variable might be subject to change without notice."
   :local permanent)
 
-;; TODO Update to 30.1 as soon as the Emacs emacs-30 branch version bumped
-(compat-version "30.0.50")
+(compat-version "30.1")
 
 ;;;; Defined in lread.c
 
-(compat-defun obarray-clear (ob) ;; <compat-tests:obarray>
+(compat-defun obarray-clear (ob) ;; <compat-tests:obarray-clear>
   "Remove all symbols from obarray OB."
   (fillarray ob 0))
 

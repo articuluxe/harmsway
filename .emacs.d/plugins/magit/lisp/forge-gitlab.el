@@ -516,7 +516,7 @@
     (cl-typecase topic
       (forge-pullreq "/projects/:project/merge_requests/:number")
       (forge-issue   "/projects/:project/issues/:number"))
-    `((,field . ,value))
+    `((,field . ,(if (and value (listp value)) (vconcat value) value)))
     :callback (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-title
@@ -682,5 +682,10 @@
                :errorback (or errorback (and callback t))))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("partial" . "llama--left-apply-partially")
+;;   ("rpartial" . "llama--right-apply-partially"))
+;; End:
 (provide 'forge-gitlab)
 ;;; forge-gitlab.el ends here

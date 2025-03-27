@@ -1,6 +1,6 @@
 ;;; uwu-theme.el --- An awesome dark color scheme  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021 Kevin Borling <kborling@protonmail.com>
+;; Copyright (C) 2025 Kevin Borling <kborling@protonmail.com>
 
 ;; Author: Kevin Borling
 ;; Created: December 24, 2021
@@ -154,7 +154,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(font-lock-keyword-face ((t (:foreground ,uwu-magenta))))
                           `(font-lock-function-name-face ((t (:foreground ,uwu-blue))))
                           `(font-lock-string-face ((t (:foreground ,uwu-green))))
-                          `(font-lock-warning-face ((t (:inverse-video t :background ,uwu-bg :foreground ,uwu-error))))
+                          `(font-lock-warning-face ((t (:foreground ,uwu-error :weight bold :underline t))))
                           `(font-lock-type-face ((t (:weight bold :foreground ,uwu-yellow))))
                           `(font-lock-preprocessor-face ((t (:foreground ,uwu-blue))))
                           `(font-lock-builtin-face ((t (:weight bold :foreground ,uwu-yellow))))
@@ -233,7 +233,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(dired-directory ((t (:weight bold :foreground ,uwu-blue))))
                           `(lazy-highlight ((t (:foreground ,uwu-blue :background ,uwu-bg :inverse-video t))))
                           `(isearch ((t (:inverse-video t :background ,uwu-highlight :foreground ,uwu-bright-blue))))
-                          `(isearch-fail ((t (:background ,uwu-bg :inherit font-lock-warning-face :inverse-video t))))
+                          `(isearch-fail ((t (:inverse-video t :background ,uwu-bg :foreground ,uwu-error))))
                           `(isearch-lazy-highlight-face ((t (:inverse-video t :foreground ,uwu-yellow))))
                           `(grep-context-face ((t (:foreground ,uwu-fg))))
                           `(grep-error-face ((t (:foreground ,uwu-red :weight bold :underline t))))
@@ -583,6 +583,8 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(helpful-heading ((t (:foreground ,uwu-bright-green :height 1.2))))
                           ;; which function
                           `(which-func ((t (:foreground ,uwu-blue))))
+                          ;; deadgrep
+                          `(deadgrep-filename-face ((t (:foreground ,uwu-green :weight bold))))
                           ;; rainbow-delimiters
                           `(rainbow-delimiters-depth-1-face ((t (:foreground ,uwu-bright-blue))))
                           `(rainbow-delimiters-depth-2-face ((t (:foreground ,uwu-bright-green))))

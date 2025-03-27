@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.1.0
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -21,6 +21,7 @@
 (declare-function consult-line "consult")
 (require 'dirvish)
 (require 'dired-x)
+(require 'transient)
 
 (defcustom dirvish-subtree-listing-switches nil
   "Listing SWITCHES used in subtrees.
@@ -41,9 +42,16 @@ The prefix is repeated \"depth\" times."
          (if v (add-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert)
            (remove-hook 'dirvish-after-revert-hook #'dirvish-subtree--revert))))
 
-(defcustom dirvish-subtree-always-show-state nil
-  "Non-nil means always show the subtree state indicator."
+(defcustom dirvish-subtree-always-show-state t
+  "Non-nil means show subtree state indicator even there is no subtrees."
   :type 'boolean :group 'dirvish)
+
+(defcustom dirvish-subtree-icon-scale-factor '(0.8 . 0.1)
+  "Scale factor for subtree state indicator.
+The value is a cons of \\='(HEIGHT . V-ADJUST) that used as values of
+:height and :v-adjust keyword respectively in `all-the-icons' and
+`nerd-icons'."
+  :type '(cons float float) :group 'dirvish)
 
 (defvar dirvish-subtree--state-icons nil)
 (defcustom dirvish-subtree-state-style 'chevron
@@ -65,22 +73,30 @@ The value can be one of: `plus', `arrow', `chevron', `nerd'."
              (cons
               (nerd-icons-octicon
                "nf-oct-chevron_down"
-               :height (* (or (bound-and-true-p dirvish-nerd-icons-height) 1) 0.8)
-               :v-adjust 0.1 :face 'dirvish-subtree-state)
+               :height (* (or (bound-and-true-p dirvish-nerd-icons-height) 1)
+                          (car dirvish-subtree-icon-scale-factor))
+               :v-adjust (cdr dirvish-subtree-icon-scale-factor)
+               :face 'dirvish-subtree-state)
               (nerd-icons-octicon
                "nf-oct-chevron_right"
-               :height (* (or (bound-and-true-p dirvish-nerd-icons-height) 1) 0.8)
-               :v-adjust 0.1 :face 'dirvish-subtree-state)))
+               :height (* (or (bound-and-true-p dirvish-nerd-icons-height) 1)
+                          (car dirvish-subtree-icon-scale-factor))
+               :v-adjust (cdr dirvish-subtree-icon-scale-factor)
+               :face 'dirvish-subtree-state)))
             ('chevron
              (cons
               (all-the-icons-octicon
                "chevron-down"
-               :height (* (or (bound-and-true-p dirvish-all-the-icons-height) 1) 0.8)
-               :v-adjust 0.1 :face 'dirvish-subtree-state)
+               :height (* (or (bound-and-true-p dirvish-all-the-icons-height) 1)
+                          (car dirvish-subtree-icon-scale-factor))
+               :v-adjust (cdr dirvish-subtree-icon-scale-factor)
+               :face 'dirvish-subtree-state)
               (all-the-icons-octicon
                "chevron-right"
-               :height (* (or (bound-and-true-p dirvish-all-the-icons-height) 1) 0.8)
-               :v-adjust 0.1 :face 'dirvish-subtree-state)))))))
+               :height (* (or (bound-and-true-p dirvish-all-the-icons-height) 1)
+                          (car dirvish-subtree-icon-scale-factor))
+               :v-adjust (cdr dirvish-subtree-icon-scale-factor)
+               :face 'dirvish-subtree-state)))))))
 
 (defcustom dirvish-subtree-file-viewer #'dirvish-subtree-default-file-viewer
   "The function used to view a file node.
@@ -300,13 +316,16 @@ See `dirvish-subtree-file-viewer' for details"
    (list (directory-file-name (expand-file-name
                                (read-file-name "Expand to file: "
                                                (dired-current-directory))))))
-  (let ((file (dired-get-filename nil t)) (dir (dired-current-directory)))
+  (let* ((file (dired-get-filename nil t))
+         (dir (dired-current-directory))
+         (f-dir (and file (file-directory-p file) (file-name-as-directory file))))
     (cond ((equal file target) target)
-          ((and file (string-prefix-p file target))
+          ;; distinguish directories with same prefix, e.g .git/ and .github/
+          ((and file (string-prefix-p (or f-dir file) target))
            (unless (dirvish-subtree--expanded-p) (dirvish-subtree--insert))
            (let ((depth (1+ (dirvish-subtree--depth)))
                  (next (car (split-string
-                            (substring target (1+ (length file))) "/"))))
+                             (substring target (1+ (length file))) "/"))))
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))
           ((string-prefix-p dir target)
@@ -318,10 +337,11 @@ See `dirvish-subtree-file-viewer' for details"
              ;; TARGET is either not exist or being hidden (#135)
              (when (dirvish-subtree--move-to-file next depth)
                (dirvish-subtree-expand-to target))))
-          ((string-prefix-p (expand-file-name default-directory) dir)
-           (goto-char (dired-subdir-min))
-           (goto-char (next-single-property-change (point) 'dired-filename))
-           (dirvish-subtree-expand-to target)))))
+          ((cl-loop for (d . _) in dired-subdir-alist
+                    if (string-prefix-p d target)
+                    return (dired-goto-subdir d))
+           (dirvish-subtree-expand-to target))
+          (t (user-error "[ %s ] does not belong to any subdir" target)))))
 
 ;;;###autoload
 (defun dirvish-subtree-up ()
@@ -399,7 +419,7 @@ This command takes a mouse event EV as its argument."
       (when-let* ((entry (dired-get-filename nil t)))
         (if (file-directory-p entry)
             (dirvish-subtree-toggle)
-          (dirvish-find-entry-a entry))))
+          (dirvish--find-entry 'find-file entry))))
     (when (window-live-p win) (select-window win))))
 
 ;;;###autoload (autoload 'dirvish-subtree-menu "dirvish-subtree" nil t)

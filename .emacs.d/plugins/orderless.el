@@ -4,8 +4,8 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
-;; Keywords: extensions
-;; Version: 1.3
+;; Keywords: matching, completion
+;; Version: 1.4
 ;; URL: https://github.com/oantolin/orderless
 ;; Package-Requires: ((emacs "27.1") (compat "30"))
 

@@ -242,7 +242,7 @@
       `(aw-leading-char-face ((,c :height 1.5 :foreground ,magenta+1 :weight bold)))
 
 ;;;;; activities
-      `(activities-tabs ((,c :foreground ,cyan+2)))
+      `(activities-tabs ((,c :foreground ,blue+2)))
 
 ;;;;; ansi-color
       `(ansi-color-bold ((,c :inherit bold)))
@@ -289,12 +289,12 @@
       `(anzu-replace-to ((,c :inherit isearch)))
 
 ;;;;; avy
-      `(avy-lead-face ((,c :foreground ,fg+2 :background ,magenta-2)))
-      `(avy-lead-face-0 ((,c :foreground ,fg+2 :background ,purple-bg)))
-      `(avy-lead-face-1 ((,c :foreground ,fg+2 :background ,fg-slate-bg)))
-      `(avy-lead-face-2 ((,c :foreground ,fg+2 :background ,red-bg)))
       `(avy-background-face ((,c :foreground ,fg-slate-bg)))
-      `(avy-goto-char-timer-face ((,c :inherit highlight :background ,highlight)))
+      `(avy-goto-char-timer-face ((,c :background ,bg-slate+1 :weight bold)))
+      `(avy-lead-face ((,c :foreground ,fg+2 :background ,magenta-2 :weight bold)))
+      `(avy-lead-face-0 ((,c :foreground ,fg+2 :background ,purple-bg :weight bold)))
+      `(avy-lead-face-1 ((,c :foreground ,fg+2 :background ,fg-slate-bg)))
+      `(avy-lead-face-2 ((,c :foreground ,fg+2 :background ,red-bg :weight bold)))
 
 ;;;;; bookmark
       `(bookmark-face ((,c :background unspecified :foreground ,fg-slate-1)))
@@ -459,13 +459,14 @@
       `(ement-room-read-receipt-marker ((,c :background ,highlight :foreground ,highlight)))
 
 ;;;;; emms
-      `(emms-playlist-selected-face ((,c :foreground ,orange)))
-      `(emms-playlist-track-face ((,c :foreground ,blue)))
-      `(emms-browser-track-face ((,c :foreground ,blue)))
-      `(emms-browser-artist-face ((,c :foreground ,red :height 1.3)))
+      `(emms-browser-album-face ((,c :inherit font-lock-keyword-face)))
+      `(emms-browser-artist-face ((,c :inherit font-lock-variable-name-face)))
       `(emms-browser-composer-face ((,c :inherit emms-browser-artist-face)))
+      `(emms-browser-year/genre-face ((,c :foreground ,cyan)))
       `(emms-browser-performer-face ((,c :inherit emms-browser-artist-face)))
-      `(emms-browser-album-face ((,c :foreground ,green :height 1.2)))
+      `(emms-browser-track-face ((,c :foreground ,fg-slate+2)))
+      `(emms-playlist-track-face ((,c :inherit emms-browser-track-face)))
+      `(emms-playlist-selected-face ((,c :foreground ,orange+1)))
 
 ;;;;; erc
       `(erc-direct-msg-face ((,c :foreground ,orange)))
@@ -703,6 +704,9 @@
       `(ido-indicator ((,c :foreground ,red :background ,bg)))
       `(ido-virtual ((,c :foreground ,comment)))
 
+;;;;; iedit-mode
+      `(iedit-occurrence ((,c :inherit lazy-highlight)))
+
 ;;;;; info
       `(Info-quoted ((,c :foreground ,fg-slate+2)))
 
@@ -846,6 +850,16 @@
 ;;;;; markdown
       `(markdown-url-face ((,c :inherit link)))
       `(markdown-link-face ((,c :foreground ,blue :underline t)))
+
+;;;;; mpdel
+      `(mpdel-browser-directory-face ((,c :inherit dired-directory)))
+      `(mpdel-playlist-current-song-face ((,c :inherit font-lock-keyword-face :weight bold)))
+      `(mpdel-tablist-album-face ((,c :foreground ,cyan)))
+      `(mpdel-tablist-artist-face ((,c :inherit default)))
+      `(mpdel-tablist-date-face ((,c :inherit default)))
+      `(mpdel-tablist-disk-face ((,c :inherit shadow)))
+      `(mpdel-tablist-song-name-face ((,c :inherit default)))
+      `(mpdel-tablist-track-face ((,c :inherit font-lock-comment-face)))
 
 ;;;;; mmm-mode
       `(mmm-code-submode-face ((,c :background ,bg+1)))
@@ -1112,9 +1126,9 @@
 
 ;;;;; tab-bar-mode
       `(tab-bar ((,c :background ,bg-slate-2 :foreground ,fg)))
-      `(tab-bar-tab-group-current ((,c :box (:line-width -4 :color ,bg-slate) :background ,bg-slate :foreground ,fg :weight bold)))
+      `(tab-bar-tab-group-current ((,c :box (:line-width -4 :color ,bg) :background ,bg :foreground ,fg :weight bold)))
       `(tab-bar-tab-group-inactive ((,c :box (:line-width -4 :color ,bg-header) :background ,bg-header :foreground ,fg-1)))
-      `(tab-bar-tab ((,c :box (:line-width -4 :color ,bg-slate) :background ,bg-slate :foreground ,fg+2 :weight bold)))
+      `(tab-bar-tab ((,c :box (:line-width -4 :color ,bg) :background ,bg :foreground ,fg+2 :weight bold)))
       `(tab-bar-tab-inactive ((,c :box (:line-width -4 :color ,bg-header) :background ,bg-header :foreground ,fg-slate-1)))
       `(tab-bar-tab-ungrouped ((,c :box (:line-width -4 :color ,bg-header) :background ,bg-header :foreground ,fg)))
 

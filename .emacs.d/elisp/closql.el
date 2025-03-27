@@ -6,11 +6,11 @@
 ;; Homepage: https://github.com/emacscollective/closql
 ;; Keywords: extensions
 
-;; Package-Version: 2.2.0
+;; Package-Version: 2.2.1
 ;; Package-Requires: (
 ;;     (emacs "26.1")
-;;     (compat "30.0.0.0")
-;;     (emacsql "4.1.0"))
+;;     (compat "30.0.2.0")
+;;     (emacsql "4.2.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -555,7 +555,7 @@
       (mapc (lambda (arg)
               (let ((str (symbol-name arg)))
                 (unless (string-match "\\`\\(!\\)?\\([^*]+\\)\\(\\*\\)?\\'" str)
-                  (error "closql-where-class-in: invalid type: %s" arg))
+                  (error "`closql-where-class-in': invalid type: %s" arg))
                 (let* ((exclude (match-beginning 1))
                        (a (intern (match-string 2 str)))
                        (a (cond ((match-beginning 3)

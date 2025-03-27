@@ -36,10 +36,12 @@
 (require 'forge-db)
 
 (eval-when-compile
+  (cl-pushnew 'forge-id eieio--known-slot-names)
   (cl-pushnew 'id       eieio--known-slot-names)
   (cl-pushnew 'name     eieio--known-slot-names)
   (cl-pushnew 'number   eieio--known-slot-names)
   (cl-pushnew 'owner    eieio--known-slot-names)
+  (cl-pushnew 'their-id eieio--known-slot-names)
   (cl-pushnew 'worktree eieio--known-slot-names))
 
 ;;; Options
@@ -289,6 +291,17 @@ is non-nil."
                                        &optional stub noerror)
   "Return the database and forge ids for the specified CLASS object.")
 
+(defun forge--their-id (id/obj)
+  "Return the forge's id for the ID used in the local database."
+  (cond
+   ((stringp id/obj)
+    (car (last (split-string (base64-decode-string id/obj) ":"))))
+   ((slot-exists-p id/obj 'their-id)
+    (oref id/obj their-id))
+   ((slot-exists-p id/obj 'forge-id)
+    (oref id/obj forge-id))
+   ((forge--their-id (oref id/obj id)))))
+
 (cl-defmethod magit-section-ident-value ((obj forge-object))
   "Return the value ob OBJ's `id' slot.
 Using OBJ itself would not be appropriate because multiple
@@ -303,7 +316,7 @@ non-equal objects may exist, representing the same thing."
                             rid
                             (if (atom value)
                                 ;; For Gitlab labels we unfortunately only
-                                ;; get a string, the ambigious name of the
+                                ;; get a string, the ambiguous name of the
                                 ;; label.  See also the comment in the
                                 ;; Gitlab `forge--update-labels' method.
                                 value
@@ -414,5 +427,10 @@ the mode requirement."
             (substring rnd 20 32))))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("partial" . "llama--left-apply-partially")
+;;   ("rpartial" . "llama--right-apply-partially"))
+;; End:
 (provide 'forge-core)
 ;;; forge-core.el ends here

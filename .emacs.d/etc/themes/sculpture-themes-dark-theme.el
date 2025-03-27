@@ -5,8 +5,8 @@
 ;; Author: Precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/sculpture-theme
 ;; Created: January 06, 2021
-;; Modified: February 16, 2025
-;; Version: 1.5.2
+;; Modified: March 03, 2025
+;; Version: 1.5.4
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -15,7 +15,7 @@
 ;; sculpture-themes-dark : A dark theme for emacs with vivid colors, inspired by
 ;; coloring pigments.
 
-;; Copyright (C) 2024 Precompute
+;; Copyright (C) 2025 Precompute
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -160,6 +160,7 @@
    `(italic                     ((,class (:slant italic))))
    `(underline                  ((,class (:underline t))))
    `(variable-pitch             ((,class (:height 1.0))))
+   `(variable-pitch-text        ((,class (:height 1.0 :inherit variable-pitch))))
    `(sculpture-themes-dark-variable-pitch-italic      ((,class (:inherit variable-pitch :slant italic))))
    `(fringe                     ((,class (:background ,bg))))
    `(vertical-border            ((,class (:background ,bg :foreground ,bg))))
@@ -189,6 +190,8 @@
    `(highlight-numbers-number ((,class (:foreground ,ot18))))
    `(highlight-quoted-symbol  ((,class (:foreground ,ot12))))
    `(highlight-quoted-quote   ((,class (:foreground ,ot01))))
+
+   `(apropos-symbol ((,class (:height 1.2 :foreground ,ot05))))
 
    `(custom-button         ((,class (:foreground ,fg :background ,bw02 :box (:line-width 2 :color ,bw08 :style released-button)))))
    `(custom-button-pressed ((,class (:foreground ,fg :background ,bw02 :box (:line-width 2 :color ,bw08 :style pressed-button)))))
@@ -916,7 +919,15 @@
 ;;;;;; merlin
    `(merlin-type-face ((,class (:inherit font-lock-type-face))))
    `(merlin-compilation-error-face ((,class (:inherit error))))
-   `(merlin-compilation-warning-face ((,class (:inherit font-lock-warning-face))))))
+   `(merlin-compilation-warning-face ((,class (:inherit font-lock-warning-face))))
+
+;;;;;; breadcrumb
+   `(breadcrumb-face                ((,class (:foreground ,cs01 :inherit variable-pitch :height 0.9))))
+   `(breadcrumb-imenu-leaf-face     ((,class (:background ,ot06 :foreground ,ot05 :inherit variable-pitch))))
+   `(breadcrumb-imenu-crumbs-face   ((,class (:background ,ot06 :foreground ,ot04 :inherit variable-pitch))))
+   `(breadcrumb-project-base-face   ((,class (:background ,ot06 :foreground ,ot02 :inherit variable-pitch))))
+   `(breadcrumb-project-leaf-face   ((,class (:background ,ot06 :foreground ,ot05 :inherit variable-pitch))))
+   `(breadcrumb-project-crumbs-face ((,class (:background ,ot06 :foreground ,ot04 :inherit variable-pitch))))))
 
 (provide-theme 'sculpture-themes-dark)
 

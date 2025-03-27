@@ -31,6 +31,7 @@
 (require 'magit-core)
 (require 'magit-diff)
 
+(declare-function magit--any-wip-mode-enabled-p "magit-wip" ())
 (declare-function magit-blob-visit "magit-files" (blob-or-file))
 (declare-function magit-cherry-apply "magit-sequence" (commit &optional args))
 (declare-function magit-insert-head-branch-header "magit-status"
@@ -173,9 +174,9 @@ want to use the same functions for both hooks."
   "Function used to generate text shown in header line of log buffers."
   :package-version '(magit . "2.12.0")
   :group 'magit-log
-  :type `(choice (function-item ,#'magit-log-header-line-arguments)
-                 (function-item ,#'magit-log-header-line-sentence)
-                 function))
+  :type `(radio (function-item ,#'magit-log-header-line-arguments)
+                (function-item ,#'magit-log-header-line-sentence)
+                function))
 
 (defcustom magit-log-trace-definition-function #'magit-which-function
   "Function used to determine the function at point.
@@ -184,10 +185,10 @@ You should prefer `magit-which-function' over `which-function'
 because the latter may make use of Imenu's outdated cache."
   :package-version '(magit . "3.0.0")
   :group 'magit-log
-  :type `(choice (function-item ,#'magit-which-function)
-                 (function-item ,#'which-function)
-                 (function-item ,#'add-log-current-defun)
-                 function))
+  :type `(radio (function-item ,#'magit-which-function)
+                (function-item ,#'which-function)
+                (function-item ,#'add-log-current-defun)
+                function))
 
 (defcustom magit-log-color-graph-limit 256
   "Number of commits over which log graphs are not colored.
@@ -262,10 +263,10 @@ The message can be shown in the `echo-area' or the `header-line', or in
 be nil, in which case no usage information is shown."
   :package-version '(magit . "2.1.0")
   :group 'magit-log
-  :type '(choice (const :tag "in echo-area" echo-area)
-                 (const :tag "in header-line" header-line)
-                 (const :tag "in both places" both)
-                 (const :tag "nowhere")))
+  :type '(choice (const :tag "In echo-area" echo-area)
+                 (const :tag "In header-line" header-line)
+                 (const :tag "In both places" both)
+                 (const :tag "Nowhere")))
 
 (defcustom magit-log-select-margin
   (list (nth 0 magit-log-margin)
@@ -494,29 +495,27 @@ commits before and half after."
   :class 'magit-log-prefix
   [magit-log-infix-arguments]
   [["Log"
-    ("l" "current"             magit-log-current)
-    ("h" "HEAD"                magit-log-head)
-    ("u" "related"             magit-log-related)
-    ("o" "other"               magit-log-other)]
+    ("l"                     magit-log-current)
+    ("o" "other"             magit-log-other)
+    ("h" "HEAD"              magit-log-head :level 0)
+    ("u" "related"           magit-log-related)]
    [""
-    ("L" "local branches"      magit-log-branches)
-    ("b" "all branches"        magit-log-all-branches)
-    ("a" "all references"      magit-log-all)
-    (7 "B" "matching branches" magit-log-matching-branches)
-    (7 "T" "matching tags"     magit-log-matching-tags)
-    (7 "m" "merged"            magit-log-merged)]
+    ("L" "local branches"    magit-log-branches)
+    ("b" "all branches"      magit-log-all-branches)
+    ("a" "all references"    magit-log-all)
+    ("B" "matching branches" magit-log-matching-branches :level 7)
+    ("T" "matching tags"     magit-log-matching-tags     :level 7)
+    ("m" "merged"            magit-log-merged            :level 7)]
    ["Reflog"
-    ("r" "current"             magit-reflog-current)
-    ("H" "HEAD"                magit-reflog-head)
-    ("O" "other"               magit-reflog-other)]
-   [:if (lambda ()
-          (and (fboundp 'magit--any-wip-mode-enabled-p)
-               (magit--any-wip-mode-enabled-p)))
+    ("r" "current"           magit-reflog-current)
+    ("O" "other"             magit-reflog-other)
+    ("H" "HEAD"              magit-reflog-head)]
+   [:if magit--any-wip-mode-enabled-p
     :description "Wiplog"
-    ("i" "index"          magit-wip-log-index)
-    ("w" "worktree"       magit-wip-log-worktree)]
+    ("i" "index"             magit-wip-log-index)
+    ("w" "worktree"          magit-wip-log-worktree)]
    ["Other"
-    (5 "s" "shortlog"    magit-shortlog)]])
+    ("s" "shortlog"          magit-shortlog)]])
 
 ;;;###autoload (autoload 'magit-log-refresh "magit-log" nil t)
 (transient-define-prefix magit-log-refresh ()
@@ -652,14 +651,13 @@ commits before and half after."
   "Read a string from the user to pass as parameter to OPTION."
   (magit-read-string (format "Type a pattern to pass to %s" option)))
 
-;;;###autoload
-(defun magit-log-current (revs &optional args files)
-  "Show log for the current branch.
-When `HEAD' is detached or with a prefix argument show log for
-one or more revs read from the minibuffer."
-  (interactive (cons (magit-log-read-revs t)
-                     (magit-log-arguments)))
-  (magit-log-setup-buffer revs args files))
+;;;###autoload (autoload 'magit-log-current "magit-log" nil t)
+(transient-define-suffix magit-log-current (&optional args files)
+  "Show log for the current branch, or `HEAD' if no branch is checked out."
+  :description (##if (magit-get-current-branch) "current" "HEAD")
+  (interactive (magit-log-arguments))
+  (magit-log-setup-buffer (list (or (magit-get-current-branch) "HEAD"))
+                          args files))
 
 ;;;###autoload
 (defun magit-log-head (&optional args files)
@@ -1044,7 +1042,7 @@ this command and its counterpart can be repeated using \
 (defun magit-next-reference (&optional previous)
   "Move to the next Git reference appearing in the current buffer.
 
-Move to the previous location that uses a face appearing in
+Move to the next location that uses a face appearing in
 `magit-reference-movement-faces'.  If `repeat-mode' is enabled,
 this command and its counterpart can be repeated using \
 \\<magit-reference-navigation-repeat-map>\
@@ -1056,9 +1054,9 @@ this command and its counterpart can be repeated using \
                   (setq pos (if previous
                                 (previous-single-property-change pos 'face)
                               (next-single-property-change pos 'face))))
-	(when (cl-intersection (ensure-list (get-text-property pos 'face))
+        (when (cl-intersection (ensure-list (get-text-property pos 'face))
                                magit-reference-movement-faces)
-	  (throw 'found (goto-char pos))))
+          (throw 'found (goto-char pos))))
       (message "No more references"))))
 
 ;;; Log Mode
@@ -1884,11 +1882,11 @@ keymap is the parent of their keymaps."
   "<1>" (magit-menu-item "Visit diff" #'magit-diff-dwim))
 
 (cl-defmethod magit-section-ident-value ((section magit-unpulled-section))
-  "\"..@{push}\" cannot be used as the value because that is
-ambiguous if `push.default' does not allow a 1:1 mapping, and
-many commands would fail because of that.  But here that does
-not matter and we need an unique value so we use that string
-in the pushremote case."
+  "Return \"..@{push}\".
+\"..@{push}\" cannot be used as the value because that is ambiguous
+if `push.default' does not allow a 1:1 mapping, and many commands
+would fail because of that.  But here that does not matter and we
+need an unique value, so we use that string in the pushremote case."
   (let ((value (oref section value)))
     (if (equal value "..@{upstream}") value "..@{push}")))
 
@@ -1925,11 +1923,11 @@ in the pushremote case."
       (magit-log-insert-child-count))))
 
 (cl-defmethod magit-section-ident-value ((section magit-unpushed-section))
-  "\"..@{push}\" cannot be used as the value because that is
-ambiguous if `push.default' does not allow a 1:1 mapping, and
-many commands would fail because of that.  But here that does
-not matter and we need an unique value so we use that string
-in the pushremote case."
+  "Return \"..@{push}\".
+\"..@{push}\" cannot be used as the value because that is ambiguous
+if `push.default' does not allow a 1:1 mapping, and many commands
+would fail because of that.  But here that does not matter and we
+need an unique value, so we use that string in the pushremote case."
   (let ((value (oref section value)))
     (if (equal value "@{upstream}..") value "@{push}..")))
 

@@ -40,10 +40,10 @@ the name of the added remote is equal to that string and the
 variable isn't already set."
   :package-version '(magit . "2.4.0")
   :group 'magit-commands
-  :type '(choice (const  :tag "ask if unset" ask-if-unset)
-                 (const  :tag "always ask" ask)
-                 (string :tag "set if named")
-                 (const  :tag "don't set")))
+  :type '(choice (const  :tag "Ask if unset" ask-if-unset)
+                 (const  :tag "Always ask" ask)
+                 (string :tag "Set if named")
+                 (const  :tag "Don't set")))
 
 (defcustom magit-remote-direct-configure t
   "Whether the command `magit-remote' shows Git variables.
@@ -83,8 +83,8 @@ has to be used to view and change remote related variables."
    [("C" "Configure..."         magit-remote-configure)
     ("p" "Prune stale branches" magit-remote-prune)
     ("P" "Prune stale refspecs" magit-remote-prune-refspecs)
-    ("b" magit-update-default-branch)
-    (7 "z" "Unshallow remote"   magit-remote-unshallow)]]
+    (7 "z" "Unshallow remote"   magit-remote-unshallow)]
+   [("d u" magit-update-default-branch)]]
   (interactive (list (magit-get-current-remote)))
   (transient-setup 'magit-remote nil nil :scope remote))
 
@@ -281,8 +281,8 @@ Delete the symbolic-ref \"refs/remotes/<remote>/HEAD\"."
                        newname)
                newname "master")))
       (cond
-       ((y-or-n-p (format "Default branch changed from `%s' to `%s' on %s.%s"
-                          oldname newname remote "  Do the same locally? "))
+       ((y-or-n-p (format "Default branch changed from `%s' to `%s' on %s.%s?"
+                          oldname newname remote "  Do the same locally"))
         (magit--set-default-branch newname oldname)
         (magit-refresh))
        ((user-error "Abort")))))))

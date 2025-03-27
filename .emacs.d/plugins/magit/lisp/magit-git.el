@@ -150,6 +150,7 @@ option."
     "-c" "log.showSignature=false"
     "-c" "color.ui=false"
     "-c" "color.diff=false"
+    "-c" "diff.noPrefix=false"
     ,@(and (eq system-type 'windows-nt)
            (list "-c" "i18n.logOutputEncoding=UTF-8")))
   "Global Git arguments.
@@ -165,7 +166,7 @@ anything that is part of the default value, unless you really
 know what you are doing.  And think very hard before adding
 something; it will be used every time Magit runs Git for any
 purpose."
-  :package-version '(magit . "2.9.0")
+  :package-version '(magit . "4.3.2")
   :group 'magit-commands
   :group 'magit-process
   :type '(repeat string))
@@ -252,8 +253,8 @@ See info node `(magit)Debugging Tools' for more information."
 
 (defmacro magit--with-refresh-cache (key &rest body)
   (declare (indent 1) (debug (form body)))
-  (let ((k (cl-gensym))
-        (hit (cl-gensym)))
+  (let ((k (gensym))
+        (hit (gensym)))
     `(if magit--refresh-cache
          (let ((,k ,key))
            (if-let ((,hit (assoc ,k (cdr magit--refresh-cache))))
@@ -299,7 +300,7 @@ propagated by `with-temp-buffer', so we explicitly ensure that
 happens, so that processes will be invoked consistently.  BODY is
 as for that macro."
   (declare (indent 0) (debug (body)))
-  (let ((p (cl-gensym)))
+  (let ((p (gensym)))
     `(let ((,p process-environment))
        (with-temp-buffer
          (setq-local process-environment ,p)
@@ -1463,7 +1464,7 @@ If REFNAME is ambiguous, return nil."
 Return an unambiguous refname, either REFNAME or that prefixed
 with PREFIX, nil otherwise.  If REFNAME has an offset suffix
 such as \"~1\", then that is preserved.  If optional PREFIX is
-nil, then use \"heads/\".  "
+nil, then use \"heads/\"."
   (if (magit-ref-ambiguous-p refname)
       (let ((refname (concat (or prefix "heads/") refname)))
         (and (not (magit-ref-ambiguous-p refname)) refname))
@@ -1873,7 +1874,7 @@ the name of a remote and REF is the ref local to the remote."
 
 If optional REV is nil, then default to `HEAD'.
 If optional WITH-DISTANCE is non-nil then return (TAG COMMITS),
-if it is `dirty' return (TAG COMMIT DIRTY). COMMITS is the number
+if it is `dirty' return (TAG COMMIT DIRTY).  COMMITS is the number
 of commits in `HEAD' but not in TAG and DIRTY is t if there are
 uncommitted changes, nil otherwise."
   (and-let* ((str (magit-git-str "describe" "--long" "--tags"
@@ -2402,7 +2403,7 @@ and this option only controls what face is used.")
 
 (defmacro magit-with-temp-index (tree arg &rest body)
   (declare (indent 2) (debug (form form body)))
-  (let ((file (cl-gensym "file")))
+  (let ((file (gensym "file")))
     `(let ((magit--refresh-cache nil)
            (,file (magit-convert-filename-for-git
                    (make-temp-name
@@ -2529,9 +2530,8 @@ and this option only controls what face is used.")
                       (string-match-p "[a-z]" string)
                       (magit-commit-p string))
                  (and (magit-ref-p string)
-                      (let ((face (get-text-property (point) 'face)))
-                        (or (not face)
-                            (member face magit-revision-faces)))))
+                      (member (get-text-property (point) 'face)
+                              magit-revision-faces)))
              string)))))
 
 (put 'git-revision-range 'thing-at-point #'magit-thingatpt--git-revision-range)

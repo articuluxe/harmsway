@@ -1,6 +1,6 @@
 ;;; elfeed-score-serde.el --- SERDE `elfeed-score'  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2024 Michael Herstine <sp1ff@pobox.com>
+;; Copyright (C) 2021-2025 Michael Herstine <sp1ff@pobox.com>
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -267,7 +267,7 @@ is the stats structure."
 (defun elfeed-score-serde--parse-title-or-content-rule-sexps (sexps)
   "Parse a list of lists SEXPS into a list of title-or-content rules.
 
-Each sub-list shall have the form '(TEXT TITLE-VALUE
+Each sub-list shall have the form \='(TEXT TITLE-VALUE
 CONTENT-VALUE TYPE DATE TAGS HITS FEEDS).  NB Over the course of
 successive score file versions, new fields have been added at the
 end so as to maintain backward compatibility (i.e. this function
@@ -396,7 +396,7 @@ with the following keys & values:
 (defun elfeed-score-serde--parse-tag-rule-sexps (sexps)
   "Parse a list of lists SEXPS into a list of tag rules.
 
-Each sub-list shall have the form '(TAGS VALUE DATE HITS).  NB
+Each sub-list shall have the form \='(TAGS VALUE DATE HITS).  NB
 Over the course of successive score file versions, new fields
 have been added at the end so as to maintain backward
 compatibility (i.e. this function can be used to read all
@@ -420,7 +420,7 @@ is the stats structure."
 (defun elfeed-score-serde--parse-adjust-tags-rule-sexps (sexps)
   "Parse a list of lists SEXPS into a list of adjust-tags rules.
 
-Each sub-list shall have the form '(TAGS VALUE DATE HITS).  NB
+Each sub-list shall have the form \='(TAGS VALUE DATE HITS).  NB
 Over the course of successive score file versions, new fields
 have been added at the end so as to maintain backward
 compatibility (i.e. this function can be used to read all
@@ -508,7 +508,7 @@ with the following keys & values:
 (defun elfeed-score-serde--parse-authors-rule-sexps (sexps)
   "Parse a list of lists SEXPS into a list of authors rules.
 
-Each sub-list shall have the form '(TEXT VALUE TYPE DATE TAGS
+Each sub-list shall have the form \='(TEXT VALUE TYPE DATE TAGS
 HITS FEEDS).  NB Over the course of successive score file
 versions, new fields have been added at the end so as to maintain
 backward compatibility (i.e. this function can be used to read

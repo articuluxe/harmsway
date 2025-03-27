@@ -73,7 +73,27 @@ HANDLER, FILTER and OTHER-PARAMS."
   (list (chatgpt-shell-openai-make-model
          :version "chatgpt-4o-latest"
          :token-width 3
+         ;; https://platform.openai.com/docs/models/chatgpt-4o-latest
+         :context-window 128000)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4o"
+         :token-width 3
          ;; https://platform.openai.com/docs/models/gpt-4o
+         :context-window 128000)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4o-search-preview"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4o-search-preview
+         :context-window 128000)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4o-mini"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4o-mini
+         :context-window 128000)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4o-mini-search-preview"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4o-mini-search-preview
          :context-window 128000)
         (chatgpt-shell-openai-make-model
          :version "o3-mini"
@@ -86,6 +106,12 @@ HANDLER, FILTER and OTHER-PARAMS."
                (when (map-elt settings :system-prompt)
                  (format "Model \"%s\" does not support system prompts. Please unset via \"M-x chatgpt-shell-swap-system-prompt\" by selecting None."
                          (map-elt model :version))))))
+        (chatgpt-shell-openai-make-model
+         :version "o1"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/o1
+         :context-window 200000
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
         (chatgpt-shell-openai-make-model
          :version "o1-preview"
          :token-width 3
@@ -105,9 +131,9 @@ HANDLER, FILTER and OTHER-PARAMS."
                  (format "Model \"%s\" does not support system prompts. Please unset via \"M-x chatgpt-shell-swap-system-prompt\" by selecting None."
                          (map-elt model :version))))))
         (chatgpt-shell-openai-make-model
-         :version "gpt-4o"
+         :version "gpt-4.5-preview"
          :token-width 3
-         ;; https://platform.openai.com/docs/models/gpt-40
+         ;; https://platform.openai.com/docs/models#gpt-4-5
          :context-window 128000)
         (chatgpt-shell-openai-make-model
          :version "gpt-3.5-turbo"
@@ -165,7 +191,7 @@ CONTEXT: Excludes PROMPT."
                            (text . ,prompt))))
                       (when prompt-url
                         `(((type . "image_url")
-                           (image_url . ,prompt-url))))))))))))
+                           (image_url . ((url . ,prompt-url))))))))))))))
 
 (defun chatgpt-shell-openai-key ()
   "Get the ChatGPT key."
@@ -236,8 +262,10 @@ Otherwise:
                                  (let-alist obj
                                    (mapconcat (lambda (choice)
                                                 (let-alist choice
-                                                  (or .delta.content
-                                                      .message.content)))
+                                                  (or (and (not (eq .delta.content :null))
+                                                           .delta.content)
+                                                      .message.content
+                                                      "")))
                                               .choices "")))))
                     (unless (string-empty-p text)
                       (setq response (concat response text)))

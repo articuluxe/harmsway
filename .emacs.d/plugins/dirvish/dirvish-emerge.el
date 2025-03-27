@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.1.0
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -17,6 +17,7 @@
 
 (declare-function dirvish-emerge--menu "dirvish-emerge")
 (require 'dirvish)
+(require 'transient)
 
 (defun dirvish-emerge-safe-groups-p (groups)
   "Return t if GROUPS is a list and has less than 100 items."
@@ -196,14 +197,14 @@ The predicate is consumed by `dirvish-emerge-groups'."
   "Read RECIPE from user input and optionally save it to OBJ."
   (ignore recipe)
   (let* ((table dirvish-emerge--available-preds)
-         (coll (dirvish--append-metadata
-                (lambda (i)
-                  (let ((item (intern (format "%s" i))))
-                    (concat
-                     (make-string
-                      (- dirvish-emerge--max-pred-name-len (length i) -8) ?\s)
-                     (cddr (assq item table)))))
-                table))
+         (fn (lambda (i)
+               (let ((item (intern (format "%s" i))))
+                 (concat
+                  (make-string
+                   (- dirvish-emerge--max-pred-name-len (length i) -8) ?\s)
+                  (cddr (assq item table))))))
+         (coll (dirvish--completion-table-with-metadata
+                table `((annotation-function . ,fn))))
          (pred (completing-read "Predicate: " coll)))
     (if obj (oset obj recipe `(predicate . ,(read pred))) (read pred))))
 
@@ -455,7 +456,7 @@ PREDS are locally composed predicates."
   "Readin `dirvish-emerge-groups' and apply them."
   (when (and (not (dirvish-prop :fd-arglist))
              (or (dirvish-prop :force-emerge)
-                 (< (hash-table-count dirvish--attrs-hash)
+                 (< (hash-table-count dirvish--dir-data)
                     dirvish-emerge-max-file-count)))
     (dirvish-emerge--readin-groups)
     (when-let* ((preds (dirvish-prop :emerge-preds)))

@@ -100,7 +100,7 @@
 
        ;; Define color variables.
 
-       (cursor         nimbus-warn)
+       (cursor         bright-yellow)
        (fringe         "#212121")
 
        (archive        blue-purple)
@@ -741,7 +741,7 @@
    `(highlight-thing ((t (:inherit highlight))))
 
    ;; hl-line
-   `(hl-line ((t (:background ,hl-line))))
+   `(hl-line ((t (:background ,hl-line :extend t))))
 
    ;; hl-todo
    `(hl-todo ((t (:foreground ,pink :bold nil :slant italic))))
@@ -1219,6 +1219,10 @@
    `(undo-tree-visualizer-register-face ((t (:foreground ,orange))))
    `(undo-tree-visualizer-current-face ((t (:foreground ,current))))
    `(undo-tree-visualizer-unmodified-face ((t (:foreground ,purple))))
+
+   ;; vline
+   `(vline ((t (:background ,hl-line))))
+   `(vline-visual ((t (:background ,teal-bg))))
 
    ;; vertico
    `(vertico-group-title ((t (:foreground ,heading))))

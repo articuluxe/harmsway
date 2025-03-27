@@ -1,13 +1,13 @@
 ;;; keycast.el --- Show current command and its binding  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.keycast@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/tarsius/keycast
 ;; Keywords: multimedia
 
-;; Package-Version: 1.4.1
-;; Package-Requires: ((emacs "26.1") (compat "30.0.0.0"))
+;; Package-Version: 1.4.2
+;; Package-Requires: ((emacs "28.1") (compat "30.0.2.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -681,8 +681,6 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (define-minor-mode keycast-tab-bar-mode
   "Show current command and its key binding in the tab bar."
   :global t
-  (when (< emacs-major-version 28)
-    (user-error "`keycast-tab-bar-mode' requires Emacs 28.1"))
   (cond
    (keycast-tab-bar-mode
     (unless tab-bar-mode

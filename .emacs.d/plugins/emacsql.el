@@ -6,7 +6,7 @@
 ;; Maintainer: Jonas Bernoulli <emacs.emacsql@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/magit/emacsql
 
-;; Package-Version: 4.1.0
+;; Package-Version: 4.2.0
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; SPDX-License-Identifier: Unlicense
@@ -32,17 +32,13 @@
   "The EmacSQL SQL database front-end."
   :group 'comm)
 
-(defconst emacsql-version "4.1.0")
+(defconst emacsql-version "4.2.0")
 
 (defvar emacsql-global-timeout 30
   "Maximum number of seconds to wait before bailing out on a SQL command.
-If nil, wait forever.  This is used by the `mysql', `pg', `psql' and
-`sqlite' back-ends.  It is not being used by the `sqlite-builtin' and
-`sqlite-module' back-ends, which only use `emacsql-sqlite-busy-timeout'.")
-
-(defvar emacsql-data-root
-  (file-name-directory (or load-file-name buffer-file-name))
-  "Directory where EmacSQL is installed.")
+If nil, wait forever.  This is used by the `mysql', `pg' and `psql'.  It
+is not being used by the `sqlite-builtin' and `sqlite-module' back-ends,
+which respect `emacsql-sqlite-busy-timeout' instead.")
 
 ;;; Database connection
 
@@ -78,8 +74,8 @@ may return `process', `user-ptr' or `sqlite' for this value.")
   "Return an alist mapping EmacSQL types to database types.
 This will mask `emacsql-type-map' during expression compilation.
 This alist should have four key symbols: integer, float, object,
-nil (default type). The values are strings to be inserted into a
-SQL expression.")
+nil (default type).  The values are strings to be inserted into
+a SQL expression.")
 
 (cl-defmethod emacsql-buffer ((connection emacsql-connection))
   "Get process buffer for CONNECTION."
@@ -100,29 +96,6 @@ MESSAGE should not have a newline on the end."
       (with-current-buffer buffer
         (goto-char (point-max))
         (princ (concat message "\n") buffer)))))
-
-(cl-defgeneric emacsql-process (this)
-  "Access internal `handle' slot directly, which you shouldn't do.
-Using this function to do it anyway, means additionally using a
-misnamed and obsolete accessor function."
-  (and (slot-boundp this 'handle)
-       (oref this handle)))
-(cl-defmethod (setf emacsql-process) (value (this emacsql-connection))
-  (oset this handle value))
-(make-obsolete 'emacsql-process "underlying slot is for internal use only."
-               "EmacSQL 4.0.0")
-
-(cl-defmethod slot-missing ((connection emacsql-connection)
-                            slot-name operation &optional new-value)
-  "Treat removed `process' slot-name as an alias for internal `handle' slot."
-  (pcase (list operation slot-name)
-    ('(oref process)
-     (message "EmacSQL: Slot `process' is obsolete")
-     (oref connection handle))
-    ('(oset process)
-     (message "EmacSQL: Slot `process' is obsolete")
-     (oset connection handle new-value))
-    (_ (cl-call-next-method))))
 
 ;;; Sending and receiving
 
@@ -159,8 +132,8 @@ misnamed and obsolete accessor function."
 
 (defun emacsql-compile (connection sql &rest args)
   "Compile s-expression SQL for CONNECTION into a string."
-  (let* ((mask (and connection (emacsql-types connection)))
-         (emacsql-type-map (or mask emacsql-type-map)))
+  (let ((emacsql-type-map (or (and connection (emacsql-types connection))
+                              emacsql-type-map)))
     (concat (apply #'emacsql-format (emacsql-prepare sql) args) ";")))
 
 (cl-defgeneric emacsql (connection sql &rest args)
@@ -177,9 +150,9 @@ misnamed and obsolete accessor function."
 
 (defclass emacsql-protocol-mixin () ()
   "A mixin for back-ends following the EmacSQL protocol.
-The back-end prompt must be a single \"]\" character. This prompt
-value was chosen because it is unreadable. Output must have
-exactly one row per line, fields separated by whitespace. NULL
+The back-end prompt must be a single \"]\" character.  This prompt
+value was chosen because it is unreadable.  Output must have
+exactly one row per line, fields separated by whitespace.  NULL
 must display as \"nil\"."
   :abstract t)
 
@@ -205,10 +178,10 @@ specific error conditions."
     (goto-char (point-min))
     (let* ((standard-input (current-buffer))
            (value (read)))
-      (if (eql value 'error)
+      (if (eq value 'error)
           (emacsql-handle connection (read) (read))
         (prog1 value
-          (unless (eq 'success (read))
+          (unless (eq (read) 'success)
             (emacsql-handle connection (read) (read))))))))
 
 (provide 'emacsql) ; end of generic function declarations
@@ -246,7 +219,7 @@ This macro can be nested indefinitely, wrapping everything in a
 single transaction at the lowest level.
 
 Warning: BODY should *not* have any side effects besides making
-changes to the database behind CONNECTION. Body may be evaluated
+changes to the database behind CONNECTION.  Body may be evaluated
 multiple times before the changes are committed."
   (declare (indent 1))
   `(let ((emacsql--connection ,connection)
@@ -288,8 +261,8 @@ A statement can be a list, containing a statement with its arguments."
 Returns the result of the last evaluated BODY.
 
 All column names must be provided in the query ($ and * are not
-allowed). Hint: all of the bound identifiers must be known at
-compile time. For example, in the expression below the variables
+allowed).  Hint: all of the bound identifiers must be known at
+compile time.  For example, in the expression below the variables
 `name' and `phone' will be bound for the body.
 
   (emacsql-with-bind db [:select [name phone] :from people]
@@ -306,8 +279,8 @@ Each column must be a plain symbol, no expressions allowed here."
         (args (and (not (vectorp sql-and-args)) (cdr sql-and-args))))
     (cl-assert (eq :select (elt sql 0)))
     (let ((vars (elt sql 1)))
-      (when (eq '* vars)
-        (error "Must explicitly list columns in `emacsql-with-bind'."))
+      (when (eq vars '*)
+        (error "Must explicitly list columns in `emacsql-with-bind'"))
       (cl-assert (cl-every #'symbolp vars))
       `(let ((emacsql--results (emacsql ,connection ,sql ,@args))
              (emacsql--final nil))

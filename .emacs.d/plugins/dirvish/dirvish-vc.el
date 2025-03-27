@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.1.0
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -15,17 +15,11 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 (define-fringe-bitmap 'dirvish-vc-gutter [250] nil nil '(center repeated))
 
 (defclass dirvish-vc-preview (transient-switches) ()
   "Class for dirvish vc-* preview dispatchers.")
-
-(defcustom dirvish-vc-state-fringe 3
-  "The width of the fringe used to display the vc state indicator.
-It is recommended to make this value greater than
-`dirvish-window-fringe', which ensures that the `vc-state' attribute is
-displayed properly."
-  :group 'dirvish :type 'integer)
 
 (defcustom dirvish-vc-state-face-alist
   '((up-to-date       . nil)
@@ -45,6 +39,9 @@ face used for that VC-STATE.  See `vc-state' in (in vc-hooks.el) for
 detail explanation of these states."
   :group 'dirvish
   :type '(alist :key-type symbol :value-type (symbol :tag "Face")))
+
+(defvar dirvish-vc--always-ignored "/node_modules"
+  "Always ignore folders matches this regex, as they may choke Emacs.")
 
 (defface dirvish-vc-needs-merge-face
   '((((background dark)) (:background "#500f29"))
@@ -109,34 +106,38 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
 `dirvish-setup-hook' after data parsing unless INHIBIT-SETUP is non-nil."
   (dirvish--make-proc
    `(prin1
-     (let ((hs (make-hash-table)) (bk ',(dirvish-prop :vc-backend)))
+     (let* ((hs (make-hash-table))
+            (bk ',(dirvish-prop :vc-backend))
+            (info (vc-call-backend bk 'mode-line-string ,dir)))
        ;; keep this until `vc-git' fixed upstream.  See: #224 and #273
        (advice-add #'vc-git--git-status-to-vc-state :around
                    (lambda (fn codes) (apply fn (list (delete-dups codes)))))
        (dolist (file (directory-files ,dir t nil t))
-         (let ((state (vc-state-refresh file bk))
+         (let ((state (if (string-suffix-p ,dirvish-vc--always-ignored file)
+                          'ignored (vc-state-refresh file bk)))
                (msg (and (eq bk 'Git)
                          (shell-command-to-string
                           (format "git log -1 --pretty=%%s %s"
                                   (shell-quote-argument file))))))
-           (puthash (intern (secure-hash 'md5 file))
+           (puthash (secure-hash 'md5 file)
                     `(:vc-state ,state :git-msg ,msg) hs)))
-       hs))
+       (cons info hs)))
    (lambda (p _)
      (pcase-let ((`(,buf . ,inhibit-setup) (process-get p 'meta))
-                 (data (with-current-buffer (process-buffer p)
-                         (read (buffer-string)))))
+                 (`(,info . ,data) (with-current-buffer (process-buffer p)
+                                     (read (buffer-string)))))
        (when (buffer-live-p buf)
          (with-current-buffer buf
            (maphash
             (lambda (k v)
-              (let ((orig (gethash k dirvish--attrs-hash)))
+              (let ((orig (gethash k dirvish--dir-data)))
                 (setf (plist-get orig :vc-state) (plist-get v :vc-state))
                 (setf (plist-get orig :git-msg) (plist-get v :git-msg))
-                (puthash k orig dirvish--attrs-hash)))
+                (puthash k orig dirvish--dir-data)))
             data)
-           (unless (derived-mode-p 'wdired-mode) (dirvish-update-body-h))
-           (unless inhibit-setup (run-hooks 'dirvish-setup-hook)))))
+           (dirvish-prop :vc-info info)
+           (unless inhibit-setup (run-hooks 'dirvish-setup-hook))
+           (dirvish--redisplay))))
      (delete-process p)
      (dirvish--kill-buffer (process-buffer p)))
    nil 'meta (cons buffer inhibit-setup)))
@@ -151,8 +152,7 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
          (new-dps (seq-difference
                    dirvish-preview-dispatchers '(vc-diff vc-log vc-blame))))
     (when value (push (intern (format "%s" value)) new-dps))
-    (setq-local dirvish--working-preview-dispathchers
-                (dirvish--preview-dps-validate new-dps))
+    (dirvish-prop :preview-dps (dirvish--preview-dps-validate new-dps))
     (if (not new-layout)
         (dirvish--preview-update dv (dirvish-prop :index))
       (quit-window nil (dv-root-window dv))
@@ -171,33 +171,42 @@ It is called when `:vc-backend' is included in DIRVISH-PROPs while
 (dirvish-define-attribute vc-state
   "The version control state at left fringe.
 This attribute only works on graphic displays."
-  ;; Avoid setting fringes constantly
-  (unless (= (car (window-fringes)) dirvish-vc-state-fringe)
-    (set-window-fringes nil dirvish-vc-state-fringe dirvish-window-fringe))
+  :when (and (symbolp (dirvish-prop :vc-backend)) (not (dirvish-prop :remote)))
   (let ((ov (make-overlay l-beg l-beg)))
-    (when-let* (((symbolp (dirvish-prop :vc-backend)))
-                (state (dirvish-attribute-cache f-name :vc-state))
+    (when-let* ((state (dirvish-attribute-cache f-name :vc-state))
                 (face (alist-get state dirvish-vc-state-face-alist))
                 (display `(left-fringe dirvish-vc-gutter . ,(cons face nil))))
       (overlay-put ov 'before-string (propertize " " 'display display)))
     `(ov . ,ov)))
 
 (dirvish-define-attribute git-msg
-  "Append git commit message to filename."
-  :index 1
-  :when (and (eq (dirvish-prop :vc-backend) 'Git)
-             (not (dirvish-prop :remote))
-             (> win-width 65))
-  (let* ((info (dirvish-attribute-cache f-name :git-msg))
+  "Display short git log."
+  :when (and (eq (dirvish-prop :vc-backend) 'Git) (not (dirvish-prop :remote)))
+  :setup (dirvish-prop :gm-chop
+           (seq-reduce (lambda (acc i) (cl-incf acc (nth 2 i)))
+                       (dirvish-prop :attrs) 0))
+  (let* ((msg-raw (dirvish-attribute-cache f-name :git-msg))
+         (msg (if (>= (length msg-raw) 1) (substring msg-raw 0 -1) ""))
          (face (or hl-face 'dirvish-git-commit-message-face))
-         (str (concat (substring (concat "  " info) 0 -1) " ")))
-    (add-face-text-property 0 (length str) face t str)
-    `(left . ,str)))
+         (chop (dirvish-prop :gm-chop)) (mlen (length msg)) (stop t)
+         (limit (- (floor (* (if (< w-width 70) 0.48 0.6) w-width)) chop))
+         (count 0) (whole (concat " " msg (make-string w-width ?\ ))) str len)
+    (cond ((or (not msg-raw) (< w-width 30)) (setq str ""))
+          ((and (>= w-width 30) (< w-width 50)) (setq str (propertize " …  ")))
+          (t (setq str "" stop (<= limit 0))))
+    (while (not stop) ; prevent multibyte string taking too much space
+      (setq str (substring whole 0 count))
+      (if (>= (- limit (string-width str)) 1)
+          (cl-incf count)
+        (setq str (concat str (if (> count mlen) "  " "… ")) stop t)))
+    (add-face-text-property 0 (setq len (length str)) face t str)
+    (add-text-properties 0 len `(help-echo ,msg) str)
+    `(right . ,str)))
 
 (dirvish-define-preview vc-diff (ext)
   "Use output of `vc-diff' as preview."
   (when (and (symbolp (dirvish-prop :vc-backend))
-             (not (member ext dirvish-media-exts))
+             (not (member ext dirvish-binary-exts))
              (cl-letf (((symbol-function 'pop-to-buffer) #'ignore)
                        ((symbol-function 'message) #'ignore))
                (vc-diff)))
@@ -214,7 +223,6 @@ This attribute only works on graphic displays."
   "Use output of `vc-annotate' (file) or `vc-dir' (dir) as preview."
   (when-let* ((bk (dirvish-prop :vc-backend))
               ((symbolp bk))
-              (orig-buflist (buffer-list))
               (display-buffer-alist
                '(("\\*\\(Annotate \\|vc-dir\\).*\\*"
                   (display-buffer-same-window)))))
@@ -223,14 +231,13 @@ This attribute only works on graphic displays."
           (vc-dir file bk)
           (cl-pushnew vc-dir-process-buffer (dv-preview-buffers dv))
           `(buffer . ,(current-buffer)))
-      (when-let* ((file (and (not (member ext dirvish-media-exts))
+      (when-let* ((file (and (not (member ext dirvish-binary-exts))
                              (not (memq (vc-state file bk)
                                         '(unregistered ignored)))
                              file))
                   (f-buf (cdr (dirvish--find-file-temporarily file)))
                   ((bufferp f-buf)))
-        (unless (memq f-buf orig-buflist)
-          (push f-buf (dv-preview-buffers dv)))
+        (cl-pushnew f-buf (dv-preview-buffers dv))
         (with-selected-window preview-window
           (with-current-buffer f-buf
             (cl-letf (((symbol-function 'message) #'ignore))
@@ -241,14 +248,11 @@ This attribute only works on graphic displays."
 (dirvish-define-mode-line vc-info
   "Version control info such as git branch."
   (when-let* (((> (window-width) 30))
-              (bk (dirvish-prop :vc-backend))
-              ((symbolp bk))
-              (ml-str (vc-call-backend bk 'mode-line-string default-directory))
-              (bk-str (format "%s:" bk)))
-    (format " %s %s "
-            (propertize bk-str 'face 'bold)
-            (propertize (substring ml-str (length bk-str))
-                        'face 'font-lock-builtin-face))))
+              (info-seq (dirvish-prop :vc-info))
+              (info (copy-sequence info-seq)))
+    (unless (dirvish--selected-p)
+      (put-text-property 0 (length info) 'face 'dirvish-inactive info))
+    info))
 
 ;;;###autoload (autoload 'dirvish-vc-menu "dirvish-vc" nil t)
 (transient-define-prefix dirvish-vc-menu ()

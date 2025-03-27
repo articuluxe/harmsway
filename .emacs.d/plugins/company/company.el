@@ -1,6 +1,6 @@
 ;;; company.el --- Modular text completion framework  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2009-2024  Free Software Foundation, Inc.
+;; Copyright (C) 2009-2025  Free Software Foundation, Inc.
 
 ;; Author: Nikolaj Schumacher
 ;; Maintainer: Dmitry Gutov <dmitry@gutov.dev>
@@ -2607,7 +2607,7 @@ For more details see `company-insertion-on-trigger' and
       (when (= (buffer-chars-modified-tick) tick)
         (let (company-require-match)
           (setq company-backend backend
-                company--manual-prefix 0)
+                company--manual-prefix "")
           (company--begin-new))
         (unless (and company-candidates
                      (equal (company--boundaries) '("" . "")))
@@ -3607,6 +3607,7 @@ Example: \(company-begin-with \\='\(\"foo\" \"foobar\" \"foobarbaz\"\)\)"
 
 (declare-function find-library-name "find-func")
 (declare-function lm-version "lisp-mnt")
+(declare-function lm-header "lisp-mnt")
 
 (defun company-version (&optional show-version)
   "Get the Company version as string.
@@ -3617,9 +3618,12 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
     (require 'find-func)
     (insert-file-contents (find-library-name "company"))
     (require 'lisp-mnt)
-    (if show-version
-        (message "Company version: %s" (lm-version))
-      (lm-version))))
+    ;; `lm-package-version' was added in 2025.
+    (let ((version (or (or (lm-header "package-version")
+                           (lm-version)))))
+      (if show-version
+          (message "Company version: %s" version)
+        version))))
 
 (defun company-diag ()
   "Pop a buffer with information about completions at point."
@@ -3632,7 +3636,8 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
                                     (setq backend b)
                                     (company-call-backend 'prefix))))
          (c-a-p-f completion-at-point-functions)
-         cc annotations)
+         cc annotations
+         current-capf)
     (when (or (stringp prefix) (consp prefix))
       (let ((company-backend backend))
         (condition-case nil
@@ -3642,7 +3647,9 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
                   annotations
                   (mapcar
                    (lambda (c) (cons c (company-call-backend 'annotation c)))
-                   cc))
+                   cc)
+                  current-capf (car (bound-and-true-p
+                                     company-capf--current-completion-data)))
           (error (setq annotations 'error)))))
     (pop-to-buffer (get-buffer-create "*company-diag*"))
     (setq buffer-read-only nil)
@@ -3660,7 +3667,9 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
               (memq 'company-capf backend)
             (eq backend 'company-capf))
       (insert "Value of c-a-p-f: "
-              (pp-to-string c-a-p-f)))
+              (pp-to-string c-a-p-f))
+      (when current-capf
+        (insert "Current c-a-p-f: " (pp-to-string current-capf))))
     (insert "Major mode: " mode)
     (insert "\n")
     (insert "Prefix: " (pp-to-string prefix))

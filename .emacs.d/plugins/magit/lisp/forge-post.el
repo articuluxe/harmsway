@@ -154,7 +154,10 @@ an error."
         (when (and (not resume) (string-prefix-p "new" filename))
           (let-alist (forge--topic-template
                       (forge-get-repository :tracked)
-                      (if source 'forge-pullreq 'forge-issue))
+                      (pcase filename
+                        ("new-discussion" 'forge-discussion)
+                        ("new-issue"      'forge-issue)
+                        ("new-pullreq"    'forge-pullreq)))
             (cond
              (.url
               (browse-url .url)
@@ -213,9 +216,10 @@ an error."
          (prevbuf forge--pre-post-buffer)
          (topic   (ignore-errors (forge-get-topic forge--buffer-post-object)))
          (repo    (forge-get-repository topic)))
-    (lambda (value headers status req)
-      (run-hook-with-args 'forge-post-submit-callback-hook
-                          value headers status req)
+    (lambda (value &optional headers status req)
+      (when headers
+        (run-hook-with-args 'forge-post-submit-callback-hook
+                            value headers status req))
       (delete-file file t)
       (let ((dir (file-name-directory file)))
         (unless (cddr (directory-files dir nil nil t))
@@ -271,5 +275,10 @@ an error."
     (forge-refresh-buffer prevbuf)))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("partial" . "llama--left-apply-partially")
+;;   ("rpartial" . "llama--right-apply-partially"))
+;; End:
 (provide 'forge-post)
 ;;; forge-post.el ends here

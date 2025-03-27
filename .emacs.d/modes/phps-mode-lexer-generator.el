@@ -1,6 +1,6 @@
 ;;; phps-mode-lexer-generator.el -- Generate lexer rules for lexer -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2024  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2025  Free Software Foundation, Inc.
 
 
 ;;; Commentary:
@@ -117,8 +117,8 @@
   "Any character.  The Zend equivalent is [^] but is not possible in Emacs Lisp.")
 
 (defconst phps-mode-lexer--newline
-  "[\n\r]"
-  "Newline characters.  The Zend equivalent is (\"\r\"|\"\n\"|\"\r\n\").")
+  "\\(\r\\|\n\\|\r\n\\)"
+  "Newline characters. ")
 
 (defvar phps-mode-lexer-generator--table nil)
 

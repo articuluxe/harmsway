@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.1.0
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -14,6 +14,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 
 (defun dirvish-ls--clear-switches-choices ()
   "Reload the listing switches setup UI."

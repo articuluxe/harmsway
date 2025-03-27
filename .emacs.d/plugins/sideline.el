@@ -230,6 +230,13 @@
 
 (declare-function shr-string-pixel-width "shr.el")  ; TODO: remove this after 29.1
 
+(defun sideline--handle-externals ()
+  "Alter external packages to work with `sideline'."
+  (add-hook 'whitespace-mode-hook #'sideline-render-this)
+  ;; Tree-sitter
+  (add-hook 'ts-fold-on-fold-hook #'sideline-render-this)
+  (add-hook 'treesit-fold-on-fold-hook #'sideline-render-this))
+
 ;;
 ;; (@* "Entry" )
 ;;
@@ -247,6 +254,7 @@
         sideline--text-scale-mode-amount text-scale-mode-amount)
   (add-hook 'post-command-hook #'sideline--post-command -90 t)
   (add-hook 'before-revert-hook #'sideline--before-revert nil t)
+  (sideline--handle-externals)
   ;; Render immediately after reopened file!
   (sideline--post-command))
 
@@ -391,7 +399,12 @@ Argument OFFSET is additional calculation from the right alignment."
               (if graphic-p
                   ;; If right fringe deactivated add 1 offset
                   (if (= 0 (nth 1 fringes)) 1 0)
-                1)))))))
+                1)
+              (if (or
+                   (bound-and-true-p whitespace-mode)
+                   (bound-and-true-p global-whitespace-mode))
+                  1
+                0)))))))
 
 (defun sideline--line-pixel-start ()
   "Return the pixel start of the line."
@@ -452,6 +465,8 @@ calculate to the right side."
     (cond
      (on-left
       (let* ((pos-first (save-excursion (back-to-indentation) (current-column)))
+             ;; The variable `pos-first' cannot be lower than the `hscroll'.
+             (pos-first (max pos-first column-start))
              (remain-spaces (- pos-first column-start)))
         (cond ((<= str-len remain-spaces)
                (cons column-start pos-first))
@@ -514,7 +529,8 @@ available lines in both directions (up & down)."
                                             (sideline--opposing-str-len)
                                             occ-bol)
                       ;; Handle exceed display.
-                      (when (and break-it
+                      (when (and exceeded  ; after search on both sides.
+                                 break-it  ; after reach edges.
                                  sideline--max-remain-spaces-line)
                         ;; Apply to BOL
                         (setq occ-bol (car sideline--max-remain-spaces-line))
@@ -523,8 +539,9 @@ available lines in both directions (up & down)."
                         (cdr sideline--max-remain-spaces-line))))
              (pos-start (sideline--column-to-point (car col)))
              (pos-end   (sideline--column-to-point (cdr col)))
-             ;; Skip virtual line from `truncate-lines'.
-             ((= pos-start pos-end)))
+             ((or on-left
+                  ;; Skip virtual line from `truncate-lines'.
+                  (= pos-start pos-end))))
           (setq data (list pos-start pos-end occ-bol))
           (setq break-it t)
           (push occ-bol occupied-lines))))
@@ -642,41 +659,53 @@ FACE, NAME, ON-LEFT, and ORDER for details."
           (if on-left (format sideline-format-left text)
             (format sideline-format-right text))))
        (len-title (sideline--str-len title))
-       (data (let ((sideline--max-remain-spaces -1)         ; Reset before use.
+       (data (let ((sideline--max-remain-spaces 0)          ; Reset before use.
                    (sideline--max-remain-spaces-line nil))  ; Reset before use.
                (sideline--find-line len-title on-left order)))
        (pos-start (nth 0 data)) (pos-end (nth 1 data)) (occ-pt (nth 2 data))
-       (offset (- 0 (sideline--render-data :hscroll)))
+       (hscroll (sideline--render-data :hscroll))
+       (offset (- 0 hscroll))
        ;; Truncate
-       (title (if sideline-truncate
-                  (let* ((win-width (sideline--render-data :win-width))
-                         (used-space (- pos-start occ-pt))
-                         (available-space (- win-width used-space))
-                         (suffix (copy-sequence (truncate-string-ellipsis))))
-                    (set-text-properties 0 (length suffix)
-                                         (text-properties-at (1- (length title)) title)
-                                         suffix)
-                    (truncate-string-to-width title available-space 0 nil
-                                              suffix))
-                title))
+       (title
+        (or (and sideline-truncate
+                 (let* ((win-width (sideline--render-data :win-width))
+                        (end-col (save-excursion
+                                   (goto-char pos-end)
+                                   (current-column)))
+                        (available-space (if on-left
+                                             (if (zerop end-col)
+                                                 win-width
+                                               (- end-col hscroll 1))
+                                           (- win-width (- end-col hscroll))))
+                        (suffix (copy-sequence (truncate-string-ellipsis))))
+                   (when (< available-space len-title)
+                     (set-text-properties 0 (length suffix)
+                                          (text-properties-at (1- (length title)) title)
+                                          suffix)
+                     (truncate-string-to-width title available-space 0 nil
+                                               suffix))))
+            title))
        ;; Align left/right
        (str (concat
              (unless on-left
                (propertize " "
-                           'display `((space :align-to
-                                             (- right ,(sideline--align-right title offset)))
-                                      (space :width 0))
+                           'display
+                           `((space :align-to (- right ,(sideline--align-right title offset)))
+                             (space :width 0))
                            `cursor t))
              title)))
 
     ;; Create overlay
     (let* ((len-str (length str))
-           (empty-ln (= pos-start pos-end))
-           (ov (make-overlay pos-start (if empty-ln pos-start (+ pos-start len-str))
+           (left-empty-ln (= pos-start pos-end))
+           (ov (make-overlay pos-start
+                             (if left-empty-ln pos-start
+                               ;; Cannot exceed `pos-end'.
+                               (min pos-end (+ pos-start len-str)))
                              nil t t)))
       (cond (on-left
-             (if empty-ln
-                 (overlay-put ov 'before-string str)
+             (if left-empty-ln
+                 (overlay-put ov 'before-string (concat (spaces-string hscroll) str))
                (overlay-put ov 'display str)
                (overlay-put ov 'invisible t)))
             (t (overlay-put ov 'before-string str)))

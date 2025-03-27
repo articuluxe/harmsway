@@ -69,7 +69,10 @@
      (list "powershell" "-NoProfile" "-Command"
            "& {(New-Object -ComObject wscript.shell).SendKeys(\"^v\")}"))
     ('x11 (list "xdotool" "key" "--clearmodifiers" "Shift+Insert"))
-    ('wayland (list "ydotool" "key" "42:1" "110:1" "42:0" "110:0"))
+    ('wayland (cond ((executable-find "dotool") (list "dotool"))
+                    ;; Note: for ydotool to work you need to have the ydotoold daemon running:
+                    ((executable-find "ydotool") (list "ydotool" "key" "42:1" "110:1" "42:0" "110:0"))
+                    ((executable-find "wtype") (list "wtype" "-M" "Shift" "-P" "Insert" "-m" "Shift" "-p" "Insert"))))
     ('unknown
      (list "notify-send"
            "No paste command defined for emacs-everywhere"
@@ -107,6 +110,7 @@ it worked can be a good idea."
     (`(windows . ,_) (list "powershell" "-NoProfile" "-command"
                            "& {Add-Type 'using System; using System.Runtime.InteropServices; public class Tricks { [DllImport(\"user32.dll\")] public static extern bool SetForegroundWindow(IntPtr hWnd); }'; [tricks]::SetForegroundWindow(%w) }"))
     (`(x11 . ,_) (list "xdotool" "windowactivate" "--sync" "%w"))
+    (`(wayland . sway) (list "swaymsg" "[con_id=%w]" "focus"))
     (`(wayland . KDE) (list "kdotool" "windowactivate" "%w"))) ; No --sync
   "Command to refocus the active window when emacs-everywhere was triggered.
 This is given as a list in the form (CMD ARGS...).
@@ -232,6 +236,7 @@ Make sure that it will be matched by `emacs-everywhere-file-patterns'."
     (`(quartz . ,_) #'emacs-everywhere--app-info-osx)
     (`(windows . ,_) #'emacs-everywhere--app-info-windows)
     (`(x11 . ,_) #'emacs-everywhere--app-info-linux-x11)
+    (`(wayland . sway) #'emacs-everywhere--app-info-linux-sway)
     (`(wayland . KDE) #'emacs-everywhere--app-info-linux-kde))
   "Function that asks the system for information on the current foreground app.
 On most systems, this should be set to a sensible default, but it
@@ -397,12 +402,25 @@ Never paste content when ABORT is non-nil."
       (setq abort t))
     (unless abort
       (run-hooks 'emacs-everywhere-final-hooks)
-      (gui-select-text (buffer-string))
-      (gui-backend-set-selection 'PRIMARY (buffer-string))
+      ;; First ensure text is in kill-ring and system clipboard
+      (let ((text (buffer-string)))
+        (kill-new text)
+        ;; Use macOS specific clipboard command
+        (when (eq system-type 'darwin)
+          (call-process "osascript" nil nil nil
+                       "-e" (format "set the clipboard to %S" text)))
+        ;; Also try GUI selection methods
+        (gui-select-text text)
+        (gui-backend-set-selection 'PRIMARY text))
+      ;; Extra clipboard handling if needed
       (when emacs-everywhere-copy-command ; handle clipboard finicklyness
         (let ((inhibit-message t)
               (require-final-newline nil)
               write-file-functions)
+          ;; Add this to your config to exclude tempf file from recent files
+          ;; (with-eval-after-load 'recentf
+          ;;   (dolist (pattern emacs-everywhere-file-patterns)
+          ;;     (add-to-list 'recentf-exclude pattern)))
           (with-file-modes #o600
             (write-file buffer-file-name))
           (apply #'call-process (car emacs-everywhere-copy-command)
@@ -424,12 +442,17 @@ Never paste content when ABORT is non-nil."
         (when (and (frame-parameter nil 'emacs-everywhere-app)
                    emacs-everywhere-paste-command
                    (not abort))
+          ;; Add small delay before paste
+          (sleep-for emacs-everywhere-clipboard-sleep-delay)
           (apply #'call-process (car emacs-everywhere-paste-command)
-                 nil nil nil (cdr emacs-everywhere-paste-command)))))
+                 (if (cdr emacs-everywhere-paste-command) nil
+                   (make-temp-file nil nil nil "key shift+insert")) nil nil
+                   (cdr emacs-everywhere-paste-command)))))
     ;; Clean up after ourselves in case the buffer survives `server-buffer-done'
-    ;; (b/c `server-existing-buffer' is non-nil).
-    (emacs-everywhere-mode -1)
-    (server-buffer-done (current-buffer))))
+    (set-buffer-modified-p nil)
+    (let ((kill-buffer-query-functions nil))
+      (emacs-everywhere-mode -1)
+      (server-buffer-done (current-buffer)))))
 
 (defun emacs-everywhere-abort ()
   "Abort current emacs-everywhere session."
@@ -475,7 +498,40 @@ Please go to 'System Preferences > Security & Privacy > Privacy > Accessibility'
   (pcase emacs-everywhere--display-server
     (`(x11 . ,_) (emacs-everywhere--app-info-linux-x11))
     (`(wayland . KDE) (emacs-everywhere--app-info-linux-kde))
+    (`(wayland . sway) (emacs-everywhere--app-info-linux-sway))
     (_ (user-error "Unable to fetch app info with display server %S" emacs-everywhere--display-server))))
+
+(declare-function json-read-from-string "json")
+
+(defun emacs-everywhere--app-info-linux-sway ()
+  "Return information on the current active window, on a Linux Sway session."
+  (cl-labels ((find-focused-node (node)
+                (or (and (assq 'type node)
+                         (eq 't (alist-get 'focused node))
+                         node)
+                    (cl-loop for child-node across (alist-get 'nodes node)
+                             thereis (find-focused-node child-node))
+                    (cl-loop for floating-node across (alist-get 'floating_nodes node)
+                             thereis (find-focused-node floating-node)))))
+    (require 'json)
+    (let* ((sway-tree-json (emacs-everywhere--call "swaymsg" "-t" "get_tree"))
+           (sway-tree (json-read-from-string sway-tree-json))
+           (focused-node (find-focused-node sway-tree))
+           (window-id (number-to-string (alist-get 'id focused-node)))
+           (app-name (or (alist-get 'app_id focused-node)
+                         (alist-get 'class (alist-get 'window_properties focused-node))))
+           (window-title (alist-get 'name focused-node))
+           (full-window-geometry (alist-get 'geometry focused-node))
+           (window-geometry (list
+                             (alist-get 'x full-window-geometry)
+                             (alist-get 'y full-window-geometry)
+                             (alist-get 'width full-window-geometry)
+                             (alist-get 'height full-window-geometry))))
+      (make-emacs-everywhere-app
+       :id window-id
+       :class app-name
+       :title window-title
+       :geometry window-geometry))))
 
 (defun emacs-everywhere--app-info-linux-x11 ()
   "Return information on the current active window, on a Linux X11 sessions."
@@ -679,10 +735,32 @@ return windowTitle"))
   "Insert the last text selection into the buffer."
   (pcase system-type
     ('darwin (progn
-               (call-process "osascript" nil nil nil
-                             "-e" "tell application \"System Events\" to keystroke \"c\" using command down")
-               (sleep-for emacs-everywhere-clipboard-sleep-delay) ; lets clipboard info propagate
-               (yank)))
+               ;; Try to get selected text directly via AppleScript
+               (let ((selection
+                      (with-temp-buffer
+                        (call-process "osascript" nil t nil
+                                    "-e" "tell application \"System Events\"
+                                           set frontApp to first application process whose frontmost is true
+                                           set frontAppName to name of frontApp
+                                         end tell
+                                         set theSelection to \"\"
+                                         tell application frontAppName
+                                           try
+                                             set theSelection to selection
+                                             if theSelection is not \"\" then
+                                               return theSelection
+                                             end if
+                                           end try
+                                         end tell")
+                        (buffer-string))))
+                 ;; If direct selection fails, fall back to clipboard
+                 (if (and selection (not (string-empty-p selection)))
+                     (insert selection)
+                   (progn
+                     (call-process "osascript" nil nil nil
+                                  "-e" "tell application \"System Events\" to keystroke \"c\" using command down")
+                     (sleep-for emacs-everywhere-clipboard-sleep-delay)
+                     (yank))))))
     ((or 'ms-dos 'windows-nt 'cygwin)
      (emacs-everywhere-insert-selection--windows))
     (_ (when-let ((selection (gui-get-selection 'PRIMARY 'UTF8_STRING)))
@@ -693,7 +771,7 @@ return windowTitle"))
              (executable-find "pandoc"))
     (apply #'call-process-region
            (point-min) (point-max) "pandoc"
-           nil nil nil
+           t t t
            emacs-everywhere-pandoc-md-args)
     (deactivate-mark) (goto-char (point-max)))
   (cond ((bound-and-true-p evil-local-mode) (evil-insert-state))))

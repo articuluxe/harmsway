@@ -1,8 +1,8 @@
 ;; danneskjold-theme.el --- beautiful high-contrast theme
 
-;; Copyright (c) 2016-2024 Dmitry Akatov
+;; Copyright (c) 2016-2025 Dmitry Akatov
 
-;; Author: Dmitry Akatov <akatovda@yandex.com>
+;; Author: Dmitry Akatov <akatovda@google.com>
 ;; URL: https://github.com/rails-to-cosmos/danneskjold-theme
 ;; Package-Version: 1.0.0
 
@@ -479,6 +479,7 @@
                           `(vc-annotate-face-FFF33F ((,class (:foreground ,yellow))))
                           `(vertical-border ((,class (:foreground "#223959"))))
                           `(vertico-current ((,class (:foreground "#FFCA00"))))
+                          `(icomplete-selected-match ((,class (:foreground "#FFCA00"))))
                           `(wgrep-done-face                  ((,class (:foreground ,green))))
                           `(wgrep-face                  ((,class (:foreground ,yellow))))
                           `(wgrep-file-face                  ((,class (:background ,(danneskjold-invert-color yellow-c) :foreground ,yellow))))

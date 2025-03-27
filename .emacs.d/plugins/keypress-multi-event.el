@@ -9,7 +9,7 @@
 ;; Package-Version:  1.0
 ;; Package-requires: ((emacs "24.3"))
 ;; Keywords:         abbrev, convenience, wp, keyboard
-;; URL:              https://www.github.com/Boruch_Baum/emacs-keypress-multi-event
+;; URL:              https://www.github.com/Boruch-Baum/emacs-keypress-multi-event
 
 ;; This is free software: you can redistribute it and/or modify it under
 ;; the terms of the GNU General Public License as published by the Free

@@ -46,9 +46,9 @@
            new branch and continue by reading the upstream next."
   :package-version '(magit . "2.2.0")
   :group 'magit-commands
-  :type '(choice (const :tag "read branch name first" nil)
-                 (const :tag "read upstream first" t)
-                 (const :tag "read upstream first, with fallback" fallback)))
+  :type '(choice (const :tag "Read branch name first" nil)
+                 (const :tag "Read upstream first" t)
+                 (const :tag "Read upstream first, with fallback" fallback)))
 
 (defcustom magit-branch-prefer-remote-upstream nil
   "Whether to favor remote upstreams when creating new branches.
@@ -154,10 +154,10 @@ However, I recommend that you use local branches as UPSTREAM."
   :package-version '(magit . "2.9.0")
   :group 'magit-commands
   :type '(repeat (cons (string :tag "Use upstream")
-                       (choice :tag "for branches"
-                               (regexp :tag "matching")
-                               (repeat :tag "except"
-                                       (string :tag "branch"))))))
+                       (choice :tag "For branches" ;???
+                               (regexp :tag "Matching")
+                               (repeat :tag "Except"
+                                       (string :tag "Branch"))))))
 
 (defcustom magit-branch-rename-push-target t
   "Whether the push-remote setup is preserved when renaming a branch.
@@ -612,7 +612,7 @@ prompt is confusing."
     ;; the respective branch name is ambiguous.
     (when-let ((ambiguous (seq-filter #'null refs)))
       (user-error
-       "%s ambiguous.  Please cleanup using git directly."
+       "%s ambiguous; please cleanup using git directly"
        (let ((len (length ambiguous)))
          (cond
           ((= len 1)
@@ -796,7 +796,7 @@ the remote."
               (remote (magit-get-push-remote new)))
           (when (and old-target
                      (not new-target)
-                     (magit-y-or-n-p (format "Also rename %S to %S on \"%s\""
+                     (magit-y-or-n-p (format "Also rename %S to %S on \"%s\"?"
                                              old new remote)))
             ;; Rename on (i.e., within) the remote, but only if the
             ;; destination ref doesn't exist yet.  If that ref already
@@ -825,7 +825,7 @@ and also rename the respective reflog file."
 
 ;;;###autoload
 (defun magit-branch-unshelve (branch)
-  "Unshelve a BRANCH
+  "Unshelve a BRANCH.
 Rename \"refs/shelved/BRANCH\" to \"refs/heads/BRANCH\",
 and also rename the respective reflog file."
   (interactive

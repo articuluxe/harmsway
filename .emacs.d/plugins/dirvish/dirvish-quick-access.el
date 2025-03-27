@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.1.0
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -21,6 +21,7 @@
 ;;; Code:
 
 (require 'dirvish)
+(require 'transient)
 
 (defcustom dirvish-quick-access-function 'dirvish-dwim
   "Function used to access `dirvish-quick-access-entries'.
@@ -64,7 +65,6 @@ Here is a sample value for this variable.
                        (interactive)
                        (funcall dirvish-quick-access-function ,path))))]
           (interactive)
-          (require 'dirvish-fd nil t)
           (transient-setup 'dirvish-quick-access))))))
 
 (provide 'dirvish-quick-access)

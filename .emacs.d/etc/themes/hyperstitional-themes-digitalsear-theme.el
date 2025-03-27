@@ -5,8 +5,8 @@
 ;; Author: precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/hyperstitional-themes
 ;; Created: April 16, 2024
-;; Modified: May 28, 2024
-;; Version: 1.2
+;; Modified: March 03, 2025
+;; Version: 1.2.4
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -105,6 +105,8 @@
    `(highlight-quoted-symbol  ((,class (:foreground ,c4-dim))))
    `(highlight-quoted-quote   ((,class (:foreground ,c3-dim))))
 
+   `(apropos-symbol ((,class (:height 1.2 :foreground ,c1-dim))))
+
    `(custom-button         ((,class (:foreground ,c5 :background ,c5-dark :box (:line-width 2 :color ,c5-light :style released-button)))))
    `(custom-button-pressed ((,class (:foreground ,c5 :background ,c5-dark :box (:line-width 2 :color ,c5-light :style pressed-button)))))
 
@@ -143,13 +145,14 @@
    `(font-lock-regexp-grouping-backslash ((,class (:foreground ,c0-dim))))
 
 ;;;;;; Header line and mode line
-   `(mode-line                  ((,class (:inherit variable-pitch :foreground ,c0 :background ,c6))))
-   `(mode-line-buffer-id        ((,class (:inherit variable-pitch :foreground ,c1 :background ,c6))))
-   `(mode-line-emphasis         ((,class (:inherit variable-pitch :foreground ,c2 :background ,c6))))
-   `(mode-line-highlight        ((,class (:inherit variable-pitch :foreground ,c3 :background ,c6))))
-   `(mode-line-inactive         ((,class (:inherit variable-pitch :foreground ,c4 :background ,c6-dim))))
-   `(header-line                ((,class (:inherit mode-line))))
-   `(header-line-highlight      ((,class (:inherit mode-line-highlight))))
+   `(mode-line             ((,class (:inherit variable-pitch :foreground ,c0 :background ,c6))))
+   `(mode-line-buffer-id   ((,class (:inherit variable-pitch :foreground ,c1 :background ,c6))))
+   `(mode-line-emphasis    ((,class (:inherit variable-pitch :foreground ,c2 :background ,c6))))
+   `(mode-line-highlight   ((,class (:inherit variable-pitch :foreground ,c3 :background ,c6-light))))
+   `(mode-line-inactive    ((,class (:inherit variable-pitch :foreground ,c4 :background ,c6-dim))))
+   `(header-line           ((,class (:inherit mode-line))))
+   `(header-line-inactive  ((,class (:inherit mode-line-inactive))))
+   `(header-line-highlight ((,class (:inherit mode-line-highlight))))
 
 ;;;;;; Info mode
    `(info-quoted       ((,class (:foreground ,c1 :background ,bg))))
@@ -333,14 +336,14 @@
    `(org-document-info-keyword     ((,class (:foreground ,c5 :background ,c5-light))))
    `(org-document-title            ((,class (:foreground ,c6 :background ,c4-light))))
    `(org-done                      ((,class (:underline (:color ,c0-dim :line-width -1)))))
-   `(org-drawer                    ((,class (:inherit fixed-pitch :foreground ,c6-dim :background ,c0-dark :box (:line-width 2 :style pressed-button)))))
+   `(org-drawer                    ((,class (:inherit fixed-pitch :foreground ,c6-dim :background ,c0-light :box (:line-width 2 :style released-button)))))
    `(org-ellipsis                  ((,class (:inherit font-lock-builtin-face))))
    `(org-footnote                  ((,class (:foreground ,c2 :background ,c2-light))))
    `(org-formula                   ((,class (:foreground ,c4 :background ,c3-light))))
    `(org-headline-todo             ((,class (:background ,c2-light :weight bold))))
    `(org-headline-done             ((,class (:background ,c4-light :weight bold))))
-   `(org-hide                      ((,class (:foreground ,c0-light))))
-   `(org-indent                    ((,class (:foreground ,c0-light))))
+   `(org-hide                      ((,class (:foreground ,bg))))
+   `(org-indent                    ((,class (:foreground ,bg))))
    `(org-latex-and-related         ((,class (:foreground ,c3 :background ,c0-light))))
    `(org-link                      ((,class (:foreground ,c0 :background ,c2-light :underline t))))
    `(org-list-dt                   ((,class (:foreground ,c6 :background ,c6-light :weight bold))))
@@ -727,7 +730,15 @@
 ;;;;;; merlin
    `(merlin-type-face ((,class (:inherit font-lock-type-face))))
    `(merlin-compilation-error-face ((,class (:inherit error))))
-   `(merlin-compilation-warning-face ((,class (:inherit font-lock-warning-face))))))
+   `(merlin-compilation-warning-face ((,class (:inherit font-lock-warning-face))))
+
+;;;;;; breadcrumb
+   `(breadcrumb-face                ((,class (:background ,bg :foreground ,fg :inherit variable-pitch :height 0.9))))
+   `(breadcrumb-imenu-leaf-face     ((,class (:background ,c0-light :foreground ,c6-dim :inherit variable-pitch))))
+   `(breadcrumb-imenu-crumbs-face   ((,class (:background ,c3-light :foreground ,c4-dim :inherit variable-pitch))))
+   `(breadcrumb-project-base-face   ((,class (:background ,c5-light :foreground ,c1-dim :inherit variable-pitch))))
+   `(breadcrumb-project-leaf-face   ((,class (:background ,c0-light :foreground ,c6-dim :inherit variable-pitch))))
+   `(breadcrumb-project-crumbs-face ((,class (:background ,c3-light :foreground ,c4-dim :inherit variable-pitch))))))
 
 (provide-theme 'hyperstitional-themes-digitalsear)
 

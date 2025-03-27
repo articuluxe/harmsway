@@ -53,7 +53,7 @@
    (object-class :initform 'forge-repository)
    (file         :initform 'forge-database-file)
    (schemata     :initform 'forge--db-table-schemata)
-   (version      :initform 14)))
+   (version      :initform 15)))
 
 (defvar forge--override-connection-class nil)
 
@@ -64,6 +64,9 @@
   (if (stringp sql)
       (emacsql (forge-db) (apply #'format sql args))
     (apply #'emacsql (forge-db) sql args)))
+
+(defun forge-sql-car (sql &rest args)
+  (mapcar #'car (apply #'forge-sql sql args)))
 
 (defun forge-sql-cdr (sql &rest args)
   (mapcar #'cdr (apply #'forge-sql sql args)))
@@ -123,6 +126,10 @@
       issues-until
       pullreqs-until
       teams
+      (discussion-categories :default eieio-unbound)
+      (discussions           :default eieio-unbound)
+      discussions-p
+      discussions-until
       ])
 
     (assignee
@@ -130,9 +137,110 @@
       (id :not-null :primary-key)
       login
       name
-      forge-id] ; Needed for Gitlab.
+      forge-id]
      (:foreign-key
       [repository] :references repository [id]
+      :on-delete :cascade))
+
+    (discussion
+     [(class :not-null)
+      (id :not-null :primary-key)
+      repository
+      number
+      answer
+      state
+      author
+      title
+      created
+      updated
+      closed
+      status
+      locked-p
+      category
+      body
+      (cards        :default eieio-unbound)
+      (edits        :default eieio-unbound)
+      (labels       :default eieio-unbound)
+      (participants :default eieio-unbound)
+      (posts        :default eieio-unbound)
+      (reactions    :default eieio-unbound)
+      (timeline     :default eieio-unbound)
+      (marks        :default eieio-unbound)
+      note
+      their-id
+      slug
+      saved-p]
+     (:foreign-key
+      [repository] :references repository [id]
+      :on-delete :cascade))
+
+    (discussion-category
+     [(repository :not-null)
+      (id :not-null :primary-key)
+      their-id
+      name
+      emoji
+      answerable-p
+      description]
+     (:foreign-key
+      [repository] :references repository [id]
+      :on-delete :cascade))
+
+    (discussion-label
+     [(discussion :not-null)
+      (id :not-null)]
+     (:foreign-key
+      [discussion] :references discussion [id]
+      :on-delete :cascade)
+     (:foreign-key
+      [id] :references label [id]
+      :on-delete :cascade))
+
+    (discussion-mark
+     [(discussion :not-null)
+      (id :not-null)]
+     (:foreign-key
+      [discussion] :references discussion [id]
+      :on-delete :cascade)
+     (:foreign-key
+      [id] :references mark [id]
+      :on-delete :cascade))
+
+    (discussion-post ; aka top-level answer
+     [(class :not-null)
+      (id :not-null :primary-key)
+      their-id
+      number
+      discussion
+      author
+      created
+      updated
+      body
+      (edits        :default eieio-unbound)
+      (reactions    :default eieio-unbound)
+      (replies      :default eieio-unbound)]
+     (:foreign-key
+      [discussion] :references discussion [id]
+      :on-delete :cascade))
+
+    (discussion-reply ; aka nested reply to top-level answer
+     [(class :not-null)
+      (id :not-null :primary-key)
+      their-id
+      number
+      post
+      discussion
+      author
+      created
+      updated
+      body
+      (edits        :default eieio-unbound)
+      (reactions    :default eieio-unbound)]
+     (:foreign-key
+      [post] :references discussion-post [id]
+      :on-delete :cascade)
+     (:foreign-key
+      [discussion] :references discussion [id]
       :on-delete :cascade))
 
     (fork
@@ -392,9 +500,10 @@
             (message "Upgrading Forge database from version %s to %s..."
                      version ,to)
             ,@body
-            (closql--db-set-version db (setq version ,to))
+            (closql--db-set-version db ,to)
             (message "Upgrading Forge database from version %s to %s...done"
-                     version ,to))))
+                     version ,to)
+            (setq version ,to))))
     (up 3
         (emacsql db [:create-table pullreq-review-request $S1]
                  (cdr (assq 'pullreq-review-request forge--db-table-schemata))))
@@ -516,6 +625,27 @@
            id)))
     (up 14
         (emacsql db [:alter-table repository :add-column teams :default nil]))
+    (up 15
+        (emacsql db [:create-table discussion $S1]
+                 (cdr (assq 'discussion forge--db-table-schemata)))
+        (emacsql db [:create-table discussion-category $S1]
+                 (cdr (assq 'discussion-category forge--db-table-schemata)))
+        (emacsql db [:create-table discussion-label $S1]
+                 (cdr (assq 'discussion-label forge--db-table-schemata)))
+        (emacsql db [:create-table discussion-mark $S1]
+                 (cdr (assq 'discussion-mark forge--db-table-schemata)))
+        (emacsql db [:create-table discussion-post $S1]
+                 (cdr (assq 'discussion-post forge--db-table-schemata)))
+        (emacsql db [:create-table discussion-reply $S1]
+                 (cdr (assq 'discussion-reply forge--db-table-schemata))))
+        (emacsql db [:alter-table repository :add-column discussion-categories
+                     :default 'eieio-unbound])
+        (emacsql db [:alter-table repository :add-column discussions
+                     :default 'eieio-unbound])
+        (emacsql db [:alter-table repository :add-column discussions-p
+                     :default nil])
+        (emacsql db [:alter-table repository :add-column discussions-until
+                     :default nil])
     ))
 
 (defun forge--backup-database (db)
@@ -529,5 +659,10 @@
     (message "Copying Forge database to %s...done" dst)))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("partial" . "llama--left-apply-partially")
+;;   ("rpartial" . "llama--right-apply-partially"))
+;; End:
 (provide 'forge-db)
 ;;; forge-db.el ends here

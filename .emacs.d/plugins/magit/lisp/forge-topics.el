@@ -133,6 +133,7 @@ Must be set before `forge-topics' is loaded.")
       (eieio-oset spec key (pop params)))
     (unless (oref spec type)
       (oset spec type 'topic))
+    (forge--cast-topics-spec-state spec)
     (unless (or repo global)
       (error "Cannot determine repository"))
     (magit-setup-buffer-internal #'forge-topics-mode nil
@@ -193,8 +194,11 @@ Must be set before `forge-topics' is loaded.")
    ["State"
     ("a" forge-topics-filter-active)
     ("o" forge-topics-filter-state-open)
-    ("c" forge-topics-filter-state-completed)
-    ("x" forge-topics-filter-state-unplanned)]
+    ("r" forge-topics-filter-state-realized)
+    ("e" forge-topics-filter-state-expunged)
+    ("U" forge-topics-filter-state-unplanned)
+    ("O" forge-topics-filter-state-outdated)
+    ("D" forge-topics-filter-state-duplicate)]
    ["Status"
     ("i" forge-topics-filter-status-inbox)
     ("u" forge-topics-filter-status-unread)
@@ -202,14 +206,16 @@ Must be set before `forge-topics' is loaded.")
     ("d" forge-topics-filter-status-done)]
    ["Type"
     ("t t" forge-topics-all-types)
+    ("t d" forge-topics-filter-discussions)
     ("t i" forge-topics-filter-issues)
     ("t p" forge-topics-filter-pullreqs)]]
   [forge--lists-group
    ["Filter                                      "
+    ("-c" forge-topics-filter-category)
     ("-m" forge-topics-filter-milestone)
     ("-l" forge-topics-filter-labels)
     ("-x" forge-topics-filter-marks)
-    ("-c" forge-topics-filter-author)
+    ("-A" forge-topics-filter-author)
     ("-a" forge-topics-filter-assignee)
     ("-r" forge-topics-filter-reviewer)
     ("-s" forge-topics-filter-saved)]
@@ -286,6 +292,15 @@ then display the respective menu, otherwise display no menu."
   (forge-topics-setup-buffer repo)
   (transient-setup 'forge-topics-menu))
 
+;;;###autoload(autoload 'forge-list-discussions "forge-topics" nil t)
+(transient-define-suffix forge-list-discussions (&optional repo)
+  "List discussions of the current repository."
+  :description "discussions"
+  (declare (interactive-only nil))
+  (interactive)
+  (forge-topics-setup-buffer repo nil :type 'discussion)
+  (transient-setup 'forge-topics-menu))
+
 ;;;###autoload(autoload 'forge-list-issues "forge-topics" nil t)
 (transient-define-suffix forge-list-issues (&optional repo)
   "List issues of the current repository."
@@ -343,6 +358,7 @@ then display the respective menu, otherwise display no menu."
                 (interactive)
                 (oset forge--buffer-topics-spec type
                       (oref (transient-suffix-object) type))
+                (forge--cast-topics-spec-state forge--buffer-topics-spec)
                 (forge-refresh-buffer)))
    (inapt-face :initform 'forge-suffix-active)
    (inapt-if
@@ -353,6 +369,11 @@ then display the respective menu, otherwise display no menu."
 (transient-define-suffix forge-topics-all-types ()
   :class 'forge--topics-filter-type-command :type 'topic
   :description "topics")
+
+(transient-define-suffix forge-topics-filter-discussions ()
+  "List discussions of the current repository."
+  :class 'forge--topics-filter-type-command :type 'discussion
+  :description "discussions")
 
 (transient-define-suffix forge-topics-filter-issues ()
   "List issues of the current repository."
@@ -396,14 +417,7 @@ then display the respective menu, otherwise display no menu."
                 (forge-refresh-buffer)))
    (description
     :initform (lambda (suffix)
-                (let ((want (oref suffix state))
-                      (type (oref forge--buffer-topics-spec type)))
-                  (pcase type
-                    ((guard (atom want))
-                     (symbol-name want))
-                    ('topic   (apply #'format "%s/%s" want))
-                    ('issue   (symbol-name (car want)))
-                    ('pullreq (symbol-name (cadr want)))))))
+                (symbol-name (oref suffix state))))
    (face
     :initform (lambda (suffix)
                 (let ((want   (oref suffix state))
@@ -417,19 +431,70 @@ then display the respective menu, otherwise display no menu."
                               (eq want 'open))
                          (if (eq have want)
                              'forge-suffix-active-and-implied
-                           'forge-suffix-implied))))))))
+                           'forge-suffix-implied))
+                        ((and (memq want '(unplanned duplicate outdated))
+                              (equal have
+                                     '(unplanned duplicate outdated rejected))
+                              (not active))
+                         'forge-suffix-implied)))))))
 
 (transient-define-suffix forge-topics-filter-state-open ()
   "Limit topic list to open topics."
-  :class 'forge--topics-filter-state-command :state 'open)
+  :class 'forge--topics-filter-state-command
+  :state 'open)
 
-(transient-define-suffix forge-topics-filter-state-completed ()
-  "Limit topic list to completed and merged topics."
-  :class 'forge--topics-filter-state-command :state '(completed merged))
+(transient-define-suffix forge-topics-filter-state-realized ()
+  "Limit topic list to realized topics.
+Realized topics include:
+- completed discussions,
+- completed issues, and
+- merged pull-requests."
+  :class 'forge--topics-filter-state-command
+  :state '(completed merged)
+  :description (lambda ()
+                 (pcase (oref forge--buffer-topics-spec type)
+                   ('discussion "completed")
+                   ('issue      "completed")
+                   ('pullreq    "merged")
+                   ('topic      "realized"))))
+
+(transient-define-suffix forge-topics-filter-state-expunged ()
+  "Limit topic list to expunged topics.
+Expunged topics include:
+- discussions closed as outdated,
+- discussions closed as duplicates,
+- issues closed as unplanned,
+- issues closed as duplicates, and
+- pull-requests closed without merging."
+  :class 'forge--topics-filter-state-command
+  :state '(unplanned duplicate outdated rejected)
+  :description (lambda ()
+                 (pcase (oref forge--buffer-topics-spec type)
+                   ('discussion "expunged")
+                   ('issue      "expunged")
+                   ('pullreq    "rejected")
+                   ('topic      "expunged"))))
 
 (transient-define-suffix forge-topics-filter-state-unplanned ()
-  "Limit topic list to unplanned and rejected topics."
-  :class 'forge--topics-filter-state-command :state '(unplanned rejected))
+  "Limit topic list to issues closed as unplanned."
+  :class 'forge--topics-filter-state-command
+  :state 'unplanned
+  :description "  unplanned"
+  :if (##eq (oref forge--buffer-topics-spec type) 'issue))
+
+(transient-define-suffix forge-topics-filter-state-outdated ()
+  "Limit topic list to discussions closed as outdated."
+  :class 'forge--topics-filter-state-command
+  :state 'outdated
+  :description "  outdated"
+  :if (##eq (oref forge--buffer-topics-spec type) 'discussion))
+
+(transient-define-suffix forge-topics-filter-state-duplicate ()
+  "Limit topic list to discussions and issues closed as duplicates."
+  :class 'forge--topics-filter-state-command
+  :state 'duplicate
+  :description "  duplicate"
+  :if (##memq (oref forge--buffer-topics-spec type) '(discussion issue)))
 
 ;;;; Status
 
@@ -513,6 +578,12 @@ then display the respective menu, otherwise display no menu."
   ((obj forge--topics-filter-command) &optional _slots)
   (unless (slot-boundp obj 'reader)
     (oset obj reader (intern (format "forge-read-topic-%s" (oref obj slot))))))
+
+(transient-define-suffix forge-topics-filter-category ()
+  "Read a category and limit discussions to that category."
+  :class 'forge--topics-filter-command
+  :slot 'category
+  :formatter (##propertize % 'face 'forge-topic-label))
 
 (transient-define-suffix forge-topics-filter-milestone ()
   "Read a milestone and limit topic list to topics with that milestone."
@@ -613,5 +684,10 @@ then display the respective menu, otherwise display no menu."
   (forge-refresh-buffer))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("partial" . "llama--left-apply-partially")
+;;   ("rpartial" . "llama--right-apply-partially"))
+;; End:
 (provide 'forge-topics)
 ;;; forge-topics.el ends here

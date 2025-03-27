@@ -229,10 +229,11 @@ adjusted as \"@@ -10,6 +10,7 @@\" and \"@@ -18,6 +19,7 @@\"."
       (magit-wip-commit-before-change files (concat " before " command)))
     (with-temp-buffer
       (insert patch)
-      (magit-run-git-with-input
-       "apply" args "-p0"
-       (and ignore-context "-C0")
-       "--ignore-space-change" "-"))
+      (let ((magit-inhibit-refresh t))
+        (magit-run-git-with-input
+         "apply" args "-p0"
+         (and ignore-context "-C0")
+         "--ignore-space-change" "-")))
     (unless magit-inhibit-refresh
       (when magit-wip-after-apply-mode
         (magit-wip-commit-after-apply files (concat " after " command)))
@@ -378,32 +379,32 @@ ignored) files."
                      "--" plain)
       (when magit-auto-revert-mode
         (mapc #'magit-turn-on-auto-revert-mode-if-desired plain)))
-    (dolist (repo repos)
-      (save-excursion
-        (goto-char (oref (magit-get-section
-                          `((file . ,repo) (untracked) (status)))
-                         start))
-        (when (and (fboundp 'borg-assimilate)
-                   (fboundp 'borg--maybe-absorb-gitdir)
-                   (fboundp 'borg--sort-submodule-sections))
-          (let* ((topdir (magit-toplevel))
-                 (url (let ((default-directory
-                             (file-name-as-directory (expand-file-name repo))))
-                        (or (magit-get "remote" (magit-get-some-remote) "url")
-                            (concat (file-name-as-directory ".") repo))))
-                 (package
-                  (and (equal borg-user-emacs-directory topdir)
-                       (file-name-nondirectory (directory-file-name repo)))))
-            (if (and package
-                     (y-or-n-p (format "Also assimilate `%s' drone?" package)))
-                (borg-assimilate package url)
-              (magit-submodule-add-1
-               url repo (magit-submodule-read-name-for-path repo package))
-              (when package
-                (borg--sort-submodule-sections
-                 (expand-file-name ".gitmodules" topdir))
-                (let ((default-directory borg-user-emacs-directory))
-                  (borg--maybe-absorb-gitdir package))))))))
+    (when (and (fboundp 'borg-assimilate)
+               (fboundp 'borg--maybe-absorb-gitdir)
+               (fboundp 'borg--sort-submodule-sections))
+      (dolist (repo repos)
+        (save-excursion
+          (when-let ((section (magit-get-section
+                               `((file . ,repo) (untracked) (status)))))
+            (goto-char (oref section start))
+            (let* ((topdir (magit-toplevel))
+                   (url (let ((default-directory
+                               (file-name-as-directory (expand-file-name repo))))
+                          (or (magit-get "remote" (magit-get-some-remote) "url")
+                              (concat (file-name-as-directory ".") repo))))
+                   (package
+                    (and (equal borg-user-emacs-directory topdir)
+                         (file-name-nondirectory (directory-file-name repo)))))
+              (if (and package
+                       (y-or-n-p (format "Also assimilate `%s' drone?" package)))
+                  (borg-assimilate package url)
+                (magit-submodule-add-1
+                 url repo (magit-submodule-read-name-for-path repo package))
+                (when package
+                  (borg--sort-submodule-sections
+                   (expand-file-name ".gitmodules" topdir))
+                  (let ((default-directory borg-user-emacs-directory))
+                    (borg--maybe-absorb-gitdir package)))))))))
     (magit-wip-commit-after-apply files " after stage")))
 
 (defvar magit-post-stage-hook-commands

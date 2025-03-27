@@ -74,6 +74,7 @@ Argument HEADER is a Gnus message header."
 (defface evenok-extra-hi-lock-7 nil nil)
 (defface evenok-extra-hi-lock-8 nil nil)
 
+(defface evenok-extra-hl-todo-done nil nil)
 (defface evenok-extra-hl-todo-fixme nil nil)
 (defface evenok-extra-hl-todo-info nil nil)
 (defface evenok-extra-hl-todo-pndg nil nil)
@@ -119,8 +120,9 @@ Argument HEADER is a Gnus message header."
           "evenok-extra-hi-lock-8"))
       '(hl-todo-keyword-faces
          (list
-           ;; apply `upcase' on lower-cased strings to avoid
+           ;; Apply `upcase' on lower-cased strings to avoid
            ;; highlighting by `hl-todo-mode'.
+           (cons (upcase "done")  'evenok-extra-hl-todo-done)
            (cons (upcase "fixme") 'evenok-extra-hl-todo-fixme)
            (cons (upcase "info")  'evenok-extra-hl-todo-info)
            (cons (upcase "pndg")  'evenok-extra-hl-todo-pndg)
@@ -129,7 +131,7 @@ Argument HEADER is a Gnus message header."
            (cons (upcase "xxx+")  'evenok-extra-hl-todo-xxx)))
       '(org-todo-keyword-faces
          (list
-           ;; apply `upcase' on lower-cased strings to avoid
+           ;; Apply `upcase' on lower-cased strings to avoid
            ;; highlighting by `hl-todo-mode'.
            (cons (upcase "info") 'evenok-extra-org-info)
            (cons (upcase "cncl") 'evenok-extra-org-cncl)
@@ -149,6 +151,7 @@ Argument HEADER is a Gnus message header."
       `(evenok-extra-hi-lock-6              ((t :background ,bright-blue :foreground ,black :weight bold)))
       `(evenok-extra-hi-lock-7              ((t :background ,bright-cyan :foreground ,black :weight bold)))
       `(evenok-extra-hi-lock-8              ((t :background ,bright-green :foreground ,black :weight bold)))
+      `(evenok-extra-hl-todo-done           ((t :foreground ,bright-green)))
       `(evenok-extra-hl-todo-fixme          ((t :foreground ,bright-red)))
       `(evenok-extra-hl-todo-info           ((t :foreground ,bright-green)))
       `(evenok-extra-hl-todo-pndg           ((t :foreground ,bright-orange)))

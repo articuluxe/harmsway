@@ -1,4 +1,4 @@
-;;; ghub-graphql.el --- Access Github API using GrapthQL  -*- lexical-binding:t -*-
+;;; ghub-graphql.el --- Access Github API using GraphQL  -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2016-2025 Jonas Bernoulli
 
@@ -21,6 +21,10 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; This library implements GraphQL queries for Github.
+
 ;;; Code:
 
 (require 'ghub)
@@ -29,9 +33,9 @@
 
 (eval-when-compile (require 'subr-x))
 
-;;; Api
-
 (define-error 'ghub-graphql-error "GraphQL Error" 'ghub-error)
+
+;;; Settings
 
 (defvar ghub-graphql-message-progress nil
   "Whether to show \"Fetching page N...\" in echo area during requests.
@@ -45,6 +49,8 @@ echo area as well.")
 
 Adjust this value if you're hitting query timeouts against larger
 repositories.")
+
+;;; Mutations
 
 (cl-defun ghub-graphql (graphql
                         &optional variables
@@ -71,25 +77,29 @@ behave as for `ghub-request' (which see)."
                 :callback callback :errorback errorback
                 :extra extra :value value))
 
+(cl-defun ghub--graphql (graphql
+                         &optional variables
+                         &key username auth host forge
+                         headers
+                         callback errorback)
+  "An experimental and unfinished replacement for `ghub-graphql'."
+  (let ((ghub-graphql-message-progress nil))
+    (ghub--graphql-vacuum graphql variables callback nil
+                          :username  username
+                          :auth      auth
+                          :host      host
+                          :forge     forge
+                          :headers   headers
+                          :errorback errorback)))
+
+;;; Queries
+
 (cl-defun ghub-graphql-rate-limit (&key username auth host)
   "Return rate limit information."
   (let-alist (ghub-graphql
               '(query (rateLimit limit cost remaining resetAt))
               nil :username username :auth auth :host host)
     .data.rateLimit))
-
-(cl-defun ghub--repository-id (owner name &key username auth host)
-  "Return the id of the repository specified by OWNER, NAME and HOST."
-  (let-alist (ghub-graphql
-              '(query (repository [(owner $owner String!)
-                                   (name  $name  String!)]
-                                  id))
-              `((owner . ,owner)
-                (name  . ,name))
-              :username username :auth auth :host host)
-    .data.repository.id))
-
-;;; Api (drafts)
 
 (defconst ghub-fetch-repository-sparse
   '(query
@@ -110,6 +120,7 @@ behave as for `ghub-request' (which see)."
      isLocked
      isMirror
      isPrivate
+     hasDiscussionsEnabled
      hasIssuesEnabled
      hasWikiEnabled
      (licenseInfo name)
@@ -124,6 +135,46 @@ behave as for `ghub-request' (which see)."
                       id
                       login
                       name)
+     (discussionCategories [(:edges t)]
+                            id
+                            name
+                            emoji
+                            isAnswerable
+                            description)
+     (discussions    [(:edges t)
+                      (:singular discussion number)
+                      (orderBy ((field UPDATED_AT) (direction DESC)))]
+                     id
+                     databaseId
+                     number
+                     url
+                     stateReason
+                     ;; Discussions lack isReadByViewer.
+                     (answer id)
+                     (author login)
+                     title
+                     createdAt
+                     updatedAt
+                     closedAt
+                     locked
+                     (category id)
+                     body
+                     (comments  [(:edges t)]
+                                id
+                                databaseId
+                                (author login)
+                                createdAt
+                                updatedAt
+                                body
+                                (replies [(:edges 20)]
+                                         id
+                                         databaseId
+                                         (author login)
+                                         createdAt
+                                         updatedAt
+                                         body))
+                     (labels    [(:edges t)]
+                                id))
      (issues         [(:edges t)
                       (:singular issue number)
                       (orderBy ((field UPDATED_AT) (direction DESC)))]
@@ -257,6 +308,27 @@ data as the only argument."
                         :paginate paginate
                         :errorback errorback))
 
+(cl-defun ghub-fetch-discussion ( owner name number callback
+                                  &optional until
+                                  &key username auth host forge
+                                  headers errorback)
+  "Asynchronously fetch forge data about the specified discussion.
+Once all data has been collected, CALLBACK is called with the
+data as the only argument."
+  (ghub--graphql-vacuum (ghub--graphql-prepare-query
+                         ghub-fetch-repository
+                         `(repository discussions (discussion . ,number)))
+                        `((owner . ,owner)
+                          (name  . ,name))
+                        callback until
+                        :narrow   '(repository discussion)
+                        :username username
+                        :auth     auth
+                        :host     host
+                        :forge    forge
+                        :headers  headers
+                        :errorback errorback))
+
 (cl-defun ghub-fetch-issue ( owner name number callback
                              &optional until
                              &key username auth host forge
@@ -324,9 +396,6 @@ data as the only argument."
                         :errorback errorback))
 
 ;;; Internal
-
-(defvar ghub--graphql-debug nil
-  "Whether `ghub--graphql-retrieve' updates the \" *gsexp-encode*\" buffer.")
 
 (cl-defstruct (ghub--graphql-req
                (:include ghub--req)
@@ -401,10 +470,13 @@ See Info node `(ghub)GraphQL Support'."
          (ghub--graphql-prepare-query
           (ghub--graphql-req-query req)
           lineage cursor)))
-  (when ghub--graphql-debug
+  (when ghub-debug
     (with-current-buffer (get-buffer-create " *gsexp-encode*")
       (erase-buffer)
-      (insert (ghub--graphql-req-query-str req))))
+      (insert (ghub--graphql-req-query-str req) "\n\n")
+      (let ((pos (point)))
+        (insert (ghub--encode-payload (ghub--graphql-req-variables req)) "\n")
+        (ignore-errors (json-pretty-print pos (point))))))
   (ghub--retrieve
    (let ((json-false nil))
      (ghub--encode-payload
@@ -468,11 +540,16 @@ See Info node `(ghub)GraphQL Support'."
                  (err     (plist-get status :error))
                  (errors  (cdr (assq 'errors payload)))
                  (errors  (and errors (cons 'ghub-graphql-error errors))))
-            (if (or err errors)
-                (ghub--graphql-handle-failure
-                 req (or err errors) headers status)
-              (ghub--graphql-walk-response req (assq 'data payload)))))
-      (when (buffer-live-p buf)
+            (cond ((or err errors)
+                   (when (and (not err) ghub-debug)
+                     ;; (pp-display-expression payload "*ghub-graphql error*")
+                     (ignore-errors (json-pretty-print (point) (point-max)))
+                     (pop-to-buffer buf))
+                   (ghub--graphql-handle-failure
+                    req (or err errors) headers status))
+                  ((ghub--graphql-walk-response req (assq 'data payload))))))
+      (when (and (buffer-live-p buf)
+                 (not (buffer-local-value 'ghub-debug buf)))
         (kill-buffer buf)))))
 
 (defun ghub--graphql-handle-failure (req errors headers status)
@@ -612,6 +689,17 @@ See Info node `(ghub)GraphQL Support'."
 
 (defun ghub--graphql-pp-response (data)
   (pp-display-expression data "*Pp Eval Output*"))
+
+(cl-defun ghub--repository-id (owner name &key username auth host)
+  "Return the id of the repository specified by OWNER, NAME and HOST."
+  (let-alist (ghub-graphql
+              '(query (repository [(owner $owner String!)
+                                   (name  $name  String!)]
+                                  id))
+              `((owner . ,owner)
+                (name  . ,name))
+              :username username :auth auth :host host)
+    .data.repository.id))
 
 ;;; _
 (provide 'ghub-graphql)

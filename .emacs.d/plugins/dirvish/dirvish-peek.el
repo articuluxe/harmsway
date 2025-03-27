@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.1.0
+;; Version: 2.2.7
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -44,12 +44,21 @@ all categories."
 (defun dirvish-peek--prepare-cand-fetcher ()
   "Set candidate fetcher according to current completion framework."
   (dirvish-prop :peek-fetcher
-    (cond (dirvish-peek-candidate-fetcher
-           dirvish-peek-candidate-fetcher)
+    (cond (dirvish-peek-candidate-fetcher dirvish-peek-candidate-fetcher)
           ((bound-and-true-p vertico-mode) #'vertico--candidate)
           ((bound-and-true-p ivy-mode) (lambda () (ivy-state-current ivy-last)))
           ((bound-and-true-p icomplete-mode)
            (lambda () (car completion-all-sorted-completions))))))
+
+(dirvish-define-preview peek-exception (file)
+  "Handle exceptions when peek files."
+  (cond ((string-prefix-p "LIB_EXCEPTION:::" file)
+         (pcase-let ((`(_ ,cand ,err) (split-string file ":::"))
+                     (fmt "Caught exception peeking [ %s ]\n    Error: %s"))
+           `(info . ,(format fmt cand err))))
+        ((string-prefix-p "FILE_REMOTE_EXCEPTION:::" file)
+         (pcase-let ((`(_ ,cand) (split-string file ":::")))
+           `(info . ,(format "Unable to peek remote file: [ %s ]" cand))))))
 
 (defun dirvish-peek-setup-h ()
   "Create dirvish minibuffer preview window.
@@ -62,46 +71,54 @@ one of categories in `dirvish-peek-categories'."
                   minibuffer-completion-predicate)))
          (category (completion-metadata-get meta 'category))
          (p-category (and (memq category dirvish-peek-categories) category))
-         new-dv)
+         (dv (dirvish--get-session 'curr-layout 'any))
+         (win (and dv (dv-preview-window dv))) new-dv)
     (dirvish-prop :peek-category p-category)
     (when p-category
       (dirvish-peek--prepare-cand-fetcher)
       (add-hook 'post-command-hook #'dirvish-peek-update-h 90 t)
       (add-hook 'minibuffer-exit-hook #'dirvish-peek-exit-h nil t)
-      (unless (and dirvish--this (dv-preview-window dirvish--this))
-        (setq new-dv (dirvish--new :type 'peek))
-        ;; `dirvish-image-dp' needs this.
-        (setf (dv-index new-dv) (cons default-directory (current-buffer)))
-        (setf (dv-preview-window new-dv)
-              (or (minibuffer-selected-window) (next-window)))))))
+      (setq new-dv (dirvish--new :type 'peek))
+      (dirvish--init-special-buffers new-dv)
+      ;; `dirvish-image-dp' needs this.
+      (setf (dv-index new-dv) (cons default-directory (current-buffer)))
+      (setf (dv-preview-window new-dv)
+            (or (and (window-live-p win) win)
+                (minibuffer-selected-window) (next-window)))
+      (cl-loop for (k v) on dirvish--scopes by 'cddr
+               do (dirvish-prop k (and (functionp v) (funcall v))))
+      (dirvish-prop :dv (dv-id new-dv))
+      (dirvish-prop :preview-dps
+        (append '(dirvish-peek-exception-dp) (dv-preview-dispatchers new-dv))))))
 
 (defun dirvish-peek-update-h ()
   "Hook for `post-command-hook' to update peek window."
   (when-let* ((category (dirvish-prop :peek-category))
               (cand-fetcher (dirvish-prop :peek-fetcher))
               (cand (funcall cand-fetcher))
-              ((not (string= cand (dirvish-prop :peek-last)))))
-    (dirvish-prop :peek-last cand)
+              (dv (dirvish-curr)))
     (pcase category
-      ('file (setq cand (expand-file-name cand)))
+      ('file
+       (let ((fname (expand-file-name cand)))
+         (if (file-remote-p fname)
+             (setq cand (format "FILE_REMOTE_EXCEPTION:::%s" fname))
+           (setq cand fname))))
       ('project-file
-       (setq cand (expand-file-name
-                   cand (or (dirvish--get-project-root)
-                            (car (minibuffer-history-value))))))
-      ('library (setq cand (file-truename
-                            (or (ignore-errors (find-library-name cand)) "")))))
+       (setq cand (expand-file-name cand (dirvish--vc-root-dir))))
+      ('library
+       (condition-case err
+           (setq cand (file-truename (find-library-name cand)))
+         (error (setq cand (format "LIB_EXCEPTION:::%s:::%s" cand
+                                   (error-message-string err)))))))
     (dirvish-prop :index cand)
-    (unless (file-remote-p cand)
-      (dirvish-debounce nil
-        (dirvish--preview-update dirvish--this cand)))))
+    (dirvish-run-with-delay cand
+      (lambda (action) (dirvish--preview-update dv action)))))
 
 (defun dirvish-peek-exit-h ()
   "Hook for `minibuffer-exit-hook' to destroy peek session."
-  (dolist (dv (hash-table-values dirvish--session-hash))
-    (when (eq (dv-type dv) 'peek)
-      (dirvish--clear-session dv)
-      (remhash (dv-name dv) dirvish--session-hash)))
-  (dirvish-prop :peek-last nil))
+  (when-let* ((dv (dirvish--get-session 'type 'peek)))
+    (dirvish--clear-session dv)
+    (remhash (dv-id dv) dirvish--sessions)))
 
 ;;;###autoload
 (define-minor-mode dirvish-peek-mode

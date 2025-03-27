@@ -77,6 +77,22 @@ VALIDATE-COMMAND and OTHER-PARAMS for `chatgpt-shell-openai-make-model'."
          ;; See https://openrouter.ai/qwen/qwq-32b-preview
          :other-params '((provider (quantizations . ["bf16"]))))
         (chatgpt-shell-openrouter-make-model
+         :version "openai/o3-mini-high"
+         :short-version "o3-mini-high"
+         :label "ChatGPT"
+         :token-width 3
+         ;; See https://openrouter.ai/openai/o3-mini-high
+         :context-window 200000
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
+        (chatgpt-shell-openrouter-make-model
+         :version "openai/o3-mini"
+         :short-version "o3-mini"
+         :label "ChatGPT"
+         :token-width 3
+         ;; See https://openrouter.ai/openai/o1-2024-12-17
+         :context-window 200000
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
+        (chatgpt-shell-openrouter-make-model
          :version "openai/o1"
          :short-version "o1"
          :label "ChatGPT"
@@ -89,8 +105,8 @@ VALIDATE-COMMAND and OTHER-PARAMS for `chatgpt-shell-openai-make-model'."
          :short-version "qwen-2.5-coder-32b"
          :label "Qwen"
          :token-width 16
-         ;; See
-         :context-window 32768
+         ;; See https://openrouter.ai/qwen/qwen-2.5-coder-32b-instruct
+         :context-window 33000
          ;; Multiple quantizations are offered for this model by different
          ;; providers so we restrict to one for consistency. Note that the sense
          ;; in which provider is used here means the providers available through
@@ -98,7 +114,14 @@ VALIDATE-COMMAND and OTHER-PARAMS for `chatgpt-shell-openai-make-model'."
          ;; argument.
          ;;
          ;; See https://openrouter.ai/qwen/qwen-2.5-coder-32b-instruct
-         :other-params '((provider (quantizations . ["bf16"]))))))
+         :other-params '((provider (quantizations . ["bf16"]))))
+        (chatgpt-shell-openrouter-make-model
+         :version "anthropic/claude-3.7-sonnet"
+         :short-version "claude-3.7-sonnet"
+         :label "Claude"
+         :token-width 4
+         ;; See https://openrouter.ai/anthropic/claude-3.7-sonnet
+         :context-window 200000)))
 
 (defcustom chatgpt-shell-openrouter-api-url-base "https://openrouter.ai/api"
   "OpenRouter API's base URL.

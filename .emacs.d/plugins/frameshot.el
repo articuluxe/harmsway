@@ -1,13 +1,13 @@
 ;;; frameshot.el --- Take screenshots of a frame  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2024 Jonas Bernoulli
+;; Copyright (C) 2018-2025 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.frameshot@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/tarsius/frameshot
 ;; Keywords: multimedia
 
-;; Package-Version: 1.0.0
-;; Package-Requires: ((emacs "26.1") (compat "30.0.0.0"))
+;; Package-Version: 1.0.1
+;; Package-Requires: ((emacs "26.1") (compat "30.0.2.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -181,7 +181,7 @@ configuration if any."
         (with-temp-file file
           (insert (x-export-frames (selected-frame) 'svg)))
         file)
-    (user-error "frameshot-export-frame-svg requires Emacs 28")))
+    (user-error "`frameshot-export-frame-svg' requires Emacs 28")))
 
 (defun frameshot-export-frame-png (file)
   "Use `x-export-frames' to take a png screenshot."
@@ -191,7 +191,7 @@ configuration if any."
         (with-temp-file file
           (insert (x-export-frames (selected-frame) 'png)))
         file)
-    (user-error "frameshot-export-frame-png requires Emacs 28")))
+    (user-error "`frameshot-export-frame-png' requires Emacs 28")))
 
 (defun frameshot-imagemagick-import (file)
   "Use Imagemagick's `import' executable to take a png screenshot."

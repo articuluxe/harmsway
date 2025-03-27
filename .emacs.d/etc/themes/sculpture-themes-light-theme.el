@@ -5,8 +5,8 @@
 ;; Author: Precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/sculpture-theme
 ;; Created: January 06, 2021
-;; Modified: February 16, 2025
-;; Version: 1.5.2
+;; Modified: March 03, 2025
+;; Version: 1.5.4
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -141,6 +141,7 @@
    `(italic                     ((,class (:slant italic))))
    `(underline                  ((,class (:underline t))))
    `(variable-pitch             ((,class (:height 1.0))))
+   `(variable-pitch-text        ((,class (:height 1.0 :inherit variable-pitch))))
    `(sculpture-themes-light-variable-pitch-italic      ((,class (:inherit variable-pitch :slant italic))))
    `(fringe                     ((,class (:background ,bg))))
    `(vertical-border            ((,class (:foreground ,bw11))))
@@ -166,8 +167,18 @@
    `(whitespace-tab       ((,class (:foreground ,ot00 :background ,ot06))))
    `(escape-glyph         ((,class (:foreground ,ot07))))
 
-   `(popup-tip-face           ((,class (:inherit (variable-pitch button) :foreground ,ot05))))
    `(highlight-numbers-number ((,class (:foreground ,ot18))))
+   `(highlight-quoted-symbol  ((,class (:foreground ,ot12))))
+   `(highlight-quoted-quote   ((,class (:foreground ,ot01))))
+
+   `(apropos-symbol ((,class (:height 1.2 :foreground ,ot05))))
+
+   `(custom-button         ((,class (:foreground ,fg :background ,bw02 :box (:line-width 2 :color ,bw08 :style released-button)))))
+   `(custom-button-pressed ((,class (:foreground ,fg :background ,bw02 :box (:line-width 2 :color ,bw08 :style pressed-button)))))
+;;;;;; popup
+   `(popup-face               ((,class (:inherit (button) :foreground ,ot05))))
+   `(popup-menu-face          ((,class (:inherit (popup-face)))))
+   `(popup-tip-face           ((,class (:inherit (popup-face variable-pitch)))))
 
 ;;;;;; font-lock
    `(font-lock-builtin-face              ((,class (:foreground ,ot05 :weight bold))))
@@ -424,7 +435,7 @@
    `(org-mode-line-clock           ((,class (:foreground ,ha00))))
    `(org-mode-line-clock-overrun   ((,class (:foreground ,ha00))))
    `(org-priority                  ((,class (:foreground ,ha00))))
-   `(org-property-value            ((,class (:foreground ,ot20 :inherit fixed-pitch))))
+   `(org-property-value            ((,class (:foreground ,ot19 :inherit fixed-pitch))))
    `(org-scheduled                 ((,class (:foreground ,ha00))))
    `(org-scheduled-previously      ((,class (:foreground ,ha00))))
    `(org-scheduled-today           ((,class (:foreground ,ha00))))
@@ -695,7 +706,75 @@
    `(rjsx-tag-bracket-face ((,class :inherit font-lock-keyword-face)))
 
 ;;;;;; pulsar
-   `(pulsar-generic ((:inherit highlight)))))
+   `(pulsar-generic ((:inherit highlight)))
+
+;;;;;; corfu
+   ;; `(corfu-deprecated ((,class (:background ,bw02))))
+   ;; `(corfu-annotations ((,class (:background ,bw02))))
+   `(corfu-bar ((,class (:background ,fg))))
+   `(corfu-border ((,class (:background ,ot04))))
+   `(corfu-current ((,class (:inherit region))))
+   `(corfu-default ((,class (:background ,bg :foreground ,fg))))
+   `(corfu-popupinfo ((,class (:inherit corfu-default))))
+   `(corfu-candidate-overlay-face ((,class (:inherit bold :background ,cs01 :foreground ,bg))))
+   `(corfu-candidate-overlay-face-exact-match ((,class (:inherit (bold underline) :background ,cs01 :foreground ,bg))))
+
+;;;;;; evil-goggles
+   `(evil-goggles-join-face                  ((,class (:background ,ot30))))
+   `(evil-goggles-yank-face                  ((,class (:background ,ot31))))
+   `(evil-goggles-paste-face                 ((,class (:background ,ot32))))
+   `(evil-goggles-change-face                ((,class (:background ,ot30))))
+   `(evil-goggles-delete-face                ((,class (:background ,ot29))))
+   `(evil-goggles-surround-face              ((,class (:background ,ot30))))
+   `(evil-goggles-commentary-face            ((,class (:background ,ot33))))
+   `(evil-goggles-nerd-commenter-face        ((,class (:inherit evil-goggles-commentary-face))))
+
+;;;;;; vundo
+   `(vundo-node        ((,class (:foreground ,ot05))))
+   `(vundo-stem        ((,class (:foreground ,ot05))))
+   `(vundo-saved       ((,class (:foreground ,ot04))))
+   `(vundo-default     ((,class (:foreground ,fg))))
+   `(vundo-highlight   ((,class (:foreground ,cs02))))
+   `(vundo-last-saved  ((,class (:foreground ,ot01))))
+   `(vundo-branch-stem ((,class (:foreground ,ot08))))
+
+;;;;;; eldoc-box
+   `(eldoc-box-border ((,class (:background ,ot05))))
+   `(eldoc-box-body   ((,class (:background ,ot27))))
+
+;;;;;; tuareg (OCaml)
+   `(tuareg-opam-error-face                      ((,class (:inherit error :background ,ot22))))
+   `(tuareg-font-lock-error-face                 ((,class (:inherit error))))
+   `(tuareg-font-lock-operator-face              ((,class (:inherit font-lock-operator-face))))
+   `(tuareg-font-lock-governing-face             ((,class (:inherit font-lock-builtin-face))))
+   `(tuareg-font-lock-multistage-face            ((,class (:inherit font-lock-misc-punctuation-face))))
+   `(tuareg-font-double-semicolon-face           ((,class (:inherit font-lock-number-face))))
+   `(tuareg-font-lock-constructor-face           ((,class (:inherit font-lock-punctuation-face))))
+   `(tuareg-font-lock-line-number-face           ((,class (:inherit line-number))))
+   `(tuareg-font-lock-doc-verbatim-face          ((,class (:inherit font-lock-property-use-face))))
+   `(tuareg-font-lock-interactive-output-face    ((,class (:background ,ot26 :inherit font-lock-doc-face))))
+   `(tuareg-font-lock-extension-node-face        ((,class (:inherit tuareg-font-lock-infix-extension-node-face))))
+   `(tuareg-font-lock-interactive-directive-face ((,class (:background ,ot26 :inherit font-lock-doc-face))))
+
+;;;;;; caml
+   `(caml-types-def-face   ((,class (:background ,ot13 :inherit font-lock-function-name-face))))
+   `(caml-types-occ-face   ((,class (:background ,ot13 :inherit font-lock-builtin-face))))
+   `(caml-types-expr-face  ((,class (:background ,ot13 :inherit font-lock-keyword-face))))
+   `(caml-types-scope-face ((,class (:background ,ot13 :inherit font-lock-property-use-face))))
+   `(caml-types-typed-face ((,class (:background ,ot13 :inherit font-lock-type-face))))
+
+;;;;;; merlin
+   `(merlin-type-face ((,class (:inherit font-lock-type-face))))
+   `(merlin-compilation-error-face ((,class (:inherit error))))
+   `(merlin-compilation-warning-face ((,class (:inherit font-lock-warning-face))))
+
+;;;;;; breadcrumb
+   `(breadcrumb-face                ((,class (:foreground ,cs01 :inherit variable-pitch :height 0.9))))
+   `(breadcrumb-imenu-leaf-face     ((,class (:background ,ot06 :foreground ,ot05 :inherit variable-pitch))))
+   `(breadcrumb-imenu-crumbs-face   ((,class (:background ,ot06 :foreground ,ot04 :inherit variable-pitch))))
+   `(breadcrumb-project-base-face   ((,class (:background ,ot06 :foreground ,ot02 :inherit variable-pitch))))
+   `(breadcrumb-project-leaf-face   ((,class (:background ,ot06 :foreground ,ot05 :inherit variable-pitch))))
+   `(breadcrumb-project-crumbs-face ((,class (:background ,ot06 :foreground ,ot04 :inherit variable-pitch))))))
 
 (provide-theme 'sculpture-themes-light)
 

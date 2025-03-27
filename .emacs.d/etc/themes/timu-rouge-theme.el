@@ -334,7 +334,7 @@ Sourced other themes to get information about font faces for packages.")
    `(match ((,class (:foreground ,green :background ,rouge0 :weight bold))))
    `(minibuffer-prompt ((,class (:foreground ,red))))
    `(nobreak-space ((,class (:background ,bg :foreground ,fg))))
-   `(region ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
+   `(region ((,class (:background ,grey :foreground unspecified :distant-foreground ,bg :extend t))))
    `(secondary-selection ((,class (:background ,grey :extend t))))
    `(shadow ((,class (:foreground ,rouge5))))
    `(success ((,class (:foreground ,green))))
@@ -517,15 +517,15 @@ Sourced other themes to get information about font faces for packages.")
    `(cfw:face-disable ((,class (:foreground ,grey))))
    `(cfw:face-grid ((,class (:foreground ,bg))))
    `(cfw:face-header ((,class (:foreground ,blue :weight bold))))
-   `(cfw:face-holiday ((,class (:foreground nil :background ,bg-other :weight bold))))
+   `(cfw:face-holiday ((,class (:foreground unspecified :background ,bg-other :weight bold))))
    `(cfw:face-periods ((,class (:foreground ,yellow))))
    `(cfw:face-saturday ((,class (:foreground ,red :weight bold))))
    `(cfw:face-select ((,class (:background ,grey))))
    `(cfw:face-sunday ((,class (:foreground ,red :weight bold))))
    `(cfw:face-title ((,class (:foreground ,blue :weight bold :height 2.0))))
-   `(cfw:face-today ((,class (:foreground nil :background nil :weight bold))))
+   `(cfw:face-today ((,class (:foreground unspecified :background unspecified :weight bold))))
    `(cfw:face-today-title ((,class (:foreground ,bg :background ,blue :weight bold))))
-   `(cfw:face-toolbar ((,class (:foreground nil :background nil))))
+   `(cfw:face-toolbar ((,class (:foreground unspecified :background unspecified))))
    `(cfw:face-toolbar-button-off ((,class (:foreground ,rouge6 :weight bold))))
    `(cfw:face-toolbar-button-on ((,class (:foreground ,blue :weight bold))))
 
@@ -614,14 +614,14 @@ Sourced other themes to get information about font faces for packages.")
    `(custom-invalid ((,class (:foreground ,red))))
    `(custom-link ((,class (:foreground ,darkred :underline t))))
    `(custom-modified ((,class (:foreground ,blue))))
-   `(custom-rogue ((,class (:foreground ,blue :box (:line-width 3 :style none)))))
+   `(custom-rogue ((,class (:foreground ,blue :box (:line-width 3)))))
    `(custom-saved ((,class (:foreground ,green :weight bold))))
    `(custom-set ((,class (:foreground ,yellow :background ,bg))))
    `(custom-state ((,class (:foreground ,green))))
    `(custom-themed ((,class (:foreground ,yellow :background ,bg))))
    `(custom-variable-button ((,class (:foreground ,green :underline t))))
    `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
-   `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
+   `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend unspecified))))
    `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
 
 ;;;; diff
@@ -738,7 +738,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; doom-modeline
    `(doom-modeline-bar ((,class (:foreground ,magenta))))
-   `(doom-modeline-bar-inactive ((,class (:background nil))))
+   `(doom-modeline-bar-inactive ((,class (:background unspecified))))
    `(doom-modeline-buffer-major-mode ((,class (:foreground ,magenta))))
    `(doom-modeline-buffer-path ((,class (:foreground ,magenta))))
    `(doom-modeline-eldoc-bar ((,class (:background ,green))))
@@ -844,13 +844,13 @@ Sourced other themes to get information about font faces for packages.")
    `(evil-search-highlight-persist-highlight-face ((,class (:background ,darkblue  :foreground ,rouge8 :distant-foreground ,rouge0 :weight bold))))
 
 ;;;; evil-googles
-   `(evil-goggles-default-face ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
+   `(evil-goggles-default-face ((,class (:background ,grey :foreground unspecified :distant-foreground ,bg :extend t))))
 
 ;;;; evil-mc
    `(evil-mc-cursor-bar-face ((,class (:height 1 :background ,purple :foreground ,rouge0))))
-   `(evil-mc-cursor-default-face ((,class (:background ,purple :foreground ,rouge0 :inverse-video nil))))
+   `(evil-mc-cursor-default-face ((,class (:background ,purple :foreground ,rouge0 :inverse-video unspecified))))
    `(evil-mc-cursor-hbar-face ((,class (:underline (:color ,orange)))))
-   `(evil-mc-region-face ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
+   `(evil-mc-region-face ((,class (:background ,grey :foreground unspecified :distant-foreground ,bg :extend t))))
 
 ;;;; evil-snipe
    `(evil-snipe-first-match-face ((,class (:foreground ,red :background ,darkblue :weight bold))))
@@ -862,7 +862,7 @@ Sourced other themes to get information about font faces for packages.")
    `(expenses-face-message ((,class (:foreground ,orange :weight bold))))
 
 ;;;; flx-ido
-   `(flx-highlight-face ((,class (:weight bold :foreground ,yellow :underline nil))))
+   `(flx-highlight-face ((,class (:weight bold :foreground ,yellow :underline unspecified))))
 
 ;;;; flycheck
    `(flycheck-error ((,class (:underline (:style wave :color ,red)))))
@@ -890,7 +890,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; forge
    `(forge-topic-closed ((,class (:foreground ,rouge5 :strike-through t))))
-   `(forge-topic-label ((,class (:box nil))))
+   `(forge-topic-label ((,class (:box unspecified))))
 
 ;;;; git-commit
    `(git-commit-comment-branch-local ((,class (:foreground ,purple))))
@@ -978,7 +978,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; goggles
    `(goggles-added ((,class (:background ,green))))
-   `(goggles-changed ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
+   `(goggles-changed ((,class (:background ,grey :foreground unspecified :distant-foreground ,bg :extend t))))
    `(goggles-removed ((,class (:background ,red :extend t))))
 
 ;;;; header-line
@@ -1046,7 +1046,7 @@ Sourced other themes to get information about font faces for packages.")
    `(hl-todo ((,class (:foreground ,red :weight bold))))
 
 ;;;; hlinum
-   `(linum-highlight-face ((,class (:foreground ,fg :distant-foreground nil :weight normal))))
+   `(linum-highlight-face ((,class (:foreground ,fg :distant-foreground unspecified :weight normal))))
 
 ;;;; hydra
    `(hydra-face-amaranth ((,class (:foreground ,purple :weight bold))))
@@ -1064,7 +1064,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; iedit
    `(iedit-occurrence ((,class (:foreground ,purple :weight bold :inverse-video t))))
-   `(iedit-read-only-occurrence ((,class (:background ,grey :foreground nil :distant-foreground ,bg :extend t))))
+   `(iedit-read-only-occurrence ((,class (:background ,grey :foreground unspecified :distant-foreground ,bg :extend t))))
 
 
 ;;;; imenu-list
@@ -1084,10 +1084,10 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; ivy
    `(ivy-confirm-face ((,class (:foreground ,green))))
-   `(ivy-current-match ((,class (:background ,grey :distant-foreground nil :extend t))))
+   `(ivy-current-match ((,class (:background ,grey :distant-foreground unspecified :extend t))))
    `(ivy-highlight-face ((,class (:foreground ,magenta))))
    `(ivy-match-required-face ((,class (:foreground ,red))))
-   `(ivy-minibuffer-match-face-1 ((,class (:background nil :foreground ,orange :weight bold :underline t))))
+   `(ivy-minibuffer-match-face-1 ((,class (:background unspecified :foreground ,orange :weight bold :underline t))))
    `(ivy-minibuffer-match-face-2 ((,class (:foreground ,purple :background ,rouge1 :weight semi-bold))))
    `(ivy-minibuffer-match-face-3 ((,class (:foreground ,green :weight semi-bold))))
    `(ivy-minibuffer-match-face-4 ((,class (:foreground ,yellow :weight semi-bold))))
@@ -1298,7 +1298,7 @@ Sourced other themes to get information about font faces for packages.")
    `(mmm-code-submode-face ((,class (:background ,bg-other))))
    `(mmm-comment-submode-face ((,class (:background ,blue))))
    `(mmm-declaration-submode-face ((,class (:background ,cyan))))
-   `(mmm-default-submode-face ((,class (:background nil))))
+   `(mmm-default-submode-face ((,class (:background unspecified))))
    `(mmm-init-submode-face ((,class (:background ,red))))
    `(mmm-output-submode-face ((,class (:background ,magenta))))
    `(mmm-special-submode-face ((,class (:background ,green))))
@@ -1345,9 +1345,9 @@ Sourced other themes to get information about font faces for packages.")
    `(mu4e-column-faces-to-from ((,class (:foreground ,red))))
 
 ;;;; mu4e-thread-folding
-   `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline nil))))
-   `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
-   `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+   `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline unspecified))))
+   `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline unspecified :underline unspecified))))
+   `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline unspecified :underline unspecified))))
 
 ;;;; multiple cursors
    `(mc/cursor-face ((,class (:background ,darkred))))
@@ -1390,7 +1390,7 @@ Sourced other themes to get information about font faces for packages.")
    `(nlinum-relative-current-face ((,class (:background ,rouge2 :foreground ,fg))))
 
 ;;;; notmuch
-   `(notmuch-message-summary-face ((,class (:foreground ,grey :background nil))))
+   `(notmuch-message-summary-face ((,class (:foreground ,grey :background unspecified))))
    `(notmuch-search-count ((,class (:foreground ,rouge5))))
    `(notmuch-search-date ((,class (:foreground ,orange))))
    `(notmuch-search-flagged-face ((,class (:foreground ,red))))
@@ -1607,7 +1607,7 @@ Sourced other themes to get information about font faces for packages.")
    `(rst-level-6 ((,class (:foreground ,magenta :weight bold))))
 
 ;;;; selectrum
-   `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground nil :extend t))))
+   `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground unspecified :extend t))))
 
 ;;;; sh-script
    `(sh-heredoc ((,class (:foreground ,orange))))
@@ -1871,7 +1871,7 @@ Sourced other themes to get information about font faces for packages.")
    `(widget-button ((,class (:foreground ,fg :weight bold))))
    `(widget-button-pressed ((,class (:foreground ,red))))
    `(widget-documentation ((,class (:foreground ,green))))
-   `(widget-field ((,class (:foreground ,fg :background ,rouge0 :extend nil))))
+   `(widget-field ((,class (:foreground ,fg :background ,rouge0 :extend unspecified))))
    `(widget-inactive ((,class (:foreground ,grey :background ,bg-other))))
    `(widget-single-line-field ((,class (:foreground ,fg :background ,rouge0))))
 

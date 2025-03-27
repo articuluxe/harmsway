@@ -1,9 +1,9 @@
 ;;; carp-theme.el --- Carp theme -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024 David Goudou
+;; Copyright (C) 2025 David Goudou
 
 ;; Author: David Goudou <david.goudou@gmail.com>
-;; Version: 0.0.3
+;; Version: 0.0.4
 ;; Package-Requires: ((emacs "29.1"))
 ;; Homepage: https://codeberg.org/seahorse/carp-theme
 
@@ -29,12 +29,12 @@
 
 (deftheme carp "Carp theme.")
 
-(let* ((fg "#d6deeb")
-       (bg "#1b191b")
+(let* ((fg "#e5c49e")
+       (bg "#061923")
        (shadow "#958b81")
-       (region "#363B5e")
-       (cursor "#b05080")
-       (hl-line "#476f6c")
+       (region "#2d434e")
+       (cursor "#a086ca")
+       (hl-line "#0e2b3a")
        (blue-0 "#78b0d3")
        (blue-1 "#6172c6")
        (green-0 "#97ef9f")
@@ -46,11 +46,10 @@
        (orange-0 "#f9c686")
        (orange-1 "#d8893a")
        (purple-0 "#aa89d6")
-       (pink-0 "#db538e")
+       (pink-0 "#e890b6")
        (red-0 "#d14051")
        (red-1 "#f44649")
-       (red-2 "#ad034d")
-       (red-3 "#bf466c")
+       (red-2 "#bf466c")
        (yellow-0 "#fcfa6c"))
 
   (custom-theme-set-faces
@@ -71,7 +70,7 @@
    `(diredp-no-priv ((t (:foreground ,fg :background ,bg))))
    `(diredp-rare-priv ((t (:foreground ,red-0 :background ,bg))))
    `(diredp-read-priv ((t (:foreground ,fg :background ,bg))))
-   `(diredp-symlink ((t (:foreground ,red-3))))
+   `(diredp-symlink ((t (:foreground ,red-2))))
    `(diredp-write-priv ((t (:foreground ,fg :background ,bg))))
    `(font-lock-builtin-face ((t (:foreground ,blue-1))))
    `(font-lock-comment-face ((t (:foreground ,grey-0 :slant italic))))
@@ -89,10 +88,10 @@
    `(fringe ((t (:foreground ,fg :background ,bg))))
    `(parenthesis ((t (:foreground ,grey-2))))
    `(header-line ((t (:foreground ,fg))))
-   `(highlight ((t (:foreground ,red-1))))
+   `(highlight ((t (:foreground ,pink-0))))
    `(highlight-indentation-face ((t (:background ,grey-1))))
    `(highlight-indentation-current-column-face ((t (:background ,grey-1))))
-   `(hl-line ((t (:foreground ,hl-line))))
+   `(hl-line ((t (:background ,hl-line))))
    `(isearch ((t (:foreground ,fg :background ,red-1))))
    `(isearch-fail ((t (:background ,red-1))))
    `(lazy-highlight ((t (:foreground ,red-1 :background unspecified))))
@@ -118,7 +117,7 @@
    `(org-link ((t (:foreground ,blue-0))))
    `(org-meta-line ((t (:foreground ,grey-0))))
    `(org-special-keyword ((t (:foreground ,purple-0))))
-   `(org-todo ((t (:foreground ,red-3))))
+   `(org-todo ((t (:foreground ,red-2))))
    `(region ((t (:foreground unspecified :background ,region))))
    `(trailing-whitespace ((t (:background ,red-1))))
    `(vertical-border ((t (:foreground ,shadow :background ,shadow))))

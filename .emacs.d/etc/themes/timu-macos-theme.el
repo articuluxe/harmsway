@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 2023-01-03
 ;; Keywords: faces themes
-;; Version: 1.5
+;; Version: 1.6
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-macos-theme
 
@@ -115,9 +115,9 @@
 ;;     By default the color contrast is set to `normal'.
 ;;     To set the desired contrast add one of the following to your
 ;;     `~/.emacs.d/init.el' or `~/.emacs':
-;;       (customize-set-variable 'timu-macos-colors-contrast 'normal)
-;;       (customize-set-variable 'timu-macos-colors-contrast 'muted)
-;;       (customize-set-variable 'timu-macos-colors-contrast 'contrasted)
+;;       (customize-set-variable 'timu-macos-color-contrast 'normal)
+;;       (customize-set-variable 'timu-macos-color-contrast 'muted)
+;;       (customize-set-variable 'timu-macos-color-contrast 'contrasted)
 ;;
 ;;   E. Border for the `mode-line'
 ;;     You can set a variable to set the border type for the `mode-line'.
@@ -341,7 +341,7 @@ BACKGROUND-COLOR changes the `background' color."
   (if (eq t timu-macos-org-intense-colors)
       (list :overline overline-color :background background-color)))
 
-(defcustom timu-macos-colors-contrast 'normal
+(defcustom timu-macos-color-contrast 'normal
   "Variable to set the contrast of the colors for the theme."
   :type '(choice (const :tag "Default colors" normal)
                  (const :tag "Muted colors" muted)
@@ -414,19 +414,19 @@ Customize `timu-macos-org-intense-colors' the to achieve this."
 ;;;###autoload
 (defun timu-macos-toggle-color-contrast ()
   "Toggle between muted, contrasted and normal colors.
-Customize `timu-macos-colors-contrast' the to achieve this."
+Customize `timu-macos-color-contrast' the to achieve this."
   (interactive)
   (let ((contrast (completing-read "Chose the contrast level: "
                                    '(normal muted contrasted))))
     (pcase contrast
       ("normal"
-       (setq timu-macos-colors-contrast 'normal)
+       (setq timu-macos-color-contrast 'normal)
        (load-theme (car custom-enabled-themes) t))
       ("muted"
-       (setq timu-macos-colors-contrast 'muted)
+       (setq timu-macos-color-contrast 'muted)
        (load-theme (car custom-enabled-themes) t))
       ("contrasted"
-       (setq timu-macos-colors-contrast 'contrasted)
+       (setq timu-macos-color-contrast 'contrasted)
        (load-theme (car custom-enabled-themes) t)))))
 
 ;;;###autoload
@@ -457,38 +457,38 @@ Sourced other themes to get information about font faces for packages.")
 ;;; DARK FLAVOUR
 (when (equal timu-macos-flavour "dark")
   (let ((class '((class color) (min-colors 89)))
-        (bg        (pcase timu-macos-colors-contrast ('muted "#222327") ('contrasted "#0e0e0e") ('normal "#222327")))
-        (bg-org    (pcase timu-macos-colors-contrast ('muted "#202125") ('contrasted "#090909") ('normal "#202125")))
-        (bg-other  (pcase timu-macos-colors-contrast ('muted "#2a2a2a") ('contrasted "#111111") ('normal "#2a2a2a")))
-        (macos0    (pcase timu-macos-colors-contrast ('muted "#2c2c2c") ('contrasted "#121212") ('normal "#2c2c2c")))
-        (macos1    (pcase timu-macos-colors-contrast ('muted "#393939") ('contrasted "#171717") ('normal "#393939")))
-        (macos2    (pcase timu-macos-colors-contrast ('muted "#616161") ('contrasted "#616161") ('normal "#616161")))
-        (macos3    (pcase timu-macos-colors-contrast ('muted "#5e5e5e") ('contrasted "#5e5e5e") ('normal "#5e5e5e")))
-        (macos4    (pcase timu-macos-colors-contrast ('muted "#8c8c8c") ('contrasted "#8c8c8c") ('normal "#8c8c8c")))
-        (macos5    (pcase timu-macos-colors-contrast ('muted "#b3b3b3") ('contrasted "#b3b3b3") ('normal "#b3b3b3")))
-        (macos6    (pcase timu-macos-colors-contrast ('muted "#b3b3b3") ('contrasted "#b3b3b3") ('normal "#b3b3b3")))
-        (macos7    (pcase timu-macos-colors-contrast ('muted "#e8e8e8") ('contrasted "#e8e8e8") ('normal "#e8e8e8")))
-        (macos8    (pcase timu-macos-colors-contrast ('muted "#f4f4f4") ('contrasted "#f4f4f4") ('normal "#f4f4f4")))
-        (fg        (pcase timu-macos-colors-contrast ('muted "#ffffff") ('contrasted "#ffffff") ('normal "#ffffff")))
-        (fg-other  (pcase timu-macos-colors-contrast ('muted "#dedede") ('contrasted "#dedede") ('normal "#dedede")))
+        (bg        (pcase timu-macos-color-contrast ('muted "#222327") ('contrasted "#0e0e0e") ('normal "#222327")))
+        (bg-org    (pcase timu-macos-color-contrast ('muted "#202125") ('contrasted "#090909") ('normal "#202125")))
+        (bg-other  (pcase timu-macos-color-contrast ('muted "#2a2a2a") ('contrasted "#111111") ('normal "#2a2a2a")))
+        (macos0    (pcase timu-macos-color-contrast ('muted "#2c2c2c") ('contrasted "#121212") ('normal "#2c2c2c")))
+        (macos1    (pcase timu-macos-color-contrast ('muted "#393939") ('contrasted "#171717") ('normal "#393939")))
+        (macos2    (pcase timu-macos-color-contrast ('muted "#616161") ('contrasted "#616161") ('normal "#616161")))
+        (macos3    (pcase timu-macos-color-contrast ('muted "#5e5e5e") ('contrasted "#5e5e5e") ('normal "#5e5e5e")))
+        (macos4    (pcase timu-macos-color-contrast ('muted "#8c8c8c") ('contrasted "#8c8c8c") ('normal "#8c8c8c")))
+        (macos5    (pcase timu-macos-color-contrast ('muted "#b3b3b3") ('contrasted "#b3b3b3") ('normal "#b3b3b3")))
+        (macos6    (pcase timu-macos-color-contrast ('muted "#b3b3b3") ('contrasted "#b3b3b3") ('normal "#b3b3b3")))
+        (macos7    (pcase timu-macos-color-contrast ('muted "#e8e8e8") ('contrasted "#e8e8e8") ('normal "#e8e8e8")))
+        (macos8    (pcase timu-macos-color-contrast ('muted "#f4f4f4") ('contrasted "#f4f4f4") ('normal "#f4f4f4")))
+        (fg        (pcase timu-macos-color-contrast ('muted "#ffffff") ('contrasted "#ffffff") ('normal "#ffffff")))
+        (fg-other  (pcase timu-macos-color-contrast ('muted "#dedede") ('contrasted "#dedede") ('normal "#dedede")))
 
-        (grey      (pcase timu-macos-colors-contrast ('muted "#d2d2d2") ('contrasted "#8c8c8c") ('normal "#8c8c8c")))
-        (red       (pcase timu-macos-colors-contrast ('muted "#ffa596") ('contrasted "#ff5258") ('normal "#ff6e65")))
-        (darkred   (pcase timu-macos-colors-contrast ('muted "#ff8478") ('contrasted "#cc5850") ('normal "#cc5850")))
-        (orange    (pcase timu-macos-colors-contrast ('muted "#ffd760") ('contrasted "#f7821b") ('normal "#ffb352")))
-        (green     (pcase timu-macos-colors-contrast ('muted "#9fffac") ('contrasted "#62ba47") ('normal "#6adf73")))
-        (blue      (pcase timu-macos-colors-contrast ('muted "#75ecff") ('contrasted "#007aff") ('normal "#4e9dff")))
-        (magenta   (pcase timu-macos-colors-contrast ('muted "#ffb8ff") ('contrasted "#f84f9e") ('normal "#e45c9c")))
-        (teal      (pcase timu-macos-colors-contrast ('muted "#d7ffff") ('contrasted "#91f3e7") ('normal "#91f3e7")))
-        (yellow    (pcase timu-macos-colors-contrast ('muted "#ffff82") ('contrasted "#ffc600") ('normal "#ffde58")))
-        (darkblue  (pcase timu-macos-colors-contrast ('muted "#7abeff") ('contrasted "#009dff") ('normal "#009dff")))
-        (purple    (pcase timu-macos-colors-contrast ('muted "#e19ae9") ('contrasted "#a550a6") ('normal "#cd7bf6")))
-        (cyan      (pcase timu-macos-colors-contrast ('muted "#00ffff") ('contrasted "#00d1e9") ('normal "#00d1e9")))
-        (lightcyan (pcase timu-macos-colors-contrast ('muted "#ceffff") ('contrasted "#88c0d0") ('normal "#88c0d0")))
-        (darkcyan  (pcase timu-macos-colors-contrast ('muted "#98ddeb") ('contrasted "#5297a5") ('normal "#5297a5")))
+        (grey      (pcase timu-macos-color-contrast ('muted "#d2d2d2") ('contrasted "#8c8c8c") ('normal "#8c8c8c")))
+        (red       (pcase timu-macos-color-contrast ('muted "#ffa596") ('contrasted "#ff5258") ('normal "#ff6e65")))
+        (darkred   (pcase timu-macos-color-contrast ('muted "#ff8478") ('contrasted "#cc5850") ('normal "#cc5850")))
+        (orange    (pcase timu-macos-color-contrast ('muted "#ffd760") ('contrasted "#f7821b") ('normal "#ffb352")))
+        (green     (pcase timu-macos-color-contrast ('muted "#9fffac") ('contrasted "#62ba47") ('normal "#6adf73")))
+        (blue      (pcase timu-macos-color-contrast ('muted "#75ecff") ('contrasted "#007aff") ('normal "#4e9dff")))
+        (magenta   (pcase timu-macos-color-contrast ('muted "#ffb8ff") ('contrasted "#f84f9e") ('normal "#e45c9c")))
+        (teal      (pcase timu-macos-color-contrast ('muted "#d7ffff") ('contrasted "#91f3e7") ('normal "#91f3e7")))
+        (yellow    (pcase timu-macos-color-contrast ('muted "#ffff82") ('contrasted "#ffc600") ('normal "#ffde58")))
+        (darkblue  (pcase timu-macos-color-contrast ('muted "#7abeff") ('contrasted "#009dff") ('normal "#009dff")))
+        (purple    (pcase timu-macos-color-contrast ('muted "#e19ae9") ('contrasted "#a550a6") ('normal "#cd7bf6")))
+        (cyan      (pcase timu-macos-color-contrast ('muted "#00ffff") ('contrasted "#00d1e9") ('normal "#00d1e9")))
+        (lightcyan (pcase timu-macos-color-contrast ('muted "#ceffff") ('contrasted "#88c0d0") ('normal "#88c0d0")))
+        (darkcyan  (pcase timu-macos-color-contrast ('muted "#98ddeb") ('contrasted "#5297a5") ('normal "#5297a5")))
 
-        (black     (pcase timu-macos-colors-contrast ('muted "#000000") ('contrasted "#000000") ('normal "#000000")))
-        (white     (pcase timu-macos-colors-contrast ('muted "#ffffff") ('contrasted "#ffffff") ('normal "#ffffff"))))
+        (black     (pcase timu-macos-color-contrast ('muted "#000000") ('contrasted "#000000") ('normal "#000000")))
+        (white     (pcase timu-macos-color-contrast ('muted "#ffffff") ('contrasted "#ffffff") ('normal "#ffffff"))))
 
     (custom-theme-set-faces
      'timu-macos
@@ -543,7 +543,7 @@ Sourced other themes to get information about font faces for packages.")
      `(warning ((,class (:foreground ,yellow))))
 
 ;;;; font-lock - dark
-     `(font-lock-builtin-face ((,class (:foreground ,blue))))
+     `(font-lock-builtin-face ((,class (:foreground ,lightcyan))))
      `(font-lock-comment-delimiter-face ((,class (:foreground ,macos4))))
      `(font-lock-comment-face ((,class (:foreground ,macos4 :slant italic))))
      `(font-lock-constant-face ((,class (:foreground ,red))))
@@ -821,14 +821,14 @@ Sourced other themes to get information about font faces for packages.")
      `(custom-invalid ((,class (:foreground ,red))))
      `(custom-link ((,class (:foreground ,cyan :underline t))))
      `(custom-modified ((,class (:foreground ,purple))))
-     `(custom-rogue ((,class (:foreground ,purple :box (:line-width 3 :style none)))))
+     `(custom-rogue ((,class (:foreground ,purple :box (:line-width 3)))))
      `(custom-saved ((,class (:foreground ,green :weight bold))))
      `(custom-set ((,class (:foreground ,yellow :background ,bg))))
      `(custom-state ((,class (:foreground ,green))))
      `(custom-themed ((,class (:foreground ,yellow :background ,bg))))
      `(custom-variable-button ((,class (:foreground ,green :underline t))))
      `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
-     `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
+     `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend unspecified))))
      `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
 
 ;;;; diff
@@ -1055,7 +1055,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; evil-mc - dark
      `(evil-mc-cursor-bar-face ((,class (:height 1 :background ,teal :foreground ,macos0))))
-     `(evil-mc-cursor-default-face ((,class (:background ,teal :foreground ,macos0 :inverse-video nil))))
+     `(evil-mc-cursor-default-face ((,class (:background ,teal :foreground ,macos0 :inverse-video unspecified))))
      `(evil-mc-cursor-hbar-face ((,class (:underline (:color ,blue)))))
      `(evil-mc-region-face ((,class (:background ,grey :distant-foreground ,bg :extend t))))
 
@@ -1069,7 +1069,7 @@ Sourced other themes to get information about font faces for packages.")
      `(expenses-face-message ((,class (:foreground ,blue :weight bold))))
 
 ;;;; flx-ido - dark
-     `(flx-highlight-face ((,class (:weight bold :foreground ,yellow :underline nil))))
+     `(flx-highlight-face ((,class (:weight bold :foreground ,yellow :underline unspecified))))
 
 ;;;; flycheck - dark
      `(flycheck-error ((,class (:underline (:style wave :color ,red)))))
@@ -1100,7 +1100,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; forge - dark
      `(forge-topic-closed ((,class (:foreground ,macos3 :strike-through t))))
-     `(forge-topic-label ((,class (:box nil))))
+     `(forge-topic-label ((,class (:box unspecified))))
      `(forge-issue-completed ((,class (:foreground ,macos3 :strike-through t))))
      `(forge-pullreq-merged ((,class (:foreground ,purple))))
      `(forge-pullreq-open ((,class (:foreground ,green))))
@@ -1260,7 +1260,7 @@ Sourced other themes to get information about font faces for packages.")
      `(hl-todo ((,class (:foreground ,red :weight bold))))
 
 ;;;; hlinum - dark
-     `(linum-highlight-face ((,class (:foreground ,fg :distant-foreground nil :weight normal))))
+     `(linum-highlight-face ((,class (:foreground ,fg :distant-foreground unspecified :weight normal))))
 
 ;;;; hydra - dark
      `(hydra-face-amaranth ((,class (:foreground ,teal :weight bold))))
@@ -1298,7 +1298,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; ivy - dark
      `(ivy-confirm-face ((,class (:foreground ,green))))
-     `(ivy-current-match ((,class (:background ,grey :distant-foreground nil :extend t))))
+     `(ivy-current-match ((,class (:background ,grey :distant-foreground unspecified :extend t))))
      `(ivy-highlight-face ((,class (:foreground ,magenta))))
      `(ivy-match-required-face ((,class (:foreground ,red))))
      `(ivy-minibuffer-match-face-1 ((,class (:foreground ,blue :weight bold :underline t))))
@@ -1568,9 +1568,9 @@ Sourced other themes to get information about font faces for packages.")
      `(mu4e-column-faces-to-from ((,class (:foreground ,blue))))
 
 ;;;; mu4e-thread-folding - dark
-     `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline nil))))
-     `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
-     `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+     `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline unspecified))))
+     `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline unspecified :underline unspecified))))
+     `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline unspecified :underline unspecified))))
 
 ;;;; multiple - dark cursors
      `(mc/cursor-face ((,class (:background ,cyan))))
@@ -1832,7 +1832,7 @@ Sourced other themes to get information about font faces for packages.")
      `(rst-level-6 ((,class (:foreground ,magenta :weight bold))))
 
 ;;;; selectrum - dark
-     `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground nil :extend t))))
+     `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground unspecified :extend t))))
 
 ;;;; sh-script - dark
      `(sh-heredoc ((,class (:foreground ,blue))))
@@ -2108,7 +2108,7 @@ Sourced other themes to get information about font faces for packages.")
      `(widget-button ((,class (:foreground ,fg :weight bold))))
      `(widget-button-pressed ((,class (:foreground ,red))))
      `(widget-documentation ((,class (:foreground ,green))))
-     `(widget-field ((,class (:foreground ,fg :background ,macos0 :extend nil))))
+     `(widget-field ((,class (:foreground ,fg :background ,macos0 :extend unspecified))))
      `(widget-inactive ((,class (:foreground ,grey :background ,bg-other))))
      `(widget-single-line-field ((,class (:foreground ,fg :background ,macos0))))
 
@@ -2144,38 +2144,38 @@ Sourced other themes to get information about font faces for packages.")
 ;;; LIGHT FLAVOUR
 (when (equal timu-macos-flavour "light")
   (let ((class '((class color) (min-colors 89)))
-        (bg        "#ffffff")
-        (bg-org    "#f4f4f4")
-        (bg-other  "#e8e8e8")
-        (macos0    "#f4f4f4")
-        (macos1    "#dedede")
-        (macos2    "#b3b3b3")
-        (macos3    "#b3b3b3")
-        (macos4    "#8c8c8c")
-        (macos5    "#5e5e5e")
-        (macos6    "#616161")
-        (macos7    "#393939")
-        (macos8    "#2c2c2c")
-        (fg        "#222327")
-        (fg-other  "#2a2a2a")
+        (bg        (pcase timu-macos-color-contrast ('muted "#ffffff") ('contrasted "#ffffff") ('normal "#ffffff")))
+        (bg-org    (pcase timu-macos-color-contrast ('muted "#f4f4f4") ('contrasted "#f4f4f4") ('normal "#f4f4f4")))
+        (bg-other  (pcase timu-macos-color-contrast ('muted "#e8e8e8") ('contrasted "#e8e8e8") ('normal "#e8e8e8")))
+        (macos0    (pcase timu-macos-color-contrast ('muted "#f4f4f4") ('contrasted "#f4f4f4") ('normal "#f4f4f4")))
+        (macos1    (pcase timu-macos-color-contrast ('muted "#dedede") ('contrasted "#dedede") ('normal "#dedede")))
+        (macos2    (pcase timu-macos-color-contrast ('muted "#b3b3b3") ('contrasted "#b3b3b3") ('normal "#b3b3b3")))
+        (macos3    (pcase timu-macos-color-contrast ('muted "#b3b3b3") ('contrasted "#b3b3b3") ('normal "#b3b3b3")))
+        (macos4    (pcase timu-macos-color-contrast ('muted "#8c8c8c") ('contrasted "#8c8c8c") ('normal "#8c8c8c")))
+        (macos5    (pcase timu-macos-color-contrast ('muted "#5e5e5e") ('contrasted "#5e5e5e") ('normal "#5e5e5e")))
+        (macos6    (pcase timu-macos-color-contrast ('muted "#616161") ('contrasted "#616161") ('normal "#616161")))
+        (macos7    (pcase timu-macos-color-contrast ('muted "#393939") ('contrasted "#171717") ('normal "#393939")))
+        (macos8    (pcase timu-macos-color-contrast ('muted "#2c2c2c") ('contrasted "#121212") ('normal "#2c2c2c")))
+        (fg        (pcase timu-macos-color-contrast ('muted "#222327") ('contrasted "#0e0e0e") ('normal "#222327")))
+        (fg-other  (pcase timu-macos-color-contrast ('muted "#2a2a2a") ('contrasted "#111111") ('normal "#2a2a2a")))
 
-        (grey      "#8c8c8c")
-        (red       "#ff675d")
-        (darkred   "#cc5850")
-        (orange    "#ffaa4f")
-        (green     "#64d86b")
-        (blue      "#4a95ff")
-        (magenta   "#e45c9c")
-        (teal      "#91f3e7")
-        (yellow    "#ffd654")
-        (darkblue  "#009dff")
-        (purple    "#bf76e4")
-        (cyan      "#00d1e9")
-        (lightcyan "#88c0d0")
-        (darkcyan  "#5297a5")
+        (grey      (pcase timu-macos-color-contrast ('muted "#a8a8a8") ('contrasted "#707070") ('normal "#8c8c8c")))
+        (red       (pcase timu-macos-color-contrast ('muted "#ff7c70") ('contrasted "#cc524a") ('normal "#ff675d")))
+        (darkred   (pcase timu-macos-color-contrast ('muted "#f56a60") ('contrasted "#a34640") ('normal "#cc5850")))
+        (orange    (pcase timu-macos-color-contrast ('muted "#ffcc5f") ('contrasted "#cc883f") ('normal "#ffaa4f")))
+        (green     (pcase timu-macos-color-contrast ('muted "#78ff80") ('contrasted "#50ad56") ('normal "#64d86b")))
+        (blue      (pcase timu-macos-color-contrast ('muted "#59b3ff") ('contrasted "#3b77cc") ('normal "#4a95ff")))
+        (magenta   (pcase timu-macos-color-contrast ('muted "#ff6ebb") ('contrasted "#b64a7d") ('normal "#e45c9c")))
+        (teal      (pcase timu-macos-color-contrast ('muted "#aeffff") ('contrasted "#74c2b9") ('normal "#91f3e7")))
+        (yellow    (pcase timu-macos-color-contrast ('muted "#ffff65") ('contrasted "#ccab43") ('normal "#ffd654")))
+        (darkblue  (pcase timu-macos-color-contrast ('muted "#00bcff") ('contrasted "#007ecc") ('normal "#009dff")))
+        (purple    (pcase timu-macos-color-contrast ('muted "#e58eff") ('contrasted "#995eb6") ('normal "#bf76e4")))
+        (cyan      (pcase timu-macos-color-contrast ('muted "#00fbff") ('contrasted "#00a7ba") ('normal "#00d1e9")))
+        (lightcyan (pcase timu-macos-color-contrast ('muted "#a3e6fa") ('contrasted "#6d9aa6") ('normal "#88c0d0")))
+        (darkcyan  (pcase timu-macos-color-contrast ('muted "#62b5c6") ('contrasted "#427984") ('normal "#5297a5")))
 
-        (black     "#000000")
-        (white     "#ffffff"))
+        (black     (pcase timu-macos-color-contrast ('muted "#000000") ('contrasted "#000000") ('normal "#000000")))
+        (white     (pcase timu-macos-color-contrast ('muted "#ffffff") ('contrasted "#ffffff") ('normal "#ffffff"))))
 
     (custom-theme-set-faces
      'timu-macos
@@ -2230,7 +2230,7 @@ Sourced other themes to get information about font faces for packages.")
      `(warning ((,class (:foreground ,yellow))))
 
 ;;;; font-lock - light
-     `(font-lock-builtin-face ((,class (:foreground ,blue))))
+     `(font-lock-builtin-face ((,class (:foreground ,darkcyan))))
      `(font-lock-comment-delimiter-face ((,class (:foreground ,macos4))))
      `(font-lock-comment-face ((,class (:foreground ,macos4 :slant italic))))
      `(font-lock-constant-face ((,class (:foreground ,red))))
@@ -2508,14 +2508,14 @@ Sourced other themes to get information about font faces for packages.")
      `(custom-invalid ((,class (:foreground ,red))))
      `(custom-link ((,class (:foreground ,cyan :underline t))))
      `(custom-modified ((,class (:foreground ,purple))))
-     `(custom-rogue ((,class (:foreground ,purple :box (:line-width 3 :style none)))))
+     `(custom-rogue ((,class (:foreground ,purple :box (:line-width 3)))))
      `(custom-saved ((,class (:foreground ,green :weight bold))))
      `(custom-set ((,class (:foreground ,yellow :background ,bg))))
      `(custom-state ((,class (:foreground ,green))))
      `(custom-themed ((,class (:foreground ,yellow :background ,bg))))
      `(custom-variable-button ((,class (:foreground ,green :underline t))))
      `(custom-variable-obsolete ((,class (:foreground ,grey :background ,bg))))
-     `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend nil))))
+     `(custom-variable-tag ((,class (:foreground ,darkcyan :underline t :extend unspecified))))
      `(custom-visibility ((,class (:foreground ,yellow :height 0.8 :underline t))))
 
 ;;;; diff
@@ -2742,7 +2742,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; evil-mc - light
      `(evil-mc-cursor-bar-face ((,class (:height 1 :background ,teal :foreground ,macos0))))
-     `(evil-mc-cursor-default-face ((,class (:background ,teal :foreground ,macos0 :inverse-video nil))))
+     `(evil-mc-cursor-default-face ((,class (:background ,teal :foreground ,macos0 :inverse-video unspecified))))
      `(evil-mc-cursor-hbar-face ((,class (:underline (:color ,blue)))))
      `(evil-mc-region-face ((,class (:background ,grey :distant-foreground ,bg :extend t))))
 
@@ -2756,7 +2756,7 @@ Sourced other themes to get information about font faces for packages.")
      `(expenses-face-message ((,class (:foreground ,blue :weight bold))))
 
 ;;;; flx-ido - light
-     `(flx-highlight-face ((,class (:weight bold :foreground ,yellow :underline nil))))
+     `(flx-highlight-face ((,class (:weight bold :foreground ,yellow :underline unspecified))))
 
 ;;;; flycheck - light
      `(flycheck-error ((,class (:underline (:style wave :color ,red)))))
@@ -2787,7 +2787,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; forge - light
      `(forge-topic-closed ((,class (:foreground ,macos2 :strike-through t))))
-     `(forge-topic-label ((,class (:box nil))))
+     `(forge-topic-label ((,class (:box unspecified))))
      `(forge-issue-completed ((,class (:foreground ,macos2 :strike-through t))))
      `(forge-pullreq-merged ((,class (:foreground ,purple))))
      `(forge-pullreq-open ((,class (:foreground ,green))))
@@ -2947,7 +2947,7 @@ Sourced other themes to get information about font faces for packages.")
      `(hl-todo ((,class (:foreground ,red :weight bold))))
 
 ;;;; hlinum - light
-     `(linum-highlight-face ((,class (:foreground ,fg :distant-foreground nil :weight normal))))
+     `(linum-highlight-face ((,class (:foreground ,fg :distant-foreground unspecified :weight normal))))
 
 ;;;; hydra - light
      `(hydra-face-amaranth ((,class (:foreground ,teal :weight bold))))
@@ -2985,7 +2985,7 @@ Sourced other themes to get information about font faces for packages.")
 
 ;;;; ivy - light
      `(ivy-confirm-face ((,class (:foreground ,green))))
-     `(ivy-current-match ((,class (:background ,grey :distant-foreground nil :extend t))))
+     `(ivy-current-match ((,class (:background ,grey :distant-foreground unspecified :extend t))))
      `(ivy-highlight-face ((,class (:foreground ,magenta))))
      `(ivy-match-required-face ((,class (:foreground ,red))))
      `(ivy-minibuffer-match-face-1 ((,class (:foreground ,blue :weight bold :underline t))))
@@ -3255,9 +3255,9 @@ Sourced other themes to get information about font faces for packages.")
      `(mu4e-column-faces-to-from ((,class (:foreground ,blue))))
 
 ;;;; mu4e-thread-folding - light
-     `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline nil))))
-     `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
-     `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline nil :underline nil))))
+     `(mu4e-thread-folding-child-face ((,class (:extend t :background ,bg-org :underline unspecified))))
+     `(mu4e-thread-folding-root-folded-face ((,class (:extend t :background ,bg-other :overline unspecified :underline unspecified))))
+     `(mu4e-thread-folding-root-unfolded-face ((,class (:extend t :background ,bg-other :overline unspecified :underline unspecified))))
 
 ;;;; multiple - light cursors
      `(mc/cursor-face ((,class (:background ,cyan))))
@@ -3519,7 +3519,7 @@ Sourced other themes to get information about font faces for packages.")
      `(rst-level-6 ((,class (:foreground ,magenta :weight bold))))
 
 ;;;; selectrum - light
-     `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground nil :extend t))))
+     `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground unspecified :extend t))))
 
 ;;;; sh-script - light
      `(sh-heredoc ((,class (:foreground ,blue))))
@@ -3795,7 +3795,7 @@ Sourced other themes to get information about font faces for packages.")
      `(widget-button ((,class (:foreground ,fg :weight bold))))
      `(widget-button-pressed ((,class (:foreground ,red))))
      `(widget-documentation ((,class (:foreground ,green))))
-     `(widget-field ((,class (:foreground ,fg :background ,macos0 :extend nil))))
+     `(widget-field ((,class (:foreground ,fg :background ,macos0 :extend unspecified))))
      `(widget-inactive ((,class (:foreground ,grey :background ,bg-other))))
      `(widget-single-line-field ((,class (:foreground ,fg :background ,macos0))))
 
