@@ -1,1 +1,0 @@
-cp src/emacs-30.1/lisp/jsonrpc.el ../../../.emacs.d/elisp
