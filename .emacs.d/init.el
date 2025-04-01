@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-01 11:45:32 dharms>
+;; Modified Time-stamp: <2025-04-01 13:27:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3264,6 +3264,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (defconst harmsway-lsp-server-alist '(
                                       (bash . "bash-language-server")
                                       (cmake . "cmake-language-server")
+                                      (cpp . "clangd")
                                       (csharp . "csharp-ls")
                                       (docker . "docker-langserver")
                                       (html . "vscode-html-language-server")

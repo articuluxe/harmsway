@@ -1,8 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2023  Dan Harms (dharms)
+;; Copyright (C) 2015-2023, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-09-27 13:52:09 dharms>
+;; Modified Time-stamp: <2025-04-01 13:41:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -26,6 +26,7 @@
 ;;; Code:
 
 (require 'use-package)
+(require 'proviso-clang-format)
 
 (defvar harmsway-c-mode-init-hooks '()
   "Hooks run once as c-mode-common is initialized.")
@@ -160,8 +161,12 @@
   (setq hide-ifdef-lines nil)
   (setq hide-ifdef-shadow nil)
   (hide-ifdef-mode 1)
-  (if (and (executable-find "clangd")
-           nil)
+  (let* ((exe (harmsway-lookup-language-server 'cpp))
+         (file (proviso-get (proviso-current-project) :clang-format)))
+    (if (and
+         (executable-find exe)
+         file
+         (file-exists-p file))
       (progn
         (eglot-ensure)
         (setq-local company-backends
@@ -170,15 +175,15 @@
                       (list 'company-c-headers 'company-c-preprocessor)
                       (copy-tree
                        (remq 'company-capf (car company-backends)))))))
-    (require 'flymake-collection-clang)
-    (flymake-mode 1)
-    (setq-local company-alt-backend 'company-clang)
-    (setq-local company-backends
-                (list
-                 (append
-                  (list 'company-c-headers 'company-c-preprocessor)
-                  (copy-tree
-                   (car company-backends)))))))
+      (require 'flymake-collection-clang)
+      (flymake-mode 1)
+      (setq-local company-alt-backend 'company-clang)
+      (setq-local company-backends
+                  (list
+                   (append
+                    (list 'company-c-headers 'company-c-preprocessor)
+                    (copy-tree
+                     (car company-backends))))))))
 
 (add-hook 'c-mode-common-hook #'harmsway-c-mode-common-fn -50)
 
