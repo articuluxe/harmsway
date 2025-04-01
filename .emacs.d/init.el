@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-03-27 15:07:43 dharms>
+;; Modified Time-stamp: <2025-04-01 09:52:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3255,6 +3255,30 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
   )
 
+(defconst harmsway-lsp-server-alist '(
+                                      (bash . "bash-language-server")
+                                      (cmake . "cmake-language-server")
+                                      (csharp . "csharp-ls")
+                                      (docker . "docker-langserver")
+                                      (html . "vscode-html-language-server")
+                                      (java . "jdtls")
+                                      (json . "vscode-json-language-server")
+                                      (lua . "lua-language-server")
+                                      (markdown . "vscode-markdown-language-server")
+                                      (python . "pylsp")
+                                      (rust . "rust-analyzer")
+                                      (yaml . "yaml-language-server")
+                                      )
+  "Alist of preferred language servers per language symbol.")
+
+(defun harmsway-lookup-language-server (lang)
+  "Look up the preferred language server for language LANG."
+  (let* ((sym (symbol-name lang))
+         (upname (upcase sym)))
+    (or
+     (getenv (concat "LSP_SERVER_" upname))
+     (alist-get lang harmsway-lsp-server-alist))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-eglot-keymap)
 (global-set-key "\C-c'" 'harmsway-eglot-keymap)
@@ -4318,13 +4342,13 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'cmake-mode-hook
             (lambda()
-              (if (and (executable-find "cmake-language-server")
-                       nil)
-                  (eglot-ensure)
-                (setq-local company-alt-backend 'company-cmake)
-                (harmsway-cmake-fix-underscore)
-                (cmake-font-lock-activate))
-              ))
+              (let ((exe (harmsway-lookup-language-server 'cmake)))
+                (if (executable-find exe)
+                    (eglot-ensure)
+                  (setq-local company-alt-backend 'company-cmake)
+                  (harmsway-cmake-fix-underscore)
+                  (cmake-font-lock-activate))
+                )))
   :config
   (require 'cmake-font-lock))
 
@@ -4385,7 +4409,7 @@ This function's result only has value if it is preceded by any font changes."
 (defun harmsway-customize-dockerfile-mode ()
   "Customize mode as there is no hook provided."
   (if (and (derived-mode-p 'dockerfile-mode)
-           (executable-find "docker-langserver")
+           (executable-find (harmsway-lookup-language-server 'docker))
            t)
       (eglot-ensure)
     ))
@@ -4501,23 +4525,23 @@ This function's result only has value if it is preceded by any font changes."
 (use-package validate-html :commands validate-html)
 (add-hook 'html-mode-hook
           (lambda()
-            (if (and (executable-find "vscode-html-language-server")
-                     t)
-                (eglot-ensure))
-            (if (featurep 'rainbow-mode)
-                (rainbow-turn-on)
-              (my/syntax-color-hex-values))
-            ))
+            (let ((exe (harmsway-lookup-language-server 'html)))
+              (if (executable-find exe)
+                  (eglot-ensure))
+              (if (featurep 'rainbow-mode)
+                  (rainbow-turn-on)
+                (my/syntax-color-hex-values))
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; inputrc-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package inputrc-mode :mode "\\.?inputrc$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; java-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'java-mode-hook (lambda ()
-                            (if (and (executable-find "jdtls")
-                                     t)
-                                (eglot-ensure)
-                              )))
+(add-hook 'java-mode-hook
+          (lambda()
+            (let ((exe (harmsway-lookup-language-server 'java)))
+              (if (executable-find exe)
+                  (eglot-ensure)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jinja-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package jinja2-mode :mode ("\\.jinja$" "\\.j2$"))
@@ -4584,13 +4608,12 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'json-mode-hook
             (lambda()
-              (if (and (executable-find "vscode-json-language-server")
-                       nil)
-                  (eglot-ensure)
-                (require 'flymake-collection-jq)
-                (flymake-mode 1))
-              (subword-mode 1)
-              ))
+              (let ((exe (harmsway-lookup-language-server 'json)))
+                (if (executable-find exe)
+                    (eglot-ensure)
+                  (require 'flymake-collection-jq)
+                  (flymake-mode 1))
+                (subword-mode 1))))
   :config
   (use-package json-navigator
     :if (< 24 emacs-major-version)
@@ -4625,13 +4648,13 @@ This function's result only has value if it is preceded by any font changes."
   (setq lua-indent-string-contents t)
   (add-hook 'lua-mode-hook
             (lambda()
-              (if (and (executable-find "lua-language-server")
-                       t)
-                  (eglot-ensure)
-                (require 'flymake-collection-luacheck)
-                (flymake-mode 1)
-                (setq-local company-alt-backend 'company-lua)
-                ))))
+              (let ((exe (harmsway-lookup-language-server 'lua)))
+                (if (executable-find exe)
+                    (eglot-ensure)
+                  (require 'flymake-collection-luacheck)
+                  (flymake-mode 1)
+                  (setq-local company-alt-backend 'company-lua)
+                  )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
@@ -4649,12 +4672,11 @@ This function's result only has value if it is preceded by any font changes."
   (setq markdown-command "Markdown.pl")
   (add-hook 'markdown-mode-hook
             (lambda()
-              (if (and (executable-find "vscode-markdown-language-server")
-                     t)
-                (eglot-ensure))
-              )
-            ;; (good-word/init-word-processor)
-            ))
+              (let ((exe (harmsway-lookup-language-server 'markdown)))
+                (if (executable-find exe)
+                    (eglot-ensure)))
+              ;; (good-word/init-word-processor)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mermaid-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mermaid-mode
@@ -4753,11 +4775,11 @@ This function's result only has value if it is preceded by any font changes."
   :init
   (add-hook 'python-mode-hook
             (lambda()
-              (if (and (executable-find "pylsp")
-                       t)
-                  (eglot-ensure)
-                (require 'flymake-collection-pycodestyle)
-                (flymake-mode 1))
+              (let ((exe (harmsway-lookup-language-server 'python)))
+                (if (executable-find exe)
+                    (eglot-ensure)
+                  (require 'flymake-collection-pycodestyle)
+                  (flymake-mode 1)))
               (subword-mode 1)
               ;; (highlight-indentation-mode 1)
               (highlight-indent-guides-mode 1)
@@ -4887,11 +4909,10 @@ This function's result only has value if it is preceded by any font changes."
 (use-package rust-mode :mode "\\.rs$"
   :init
   (add-hook 'rust-mode-hook
-            (lambda ()
-              (if (and (executable-find "rust-analyzer")
-                       t)
-                  (eglot-ensure)
-                ))))
+            (lambda()
+              (let ((exe (harmsway-lookup-language-server 'rust)))
+                (if (executable-find exe)
+                    (eglot-ensure))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package qt-pro-mode :mode ("\\.pr[oi]$"))
@@ -4906,17 +4927,17 @@ This function's result only has value if it is preceded by any font changes."
   (setq sh-indent-statement-after-and t)
   (add-hook 'sh-mode-hook
             (lambda()
-              (if (and (executable-find "bash-language-server")
-                       t)
-                  (eglot-ensure)
-                ;; set completion
-                (setq-local company-alt-backend 'company-shell)
-                (require 'flymake-collection-shellcheck)
-                (require 'flymake-bashate)
-                (flymake-bashate-setup)
-                (flymake-mode 1))
-              (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
-              ))
+              (let ((exe (harmsway-lookup-language-server 'bash)))
+                (if (executable-find exe)
+                    (eglot-ensure)
+                  ;; set completion
+                  (setq-local company-alt-backend 'company-shell)
+                  (require 'flymake-collection-shellcheck)
+                  (require 'flymake-bashate)
+                  (flymake-bashate-setup)
+                  (flymake-mode 1))
+                (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
+                )))
   :config
   (setq sh-basic-offset 4)
   (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
@@ -5038,15 +5059,15 @@ This function's result only has value if it is preceded by any font changes."
          (search-backward-regexp ": *"))
   (add-hook 'yaml-mode-hook
             (lambda()
-              (if (and (executable-find "yaml-language-server")
-                       t)
-                  (eglot-ensure)
-                (require 'flymake-collection-yamllint)
-                (flymake-mode 1))
-              (define-key yaml-mode-map "\C-m" 'newline-and-indent)
-              (define-key yaml-mode-map "\M-\r" 'insert-ts)
-              (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)
-              (define-key yaml-mode-map (kbd "C-S-<tab>") 'yaml-prev-field)
-              )))
+              (let ((exe (harmsway-lookup-language-server 'yaml)))
+                (if (executable-find exe)
+                    (eglot-ensure)
+                  (require 'flymake-collection-yamllint)
+                  (flymake-mode 1))
+                (define-key yaml-mode-map "\C-m" 'newline-and-indent)
+                (define-key yaml-mode-map "\M-\r" 'insert-ts)
+                (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)
+                (define-key yaml-mode-map (kbd "C-S-<tab>") 'yaml-prev-field)
+                ))))
 
 ;; code ends here
