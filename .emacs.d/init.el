@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-01 13:27:41 dharms>
+;; Modified Time-stamp: <2025-04-01 18:46:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1640,10 +1640,6 @@ ARGS are the additional arguments."
          ("C-x x%b" . bmkp-set-autonamed-regexp-buffer)
          ("C-x x%r" . bmkp-set-autonamed-regexp-region)
          )
-  :init
-  ;; (setq initial-buffer-choice (lambda ()
-  ;;                               (bookmark-bmenu-list)
-  ;;                               "*Bookmark List*"))
   :config
   ;; (setq bookmark-default-file (concat my/user-directory "bookmarks"))
   ;; (setq bmkp-bmenu-state-file (concat my/user-directory "emacs-bmk-bmenu-state"))
@@ -1662,17 +1658,28 @@ ARGS are the additional arguments."
 (use-package enlight-menu)
 (use-package enlight
   :commands enlight-open
+  :init
+  (setq initial-buffer-choice
+        (lambda()
+          (require 'enlight)
+          (enlight-open)
+          (switch-to-buffer "*enlight*")))
   :custom
   (enlight-content
    (concat
     (propertize "MENU" 'face 'highlight)
     "\n\n"
     (enlight-menu
-     '(("Downloads"
+     '(("Special"
+        ("Harmsway" (dired "~/src/harmsway") "h")
         ("Downloads Folder" (dired "~/Downloads") "w")
-        ("Desktop Folder" (dired "~/Desktop") "k"))
+        ("Desktop Folder" (dired "~/Desktop") "k")
+        ("Documents Folder" (dired "~/Documents") "d")
+        ("Source Dir" (dired "~/src") "s")
+        )
        ("Other"
-        ("Projects" project-switch-project "p"))))))
+        ("Projects" project-switch-project "p")
+        ("Bookmarks" bookmark-bmenu-list "b"))))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleandesk ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
