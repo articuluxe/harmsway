@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-01 10:57:06 dharms>
+;; Modified Time-stamp: <2025-04-01 11:45:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -986,6 +986,11 @@ From `manuel-oberti.github.io' on 20190806."
   :bind (("C-=" . embrace-commander)
          ("M-' =" . embrace-commander)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; regswap ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package regswap
+  :config
+  (regswap-setup-default-keybindings))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; corral ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package corral
