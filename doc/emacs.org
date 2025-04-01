@@ -18,6 +18,10 @@ sudo strace -yy -p `pidof emacs`
 # find out which library required a feature
 (require 'loadhist)
 (file-dependents (feature-file 'cl))
+** Profile
+M-x profiler-start
+# do stuff whose CPU usage will be monitored
+M-x profiler-report
 
 C-x RET f unix   change buffer's file coding system
 C-x C-m f   change file's default text encoding
