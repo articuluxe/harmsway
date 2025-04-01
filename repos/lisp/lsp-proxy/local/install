@@ -1,0 +1,3 @@
+cd src
+cargo build --release
+cp target/release/lsp-proxy $HOME/opt/bin
