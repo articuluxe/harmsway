@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2025-04-01 13:41:25 dharms>
+;; Modified Time-stamp: <2025-04-01 16:25:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -26,7 +26,7 @@
 ;;; Code:
 
 (require 'use-package)
-(require 'proviso-clang-format)
+(require 'proviso-clang)
 
 (defvar harmsway-c-mode-init-hooks '()
   "Hooks run once as c-mode-common is initialized.")
@@ -162,8 +162,9 @@
   (setq hide-ifdef-shadow nil)
   (hide-ifdef-mode 1)
   (let* ((exe (harmsway-lookup-language-server 'cpp))
-         (file (proviso-get (proviso-current-project) :clang-format)))
+         (file (proviso-get (proviso-current-project) :compile-db)))
     (if (and
+         exe
          (executable-find exe)
          file
          (file-exists-p file))
