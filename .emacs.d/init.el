@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-01 09:52:40 dharms>
+;; Modified Time-stamp: <2025-04-01 10:57:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -144,6 +144,7 @@
 (setq confirm-kill-processes nil)
 (setq gc-cons-threshold 20000000)
 (setq kill-do-not-save-duplicates t)
+(setq exchange-point-and-mark-highlight-region nil)
 (file-name-shadow-mode 1)
 ;; (setq switch-to-visible-buffer nil)     ;obsolete in 27.1
 (setq switch-to-prev-buffer-skip nil)
