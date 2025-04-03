@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-03 10:48:23 dharms>
+;; Modified Time-stamp: <2025-04-03 12:01:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -902,6 +902,10 @@ From `manuel-oberti.github.io' on 20190806."
   (setq nswbuff-exclude-buffer-regexps '("^ .*"
                                          "^\\*.*\\*"))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; noman ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package noman
+  :commands (noman))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mission-control ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mission-control :bind ("s-\\" . mcon-switch))
