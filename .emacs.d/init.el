@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-03 12:01:27 dharms>
+;; Modified Time-stamp: <2025-04-03 12:27:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1185,6 +1185,7 @@ From `manuel-oberti.github.io' on 20190806."
   :bind (("C-c 0T" . gt-do-translate))
   :init
   (setq gt-langs '(en it fr))
+  :config
   (setq gt-default-translator (gt-translator :engines (gt-google-engine)))
   )
 
@@ -1445,6 +1446,14 @@ ARGS are the additional arguments."
   :bind (("C-c 0vt" . vterm-toggle)
          ("C-c 0vn" . vterm-toggle-forward)
          ("C-c 0vp" . vterm-toggle-backward)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; toggle-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package toggle-term
+  :bind (("C-c C-v" . toggle-term-vterm))
+  :init
+  (setq toggle-term-size 25)
+  (setq toggle-term-switch-upon-toggle t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shx :config (shx-global-mode 1))
