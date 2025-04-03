@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-01 18:46:25 dharms>
+;; Modified Time-stamp: <2025-04-03 10:48:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -85,6 +85,7 @@
                      ,(concat my/plugins-directory "http/")
                      ,(concat my/plugins-directory "hydra/")
                      ,(concat my/plugins-directory "icons/")
+                     ,(concat my/plugins-directory "ipe/")
                      ,(concat my/plugins-directory "js2/")
                      ,(concat my/plugins-directory "lsp/")
                      ,(concat my/plugins-directory "magit/lisp/")
@@ -986,6 +987,14 @@ From `manuel-oberti.github.io' on 20190806."
   :bind (("C-=" . embrace-commander)
          ("M-' =" . embrace-commander)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; insert-pair-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ipe
+  :bind (("M-(" . ipe-insert-pair-edit)
+         ("M-)" . ipe-insert-pair-edit-update)
+         ("M-_" . ipe-insert-pair-edit-delete)
+         )
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; regswap ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package regswap

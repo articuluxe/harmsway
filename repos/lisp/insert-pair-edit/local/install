@@ -1,0 +1,2 @@
+cp src/*.el ../../../.emacs.d/plugins/ipe
+cp src/modes/*.el ../../../.emacs.d/plugins/ipe/modes
