@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2025-04-01 16:25:15 dharms>
+;; Modified Time-stamp: <2025-04-17 16:17:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -167,7 +167,9 @@
          exe
          (executable-find exe)
          file
-         (file-exists-p file))
+         ;(file-exists-p file)
+         ;not requiring the file to exist as of now
+         )
       (progn
         (eglot-ensure)
         (setq-local company-backends

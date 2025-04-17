@@ -3310,11 +3310,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (defun harmsway-lookup-language-server (lang)
   "Look up the preferred language server for language LANG."
-  (let* ((sym (symbol-name lang))
-         (upname (upcase sym)))
-    (or
-     (getenv (concat "LSP_SERVER_" upname))
-     (alist-get lang harmsway-lsp-server-alist))))
+  (when-let ((exe (getenv (concat "LSP_SERVER_" (upcase (symbol-name lang))))))
+    (if (string-equal (substring exe 0 1) "!") "" exe))
+  (alist-get lang harmsway-lsp-server-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-eglot-keymap)
