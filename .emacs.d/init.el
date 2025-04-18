@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-06 16:56:19 dharms>
+;; Modified Time-stamp: <2025-04-18 08:43:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1678,6 +1678,39 @@ ARGS are the additional arguments."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; enlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar harmsway-enlight-projects nil
+  "A list of projects suitable for a global menu.")
+
+(defun harmsway-create-enlight-content-string (dirs)
+  "Create the menu string, including a list of projects from DIRS."
+  (let ((i 0))
+    (list (list "Special"
+                (list "Harmsway" '(dired "~/src/harmsway") "h")
+                (list "Downloads" '(dired "~/Downloads") "w")
+                (list "Desktop" '(dired "~/Desktop") "k")
+                (list "Documents" '(dired "~/Documents") "d")
+                (list "Source" '(dired "~/src") "s"))
+          (list "Other"
+                (list "Bookmarks" #'bookmark-bmenu-list "b")
+                (list "Switch project" #'project-switch-project "p"))
+          (append (list "Projects")
+                (mapcar (lambda (dir)
+                          (cl-incf i)
+                          (list
+                           (file-name-nondirectory dir)
+                           `(dired ,dir)
+                           (number-to-string i)))
+                        dirs)
+                ))))
+
+(defun harmsway-create-enlight-content ()
+  "Create the enlight string."
+  (concat
+   (propertize "MENU" 'face 'highlight)
+   "\n\n"
+   (enlight-menu
+    (harmsway-create-enlight-content-string harmsway-enlight-projects))))
+
 (use-package enlight-menu)
 (use-package enlight
   :commands enlight-open
@@ -1687,23 +1720,8 @@ ARGS are the additional arguments."
           (require 'enlight)
           (enlight-open)
           (switch-to-buffer "*enlight*")))
-  :custom
-  (enlight-content
-   (concat
-    (propertize "MENU" 'face 'highlight)
-    "\n\n"
-    (enlight-menu
-     '(("Special"
-        ("Harmsway" (dired "~/src/harmsway") "h")
-        ("Downloads Folder" (dired "~/Downloads") "w")
-        ("Desktop Folder" (dired "~/Desktop") "k")
-        ("Documents Folder" (dired "~/Documents") "d")
-        ("Source Dir" (dired "~/src") "s")
-        )
-       ("Other"
-        ("Projects" project-switch-project "p")
-        ("Bookmarks" bookmark-bmenu-list "b"))))))
-  )
+  :config
+  (setq enlight-content (harmsway-create-enlight-content)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleandesk ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (with-eval-after-load 'dired
