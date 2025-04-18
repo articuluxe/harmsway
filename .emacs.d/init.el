@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-18 08:43:48 dharms>
+;; Modified Time-stamp: <2025-04-18 09:04:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3328,9 +3328,10 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 (defun harmsway-lookup-language-server (lang)
   "Look up the preferred language server for language LANG."
-  (when-let ((exe (getenv (concat "LSP_SERVER_" (upcase (symbol-name lang))))))
-    (if (string-equal (substring exe 0 1) "!") "" exe))
-  (alist-get lang harmsway-lsp-server-alist))
+  (let ((exe (getenv (concat "LSP_SERVER_" (upcase (symbol-name lang))))))
+    (if exe
+        (if (string-equal (substring exe 0 1) "!") "" exe)
+      (alist-get lang harmsway-lsp-server-alist))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-eglot-keymap)
