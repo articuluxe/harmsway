@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-18 09:04:01 dharms>
+;; Modified Time-stamp: <2025-04-19 12:18:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -396,7 +396,6 @@ not an error if any files do not exist."
          )
   :init
   (setq tags-revert-without-query t)
-  (setq proviso-search-ask-whole-word t)
   (define-prefix-command 'proviso-deploy-keymode-map)
   (global-set-key "\C-cpl" 'proviso-deploy-keymode-map)
   (setq project-list-file (concat my/user-directory "projects"))
