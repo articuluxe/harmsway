@@ -1,0 +1,2 @@
+cp src/lisp/wood.el ../../../../.emacs.d/plugins
+find src/lisp -maxdepth 1 -name \*-theme.el | grep -v svg | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
