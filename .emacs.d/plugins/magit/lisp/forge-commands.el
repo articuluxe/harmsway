@@ -591,14 +591,20 @@ With prefix argument MENU, also show the topic menu."
   "Create a new issue for the current repository."
   (interactive)
   (let* ((repo (forge-get-repository :tracked))
-         (buf (forge--prepare-post-buffer
-               "new-issue"
-               (forge--format repo "Create new issue on %p"))))
-    (when buf
-      (with-current-buffer buf
-        (setq forge--buffer-post-object repo)
-        (setq forge--submit-post-function #'forge--submit-create-issue))
-      (forge--display-post-buffer buf))))
+         (template (forge--topic-template repo 'forge-issue)))
+    (let-alist template
+      (pcase-exhaustive .type
+        ('redirect (browse-url .url))
+        ('forge-discussion (forge-create-discussion .category))
+        ('forge-issue
+         (when-let ((buf (forge--prepare-post-buffer
+                          "new-issue"
+                          (forge--format repo "Create new issue on %p")
+                          nil nil template)))
+           (with-current-buffer buf
+             (setq forge--buffer-post-object repo)
+             (setq forge--submit-post-function #'forge--submit-create-issue))
+           (forge--display-post-buffer buf)))))))
 
 (defun forge-create-pullreq (source target)
   "Create a new pull-request for the current repository."
@@ -607,7 +613,8 @@ With prefix argument MENU, also show the topic menu."
          (buf (forge--prepare-post-buffer
                "new-pullreq"
                (forge--format repo "Create new pull-request on %p")
-               source target)))
+               source target
+               (forge--topic-template repo 'forge-pullreq))))
     (with-current-buffer buf
       (setq forge--buffer-base-branch target)
       (setq forge--buffer-head-branch source)
@@ -673,13 +680,10 @@ point is currently on."
   (let* ((quote (cond
                  ((not (magit-section-match 'post)) nil)
                  ((use-region-p)
-                  (buffer-substring-no-properties (region-beginning)
-                                                  (region-end)))
+                  (magit--buffer-string (region-beginning) (region-end)))
                  (quote
-                  (let ((section (magit-current-section)))
-                    (string-trim-right
-                     (buffer-substring-no-properties (oref section content)
-                                                     (oref section end)))))))
+                  (with-slots (content end) (magit-current-section)
+                    (magit--buffer-string content end t)))))
          (obj (if (forge-discussion-p forge-buffer-topic)
                   (forge--select-discussion-reply-target)
                 forge-buffer-topic))
@@ -817,7 +821,7 @@ Please see the manual for more information."
     (if-let ((branch (forge--pullreq-branch-active pullreq)))
         (progn (message "Branch %S already exists and is configured" branch)
                branch)
-      (forge--branch-pullreq (forge-get-repository pullreq) pullreq)
+      (forge--branch-pullreq pullreq)
       (forge-refresh-buffer))))
 
 (cl-defmethod forge--branch-pullreq ((pullreq forge-pullreq))
@@ -1074,24 +1078,26 @@ is configured to disallow that, you should instead merge locally
 and then push the target branch.  Forges detect that you have
 done that and respond by automatically marking the pull-request
 as merged."
-  (interactive
-   (list (forge-read-pullreq "Merge pull-request")
-         (if (forge--childp (forge-get-repository :tracked)
-                            'forge-gitlab-repository)
-             (magit-read-char-case "Merge method " t
-               (?m "[m]erge"  'merge)
-               (?s "[s]quash" 'squash))
-           (magit-read-char-case "Merge method " t
-             (?m "[m]erge"  'merge)
-             (?s "[s]quash" 'squash)
-             (?r "[r]ebase" 'rebase)))))
+  (declare (interactive-only nil))
+  (interactive (list (forge-read-pullreq "Merge pull-request")
+                     (forge-select-merge-method)))
   (let ((pullreq (forge-get-pullreq pullreq)))
     (forge--merge-pullreq (forge-get-repository pullreq)
                           pullreq
                           (magit-rev-hash
                            (forge--pullreq-branch-internal pullreq))
-                          method))
-  (forge-pull))
+                          method)))
+
+(defun forge-select-merge-method ()
+  (if (forge--childp (forge-get-repository :tracked)
+                     'forge-gitlab-repository)
+      (magit-read-char-case "Merge method " t
+        (?m "[m]erge"  'merge)
+        (?s "[s]quash" 'squash))
+    (magit-read-char-case "Merge method " t
+      (?m "[m]erge"  'merge)
+      (?s "[s]quash" 'squash)
+      (?r "[r]ebase" 'rebase))))
 
 ;;;###autoload
 (defun forge-set-default-branch ()
@@ -1454,6 +1460,33 @@ heavy development."
     (forge-refresh-buffer)))
 
 ;;; Miscellaneous
+
+(defun forge-mark-completed-topics-as-done ()
+  "Mark completed topics of the current repository as done.
+Change the private status to \"done\" for topics whose private status is
+\"unread\" or \"pending\" and whose public state is \"completed\".
+Whether this affects all such topics or only all such topics of a
+certain type (discussion, issue or pull-request), depends on the
+context."
+  (interactive)
+  (let* ((type (forge-current-topic-type))
+         (desc (if (eq type 'pullreq) 'pull-request type))
+         (topics (forge--list-topics
+                  (forge--topics-spec :type type
+                                      :active nil
+                                      :state 'closed
+                                      :status 'inbox)
+                  (forge-get-repository :tracked))))
+    (cond ((not topics)
+           (message "No completed %s that could be marked as done" desc))
+          ((magit-confirm t
+             "Mark \"%s\" as done"
+             (format "Mark %%d %ss as done" desc)
+             nil
+             (mapcar #'forge--format-topic-line topics))
+           (dolist (topic topics)
+             (oset topic status 'done))
+           (forge-refresh-buffer)))))
 
 (magit-define-section-jumper forge-jump-to-pullreqs "Pull requests" pullreqs)
 (magit-define-section-jumper forge-jump-to-issues "Issues" issues)

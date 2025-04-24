@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 4.2.2
+;; Package-Version: 4.3.0
 ;; Package-Requires: (
 ;;     (emacs "29.1")
 ;;     (compat "30.0.2.0")
@@ -448,7 +448,7 @@ this function is called with nil for PAYLOAD."
                 (pcase-let ((`(,url ,rel) (split-string elt "; ")))
                   (cons (intern (substring rel 5 -1))
                         (substring url 1 -1))))
-              (split-string rels ", ")))))
+              (split-string rels ", ?")))))
 
 (cl-defun ghub-repository-id (owner name &key username auth host forge noerror)
   "Return the id of the specified repository.

@@ -3,7 +3,7 @@
 ;; Copyright (C) 2024-2025 James Cherti | https://www.jamescherti.com/contact/
 
 ;; Author: James Cherti
-;; Version: 1.0.2
+;; Version: 1.0.4
 ;; URL: https://github.com/jamescherti/flymake-bashate.el
 ;; Keywords: tools
 ;; Package-Requires: ((flymake-quickdef "1.0.0") (emacs "27.1"))
@@ -144,7 +144,11 @@ environment variable."
   "Set up Flymake for Bashate linting in the current buffer.
 This function adds `flymake-bashate-backend' to the list of Flymake diagnostic
 functions, enabling Bashate style checks locally for the current buffer."
-  (add-hook 'flymake-diagnostic-functions #'flymake-bashate-backend nil t))
+  (if (executable-find flymake-bashate-executable)
+      (add-hook 'flymake-diagnostic-functions #'flymake-bashate-backend nil t)
+    (message (concat "[flymake-bashate] Not enabled because '%s' was not found"
+                     " in $PATH. Ensure it is installed and accessible.")
+             flymake-bashate-executable)))
 
 (provide 'flymake-bashate)
 ;;; flymake-bashate.el ends here

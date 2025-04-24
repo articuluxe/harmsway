@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 2.1
+;; Version: 2.3
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -2912,14 +2912,6 @@ INHERIT-INPUT-METHOD, if non-nil the minibuffer inherits the
 input method.
 ASYNC-WRAP wraps asynchronous functions and defaults to
 `consult--async-wrap'."
-  ;; supported types
-  (cl-assert (or (functionp table)     ;; dynamic table or asynchronous function
-                 (obarrayp table)      ;; obarray
-                 (hash-table-p table)  ;; hash table
-                 (not table)           ;; empty list
-                 (stringp (car table)) ;; string list
-                 (and (consp (car table)) (stringp (caar table)))   ;; string alist
-                 (and (consp (car table)) (symbolp (caar table))))) ;; symbol alist
   (ignore prompt predicate require-match history default keymap category
           initial narrow initial-narrow add-history annotate state
           preview-key sort lookup group inherit-input-method async-wrap)
@@ -4629,9 +4621,11 @@ The command supports previewing the currently selected theme."
   (unless (eq theme (car custom-enabled-themes))
     (mapc #'disable-theme custom-enabled-themes)
     (when theme
+      (unless (custom-theme-p theme)
+        (load-theme theme 'no-confirm 'no-enable))
       (if (custom-theme-p theme)
           (enable-theme theme)
-        (load-theme theme :no-confirm)))))
+        (consult--minibuffer-message "%s is not a valid theme")))))
 
 ;;;;; Command: consult-buffer
 

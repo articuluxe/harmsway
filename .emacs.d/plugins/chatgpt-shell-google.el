@@ -221,7 +221,17 @@ This gets set once for each MODEL, based on a heuristic."
   "Build a list of Google LLM models available."
   ;; Context windows have been verified as of 11/26/2024. See
   ;; https://ai.google.dev/gemini-api/docs/models/gemini.
-  (list (chatgpt-shell-google-make-model :version "gemini-2.0-pro-exp"
+  (list (chatgpt-shell-google-make-model :version "gemini-2.5-pro-preview"
+                                         :short-version "2.5-pro-preview"
+                                         :path "/v1beta/models/gemini-2.5-pro-preview-03-25"
+                                         :token-width 4
+                                         :context-window 1048576)
+        (chatgpt-shell-google-make-model :version "gemini-2.5-pro-exp"
+                                         :short-version "2.5-pro-exp"
+                                         :path "/v1beta/models/gemini-2.5-pro-exp-03-25"
+                                         :token-width 4
+                                         :context-window 1048576)
+        (chatgpt-shell-google-make-model :version "gemini-2.0-pro-exp"
                                          :short-version "2.0-pro-exp"
                                          :path "/v1beta/models/gemini-2.0-pro-exp"
                                          :token-width 4
@@ -234,6 +244,12 @@ This gets set once for each MODEL, based on a heuristic."
         (chatgpt-shell-google-make-model :version "gemini-2.0-flash"
                                          :short-version "2.0-flash"
                                          :path "/v1beta/models/gemini-2.0-flash"
+                                         :grounding-search t
+                                         :token-width 4
+                                         :context-window 1048576)
+        (chatgpt-shell-google-make-model :version "gemini-2.0-flash-lite"
+                                         :short-version "2.0-flash-lite"
+                                         :path "/v1beta/models/gemini-2.0-flash-lite"
                                          :grounding-search t
                                          :token-width 4
                                          :context-window 1048576)

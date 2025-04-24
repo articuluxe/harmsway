@@ -32,6 +32,7 @@
 (require 'ring)
 (require 'flymake)
 (require 'shell-maker)
+(require 'transient)
 
 (declare-function chatgpt-shell-previous-source-block "chatgpt-shell")
 (declare-function chatgpt-shell-next-source-block "chatgpt-shell")
@@ -50,6 +51,12 @@
 (declare-function chatgpt-shell--pretty-smerge-insert "chatgpt-shell")
 (declare-function chatgpt-shell-markdown-block-at-point "chatgpt-shell")
 (declare-function chatgpt-shell-view-block-at-point "chatgpt-shell")
+(declare-function chatgpt-shell-copy-block-at-point "chatgpt-shell")
+
+(defcustom chatgpt-shell-compose-auto-transient t
+  "When non-nil automatically display transient menu post compose submission."
+  :type 'boolean
+  :group 'chatgpt-shell)
 
 (defvar-local chatgpt-shell-prompt-compose--exit-on-submit nil
   "Whether or not compose buffer should close after submission.
@@ -108,6 +115,30 @@ t if invoked from a transient frame (quitting closes the frame).")
     (set-keymap-parent map view-mode-map)
     map)
   "Keymap for `chatgpt-shell-prompt-compose-view-mode'.")
+
+(transient-define-prefix chatgpt-shell-prompt-compose-transient ()
+  "ChatGPT Shell Compose Transient."
+  [["Navigation"
+    ("n" "Next item" chatgpt-shell-prompt-compose-next-item :transient t)
+    ("p" "Previous item" chatgpt-shell-prompt-compose-previous-item :transient t)
+    ("f" "Next interaction" chatgpt-shell-prompt-compose-next-interaction :transient t)
+    ("b" "Previous interaction" chatgpt-shell-prompt-compose-previous-interaction :transient t)
+    ("o" "View other (related) shell" chatgpt-shell-prompt-compose-other-buffer)]
+   ["Prompts"
+    ("g" "Retry" chatgpt-shell-prompt-compose-retry)
+    ("r" "Reply with followup" chatgpt-shell-prompt-compose-reply)
+    ("m" "Request more" chatgpt-shell-prompt-compose-request-more)
+    ("e" "Request entire snippet" chatgpt-shell-prompt-compose-request-entire-snippet)]
+   ["Blocks"
+    ("'" "View block at point" chatgpt-shell-view-block-at-point)
+    ("t" "Transfer block at point" chatgpt-shell-prompt-compose-insert-block-at-point)
+    ("w" "Copy block at point" chatgpt-shell-copy-block-at-point)
+    ("C-c C-c" "Execute block at point" chatgpt-shell-execute-block-action-at-point)]
+   ["Model"
+    ("v" "Swap model version" chatgpt-shell-prompt-compose-swap-model-version)
+    ("s" "Swap system prompt" chatgpt-shell-prompt-compose-swap-system-prompt)
+    ("c" "Clear history" chatgpt-shell-prompt-compose-clear-history)
+    ("q" "Quit shell compose buffer" chatgpt-shell-prompt-compose-quit-and-close-frame)]])
 
 (define-minor-mode chatgpt-shell-prompt-compose-view-mode
   "Like `view-mode`, but extended for ChatGPT Compose."
@@ -220,6 +251,11 @@ Set TRANSIENT-FRAME-P to also close frame on exit."
       (setq chatgpt-shell--ring-index nil)
       (message instructions))
     (chatgpt-shell-prompt-compose-buffer)))
+
+(defun chatgpt-shell-prompt-compose-clear-history ()
+  "Clear compose and associated shell history."
+  (interactive)
+  (chatgpt-shell-prompt-compose-show-buffer :clear-history t))
 
 (defun chatgpt-shell-prompt-compose-search-history ()
   "Search prompt history, select, and insert to current compose buffer."
@@ -366,11 +402,13 @@ Optionally set its PROMPT."
                                         (lambda (_input _output _success)
                                           (with-current-buffer (chatgpt-shell-prompt-compose-buffer)
                                             (let ((inhibit-read-only t))
-                                              (chatgpt-shell--put-source-block-overlays))))
+                                              (chatgpt-shell--put-source-block-overlays)))
+                                          (when chatgpt-shell-compose-auto-transient
+                                            (chatgpt-shell-prompt-compose-transient)))
                                         'inline))
-        ;; Point should go to beginning of prompt after submission.
+        ;; Point should go to beginning of response after submission.
         (goto-char (point-min))
-        (text-property-search-forward 'prompt t)))))
+        (text-property-search-forward 'request nil)))))
 
 (defun chatgpt-shell-prompt-compose-next-interaction (&optional backwards)
   "Show next interaction (request / response).

@@ -161,6 +161,9 @@
    `(org-headline-todo ((,class (:foreground ,miasma-eucalyptus :weight bold))))
    `(org-todo ((,class (:foreground ,miasma-brass :weight bold))))
 
+   ;;;;; pulse
+   `(pulse-highlight-start-face ((,class (:background ,miasma-brass))))
+
    ;;;;; smerge-mode
    `(smerge-base ((,class (:background ,miasma-reseda :extend t))))
    `(smerge-lower ((,class (:background ,miasma-ivy :extend t))))
@@ -285,9 +288,9 @@
    `(hl-line ((,class (:background ,miasma-charcoal))))
 
    ;;;;; lsp
-   `(lsp-modeline-code-actions-face ((,class (:foreground ,miasma-olive))))
    `(lsp-face-highlight-read ((,class (:underline t :background ,miasma-moss))))
    `(lsp-face-highlight-textual ((,class (:background ,miasma-forest))))
+   `(lsp-modeline-code-actions-face ((,class (:foreground ,miasma-olive))))
 
    ;;;;; magit
    `(magit-bisect-bad ((,class (:foreground ,miasma-fire))))
@@ -384,7 +387,7 @@
    `(solaire-hl-line-face ((,class (:background ,miasma-obsidian))))
 
    ;;;;; show-paren
-   `(show-paren-match ((,class (:background ,miasma-moss :weight bold))))
+   `(show-paren-match ((,class (:background ,miasma-forest :weight bold))))
 
    ;;;;; transient
    `(transient-inactive-value ((,class :foreground ,miasma-graphite)))

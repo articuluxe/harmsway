@@ -6,8 +6,8 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.8.6
-;; Package-Requires: ((emacs "26.1") (compat "30.0.0.0") (seq "2.24"))
+;; Package-Version: 0.8.7
+;; Package-Requires: ((emacs "26.1") (compat "30.0.2.0") (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -34,7 +34,7 @@
 
 ;;; Code:
 
-(defconst transient-version "0.8.6")
+(defconst transient-version "0.8.7")
 
 (require 'cl-lib)
 (require 'compat)
@@ -105,6 +105,8 @@ TYPE is a type descriptor as accepted by `cl-typep', which see."
 (make-obsolete-variable 'transient-hide-during-minibuffer-read
                         'transient-show-during-minibuffer-read "0.8.0")
 
+(defvar transient-common-command-prefix)
+
 (defmacro transient--with-emergency-exit (id &rest body)
   (declare (indent defun))
   (unless (keywordp id)
@@ -128,20 +130,20 @@ TYPE is a type descriptor as accepted by `cl-typep', which see."
   :group 'extensions)
 
 (defcustom transient-show-popup t
-  "Whether to show the current transient in a popup buffer.
+  "Whether and when to show transient's menu in a buffer.
 \\<transient-map>
-- If t, then show the popup as soon as a transient prefix command
+- If t, then show the buffer as soon as a transient prefix command
   is invoked.
 
-- If nil, then do not show the popup unless the user explicitly
+- If nil, then do not show the buffer unless the user explicitly
   requests it, by pressing \\[transient-show] or a prefix key.
 
-- If a number, then delay displaying the popup and instead show
+- If a number, then delay displaying the buffer and instead show
   a brief one-line summary.  If zero or negative, then suppress
   even showing that summary and display the pressed key only.
 
-  Show the popup when the user explicitly requests it by pressing
-  \\[transient-show] or a prefix key.  Unless zero, then also show the popup
+  Show the buffer once the user explicitly requests it by pressing
+  \\[transient-show] or a prefix key.  Unless zero, then also show the buffer
   after that many seconds of inactivity (using the absolute value)."
   :package-version '(transient . "0.1.0")
   :group 'transient
@@ -151,12 +153,12 @@ TYPE is a type descriptor as accepted by `cl-typep', which see."
                  (number :tag "After delay" 1)))
 
 (defcustom transient-enable-popup-navigation 'verbose
-  "Whether navigation commands are enabled in the transient popup.
+  "Whether navigation commands are enabled in the menu buffer.
 
 If the value is `verbose', additionally show brief documentation
 about the command under point in the echo area.
 
-While a transient is active the transient popup buffer is not the
+While a transient is active transient's menu buffer is not the
 current buffer, making it necessary to use dedicated commands to
 act on that buffer itself.  If this is non-nil, then the following
 bindings are available:
@@ -169,7 +171,7 @@ bindings are available:
 - \\`<mouse-1>' and \\`<mouse-2>' invoke the clicked on suffix.
 \\<transient-popup-navigation-map>\
 - \\[transient-isearch-backward]\
- and \\[transient-isearch-forward] start isearch in the popup buffer.
+ and \\[transient-isearch-forward] start isearch in the menu buffer.
 
 \\`<mouse-1>' and \\`<mouse-2>' are bound in `transient-push-button'.
 All other bindings are in `transient-popup-navigation-map'.
@@ -189,9 +191,9 @@ if no transient were active."
     (side . bottom)
     (dedicated . t)
     (inhibit-same-window . t))
-  "The action used to display the transient popup buffer.
+  "The action used to display transient's menu buffer.
 
-The transient popup buffer is displayed in a window using
+The transient menu buffer is displayed in a window using
 
   (display-buffer BUFFER transient-display-buffer-action)
 
@@ -251,7 +253,7 @@ is in characters."
   :type 'natnum)
 
 (defcustom transient-mode-line-format 'line
-  "The mode-line format for the transient popup buffer.
+  "The mode-line format for transient's menu buffer.
 
 If nil, then the buffer has no mode-line.  If the buffer is not
 displayed right above the echo area, then this probably is not
@@ -282,11 +284,16 @@ See `mode-line-format' for details."
                  (sexp   :tag "Custom mode-line format")))
 
 (defcustom transient-show-common-commands nil
-  "Whether to show common transient suffixes in the popup buffer.
+  "Whether to permanently show common suffix commands in transient menus.
 
-These commands are always shown after typing the prefix key
-\\`C-x' when a transient command is active.  To toggle the value
-of this variable use \\`C-x t' when a transient is active."
+By default these commands are only temporarily shown after typing their
+shared prefix key \
+\\<transient--docstr-hint-1>\\[transient-common-command-prefix], \
+while a transient menu is active.  When the value
+of this option is non-nil, then these commands are permanently shown.
+To toggle the value for the current Emacs session only type \
+\\<transient--docstr-hint-2>\\[transient-toggle-common] while
+any transient menu is active."
   :package-version '(transient . "0.1.0")
   :group 'transient
   :type 'boolean)
@@ -416,7 +423,7 @@ using a layout optimized for Lisp.
 
 If non-nil, then the key binding of each suffix is colorized to
 indicate whether it exits the transient state or not, and the
-line that is drawn below the transient popup buffer is used to
+line that is drawn below transient's menu buffer is used to
 indicate the behavior of non-suffix commands."
   :package-version '(transient . "0.5.0")
   :group 'transient
@@ -432,8 +439,18 @@ used."
   :group 'transient
   :type 'boolean)
 
+(defcustom transient-error-on-insert-failure nil
+  "Whether to signal an error when failing to insert a suffix.
+
+When `transient-insert-suffix' and `transient-append-suffix' fail
+to insert a suffix into an existing prefix, they usually just show
+a warning.  If this is non-nil, they signal an error instead."
+  :package-version '(transient . "0.8.8")
+  :group 'transient
+  :type 'boolean)
+
 (defcustom transient-align-variable-pitch nil
-  "Whether to align columns pixel-wise in the popup buffer.
+  "Whether to align columns pixel-wise in the menu buffer.
 
 If this is non-nil, then columns are aligned pixel-wise to
 support variable-pitch fonts.  Keys are not aligned, so you
@@ -450,11 +467,11 @@ See also `transient-force-fixed-pitch'."
   :type 'boolean)
 
 (defcustom transient-force-fixed-pitch nil
-  "Whether to force use of monospaced font in the popup buffer.
+  "Whether to force use of monospaced font in the menu buffer.
 
 Even if you use a proportional font for the `default' face,
 you might still want to use a monospaced font in transient's
-popup buffer.  Setting this option to t causes `default' to
+menu buffer.  Setting this option to t causes `default' to
 be remapped to `fixed-pitch' in that buffer.
 
 See also `transient-align-variable-pitch'."
@@ -484,7 +501,7 @@ Integers between 1 and 7 (inclusive) are valid levels.
 
 The levels of individual transients and/or their individual
 suffixes can be changed individually, by invoking the prefix and
-then pressing \\`C-x l'.
+then pressing \\<transient--docstr-hint-2>\\[transient-set-level].
 
 The default level for both transients and their suffixes is 4.
 This option only controls the default for transients.  The default
@@ -1014,7 +1031,7 @@ argument supported by the constructor of that class.  The
 explicitly.
 
 GROUPs add key bindings for infix and suffix commands and specify
-how these bindings are presented in the popup buffer.  At least
+how these bindings are presented in the menu buffer.  At least
 one GROUP has to be specified.  See info node `(transient)Binding
 Suffix and Infix Commands'.
 
@@ -1211,6 +1228,8 @@ commands are aliases for."
     ;; ARGLIST and FORM are only optional for backward compatibility.
     ;; This is necessary because "emoji.el" from Emacs 29 calls this
     ;; function directly, with just one argument.
+    (declare (advertised-calling-convention
+              (args arglist form &optional nobody) "0.7.1"))
     (unless (listp arglist)
       (error "Mandatory ARGLIST is missing"))
     (let (class keys suffixes docstr declare (interactive-only t))
@@ -1392,9 +1411,12 @@ commands are aliases for."
             (_ (use key val)))))
       (when spec
         (error "Need keyword, got %S" (car spec)))
-      (when-let* (((not (plist-get args :key)))
-                  (shortarg (plist-get args :shortarg)))
-        (use :key shortarg)))
+      (if-let ((key (plist-get args :key)))
+          (when (string-match "\\`\\({p}\\)" key)
+            (use :key
+                 (replace-match transient-common-command-prefix t t key 1)))
+        (when-let ((shortarg (plist-get args :shortarg)))
+          (use :key shortarg))))
     (list 'list
           level
           (macroexp-quote (or class 'transient-suffix))
@@ -1455,14 +1477,16 @@ Intended for use in a group's `:setup-children' function."
     (setq suf (eval suf t))
     (cond
      ((not mem)
-      (error "Cannot insert %S into %s; %s not found"
-             suffix prefix loc))
+      (funcall (if transient-error-on-insert-failure #'error #'message)
+               "Cannot insert %S into %s; %s not found"
+               suffix prefix loc))
      ((or (and (vectorp suffix) (not (vectorp elt)))
           (and (listp   suffix) (vectorp elt))
           (and (stringp suffix) (vectorp elt)))
-      (error "Cannot place %S into %s at %s; %s"
-             suffix prefix loc
-             "suffixes and groups cannot be siblings"))
+      (funcall (if transient-error-on-insert-failure #'error #'message)
+               "Cannot place %S into %s at %s; %s"
+               suffix prefix loc
+               "suffixes and groups cannot be siblings"))
      (t
       (when-let* (((not (eq keep-other 'always)))
                   (bindingp (listp suf))
@@ -1692,7 +1716,7 @@ That buffer is current and empty when this hook runs.")
 (defconst transient--exit nil "Do exit the transient.")
 
 (defvar transient--exitp nil "Whether to exit the transient.")
-(defvar transient--showp nil "Whether to show the transient popup buffer.")
+(defvar transient--showp nil "Whether to show the transient menu buffer.")
 (defvar transient--helpp nil "Whether help-mode is active.")
 (defvar transient--docsp nil "Whether docstring-mode is active.")
 (defvar transient--editp nil "Whether edit-mode is active.")
@@ -1716,7 +1740,7 @@ That buffer is current and empty when this hook runs.")
   "The transient menu buffer.")
 
 (defvar transient--window nil
-  "The window used to display the transient popup buffer.")
+  "The window used to display transient's menu buffer.")
 
 (defvar transient--original-window nil
   "The window that was selected before the transient was invoked.
@@ -1931,7 +1955,7 @@ to `transient-predicate-map'."
     (keymap-set map "C-t"   #'transient-show)
     (keymap-set map "?"     #'transient-help)
     (keymap-set map "C-h"   #'transient-help)
-    ;; Also bound to "C-x p" and "C-x n" in transient-common-commands.
+    ;; Next two have additional bindings in transient-common-commands.
     (keymap-set map "C-M-p" #'transient-history-prev)
     (keymap-set map "C-M-n" #'transient-history-next)
     (when (fboundp 'other-frame-prefix) ;Emacs >= 28.1
@@ -1946,53 +1970,81 @@ to `transient-predicate-map'.  See also `transient-base-map'.")
 (defvar-keymap transient-edit-map
   :doc "Keymap that is active while a transient in is in \"edit mode\"."
   :parent transient-base-map
-  "?"     #'transient-help
-  "C-h"   #'transient-help
-  "C-x l" #'transient-set-level)
+  "?"   #'transient-help
+  "C-h" #'transient-help)
 
 (defvar-keymap transient-sticky-map
   :doc "Keymap that is active while an incomplete key sequence is active."
   :parent transient-base-map
   "C-g" #'transient-quit-seq)
 
-(defvar transient--common-command-prefixes '(?\C-x))
+(defvar transient-common-commands
+  [:hide (lambda ()
+           (defvar transient--redisplay-key)
+           (and (not (equal (vconcat transient--redisplay-key)
+                            (read-kbd-macro transient-common-command-prefix)))
+                (not transient-show-common-commands)))
+   ["Value commands"
+    ("{p} s  " "Set"            transient-set)
+    ("{p} C-s" "Save"           transient-save)
+    ("{p} C-k" "Reset"          transient-reset)
+    ("{p} p  " "Previous value" transient-history-prev)
+    ("{p} n  " "Next value"     transient-history-next)]
+   ["Sticky commands"
+    ;; Like `transient-sticky-map' except that
+    ;; "C-g" has to be bound to a different command.
+    ("C-g" "Quit prefix or transient" transient-quit-one)
+    ("C-q" "Quit transient stack"     transient-quit-all)
+    ("C-z" "Suspend transient stack"  transient-suspend)]
+   ["Customize"
+    ("{p} t" transient-toggle-common)
+    ("{p} l" "Show/hide suffixes" transient-set-level)
+    ("{p} a" transient-toggle-level-limit)]]
+  "Commands available in all transient menus.
+The same functions that are used to change bindings in transient prefix
+commands, can be used to modify these bindings as well, but note that
+customizing `transient-common-command-prefix' resets these bindings and
+that the special meaning of \"{p}\" does not apply when modifying these
+bindings.")
 
-(put 'transient-common-commands
-     'transient--layout
-     (list
-      (eval
-       (car (transient--parse-child
-             'transient-common-commands
-             (vector
-              :hide
-              (lambda ()
-                (and (not (memq
-                           (car (bound-and-true-p transient--redisplay-key))
-                           transient--common-command-prefixes))
-                     (not transient-show-common-commands)))
-              (vector
-               "Value commands"
-               (list "C-x s  " "Set"            #'transient-set)
-               (list "C-x C-s" "Save"           #'transient-save)
-               (list "C-x C-k" "Reset"          #'transient-reset)
-               (list "C-x p  " "Previous value" #'transient-history-prev)
-               (list "C-x n  " "Next value"     #'transient-history-next))
-              (vector
-               "Sticky commands"
-               ;; Like `transient-sticky-map' except that
-               ;; "C-g" has to be bound to a different command.
-               (list "C-g" "Quit prefix or transient" #'transient-quit-one)
-               (list "C-q" "Quit transient stack"     #'transient-quit-all)
-               (list "C-z" "Suspend transient stack"  #'transient-suspend))
-              (vector
-               "Customize"
-               (list "C-x t" #'transient-toggle-common)
-               (list "C-x l" "Show/hide suffixes" #'transient-set-level)
-               (list "C-x a" #'transient-toggle-level-limit)))))
-       t)))
+(defun transient--init-common-commands ()
+  (put 'transient-common-commands
+       'transient--layout
+       (list (eval (car (transient--parse-child 'transient-common-commands
+                                                transient-common-commands))
+                   t)))
+  (defvar transient-common-command-prefix)
+  (defvar transient--docstr-hint-1)
+  (defvar transient--docstr-hint-2)
+  (setq transient--docstr-hint-1
+        (define-keymap transient-common-command-prefix
+          'transient-common-command-prefix))
+  (setq transient--docstr-hint-2
+        (define-keymap (concat transient-common-command-prefix " t")
+          'transient-toggle-common)))
+
+(defcustom transient-common-command-prefix "C-x"
+  "The prefix key used for most commands common to all menus.
+
+Some shared commands are available in all transient menus, most of
+which share a common prefix specified by this option.  By default the
+bindings for these shared commands are only shown after pressing that
+prefix key and before following that up with a valid key binding.
+
+For historic reasons \\`C-x' is used by default, but users are
+encouraged to pick another key, preferably one that is not commonly used
+in Emacs but is still convenient to them.  See info node `(transient)
+Common Suffix Commands'."
+  :type 'key
+  :initialize (lambda (symbol exp)
+                (custom-initialize-default symbol exp)
+                (transient--init-common-commands))
+  :set (lambda (symbol value)
+         (set-default symbol value)
+         (transient--init-common-commands)))
 
 (defvar-keymap transient-popup-navigation-map
-  :doc "One of the keymaps used when popup navigation is enabled.
+  :doc "One of the keymaps used when menu navigation is enabled.
 See `transient-enable-popup-navigation'."
   "<down-mouse-1>" #'transient-noop
   "<up>"   #'transient-backward-button
@@ -2002,7 +2054,7 @@ See `transient-enable-popup-navigation'."
   "M-RET"  #'transient-push-button)
 
 (defvar-keymap transient-button-map
-  :doc "One of the keymaps used when popup navigation is enabled.
+  :doc "One of the keymaps used when menu navigation is enabled.
 See `transient-enable-popup-navigation'."
   "<mouse-1>" #'transient-push-button
   "<mouse-2>" #'transient-push-button)
@@ -2102,9 +2154,11 @@ of the corresponding object."
 
 (defun transient--make-transient-map ()
   (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map (if transient--editp
-                               transient-edit-map
-                             transient-map))
+    (cond (transient--editp
+           (keymap-set map (concat transient-common-command-prefix " l")
+                       #'transient-set-level)
+           (set-keymap-parent map transient-edit-map))
+          ((set-keymap-parent map transient-map)))
     (dolist (obj transient--suffixes)
       (let ((key (oref obj key)))
         (when (vectorp key)
@@ -2369,6 +2423,7 @@ value.  Otherwise return CHILDREN as is.")
 (defun transient--init-suffix (levels spec parent)
   (pcase-let* ((`(,level ,class ,args) spec)
                (cmd (plist-get args :command))
+               (_ (transient--load-command-if-autoload cmd))
                (key (transient--kbd (plist-get args :key)))
                (proto (and cmd (transient--suffix-prototype cmd)))
                (level (or (alist-get (cons cmd key) levels nil nil #'equal)
@@ -2376,7 +2431,6 @@ value.  Otherwise return CHILDREN as is.")
                           level
                           (and proto (oref proto level))
                           transient--default-child-level)))
-    (transient--load-command-if-autoload cmd)
     (when (transient--use-level-p level)
       (let ((obj (if (child-of-class-p class 'transient-information)
                      (apply class :parent parent :level level args)
@@ -3171,7 +3225,7 @@ This should never happen.
 Please open an issue and post the shown command log." :error)))
 
 (defun transient-inhibit-move ()
-  "Warn the user that popup navigation is disabled."
+  "Warn the user that menu navigation is disabled."
   (interactive)
   (message "To enable use of `%s', please customize `%s'"
            this-original-command
@@ -3192,12 +3246,12 @@ Please open an issue and post the shown command log." :error)))
   (interactive))
 
 (defun transient-update ()
-  "Redraw the transient's state in the popup buffer."
+  "Redraw the transient's state in the menu buffer."
   (interactive)
   (setq prefix-arg current-prefix-arg))
 
 (defun transient-show ()
-  "Show the transient's state in the popup buffer."
+  "Show the transient's state in the menu buffer."
   (interactive)
   (setq transient--showp t))
 
@@ -4858,7 +4912,8 @@ Type %s and then %s to describe the respective suffix command.\n"
         (propertize "<KEY>" 'face 'transient-key)
         (propertize "<N>"   'face 'transient-key)
         (propertize " N "   'face 'transient-enabled-suffix)
-        (propertize "C-x l" 'face 'transient-key)
+        (propertize (concat transient-common-command-prefix " l")
+                    'face 'transient-key)
         (propertize "<N>"   'face 'transient-key)
         (propertize " N "   'face 'transient-enabled-suffix)
         (propertize "C-h"   'face 'transient-key)
@@ -4909,10 +4964,10 @@ This is used when a tooltip is needed.")
         (let ((message-log-max nil))
           (message "%s" doc))))))
 
-;;; Popup Navigation
+;;; Menu Navigation
 
 (defun transient-scroll-up (&optional arg)
-  "Scroll text of transient popup window upward ARG lines.
+  "Scroll text of transient's menu window upward ARG lines.
 If ARG is nil scroll near full screen.  This is a wrapper
 around `scroll-up-command' (which see)."
   (interactive "^P")
@@ -4920,7 +4975,7 @@ around `scroll-up-command' (which see)."
     (scroll-up-command arg)))
 
 (defun transient-scroll-down (&optional arg)
-  "Scroll text of transient popup window down ARG lines.
+  "Scroll text of transient's menu window down ARG lines.
 If ARG is nil scroll near full screen.  This is a wrapper
 around `scroll-down-command' (which see)."
   (interactive "^P")
@@ -4928,7 +4983,7 @@ around `scroll-down-command' (which see)."
     (scroll-down-command arg)))
 
 (defun transient-backward-button (n)
-  "Move to the previous button in the transient popup buffer.
+  "Move to the previous button in transient's menu buffer.
 See `backward-button' for information about N."
   (interactive "p")
   (with-selected-window transient--window
@@ -4937,7 +4992,7 @@ See `backward-button' for information about N."
       (transient-show-summary (get-text-property (point) 'suffix)))))
 
 (defun transient-forward-button (n)
-  "Move to the next button in the transient popup buffer.
+  "Move to the next button in transient's menu buffer.
 See `forward-button' for information about N."
   (interactive "p")
   (with-selected-window transient--window
@@ -4977,7 +5032,7 @@ See `forward-button' for information about N."
                beg 'face nil (line-end-position))))))
 
 ;;; Compatibility
-;;;; Popup Isearch
+;;;; Menu Isearch
 
 (defvar-keymap transient--isearch-mode-map
   :parent isearch-mode-map

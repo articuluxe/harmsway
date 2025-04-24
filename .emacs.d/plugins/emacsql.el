@@ -6,7 +6,7 @@
 ;; Maintainer: Jonas Bernoulli <emacs.emacsql@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/magit/emacsql
 
-;; Package-Version: 4.2.0
+;; Package-Version: 4.3.0
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; SPDX-License-Identifier: Unlicense
@@ -32,7 +32,7 @@
   "The EmacSQL SQL database front-end."
   :group 'comm)
 
-(defconst emacsql-version "4.2.0")
+(defconst emacsql-version "4.3.0")
 
 (defvar emacsql-global-timeout 30
   "Maximum number of seconds to wait before bailing out on a SQL command.
@@ -183,8 +183,6 @@ specific error conditions."
         (prog1 value
           (unless (eq (read) 'success)
             (emacsql-handle connection (read) (read))))))))
-
-(provide 'emacsql) ; end of generic function declarations
 
 ;;; Automatic connection cleanup
 
@@ -374,5 +372,7 @@ Once activated, vector contents no longer indent like lists."
   (interactive)
   (advice-add 'calculate-lisp-indent :around
               #'emacsql--calculate-vector-indent))
+
+(provide 'emacsql)
 
 ;;; emacsql.el ends here

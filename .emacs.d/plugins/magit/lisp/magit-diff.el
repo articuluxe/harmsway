@@ -73,7 +73,7 @@
 (declare-function magit-commit-add-log "magit-commit" ())
 (declare-function magit-diff-trace-definition "magit-log" ())
 (declare-function magit-patch-save "magit-patch" (files &optional arg))
-(declare-function magit-do-async-shell-command "magit-extras" (file))
+(declare-function magit-do-async-shell-command "magit-dired" (file))
 (declare-function magit-add-change-log-entry "magit-extras"
                   (&optional whoami file-name other-window))
 (declare-function magit-add-change-log-entry-other-window "magit-extras"
@@ -197,7 +197,7 @@ keep their distinct foreground colors."
 `t'    Show fine differences for the current diff hunk only.
 `all'  Show fine differences for all displayed diff hunks."
   :group 'magit-diff
-  :safe (lambda (val) (memq val '(nil t all)))
+  :safe (##memq % '(nil t all))
   :type '(choice (const :tag "Never" nil)
                  (const :tag "Current" t)
                  (const :tag "All" all)))
@@ -258,7 +258,7 @@ The options `magit-diff-highlight-trailing' and
 `magit-diff-highlight-indentation' control what kind of
 whitespace errors are highlighted."
   :group 'magit-diff
-  :safe (lambda (val) (memq val '(t nil uncommitted status)))
+  :safe (##memq % '(t nil uncommitted status))
   :type '(choice (const :tag "In all diffs" t)
                  (const :tag "Only in uncommitted changes" uncommitted)
                  (const :tag "Never" nil)))
@@ -271,7 +271,7 @@ whitespace errors are highlighted."
 `all'     Highlight in added, removed and context lines."
   :package-version '(magit . "3.0.0")
   :group 'magit-diff
-  :safe (lambda (val) (memq val '(t both all)))
+  :safe (##memq % '(t both all))
   :type '(choice (const :tag "In added lines" t)
                  (const :tag "In added and removed lines" both)
                  (const :tag "In added, removed and context lines" all)))
@@ -1423,9 +1423,8 @@ for a revision."
               (magit-diff--goto-position file line col))))))))
 
 (defun magit-diff--locate-hunk (file line &optional parent)
-  (and-let* ((diff (cl-find-if (lambda (section)
-                                 (and (cl-typep section 'magit-file-section)
-                                      (equal (oref section value) file)))
+  (and-let* ((diff (cl-find-if (##and (cl-typep % 'magit-file-section)
+                                      (equal (oref % value) file))
                                (oref (or parent magit-root-section) children))))
     (let ((hunks (oref diff children)))
       (cl-block nil
@@ -1522,12 +1521,12 @@ instead."
 (defun magit-diff-less-context (&optional count)
   "Decrease the context for diff hunks by COUNT lines."
   (interactive "p")
-  (magit-diff-set-context (lambda (cur) (max 0 (- (or cur 0) count)))))
+  (magit-diff-set-context (##max 0 (- (or % 0) count))))
 
 (defun magit-diff-more-context (&optional count)
   "Increase the context for diff hunks by COUNT lines."
   (interactive "p")
-  (magit-diff-set-context (lambda (cur) (+ (or cur 0) count))))
+  (magit-diff-set-context (##+ (or % 0) count)))
 
 (defun magit-diff-default-context ()
   "Reset context for diff hunks to the default height."
@@ -1597,9 +1596,9 @@ Display the buffer in the selected window.  With a prefix
 argument OTHER-WINDOW display the buffer in another window
 instead.
 
-Visit the worktree version of the appropriate file.  The location
-of point inside the diff determines which file is being visited.
-The visited version depends on what changes the diff is about.
+The location of point inside the diff determines which file is
+being visited.  The visited version depends on what changes the
+diff is about.
 
 1. If the diff shows uncommitted changes (i.e., stage or unstaged
    changes), then visit the file in the working tree (i.e., the
@@ -2125,8 +2124,8 @@ keymap is the parent of their keymaps."
   "<remap> <magit-visit-thing>"      #'magit-diff-visit-file
   "<remap> <magit-revert-no-commit>" #'magit-reverse
   "<remap> <magit-delete-thing>"     #'magit-discard
-  "<remap> <magit-unstage-file>"     #'magit-unstage
-  "<remap> <magit-stage-file>"       #'magit-stage
+  "<remap> <magit-unstage-files>"    #'magit-unstage
+  "<remap> <magit-stage-files>"      #'magit-stage
   "<remap> <magit-cherry-apply>"     #'magit-apply
   "<8>" (magit-menu-item "Rename file" #'magit-file-rename
                          '(:enable (eq (magit-diff-scope) 'file)))
@@ -2232,7 +2231,7 @@ keymap is the parent of their keymaps."
     (unless (equal cmd "merge-tree")
       (push "--ita-visible-in-index" args))
     (setq args (magit-diff--maybe-add-stat-arguments args))
-    (when (cl-member-if (lambda (arg) (string-prefix-p "--color-moved" arg)) args)
+    (when (cl-member-if (##string-prefix-p "--color-moved" %) args)
       (push "--color=always" args)
       (setq magit-git-global-arguments
             (append magit-diff--reset-non-color-moved
@@ -2240,7 +2239,7 @@ keymap is the parent of their keymaps."
     (magit--git-wash #'magit-diff-wash-diffs
         (if (member "--no-index" args)
             'wash-anyway
-          (or keep-error magit--git-wash-keep-error))
+          (or keep-error t))
       cmd args)))
 
 (defun magit-diff--maybe-add-stat-arguments (args)
@@ -2339,7 +2338,7 @@ keymap is the parent of their keymaps."
         (if (looking-at "^$") (forward-line) (insert "\n"))))))
 
 (defun magit-diff-wash-diff (args)
-  (when (cl-member-if (lambda (arg) (string-prefix-p "--color-moved" arg)) args)
+  (when (cl-member-if (##string-prefix-p "--color-moved" %) args)
     (require 'ansi-color)
     (ansi-color-apply-on-region (point-min) (point-max)))
   (cond
@@ -2454,7 +2453,7 @@ keymap is the parent of their keymaps."
       (setq header (nreverse header))
       ;; KLUDGE `git-log' ignores `--no-prefix' when `-L' is used.
       (when (and (derived-mode-p 'magit-log-mode)
-                 (seq-some (lambda (arg) (string-prefix-p "-L" arg))
+                 (seq-some (##string-prefix-p "-L" %)
                            magit-buffer-log-args))
         (when orig
           (setq orig (substring orig 2)))
@@ -3107,7 +3106,7 @@ It the SECTION has a different type, then do nothing."
 (defvar-keymap magit-unstaged-section-map
   :doc "Keymap for the `unstaged' section."
   "<remap> <magit-visit-thing>"  #'magit-diff-unstaged
-  "<remap> <magit-stage-file>"   #'magit-stage
+  "<remap> <magit-stage-files>"  #'magit-stage
   "<remap> <magit-delete-thing>" #'magit-discard
   "<3>" (magit-menu-item "Discard all" #'magit-discard)
   "<2>" (magit-menu-item "Stage all"   #'magit-stage)
@@ -3128,7 +3127,7 @@ It the SECTION has a different type, then do nothing."
   :doc "Keymap for the `staged' section."
   "<remap> <magit-revert-no-commit>" #'magit-reverse
   "<remap> <magit-delete-thing>"     #'magit-discard
-  "<remap> <magit-unstage-file>"     #'magit-unstage
+  "<remap> <magit-unstage-files>"    #'magit-unstage
   "<remap> <magit-visit-thing>"      #'magit-diff-staged
   "<4>" (magit-menu-item "Reverse all" #'magit-reverse)
   "<3>" (magit-menu-item "Discard all" #'magit-discard)
@@ -3374,14 +3373,13 @@ are highlighted."
                           (delq section magit-section-unhighlight-sections)))
                    (magit-diff-highlight-hunk-body
                     (setq paint t)))))
+          ((and (oref section hidden)
+                (memq section magit-section-unhighlight-sections))
+           (cl-pushnew section magit-section-highlighted-sections)
+           (setq magit-section-unhighlight-sections
+                 (delq section magit-section-unhighlight-sections)))
           (t
-           (cond ((and (oref section hidden)
-                       (memq section magit-section-unhighlight-sections))
-                  (cl-pushnew section magit-section-highlighted-sections)
-                  (setq magit-section-unhighlight-sections
-                        (delq section magit-section-unhighlight-sections)))
-                 (t
-                  (setq paint t)))))
+           (setq paint t)))
     (when paint
       (save-excursion
         (goto-char (oref section start))

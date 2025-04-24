@@ -121,7 +121,7 @@ an error."
 (defvar-local forge--pre-post-buffer nil)
 (make-variable-buffer-local 'forge-buffer-draft-p)
 
-(defun forge--prepare-post-buffer (filename &optional header source target)
+(defun forge--prepare-post-buffer (filename &optional header source target template)
   (let* ((repo (forge-get-repository :tracked))
          (tree (oref repo worktree))
          (file (convert-standard-filename
@@ -151,20 +151,9 @@ an error."
                   (?d "[d]iscard draft and start over" t))
             (erase-buffer)
             (setq resume nil)))
-        (when (and (not resume) (string-prefix-p "new" filename))
-          (let-alist (forge--topic-template
-                      (forge-get-repository :tracked)
-                      (pcase filename
-                        ("new-discussion" 'forge-discussion)
-                        ("new-issue"      'forge-issue)
-                        ("new-pullreq"    'forge-pullreq)))
+        (when (and (not resume) template)
+          (let-alist template
             (cond
-             (.url
-              (browse-url .url)
-              (forge-post-cancel)
-              (setq buf nil)
-              (message "Using browser to visit %s instead of opening an issue"
-                       .url))
              (.name
               ;; A Github issue with yaml frontmatter.
               (save-excursion (insert .text))
@@ -217,9 +206,8 @@ an error."
          (topic   (ignore-errors (forge-get-topic forge--buffer-post-object)))
          (repo    (forge-get-repository topic)))
     (lambda (value &optional headers status req)
-      (when headers
-        (run-hook-with-args 'forge-post-submit-callback-hook
-                            value headers status req))
+      (run-hook-with-args 'forge-post-submit-callback-hook
+                          value headers status req)
       (delete-file file t)
       (let ((dir (file-name-directory file)))
         (unless (cddr (directory-files dir nil nil t))
@@ -262,9 +250,7 @@ an error."
   "<remap> <magit-edit-thing>" #'forge-edit-topic-note)
 
 (defun forge--save-note (_repo topic)
-  (let ((value (string-trim (buffer-substring-no-properties
-                             (point-min)
-                             (point-max)))))
+  (let ((value (string-trim (magit--buffer-string))))
     (oset topic note (if (equal value "") nil value)))
   (delete-file buffer-file-name t)
   (let ((dir (file-name-directory buffer-file-name)))

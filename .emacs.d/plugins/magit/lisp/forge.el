@@ -7,19 +7,19 @@
 ;; Homepage: https://github.com/magit/forge
 ;; Keywords: git tools vc
 
-;; Package-Version: 0.4.8
+;; Package-Version: 0.5.0
 ;; Package-Requires: (
 ;;     (emacs "29.1")
 ;;     (compat "30.0.2.0")
 ;;     (closql "2.2.1")
-;;     (emacsql "4.2.0")
-;;     (ghub "4.2.2")
+;;     (emacsql "4.3.0")
+;;     (ghub "4.3.0")
 ;;     (let-alist "1.0.6")
-;;     (llama "0.6.1")
-;;     (magit "4.3.1")
+;;     (llama "0.6.2")
+;;     (magit "4.3.2")
 ;;     (markdown-mode "2.7")
 ;;     (seq "2.24")
-;;     (transient "0.8.5")
+;;     (transient "0.8.7")
 ;;     (yaml "1.2.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -59,6 +59,7 @@
 (require 'forge-repo)
 (require 'forge-post)
 (require 'forge-topic)
+(require 'forge-discussion)
 (require 'forge-issue)
 (require 'forge-pullreq)
 (require 'forge-revnote)
@@ -85,9 +86,9 @@ If you want to disable this, then you must set this to nil before
 `forge' is loaded.")
 
 (when forge-add-default-sections
-  (magit-add-section-hook 'magit-status-sections-hook #'forge-insert-discussions nil t)
   (magit-add-section-hook 'magit-status-sections-hook #'forge-insert-pullreqs    nil t)
-  (magit-add-section-hook 'magit-status-sections-hook #'forge-insert-issues      nil t))
+  (magit-add-section-hook 'magit-status-sections-hook #'forge-insert-issues      nil t)
+  (magit-add-section-hook 'magit-status-sections-hook #'forge-insert-discussions nil t))
 
 ;;; Add Bindings
 

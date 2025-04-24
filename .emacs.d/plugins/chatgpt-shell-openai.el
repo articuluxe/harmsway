@@ -34,7 +34,18 @@
 (declare-function chatgpt-shell--make-chatgpt-url "chatgpt-shell")
 (declare-function chatgpt-shell-validate-no-system-prompt "chatgpt-shell")
 
-(cl-defun chatgpt-shell-openai-make-model (&key version short-version token-width context-window validate-command (headers #'chatgpt-shell-openai--make-headers) (key chatgpt-shell-openai-key) (url-base 'chatgpt-shell-api-url-base) (path "/v1/chat/completions") (provider "OpenAI") (label "ChatGPT") (handler #'chatgpt-shell-openai--handle-chatgpt-command) (filter #'chatgpt-shell-openai--filter-output) other-params)
+;; See https://platform.openai.com/docs/guides/reasoning
+(defcustom chatgpt-shell-openai-reasoning-effort "medium"
+  "The amount of reasoning effort to use for OpenAI reasoning
+models. It can be \"low\", \"medium\" or \"high\". Lower values
+are faster and cheaper but higher values may work better for more
+difficult problems."
+  :type 'string
+  :safe #'stringp
+  :options '("low" "medium" "high")
+  :group 'chatgpt-shell)
+
+(cl-defun chatgpt-shell-openai-make-model (&key version short-version token-width context-window validate-command (headers #'chatgpt-shell-openai--make-headers) (key chatgpt-shell-openai-key) (url-base 'chatgpt-shell-api-url-base) (path "/v1/chat/completions") (provider "OpenAI") (label "ChatGPT") (handler #'chatgpt-shell-openai--handle-chatgpt-command) (filter #'chatgpt-shell-openai--filter-output) reasoning-effort other-params)
   "Create an OpenAI model.
 
 Set VERSION, SHORT-VERSION, TOKEN-WIDTH, CONTEXT-WINDOW,
@@ -50,27 +61,43 @@ HANDLER, FILTER and OTHER-PARAMS."
     (error ":token-width must be an integer"))
   (unless (integerp context-window)
     (error ":context-window must be an integer"))
-  `((:version . ,version)
-    (:short-version . ,short-version)
-    (:label . ,label)
-    (:provider . ,provider)
-    (:path . ,path)
-    (:token-width . ,token-width)
-    (:context-window . ,context-window)
-    (:handler . ,handler)
-    (:filter . ,filter)
-    (:payload . chatgpt-shell-openai--make-payload)
-    (:headers . ,headers)
-    (:url . chatgpt-shell-openai--make-url)
-    (:key . ,key)
-    (:url-base . ,url-base)
-    (:validate-command . ,(or validate-command 'chatgpt-shell-openai--validate-command))
-    (:other-params . ,other-params)))
+  (append `((:version . ,version)
+            (:short-version . ,short-version)
+            (:label . ,label)
+            (:provider . ,provider)
+            (:path . ,path)
+            (:token-width . ,token-width)
+            (:context-window . ,context-window)
+            (:handler . ,handler)
+            (:filter . ,filter)
+            (:payload . chatgpt-shell-openai--make-payload)
+            (:headers . ,headers)
+            (:url . chatgpt-shell-openai--make-url)
+            (:key . ,key)
+            (:reasoning-effort . ,reasoning-effort)
+            (:url-base . ,url-base)
+            (:validate-command . ,(or validate-command 'chatgpt-shell-openai--validate-command))
+            (:other-params . ,other-params))))
 
 (defun chatgpt-shell-openai-models ()
   "Build a list of all OpenAI LLM models available."
   ;; Context windows have been verified as of 11/26/2024.
   (list (chatgpt-shell-openai-make-model
+         :version "gpt-4.1"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4.1
+         :context-window 1047576)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4.1-mini"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4.1-mini
+         :context-window 1047576)
+        (chatgpt-shell-openai-make-model
+         :version "gpt-4.1-nano"
+         :token-width 3
+         ;; https://platform.openai.com/docs/models/gpt-4.1-nano
+         :context-window 1047576)
+        (chatgpt-shell-openai-make-model
          :version "chatgpt-4o-latest"
          :token-width 3
          ;; https://platform.openai.com/docs/models/chatgpt-4o-latest
@@ -96,40 +123,44 @@ HANDLER, FILTER and OTHER-PARAMS."
          ;; https://platform.openai.com/docs/models/gpt-4o-mini-search-preview
          :context-window 128000)
         (chatgpt-shell-openai-make-model
+         :version "o4-mini"
+         :token-width 3
+         :context-window 200000
+         :reasoning-effort t
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
+        (chatgpt-shell-openai-make-model
+         :version "o3"
+         :token-width 3
+         :context-window 200000
+         :reasoning-effort t
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
+        (chatgpt-shell-openai-make-model
          :version "o3-mini"
          :token-width 3
          :context-window 200000
-         :validate-command
-         ;; TODO: Standardize whether or not a model supports system prompts.
-         (lambda (command model settings)
-           (or (chatgpt-shell-openai--validate-command command model settings)
-               (when (map-elt settings :system-prompt)
-                 (format "Model \"%s\" does not support system prompts. Please unset via \"M-x chatgpt-shell-swap-system-prompt\" by selecting None."
-                         (map-elt model :version))))))
+         :reasoning-effort t
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
         (chatgpt-shell-openai-make-model
          :version "o1"
          :token-width 3
          ;; https://platform.openai.com/docs/models/o1
          :context-window 200000
+         :reasoning-effort t
          :validate-command #'chatgpt-shell-validate-no-system-prompt)
         (chatgpt-shell-openai-make-model
          :version "o1-preview"
          :token-width 3
          ;; https://platform.openai.com/docs/models/gpt-01
          :context-window 128000
+         ;; Reasoning effort is only supported for o1-pro, o1 and o3-mini.
          :validate-command #'chatgpt-shell-validate-no-system-prompt)
         (chatgpt-shell-openai-make-model
          :version "o1-mini"
          :token-width 3
          ;; https://platform.openai.com/docs/models/gpt-01-mini
          :context-window 128000
-         :validate-command
-         ;; TODO: Standardize whether or not a model supports system prompts.
-         (lambda (command model settings)
-           (or (chatgpt-shell-openai--validate-command command model settings)
-               (when (map-elt settings :system-prompt)
-                 (format "Model \"%s\" does not support system prompts. Please unset via \"M-x chatgpt-shell-swap-system-prompt\" by selecting None."
-                         (map-elt model :version))))))
+         ;; Reasoning effort is only supported for o1 and o3-mini.
+         :validate-command #'chatgpt-shell-validate-no-system-prompt)
         (chatgpt-shell-openai-make-model
          :version "gpt-4.5-preview"
          :token-width 3
@@ -205,7 +236,7 @@ CONTEXT: Excludes PROMPT."
         (t
          nil)))
 
-(cl-defun chatgpt-shell-openai-make-chatgpt-request-data (&key system-prompt prompt prompt-url context version temperature streaming other-params)
+(cl-defun chatgpt-shell-openai-make-chatgpt-request-data (&key system-prompt prompt prompt-url context version temperature reasoning-effort streaming other-params)
   "Make request data with MESSAGES.
 
 Optionally set PROMPT, VERSION, TEMPERATURE, STREAMING, SYSTEM-PROMPT,
@@ -221,6 +252,8 @@ and OTHER-PARAMS (list)."
                             :context context))))
    (when temperature
      `((temperature . ,temperature)))
+   (when reasoning-effort
+     `((reasoning_effort . ,reasoning-effort)))
    (when streaming
      `((stream . t)))
    other-params))
@@ -310,6 +343,8 @@ or
    :context context
    :version (map-elt model :version)
    :temperature (map-elt settings :temperature)
+   :reasoning-effort (and (map-elt model :reasoning-effort)
+                          chatgpt-shell-openai-reasoning-effort)
    :streaming (map-elt settings :streaming)
    :other-params (map-elt model :other-params)))
 
@@ -328,6 +363,8 @@ or
           :context context
           :version (map-elt model :version)
           :temperature (map-elt settings :temperature)
+          :reasoning-effort (and (map-elt model :reasoning-effort)
+                                 chatgpt-shell-openai-reasoning-effort)
           :streaming (map-elt settings :streaming)
           :other-params (map-elt model :other-params))
    :headers (list "Content-Type: application/json; charset=utf-8"

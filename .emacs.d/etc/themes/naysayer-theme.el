@@ -1,7 +1,7 @@
 ;;; naysayer-theme.el --- The naysayer color theme
 
 ;; Author: Nick Aversano <nickav@users.noreply.github.com>
-;; Version: 0.33
+;; Version: 0.34
 ;; Filename: naysayer-theme.el
 ;; Package-Requires: ((emacs "24"))
 ;; URL: https://github.com/nickav/naysayer-theme.el
@@ -90,6 +90,20 @@
    `(linum-relative-current-face ((t (:foreground ,white :background ,background))))
    `(line-number ((t (:foreground ,line-fg :background ,background))))
    `(line-number-current-line ((t (:foreground ,white :background ,background))))
+
+   ;; compilation
+   `(compilation-info ((t ,(list :foreground naysayer-theme-green
+                                 :inherit 'unspecified))))
+   `(compilation-warning ((t ,(list :foreground naysayer-theme-yellow
+                                    :bold t
+                                    :inherit 'unspecified))))
+   `(compilation-error ((t (:foreground, error))))
+   `(compilation-mode-line-fail ((t ,(list :foreground error
+                                           :weight 'bold
+                                           :inherit 'unspecified))))
+   `(compilation-mode-line-exit ((t ,(list :foreground naysayer-theme-green
+                                           :weight 'bold
+                                           :inherit 'unspecified))))
 
    ;; hl-line-mode
    `(hl-line ((t (:background ,highlight-line))))

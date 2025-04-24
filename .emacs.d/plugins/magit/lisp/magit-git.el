@@ -226,7 +226,16 @@ framework ultimately determines how the collection is displayed."
 
 ;;; Git
 
-(defvar magit-git-debug nil)
+(defvar magit-git-debug nil
+  "Whether and how to enable additional debugging of git errors.
+
+Use `magit-toggle-git-debug' (which see) to toggle the boolean value of
+this variable.  This can also manually be set to `include-success', in
+which case successful git invocations are also logged.
+
+This can also be a function, which takes one argument, the error output
+as a string.  This is intended for internal use and is established using
+let-bindings around critical code (i.e., in `magit--assert-usable-git').")
 
 (defun magit-toggle-git-debug ()
   "Toggle whether additional git errors are reported.
@@ -235,7 +244,8 @@ Magit basically calls git for one of these two reasons: for
 side-effects or to do something with its standard output.
 
 When git is run for side-effects then its output, including error
-messages, go into the process buffer which is shown when using ~$~.
+messages, go into the process buffer which is shown when using \
+\\<magit-mode-map>\\[magit-process-buffer].
 
 When git's output is consumed in some way, then it would be too
 expensive to also insert it into this buffer, but with this command
@@ -453,7 +463,7 @@ a boolean, then raise an error."
 
 (defun magit-git-insert (&rest args)
   "Execute Git with ARGS, insert stdout at point and return exit code.
-If `magit-git-debug' in non-nil and the exit code is non-zero, then
+If `magit-git-debug' is non-nil and the exit code is non-zero, then
 insert the run command and stderr into the process buffer."
   (apply #'magit--git-insert nil args))
 
@@ -466,7 +476,7 @@ insert the run command and stderr into the process buffer."
               (setq log (make-temp-file "magit-stderr"))
               (delete-file log)
               (setq exit (magit-process-git (list t log) args))
-              (when (or (> exit 0) (eq magit-git-debug 'all))
+              (when (or (> exit 0) (eq magit-git-debug 'include-success))
                 (when (file-exists-p log)
                   (with-temp-buffer
                     (insert-file-contents log)
@@ -474,7 +484,8 @@ insert the run command and stderr into the process buffer."
                     (setq errmsg
                           (cond
                            ((eq return-error 'full)
-                            (buffer-string))
+                            (let ((str (buffer-string)))
+                              (and (not (equal str "")) str)))
                            ((functionp magit-git-debug)
                             (funcall magit-git-debug (buffer-string)))
                            ((magit--locate-error-message)))))
@@ -498,7 +509,7 @@ insert the run command and stderr into the process buffer."
 (defun magit--locate-error-message ()
   (goto-char (point-max))
   (and (run-hook-wrapped 'magit-process-error-message-regexps
-                         (lambda (re) (re-search-backward re nil t)))
+                         (##re-search-backward % nil t))
        (match-string-no-properties 1)))
 
 (defun magit-git-string (&rest args)
@@ -517,8 +528,8 @@ newline, return an empty string."
   "Execute Git with ARGS, returning its output as a list of lines.
 Empty lines anywhere in the output are omitted.
 
-If Git exits with a non-zero exit status, then report show a
-message and add a section in the respective process buffer."
+If Git exits with a non-zero exit status, show a message and add
+a section in the respective process buffer."
   (magit--with-temp-process-buffer
     (apply #'magit-git-insert args)
     (split-string (buffer-string) "\n" t)))
@@ -527,24 +538,32 @@ message and add a section in the respective process buffer."
   "Execute Git with ARGS, returning its null-separated output as a list.
 Empty items anywhere in the output are omitted.
 
-If Git exits with a non-zero exit status, then report show a
-message and add a section in the respective process buffer."
+If Git exits with a non-zero exit status, show a message and add
+a section in the respective process buffer."
   (magit--with-temp-process-buffer
     (apply #'magit-git-insert args)
     (split-string (buffer-string) "\0" t)))
 
-(defvar magit--git-wash-keep-error t)
-
 (defun magit-git-wash (washer &rest args)
-  "Execute Git with ARGS, inserting washed output at point.
-Actually first insert the raw output at point.  If there is no
-output, call `magit-cancel-section'.  Otherwise temporarily narrow
-the buffer to the inserted text, move to its beginning, and then
-call function WASHER with ARGS as its sole argument."
+  "Execute git with ARGS, inserting washed output at point.
+
+First insert the raw output at point.  If there is no output, call
+`magit-cancel-section'.  Otherwise temporarily narrow the buffer to
+the inserted text, move to its beginning, and finally call function
+WASHER with ARGS as its sole argument.
+
+If git exits with a non-zero exit status, apply the `error' face to
+the error message, instead of calling WASHER.  To instead cancel the
+section use `magit--git-wash'."
   (declare (indent 1))
-  (apply #'magit--git-wash washer magit--git-wash-keep-error args))
+  (apply #'magit--git-wash washer t args))
 
 (defun magit--git-wash (washer keep-error &rest args)
+  "Execute git with ARGS, inserting washed output at point.
+
+Like `magit-git-wash' but if KEEP-ERROR is nil and an error occurs, also
+insert standard error.  If KEEP-ERROR is `wash-anyway', insert and wash
+standard output even in case of an error."
   (declare (indent 2))
   (setq args (flatten-tree args))
   (let ((beg (point))
@@ -679,7 +698,7 @@ values of `magit-remote-git-executable' and `exec-path'.\n"))
 Also include information about `magit-remote-git-executable'.
 See info node `(magit)Debugging Tools' for more information."
   (interactive)
-  (with-current-buffer (get-buffer-create "*magit-git-debug*")
+  (with-current-buffer (get-buffer-create "*magit-git-executable*")
     (pop-to-buffer (current-buffer))
     (erase-buffer)
     (insert (format "magit-remote-git-executable: %S\n"
@@ -795,7 +814,7 @@ Also see `magit-git-config-p'."
 
 (defun magit-git-dir (&optional path)
   "Like (expand-file-name PATH (magit-gitdir)) or just (magit-gitdir)."
-  (declare (obsolete 'magit-gitdir "Magit 4.0.0"))
+  (declare (obsolete magit-gitdir "Magit 4.0.0"))
   (and-let* ((dir (magit-gitdir)))
     (if path
         (expand-file-name (convert-standard-filename path) dir)
@@ -1182,7 +1201,7 @@ Sorted from longest to shortest CYGWIN name."
     (setq filename (expand-file-name filename)))
   (if-let ((cyg:win (and (not (file-remote-p default-directory)) ; see #4976
                          (cl-assoc filename magit-cygwin-mount-points
-                                   :test (lambda (f cyg) (string-prefix-p cyg f))))))
+                                   :test (##string-prefix-p %2 %1)))))
       (concat (cdr cyg:win)
               (substring filename (length (car cyg:win))))
     filename))
@@ -1196,7 +1215,7 @@ Sorted from longest to shortest CYGWIN name."
 3. Deal with an `windows-nt' Emacs vs. Cygwin Git incompatibility."
   (if (file-name-absolute-p filename)
       (if-let ((cyg:win (cl-rassoc filename magit-cygwin-mount-points
-                                   :test (lambda (f win) (string-prefix-p win f)))))
+                                   :test (##string-prefix-p %2 %1))))
           (concat (car cyg:win)
                   (substring filename (length (cdr cyg:win))))
         (let ((expanded (expand-file-name filename)))
@@ -1286,8 +1305,7 @@ are considered."
   (not (magit-module-worktree-p module)))
 
 (defun magit-ignore-submodules-p (&optional return-argument)
-  (or (cl-find-if (lambda (arg)
-                    (string-prefix-p "--ignore-submodules" arg))
+  (or (cl-find-if (##string-prefix-p "--ignore-submodules" %)
                   magit-buffer-diff-args)
       (and-let* ((value (magit-get "diff.ignoreSubmodules")))
         (if return-argument
@@ -1630,7 +1648,7 @@ The amount of time spent searching is limited by
 (defun magit--set-default-branch (newname oldname)
   (let ((remote (or (magit-primary-remote)
                     (user-error "Cannot determine primary remote")))
-        (branches (mapcar (lambda (line) (split-string line "\t"))
+        (branches (mapcar (##split-string % "\t")
                           (magit-git-lines
                            "for-each-ref" "refs/heads"
                            "--format=%(refname:short)\t%(upstream:short)"))))
@@ -1697,6 +1715,11 @@ according to the branch type."
        upstream (if (equal (magit-get "branch" branch "remote") ".")
                     'magit-branch-local
                   'magit-branch-remote)))))
+
+(defun magit-get-local-upstream-branch (&optional branch)
+  (and-let* ((upstream (magit-get-upstream-branch branch))
+             (upstream (cdr (magit-split-branch-name upstream))))
+    (and (magit-branch-p upstream) upstream)))
 
 (defun magit-get-indirect-upstream-branch (branch &optional force)
   (let ((remote (magit-get "branch" branch "remote")))
@@ -1808,8 +1831,7 @@ exists, then remotes in `magit-primary-remote-names' are tried in
 order and the first remote from that list that actually exists in
 the current repository is considered its primary remote."
   (let ((remotes (magit-list-remotes)))
-    (seq-find (lambda (name)
-                (member name remotes))
+    (seq-find (##member % remotes)
               (delete-dups
                (delq nil
                      (cons (magit-get "magit.primaryRemote")
@@ -1983,8 +2005,7 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
 
 (defun magit-list-special-refnames ()
   (let ((gitdir (magit-gitdir)))
-    (cl-remove-if-not (lambda (name)
-                        (file-exists-p (expand-file-name name gitdir)))
+    (cl-remove-if-not (##file-exists-p (expand-file-name % gitdir))
                       magit-special-refnames)))
 
 (defun magit-list-branch-names ()
@@ -2044,9 +2065,8 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
 
 (defun magit-remote-head (remote)
   (and-let* ((line (cl-find-if
-                    (lambda (line)
-                      (string-match
-                       "\\`ref: refs/heads/\\([^\s\t]+\\)[\s\t]HEAD\\'" line))
+                    (##string-match
+                     "\\`ref: refs/heads/\\([^\s\t]+\\)[\s\t]HEAD\\'" %)
                     (magit-git-lines "ls-remote" "--symref" remote "HEAD"))))
     (match-string 1 line)))
 
@@ -2183,8 +2203,7 @@ exists, then the branch names in `magit-main-branch-names' are
 tried in order.  The first branch from that list that actually
 exists in the current repository is considered its main branch."
   (let ((branches (magit-list-local-branch-names)))
-    (seq-find (lambda (name)
-                (member name branches))
+    (seq-find (##member % branches)
               (delete-dups
                (delq nil
                      (cons (magit-get "init.defaultBranch")

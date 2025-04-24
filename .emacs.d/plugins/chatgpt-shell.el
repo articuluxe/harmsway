@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.16.4
+;; Version: 2.18.2
 ;; Package-Requires: ((emacs "28.1") (shell-maker "0.76.3"))
-(defconst chatgpt-shell--version "2.16.4")
+(defconst chatgpt-shell--version "2.18.2")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -2911,6 +2911,17 @@ For example \"elisp\" -> \"emacs-lisp\"."
                                 :on-finished #'identity)
     (user-error "No block at point")))
 
+(defun chatgpt-shell-copy-block-at-point ()
+  "Copy code block at point to the kill ring."
+  (interactive)
+  (if-let ((block (chatgpt-shell-markdown-block-at-point)))
+      (let ((code (buffer-substring-no-properties
+                   (map-elt block 'start)
+                   (map-elt block 'end))))
+        (kill-new code)
+        (message "Copied block to kill ring"))
+    (user-error "No block at point")))
+
 (cl-defun chatgpt-shell--view-code (&key edit language code on-finished)
   "Open a temporary buffer for editing CODE in LANGUAGE major mode.
 When done, invoke the FINISHED function with the resulting code.
@@ -3569,8 +3580,8 @@ NEW-LABEL (optional): To display for new text."
 
 (defun chatgpt-shell--fader-palette ()
   "Generate a gradient palette from the `region' face to the `default' face."
-  (let* ((start-color (face-background 'region))
-         (end-color (face-background 'default))
+  (let* ((start-color (or (face-background 'region) "#808080"))
+         (end-color (or (face-background 'default) "#1a1a1a"))
          (start-rgb (color-name-to-rgb start-color))
          (end-rgb (color-name-to-rgb end-color))
          (steps 50))

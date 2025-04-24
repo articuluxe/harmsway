@@ -388,6 +388,15 @@ an error."
 (defun forge-region-topics ()
   (magit-region-values '(discussion issue pullreq)))
 
+(defun forge-current-topic-type ()
+  (magit-section-case
+    ([* discussions] 'discussion)
+    ([* issues]      'issue)
+    ([* pullreqs]    'pullreq)
+    (t (or (and forge--buffer-topics-spec
+                (oref forge--buffer-topics-spec type))
+           'topic))))
+
 ;;;; List
 
 (defvar-local forge--buffer-topics-spec nil)
@@ -436,6 +445,7 @@ State is the \"public condition\".  I.e., is the topic still open?"
                 :type (satisfies
                        (lambda (val)
                          (member val '(open
+                                       closed
                                        (completed merged)
                                        completed
                                        merged
@@ -605,6 +615,8 @@ Limit list to topics for which a review by the given user was requested."
            (setq status '(unread pending)))
           ((eq status 'inbox)
            (setq status '(unread pending))))
+    (when (eq state 'closed)
+      (setq state '( completed merged unplanned duplicate outdated rejected)))
     `[:select :distinct topic:*
       :from [(as ,type topic)]
       ,@(pcase type
@@ -1622,13 +1634,32 @@ This mode itself is never used directly."
   :if #'forge-current-discussion)
 
 (transient-define-suffix forge-pullreq-state-set-merged ()
-  "If the current pull-request is merged, then visualize that."
+  "Merge the current pull-request into its target.
+Prompt the user to either use the API to perform the merge or use Git.
+I recommend you only use the API if your organization enforces that
+inferior process."
   :class 'forge--topic-set-state-command
   :state 'merged
   :getter #'forge-current-pullreq
   :if #'forge-current-pullreq
+  :transient nil
   (interactive)
-  (message "Please use a merge command for this"))
+  (let ((pullreq (forge-current-pullreq)))
+    (if (magit-read-char-case (format "Merge #%s " (oref pullreq number)) t
+          (?g "using [g]it (recommended)" t)
+          (?a "using [a]pi" nil))
+        (if-let ((branch (or (forge--pullreq-branch-active pullreq)
+                             (forge--branch-pullreq pullreq)))
+                 (upstream (magit-get-local-upstream-branch branch)))
+            (if (zerop (magit-call-git "checkout" upstream))
+                (magit--merge-absorb
+                 branch (magit-merge-arguments)
+                 ;; Users might be surprised that we
+                 ;; aren't done yet, so drop a hint.
+                 "Inspect the result, and if satisfied push")
+              (user-error "Could not checkout %S" upstream))
+          (user-error "No upstream configured for %S" branch))
+      (forge-merge pullreq (forge-select-merge-method)))))
 
 (transient-define-suffix forge-pullreq-state-set-rejected ()
   "Set the state of the current pull-request to `rejected'."
@@ -1819,6 +1850,86 @@ When point is on the answer, then unmark it and mark no other."
 
 ;;; Templates
 
+(defun forge--topic-template (repo class)
+  (let* ((templates (forge--topic-templates repo class))
+         (template
+          (if (cdr templates)
+              (let ((c (magit-completing-read
+                        (pcase class
+                          ('forge-issue   "Select issue template")
+                          ('forge-pullreq "Select pull-request template"))
+                        (mapcar (##alist-get 'prompt %) templates)
+                        nil t)))
+                (seq-find (##equal (alist-get 'prompt %) c) templates))
+            (car templates))))
+    (if-let ((url (alist-get 'url template)))
+        (if (string-match (forge--format repo "\
+\\`https://%h/[^/]+/[^/]+/discussions\\(?:/categories/\\(.+\\)\\)?")
+                          url)
+            `((type . forge-discussion)
+              (category . ,(or (match-string 1 url)
+                               (forge-read-topic-category
+                                nil "Category for new discussion"))))
+          `((type . redirect) ,@template))
+      `((type . ,class) ,@template))))
+
+(defun forge--topic-templates (repo class)
+  (mapcan (lambda (file)
+            (with-temp-buffer
+              (magit-git-insert "cat-file" "-p" file)
+              (if (equal (file-name-nondirectory file) "config.yml")
+                  (forge--topic-parse-template-config)
+                (list (forge--topic-parse-template)))))
+          (forge--topic-template-files repo class)))
+
+(cl-defgeneric forge--topic-template-files (repo class))
+
+(defun forge--topic-template-files-1 (repo suffix &rest paths)
+  (setq suffix (ensure-list suffix))
+  (let ((branch (oref repo default-branch)))
+    (seq-keep (if suffix
+                  (##and (member (file-name-extension %) suffix)
+                         (concat branch ":" %))
+                (##concat branch ":" %))
+              (magit-git-items "ls-tree" "-z"
+                               "--full-tree" "--name-only"
+                               (and suffix "-r")
+                               branch "--" paths))))
+
+(defun forge--topic-parse-template-config ()
+  (let-alist (yaml-parse-string (magit--buffer-string)
+                                :object-type 'alist
+                                :sequence-type 'list)
+    (nconc
+     (and (not (eq .blank_issues_enabled :false)) ;unset means true
+          `(((prompt . ,(concat (propertize "Blank issue" 'face 'bold)
+                                " — Create a new issue from scratch")))))
+     (mapcar (lambda (link)
+               `(,@link
+                 (prompt . ,(let-alist link
+                              (concat (propertize .name 'face 'bold)
+                                      " — " .about)))))
+             .contact_links))))
+
+(defun forge--topic-parse-template ()
+  (goto-char (point-min))
+  (skip-chars-forward "\s\t\n\r")
+  (if-let ((beg (and (looking-at "^---[\s\t]*$")
+                     (point)))
+           (end (and (zerop (forward-line))
+                     (re-search-forward "^---[\s\t]*$" nil t)
+                     (match-beginning 0))))
+      (let-alist (yaml-parse-string (magit--buffer-string beg end)
+                                    :object-type 'alist
+                                    :sequence-type 'list
+                                    :null-object nil)
+        `((prompt    . ,(format "%s — %s" (propertize .name 'face 'bold) .about))
+          (title     . ,(and .title (string-trim .title)))
+          (text      . ,(magit--buffer-string (point) nil ?\n))
+          (labels    . ,(ensure-list .labels))
+          (assignees . ,(ensure-list .assignees))))
+    `((text . (magit--buffer-string)))))
+
 (defun forge--topic-parse-buffer (&optional file)
   (save-match-data
     (save-excursion
@@ -1847,15 +1958,14 @@ When point is on the answer, then unmark it and mark no other."
       (setq beg (point))
       (when (re-search-forward "^---[\s\t]*$" nil t)
         (setq end (match-beginning 0))
-        (setq alist (yaml-parse-string
-                     (buffer-substring-no-properties beg end)
-                     :object-type 'alist
-                     :sequence-type 'list
-                     :false-object nil))
+        (setq alist (yaml-parse-string (magit--buffer-string beg end)
+                                       :object-type 'alist
+                                       :sequence-type 'list
+                                       :false-object nil))
         (let-alist alist
           (when (and .name .about)
             (setf (alist-get 'prompt alist)
-                  (format "[%s] %s" .name .about)))
+                  (format "%s -- %s" .name .about)))
           (when (and .labels (atom .labels))
             (setf (alist-get 'labels alist) (list .labels)))
           (when (and .assignees (atom .assignees))
@@ -1881,58 +1991,6 @@ When point is on the answer, then unmark it and mark no other."
     (setq body (magit--buffer-string (point) nil ?\n))
     `((title . ,(string-trim title))
       (body  . ,(string-trim body)))))
-
-(defun forge--topic-parse-link-buffer ()
-  (save-match-data
-    (save-excursion
-      (goto-char (point-min))
-      (mapcar (lambda (alist)
-                (cons (cons 'prompt (concat (alist-get 'name alist) " -- "
-                                            (alist-get 'about alist)))
-                      alist))
-              (forge--topic-parse-yaml-links)))))
-
-(defun forge--topic-parse-yaml-links ()
-  (alist-get 'contact_links
-             (yaml-parse-string (buffer-substring-no-properties
-                                 (point-min)
-                                 (point-max))
-                                :object-type 'alist
-                                :sequence-type 'list)))
-
-(cl-defgeneric forge--topic-template-files (repo class)
-  "Return a list of topic template files for REPO and a topic of CLASS.")
-
-(cl-defgeneric forge--topic-template (repo class)
-  "Return a topic template alist for REPO and a topic of CLASS.
-If there are multiple templates, then the user is asked to select
-one of them.  It there are no templates, then return a very basic
-alist, containing just `text' and `position'.")
-
-(defun forge--topic-templates-data (repo class)
-  (let ((branch (oref repo default-branch)))
-    (mapcan (lambda (f)
-              (with-temp-buffer
-                (magit-git-insert "cat-file" "-p" (concat branch ":" f))
-                (if (equal (file-name-nondirectory f) "config.yml")
-                    (forge--topic-parse-link-buffer)
-                  (list (forge--topic-parse-buffer f)))))
-            (forge--topic-template-files repo class))))
-
-(cl-defmethod forge--topic-template ((repo forge-repository)
-                                     (class (subclass forge-topic)))
-  (let ((choices (and (not (eq class 'forge-discussion))
-                      (forge--topic-templates-data repo class))))
-    (if (cdr choices)
-        (let ((c (magit-completing-read
-                  (pcase class
-                    ('forge-discussion "Select discussion type")
-                    ('forge-issue      "Select issue template")
-                    ('forge-pullreq    "Select pull-request template"))
-                  (mapcar (##alist-get 'prompt %) choices)
-                  nil t)))
-          (seq-find (##equal (alist-get 'prompt %) c) choices))
-      (car choices))))
 
 ;;; Bug-Reference
 

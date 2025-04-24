@@ -288,13 +288,19 @@ is a boolean that determines if rest arguments are to be considered."
                         "after positional arguments. These keywords"
                         "were interpreted as rest arguments")))
          (tests
-          ;; ensure that all keywords are valid
-          `((->> (-difference ,y ',kws)
-                 (org-ml--throw-kw-error ,inv-msg))
-            ;; ensure keywords are only used once per call
-            (->> (-group-by #'identity ,y)
-                 (--filter (< 2 (length it)))
-                 (org-ml--throw-kw-error ,dup-msg))
+          `((let (invalid unique dups)
+              (--each ,y
+                (if (memq it ',kws)
+                    (if (memq it unique)
+                        (!cons it dups)
+                      (!cons it unique))
+                  (if (memq it invalid)
+                      (!cons it dups)
+                    (!cons it invalid))))
+              (when invalid
+                (org-ml--throw-kw-error ,inv-msg invalid))
+              (when dups
+                (org-ml--throw-kw-error ,dup-msg dups)))
             ;; ensure that keyword pairs are only used
             ;; immediately after positional arguments
             (->> (-filter #'keywordp ,r)
@@ -475,28 +481,21 @@ NEW-ALIAS, BASE-VARIABLE, and DOCSTRING have the same meaning as `defconst'."
 
 ;; FUNCTORS
 
-(defmacro org-ml--map* (form list)
-  "Like `--map' but doesn't create closures (and is therefore faster).
-FORM and LIST have the same meaning."
-  (let ((l (make-symbol "list")))
-    `(let ((,l ,list)
-           acc it)
-       (while ,l
-         (setq it (car ,l)
-               acc (cons ,form acc)
-               ,l (cdr ,l)))
-       (nreverse acc))))
-
 (defmacro org-ml--map-first* (form list)
   "Return LIST with FORM applied to the first member.
 The first element is `it' in FORM which returns the modified member."
-  `(when ,list
-     (cons (let ((it (car ,list))) ,form) (cdr ,list))))
+  (let ((x (make-symbol "--list")))
+    `(let ((,x ,list))
+       (when ,x
+         (cons (let ((it (car ,x))) ,form) (cdr ,x))))))
 
 (defmacro org-ml--map-last* (form list)
     "Return LIST with FORM applied to the last member.
 The last element is `it' in FORM which returns the modified member."
-    `(-some->> ,list (nreverse) (org-ml--map-first* ,form) (nreverse)))
+  (let ((x (make-symbol "--list")))
+    `(let ((,x ,list))
+       (when ,x
+         (nreverse (org-ml--map-first* ,form (nreverse ,x)))))))
 
 (defmacro org-ml--map-at* (n form list)
   "Return LIST with FORM applied to the member at index N.
@@ -508,8 +507,8 @@ The nth element is `it' in FORM which returns the modified member."
 
 (defmacro org-ml--reduce2-from* (form init list)
   "Like `--reduce-from' but iterate over every pair of items in LIST.
-In FORM, the first of the pair is bound to 'it-key' and the
-second is bound to 'it'. INIT has the same meaning."
+In FORM, the first of the pair is bound to `it-key' and the
+second is bound to `it'. INIT has the same meaning."
   (let ((l (make-symbol "list")))
     `(let ((acc ,init)
            (,l ,list)

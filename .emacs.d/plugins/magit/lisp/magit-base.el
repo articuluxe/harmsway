@@ -69,21 +69,17 @@
 (defcustom magit-completing-read-function #'magit-builtin-completing-read
   "Function to be called when requesting input from the user.
 
-If you have enabled `ivy-mode' or `helm-mode', then you don't
-have to customize this option; `magit-builtin-completing-read'
-will work just fine.  However, if you use Ido completion, then
-you do have to use `magit-ido-completing-read', because Ido is
-less well behaved than the former, more modern alternatives.
+The default, `magit-builtin-completing-read', support third-party
+completion frameworks, including `vertico-mode', `ivy-mode' and
+`helm-mode'.
 
-If you would like to use Ivy or Helm completion with Magit but
-not enable the respective modes globally, then customize this
-option to use `ivy-completing-read' or
-`helm--completing-read-default'.  If you choose to use
-`ivy-completing-read', note that the items may always be shown in
-alphabetical order, depending on your version of Ivy."
+However, if you would like to use Ivy or Helm completion with Magit but
+not enable the respective modes globally, then customize this option to
+use `ivy-completing-read' or `helm--completing-read-default'.
+
+If you still use `ido-mode', you'll likely need the `magit-ido' package."
   :group 'magit-essentials
   :type `(radio (function-item ,#'magit-builtin-completing-read)
-                (function-item ,#'magit-ido-completing-read)
                 (function-item ivy-completing-read)
                 (function-item helm--completing-read-default)
                 (function :tag "Other function")))
@@ -699,27 +695,6 @@ third-party completion frameworks."
                 hist def inherit-input-method)))
     (if no-split input values)))
 
-(defun magit-ido-completing-read
-    (prompt choices &optional predicate require-match initial-input hist def)
-  "Ido-based `completing-read' almost-replacement.
-
-Unfortunately `ido-completing-read' is not suitable as a
-drop-in replacement for `completing-read', instead we use
-`ido-completing-read+' from the third-party package by the
-same name."
-  (if (and (require 'ido-completing-read+ nil t)
-           (fboundp 'ido-completing-read+))
-      (ido-completing-read+ prompt choices predicate require-match
-                            initial-input hist
-                            (or def (and require-match (car choices))))
-    (display-warning 'magit "ido-completing-read+ is not installed
-
-To use Ido completion with Magit you need to install the
-third-party `ido-completing-read+' packages.  Falling
-back to built-in `completing-read' for now." :error)
-    (magit-builtin-completing-read prompt choices predicate require-match
-                                   initial-input hist def)))
-
 (defvar-keymap magit-minibuffer-local-ns-map
   :parent minibuffer-local-map
   "SPC" #'magit-whitespace-disallowed
@@ -808,12 +783,12 @@ ACTION is a member of option `magit-slow-confirm'."
   (when (and prompt (listp prompt))
     (setq prompt
           (apply #'format (car prompt)
-                 (mapcar (lambda (a) (if (stringp a) (string-replace "%" "%%" a) a))
+                 (mapcar (##if (stringp %) (string-replace "%" "%%" %) %)
                          (cdr prompt)))))
   (when (and prompt-n (listp prompt-n))
     (setq prompt-n
           (apply #'format (car prompt-n)
-                 (mapcar (lambda (a) (if (stringp a) (string-replace "%" "%%" a) a))
+                 (mapcar (##if (stringp %) (string-replace "%" "%%" %) %)
                          (cdr prompt-n)))))
   (setq prompt-n (format (concat (or prompt-n prompt) "? ") (length items)))
   (setq prompt   (format (concat (or prompt (magit-confirm-make-prompt action))
@@ -878,7 +853,7 @@ See info node `(magit)Debugging Tools' for more information."
               `(,(concat invocation-directory invocation-name)
                 "-Q" "--eval" "(setq debug-on-error t)"
                 ,@(mapcan
-                   (lambda (dir) (list "-L" dir))
+                   (##list "-L" %)
                    (delete-dups
                     (mapcan
                      (lambda (lib)

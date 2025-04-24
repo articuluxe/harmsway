@@ -727,7 +727,7 @@ remote in alphabetic order."
 (defvar-keymap magit-untracked-section-map
   :doc "Keymap for the `untracked' section."
   "<remap> <magit-delete-thing>" #'magit-discard
-  "<remap> <magit-stage-file>"   #'magit-stage
+  "<remap> <magit-stage-files>"  #'magit-stage
   "<2>" (magit-menu-item "Discard files" #'magit-discard)
   "<1>" (magit-menu-item "Stage files"   #'magit-stage))
 
@@ -767,9 +767,8 @@ is always ignored."
     (magit-insert-files
      'untracked
      (lambda (files)
-       (mapcan (lambda (line)
-                 (and (eq (aref line 0) ??)
-                      (list (substring line 3))))
+       (mapcan (##and (eq (aref % 0) ??)
+                      (list (substring % 3)))
                (apply #'magit-git-items "status" "-z" "--porcelain"
                       (format "--untracked-files=%s"
                               (if (eq value 'all) "all" "normal"))
@@ -783,8 +782,7 @@ Honor the buffer's file filter, which can be set using \"D - -\"."
 (defun magit-insert-ignored-files ()
   "Insert a list of ignored files.
 Honor the buffer's file filter, which can be set using \"D - -\"."
-  (magit-insert-files 'ignored
-                      (lambda (args) (magit-ignored-files "--directory" args))))
+  (magit-insert-files 'ignored (##magit-ignored-files "--directory" %)))
 
 (defun magit-insert-skip-worktree-files ()
   "Insert a list of skip-worktree files.

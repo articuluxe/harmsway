@@ -2070,12 +2070,15 @@ minibuffer before executing the action."
                             (embark--run-action-hooks embark-pre-action-hooks
                                                       action target quit)
                             (minibuffer-with-setup-hook inject
-                              ;; pacify commands that use (this-command-keys)
-                              (when (= (length (this-command-keys)) 0)
+                              ;; HACK work around `browse-url-interactive-arg'
+                              ;; expecting a non-empty `this-command-keys'
+                              ;; output.
+                              (when (and (eq action 'browse-url)
+                                         (= (length (this-command-keys)) 0))
                                 (set--this-command-keys
                                  (if (characterp last-command-event)
                                      (string last-command-event)
-                                  "\r")))
+                                   "\r")))
                               (setq this-command action)
                               (embark--run-around-action-hooks
                                action target quit)))
@@ -2523,7 +2526,8 @@ See `embark-act' for the meaning of the prefix ARG."
                    targets)))
              (type (plist-get target :type))
              (default-action (embark--default-action type))
-             (action (or (command-remapping default-action) default-action)))
+             (command-remapping (command-remapping default-action))
+             (action (or (unless (eq 'embark-dwim command-remapping) command-remapping) default-action)))
         (unless action
           (user-error "No default action for %s targets" type))
         (when (and arg (minibufferp)) (setq embark--toggle-quit t))

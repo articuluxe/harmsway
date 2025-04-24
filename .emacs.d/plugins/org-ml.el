@@ -5,8 +5,8 @@
 ;; Author: Nathan Dwarshuis <ndwar@yavin4.ch>
 ;; Keywords: org-mode, outlines
 ;; Homepage: https://github.com/ndwarshuis/org-ml
-;; Package-Requires: ((emacs "27.1") (org "9.3") (dash "2.17") (s "1.12"))
-;; Version: 5.8.8
+;; Package-Requires: ((emacs "27.1") (org "9.7") (dash "2.17") (s "1.12"))
+;; Version: 6.0.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -51,38 +51,10 @@
 (require 'org-element)
 (require 'dash)
 (require 's)
+(require 'inline)
 
 (eval-when-compile
   (require 'org-ml-macs))
-
-;;; CUSTOM
-
-(defcustom org-ml-memoize-match-patterns nil
-  "Memoize patterns in `org-ml-match' and friends.
-
-These functions all take a PATTERN parameter that is used to
-generate a lambda function, which is then used to computationally
-search for the desired matches. Generating these lambda forms has
-some overhead (and will increase with increasing pattern
-complexity). Therefore, this value can be used to memoize (cache)
-each unique lambda form for each pattern. When enabled, calls to
-any of the match function using a unique pattern will generate
-the corresponding lambda form only once, and then subsequent
-calls will retrieve the form from the cache. This can increase
-performance if relatively few patterns are used relative to the
-calls made to pattern-consuming functions.
-
-The following values are understood:
-- nil: don't memoize anything
-- 'compiled': memoize byte-compiled lambda forms
-- any other non-nil: memoize non-compiled lambda forms"
-  :type 'boolean
-  :group 'org-ml)
-
-(defcustom org-ml-parse-habits nil
-  "Parse habits if set to t."
-  :type 'boolean
-  :group 'org-ml)
 
 ;;; NODE TYPE SETS
 
@@ -142,16 +114,16 @@ The following values are understood:
 
 (org-ml--defconst org-ml-elements
   (cons 'org-data org-element-all-elements)
-  "List of all element types including 'org-data'.")
+  "List of all element types including `org-data'.")
 
 (org-ml--defconst org-ml-objects
   (cons 'plain-text org-element-all-objects)
-  "List of all object types including 'plain-text'.")
+  "List of all object types including `plain-text'.")
 
-(defconst org-ml-nodes
-  (eval-when-compile
-    (append org-ml-elements org-ml-objects))
-  "List of all node types.")
+(eval-and-compile
+  (defconst org-ml-nodes
+    (append org-ml-elements org-ml-objects)
+    "List of all node types."))
 
 (org-ml--defvaralias 'org-ml-branch-nodes-permitting-child-objects
   'org-element-object-containers
@@ -250,6 +222,106 @@ the car.")
          (cons 'plain-text)))
   "List of node types which may be used in item headline title properties.")
 
+;;; CUSTOM
+
+(defcustom org-ml-memoize-match-patterns nil
+  "Memoize patterns in `org-ml-match' and friends.
+
+These functions all take a PATTERN parameter that is used to
+generate a lambda function, which is then used to computationally
+search for the desired matches. Generating these lambda forms has
+some overhead (and will increase with increasing pattern
+complexity). Therefore, this value can be used to memoize (cache)
+each unique lambda form for each pattern. When enabled, calls to
+any of the match function using a unique pattern will generate
+the corresponding lambda form only once, and then subsequent
+calls will retrieve the form from the cache. This can increase
+performance if relatively few patterns are used relative to the
+calls made to pattern-consuming functions.
+
+The following values are understood:
+- nil: do not memoize anything
+- `compiled': memoize byte-compiled lambda forms
+- any other non-nil: memoize non-compiled lambda forms"
+  :type 'boolean
+  :group 'org-ml)
+
+(defcustom org-ml-memoize-builders nil
+  "Memoize `org-ml-build-*' functions.
+
+These functions are pure and thus can be easily memoized.
+
+One may wish to do this if one needs to create many nodes that
+are the same, as node creation is relatively expensive. These
+functions are also used internally by other parts of `org-ml',
+thus memoizing these functions can achieve significant speed
+increases in many scenerios. The downside is each unique node
+will be stored, which takes space.
+
+This variable globally controls memoization for these functions.
+To control memoization on a per-type basis, see
+`org-ml-memoize-builder-types'."
+  :type 'boolean
+  :group 'org-ml)
+
+(org-ml--defconst org-ml-builder-types
+   (append org-element-all-objects org-element-all-elements))
+
+(defcustom org-ml-memoize-builder-types
+  (-difference org-ml-builder-types org-ml-branch-nodes)
+  "Specify the types for `org-ml-memoize-builders'."
+  :type `(set ,@(--map (list 'const it) org-ml-builder-types))
+  :group 'org-ml)
+
+(defcustom org-ml-memoize-shorthand-builders nil
+  "Memoize `org-ml-build-*!' functions.
+
+Like the `org-ml-build-*' functions (no exclamation point), these
+functions are pure and thus can be easily memoized.
+
+One may wish to do this if one needs to create many nodes that
+are the same, as node creation is relatively expensive. These
+functions are also used internally by other parts of `org-ml',
+thus memoizing these functions can achieve significant speed
+increases in many scenerios. The downside is each unique node
+will be stored, which takes space.
+
+This variable globally controls memoization for these functions.
+To control memoization on a per-type basis, see
+`org-ml-memoize-shorthand-builder-types'."
+  :type 'boolean
+  :group 'org-ml)
+
+(org-ml--defconst org-ml-shorthand-builder-types
+  '(timestamp clock planning headline paragraph secondary-string item
+              property-drawer table-cell table-row table))
+
+(defcustom org-ml-memoize-shorthand-builder-types
+  (-difference org-ml-shorthand-builder-types '(headline item))
+  "Specify the types for `org-ml-memoize-shorthand-builders'.
+
+Note that these don't perfectly correspond to `org-ml-nodes' since
+some of these functions are composite node builders.
+
+All in `org-ml-shorthand-builder-types' are enabled by default except for
+`headline' and `item' since these take child nodes are arguments
+which therefore lead to large key sizes."
+  :type `(set ,@(--map (list 'const it) org-ml-shorthand-builder-types))
+  :group 'org-ml)
+
+(defcustom org-ml-use-impure nil
+  "Run functions in impure mode.
+
+For now this means that no function will make a copy of a node,
+so all changes will be via side effect."
+  :type 'boolean
+  :group 'org-ml)
+
+(defcustom org-ml-disable-checks nil
+  "Run functions without checking nodes for proper types."
+  :type 'boolean
+  :group 'org-ml)
+
 ;;; AFFILIATED KEYWORD NODES
 
 (org-ml--defconst org-ml--element-nodes-with-affiliated
@@ -291,6 +363,7 @@ FUN is a unary function that returns a modified value."
 
 (defun org-ml--is-plist (x)
   "Return t if X is a plist."
+  (declare (pure t) (side-effect-free t))
   (when (listp x)
     (let ((is-plist t))
       (while (and is-plist (cdr x))
@@ -424,154 +497,247 @@ See `org-ml--convert-intra-index' for the meaning of N and USE-OOR."
 (defun org-ml--arg-error (string &rest args)
   "Signal an `arg-type-error'.
 STRING and ARGS are analogous to `error'."
-    (signal 'arg-type-error `(,(apply #'format-message string args))))
+  (signal 'arg-type-error `(,(apply #'format-message string args))))
+
+(defun org-ml--is-any-type (types node)
+  "Return t if the type of NODE is in TYPES (a list of symbols)."
+  (declare (pure t) (side-effect-free t))
+  (if (memq (org-ml-get-type node) types) t))
 
 (defun org-ml--is-node (list)
   "Return t if LIST is a node."
-  (org-ml-is-any-type org-ml-nodes list))
+  (declare (pure t) (side-effect-free t))
+  (org-ml--is-any-type org-ml-nodes list))
+
+(defun org-ml--is-type (type node)
+  "Return t if the type of NODE is TYPE (a symbol)."
+  (declare (pure t) (side-effect-free t))
+  (eq (org-ml-get-type node) type))
 
 (defun org-ml--is-table-row (node)
   "Return t if NODE is a standard table-row node."
-  (and (org-ml-is-type 'table-row node)
+  (declare (pure t) (side-effect-free t))
+  (and (org-ml--is-type 'table-row node)
        (org-ml--property-is-eq :type 'standard node)))
 
 (defun org-ml--filter-type (type node)
   "Return NODE if it is TYPE or nil otherwise."
-  (and (org-ml-is-type type node) node))
+  (declare (pure t) (side-effect-free t))
+  (and (org-ml--is-type type node) node))
 
 (defun org-ml--filter-types (types node)
   "Return NODE if it is one of TYPES or nil otherwise."
+  (declare (pure t) (side-effect-free t))
   (and (org-ml-is-any-type types node) node))
 
 (defun org-ml--is-secondary-string (list)
   "Return t if LIST is a secondary string."
-  (--none? (org-ml-is-any-type org-ml-elements it) list))
+  (declare (pure t) (side-effect-free t))
+  (--none? (org-ml--is-any-type org-ml-elements it) list))
+
+(defun org-ml--check-type (type node)
+  "Check that NODE is TYPE; throw error if not."
+  (unless org-ml-disable-checks
+    (let ((y (org-ml-get-type node)))
+      (unless (equal y type)
+        (org-ml--arg-error "Node must be a %s, got a %s" type y)))))
+
+(defun org-ml--check-types (types node)
+  "Check that NODE is one of TYPES; throw error if not."
+  (unless org-ml-disable-checks
+    (let ((y (org-ml-get-type node)))
+      (unless (memq y types)
+        (org-ml--arg-error "Node must be one of %s, got a %s" types y)))))
 
 ;;; MISC HELPER FUNCTIONS
 
 (defun org-ml--get-head (node)
   "Return the type and properties cells of NODE."
+  (declare (pure t) (side-effect-free t))
   (if (stringp node) node (list (car node) (cadr node))))
-
-(defun org-ml--construct (type props children)
-  "Make a new node list structure of TYPE, PROPS, and CHILDREN.
-TYPE is a symbol, PROPS is a plist, and CHILDREN is a list or nil."
-  `(,type ,props ,@children))
 
 (defun org-ml--from-string (string)
   "Convert STRING to org-element representation."
   (with-temp-buffer
     (insert string)
-    (-> (org-ml-parse-this-buffer) (org-ml-get-children) (car))))
+    (-> (org-ml-parse-this-buffer) (org-element-contents) (car))))
+
+(define-inline org-ml-copy (node &optional keep)
+  "Copy NODE if running in pure mode.
+
+KEEP is passed to `org-element-copy'."
+  (inline-letevals (node)
+    (inline-quote
+     (if org-ml-use-impure ,node (org-element-copy ,node ,keep)))))
+
+(defmacro org-ml-wrap-impure (&rest body)
+  "Run BODY in impure mode."
+  `(let ((org-ml-use-impure t))
+     ,@body))
+
+(defmacro org-ml-wrap-check (&rest body)
+  "Run BODY without node type checking."
+  `(let ((org-ml-disable-checks t))
+     ,@body))
+
+(defmacro org-ml-> (&rest forms)
+  "Thread FORMS using `->' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (-> ,@forms)))
+
+(defmacro org-ml->> (&rest forms)
+  "Thread FORMS using `->>' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (->> ,@forms)))
+
+(defmacro org-ml--> (&rest forms)
+  "Thread FORMS using `-->' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (--> ,@forms)))
+
+(defmacro org-ml-some-> (&rest forms)
+  "Thread FORMS using `-some->' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (-some-> ,@forms)))
+
+(defmacro org-ml-some->> (&rest forms)
+  "Thread FORMS using `-some->>' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (-some->> ,@forms)))
+
+(defmacro org-ml-some--> (&rest forms)
+  "Thread FORMS using `-some-->' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (-some--> ,@forms)))
+
+(defmacro org-ml-as-> (&rest forms)
+  "Thread FORMS using `-some-->' and run in impure mode."
+  (declare (indent 1))
+  `(org-ml-wrap-impure (-some--> ,@forms)))
 
 ;;; INTERNAL PREDICATES
 
 (defun org-ml--is-oneline-string (x)
   "Return t if X is a string with no newlines."
+  (declare (pure t))
   (and (stringp x) (not (s-contains? "\n" x))))
 
 (defun org-ml--is-oneline-string-or-nil (x)
   "Return t if X is a string with no newlines or nil."
+  (declare (pure t))
   (or (null x) (org-ml--is-oneline-string x)))
 
 (defun org-ml--is-non-neg-integer (x)
   "Return t if X is a non-negative integer."
+  (declare (pure t))
   (and (integerp x) (<= 0 x)))
 
 (defun org-ml--is-non-neg-integer-or-nil (x)
   "Return t if X is a non-negative integer or nil."
+  (declare (pure t))
   (or (null x) (org-ml--is-non-neg-integer x)))
 
 (defun org-ml--is-pos-integer (x)
   "Return t if X is a positive integer."
+  (declare (pure t))
   (and (integerp x) (< 0 x)))
 
 (defun org-ml--is-pos-integer-or-nil (x)
   "Return t if X is a positive integer or nil."
+  (declare (pure t))
   (or (null x) (org-ml--is-pos-integer x)))
 
 (defun org-ml--is-string-list (x)
   "Return t if X is a list of strings without newlines or nil."
+  (declare (pure t))
   (or (null x) (and (listp x) (-all? #'org-ml--is-oneline-string x))))
 
 ;;; INTERNAL NODE PROPERTY FUNCTIONS
 
+(defun org-ml--get-nonstandard-properties (node)
+  "Return the non-standard properties list of NODE."
+  (if (stringp node) (text-properties-at 0 node) (cddr (nth 1 node))))
+
 (defun org-ml-get-all-properties (node)
   "Return the properties list of NODE."
-  (if (stringp node) (text-properties-at 0 node) (nth 1 node)))
+  (if (stringp node) (text-properties-at 0 node)
+    (let ((arr-props (->> org-element--standard-properties
+                          (--map (list it (org-element-property it node)))
+                          (-flatten-n 1)))
+          (plist-props (->> (nth 1 node)
+                            (cddr)
+                            (org-ml--plist-get-keys)
+                            (--map (list it (org-element-property it node)))
+                            (-flatten-n 1))))
+      (append arr-props plist-props))))
 
-(defun org-ml--get-property-nocheck (prop node)
-  "Return PROP from NODE."
-  (if (and (stringp node) (eq prop :post-blank))
-      (length (car (s-match "[ ]*$" node)))
-    (org-element-property prop node)))
+(define-inline org-ml--get-post-blank-text (plain-text)
+  "Return number of trailing spaces in PLAIN-TEXT."
+  (inline-quote
+   (length (car (s-match "[ ]*$" ,plain-text)))))
 
-(defun org-ml--get-parent (node)
-  "Return the parent of NODE."
-  (org-ml--get-property-nocheck :parent node))
+(define-inline org-ml--get-post-blank-textsafe (node)
+  "Return number of trailing spaces in PLAIN-TEXT."
+  (inline-letevals (node)
+    (inline-quote
+     (if (stringp ,node) (org-ml--get-post-blank-text ,node)
+       (org-element-post-blank ,node)))))
 
-(defun org-ml--get-parent-headline (node)
-  "Return the most immediate parent headline node of NODE."
-  (-when-let (parent (org-ml--get-property-nocheck :parent node))
-    (if (org-ml-is-type 'headline parent) parent
-      (org-ml--get-parent-headline parent))))
+(define-inline org-ml--set-post-blank (post-blank node)
+  (inline-quote (org-element-put-property-2 :post-blank ,post-blank ,node)))
 
-(defun org-ml--set-property-nocheck (prop value node)
-  "Set PROP in NODE to VALUE."
-  (if (stringp node)
-      (if (eq prop :post-blank)
-          (->> (s-trim-right node) (s-append (s-repeat value " ")))
-        (org-add-props node nil prop value))
-    (-let (((type . (props . children)) node))
-      (org-ml--construct type (plist-put props prop value) children))))
+(define-inline org-ml--set-last-post-blank (pb nodes)
+  "Set post-blank of last of NODES by PB."
+  (inline-quote (org-ml--map-last* (org-ml--set-post-blank ,pb it) ,nodes)))
 
-(defun org-ml--set-properties-nocheck (plist node)
+(defmacro org-ml--set-properties-raw (node &rest plist)
   "Set all properties in NODE to the values corresponding to PLIST.
 PLIST is a list of property-value pairs that correspond to the
-property list in NODE."
-  ;; TODO this currently doesn't work with plain-text
-  (if (org-ml--is-plist plist)
-      (-let (((type . (props . children)) node))
-        (--> (org-ml--reduce2-from* (plist-put acc it-key it) props plist)
-             (org-ml--construct type it children)))
-    (org-ml--arg-error "Not a plist: %S" plist)))
+property list in NODE.
 
-(defun org-ml--set-property-nocheck-nil (prop node)
-  "Set PROP to nil in NODE."
-  (org-ml--set-property-nocheck prop nil node))
-
-(defun org-ml--set-properties-nocheck-nil (props node)
-  "Set all PROPS to new in NODE."
-  ;; TODO this currently doesn't work with plain-text
-  (-let (((type . (nprops . children)) node))
-    (--> (--reduce-from (plist-put acc it nil) nprops props)
-         (org-ml--construct type it children))))
+This is not meant for plain-text."
+  (declare (indent 1))
+  (let* ((n (make-symbol "it-node"))
+         (forms (->> (-partition 2 plist)
+                     (--map `(org-element-put-property ,n ,(car it) ,(cadr it))))))
+    `(let ((,n ,node))
+       ,@forms
+       ,n)))
 
 (eval-when-compile
-  (defmacro org-ml--map-property-nocheck* (prop form node)
+  (defmacro org-ml--map-property-raw* (prop form node)
     "Return NODE with FUN applied to the value in PROP.
 FUN is a form that returns a modified value and contains `it'
 bound to the property value."
     (declare (indent 1))
     (let ((node* (make-symbol "node")))
       `(let ((,node* ,node))
-         (let ((it (org-ml--get-property-nocheck ,prop ,node*)))
-           (org-ml--set-property-nocheck ,prop ,form ,node*))))))
+         (let ((it (org-element-property-raw ,prop ,node*)))
+           (org-element-put-property-2 ,prop ,form ,node*))))))
 
-(defun org-ml--property-is-nil (prop node)
-  "Return t if PROP in NODE is nil."
-  (not (org-ml--get-property-nocheck prop node)))
+(define-inline org-ml--shift-post-blank (n node)
+  "ADD N spaces to the end of NODE.
 
-(defun org-ml--property-is-eq (prop val node)
+This will not work if NODE is a string."
+  (inline-quote
+   (org-ml--map-property-raw* :post-blank (+ it ,n) ,node)))
+
+(define-inline org-ml--shift-last-post-blank (pb nodes)
+  "Shift post-blank of last of NODES by PB."
+  (inline-quote (org-ml--map-last* (org-ml--shift-post-blank ,pb it) ,nodes)))
+
+(defun org-ml--shift-post-blank-textsafe (n node)
+  "ADD N spaces to the end of NODE.
+
+This will work if NODE is a string."
+  (if (stringp node)
+      (let ((pb (org-ml--get-post-blank-text node)))
+        (concat (substring node (- pb)) (make-string (+ pb n) ?\ )))
+    (org-ml--shift-post-blank n node)))
+
+(define-inline org-ml--property-is-eq (prop val node)
   "Return t if PROP in NODE is `eq' to VAL."
-  (eq val (org-ml--get-property-nocheck prop node)))
-
-(eval-when-compile
-  (defmacro org-ml--property-is-predicate* (prop form node)
-    "Return t if FUN applied to the value of PROP in NODE results not nil.
-FORM is a predicate form that takes one with `it' bound to the
-property value."
-    `(let ((it (org-ml--get-property-nocheck ,prop ,node))) (and ,form t))))
+  (inline-quote (eq ,val (org-element-property-raw ,prop ,node))))
 
 ;;; NODE PROPERTY TRANSLATION AND CHECKING FRAMEWORK
 
@@ -584,6 +750,8 @@ property value."
 ;; Map: f(PROP FUN NODE) -> NODE' where FUN is a function that
 ;;      modifies the value of PROP in NODE and is like:
 ;;      f(VALUE) -> VALUE'
+
+;; Get -> 'read', Set -> 'write', Map -> 'read/write'
 
 ;; `org-element.el' doesn't always store values as their native types (like some
 ;; strings look like plists converted to strings). Here, we make a distinction
@@ -607,11 +775,12 @@ property value."
 ;;     - :pred - a predicate function that returns t if VALUE is the correct
 ;;       type for PROP
 ;;     - :type-desc - a string describing the data type for PROP
-;;     - :encode - a unary function that converts VALUE to IVALUE; if this not
-;;       given then VALUE and IVALUE are `equal'
-;;     - :decode - a function that inverts the function at :encode
+;;     - :encode - a unary function that converts VALUE to IVALUE; if not given
+;;       this is the identity function
+;;     - :decode - a function that inverts the function at :encode, if not given
+;;       this is the identity function
 ;;     - :cis - a unary function that takes NODE and returns a modified NODE;
-;;       the point of this it so 'update' other properties when PROP is changed
+;;       the point of this it to "update" other properties when PROP is changed
 ;;     - :const - a value that PROP should always have
 ;;     - :shift - a binary function that shifts PROP; the first argument takes
 ;;       an integer describing the magnitude and direction of the shift and the
@@ -632,7 +801,7 @@ property value."
 ;;    from NODE
 
 ;; set: SET(PROP VALUE NODE) -> NODE
-;; 1) if PROP(VALUE) -> t, proceed to 2), else throw error
+;; 1) if PRED(VALUE) -> t, proceed to 2), else throw error
 ;; 2) ISET(PROP, ENCODE(VALUE), NODE)) -> NODE' where ISET sets the PROP of NODE
 ;;    to IVALUE
 ;; 3) If CIS is non-nil, run CIS(NODE') -> NODE'', else return NODE'
@@ -642,6 +811,16 @@ property value."
 ;; 2) FUN(VALUE) -> VALUE'
 ;; 3) if PRED(VALUE') -> t proceed to 4), else throw error
 ;; 4) SET(PROP VALUE' NODE) -> NODE'
+
+;; Thus GET only requires that the property exist in the type (which may be
+;; nil, in which case GET returns nil). The decoder doesn't need to be present
+;; as the identity function will be used if it isn't present.
+;;
+;; SET requires that the :pred attribute exists, since it needs to check that
+;; the incoming value to assign is valid. If :encoder or :cis are unspecified
+;; then these will be identity.
+;;
+;; MAP obviously requires both.
 
 ;;; property value predicates (type specific)
 
@@ -662,7 +841,7 @@ property value."
 (defun org-ml--is-valid-item-tag (x)
   "Return t if X is an allowed value for an item node tag property."
   (and (listp x)
-       (--all? (org-ml-is-any-type org-ml--item-tag-restrictions it) x)))
+       (--all? (org-ml--is-any-type org-ml--item-tag-restrictions it) x)))
 
 (defun org-ml--is-valid-item-bullet (x)
   "Return t if X is an allowed value for a item node bullet property."
@@ -674,19 +853,18 @@ property value."
 
 (defun org-ml--is-valid-clock-timestamp (x)
   "Return t if X is an allowed value for a clock node value property."
-  (and (org-ml-is-type 'timestamp x)
-       (org-ml--property-is-predicate* :type
-         (memq it '(inactive inactive-range)) x)
-       (org-ml--property-is-nil :repeater-type x)))
+  (and (org-ml--is-type 'timestamp x)
+       (memq (org-element-property-raw :type x) '(inactive inactive-range))
+       (not (org-element-property-raw :repeater-type x))))
 
 (defun org-ml--is-valid-planning-unclosed-timestamp (x)
   "Return t if X is an allowed value for a planning node timestamp property."
-  (or (null x) (and (org-ml-is-type 'timestamp x)
+  (or (null x) (and (org-ml--is-type 'timestamp x)
                     (org-ml--property-is-eq :type 'active x))))
 
 (defun org-ml--is-valid-planning-closed-timestamp (x)
   "Return t if X is an allowed value for a planning node timestamp property."
-  (or (null x) (and (org-ml-is-type 'timestamp x)
+  (or (null x) (and (org-ml--is-type 'timestamp x)
                     (org-ml--property-is-eq :type 'inactive x))))
 
 (defun org-ml--is-valid-entity-name (x)
@@ -708,11 +886,15 @@ property value."
   "Return t if X is an allowed value for a headline node title property."
   (and
    (listp x)
-   (--all? (org-ml-is-any-type org-ml--headline-title-restrictions it) x)))
+   (--all? (org-ml--is-any-type org-ml--headline-title-restrictions it) x)))
 
 (defun org-ml--is-valid-timestamp-type (x)
   "Return t if X is an allowed value for a timestamp node type property."
   (memq x '(inactive inactive-range active active-range)))
+
+(defun org-ml--is-valid-timestamp-range-type (x)
+  "Return t if X is an allowed value for a timestamp node range-type property."
+  (memq x '(nil daterange timerange)))
 
 (defun org-ml--is-valid-timestamp-repeater-type (x)
   "Return t if X is an allowed value for a timestamp node repeater-type property."
@@ -808,7 +990,7 @@ property value."
 
 (defun org-ml--encode-plist (plist)
   "Return PLIST as string joined by spaces."
-  (-some->> (org-ml--map* (format "%S" it) plist) (s-join " ")))
+  (-some->> (--map (format "%S" it) plist) (s-join " ")))
 
 (defun org-ml--decode-plist (string)
   "Return STRING as plist split by spaces."
@@ -907,19 +1089,19 @@ Return value will conform to `org-ml--is-valid-diary-sexp-value'."
 
 (defun org-ml--encode-header (plists)
   "Return PLISTS as a list of strings."
-  (->> (reverse plists)
-       (org-ml--map*
-        (-some->> it
-          (-partition 2)
-          (org-ml--map* (format "%S %s" (car it) (cadr it)))
-          (s-join " ")))))
+  (--map
+   (-some->> it
+     (-partition 2)
+     (--map (format "%S %s" (car it) (cadr it)))
+     (s-join " "))
+   plists))
 
 (defun org-ml--decode-header (headers)
   "Return HEADERS (a list of strings) as a list of plists."
-  (->> (reverse headers)
-       (org-ml--map*
-        (->> (org-ml--decode-string-list-space-delim it)
-             (--map-indexed (if (cl-evenp it-index) (intern it) it))))))
+  (--map
+   (->> (org-ml--decode-string-list-space-delim it)
+        (--map-indexed (if (cl-evenp it-index) (intern it) it)))
+   headers))
 
 (defun org-ml--encode-results (results)
   "Return a encoded results affiliated keyword value.
@@ -937,7 +1119,7 @@ INTERNAL-RESULTS stored in a node."
 (defun org-ml--encode-caption (caption)
   "Return a encoded caption affiliated keyword value.
 CAPTION should conform to `org-ml--is-valid-caption'."
-  (->> caption
+  (->> (reverse caption)
        (--reduce-from
         (pcase it
           ((and (pred stringp) long)
@@ -958,50 +1140,53 @@ INTERNAL-CAPTION stored in a node."
                          (substring-no-properties long))
            (substring-no-properties long))
          (cons acc)))
-   nil internal-caption))
+   nil (reverse internal-caption)))
 
 ;;; cis functions
 
 (defun org-ml--update-macro-value (macro)
   "Return MACRO node with its value property updated.
 This will be based on MACRO's key and value properties."
-  (let* ((k (org-ml--get-property-nocheck :key macro))
-         (as (org-ml--get-property-nocheck :args macro))
+  (let* ((k (org-element-property-raw :key macro))
+         (as (org-element-property-raw :args macro))
          (v (if as (format "%s(%s)" k (s-join "," as)) k)))
-    (org-ml--set-property-nocheck :value (format "{{{%s}}}" v) macro)))
+    (org-element-put-property-2 :value (format "{{{%s}}}" v) macro)))
 
 (defun org-ml--update-clock-duration-and-status (clock)
   "Return CLOCK node with its duration and status properties updated.
 This will be based on CLOCK's value property."
-  (let* ((ts (org-ml--get-property-nocheck :value clock))
-         (seconds (org-ml--timestamp-get-range ts)))
+  (let* ((ts (org-element-property-raw :value clock))
+         (seconds (org-ml--timestamp-get-length ts)))
     (if (= seconds 0)
-        (->> (org-ml--set-property-nocheck :duration nil clock)
-             (org-ml--set-property-nocheck :status 'running))
+        (org-ml--set-properties-raw clock
+          :duration nil
+          :status 'running)
       (let* ((h (-> seconds (/ 3600) (floor)))
-             (m (-> seconds (- (* h 3600)) (/ 60) (floor)))
-             ;; if the clock is going from non-ranged to ranged, it may not be
-             ;; in collapsed form; ensure it is not in collapsed form
-             ;;
-             ;; TODO it may be cleaner to simply restrict the clocks to being in
-             ;; non-collapsed form (eg at using the :pred slot in the master
-             ;; property-alist table) however...I'm pretty sure collapsed clocks
-             ;; are still valid org-syntax, even if they don't appear by default
-             (ts* (org-ml-timestamp-set-collapsed nil ts)))
-        (->> clock
-             (org-ml--set-property-nocheck :duration (format "%2d:%02d" h m))
-             (org-ml--set-property-nocheck :status 'closed)
-             (org-ml--set-property-nocheck :value ts*))))))
+             (m (-> seconds (- (* h 3600)) (/ 60) (floor))))
+        (org-ml--set-properties-raw clock
+          :duration (format "%2d:%02d" h m)
+          :status 'closed
+          ;; if the clock is going from non-ranged to ranged, it may not be in
+          ;; collapsed form; ensure it is not in collapsed form
+          :value (org-ml--timestamp-set-collapsed nil ts))))))
 
 (defun org-ml--update-headline-tags (headline)
   "Return HEADLINE node with its tags updated.
 This will be based on HEADLINE's archivedp property."
-  (org-ml--map-property-nocheck* :tags
+  (org-ml--map-property-raw* :tags
     (let ((tags* (remove org-archive-tag it)))
-      (if (org-ml--get-property-nocheck :archivedp headline)
-          (-snoc tags* org-archive-tag) tags*))
-    headline))
+      (if (org-element-property :archivedp headline)
+          (-snoc tags* org-archive-tag)
+        tags*))
+    (org-element-properties-resolve headline)))
 
+(defun org-ml--link-update-type-explicit (link)
+  "Return LINK with `:type-explicit-p' updated."
+  (let ((x (-> (org-element-property-raw :type link)
+               (member (org-link-types))
+               (null)
+               (not))))
+    (org-element-put-property-2 :type-explicit-p x link)))
 
 ;;; shifters
 
@@ -1080,9 +1265,7 @@ bounds."
                                 :type-desc "a zero-range, inactive timestamp node"))
          (ts-unit (list :pred #'org-ml--is-valid-timestamp-unit
                         :type-desc '("nil or a symbol from `year' `month'"
-                                     "`week' `day', or `hour'")))
-         (post-blank `(:post-blank ,@nn-int
-                                   :shift org-ml--shift-non-neg-integer)))
+                                     "`week' `day', or `hour'"))))
     (->>
      `((babel-call (:call ,@ol-str :require t)
                    (:inside-header ,@plist)
@@ -1147,6 +1330,7 @@ bounds."
                  (:pre-blank ,@nn-int
                              :shift org-ml--shift-non-neg-integer
                              :require 0)
+                 ;; ,@robust
                  (:priority :pred org-ml--is-valid-headline-priority
                             :shift org-ml--shift-headline-priority
                             :type-desc ("an integer between (inclusive)"
@@ -1187,8 +1371,8 @@ bounds."
                         :type-desc "nil or the symbols `on', `off', or `trans'")
              (:counter ,@pos-int-nil :shift org-ml--shift-pos-integer)
              (:tag :pred org-ml--is-valid-item-tag
-                   :type-desc "a secondary string")
-             (:structure))
+                   :type-desc "a secondary string"))
+             ;; (:structure))
        (keyword (:key ,@ol-str :require t)
                 (:value ,@ol-str :require t))
        (latex-environment (:value :encode org-ml--encode-latex-environment-value
@@ -1202,6 +1386,7 @@ bounds."
              (:format :pred org-ml--is-valid-link-format
                       :type-desc "the symbol `plain', `bracket' or `angle'")
              (:type :pred org-ml--is-valid-link-type
+                    :cis org-ml--link-update-type-explicit
                     :type-desc ("a oneline string from `org-link-types'"
                                 "or \"coderef\", \"custorg-ml-id\","
                                 "\"file\", \"id\", \"radio\", or"
@@ -1217,7 +1402,7 @@ bounds."
        (node-property (:key ,@ol-str :require t)
                       (:value ,@ol-str :require t))
        (paragraph)
-       (plain-list (:structure)
+       (plain-list ;;(:structure)
                    (:type))
        (plain-text)
        (planning (:closed ,@planning-closed)
@@ -1228,7 +1413,7 @@ bounds."
        ;; TODO this should not have multiline strings in it
        (radio-target (:value))
        (section)
-       (special-block (:type ,@ol-str :require t))
+       (special-block (:type ,@ol-str :require t) (:parameters ,@ol-str-nil))
        (src-block (:value ,@str :decode s-trim-right :require "")
                   (:language ,@str-nil)
                   (:parameters ,@plist)
@@ -1263,6 +1448,9 @@ bounds."
                                      "`active', `inactive-range', or"
                                      "`active-range'")
                          :require t)
+                  (:range-type :pred org-ml--is-valid-timestamp-range-type
+                               :type-desc ("either symbol `daterange' or"
+                                           "`timerange' or nil"))
                   (:year-start ,@pos-int :require t)
                   (:month-start ,@pos-int :require t)
                   (:day-start ,@pos-int :require t)
@@ -1279,6 +1467,8 @@ bounds."
                                               "or `cumulate'"))
                   (:repeater-unit ,@ts-unit)
                   (:repeater-value ,@pos-int-nil)
+                  (:repeater-deadline-unit ,@ts-unit)
+                  (:repeater-deadline-value ,@pos-int-nil)
                   (:warning-type :pred org-ml--is-valid-timestamp-warning-type
                                  :type-desc ("nil or a symbol from"
                                              "`all' or `first'"))
@@ -1288,12 +1478,6 @@ bounds."
        (underline)
        (verbatim (:value ,@str :require t))
        (verse-block))
-     ;; add post-blank/begin/end to everything
-     (--map (append it `(,post-blank (:begin) (:end) (:parent))))
-     (--map-when (memq (car it) org-ml-branch-nodes)
-                 (-snoc it '(:contents-begin) '(:contents-end)))
-     (--map-when (memq (car it) org-ml-elements)
-                 (-snoc it '(:post-affiliated)))
      (--map-when (memq (car it) org-ml--element-nodes-with-affiliated)
                  (append it
                          `((:name ,@str-nil)
@@ -1321,32 +1505,125 @@ bounds."
 
 ;; alist functions
 
-(defun org-ml--get-property-attribute (attribute type prop)
-  "Return ATTRIBUTE for PROP of node TYPE.
-Signal an error if PROP in TYPE does not have ATTRIBUTE."
-  (-if-let (type-list (alist-get type org-ml--property-alist))
-      (if (assq prop type-list)
-          (-when-let (plist (alist-get prop type-list))
-            (plist-get plist attribute))
-        (org-ml--arg-error "Type '%s' does not have property '%s'" type prop))
-    (org-ml--arg-error "Tried to query property '%s' for non-existent type '%s'" prop type)))
+(eval-when-compile
+  (defun org-ml--flatten-attribute (attr)
+    (->> org-ml--property-alist
+         (--map (cons (car it)
+                      (->> (cdr it)
+                           (--map (cons (car it) (plist-get (cdr it) attr)))
+                           (-filter #'cdr))))
+         (-filter #'cdr)))
+
+  (defun org-ml--flatten-attribute-boolean (attr)
+    (->> org-ml--property-alist
+         (--map (cons (car it)
+                      (->> (cdr it)
+                           (--filter (plist-get (cdr it) attr))
+                           (-map #'car))))
+         (-filter #'cdr))))
+
+(org-ml--defconst org-ml--property-decoder-functions
+  (--map (cons (car it)
+               (--map (cons (car it) (plist-get (cdr it) :decode))
+                      (cdr it)))
+         org-ml--property-alist))
+
+(org-ml--defconst org-ml--property-encoder-functions
+  (org-ml--flatten-attribute :encode))
+
+(org-ml--defconst org-ml--property-predicate-functions
+  (org-ml--flatten-attribute :pred))
+
+(org-ml--defconst org-ml--property-shifter-functions
+  (org-ml--flatten-attribute :shift))
+
+(org-ml--defconst org-ml--property-updater-functions
+  (org-ml--flatten-attribute :cis))
+
+(org-ml--defconst org-ml--property-type-descriptions
+  (cl-flet
+      ((map-cdr
+         (cell f)
+         (cons (car cell) (funcall f (cdr cell)))))
+    (->> (org-ml--flatten-attribute :type-desc)
+         (--map (map-cdr it (lambda (props)
+                              (--map (map-cdr it
+                                              (lambda (desc)
+                                                (if (listp desc)
+                                                    (s-join " " desc)
+                                                  desc)))
+                                     props)))))))
+
+(org-ml--defconst org-ml--properties-with-toggle
+  (org-ml--flatten-attribute-boolean :toggle))
+
+(org-ml--defconst org-ml--properties-with-string-list
+  (org-ml--flatten-attribute-boolean :string-list))
+
+(org-ml--defconst org-ml--properties-with-plist
+  (org-ml--flatten-attribute-boolean :plist))
 
 (defun org-ml--get-property-encoder (type prop)
-  "Return the encoder function for PROP of node TYPE."
-  (org-ml--get-property-attribute :encode type prop))
+  "Return the encoder for PROP of node TYPE."
+  (->> (alist-get type org-ml--property-encoder-functions)
+       (alist-get prop)))
 
 (defun org-ml--get-property-decoder (type prop)
-  "Return the decoder function for PROP of node TYPE."
-  (org-ml--get-property-attribute :decode type prop))
+  "Return the decoder function for PROP of node TYPE.
+If TYPE does not exist, return error. If PROP does not exist for
+TYPE, also return error. If type does exist, return the decoder
+function or nil if there is none."
+    (-if-let (ps (alist-get type org-ml--property-decoder-functions))
+        (-if-let (f (assq prop ps))
+            (cdr f)
+          (org-ml--arg-error "Type '%s' does not have property '%s'" type prop))
+      (org-ml--arg-error "Tried to query '%s' for non-existent '%s'" prop type)))
 
-(defun org-ml--get-property-cis-function (type prop)
-  "Return the cis function for PROP of node TYPE."
-  (org-ml--get-property-attribute :cis type prop))
+(defun org-ml--get-property-updater (type prop)
+  "Return the updater for PROP of node TYPE."
+  (->> (alist-get type org-ml--property-updater-functions)
+       (alist-get prop)))
 
 (defun org-ml--get-property-type-desc (type prop)
-  "Return the type-description string for PROP of node TYPE."
-  (let ((desc (org-ml--get-property-attribute :type-desc type prop)))
-    (if (listp desc) (s-join " " desc) desc)))
+  "Return the description for PROP of node TYPE."
+  (->> (alist-get type org-ml--property-type-descriptions)
+       (alist-get prop)))
+
+(defun org-ml--get-property-shifter (type prop)
+  "Lookup shifter function for TYPE and PROP."
+  (if (eq prop :post-blank) #'org-ml--shift-non-neg-integer
+    (->> (alist-get type org-ml--property-shifter-functions)
+         (alist-get prop))))
+
+(defun org-ml--get-property-predicate (type prop)
+  "Lookup shifter function for TYPE and PROP."
+  (if (eq prop :post-blank) #'org-ml--is-non-neg-integer
+    (->> (alist-get type org-ml--property-predicate-functions)
+         (alist-get prop))))
+
+(defun org-ml--property-memq (alist type prop)
+  "Return t if PROP is in the cdr of TYPE in ALIST."
+  (memq prop (alist-get type alist)))
+
+(defun org-ml--property-error-unsettable (prop type)
+  "Throw error signifying that PROP is unsettable of node TYPE."
+  (org-ml--arg-error "Property '%s' is unsettable for type '%s'" prop type))
+
+(defun org-ml--property-error-wrong-type (prop type value)
+  "Throw error signifying that VALUE is wrong for PROP of node TYPE."
+  (let ((msg "Property '%s' in node of type '%s' must be %s. Got '%S'")
+        (correct-type (org-ml--get-property-type-desc type prop)))
+    (org-ml--arg-error msg prop type correct-type value)))
+
+(defun org-ml--property-encode (prop value type)
+  "Given TYPE and PROP, return encoded VALUE."
+  (-if-let (pred (org-ml--get-property-predicate type prop))
+      (if (funcall pred value)
+          (-if-let (encode-fun (org-ml--get-property-encoder type prop))
+              (funcall encode-fun value)
+            value)
+        (org-ml--property-error-wrong-type prop type value))
+    (org-ml--property-error-unsettable prop type)))
 
 ;;; INTERNAL BRANCH/CHILD MANIPULATION
 
@@ -1355,7 +1632,7 @@ Signal an error if PROP in TYPE does not have ATTRIBUTE."
 INDICES is a list of integers specifying the index and level of the
 nested element to return."
   (if (not indices) node
-    (->> (org-ml-get-children node)
+    (->> (org-element-contents node)
          (nth (car indices))
          (org-ml--get-descendent (cdr indices)))))
 
@@ -1371,9 +1648,10 @@ nested element to return."
 FORM is a form with `it' bound to the list of children and
 returns a modified list of children."
     (declare (debug (form form)))
-    `(let* ((node ,node)
-            (it (org-ml-get-children node)))
-       (org-ml--set-children-nocheck ,form node))))
+    (let ((n (make-symbol "--node")))
+    `(let* ((,n ,node)
+            (it (org-element-contents ,n)))
+       (org-ml--set-children-nocheck ,form ,n)))))
 
 (defun org-ml--set-children-throw-error (type child-types illegal)
   "Throw an `arg-type-error' for TYPE.
@@ -1395,34 +1673,78 @@ and ILLEGAL types were attempted to be set."
 
 ;;; build helpers
 
-(defun org-ml--init-properties (props)
-  "Return a plist where the keys are PROPS and all values are nil."
-  (apply #'append (org-ml--map* (list it nil) props)))
-
-(defun org-ml--build-bare-node (type post-blank)
-  "Return a new node assembled from TYPE with POST-BLANK.
+(eval-and-compile
+  (defun org-ml--build-bare-node (type post-blank props children)
+    "Return new node of TYPE with POST-BLANK, PROPS and CHILDREN.
 TYPE is a symbol and POST-BLANK is a positive integer."
-  `(,type (:post-blank ,(or post-blank 0))))
+    ;; don't set children in the function itself a) so I can check for valid
+    ;; types and b) because `org-element-create' will add :parent
+    (let ((node (org-element-create type `(:post-blank ,(or post-blank 0) ,@props))))
+      ;; Use this function here so we get child type checks
+      (if children (org-ml-set-children children node) node))))
 
-(defun org-ml--build-leaf-node (type post-blank)
-  "Return a new object-typed node from TYPE and POST-BLANK."
-  (org-ml--build-bare-node type post-blank))
-
-(defun org-ml--build-branch-node (type post-blank children)
-  "Return a new branch object-typed node from TYPE, POST-BLANK, and CHILDREN."
-  (->> (org-ml--build-bare-node type post-blank)
-       (org-ml-set-children children)))
-
-(defun org-ml--build-blank-node (type)
-  "Return a new node of type TYPE with all properties set to nil."
-  (->> (alist-get type org-ml--property-alist)
-       (-map #'car)
-       (org-ml--init-properties)
-       (list type)))
+(defmacro org-ml--build-blank-node (type post-blank)
+  "Return new node of TYPE with POST-BLANK and all properties set to nil."
+  (let ((ips (->> (alist-get type org-ml--property-alist)
+                  (-map #'car)
+                  (--mapcat (list it nil))
+                  (cons 'list))))
+    `(org-ml--build-bare-node ',type ,post-blank ,ips nil)))
 
 ;;; base builders
 
 ;; define all base builders using this automated monstrosity
+
+(defmacro org-ml--with-cache (table switch valid type key body)
+  "Run BODY with a memoization cache.
+
+TABLE is a symbol with an alist indexed by TYPE. SWITCH is a
+symbol which will be dynamically read at runtime to determine if
+the cache should be used. VALID is a symbol bound to a list of
+valid types (at runtime) which should use the cache. KEY is the
+lookup key to be used in the cache (which is actually a hash
+table) and is assumed to correspond to the inputs to BODY.
+
+If KEY is not in the cache, run BODY and put the result in the
+cache under KEY. If KEY is in the cache, return whatever that is."
+  (let* ((k (make-symbol "--key"))
+         (n (make-symbol "--node"))
+         (c (make-symbol "--cached"))
+         (h (alist-get type (eval table))))
+    (unless h
+      (error "Failed to get cache table for %s" type))
+    `(let* ((,k ,key)
+            (,c (and ,switch (memq ',type ,valid) (gethash ,k ,h))))
+       (if ,c (org-ml-copy ,c t)
+         ;; turn off memoizer internally since some shorthand builders
+         ;; call other shorthand builders and caching each layer is probably
+         ;; overkill since none of these functions have that many arguments
+         ;; to vary
+         (let ((,switch nil))
+           (let ((,n ,body))
+             (puthash ,k (org-ml-copy ,n t) ,h)
+             ,n))))))
+
+(eval-and-compile
+  (defvar org-ml--builder-cache
+    (--map (cons it (make-hash-table :test #'equal)) org-ml-builder-types)
+    "Alist of hash tables to store builder results."))
+
+(defun org-ml-clear-builder-cache ()
+  "Clear the memoization cache for node builders."
+  (interactive)
+  (--each org-ml--builder-cache
+    (clrhash (cdr it))))
+
+(defmacro org-ml--with-builder-cache (type key body)
+  "Run BODY with builder cache.
+See org-ml--with-cache' for meaning of TYPE and KEY."
+  (declare (indent 1))
+  `(org-ml--with-cache
+     org-ml--builder-cache
+     org-ml-memoize-builders
+     org-ml-memoize-builder-types
+     ,type ,key ,body))
 
 (eval-when-compile
   (defun org-ml--autodef-kwd-to-sym (keyword)
@@ -1516,33 +1838,52 @@ symbol for the rest argument."
                       ((memq type org-element-object-containers) 'object-nodes)))
            (args (let ((a `(,@pos-args &key ,@kw-args post-blank)))
                    (if rest-arg `(,@a &rest ,rest-arg) a)))
-           (const-props (-some->> (alist-get 'const props)
-                                  (--mapcat (list (car it)
-                                                  (plist-get (cdr it) :const)))
-                                  (org-ml--autodef-prop-form 2
-                                    #'org-ml--set-property-nocheck
-                                    #'org-ml--set-properties-nocheck)))
-           (nil-props (-some->> (alist-get 'null props)
-                                (-map #'car)
-                                (org-ml--autodef-prop-form 1
-                                  #'org-ml--set-property-nocheck-nil
-                                  #'org-ml--set-properties-nocheck-nil)))
-           (strict-props (-some->> (append (alist-get 'key props)
-                                           (alist-get 'req props))
-                                   (-map #'car)
-                                   (--mapcat (list it (org-ml--autodef-kwd-to-sym it)))
-                                   (org-ml--autodef-prop-form 2
-                                     #'org-ml-set-property
-                                     #'org-ml-set-properties)))
+           (const-props (->> (alist-get 'const props)
+                             (--mapcat (list (car it)
+                                             (plist-get (cdr it) :const)))))
+           (nil-props (->> (alist-get 'null props)
+                           (-map #'car)
+                           (--mapcat (list it nil))))
+           (strict-props
+            (->> (append (alist-get 'key props)
+                         (alist-get 'req props))
+                 (-map #'car)
+                 (--mapcat (list it
+                                 `(org-ml--property-encode
+                                   ,it ,(org-ml--autodef-kwd-to-sym it) ',type)))))
+           (all-props (-some->> (append strict-props nil-props const-props)
+                       (cons 'list)))
+           (updaters (->> (alist-get type org-ml--property-updater-functions)
+                          (-map #'cdr)
+                          (-uniq)))
            (doc (org-ml--autodef-make-docstring type rest-arg props))
-           (builder (let ((a `(',type post-blank)))
-                      (if rest-arg `(org-ml--build-branch-node ,@a ,rest-arg)
-                        `(org-ml--build-leaf-node ,@a))))
-           (body (if (or strict-props nil-props const-props)
-                     `(->> ,@(-non-nil (list builder const-props
-                                             nil-props strict-props)))
-                   builder)))
-      (macroexpand `(org-ml--defun-kw ,name ,args ,doc ,body))))
+           (inner-body `(org-ml--build-bare-node
+                         ',type post-blank
+                         ,all-props
+                         ,rest-arg))
+           (prop-syms (->> (alist-get 'key props)
+                           (append (alist-get 'req props))
+                           (-map #'car)
+                           (-map #'org-ml--autodef-kwd-to-sym)
+                           (cons 'post-blank)))
+           (memoizer-key
+            (cond
+             ((and rest-arg (not prop-syms)) rest-arg)
+             ((and rest-arg (= (length prop-syms) 1)) `(cons ,@prop-syms ,rest-arg))
+             (rest-arg `(append (list ,@prop-syms) ,rest-arg))
+             ((not prop-syms) nil)
+             ((= (length prop-syms) 1) (car prop-syms))
+             (t `(list ,@prop-syms))))
+           (body (if updaters
+                     (let ((us (--map `(funcall #',it node) updaters)))
+                       `(let ((node ,inner-body))
+                          ,@us))
+                   inner-body))
+           (memoized-body
+            (if memoizer-key
+                `(org-ml--with-builder-cache ,type ,memoizer-key ,body)
+              body)))
+      (macroexpand `(org-ml--defun-kw ,name ,args ,doc ,memoized-body))))
 
   (defmacro org-ml--autodef-build-node-functions ()
     "Define all build node functions."
@@ -1562,270 +1903,453 @@ symbol for the rest argument."
   "Return format of STATISTICS-COOKIE as a symbol.
 If fractional cookie, return `fraction'; if percentage cookie return
 `percent', else throw error (which should never happen)."
-  (let ((value (org-ml--get-property-nocheck :value statistics-cookie)))
+  (let ((value (org-element-property-raw :value statistics-cookie)))
     (cond ((s-contains? "/" value) 'fraction)
           ((s-contains? "%" value) 'percent)
           (t (org-ml--arg-error "Unparsable statistics cookie: %s" value)))))
 
 ;; timestamp (auxiliary functions)
 
-(defun org-ml-time-is-long (time)
-  "Return t if TIME is a long format time list."
-  (pcase time
+;; terminology (in haskell types)
+;; type Date = (Y, M, D)
+;; type Time = (H, M)
+;; type DateTime = (Y, M, D, H, M)
+;; type TimeList = (Y, M, D, (Maybe H), (Maybe M))
+
+(defun org-ml-is-time-p (time)
+  "Return t if TIME is a list like (hour min)."
+  (pcase time (`(,(pred integerp) ,(pred integerp)) t)))
+
+(defun org-ml-timelist-has-time (timelist)
+  "Return t if TIMELIST has a time."
+  (pcase timelist
     (`(,(pred integerp) ,(pred integerp) ,(pred integerp)
        ,(pred integerp) ,(pred integerp))
      t)))
 
 ;; make these public, not sure where else to put them
-(defun org-ml-time-to-unixtime (time)
-  "Return the unix time (integer seconds) of time list TIME.
+(defun org-ml-timelist-to-unixtime (timelist)
+  "Return the unix time (integer seconds) of TIMELIST.
 The returned value is dependent on the time zone of the operating
 system."
-  (->> (if (org-ml-time-is-long time)
-           (-let (((y m d H M) time))
-             (list 0 M H d m y nil -1 (current-time-zone)))
-         (-let (((y m d) time))
-           (list 0 0 0 d m y nil -1 (current-time-zone))))
+  (->> (-let (((y m d H M) timelist))
+         (list 0 (or M 0) (or H 0) d m y nil -1 (current-time-zone)))
        (encode-time)
        (float-time)
        (round)))
 
-(defun org-ml-unixtime-to-time-long (unixtime)
+(defun org-ml-unixtime-to-timelist (has-time unixtime)
+  "Return the long time list of UNIXTIME.
+
+The list will be formatted like (YEAR MONTH DAY HOUR MIN) unless
+HAS-TIME is nil, in which case HOUR and MIN will be set to nil."
+  (-let (((M H d m y) (-slice (decode-time unixtime (current-time-zone)) 1 6)))
+    (if has-time (list y m d H M) (list y m d nil nil))))
+
+(defun org-ml-unixtime-to-datetime (unixtime)
   "Return the long time list of UNIXTIME.
 The list will be formatted like (YEAR MONTH DAY HOUR MIN)."
   (reverse (-slice (decode-time unixtime (current-time-zone)) 1 6)))
 
-(defun org-ml-unixtime-to-time-short (unixtime)
+(defun org-ml-unixtime-to-date (unixtime)
   "Return the short time list of UNIXTIME.
 The list will be formatted like (YEAR MONTH DAY nil nil)."
-  (append (-take 3 (org-ml-unixtime-to-time-long unixtime)) '(nil nil)))
+  (append (-take 3 (org-ml-unixtime-to-datetime unixtime)) '(nil nil)))
 
-(defun org-ml--time-truncate (time)
-  "Return the short time format of TIME regardless of input format."
-  (-take 3 time))
+(defun org-ml--timelist-truncate (timelist)
+  "Return the date of TIMELIST with hour amd minute fields nil-ed."
+  `(,@(-take 3 timelist) nil nil))
 
-(defun org-ml--time-shift (n unit time)
-  "Return modified time list TIME shifted N UNIT's.
+(defun org-ml-timelist-split (timelist)
+  "Return TIMELIST split into ((Y M D) (H M)).
+
+The second member will be nil if either hours or minutes is nil."
+  (-let (((ymd (h m)) (-split-at 3 timelist)))
+    (list ymd (if (and h m) (list h m) nil))))
+
+(defun org-ml-times-equal-date-p (time1 time2)
+  "Return t if the dates of TIME1 and TIME2 are the same."
+  (equal (org-ml--timelist-truncate time1) (org-ml--timelist-truncate time2)))
+
+(defun org-ml--timelists-get-range-type (timelist1 timelist2 original)
+  "Return range type of TIMELIST1 and TIMELIST2.
+
+Valid return values are nil (unranged), `daterange' (ranged with
+different dates), or `timerange' (ranged with same date).
+
+ORIGINAL can be any of the return values above. If TIME1 and TIME2 are
+a timerange as defined above, return ORIGINAL if it is non-nil."
+  (-let (((d1 t1) (org-ml-timelist-split timelist1))
+         ((d2 t2) (org-ml-timelist-split timelist2)))
+    (if (equal d1 d2)
+        (if (equal t1 t2) nil (or original 'timerange))
+      'daterange)))
+
+;; ASSUME any "impossible datetimes" will be corrected when the timelist is
+;; parsed back into a timestamp (or however it will be used). Ie if I add 10000
+;; days to any timestamp assume this will be reflected sensibly in the month
+;; and year of the final result downstream.
+(defun org-ml-timelist-shift (n unit timelist)
+  "Return modified TIMELIST shifted N UNIT's.
 
 UNIT is one of `day', `week', `month', `year', `minute', or `hour'.
 N is an integer."
   (-let (((i s) (cond
-                 ((eq unit 'year) (list 0 n))
-                 ((eq unit 'month) (list 1 n))
-                 ((eq unit 'week) (list 2 (* 7 n)))
-                 ((eq unit 'day) (list 2 n))
-                 ((and (eq unit 'hour) (org-ml-time-is-long time)) (list 3 n))
-                 ((and (eq unit 'minute) (org-ml-time-is-long time)) (list 4 n))
+                 ((eq unit 'year) `(0 ,n))
+                 ((eq unit 'month) `(1 ,n))
+                 ((eq unit 'week) `(2 ,(* 7 n)))
+                 ((eq unit 'day) `(2 ,n))
+                 ((and (eq unit 'hour) (org-ml-timelist-has-time timelist)) `(3 ,n))
+                 ((and (eq unit 'minute) (org-ml-timelist-has-time timelist)) `(4 ,n))
                  (t (org-ml--arg-error "Invalid time unit: %S" unit)))))
-    (org-ml--map-at* i (+ s it) time)))
+    (org-ml--map-at* i (+ s it) timelist)))
 
-(defconst org-ml--time-start-keys
-  '(:year-start :month-start :day-start :hour-start :minute-start)
-  "Properties for the starting time values of a timestamp node.")
+(defun org-ml--time-shift (n unit time)
+  "Return modified TIME shifted N UNITs (modulo).
 
-(defconst org-ml--time-end-keys
-  '(:year-end :month-end :day-end :hour-end :minute-end)
-  "Properties for the ending time values of a timestamp node.")
-
-(defun org-ml--time-format-props (time start?)
-  "Return plist representation of time list TIME.
-If START? is t, the plist will represent a start time, else and
-end time."
-  (let* ((props (if start? org-ml--time-start-keys org-ml--time-end-keys))
-         (time* (pcase time
-                  (`(,(pred integerp)
-                     ,(pred integerp)
-                     ,(pred integerp))
-                   (append time '(nil nil)))
-                  ((or `(,(pred integerp)
-                         ,(pred integerp)
-                         ,(pred integerp)
-                         ,(pred integerp)
-                         ,(pred integerp))
-                       `(,(pred integerp)
-                         ,(pred integerp)
-                         ,(pred integerp)
-                         ,(pred null)
-                         ,(pred null)))
-                   time)
-                  (`nil (-repeat 5 nil))
-                  (_ (org-ml--arg-error "Invalid time given: %s" time)))))
-    (-interleave props time*)))
-
-(defconst org-ml--warning-keys
-  '(:warning-type :warning-value :warning-unit)
-  "Properties for timestamp warning.")
-
-(defconst org-ml--repeater-keys
-  '(:repeater-type :repeater-value :repeater-unit)
-  "Properties for timestamp repeater.")
-
-(defun org-ml--decorator-format (dec warning? valid-types)
-  "Return plist representing a timestamp warning or repeater (decorators).
-
-DEC is a list like (TYPE VALUE UNIT) of the decorator, WARNING?
-is t if the decorator is a warning or nil if it is a repeater,
-and VALID-TYPES are the allowed values for TYPE given in DEC."
-  (let ((props (if warning? org-ml--warning-keys org-ml--repeater-keys)))
-    (if (not dec) (org-ml--init-properties props)
-      (-let (((type value unit) dec))
-        (unless (or (not type) (memq type valid-types))
-          (org-ml--arg-error "Invalid decorator type: %s" type))
-        (unless (or (not value) (integerp value))
-          (org-ml--arg-error "Invalid decorator value: %s" value))
-        (unless (or (not unit) (memq unit '(year month week day hour)))
-          (org-ml--arg-error "Invalid decorator unit: %s" unit))
-        (-interleave props dec)))))
+UNIT is `minute', or `hour'. N is an integer."
+  (-let* ((f (pcase unit
+               (`hour 60)
+               (`minute 1)
+               (_ (org-ml--arg-error "Invalid time unit: %S" unit))))
+          ((H M) time)
+          (s (+ (* n f) (* H 60) M)))
+    (list (mod (/ s 60) 24) (mod s 60))))
 
 ;; timestamp (regular)
 
-(defun org-ml--timestamp-get-start-time (timestamp)
-  "Return the time list of the start time in TIMESTAMP."
+;; ASSUME the source of truth for if a timestamp is ranged or not is in the
+;; :ranged-type property. This is much faster than querying each piece of the
+;; timestamp and inferring if it is ranged or not. It also is less ambiguous for
+;; in cases where the timestamp may be collapsed.
+
+(defun org-ml--check-time (H M)
+  "Check time, decomposed into H and M."
+  (unless (and (integerp H) (integerp M))
+    (org-ml--arg-error "Invalid time %s" (list H M))))
+
+(defun org-ml--check-time-from-list (time)
+  "Check TIME."
+  (if (consp time)
+      (-let (((H M) time))
+        (org-ml--check-time H M))
+    (org-ml--arg-error "Time must not be nil")))
+
+(defun org-ml--check-timelist (y m d H M)
+  "Check timelist, decomposed into Y M D H and M."
+  (unless (and (integerp y)
+               (integerp m)
+               (integerp d)
+               (or (not H) (integerp H))
+               (or (not M) (integerp M)))
+    (org-ml--arg-error "Invalid timelist %s" (list y m d H M))))
+
+(defun org-ml--check-timelist-from-list (timelist)
+  "Check TIMELIST."
+  (if (consp timelist)
+      (-let (((y m d H M) timelist))
+        (org-ml--check-timelist y m d H M))
+    (org-ml--arg-error "Timelist must not be nil")))
+
+(defun org-ml--check-warning (type value unit)
+  "Check that warning (TYPE VALUE UNIT) is valid."
+  (unless (and (org-ml--is-valid-timestamp-warning-type type)
+               (integerp value)
+               (org-ml--is-valid-timestamp-unit unit))
+    (org-ml--arg-error "Invalid warning %s" (list type value unit))))
+
+(defun org-ml--check-repeater (type value unit)
+  "Check that repeater (TYPE VALUE UNIT) is valid."
+  (unless (and (org-ml--is-valid-timestamp-repeater-type type)
+               (integerp value)
+               (org-ml--is-valid-timestamp-unit unit))
+    (org-ml--arg-error "Invalid repeater %s" (list type value unit))))
+
+(defun org-ml--check-deadline (value unit)
+  "Check that deadline (VALUE UNIT) is valid."
+  (unless (and (integerp value) (org-ml--is-valid-timestamp-unit unit))
+    (org-ml--arg-error "Invalid deadline %s" (list value unit))))
+
+(defun org-ml--check-warning-from-list (warning)
+  "Check that WARNING is valid."
+  (if (consp warning)
+      (-let (((y v u) warning))
+        (org-ml--check-warning y v u))
+    (org-ml--arg-error "Warning must not be nil")))
+
+(defun org-ml--check-repeater-from-list (repeater)
+  "Check that REPEATER is valid."
+  (if (consp repeater)
+      (-let (((y v u) repeater))
+        (org-ml--check-repeater y v u))
+    (org-ml--arg-error "Repeater must not be nil")))
+
+(defun org-ml--check-deadline-from-list (deadline)
+  "Check that DEADLINE is valid."
+  (if (consp deadline)
+      (-let (((v u) deadline))
+        (org-ml--check-deadline v u))
+    (org-ml--arg-error "Repeater must not be nil")))
+
+(defun org-ml--timestamp-get-start-timelist (timestamp)
+  "Return the timelist of the start time in TIMESTAMP."
   (-let (((&plist :minute-start n :hour-start h :day-start d
                   :month-start m :year-start y)
-          (org-ml-get-all-properties timestamp)))
+          (org-ml--get-nonstandard-properties timestamp)))
     `(,y ,m ,d ,h ,n)))
 
-(defun org-ml--timestamp-get-end-time (timestamp)
-  "Return the time list of the end time in TIMESTAMP."
+(defun org-ml--timestamp-get-start-date (timestamp)
+  "Return the start date of TIMESTAMP."
+  (-let (((&plist :year-start y :month-start m :day-start d)
+          (org-ml--get-nonstandard-properties timestamp)))
+    `(,y ,m ,d)))
+
+(defun org-ml--timestamp-get-start-time (timestamp)
+  "Return the start time of TIMESTAMP or nil if not set."
+  (-let (((&plist :minute-start m :hour-start h)
+          (org-ml--get-nonstandard-properties timestamp)))
+    (if (and h m) `(,h ,m) nil)))
+
+(defun org-ml--timestamp-get-end-timelist (timestamp)
+  "Return the timelist of the end time in TIMESTAMP."
   (-let (((&plist :minute-end n :hour-end h :day-end d
                   :month-end m :year-end y)
-          (org-ml-get-all-properties timestamp)))
+          (org-ml--get-nonstandard-properties timestamp)))
     `(,y ,m ,d ,h ,n)))
+
+(defun org-ml--timestamp-get-end-date (timestamp)
+  "Return the end date of TIMESTAMP."
+  (-let (((&plist :year-end y :month-end m :day-end d)
+          (org-ml--get-nonstandard-properties timestamp)))
+    `(,y ,m ,d)))
+
+(defun org-ml--timestamp-get-end-time (timestamp)
+  "Return the end time of TIMESTAMP or nil if not set."
+  (-let (((&plist :minute-end m :hour-end h)
+          (org-ml--get-nonstandard-properties timestamp)))
+    (if (and h m) `(,h ,m) nil)))
 
 (defun org-ml--timestamp-get-start-unixtime (timestamp)
   "Return the unixtime of the start time in TIMESTAMP."
-  (->> (org-ml--timestamp-get-start-time timestamp)
-       (org-ml-time-to-unixtime)))
+  (->> (org-ml--timestamp-get-start-timelist timestamp)
+       (org-ml-timelist-to-unixtime)))
 
 (defun org-ml--timestamp-get-end-unixtime (timestamp)
   "Return the unixtime of the end time in TIMESTAMP."
-  (->> (org-ml--timestamp-get-end-time timestamp)
-       (org-ml-time-to-unixtime)))
+  (->> (org-ml--timestamp-get-end-timelist timestamp)
+       (org-ml-timelist-to-unixtime)))
 
-(defun org-ml--timestamp-get-range (timestamp)
+(defun org-ml--timestamp-has-equal-dates-p (timestamp)
+  "Return t if start and end dates of TIMESTAMP are the same."
+  (equal (org-ml--timestamp-get-start-date timestamp)
+         (org-ml--timestamp-get-end-date timestamp)))
+
+(defun org-ml--timestamp-get-length (timestamp)
   "Return the range of TIMESTAMP in seconds."
   (- (org-ml--timestamp-get-end-unixtime timestamp)
      (org-ml--timestamp-get-start-unixtime timestamp)))
 
 (defun org-ml--timestamp-is-active (timestamp)
   "Return t if TIMESTAMP is an active type."
-  (memq (org-ml--get-property-nocheck :type timestamp) '(active active-range)))
+  (memq (org-element-property-raw :type timestamp) '(active active-range)))
 
 (defun org-ml--timestamp-is-range-type (timestamp)
   "Return t if TIMESTAMP has a range type."
-  (memq (org-ml--get-property-nocheck :type timestamp)
+  (memq (org-element-property-raw :type timestamp)
         '(active-range inactive-range)))
 
 (defun org-ml--timestamp-is-ranged (timestamp)
   "Return t if TIMESTAMP has a range greater than 0 seconds."
-  (/= 0 (org-ml--timestamp-get-range timestamp)))
+  (/= 0 (org-ml--timestamp-get-length timestamp)))
 
-(defun org-ml--timestamp-is-ranged-lowres (timestamp)
-  "Return t if TIMESTAMP is range according to only year, month, and day."
-  (-let* (((l s) (-split-at 3 (org-ml--timestamp-get-start-time timestamp)))
-          ((L S) (-split-at 3 (org-ml--timestamp-get-end-time timestamp))))
-    ;; lowres if Y/M/D is different and Min/Hour are the same but only if
-    ;; Min/Hour are both not nil
-    (and (not (equal l L)) (or (equal s S)
-                               (memq nil s)
-                               (memq nil S)))))
+(defun org-ml--timestamp-set-start-timelist-nocheck (timelist timestamp)
+  "Set the start of TIMESTAMP using TIMELIST. Does not set type."
+  (-let (((y m d H M) timelist))
+    (org-ml--set-properties-raw timestamp
+      :year-start y
+      :month-start m
+      :day-start d
+      :hour-start H
+      :minute-start M)))
 
-(defun org-ml--timestamp-set-start-time-nocheck (time timestamp)
-  "Set the start TIME of TIMESTAMP. Does not set type."
-  (let ((time* (org-ml--time-format-props time t)))
-      (org-ml--set-properties-nocheck time* timestamp)))
-
-(defun org-ml--timestamp-set-start-time (time timestamp)
-  "Return TIMESTAMP with start time properties set according to time list TIME."
-  (->> (org-ml--timestamp-set-start-time-nocheck time timestamp)
+(defun org-ml--timestamp-set-start-timelist (timelist timestamp)
+  "Return TIMESTAMP with start time set according to TIMELIST."
+  (->> (org-ml--timestamp-set-start-timelist-nocheck timelist timestamp)
        (org-ml--timestamp-update-type-ranged)))
 
-(defun org-ml--timestamp-set-end-time-nocheck (time timestamp)
-  "Set the end TIME of TIMESTAMP. Does not set type."
-  (if time
-      (-> (org-ml--time-format-props time nil)
-          (org-ml--set-properties-nocheck timestamp))
-    (-> (org-ml--timestamp-get-start-time timestamp)
-        (org-ml--time-format-props nil)
-        (org-ml--set-properties-nocheck timestamp))))
+(defun org-ml--timestamp-set-end-timelist-nocheck (timelist timestamp)
+  "Set the end of TIMESTAMP using TIMELIST. Does not set type.
 
-(defun org-ml--timestamp-set-end-time (time timestamp)
-  "Return TIMESTAMP with end time properties set according to time list TIME."
-  (let ((ts* (org-ml--timestamp-set-end-time-nocheck time timestamp)))
-    (if time (org-ml--timestamp-update-type-ranged ts*)
-      (org-ml--timestamp-set-type-ranged nil ts*))))
+Set end to start if TIMELIST is nil."
+  (-let (((y m d H M)
+          (or timelist (org-ml--timestamp-get-start-timelist timestamp))))
+    (org-ml--set-properties-raw timestamp
+      :year-end y
+      :month-end m
+      :day-end d
+      :hour-end H
+      :minute-end M)))
 
-(defun org-ml--timestamp-set-single-time (time timestamp)
-  "Return TIMESTAMP with start/end properties set to time list TIME."
-  (->> (org-ml--timestamp-set-start-time-nocheck time timestamp)
-       (org-ml--timestamp-set-end-time-nocheck time)
-       (org-ml--timestamp-set-type-ranged nil)))
-
-(defun org-ml--timestamp-set-double-time (time1 time2 timestamp)
-  "Return TIMESTAMP with start/end set to TIME1 and TIME2."
-  (->> (org-ml--timestamp-set-start-time-nocheck time1 timestamp)
-       (org-ml--timestamp-set-end-time-nocheck time2)
+(defun org-ml--timestamp-set-end-timelist (timelist timestamp)
+  "Return TIMESTAMP with end set according to TIMELIST."
+  (->> (org-ml--timestamp-set-end-timelist-nocheck timelist timestamp)
        (org-ml--timestamp-update-type-ranged)))
 
-(defun org-ml--timestamp-set-range (range timestamp)
-  "Return TIMESTAMP with end time shifted to RANGE seconds from start time."
-  (let* ((start (org-ml--timestamp-get-start-time timestamp))
-         (long? (org-ml-time-is-long start))
-         (range (* range (if long? 60 86400)))
-         (t2 (--> (org-ml-time-to-unixtime start)
-                  (+ it range)
-                  (if long? (org-ml-unixtime-to-time-long it)
-                    (org-ml-unixtime-to-time-short it)))))
-    (->> (org-ml--timestamp-set-end-time-nocheck t2 timestamp)
-         (org-ml--timestamp-update-type-ranged))))
+(defun org-ml--timestamp-set-single-timelist (timelist timestamp)
+  "Return TIMESTAMP with start/end set to TIMELIST."
+  (->> (org-ml--timestamp-set-start-timelist-nocheck timelist timestamp)
+       (org-ml--timestamp-set-end-timelist-nocheck timelist)
+       (org-ml--timestamp-set-range-type nil)))
 
-(defun org-ml--timestamp-update-type-ranged (timestamp)
-  "Return TIMESTAMP with updated type based on if it is ranged."
-  (-> (org-ml--timestamp-is-ranged-lowres timestamp)
-      (org-ml--timestamp-set-type-ranged timestamp)))
+(defun org-ml--timestamp-set-double-timelist (timelist1 timelist2 timestamp)
+  "Return TIMESTAMP with start/end set to TIMELIST1/TIMELIST2."
+  (->> (org-ml--timestamp-set-start-timelist-nocheck timelist1 timestamp)
+       (org-ml--timestamp-set-end-timelist-nocheck timelist2)
+       (org-ml--timestamp-update-type-ranged)))
 
-(defun org-ml--timestamp-set-type-ranged (ranged? timestamp)
-  "Return TIMESTAMP with type set according to RANGED?."
-  (org-ml--map-property-nocheck* :type
+(defun org-ml--timestamp-set-type-ranged (is-ranged timestamp)
+  "Return TIMESTAMP with `:type' set according to IS-RANGED."
+  (org-ml--map-property-raw* :type
     (pcase it
       ((or `active `active-range)
-       (if ranged? 'active-range 'active))
+       (if is-ranged 'active-range 'active))
       ((or `inactive `inactive-range)
-       (if ranged? 'inactive-range 'inactive))
+       (if is-ranged 'inactive-range 'inactive))
       (e (org-ml--arg-error "Invalid timestamp type: %s" e)))
     timestamp))
 
+(defun org-ml--timestamp-set-range-type (range-type timestamp)
+  "Return TIMESTAMP updated to reflect RANGE-TYPE.
+Specifically update `:range-type' and `:type'."
+  (->> (org-ml--timestamp-set-type-ranged range-type timestamp)
+       (org-element-put-property-2 :range-type range-type)))
+
+(defun org-ml--timestamp-set-length (n unit timestamp)
+  "Return TIMESTAMP with end time shifted to N UNITs from start time."
+  (let* ((t1 (org-ml--timestamp-get-start-timelist timestamp))
+         (has-time (org-ml-timelist-has-time t1))
+         ;; convert to unixtime and back to fix any overflow values
+         (t2 (->> (org-ml-timelist-shift n unit t1)
+                  (org-ml-timelist-to-unixtime)
+                  (org-ml-unixtime-to-timelist has-time)))
+         (rt (->> (org-element-property-raw :range-type timestamp)
+                  (org-ml--timelists-get-range-type t1 t2))))
+    (->> (org-ml--timestamp-set-end-timelist-nocheck t2 timestamp)
+         (org-ml--timestamp-update-type-ranged)
+         (org-ml--timestamp-set-range-type rt))))
+
+(defun org-ml--timestamp-update-type-ranged (timestamp)
+  "Return TIMESTAMP with updated `:type' and `:range-type'.
+
+Specifically, this assumes that the start and/or end of TIMESTAMP
+have just been updated, and that the `:type' and `:range-type'
+are now out of sync with the range between start/end. If deciding
+between `timerange' or `daterange', prefer the original value of
+TIMESTAMP if possible."
+  (let* ((t1 (org-ml--timestamp-get-start-timelist timestamp))
+         (t2 (org-ml--timestamp-get-end-timelist timestamp))
+         (rt (->> (org-element-property-raw :range-type timestamp)
+                  (org-ml--timelists-get-range-type t1 t2))))
+    (org-ml--timestamp-set-range-type rt timestamp)))
+
 (defun org-ml--timestamp-set-active (flag timestamp)
   "Return TIMESTAMP with active type if FLAG is t."
-  (let* ((type (if (org-ml--timestamp-is-ranged-lowres timestamp)
-                   (if flag 'active-range 'inactive-range)
-                 (if flag 'active 'inactive))))
-    (org-ml--set-property-nocheck :type type timestamp)))
+  (let ((type (if (org-element-property-raw :range-type timestamp)
+                  (if flag 'active-range 'inactive-range)
+                (if flag 'active 'inactive))))
+    (org-element-put-property-2 :type type timestamp)))
+
+(defun org-ml--timestamp-get-warning (timestamp)
+  "Return the warning component of TIMESTAMP.
+Return a list like (TYPE VALUE UNIT) or nil."
+  (-let (((&plist :warning-type y :warning-value v :warning-unit u)
+          (org-ml--get-nonstandard-properties timestamp)))
+    (when (and y v u) `(,y ,v, u))))
 
 (defun org-ml--timestamp-set-warning (warning timestamp)
   "Return TIMESTAMP with warning properties set to WARNING list."
-  (-> (org-ml--decorator-format warning t '(all first))
-      (org-ml--set-properties-nocheck timestamp)))
+  (-let (((type value unit) warning))
+    (org-ml--set-properties-raw timestamp
+      :warning-type type
+      :warning-value value
+      :warning-unit unit)))
+
+(defun org-ml--timestamp-get-repeater (timestamp)
+  "Return the repeater component of TIMESTAMP.
+Return a list like (TYPE VALUE UNIT) or nil."
+  (-let (((&plist :repeater-type y :repeater-value v :repeater-unit u)
+          (org-ml--get-nonstandard-properties timestamp)))
+    (when (and y v u) `(,y ,v, u))))
 
 (defun org-ml--timestamp-set-repeater (repeater timestamp)
-  "Return TIMESTAMP with warning properties set to REPEATER list."
-  (-> (org-ml--decorator-format repeater nil '(catch-up restart cumulate))
-      (org-ml--set-properties-nocheck timestamp)))
+  "Return TIMESTAMP with repeater properties set to REPEATER."
+  (unless repeater
+    (org-ml--set-properties-raw timestamp
+      :repeater-deadline-value nil
+      :repeater-deadline-unit nil))
+  (-let (((type value unit) repeater))
+    (org-ml--set-properties-raw timestamp
+      :repeater-type type
+      :repeater-value value
+      :repeater-unit unit)))
 
-(defun org-ml--timestamp-shift-start (n unit timestamp)
-  "Return TIMESTAMP with start time shifted N UNIT's."
-  (let ((time* (->> (org-ml--timestamp-get-start-time timestamp)
-                    (org-ml--time-shift n unit))))
-    (->> (org-ml--timestamp-set-start-time time* timestamp)
-         (org-ml--timestamp-update-type-ranged))))
+(defun org-ml--timestamp-set-deadline (deadline timestamp)
+  "Return TIMESTAMP with repeater properties set to DEADLINE."
+  (if (not (org-ml--timestamp-get-repeater timestamp)) timestamp
+    (-let (((value unit) deadline))
+      (org-ml--set-properties-raw timestamp
+        :repeater-deadline-value value
+        :repeater-deadline-unit unit))))
 
-(defun org-ml--timestamp-shift-end (n unit timestamp)
-  "Return TIMESTAMP with end time shifted N UNIT's."
-  (let ((time* (->> (org-ml--timestamp-get-end-time timestamp)
-                    (org-ml--time-shift n unit))))
-    (->> (org-ml--timestamp-set-end-time time* timestamp)
-         (org-ml--timestamp-update-type-ranged))))
+(defun org-ml--timestamp-set-collapsed (flag timestamp)
+  "Return TIMESTAMP with collapsed set to FLAG."
+  (pcase (org-element-property-raw :range-type timestamp)
+    ;; collapsed
+    (`timerange
+     (if flag timestamp
+       (->> (org-ml-copy timestamp)
+            (org-element-put-property-2 :range-type 'daterange))))
+    ;; uncollapsed
+    (`daterange
+     (if (and (org-ml--timestamp-get-start-time timestamp)
+              (org-ml--timestamp-get-end-time timestamp))
+         (cond
+          ((and (eq flag t) (org-ml--timestamp-has-equal-dates-p timestamp))
+           (org-element-put-property-2 :range-type 'timerange timestamp))
+          ((and (eq flag 'force))
+           (let ((s (org-ml--timestamp-get-start-timelist timestamp)))
+             (->> (org-ml-copy timestamp)
+                  (org-ml--timestamp-set-end-timelist-nocheck s)
+                  (org-element-put-property-2 :range-type 'timerange))))
+          (t
+           timestamp))
+       timestamp))
+    ;; neither
+    (`nil
+     timestamp)
+    (e
+     (error "Invalid range-type %s" e))))
+
+(defun org-ml--timestamp-set-start-time (time timestamp-diary)
+  "Set the start of TIMESTAMP-DIARY to TIME. Does not set type."
+  (-let (((H M) time))
+    (org-ml--set-properties-raw timestamp-diary
+      :hour-start H
+      :minute-start M)))
+
+(defun org-ml--timestamp-set-end-time (time timestamp-diary)
+  "Set the end of TIMESTAMP-DIARY to TIME. Does not set type."
+  (-let (((H M) time))
+    (org-ml--set-properties-raw timestamp-diary
+      :hour-end H
+      :minute-end M)))
+
+(defun org-ml--timestamp-update-type-ranged-timeonly (timestamp-diary)
+  "Return TIMESTAMP-DIARY with updated `:range-type'."
+  (let* ((t1 (org-ml--timestamp-get-start-time timestamp-diary))
+         (t2 (org-ml--timestamp-get-end-time timestamp-diary))
+         (rt (if (equal t1 t2) nil 'timerange)))
+    (org-element-put-property-2 :range-type rt timestamp-diary)))
 
 ;; timestamp (diary sexp)
 
@@ -1840,11 +2364,25 @@ REST) where HEAD consists of all nodes before the first nested
 plain-list, SUBITEMS will be all items in the nested plain-list,
 POST-BLANK will be the post-blank of the nested plain-list, and
 REST will be everything after the plain-list (which should be nil
-for all sensible items)."
-  (-let* (((h (s . r)) (->> (org-ml-get-children item)
-                            (--split-with (not (org-ml-is-type 'plain-list it)))))
-          (pb (if s (org-ml--get-property-nocheck :post-blank s) 0))
-          (i (org-ml-get-children s)))
+for all sensible items).
+
+Example item showing how this breaks down:
+
+- HEAD
+  - SUBITEM1
+  - SUBITEM2 (with POST-BLANK 1 below)
+
+  REST
+
+REST may itself contain more plain lists, but (for now at least)
+let's consider these cases extremely rare. This function will
+still do the right thing, but any plain list in REST will be
+off-limits for the indent/outdent functions that use this
+function."
+  (-let* (((h (s . r)) (->> (org-element-contents item)
+                            (--split-with (not (org-ml--is-type 'plain-list it)))))
+          (pb (if s (org-element-post-blank s) 0))
+          (i (org-element-contents s)))
     (list h i pb r)))
 
 (defun org-ml--item-set-subcomponents (subcomponents item)
@@ -1853,34 +2391,63 @@ SUBCOMPONENTS is a list like that returned by
 `org-ml--item-get-subcomponents'."
   (-let* (((head subitems sub-pb rest) subcomponents))
     (-when-let (pb (cond
-                    (rest (-some->> (-last-item rest)
-                            (org-ml--get-property-nocheck :post-blank)))
+                    (rest (org-element-post-blank (-last-item rest)))
                     (subitems sub-pb)
-                    (head (-some->> (-last-item head)
-                            (org-ml--get-property-nocheck :post-blank)))))
-      (let ((rest* (-some->> rest
-                     (org-ml--map-last*
-                      (org-ml--set-property-nocheck :post-blank 0 it))))
-            (sublist (-some->> subitems
-                       (apply #'org-ml-build-plain-list
-                              :post-blank (if rest sub-pb 0))
-                       (list)))
-            (head* (-some->> head
-                     (org-ml--map-last*
-                      (org-ml--set-property-nocheck :post-blank 0 it)))))
-        (->> (org-ml--set-children-nocheck (append head* sublist rest*) item)
-             (org-ml--map-property-nocheck* :post-blank (+ pb it)))))))
+                    (head (org-element-post-blank (-last-item head)))))
+      ;; TODO why did I do this?
+      (let ((rest* (org-ml--set-last-post-blank 0 rest))
+            (sublist (apply #'org-ml-build-plain-list
+                            :post-blank (if rest sub-pb 0)
+                            subitems)))
+        (->> (org-ml--set-children-nocheck `(,@head ,sublist ,@rest*) item)
+             (org-ml--shift-post-blank-textsafe pb))))))
 
 (defmacro org-ml--item-map-subcomponents* (form item)
   "Return ITEM with subcomponents modified.
 FORM is a form where the subcomponents of item are bound to the
-symbol 'it' and returns modified subcomponents. The subcomponents
+symbol `it' and returns modified subcomponents. The subcomponents
 will conform to those given in `org-ml--item-get-subcomponents'."
   (declare (debug (form form)))
   (let ((i (make-symbol "item")))
     `(let ((,i ,item))
        (let ((it (org-ml--item-get-subcomponents ,i)))
          (org-ml--item-set-subcomponents ,form ,i)))))
+
+(defmacro org-ml--item-map-subcomponents-cond*
+    (head-form subitem-form rest-form item)
+  "Return ITEM with subcomponents modified.
+
+First, split ITEM using `org-ml--item-get-subcomponents' and
+assign each of the four outputs to `it-head', `it-subitems',
+`it-rest-blank', and `it-rest' respectively.
+
+REST-FORM will run with all `it' variables are non-nil.
+This should return a modified `it-rest' analogue.
+
+SUBITEM-FORM will run if `it-rest' is nil and the rest are
+non-nil. This should return a list (SUBITEMS REST-BLANK REST).
+
+HEAD-FORM will run if `it-rest' and `it-subitems' are nil and the
+others are non-nil. This should return a list to be fed into
+`org-ml--item-set-subcomponents'."
+  (declare (indent 3))
+  (let ((h (make-symbol "--head"))
+        (s (make-symbol "--subitems"))
+        (b (make-symbol "--blank"))
+        (r (make-symbol "--rest")))
+  `(org-ml--item-map-subcomponents*
+    (-let (((,h ,s ,b ,r) it))
+      (cond
+       (,r
+        (let ((it-rest ,r))
+          (list ,h ,s ,b ,rest-form)))
+       (,s
+        (let ((it-subitems ,s))
+          (cons ,h ,subitem-form)))
+       (t
+        (let ((it-head ,h))
+          ,head-form))))
+    ,item)))
 
 (defun org-ml--item-get-subitems (item)
   "Return the subitems of ITEM."
@@ -1896,7 +2463,7 @@ will conform to those given in `org-ml--item-get-subcomponents'."
 
 (defmacro org-ml--item-map-subitems* (form item)
   "Return a ITEM with FORM applied to its sublist if present.
-FORM is a Lisp form in which the symbol 'it' is bound to the
+FORM is a Lisp form in which the symbol `it' is bound to the
 items in the sub plain-list, and returns a modified list of
 items."
   (declare (debug (form form)))
@@ -1913,24 +2480,26 @@ items."
 (defun org-ml--headline-shift-level (n headline)
   "Return HEADLINE node with the level property shifted by N.
 If the level is less then one after shifting, set level to one."
-  (org-ml--map-property-nocheck* :level (org-ml--shift-pos-integer n it) headline))
+  (->> (org-element-properties-resolve headline)
+       (org-ml--map-property-raw* :level (org-ml--shift-pos-integer n it))))
 
 (defun org-ml--headline-set-statistics-cookie (value headline)
   "Return HEADLINE node with statistics cookie set by VALUE.
 VALUE is a list conforming to `org-ml--is-valid-statistics-cookie-value'
 or nil to erase the statistics cookie if present."
-  (org-ml--map-property-nocheck*
+  (org-ml--map-property-raw*
    :title
-   (let ((last? (org-ml-is-type 'statistics-cookie (-last-item it))))
+   (let ((last? (org-ml--is-type 'statistics-cookie (-last-item it))))
      (cond
       ((and last? value)
-       (org-ml--map-last* (org-ml-set-property :value value it) it))
+       ;; NOTE use full property setter here since this will call the encoder
+       (org-ml--map-last* (org-ml-set-property :value value it) (org-ml-copy it)))
       ((and last? (not value))
        (-drop-last 1 it))
       (value
        (-snoc it (org-ml-build-statistics-cookie value)))
       (t it)))
-   headline))
+   (org-element-properties-resolve headline)))
 
 (defun org-ml--headline-set-statistics-cookie-fraction (done total headline)
   "Return HEADLINE node with statistics cookie set by DONE and TOTAL.
@@ -1951,18 +2520,81 @@ be greater than zero, and DONE must be less than or equal to TOTAL."
 
 ;; planning
 
-(defun org-ml--planning-list-to-timestamp (active planning-list)
+(defun org-ml--build-planning-timestamp (active timelist)
+  "Build a planning timestamp.
+
+ACTIVE is a boolean. TIMELIST is a list like (year month date
+[hour] [minute]).
+
+Note this is a more optimized version of `org-ml-build-timestamp!'"
+  (-let (((y m d H M) timelist))
+    (org-ml--check-timelist y m d H M)
+    (org-ml--set-properties-raw (org-ml--build-blank-node timestamp 0)
+      :year-start y
+      :month-start m
+      :day-start d
+      :hour-start H
+      :minute-start M
+      :year-end y
+      :month-end m
+      :day-end d
+      :hour-end H
+      :minute-end M
+      :type (if active 'active 'inactive))))
+
+(defun org-ml--planning-list-to-timestamp (planning-list)
   "Return timestamp node from PLANNING-LIST.
-See `org-ml-build-planning!' for syntax of PLANNING-LIST.
-ACTIVE is a flag denoting if the timestamp is to be active."
-  (when planning-list
-    (let* ((p (-partition-before-pred
-               (lambda (it) (memq it '(&warning &repeater)))
-               planning-list)))
-      (org-ml-build-timestamp! (car p)
-                           :active active
-                           :warning (alist-get '&warning p)
-                           :repeater (alist-get '&repeater p)))))
+See `org-ml-build-planning!' for syntax of PLANNING-LIST."
+  (-let* ((p (-partition-before-pred
+              (lambda (it) (memq it '(&warning &repeater)))
+              planning-list))
+          (ts (org-ml--build-planning-timestamp t (car p))))
+    (-when-let (w (alist-get '&warning p))
+      (org-ml--check-warning-from-list w)
+      (org-ml--timestamp-set-warning w ts))
+    (-when-let (r (alist-get '&repeater p))
+      (org-ml--check-repeater-from-list r)
+      (org-ml--timestamp-set-repeater r ts))
+    ts))
+
+(defun org-ml--timestamp-to-planning-list (timestamp)
+  "Return TIMESTAMP as planning list.
+See `org-ml-build-planning!' for syntax of PLANNING-LIST. This is
+only meant for deadline or scheduled timestamps, since the list
+for closed is trival."
+  (let ((timelist (org-ml--timestamp-get-start-timelist timestamp))
+        (warning (org-ml--timestamp-get-warning timestamp))
+        (repeater (org-ml--timestamp-get-repeater timestamp)))
+    (append timelist
+            (and warning (cons '&warning warning))
+            (and repeater (cons '&repeater repeater)))))
+
+;; clock
+
+(defun org-ml--build-clock-timestamp (start end)
+  "Build clock timestamp from START and END.
+
+Both arguments are lists like (year month date hour minute).
+
+This is a more optimized version of `org-ml-build-timestamp!'."
+  (-let (((y0 m0 d0 H0 M0) start)
+         ((y1 m1 d1 H1 M1) (or end start)))
+    (org-ml--check-timelist y0 m0 d0 H0 M0)
+    (when end
+      (org-ml--check-timelist y1 m1 d1 H1 M1))
+    (org-ml--set-properties-raw (org-ml--build-blank-node timestamp 0)
+      :year-start y0
+      :month-start m0
+      :day-start d0
+      :hour-start H0
+      :minute-start M0
+      :year-end y1
+      :month-end m1
+      :day-end d1
+      :hour-end H1
+      :minute-end M1
+      :range-type (and end 'daterange)
+      :type (if end 'inactive-range 'inactive))))
 
 ;;; INTERNAL TYPE-SPECIFIC BRANCH/CHILD FUNCTIONS
 
@@ -1970,14 +2602,14 @@ ACTIVE is a flag denoting if the timestamp is to be active."
 
 (defun org-ml-headline-get-section (headline)
   "Return children of section node in HEADLINE node or nil if none."
-  (-some--> (car (org-ml-get-children headline))
-    (when (org-ml-is-type 'section it) (org-ml-get-children it))))
+  (--> (car (org-element-contents headline))
+       (when (org-ml--is-type 'section it) (org-element-contents it))))
 
 (defun org-ml-headline-set-section (children headline)
   "Return HEADLINE with section node containing CHILDREN.
 If CHILDREN is nil, return HEADLINE with no section node."
   (org-ml--map-children-nocheck*
-    (if (org-ml-is-type 'section (car it))
+    (if (org-ml--is-type 'section (car it))
         (cons (org-ml-set-children children (car it)) (cdr it))
       (cons (apply #'org-ml-build-section children) it))
     headline))
@@ -1992,8 +2624,8 @@ returns a modified child list."
 
 (defun org-ml-headline-get-subheadlines (headline)
   "Return list of child headline nodes in HEADLINE node or nil if none."
-  (let ((children (org-ml-get-children headline)))
-    (if (org-ml-is-type 'section (car children)) (cdr children) children)))
+  (let ((children (org-element-contents headline)))
+    (if (org-ml--is-type 'section (car children)) (cdr children) children)))
 
 (defun org-ml-headline-set-subheadlines (subheadlines headline)
   "Return HEADLINE node with SUBHEADLINES set to child subheadlines."
@@ -2016,25 +2648,27 @@ a modified list of headlines."
 Also shift all HEADLINE node's child headline nodes by N.
 If the final shifted level is less one, set level to one (for parent
 and child nodes)."
-  (->> (org-ml--headline-shift-level n headline)
+  (->> (org-ml-copy headline)
+       (org-ml--headline-shift-level n)
        (org-ml-headline-map-subheadlines*
-         (org-ml--map* (org-ml--headline-subtree-shift-level n it) it))))
+         (--map (org-ml--headline-subtree-shift-level n it) it))))
 
 (defun org-ml--headline-set-level (level headline)
   "Return HEADLINE node with its level set to LEVEL.
 Additionally set all child headline nodes to be (+ 1 level) for
 first layer, (+ 2 level) for second, and so on."
-  (->> (org-ml-set-property :level level headline)
+  ;; NOTE full setter needed since this is called from the headline builder
+  (->> (org-element-put-property-2 :level level headline)
        (org-ml-headline-map-subheadlines*
-         (org-ml--map* (org-ml--headline-set-level (1+ level) it) it))))
+         (--map (org-ml--headline-set-level (1+ level) it) it))))
 
 ;;; table
 
 (defun org-ml--table-get-width (table)
   "Return the width of TABLE as an integer.
 This effectively is the maximum of all table-row lengths."
-  (->> (org-ml-get-children table)
-       (org-ml--map* (length (org-ml-get-children it)))
+  (->> (org-element-contents table)
+       (--map (length (org-element-contents it)))
        (-max)))
 
 (defun org-ml--table-pad-or-truncate (length list)
@@ -2064,9 +2698,9 @@ a modified table-cell node."
 (defun org-ml--table-get-row (row-index table)
   "Return the table-row node at ROW-INDEX within TABLE.
 Rule-type table-row nodes do not factor when counting the index."
-  (-some->> (org-ml-get-children table)
-            (--filter (org-ml--property-is-eq :type 'standard it))
-            (org-ml--nth row-index)))
+  (->> (org-element-contents table)
+       (--filter (org-ml--property-is-eq :type 'standard it))
+       (org-ml--nth row-index)))
 
 (defun org-ml--table-replace-column (column-index column-cells table)
   "Return TABLE with COLUMN-CELLS in place of original cells at COLUMN-INDEX."
@@ -2104,84 +2738,86 @@ performed. TABLE is used to get the table width."
 
 ;;; misc builders
 
-;; these are nodes that cannot and should not be built with the 'normal' build
-;; functions because they are too weird
-
-;; ...and this is here because I can't think of where else to put it
-(defun org-ml-clone-node (node)
-  "Return copy of NODE, which may be a circular tree.
-
-This is only necessary to copy nodes parsed using any of parsing
-functions from this package (for example, `org-ml-parse-this-headline')
-because these retain parent references which makes the node a circular
-list. None of the builder functions add parent references, so
-`copy-tree' will be a faster alternative to this function."
-  (let ((print-circle t))
-    (read (format "%S" node))))
-
-(defun org-ml-clone-node-n (n node)
-  "Like `org-ml-clone-node' but make N copies of NODE."
-  (let ((ret))
-    (--dotimes n (!cons (org-ml-clone-node node) ret))
-    ret))
-
-(org-ml--defun-kw org-ml-build-timestamp-diary (form &key post-blank)
+(org-ml--defun-kw org-ml-build-timestamp-diary (form &key start end post-blank)
   "Return a new diary-sexp timestamp node from FORM.
-Optionally set POST-BLANK (a positive integer)."
-  (->> (org-ml--build-blank-node 'timestamp)
-       (org-ml-set-property :post-blank (or post-blank 0))
-       (org-ml--set-property-nocheck :type 'diary)
-       (org-ml-timestamp-diary-set-value form)))
+
+TIME1 and TIME1 are lists like (hour min) which specify the
+time(s) of the diary timestamp. If TIME2 is provided, TIME1 must
+also be provided and the timestamp will be ranged. Optionally set
+POST-BLANK (a positive integer)."
+  ;; TODO this isn't very efficient
+  (->> (org-ml--build-blank-node timestamp post-blank)
+       (org-element-put-property-2 :type 'diary)
+       (org-ml-timestamp-diary-set-value form)
+       (org-ml-timestamp-diary-set-double-time start end)))
 
 (org-ml--defun-kw org-ml-build-table-row-hline (&key post-blank)
   "Return a new rule-typed table-row node.
 Optionally set POST-BLANK (a positive integer)."
-  (->> (org-ml--build-blank-node 'table-row)
-       (org-ml-set-property :post-blank (or post-blank 0))
-       (org-ml--set-property-nocheck :type 'rule)))
+  (->> (org-ml--build-blank-node table-row post-blank)
+       (org-element-put-property-2 :type 'rule)))
 
 ;;; shorthand builders
 
 ;; These function offer a shorter and more convenient way of building
 ;; nodes. They all end in '!' (and all associated functions later
-;; that replicate their syntax here do the same)
+
+(eval-and-compile
+  (defvar org-ml--shorthand-builder-cache
+    (--map (cons it (make-hash-table :test #'equal))
+           org-ml-shorthand-builder-types)
+    "Alist of hash tables to store shorthand builder results."))
+
+(defun org-ml-clear-shorthand-builder-cache ()
+  "Clear the memoization cache for shorthand node builders."
+  (interactive)
+  (--each org-ml--shorthand-builder-cache
+    (clrhash (cdr it))))
+
+(defmacro org-ml--with-shorthand-builder-cache (type key body)
+  "Run BODY with shorthand builder cache.
+See org-ml--with-cache' for meaning of TYPE and KEY."
+  (declare (indent 1))
+  `(org-ml--with-cache
+     org-ml--shorthand-builder-cache
+     org-ml-memoize-shorthand-builders
+     org-ml-memoize-shorthand-builder-types
+     ,type ,key ,body))
+
 
 (defun org-ml-build-secondary-string! (string)
   "Return a secondary string (list of object nodes) from STRING.
 STRING is any string that contains a textual representation of
 object nodes. If the string does not represent a list of object nodes,
 throw an error."
-  ;; fool parser to always parse objects, bold will parse to headlines
-  ;; because of the stars
-  (cl-flet
-      ((err
-        ()
-        (org-ml--arg-error "Could not make secondary string from %S" string)))
+  (org-ml--with-shorthand-builder-cache secondary-string
+    string
     ;; add space to prevent leading stars from parsing as headlines
     (-if-let (d (->> (org-ml--from-string (concat " " string))
                      (org-ml--get-descendent '(0))))
         ;; special case, anything starting with what looks like a bullet will
         ;; be parsed as a list with one item
-        (if (org-ml-is-type 'plain-list d)
+        (if (org-ml--is-type 'plain-list d)
             (-let* ((i (org-ml--get-descendent '(0) d))
                     ((first . rest) (->> (org-ml--get-descendent '(0) i)
-                                       (org-ml-get-children)))
-                    (bullet (org-ml--get-property-nocheck :bullet i)))
-              (if (org-ml-is-type 'plain-text first)
+                                         (org-element-contents)))
+                    (bullet (org-element-property-raw :bullet i)))
+              (if (org-ml--is-type 'plain-text first)
                   `(,(concat bullet first) ,@rest)
                 `(,bullet ,first ,@rest)))
-          (if-let (ss (org-ml-get-children d))
+          (if-let (ss (org-element-contents d))
               (cond
                ((not (org-ml--is-secondary-string ss))
                 (org-ml--arg-error "Secondary string must only contain objects"))
                ((equal (car ss) " ")
                 (-drop 1 ss))
                (t (org-ml--map-first* (substring it 1) ss)))
-            (err)))
-      (err))))
+            (org-ml--arg-error "Could not make secondary string from %S" string)))
+      (org-ml--arg-error "Could not make secondary string from %S" string))))
 
 (org-ml--defun-kw org-ml-build-timestamp! (start &key end active repeater
-                                                 warning post-blank)
+                                                 deadline warning collapsed
+                                                 post-blank)
   "Return a new timestamp node.
 
 START specifies the start time and is a list of integers in one of
@@ -2197,32 +2833,48 @@ ACTIVE is a boolean where t signifies the type is `active', else
 `inactive' (the range suffix will be added if an end time is
 supplied).
 
-REPEATER and WARNING are lists corresponding to those required
-for `org-ml-timestamp-set-repeater' and
+REPEATER, DEADLINE, and WARNING are lists corresponding to those
+required for `org-ml-timestamp-set-repeater',
+`org-ml-timestamp-set-deadline', and
 `org-ml-timestamp-set-warning' respectively.
 
 Building a diary sexp timestamp is not possible with this function."
-  (->> (org-ml--build-blank-node 'timestamp)
-       (org-ml-set-property :post-blank (or post-blank 0))
-       (org-ml--timestamp-set-start-time-nocheck start)
-       (org-ml--timestamp-set-end-time-nocheck end)
-       (org-ml--timestamp-set-active active)
-       (org-ml-timestamp-set-warning warning)
-       (org-ml-timestamp-set-repeater repeater)))
+  (org-ml--check-timelist-from-list start)
+  (when end
+    (org-ml--check-timelist-from-list end))
+  (when repeater
+    (org-ml--check-repeater-from-list repeater))
+  (when warning
+    (org-ml--check-warning-from-list warning))
+  (when deadline
+    (org-ml--check-deadline-from-list deadline))
+  (org-ml--with-shorthand-builder-cache timestamp
+    (list start end active repeater deadline warning collapsed post-blank)
+    (org-ml->> (org-ml--build-blank-node timestamp post-blank)
+      (org-ml--timestamp-set-start-timelist-nocheck start)
+      (org-ml--timestamp-set-end-timelist-nocheck end)
+      (org-ml--timestamp-set-active active)
+      (org-ml--timestamp-update-type-ranged)
+      (org-ml--timestamp-set-warning warning)
+      (org-ml--timestamp-set-repeater repeater)
+      (org-ml--timestamp-set-deadline deadline)
+      (org-ml--timestamp-set-collapsed (or collapsed t)))))
 
 (org-ml--defun-kw org-ml-build-clock! (start &key end post-blank)
   "Return a new clock node.
 
 START and END follow the same rules as their respective arguments in
 `org-ml-build-timestamp!'."
-  (let ((ts (org-ml-build-timestamp! start :end end)))
-    (org-ml-build-clock ts :post-blank post-blank)))
+  (org-ml--with-shorthand-builder-cache clock
+    (list start end post-blank)
+    (let ((ts (org-ml--build-clock-timestamp start end)))
+      (org-ml-build-clock ts :post-blank post-blank))))
 
 (org-ml--defun-kw org-ml-build-planning! (&key closed deadline scheduled
                                                post-blank)
   "Return a new planning node.
 
-CLOSED, DEADLINE, and SCHEDULED are lists with the following structure
+DEADLINE and SCHEDULED are lists with the following structure
 \(brackets denote optional members):
 
 \(YEAR MINUTE DAY [HOUR] [MIN]
@@ -2233,12 +2885,23 @@ In terms of arguments supplied to `org-ml-build-timestamp!', the first
 five members correspond to the list supplied as TIME, and the TYPE,
 VALUE, and UNIT fields correspond to the lists supplied to WARNING and
 REPEATER arguments. The order of warning and repeater does not
-matter."
-  (org-ml-build-planning
-   :closed (org-ml--planning-list-to-timestamp nil closed)
-   :deadline (org-ml--planning-list-to-timestamp t deadline)
-   :scheduled (org-ml--planning-list-to-timestamp t scheduled)
-   :post-blank post-blank))
+matter.
+
+CLOSED is a similar list to above but does not have &warning or
+&repeater."
+  (org-ml--with-shorthand-builder-cache planning
+    (list closed deadline scheduled post-blank)
+    (let ((node (org-ml--build-blank-node planning (or post-blank 0))))
+      (when closed
+        (->> (org-ml--build-planning-timestamp nil closed)
+             (org-element-put-property node :closed)))
+      (when deadline
+        (->> (org-ml--planning-list-to-timestamp deadline)
+             (org-element-put-property node :deadline)))
+      (when scheduled
+        (->> (org-ml--planning-list-to-timestamp scheduled)
+             (org-element-put-property node :scheduled)))
+      node)))
 
 (org-ml--defun-kw org-ml-build-property-drawer! (&key post-blank &rest keyvals)
   "Return a new property-drawer node.
@@ -2246,11 +2909,13 @@ matter."
 Each member in KEYVALS is a list like (KEY VAL) where KEY and VAL
 are both strings, where each list will generate a node-property
 node in the property-drawer node like \":key: val\"."
-  (->> keyvals
-       (org-ml--map* (let ((key (car it))
-                           (val (cadr it)))
-                       (org-ml-build-node-property key val)))
-       (apply #'org-ml-build-property-drawer :post-blank post-blank)))
+  (org-ml--with-shorthand-builder-cache property-drawer
+    (cons post-blank keyvals)
+    (->> keyvals
+         (--map (let ((key (car it))
+                      (val (cadr it)))
+                  (org-ml-build-node-property key val)))
+         (apply #'org-ml-build-property-drawer :post-blank post-blank))))
 
 (org-ml--defun-kw org-ml-build-headline! (&key (level 1) title-text
                                                todo-keyword tags pre-blank
@@ -2281,32 +2946,40 @@ automatically be adjusted to LEVEL + 1.
 
 All arguments not mentioned here follow the same rules as
 `org-ml-build-headline'"
-  (let* ((planning (-some->> planning (apply #'org-ml-build-planning!)))
-         (section (-some->>  (if planning (cons planning section-children)
-                               section-children)
-                    (apply #'org-ml-build-section)))
-         (shls (org-ml--map* (org-ml--headline-set-level (1+ level) it)
-                             subheadlines))
-         (nodes (--> shls (if section (cons section it) it))))
-    (->> (apply #'org-ml-build-headline
-                :todo-keyword todo-keyword
-                :level level
-                :tags tags
-                :post-blank post-blank
-                :pre-blank pre-blank
-                :priority priority
-                :commentedp commentedp
-                :archivedp archivedp
-                nodes)
-         (org-ml-headline-set-title! title-text statistics-cookie))))
+  (org-ml--with-shorthand-builder-cache headline
+    (append (list level title-text todo-keyword tags pre-blank priority
+                  commentedp archivedp post-blank planning statistics-cookie
+                  section-children)
+            subheadlines)
+    (let* ((planning (-some->> planning (apply #'org-ml-build-planning!)))
+           (section (-some->>  (if planning (cons planning section-children)
+                                 section-children)
+                      (apply #'org-ml-build-section)))
+           (shls (--map (org-ml--headline-set-level (1+ level) it) subheadlines))
+           (nodes (--> shls (if section (cons section it) it))))
+      (->> (apply #'org-ml-build-headline
+                  :todo-keyword todo-keyword
+                  :level level
+                  :tags tags
+                  :post-blank post-blank
+                  :pre-blank pre-blank
+                  :priority priority
+                  :commentedp commentedp
+                  :archivedp archivedp
+                  nodes)
+           (org-ml-headline-set-title! title-text statistics-cookie)))))
 
 (org-ml--defun-kw org-ml-build-paragraph! (string &key post-blank)
   "Return a new paragraph node from STRING.
 
 STRING is the text to be parsed into a paragraph and must contain
 valid textual representations of object nodes."
-  (->> (org-ml-build-secondary-string! string)
-       (apply #'org-ml-build-paragraph :post-blank (or post-blank 0))))
+  ;; ASSUME all children coming from `org-ml-build-secondary-string!' will be
+  ;; valid so bypass type checking overhead.
+  (org-ml--with-shorthand-builder-cache paragraph
+    (list string post-blank)
+    (->> (org-ml--build-blank-node paragraph post-blank)
+         (org-ml-set-children (org-ml-build-secondary-string! string)))))
 
 (org-ml--defun-kw org-ml-build-item! (&key post-blank bullet checkbox tag
                                            paragraph counter &rest children)
@@ -2322,18 +2995,20 @@ CHILDREN contains the nodes that will go under this item after
 PARAGRAPH.
 
 All other arguments follow the same rules as `org-ml-build-item'."
-  (let ((children* (or (-some-> paragraph
-                                (org-ml-build-paragraph!)
-                                (cons children))
-                       children))
-        (tag (-some->> tag (org-ml-build-secondary-string!))))
-    (apply #'org-ml-build-item
-           :post-blank post-blank
-           :bullet bullet
-           :checkbox checkbox
-           :counter counter
-           :tag tag
-           children*)))
+  (org-ml--with-shorthand-builder-cache item
+    (append (list post-blank bullet checkbox tag paragraph counter) children)
+    (let ((children* (or (-some-> paragraph
+                           (org-ml-build-paragraph!)
+                           (cons children))
+                         children))
+          (tag (-some->> tag (org-ml-build-secondary-string!))))
+      (apply #'org-ml-build-item
+             :post-blank post-blank
+             :bullet bullet
+             :checkbox checkbox
+             :counter counter
+             :tag tag
+             children*))))
 
 (defun org-ml-build-table-cell! (string)
   "Return a new table-cell node.
@@ -2341,7 +3016,9 @@ All other arguments follow the same rules as `org-ml-build-item'."
 STRING is the text to be contained in the table-cell node. It must
 contain valid textual representations of objects that are allowed in
 table-cell nodes."
-  (apply #'org-ml-build-table-cell (org-ml-build-secondary-string! string)))
+  (org-ml--with-shorthand-builder-cache table-cell
+    string
+    (apply #'org-ml-build-table-cell (org-ml-build-secondary-string! string))))
 
 (defun org-ml-build-table-row! (row-list)
   "Return a new table-row node.
@@ -2350,9 +3027,11 @@ ROW-LIST is a list of strings to be built into table-cell nodes via
 `org-ml-build-table-cell!' (see that function for restrictions).
 Alternatively, ROW-LIST may the symbol `hline' instead of a string to
 create a rule-typed table-row."
-  (if (eq row-list 'hline) (org-ml-build-table-row-hline)
-    (->> (-map #'org-ml-build-table-cell! row-list)
-         (apply #'org-ml-build-table-row))))
+  (org-ml--with-shorthand-builder-cache table-row
+    row-list
+    (if (eq row-list 'hline) (org-ml-build-table-row-hline)
+      (->> (-map #'org-ml-build-table-cell! row-list)
+           (apply #'org-ml-build-table-row)))))
 
 (org-ml--defun-kw org-ml-build-table! (&key tblfm post-blank &rest row-lists)
   "Return a new table node.
@@ -2362,16 +3041,16 @@ via `org-ml-build-table-row!' (see that function for
 restrictions).
 
 All other arguments follow the same rules as `org-ml-build-table'."
-  (->> (-map #'org-ml-build-table-row! row-lists)
-       (apply #'org-ml-build-table :tblfm tblfm :post-blank post-blank)))
+  (org-ml--with-shorthand-builder-cache table
+    (append (list tblfm post-blank) row-lists)
+    (->> (-map #'org-ml-build-table-row! row-lists)
+         (apply #'org-ml-build-table :tblfm tblfm :post-blank post-blank))))
 
 (defun org-ml-build-org-data (&rest nodes)
   "Return a new org-data node using NODES.
 NODES should be either headline or section nodes."
-  (->> (org-ml--build-blank-node 'org-data)
-    (org-ml--set-property-nocheck-nil :beg)
-    (org-ml--set-property-nocheck-nil :end)
-    (org-ml-set-children nodes)))
+  (->> (org-ml--build-blank-node org-data nil)
+       (org-ml-set-children nodes)))
 
 ;;; logbook items
 
@@ -2380,8 +3059,8 @@ NODES should be either headline or section nodes."
 (defun org-ml--log-replace (placeholder string heading)
   "Return HEADING with PLACEHOLDER replaced by STRING."
   (->> (cons placeholder string)
-    (list)
-    (org-replace-escapes heading)))
+       (list)
+       (org-replace-escapes heading)))
 
 (defun org-ml--log-replace-new (string heading)
   "Return HEADING with placeholder \"%s\" replaced by STRING."
@@ -2432,8 +3111,9 @@ on the boolean values of ACTIVE-P and LONG-P:
                    (active-p "%D")
                    (long-p "%t")
                    (t "%d")))
-        (time (if long-p (org-ml-unixtime-to-time-long unixtime)
-                (org-ml-unixtime-to-time-short unixtime))))
+        (time (if long-p (org-ml-unixtime-to-datetime unixtime)
+                (org-ml-unixtime-to-date unixtime))))
+    ;; TODO this can likely be optimized
     (--> (org-ml-build-timestamp! time :active active-p)
          (org-ml-to-string it)
          (org-ml--log-replace key it heading))))
@@ -2475,7 +3155,7 @@ from OLD-TIMESTAMP at UNIXTIME with optionally supplied NOTE."
   "Return an item node for a done log entry.
 
 This will format the log entry from the default value for the
-'done` cell in `org-log-note-headings'.
+`done' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2489,7 +3169,7 @@ If string NOTE is supplied, append a note to the log entry."
   "Return an item node for a state change log entry.
 
 This will format the log entry from the default value for the
-'state` cell in `org-log-note-headings'.
+`state' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2508,7 +3188,7 @@ If string NOTE is supplied, append a note to the log entry."
   "Return an item node for a new note log entry.
 
 This will format the log entry from the default value for the
-'note` cell in `org-log-note-headings'.
+`note' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2522,7 +3202,7 @@ NOTE is a string for the note text."
   "Return an item node for a new schedule log entry.
 
 This will format the log entry from the default value for the
-'reschedule` cell in `org-log-note-headings'.
+`reschedule' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2537,7 +3217,7 @@ If string NOTE is supplied, append a note to the log entry."
   "Return an item node for a delete schedule log entry.
 
 This will format the log entry from the default value for the
-'delschedule` cell in `org-log-note-headings'.
+`delschedule' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2552,7 +3232,7 @@ If string NOTE is supplied, append a note to the log entry."
   "Return an item node for a new deadline log entry.
 
 This will format the log entry from the default value for the
-'redeadline` cell in `org-log-note-headings'.
+`redeadline' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2567,7 +3247,7 @@ If string NOTE is supplied, append a note to the log entry."
   "Return an item node for a delete deadline log entry.
 
 This will format the log entry from the default value for the
-'deldeadline` cell in `org-log-note-headings'.
+`deldeadline' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2581,7 +3261,7 @@ If string NOTE is supplied, append a note to the log entry."
 (defun org-ml-build-log-refile (unixtime &optional note)
   "Return an item node for a refile log entry.
 This will format the log entry from the default value for the
-'deldeadline` cell in `org-log-note-headings'.
+`deldeadline' cell in `org-log-note-headings'.
 
 UNIXTIME is an integer representing the time to be used for all
 timestamp nodes.
@@ -2626,7 +3306,7 @@ If string NOTE is supplied, append a note to the log entry."
         (if (not rep) note
           (let ((fun
                  (cond
-                  ((org-ml-is-type 'timestamp rep)
+                  ((org-ml--is-type 'timestamp rep)
                    (if old-p #'org-ml--log-replace-old-timestamp
                      #'org-ml--log-replace-new-timestamp))
                   ((stringp rep)
@@ -2655,42 +3335,43 @@ If string NOTE is supplied, append a note to the log entry."
 
 ;;; PUBLIC TYPE FUNCTIONS
 
-(defun org-ml-get-type (node)
-  "Return the type of NODE."
-  (org-element-type node))
+(defalias 'org-ml-get-type #'org-element-type
+  "Return the type of NODE.")
 
 (defun org-ml-is-type (type node)
   "Return t if the type of NODE is TYPE (a symbol)."
+  (declare (pure t))
   (unless (memq type org-ml-nodes)
     (org-ml--arg-error "Argument 'type' must be in `org-ml-nodes': Got %s" type))
-  (eq (org-ml-get-type node) type))
+  (org-ml--is-type type node))
 
 (defun org-ml-is-any-type (types node)
   "Return t if the type of NODE is in TYPES (a list of symbols)."
+  (declare (pure t))
   (-some->>
    (-difference types org-ml-nodes)
    (org-ml--arg-error
     "All in 'types' must be in `org-ml-nodes'; these were not: %s"))
-  (if (memq (org-ml-get-type node) types) t))
+  (org-ml--is-any-type types node))
 
 (defun org-ml-is-element (node)
   "Return t if NODE is an element class."
-  (org-ml-is-any-type org-ml-elements node))
+  (org-ml--is-any-type org-ml-elements node))
 
 (defun org-ml-is-branch-node (node)
   "Return t if NODE is a branch node."
-  (org-ml-is-any-type org-ml-branch-nodes node))
+  (org-ml--is-any-type org-ml-branch-nodes node))
 
 (defun org-ml-node-may-have-child-objects (node)
   "Return t if NODE is a branch node that may have child objects."
-  (org-ml-is-any-type org-ml-branch-nodes-permitting-child-objects node))
+  (org-ml--is-any-type org-ml-branch-nodes-permitting-child-objects node))
 
 (defun org-ml-node-may-have-child-elements (node)
   "Return t if NODE is a branch node that may have child elements.
 
 Note this implies that NODE is also of class element since only
 elements may have other elements as children."
-  (org-ml-is-any-type org-ml-branch-elements-permitting-child-elements node))
+  (org-ml--is-any-type org-ml-branch-elements-permitting-child-elements node))
 
 ;;; PUBLIC PROPERTY FUNCTIONS
 
@@ -2698,34 +3379,15 @@ elements may have other elements as children."
 
 (defun org-ml-contains-point-p (point node)
   "Return t if POINT is within the boundaries of NODE."
-  (-let (((&plist :begin :end) (org-ml-get-all-properties node)))
-    (if (and (integerp begin) (integerp end))
-        (<= begin point end)
+  (-let ((b (org-element-begin node))
+         (e (org-element-end node)))
+    (if (and (integerp b) (integerp e))
+        (<= b point e)
       (error "Node boundaries are not defined"))))
 
 (defun org-ml--property-is-attribute (prop)
   "Return t if PROP is of the form :attr_X where X is anything."
   (and (keywordp prop) (s-prefix-p ":attr_" (symbol-name prop) t)))
-
-(defun org-ml--property-error-unsettable (prop type)
-  "Throw error signifying that PROP is unsettable of node TYPE."
-  (org-ml--arg-error "Property '%s' is unsettable for type '%s'" prop type))
-
-(defun org-ml--property-error-wrong-type (prop type value)
-  "Throw error signifying that VALUE is wrong for PROP of node TYPE."
-  (let ((msg "Property '%s' in node of type '%s' must be %s. Got '%S'")
-        (correct-type (org-ml--get-property-type-desc type prop)))
-    (org-ml--arg-error msg prop type correct-type value)))
-
-(defun org-ml--property-encode (prop value type)
-  "Given TYPE and PROP, return encoded VALUE."
-  (-if-let (pred (org-ml--get-property-attribute :pred type prop))
-      (if (funcall pred value)
-          (-if-let (encode-fun (org-ml--get-property-encoder type prop))
-              (funcall encode-fun value)
-            value)
-        (org-ml--property-error-wrong-type prop type value))
-    (org-ml--property-error-unsettable prop type)))
 
 (defun org-ml-set-property (prop value node)
   "Return NODE with PROP set to VALUE.
@@ -2736,16 +3398,27 @@ each type."
     ;; Specialized code to handle :attr_X properties which can't be put in
     ;; `org-ml--property-alist'. Values for these can only be lists of strings
     ;; and have no encoder or decoder.
-    (if (and (memq type org-ml--element-nodes-with-affiliated)
-             (org-ml--property-is-attribute prop))
-        (if (org-ml--is-string-list value)
-            (org-ml--set-property-nocheck prop value node)
-          (org-ml--arg-error "All attributes like '%s' must be a list of strings. Got '%S'"
-           prop value))
-      (let ((value* (org-ml--property-encode prop value type))
-            (update-fun (org-ml--get-property-cis-function type prop)))
-        (--> (org-ml--set-property-nocheck prop value* node)
-             (if update-fun (funcall update-fun it) it))))))
+    (cond
+     ((and (memq type org-ml--element-nodes-with-affiliated)
+           (org-ml--property-is-attribute prop))
+      (if (org-ml--is-string-list value)
+          (org-element-put-property-2 prop value node)
+        (org-ml--arg-error "All attributes like '%s' must be a list of strings. Got '%S'"
+                           prop value)))
+     ((eq type 'plain-text)
+      (if (eq prop :post-blank)
+          (concat (s-trim-right node) (make-string value ?\ ))
+        (org-add-props node nil prop value)))
+     (t
+      (let* ((value* (org-ml--property-encode prop value type))
+             (node* (->> (if (eq type 'headline)
+                             (org-element-properties-resolve node)
+                           node)
+                         (org-ml-copy)
+                         (org-element-put-property-2 prop value*))))
+        (-if-let (update-fun (org-ml--get-property-updater type prop))
+            (funcall update-fun node*)
+          node*))))))
 
 (defun org-ml-set-properties (plist node)
   "Return NODE with all properties set to the values according to PLIST.
@@ -2762,47 +3435,43 @@ each type."
             (list keyvals nil)
           (--> keyvals
                (--group-by (org-ml--property-is-attribute (car it)) it)
-               (list (alist-get nil it) (alist-get t it)))))
-       (put
-        (acc keyval)
-        (plist-put acc (car keyval) (cadr keyval)))
-       (put-encode
-        (acc keyval type)
-        (-let* (((prop value) keyval))
-          (plist-put acc prop (org-ml--property-encode prop value type)))))
+               (list (alist-get nil it) (alist-get t it))))))
     (if (not (org-ml--is-plist plist))
         (org-ml--arg-error "Not a plist: %S" plist)
       (-let* ((type (org-ml-get-type node))
-              (keyvals (-partition 2 plist))
               ;; this will divide the keywords to those that are of the form
               ;; :attr_X which must be set differently
-              ((kv kv-attrs) (split-keyvals-maybe type keyvals))
+              ((kv kv-attrs) (split-keyvals-maybe type (-partition 2 plist)))
               (update-funs
-               (->> (--map (org-ml--get-property-cis-function type (car it)) kv)
+               (->> (--map (org-ml--get-property-updater type (car it)) kv)
                     (-uniq)
-                    (-non-nil))))
-        (--> (org-ml-get-all-properties node)
-             (if kv (--reduce-from (put-encode acc it type) it kv) it)
-             (if kv-attrs (-reduce-from #'put it kv-attrs) it)
-             (org-ml--construct type it (org-ml-get-children node))
-             (if update-funs (--reduce-from (funcall it acc) it update-funs) it))))))
+                    (-non-nil)))
+              (node* (org-ml-copy node)))
+        (--each kv (->> (org-ml--property-encode (car it) (cadr it) type)
+                        (org-element-put-property node* (car it))))
+        (--each kv-attrs (org-element-put-property node* (car it) (cadr it)))
+        (--each update-funs (funcall it node*))
+        node*))))
 
 (defun org-ml-get-property (prop node)
   "Return the value of PROP of NODE."
-  (let* ((type (org-ml-get-type node))
-         (decoder-fun (unless (and (memq type org-ml--element-nodes-with-affiliated)
-                                   (org-ml--property-is-attribute prop))
-                        (org-ml--get-property-decoder type prop)))
-         (value (org-ml--get-property-nocheck prop node)))
-    (if decoder-fun (funcall decoder-fun value) value)))
+  (let ((type (org-ml-get-type node)))
+    (if (and (eq type 'plain-text) (eq prop :post-blank))
+        (org-ml--get-post-blank-text node)
+      (let ((decoder-fun (unless (or (and (memq type org-ml--element-nodes-with-affiliated)
+                                          (org-ml--property-is-attribute prop))
+                                     (memq prop org-element--standard-properties))
+                           (org-ml--get-property-decoder type prop)))
+            (value (org-element-property prop node)))
+        (if decoder-fun (funcall decoder-fun value) value)))))
 
 (defun org-ml-get-properties (props node)
   "Return all the values of PROPS from NODE.
 PROPS is a list of all the properties desired, and the returned
 list will be the values of these properties in the order
-requested. To get the raw plist of NODE, use
+requested. To get all properties of NODE, use
 `org-ml--get-all-properties'."
-  (org-ml--map* (org-ml-get-property it node) props))
+  (--map (org-ml-get-property it node) props))
 
 (org-ml--defun-anaphoric* org-ml-map-property (prop fun node)
   "Return NODE with FUN applied to the value of PROP.
@@ -2823,6 +3492,7 @@ its values are unary functions to be mapped to these properties.
 
 See builder functions for a list of properties and their rules for
 each type."
+  ;; TODO this is slow since it will copy the node for each property iteration
   (cond
    ((not plist) node)
    ((org-ml--is-plist plist)
@@ -2845,7 +3515,7 @@ its values are forms to be mapped to these properties."
 
 This function only applies to properties that are booleans."
   (let ((type (org-ml-get-type node)))
-    (if (org-ml--get-property-attribute :toggle type prop)
+    (if (org-ml--property-memq org-ml--properties-with-toggle type prop)
         (org-ml-map-property prop #'not node)
       (org-ml--arg-error "Not a toggle-able property"))))
 
@@ -2854,10 +3524,9 @@ This function only applies to properties that are booleans."
 
 This only applies the properties that are represented as integers."
   (let* ((type (org-ml-get-type node))
-         (fun (org-ml--get-property-attribute :shift type prop)))
-    (if fun
-        (org-ml-map-property* prop (funcall fun n it) node)
-      (org-ml--arg-error "Not a shiftable property"))))
+         (fun (org-ml--get-property-shifter type prop)))
+    (if fun (org-ml-map-property* prop (funcall fun n it) node)
+      (org-ml--arg-error "'%s' not a shiftable for '%s'" prop type))))
 
 (defun org-ml-insert-into-property (prop index string node)
   "Return NODE with STRING inserted at INDEX into PROP.
@@ -2865,7 +3534,7 @@ This only applies the properties that are represented as integers."
 This only applies to properties that are represented as lists of
 strings."
   (let ((type (org-ml-get-type node)))
-    (if (org-ml--get-property-attribute :string-list type prop)
+    (if (org-ml--property-memq org-ml--properties-with-string-list type prop)
         (org-ml-map-property* prop
           (if (member string it) it (org-ml--insert-at index string it))
           node)
@@ -2881,7 +3550,7 @@ strings.
 See `org-ml-insert-into-property' for a list of supported elements
 and properties that may be used with this function."
   (let ((type (org-ml-get-type node)))
-    (if (org-ml--get-property-attribute :string-list type prop)
+    (if (org-ml--property-memq org-ml--properties-with-string-list type prop)
         (org-ml-map-property* prop (-remove-item string it) node)
       (org-ml--arg-error "Property '%s' in node of type '%s' is not a string-list"
                      prop type))))
@@ -2891,7 +3560,7 @@ and properties that may be used with this function."
 
 KEY is a keyword and VALUE is a symbol. This only applies to
 properties that are represented as plists."
-  (if (org-ml--get-property-attribute :plist (org-ml-get-type node) prop)
+  (if (org-ml--property-memq org-ml--properties-with-plist (org-ml-get-type node) prop)
       (org-ml-map-property* prop (plist-put it key value) node)
     (org-ml--arg-error "Not a plist property")))
 
@@ -2903,7 +3572,7 @@ represented as plists.
 
 See `org-ml-plist-put-property' for a list of supported elements
 and properties that may be used with this function."
-  (if (org-ml--get-property-attribute :plist (org-ml-get-type node) prop)
+  (if (org-ml--property-memq org-ml--properties-with-plist (org-ml-get-type node) prop)
       (org-ml-map-property* prop (org-ml--plist-remove key it) node)
     (org-ml--arg-error "Not a plist property")))
 
@@ -2969,7 +3638,7 @@ will be the rightmost member."
       ((get-parents
         (acc node)
         (if (or (null node) (eq 'org-data (car node))) acc
-          (get-parents (cons node acc) (org-ml-get-property :parent node)))))
+          (get-parents (cons node acc) (org-element-parent node)))))
     (get-parents nil node)))
 
 (defun org-ml-remove-parent (node)
@@ -2993,8 +3662,8 @@ this, it is not necessary as the tree structure itself already
 encodes all parent-child relationships. Further, it is not used
 by org-element internally to convert nodes into strings (such as
 with `org-ml-to-string') and thus can be thought of as a
-'read-only' property. This is why :parent will be set to nil when
-building a new node with the 'org-ml-build-' family of functions
+\"read-only\" property. This is why :parent will be set to nil when
+building a new node with the \"org-ml-build-\" family of functions
 and why `org-ml-set-property' forbids setting this property.
 
 In many cases, one can safely ignore :parent unless, of course,
@@ -3013,10 +3682,9 @@ dealing with circular lists and will complain about infinite
 recursion. If this is happening, the :parent property is likely
 to blame, and setting it to nil has a high probability of fixing
 the issue."
-  ;; TODO this will check if node is s string twice
   (if (stringp node)
       (progn (remove-text-properties 0 (length node) '(:parent) node) node)
-    (org-ml--set-property-nocheck-nil :parent node)))
+    (org-element-put-property-2 :parent nil node)))
 
 (defun org-ml--caption-remove-parents (node)
   "Remove parents from CAPTION property in NODE if present."
@@ -3035,9 +3703,9 @@ the issue."
              (cons (remove-ss long) (remove-ss short))))
           ;; TODO error here?
           (_ caption))))
-    (if (and (org-ml-is-any-type org-ml--element-nodes-with-affiliated node)
-             (org-ml--get-property-nocheck :caption node))
-        (org-ml--map-property-nocheck* :caption
+    (if (and (org-ml--is-any-type org-ml--element-nodes-with-affiliated node)
+             (org-element-property-raw :caption node))
+        (org-ml--map-property-raw* :caption
           (-map #'remove-from-caption it)
           node)
       node)))
@@ -3052,13 +3720,14 @@ See `org-ml-remove-parent' for why you might want this."
         (--map (org-ml-remove-parents it) nodes))
        (remove-within-prop
         (prop node)
-        (org-ml--map-property-nocheck* prop
+        (org-ml--map-property-raw* prop
           (remove-recursive it)
           node)))
     (->>
      ;; remove parents from secondary strings (if necessary)
      (pcase (org-ml-get-type node)
-       (`headline (remove-within-prop :title node))
+       (`headline (->> (org-element-properties-resolve node)
+                       (remove-within-prop :title)))
        (`item (remove-within-prop :tag node))
        (_ node))
      (org-ml--caption-remove-parents)
@@ -3082,9 +3751,10 @@ KEY is one of:
 - `:utf-8' (the entity's utf8 representation)
 
 Any other keys will trigger an error."
+  (org-ml--check-type 'entity entity)
   (-if-let (index (-elem-index key (list :latex :latex-math-p :html
                                          :ascii :latin1 :utf-8)))
-      (->> (org-ml-get-property :name entity)
+      (->> (org-element-property-raw :name entity)
            (org-entity-get)
            (cdr)
            (nth index))
@@ -3094,7 +3764,8 @@ Any other keys will trigger an error."
 
 (defun org-ml-statistics-cookie-is-complete (statistics-cookie)
   "Return t is STATISTICS-COOKIE node is complete."
-  (let ((val (org-ml--get-property-nocheck :value statistics-cookie)))
+  (org-ml--check-type 'statistics-cookie statistics-cookie)
+  (let ((val (org-element-property-raw :value statistics-cookie)))
     (or (-some->>
          (s-match "\\([[:digit:]]+\\)%" val)
          (nth 1)
@@ -3112,38 +3783,43 @@ Any other keys will trigger an error."
   "Return the time list for start time of TIMESTAMP node.
 The return value will be a list as specified by the TIME argument in
 `org-ml-build-timestamp!'."
-  (org-ml--timestamp-get-start-time timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--timestamp-get-start-timelist timestamp))
 
 (defun org-ml-timestamp-get-end-time (timestamp)
   "Return the end time list for end time of TIMESTAMP or nil if not a range.
 The return value will be a list as specified by the TIME argument in
 `org-ml-build-timestamp!'."
+  (org-ml--check-type 'timestamp timestamp)
   (and (org-ml--timestamp-is-range-type timestamp)
-       (org-ml--timestamp-get-end-time timestamp)))
+       (org-ml--timestamp-get-end-timelist timestamp)))
 
-;; TODO this should be ""-get-length
-(defun org-ml-timestamp-get-range (timestamp)
-  "Return the range of TIMESTAMP node in seconds as an integer.
+(defun org-ml-timestamp-get-length (timestamp)
+  "Return the length of TIMESTAMP node in seconds as an integer.
 If non-ranged, this function will return 0. If ranged but
 the start time is in the future relative to end the time, return
 a negative integer."
-  (org-ml--timestamp-get-range timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--timestamp-get-length timestamp))
 
 (defun org-ml-timestamp-is-active (timestamp)
   "Return t if TIMESTAMP node is active."
-  (or (org-ml--property-is-eq :type 'active timestamp)
-      (org-ml--property-is-eq :type 'active-range timestamp)))
+  (org-ml--check-type 'timestamp timestamp)
+  (let ((y (org-element-property-raw :type timestamp)))
+    (if (memq y '(active active-range)) t)))
 
 (defun org-ml-timestamp-is-ranged (timestamp)
   "Return t if TIMESTAMP node is ranged."
-  (or (org-ml--property-is-eq :type 'active-range timestamp)
-      (org-ml--property-is-eq :type 'inactive-range timestamp)))
+  (org-ml--check-type 'timestamp timestamp)
+  (let ((y (org-element-property-raw :type timestamp)))
+    (if (memq y '(active-ranged inactive-range)) t)))
 
 (defun org-ml-timestamp-range-contains-p (unixtime timestamp)
   "Return t if UNIXTIME is between start and end time of TIMESTAMP node.
 The boundaries are inclusive. If TIMESTAMP has a range of zero, then
 only return t if UNIXTIME is the same as TIMESTAMP. TIMESTAMP will be
 interpreted according to the localtime of the operating system."
+  (org-ml--check-type 'timestamp timestamp)
   (let ((ut1 (org-ml--timestamp-get-start-unixtime timestamp))
         (ut2 (org-ml--timestamp-get-end-unixtime timestamp)))
     (<= ut1 unixtime ut2)))
@@ -3152,38 +3828,50 @@ interpreted according to the localtime of the operating system."
   "Return TIMESTAMP node with start time set to TIME.
 TIME is a list analogous to the same argument specified in
 `org-ml-build-timestamp!'."
-  (org-ml--timestamp-set-start-time time timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--check-timelist-from-list time)
+  (org-ml--timestamp-set-start-timelist time (org-ml-copy timestamp)))
 
 (defun org-ml-timestamp-set-end-time (time timestamp)
   "Return TIMESTAMP node with end time set to TIME.
 TIME is a list analogous to the same argument specified in
 `org-ml-build-timestamp!'."
-  (org-ml--timestamp-set-end-time time timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (when time
+    (org-ml--check-timelist-from-list time))
+  (org-ml--timestamp-set-end-timelist time (org-ml-copy timestamp)))
 
 (defun org-ml-timestamp-set-single-time (time timestamp)
   "Return TIMESTAMP node with start and end times set to TIME.
 TIME is a list analogous to the same argument specified in
 `org-ml-build-timestamp!'."
-  (org-ml--timestamp-set-single-time time timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--check-timelist-from-list time)
+  (org-ml--timestamp-set-single-timelist time (org-ml-copy timestamp)))
 
 (defun org-ml-timestamp-set-double-time (time1 time2 timestamp)
   "Return TIMESTAMP node with start/end times set to TIME1/TIME2 respectively.
 TIME1 and TIME2 are lists analogous to the TIME argument specified in
 `org-ml-build-timestamp!'."
-  (org-ml--timestamp-set-double-time time1 time2 timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--check-timelist-from-list time1)
+  (org-ml--check-timelist-from-list time2)
+  (org-ml--timestamp-set-double-timelist time1 time2 (org-ml-copy timestamp)))
 
-;; TODO this should be ""-set-length
-(defun org-ml-timestamp-set-range (range timestamp)
-  "Return TIMESTAMP node with range set to RANGE.
+(defun org-ml-timestamp-set-length (n unit timestamp)
+  "Return TIMESTAMP node with length set to N UNITs.
 If TIMESTAMP is ranged, keep start time the same and adjust the end
 time. If not, make a new end time. The units for RANGE are in minutes
 if TIMESTAMP is in long format and days if TIMESTAMP is in short
 format."
-  (org-ml--timestamp-set-range range timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  ;; ASSUME unit will be checked internally
+  (org-ml--timestamp-set-length n unit (org-ml-copy timestamp)))
 
 (defun org-ml-timestamp-set-active (flag timestamp)
   "Return TIMESTAMP node with active type if FLAG is t."
-  (org-ml--timestamp-set-active flag timestamp))
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--timestamp-set-active flag (org-ml-copy timestamp)))
 
 (defun org-ml-timestamp-shift (n unit timestamp)
   "Return TIMESTAMP node with time shifted by N UNIT's.
@@ -3197,8 +3885,32 @@ N is a positive or negative integer and UNIT is one of `minute',
 `hour', `day', `month', or `year'. Overflows will wrap around
 transparently; for instance, supplying `minute' for UNIT and 90 for N
 will increase the hour property by 1 and the minute property by 30."
-  (->> (org-ml--timestamp-shift-start n unit timestamp)
-       (org-ml--timestamp-shift-end n unit)))
+  ;; ASSUME unit will be checked internally
+  ;;
+  ;; if not ranged, simply need to shift start and end (which are the same);
+  ;; otherwise need to shift both, set both, and update the timerange depending
+  ;; on if we straddle a day boundary after the shift
+  (org-ml--check-type 'timestamp timestamp)
+  (let ((rt (org-element-property-raw :range-type timestamp))
+        (timestamp* (org-ml-copy timestamp)))
+    (if (not rt)
+        (let ((t1 (->> (org-ml--timestamp-get-start-timelist timestamp)
+                       (org-ml-timelist-shift n unit))))
+          (->> (org-ml--timestamp-set-start-timelist t1 timestamp*)
+               (org-ml--timestamp-set-end-timelist t1)))
+      (-let* ((s1 (->> (org-ml--timestamp-get-start-timelist timestamp)
+                       (org-ml-timelist-shift n unit)))
+              (s2 (->> (org-ml--timestamp-get-end-timelist timestamp)
+                       (org-ml-timelist-shift n unit)))
+              ;; total micro-optimization...
+              ((d1 t1) (org-ml-timelist-split s1))
+              ((d2 t2) (org-ml-timelist-split s2))
+              (rt* (if (and (not (equal t1 t2)) (equal d1 d2))
+                       (or rt 'timerange)
+                     'daterange)))
+        (->> (org-ml--timestamp-set-start-timelist s1 timestamp*)
+             (org-ml--timestamp-set-end-timelist s2)
+             (org-ml--timestamp-set-range-type rt*))))))
 
 (defun org-ml-timestamp-shift-start (n unit timestamp)
   "Return TIMESTAMP node with start time shifted by N UNIT's.
@@ -3208,7 +3920,16 @@ N and UNIT behave the same as those in `org-ml-timestamp-shift'.
 If TIMESTAMP is not range, the output will be a ranged timestamp with
 the shifted start time and the end time as that of TIMESTAMP. If this
 behavior is not desired, use `org-ml-timestamp-shift'."
-  (org-ml--timestamp-shift-start n unit timestamp))
+  ;; ASSUME unit will be checked internally
+  (org-ml--check-type 'timestamp timestamp)
+  (let* ((t1 (->> (org-ml--timestamp-get-start-timelist timestamp)
+                  (org-ml-timelist-shift n unit)))
+         (t2 (org-ml--timestamp-get-end-timelist timestamp))
+         (rt (->> (org-element-property-raw :range-type timestamp)
+                  (org-ml--timelists-get-range-type t1 t2))))
+    (->> (org-ml-copy timestamp)
+         (org-ml--timestamp-set-start-timelist t1)
+         (org-ml--timestamp-set-range-type rt))))
 
 (defun org-ml-timestamp-shift-end (n unit timestamp)
   "Return TIMESTAMP node with end time shifted by N UNIT's.
@@ -3218,66 +3939,116 @@ N and UNIT behave the same as those in `org-ml-timestamp-shift'.
 If TIMESTAMP is not range, the output will be a ranged timestamp with
 the shifted end time and the start time as that of TIMESTAMP. If this
 behavior is not desired, use `org-ml-timestamp-shift'."
-  (org-ml--timestamp-shift-end n unit timestamp))
+  ;; ASSUME unit will be checked internally
+  (org-ml--check-type 'timestamp timestamp)
+  (let* ((t1 (org-ml--timestamp-get-start-timelist timestamp))
+         (t2 (->> (org-ml--timestamp-get-end-timelist timestamp)
+                  (org-ml-timelist-shift n unit)))
+         (rt (->> (org-element-property-raw :range-type timestamp)
+                  (org-ml--timelists-get-range-type t1 t2))))
+    (->> (org-ml-copy timestamp)
+         (org-ml--timestamp-set-end-timelist t2)
+         (org-ml--timestamp-set-range-type rt))))
 
 (defun org-ml-timestamp-toggle-active (timestamp)
   "Return TIMESTAMP node with its active/inactive type flipped."
+  (org-ml--check-type 'timestamp timestamp)
   (-> (org-ml--timestamp-is-active timestamp)
       (not)
-      (org-ml--timestamp-set-active timestamp)))
+      (org-ml--timestamp-set-active (org-ml-copy timestamp))))
 
 (defun org-ml-timestamp-truncate (timestamp)
   "Return TIMESTAMP node with start/end times forced to short format."
-  (let ((t1 (->> (org-ml--timestamp-get-start-time timestamp)
-                 (org-ml--time-truncate)))
-        (t2 (->> (org-ml--timestamp-get-end-time timestamp)
-                 (org-ml--time-truncate))))
-    (org-ml--timestamp-set-double-time t1 t2 timestamp)))
+  (org-ml--check-type 'timestamp timestamp)
+  (let* ((t1 (->> (org-ml--timestamp-get-start-timelist timestamp)
+                  (org-ml--timelist-truncate)))
+         (t2 (->> (org-ml--timestamp-get-end-timelist timestamp)
+                  (org-ml--timelist-truncate)))
+         ;; NOTE it is impossible for range-type to be 'timerange since hours
+         ;; and minutes will be missing
+         (rt (if (equal t1 t2) nil 'daterange)))
+    (->> (org-ml-copy timestamp)
+         (org-ml--timestamp-set-start-timelist t1)
+         (org-ml--timestamp-set-end-timelist t2)
+         (org-ml--timestamp-set-range-type rt))))
 
 (defun org-ml-timestamp-truncate-start (timestamp)
-  "Return TIMESTAMP node with start time forced to short format."
-  (let ((time (->> (org-ml--timestamp-get-start-time timestamp)
-                   (org-ml--time-truncate))))
-    (org-ml--timestamp-set-start-time time timestamp)))
+  "Return TIMESTAMP node with start time forced to short format.
+
+Collapsed timestamps will become uncollapsed."
+  (org-ml--check-type 'timestamp timestamp)
+  (let* ((t1 (->> (org-ml--timestamp-get-start-timelist timestamp)
+                  (org-ml--timelist-truncate)))
+         (t2 (->> (org-ml--timestamp-get-end-timelist timestamp)
+                  (org-ml--timelist-truncate)))
+         (rt (if (equal t1 t2) nil 'daterange)))
+    (->> (org-ml-copy timestamp)
+         (org-ml--timestamp-set-start-timelist t1)
+         (org-ml--timestamp-set-range-type rt))))
 
 (defun org-ml-timestamp-truncate-end (timestamp)
-  "Return TIMESTAMP node with end time forced to short format."
-  (let ((time (->> (org-ml--timestamp-get-end-time timestamp)
-                   (org-ml--time-truncate))))
-    (org-ml--timestamp-set-end-time time timestamp)))
+  "Return TIMESTAMP node with end time forced to short format.
+
+Collapsed timestamps will become uncollapsed."
+  (org-ml--check-type 'timestamp timestamp)
+  (let* ((t1 (->> (org-ml--timestamp-get-start-timelist timestamp)
+                  (org-ml--timelist-truncate)))
+         (t2 (->> (org-ml--timestamp-get-end-timelist timestamp)
+                  (org-ml--timelist-truncate)))
+         (rt (if (equal t1 t2) nil 'daterange)))
+    (->> (org-ml-copy timestamp)
+         (org-ml--timestamp-set-end-timelist t2)
+         (org-ml--timestamp-set-range-type rt))))
 
 (defun org-ml-timestamp-set-collapsed (flag timestamp)
   "Return TIMESTAMP with collapsed set to FLAG.
 
-If timestamp is ranged but not outside of one day, it may be collapsed
-\(FLAG is t) to short format like [yyyy-mm-dd xxx hh:mm-hh:mm] or
-expanded (FLAG is nil) to long format like [yyyy-mm-dd xxx
-hh:mm]--[yyyy-mm-dd xxx hh:mm]. If these conditions are not met,
-return TIMESTAMP untouched regardless of FLAG.
+Collapsed timestamps are like [yyyy-mm-dd xxx hh:mm-hh:mm].
 
-Note: the default for all timestamp functions in `om.el' is to favor
-collapsed format."
-  (if (and (not (org-ml--timestamp-is-ranged-lowres timestamp))
-           (org-ml--timestamp-is-ranged timestamp))
-      (org-ml--timestamp-set-type-ranged (not flag) timestamp)
-    timestamp))
+Uncollapsed timestamp are like
+[yyyy-mm-dd xxx hh:mm]--[yyyy-mm-dd xxx hh:mm].
+
+FLAG may be one of nil, t, or `force'.
+
+If nil, uncollapse the timestamp if it is collapsed. The dates in
+the uncollapsed timestamp will be the same. Has no effect if the
+timestamp is not collapsed.
+
+If t, collapse the timestamp from uncollapsed format if the following
+conditions are met:
+1. the dates are the same
+2. start and end hours/minutes are non-nil
+
+Has no effect if timestamp id not uncollapsed and these
+conditions are not met.
+
+If `force', ignore condition 1 above. The date in the collapsed
+timestamp will be taken from the start date and the end date will
+be ignored."
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--timestamp-set-collapsed flag timestamp))
 
 (defun org-ml-timestamp-get-warning (timestamp)
   "Return the warning component of TIMESTAMP.
 Return a list like (TYPE VALUE UNIT)."
+  (org-ml--check-type 'timestamp timestamp)
   (-let (((&plist :warning-type y
                   :warning-value v
                   :warning-unit u)
-          (org-ml-get-all-properties timestamp)))
-    `(,y ,v ,u)))
+          (org-ml--get-nonstandard-properties timestamp)))
+    (when (and y v u) `(,y ,v ,u))))
 
 (defun org-ml-timestamp-set-warning (warning timestamp)
   "Set the warning of TIMESTAMP to WARNING.
 
-WARNING is a list like (TYPE VALUE UNIT). TYPE is one of 'year',
-'month', 'week', or 'day'. VALUE and is an integer. UNIT is one
-of 'year', 'month', 'week', or 'day'."
-  (org-ml--timestamp-set-warning warning timestamp))
+WARNING is a list like (TYPE VALUE UNIT). TYPE is `all' or
+`first' VALUE and is an integer. UNIT is one of `year', `month',
+`week', or `day'."
+  (org-ml--check-type 'timestamp timestamp)
+  (when warning
+    (org-ml--check-warning-from-list warning))
+  (->> (org-ml-copy timestamp)
+       (org-ml--timestamp-set-warning warning)))
 
 (org-ml--defun-anaphoric* org-ml-timestamp-map-warning (fun timestamp)
   "Apply FUN to the warning of TIMESTAMP.
@@ -3285,94 +4056,30 @@ FUN is a function that takes a warning list like and returns a
 new warning list. The same rules that apply to
 `org-ml-timestamp-set-warning' and `org-ml-timestamp-get-warning'
 apply here."
-  (--> (org-ml-timestamp-get-warning timestamp)
-    (org-ml-timestamp-set-warning (funcall fun it) timestamp)))
+  ;; TODO this will check node type twice
+  (let ((w (org-ml-timestamp-get-warning timestamp)))
+    (org-ml-timestamp-set-warning (funcall fun w) timestamp)))
 
 (defun org-ml-timestamp-get-repeater (timestamp)
   "Return the repeater component of TIMESTAMP.
-Return a list like (TYPE VALUE UNIT). If `org-ml-parse-habits' is
-t, return a list like (TYPE VALUE UNIT HABIT-VALUE HABIT-UNIT)."
-  (-let* (((&plist :repeater-type y
-                   :repeater-value v
-                   :repeater-unit u
-                   :raw-value r)
-           (org-ml-get-all-properties timestamp))
-          (rep `(,y ,v ,u)))
-    (if (not org-ml-parse-habits) rep
-      (-let* (((v u) (-some->> r
-                       (s-match "+[0-9]+[ymwd]/\\([0-9]+\\)\\([ymwd]\\)")
-                       (cdr)))
-              (v* (-some-> v (string-to-number)))
-              (u* (-some--> u
-                    (pcase it
-                      ("y" 'year)
-                      ("m" 'month)
-                      ("w" 'week)
-                      ("d" 'day)
-                      (_ (error "Unknown unit (this shouldn't happen)"))))))
-            `(,@rep ,v* ,u*)))))
-
-(defun org-ml--timestamp-unit-to-string (unit)
-  "Convert UNIT of time to string representation."
-  (pcase unit
-    (`year "y")
-    (`month "m")
-    (`week "w")
-    (`day "d")
-    (e (error "Invalid unit: %s" e))))
+Return a list like (TYPE VALUE UNIT) or nil."
+  (org-ml--check-type 'timestamp timestamp)
+  (org-ml--timestamp-get-repeater timestamp))
 
 (defun org-ml-timestamp-set-repeater (repeater timestamp)
   "Set the repeater of TIMESTAMP to REPEATER.
 
-REPEATER is a list like (TYPE VALUE UNIT) or (TYPE VALUE UNIT
-HABIT-VALUE HABIT-UNIT); if `org-ml-parse-habits' is nil, only
-accept the former and error on the latter (and vice versa). TYPE
-is one of 'year', 'month', 'week', or 'day'. VALUE and
-HABIT-VALUE are integers. UNIT and HABIT-UNIT are one of 'year',
-'month', 'week', or 'day'.
+REPEATER is a list like (TYPE VALUE UNIT); TYPE is one of
+`cumulate', `restart', or `catch-up'. VALUE is an integer. UNIT
+is one of `year', `month', `week', or `day'.
 
-In order to remove the repeater entirely, set REPEATER to nil
-or (nil nil nil). To delete just the habit (if it exists and
-`org-ml-parse-habits' is t) set REPEATER to (TYPE VALUE UNIT nil
-nil)."
-  (pcase repeater
-    (`nil
-     (->> (if org-ml-parse-habits
-              (org-ml--map-property-nocheck* :raw-value
-                (replace-regexp-in-string " [.+]?+[0-9]+[ymwd]\\(/[0-9]+[ymwd]\\)?" "" it)
-                timestamp)
-            timestamp)
-          (org-ml--timestamp-set-repeater nil)))
-    (`(,_ ,_ ,_)
-     (if org-ml-parse-habits
-         (error "Habit parsing is enabled; use a 5-membered list")
-       (org-ml--timestamp-set-repeater repeater timestamp)))
-    (`(,rt ,rv ,ru ,hv ,hu)
-     (if (not org-ml-parse-habits)
-         (error "Habit parsing is disabled; use a 3-membered list")
-       (->> (org-ml--timestamp-set-repeater (list rt rv ru) timestamp)
-            (org-ml--map-property-nocheck* :raw-value
-              (let ((r (if (not (and hv hu)) ""
-                         (->> (org-ml--timestamp-unit-to-string hu)
-                              (format "/%s%s" hv)))))
-                (save-match-data
-                  (-if-let (m (string-match "\\(+[0-9]+[ymwd]\\)\\(/[0-9]+[ymwd]\\)?" it))
-                      (-let (((b1 e1 b2 e2) (-if-let (b (match-beginning 2))
-                                                `(0 ,b ,(match-end 2) nil)
-                                              (let ((i (match-end 1)))
-                                                `(0 ,i ,i -1)))))
-                        (concat (substring it b1 e1) r (substring it b2 e2)))
-                    (if (and rt rv ru)
-                        (let* ((y* (pcase rt
-                                     (`cumulate "+")
-                                     (`catch-up "++")
-                                     (`restart ".+")
-                                     (e (error "Unknown repeater type: %s" e))))
-                               (rep (->> (org-ml--timestamp-unit-to-string ru)
-                                         (format " %s%s%s" y* rv))))
-                          (concat (substring it 0 -1) rep r (substring it -1)))
-                      it))))))))
-    (e (error "Invalid repeater definition: %s" e))))
+Setting REPEATER to nil will remove the repeater and its deadline
+if present."
+  (org-ml--check-type 'timestamp timestamp)
+  (when repeater
+    (org-ml--check-repeater-from-list repeater))
+  (->> (org-ml-copy timestamp)
+       (org-ml--timestamp-set-repeater repeater)))
 
 (org-ml--defun-anaphoric* org-ml-timestamp-map-repeater (fun timestamp)
   "Apply FUN to the warning of TIMESTAMP.
@@ -3380,18 +4087,192 @@ FUN is a function that takes a repeater list like and returns a
 new repeater list. The same rules that apply to
 `org-ml-timestamp-set-repeater' and
 `org-ml-timestamp-get-repeater' apply here."
-  (--> (org-ml-timestamp-get-repeater timestamp)
-    (org-ml-timestamp-set-repeater (funcall fun it) timestamp)))
+  (let ((r (org-ml-timestamp-get-repeater timestamp)))
+    (org-ml-timestamp-set-repeater (funcall fun r) timestamp)))
+
+(defun org-ml-timestamp-get-deadline (timestamp)
+  "Return the repeater component of TIMESTAMP.
+Return a list like (VALUE UNIT) or nil."
+  (org-ml--check-type 'timestamp timestamp)
+  (-let (((&plist :repeater-deadline-value dv
+                  :repeater-deadline-unit du)
+          (org-ml--get-nonstandard-properties timestamp)))
+    (when (and dv du) (list dv du))))
+
+(defun org-ml-timestamp-set-deadline (deadline timestamp)
+  "Set the repeater of TIMESTAMP to DEADLINE.
+
+DEADLINE is a list like (VALUE UNIT); VALUE is an integer. UNIT
+is one of `year', `month', `week', or `day'.
+
+Setting DEADLINE to nil will remove the deadline. Will have no effect
+if repeater is not present."
+  (org-ml--check-type 'timestamp timestamp)
+  (when deadline
+    (org-ml--check-deadline-from-list deadline))
+  (->> (org-ml-copy timestamp)
+       (org-ml--timestamp-set-deadline deadline)))
+
+(org-ml--defun-anaphoric* org-ml-timestamp-map-deadline (fun timestamp)
+  "Apply FUN to the deadline of TIMESTAMP.
+FUN is a function that takes a repeater list like and returns a
+new repeater list. The same rules that apply to
+`org-ml-timestamp-set-deadline' and
+`org-ml-timestamp-get-deadline' apply here."
+  (let ((d (org-ml-timestamp-get-deadline timestamp)))
+    (org-ml-timestamp-set-deadline (funcall fun d) timestamp)))
 
 ;; timestamp (diary)
 
 (defun org-ml-timestamp-diary-set-value (form timestamp-diary)
   "Return TIMESTAMP-DIARY node with value set to FORM.
 The node must have a type `eq' to `diary'. FORM is a quoted list."
+  (org-ml--check-type 'timestamp timestamp-diary)
   (if (listp form)
-      (org-ml--set-property-nocheck :raw-value (format "<%%%%%S>" form)
-                                    timestamp-diary)
+      (->> (org-ml-copy timestamp-diary)
+           (org-element-put-property-2 :raw-value (format "<%%%%%S>" form))
+           (org-element-put-property-2 :diary-sexp (format "%S" form)))
     (org-ml--arg-error "Timestamp-diary node value must be a form: Got %S" form)))
+
+(defun org-ml-timestamp-diary-get-start-time (timestamp-diary)
+  "Return start time for  TIMESTAMP-DIARY or nil."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (org-ml--timestamp-get-start-time timestamp-diary))
+
+(defun org-ml-timestamp-diary-get-end-time (timestamp-diary)
+  "Return end time for  TIMESTAMP-DIARY or nil."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (org-ml--timestamp-get-end-time timestamp-diary))
+
+(defun org-ml-timestamp-diary-set-single-time (time timestamp-diary)
+  "Return TIMESTAMP-DIARY node with start/end time set to TIME.
+The node must have a type `eq' to `diary'. TIME is a list
+like (hour min). If TIME is nil remove the time."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (when time
+    (org-ml--check-time-from-list time))
+  (->> (org-ml-copy timestamp-diary)
+       (org-ml--timestamp-set-start-time time)
+       (org-ml--timestamp-set-end-time time)
+       (org-ml--timestamp-update-type-ranged-timeonly)))
+
+(defun org-ml-timestamp-diary-set-start-time (time timestamp-diary)
+  "Return TIMESTAMP-DIARY node with start time set to TIME.
+The node must have a type `eq' to `diary'. TIME is a list
+like (hour min). TIME may not be nil"
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (org-ml--check-time-from-list time)
+  (let* ((start (org-ml--timestamp-get-start-time timestamp-diary))
+         (end (or (org-ml--timestamp-get-end-time timestamp-diary) start time)))
+    (->> (org-ml-copy timestamp-diary)
+         (org-ml--timestamp-set-start-time time)
+         (org-ml--timestamp-set-end-time end)
+         (org-ml--timestamp-update-type-ranged-timeonly))))
+
+(defun org-ml-timestamp-diary-set-end-time (time timestamp-diary)
+  "Return TIMESTAMP-DIARY node with end time set to TIME.
+The node must have a type `eq' to `diary'. TIME is a list
+like (hour min). If TIME is nil then remove the end time.
+If start time is not set, return node unchanged."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (when time
+    (org-ml--check-time-from-list time))
+  (let ((start (org-ml--timestamp-get-start-time timestamp-diary)))
+    (if (not start) timestamp-diary
+      (->> (org-ml-copy timestamp-diary)
+           (org-ml--timestamp-set-end-time (or time start))
+           (org-ml--timestamp-update-type-ranged-timeonly)))))
+
+(defun org-ml-timestamp-diary-set-double-time (time1 time2 timestamp-diary)
+  "Return TIMESTAMP-DIARY node with time set to TIME1 and TIME2.
+The node must have a type `eq' to `diary'. TIME1 and TIME2 are
+lists like (hour min). Either time may be nil, but if TIME1 is nil
+then TIME2 must also be nil."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (when (and (not time1) time2)
+    (org-ml--arg-error "Time1 cannot be nil if Time2 is non-nil"))
+  (when time1
+    (org-ml--check-time-from-list time1))
+  (when time2
+    (org-ml--check-time-from-list time2))
+  (->> (org-ml-copy timestamp-diary)
+       (org-ml--timestamp-set-start-time time1)
+       (org-ml--timestamp-set-end-time (or time2 time1))
+       (org-ml--timestamp-update-type-ranged-timeonly)))
+
+(defun org-ml-timestamp-diary-set-length (n unit timestamp-diary)
+  "Return TIMESTAMP-DIARY node with range set to N UNITs.
+If TIMESTAMP-DIARY is ranged, keep start time the same and adjust
+the end time. If not, make a new end time."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (-if-let (start (org-ml--timestamp-get-start-time timestamp-diary))
+      (let ((s (org-ml--time-shift n unit start)))
+        (->> (org-ml-copy timestamp-diary)
+             (org-ml--timestamp-set-end-time s)
+             (org-ml--timestamp-update-type-ranged-timeonly)))
+    timestamp-diary))
+
+(defun org-ml-timestamp-diary-shift (n unit timestamp-diary)
+  "Return TIMESTAMP-DIARY node with time shifted by N UNITs.
+
+This function will move the start and end times together;
+therefore ranged inputs will always output ranged timestamps and
+same for non-ranged. To move the start and end time
+independently, use `org-ml-timestamp-diary-shift-start' or
+`org-ml-timestamp-shift-end'.
+
+N is a positive or negative integer and UNIT is one of `minute',
+`hour', `day', `month', or `year'. Overflows will wrap around
+transparently; for instance, supplying `minute' for UNIT and 90
+for N will increase the hour property by 1 and the minute
+property by 30."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (-if-let (start (org-ml--timestamp-get-start-time timestamp-diary))
+      ;; 'or' to guard against nil end time when start is set, which is not
+      ;; supposed to happen (but might)
+      (let* ((end (or (org-ml--timestamp-get-end-time timestamp-diary) start))
+             (start* (org-ml--time-shift n unit start))
+             (end* (org-ml--time-shift n unit end)))
+        (->> (org-ml-copy timestamp-diary)
+             (org-ml--timestamp-set-start-time start*)
+             (org-ml--timestamp-set-end-time end*)
+             ;; update this in case range is in undefined state
+             (org-ml--timestamp-update-type-ranged-timeonly)))
+    timestamp-diary))
+
+(defun org-ml-timestamp-diary-shift-start (n unit timestamp-diary)
+  "Return TIMESTAMP-DIARY node with start time shifted by N UNITs.
+
+N and UNIT behave the same as those in `org-ml-timestamp-diary-shift'.
+
+If TIMESTAMP-DIARY is not range, the output will be a ranged timestamp with
+the shifted start time and the end time as that of TIMESTAMP-DIARY. If this
+behavior is not desired, use `org-ml-timestamp-diary-shift'."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (-if-let (start (org-ml--timestamp-get-start-time timestamp-diary))
+      (let ((end (or (org-ml--timestamp-get-end-time timestamp-diary) start))
+            (start* (org-ml--time-shift n unit start)))
+        (->> (org-ml-copy timestamp-diary)
+             (org-ml--timestamp-set-start-time start*)
+             (org-ml--timestamp-set-end-time end)
+             (org-ml--timestamp-update-type-ranged-timeonly)))
+    timestamp-diary))
+
+(defun org-ml-timestamp-diary-shift-end (n unit timestamp-diary)
+  "Return TIMESTAMP-DIARY node with end time shifted by N UNITs.
+
+N and UNIT behave the same as those in `org-ml-timestamp-diary-shift'.
+
+If TIMESTAMP-DIARY is not range, the output will be a ranged timestamp with
+the shifted end time and the start time as that of TIMESTAMP-DIARY. If this
+behavior is not desired, use `org-ml-timestamp-diary-shift'."
+  (org-ml--check-type 'timestamp timestamp-diary)
+  (-if-let (start (org-ml--timestamp-get-start-time timestamp-diary))
+      (let* ((end (or (org-ml--timestamp-get-end-time timestamp-diary) start)))
+        (-> (org-ml--time-shift n unit end)
+            (org-ml--timestamp-set-end-time (org-ml-copy timestamp-diary))
+            (org-ml--timestamp-update-type-ranged-timeonly)))
+    timestamp-diary))
 
 ;;; element nodes
 ;;
@@ -3399,25 +4280,29 @@ The node must have a type `eq' to `diary'. FORM is a quoted list."
 
 (defun org-ml-clock-is-running (clock)
   "Return t if CLOCK element is running (eg is open)."
+  (org-ml--check-type 'clock clock)
   (org-ml--property-is-eq :status 'running clock))
 
 ;; headline
 
 (defun org-ml-headline-get-statistics-cookie (headline)
   "Return the statistics cookie node from HEADLINE if it exists."
-  (->> (org-ml--get-property-nocheck :title headline)
+  (org-ml--check-type 'headline headline)
+  (->> (org-element-property :title headline)
        (-last-item)
        (org-ml--filter-type 'statistics-cookie)))
 
 (defun org-ml-headline-is-done (headline)
   "Return t if HEADLINE node has a done todo-keyword."
-  (-> (org-ml--get-property-nocheck :todo-keyword headline)
+  (org-ml--check-type 'headline headline)
+  (-> (org-element-property :todo-keyword headline)
       (member org-done-keywords)
       (and t)))
 
 (defun org-ml-headline-has-tag (tag headline)
   "Return t if HEADLINE node is tagged with TAG."
-  (if (member tag (org-ml--get-property-nocheck :tags headline)) t))
+  (org-ml--check-type 'headline headline)
+  (if (member tag (org-element-property :tags headline)) t))
 
 (defun org-ml-headline-set-title! (title-text stats-cookie-value headline)
   "Return HEADLINE node with new title.
@@ -3426,11 +4311,11 @@ TITLE-TEXT is a string to be parsed into object nodes for the title
 via `org-ml-build-secondary-string!' (see that function for restrictions)
 and STATS-COOKIE-VALUE is a list described in
 `org-ml-build-statistics-cookie'."
+  (org-ml--check-type 'headline headline)
   (let ((ss (org-ml-build-secondary-string! title-text)))
     (if (not stats-cookie-value)
         (org-ml-set-property :title ss headline)
-      (let ((ss* (org-ml--map-last*
-                  (org-ml--set-property-nocheck :post-blank 1 it) ss))
+      (let ((ss* (org-ml--set-last-post-blank 1 ss))
             (sc (org-ml-build-statistics-cookie stats-cookie-value)))
         (org-ml-set-property :title (-snoc ss* sc) headline)))))
 
@@ -3441,24 +4326,12 @@ and STATS-COOKIE-VALUE is a list described in
 This only affects item nodes with checkboxes in the `on' or `off'
 states; return ITEM node unchanged if the checkbox property is `trans'
 or nil."
-  (pcase (org-ml-get-property :checkbox item)
-    ('on (org-ml-set-property :checkbox 'off item))
-    ('off (org-ml-set-property :checkbox 'on item))
+  (org-ml--check-type 'item item)
+  (pcase (org-element-property-raw :checkbox item)
+    ('on (org-element-put-property-2 :checkbox 'off (org-ml-copy item)))
+    ('off (org-element-put-property-2 :checkbox 'on (org-ml-copy item)))
     ((or `trans `nil) item)
     (_ (error "This should not happen"))))
-
-;; planning
-
-(defun org-ml-planning-set-timestamp! (prop planning-list planning)
-  "Return PLANNING node with PROP set to PLANNING-LIST.
-
-PROP is one of `:closed', `:deadline', or `:scheduled'. PLANNING-LIST
-is the same as that described in `org-ml-build-planning!'."
-  (unless (memq prop '(:closed :deadline :scheduled))
-    (org-ml--arg-error "PROP must be ':closed', ':deadline', or ':scheduled'. Got %S" prop))
-  (let* ((active (if (eq prop :closed) nil t))
-         (ts (org-ml--planning-list-to-timestamp active planning-list)))
-    (org-ml-set-property prop ts planning)))
 
 ;;; PUBLIC BRANCH/CHILD FUNCTIONS
 
@@ -3466,14 +4339,14 @@ is the same as that described in `org-ml-build-planning!'."
 
 (defun org-ml-children-contain-point (point branch-node)
   "Return t if POINT is within the boundaries of BRANCH-NODE's children."
-  (-let (((&plist :contents-begin :contents-end)
-          (org-ml-get-all-properties branch-node)))
-    (if (and (integerp contents-begin) (integerp contents-end))
-        (<= contents-begin point contents-end)
-      (error "Node boundaries are not defined"))))
+  (org-ml--check-types org-ml-branch-nodes branch-node)
+  (-let ((b (org-element-contents-begin branch-node))
+         (e (org-element-contents-end branch-node)))
+    (<= b point e)))
 
 (defun org-ml-get-children (branch-node)
   "Return the children of BRANCH-NODE as a list."
+  (org-ml--check-types org-ml-branch-nodes branch-node)
   (org-element-contents branch-node))
 
 (defun org-ml-set-children (children branch-node)
@@ -3508,8 +4381,8 @@ returns a modified list of children."
       ((concat-maybe
         (acc node)
         (let ((last (car acc)))
-          (if (and (org-ml-is-type 'plain-text last)
-                   (org-ml-is-type 'plain-text node))
+          (if (and (org-ml--is-type 'plain-text last)
+                   (org-ml--is-type 'plain-text node))
               (cons (concat last node) (cdr acc))
             (cons node acc)))))
     (reverse (-reduce-from #'concat-maybe nil secondary-string))))
@@ -3519,7 +4392,7 @@ returns a modified list of children."
     "Return mapped, concatenated, and normalized SECONDARY-STRING.
 FORM is a form supplied to `--mapcat'."
     (declare (debug (def-form form)))
-    `(->> (org-ml--map* ,form ,secondary-string)
+    `(->> (--map ,form ,secondary-string)
           (apply #'append)
           (org-ml--normalize-secondary-string))))
 
@@ -3528,11 +4401,14 @@ FORM is a form supplied to `--mapcat'."
 If OBJECT-NODE is a plain-text node, wrap it in a list and return.
 Else add the post-blank property of OBJECT-NODE to the last member
 of its children and return children as a secondary string."
-  (if (org-ml-is-type 'plain-text object-node)
+  (org-ml--check-types org-ml-objects object-node)
+  (if (org-ml--is-type 'plain-text object-node)
       (list object-node)
-    (let ((post-blank (org-ml--get-property-nocheck :post-blank object-node)))
-      (org-ml--map-last* (org-ml-map-property* :post-blank (+ it post-blank) it)
-        (org-ml-get-children object-node)))))
+    (let ((post-blank (org-ml--get-post-blank-textsafe object-node)))
+      (->> (org-ml-copy object-node t)
+           (org-element-contents)
+           (org-ml--map-last*
+            (org-ml--shift-post-blank-textsafe post-blank it))))))
 
 (defun org-ml-unwrap-types-deep (types object-node)
   "Return the children of OBJECT-NODE as a secondary string.
@@ -3540,15 +4416,18 @@ If OBJECT-NODE is a plain-text node, wrap it in a list and return.
 Else recursively descend into the children of OBJECT-NODE and splice
 the children of nodes with type in TYPES in place of said node and
 return the result as a secondary string."
+  ;; TODO this will check for object nodes in nested levels which is redundant
+  (org-ml--check-types org-ml-objects object-node)
   (cond
-   ((org-ml-is-type 'plain-text object-node)
+   ((org-ml--is-type 'plain-text object-node)
     (list object-node))
    ((org-ml-is-any-type types object-node)
-    (let ((post-blank (org-ml--get-property-nocheck :post-blank object-node)))
-      (->> (org-ml-get-children object-node)
-           (org-ml--mapcat-normalize (org-ml-unwrap-types-deep types it))
-           (org-ml--map-last* (org-ml-map-property* :post-blank
-                            (+ it post-blank) it)))))
+    (let ((post-blank (org-ml--get-post-blank-textsafe object-node)))
+      (->> (org-element-contents object-node)
+           (org-ml--mapcat-normalize
+            (->> (org-ml-copy it)
+                 (org-ml-unwrap-types-deep types)))
+           (org-ml--map-last* (org-ml--shift-post-blank-textsafe post-blank it)))))
    (t
     (->> object-node
          (org-ml-map-children*
@@ -3584,12 +4463,12 @@ If the last node in NODES1 and the first node in NODES2 are
 plain-lists, join the two lists together."
   (let ((last (-last-item nodes1))
         (first (car nodes2)))
-    (if (and (org-ml-is-type 'plain-list last)
-             (org-ml-is-type 'plain-list first))
-        (let ((pb (org-ml-get-property :post-blank last)))
-          (--> (org-ml-get-children last)
-               (org-ml--map-last* (org-ml-set-property :post-blank pb it) it)
-               (append it (org-ml-get-children first))
+    (if (and (org-ml--is-type 'plain-list last)
+             (org-ml--is-type 'plain-list first))
+        (let ((pb (org-element-post-blank last)))
+          (--> (org-element-contents last)
+               (org-ml--set-last-post-blank pb it)
+               (append it (org-element-contents first))
                (org-ml--set-children-nocheck it last)
                (cons it (cdr nodes2))
                (append (-drop-last 1 nodes1) it)))
@@ -3597,14 +4476,16 @@ plain-lists, join the two lists together."
 
 (defun org-ml-item-get-paragraph (item)
   "Return the first paragraph's children of ITEM or nil if none."
-  (-when-let (first-child (car (org-ml-get-children item)))
-    (when (org-ml-is-type 'paragraph first-child)
-      (org-ml-get-children first-child))))
+  (org-ml--check-type 'item item)
+  (-when-let (first-child (car (org-element-contents item)))
+    (when (org-ml--is-type 'paragraph first-child)
+      (org-element-contents first-child))))
 
 (defun org-ml-item-set-paragraph (secondary-string item)
   "Set the first paragraph's children of ITEM to SECONDARY-STRING."
+  (org-ml--check-type 'item item)
   (org-ml-map-children*
-    (if (org-ml-is-type 'paragraph (car it))
+    (if (org-ml--is-type 'paragraph (car it))
         (if (not secondary-string) (cdr it)
           (cons (org-ml-set-children secondary-string (car it)) (cdr it)))
       (cons (apply #'org-ml-build-paragraph secondary-string) it))
@@ -3617,138 +4498,64 @@ first paragraph and returns modified secondary-string."
   (--> (org-ml-item-get-paragraph item)
        (org-ml-item-set-paragraph (funcall fun it) item)))
 
-;;; headline (metadata)
+;;; headline (supercontents)
 
-;; planning
+;; Everything under a headline in the "section" should follow a predictable
+;; structure. The planning and property-drawer nodes is always first and second
+;; respectively (if present) followed by a "logbook" and the "contents" The
+;; "logbook" contains two types of nodes, here called "log items" (or sometimes
+;; simply "items" if the context is obvious) and "clocks." The former include
+;; any plain-list/item node as given by `org-log-note-headings' (except for
+;; 'clock-out' which applies only to clocks), and clocks includes clock nodes
+;; and optionally plain-list/item nodes that represent the clock-out notes.
+;; Anything that comes after the logbook is deemed "contents." To make this even
+;; more complicated, the spacing after these nodes potentially interacts the
+;; encapsulating headline itself through the :pre-blank property. For instance,
+;; if a planning node has a non-zero :post-blank property, this value should be
+;; set to the :pre-blank property of the headline if the planning node is
+;; deleted (indicating that the space "moves up").
 
-(defun org-ml-headline-get-planning (headline)
-  "Return the planning node in HEADLINE or nil if none."
-  (-some--> (car (org-ml-headline-get-section headline))
-    (when (org-ml-is-type 'planning it) it)))
+;; To simplify this entire process, here we introduce an abstraction layer
+;; called the "supercontents" which will encompass the entire headline section
+;; and the :pre-blank property of the headline itself. This will represent all
+;; these components in a standardized way. A similar data structure for
+;; "logbook" also exists within the supercontents for similar reasons, as the
+;; logbook has many different complex representations.
 
-(defun org-ml-headline-set-planning (planning headline)
-  "Return HEADLINE node with planning components set to PLANNING node."
-  (-let* ((children (org-ml-headline-get-section headline))
-          (first-type (org-ml-get-type (car children))))
-    (cond
-     ((and planning (eq first-type 'planning))
-      (org-ml-headline-set-section (cons planning (cdr children)) headline))
-     (planning
-      (let ((pb (org-ml-get-property :pre-blank headline)))
-        (--> (org-ml-map-property* :post-blank (+ pb it) planning)
-             (org-ml-headline-set-section (cons it children) headline)
-             (org-ml-set-property :pre-blank 0 it))))
-     ((eq first-type 'planning)
-      (--> (org-ml-get-property :post-blank (car children))
-           (org-ml-set-property :pre-blank it headline)
-           (org-ml-headline-set-section (cdr children) it)))
-     (t
-      headline))))
+;; In haskell types, the supercontents and logbook are like this:
 
-(org-ml--defun-anaphoric* org-ml-headline-map-planning (fun headline)
-  "Return HEADLINE node with planning node modified by FUN.
+;; type Blank = Natural
+;;
+;; type Property = (Text, Text)
+;;
+;; data LogBook = LogBook
+;;   { clocks :: [ClockNode]
+;;   , items :: [ItemNode]
+;;   , unknown :: [Node]
+;;   }
+;;
+;; data SuperContents = SuperContents
+;;   { planning :: (Maybe Planning)
+;;   , node-properties :: [Property]
+;;   , logbook :: LogBook
+;;   , blank :: Blank
+;;   , contents :: [Nodes]
+;;   }
 
-FUN is a unary function that takes a planning node and returns a
-modified planning node."
-   (--> (org-ml-headline-get-planning headline)
-        (org-ml-headline-set-planning (funcall fun it) headline)))
+;; There is one *very important* assumption built into this data structure. If
+;; the planning, property-drawer, or logbook are present, there must not be any
+;; spaces between them the nor can there be a space between the headline and the
+;; first node. By extension this means :pre-blank (in the encapsulating
+;; headline) must be 0 if planning, property-drawer, or logbook are present. In
+;; this case, "blank" represents the first blank after any of these three
+;; components and the first node after (the start of the "contents"). If
+;; planning, property-drawer, or logbook are not present, "blank" is the same as
+;; :pre-blank. The advantage of this setup is that this annoying whitespace
+;; doesn't need to be transferred to different nodes as the headline section is
+;; edited.
 
-;; node-properties (eg the entire property drawer)
-
-(defun org-ml-headline-get-node-properties (headline)
-  "Return a list of node-properties nodes in HEADLINE or nil if none."
-  ;; assume the property drawer is the first or second child of section
-  (-some--> (org-ml-headline-get-section headline)
-    (if (org-ml-is-type 'property-drawer (car it)) (car it)
-      (when (org-ml-is-type 'property-drawer (cadr it)) (cadr it)))
-    (org-ml-get-children it)))
-
-(defun org-ml-headline-set-node-properties (node-properties headline)
-  "Return HEADLINE node with property drawer containing NODE-PROPERTIES.
-NODE-PROPERTIES is a list of node-property nodes."
-  (-let* ((children (org-ml-headline-get-section headline))
-          ((first . r1) children)
-          ((second . r2) r1)
-          (t1 (org-ml-get-type first))
-          (t2 (org-ml-get-type second)))
-    (cond
-     ((and node-properties (eq t1 'planning) (eq t2 'property-drawer))
-      (--> (org-ml-set-children node-properties second)
-           (org-ml-headline-set-section `(,first ,it ,@r2) headline)))
-     ((and node-properties (eq t1 'property-drawer))
-      (--> (org-ml-set-children node-properties first)
-           (org-ml-headline-set-section (cons it r1) headline)))
-     ((and node-properties (eq t1 'planning))
-      (--> (org-ml-get-property :post-blank first)
-           (apply #'org-ml-build-property-drawer :post-blank it node-properties)
-           `(,(org-ml-set-property :post-blank 0 first) ,it ,@r1)
-           (org-ml-headline-set-section it headline)))
-     (node-properties
-      (--> (org-ml-get-property :pre-blank headline)
-           (apply #'org-ml-build-property-drawer :post-blank it node-properties)
-           (org-ml-headline-set-section (cons it children) headline)
-           (org-ml-set-property :pre-blank 0 it)))
-     ((eq t2 'property-drawer)
-      (let ((pb (org-ml-get-property :post-blank second)))
-        (--> (org-ml-map-property* :post-blank (+ pb it) first)
-             (org-ml-headline-set-section (cons it r2) headline))))
-     ((eq t1 'property-drawer)
-      (let ((pb (org-ml-get-property :post-blank first)))
-        (--> (org-ml-map-property* :pre-blank (+ pb it) headline)
-             (org-ml-headline-set-section r1 it))))
-     (t
-      headline))))
-
-(org-ml--defun-anaphoric* org-ml-headline-map-node-properties (fun headline)
-  "Return HEADLINE node with property-drawer node modified by FUN.
-
-FUN is a unary function that takes a property-drawer node and returns
-a modified property-drawer node."
-   (--> (org-ml-headline-get-node-properties headline)
-        (org-ml-headline-set-node-properties (funcall fun it) headline)))
-
-;; node-property
-
-(defun org-ml-headline-get-node-property (key headline)
-  "Return value of property with KEY in HEADLINE or nil if not found.
-If multiple properties with KEY are present, only return the first."
-  (-some->> (org-ml-headline-get-node-properties headline)
-    (--first (equal key (org-ml-get-property :key it)))
-    (org-ml-get-property :value)))
-
-(defun org-ml-headline-set-node-property (key value headline)
-  "Return HEADLINE with node property matching KEY set to VALUE.
-If a property matching KEY is present, set it to VALUE. If multiple
-properties matching KEY are present, only set the first."
-  (org-ml-headline-map-node-properties*
-    (-if-let (np (-some->> value (org-ml-build-node-property key)))
-        (-if-let (i (--find-index (equal key (org-ml-get-property :key it)) it))
-            (-replace-at i np it)
-          (cons np it))
-      (--remove-first (equal key (org-ml-get-property :key it)) it))
-    headline))
-
-(org-ml--defun-anaphoric* org-ml-headline-map-node-property (key fun headline)
-  "Return HEADLINE node with property value matching KEY modified by FUN.
-
-FUN is a unary function that takes a node-property value and returns
-a modified node-property value."
-   (--> (org-ml-headline-get-node-property key headline)
-        (org-ml-headline-set-node-property key (funcall fun it) headline)))
-
-;;; headline (logbook/contents)
-
-;; Everything after the planning and property drawer of the headline can be
-;; either part of the "logbook" or the "contents". The "logbook" contains two
-;; types of nodes, here called "log items" (or sometimes simply "items" if the
-;; context is obvious) and "clocks." The former include any plain-list/item node
-;; as given by `org-log-note-headings' (except for 'clock-out' which applies
-;; only to clocks), and clocks includes clock nodes and optionally
-;; plain-list/item nodes that represent the clock-out notes. Anything that comes
-;; after the logbook is deemed "contents." Together, the "logbook" and
-;; "contents" are hereafter referred collectively as the "supercontents."
-
-;; There are many ways to configure the logbook, and these are controlled by
+;; The "logbook" requires its own special attention, since it could be several
+;; different things depending on configuration. This is controlled by
 ;; `org-log-into-drawer', `org-clock-into-drawer', and `org-log-note-clock-out'.
 ;; These roughly control when the log items and/or clocks are in a named drawer
 ;; or "loose" by themselves.
@@ -3763,7 +4570,7 @@ a modified node-property value."
 ;;   idea). Note this also implies that any log item must have a timestamp
 ;;   regardless of `org-log-note-headings', which makes sense for a log note to
 ;;   have...
-;; - any clock not are defined as any item that is not a log item but after a
+;; - any clock notes are defined as any item that is not a log item but after a
 ;;   clock
 ;;
 ;; The first node that breaks any of the above conditions will be the dividing
@@ -3771,17 +4578,6 @@ a modified node-property value."
 ;; creates is that it is theoretically possible (but unlikely) that an item
 ;; immediately after a clock could be interpreted as a clock note even if it was
 ;; not intended as one.
-
-;; Since there are many possible configurations for the logbook and consequently
-;; many details involved in determining what is "logbook" and what is
-;; "contents," there are several specialized data structures used for this
-;; process. The logbook itself is represented by an alist consisting of the
-;; items, clocks, and unknown nodes from the logbook. This alist is part of a
-;; larger list called the "supercontents" which consists of two keys for the
-;; logbook and contents. The config for the logbook will be representing on the
-;; user side by a plist which corresponds to the possible configuration
-;; variables noted above; internally it will be 'encoded' to a more
-;; readily-parsable alist.
 
 ;; Any operation involving the logbook or contents will either require
 ;; separating the supercontents of the headline into the supercontents object,
@@ -3810,92 +4606,136 @@ a modified node-property value."
 ;; 5. append items and clocks (or drawers if applicable)
 ;; 6. append the logbook nodes from above with the contents from the contents
 
-;; logbook data structure
+;; logbook struct
 
-;; alist to store the separated nodes from a logbook
-
-(defun org-ml--logbook-init (items clocks unknown post-blank)
+(define-inline org-ml--logbook-init (items clocks unknown)
   "Create a new logbook alist.
 ITEMS, CLOCKS, and UNKNOWN correspond to a list of item nodes,
 clock notes (which may contain item nodes for notes) and other
-nodes. POST-BLANK corresponds to the number of extra newlines
-between the logbook and the contents."
-  `((:items ,@items)
-    (:clocks ,@clocks)
-    (:unknown ,@unknown)
-    (:post-blank . ,(or post-blank 0))))
+nodes."
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (list :items ,items :clocks ,clocks :unknown ,unknown)))
 
-(defun org-ml-logbook-get-items (logbook)
+(define-inline org-ml-logbook-get-items (logbook)
   "Return the :items slot from LOGBOOK."
-  (alist-get :items logbook))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (plist-get ,logbook :items)))
 
-(defun org-ml-logbook-get-clocks (logbook)
+(define-inline org-ml-logbook-get-clocks (logbook)
   "Return the :clocks slot from LOGBOOK."
-  (alist-get :clocks logbook))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (plist-get ,logbook :clocks)))
 
-(defun org-ml-logbook-get-post-blank (logbook)
+(define-inline org-ml-logbook-get-post-blank (logbook)
   "Return the :clocks slot from LOGBOOK."
-  (alist-get :post-blank logbook))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (plist-get ,logbook :post-blank)))
 
-(defun org-ml-logbook-set-items (items logbook)
+(define-inline org-ml-logbook-set-items (items logbook)
   "Set the :items slot in LOGBOOK to ITEMS."
-  (-let (((&alist :clocks :unknown :post-blank) logbook))
-    (org-ml--logbook-init items clocks unknown post-blank)))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (-let (((&plist :clocks :unknown) ,logbook))
+     (org-ml--logbook-init ,items clocks unknown))))
 
-(defun org-ml-logbook-set-clocks (clocks logbook)
+(define-inline org-ml-logbook-set-clocks (clocks logbook)
   "Set the :clocks slot in LOGBOOK to CLOCKS."
-  (-let (((&alist :items :unknown :post-blank) logbook))
-    (org-ml--logbook-init items clocks unknown post-blank)))
-
-(defun org-ml-logbook-set-post-blank (post-blank logbook)
-  "Set the :post-blank slot in LOGBOOK to POST-BLANK."
-  (-let (((&alist :items :clocks :unknown) logbook))
-    (org-ml--logbook-init items clocks unknown post-blank)))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (-let (((&plist :items :unknown) ,logbook))
+     (org-ml--logbook-init items ,clocks unknown))))
 
 (org-ml--defun-anaphoric* org-ml-logbook-map-items (fun logbook)
   "Apply function to :item slot in LOGBOOK.
 FUN is a unary function that takes a list of items and returns a
 new list of items."
-  (--> (alist-get :items logbook)
+  (--> (org-ml-logbook-get-items logbook)
        (org-ml-logbook-set-items (funcall fun it) logbook)))
 
 (org-ml--defun-anaphoric* org-ml-logbook-map-clocks (fun logbook)
   "Apply function to :clocks slot in LOGBOOK.
 FUN is a unary function that takes a list of clocks and returns a
 new list of clocks."
-  (--> (alist-get :clocks logbook)
+  (--> (org-ml-logbook-get-clocks logbook)
        (org-ml-logbook-set-clocks (funcall fun it) logbook)))
 
-;; supercontents data structure
+;; supercontents struct
 
-;; alist to store the separated logbook and contents from a headline section
-
-;; NOTE: this is a structure that the user may interact with, so some of these
+;; This is a structure that the user may interact with, so some of these
 ;; functions are public
 
-(defun org-ml--supercontents-init-from-lb (logbook contents)
-  "Create a supercontents alist.
-LOGBOOK is a logbook as given by `org-ml--logbook-init' and
+(define-inline org-ml--supercontents-init-from-lb
+  (planning node-props logbook blank contents)
+  "Create a supercontents plist.
+
+PLANNING is a planning node or nil.
+
+NODE-PROPS is a list of like (KEY VAL) for each node property.
+
+LOGBOOK is a logbook as given by `org-ml--logbook-init'.
+
+BLANK is the blank space above the contents.
+
 CONTENTS is a list of nodes corresponding to the headline
 contents (the stuff after the logbook)."
-  `((:logbook ,@logbook) (:contents ,@contents)))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (list :planning ,planning
+         :node-props ,node-props
+         :logbook ,logbook
+         :blank ,blank
+         :contents ,contents)))
 
-(defun org-ml--supercontents-init (items clocks unknown post-blank contents)
+(define-inline org-ml--supercontents-init
+  (planning node-props items clocks unknown blank contents)
   "Create a supercontents alist.
 ITEMS, CLOCKS, UNKNOWN, and POST-BLANK are lists corresponding to
 the arguments in `org-ml--logbook-init' and CONTENTS has the same
 meaning as `org-ml--supercontents-init-from-lb'."
-  (let ((lb (org-ml--logbook-init items clocks unknown post-blank)))
-    (org-ml--supercontents-init-from-lb lb contents)))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (let ((lb (org-ml--logbook-init ,items ,clocks ,unknown)))
+     (org-ml--supercontents-init-from-lb ,planning ,node-props lb ,blank ,contents))))
 
-(defun org-ml-supercontents-get-contents (supercontents)
+(define-inline org-ml-supercontents-get-planning (supercontents)
+  "Return the :planning slot of SUPERCONTENTS."
+  (declare (pure t) (side-effect-free t))
+  (inline-quote (plist-get ,supercontents :planning)))
+
+(define-inline org-ml-supercontents-set-planning (planning supercontents)
+  "Set the :planning slot of SUPERCONTENTS to CONTENTS."
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (-let (((&plist :node-props n :logbook l :blank b :contents c) ,supercontents))
+     (org-ml--supercontents-init-from-lb ,planning n l b c))))
+
+(define-inline org-ml-supercontents-get-node-properties (supercontents)
+  "Return the :node-props slot of SUPERCONTENTS."
+  (declare (pure t) (side-effect-free t))
+  (inline-quote (plist-get ,supercontents :node-props)))
+
+(define-inline org-ml-supercontents-set-node-properties (node-props supercontents)
+  "Set the :node-props slot of SUPERCONTENTS to CONTENTS."
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (-let (((&plist :planning p :logbook l :blank b :contents c) ,supercontents))
+     (org-ml--supercontents-init-from-lb p ,node-props l b c))))
+
+(define-inline org-ml-supercontents-get-contents (supercontents)
   "Return the :contents slot of SUPERCONTENTS."
-  (alist-get :contents supercontents))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote (plist-get ,supercontents :contents)))
 
-(defun org-ml-supercontents-set-contents (contents supercontents)
+(define-inline org-ml-supercontents-set-contents (contents supercontents)
   "Set the :contents slot of SUPERCONTENTS to CONTENTS."
-  (-let (((&alist :logbook) supercontents))
-    (org-ml--supercontents-init-from-lb logbook contents)))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (-let (((&plist :planning p :node-props n :logbook l :blank b) ,supercontents))
+     (org-ml--supercontents-init-from-lb p n l b ,contents))))
 
 (org-ml--defun-anaphoric* org-ml-supercontents-map-contents (fun supercontents)
   "Apply function to :contents slot in SUPERCONTENTS.
@@ -3904,14 +4744,18 @@ new list of nodes."
   (--> (org-ml-supercontents-get-contents supercontents)
        (org-ml-supercontents-set-contents (funcall fun it) supercontents)))
 
-(defun org-ml-supercontents-get-logbook (supercontents)
+(define-inline org-ml-supercontents-get-logbook (supercontents)
   "Return the :logbook slot of SUPERCONTENTS."
-  (alist-get :logbook supercontents))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (plist-get ,supercontents :logbook)))
 
-(defun org-ml-supercontents-set-logbook (logbook supercontents)
+(define-inline org-ml-supercontents-set-logbook (logbook supercontents)
   "Set the :logbook slot of SUPERCONTENTS to LOGBOOK."
-  (-let (((&alist :contents) supercontents))
-    (org-ml--supercontents-init-from-lb logbook contents)))
+  (declare (pure t) (side-effect-free t))
+  (inline-quote
+   (-let (((&plist :planning p :node-props n :blank b :contents c) ,supercontents))
+     (org-ml--supercontents-init-from-lb p n ,logbook b c))))
 
 (org-ml--defun-anaphoric* org-ml-supercontents-map-logbook (fun supercontents)
   "Apply function to :logbook slot in SUPERCONTENTS.
@@ -3928,7 +4772,7 @@ logbook."
 ;; `org-clock-into-drawer', and `org-log-note-clock-out' respectively.
 
 ;; The options :log/clock-into-drawer control the "drawer configuration". Eight
-;; possible configurations are possible:
+;; configurations are possible:
 ;; 
 ;; | log    | clock   | result                                                                  |
 ;; |----------+----------+----------------------------------------------------------------------|
@@ -3949,22 +4793,22 @@ logbook."
   (cl-flet
       ((is-long-inactive-timestamp
         (node)
-        (when (and (org-ml-is-type 'timestamp node)
+        (when (and (org-ml--is-type 'timestamp node)
                    (org-ml--property-is-eq :type 'inactive node)
-                   (-some->> (org-ml--timestamp-get-start-time node)
-                     (org-ml-time-is-long)))
+                   (-some->> (org-ml--timestamp-get-start-timelist node)
+                     (org-ml-timelist-has-time)))
           (org-ml--timestamp-get-start-unixtime node)))
        (is-line-break
         (node)
-        (or (org-ml-is-type 'line-break node)
-            (and (org-ml-is-type 'plain-text node)
+        (or (org-ml--is-type 'line-break node)
+            (and (org-ml--is-type 'plain-text node)
                  (equal "\n" node))))
        (get-paragraph-children
         (item)
-        (-when-let (first-child (car (org-ml-get-children item)))
-          (when (org-ml-is-type 'paragraph first-child)
-            (org-ml-get-children first-child)))))
-    (when (org-ml-is-type 'item item)
+        (-when-let (first-child (car (org-element-contents item)))
+          (when (org-ml--is-type 'paragraph first-child)
+            (org-element-contents first-child)))))
+    (when (org-ml--is-type 'item item)
       (let ((pchildren (get-paragraph-children item)))
         (-if-let (i (-find-index #'is-line-break pchildren))
             (is-long-inactive-timestamp (nth (1- i) pchildren))
@@ -4000,24 +4844,26 @@ logbook."
   (-let (((&alist :drawers) scc))
     (plist-get drawers key)))
 
-(defun org-ml--scc-get-clock-notes (scc)
+(define-inline org-ml--scc-get-clock-notes (scc)
   "Return the :clock-notes slot from SCC."
-  (alist-get :clock-notes scc))
+  (inline-quote
+   (alist-get :clock-notes ,scc)))
 
-(defun org-ml--scc-get-log-item-fun (scc)
+(define-inline org-ml--scc-get-log-item-fun (scc)
   "Return the :is-log-item-fun slot from SCC."
-  (alist-get :is-log-item-fun scc))
+  (inline-quote
+   (alist-get :is-log-item-fun ,scc)))
 
-;; logbook separation (nodes -> supercontents)
+;; logbook separation (nodes -> logbook + contents)
 
 (defun org-ml--node-has-trailing-space (node)
   "Return t if NODE has at least one newline after it."
-  (and (< 0 (org-ml-get-property :post-blank node)) t))
+  (and (< 0 (org-ml--get-post-blank-textsafe node)) t))
 
 (defun org-ml--node-is-drawer-with-name (drawer-name node)
   "Return t if NODE is a drawer with DRAWER-NAME."
-  (and (org-ml-is-type 'drawer node)
-       (equal drawer-name (org-ml-get-property :drawer-name node))))
+  (and (org-ml--is-type 'drawer node)
+       (equal drawer-name (org-element-property-raw :drawer-name node))))
 
 (defun org-ml--flatten-plain-lists (nodes)
   "Return NODES with unwrapped plain-list nodes.
@@ -4026,10 +4872,10 @@ items."
   (cl-flet
       ((flatten
         (plain-list)
-        (let ((pb (org-ml-get-property :post-blank plain-list)))
-          (->> (org-ml-get-children plain-list)
-               (org-ml--map-last* (org-ml-set-property :post-blank pb it))))))
-    (--splice (org-ml-is-type 'plain-list it) (flatten it) nodes)))
+        (let ((pb (org-element-post-blank plain-list)))
+          (->> (org-element-contents plain-list)
+               (org-ml--set-last-post-blank pb)))))
+    (--splice (org-ml--is-type 'plain-list it) (flatten it) nodes)))
 
 (defun org-ml--wrap-plain-lists (nodes)
   "Return NODES with all subsequent items wrapped as plain-lists.
@@ -4038,13 +4884,13 @@ This is the dual of `org-ml--flatten-plain-lists'."
       ((wrap
         (acc node)
         (cond
-         ((and (org-ml-is-type 'item node)
-               (org-ml-is-type 'plain-list (car acc)))
+         ((and (org-ml--is-type 'item node)
+               (org-ml--is-type 'plain-list (car acc)))
           (cons (org-ml-map-children* (cons node it) (car acc))
                 (cdr acc)))
-         ((org-ml-is-type 'item node)
-          (let* ((pb (org-ml-get-property :post-blank node))
-                 (pl (->> (org-ml-set-property :post-blank 0 node)
+         ((org-ml--is-type 'item node)
+          (let* ((pb (org-element-post-blank node))
+                 (pl (->> (org-ml--set-post-blank 0 node)
                           (org-ml-build-plain-list :post-blank pb))))
             (cons pl acc)))
          (t
@@ -4055,8 +4901,8 @@ This is the dual of `org-ml--flatten-plain-lists'."
   "Separate NODES into logbook components.
 SCC is the supercontents-config as given by `org-ml--scc-encode'.
 MODE is the mode by which to separate the nodes and is one of
-'mixed' (items and clocks are mixed together), 'clocks', or
-'items'. The returned list will be like (ITEMS CLOCKS UNKNOWN)."
+`mixed' (items and clocks are mixed together), `clocks', or
+`items'. The returned list will be like (ITEMS CLOCKS UNKNOWN)."
   (let ((n (org-ml--scc-get-clock-notes scc))
         (f (org-ml--scc-get-log-item-fun scc)))
     (cl-flet
@@ -4064,18 +4910,18 @@ MODE is the mode by which to separate the nodes and is one of
           (acc node)
           (if (not node) acc
             (cond
-             ((and (org-ml-is-type 'clock node)
+             ((and (org-ml--is-type 'clock node)
                    (memq mode '(:mixed :clocks)))
               (cons (cons 'clocks node) acc))
-             ((and (org-ml-is-type 'item node)
+             ((and (org-ml--is-type 'item node)
                    (memq mode '(:items :mixed))
                    (funcall f node))
               (cons (cons 'items node) acc))
-             ((and (org-ml-is-type 'item node)
+             ((and (org-ml--is-type 'item node)
                    (memq mode '(:clocks :mixed))
                    n
                    (not (funcall f node))
-                   (org-ml-is-type 'clock (cdr (car acc))))
+                   (org-ml--is-type 'clock (cdr (car acc))))
               (cons (cons 'clocks node) acc))
              (t
               (cons (cons 'unknown node) acc))))))
@@ -4134,7 +4980,7 @@ SCC is given by `org-ml--scc-encode' and STATE is given by
 `org-ml--state-init'. STATE will be updated by called
 `org-ml--state-tick'."
   (let ((f (org-ml--scc-get-log-item-fun scc)))
-    (when (and (org-ml-is-type 'item node) (funcall f node))
+    (when (and (org-ml--is-type 'item node) (funcall f node))
       (list (org-ml--state-tick :item state) (list (cons 'items node))))))
 
 (defun org-ml--clock-note-get-next-state (scc state node)
@@ -4143,7 +4989,7 @@ SCC is given by `org-ml--scc-encode' and STATE is given by
 `org-ml--state-init'. STATE will be updated by called
 `org-ml--state-tick'."
   (-let ((f (org-ml--scc-get-log-item-fun scc)))
-    (when (and (org-ml-is-type 'item node) (not (funcall f node)))
+    (when (and (org-ml--is-type 'item node) (not (funcall f node)))
       (list (org-ml--state-tick :clock-note state)
             (list (cons 'clocks node))))))
 
@@ -4158,7 +5004,7 @@ will exist for one pass.
 SCC is given by `org-ml--scc-encode' and STATE is given by
 `org-ml--state-init'. STATE will be updated by called
 `org-ml--state-tick'."
-  (when (org-ml-is-type 'clock node)
+  (when (org-ml--is-type 'clock node)
     (let* ((slot (org-ml--state-slot :clock-notes 1 t
                    #'org-ml--clock-note-get-next-state))
            (next-state (--> (org-ml--state-tick :clock state)
@@ -4177,7 +5023,7 @@ SCC is given by `org-ml--scc-encode' and STATE is given by
 `org-ml--state-init'. STATE will be updated by called
 `org-ml--state-tick'."
   (when (org-ml--node-is-drawer-with-name name node)
-    (let ((drawer-nodes (->> (org-ml-get-children node)
+    (let ((drawer-nodes (->> (org-element-contents node)
                              (org-ml--separate-logbook scc mode)))
                              ;; (reverse)))
           (key (cl-case mode
@@ -4233,7 +5079,7 @@ is given by `org-ml--state-slot'. The purpose of this data
 structure is to represent valid logbook nodes for a particular
 configuration as well as their order and number. The reason it is
 called a state is because it will be used in an iterator as the
-logbook is separated from the contents, and a 'stateful' iterator
+logbook is separated from the contents, and a `stateful' iterator
 is needed because most logbook configurations have sequential
 dependencies for valid nodes."
   (-let ((funs
@@ -4301,8 +5147,8 @@ dependencies for valid nodes."
     (cons 'state funs)))
 
 (defmacro org-ml--reduce-state (initial-state form list)
-  "Sort of like `--reduce` but with state.
-It is only 'sort of' like a standard reduce function for two
+  "Sort of like `--reduce' but with state.
+It is only \"sort of\" like a standard reduce function for two
 reasons a) it keeps track of state and b) returns the remainder
 of LIST when the state is nil (which signifies termination of the
 loop). FORM is a form where `it' is bound to the current node,
@@ -4312,56 +5158,61 @@ to the current state. FORM must return a list like
 and accumulator on the next iteration. INITIAL-STATE is bound to
 `it-state' on the first iteration."
   (declare (indent 1))
-  `(let ((it-state ,initial-state)
-         (rest ,list)
-         acc it)
-     (while (and it-state rest)
-       (setq it (car rest))
-       (-setq (it-state acc) ,form)
-       (when it-state
-         (setq rest (cdr rest))))
-     (list acc rest)))
+  (let ((r (make-symbol "--rest")))
+    `(let ((it-state ,initial-state)
+           (,r ,list)
+           acc it)
+       (while (and it-state ,r)
+         (setq it (car ,r))
+         (-setq (it-state acc) ,form)
+         (when it-state
+           (setq ,r (cdr ,r))))
+       (list acc ,r))))
 
-(defun org-ml--supercontents-from-nodes (config nodes)
-  "Return a supercontents object based on NODES.
+(defun org-ml--split-logbook (config nodes)
+  "Return NODES split to logbook components.
 CONFIG is a plist parsable by `org-ml--scc-encode'."
-  (cl-flet
-      ((map-cdr
-        (list)
-        (-map #'cdr list))
-       (try-test-funs
-        (scc state node)
-        (-let ((test-funs (--map (plist-get (cdr it) :next) (cdr state))))
-          (--reduce-from (if acc acc (funcall it scc state node)) nil test-funs))))
-    (-let* ((scc (org-ml--scc-encode config))
-            (init-state (org-ml--init-state scc))
-            (flat (org-ml--flatten-plain-lists nodes))
-            (i (-some->> flat
-                 (-find-index #'org-ml--node-has-trailing-space)
-                 (1+)))
-            ((nodes-before-space nodes-after-space)
-             (if i (-split-at i flat) (list flat nil)))
-            (first-space-post-blank (-some->>
-                                        (-last-item nodes-before-space)
-                                      (org-ml-get-property :post-blank)))
-            ((logbook-nodes contents-nodes-before-space)
-             (org-ml--reduce-state init-state
-               (-let (((next-state logbook-nodes) (try-test-funs scc it-state it)))
-                 (if logbook-nodes
-                     (list next-state (append logbook-nodes acc))
-                   (list nil acc)))
-               nodes-before-space))
-            ((&alist 'items 'clocks 'unknown) (->> (reverse logbook-nodes)
-                                                   (-group-by #'car)))
-            (post-blank (when logbook-nodes
-                          (if contents-nodes-before-space 0 first-space-post-blank)))
-            (contents (->> nodes-after-space
-                           (append contents-nodes-before-space)
-                           (org-ml--wrap-plain-lists))))
-      (org-ml--supercontents-init (map-cdr items)
-                                  (map-cdr clocks)
-                                  (map-cdr unknown)
-                                  post-blank contents))))
+  (if (not nodes) (list (org-ml--logbook-init nil nil nil) 0 nil)
+    (cl-flet
+        ((map-cdr
+           (list)
+           (-map #'cdr list))
+         (try-test-funs
+           (scc state node)
+           (-let ((test-funs (--map (plist-get (cdr it) :next) (cdr state))))
+             (--reduce-from (if acc acc (funcall it scc state node)) nil test-funs))))
+      (-let* ((scc (org-ml--scc-encode config))
+              (init-state (org-ml--init-state scc))
+              (flat (org-ml--flatten-plain-lists nodes))
+              (i (-some->> flat
+                   (-find-index #'org-ml--node-has-trailing-space)
+                   (1+)))
+              ((nodes-before-space nodes-after-space)
+               (if i (-split-at i flat) (list flat nil)))
+              (first-space-post-blank (->> (-last-item nodes-before-space)
+                                           (org-element-post-blank)))
+              ((logbook-nodes contents-nodes-before-space)
+               (org-ml--reduce-state init-state
+                 (-let (((next-state logbook-nodes) (try-test-funs scc it-state it)))
+                   (if logbook-nodes
+                       (list next-state (append logbook-nodes acc))
+                     (list nil acc)))
+                 nodes-before-space))
+              ((&alist 'items 'clocks 'unknown) (->> (reverse logbook-nodes)
+                                                     (-group-by #'car)))
+              (post-blank
+               (if logbook-nodes
+                   (if contents-nodes-before-space 0 first-space-post-blank)
+                 0))
+              (contents (->> nodes-after-space
+                             (append contents-nodes-before-space)
+                             (org-ml--wrap-plain-lists))))
+        (list (org-ml--logbook-init
+               (map-cdr items)
+               (map-cdr clocks)
+               (map-cdr unknown))
+              post-blank
+              contents)))))
 
 ;; logbook merging (supercontents -> nodes)
 
@@ -4378,7 +5229,7 @@ or :clocks depending on what is intended to be sorted."
           (node)
           (cl-case (org-ml-get-type node)
             (clock
-             (-some->> (org-ml-get-property :value node)
+             (-some->> (org-element-property-raw :value node)
                (org-ml--timestamp-get-start-unixtime)))
             (item
              (funcall f node))))
@@ -4390,15 +5241,15 @@ or :clocks depending on what is intended to be sorted."
           (cond
            ((and n
                  (memq mode '(:clocks :mixed))
-                 (org-ml-is-type 'item node)
-                 (org-ml-is-type 'clock (car (car acc)))
+                 (org-ml--is-type 'item node)
+                 (org-ml--is-type 'clock (car (car acc)))
                  (not (funcall f node)))
             (cons (list (car (car acc)) node) (cdr acc)))
            ((or (and (memq mode '(:items :mixed))
-                     (org-ml-is-type 'item node)
+                     (org-ml--is-type 'item node)
                      (funcall f node))
                 (and (memq mode '(:clocks :mixed))
-                     (org-ml-is-type 'clock node)))
+                     (org-ml--is-type 'clock node)))
             (cons (list node) acc))
            (t
             (let ((msg (cond
@@ -4480,112 +5331,219 @@ SCC is a supercontents-config as returned by
 Anything in the UNKNOWN slot will be ignored. The exact
 nodes (drawers, loose items, etc) will be determined by the SCC.
 CONFIG is a config plist to be given to `org-ml--scc-encode'."
-  (cl-flet*
-      ((build-drawer
-        (name children)
-        (apply #'org-ml-build-drawer name children))
-       (build-drawer-maybe
-        (name children)
-        (-some->> children (build-drawer name)))
-       (cons-drawer-maybe
-        (name drawer-nodes loose-nodes)
-        (let ((drawer (-some->> drawer-nodes (build-drawer name))))
-          (if drawer (cons drawer loose-nodes) loose-nodes)))
-       (below-limit
-        (limit logbook)
-        (->> (org-ml-logbook-get-clocks logbook)
-             (--count (org-ml-is-type 'clock it))
-             (>= limit)))
-       (merge-nodes
-        (enconf logbook)
-        (-let (((&alist :items :clocks) logbook))
-          (org-ml--merge-logbook enconf items clocks)))
-       (build-mixed-drawer-maybe
-        (enconf m logbook)
-        (-some->> (merge-nodes enconf logbook)
-          (build-drawer m)
-          (list)))
-       (to-item-clock-nodes
-        (enconf logbook)
-        (list (org-ml--logbook-items-to-nodes enconf logbook)
-              (org-ml--logbook-clocks-to-nodes enconf logbook)))
-       (to-nodes
-        (config logbook)
+  ;; TODO clean this up
+  (-let (((&plist :items :clocks) logbook))
+    (when (or items clocks)
+      (cl-flet*
+          ((build-drawer
+             (name children)
+             (apply #'org-ml-build-drawer name children))
+           (build-drawer-maybe
+             (name children)
+             (-some->> children (build-drawer name)))
+           (cons-drawer-maybe
+             (name drawer-nodes loose-nodes)
+             (let ((drawer (-some->> drawer-nodes (build-drawer name))))
+               (if drawer (cons drawer loose-nodes) loose-nodes)))
+           (below-limit
+             (limit lb)
+             (->> (org-ml-logbook-get-clocks lb)
+                  (--count (org-ml--is-type 'clock it))
+                  (>= limit)))
+           (merge-nodes
+             (enconf lb)
+             (-let (((&plist :items :clocks) lb))
+               (org-ml--merge-logbook enconf items clocks)))
+           (build-mixed-drawer-maybe
+             (enconf m lb)
+             (-some->> (merge-nodes enconf lb)
+               (build-drawer m)
+               (list)))
+           (to-item-clock-nodes
+             (enconf lb)
+             (list (org-ml--logbook-items-to-nodes enconf lb)
+                   (org-ml--logbook-clocks-to-nodes enconf lb))))
         (-let (((enconf &as &alist :drawers d) (org-ml--scc-encode config)))
           (pcase d
 
-           ;; items not in drawer, clocks not in drawer
-           (`(:items nil :clocks nil :mixed nil :clock-limit nil)
-            (merge-nodes enconf logbook))
+            ;; items not in drawer, clocks not in drawer
+            (`(:items nil :clocks nil :mixed nil :clock-limit nil)
+             (merge-nodes enconf logbook))
 
-           ;; items and clocks in the same drawer
-           (`(:items nil :clocks nil :mixed ,m :clock-limit nil)
-            (build-mixed-drawer-maybe enconf m logbook))
+            ;; items and clocks in the same drawer
+            (`(:items nil :clocks nil :mixed ,m :clock-limit nil)
+             (build-mixed-drawer-maybe enconf m logbook))
 
-           ;; items in drawer, clocks not in drawer
-           (`(:items ,i :clocks nil :mixed nil :clock-limit nil)
-            (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
-              (cons-drawer-maybe i items clocks)))
+            ;; items in drawer, clocks not in drawer
+            (`(:items ,i :clocks nil :mixed nil :clock-limit nil)
+             (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
+               (cons-drawer-maybe i items clocks)))
 
-           ;; items not in drawer, clocks in drawer
-           (`(:items nil :clocks ,c :mixed nil :clock-limit nil)
-            (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
-              (cons-drawer-maybe c clocks items)))
+            ;; items not in drawer, clocks in drawer
+            (`(:items nil :clocks ,c :mixed nil :clock-limit nil)
+             (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
+               (cons-drawer-maybe c clocks items)))
 
-           ;; items in drawer, clocks might be in the same drawer
-           (`(:items nil :clocks nil :mixed ,m :clock-limit ,l)
-            (if (below-limit l logbook)
-                (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
-                  (cons-drawer-maybe m items clocks))
-              (build-mixed-drawer-maybe enconf m logbook)))
-           
-           ;; items not in drawer, clocks might be in a drawer
-           (`(:items nil :clocks ,c :mixed nil :clock-limit ,l)
-            (if (below-limit l logbook) (merge-nodes enconf logbook)
-              (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
-                (cons-drawer-maybe c clocks items))))
+            ;; items in drawer, clocks might be in the same drawer
+            (`(:items nil :clocks nil :mixed ,m :clock-limit ,l)
+             (if (below-limit l logbook)
+                 (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
+                   (cons-drawer-maybe m items clocks))
+               (build-mixed-drawer-maybe enconf m logbook)))
+            
+            ;; items not in drawer, clocks might be in a drawer
+            (`(:items nil :clocks ,c :mixed nil :clock-limit ,l)
+             (if (below-limit l logbook) (merge-nodes enconf logbook)
+               (-let* (((items clocks) (to-item-clock-nodes enconf logbook)))
+                 (cons-drawer-maybe c clocks items))))
 
-           ;; items in drawer, clocks in a different drawer
-           (`(:items ,i :clocks ,c :mixed nil :clock-limit nil)
-            (-let* (((items clocks) (to-item-clock-nodes enconf logbook))
-                    (items-drawer (build-drawer-maybe i items))
-                    (clocks-drawer (build-drawer-maybe c clocks)))
-              (-non-nil (list items-drawer clocks-drawer))))
+            ;; items in drawer, clocks in a different drawer
+            (`(:items ,i :clocks ,c :mixed nil :clock-limit nil)
+             (-let* (((items clocks) (to-item-clock-nodes enconf logbook))
+                     (items-drawer (build-drawer-maybe i items))
+                     (clocks-drawer (build-drawer-maybe c clocks)))
+               (-non-nil (list items-drawer clocks-drawer))))
 
-           ;; items in drawer, clocks either loose or in a different drawer
-           (`(:items ,i :clocks ,c :mixed nil :clock-limit ,l)
-            (-let* (((items clocks) (to-item-clock-nodes enconf logbook))
-                    (items-drawer (build-drawer-maybe i items)))
-              (if (below-limit l logbook)
-                  (if items-drawer (cons items-drawer clocks) clocks)
-                (->> (build-drawer-maybe c clocks)
-                     (list items-drawer)
-                     (-non-nil)))))
+            ;; items in drawer, clocks either loose or in a different drawer
+            (`(:items ,i :clocks ,c :mixed nil :clock-limit ,l)
+             (-let* (((items clocks) (to-item-clock-nodes enconf logbook))
+                     (items-drawer (build-drawer-maybe i items)))
+               (if (below-limit l logbook)
+                   (if items-drawer (cons items-drawer clocks) clocks)
+                 (->> (build-drawer-maybe c clocks)
+                      (list items-drawer)
+                      (-non-nil)))))
 
-           (e (error "This shouldn't happen: %s" e))))))
-    (let ((pb (org-ml-logbook-get-post-blank logbook)))
-      (->> (to-nodes config logbook)
-           (org-ml--map-last* (org-ml-set-property :post-blank pb it))))))
+            (e (error "This shouldn't happen: %s" e))))))))
 
-(defun org-ml--supercontents-to-nodes (config supercontents)
-  "Return SUPERCONTENTS as a list of nodes.
-The exact configuration of the returned nodes will depend on
-CONFIG. POST-BLANK is the blank space to put between the logbook
-and the contents."
-  (let* ((logbook (->> (org-ml-supercontents-get-logbook supercontents)
-                       (org-ml--logbook-to-nodes config)))
-         (contents (org-ml-supercontents-get-contents supercontents)))
-    (org-ml--append-join-plain-lists logbook contents)))
+;; section -> supercontents
+
+;; Introduce another data abstraction here called the "supersection". This is
+;; much simpler than the supercontents, and consists only of the :pre-blank and
+;; section children of the encapsulating headline. The main purpose of this is
+;; to provide a means to update "the stuff under the headline" easily without
+;; triggering the headline itself to undefer most of its properties. The
+;; :pre-blank is part of the headline node even though it visually affects the
+;; stuff underneath it. This especially matters for functions like
+;; `org-ml-update-supersections' and `org-ml-update-supercontents' which can be
+;; massively sped up if they don't need to update the headline in the buffer.
+
+(define-inline org-ml--supersection-init (pre-blank section)
+  "Create a supersection plist from PRE-BLANK and SECTION.
+SECTION is a list of nodes under the section node in a headline."
+  (inline-quote (list :pre-blank ,pre-blank :section ,section)))
+
+(defun org-ml--planning-split (planning)
+  "Decompose PLANNING into lists."
+  (list :closed (-some->> (org-element-property-raw :closed planning)
+                  (org-ml--timestamp-get-start-timelist))
+        :scheduled (-some->> (org-element-property-raw :scheduled planning)
+                     (org-ml--timestamp-to-planning-list))
+        :deadline (-some->> (org-element-property-raw :deadline planning)
+                    (org-ml--timestamp-to-planning-list))))
+
+(defun org-ml--property-drawer-split (property-drawer)
+  "Decompose PROPERTY-DRAWER into a list of node-property nodes."
+  (->> (org-element-contents property-drawer)
+       (--map (list (org-element-property-raw :key it)
+                    (org-element-property-raw :value it)))))
+
+(defun org-ml--from-first-second-rest
+    (config planning prop-drawer blank-node children)
+  "Create a new supercontents node in various ways.
+
+CONFIG is a list corresponding to `org-ml--scc-encode'. PLANNING
+is a planning node. PROP-DRAWER is a property-drawer node.
+BLANK-NODE is a node that has a post-blank behind it. CHILDREN is
+everything after the planning and/or property-drawer."
+  (-let* ((pb (org-element-post-blank blank-node))
+          ((logbook blank contents) (if (< 0 pb)
+                                        `(nil ,pb ,children)
+                                      (org-ml--split-logbook config children))))
+    (org-ml--supercontents-init-from-lb
+     (and planning (org-ml--planning-split planning))
+     (and prop-drawer (org-ml--property-drawer-split prop-drawer))
+     logbook
+     blank
+     contents)))
+
+(defun org-ml--supersection-to-supercontents (config supersection)
+  "Convert SUPERSECTION to supercontents.
+CONFIG is a list corresponding to `org-ml--scc-encode'."
+  (-let (((&plist :pre-blank pb :section children) supersection))
+    ;; If pre-blank is >0, by definition there is no planning,
+    ;; property-drawer, or logbook
+    (if (< 0 pb) (org-ml--supercontents-init nil nil nil nil nil pb children)
+      (-let* (((first . rest1) children)
+              ((second . rest2) rest1)
+              (t1 (org-ml-get-type first))
+              (t2 (org-ml-get-type second)))
+        (cond
+         ((and (eq t1 'planning) (eq t2 'property-drawer))
+          (org-ml--from-first-second-rest config first second second rest2))
+         ((eq t1 'planning)
+          (org-ml--from-first-second-rest config first nil first rest1))
+         ((eq t1 'property-drawer)
+          (org-ml--from-first-second-rest config nil first first rest1))
+         (t
+          (->> (org-ml--split-logbook config children)
+               (apply #'org-ml--supercontents-init-from-lb nil nil))))))))
+
+(defun org-ml--supercontents-to-supersection (config supercontents)
+  "Convert SUPERCONTENTS to supersection.
+CONFIG is a list corresponding to `org-ml--scc-encode'."
+  (-let* (((&plist :planning p :node-props n :logbook lb :blank b :contents c)
+           supercontents)
+          (anyp (or (plist-get p :closed)
+                    (plist-get p :scheduled)
+                    (plist-get p :deadline)))
+          (lb-nodes (org-ml--logbook-to-nodes config lb)))
+    (cond
+     (lb-nodes
+      (org-ml--supersection-init
+       0 `(,@(when anyp (list (apply #'org-ml-build-planning! p)))
+           ,@(when n (list (apply #'org-ml-build-property-drawer! n)))
+           ,@(org-ml--set-last-post-blank b lb-nodes)
+           ,@c)))
+     (n
+      (org-ml--supersection-init
+       0 `(,@(when anyp (list (apply #'org-ml-build-planning! p)))
+           ,(apply #'org-ml-build-property-drawer! :post-blank b n)
+           ,@c)))
+     (anyp
+      (org-ml--supersection-init
+       0 (cons (apply #'org-ml-build-planning! :post-blank b p) c)))
+     (t
+      (org-ml--supersection-init b c)))))
 
 ;; public supercontents functions
 
 (defun org-ml-headline-get-supercontents (config headline)
   "Return the supercontents of HEADLINE node.
 
-Supercontents will be like ((:logbook LB) (:contents CONTENTS))
-where LB is another alist representing the logbook, and CONTENTS
-is everything under the headline after the logbook and before the
-first subheadline (if present).
+Supercontents will be a plist like:
+
+\(
+  :planning PLANNING
+  :node-props PROPS
+  :logbook LB
+  :blank BLANK
+  :contents CONTENTS
+)
+
+PLANNING is a plist like the analogous argument of
+`org-ml-build-planning!' or nil if non-existent.
+
+PROPS is a list of node-property nodes.
+
+LB is the logbook, which is another plist (see below).
+
+BLANK is the value of any whitespace after the planning,
+property-drawer, or logbook (assuming any exist) or the
+:pre-blank value of the encapsulating headline (if they don't
+exist).
+
+CONTENTS is a list of nodes after all the other stuff above.
 
 The logbook will be have keys :items, :clocks, and :unknown,
 where the first two will include the item and clock nodes of the
@@ -4611,48 +5569,15 @@ this controls how the logbook will be parsed; this means it also
 determines which nodes will be returned in the :items/:clocks
 slots and which will be deemed :unknown (see above) so be sure
 this plist is set according to your desired target configuration."
-  (cl-flet
-      ((drop-if-type
-        (type children)
-        (if (org-ml-is-type type (car children)) (cdr children) children)))
-    (->> (org-ml-headline-get-section headline)
-         (drop-if-type 'planning)
-         (drop-if-type 'property-drawer)
-         (org-ml--supercontents-from-nodes config))))
-
+  (->> (org-ml-headline-get-supersection headline)
+       (org-ml--supersection-to-supercontents config)))
+     
 (defun org-ml-headline-set-supercontents (config supercontents headline)
   "Set logbook and contents of HEADLINE according to SUPERCONTENTS.
 See `org-ml-headline-get-supercontents' for the meaning of CONFIG
 and the structure of the SUPERCONTENTS list."
-  (cl-flet
-      ((set-blank
-        (new-logbook? config headline prop node)
-        (if new-logbook? (org-ml-set-property prop 0 node)
-          (-if-let (pb (-some->> headline
-                         (org-ml-headline-get-supercontents config)
-                         (org-ml-supercontents-get-logbook)
-                         (org-ml-logbook-get-post-blank)))
-              (org-ml-set-property prop pb node)
-            node))))
-    (-let* (((first . (second . _)) (org-ml-headline-get-section headline))
-            (t1 (org-ml-get-type first))
-            (t2 (org-ml-get-type second))
-            (nodes (org-ml--supercontents-to-nodes config supercontents))
-            (new-logbook? (--> (org-ml-supercontents-get-logbook supercontents)
-                               (or (org-ml-logbook-get-items it)
-                                   (org-ml-logbook-get-clocks it)))))
-      (cond
-       ((and (eq t1 'planning) (eq t2 'property-drawer))
-        (--> (set-blank new-logbook? config headline :post-blank second)
-             `(,first ,it ,@nodes)
-             (org-ml-headline-set-section it headline)))
-       ((or (eq t1 'planning) (eq t1 'property-drawer))
-        (--> (set-blank new-logbook? config headline :post-blank first)
-             (cons it nodes)
-             (org-ml-headline-set-section it headline)))
-       (t
-        (->> (set-blank new-logbook? config headline :pre-blank headline)
-             (org-ml-headline-set-section nodes)))))))
+  (-> (org-ml--supercontents-to-supersection config supercontents)
+      (org-ml-headline-set-supersection headline)))
 
 (org-ml--defun-anaphoric* org-ml-headline-map-supercontents (config fun headline)
   "Map a function over the supercontents of HEADLINE.
@@ -4662,6 +5587,109 @@ returns a modified supercontents list. See
 the structure of the supercontents list."
   (--> (org-ml-headline-get-supercontents config headline)
        (org-ml-headline-set-supercontents config (funcall fun it) headline)))
+
+(defun org-ml-headline-get-supersection (headline)
+  "Return supersection list for the section in HEADLINE."
+  (org-ml--check-type 'headline headline)
+  (org-ml--supersection-init
+   (org-element-property-raw :pre-blank headline)
+   (org-ml-headline-get-section headline)))
+
+(defun org-ml-headline-set-supersection (supersection headline)
+  "Return SUPERSECTION for the section in HEADLINE."
+  (org-ml--check-type 'headline headline)
+  (-let* (((&plist :pre-blank p :section m) supersection)
+          (pb (org-element-property-raw :pre-blank headline))
+          (headline* (if (/= p pb)
+                         (->> (org-ml-copy headline)
+                              (org-element-put-property-2 :pre-blank p))
+                       headline)))
+    (org-ml-headline-set-section m headline*)))
+
+(org-ml--defun-anaphoric* org-ml-headline-map-supersection (fun headline)
+  "Apply FUN to HEADLINE supersection."
+  (let ((it (org-ml-headline-get-supersection headline)))
+    (org-ml-headline-set-supersection (funcall fun it) headline)))
+
+;; planning
+
+(defun org-ml-headline-get-planning (headline)
+  "Return the planning node in HEADLINE or nil if none."
+  (org-ml--check-type 'headline headline)
+  ;; TODO it seems silly that we need to "convert" the logbook when I'm not
+  ;; modifying it. Lazy eval?
+  (->> (org-ml-headline-get-supercontents nil headline)
+       (org-ml-supercontents-get-planning)))
+
+(defun org-ml-headline-set-planning (planning headline)
+  "Return HEADLINE node with planning components set to PLANNING node."
+  (org-ml--check-type 'headline headline)
+  (org-ml-headline-map-supercontents* nil
+    (org-ml-supercontents-set-planning planning it)
+    headline))
+
+(org-ml--defun-anaphoric* org-ml-headline-map-planning (fun headline)
+  "Return HEADLINE node with planning node modified by FUN.
+
+FUN is a unary function that takes a planning node and returns a
+modified planning node."
+   (--> (org-ml-headline-get-planning headline)
+        (org-ml-headline-set-planning (funcall fun it) headline)))
+
+;; node-properties (eg the entire property drawer)
+
+(defun org-ml-headline-get-node-properties (headline)
+  "Return a list of node-properties nodes in HEADLINE or nil if none."
+  (org-ml--check-type 'headline headline)
+  ;; TODO it seems silly that we need to "convert" the logbook when I'm not
+  ;; modifying it. Lazy eval?
+  (->> (org-ml-headline-get-supercontents nil headline)
+       (org-ml-supercontents-get-node-properties)))
+
+(defun org-ml-headline-set-node-properties (node-properties headline)
+  "Return HEADLINE node with property drawer containing NODE-PROPERTIES.
+NODE-PROPERTIES is a list of (key . value) pairs (both strings)."
+  (org-ml--check-type 'headline headline)
+  (org-ml-headline-map-supercontents* nil
+    (org-ml-supercontents-set-node-properties node-properties it)
+    headline))
+
+(org-ml--defun-anaphoric* org-ml-headline-map-node-properties (fun headline)
+  "Return HEADLINE node with property-drawer node modified by FUN.
+
+FUN is a unary function that takes a property-drawer node and returns
+a modified property-drawer node."
+   (--> (org-ml-headline-get-node-properties headline)
+        (org-ml-headline-set-node-properties (funcall fun it) headline)))
+
+;; node-property
+
+(defun org-ml-headline-get-node-property (key headline)
+  "Return value of property with KEY in HEADLINE or nil if not found.
+If multiple properties with KEY are present, only return the first."
+  (->> (org-ml-headline-get-node-properties headline)
+       (--first (equal key (car it)))
+       (cadr)))
+
+(defun org-ml-headline-set-node-property (key value headline)
+  "Return HEADLINE with node property matching KEY set to VALUE.
+If a property matching KEY is present, set it to VALUE. If multiple
+properties matching KEY are present, only set the first."
+  (org-ml-headline-map-node-properties*
+    (-if-let (np (-some->> value (list key)))
+        (-if-let (i (--find-index (equal key (car it)) it))
+            (-replace-at i np it)
+          (cons np it))
+      (--remove-first (equal key (car it)) it))
+    headline))
+
+(org-ml--defun-anaphoric* org-ml-headline-map-node-property (key fun headline)
+  "Return HEADLINE node with property value matching KEY modified by FUN.
+
+FUN is a unary function that takes a node-property value and returns
+a modified node-property value."
+   (--> (org-ml-headline-get-node-property key headline)
+        (org-ml-headline-set-node-property key (funcall fun it) headline)))
 
 ;; public logbook/contents getters/setters/mappers
 
@@ -4761,7 +5789,7 @@ See `org-ml-headline-get-supercontents' for the meaning of
 CONFIG. UNIXTIME will set the start time of the clock. The
 logbook will be started if it does not already exist, else the
 new clock will be added in chronological order."
-  (let ((clock (-> (org-ml-unixtime-to-time-long unixtime)
+  (let ((clock (-> (org-ml-unixtime-to-datetime unixtime)
                    (org-ml-build-clock!))))
     (org-ml-headline-map-logbook-clocks* config (cons clock it) headline)))
 
@@ -4776,11 +5804,12 @@ clock-note when it is not allowed by CONFIG will trigger an
 error."
   (org-ml-headline-map-logbook-clocks* config
     (-let (((first . rest) it))
-      (if (not (org-ml-clock-is-running first)) it
-        (let* ((time (org-ml-unixtime-to-time-long unixtime))
-               (closed (org-ml-map-property* :value
-                         (org-ml-timestamp-set-end-time time it)
-                         first))
+      (if (not (and first (org-ml-clock-is-running first))) it
+        (let* ((time (org-ml-unixtime-to-datetime unixtime))
+               (closed (->> first
+                            ;; NOTE making copies here is necessary
+                            (org-ml-map-property* :value
+                              (org-ml-timestamp-set-end-time time it))))
                (note* (-some->> note
                         (org-ml-build-paragraph)
                         (org-ml-build-item))))
@@ -4804,8 +5833,9 @@ for the structure of both config lists."
 
 The return value is a list of headline titles (including that from
 HEADLINE) leading to the root node."
+  (org-ml--check-type 'headline headline)
   (->> (org-ml-get-parents headline)
-       (org-ml--map* (org-ml-get-property :raw-value it))))
+       (--map (org-element-property :raw-value it))))
 
 (defun org-ml-headline-update-item-statistics (headline)
   "Return HEADLINE node with updated statistics cookie via items.
@@ -4815,14 +5845,15 @@ over the number of items with checkboxes (non-checkbox items will
 not be considered)."
   (let* ((items
           (->> (org-ml-headline-get-section headline)
-               (org-ml-get-children)
-               (--filter (org-ml-is-type 'plain-list it))
-               (-mapcat #'org-ml-get-children)
-               (--remove (org-ml--property-is-nil :checkbox it))))
+               (org-element-contents)
+               (--filter (org-ml--is-type 'plain-list it))
+               (-mapcat #'org-element-contents)
+               (--filter (org-element-property-raw :checkbox it))))
          (done (length (--filter (org-ml--property-is-eq :checkbox 'on it)
                                  items)))
          (total (length items)))
-    (org-ml--headline-set-statistics-cookie-fraction done total headline)))
+    (->> (org-ml-copy headline)
+         (org-ml--headline-set-statistics-cookie-fraction done total))))
 
 (defun org-ml-headline-update-todo-statistics (headline)
   "Return HEADLINE node with updated statistics cookie via subheadlines.
@@ -4831,10 +5862,11 @@ The percent/fraction will be computed as the number of done
 subheadlines over the number of todo subheadlines (eg non-todo
 subheadlines will not be counted)."
   (let* ((subtodo (->> (org-ml-headline-get-subheadlines headline)
-                       (--filter (org-ml--get-property-nocheck :todo-keyword it))))
+                       (--filter (org-element-property :todo-keyword it))))
          (done (length (-filter #'org-ml-headline-is-done subtodo)))
          (total (length subtodo)))
-    (org-ml--headline-set-statistics-cookie-fraction done total headline)))
+    (->> (org-ml-copy headline)
+         (org-ml--headline-set-statistics-cookie-fraction done total))))
 
 ;;; plain-list
 
@@ -4843,16 +5875,17 @@ subheadlines will not be counted)."
 (defun org-ml-plain-list-set-type (type plain-list)
   "Return PLAIN-LIST node with type property set to TYPE.
 TYPE is one of the symbols `unordered' or `ordered'."
+  (org-ml--check-type 'plain-list plain-list)
   (cond
    ((eq type 'unordered)
     (org-ml--map-children-nocheck*
-      (org-ml--map* (org-ml-set-property :bullet '- it) it)
+      (--map (org-ml-set-property :bullet '- it) it)
       plain-list))
    ((eq type 'ordered)
     ;; NOTE the org-interpreter seems to use the correct, ordered numbers if any
     ;; number is set here. This behavior may not be reliable.
     (org-ml--map-children-nocheck*
-      (org-ml--map* (org-ml-set-property :bullet 1 it) it)
+      (--map (org-ml-set-property :bullet 1 it) it)
       plain-list))
    (t (org-ml--arg-error "Invalid type: %s" type))))
 
@@ -4861,18 +5894,21 @@ TYPE is one of the symbols `unordered' or `ordered'."
 (defun org-ml-table-get-cell (row-index column-index table)
   "Return table-cell node at ROW-INDEX and COLUMN-INDEX in TABLE node.
 Rule-type rows do not count toward row indices."
-  (-some->> (org-ml--table-get-row row-index table)
-            (org-ml-get-children)
-            (org-ml--nth column-index)))
+  (org-ml--check-type 'table table)
+  (->> (org-ml--table-get-row row-index table)
+       (org-element-contents)
+       (org-ml--nth column-index)))
 
 (defun org-ml-table-delete-row (row-index table)
   "Return TABLE node with row at ROW-INDEX deleted."
+  (org-ml--check-type 'table table)
   (org-ml--map-children-nocheck* (org-ml--remove-at row-index it) table))
 
 (defun org-ml-table-delete-column (column-index table)
   "Return TABLE node with column at COLUMN-INDEX deleted."
+  (org-ml--check-type 'table table)
   (org-ml--map-children-nocheck*
-   (org-ml--map*
+   (--map
     (if (org-ml--property-is-eq :type 'rule it) it
       (org-ml--map-children-nocheck* (org-ml--remove-at column-index it) it))
     it)
@@ -4884,6 +5920,7 @@ Rule-type rows do not count toward row indices."
 COLUMN-INDEX is the index of the column and COLUMN-TEXT is a list of
 strings to be made into table-cells to be inserted following the same
 syntax as `org-ml-build-table-cell!'."
+  (org-ml--check-type 'table table)
   (let ((column (-map #'org-ml-build-table-cell! column-text)))
     (org-ml--column-map-down-rows
      (lambda (new-cell cells) (org-ml--insert-at column-index new-cell cells))
@@ -4896,6 +5933,7 @@ syntax as `org-ml-build-table-cell!'."
 ROW-INDEX is the index of the column and ROW-TEXT is a list of strings
 to be made into table-cells to be inserted following the same syntax
 as `org-ml-build-table-row!'."
+  (org-ml--check-type 'table table)
   (if (not row-text) (org-ml--table-clear-row row-index table)
     (let ((row (->> (org-ml-build-table-row! row-text)
                     (org-ml--table-row-pad-maybe table))))
@@ -4911,6 +5949,7 @@ table-cell at ROW-INDEX and COLUMN-INDEX in TABLE. CELL-TEXT will be
 processed the same as the argument given to `org-ml-build-table-cell!'.
 
 If CELL-TEXT is nil, it will set the cell to an empty string."
+  (org-ml--check-type 'table table)
   (let* ((cell (if cell-text (org-ml-build-table-cell! cell-text)
                  (org-ml-build-table-cell "")))
          (row (->> (org-ml--table-get-row row-index table)
@@ -4926,6 +5965,7 @@ at COLUMN-INDEX. Each member of COLUMN-TEXT will be processed the
 same as the argument given to `org-ml-build-table-cell!'.
 
 If COLUMN-TEXT is nil, it will clear all cells at COLUMN-INDEX."
+  (org-ml--check-type 'table table)
   (if (not column-text) (org-ml--table-clear-column column-index table)
     (let ((column-cells (-map #'org-ml-build-table-cell! column-text)))
       (org-ml--table-replace-column column-index column-cells table))))
@@ -4938,6 +5978,7 @@ ROW-INDEX. Each member of ROW-TEXT will be processed the same as
 the argument given to `org-ml-build-table-row!'.
 
 If ROW-TEXT is nil, it will clear all cells at ROW-INDEX."
+  (org-ml--check-type 'table table)
   (let ((row-cells (org-ml-build-table-row! row-text)))
     (org-ml--table-replace-row row-index row-cells table)))
 
@@ -4978,8 +6019,8 @@ If ROW-TEXT is nil, it will clear all cells at ROW-INDEX."
 (defmacro org-ml--tree-set-child* (index form tree)
   "Return TREE with node at INDEX set as child of the node before it.
 FORM is a Lisp form that takes the last member of TREE
-immediately before INDEX (called \"parent\", bound to 'it') and
-the item at INDEX to be set as its child (bound to 'it-target')
+immediately before INDEX (called \"parent\", bound to `it') and
+the item at INDEX to be set as its child (bound to `it-target')
 and returns a new \"parent\" node."
   (declare (indent 1) (debug (form form form)))
   (let ((i (make-symbol "index"))
@@ -4993,6 +6034,15 @@ and returns a new \"parent\" node."
            (let ((it-target (car ,T)))
              (append (org-ml--map-last* ,form ,h) (cdr ,T))))))))
 
+(defun org-ml--headline-move-post-blank (headline)
+  "Move :post-blank to :pre-blank if HEADLINE is totally empty."
+  (if (org-element-contents headline) headline
+    (let ((pre (org-element-property :pre-blank headline))
+          (post (org-element-post-blank headline)))
+      (org-ml--set-properties-raw (org-ml-copy headline)
+        :pre-blank (+ pre post)
+        :post-blank 0))))
+
 ;; headline
 
 (defun org-ml-headline-demote-subtree (index headline)
@@ -5003,7 +6053,7 @@ demoted headline node's children."
     (org-ml--tree-set-child* index
       (org-ml--map-children-nocheck*
        (-snoc it (org-ml--headline-subtree-shift-level 1 it-target))
-       it)
+       (org-ml--headline-move-post-blank it))
       it)
     headline))
 
@@ -5014,17 +6064,17 @@ demoted headline node's children."
   (org-ml-headline-map-subheadlines*
     (org-ml--tree-set-child* index
       (let* ((headlines-in-target (org-ml-headline-get-subheadlines it-target))
-             (tgt-children (org-ml-get-children it-target))
-             (tgt-pb (if (org-ml-is-type 'section (car tgt-children))
-                            (org-ml--get-property-nocheck :post-blank (car tgt-children))
-                          (org-ml--get-property-nocheck :pre-blank it-target)))
-             (tgt-headline* (->> it-target
+             (tgt-children (org-element-contents it-target))
+             (tgt-pb (if (org-ml--is-type 'section (car tgt-children))
+                         (org-ml--get-post-blank-textsafe (car tgt-children))
+                       (org-element-property-raw :pre-blank it-target)))
+             (tgt-headline* (->> (org-ml-copy it-target)
                                  (org-ml-headline-set-subheadlines nil)
                                  (org-ml--headline-shift-level 1)
-                                 (org-ml--set-property-nocheck :post-blank tgt-pb))))
+                                 (org-ml--set-post-blank tgt-pb))))
         (org-ml--map-children-nocheck*
          (append it (list tgt-headline*) headlines-in-target)
-         it))
+         (org-ml--headline-move-post-blank it)))
       it)
     headline))
 
@@ -5034,9 +6084,30 @@ demoted headline node's children."
   "Return PLAIN-LIST node with child item at INDEX indented.
 Unlike `org-ml-item-indent-item' this will also indent the indented item
 node's children."
+  (org-ml--check-type 'plain-list plain-list)
   (org-ml--map-children-nocheck*
    (org-ml--tree-set-child* index
-     (org-ml--item-map-subitems* (-snoc it it-target) it)
+     (let ((parent-pb (org-element-post-blank it))
+           (indented-target (org-ml--set-post-blank 0 it-target)))
+       (org-ml--item-map-subcomponents-cond*
+           ;; If neither subitems nor rest present, add indented tree as new
+           ;; subitem under parent. Put the parent post-blank at the end of
+           ;; the header material.
+           (list (org-ml--shift-last-post-blank parent-pb it-head)
+                 `(,indented-target) 0 nil)
+           ;; If rest not present but subitems present, append indented tree
+           ;; to the end of these subitems. Put the parent post-blank at the
+           ;; end of the list of subitems.
+           (list (-snoc
+                  (org-ml--shift-last-post-blank parent-pb it-subitems)
+                  indented-target)
+                 0 nil)
+           ;; If rest present, append indented item tree to the end of rest.
+           ;; Add the post-blank from parent to the end the last node in rest
+             (cons
+              (org-ml--shift-last-post-blank parent-pb it-rest)
+              (org-ml-build-plain-list indented-target))
+        it))
      it)
    plain-list))
 
@@ -5044,22 +6115,43 @@ node's children."
   "Return PLAIN-LIST node with child item at INDEX indented.
 Unlike `org-ml-item-indent-item-tree' this will not indent the indented
 item node's children."
+  (org-ml--check-type 'plain-list plain-list)
   (org-ml--map-children-nocheck*
    (org-ml--tree-set-child* index
-     (-let* (((h i pb r) (org-ml--item-get-subcomponents it-target))
-             (tgt-item* (org-ml--item-set-subcomponents `(,h nil nil nil) it-target)))
-       (org-ml--item-map-subcomponents*
-        (-let (((h* i* pb* r*) it))
-          (if r*
-              (let ((pl (-some->> (cons tgt-item* i)
-                          (apply #'org-ml-build-plain-list :post-blank pb)
-                          (list))))
-                (list h* i* pb* (append r* pl r)))
-            (--> (org-ml--map-last*
-                  (org-ml--map-property-nocheck* :post-blank (+ it pb*) it)
-                  i*)
-                 (list h* (append it (list tgt-item*) i) pb r))))
-        it))
+     ;; Get the target item (the one to be indented) and set its children
+     ;; to nil. Assume that its subitems and anything after it (including the
+     ;; post-blank) will not change.
+     (-let* (((tgt-head tgt-subitems tgt-rest-pb tgt-rest)
+              (org-ml--item-get-subcomponents it-target))
+             (indented-target (org-ml--item-set-subcomponents
+                               `(,tgt-head nil nil nil) it-target))
+             ;; NOTE: this is the post-blank of the *topmost* item in front of
+             ;; the one to be indented. Any space after the the last subitem (if
+             ;; any) are reflected in this (more to come below).
+             (parent-pb (org-element-post-blank it)))
+       (org-ml--item-map-subcomponents-cond*
+           (list
+            (org-ml--shift-last-post-blank parent-pb it-head)
+            (cons indented-target tgt-subitems)
+            0 nil)
+           ;; Otherwise, add the indented target and its children to the
+           ;; subitems under the parent, and set the rest to be that of the
+           ;; target (if anything). The only tricky part here is to most the
+           ;; post-blank of the toplevel parent into the last subitem of the
+           ;; parent (otherwise the post blank would move to the end of the
+           ;; entire new list after indentation)
+           (let ((psub (org-ml--shift-last-post-blank parent-pb it-subitems)))
+             `((,@psub ,indented-target ,@tgt-subitems) 0 nil))
+           ;; If the parent has "extra stuff" underneath its subitems (ie
+           ;; "rest") then we need to append the indented item after this "extra
+           ;; stuff." Make a new list with the indented item and its children
+           ;; (which will be at the same level after the target is indented)
+           (let ((rest*
+                  (->> (cons indented-target tgt-subitems)
+                       (apply #'org-ml-build-plain-list :post-blank tgt-rest-pb)
+                       (cons it-rest))))
+             `(,@rest* ,@tgt-rest))
+         it))
      it)
    plain-list))
 
@@ -5086,7 +6178,7 @@ item node's children."
 
 (defmacro org-ml--split-children-at-index* (index form tree)
   "Return TREE with node at INDEX split according to FORM.
-The node at INDEX will be bound to the symbol 'it' which is to be
+The node at INDEX will be bound to the symbol `it' which is to be
 referenced in FORM, and FORM is to return a list like (PARENT
 CHILDREN) where PARENT is the modified node at INDEX and CHILDREN
 is a list of nodes that were children under PARENT but are to be
@@ -5106,10 +6198,11 @@ CHILDREN nodes after PARENT at the same level as PARENT."
   "Return HEADLINE node with all child headlines under INDEX promoted."
   (org-ml-headline-map-subheadlines*
     (org-ml--split-children-at-index* index
-      (let ((children (->> (org-ml-get-children it)
-                           (org-ml--map* (org-ml--headline-subtree-shift-level -1 it))))
-            (parent (org-ml--set-children-nocheck nil it)))
-        (list parent children))
+      (let* ((children (->> (org-element-contents it)
+                            (--map (org-ml--headline-subtree-shift-level -1 it))))
+             (parent (org-ml--set-children-nocheck nil it))
+             (parent* (org-ml--headline-move-post-blank parent)))
+        (list parent* children))
       it)
     headline))
 
@@ -5117,14 +6210,26 @@ CHILDREN nodes after PARENT at the same level as PARENT."
 
 (defun org-ml-plain-list-outdent-all-items (index plain-list)
   "Return PLAIN-LIST node with all child items under INDEX outdented."
+  (org-ml--check-type 'plain-list plain-list)
   (org-ml--map-children-nocheck*
    (org-ml--split-children-at-index* index
-     (-let* (((h i pb r) (org-ml--item-get-subcomponents it))
-             (parent (org-ml--item-set-subcomponents `(,h nil nil nil) it))
-             (i* (org-ml--map-last*
-                  (org-ml--map-property-nocheck* :post-blank (+ pb it) it)
-                  i)))
-       (list parent (append i* r)))
+     (-let* (((tgt-head tgt-subitems tgt-rest-pb tgt-rest)
+              (org-ml--item-get-subcomponents it))
+             (parent-pb (or (org-element-post-blank (-last-item tgt-head)) 0))
+             (parent (->> (org-ml--item-set-subcomponents `(,tgt-head nil nil nil) it)
+                          (org-ml--set-post-blank parent-pb)))
+             (outdent-pb (org-element-post-blank it))
+             (outdented
+              (cond
+               (tgt-rest
+                (append
+                 (org-ml--shift-last-post-blank tgt-rest-pb tgt-subitems)
+                 (org-ml--shift-last-post-blank outdent-pb tgt-rest)))
+               (tgt-subitems
+                (org-ml--shift-last-post-blank outdent-pb tgt-subitems))
+               (t
+                nil))))
+       `(,parent ,outdented))
      it)
    plain-list))
 
@@ -5158,9 +6263,10 @@ CHILDREN nodes after PARENT at the same level as PARENT."
 The specific child headline to promote is selected by CHILD-INDEX."
   (org-ml-headline-map-subheadlines*
     (org-ml--split-children-at-index* index
-      (-let* (((head tail) (-split-at child-index (org-ml-get-children it)))
+      (-let* (((head tail) (-split-at child-index (org-element-contents it)))
               (target (->> (car tail)
-                           (org-ml--headline-shift-level -1)
+                           (org-ml-copy)
+                           (org-ml--headline-subtree-shift-level -1)
                            (org-ml-headline-map-subheadlines*
                              (append it (cdr tail)))))
               (parent (org-ml--set-children-nocheck head it)))
@@ -5173,30 +6279,36 @@ The specific child headline to promote is selected by CHILD-INDEX."
 (defun org-ml-plain-list-outdent-item (index child-index plain-list)
   "Return PLAIN-LIST node with a child item under INDEX outdented.
 The specific child item to outdent is selected by CHILD-INDEX."
+  (org-ml--check-type 'plain-list plain-list)
   (org-ml--map-children-nocheck*
    (org-ml--split-children-at-index* index
-     (-let* (((h i pb r) (org-ml--item-get-subcomponents it))
-             ((parent-i (tgt . tgt-i)) (-split-at child-index i))
-             (parent-pb (-some->> (-last-item parent-i)
-                          (org-ml-get-property :post-blank)))
-             (parent (->> (org-ml-set-property :post-blank 0 it)
+     (-let* (((parent-head parent-subitems parent-rest-pb parent-rest)
+              (org-ml--item-get-subcomponents it))
+             ((above-outdent (to-outdent . outdent-subitems))
+              (-split-at child-index parent-subitems))
+             (parent-pb (or (org-element-post-blank (-last-item above-outdent)) 0))
+             ;; Make new parent with the subitems that are above the item to
+             ;; be outdented (if any) and remove its rest component since this
+             ;; will become part of the outdented item's children
+             (parent (->> (org-ml--set-post-blank parent-pb it)
                           (org-ml--item-set-subcomponents
-                           `(,h ,parent-i ,parent-pb nil))))
-             (tgt-pb (-some->> tgt (org-ml-get-property :post-blank)))
-             (tgt* (-some->> tgt
-                     (org-ml--item-map-subcomponents*
-                      (-let* (((h* i* pb* r*) it)
-                              (h** (org-ml--map-last*
-                                    (org-ml-set-property :post-blank tgt-pb it)
-                                    h*)))
-                        (if (not r*) (list h** (append i* tgt-i) pb* r)
-                          (--> (apply #'org-ml-build-plain-list tgt-i)
-                               (list it)
-                               (append r* it r)
-                               (list h** i* pb* it)))))
-                     (org-ml-set-property :post-blank pb)
-                     (list))))
-       (list parent tgt*))
+                           `(,parent-head ,above-outdent 0 nil))))
+             (tgt-pb (org-element-post-blank to-outdent)))
+       (if (not to-outdent) `(,parent nil)
+         (let ((outdented
+                (org-ml--item-map-subcomponents-cond*
+                    (list (org-ml--set-last-post-blank tgt-pb it-head)
+                          outdent-subitems
+                          0 nil)
+                    (-> (org-ml--shift-last-post-blank tgt-pb it-subitems)
+                        (append outdent-subitems)
+                        (list 0 nil))
+                    (let ((psub (apply #'org-ml-build-plain-list
+                                       :post-blank parent-rest-pb
+                                       outdent-subitems)))
+                      `(,@it-rest ,psub ,@parent-rest))
+                 to-outdent)))
+           `(,parent (,outdented)))))
      it)
    plain-list))
 
@@ -5232,21 +6344,15 @@ This is a workaround for a bug")
   "Branch element nodes that require \"\" to correctly print empty.
 This is a workaround for a bug.")
 
+;; TODO do I still need this in 9.7?
 (defun org-ml--blank (node)
   "Return NODE with empty child nodes `org-ml--blank-if-empty' set to contain \"\"."
-  (if (org-ml-is-childless node)
+  (if (not (org-element-contents node))
       (cond
-       ((and org-ml-parse-habits (org-ml-is-type 'timestamp node))
-        (let ((s (org-element-interpret-data node)))
-          (-if-let (h (-some->> (org-ml-get-property :raw-value node)
-                        (s-match "+[[:digit:]]+[ymwd]/\\([[:digit:]]+[ymwd]\\)")
-                        (cadr)))
-              (concat (substring s 0 -1) "/" h (s-right 1 s))
-            s)))
-       ((org-ml-is-any-type org-ml--blank-if-empty node)
+       ((org-ml--is-any-type org-ml--blank-if-empty node)
         (org-ml--set-blank-children node))
        (t
-        (unless (or (org-ml-is-any-type org-ml--rm-if-empty node)
+        (unless (or (org-ml--is-any-type org-ml--rm-if-empty node)
                     (org-ml--is-table-row node))
           node)))
     (org-ml--map-children-nocheck*
@@ -5261,9 +6367,20 @@ This is a workaround for a bug.")
    ((null node)
     "")
    ((org-ml--is-node node)
-    (->> (org-ml--blank node)
-         (org-element-interpret-data)
-         (substring-no-properties)))
+    (let ((s (->> (org-ml--blank node)
+                  (org-element-interpret-data)
+                  (substring-no-properties))))
+      (if (not (org-ml--is-type 'section node)) s
+        ;; TODO this is a bug in 9.7; sections now don't carry a post-blank
+        ;; property, and instead assume that the post-blank is encoded in the
+        ;; underlying contents. Unfortunately, `org-element-interpret-data' will
+        ;; normalize the underlying contents (as a string) to only have one
+        ;; newline regardless of post-blank. This workaround will manually add
+        ;; the newlines back in the case of section nodes
+        (let ((pb (->> (org-element-contents node)
+                       (-last-item)
+                       (org-element-post-blank))))
+          (concat s (make-string pb ?\n))))))
    (t
     (org-ml--arg-error "Can only stringify node or nil, got %s" node))))
 
@@ -5284,16 +6401,12 @@ parsed into TYPE this function will return nil."
           (if (not (and b e)) 0
             (let ((d (- e b)))
               (if (= 1 d) 0 d)))))
-       ;; TODO these all smell like something that should just be in the
-       ;; public API...except that I don't really mess around with the bounds
-       ;; anywhere except here (mostly because they already exist when the
-       ;; string is parsed
        (shift-property
         (prop n node)
-        (org-ml--map-property-nocheck* prop (+ n it) node))
+        (org-ml--map-property-raw* prop (+ n it) node))
        (shift-property-maybe
         (prop n node)
-        (org-ml--map-property-nocheck* prop (when it (+ n it)) node))
+        (org-ml--map-property-raw* prop (when it (+ n it)) node))
        (shift-object-node
         (n node)
         (->> (shift-property :begin n node)
@@ -5314,7 +6427,7 @@ parsed into TYPE this function will return nil."
              (shift-property-maybe :contents-end n)))
        (shift-property-node
         (prop n node)
-        (org-ml--map-property-nocheck* prop
+        (org-ml--map-property-raw* prop
           (-some->> it (shift-object-node n))
           node))
        (decrement-object-node
@@ -5331,7 +6444,7 @@ parsed into TYPE this function will return nil."
         (node)
         (org-ml--map-children-nocheck*
          (org-ml--map-first*
-          (if (org-ml-is-type 'paragraph it)
+          (if (org-ml--is-type 'paragraph it)
               (org-ml--map-children-nocheck*
                (if (equal (car it) " ") (cdr it)
                  (org-ml--map-first*
@@ -5342,59 +6455,61 @@ parsed into TYPE this function will return nil."
          node))
        (from-prefixed-string
         (prefix level string)
-        (-some->> (concat prefix string)
-          (org-ml--from-string)
-          (org-ml--get-descendent level)
-          (shift-branch-object-node -1)
-          (org-ml-match-map '((:not plain-text) *) #'decrement-object-node))))
+        (-if-let (x (->> (concat prefix string)
+                         (org-ml--from-string)
+                         (org-ml--get-descendent level)))
+            (->> (shift-branch-object-node -1 x)
+                 (org-ml-match-map '((:not plain-text) *) #'decrement-object-node)))))
     (-some->> (cond
                ((eq type 'paragraph)
                 (let* ((pb (string-to-post-blank string))
                        (e (1+ (length string)))
                        (ce (- e pb)))
-                  (-some->> (org-ml-build-paragraph! string :post-blank pb)
-                    (org-ml--set-properties-nocheck (list :begin 1
-                                                          :contents-begin 1
-                                                          :end e
-                                                          :contents-end ce)))))
+                  (-> (org-ml-build-paragraph! string :post-blank pb)
+                    (org-ml--set-properties-raw
+                        :begin 1
+                        :contents-begin 1
+                        :end e
+                        :contents-end ce))))
                ((and (eq type 'section) (s-matches-p "^\\*" string))
-                (-some->> (concat " " string)
-                  (org-ml--from-string)
-                  (remove-leading-space-maybe)
-                  (shift-property :end -1)
-                  (shift-property-maybe :contents-end -1)
-                  (org-ml-match-map '((:and 0 (:not plain-text)) *)
-                    (lambda (node)
-                      (->> (if (not (org-ml-is-branch-node node)) node
-                             (shift-property :contents-end -1 node))
-                           (shift-property :end -1))))
-                  (org-ml-match-map '((:and (> 0) (:not plain-text)) *)
-                    #'decrement-node)))
+                (->> (concat " " string)
+                     (org-ml--from-string)
+                     (remove-leading-space-maybe)
+                     (shift-property :end -1)
+                     (shift-property-maybe :contents-end -1)
+                     (org-ml-match-map '((:and 0 (:not plain-text)) *)
+                       (lambda (node)
+                         (->> (if (not (org-ml-is-branch-node node)) node
+                                (shift-property :contents-end -1 node))
+                              (shift-property :end -1))))
+                     (org-ml-match-map '((:and (> 0) (:not plain-text)) *)
+                       #'decrement-node)))
                ((eq type 'node-property)
                 (let* ((pb (string-to-post-blank string))
                        (e (1+ (- (length string) pb))))
-                  (-some->> (format "* dummy\n:PROPERTIES:\n%s\n:END:" string)
-                    (org-ml--from-string)
-                    (org-ml--get-descendent '(0 0 0))
-                    (org-ml--set-properties-nocheck (list :post-affiliated 1
-                                                          :begin 1
-                                                          :post-blank pb
-                                                          :end e)))))
+                  (-if-let (x (->> (format "* dummy\n:PROPERTIES:\n%s\n:END:" string)
+                                   (org-ml--from-string)
+                                   (org-ml--get-descendent '(0 0 0))))
+                      (org-ml--set-properties-raw x
+                        :post-affiliated 1
+                        :begin 1
+                        :post-blank pb
+                        :end e))))
                ((eq type 'property-drawer)
-                (-some->> (concat "* dummy\n" string)
-                  (org-ml--from-string)
-                  (org-ml--get-descendent '(0 0))
-                  (shift-branch-element-node -8)
-                  (org-ml--map-children-nocheck*
-                   (--map (shift-element-node -8 it) it))))
+                (-if-let (x (->> (concat "* dummy\n" string)
+                                 (org-ml--from-string)
+                                 (org-ml--get-descendent '(0 0))))
+                    (->> (shift-branch-element-node -8 x)
+                         (org-ml--map-children-nocheck*
+                          (--map (shift-element-node -8 it) it)))))
                ((eq type 'planning)
-                (-some->> (concat "* dummy\n" string)
-                  (org-ml--from-string)
-                  (org-ml--get-descendent '(0 0))
-                  (shift-element-node -8)
-                  (shift-property-node :scheduled -8)
-                  (shift-property-node :deadline -8)
-                  (shift-property-node :closed -8)))
+                (-if-let (x (->> (concat "* dummy\n" string)
+                                 (org-ml--from-string)
+                                 (org-ml--get-descendent '(0 0))))
+                    (->> (shift-element-node -8 x)
+                         (shift-property-node :scheduled -8)
+                         (shift-property-node :deadline -8)
+                         (shift-property-node :closed -8))))
                ((eq type 'bold)
                 (from-prefixed-string " " '(0 1) string))
                ((memq type '(superscript subscript))
@@ -5408,9 +6523,9 @@ parsed into TYPE this function will return nil."
                                 ((eq type 'table-row) '(0 0))
                                 ((memq type org-ml-objects) '(0 0))
                                 (t '(0)))))
-                    (-some->> (org-ml--from-string string)
-                      (org-ml--get-descendent level)))))
-      (org-ml--set-property-nocheck :parent nil))))
+                    (->> (org-ml--from-string string)
+                         (org-ml--get-descendent level)))))
+      (org-element-put-property-2 :parent nil))))
 
 ;;; PATTERN MATCHING
 
@@ -5468,7 +6583,7 @@ FORM and LIST carry the same meaning."
 (defmacro org-ml--get-children-indexed (reverse? node)
   "Return list of children from NODE (if any) with index annotations.
 If REVERSE is t, reverse the final result."
-  `(let* ((children (org-ml-get-children ,node))
+  `(let* ((children (org-element-contents ,node))
           (len (- (length children))))
      (org-ml--map-indexed ,reverse?
        (cons `(,it-index . ,(+ len it-index)) it) children)))
@@ -5542,7 +6657,7 @@ of NODE (starting at -1 on the rightmost side of the children list)."
       ;; NOTE: this must go last if we don't want :pred/:and/:or/:not
       ;; to be interpreted as a property
       (`(,(and (pred keywordp) prop) . (,val . nil))
-       `(equal (org-ml--get-property-nocheck ,prop ,it-node) ,val))
+       `(equal (org-ml-get-property ,prop ,it-node) ,val))
       ;;
       ;; :any
       (:any t)
@@ -5642,8 +6757,8 @@ be deduplicated."
                        (-split-on '| p)
                        (-replace '(nil) nil)
                        (-mapcat #'org-ml--match-pattern-expand-alternations))))
-              (-mapcat (lambda (a) (org-ml--map* (append a it) p*)) acc))
-          (org-ml--map* (append it (list p)) acc))))
+              (-mapcat (lambda (a) (--map (append a it) p*)) acc))
+          (--map (append it (list p)) acc))))
     (-uniq (-reduce-from #'add-subpattern '(()) pattern))))
 
 (defun org-ml--match-pattern-process-alternations (end? limit alt-patterns)
@@ -5654,7 +6769,7 @@ alternations in the original pattern.
 See `org-ml--match-pattern-make-inner-form' for the meaning of
 END? and LIMIT."
   (->> (if end? alt-patterns (reverse alt-patterns))
-       (org-ml--map* (org-ml--match-pattern-make-inner-form end? limit it))
+       (--map (org-ml--match-pattern-make-inner-form end? limit it))
        ;; use nested let statements to keep track of accumulator
        ;; note the comma usage to make this extra confusing :)
        (--reduce `(let ((acc ,it)) ,acc))))
@@ -5775,7 +6890,7 @@ NODE is the node to be matched."
     ;; no slicer - search without limit and return all
     (ps (org-ml--match-make-pattern-form nil nil ps))))
 
-(defconst org-ml--match-form-cache (make-hash-table :test #'equal)
+(defvar org-ml--match-form-cache (make-hash-table :test #'equal)
   "Cache of previously generated lambda forms.")
 
 (defun org-ml-clear-match-cache ()
@@ -5878,7 +6993,7 @@ function and POSIX extended regular expressions.:
 - SUB `+' - match SUB one or more times
 - SUB [N] - match SUB N times
 - SUB [M N] - match SUB M to N times (inclusive); if M or N is
-  nil, this will match 'at most N times' or 'at least M times'
+  nil, this will match \"at most N times\" or \"at least M times\"
   respectively
 - (ALT-A1 [ALT-A2 ...] | ALT-B1 [ALT-B2 ...] [| ...]) - match
   any of the ALT expressions separated by `|' where ALT is a list
@@ -5912,15 +7027,14 @@ shared between all functions that consume a PATTERN parameter."
     "Recursively modify the children of NODE using FORM.
 FORM returns a list of element or object nodes as the new children,
 and the variable `it' is bound to the original children."
-    (declare (debug (form def-form)))
-    (declare (indent 1))
+    (declare (debug (form def-form)) (indent 1))
     ;; TODO this makes a closure
     `(cl-labels
          ((rec
            (node)
            (if (not (org-ml-is-branch-node node)) node
              (org-ml-map-children*
-               (let ((it (org-ml--map* (rec it) it)))
+               (let ((it (--map (rec it) it)))
                  ,form)
                node))))
        (rec ,node))))
@@ -6151,35 +7265,38 @@ TYPE is the type of the node to be parsed."
                                 ((or `superscript `subscript) '(-1 (0 1)))
                                 (`table-cell '(-1 (0 0 0)))
                                 (_ '(0 (0 0)))))
-            ((&plist :begin :end) (org-ml-get-all-properties context))
+            (begin (org-element-begin context))
+            (end (org-element-end context))
             (tree (org-ml--parse-objects type (+ begin offset) end)))
       (->> (car tree)
            (org-ml--get-descendent nesting)
            (org-ml--filter-types org-ml-objects)))))
 
+;; TODO this seems really inefficient; essentially we are parsing twice and
+;; there is probably a better way to do this with the new API
 (defun org-ml--parse-element-at (point type)
   "Return element node immediately under POINT.
 For a list of all possible return types refer to `org-ml-elements'; this
-will return everything in this list except 'section' which is
+will return everything in this list except `section' which is
 ambiguous when referring to a single point.
 \(see `org-ml-parse-section-at').
 
 If TYPE is non-nil, only return nil if the object under point is not
 of that type. TYPE is a symbol from `org-ml-elements'. Furthermore,
-setting TYPE to 'table-row' will prefer table-row elements over table
-elements and likewise when setting TYPE to 'item' for plain-list
+setting TYPE to `table-row' will prefer table-row elements over table
+elements and likewise when setting TYPE to `item' for plain-list
 elements vs item elements."
   (save-excursion
     (goto-char point)
-    ;; TODO this seems really inefficient; essentially we are parsing twice
     (let* ((node (org-element-at-point))
            (node-type (org-ml-get-type node)))
       ;; NOTE this will not filter by type if it is a leaf node
       (if (not (memq node-type org-ml-branch-nodes)) node
         ;; need to parse again if branch-node since
         ;; `org-element-at-point' does not parse children
-        (-let* (((&plist :begin :end :contents-end :post-blank)
-                 (org-ml-get-all-properties node))
+        (-let* ((begin (org-element-begin node))
+                (end (org-element-end node))
+                (contents-end (org-element-contents-end node))
                 (tree (car (org-ml--parse-elements begin end 'first-section)))
                 (nesting (pcase node-type
                            (`headline nil)
@@ -6190,14 +7307,17 @@ elements vs item elements."
                            (`table (if (eq type 'table-row) '(0 0) '(0)))
                            (`plain-list (if (eq type 'item) '(0 0) '(0)))
                            (`item '(0 0))
-                           (_ '(0)))))
-          (--> (org-ml--get-descendent nesting tree)
-               ;; set ending boundaries according to what we get from
-               ;; `org-element-at-point'
-               (org-ml--set-properties-nocheck (list :end end
-                                                     :contents-end contents-end
-                                                     :post-blank post-blank)
-                                               it)
+                           (_ '(0))))
+                (node* (->> (org-ml--get-descendent nesting tree)
+                            ;; set ending boundaries according to what we get
+                            ;; from `org-element-at-point'
+                            (org-element-put-property-2 :end end)
+                            (org-element-put-property-2 :contents-end contents-end))))
+          ;; some elements will always have post-blank set to 0, so no need to
+          ;; update it
+          (--> (if (memq node-type '(section table-row)) node*
+                 (let ((pb (org-element-post-blank node)))
+                   (org-ml--set-post-blank pb node*)))
                (if type (org-ml--filter-type type it) it)))))))
 
 (defun org-ml-parse-element-at (point)
@@ -6235,8 +7355,8 @@ t, parse the entire subtree, else just parse the top headline."
   (save-excursion
     (goto-char point)
     (when (ignore-errors (org-back-to-heading t))
-      (let ((b (point))
-            (e (if subtree
+      (let* ((b (point))
+             (e (if subtree
                    (progn
                      (org-end-of-subtree)
                      ;; skip ahead to the next headline because
@@ -6244,8 +7364,17 @@ t, parse the entire subtree, else just parse the top headline."
                      ;; any spacing after headlines
                      (or (outline-next-heading)
                          (point-max)))
-                 (or (outline-next-heading) (point-max)))))
-        (car (org-ml--parse-elements b e 'first-section))))))
+                  (or (outline-next-heading) (point-max))))
+             (tree (car (org-ml--parse-elements b e 'first-section))))
+        ;; TODO this is a hack; since org 9.6 setting the boundaries at the next
+        ;; headline will not stop the parser from parsing the entire subtree,
+        ;; even if we don't want it. Workaround is to parse the entire subtree
+        ;; and possibly throw away most of it
+        (if subtree tree
+          (let ((cs (org-element-contents tree)))
+            (if (< 1 (length cs))
+                (org-ml-set-children (list (car cs)) tree)
+              tree)))))))
 
 (defun org-ml-parse-headline-at (point)
   "Return headline node under POINT or nil if not on a headline.
@@ -6268,15 +7397,17 @@ headline. If POINT is before the first headline (if any), return
 the section at the top of the org buffer."
   (save-excursion
     (goto-char point)
-    (org-ml--get-descendent
-     '(0)
-     (condition-case nil
-         (progn
-           (org-back-to-heading)
-           (org-ml--parse-headline-subtree-at point nil))
-       (error
-        (org-ml--parse-elements
-         (point-min) (or (outline-next-heading) (point-max)) 'first-section))))))
+    (->> (condition-case nil
+             (progn
+               (org-back-to-heading)
+               ;; TODO this suffers from the same problem as the headline parser
+               ;; (parses entire subtree and probably wastes most of it)
+               (org-ml--parse-headline-subtree-at point nil))
+           (error
+            (org-ml--parse-elements
+             (point-min) (or (outline-next-heading) (point-max)) 'first-section)))
+         (org-ml--get-descendent '(0))
+         (org-ml--filter-type 'section))))
 
 ;;; parse at current point
 
@@ -6309,10 +7440,7 @@ If there is no such section, return nil."
   "Return org-data document tree for the current buffer.
 Contrary to the org-element specification, the org-data element
 returned from this function will have :begin and :end properties."
-  (let* ((c (org-ml-get-children (org-element-parse-buffer)))
-         (b (if c (org-ml--get-property-nocheck :begin (-first-item c)) 1))
-         (e (if c (org-ml--get-property-nocheck :end (-last-item c)) 1)))
-    (org-ml--construct 'org-data `(:begin ,b :end ,e) c)))
+  (org-element-parse-buffer))
 
 (defun org-ml-this-buffer-has-headlines ()
   "Return t if the current buffer has headlines, else return nil."
@@ -6384,10 +7512,10 @@ NODE may be a node or a list of nodes. Return NODE."
 ;; from Myers; adapted from the python implementation listed here:
 ;; https://blog.robertelder.org/diff-algorithm/
 
-(defun org-ml--diff-find-middle (str= M N)
+(defun org-ml--diff-find-middle (str-eq M N)
   "Return the coordinates for the middle snake.
 
-STR= is a ternary function that takes a direction (0 = forward, 1
+STR-EQ is a ternary function that takes a direction (0 = forward, 1
 = backward) and X/Y coordinates; it will return t if the two
 strings at the given coordinates in the indicated direction
 match.
@@ -6440,7 +7568,7 @@ M and N are the length of the current substrings."
                   x x0
                   y y0
                   z (- delta k))
-            (while (and (< x M) (< y N) (funcall str= fwd-p x y))
+            (while (and (< x M) (< y N) (funcall str-eq fwd-p x y))
               (setq x (1+ x)
                     y (1+ y)))
             (aset Va (mod k V-len) x)
@@ -6466,9 +7594,9 @@ string length and using them as circular buffers. After these
 edits, the time complexity should be O(min(A, B)*D) and the space
 complexity should be O(min(A, B).
 
-Return value will be a list of either '(ins I M N)' or '(del I
-J)'. For 'ins' commands M and N are the indices from STR-B to
-insert at I in STR-A, and for 'del' commands I and J are the
+Return value will be a list of either `(ins I M N)' or `(del I
+J)'. For `ins' commands M and N are the indices from STR-B to
+insert at I in STR-A, and for `del' commands I and J are the
 indices between which will be deleted in STR-A. Note that
 consecutive edits will be consolidated so the length of the
 return list will not necessarily be the length of the LCS
@@ -6600,39 +7728,43 @@ applied to the buffer."
 ;;                        p2 (cdr (cdr p2))))
 ;;                (and (not p2) plist-matches))))))))
 
-(org-ml--defun-anaphoric* org-ml--update (diff-mode fun node)
-  "Internal version of `org-ml~update'.
-DIFF-MODE, FUN, and NODE have the same meaning. The only
-difference is this function does not save the point's position"
-  ;; if node is of type 'org-data' it will have no props
-  (let* ((begin (org-ml--get-property-nocheck :begin node))
-         (end (org-ml--get-property-nocheck :end node))
-         (ov-cmd (-some->> (overlays-in begin end)
-                   (--filter (eq 'outline (overlay-get it 'invisible)))
-                   (org-ml--map* (list :start (overlay-start it)
-                                       :end (overlay-end it)
-                                       :props (overlay-properties it)))
-                   (list 'apply 'org-ml--apply-overlays)))
-         ;; do all computation before modifying buffer
-         ;;
-         ;; TODO it might be useful to add this as a switch for cases where
-         ;; `FUN' almost never changes anything, in which case it would be
-         ;; much cheaper to check if the node is equal before inserting it.
-         ;; In 99.9999% of cases, this is probably false, so just assume
-         ;; the node has changed and update it
-         ;;
-         ;; (node0 (org-ml-clone-node node))
-         (node* (funcall fun node)))
-    ;; (unless (org-ml--equal node0 node*)
+(defun org-ml--replace-region (begin end text)
+  "Replace text between BEGIN and END with TEXT."
+  (delete-region begin end)
+  (goto-char begin)
+  (insert text))
+
+(defun org-ml--replace-bounds (diff-mode begin end node)
+  "Replace text between BEGIN and END with NODE1 in current buffer.
+See `org-ml~update' for meaning of DIFF-MODE."
+  (let ((ov-cmd (-if-let (x (->> (overlays-in begin end)
+                                 (--filter (eq 'outline (overlay-get it 'invisible)))
+                                 (--map (list :start (overlay-start it)
+                                              :end (overlay-end it)
+                                              :props (overlay-properties it)))))
+                    (list 'apply 'org-ml--apply-overlays x))))
     ;; hacky way to add overlays to undo tree
     (when ov-cmd
       (setq-local buffer-undo-list (cons ov-cmd buffer-undo-list)))
     (if diff-mode
-        (org-ml--diff-region begin end (org-ml-to-string node*))
-      (progn
-        (delete-region begin end)
-        (org-ml--insert begin node*)))
+        (org-ml--diff-region begin end (org-ml-to-string node))
+      ;; convert node to string before deleting so deferred properties can get
+      ;; what they need from the buffer
+      (org-ml--replace-region begin end (org-ml-to-string node)))
     nil))
+
+(org-ml--defun-anaphoric* org-ml--update (diff-mode fun node)
+  "Internal version of `org-ml~update'.
+DIFF-MODE, FUN, and NODE have the same meaning. The only
+difference is this function does not save the point's position"
+  ;; do all computation before modifying buffer
+  ;;
+  ;; NOTE force resolution so that we can convert back to string after
+  ;; deleting the node from the buffer
+  (let* ((begin (org-element-begin node))
+         (end (org-element-end node)))
+    (->> (funcall fun node)
+         (org-ml--replace-bounds diff-mode begin end))))
 
 (org-ml--defun* org-ml~update (diff-mode fun node)
   "Replace NODE in the current buffer with a new one.
@@ -6736,7 +7868,7 @@ middle of NODE."
 
 (org-ml--defun* org-ml-update-this-buffer (fun)
   "Apply FUN to the contents of the current buffer.
-FUN is a unary function that takes a node of type 'org-data' and
+FUN is a unary function that takes a node of type `org-data' and
 returns a modified node."
   (org-ml-update fun (org-ml-parse-this-buffer)))
 
@@ -6744,7 +7876,7 @@ returns a modified node."
 
 (defun org-ml--fold-get-contents-begin-maybe (node)
   "Return :contents-begin minus one or nil if not found for NODE."
-  (-some-> (org-ml-get-property :contents-begin node) (1-)))
+  (-some-> (org-element-contents-begin node) (1-)))
 
 (eval-when-compile
   (defmacro org-ml--fold-get-contents-begin-offset (node offset)
@@ -6754,8 +7886,10 @@ use OFFSET to calculated the beginning fold boundary beginning.
 OFFSET can either be an integer or a form that evaluates to an
 integer."
     (declare (indent 1) (debug (form form)))
-    `(or (org-ml--fold-get-contents-begin-maybe ,node)
-         (+ ,offset (org-ml-get-property :begin ,node)))))
+    (let ((n (make-symbol "--node")))
+      `(let ((,n ,node))
+         (or (org-ml--fold-get-contents-begin-maybe ,n)
+             (+ ,offset (org-element-begin ,n)))))))
 
 (defun org-ml--fold-get-begin-boundary (node)
   "Return integer for point at the beginning of fold region for NODE."
@@ -6765,17 +7899,17 @@ integer."
      (org-ml--fold-get-contents-begin-offset node 14))
     (dynamic-block
      (org-ml--fold-get-contents-begin-offset node
-       (+ 9 (length (org-ml-get-property :block-name node)))))
+       (+ 9 (length (org-element-property-raw :block-name node)))))
     (drawer
      (org-ml--fold-get-contents-begin-offset node
-       (+ 2 (length (org-ml-get-property :drawer-name node)))))
+       (+ 2 (length (org-element-property-raw :drawer-name node)))))
     (property-drawer
      (org-ml--fold-get-contents-begin-offset node 12))
     ((quote-block verse-block)
      (org-ml--fold-get-contents-begin-offset node 13))
     (special-block
      (org-ml--fold-get-contents-begin-offset node
-       (+ 9 (length (org-ml-get-property :type node)))))
+       (+ 9 (length (org-element-property-raw :type node)))))
     ;; Headlines should only be folded if they have children
     (headline
      (org-ml--fold-get-contents-begin-maybe node))
@@ -6784,29 +7918,29 @@ integer."
     ;; line is and add that to :contents-begin. Do nothing if there are no
     ;; children
     (item
-     (-when-let (first (-first-item (org-ml-get-children node)))
-       (let ((offset (if (not (org-ml-is-type 'paragraph first)) -1
+     (-when-let (first (-first-item (org-element-contents node)))
+       (let ((offset (if (not (org-ml--is-type 'paragraph first)) -1
                        (->> (org-ml-to-string first)
                             (s-split "\n")
                             (-first-item)
                             (length)))))
-         (+ offset (org-ml-get-property :contents-begin node)))))
+         (+ offset (org-element-contents-begin node)))))
     ;; These elements are not branch types and thus don't have child boundaries,
     ;; so will need to manually calculated where the boundaries should be
     ((comment-block example-block)
-     (+ 15 (org-ml-get-property :begin node)))
+     (+ 15 (org-element-begin node)))
     (export-block
-     (+ (org-ml-get-property :begin node)
-        (-if-let (type (org-ml-get-property :type node))
+     (+ (org-element-begin node)
+        (-if-let (type (org-element-property-raw :type node))
             (1+ (length type)) 0)
         14))
     (src-block
-     (+ (org-ml-get-property :begin node)
-        (-if-let (meta (-some->
+     (+ (org-element-begin node)
+        (-if-let (meta (->
                         (list
-                         (org-ml-get-property :language node)
-                         (org-ml--get-property-nocheck :switches node)
-                         (org-ml--get-property-nocheck :parameters node))
+                         (org-element-property-raw :language node)
+                         (org-element-property-raw :switches node)
+                         (org-element-property-raw :parameters node))
                         (-non-nil)))
             (1+ (length (s-join " " meta))) 0)
         11))))
@@ -6827,9 +7961,7 @@ only be used for block elements."
 (defun org-ml--fold-flag-node (flag node)
   "Set folding of buffer contents in NODE to FLAG."
   (-when-let (begin (org-ml--fold-get-begin-boundary node))
-    (let ((end (- (org-ml-get-property :end node)
-                  (org-ml-get-property :post-blank node)
-                  1)))
+    (let ((end (- (org-element-end node) (org-element-post-blank node) 1)))
       (cl-case (org-ml-get-type node)
         ((drawer headline item property-drawer)
          (outline-flag-region begin end flag))
@@ -6858,11 +7990,10 @@ FOLD-STATE may be one of:
       ((fold-drawers
         (headline)
         (-when-let (section (org-ml-headline-get-section headline))
-          (-some->> section
-                    (--first (org-ml-is-type 'property-drawer it))
-                    (org-ml-fold))
-          (let ((drawers (-some->> (org-ml-get-children section)
-                                   (--filter (org-ml-is-type 'drawer it)))))
+          (-some->> (--first (org-ml--is-type 'property-drawer it) section)
+            (org-ml-fold))
+          (let ((drawers (->> (org-element-contents section)
+                              (--filter (org-ml--is-type 'drawer it)))))
             (--each drawers (org-ml-fold it))))))
     (cl-case fold-state
       (none
@@ -6992,7 +8123,7 @@ of the following:
 - [A B]: parse all headlines whose first point falls between points
   A and B in the buffer; if A and B are nil, use `point-min' and
   `point-max' respectively.
-- 'all': parse all headlines (equivalent to [nil nil])
+- `all': parse all headlines (equivalent to [nil nil])
 
 Each headline is obtained with `org-ml-parse-headline-at'."
   (cl-labels
@@ -7054,148 +8185,103 @@ nil (see this for use and meaning of FUN)."
          (nreverse it)
          (--each it (org-ml~update nil fun it)))))
 
-;;; depreciated functions
+(org-ml--defun* org-ml-update-supersections (which fun)
+  "Update some headline supersections in the current using FUN.
 
-;; affiliated keywords
+See `org-ml-parse-headlines' for the meaning of WHICH.
 
-(defun org-ml-get-affiliated-keyword (key node)
-  "Get the value of affiliated keyword KEY in NODE.
+Headlines are updated using `org-ml~update' with DIFF-ARG set to
+nil (see this for use and meaning of FUN)."
+  ;; don't use the myers diff algorithm here, since these functions are meant
+  ;; for batch processing.
+  (save-excursion
+    (cl-labels
+        ((map-to-subheadlines
+           (headline)
+           (-each (nreverse (org-ml-headline-get-subheadlines headline))
+             #'map-to-subheadlines)
+           (-let* (((ss0 &as &plist :pre-blank pb0 :section nodes0)
+                    (org-ml-headline-get-supersection headline))
+                   ((ss1 &as &plist :pre-blank pb1 :section nodes1) (funcall fun ss0)))
+             (if (or (not pb1) (= pb0 pb1))
+                 (let ((s (->> (-map #'org-ml-to-string nodes1)
+                               (apply #'concat (make-string pb0 ?\n)))))
+                   (if nodes0
+                       (let ((begin (org-element-begin (-first-item nodes0)))
+                             (end (org-element-end (-last-item nodes0))))
+                         (org-ml--replace-region begin end s))
+                     (let* ((begin (or (org-element-contents-begin headline)
+                                       ;; If there are no contents, go to
+                                       ;; headline start, try to go to next
+                                       ;; line, and insert new line if we can't
+                                       ;; (which means we are at the end)
+                                       (progn
+                                         (goto-char (org-element-begin headline))
+                                         (forward-line)
+                                         (if (bolp) (point)
+                                           ;; use this since this plays nice
+                                           ;; with evil mode
+                                           (when (re-search-forward "$" nil t)
+                                             (replace-match "\n" nil nil))
+                                           (forward-line)
+                                           (point))))))
+                       (goto-char begin)
+                       (insert s))))
+               (let ((headline* (->> (org-ml-copy headline)
+                                     (org-ml-headline-set-subheadlines nil)
+                                     (org-ml-headline-set-supersection ss1)))
+                     (begin (org-element-begin headline))
+                     (end (or (outline-next-heading) (point-max))))
+                 (org-ml--replace-bounds nil begin end headline*))))))
+      (-each (nreverse (org-ml--parse-patterns-where which "^\\* "))
+        #'map-to-subheadlines))))
 
-See `org-ml-set-affiliated-keyword' for the meaning of KEY.
+(org-ml--defun* org-ml-update-supercontents (config which fun)
+  "Update some headline supercontents in the current using FUN.
 
-WARNING: This function is depreciated and will be removed in a
-future major revision. Its functionality has been merged with
-`org-ml-get-property'."
-  (unless (or (memq key '(:caption :header :name :plot :results))
-              (s-starts-with? ":attr_" (symbol-name key)))
-    (org-ml--arg-error "Invalid affiliated keyword requested: %s" key))
-  (org-ml--get-property-nocheck key node))
+See `org-ml-parse-headlines' for the meaning of WHICH.
 
-(defun org-ml-set-affiliated-keyword (key value node)
-  "Set affiliated keyword KEY in NODE to VALUE.
-This is just like `org-ml--set-property-nocheck' except it will
-delete KEY from the plist if VALUE is nil.
+Headlines are updated using `org-ml~update' with DIFF-ARG set to
+nil (see this for use and meaning of FUN)."
+  (org-ml-update-supersections* which
+    (->> (org-ml--supersection-to-supercontents config it)
+         (funcall fun)
+         (org-ml--supercontents-to-supersection config))))
 
-NOTE that VALUE should reflect the required value of affiliated
-keyword given by KEY. The format for each keyword is given below:
-- NAME `STRING': `STRING'
-- PLOT `STRING': `STRING'
-- RESULTS[`STRING1'] `STRING2': (STRING2 . STRING1)
-  where `STRING1' may be nil
-- CAPTION[`STRING1'] `STRING2': ((STRING2 . STRING1) ...)
-  where `STRING1' may be nil and multiple list members
-  correspond to multiple caption entries
-- HEADERS `STRING': (STRING ...) where multiple list members
-  correspond to multiple headers entries
-- CAPTION[`STRING'] `SECSTRING': ((STRING . SECSTRING) ...)
-  where `STRING' may be nil and multiple list members
-  correspond to multiple caption entries
+;;; deprecated functions
 
-In the case of ATTR_BACKEND, KEY is like `:attr_x' where `x'
-corresponds to BACKEND and VALUE is a list of strings
-corresponding to multiple entries of the attribute.
+(define-obsolete-function-alias 'org-ml-timestamp-get-range 'org-ml-timestamp-get-length "6.0.0")
 
-WARNING: This function is depreciated and will be removed in a
-future major revision. Its functionality has been merged with
-`org-ml-set-property'"
-  (unless (org-ml-is-any-type org-ml--element-nodes-with-affiliated node)
-    (org-ml--arg-error
-     "Node type '%s' does not allow affiliated keywords"
-     (org-ml-get-type node)))
-  (let ((props
-         (if value
-             (plist-put (org-ml-get-all-properties node) key value)
-           (org-ml--plist-remove key (org-ml-get-all-properties node)))))
-    (org-ml--construct (org-ml-get-type node) props (org-ml-get-children node))))
+(defun org-ml-timestamp-set-range (n timestamp)
+  "Return TIMESTAMP node with range set to N seconds.
 
-(org-ml--defun-anaphoric* org-ml-map-affiliated-keyword (key fun node)
-  "Apply FUN to value of affiliated keyword KEY in NODE.
+If TIMESTAMP is ranged, keep start time the same and adjust the end
+time. If not, make a new end time. The units for RANGE are in minutes
+if TIMESTAMP is in long format and days if TIMESTAMP is in short
+format.
 
-See `org-ml-set-affiliated-keyword' for the meaning of KEY.
+This function is deprecated. Use `org-ml-timestamp-set-length'
+instead."
+  (if (->> (org-ml-timestamp-get-start-time timestamp)
+           (org-ml-timelist-has-time))
+      (org-ml-timestamp-set-length (* 60 n) 'minute timestamp)
+    (org-ml-timestamp-set-length (* 86400 n) 'day timestamp)))
 
-WARNING: This function is depreciated and will be removed in a
-future major revision. Its functionality has been merged with
-`org-ml-map-property'."
-  (-some--> (org-ml-get-affiliated-keyword key node)
-    (org-ml-set-affiliated-keyword key (funcall fun it) node)))
+(define-obsolete-function-alias `org-ml-time-is-long 'org-ml-timelist-has-time "6.0.0")
 
-(defun org-ml-set-caption! (caption node)
-  "Set the caption affiliated keyword of NODE.
+(define-obsolete-function-alias `org-ml-time-to-unixtime 'org-ml-timelist-to-unixtime "6.0.0")
 
-CAPTION can be one of the following:
-- STRING: produces #+CAPTION: `STRING'
-- (STRING1 STRING2): produces #+CAPTION[`STRING2']: `STRING1'
-- ((STRING1 STRING2) ...): like above but makes multiple
-  caption entries
-- nil: removes all captions
+(defun org-ml-unixtime-to-time-short (unixtime)
+  "Convert UNIXTIME to list like (YEAR MONTH DAY).
 
-WARNING: This function is depreciated and will be removed in a
-future major revision. Its functionality has been merged with
-`org-ml-set-property'."
-  (cl-flet
-      ((is-metacell
-        (cell)
-        (pcase cell (`(,(pred stringp) ,(pred stringp)) t)))
-       (convert-metacell
-        (cell)
-        (cons (org-ml-build-secondary-string! (cadr cell)) (car cell))))
-    (let ((caption
-           (pcase caption
-             ((pred stringp)
-              (list (list (org-ml-build-secondary-string! caption))))
-             ((pred is-metacell)
-              (list (convert-metacell caption)))
-             ((pred (lambda (x) (-all? #'is-metacell x)))
-              (-map #'convert-metacell caption))
-             (`nil nil)
-             (e (org-ml--arg-error "Invalid caption given: %s" e)))))
-      (org-ml-set-affiliated-keyword :caption caption node))))
+This function is deprecated."
+  (-take 3 (org-ml-unixtime-to-timelist nil unixtime)))
 
-;; headline batch processing
+(defun org-ml-unixtime-to-time-long (unixtime)
+  "Convert UNIXTIME to list like (YEAR MONTH DAY HOUR MINUTE).
 
-(defalias 'org-ml-get-some-headlines 'org-ml-parse-headlines)
-
-(defun org-ml-get-headlines ()
-  "Return list of all headline nodes from current buffer.
-
-This function is depreciated and will be removed in a later release.
-Use `org-ml-parse-headlines' instead."
-  (org-ml-parse-headlines 'all))
-
-(defalias 'org-ml-get-some-subtrees 'org-ml-parse-subtrees)
-
-(defun org-ml-get-subtrees ()
-  "Return list of all subtree nodes from current buffer.
-
-This function is depreciated and will be removed in a later release.
-Use `org-ml-parse-subtrees' instead."
-  (org-ml-parse-subtrees 'all))
-
-(defalias 'org-ml-do-some-headlines 'org-ml-update-headlines)
-(defalias 'org-ml-do-some-headlines* 'org-ml-update-headlines*)
-
-(org-ml--defun* org-ml-do-headlines (fun)
-  "Update all headlines in the current buffer using FUN.
-
-Headlines are updated using `org-ml-update-this-headline' (see this for
-use and meaning of FUN).
-
-This function is depreciated and will be removed in a later release.
-Use `org-ml-parse-headlines' instead."
-  (org-ml-update-headlines 'all fun))
-
-(defalias 'org-ml-do-some-subtrees 'org-ml-update-subtrees)
-(defalias 'org-ml-do-some-subtrees* 'org-ml-update-subtrees*)
-
-(org-ml--defun* org-ml-do-subtrees (fun)
-  "Update all toplevel subtrees in the current buffer using FUN.
-
-Subtrees are updated using `org-ml-update-this-subtree' (see this for use
-and meaning of FUN).
-
-This function is depreciated and will be removed in a later release.
-Use `org-ml-update-subtrees' instead."
-  (org-ml-update-subtrees 'all fun))
+This function is deprecated."
+  (org-ml-unixtime-to-timelist t unixtime))
 
 (provide 'org-ml)
 ;;; org-ml.el ends here

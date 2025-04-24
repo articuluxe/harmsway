@@ -1030,35 +1030,26 @@
 
 (cl-defmethod forge--topic-template-files ((repo forge-github-repository)
                                            (_ (subclass forge-issue)))
-  (and-let* ((files (magit-revision-files (oref repo default-branch))))
-    (let ((case-fold-search t))
-      (if-let ((file (seq-find (##string-match-p "\
-\\`\\(\\|docs/\\|\\.github/\\)issue_template\\(\\.[a-zA-Z0-9]+\\)?\\'" %)
-                               files)))
-          (list file)
-        (setq files (seq-filter
-                     (##string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" %)
-                     files))
-        (if-let ((conf (seq-find
-                        (##equal (file-name-nondirectory %) "config.yml")
-                        files)))
-            (nconc (delete conf files)
-                   (list conf))
-          files)))))
+  ;; Upstream documentation is unclear but experimentation indicates that
+  ;; placing the template directory in ./ or docs/ does not work, a single
+  ;; template file is not supported, and silly names like IsSuE_tEmPlAtE
+  ;; are supported (but we don't support that here anyway).  We do not
+  ;; support experimental issue *forms* for now.  Make sure the config
+  ;; file comes last.
+  (or (nconc (forge--topic-template-files-1
+              repo "md" ".github/issue_template")
+             (forge--topic-template-files-1
+              repo nil  ".github/issue_template/config.yml"))
+      (nconc (forge--topic-template-files-1
+              repo "md" ".github/ISSUE_TEMPLATE")
+             (forge--topic-template-files-1
+              repo nil  ".github/ISSUE_TEMPLATE/config.yml"))))
 
 (cl-defmethod forge--topic-template-files ((repo forge-github-repository)
                                            (_ (subclass forge-pullreq)))
-  (and-let* ((files (magit-revision-files (oref repo default-branch))))
-    (let ((case-fold-search t))
-      (if-let ((file (seq-find (##string-match-p "\
-\\`\\(\\|docs/\\|\\.github/\\)pull_request_template\\(\\.[a-zA-Z0-9]+\\)?\\'" %)
-                               files)))
-          (list file)
-        ;; Unlike for issues, the web interface does not support
-        ;; multiple pull-request templates.  The API does though,
-        ;; but due to this limitation I doubt many people use them,
-        ;; so Forge doesn't support them either.
-        ))))
+  ;; The web interface does not support multiple pull-request templates,
+  ;; and while the API theoretically does, we don't support that here.
+  (forge--topic-template-files-1 repo nil ".github/PULL_REQUEST_TEMPLATE"))
 
 (cl-defmethod forge--set-default-branch ((repo forge-github-repository) branch)
   (forge--ghub-patch repo
@@ -1089,12 +1080,26 @@
            `((organization . ,fork))))
     (ghub-wait (format "/repos/%s/%s" fork name) nil :auth 'forge)))
 
-(cl-defmethod forge--merge-pullreq ((_repo forge-github-repository)
-                                    topic hash method)
-  (forge--ghub-put topic
+(cl-defmethod forge--merge-pullreq ((repo forge-github-repository)
+                                    pullreq hash method)
+  (forge--ghub-put pullreq
     "/repos/:owner/:repo/pulls/:number/merge"
     `((merge_method . ,(symbol-name method))
-      ,@(and hash `((sha . ,hash))))))
+      ,@(and hash `((sha . ,hash))))
+    :errorback t
+    :callback
+    (lambda (&rest _)
+      (forge--pull
+       repo
+       (lambda ()
+         (when-let* ((branch (or (forge--pullreq-branch-active pullreq)
+                                 (forge--branch-pullreq pullreq)))
+                     (upstream (magit-get-local-upstream-branch branch))
+                     (remote (oref repo remote)))
+           (magit-call-git "checkout" upstream)
+           (magit-call-git "pull" "--ff-only" remote (magit-pull-arguments))
+           (magit-call-git "branch" "-d" branch)
+           (forge-refresh-buffer)))))))
 
 ;;; Wrappers
 

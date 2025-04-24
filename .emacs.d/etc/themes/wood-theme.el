@@ -27,7 +27,7 @@
 (require 'wood)
 
 (wood-deftheme wood
-  "A warm theme inspired by wood and plants colours."
+  "Relaxing warm theme inspired by wood and plants colours."
   
   ;; declare color classes to use
   ((((class color) (min-colors #xffffff)) ; 24 bit color
@@ -36,7 +36,7 @@
    
    ;; Define colours, one columns per class in order
    ;; Woods (main)
-   (wood-bark-dark "#2b0400")
+   (wood-bark-dark "#280000")
    (wood-bark "#331400")
    (wood-bark-light "#401900") ; result of auto wood-indent from #331400
    (wood-sap "#402510")        ; slight blue for contrast
@@ -59,12 +59,12 @@
    (wood-leaf-momiji "#ff6900")
    
    ;; Flowers (emphasis)
-   (wood-rose "#ba0016")
-   (wood-rose-light "#ec6481") ; #d96c92 #ec6481 #ff5d71
-   (wood-lilac "#7d1636")
+   (wood-rose "#d00016")
+   (wood-rose-light "#ff6481") ; #d96c92 #ff5d71
+   (wood-lilac "#9d1650")
    (wood-lilac-light "#e372d9") ; #f782f7 #d96c92
-   (wood-iris "#5f4dcd")
-   (wood-iris-light "#aaaaff")
+   (wood-iris "#6644cc")
+   (wood-iris-light "#bbaaff")
    (wood-sky "#55aaff")
    (wood-sky-light "#55eeff")
    

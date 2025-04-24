@@ -492,9 +492,9 @@
 (cl-defmethod forge--submit-edit-post ((_ forge-gitlab-repository) post)
   (forge--glab-put post
     (cl-etypecase post
-      (forge-pullreq "/projects/:project/merge_requests/:number")
-      (forge-issue   "/projects/:project/issues/:number")
-      (forge-issue-post "/projects/:project/issues/:topic/notes/:number")
+      (forge-pullreq      "/projects/:project/merge_requests/:number")
+      (forge-issue        "/projects/:project/issues/:number")
+      (forge-issue-post   "/projects/:project/issues/:topic/notes/:number")
       (forge-pullreq-post "/projects/:project/merge_requests/:topic/notes/:number"))
     (if (cl-typep post 'forge-topic)
         (let-alist (forge--topic-parse-buffer)
@@ -589,15 +589,11 @@
 
 (cl-defmethod forge--topic-template-files ((repo forge-gitlab-repository)
                                            (_ (subclass forge-issue)))
-  (seq-filter
-   (##string-match-p "\\`\\.gitlab/issue_templates/.+\\.md\\'" %)
-   (magit-revision-files (oref repo default-branch))))
+  (forge--topic-template-files-1 repo "md" ".gitlab/issue_templates"))
 
 (cl-defmethod forge--topic-template-files ((repo forge-gitlab-repository)
                                            (_ (subclass forge-pullreq)))
-  (seq-filter
-   (##string-match-p "\\`\\.gitlab/merge_request_templates/.+\\.md\\'" %)
-   (magit-revision-files (oref repo default-branch))))
+  (forge--topic-template-files-1 repo "md" ".gitlab/merge_request_templates"))
 
 (cl-defmethod forge--fork-repository ((repo forge-gitlab-repository) fork)
   (with-slots (owner name) repo

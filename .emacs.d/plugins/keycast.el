@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/tarsius/keycast
 ;; Keywords: multimedia
 
-;; Package-Version: 1.4.2
+;; Package-Version: 1.4.3
 ;; Package-Requires: ((emacs "28.1") (compat "30.0.2.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -520,7 +520,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 (defun keycast--tree-member (elt tree &optional delete)
   ;; Also known as auto-compile--tree-member.
   (and (listp tree)
-       (if-let* ((pos (cl-position elt tree))
+       (if-let* ((pos (cl-position elt tree :test #'equal))
                  (mem (nthcdr pos tree)))
            (cond ((not delete) mem)
                  ((cdr mem)

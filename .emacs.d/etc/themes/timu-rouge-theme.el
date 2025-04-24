@@ -6,7 +6,7 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 20 Oct 2021
 ;; Keywords: faces themes
-;; Version: 1.9
+;; Version: 2.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-rouge-theme
 
