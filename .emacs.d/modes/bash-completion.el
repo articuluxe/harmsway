@@ -294,7 +294,7 @@ Bash processes.")
 (defconst bash-completion-special-chars "[ -$&-*,:-<>?[-^`{-}]"
   "Regexp of characters that must be escaped or quoted.")
 
-(defconst bash-completion--ps1 "'==emacs==ret=$?==.'"
+(defconst bash-completion--ps1 "'==emacs==ret=${__ebcret:-$?}==.'"
   "Value for the special PS1 prompt set for completions, quoted.")
 
 (eval-when-compile
@@ -1532,12 +1532,12 @@ Return the status code of the command, as a number."
             ;; single process, assume __ebcpre is already defined
             ((not define-functions)
              (concat
-              "if type __ebcpre &>/dev/null; then "
-              "  __ebcpre; %s; "
+              "__ebcor=$?; if type __ebcpre &>/dev/null; then "
+              "  __ebcpre; %s; __ebcret $?; "
               "else "
               "  echo ==emacs==nopre=${BASH_VERSION}==.; "
-              "  __ebcp=(\"$PS1\" \"$PROMPT_COMMAND\");"
-              "  unset PS1 PROMPT_COMMAND;"
+              "  __ebcp=(\"$PS1\" \"$PROMPT_COMMAND\" $__ebcor);"
+              "  unset PS1 PROMPT_COMMAND __ebcor;"
               "fi;\n"))
             ;; single process, define __ebcpre
             (t
@@ -1548,28 +1548,26 @@ Return the status code of the command, as a number."
                "    c=$((c+1));"
                "  fi;"
                "  history -d $c &>/dev/null || true;"
-               "}; function __ebcpre {"
+               "} ; function __ebcret {"
+               "  __ebcret=$1;"
+               "  return ${__ebcp[2]};"
+               "} ; function __ebctrap {"
+               " if [[ -n \"$__ebcret\" && ${#__ebcp[@]} -gt 0 ]]; then"
+               "  PS1=\"${__ebcp[0]}\";"
+               "  PROMPT_COMMAND=\"${__ebcp[1]}\";"
+               "  unset __ebcp __ebcret;"
+               " fi;"
+               "} ; trap __ebctrap DEBUG ; function __ebcpre {"
+               "  __ebcor=${__ebcor:-$?}; "
                "  set +x; set +o emacs; set +o vi;"
                "  echo \"==emacs==bash=${BASH_VERSION}==.\";"
                "  if [[ ${#__ebcp[@]} = 0 ]]; then "
-               "    __ebcp=(\"$PS1\" \"$PROMPT_COMMAND\");"
+               "    __ebcp=(\"$PS1\" \"$PROMPT_COMMAND\" $__ebcor);"
                "  fi;"
-               "  PROMPT_COMMAND=" ;; set a temporary prompt
-               (bash-completion-quote
-                (concat "PS1=" bash-completion--ps1 ";"
-                        "PROMPT_COMMAND=" ;; recover prompt
-                        (bash-completion-quote
-                         (concat
-                          "__ebcr=$?;"
-                          "PS1=\"${__ebcp[0]}\";"
-                          "PROMPT_COMMAND=\"${__ebcp[1]}\";"
-                          "unset __ebcp;"
-                          "if [[ -n \"$PROMPT_COMMAND\" ]]; then"
-                          "  (exit $__ebcr); eval \"$PROMPT_COMMAND\";"
-                          "fi;"))))
-               ";"
+               "  PS1=" bash-completion--ps1 ";"
+               "  unset PROMPT_COMMAND __ebcor;"
                "  __ebcnohistory 1;"
-               "} && { __ebcpre; %s; }\n")))
+               "} ; { __ebcpre; %s; __ebcret $?; }\n")))
            commandline)))
     (setq bash-completion--debug-info
           (list (cons 'commandline complete-command)
@@ -1591,7 +1589,7 @@ Return the status code of the command, as a number."
           ;; common initialization, then retry.
           (bash-completion-send "__ebcnohistory" process timeout debug-context 'define-functions)
           (bash-completion--setup-bash-common process)
-          (funcall send-string process (concat "__ebcpre; " commandline ";\n"))
+          (funcall send-string process (concat "__ebcpre; " commandline "; __ebcret $?\n"))
           (bash-completion--wait-for-regexp
            "short-timeout" process "==emacs==bash=[0-9].*?==."
            bash-completion-short-command-timeout))

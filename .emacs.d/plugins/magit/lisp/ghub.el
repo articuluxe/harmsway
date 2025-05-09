@@ -6,12 +6,12 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 4.3.0
+;; Package-Version: 4.3.1
 ;; Package-Requires: (
 ;;     (emacs "29.1")
-;;     (compat "30.0.2.0")
+;;     (compat "30.1.0.0")
 ;;     (let-alist "1.0.6")
-;;     (llama "0.6.1")
+;;     (llama "0.6.2")
 ;;     (treepy "0.1.2"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -593,15 +593,16 @@ Signal an error if the id cannot be determined."
                'ghub--read-json-payload)
            url-http-response-status))
 
-(defun ghub--read-json-payload (_status)
+(defun ghub--read-json-payload (_status &optional json-type-args)
   (and-let* ((payload (ghub--decode-payload)))
     (ghub--assert-json-available)
     (condition-case nil
-        (json-parse-string payload
-                           :object-type 'alist
-                           :array-type 'list
-                           :null-object nil
-                           :false-object nil)
+        (apply #'json-parse-string payload
+               (or json-type-args
+                   '( :object-type alist
+                      :array-type list
+                      :null-object nil
+                      :false-object nil)))
       (json-parse-error
        (pop-to-buffer (current-buffer))
        (setq-local ghub-debug t)

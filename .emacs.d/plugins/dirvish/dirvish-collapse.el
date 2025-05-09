@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.7
+;; Version: 2.3.0
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -71,7 +71,7 @@
 
 (dirvish-define-attribute collapse
   "Collapse unique nested paths."
-  :when (and (not (dirvish-prop :fd-arglist))
+  :when (and (not (dirvish-prop :fd-info))
              (not (dirvish-prop :remote)))
   (when-let* ((cache (dirvish-collapse--cache f-name))
               (head (car cache))

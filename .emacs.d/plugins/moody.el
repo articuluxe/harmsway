@@ -32,15 +32,80 @@
 
 ;; The biggest differences to similar packages is that this one is
 ;; much simpler and much more consistent.  When using this package,
-;; then only the color of the mode line changes when a window
-;; becomes in-/active.  Other packages additionally change what
-;; elements are being displayed and also the appearance of an
-;; individual element may change completely, which I found highly
-;; distracting when trying out those packages, because I never knew
-;; what visual clues to look for in order to find a certain piece
-;; of information.
+;; only the color of the mode line changes when a window becomes
+;; in-/active.  Other packages additionally change what elements
+;; are being displayed and also the appearance of an individual
+;; element may change completely, which I found highly distracting
+;; when trying out those packages, because I never knew what visual
+;; clues to look for in order to find a certain piece of information.
 
-;; See README.org for setup instructions.
+;; Configuration
+;; =============
+
+;; Replacing default elements
+;; --------------------------
+;;
+;; To style the buffer identification, displayed in the mode line, as
+;; shown at https://github.com/tarsius/moody, add the following to your
+;; init file.
+;;
+;;   (require 'moody)
+;;   (moody-replace-mode-line-front-space)
+;;   (moody-replace-mode-line-buffer-identification)
+;;   (moody-replace-vc-mode)
+
+;; Or if you are using `use-package'.
+;;
+;;   (use-package moody
+;;     :config
+;;     (moody-replace-mode-line-front-space)
+;;     (moody-replace-mode-line-buffer-identification)
+;;     (moody-replace-vc-mode))
+
+;; Moody provides functions named `moody-replace-...', each of which
+;; replaces a particular element with a styled variant.  These functions
+;; can also be called interactively, in which case they toggle between
+;; using the styled and vanilla variants of their respective element.
+
+;; To learn what element substitutions are available out of the box, use
+;; M-x moody-replace- TAB.
+
+;; Styling
+;; -------
+
+;; Depending on the used theme, the faces `mode-line', `mode-line-active'
+;; and `mode-line-inactive' might have to be modified when using Moody.
+
+;; Let's go through some changes that are commonly required.  We will be
+;; using `set-face-attribute' to achieve this.  The calls to that function
+;; should be placed right after `load-theme'.
+
+;; These examples assume Emacs 29.1 or later.  If you use an older
+;; release, modify `mode-line' instead of `mode-line-active'.
+
+;; Many themes (including the default theme) set the `:box' attribute
+;; for these faces.  That conflicts with Moody, so you most likely have
+;; to remove those boxes.
+;;
+;;   (set-face-attribute 'mode-line-active nil :box 'unspecified)
+;;   (set-face-attribute 'mode-line-inactive nil :box 'unspecified)
+
+;; A look similar to boxes can be achieved by using the `:overline' and
+;; `:underline' attributes.
+;;
+;;   (set-face-attribute 'mode-line-active nil :overline "blue")
+;;   (set-face-attribute 'mode-line-active nil
+;;                       :underline `(:color "blue" :position t))
+;;
+;;   (set-face-attribute 'mode-line-inactive nil :overline "green")
+;;   (set-face-attribute 'mode-line-inactive nil
+;;                       :underline `(:color "green" :position t))
+;;
+;; Beginning with Emacs 29.1, we can use :position t to put the
+;; underline at the very bottom of the mode line.  When using an older
+;; release, then this unfortunately can only be enabled globally.
+;;
+;;   (setq x-underline-at-descent-line t)
 
 ;;; Code:
 
@@ -91,12 +156,13 @@ the image cannot be displayed.")
 (defcustom moody-ribbon-background '(default :background)
   "Indirect specification of the background color used for ribbons.
 
-This has the form (FACE ATTRIBUTE), and the color to be used is
-determined using (face-attribute FACE ATTRIBUTE).  If FACE is
+This has the form (FACE ATTRIBUTE), and the color to be used
+is determined using (face-attribute FACE ATTRIBUTE).  If FACE is
 the special value `base', then, depending on whether the window
-is active or not either `mode-line' or `mode-line-inactive' is
-used (or if `moody-wrap's optional arguments FACE-ACTIVE and/or
-FACE-INACTIVE are specified, then those faces).
+is active or not either `mode-line-active' or `mode-line-inactive'
+is used (or if `moody-wrap's optional arguments FACE-ACTIVE and/or
+FACE-INACTIVE are specified, then those faces).  `mode-line-active'
+was added in Emacs 29.1, for older releases `mode-line' is used.
 
 To get the color used until v0.6.0, then use (base :underline)."
   :type '(list (symbol  :tag "Face")
@@ -152,8 +218,8 @@ to `up'.  The other valid value is `down'.
 
 FACE-ACTIVE and FACE-INACTIVE specify the faces to be used when
 the window is active respectively inactive.  If these faces are
-not specified, then faces based on `default', `mode-line' and
-`mode-line-active' are generated and used."
+not specified, then ad hoc faces based on `default', `mode-line',
+`mode-line-active' and `mode-line-inactive' are used."
   (moody-wrap string width direction 'ribbon face-active face-inactive))
 
 (defun moody-wrap (string &optional width direction type face-active face-inactive)
@@ -162,10 +228,13 @@ not specified, then faces based on `default', `mode-line' and
   (unless direction
     (setq direction 'down))
   (let* ((base  (if (moody-window-active-p)
-                    (or face-active 'mode-line)
+                    (or face-active
+                        (if (>= emacs-major-version 29)
+                            'mode-line-active
+                          'mode-line))
                   (or face-inactive 'mode-line-inactive)))
-         (outer (face-attribute base :background))
-         (line  (face-attribute base :underline))
+         (outer (face-attribute base :background nil t))
+         (line  (face-attribute base :underline nil t))
          (line  (cond ((and line (listp line))
                        (plist-get line :color))
                       ((eq line 'unspecified) outer)
@@ -173,8 +242,8 @@ not specified, then faces based on `default', `mode-line' and
          (inner (if (eq type 'ribbon)
                     (pcase-let ((`(,face ,attribute) moody-ribbon-background))
                       (face-attribute (if (eq face 'base) base face)
-                                      attribute))
-                  (face-attribute 'default :background)))
+                                      attribute nil t))
+                  (face-attribute 'default :background nil t)))
          (slant (if (eq direction 'down)
                     (list outer line inner)
                   (list inner line outer)))

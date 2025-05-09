@@ -1,2 +1,2 @@
-git checkout -b main origin/main
+git checkout main
 git pull

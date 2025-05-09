@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.7
+;; Version: 2.3.0
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -454,7 +454,7 @@ PREDS are locally composed predicates."
 
 (defun dirvish-emerge--apply ()
   "Readin `dirvish-emerge-groups' and apply them."
-  (when (and (not (dirvish-prop :fd-arglist))
+  (when (and (not (dirvish-prop :fd-info))
              (or (dirvish-prop :force-emerge)
                  (< (hash-table-count dirvish--dir-data)
                     dirvish-emerge-max-file-count)))

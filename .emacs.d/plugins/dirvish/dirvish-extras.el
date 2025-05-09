@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.7
+;; Version: 2.3.0
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -412,12 +412,14 @@ current layout defined in `dirvish-layout-recipes'."
   [:description
    (lambda () (dirvish--format-menu-heading
           "Dirvish main menu"
-          "NOTICE: these commands require relevant Dirvish extensions"))
+          "NOTICE: these commands require relevant Dirvish extensions")
+     (declare-function dirvish-narrow "dirvish-narrow"))
    "" "Actions & Essential commands"
    ("u" "User interface setup"   dirvish-setup-menu)
    ("c" "Dired cheatsheet"       dirvish-dired-cheatsheet)
-   ("/" "Perform fd search"      dirvish-fd)
-   ("@" "Find all dirs by fd"    dirvish-fd-jump)
+   ("/" "Run fd search here"     dirvish-fd)
+   ("#" "Search everything in ~" (lambda () (interactive)
+                                   (dirvish-fd "~" "") (dirvish-narrow)))
    ("R" "Rsync marked files"     dirvish-rsync)
    ("n" "Live narrowing"         dirvish-narrow)
    "Transient commands"
@@ -426,7 +428,7 @@ current layout defined in `dirvish-layout-recipes'."
    ("s" "Sort current buffer"    dirvish-quicksort)
    ("l" "Setup listing switches" dirvish-ls-switches-menu)
    ("f" "Setup fd-find switches" dirvish-fd-switches-menu
-    :if (lambda () (dirvish-prop :fd-arglist)))
+    :if (lambda () (dirvish-prop :fd-info)))
    ("S" "Setup rsync switches"   dirvish-rsync-switches-menu)
    ("m" "Manage marks"           dirvish-mark-menu)
    ("e" "Manage emerged groups"  dirvish-emerge-menu)

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2021-2025 Alex Lu
 ;; Author : Alex Lu <https://github.com/alexluigit>
-;; Version: 2.2.7
+;; Version: 2.3.0
 ;; Keywords: files, convenience
 ;; Homepage: https://github.com/alexluigit/dirvish
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -33,6 +33,7 @@ FN is the original `dired-noselect' closure."
          (vec (tramp-dissect-file-name dir))
          (async-type (dirvish-tramp--async-p vec))
          (gnuls "ls")
+         (dired-buffers nil) ; disable reuse from `dired'
          (buffer (cond ((eq async-type 'local) (funcall fn dir flags))
                        (saved-flags (funcall fn dir saved-flags)) ; skip
                        ((= (or (process-file gnuls nil nil nil "--version") 1) 0)
