@@ -129,7 +129,8 @@
   '((t :background "#fff"))
   "The border color of the child frame."
   :group 'flymake-posframe
-  :type 'string)
+  ;:type 'string
+  )
 
 (defun flymake-posframe-get-diagnostic-text ()
   "Get the flymake diagnostic text for the thing at point."
