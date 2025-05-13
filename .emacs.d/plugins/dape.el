@@ -6,7 +6,7 @@
 ;; Maintainer: Daniel Pettersson <daniel@dpettersson.net>
 ;; Created: 2023
 ;; License: GPL-3.0-or-later
-;; Version: 0.24.0
+;; Version: 0.24.1
 ;; Homepage: https://github.com/svaante/dape
 ;; Package-Requires: ((emacs "29.1") (jsonrpc "1.0.25"))
 
@@ -3267,10 +3267,11 @@ Will use `dape-default-breakpoints-file' if FILE is nil."
              into serialized finally do
              (prin1 serialized (current-buffer)))
     ;; Skip write if nothing has changed since last save
-    (unless (equal (buffer-string)
+    (unless (and (file-exists-p file)
+                 (equal (buffer-string)
                    (with-temp-buffer
                      (insert-file-contents file)
-                     (buffer-string)))
+                     (buffer-string))))
       (write-region (point-min) (point-max) file nil
                     (unless (called-interactively-p 'interactive) 'quiet)))))
 

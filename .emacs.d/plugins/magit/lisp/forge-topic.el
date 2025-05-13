@@ -457,8 +457,15 @@ State is the \"public condition\".  I.e., is the topic still open?"
                                        nil))))
                 :custom (choice
                          (const open)
+                         (const closed)
                          (const (completed merged))
+                         (const completed)
+                         (const merged)
                          (const (unplanned duplicate outdated rejected))
+                         (const unplanned)
+                         (const duplicate)
+                         (const outdated)
+                         (const rejected)
                          (const :tag "all (nil)" nil)))
    (status      :documentation "\
 Limit list based on topic (private) status.
@@ -523,23 +530,29 @@ current Forge database."
 Limit list to topics created by given user."
                 :initarg :author
                 :initform nil
-                :label "Author (username)"
+                :label "Author"
                 :type (or string null)
-                :custom string)
+                :custom (choice
+                         (string :tag "username")
+                         (const :tag "no filter (nil)" nil)))
    (assignee    :documentation "\
 Limit list to topics assigned to given user."
                 :initarg :assignee
                 :initform nil
-                :label "Assignee (username)"
+                :label "Assignee"
                 :type (or string null)
-                :custom string)
+                :custom (choice
+                         (string :tag "username")
+                         (const :tag "no filter (nil)" nil)))
    (reviewer    :documentation "\
 Limit list to topics for which a review by the given user was requested."
                 :initarg :reviewer
                 :initform nil
-                :label "Reviewer (username)"
+                :label "Reviewer"
                 :type (or string null)
-                :custom string)
+                :custom (choice
+                         (string :tag "username")
+                         (const :tag "no filter (nil)" nil)))
    (global      :documentation "Whether to list topics for all repositories."
                 :initarg :global
                 :initform nil
@@ -645,9 +658,6 @@ Limit list to topics for which a review by the given user was requested."
            [:join    pullreq-mark :on (= pullreq-mark:pullreq        topic:id)
             :join            mark :on (= mark:id              pullreq-mark:id)]))
       ,@(pcase (and assignee type)
-          ('discussion
-           [:join discussion-assignee :on (= discussion-assignee:discussion  topic:id)
-            :join            assignee :on (= assignee:id       discussion-assignee:id)])
           ('issue
            [:join      issue-assignee :on (= issue-assignee:issue            topic:id)
             :join            assignee :on (= assignee:id            issue-assignee:id)])
@@ -675,8 +685,10 @@ Limit list to topics for which a review by the given user was requested."
        ,@(and marks     `((or ,@(mapcar (##`(=  mark:name ,%))  marks))))
        ,@(and saved     '((= topic:saved-p  't)))
        ,@(and author    `((= topic:author   ,author)))
-       ,@(and assignee  `((= assignee:login ,assignee)))
-       ,@(and reviewer  `((= assignee:login ,reviewer))))
+       ,@(and assignee (memq type '(issue pullreq))
+              `((= assignee:login ,assignee)))
+       ,@(and reviewer (eq type 'pullreq)
+              `((= assignee:login ,reviewer))))
       :order-by [,(pcase order
                     ('newest            '(desc topic:number))
                     ('oldest            '(asc  topic:number))

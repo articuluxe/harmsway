@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.18.3
+;; Version: 2.19.1
 ;; Package-Requires: ((emacs "28.1") (shell-maker "0.76.3"))
-(defconst chatgpt-shell--version "2.18.3")
+(defconst chatgpt-shell--version "2.19.1")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -189,6 +189,8 @@ For example:
 
 (defalias 'chatgpt-shell-save-session-transcript #'shell-maker-save-session-transcript)
 
+(defalias 'chatgpt-shell-proofread-region #'chatgpt-shell-proofread-paragraph-or-region)
+
 (defvar chatgpt-shell--prompt-history nil)
 
 (defcustom chatgpt-shell-language-mapping '(("elisp" . "emacs-lisp")
@@ -218,10 +220,9 @@ Objective-C -> (\"objective-c\" . \"objc\")"
   "Additional headers to make babel blocks work.
 
 Entries are of the form (language . headers).  Headers should
-conform to the types of `org-babel-default-header-args', which
-see.
+conform to the types of `org-babel-default-header-args'.
 
-Please submit contributions so more things work out of the box."
+Please submit contributions so more languages work out of the box."
   :type '(alist :key-type (string :tag "Language")
                 :value-type (alist :key-type (restricted-sexp :match-alternatives (keywordp) :tag "Argument Name")
                                    :value-type (string :tag "Value")))
@@ -1468,12 +1469,23 @@ If region is active, append to prompt."
   (chatgpt-shell-send-region-with-header chatgpt-shell-prompt-header-generate-unit-test))
 
 ;;;###autoload
-(defun chatgpt-shell-proofread-region ()
-  "Proofread text from region using ChatGPT.
+(defun chatgpt-shell-proofread-paragraph-or-region ()
+  "Proofread text from region or current paragraph using ChatGPT.
 
 See `chatgpt-shell-prompt-header-proofread-region' to change prompt or language."
   (interactive)
-  (let* ((region (chatgpt-shell--region))
+  (let* ((region (if (use-region-p)
+                     (chatgpt-shell--region)
+                   (save-excursion
+                     (mark-paragraph)
+                     ;; Adjust end to avoid including the newline character after the paragraph
+                     (let ((start (region-beginning))
+                           (end (progn (goto-char (region-end))
+                                       (skip-chars-backward "\n")
+                                       (point))))
+                       (list (cons :start start)
+                             (cons :end end)
+                             (cons :text (buffer-substring-no-properties start end)))))))
          (query (map-elt region :text))
          (context nil))
     (chatgpt-shell-request-and-insert-merged-response
