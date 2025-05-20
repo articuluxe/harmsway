@@ -129,7 +129,4 @@ host=${domain:-$(hostname -s)}
 # If we are in a container, initialize it
 [ -r ~/.singularity_profile ] && test "${SINGULARITY_NAME}" && . ~/.singularity_profile
 
-# Source personal data
-[ -r ~/.personal.env ] && . ~/.personal.env
-
 [ -r ~/.emacs_bash ] && . ~/.emacs_bash
