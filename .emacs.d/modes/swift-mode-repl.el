@@ -36,6 +36,7 @@
 (require 'subr-x)
 (require 'wid-edit)
 (require 'compile)
+(require 'rx)
 
 ;;;###autoload
 (defgroup swift-mode:repl nil
@@ -105,7 +106,8 @@ The string is split by spaces, then unquoted."
   :type 'string
   :safe #'stringp)
 
-(defcustom swift-mode:swift-testing-command-regexp "\\<swift test\\>"
+(defcustom swift-mode:swift-testing-command-regexp
+  "\\<swift \\(?:test\\|package\\|build\\)\\>"
   "Regexp to of command line of Swift Testing.
 
 When the command of `compile' matches this regexp, its
@@ -294,7 +296,9 @@ Return a JSON object."
   (unless project-directory (setq project-directory default-directory))
   (swift-mode:call-process-to-json
    swift-mode:swift-package-executable
-   "--package-path" project-directory "describe" "--type" "json"))
+   "--package-path" (expand-file-name project-directory)
+   "describe"
+   "--type" "json"))
 
 (defun swift-mode:read-main-module (project-directory)
   "Read the main module description from the manifest file Package.swift.
@@ -560,7 +564,7 @@ An list ARGS are appended for builder command line arguments."
           (zerop
            (apply #'swift-mode:call-process
                   swift-mode:swift-build-executable
-                  "--package-path" project-directory
+                  "--package-path" (expand-file-name project-directory)
                   args))
         (compilation-mode)
         (goto-char (point-min))
@@ -1055,6 +1059,25 @@ If FILE doesn't exist in the project, return nil."
                          swift-mode:compilation-swift-files)))
       (and path (list path)))))
 
+(defun swift-mode:resolve-and-highlight-swift-test-file ()
+  "Call `swift-mode:resolve-swift-test-file' on match and highlight if needed.
+
+When a function is specified as the `file' component of
+`compilation-error-regexp-alist-alist', `compile' does not highlight the
+matching filename.  So we have to highlight it here."
+  (save-match-data
+    (let ((start (match-beginning 2))
+          (end (match-end 2))
+          (result (funcall swift-mode:resolve-swift-test-file-function
+                           (match-string 2))))
+      (when result
+        (put-text-property
+         start
+         end
+         'font-lock-face
+         compilation-error-face))
+      result)))
+
 (defun swift-mode:setup-swift-testing ()
   "Setup `compilation-process-setup-function' for Swift Testing.
 
@@ -1081,10 +1104,7 @@ Also add an entry to `compilation-error-regexp-alist-alist'."
                           (group (+ digit))))
                         ": ")
                    ;; filename
-                   ,(lambda ()
-                      (save-match-data
-                        (funcall swift-mode:resolve-swift-test-file-function
-                                 (match-string 2))))
+                   ,#'swift-mode:resolve-and-highlight-swift-test-file
                    ;; line
                    3
                    ;; column

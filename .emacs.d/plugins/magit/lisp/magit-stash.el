@@ -173,14 +173,15 @@ while two prefix arguments are equivalent to `--all'."
 
 The message that Git would have picked, is available as the
 default (used when the user enters the empty string) and as
-the next history element (which can be accessed with \
-\\<minibuffer-local-map>\\[next-history-element])."
-  (read-string (format "Stash message (default: On%s:%s): "
-                       (magit--ellipsis) (magit--ellipsis))
-               nil nil
-               (format "On %s: %s"
-                       (or (magit-get-current-branch) "(no branch)")
-                       (magit-rev-format "%h %s"))))
+the first future history element.  The second future history
+element is just \"On BRANCH: \".  Future history elements can
+be accessed using \\<minibuffer-local-map>\\[next-history-element])."
+  (let ((branch (or (magit-get-current-branch) "(no branch)"))
+        (ellipsis (magit--ellipsis)))
+    (read-string (format "Stash message (default: On%s:%s): " ellipsis ellipsis)
+                 nil nil
+                 (list (format "On %s: %s" branch (magit-rev-format "%h %s"))
+                       (format "On %s: " branch)))))
 
 (defun magit-stash-read-message-traditional ()
   "Read a message from the minibuffer, to be used for a stash.
@@ -527,16 +528,12 @@ instead of \"Stashes:\"."
             (magit-insert-section (stash autostash)
               (insert (propertize "AUTOSTASH" 'font-lock-face 'magit-hash))
               (insert " " msg "\n")
-              (save-excursion
-                (backward-char)
-                (magit-log-format-margin autostash author date)))))
+              (magit-log-format-margin autostash author date))))
         (if verified
             (magit-git-wash (apply-partially #'magit-log-wash-log 'stash)
               "reflog" "--format=%gd%x00%aN%x00%at%x00%gs" ref)
           (insert ?\n)
-          (save-excursion
-            (backward-char)
-            (magit-make-margin-overlay)))))))
+          (magit-make-margin-overlay))))))
 
 ;;; List Stashes
 

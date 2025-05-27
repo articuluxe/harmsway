@@ -466,9 +466,7 @@
                   (magit-split-branch-name forge--buffer-head-branch))
                  (head-repo (forge-get-repository :stub head-remote)))
       (forge--glab-post head-repo "/projects/:project/merge_requests"
-        `((title . ,(if (if (local-variable-p 'forge-buffer-draft-p)
-                            forge-buffer-draft-p
-                          .draft)
+        `((title . ,(if forge--buffer-draft-p
                         (concat "Draft: " .title)
                       .title))
           (description . , .body)
@@ -485,7 +483,7 @@
     (if (forge-issue-p topic)
         "/projects/:project/issues/:number/notes"
       "/projects/:project/merge_requests/:number/notes")
-    `((body . ,(string-trim (buffer-string))))
+    `((body . ,(magit--buffer-string nil nil t)))
     :callback  (forge--post-submit-callback)
     :errorback (forge--post-submit-errorback)))
 
@@ -506,7 +504,7 @@
           `((title . , .title)
             ,@(and (not (equal .body (oref post body)))
                    `((description . , .body)))))
-      `((body . ,(string-trim (buffer-string)))))
+      `((body . ,(magit--buffer-string nil nil t))))
     :callback  (forge--post-submit-callback)
     :errorback (forge--post-submit-errorback)))
 

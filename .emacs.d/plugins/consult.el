@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 2.3
+;; Version: 2.4
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -829,7 +829,6 @@ asked for the directories or files to search via
                       ;; Preserve this-command across `completing-read-multiple' call,
                       ;; such that `consult-customize' continues to work.
                       (let ((this-command this-command)
-                            (def (abbreviate-file-name default-directory))
                             ;; bug#75910: category instead of `minibuffer-completing-file-name'
                             (minibuffer-completing-file-name t)
                             (ignore-case read-file-name-completion-ignore-case))
@@ -837,9 +836,9 @@ asked for the directories or files to search via
                             (lambda ()
                               (setq-local completion-ignore-case ignore-case)
                               (set-syntax-table minibuffer-local-filename-syntax))
-                          (completing-read-multiple "Directories or files: "
+                          (completing-read-multiple (format-prompt "Dirs or files" "./")
                                                     #'completion-file-name-table
-                                                    nil t def 'consult--path-history def))))
+                                                    nil t nil 'consult--path-history ""))))
                ((and `(,p) (guard (file-directory-p p))) p)
                (ps (setq paths (mapcar (lambda (p)
                                          (file-relative-name (expand-file-name p)))
@@ -1532,7 +1531,9 @@ See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
       ;; Switch to buffer if it is not visible
       (when-let ((buf (marker-buffer pos)))
         (or (and (eq (current-buffer) buf) (eq (window-buffer) buf))
-            (consult--buffer-action buf 'norecord)
+            (if-let ((win (get-buffer-window buf)))
+                (select-window win 'norecord)
+              (consult--buffer-action buf 'norecord))
             t))))
 
 (defun consult--jump (pos)

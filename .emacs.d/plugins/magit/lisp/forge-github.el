@@ -710,8 +710,7 @@
 
 ;;; Mutations
 
-(cl-defmethod forge--submit-create-discussion ((_ forge-github-repository)
-                                               repo category)
+(cl-defmethod forge--submit-create-discussion ((_ forge-github-repository) repo)
   (let-alist (forge--topic-parse-buffer)
     (ghub--graphql
      '(mutation (createDiscussion
@@ -724,7 +723,7 @@
                                      :where (and (= repository $s1)
                                                  (= name $s2))]
                                     (oref repo id)
-                                    category)))
+                                    forge--buffer-category)))
               (title . , .title)
               (body . , .body)))
      :callback  (forge--post-submit-callback)
@@ -763,9 +762,6 @@
 
 (cl-defmethod forge--submit-create-pullreq ((_ forge-github-repository) repo)
   (let-alist (forge--topic-parse-buffer)
-    (when (and .yaml (local-variable-p 'forge-buffer-draft-p))
-      (user-error "Cannot use yaml frontmatter and set `%s' at the same time"
-                  'forge-buffer-draft-p))
     (pcase-let* ((`(,base-remote . ,base-branch)
                   (magit-split-branch-name forge--buffer-base-branch))
                  (`(,head-remote . ,head-branch)
@@ -779,9 +775,7 @@
                         head-branch
                       (concat (oref head-repo owner) ":"
                               head-branch)))
-          (draft . ,(if (local-variable-p 'forge-buffer-draft-p)
-                        forge-buffer-draft-p
-                      .draft))
+          (draft . ,forge--buffer-draft-p)
           (maintainer_can_modify . t))
         :callback  (forge--post-submit-callback)
         :errorback (forge--post-submit-errorback)))))
@@ -798,12 +792,12 @@
               `((discussionId . ,(oref (forge-get-discussion post) their-id))
                 (replyToId . ,(oref post their-id)))
             `((discussionId . ,(oref post their-id))))
-        (body . ,(string-trim (buffer-string)))))
+        (body . ,(magit--buffer-string nil nil t))))
      :callback  (forge--post-submit-callback)
      :errorback (forge--post-submit-errorback)))
    (t
     (forge--ghub-post post "/repos/:owner/:repo/issues/:number/comments"
-      `((body . ,(string-trim (buffer-string))))
+      `((body . ,(magit--buffer-string nil nil t)))
       :callback  (forge--post-submit-callback)
       :errorback (forge--post-submit-errorback)))))
 
@@ -817,7 +811,7 @@
         (let-alist (forge--topic-parse-buffer)
           `((title . , .title)
             (body  . , .body)))
-      `((body . ,(string-trim (buffer-string)))))
+      `((body . ,(magit--buffer-string nil nil t))))
     :callback  (forge--post-submit-callback)
     :errorback (forge--post-submit-errorback)))
 
@@ -1057,7 +1051,7 @@
     (seq-some (lambda (file)
                 (and (string-match-p "\
 \\`\\(.github/\\|docs/\\)?pull_request_template\\(\\.[a-zA-Z0-9]+\\)?\\'" file)
-                     (concat branch ":" file)))
+                     (list (concat branch ":" file))))
               (magit-git-items "ls-tree" "-z" "--full-tree" "--name-only"
                                "-r" branch))))
 

@@ -47,15 +47,6 @@ exist (or its location is unknown), then this directory is used instead."
   :group 'forge
   :type 'directory)
 
-(defcustom forge-buffer-draft-p nil
-  "Whether new pull-requests start out as drafts by default.
-
-The buffer-local value is used to keep track of the draft status
-of the current pull-request."
-  :package-version '(forge . "0.4.0")
-  :group 'forge
-  :type 'boolean)
-
 ;;; Class
 
 (defclass forge-post (forge-object) () :abstract t)
@@ -112,92 +103,92 @@ an error."
   "Major mode for editing topic posts."
   :interactive nil)
 
-(defvar-local forge--buffer-base-branch nil)
-(defvar-local forge--buffer-head-branch nil)
-(defvar-local forge--buffer-post-object nil)
-(defvar-local forge--buffer-issue nil)
+(defvar-local forge--pre-post-buffer nil)
+
 (defvar-local forge--submit-post-function nil)
 (defvar-local forge--cancel-post-function nil)
-(defvar-local forge--pre-post-buffer nil)
-(make-variable-buffer-local 'forge-buffer-draft-p)
 
-(defun forge--prepare-post-buffer (filename &optional header source target template)
-  (let* ((repo (forge-get-repository :tracked))
-         (tree (oref repo worktree))
-         (file (convert-standard-filename
-                (if tree
-                    (expand-file-name (concat "magit/posts/" filename)
-                                      (magit-gitdir tree))
-                  (expand-file-name (format "%s_%s-%s_%s"
-                                            (oref repo githost)
-                                            (oref repo owner)
-                                            (oref repo name)
-                                            filename)
-                                    forge-post-fallback-directory)))))
-    (make-directory (file-name-directory file) t)
-    (let ((prevbuf (current-buffer))
-          (resume (and (file-exists-p file)
-                       (> (file-attribute-size (file-attributes file)) 0)))
-          (buf (find-file-noselect file)))
-      (with-current-buffer buf
-        (forge-post-mode)
-        (when header
-          (magit-set-header-line-format header))
-        (setq forge--pre-post-buffer prevbuf)
-        (when resume
-          (forge--display-post-buffer buf)
-          (when (magit-read-char-case "A draft already exists.  " nil
-                  (?r "[r]esume editing existing draft")
-                  (?d "[d]iscard draft and start over" t))
-            (erase-buffer)
-            (setq resume nil)))
-        (when (and (not resume) template)
-          (let-alist template
-            (cond
-             (.name
-              ;; A Github issue with yaml frontmatter.
-              (save-excursion (insert .text))
-              (unless (re-search-forward "^title: " nil t)
-                (when (re-search-forward "^---" nil t 2)
-                  (beginning-of-line)
-                  (insert "title: \n")
-                  (backward-char))))
-             (t
-              (insert "# ")
-              (let ((single
-                     (and source
-                          (= (car (magit-rev-diff-count source target)) 1))))
-                (save-excursion
-                  (when single
-                    ;; A pull-request.
-                    (magit-rev-insert-format "%B" source))
-                  (when .text
-                    (if single
-                        (insert "-------\n")
-                      (insert "\n"))
-                    (insert "\n" .text)))))))))
-      buf)))
+(defvar-local forge--buffer-post-object nil)
+(defvar-local forge--buffer-template nil)
+(defvar-local forge--buffer-category nil)
+(defvar-local forge--buffer-base-branch nil)
+(defvar-local forge--buffer-head-branch nil)
+(defvar-local forge--buffer-draft-p nil)
+
+(defun forge--setup-post-buffer (obj submit file header &optional bindings fn)
+  (declare (indent defun))
+  (let* ((prevbuf (current-buffer))
+         (obj     (or obj (forge-get-repository :tracked)))
+         (repo    (forge-get-repository obj))
+         (header  (forge--format obj header))
+         (file    (forge--post-expand-file-name file repo))
+         (_       (make-directory (file-name-directory file) t))
+         (buffer  (find-file-noselect file))
+         (resume  (forge--post-resume-p file buffer)))
+    (with-current-buffer buffer
+      (forge-post-mode)
+      (magit-set-header-line-format header)
+      (setq forge--pre-post-buffer prevbuf)
+      (setq forge--buffer-post-object obj)
+      (setq forge--submit-post-function submit)
+      (pcase-dolist (`(,var ,val) bindings)
+        (set (make-local-variable var) val)
+        (when (eq var 'forge--buffer-template)
+          (let-alist forge--buffer-template
+            (setq forge--buffer-draft-p .draft))))
+      (when (and (not resume) forge--buffer-template)
+        (forge--post-insert-template forge--buffer-template))
+      (when fn
+        (funcall fn))
+      (run-hooks 'forge-edit-post-hook))
+    (forge--display-post-buffer buffer)))
 
 (defun forge--display-post-buffer (buf)
   (magit-display-buffer buf #'display-buffer))
 
-(defun forge-post-cancel ()
-  "Cancel the post that is being edited in the current buffer."
-  (interactive)
-  (save-buffer)
-  (if-let ((fn forge--cancel-post-function))
-      (funcall fn forge--buffer-post-object)
-    (magit-mode-bury-buffer 'kill)))
+(defun forge--post-expand-file-name (file repo)
+  (if-let ((worktree (oref repo worktree)))
+      (expand-file-name (concat "magit/posts/" file) (magit-gitdir worktree))
+    (expand-file-name (with-slots (githost owner name) repo
+                        (format "%s_%s-%s_%s" githost owner name file))
+                      forge-post-fallback-directory)))
 
-(defun forge-post-submit ()
-  "Submit the post that is being edited in the current buffer."
-  (interactive)
-  (save-buffer)
-  (if-let ((fn forge--submit-post-function))
-      (funcall fn
-               (forge-get-repository forge--buffer-post-object)
-               forge--buffer-post-object)
-    (error "forge--submit-post-function is nil")))
+(defun forge--post-resume-p (file buffer)
+  (and (file-exists-p file)
+       (> (file-attribute-size (file-attributes file)) 0)
+       (progn (forge--display-post-buffer buffer)
+              (or (magit-read-char-case "" nil
+                    (?r "[r]esume editing this draft" t)
+                    (?d "[d]iscard and start over?"))
+                  (progn (erase-buffer)
+                         nil)))))
+
+(defun forge--post-insert-template (template)
+  (let-alist template
+    (cond
+     (.name
+      ;; A Github issue with yaml frontmatter.
+      (save-excursion (insert .text))
+      (unless (re-search-forward "^title: " nil t)
+        (when (re-search-forward "^---" nil t 2)
+          (beginning-of-line)
+          (insert "title: \n")
+          (backward-char))))
+     (t
+      (insert "# ")
+      (let* ((source (alist-get 'source template))
+             (target (alist-get 'target template))
+             (single (and source
+                          (= (car (magit-rev-diff-count source target)) 1))))
+        (save-excursion
+          (when single
+            ;; A pull-request.
+            (magit-rev-insert-format "%B" source))
+          (when .text
+            (if single
+                (insert "-------\n")
+              (insert "\n"))
+            (insert "\n" .text))))))))
 
 (defun forge--post-submit-callback ()
   (let* ((file    buffer-file-name)
@@ -227,6 +218,8 @@ an error."
   (lambda (error &rest _)
     (error "Failed to submit post: %S" error)))
 
+;;; Commands
+
 (transient-define-prefix forge-post-dispatch ()
   "Dispatch a post creation command."
   ["Variables"
@@ -235,12 +228,30 @@ an error."
    ("C-c" "Submit" forge-post-submit)
    ("C-k" "Cancel" forge-post-cancel)])
 
+(defun forge-post-submit ()
+  "Submit the post that is being edited in the current buffer."
+  (interactive)
+  (save-buffer)
+  (if-let ((fn forge--submit-post-function))
+      (funcall fn
+               (forge-get-repository forge--buffer-post-object)
+               forge--buffer-post-object)
+    (error "forge--submit-post-function is nil")))
+
+(defun forge-post-cancel ()
+  "Cancel the post that is being edited in the current buffer."
+  (interactive)
+  (save-buffer)
+  (if-let ((fn forge--cancel-post-function))
+      (funcall fn forge--buffer-post-object)
+    (magit-mode-bury-buffer 'kill)))
+
 (transient-define-infix forge-post-toggle-draft ()
   "Toggle whether the pull-request being created is a draft."
   :class 'transient-lisp-variable
-  :variable 'forge-buffer-draft-p
-  :reader (lambda (&rest _) (not forge-buffer-draft-p))
-  :if (##equal (file-name-nondirectory buffer-file-name) "new-pullreq"))
+  :variable 'forge--buffer-draft-p
+  :reader (lambda (&rest _) (not forge--buffer-draft-p))
+  :if (lambda () (equal (file-name-nondirectory buffer-file-name) "new-pullreq")))
 
 ;;; Notes
 

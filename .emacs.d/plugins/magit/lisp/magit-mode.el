@@ -570,7 +570,7 @@ Magit is documented in info node `(magit)'."
   (magit-hack-dir-local-variables)
   (face-remap-add-relative 'header-line 'magit-header-line)
   (setq mode-line-process (magit-repository-local-get 'mode-line-process))
-  (setq-local revert-buffer-function #'magit-refresh-buffer)
+  (setq-local revert-buffer-function #'magit-revert-buffer)
   (setq-local bookmark-make-record-function #'magit--make-bookmark)
   (setq-local imenu-create-index-function #'magit--imenu-create-index)
   (setq-local imenu-default-goto-function #'magit--imenu-goto-function)
@@ -662,7 +662,7 @@ The buffer's major-mode should derive from `magit-section-mode'."
     (magit-display-buffer buffer)
     (with-current-buffer buffer
       (run-hooks 'magit-setup-buffer-hook)
-      (magit-refresh-buffer)
+      (magit-refresh-buffer created)
       (when created
         (run-hooks 'magit-post-create-buffer-hook)))
     buffer))
@@ -1020,7 +1020,8 @@ window."
 Refresh the current buffer if its major mode derives from
 `magit-mode', and refresh the corresponding status buffer.
 
-Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
+Run hooks `magit-pre-refresh-hook', `magit-post-refresh-hook'
+and `magit-unwind-refresh-hook'."
   (interactive)
   (unless magit-inhibit-refresh
     (unwind-protect
@@ -1062,15 +1063,18 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
     (with-current-buffer buffer (magit-refresh-buffer)))
   (magit-run-hook-with-benchmark 'magit-post-refresh-hook))
 
-(defvar-local magit-refresh-start-time nil)
+(defvar-local magit--refresh-start-time nil)
 
-(defun magit-refresh-buffer (&rest _ignore)
+(defvar magit--initial-section-hook nil)
+
+(defun magit-refresh-buffer (&optional created)
   "Refresh the current Magit buffer."
   (interactive)
-  (setq magit-refresh-start-time (current-time))
-  (let ((refresh (intern (format "%s-refresh-buffer"
-                                 (substring (symbol-name major-mode) 0 -5))))
-        (magit--refresh-cache (or magit--refresh-cache (list (cons 0 0)))))
+  (let ((magit--refreshing-buffer-p t)
+        (magit--refresh-start-time (current-time))
+        (magit--refresh-cache (or magit--refresh-cache (list (cons 0 0))))
+        (refresh (intern (format "%s-refresh-buffer"
+                                 (substring (symbol-name major-mode) 0 -5)))))
     (when (functionp refresh)
       (when magit-refresh-verbose
         (message "Refreshing buffer `%s'..." (buffer-name)))
@@ -1093,8 +1097,8 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
         (deactivate-mark)
         (setq magit-section-pre-command-section nil)
         (setq magit-section-highlight-overlays nil)
+        (setq magit-section-selection-overlays nil)
         (setq magit-section-highlighted-sections nil)
-        (setq magit-section-unhighlight-sections nil)
         (let ((inhibit-read-only t))
           (erase-buffer)
           (save-excursion
@@ -1106,12 +1110,22 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
             (with-current-buffer buffer
               (let ((magit-section-movement-hook nil))
                 (apply #'magit-section-goto-successor args)))))
+        (when created
+          (run-hooks 'magit--initial-section-hook)
+          (setq-local magit--initial-section-hook nil))
+        (let ((magit-section-cache-visibility nil))
+          (magit-section-show magit-root-section))
         (run-hooks 'magit-refresh-buffer-hook)
         (magit-section-update-highlight)
-        (set-buffer-modified-p nil))
+        (set-buffer-modified-p nil)
+        (push buffer magit-section--refreshed-buffers))
       (when magit-refresh-verbose
         (message "Refreshing buffer `%s'...done (%.3fs)" (buffer-name)
-                 (float-time (time-since magit-refresh-start-time)))))))
+                 (float-time (time-since magit--refresh-start-time)))))))
+
+(defun magit-revert-buffer (_ignore-auto _noconfirm)
+  "Wrapper around `magit-refresh-buffer' suitable as `revert-buffer-function'."
+  (magit-refresh-buffer))
 
 (defun magit-profile-refresh-buffer ()
   "Profile refreshing the current Magit buffer."

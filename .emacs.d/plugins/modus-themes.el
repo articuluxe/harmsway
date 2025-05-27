@@ -333,7 +333,9 @@ the same as using the command `modus-themes-select'."
 
 (defcustom modus-themes-after-load-theme-hook nil
   "Hook that runs after loading a Modus theme.
-This is used by the command `modus-themes-toggle'."
+This is used by the commands `modus-themes-toggle',
+`modus-themes-rotate', `modus-themes-select', as well as the function
+`modus-themes-load-theme'."
   :type 'hook
   :package-version '(modus-themes . "4.0.0")
   :version "30.1"
@@ -2927,7 +2929,8 @@ FG and BG are the main colors."
     `(keycast-command ((,c :inherit bold)))
     `(keycast-key ((,c :inherit modus-themes-bold :background ,keybind :foreground ,bg-main)))
 ;;;;; kmacro-menu
-    `(kmacro-menu-mark ((,c :inherit bold)))
+    ;; Use `list' here to avoid a spurious warning about `kmacro-menu-mark'.
+    (list 'kmacro-menu-mark `((,c :inherit bold)))
     `(kmacro-menu-marked ((,c :inherit modus-themes-mark-sel)))
     `(kmacro-menu-flagged ((,c :inherit modus-themes-mark-del)))
 ;;;;; ledger-mode

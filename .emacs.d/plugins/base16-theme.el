@@ -274,6 +274,11 @@ return the actual color value.  Otherwise return the value unchanged."
 
 ;;; Third-party
 
+;;;; adoc-mode
+     (adoc-gen-face                                :foreground base0C)
+     (adoc-verbatim-face                           :foreground base0A)
+     (adoc-meta-face                               :foreground base03)
+
 ;;;; anzu-mode
      (anzu-mode-line                               :foreground base0E)
 
@@ -339,6 +344,12 @@ return the actual color value.  Otherwise return the value unchanged."
      (company-preview                              :foreground base04)
      (company-preview-search                       :inherit match)
      (company-echo-common                          :inherit secondary-selection)
+
+;;;; corfu
+     (corfu-default                                :inherit tooltip)
+     (corfu-current                                :background base02 :inherit font-lock-function-name-face)
+     (corfu-bar                                    :background base05)
+     (corfu-border                                 :background base04)
 
 ;;;; cperl-mode
      (cperl-array-face                             :weight bold :inherit font-lock-variable-name-face)
@@ -734,7 +745,7 @@ return the actual color value.  Otherwise return the value unchanged."
      (magit-hunk-heading                           :background base03)
      (magit-hunk-heading-highlight                 :background base03)
      (magit-diff-hunk-heading                      :background base01)
-     (magit-diff-hunk-heading-highlight            :background base01)
+     (magit-diff-hunk-heading-highlight            :background base02)
      (magit-item-highlight                         :background base01)
      (magit-log-author                             :foreground base0D)
      (magit-process-ng                             :foreground base08 :inherit magit-section-heading)

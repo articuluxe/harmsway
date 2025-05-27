@@ -37,6 +37,7 @@
 
 ;;; Change log:
 ;;
+;; version 1.5.0, 2025-05-14 Fixed warnings with new Java versions #157; updated versions to let CI work again
 ;; version 1.4.1, 2019-09-03 Better indentation; more bugfixing; actually adding `executable' mode
 ;; version 1.4.0, 2019-08-21 Added `executable' exec mode to use locally installed `plantuml' binaries, various bugfixes
 ;; version 1.3.1, 2019-08-02 Fixed interactive behavior of `plantuml-set-exec-mode'
@@ -76,8 +77,7 @@
 (require 'dash)
 (require 'xml)
 
-(defgroup plantuml-mode nil
-  "Major mode for editing plantuml file."
+(defgroup plantuml-mode nil  "Major mode for editing plantuml file."
   :group 'languages)
 
 (defcustom plantuml-jar-path
@@ -94,7 +94,7 @@
 
 (defvar plantuml-mode-hook nil "Standard hook for plantuml-mode.")
 
-(defconst plantuml-mode-version "20190905.838" "The plantuml-mode version string.")
+(defconst plantuml-mode-version "1.5.0" "The plantuml-mode version string.")
 
 (defvar plantuml-mode-debug-enabled nil)
 
@@ -144,7 +144,7 @@
   :group 'plantuml)
 
 (defcustom plantuml-indent-level 8
-  "Indentation level of PlantUML lines")
+  "Indentation level of PlantUML lines.")
 
 (defun plantuml-jar-render-command (&rest arguments)
   "Create a command line to execute PlantUML with arguments (as ARGUMENTS)."
@@ -176,7 +176,7 @@
 
 ;; PlantUML execution mode
 (defvar-local plantuml-exec-mode nil
-  "The Plantuml execution mode override. See `plantuml-default-exec-mode' for acceptable values.")
+  "The Plantuml execution mode override.  See `plantuml-default-exec-mode' for acceptable values.")
 
 (defun plantuml-set-exec-mode (mode)
   "Set the execution mode MODE for PlantUML."
@@ -516,8 +516,9 @@ Uses prefix (as PREFIX) to choose where to display it:
                                           "\n@enduml")))
 
 (defun plantuml-preview-current-block (prefix)
-  "Preview diagram from the PlantUML sources from the previous @startuml to the next @enduml.
-Uses prefix (as PREFIX) to choose where to display it:
+  "Preview diagram from the PlantUML sources for the current block.
+The block is defined as starting from the previous @startuml to the next
+@enduml.  Uses prefix (as PREFIX) to choose where to display it:
 - 4  (when prefixing the command with C-u) -> new window
 - 16 (when prefixing the command with C-u C-u) -> new frame.
 - else -> new buffer"
