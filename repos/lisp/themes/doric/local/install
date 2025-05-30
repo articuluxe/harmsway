@@ -1,0 +1,2 @@
+cp src/doric-themes.el ../../../../.emacs.d/plugins
+cp src/doric-*-theme.el ../../../../.emacs.d/etc/themes
