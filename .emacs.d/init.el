@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-04-19 12:18:03 dharms>
+;; Modified Time-stamp: <2025-05-30 15:19:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -701,6 +701,7 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleanup-funcs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package cleanup-funcs
+  :disabled
   :bind ("C-c ic" . makey-key-mode-popup-c-cleanup-funcs))
 
 ;; Show selections
