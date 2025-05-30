@@ -1,0 +1,6 @@
+set -e
+cd src
+mkdir -p build && cd build
+LDFLAGS="-L/usr/local/opt/llvm/lib" CPPFLAGS="-I/usr/local/opt/llvm/include" cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_CXX_COMPILER=clang++ ..
+make
+make install

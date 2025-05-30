@@ -37,6 +37,7 @@ brew install readline
 brew install figlet
 brew install plantuml
 brew install cmake
+brew install llvm
 brew install hunspell
 brew install stow
 brew install shellcheck

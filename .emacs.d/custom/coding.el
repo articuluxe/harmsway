@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2023, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2025-04-17 16:17:25 dharms>
+;; Modified Time-stamp: <2025-05-30 13:48:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -38,6 +38,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cc-chainsaw ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package cc-chainsaw :disabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cppinsights ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package cppinsights
+  :if (executable-find "insights")
+  :commands cppinsights-run
+  :bind ("C-c ic" . cppinsights-run))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; preproc-font-lock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/preproc-font-lock ()
