@@ -44,8 +44,8 @@
 ;;   M-p      Move the commit at point up.
 ;;   M-n      Move the commit at point down.
 ;;
-;;   k        Drop the commit at point.
-;;   c        Don't drop the commit at point.
+;;   d        Drop the commit at point.
+;;   c        Keep the commit at point.
 ;;   r        Change the message of the commit at point.
 ;;   e        Edit the commit at point.
 ;;   s        Squash the commit at point, into the one above.
@@ -53,6 +53,7 @@
 ;;   b        Break for editing at this point in the sequence.
 ;;   x        Add a script to be run with the commit at point
 ;;            being checked out.
+;;   k        Un-/comment current line.
 ;;   z        Add noop action at point.
 ;;
 ;;   SPC      Show the commit at point in another buffer.
@@ -152,6 +153,7 @@
   "M-p" #'git-rebase-move-line-up
   "M-n" #'git-rebase-move-line-down
   "c"   #'git-rebase-pick
+  "d"   #'git-rebase-drop
   "k"   #'git-rebase-kill-line
   "C-k" #'git-rebase-kill-line
   "b"   #'git-rebase-break
@@ -160,11 +162,14 @@
   "M M" #'git-rebase-merge
   "M t" #'git-rebase-merge-toggle-editmsg
   "m"   #'git-rebase-edit
+  "s"   #'git-rebase-squash
+  "S"   #'git-rebase-squish
   "f"   #'git-rebase-fixup
+  "F"   #'git-rebase-alter
+  "A"   #'git-rebase-alter
   "q"   #'undefined
   "r"   #'git-rebase-reword
   "w"   #'git-rebase-reword
-  "s"   #'git-rebase-squash
   "t"   #'git-rebase-reset
   "u"   #'git-rebase-update-ref
   "x"   #'git-rebase-exec
@@ -176,6 +181,7 @@
   "M-<up>"         #'git-rebase-move-line-up
   "M-<down>"       #'git-rebase-move-line-down
   "<remap> <undo>" #'git-rebase-undo)
+(put 'git-rebase-alter        :advertised-binding (kbd "F"))
 (put 'git-rebase-reword       :advertised-binding (kbd "r"))
 (put 'git-rebase-move-line-up :advertised-binding (kbd "M-p"))
 (put 'git-rebase-kill-line    :advertised-binding (kbd "k"))
@@ -184,6 +190,7 @@
   "Git-Rebase mode menu."
   '("Rebase"
     ["Pick" git-rebase-pick t]
+    ["Drop" git-rebase-drop t]
     ["Reword" git-rebase-reword t]
     ["Edit" git-rebase-edit t]
     ["Squash" git-rebase-squash t]
@@ -208,9 +215,21 @@
     (git-rebase-show-commit
      . "show the commit at point in another buffer and select its window")
     (undo                         . "undo last change")
-    (git-rebase-kill-line         . "drop the commit at point")
+    (git-rebase-drop              . "drop the commit at point")
+    (git-rebase-kill-line         . "un-/comment current line")
     (git-rebase-insert            . "insert a line for an arbitrary commit")
     (git-rebase-noop              . "add noop action at point")))
+
+(defvar git-rebase-fixup-descriptions
+  '((git-rebase-squish
+     . "fixup -c <commit> = use commit, but meld into previous commit,\n#\
+          dropping previous commit's message, and open the editor")
+    (git-rebase-fixup
+     . "fixup <commit> = use commit, but meld into previous commit,\n#\
+          dropping <commit>'s message")
+    (git-rebase-alter
+     . "fixup -C <commit> = use commit, but meld into previous commit,\n#\
+          dropping previous commit's message")))
 
 ;;; Commands
 
@@ -219,6 +238,12 @@
 If the region is active, act on all lines touched by the region."
   (interactive)
   (git-rebase-set-action "pick"))
+
+(defun git-rebase-drop ()
+  "Drop commit on current line.
+If the region is active, act on all lines touched by the region."
+  (interactive)
+  (git-rebase-set-action "drop"))
 
 (defun git-rebase-reword ()
   "Edit message of commit on current line.
@@ -233,21 +258,38 @@ If the region is active, act on all lines touched by the region."
   (git-rebase-set-action "edit"))
 
 (defun git-rebase-squash ()
-  "Meld commit on current line into previous commit, edit message.
+  "Fold commit on current line into previous commit, edit combined message.
 If the region is active, act on all lines touched by the region."
   (interactive)
   (git-rebase-set-action "squash"))
 
+(defun git-rebase-squish ()
+  "Fold current into previous commit, discard previous message and edit current.
+This is like `git-rebase-squash', except that the other message is kept.
+The action indicatore shown in the list commits is \"fixup -c\".  If the
+region is active, act on all lines touched by the region."
+  (interactive)
+  (git-rebase-set-action "fixup -c"))
+
 (defun git-rebase-fixup ()
-  "Meld commit on current line into previous commit, discard its message.
+  "Fold commit on current line into previous commit, discard current message.
 If the region is active, act on all lines touched by the region."
   (interactive)
   (git-rebase-set-action "fixup"))
+
+(defun git-rebase-alter ()
+  "Meld current into previous commit, discard previous message and use current.
+This is like `git-rebase-fixup', except that the other message is kept.
+The action indicatore shown in the list commits is \"fixup -C\".  If the
+region is active, act on all lines touched by the region."
+  (interactive)
+  (git-rebase-set-action "fixup -C"))
 
 (defvar-local git-rebase-comment-re nil)
 
 (defvar git-rebase-short-options
   '((?b . "break")
+    (?d . "drop")
     (?e . "edit")
     (?f . "fixup")
     (?l . "label")
@@ -280,11 +322,14 @@ If the region is active, act on all lines touched by the region."
 
 (defvar git-rebase-line-regexps
   `((commit . ,(concat
-                (regexp-opt '("e" "edit"
-                              "f" "fixup"
-                              "p" "pick"
-                              "r" "reword"
-                              "s" "squash")
+                (regexp-opt '("d"    "drop"
+                              "e"    "edit"
+                              "f"    "fixup"
+                              "f -C" "fixup -C"
+                              "f -c" "fixup -c"
+                              "p"    "pick"
+                              "r"    "reword"
+                              "s"    "squash")
                             "\\(?1:")
                 " \\(?3:[^ \n]+\\) ?\\(?4:.*\\)"))
     (exec . "\\(?1:x\\|exec\\) \\(?3:.*\\)")
@@ -301,18 +346,21 @@ If the region is active, act on all lines touched by the region."
                       " ?\\(?4:.*\\)"))))
 
 ;;;###autoload
-(defun git-rebase-current-line ()
+(defun git-rebase-current-line (&optional batch)
   "Parse current line into a `git-rebase-action' instance.
 If the current line isn't recognized as a rebase line, an
-instance with all nil values is returned."
+instance with all nil values is returned, unless optional
+BATCH is non-nil, in which case nil is returned.  Non-nil
+BATCH also ignores commented lines."
   (save-excursion
     (goto-char (line-beginning-position))
-    (if-let ((re-start (concat "^\\(?5:" (regexp-quote comment-start)
-                               "\\)? *"))
-             (type (seq-some (lambda (arg)
+    (if-let ((re-start (if batch
+                           "^"
+                         (format "^\\(?5:%s\\)? *"
+                                 (regexp-quote comment-start))))
+             (type (seq-some (pcase-lambda (`(,type . ,re))
                                (let ((case-fold-search nil))
-                                 (and (looking-at (concat re-start (cdr arg)))
-                                      (car arg))))
+                                 (and (looking-at (concat re-start re)) type)))
                              git-rebase-line-regexps)))
         (git-rebase-action
          :action-type    type
@@ -323,8 +371,9 @@ instance with all nil values is returned."
          :target         (match-string-no-properties 3)
          :trailer        (match-string-no-properties 4)
          :comment-p      (and (match-string 5) t))
-      ;; Use default empty class rather than nil to ease handling.
-      (git-rebase-action))))
+      (and (not batch)
+           ;; Use empty object rather than nil to ease handling.
+           (git-rebase-action)))))
 
 (defun git-rebase-set-action (action)
   "Set action of commit line to ACTION.
@@ -773,6 +822,8 @@ running \"man git-rebase\" at the command line) for details."
     ("^\\(m\\(?:erge\\)?\\) \\([^ \n]+\\)"
      (1 'git-rebase-action)
      (2 'git-rebase-label))
+    ("^drop \\(.+\\)"
+     1 'git-rebase-killed-action t)
     (,(concat git-rebase-comment-re " *"
               (cdr (assq 'commit git-rebase-line-regexps)))
      0 'git-rebase-killed-action t)
@@ -802,24 +853,23 @@ except for the \"pick\" command."
                   (concat git-rebase-comment-re "\\s-+p, pick")
                   nil t))
         (goto-char (line-beginning-position))
-        (pcase-dolist (`(,cmd . ,desc) git-rebase-command-descriptions)
-          (insert (format (propertize "%s %s %s\n"
-                                      'font-lock-face 'font-lock-comment-face)
-                          comment-start
-                          (string-pad
-                           (substitute-command-keys (format "\\[%s]" cmd)) 8)
-                          desc)))
-        (while (re-search-forward
-                (concat git-rebase-comment-re "\\(?:"
-                        "\\( \\.?     *\\)\\|"
-                        "\\( +\\)\\([^\n,],\\) \\([^\n ]+\\) \\)")
-                nil t)
-          (if (match-string 1)
-              (replace-match (make-string 10 ?\s) t t nil 1)
-            (let ((cmd (intern (concat "git-rebase-" (match-string 4)))))
-              (if (not (fboundp cmd))
-                  (delete-region (line-beginning-position)
-                                 (1+ (line-end-position)))
+        (git-rebase--insert-descriptions git-rebase-command-descriptions)
+        (let ((cmd nil)
+              (line (concat git-rebase-comment-re "\\(?:\\( \\.?     *\\)\\|"
+                            "\\( +\\)\\([^\n,],\\) \\([^\n ]+\\) \\)")))
+          (while (re-search-forward line nil t)
+            (if (match-string 1)
+                (if (assq cmd git-rebase-fixup-descriptions)
+                    (delete-line)
+                  (replace-match (make-string 10 ?\s) t t nil 1))
+              (setq cmd (intern (concat "git-rebase-" (match-string 4))))
+              (cond
+               ((not (fboundp cmd))
+                (delete-line))
+               ((eq cmd 'git-rebase-fixup)
+                (delete-line)
+                (git-rebase--insert-descriptions git-rebase-fixup-descriptions))
+               (t
                 (add-text-properties (line-beginning-position)
                                      (1+ (line-end-position))
                                      '(font-lock-face font-lock-comment-face))
@@ -829,7 +879,16 @@ except for the \"pick\" command."
                   (save-match-data
                     (substitute-command-keys (format "\\[%s]" cmd)))
                   8)
-                 t t nil 3)))))))))
+                 t t nil 3))))))))))
+
+(defun git-rebase--insert-descriptions (alist)
+  (pcase-dolist (`(,cmd . ,desc) alist)
+    (insert (format (propertize "%s %s %s\n"
+                                'font-lock-face 'font-lock-comment-face)
+                    comment-start
+                    (string-pad
+                     (substitute-command-keys (format "\\[%s]" cmd)) 8)
+                    (replace-regexp-in-string "#" comment-start desc)))))
 
 (add-hook 'git-rebase-mode-hook #'git-rebase-mode-show-keybindings t)
 

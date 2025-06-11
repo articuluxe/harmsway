@@ -129,6 +129,7 @@ themes. Cyans sourced authoritatively from Colorxs[3].
      `(font-lock-type-face ((t (:weight bold))))
      `(font-lock-variable-name-face ((t (:foreground ,color-fg :slant italic))))
      `(font-lock-warning-face ((t (:foreground ,color-pink :slant italic))))
+     `(font-lock-preprocessor-face ((t (:foreground ,color-dark :background ,color-darkest :slant italic))))
 
      ;; ansi colors
      `(ansi-color-names-vector [,color-bg ,color-pink ,color-middle ,color-middle ,color-green ,color-middle ,color-middle ,color-fg])

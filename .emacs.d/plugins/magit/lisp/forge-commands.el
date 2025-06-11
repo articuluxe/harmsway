@@ -90,6 +90,7 @@ Takes the pull-request as only argument and must return a directory."
    ["Visit"
     :inapt-if-not (##forge-get-repository :tracked?)
     ("v t" "topic"          forge-visit-topic)
+    ("v u" "topic from url" forge-visit-topic-from-url :level 0)
     ("v d" "discussion"     forge-visit-discussion)
     ("v i" "issue"          forge-visit-issue)
     ("v p" "pull-request"   forge-visit-pullreq)]
@@ -144,7 +145,6 @@ repository cannot be determined, instead invoke `forge-add-repository'."
                  (if (forge-get-repository :tracked?)
                      "forge topics"
                    "new forge repository"))
-  (declare (interactive-only nil))
   (interactive)
   (if-let ((repo (forge-get-repository :tracked?)))
       (forge--pull repo)
@@ -538,6 +538,20 @@ lifts the limitation to active pull-requests."
   (forge-topic-setup-buffer (forge-get-pullreq pull-request)))
 
 ;;;###autoload
+(defun forge-visit-topic-from-url (url)
+  "Visit the topic specified by web URL."
+  (interactive (list (read-string "Topic URL: ")))
+  (if (string-match
+       "/\\(issues\\|pull\\|discussions\\|merge_requests\\)/\\([0-9]+\\)\\'"
+       url)
+      (forge-topic-setup-buffer
+       (forge-get-topic (forge-get-repository
+                         (substring url 0 (match-beginning 1))
+                         nil :tracked)
+                        (string-to-number (match-string 2 url))))
+    (user-error "Not recognized as a topic URL: %s" url)))
+
+;;;###autoload
 (defun forge-visit-this-topic (&optional menu)
   "Visit the topic at point.
 With prefix argument MENU, also show the topic menu."
@@ -576,7 +590,7 @@ With prefix argument MENU, also show the topic menu."
   "Create a new discussion for the current repository."
   (interactive
    (list (forge-read-topic-category nil "Category for new discussion")))
-  (forge--setup-post-buffer nil #'forge--submit-create-discussion
+  (forge--setup-post-buffer 'new-discussion #'forge--submit-create-discussion
     "new-discussion" "Create new discussion on %p"
    `((forge--buffer-category ,category))))
 
@@ -588,14 +602,14 @@ With prefix argument MENU, also show the topic menu."
       ('redirect (browse-url .url))
       ('forge-discussion (forge-create-discussion .category))
       ('forge-issue
-       (forge--setup-post-buffer nil #'forge--submit-create-issue
+       (forge--setup-post-buffer 'new-issue #'forge--submit-create-issue
          "new-issue" "Create new issue on %p"
          `((forge--buffer-template ,template)))))))
 
 (defun forge-create-pullreq (source target)
   "Create a new pull-request for the current repository."
   (interactive (forge-create-pullreq--read-args))
-  (forge--setup-post-buffer nil #'forge--submit-create-pullreq
+  (forge--setup-post-buffer 'new-pullreq #'forge--submit-create-pullreq
     "new-pullreq" "Create new pull-request on %p"
     `((forge--buffer-base-branch ,target)
       (forge--buffer-head-branch ,source)

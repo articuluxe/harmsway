@@ -104,9 +104,6 @@ first matching name."
    `(vertical-border ((t (:foreground ,(rg-themes--colour palette
                                                           'window-border
                                                           'background-accent-strong)))))
-   `(trailing-whitespace ((t (:background ,(rg-themes--colour palette
-                                                              'trailing-whitespace
-                                                              'red)))))
 
    `(line-number              ((t (:foreground ,(rg-themes--colour palette
                                                                    'line-number
@@ -213,7 +210,33 @@ first matching name."
 
    `(hl-line ((t (:background ,(rg-themes--colour palette
                                                   'current-line-background
-                                                  'background-accent-light)))))))
+                                                  'background-accent-light)))))
+
+   `(trailing-whitespace ((t (:background ,(rg-themes--colour palette
+                                                              'trailing-whitespace
+                                                              'red)))))
+   `(whitespace-trailing ((t (:background ,(rg-themes--colour palette
+                                                              'trailing-whitespace
+                                                              'red)))))
+   `(whitespace-empty ((t (:background ,(rg-themes--colour palette
+                                                           'trailing-whitespace
+                                                           'red)
+                           :foreground ,(rg-themes--colour palette 'foreground)))))
+   `(whitespace-newline ((t (:background ,(rg-themes--colour palette
+                                                             'mode-line-inactive-background
+                                                             'background-accent-light)
+                             :foreground ,(rg-themes--colour palette
+                                                             'grey-neutral
+                                                             'warm-grey
+                                                             'foreground)))))
+   `(whitespace-space ((t (:background ,(rg-themes--colour palette 'background-accent-light)
+                           :foreground ,(rg-themes--colour palette 'background-accent-strong)))))
+   `(whitespace-hspace ((t (:background ,(rg-themes--colour palette 'background-accent-medium)
+                            :foreground ,(rg-themes--colour palette 'warm-grey)))))
+   `(whitespace-indentation ((t (:background ,(rg-themes--colour palette 'background-accent-medium)
+                                 :foreground ,(rg-themes--colour palette 'warm-grey)))))
+   `(whitespace-line ((t (:background ,(rg-themes--colour palette 'background-accent-strong)
+                          :foreground ,(rg-themes--colour palette 'accent-medium 'accent-strong 'foreground)))))))
 
 (defun rg-themes ()
   "Get all available rg themes."
@@ -221,7 +244,7 @@ first matching name."
 
 
 (defvar rg-themes-after-theme-load-hook nil
-  "Hook that is run after an rg theme has loaded.")
+  "Hook that is run after a theme has loaded.")
 
 (defun rg-themes-spacious-frame-style-tweaks ()
   "Apply the stylistic tweaks that make the frame sleek."

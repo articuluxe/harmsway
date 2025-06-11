@@ -8,11 +8,11 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: tools
 
-;; Package-Version: 4.3.5
+;; Package-Version: 4.3.6
 ;; Package-Requires: (
 ;;     (emacs "27.1")
-;;     (compat "30.0.2.0")
-;;     (llama "0.6.1")
+;;     (compat "30.1")
+;;     (llama "0.6.3")
 ;;     (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -1770,7 +1770,9 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
                  (magit-section-highlight-range content child-start)))
              (mapc #'magit-section-highlight children))
             ((and content (not (slot-boundp section 'painted)))
-             (magit-section-highlight-range content end))))
+             (magit-section-highlight-range content end))
+            ;; Unfortunate kludge for delayed hunk refinement.
+            ((magit-section--refine section))))
      (headlight
       (magit-section-highlight-range start (or content end) headlight)
       (when content
@@ -1786,6 +1788,7 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
                        (or heading-selection-face
                            'magit-section-heading-selection))
           (overlay-put ov 'evaporate t)
+          (overlay-put ov 'priority '(nil . 9))
           (push ov magit-section-selection-overlays)
           ov)))))
 
@@ -1844,6 +1847,8 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
         (unless (oref section painted)
           (cl-pushnew section magit-section-highlighted-sections))
       (magit-section-update-paint section (magit-focused-sections)))))
+
+(cl-defmethod magit-section--refine ((_section magit-section)))
 
 ;;; Long Lines
 
@@ -2492,6 +2497,8 @@ necessary.  For use as `imenu-default-goto-function' in
 (cl-defgeneric magit-bookmark-get-filename ()
   (or (buffer-file-name) (buffer-name)))
 
+(cl-defgeneric magit-bookmark-get-value (bookmark mode))
+
 (cl-defgeneric magit-bookmark--get-child-value (section)
   (oref section value))
 
@@ -2513,8 +2520,7 @@ and the buffer-local values of the variables referenced in its
         (bookmark-prop-set bookmark 'mode     major-mode)
         (bookmark-prop-set bookmark 'filename (magit-bookmark-get-filename))
         (bookmark-prop-set bookmark 'defaults (list (magit-bookmark-name)))
-        (dolist (var (get major-mode 'magit-bookmark-variables))
-          (bookmark-prop-set bookmark var (symbol-value var)))
+        (magit-bookmark-get-value bookmark)
         (bookmark-prop-set
          bookmark 'magit-hidden-sections
          (seq-keep (##and (oref % hidden)

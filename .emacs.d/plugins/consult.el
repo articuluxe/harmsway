@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 2.4
+;; Version: 2.5
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -232,6 +232,7 @@ buffers.  The regular expressions are matched case sensitively."
     consult--source-modified-buffer
     consult--source-buffer
     consult--source-recent-file
+    consult--source-buffer-register
     consult--source-file-register
     consult--source-bookmark
     consult--source-project-buffer-hidden
@@ -829,6 +830,7 @@ asked for the directories or files to search via
                       ;; Preserve this-command across `completing-read-multiple' call,
                       ;; such that `consult-customize' continues to work.
                       (let ((this-command this-command)
+                            (def (abbreviate-file-name default-directory))
                             ;; bug#75910: category instead of `minibuffer-completing-file-name'
                             (minibuffer-completing-file-name t)
                             (ignore-case read-file-name-completion-ignore-case))
@@ -836,9 +838,9 @@ asked for the directories or files to search via
                             (lambda ()
                               (setq-local completion-ignore-case ignore-case)
                               (set-syntax-table minibuffer-local-filename-syntax))
-                          (completing-read-multiple (format-prompt "Dirs or files" "./")
+                          (completing-read-multiple "Dirs or files: "
                                                     #'completion-file-name-table
-                                                    nil t nil 'consult--path-history ""))))
+                                                    nil t def 'consult--path-history def))))
                ((and `(,p) (guard (file-directory-p p))) p)
                (ps (setq paths (mapcar (lambda (p)
                                          (file-relative-name (expand-file-name p)))
@@ -1918,26 +1920,24 @@ This command is used internally by the narrowing system of `consult--read'."
   (run-hooks 'consult--completion-refresh-hook))
 
 (defconst consult--narrow-delete
-  `(menu-item
-    "" nil :filter
-    ,(lambda (&optional _)
-       (when (equal (minibuffer-contents-no-properties) "")
-         (lambda ()
-           (interactive)
-           (consult-narrow nil))))))
+  `( menu-item "" nil :filter
+     ,(lambda (&optional _)
+        (when (equal (minibuffer-contents-no-properties) "")
+          (lambda ()
+            (interactive)
+            (consult-narrow nil))))))
 
 (defconst consult--narrow-space
-  `(menu-item
-    "" nil :filter
-    ,(lambda (&optional _)
-       (let ((str (minibuffer-contents-no-properties)))
-         (when-let ((keys (plist-get consult--narrow-config :keys))
-                    (pair (or (and (length= str 1) (assoc (aref str 0) keys))
-                              (and (equal str "") (assoc ?\s keys)))))
-           (lambda ()
-             (interactive)
-             (delete-minibuffer-contents)
-             (consult-narrow (car pair))))))))
+  `( menu-item "" nil :filter
+     ,(lambda (&optional _)
+        (let ((str (minibuffer-contents-no-properties)))
+          (when-let ((keys (plist-get consult--narrow-config :keys))
+                     (pair (or (and (length= str 1) (assoc (aref str 0) keys))
+                               (and (equal str "") (assoc ?\s keys)))))
+            (lambda ()
+              (interactive)
+              (delete-minibuffer-contents)
+              (consult-narrow (car pair))))))))
 
 (defun consult-narrow-help ()
   "Print narrowing help as a `minibuffer-message'.
@@ -4916,17 +4916,33 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
                                         :as #'consult--buffer-pair)))
   "Buffer source for `consult-buffer'.")
 
+(autoload 'consult-register--candidates "consult-register")
+
+(defun consult--buffer-register-p (reg)
+  "Return non-nil if REG is a buffer register."
+  (and (eq (car-safe reg) 'buffer) (buffer-live-p (get-buffer (cdr reg)))))
+
+(defvar consult--source-buffer-register
+  `( :name     "Buffer Register"
+     :narrow   (?r . "Register")
+     :category buffer
+     :state    ,#'consult--buffer-state
+     :enabled  ,(lambda () (cl-loop for (_ . reg) in register-alist
+                                    thereis (consult--buffer-register-p reg)))
+     :items    ,(lambda () (consult-register--candidates #'consult--buffer-register-p)))
+  "Buffer register source.")
+
 (defun consult--file-register-p (reg)
   "Return non-nil if REG is a file register."
-  (memq (car-safe (cdr reg)) '(file-query file)))
+  (memq (car-safe reg) '(file-query file)))
 
-(autoload 'consult-register--candidates "consult-register")
 (defvar consult--source-file-register
   `( :name     "File Register"
      :narrow   (?r . "Register")
      :category file
      :state    ,#'consult--file-state
-     :enabled  ,(lambda () (seq-some #'consult--file-register-p register-alist))
+     :enabled  ,(lambda () (cl-loop for (_ . reg) in register-alist
+                                    thereis (consult--file-register-p reg)))
      :items    ,(lambda () (consult-register--candidates #'consult--file-register-p)))
   "File register source.")
 
@@ -5424,7 +5440,7 @@ details regarding the asynchronous search."
                  (and cand
                       (eq action 'preview)
                       (or (cdr (assoc cand buffers))
-                          (let ((buf (consult--man-action cand t)))
+                          (when-let ((buf (consult--man-action cand t)))
                             (unless (memq buf orig)
                               (cl-callf consult--preview-add-buffer
                                   buffers (cons cand buf)))
@@ -5434,10 +5450,11 @@ details regarding the asynchronous search."
   "Create man PAGE buffer, do not display if NODISPLAY is non-nil."
   (dlet ((Man-prefer-synchronous-call t)
          (Man-notify-method (and (not nodisplay) 'aggressive)))
-    (let (inhibit-message message-log-max)
-      (with-current-buffer (man page)
-        (goto-char (point-min))
-        (current-buffer)))))
+    (let* ((inhibit-message nil) (message-log-max nil) (buf (man page)))
+      (when (buffer-live-p buf)
+        (with-current-buffer buf
+          (goto-char (point-min))
+          (current-buffer))))))
 
 (consult--define-state man)
 

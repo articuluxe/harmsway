@@ -54,10 +54,27 @@
 (declare-function chatgpt-shell-view-block-at-point "chatgpt-shell")
 (declare-function chatgpt-shell-copy-block-at-point "chatgpt-shell")
 
-(defcustom chatgpt-shell-compose-auto-transient t
+(defcustom chatgpt-shell-compose-auto-transient nil
   "When non-nil automatically display transient menu post compose submission."
   :type 'boolean
   :group 'chatgpt-shell)
+
+(defcustom chatgpt-shell-prompt-compose-display-action
+  (cons '(major-mode . chatgpt-shell-prompt-compose-mode)
+                     `((display-buffer-reuse-mode-window
+                        (lambda (buffer alist) ;; Use left side window if one available.
+                          (when (window-combination-p (frame-root-window (selected-frame)) t)
+                            (window--display-buffer buffer
+                                                    (car (window-at-side-list nil 'left))
+                                                    'reuse alist)))
+                        display-buffer-in-direction)
+                       (window-width . 0.45)
+                       (direction . left)))
+  "Choose how to display the compose buffer.
+
+Same format as a action in a `display-buffer-alist' entry."
+  :type (plist-get (cdr (get 'display-buffer-alist 'custom-type)) :value-type)
+  :group 'ready-player)
 
 (defvar-local chatgpt-shell-prompt-compose--exit-on-submit nil
   "Whether or not compose buffer should close after submission.
@@ -221,10 +238,13 @@ Set TRANSIENT-FRAME-P to also close frame on exit."
                            ;; view-mode = old query, erase for new one.
                            (with-current-buffer (chatgpt-shell-prompt-compose-buffer)
                              chatgpt-shell-prompt-compose-view-mode))))
+    (when chatgpt-shell-prompt-compose-display-action
+      (add-to-list 'display-buffer-alist
+                   chatgpt-shell-prompt-compose-display-action))
     (with-current-buffer (chatgpt-shell-prompt-compose-buffer)
+      (chatgpt-shell-prompt-compose-mode)
       (unless transient-frame-p
         (select-window (display-buffer (chatgpt-shell-prompt-compose-buffer))))
-      (chatgpt-shell-prompt-compose-mode)
       (setq-local chatgpt-shell-prompt-compose--exit-on-submit exit-on-submit)
       (setq-local chatgpt-shell-prompt-compose--transient-frame-p transient-frame-p)
       (setq-local chatgpt-shell-prompt-compose--last-known-region region-details)
@@ -427,7 +447,9 @@ Optionally set its PROMPT and RESPONSE."
                                             (call-interactively 'chatgpt-shell-prompt-compose-transient)))
                                         'inline))
         ;; Point should go to beginning of response after submission.
-        (chatgpt-shell-prompt-compose--goto-response)))))
+        (chatgpt-shell-prompt-compose--goto-response)
+        (let ((inhibit-read-only t))
+          (markdown-overlays-put))))))
 
 (defun chatgpt-shell-prompt-compose-next-interaction (&optional backwards)
   "Show next interaction (request / response).
@@ -503,7 +525,12 @@ If BACKWARDS is non-nil, go to previous interaction."
           (svg-embed svg icon-filename
                      "image/png" nil
                      :x 0 :y 0 :width image-width :height image-height))
-        (svg-text svg (format "[%d/%d]\n\n" (car pos) (cdr pos))
+        (svg-text svg (format "[%d/%d] %s\n\n" (car pos) (cdr pos)
+                              (if chatgpt-shell-prompt-compose-view-mode
+                                  (if chatgpt-shell-compose-auto-transient
+                                      ""
+                                    " '?' for help")
+                                "'C-c C-c' to send prompt"))
                   :x (+ image-width 10) :y text-height
                   :fill (face-attribute 'default :foreground))
         (svg-text svg (format "%s (%s)"

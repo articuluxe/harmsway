@@ -266,7 +266,9 @@
      (lambda (data)
        (forge--update-pullreq repo data)
        (forge-refresh-buffer buffer)
-       (when callback (funcall callback)))
+       (if callback
+           (funcall callback)
+         (forge--maybe-git-fetch repo)))
      nil
      :host (oref repo apihost)
      :auth 'forge
@@ -711,8 +713,8 @@
 ;;; Mutations
 
 (cl-defmethod forge--submit-create-discussion ((_ forge-github-repository) repo)
-  (let-alist (forge--topic-parse-buffer)
-    (ghub--graphql
+  (pcase-let ((`(,title . ,body) (forge--post-buffer-text)))
+    (forge--graphql
      '(mutation (createDiscussion
                  [(input $input CreateDiscussionInput!)]
                  clientMutationId))
@@ -724,20 +726,28 @@
                                                  (= name $s2))]
                                     (oref repo id)
                                     forge--buffer-category)))
-              (title . , .title)
-              (body . , .body)))
-     :callback  (forge--post-submit-callback)
+              (title . ,title)
+              (body  . ,body)))
+     :callback  (forge--post-submit-callback t)
      :errorback (forge--post-submit-errorback))))
 
 (cl-defmethod forge--submit-create-issue ((_ forge-github-repository) repo)
-  (let-alist (forge--topic-parse-buffer)
-    (forge--ghub-post repo "/repos/:owner/:repo/issues"
-      `((title . , .title)
-        (body  . , .body)
-        ,@(and .labels    `((labels    . , .labels)))
-        ,@(and .assignees `((assignees . , .assignees))))
-      :callback  (forge--post-submit-callback)
-      :errorback (forge--post-submit-errorback))))
+  (forge--ghub-post repo "/repos/:owner/:repo/issues"
+    (pcase-let ((`(,title . ,body) (forge--post-buffer-text)))
+      `((title . ,title)
+        (body  . ,body)
+        ,@(and forge--buffer-milestone
+               `((milestone
+                  . ,(caar (forge-sql [:select [number]
+                                       :from milestone
+                                       :where (= title $s1)]
+                                      forge--buffer-milestone)))))
+        ,@(and forge--buffer-labels
+               `((labels . ,(vconcat forge--buffer-labels))))
+        ,@(and forge--buffer-assignees
+               `((assignees . ,(vconcat forge--buffer-assignees))))))
+    :callback  (forge--post-submit-callback t)
+    :errorback (forge--post-submit-errorback)))
 
 (cl-defmethod forge--create-pullreq-from-issue ((repo forge-github-repository)
                                                 (issue forge-issue)
@@ -757,28 +767,27 @@
         (maintainer_can_modify . t))
       :callback  (lambda (&rest _)
                    (closql-delete issue)
-                   (forge-pull))
-      :errorback (lambda (&rest _) (forge-pull)))))
+                   (forge--pull repo))
+      :errorback (lambda (&rest _) (forge--pull repo)))))
 
 (cl-defmethod forge--submit-create-pullreq ((_ forge-github-repository) repo)
-  (let-alist (forge--topic-parse-buffer)
-    (pcase-let* ((`(,base-remote . ,base-branch)
+  (forge--ghub-post repo "/repos/:owner/:repo/pulls"
+    (pcase-let* ((`(,title . ,body) (forge--post-buffer-text))
+                 (`(,base-remote . ,base-branch)
                   (magit-split-branch-name forge--buffer-base-branch))
                  (`(,head-remote . ,head-branch)
                   (magit-split-branch-name forge--buffer-head-branch))
                  (head-repo (forge-get-repository :stub head-remote)))
-      (forge--ghub-post repo "/repos/:owner/:repo/pulls"
-        `((title . , .title)
-          (body  . , .body)
-          (base  . ,base-branch)
-          (head  . ,(if (equal head-remote base-remote)
-                        head-branch
-                      (concat (oref head-repo owner) ":"
-                              head-branch)))
-          (draft . ,forge--buffer-draft-p)
-          (maintainer_can_modify . t))
-        :callback  (forge--post-submit-callback)
-        :errorback (forge--post-submit-errorback)))))
+      `((title . ,title)
+        (body  . ,body)
+        (base  . ,base-branch)
+        (head  . ,(if (equal head-remote base-remote)
+                      head-branch
+                    (concat (oref head-repo owner) ":" head-branch)))
+        (draft . ,forge--buffer-draft-p)
+        (maintainer_can_modify . t)))
+    :callback  (forge--post-submit-callback t)
+    :errorback (forge--post-submit-errorback)))
 
 (cl-defmethod forge--submit-create-post ((_ forge-github-repository) post)
   (cond
@@ -808,9 +817,9 @@
       (forge-issue   "/repos/:owner/:repo/issues/:number")
       (forge-post    "/repos/:owner/:repo/issues/comments/:number"))
     (if (cl-typep post 'forge-topic)
-        (let-alist (forge--topic-parse-buffer)
-          `((title . , .title)
-            (body  . , .body)))
+        (pcase-let ((`(,title . ,body) (forge--post-buffer-text)))
+          `((title . ,title)
+            (body  . ,body)))
       `((body . ,(magit--buffer-string nil nil t))))
     :callback  (forge--post-submit-callback)
     :errorback (forge--post-submit-errorback)))
@@ -857,13 +866,13 @@
    state)
   (with-slots (their-id) topic
     (cond ((eq state 'open)
-           (ghub--graphql
+           (forge--graphql
             '(mutation (reopenDiscussion
                         [(input $input ReopenDiscussionInput!)]
                         clientMutationId))
             `((input (discussionId . ,their-id)))
             :callback (forge--set-field-callback topic t)))
-          ((ghub--graphql
+          ((forge--graphql
             '(mutation (closeDiscussion
                         [(input $input CloseDiscussionInput!)]
                         clientMutationId))
@@ -898,7 +907,7 @@
   ((_repo forge-github-repository)
    (topic forge-discussion)
    category)
-  (ghub--graphql
+  (forge--graphql
    '(mutation (updateDiscussion
                [(input $input UpdateDiscussionInput!)]
                clientMutationId))
@@ -919,7 +928,7 @@
   (let* ((old (oref topic answer))
          (old (and old (forge--their-id old)))
          (new (and answer (oref answer their-id))))
-    (ghub--graphql
+    (forge--graphql
      `(mutation
        ,@(and old '((unmarkDiscussionCommentAsAnswer
                      [(input $old UnmarkDiscussionCommentAsAnswerInput!)]
@@ -948,8 +957,15 @@
 (cl-defmethod forge--set-topic-labels
   ((repo forge-github-repository) topic labels)
   (let* ((topic-id (oref topic their-id))
-         (old (mapcar (##forge--their-id (car %)) (oref topic labels)))
-         (new (mapcar (##forge--their-id (car %))
+         (their-id ; I really messed up IDs! :(
+          (pcase-lambda (`(,id))
+            (let* ((parts (split-string (base64-decode-string id) ":"))
+                   (maybe-id (car (last parts))))
+              (if (string-prefix-p "Label" maybe-id)
+                  (base64-encode-string (string-join (last parts 2) ":"))
+                maybe-id))))
+         (old (mapcar their-id (oref topic labels)))
+         (new (mapcar their-id
                       (forge-sql [:select [id] :from label
                                   :where (and (= repository $s1)
                                               (in name $v2))]
@@ -958,7 +974,7 @@
          (add (cl-set-difference new old :test #'equal))
          (del (cl-set-difference old new :test #'equal)))
     (when (or add del)
-      (ghub--graphql
+      (forge--graphql
        `(mutation
          ,@(and add '((addLabelsToLabelable
                        [(input $add AddLabelsToLabelableInput!)]
@@ -984,7 +1000,7 @@
          (add (cl-set-difference new old :test #'equal))
          (del (cl-set-difference old new :test #'equal)))
     (when (or add del)
-      (ghub--graphql
+      (forge--graphql
        `(mutation
          ,@(and add '((addAssigneesToAssignable
                        [(input $add AddAssigneesToAssignableInput!)]
@@ -1007,7 +1023,7 @@
                 (oref repo id)
                 (vconcat (seq-remove (##string-match "/" %) reviewers))))
         (teams nil)) ;TODO Investigate #742, track id, then use it here.
-    (ghub--graphql
+    (forge--graphql
      `(mutation (requestReviews
                  [(input $input RequestReviewsInput!)]
                  clientMutationId))

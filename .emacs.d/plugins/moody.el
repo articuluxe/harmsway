@@ -6,8 +6,8 @@
 ;; Homepage: https://github.com/tarsius/moody
 ;; Keywords: faces
 
-;; Package-Version: 1.1.2
-;; Package-Requires: ((emacs "26.1") (compat "30.0.1.0"))
+;; Package-Version: 1.1.3
+;; Package-Requires: ((emacs "26.1") (compat "30.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -313,8 +313,7 @@ not specified, then ad hoc faces based on `default', `mode-line',
 ;;;; mode-line-buffer-identification
 
 (defvar-local moody-mode-line-buffer-identification
-    '(:eval (moody-tab (car (propertized-buffer-identification (buffer-name)))
-                       20 'down)))
+  '(:eval (moody-tab (car (propertized-buffer-identification "%b")) 20 'down)))
 
 (put 'moody-mode-line-buffer-identification 'risky-local-variable t)
 

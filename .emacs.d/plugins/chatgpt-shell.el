@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.21.1
+;; Version: 2.22.1
 ;; Package-Requires: ((emacs "28.1") (shell-maker "0.77.1"))
-(defconst chatgpt-shell--version "2.21.1")
+(defconst chatgpt-shell--version "2.22.1")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -70,7 +70,8 @@
 (require 'find-func)
 (require 'flymake)
 (require 'ielm)
-(require 'markdown-overlays)
+(unless (require 'markdown-overlays nil 'noerror)
+  (error "Please update 'shell-maker' to v0.77.1 or newer"))
 (require 'shell-maker)
 (require 'smerge-mode)
 (require 'ob-core)
@@ -206,6 +207,8 @@ For example:
                                          ("plantuml" . ((:file . "<temp-file>.png")))
                                          ("ditaa" . ((:file . "<temp-file>.png")))
                                          ("objc" . ((:results . "output")))
+                                         ("lisp" . ((:results . "output")))
+                                         ("clojure" . ((:results . "output")))
                                          ("python" . ((:python . "python3")))
                                          ("swiftui" . ((:results . "file")))
                                          ("c++" . ((:results . "raw")))
@@ -530,13 +533,16 @@ See `chatgpt-shell-allow-model-versions' and
 (defcustom chatgpt-shell-swap-model-selector nil
   "Custom function to select a model during swap.
 
-This would allow a user to sort, group, filter, present a different selection
-user experience, attach affixations, and so on.  An example:
+This would allow a user to sort, group, filter, present a different
+selection, user experience, attach affixations, and so on.
+
+An example:
 
   (setq chatgpt-shell-swap-model-selector
         (lambda (candidates)
-          (completing-read \"New model: \"
-                           (my-custom-model-completion-table candidates) nil t)))
+          (completing-read
+            \"New model: \"
+             (my-custom-model-completion-table candidates) nil t)))
 
 See also `chatgpt-shell-swap-model'."
   :type 'function
@@ -603,6 +609,13 @@ non-nil; otherwise `completing-read'."
 
 (defcustom chatgpt-shell-streaming t
   "Whether or not to stream ChatGPT responses (show chunks as they arrive)."
+  :type 'boolean
+  :group 'chatgpt-shell)
+
+(defcustom chatgpt-shell-always-create-new t
+  "Non-nil creates a new shell buffer every time `chatgpt-shell' is invoked.
+
+Otherwise, reuse an existing chat."
   :type 'boolean
   :group 'chatgpt-shell)
 
@@ -731,7 +744,8 @@ Set CONTEXT, STREAMING, TEMPERATURE, and SYSTEM-PROMPT as usual."
 
 With NEW-SESSION, start a new session."
   (interactive "P")
-  (chatgpt-shell-start nil new-session))
+  (chatgpt-shell-start nil (or new-session
+                               chatgpt-shell-always-create-new)))
 
 (defvar chatgpt-shell-mode-map (make-sparse-keymap)
   "Keymap for `chatgpt-shell-mode'.")

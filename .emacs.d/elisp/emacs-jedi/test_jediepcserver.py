@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import textwrap
+import venv
 from contextlib import contextmanager
 
 import jediepcserver as jep
@@ -36,7 +37,6 @@ def test_epc_server_runs_fine_in_virtualenv():
     subprocess.check_call(['tox', '-e', envname, '--notest'])
     relative_venv_path = ".tox/" + envname
     full_venv_path = os.path.join(os.getcwd(), relative_venv_path)
-
     handler = jep.JediEPCHandler(virtual_envs=[full_venv_path])
     sys_path = handler.get_sys_path()
     venv_path = '{0}/lib/python{1}.{2}/site-packages'.format(
@@ -137,6 +137,31 @@ def test_completion_docstring_raises(monkeypatch):
         {
             'word': 'chdir',
             'doc': '',
+            'description': 'def chdir',
+            'symbol': 'f',
+        },
+    ]
+
+
+def test_complete_with_multiple_virtualenvs(tmpdir):
+    params = _get_jedi_script_params("""
+    import os
+    os.chd
+    """)
+
+    def create_venv(envname):
+        subdir = tmpdir.join(envname)
+        venv.create(subdir)
+        return subdir
+
+    venv1 = create_venv('some-env')
+    venv2 = create_venv('other-env')
+    handler = jep.JediEPCHandler(virtual_envs=[venv1, venv2])
+    result = handler.complete(*params)
+    assert result == [
+        {
+            'word': 'chdir',
+            'doc': 'chdir(path: _FdOrAnyPath) -> None',
             'description': 'def chdir',
             'symbol': 'f',
         },

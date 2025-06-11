@@ -22,6 +22,7 @@
 
 ;;; Code:
 
+(require 'bookmark)
 (require 'bug-reference)
 (require 'eieio-custom)
 (require 'markdown-mode)
@@ -339,21 +340,21 @@ A face attribute should be used that is not already used by any
   (if (and (numberp number-or-id)
            (< number-or-id 0))
       (forge-get-pullreq repo (abs number-or-id))
-    (or (forge-get-discussion number-or-id)
-        (forge-get-issue number-or-id)
-        (forge-get-pullreq number-or-id))))
+    (or (forge-get-discussion repo number-or-id)
+        (forge-get-issue      repo number-or-id)
+        (forge-get-pullreq    repo number-or-id))))
 
 (cl-defmethod forge-get-topic ((number integer))
   (if (< number 0)
       (forge-get-pullreq (abs number))
     (or (forge-get-discussion number)
-        (forge-get-issue number)
-        (forge-get-pullreq number))))
+        (forge-get-issue      number)
+        (forge-get-pullreq    number))))
 
 (cl-defmethod forge-get-topic ((id string))
   (or (forge-get-discussion id)
-      (forge-get-issue id)
-      (forge-get-pullreq id)))
+      (forge-get-issue      id)
+      (forge-get-pullreq    id)))
 
 ;;;; Current
 
@@ -852,7 +853,7 @@ can be selected from the start."
   (let ((crm-separator ","))
     (magit-completing-read-multiple
      "Labels: "
-     (forge--format-labels (and obj (forge-get-repository obj)))
+     (forge--format-labels (forge-get-repository (or obj :tracked)))
      nil t
      (and (cl-typep obj 'forge-topic)
           (forge--format-labels obj crm-separator)))))
@@ -1069,8 +1070,18 @@ can be selected from the start."
        ('pending 'forge-topic-pending)
        ('done    'forge-topic-done)))))
 
-(defun forge--format-topic-assignees (topic)
-  (and-let* ((assignees (oref topic assignees)))
+(defun forge--format-topic-assignees (arg)
+  (and-let* ((assignees
+              (cond ((eieio-object-p arg)
+                     (oref arg assignees))
+                    ((forge-buffer-repository)
+                     (forge-sql-cdr [:select * :from assignee
+                                     :where
+                                     (and (= repository $s1)
+                                          (in login $v2))
+                                     :order-by [(asc login)]]
+                                    forge-buffer-repository
+                                    (vconcat arg))))))
     (mapconcat #'forge--format-person assignees ", ")))
 
 (defun forge--format-topic-review-requests (topic)
@@ -1078,10 +1089,12 @@ can be selected from the start."
     (mapconcat #'forge--format-person review-requests ", ")))
 
 (defun forge--format-person (person)
-  (pcase-let ((`(,_id ,login ,name) person))
-    (format "%s%s (@%s)"
-            (forge--format-avatar login)
-            name login)))
+  (pcase-let* ((`(,_id ,login ,name) person)
+               (avatar (forge--format-avatar login)))
+    (propertize (if name
+                    (format "%s%s (@%s)" avatar name login)
+                  (format "%s@%s" avatar login))
+                'face 'transient-value)))
 
 (defun forge--format-avatar (person)
   (if forge-format-avatar-function
@@ -1106,11 +1119,11 @@ can be selected from the start."
   "Insert a list of topics, according to PREPARE.
 
 This function is not intended to be added to section hooks directly.
-Instead create a function, which calls this function, and add wrapper
-to the section hook.
+Instead create a function, which calls this function, and add that
+wrapper to the mode's section hook.
 
 PREPARE is a function which takes one arguments the repository object,
-and must return an filter object of type `forge--topics-spec' or nil.
+and must return a filter object of type `forge--topics-spec' or nil.
 Insert no topics if PREPARE returns nil, or if the current repository
 isn't tracked or Forge hasn't been fully setup yet (in the latter two
 cases don't even call PREPARE).
@@ -1123,7 +1136,27 @@ See `forge--topics-spec' for the valid slots and their values.
 HEADING is used as the heading of the list section and TYPE is used as
 its type.  TYPE should be a symbol of the form `SUBSET-KIND', where KIND
 is one of `topics', `issues' or `pullreqs', and SUBSET should describe
-what subset of KIND is being listed."
+what subset of KIND is being listed.
+
+For example, to insert a list of issues assigned to you use something
+like:
+
+  (defun my-forge-insert-assigned-issues ()
+    \"Insert a list of issues that are assigned to me.\"
+    (forge-insert-topics \\='assigned-issues \"Assigned issues\"
+      (lambda (repo)
+        (and-let* ((me (ghub--username repo)))
+          (forge--topics-spec :type \\='issue :active t
+                              :assignee me)))))
+
+  (magit-add-section-hook \\='magit-status-sections-hook
+                          #\\='my-forge-insert-assigned-issues
+                          #\\='forge-insert-issues)
+
+Grep Forge for more examples.
+
+Alternatively you can use `forge-topics-setup-buffer' to list a set
+of topics in a dedicated buffer."
   (declare (indent defun))
   (when-let (((forge-db t))
              (repo (forge-get-repository :tracked?))
@@ -1285,15 +1318,16 @@ This mode itself is never used directly."
 (defun forge-topic-setup-buffer (topic)
   (let* ((repo (forge-get-repository topic))
          (name (format "*forge: %s %s*" (oref repo slug) (oref topic slug)))
-         (magit-generate-buffer-name-function (lambda (_mode _value) name)))
-    (magit-setup-buffer-internal
-     (pcase-exhaustive (eieio-object-class topic)
-       ('forge-discussion #'forge-discussion-mode)
-       ('forge-issue      #'forge-issue-mode)
-       ('forge-pullreq    #'forge-pullreq-mode))
-     t `((forge-buffer-topic ,topic))
-     name (or (forge-get-worktree repo) "/"))
-    (forge-topic-mark-read topic)))
+         (magit-generate-buffer-name-function (lambda (_mode _value) name))
+         (buffer (magit-setup-buffer-internal
+                  (pcase-exhaustive (eieio-object-class topic)
+                    ('forge-discussion #'forge-discussion-mode)
+                    ('forge-issue      #'forge-issue-mode)
+                    ('forge-pullreq    #'forge-pullreq-mode))
+                  t `((forge-buffer-topic ,topic))
+                  name (or (forge-get-worktree repo) "/"))))
+    (forge-topic-mark-read topic)
+    buffer))
 
 (defun forge-topic-refresh-buffer ()
   (let ((topic (closql-reload forge-buffer-topic)))
@@ -1301,8 +1335,10 @@ This mode itself is never used directly."
     (magit-set-header-line-format (forge--format-topic-line topic))
     (magit-insert-section (topicbuf)
       (magit-insert-headers
-       (intern (format "%s-headers-hook"
-                       (substring (symbol-name major-mode) 0 -5))))
+       (pcase major-mode
+         ('forge-discussion-mode 'forge-discussion-headers-hook)
+         ('forge-issue-mode      'forge-issue-headers-hook)
+         ('forge-pullreq-mode    'forge-pullreq-headers-hook)))
       (when (forge-pullreq-p topic)
         (magit-insert-section (pullreq topic)
           (magit-insert-heading "Commits")
@@ -1371,6 +1407,28 @@ This mode itself is never used directly."
 
 (cl-defmethod magit-buffer-value (&context (major-mode forge-topic-mode))
   (oref forge-buffer-topic slug))
+
+;;; Bookmarks
+
+(cl-defmethod magit-bookmark-name
+  (&context (major-mode forge-topic-mode))
+  (concat (oref (forge-get-repository forge-buffer-topic) slug)
+          (oref forge-buffer-topic slug)))
+
+(cl-defmethod magit-bookmark-get-value
+  (bookmark &context (major-mode forge-topic-mode))
+  (bookmark-prop-set bookmark 'forge-topic (oref forge-buffer-topic id)))
+
+(cl-defmethod magit-bookmark-get-buffer-create
+  (bookmark (_mode (derived-mode forge-topic-mode)))
+  (let ((magit-display-buffer-function #'identity)
+        (magit-display-buffer-noselect t))
+    (forge-topic-setup-buffer
+     (forge-get-topic (bookmark-prop-get bookmark 'forge-topic)))))
+
+(put 'forge-discussion-mode 'magit-bookmark-variables t)
+(put 'forge-issue-mode      'magit-bookmark-variables t)
+(put 'forge-pullreq-mode    'magit-bookmark-variables t)
 
 ;;; Headers
 
@@ -1931,82 +1989,38 @@ When point is on the answer, then unmark it and mark no other."
                      (point)))
            (end (and (zerop (forward-line))
                      (re-search-forward "^---[\s\t]*$" nil t)
-                     (match-beginning 0))))
+                     (match-beginning 0)))
+           (repoid (oref (forge-get-repository :tracked) id)))
       (let-alist (yaml-parse-string (magit--buffer-string beg end)
                                     :object-type 'alist
                                     :sequence-type 'list
-                                    :null-object nil)
+                                    :null-object nil
+                                    :false-object nil)
         `((prompt    . ,(format "%s — %s"
-                                (and .name (propertize .name 'face 'bold))
+                                (and .name
+                                     (stringp .name)
+                                     (propertize .name 'face 'bold))
                                 .about))
-          (title     . ,(and .title (string-trim .title)))
+          (title     . ,(and .title
+                             (stringp .title)
+                             (string-trim .title)))
           (text      . ,(magit--buffer-string (point) nil ?\n))
-          (labels    . ,(ensure-list .labels))
-          (assignees . ,(ensure-list .assignees))
-          (draft     . , .draft)))
+          ;; Prevent ad hock creation or previously unknown labels.
+          (labels    . ,(cl-intersection
+                         (ensure-list .labels)
+                         (forge-sql-car [:select name :from label
+                                         :where (= repository $s1)]
+                                        repoid)
+                         :test #'equal))
+          ;; Server errors on invalid assignees.
+          (assignees . ,(cl-intersection
+                         (ensure-list .assignees)
+                         (forge-sql-car [:select login :from assignee
+                                         :where (= repository $s1)]
+                                        repoid)
+                         :test #'equal))
+          (draft     . ,(and (booleanp .draft) .draft))))
     `((text . ,(magit--buffer-string)))))
-
-(defun forge--topic-parse-buffer (&optional file)
-  (save-match-data
-    (save-excursion
-      (goto-char (point-min))
-      (let ((alist (save-excursion (forge--topic-parse-yaml))))
-        (if alist
-            (setf (alist-get 'yaml alist) t)
-          (setq alist (save-excursion (forge--topic-parse-plain))))
-        (setf (alist-get 'file alist) file)
-        (setf (alist-get 'text alist) (magit--buffer-string nil nil ?\n))
-        (when (and file (not (alist-get 'prompt alist)))
-          (setf (alist-get 'prompt alist)
-                (file-name-sans-extension (file-name-nondirectory file))))
-        ;; If there is a yaml front-matter, then it is supposed
-        ;; to have a `title' field, but this may not be the case.
-        (when (and (not file)
-                   (not (alist-get 'title alist)))
-          (setf (alist-get 'title alist)
-                (read-string "Title: ")))
-        alist))))
-
-(defun forge--topic-parse-yaml ()
-  (let (alist beg end)
-    (when (looking-at "^---[\s\t]*$")
-      (forward-line)
-      (setq beg (point))
-      (when (re-search-forward "^---[\s\t]*$" nil t)
-        (setq end (match-beginning 0))
-        (setq alist (yaml-parse-string (magit--buffer-string beg end)
-                                       :object-type 'alist
-                                       :sequence-type 'list
-                                       :false-object nil))
-        (let-alist alist
-          (when (and .name .about)
-            (setf (alist-get 'prompt alist)
-                  (format "%s -- %s" .name .about)))
-          (when (and .labels (atom .labels))
-            (setf (alist-get 'labels alist) (list .labels)))
-          (when (and .assignees (atom .assignees))
-            (setf (alist-get 'assignees alist) (list .assignees))))
-        (forward-line)
-        (when (and (not (alist-get 'title alist))
-                   (looking-at "^\n?#*"))
-          (goto-char (match-end 0))
-          (setf (alist-get 'title alist)
-                (string-trim
-                 (magit--buffer-string (point) (line-end-position) t)))
-          (forward-line))
-        (setf (alist-get 'body alist)
-              (string-trim (magit--buffer-string (point) nil ?\n)))))
-    alist))
-
-(defun forge--topic-parse-plain ()
-  (let (title body)
-    (when (looking-at "\\`#*")
-      (goto-char (match-end 0)))
-    (setq title (magit--buffer-string (point) (line-end-position) t))
-    (forward-line)
-    (setq body (magit--buffer-string (point) nil ?\n))
-    `((title . ,(string-trim title))
-      (body  . ,(string-trim body)))))
 
 ;;; Bug-Reference
 

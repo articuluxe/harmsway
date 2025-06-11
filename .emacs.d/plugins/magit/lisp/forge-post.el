@@ -31,12 +31,26 @@
 (defcustom forge-post-mode-hook
   '(visual-line-mode
     turn-on-flyspell)
-  "Hook run after entering Forge-Post mode."
+  "Hook run after entering Forge-Post mode.
+This hook is run early on while setting up a buffer to edit a post.
+If you want to make changes to the already populated buffer, instead
+use `forge-edit-post-hook'."
   :package-version '(forge . "0.2.0")
   :group 'forge
   :type 'hook
   :options '(visual-line-mode
              turn-on-flyspell))
+
+(defcustom forge-edit-post-hook
+  '(forge-create-pullreq-insert-single-commit-message)
+  "Hook run after setting up a buffer to edit a post.
+Consult the variable `forge-edit-post-action' to determine the action;
+one of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'."
+  :package-version '(forge . "0.5.4")
+  :group 'forge
+  :type 'hook
+  :options '(forge-create-pullreq-insert-single-commit-message
+             forge-create-pullreq-insert-branch-description))
 
 (defcustom forge-post-fallback-directory
   (locate-user-emacs-file "forge-drafts/")
@@ -89,7 +103,8 @@ an error."
 ;;; Mode
 
 (defvar-keymap forge-post-mode-map
-  "C-c C-e"                                #'forge-post-dispatch
+  "<remap> <forge--item-menu>"             #'forge-post-menu
+  "C-c C-e"                                #'forge-post-menu
   "C-c C-c"                                #'forge-post-submit
   "<remap> <evil-save-and-close>"          #'forge-post-submit
   "<remap> <evil-save-modified-and-close>" #'forge-post-submit
@@ -108,20 +123,33 @@ an error."
 (defvar-local forge--submit-post-function nil)
 (defvar-local forge--cancel-post-function nil)
 
+(defvar-local forge-edit-post-action nil
+  "The action being carried out by editing this post buffer.
+One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
+
 (defvar-local forge--buffer-post-object nil)
 (defvar-local forge--buffer-template nil)
 (defvar-local forge--buffer-category nil)
+(defvar-local forge--buffer-milestone nil)
+(defvar-local forge--buffer-labels nil)
+(defvar-local forge--buffer-assignees nil)
 (defvar-local forge--buffer-base-branch nil)
 (defvar-local forge--buffer-head-branch nil)
 (defvar-local forge--buffer-draft-p nil)
 
-(defun forge--setup-post-buffer (obj submit file header &optional bindings fn)
+(defun forge--setup-post-buffer ( obj-or-action submit file header
+                                  &optional bindings fn)
   (declare (indent defun))
   (let* ((prevbuf (current-buffer))
-         (obj     (or obj (forge-get-repository :tracked)))
+         (action  (cond ((symbolp obj-or-action)             obj-or-action)
+                        ((forge--childp obj-or-action 'forge-topic) 'reply)
+                        ((forge--childp obj-or-action 'forge-post)   'edit)))
+         (obj     (if (symbolp obj-or-action)
+                      (forge-get-repository :tracked)
+                    obj-or-action))
          (repo    (forge-get-repository obj))
          (header  (forge--format obj header))
-         (file    (forge--post-expand-file-name file repo))
+         (file    (forge--post-expand-file-name (forge--format obj file) repo))
          (_       (make-directory (file-name-directory file) t))
          (buffer  (find-file-noselect file))
          (resume  (forge--post-resume-p file buffer)))
@@ -129,18 +157,29 @@ an error."
       (forge-post-mode)
       (magit-set-header-line-format header)
       (setq forge--pre-post-buffer prevbuf)
+      (forge-set-buffer-repository)
+      (setq forge-edit-post-action action)
       (setq forge--buffer-post-object obj)
       (setq forge--submit-post-function submit)
       (pcase-dolist (`(,var ,val) bindings)
         (set (make-local-variable var) val)
         (when (eq var 'forge--buffer-template)
           (let-alist forge--buffer-template
+            (setq forge--buffer-assignees .assignees)
+            (setq forge--buffer-labels .labels)
             (setq forge--buffer-draft-p .draft))))
       (when (and (not resume) forge--buffer-template)
-        (forge--post-insert-template forge--buffer-template))
+        (if-let ((template (alist-get 'text forge--buffer-template)))
+            (progn (unless (string-prefix-p "# " template)
+                     (insert "# \n\n"))
+                   (insert template)
+                   (goto-char 3))
+          (insert "# ")))
       (when fn
         (funcall fn))
       (run-hooks 'forge-edit-post-hook))
+    (message (substitute-command-keys
+              "Use \\[forge-post-menu] to set fields and submit or abort"))
     (forge--display-post-buffer buffer)))
 
 (defun forge--display-post-buffer (buf)
@@ -163,39 +202,57 @@ an error."
                   (progn (erase-buffer)
                          nil)))))
 
-(defun forge--post-insert-template (template)
-  (let-alist template
-    (cond
-     (.name
-      ;; A Github issue with yaml frontmatter.
-      (save-excursion (insert .text))
-      (unless (re-search-forward "^title: " nil t)
-        (when (re-search-forward "^---" nil t 2)
-          (beginning-of-line)
-          (insert "title: \n")
-          (backward-char))))
-     (t
-      (insert "# ")
-      (let* ((source (alist-get 'source template))
-             (target (alist-get 'target template))
-             (single (and source
-                          (= (car (magit-rev-diff-count source target)) 1))))
-        (save-excursion
-          (when single
-            ;; A pull-request.
-            (magit-rev-insert-format "%B" source))
-          (when .text
-            (if single
-                (insert "-------\n")
-              (insert "\n"))
-            (insert "\n" .text))))))))
+(defun forge-create-pullreq-insert-single-commit-message ()
+  "When creating a pull-request from a single commit, insert its message."
+  (when-let* ((source forge--buffer-head-branch)
+              (target forge--buffer-base-branch)
+              ((= (car (magit-rev-diff-count source target)) 1)))
+    (when (alist-get 'text forge--buffer-template)
+      (goto-char (point-max))
+      (unless (eq (char-before) ?\n)
+        (insert ?\n))
+      (insert "\n<!-- Message of single commit: -->\n\n"))
+    (magit-rev-insert-format "%B" source)
+    (when (= (char-before (1- (point))) ?\n)
+      (delete-char -1))
+    (goto-char 3)))
 
-(defun forge--post-submit-callback ()
+(defun forge-create-pullreq-insert-branch-description ()
+  "When creating a pull-request, insert branch description, if any.
+Insert the value of `branch.BRANCH.description' of the source BRANCH."
+  (when-let* ((source forge--buffer-head-branch)
+              (description (magit-get "branch"
+                                      (cdr (magit-split-branch-name source))
+                                      "description")))
+    (when (or (alist-get 'text forge--buffer-template)
+              (> (point-max) 3))
+      (goto-char (point-max))
+      (unless (eq (char-before) ?\n)
+        (insert ?\n))
+      (insert "\n<!-- Branch description: -->\n\n"))
+    (insert description)
+    (goto-char 3)))
+
+(defun forge--post-buffer-text ()
+  (save-match-data
+    (save-excursion
+      (goto-char (point-min))
+      (skip-chars-forward "\s\t\n")
+      (let (title body)
+        (when (looking-at "^#*[\s\t]*")
+          (goto-char (match-end 0)))
+        (setq title (magit--buffer-string (point) (line-end-position) t))
+        (forward-line)
+        (setq body (magit--buffer-string (point) nil ?\n))
+        (cons (string-trim title)
+              (string-trim body))))))
+
+(defun forge--post-submit-callback (&optional full-pull)
   (let* ((file    buffer-file-name)
          (editbuf (current-buffer))
          (prevbuf forge--pre-post-buffer)
          (topic   (ignore-errors (forge-get-topic forge--buffer-post-object)))
-         (repo    (forge-get-repository topic)))
+         (repo    (forge-get-repository (or topic forge--buffer-post-object))))
     (lambda (value &optional headers status req)
       (run-hook-with-args 'forge-post-submit-callback-hook
                           value headers status req)
@@ -208,11 +265,10 @@ an error."
           (magit-mode-bury-buffer 'kill)))
       (with-current-buffer
           (if (buffer-live-p prevbuf) prevbuf (current-buffer))
-        (if (and topic
-                 (forge--childp repo 'forge-github-repository)
-                 (oref repo selective-p))
+        (if (or (not full-pull)
+                (oref repo selective-p))
             (forge--pull-topic repo topic)
-          (forge-pull))))))
+          (forge--pull repo))))))
 
 (defun forge--post-submit-errorback ()
   (lambda (error &rest _)
@@ -220,13 +276,20 @@ an error."
 
 ;;; Commands
 
-(transient-define-prefix forge-post-dispatch ()
+(transient-define-prefix forge-post-menu ()
   "Dispatch a post creation command."
-  ["Variables"
-   ("d" "Create draft" forge-post-toggle-draft)]
-  ["Act"
-   ("C-c" "Submit" forge-post-submit)
-   ("C-k" "Cancel" forge-post-cancel)])
+  [["Set"
+    :if (lambda ()
+          (and (forge-github-repository-p (forge-get-repository :tracked))
+               (string-prefix-p "new-"
+                                (file-name-nondirectory buffer-file-name))))
+    ("-m" forge-new-topic-set-milestone)
+    ("-l" forge-new-topic-set-labels)
+    ("-a" forge-new-topic-set-assignees)
+    ("-d" forge-new-pullreq-toggle-draft)]
+   ["Actions"
+    ("C-c" "Submit" forge-post-submit)
+    ("C-k" "Cancel" forge-post-cancel)]])
 
 (defun forge-post-submit ()
   "Submit the post that is being edited in the current buffer."
@@ -244,13 +307,62 @@ an error."
   (save-buffer)
   (if-let ((fn forge--cancel-post-function))
       (funcall fn forge--buffer-post-object)
-    (magit-mode-bury-buffer 'kill)))
+    (let ((file buffer-file-name))
+      (magit-mode-bury-buffer 'kill)
+      (when (yes-or-no-p "Also delete draft? ")
+        (dired-delete-file file nil magit-delete-by-moving-to-trash)))))
 
-(transient-define-infix forge-post-toggle-draft ()
+(defclass forge--new-topic-set-slot-command (transient-lisp-variable)
+  ((name :initarg :name)
+   (reader :initarg :reader)
+   (formatter :initarg :formatter)
+   (format :initform " %k %d")
+   (description :initform (lambda (obj)
+                            (with-slots (name variable formatter) obj
+                              (if-let* ((value (symbol-value variable))
+                                        (value (funcall formatter value)))
+                                  (format "%s %s" name value)
+                                (format "%s" name)))))))
+
+(transient-define-infix forge-new-topic-set-milestone ()
+  "Set milestone for the topic being created."
+  :class 'forge--new-topic-set-slot-command
+  :variable 'forge--buffer-milestone
+  :name "milestone"
+  :reader (lambda (&rest _) (forge-read-topic-milestone))
+  :formatter (lambda (milestone) (propertize milestone 'face 'forge-topic-label))
+  :if (lambda () (equal (file-name-nondirectory buffer-file-name) "new-issue")))
+
+(transient-define-infix forge-new-topic-set-labels ()
+  "Set labels for the topic being created."
+  :class 'forge--new-topic-set-slot-command
+  :variable 'forge--buffer-labels
+  :name "labels"
+  :reader (lambda (&rest _) (forge-read-topic-labels))
+  :formatter (##forge--format-labels % t)
+  :if (lambda () (equal (file-name-nondirectory buffer-file-name) "new-issue")))
+
+(transient-define-infix forge-new-topic-set-assignees ()
+  "Set assignees for the pull-request being created."
+  :class 'forge--new-topic-set-slot-command
+  :variable 'forge--buffer-assignees
+  :name "assignees"
+  :reader (lambda (&rest _) (forge-read-topic-assignees))
+  :formatter #'forge--format-topic-assignees
+  :if (lambda () (equal (file-name-nondirectory buffer-file-name) "new-issue")))
+
+(transient-define-infix forge-new-pullreq-toggle-draft ()
   "Toggle whether the pull-request being created is a draft."
-  :class 'transient-lisp-variable
+  :class 'forge--new-topic-set-slot-command
   :variable 'forge--buffer-draft-p
+  :name "draft"
   :reader (lambda (&rest _) (not forge--buffer-draft-p))
+  :description (lambda ()
+                 (format (propertize "[%s]" 'face 'transient-delimiter)
+                         (propertize "draft" 'face
+                                     (if forge--buffer-draft-p
+                                         'transient-value
+                                       'transient-inactive-value))))
   :if (lambda () (equal (file-name-nondirectory buffer-file-name) "new-pullreq")))
 
 ;;; Notes
