@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/modus-themes
-;; Version: 4.7.0
+;; Version: 4.8.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -1689,6 +1689,7 @@ FG and BG are the main colors."
     `(escape-glyph ((,c :foreground ,err)))
     `(file-name-shadow ((,c :inherit shadow)))
     `(header-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-dim)))
+    `(header-line-inactive ((,c :inherit (modus-themes-ui-variable-pitch shadow))))
     `(header-line-highlight ((,c :background ,bg-hover :foreground ,fg-main :box ,fg-main)))
     `(help-argument-name ((,c :inherit modus-themes-slant :foreground ,variable)))
     `(help-key-binding ((,c :inherit modus-themes-key-binding)))
@@ -2654,6 +2655,8 @@ FG and BG are the main colors."
 ;;;;; hexl-mode
     `(hexl-address-region ((,c :foreground ,constant)))
     `(hexl-ascii-region ((,c :foreground ,variable)))
+;;;;; hideshow
+    `(hs-ellipsis (( )))
 ;;;;; highlight region or ad-hoc regexp
     ;; HACK 2022-06-23: The :inverse-video prevents hl-line-mode from
     ;; overriding the background.  Such an override really defeats the
@@ -3758,6 +3761,8 @@ FG and BG are the main colors."
     `(smerge-refined-removed ((,c :inherit diff-refine-removed)))
     `(smerge-upper ((,c :inherit diff-removed)))
 ;;;;; spacious-padding
+    `(spacious-padding-line-active ((,c :foreground ,accent-0)))
+    `(spacious-padding-line-inactive ((,c :foreground ,border)))
     `(spacious-padding-subtle-mode-line-active ((,c :foreground ,accent-0)))
     `(spacious-padding-subtle-mode-line-inactive ((,c :foreground ,border)))
 ;;;;; speedbar

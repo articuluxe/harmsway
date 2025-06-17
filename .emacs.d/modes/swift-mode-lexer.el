@@ -667,10 +667,10 @@ return non-nil."
        ;; statements.
        (member (swift-mode:token:text previous-token)
                '("any" "some" "inout" "borrowing" "consuming" "sending" "in"
-                 "where" "isolated" "each"))
+                 "where" "each"))
        (member (swift-mode:token:text next-token)
                '("any" "some" "inout" "borrowing" "consuming" "sending" "throws"
-                 "rethrows" "in" "where" "isolated" "each"))
+                 "rethrows" "in" "where" "each"))
 
        ;; Suppress implicit semicolon between throws and open parenthesis.
        (and (equal (swift-mode:token:text previous-token) "throws")
@@ -738,24 +738,25 @@ return non-nil."
                 "mutating" "nonmutating" "optional" "override" "postfix"
                 "prefix" "required" "static" "unowned" "weak" "internal"
                 "package" "private" "public" "open" "fileprivate" "nonisolated"
-                "distributed"))
+                "distributed" "isolated"))
       nil)
 
      ;; internal(set) private(set) public(set) open(set) fileprivate(set)
      ;; unowned(safe) unowned(unsafe) nonisolated(unsafe)
+     ;; nonisolated(nonsending)
      ((and
        (eq (swift-mode:token:type previous-token) '\))
        (save-excursion
          (and
           (eq (swift-mode:token:type (swift-mode:backward-token-simple)) '\))
           (member (swift-mode:token:text (swift-mode:backward-token-simple))
-                  '("set" "safe" "unsafe"))
+                  '("set" "safe" "unsafe" "nonsending"))
           (eq (swift-mode:token:type (swift-mode:backward-token-simple)) '\()
           (member (swift-mode:token:text
                    (swift-mode:backquote-identifier-if-after-dot
                     (swift-mode:backward-token-simple)))
                   '("unowned" "internal" "private" "public" "open"
-                    "fileprivate" "nonisolated")))))
+                    "fileprivate" "nonisolated" "isolated")))))
       nil)
 
      ;; Suppress implicit semicolon after declaration starters.
@@ -773,7 +774,7 @@ return non-nil."
                 "mutating" "nonmutating" "optional" "override" "postfix"
                 "prefix" "required" "static" "unowned" "weak" "internal"
                 "package" "private" "public" "open" "fileprivate" "nonisolated"
-                "distributed"))
+                "distributed" "isolated"))
       t)
 
      ;; Inserts implicit semicolon around keywords that forms single keyword

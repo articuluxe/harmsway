@@ -313,7 +313,9 @@ not specified, then ad hoc faces based on `default', `mode-line',
 ;;;; mode-line-buffer-identification
 
 (defvar-local moody-mode-line-buffer-identification
-  '(:eval (moody-tab (car (propertized-buffer-identification "%b")) 20 'down)))
+  '(:eval (moody-tab (car (propertized-buffer-identification
+                           (format-mode-line "%b")))
+                     20 'down)))
 
 (put 'moody-mode-line-buffer-identification 'risky-local-variable t)
 
@@ -334,12 +336,13 @@ If called interactively, then toggle between the variants."
 (defvar sml/mode-line-buffer-identification) ; defined in `smart-mode-line.el'
 
 (defvar-local moody-sml/mode-line-buffer-identification
-    '(:eval (moody-tab
-             (or sml/buffer-identification
-                 (sml/generate-buffer-identification)
-                 ;; Just in case the above are both nil.
-                 (car (propertized-buffer-identification (buffer-name))))
-             20 'down)))
+  '(:eval (moody-tab
+           (or sml/buffer-identification
+               (sml/generate-buffer-identification)
+               ;; Just in case the above are both nil.
+               (car (propertized-buffer-identification
+                     (format-mode-line "%b"))))
+           20 'down)))
 
 (put 'moody-sml/mode-line-buffer-identification 'risky-local-variable t)
 
@@ -370,7 +373,7 @@ already been called."
 ;;;; vc-mode
 
 (defvar-local moody-vc-mode
-    '(:eval (moody-ribbon (substring vc-mode 1) nil 'up)))
+  '(:eval (moody-ribbon (substring vc-mode 1) nil 'up)))
 
 (put 'moody-vc-mode 'risky-local-variable t)
 
@@ -469,9 +472,9 @@ If called interactively, then toggle between the variants."
 ;;;; mode-line-front-space
 
 (defvar-local moody-mode-line-front-space
-    '(:eval (if (display-graphic-p)
-                (propertize " " 'display `((space :align-to 0)))
-              "-")))
+  '(:eval (if (display-graphic-p)
+              (propertize " " 'display `((space :align-to 0)))
+            "-")))
 
 (put 'moody-mode-line-front-space 'risky-local-variable t)
 

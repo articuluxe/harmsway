@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2021
-;; Version: 2.2
+;; Version: 2.3
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 ;; URL: https://github.com/minad/vertico
 ;; Keywords: convenience, files, matching, completion
@@ -622,7 +622,8 @@ the stack trace is shown in the *Messages* buffer."
 
 (cl-defgeneric vertico--advice (&rest app)
   "Advice for completion function, apply APP."
-  (minibuffer-with-setup-hook #'vertico--setup (apply app)))
+  (dlet ((completion-eager-display nil)) ;; Available on Emacs 31
+    (minibuffer-with-setup-hook #'vertico--setup (apply app))))
 
 (defun vertico-first ()
   "Go to first candidate, or to the prompt when the first candidate is selected."

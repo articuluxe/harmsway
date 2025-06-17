@@ -1042,7 +1042,7 @@ OFFSET is the offset of the contents."
              (swift-mode:token:text next-token)
              '("for" "while" "repeat" "guard" "switch" "if" "else"
                "defer" "do" "catch"
-               "get" "set" "willSet" "didSet" "func" "init" "subscript"
+               "get" "set" "willSet" "didSet" "func" "init" "deinit" "subscript"
                "enum" "struct" "actor" "class" "extension"
                "prefix" "postfix" "infix" "precedencegroup"))
             (setq is-declaration-or-control-statement-body t)
@@ -1652,7 +1652,7 @@ It is a Generic parameter list if:
     "consume" "copy" "discard"
     "in"
     "init" "deinit" "get" "set" "willSet" "didSet" "subscript"
-    "for" "case" "default" "while" "let" "var" "repeat" "if" "else"
+    "for" "case" "default" "while" "var" "repeat" "if" "else"
     "guard" "break" "continue" "fallthrough" "return" "throw" "defer"
     "do" "catch" "import" "typealias" "associatedtype"))
 
@@ -1672,8 +1672,7 @@ UNMATCHING-BRACKET-TEXT is a text of the current bracket."
         (cond
          ((or (memq (swift-mode:token:type next-token) prohibited-tokens)
               (member (swift-mode:token:text next-token) prohibited-tokens)
-              (string-match-p "^[\"$0-9]"
-                              (swift-mode:token:text next-token)))
+              (string-match-p "^[\"$]" (swift-mode:token:text next-token)))
           ;; Not a generic parameter list. Returns to the initial position and
           ;; stops the loop.
           (goto-char pos)

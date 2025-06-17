@@ -247,7 +247,7 @@
 ;;;;; ansi-color
       `(ansi-color-bold ((,c :inherit bold)))
       `(ansi-color-black ((,c :background ,bg :foreground ,bg)))
-      `(ansi-color-red ((,c :background ,orange :foreground ,orange)))
+      `(ansi-color-red ((,c :background ,red+1 :foreground ,red+1)))
       `(ansi-color-green ((,c :background ,green :foreground ,green)))
       `(ansi-color-yellow ((,c :background ,fg-1 :foreground ,fg-1)))
       `(ansi-color-blue ((,c :background ,blue :foreground ,blue)))
@@ -418,7 +418,7 @@
       `(eldoc-highlight-function-argument ((,c :inherit line-number-current-line :weight bold)))
 
 ;;;;; eldoc-box
-      `(eldoc-box-body ((,c :inherit default :background ,bg-1)))
+      `(eldoc-box-body ((,c :inherit default :background ,bg-header)))
       `(eldoc-box-border ((,c :inherit border)))
 
 ;;;;; elfeed

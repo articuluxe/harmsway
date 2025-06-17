@@ -66,6 +66,25 @@ The hook functions should have four parameters:
   :group 'devcontainer
   :type 'hook)
 
+(defcustom devcontainer-startup-secrets-file nil
+  "The file passed to the `--secrets-file' option of the `devcontainer up' command.
+
+The file can be defined either with an absolute path or relative to the
+devcontainer's workspace folder AKA the project's root directory."
+  :group 'devcontainer
+  :type 'file)
+
+(defcustom devcontainer-execution-buffer-naming #'devcontainer-find-execute-buffer-name
+  "Define the way buffers for `devcontainer-execute-command' are to be named.
+
+If a string, the string is just use as is as candidate for the buffer
+name.  If a function the function is called with the command string as
+argument.  The function is then supposed to return candidate of the
+buffer name."
+  :group 'devcontainer
+  :type '(choice (string :tag "Static name")
+                 (function :tag "Function taking the command string.")))
+
 (defvar devcontainer--project-info nil
   "The data structure for state of the devcontainer's of all active projects.
 
@@ -108,9 +127,9 @@ Otherwise, raise an `error'."
   (append
    (list
     (devcontainer--find-executable)
+    verb
     "--docker-path" (devcontainer--docker-path)
-    "--workspace-folder" (devcontainer--root)
-    verb)
+    "--workspace-folder" (devcontainer--root))
    ;; TODO dotfiles argument
    args))
 
@@ -194,6 +213,16 @@ Otherwise, raise an `error'."
            (devcontainer--set-current-project-state 'devcontainer-is-up))
          output)))
 
+(defun devcontainer--secrets-file-arg ()
+  "Return secrets file CLI arg for `devcontainer up' if set and existant."
+  (let ((secrets-file (pcase devcontainer-startup-secrets-file
+                        ('nil nil)
+                        ((pred file-name-absolute-p) devcontainer-startup-secrets-file)
+                        (_  (concat (file-name-as-directory (devcontainer--root))
+                                    devcontainer-startup-secrets-file)))))
+    (when (and secrets-file (file-exists-p secrets-file))
+      `("--secrets-file" ,secrets-file))))
+
 ;;;###autoload
 (defun devcontainer-up (&optional show-buffer)
   "Start the devcontainer of the current project.
@@ -201,28 +230,93 @@ Otherwise, raise an `error'."
 If SHOW-BUFFER is non nil, the buffer of the startup process is shown."
   (interactive
    (list (called-interactively-p 'interactive)))
+  (when (eq (devcontainer--current-project-state) 'devcontainer-is-starting)
+    (user-error "Another devcontainer is starting up.  Please wait until that is finished."))
   (if (and (if (devcontainer-container-needed-p) t
              (message "Project does not use a devcontainer.")
              (devcontainer--set-current-project-state 'no-devcontainer))
            (or (devcontainer--find-executable)
                (user-error "Don't have devcontainer executable")))
-      (let* ((cmd (devcontainer--make-cli-args "up"))
-             (buffer (get-buffer-create "*devcontainer startup*"))
+      (let* ((cmd (apply #'devcontainer--make-cli-args "up" (devcontainer--secrets-file-arg)))
+             (buffer (devcontainer--comint-process-buffer "devcontainer" "devcontainer startup" cmd))
              (proc (with-current-buffer buffer
-                     (let ((inhibit-read-only t)) (erase-buffer))
-                     (apply #'make-comint-in-buffer
-                            "devcontainer"
-                            buffer
-                            (car cmd)
-                            nil         ; STARTFILE
-                            (cdr cmd))
-                     (devcontainer-up-buffer-mode)
-                     (when show-buffer
-                       (temp-buffer-window-show buffer))
-                     (get-buffer-process buffer))))
+                (devcontainer-up-buffer-mode)
+                (when show-buffer
+                  (temp-buffer-window-show buffer))
+                (get-buffer-process buffer))))
         (message "Starting devcontainer...")
         (set-process-sentinel proc #'devcontainer--build-sentinel)
         (devcontainer--set-current-project-state 'devcontainer-is-starting))))
+
+(defun devcontainer-find-execute-buffer-name (command)
+  "Create unique name for buffer including COMMAND.
+
+This function is the default function to name the buffer used for
+`devcontainer-execute-command'."
+  (let ((project (file-name-nondirectory (directory-file-name (devcontainer--root)))))
+    (concat project ": " command)))
+
+(defun devcontainer--make-execution-buffer-name (command)
+  "Make execution buffer name for COMMAND according to config.
+
+Evaluates `devcontainer-execution-buffer-naming'"
+  (if (functionp devcontainer-execution-buffer-naming)
+      (funcall devcontainer-execution-buffer-naming command)
+    devcontainer-execution-buffer-naming))
+
+;;;###autoload
+(defun devcontainer-execute-command (command)
+  "Execute COMMAND in the container."
+  (interactive
+   (let ((proposal (car devcontainer--command-history))
+         (history '(devcontainer--command-history . 1)))
+     (list (read-from-minibuffer "Command: " proposal nil nil history))))
+  (unless (devcontainer-container-needed-p)
+    (user-error "No devcontainer for current project"))
+  (unless (devcontainer-up-container-id)
+    (user-error "The devcontainer not running.  Please start it first"))
+  (let* ((cmd (apply #'devcontainer--make-cli-args "exec" (split-string-shell-command command)))
+         (buffer (devcontainer--comint-process-buffer
+                  "devcontainer"
+                  (format "DevC %s" (devcontainer--make-execution-buffer-name command))
+                  cmd)))
+    (temp-buffer-window-show buffer)
+    buffer))
+
+(defun devcontainer--existing-buffer-available (buffer-name)
+  "Find the first available buffer name prefixed BUFFER-NAME[<N>]."
+  (thread-last
+    (buffer-list)
+    (seq-filter (lambda (buffer) (string-prefix-p buffer-name (buffer-name buffer))))
+    (seq-find (lambda (buffer) (not (process-live-p (get-buffer-process buffer)))))))
+
+(defun devcontainer--get-execution-buffer (buffer-name)
+  "Provide an unused buffer for an execution process with BUFFER-NAME.
+
+Takes the first buffer whose name prefixed BUFFER-NAME[<N>] that has
+not a running process associated with it or creates a new one."
+  (or (devcontainer--existing-buffer-available buffer-name)
+      (generate-new-buffer buffer-name)))
+
+(defun devcontainer--comint-process-buffer (proc-name buffer-name command)
+  "Make a comint buffer.
+
+PROC-NAME is the name given to the process object.  BUFFER-NAME is the
+name given to the buffer.  COMMAND is a list of strings representing the
+command line."
+  (let ((buffer (devcontainer--get-execution-buffer (format "*%s*" buffer-name))))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (string-join command " "))
+        (insert "\n"))
+      (apply #'make-comint-in-buffer
+             proc-name
+             buffer
+             (car command)
+             nil         ; STARTFILE
+             (cdr command)))
+    buffer))
 
 ;;;###autoload
 (defun devcontainer-restart (&optional show-buffer)
@@ -462,7 +556,8 @@ If IN-TERMINAL is non nil, the \"-it\" flag is set."
             (symbol-name devcontainer-engine)
             "exec"
             (when in-terminal "-it")
-            "--workdir" (devcontainer-remote-workdir))
+            "--workdir" (devcontainer-remote-workdir)
+            "--user" (devcontainer-remote-user))
            (devcontainer--make-env-cli-args in-terminal)
            (list container-id)))))
 
@@ -533,44 +628,6 @@ commands to a shell."
 
 (defvar devcontainer--command-history nil)
 
-;;;###autoload
-(defun devcontainer-execute-command (command)
-  "Execute COMMAND inside the devcontainer.
-
-This opens a buffer `*DevC command*' in which you can see and even
-interact with the running process.
-
-TODO: multiple parallel executions (maybe also in different containers)
-are not yet supported."
-  (interactive
-   (list (read-from-minibuffer "Command: " (car devcontainer--command-history) nil nil '(devcontainer--command-history . 1))))
-  (when (not (devcontainer-up-container-id))
-    (user-error "devcontainer not running"))
-  (let* ((container-id (devcontainer-container-id))
-         (cmd-args (append `("exec" "--workspace-folder" ,(devcontainer--root))
-                           (split-string-shell-command command)))
-         (buffer (get-buffer-create "*DevC command*"))
-         (name (concat "DevC-" (devcontainer--root) "-" command))
-         (proc (with-current-buffer buffer
-                 (let ((inhibit-read-only t)) (erase-buffer))
-                 (apply #'make-comint-in-buffer name buffer "devcontainer" nil cmd-args)
-                 (temp-buffer-window-show buffer)
-                 (get-buffer-process buffer)))
-         (pts (string-trim (shell-command-to-string (format "docker exec %s ls -1t /dev/pts | head -1" container-id)))))
-    (process-put proc 'pts pts)))
-
-;;;###autoload
-(defun devcontainer-kill-command ()
-  "Kill the process launched by `devcontainer-execute-command'."
-  (interactive)
-  (let* ((container-id (devcontainer-container-id))
-         (proc (get-buffer-process (get-buffer "*DevC command*")))
-         (pts (process-get proc 'pts)))
-    (devcontainer--call-engine-string-sync "exec"
-                                           container-id
-                                           "pkill"
-                                           "-t"
-                                           (format "pts/%s" pts))))
 
 (defun devcontainer-container-environment ()
   "Retrieve the container environment of current project's devcontainer as alist if it's up."
@@ -586,15 +643,21 @@ are not yet supported."
 
 (defun devcontainer--container-metadata ()
   "Retrieve the devcontainer's metadata if it's up."
-  (when-let* ((container-id (devcontainer-container-id)))
     (seq-reduce #'append
                 (json-parse-string
-                 (car (process-lines
-                       (symbol-name devcontainer-engine)
-                       "container" "inspect" container-id
-                       "--format={{index .Config.Labels \"devcontainer.metadata\"}}"))
+                 (or (devcontainer--inspect-container "{{index .Config.Labels \"devcontainer.metadata\"}}")
+                 "{}")
                  :object-type 'alist)
-                nil)))
+                nil))
+
+(defun devcontainer--inspect-container (format-query)
+  "Query FORMAT-QUERY from `docker container inspect --format='."
+  (when-let* ((container-id (devcontainer-container-id)))
+    (string-trim
+     (car (process-lines
+           (symbol-name devcontainer-engine)
+           "container" "inspect" container-id
+           (format "--format=%s" format-query))))))
 
 (defun devcontainer-remote-user ()
   "Retrieve the remote user name of the current project's devcontainer if it's up."
@@ -633,7 +696,12 @@ https://containers.dev/implementors/json_reference/#variables-in-devcontainerjso
                         (insert-file-contents (concat (file-name-as-directory (devcontainer--root)) devcontainer-json-file))
                         (devcontainer--bust-json-comments-in-buffer)
                         (json-parse-string (buffer-string)))))
-    (devcontainer--interpolate-variable (file-name-as-directory (gethash "workspaceFolder" config "/")))))
+    (devcontainer--interpolate-variable (file-name-as-directory (or (gethash "workspaceFolder" config)
+                                                                    (devcontainer--determine-workspace-folder-from-container))))))
+
+(defun devcontainer--determine-workspace-folder-from-container ()
+  "Determine the remote workdir in the devcontainer."
+  (devcontainer--inspect-container "{{(index .Mounts 0).Destination}}"))
 
 (defun devcontainer--bust-json-comments-in-buffer ()
   (while (re-search-forward "^\\([^\"]*?\\)\\(\\(\"[^\"]*\"[^\"]*?\\)*\\)//.*" nil t)

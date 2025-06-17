@@ -5,7 +5,7 @@
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
 ;; Package-Requires: ((emacs "25.1") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.7.2
+;; Version: 1.7.3
 ;; Keywords: dark light teal blue violet purple brown theme faces
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -116,6 +116,7 @@
   "If t, enable italic style in comments."
   :group 'kaolin-themes)
 
+
 (defcustom kaolin-themes-comments-style 'normal
   "Sets the style of commentaries: normal which is used by default, alt to use colored commentary or contrast to make them more distinguished."
   :type '(choice (const :tag "Normal" normal)
@@ -130,6 +131,11 @@
 (defcustom kaolin-themes-distinct-fringe nil
   "Enable distinct background for fringe and line numbers."
   :group 'kaolin-themes)
+
+(defcustom kaolin-themes-distinct-tab-line nil
+  "Enable distinct foreground for current tab in `tab-line-mode'."
+  :group 'kaolin-themes)
+
 
 (defcustom kaolin-themes-distinct-company-scrollbar nil
   "Enable distinct colors for company popup scrollbar."

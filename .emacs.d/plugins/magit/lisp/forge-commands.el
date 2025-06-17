@@ -592,7 +592,7 @@ With prefix argument MENU, also show the topic menu."
    (list (forge-read-topic-category nil "Category for new discussion")))
   (forge--setup-post-buffer 'new-discussion #'forge--submit-create-discussion
     "new-discussion" "Create new discussion on %p"
-   `((forge--buffer-category ,category))))
+    `((forge--buffer-category ,category))))
 
 (defun forge-create-issue (template)
   "Create a new issue for the current repository."
@@ -817,7 +817,7 @@ Please see the manual for more information."
            ;; longer does this, but we nevertheless have to deal
            ;; with merge-requests that have been lost in time.
            (error "Cannot check out this merge-request because %s"
-                  "on old Gitlab version discarded the source branch"))
+                  "an old Gitlab version discarded the source branch"))
           ((not (eq (oref pullreq state) 'open))
            (magit-git "branch" "--force" branch pullreq-ref))
           (t

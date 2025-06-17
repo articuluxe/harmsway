@@ -171,7 +171,7 @@
                            (unless (zerop (process-file-shell-command
                                            (format "%s -c \"import debugpy.adapter\"" python)))
                              (user-error "%s module debugpy is not installed" python))))
-                command (progn (require 'python) python-interpreter)
+                command "python"
                 command-args ("-m" "debugpy.adapter" "--host" "0.0.0.0" "--port" :autoport)
                 port :autoport
                 :request "launch"
@@ -843,12 +843,14 @@ Non interactive global minor mode."
 
 (defmacro dape--with-request-bind (vars fn-args &rest body)
   "Call FN with ARGS and execute BODY on callback with VARS bound.
-VARS are bound from the args that the callback was invoked with.
-FN-ARGS is be an cons pair as FN . ARGS, where FN is expected to
-take an function as an argument at ARGS + 1.
-BODY is guaranteed to be evaluated with the current buffer if it's
-still live.
-See `cl-destructuring-bind' for bind forms."
+VARS are bound from the arguments that the callback is invoked
+with.  FN-ARGS is a list of (FN . ARGS).  FN is called with ARGS
+followed by a callback function.  BODY is evaluated in the buffer that
+was active when this macro was invoked.  If that buffer is no longer
+live, BODY is evaluated in the buffer current at callback execution
+time.
+See `cl-destructuring-bind' for details on valid bind forms for
+VARS."
   (declare (indent 2))
   (let ((old-buffer (make-symbol "old-buffer")))
     `(let ((,old-buffer (current-buffer)))
@@ -863,8 +865,7 @@ See `cl-destructuring-bind' for bind forms."
 (defmacro dape--with-request (fn-args &rest body)
   "Call `dape-request' like FN with ARGS and execute BODY on callback.
 FN-ARGS is be an cons pair as FN . ARGS.
-BODY is guaranteed to be evaluated with the current buffer if it's
-still live.
+BODY is guaranteed to be evaluated with the current buffer if live.
 See `cl-destructuring-bind' for bind forms."
   (declare (indent 1))
   `(dape--with-request-bind (&rest _) ,fn-args ,@body))
@@ -879,15 +880,14 @@ See `cl-destructuring-bind' for bind forms."
 This function utilizes TIMER to store state.  It cancels the TIMER
 and schedules FN to run after current time + BACKOFF seconds.
 If BACKOFF is non-zero, FN will be evaluated within timer context."
-  (cond
-   ((zerop backoff)
-    (cancel-timer timer)
-    (funcall fn))
-   (t
-    (cancel-timer timer)
-    (timer-set-time timer (timer-relative-time nil backoff))
-    (timer-set-function timer fn)
-    (timer-activate timer))))
+  (cond ((zerop backoff)
+         (cancel-timer timer)
+         (funcall fn))
+        (t
+         (cancel-timer timer)
+         (timer-set-time timer (timer-relative-time nil backoff))
+         (timer-set-function timer fn)
+         (timer-activate timer))))
 
 (defmacro dape--with-debounce (timer backoff &rest body)
   "Eval BODY forms with a debounce of BACKOFF seconds using TIMER.
@@ -896,7 +896,7 @@ Helper macro for `dape--call-with-debounce'."
   `(dape--call-with-debounce ,timer ,backoff (lambda () ,@body)))
 
 (defmacro dape--with-line (buffer line &rest body)
-  "Save point, and current buffer; execute BODY on LINE in BUFFER."
+  "Save point and buffer then execute BODY on LINE in BUFFER."
   (declare (indent 2))
   `(with-current-buffer ,buffer
      (save-excursion
@@ -2992,7 +2992,7 @@ of memory read."
                          "edit log message" #'dape-mouse-breakpoint-log))
           ('expression
            (after-string ov "Cond" (or disabled-face 'dape-expression-face)
-                         "edit break condition" #'dape-mouse-breakpoint-log))
+                         "edit break condition" #'dape-mouse-breakpoint-expression))
           ('hits
            (after-string ov "Hits" 'dape-hits-face
                          "edit break hit condition" #'dape-mouse-breakpoint-hits))
@@ -3538,7 +3538,8 @@ FN is expected to update insert buffer contents, update
             (funcall fn))
           (ignore-errors
             (goto-char (point-min))
-            (forward-line (1- line)))
+            (forward-line (1- line))
+            (beginning-of-line))
           (dape--info-set-related-buffers))
         (when old-window
           (select-window old-window))))))
@@ -5482,7 +5483,7 @@ mouse-1: Display minor mode menu"
                     face shadow
                     help-echo "Active child connections")))))))
 
-(add-to-list 'mode-line-misc-info
+(add-to-list 'global-mode-string
              `(dape-active-mode ("[" dape--mode-line-format "] ")))
 
 

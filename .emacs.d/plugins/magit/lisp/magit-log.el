@@ -78,7 +78,7 @@
   :group 'magit-log
   :type 'hook)
 
-(defcustom magit-log-remove-graph-args '("--follow" "--grep" "-G" "-S" "-L")
+(defcustom magit-log-remove-graph-args '("--follow" "-G" "-S" "-L")
   "The log arguments that cause the `--graph' argument to be dropped.
 
 The default value lists the arguments that are incompatible with
@@ -87,10 +87,10 @@ can add additional arguments that are available in `magit-log',
 but I recommend that you don't do that.  Nowadays I would define
 this as a constant, but I am preserving it as an option, in case
 someone actually customized it."
-  :package-version '(magit . "2.3.0")
+  :package-version '(magit . "4.3.7")
   :group 'magit-log
   :type '(repeat (string :tag "Argument"))
-  :options '("--follow" "--grep" "-G" "-S" "-L"))
+  :options '("--follow" "-G" "-S" "-L"))
 
 (defcustom magit-log-revision-headers-format "\
 %+b%+N
@@ -1530,7 +1530,8 @@ exists mostly for backward compatibility reasons."
 
 (defun magit-log-maybe-update-revision-buffer (&optional _)
   "When moving in a log or cherry buffer, update the revision buffer.
-If there is no revision buffer in the same frame, then do nothing."
+If there is no revision buffer in the same frame, then do nothing.
+See also info node `(magit)Section Movement'."
   (when (derived-mode-p 'magit-log-mode 'magit-cherry-mode 'magit-reflog-mode)
     (magit--maybe-update-revision-buffer)))
 
@@ -1558,7 +1559,8 @@ If there is no revision buffer in the same frame, then do nothing."
 
 (defun magit-log-maybe-update-blob-buffer (&optional _)
   "When moving in a log or cherry buffer, update the blob buffer.
-If there is no blob buffer in the same frame, then do nothing."
+If there is no blob buffer in the same frame, then do nothing.
+See also info node `(magit)Section Movement'."
   (when (derived-mode-p 'magit-log-mode 'magit-cherry-mode 'magit-reflog-mode)
     (magit--maybe-update-blob-buffer)))
 

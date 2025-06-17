@@ -42,7 +42,8 @@ use `forge-edit-post-hook'."
              turn-on-flyspell))
 
 (defcustom forge-edit-post-hook
-  '(forge-create-pullreq-insert-single-commit-message)
+  '(forge-create-pullreq-insert-single-commit-message
+    forge-create-pullreq-show-diff)
   "Hook run after setting up a buffer to edit a post.
 Consult the variable `forge-edit-post-action' to determine the action;
 one of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'."
@@ -50,7 +51,8 @@ one of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'."
   :group 'forge
   :type 'hook
   :options '(forge-create-pullreq-insert-single-commit-message
-             forge-create-pullreq-insert-branch-description))
+             forge-create-pullreq-insert-branch-description
+             forge-create-pullreq-show-diff))
 
 (defcustom forge-post-fallback-directory
   (locate-user-emacs-file "forge-drafts/")
@@ -119,9 +121,9 @@ an error."
   :interactive nil)
 
 (defvar-local forge--pre-post-buffer nil)
+(defvar-local forge--pre-post-winconf nil)
 
 (defvar-local forge--submit-post-function nil)
-(defvar-local forge--cancel-post-function nil)
 
 (defvar-local forge-edit-post-action nil
   "The action being carried out by editing this post buffer.
@@ -141,6 +143,7 @@ One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
                                   &optional bindings fn)
   (declare (indent defun))
   (let* ((prevbuf (current-buffer))
+         (winconf (current-window-configuration))
          (action  (cond ((symbolp obj-or-action)             obj-or-action)
                         ((forge--childp obj-or-action 'forge-topic) 'reply)
                         ((forge--childp obj-or-action 'forge-post)   'edit)))
@@ -157,6 +160,7 @@ One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
       (forge-post-mode)
       (magit-set-header-line-format header)
       (setq forge--pre-post-buffer prevbuf)
+      (setq forge--pre-post-winconf winconf)
       (forge-set-buffer-repository)
       (setq forge-edit-post-action action)
       (setq forge--buffer-post-object obj)
@@ -168,7 +172,8 @@ One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
             (setq forge--buffer-assignees .assignees)
             (setq forge--buffer-labels .labels)
             (setq forge--buffer-draft-p .draft))))
-      (when (and (not resume) forge--buffer-template)
+      (when (and (not resume)
+                 (memq action '(new-discussion new-issue new-pullreq)))
         (if-let ((template (alist-get 'text forge--buffer-template)))
             (progn (unless (string-prefix-p "# " template)
                      (insert "# \n\n"))
@@ -176,8 +181,9 @@ One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
                    (goto-char 3))
           (insert "# ")))
       (when fn
-        (funcall fn))
-      (run-hooks 'forge-edit-post-hook))
+        (funcall fn)))
+    (run-hook-wrapped 'forge-edit-post-hook
+                      (lambda (fn) (with-current-buffer buffer (funcall fn)) nil))
     (message (substitute-command-keys
               "Use \\[forge-post-menu] to set fields and submit or abort"))
     (forge--display-post-buffer buffer)))
@@ -233,6 +239,15 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
     (insert description)
     (goto-char 3)))
 
+(defun forge-create-pullreq-show-diff ()
+  "When creating a pull-request, show diff for the branch's changes."
+  (when (eq forge-edit-post-action 'new-pullreq)
+    (magit-diff-setup-buffer
+     (format "%s...%s"
+             forge--buffer-base-branch
+             forge--buffer-head-branch)
+     nil (car (magit-diff-arguments)) nil 'committed t)))
+
 (defun forge--post-buffer-text ()
   (save-match-data
     (save-excursion
@@ -249,6 +264,7 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
 
 (defun forge--post-submit-callback (&optional full-pull)
   (let* ((file    buffer-file-name)
+         (winconf forge--pre-post-winconf)
          (editbuf (current-buffer))
          (prevbuf forge--pre-post-buffer)
          (topic   (ignore-errors (forge-get-topic forge--buffer-post-object)))
@@ -263,6 +279,7 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
       (when (buffer-live-p editbuf)
         (with-current-buffer editbuf
           (magit-mode-bury-buffer 'kill)))
+      (forge--maybe-restore-winconf winconf)
       (with-current-buffer
           (if (buffer-live-p prevbuf) prevbuf (current-buffer))
         (if (or (not full-pull)
@@ -273,6 +290,12 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
 (defun forge--post-submit-errorback ()
   (lambda (error &rest _)
     (error "Failed to submit post: %S" error)))
+
+(defun forge--maybe-restore-winconf (winconf)
+  (when (and winconf
+             (eq (window-configuration-frame winconf)
+                 (selected-frame)))
+    (set-window-configuration winconf)))
 
 ;;; Commands
 
@@ -295,22 +318,19 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
   "Submit the post that is being edited in the current buffer."
   (interactive)
   (save-buffer)
-  (if-let ((fn forge--submit-post-function))
-      (funcall fn
-               (forge-get-repository forge--buffer-post-object)
-               forge--buffer-post-object)
-    (error "forge--submit-post-function is nil")))
+  (funcall forge--submit-post-function
+           (forge-get-repository forge--buffer-post-object)
+           forge--buffer-post-object))
 
 (defun forge-post-cancel ()
   "Cancel the post that is being edited in the current buffer."
   (interactive)
   (save-buffer)
-  (if-let ((fn forge--cancel-post-function))
-      (funcall fn forge--buffer-post-object)
-    (let ((file buffer-file-name))
-      (magit-mode-bury-buffer 'kill)
-      (when (yes-or-no-p "Also delete draft? ")
-        (dired-delete-file file nil magit-delete-by-moving-to-trash)))))
+  (let ((winconf forge--pre-post-winconf))
+    (when (yes-or-no-p "Also delete draft? ")
+      (dired-delete-file buffer-file-name nil magit-delete-by-moving-to-trash))
+    (magit-mode-bury-buffer 'kill)
+    (forge--maybe-restore-winconf winconf)))
 
 (defclass forge--new-topic-set-slot-command (transient-lisp-variable)
   ((name :initarg :name)

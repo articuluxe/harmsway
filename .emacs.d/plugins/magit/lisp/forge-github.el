@@ -790,39 +790,87 @@
     :errorback (forge--post-submit-errorback)))
 
 (cl-defmethod forge--submit-create-post ((_ forge-github-repository) post)
-  (cond
-   ((cl-typep post '(or forge-discussion forge-discussion-post))
-    (ghub-graphql
-     `(mutation (addDiscussionComment
-                 [(input $input AddDiscussionCommentInput!)]
-                 clientMutationId))
-     `((input
-        ,@(if (cl-typep post 'forge-discussion-post)
-              `((discussionId . ,(oref (forge-get-discussion post) their-id))
-                (replyToId . ,(oref post their-id)))
-            `((discussionId . ,(oref post their-id))))
-        (body . ,(magit--buffer-string nil nil t))))
-     :callback  (forge--post-submit-callback)
-     :errorback (forge--post-submit-errorback)))
-   (t
-    (forge--ghub-post post "/repos/:owner/:repo/issues/:number/comments"
-      `((body . ,(magit--buffer-string nil nil t)))
-      :callback  (forge--post-submit-callback)
-      :errorback (forge--post-submit-errorback)))))
+  (forge--graphql
+   `(mutation (addComment
+               [(input $input AddCommentInput!)]
+               clientMutationId))
+   `((input (subjectId . ,(oref post their-id))
+            (body . ,(magit--buffer-string nil nil t))))
+   :callback  (forge--post-submit-callback)
+   :errorback (forge--post-submit-errorback)))
+
+(cl-defmethod forge--submit-create-post ((_ forge-github-repository)
+                                         (post forge-discussion-post))
+  (forge--graphql
+   `(mutation (addDiscussionComment
+               [(input $input AddDiscussionCommentInput!)]
+               clientMutationId))
+   `((input (discussionId . ,(oref (forge-get-discussion post) their-id))
+            (replyToId . ,(oref post their-id))
+            (body . ,(magit--buffer-string nil nil t))))
+   :callback  (forge--post-submit-callback)
+   :errorback (forge--post-submit-errorback)))
+
+(cl-defmethod forge--submit-create-post ((_ forge-github-repository)
+                                         (post forge-discussion))
+  (forge--graphql
+   `(mutation (addDiscussionComment
+               [(input $input AddDiscussionCommentInput!)]
+               clientMutationId))
+   `((input (discussionId . ,(oref post their-id))
+            (body . ,(magit--buffer-string nil nil t))))
+   :callback  (forge--post-submit-callback)
+   :errorback (forge--post-submit-errorback)))
 
 (cl-defmethod forge--submit-edit-post ((_ forge-github-repository) post)
-  (forge--ghub-patch post
-    (cl-typecase post
-      (forge-pullreq "/repos/:owner/:repo/pulls/:number")
-      (forge-issue   "/repos/:owner/:repo/issues/:number")
-      (forge-post    "/repos/:owner/:repo/issues/comments/:number"))
-    (if (cl-typep post 'forge-topic)
-        (pcase-let ((`(,title . ,body) (forge--post-buffer-text)))
-          `((title . ,title)
-            (body  . ,body)))
-      `((body . ,(magit--buffer-string nil nil t))))
-    :callback  (forge--post-submit-callback)
-    :errorback (forge--post-submit-errorback)))
+  (cl-typecase post
+    ((or forge-issue-post forge-pullreq-post)
+     ;; Cannot use GraphQL because we made the mistake to derive our ID
+     ;; from the number instead of their ID.  `updatePullRequestComment'
+     ;; (or something equivalent under an inconsistent name) does not
+     ;; exist, so for that we would have to continue to use REST anyway.
+     (forge--ghub-patch post
+       "/repos/:owner/:repo/issues/comments/:number"
+       `((body . ,(magit--buffer-string nil nil t)))
+       :callback  (forge--post-submit-callback)
+       :errorback (forge--post-submit-errorback)))
+    (t
+     (forge--graphql
+      `(mutation (,(cl-etypecase post
+                     (forge-discussion       'updateDiscussion)
+                     (forge-issue            'updateIssue)
+                     (forge-pullreq          'updatePullRequest)
+                     (forge-discussion-post  'updateDiscussionComment)
+                     (forge-discussion-reply 'updateDiscussionComment)
+                     (forge-issue-post       'updateIssueComment)
+                     (forge-pullreq-post     'updatePullRequestComment))
+                  [(input
+                    $input
+                    ,(cl-etypecase post
+                       (forge-discussion       'UpdateDiscussionInput!)
+                       (forge-issue            'UpdateIssueInput!)
+                       (forge-pullreq          'UpdatePullRequestInput!)
+                       (forge-discussion-post  'UpdateDiscussionCommentInput!)
+                       (forge-discussion-reply 'UpdateDiscussionCommentInput!)
+                       (forge-issue-post       'UpdateIssueCommentInput!)
+                       (forge-pullreq-post     'UpdatePullRequestCommentInput!)))]
+                  clientMutationId))
+      `((input (,(cl-etypecase post
+                   (forge-discussion       'discussionId)
+                   (forge-issue            'id)
+                   (forge-pullreq          'pullRequestId)
+                   (forge-discussion-post  'commentId)
+                   (forge-discussion-reply 'commentId)
+                   (forge-issue-post       'id)
+                   (forge-pullreq-post     'id))
+                . ,(forge--their-id post))
+               ,@(if (cl-typep post 'forge-topic)
+                     (pcase-let ((`(,title . ,body) (forge--post-buffer-text)))
+                       `((title . ,title)
+                         (body  . ,body)))
+                   `((body . ,(magit--buffer-string nil nil t))))))
+      :callback  (forge--post-submit-callback)
+      :errorback (forge--post-submit-errorback)))))
 
 (cl-defmethod forge--submit-approve-pullreq ((_ forge-github-repository) repo)
   (let ((body (magit--buffer-string nil nil t)))
@@ -841,11 +889,34 @@
       :errorback (forge--post-submit-errorback))))
 
 (cl-defmethod forge--set-topic-title
-  ((_repo forge-github-repository) topic title)
-  (forge--ghub-patch topic
-    "/repos/:owner/:repo/issues/:number"
-    `((title . ,title))
-    :callback (forge--set-field-callback topic)))
+  ((_repo forge-github-repository) (topic forge-discussion) title)
+  (ghub--graphql
+   `(mutation (updateDiscussion
+               [(input $input UpdateDiscussionInput!)]
+               clientMutationId))
+   `((input (discussionId . ,(oref topic their-id))
+            (title . ,title)))
+   :callback  (forge--set-field-callback topic)))
+
+(cl-defmethod forge--set-topic-title
+  ((_repo forge-github-repository) (topic forge-issue) title)
+  (ghub--graphql
+   `(mutation (updateIssue
+               [(input $input UpdateIssueInput!)]
+               clientMutationId))
+   `((input (id . ,(oref topic their-id))
+            (title . ,title)))
+   :callback  (forge--set-field-callback topic)))
+
+(cl-defmethod forge--set-topic-title
+  ((_repo forge-github-repository) (topic forge-pullreq) title)
+  (ghub--graphql
+   `(mutation (updatePullRequest
+               [(input $input UpdatePullRequestInput!)]
+               clientMutationId))
+   `((input (pullRequestId . ,(oref topic their-id))
+            (title . ,title)))
+   :callback  (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-state
   ((_repo forge-github-repository) topic state)
@@ -885,23 +956,16 @@
 
 (cl-defmethod forge--set-topic-draft
   ((_repo forge-github-repository) topic value)
-  (let ((buffer (current-buffer)))
-    (ghub-graphql
-     `(mutation (,(if value
-                      'convertPullRequestToDraft
-                    'markPullRequestReadyForReview)
-                 [(input $input ,(if value
-                                     'ConvertPullRequestToDraftInput!
-                                   'MarkPullRequestReadyForReviewInput!))]
-                 (pullRequest isDraft)))
-     `((input (pullRequestId . ,(oref topic their-id))))
-     :host (oref (forge-get-repository topic) apihost)
-     :auth 'forge
-     :callback (lambda (data &rest _)
-                 (if (assq 'error data)
-                     (ghub--graphql-pp-response data)
-                   (oset topic draft-p value)
-                   (forge-refresh-buffer buffer))))))
+  (forge--graphql
+   `(mutation (,(if value
+                    'convertPullRequestToDraft
+                  'markPullRequestReadyForReview)
+               [(input $input ,(if value
+                                   'ConvertPullRequestToDraftInput!
+                                 'MarkPullRequestReadyForReviewInput!))]
+               (pullRequest isDraft)))
+   `((input (pullRequestId . ,(oref topic their-id))))
+   :callback (forge--set-field-callback topic)))
 
 (cl-defmethod forge--set-topic-category
   ((_repo forge-github-repository)
