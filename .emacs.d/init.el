@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-06-17 13:20:08 dharms>
+;; Modified Time-stamp: <2025-06-17 15:20:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3047,7 +3047,7 @@ ARGS are the additional arguments."
   ;; see diff-hl-fallback-to-margin
   ;; (unless (display-graphic-p)
   ;;   (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
-    )
+    ;; )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; in-memory-diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
