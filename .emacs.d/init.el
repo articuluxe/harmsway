@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-06-17 13:03:24 dharms>
+;; Modified Time-stamp: <2025-06-17 13:20:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3044,8 +3044,9 @@ ARGS are the additional arguments."
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (use-package diff-hl-amend)
   (global-diff-hl-mode 1)
-  (unless (display-graphic-p)
-    (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
+  ;; see diff-hl-fallback-to-margin
+  ;; (unless (display-graphic-p)
+  ;;   (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
     )
   )
 
