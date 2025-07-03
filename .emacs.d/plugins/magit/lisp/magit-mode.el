@@ -1070,58 +1070,84 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
 (defun magit-refresh-buffer (&optional created)
   "Refresh the current Magit buffer."
   (interactive)
-  (let ((magit--refreshing-buffer-p t)
-        (magit--refresh-start-time (current-time))
-        (magit--refresh-cache (or magit--refresh-cache (list (cons 0 0))))
-        (refresh (intern (format "%s-refresh-buffer"
-                                 (substring (symbol-name major-mode) 0 -5)))))
-    (when (functionp refresh)
+  (when-let ((refresh (magit--refresh-buffer-function)))
+    (let ((magit--refreshing-buffer-p t)
+          (magit--refresh-start-time (current-time))
+          (magit--refresh-cache (or magit--refresh-cache (list (cons 0 0))))
+          (action (if created "Creating" "Refreshing")))
       (when magit-refresh-verbose
-        (message "Refreshing buffer `%s'..." (buffer-name)))
-      (let* ((buffer (current-buffer))
-             (windows (mapcan
-                       (lambda (window)
-                         (with-selected-window window
-                           (with-current-buffer buffer
-                             (and-let* ((section (magit-section-at)))
-                               `(( ,window
-                                   ,section
-                                   ,@(magit-section-get-relative-position
-                                      section)))))))
-                       ;; If it qualifies, then the selected window
-                       ;; comes first, but we want to handle it last
-                       ;; so that its `magit-section-movement-hook'
-                       ;; run can override the effects of other runs.
-                       (or (nreverse (get-buffer-window-list buffer nil t))
-                           (list (selected-window))))))
+        (message "%s buffer `%s'..." action (buffer-name)))
+      (cond
+       (created
+        (funcall refresh)
+        (run-hooks 'magit--initial-section-hook)
+        (setq-local magit--initial-section-hook nil))
+       (t
         (deactivate-mark)
         (setq magit-section-pre-command-section nil)
         (setq magit-section-highlight-overlays nil)
         (setq magit-section-selection-overlays nil)
         (setq magit-section-highlighted-sections nil)
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (save-excursion
-            (funcall refresh)))
-        (pcase-dolist (`(,window . ,args) windows)
-          (if (eq buffer (window-buffer window))
-              (with-selected-window window
-                (apply #'magit-section-goto-successor args))
-            (with-current-buffer buffer
-              (let ((magit-section-movement-hook nil))
-                (apply #'magit-section-goto-successor args)))))
-        (when created
-          (run-hooks 'magit--initial-section-hook)
-          (setq-local magit--initial-section-hook nil))
-        (let ((magit-section-cache-visibility nil))
-          (magit-section-show magit-root-section))
-        (run-hooks 'magit-refresh-buffer-hook)
-        (magit-section-update-highlight)
-        (set-buffer-modified-p nil)
-        (push buffer magit-section--refreshed-buffers))
+        (setq magit-section-focused-sections nil)
+        (let ((positions (magit--refresh-buffer-get-positions)))
+          (funcall refresh)
+          (magit--refresh-buffer-set-positions positions))))
+      (let ((magit-section-cache-visibility nil))
+        (magit-section-show magit-root-section))
+      (run-hooks 'magit-refresh-buffer-hook)
+      (magit-section-update-highlight)
+      (set-buffer-modified-p nil)
+      (push (current-buffer) magit-section--refreshed-buffers)
       (when magit-refresh-verbose
-        (message "Refreshing buffer `%s'...done (%.3fs)" (buffer-name)
+        (message "%s buffer `%s'...done (%.3fs)" action (buffer-name)
                  (float-time (time-since magit--refresh-start-time)))))))
+
+(defun magit--refresh-buffer-function ()
+  (let ((fn (intern (format "%s-refresh-buffer"
+                            (substring (symbol-name major-mode) 0 -5)))))
+    (and (functionp fn)
+         (lambda ()
+           (let ((inhibit-read-only t))
+             (erase-buffer)
+             (save-excursion (funcall fn)))))))
+
+(defun magit--refresh-buffer-get-positions ()
+  (or (let ((buffer (current-buffer)))
+        (mapcan
+         (lambda (window)
+           (with-selected-window window
+             (with-current-buffer buffer
+               (and-let* ((section (magit-section-at)))
+                 `((,window
+                    ,section
+                    ,@(magit-section-get-relative-position section)
+                    ,@(and-let* ((ws (magit-section-at (window-start))))
+                        (list ws
+                              (car (magit-section-get-relative-position ws))
+                              (window-start)))))))))
+         (get-buffer-window-list buffer nil t)))
+      (and-let* ((section (magit-section-at)))
+        `((nil ,section ,@(magit-section-get-relative-position section))))))
+
+(defun magit--refresh-buffer-set-positions (positions)
+  (pcase-dolist
+      (`(,window ,section ,line ,char ,ws-section ,ws-line ,window-start)
+       positions)
+    (if window
+        (with-selected-window window
+          (magit-section-goto-successor section line char)
+          (cond
+           ((or (not window-start)
+                (> window-start (point))))
+           ((magit-section-equal ws-section (magit-section-at window-start))
+            (set-window-start window window-start t))
+           ((not (derived-mode-p 'magit-log-mode))
+            (when-let ((pos (save-excursion
+                              (and (magit-section-goto-successor--same
+                                    ws-section ws-line 0)
+                                   (point)))))
+              (set-window-start window pos t)))))
+      (magit-section-goto-successor section line char))))
 
 (defun magit-revert-buffer (_ignore-auto _noconfirm)
   "Wrapper around `magit-refresh-buffer' suitable as `revert-buffer-function'."
@@ -1188,7 +1214,7 @@ Note that refreshing a Magit buffer is done by re-creating its
 contents from scratch, which can be slow in large repositories.
 If you are not satisfied with Magit's performance, then you
 should obviously not add this function to that hook."
-  (when-let (((and (not magit--disable-save-buffers)
+  (when-let (((and (not magit-inhibit-refresh)
                    (magit-inside-worktree-p t)))
              (buf (ignore-errors (magit-get-mode-buffer 'magit-status-mode))))
     (cl-pushnew buf magit-after-save-refresh-buffers)
@@ -1222,12 +1248,12 @@ argument (the prefix) non-nil means save all with no questions."
   (when-let ((topdir (magit-rev-parse-safe "--show-toplevel")))
     (let ((remote (file-remote-p default-directory))
           (save-some-buffers-action-alist
-           `((?Y (##with-current-buffer %
-                   (setq buffer-save-without-query t)
-                   (save-buffer))
+           `((?Y ,(##with-current-buffer %
+                    (setq buffer-save-without-query t)
+                    (save-buffer))
                  "to save the current buffer and remember choice")
-             (?N (##with-current-buffer %
-                   (setq magit-inhibit-refresh-save t))
+             (?N ,(##with-current-buffer %
+                    (setq magit-inhibit-refresh-save t))
                  "to skip the current buffer and remember choice")
              ,@save-some-buffers-action-alist))
           (topdirs nil)

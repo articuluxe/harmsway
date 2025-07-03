@@ -337,12 +337,15 @@ A face attribute should be used that is not already used by any
   topic)
 
 (cl-defmethod forge-get-topic ((repo forge-repository) number-or-id)
-  (if (and (numberp number-or-id)
-           (< number-or-id 0))
-      (forge-get-pullreq repo (abs number-or-id))
-    (or (forge-get-discussion repo number-or-id)
-        (forge-get-issue      repo number-or-id)
-        (forge-get-pullreq    repo number-or-id))))
+  (cond ((stringp number-or-id)
+         (or (forge-get-discussion number-or-id)
+             (forge-get-issue      number-or-id)
+             (forge-get-pullreq    number-or-id)))
+        ((< number-or-id 0)
+         (forge-get-pullreq repo (abs number-or-id)))
+        ((forge-get-discussion repo number-or-id))
+        ((forge-get-issue      repo number-or-id))
+        ((forge-get-pullreq    repo number-or-id))))
 
 (cl-defmethod forge-get-topic ((number integer))
   (if (< number 0)
@@ -979,18 +982,18 @@ can be selected from the start."
 
 (defun forge--format-topic-category (topic)
   (and-let* ((id (oref topic category))
-             (str (caar (forge-sql [:select [name]
-                                    :from discussion-category
-                                    :where (= id $s1)]
-                                   id))))
+             (str (forge-sql1 [:select [name]
+                               :from discussion-category
+                               :where (= id $s1)]
+                              id)))
     (magit--propertize-face str 'forge-topic-label)))
 
 (defun forge--format-topic-milestone (topic)
   (and-let* ((id (oref topic milestone))
-             (str (caar (forge-sql [:select [title]
-                                    :from milestone
-                                    :where (= id $s1)]
-                                   id))))
+             (str (forge-sql1 [:select [title]
+                               :from milestone
+                               :where (= id $s1)]
+                              id)))
     (magit--propertize-face str 'forge-topic-label)))
 
 (defun forge--format-labels (&optional arg concat)
@@ -1882,10 +1885,10 @@ When point is on the answer, then unmark it and mark no other."
   :inapt-if-not (lambda ()
                   (and-let* ((discussion (forge-current-discussion))
                              (category (oref discussion category)))
-                    (forge-sql-caar [:select answerable-p
-                                     :from discussion-category
-                                     :where (= id $s1)]
-                                    category)))
+                    (forge-sql1 [:select answerable-p
+                                 :from discussion-category
+                                 :where (= id $s1)]
+                                category)))
   :description (##forge--format-boolean 'answer "answered")
   :reader #'forge--select-discussion-answer)
 

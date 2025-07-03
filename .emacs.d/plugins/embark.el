@@ -207,6 +207,7 @@ Each function should take no arguments and return one of:
     (project-file . embark--project-file-full-path)
     (package . embark--remove-package-version)
     (multi-category . embark--refine-multi-category)
+    (buffer . embark--uniquify-orig-buffer)
     (file . embark--simplify-path))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
@@ -359,7 +360,10 @@ indicate that for files at the prompt of the `delete-file' command,
     (xref-find-definitions embark--ignore-target)
     (xref-find-references embark--ignore-target)
     (sort-regexp-fields embark--ignore-target)
-    (align-regexp embark--ignore-target))
+    (align-regexp embark--ignore-target)
+    ;; Treat target as file
+    (embark-dired-jump embark--as-file)
+    (embark-open-externally embark--as-file))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
@@ -1138,6 +1142,47 @@ added to `eldoc-documentation-functions'."
                       (lambda (target) (symbol-name (plist-get target :type)))
                       targets
                       ", ")))))
+
+;;;###autoload
+(defun embark-context-menu (menu event)
+  "Add Embark menu items to context MENU at the position of mouse EVENT."
+  (if (and (minibufferp) (embark--targets))
+      (define-key menu [embark-context-menu]
+                  `( "Embark" .
+                     ,(easy-menu-create-menu
+                       ""
+                       ;; PROBLEM: embark-dwim and embark-act in the minibuffer
+                       ;; do not select the correct candidate
+                       '(;;["DWIM" embark-dwim :keys "\\[embark-dwim]"]
+                         ;;["Act" embark-act :keys "\\[embark-act]"]
+                         ["Act All" embark-act :keys "\\[embark-act] A"]
+                         ["Export" embark-export :keys "\\[embark-act] A"]
+                         ["Snapshot" embark-collect :keys "\\[embark-act] S"]))))
+    (when-let ((target (save-excursion
+                         (mouse-set-point event)
+                         (car (embark--targets)))))
+      (let* ((type (plist-get target :type))
+             (target (embark--truncate-target (plist-get target :target)))
+             (action (embark--default-action type)))
+        (define-key menu [embark-act]
+                    `( menu-item "Embark Act"
+                       ,(lambda ()
+                          (interactive)
+                          (mouse-set-point event)
+                          (embark-act))
+                       :keys "\\[embark-act]"
+                       :help ,(format "Act on %s ‘%s’" type target)))
+        (when (and action (symbolp action))
+          (define-key menu [embark-dwim]
+                      `( menu-item "Embark DWIM"
+                         ,(lambda ()
+                            (interactive)
+                            (mouse-set-point event)
+                            (embark-dwim))
+                         :keys "\\[embark-dwim]"
+                         :help ,(format "Run ‘%s’ on %s ‘%s’"
+                                        action type target)))))))
+    menu)
 
 (defun embark--format-targets (target shadowed-targets rep)
   "Return a formatted string indicating the TARGET of an action.
@@ -2115,6 +2160,14 @@ minibuffer before executing the action."
                                                 action target quit))))))))
       (setq prefix-arg nil)
       (if quit (embark--quit-and-run run-action) (funcall run-action)))))
+
+(defun embark--uniquify-orig-buffer (_type target)
+  "Return `uniquify-orig-buffer' property of TARGET.
+Used by `project--read-project-buffer' on Emacs 31."
+  (cons 'buffer
+        (if-let ((buf (get-text-property 0 'uniquify-orig-buffer target)))
+            (buffer-name buf)
+          target)))
 
 (defun embark--refine-multi-category (_type target)
   "Refine `multi-category' TARGET to its actual type."
@@ -3836,14 +3889,6 @@ with command output.  For replacement behavior see
 (declare-function bookmark-prop-get "bookmark")
 (declare-function bookmark-completing-read "bookmark")
 
-(defun embark-bookmark-open-externally (bookmark)
-  "Open BOOKMARK in external application."
-  (interactive (list (bookmark-completing-read "Open externally: ")))
-  (embark-open-externally
-   (or (bookmark-prop-get bookmark 'location)
-       (bookmark-prop-get bookmark 'filename)
-       (user-error "Bookmark `%s' does not have a location" bookmark))))
-
 (defun embark-bury-buffer (buf)
   "Bury buffer BUF."
   (interactive "bBuffer: ")
@@ -4116,16 +4161,26 @@ the REST of the arguments."
                  (let ((buffer (get-buffer target)))
                    (or (buffer-file-name buffer)
                        (buffer-local-value 'default-directory buffer)))))
-    (bookmark . bookmark-location)
+    (bookmark . ,(lambda (target)
+                   ;; Do not use `bookmark-location', which can return the
+                   ;; invalid string "-- Unknown location --".
+                   (or (bookmark-prop-get target 'location)
+                       (bookmark-prop-get target 'filename))))
     (library . locate-library))
   "Alist of functions that extract a file path from targets of a given type.")
+
+(defun embark--associated-file (target type)
+  "Return file associated to TARGET of given TYPE.
+The supported values of TYPE are file, buffer, bookmark and
+library, which have an obvious notion of associated file."
+  (when-let ((fn (alist-get type embark--associated-file-fn-alist)))
+    (funcall fn target)))
 
 (defun embark--associated-directory (target type)
   "Return directory associated to TARGET of given TYPE.
 The supported values of TYPE are file, buffer, bookmark and
 library, which have an obvious notion of associated directory."
-  (when-let ((file-fn (alist-get type embark--associated-file-fn-alist))
-             (file (funcall file-fn target)))
+  (when-let ((file (embark--associated-file target type)))
     (if (file-directory-p file)
         (file-name-as-directory file)
       (file-name-directory file))))
@@ -4138,6 +4193,12 @@ The REST of the arguments are also passed to RUN."
   (let ((default-directory
           (or (embark--associated-directory target type) default-directory)))
     (apply run :target target :type type rest)))
+
+(cl-defun embark--as-file (&key target type &allow-other-keys)
+  "Inject TARGET of TYPE as file."
+  (when-let ((file (embark--associated-file target type)))
+    (delete-minibuffer-contents)
+    (insert file)))
 
 (cl-defun embark--save-excursion (&rest rest &key run &allow-other-keys)
   "Run action without moving point.
@@ -4280,9 +4341,10 @@ This simply calls RUN with the REST of its arguments inside
   "r" #'rename-file
   "c" #'copy-file
   "s" #'make-symbolic-link
-  "j" #'embark-dired-jump
   "!" #'shell-command
   "&" #'async-shell-command
+  "x" #'embark-open-externally
+  "j" #'embark-dired-jump
   "$" #'eshell
   "<" #'insert-file
   "m" #'chmod
@@ -4291,7 +4353,6 @@ This simply calls RUN with the REST of its arguments inside
   "\\" #'embark-recentf-remove
   "I" #'embark-insert-relative-path
   "W" #'embark-save-relative-path
-  "x" #'embark-open-externally
   "e" #'eww-open-file
   "l" #'load-file
   "b" #'byte-compile-file
@@ -4328,6 +4389,8 @@ This simply calls RUN with the REST of its arguments inside
   "a" #'apropos-library
   "L" #'locate-library
   "m" #'info-display-manual
+  "x" #'embark-open-externally
+  "j" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-buffer-map
@@ -4343,6 +4406,8 @@ This simply calls RUN with the REST of its arguments inside
   "=" #'ediff-buffers
   "|" #'embark-shell-command-on-buffer
   "<" #'insert-buffer
+  "x" #'embark-open-externally
+  "j" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-tab-map
@@ -4489,18 +4554,19 @@ This simply calls RUN with the REST of its arguments inside
   :doc "Keymap for Embark bookmark actions."
   :parent embark-general-map
   "RET" #'bookmark-jump
+  "b" #'bookmark-jump
   "s" #'bookmark-set
   "d" #'bookmark-delete
   "r" #'bookmark-rename
   "R" #'bookmark-relocate
   "l" #'bookmark-locate
   "<" #'bookmark-insert
-  "j" #'bookmark-jump
   "o" #'bookmark-jump-other-window
   "f" #'bookmark-jump-other-frame
   "a" 'bookmark-show-annotation
   "e" 'bookmark-edit-annotation
-  "x" #'embark-bookmark-open-externally
+  "x" #'embark-open-externally
+  "j" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-unicode-name-map

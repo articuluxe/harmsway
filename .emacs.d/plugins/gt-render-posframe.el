@@ -26,8 +26,8 @@
 
 ;;; Code:
 
-(require 'gt-core)
 (require 'gt-faces)
+(require 'gt-render-buffer)
 
 ;; implements via package Posframe, you should install it before use this
 
@@ -75,7 +75,6 @@ Manually close the frame with `q'.")
 (cl-defmethod gt-init ((render gt-posframe-pop-render) translator)
   (with-slots (width height forecolor backcolor padding frame-params) render
     (let ((inhibit-read-only t)
-          (gt-buffer-render-dislike-source-text t)
           (gt-buffer-render-init-hook gt-posframe-pop-render-init-hook)
           (buf (get-buffer-create gt-posframe-pop-render-buffer))
           (rweight (cond ((functionp width) (funcall width translator))
@@ -96,6 +95,7 @@ Manually close the frame with `q'.")
           (setq factor (* factor (max 1 (length (ensure-list (cdr (oref translator target)))))))
           (setq rheight (* factor (+ 4 h)))))
       ;; render
+      (oset render dislike-source t)
       (gt-buffer-render-init buf render translator)
       ;; create
       (unless (get-buffer-window (get-buffer buf))
@@ -115,8 +115,7 @@ Manually close the frame with `q'.")
                         :poshandler gt-posframe-pop-render-poshandler))))
       (posframe-refresh buf)
       ;; setup
-      (with-current-buffer buf
-        (gt-buffer-render-key ("q" "Close") (posframe-delete buf)))
+      (with-current-buffer buf (gt-buffer-render-key ("q" "Close") (posframe-delete buf)))
       (add-hook 'post-command-hook #'gt-posframe-render-auto-close-handler))))
 
 (cl-defmethod gt-output ((render gt-posframe-pop-render) (translator gt-translator))
@@ -150,9 +149,9 @@ Other operations in the childframe buffer, just like in 'gt-buffer-render'.")
 (defvar gt-posframe-pin-render-poshandler #'posframe-poshandler-frame-top-right-corner)
 
 (cl-defmethod gt-init ((render gt-posframe-pin-render) translator)
-  (if (and (get-buffer gt-posframe-pin-render-buffer) gt-posframe-pin-render-frame)
-      (make-frame-visible gt-posframe-pin-render-frame)
-    (with-slots (width height min-width min-height bd-width forecolor backcolor bd-color padding position frame-params) render
+  (with-slots (width height min-width min-height bd-width forecolor backcolor bd-color fri-color padding position frame-params init) render
+    (if (and (get-buffer gt-posframe-pin-render-buffer) gt-posframe-pin-render-frame)
+        (make-frame-visible gt-posframe-pin-render-frame)
       (setq gt-posframe-pin-render-frame
             (let ((inhibit-read-only t))
               (apply #'posframe-show gt-posframe-pin-render-buffer
@@ -173,17 +172,18 @@ Other operations in the childframe buffer, just like in 'gt-buffer-render'.")
                               :accept-focus t
                               :respect-header-line t
                               :position position
-                              :poshandler (unless position gt-posframe-pin-render-poshandler)))))))
-    (set-frame-parameter gt-posframe-pin-render-frame 'drag-internal-border t)
-    (set-frame-parameter gt-posframe-pin-render-frame 'drag-with-header-line t)
-    (when-let* ((color (or (oref render fri-color) gt-pin-posframe-fringe-color)))
-      (set-face-background 'fringe color  gt-posframe-pin-render-frame)))
-  ;; render
-  (let ((gt-buffer-render-init-hook gt-posframe-pin-render-init-hook))
-    (gt-buffer-render-init gt-posframe-pin-render-buffer render translator))
-  ;; setup
-  (with-current-buffer gt-posframe-pin-render-buffer
-    (gt-buffer-render-key ("q" "Close") (posframe-hide gt-posframe-pin-render-buffer))))
+                              :poshandler (unless position gt-posframe-pin-render-poshandler))))))
+      (set-frame-parameter gt-posframe-pin-render-frame 'drag-internal-border t)
+      (set-frame-parameter gt-posframe-pin-render-frame 'drag-with-header-line t)
+      (when-let* ((color (or fri-color gt-pin-posframe-fringe-color)))
+        (set-face-background 'fringe color  gt-posframe-pin-render-frame)))
+    ;; render
+    (let ((gt-buffer-render-init-hook gt-posframe-pin-render-init-hook))
+      (gt-buffer-render-init gt-posframe-pin-render-buffer render translator))
+    ;; setup
+    (with-current-buffer gt-posframe-pin-render-buffer
+      (gt-buffer-render-key ("q" "Close") (posframe-hide gt-posframe-pin-render-buffer))
+      (if (functionp init) (pdd-funcall init (list translator))))))
 
 (cl-defmethod gt-output ((render gt-posframe-pin-render) (translator gt-translator))
   (let ((gt-buffer-render-output-hook gt-posframe-pin-render-output-hook))

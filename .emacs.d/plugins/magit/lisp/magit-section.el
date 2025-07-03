@@ -8,7 +8,7 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: tools
 
-;; Package-Version: 4.3.6
+;; Package-Version: 4.3.7
 ;; Package-Requires: (
 ;;     (emacs "27.1")
 ;;     (compat "30.1")
@@ -306,6 +306,7 @@ no effect.  This also has no effect for Emacs >= 28, where
 
 (defvar-local magit-section-pre-command-region-p nil)
 (defvar-local magit-section-pre-command-section nil)
+
 (defvar-local magit-section-highlight-force-update nil)
 (defvar-local magit-section-highlight-overlays nil)
 (defvar-local magit-section-selection-overlays nil)
@@ -545,6 +546,11 @@ The return value has the form ((TYPE . VALUE)...)."
               (magit-section-ident-value section))
         (and-let* ((parent (oref section parent)))
           (magit-section-ident parent))))
+
+(defun magit-section-equal (a b)
+  "Return t if A an B are the same section."
+  (and a b (equal (magit-section-ident a)
+                  (magit-section-ident b))))
 
 (cl-defgeneric magit-section-ident-value (object)
   "Return OBJECT's value, making it constant and unique if necessary.

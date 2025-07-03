@@ -360,7 +360,7 @@ or similar."
      `(mode-line-active      ((,class (:inherit mode-line))))
      `(mode-line-inactive    ((,class (:background ,bg2 :foreground ,comment :box nil :underline nil))))
      `(mode-line-buffer-id   ((,class (:foreground ,base :weight normal))))
-     `(mode-line-highlight   ((,class (:background ,bg3 :foreground ,base :box nil :underline nil))))
+     `(mode-line-highlight   ((,class (:background ,bg2 :foreground ,base :box nil :underline nil :weight bold))))
      `(header-line           ((,class (:background ,bg2 :foreground ,base))))
      `(header-line-highlight ((,class (:background ,bg3 :foreground ,base))))
 
@@ -1322,6 +1322,15 @@ or similar."
      `(smerge-refined-added   ((,class (:background ,green-bg-s :foreground ,green))))
      `(smerge-refined-changed ((,class (:background ,blue-bg-s :foreground ,blue))))
      `(smerge-refined-removed ((,class (:background ,red-bg-s :foreground ,red))))
+
+     ;;; shr
+     `(shr-h1   ((,class (:inherit 'outline-1 :extend t))))
+     `(shr-h2   ((,class (:inherit 'outline-2 :extend t))))
+     `(shr-h3   ((,class (:inherit 'outline-3 :extend t))))
+     `(shr-h4   ((,class (:inherit 'outline-4 :extend t))))
+     `(shr-h5   ((,class (:inherit 'outline-5 :extend t))))
+     `(shr-h6   ((,class (:inherit 'outline-6 :extend t))))
+     `(shr-mark ((,class (:inherit 'highlight))))
 
      ;;; solaire-mode
      `(solaire-default-face            ((,class (:inherit default :background ,bg1))))

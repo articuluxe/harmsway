@@ -1,4 +1,4 @@
-;;; ob-mermaid.el --- org-babel support for mermaid evaluation
+;;; ob-mermaid.el --- org-babel support for mermaid evaluation  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2018 Alexei Nunez
 
@@ -23,6 +23,18 @@
 ;;; Commentary:
 
 ;; Org-Babel support for evaluating mermaid diagrams.
+;;
+;; Supported header arguments:
+;; :file - Output file (required)
+;; :theme - Mermaid theme
+;; :width, :height - Diagram dimensions
+;; :scale - Scale factor
+;; :background-color - Background color
+;; :mermaid-config-file - Mermaid config file
+;; :css-file - CSS file for styling
+;; :puppeteer-config-file - Puppeteer config file
+;; :pdf-fit - Enable PDF fit mode
+;; :cmdline - Additional command line arguments
 
 ;;; Requirements:
 
@@ -53,15 +65,15 @@
 	 (css-file (cdr (assoc :css-file params)))
 	 (puppeteer-config-file (cdr (assoc :puppeteer-config-file params)))
 	 (pdf-fit (assoc :pdf-fit params))
+	 (cmdline (cdr (assoc :cmdline params)))
          (temp-file (org-babel-temp-file "mermaid-"))
+         (mmdc-path (executable-find "mmdc"))
          (mmdc (or ob-mermaid-cli-path
-									 (if (executable-find "mmdc")
-											 (unless (file-executable-p mmdc)
-												 ;; cannot happen with `executable-find', so we complain about
-												 ;; `ob-mermaid-cli-path'
-												 (error "Cannot find or execute %s, please check `ob-mermaid-cli-path'" mmdc))
-										 (executable-find "mmdc"))
-                   (error "`ob-mermaid-cli-path' is not set and mmdc is not in `exec-path'")))
+                   (if mmdc-path
+                       (if (file-executable-p mmdc-path)
+                           mmdc-path
+                         (error "Found mmdc at %s but it's not executable" mmdc-path))
+                     (error "`ob-mermaid-cli-path' is not set and mmdc is not in `exec-path'"))))
          (cmd (concat mmdc
                       " -i " (org-babel-process-file-name temp-file)
                       " -o " (org-babel-process-file-name out-file)
@@ -70,11 +82,11 @@
 		      (when background-color
 			(concat " -b " background-color))
 		      (when width
-			(concat " -w " width))
+			(concat " -w " (if (numberp width) (number-to-string width) width)))
 		      (when height
-			(concat " -H " height))
+			(concat " -H " (if (numberp height) (number-to-string height) height)))
 		      (when scale
-			(concat " -s " (number-to-string scale)))
+			(concat " -s " (if (numberp scale) (number-to-string scale) (number-to-string scale))))
 		      (when pdf-fit
 			(concat " -f "))
 		      (when mermaid-config-file
@@ -82,13 +94,14 @@
 		      (when css-file
 			(concat " -C " (org-babel-process-file-name css-file)))
                       (when puppeteer-config-file
-                        (concat " -p " (org-babel-process-file-name puppeteer-config-file))))))
+                        (concat " -p " (org-babel-process-file-name puppeteer-config-file)))
+		      (when cmdline
+			(concat " " cmdline)))))
     (with-temp-file temp-file (insert body))
     (message "%s" cmd)
     (org-babel-eval cmd "")
     nil))
 
 (provide 'ob-mermaid)
-
 
 ;;; ob-mermaid.el ends here

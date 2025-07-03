@@ -1,4 +1,4 @@
-;;; doric-themes.el --- Minimalist themes -*- lexical-binding:t -*-
+;;; doric-themes.el --- Highly legible minimalist themes -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -58,11 +58,11 @@
   (append doric-themes-light-themes doric-themes-dark-themes)
   "Symbols of all the Doric themes.")
 
-(defgroup doric-themes ()
-  "Minimalist themes with few colours and precise typography."
+(defgroup doric-themes nil
+  "Highly legible minimalist themes with precise typography."
   :group 'faces
-  :prefix "doric-themes-"
-  :tag "Doric Themes")
+  :link '(url-link :tag "Homepage" "https://protesilaos.com/emacs/doric-themes")
+  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/doric-themes-pictures"))
 
 ;;;; User options
 
@@ -379,6 +379,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     org-date
     org-sexp-date
     proced-time-colon
+    rcirc-timestamp
     vc-state-base
     vc-up-to-date-state
     ztreep-diff-header-small-face))
@@ -960,6 +961,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     outline-8
     proced-emacs-pid
     proced-sort-header
+    rcirc-prompt
+    rcirc-other-nick
     reb-regexp-grouping-backslash
     reb-regexp-grouping-construct
     sh-escaped-newline
@@ -1044,6 +1047,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     proced-memory-high-usage
     proced-run-status-code
     proced-uninterruptible-sleep-status-code
+    rcirc-bright-nick
+    rcirc-track-keyword
     smerge-markers
     tab-line-tab-modified
     transient-key
@@ -1137,13 +1142,12 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     notmuch-wash-cited-text
     org-agenda-calendar-event
     org-agenda-calendar-sexp
-    org-code
     org-inline-src-block
     org-latex-and-related
     org-macro
     org-priority
-    org-verbatim
     package-description
+    rcirc-dim-nick
     sh-heredoc
     shr-code
     speedbar-tag-face
@@ -1179,6 +1183,10 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     orderless-match-face-2
     orderless-match-face-3
     proced-session-leader-pid
+    rcirc-my-nick
+    rcirc-nick-in-message
+    rcirc-nick-in-message-full-line
+    rcirc-track-nick
     show-paren-mismatch
     speedbar-selected-face
     transient-argument
@@ -1205,6 +1213,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     org-footnote
     org-link
     package-name
+    rcirc-url
     shr-link))
 
 (defconst doric-themes-diff-added-faces
@@ -1476,6 +1485,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(org-block-begin-line ((t :inherit fixed-pitch :background ,bg-neutral :foreground ,fg-neutral :extend t)))
             `(org-block-end-line ((t :inherit org-block-begin-line)))
             '(org-checkbox ((t :inherit fixed-pitch)))
+            `(org-code ((t :inherit (fixed-pitch italic) :foreground ,fg-shadow-subtle)))
             `(org-column-title ((t :inherit fixed-pitch :foreground ,fg-shadow-subtle)))
             `(org-date-selected
               ((default :background ,bg-accent :foreground ,fg-main)
@@ -1492,8 +1502,12 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             '(org-property-value ((t :inherit fixed-pitch)))
             '(org-quote ((t :inherit org-block)))
             `(org-scheduled-previously ((t :inherit bold :foreground ,fg-shadow-subtle)))
+            `(org-verbatim ((t :inherit (fixed-pitch italic) :foreground ,fg-shadow-subtle)))
             '(org-verse ((t :inherit org-block)))
             `(org-table ((t :inherit fixed-pitch :foreground ,fg-accent)))
+
+            '(rcirc-monospace-text ((t :inherit fixed-pitch)))
+            '(rcirc-server ((t :inherit font-lock-comment-face)))
 
             `(reb-match-0 ((t :background ,bg-accent :foreground ,fg-main)))
             `(reb-match-1 ((t :background ,bg-shadow-subtle :foreground ,fg-shadow-subtle)))

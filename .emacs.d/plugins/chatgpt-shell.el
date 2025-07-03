@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.22.2
-;; Package-Requires: ((emacs "28.1") (shell-maker "0.77.1"))
-(defconst chatgpt-shell--version "2.22.2")
+;; Version: 2.24.1
+;; Package-Requires: ((emacs "28.1") (shell-maker "0.78.1"))
+(defconst chatgpt-shell--version "2.24.1")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -683,15 +683,27 @@ See `shell-maker-welcome-message' as an example."
    (lambda (command shell)
      (if-let* ((model (chatgpt-shell--resolved-model))
                (handler (map-elt model :handler)))
-         (funcall handler
-                  :model model
-                  :command command
-                  :context (chatgpt-shell-crop-context
-                            :model model
-                            :command command
-                            :context (map-elt shell :history))
-                  :shell shell
-                  :settings (chatgpt-shell--model-settings))
+         (progn
+           (unless (fboundp 'markdown-overlays-expand-local-links)
+             (error "Please update 'shell-maker' to v0.78.1 or newer"))
+           (funcall handler
+                    :model model
+                    :command (if chatgpt-shell-include-local-file-link-content
+                                 (markdown-overlays-expand-local-links command)
+                               command)
+                    :context (chatgpt-shell-crop-context
+                              :model model
+                              :command command
+                              :context
+                              (if chatgpt-shell-include-local-file-link-content
+                                  (mapcar (lambda (item)
+                                            (cons (markdown-overlays-expand-local-links
+                                                   (car item))
+                                                  (cdr item)))
+                                          (map-elt shell :history))
+                                (map-elt shell :history)))
+                    :shell shell
+                    :settings (chatgpt-shell--model-settings)))
        (error "%s not found" (chatgpt-shell-model-version))))
    :on-command-finished
    (lambda (command output success)
@@ -982,6 +994,52 @@ With prefix IGNORE-ITEM, do not mark as failed."
        (t
         (shell-maker-buffer-name chatgpt-shell--config)))
     (shell-maker-interrupt ignore-item)))
+
+(defcustom chatgpt-shell-include-local-file-link-content nil
+  "Non-nil includes linked file content in requests.
+
+Links must be of the form:
+
+  `[file.txt](file:///absolute/path/to/file.txt)'"
+  :type 'boolean
+  :group 'chatgpt-shell)
+
+(defun chatgpt-shell-insert-local-file-link ()
+  "Select and insert a link to a local file.
+
+Requires `chatgpt-shell-include-local-file-link-content' set."
+  (interactive)
+  (let* ((file (read-file-name "Select file: "))
+         (link (markdown-overlays-make-local-file-link file)))
+    (unless link
+      (error "File not found"))
+    (unless chatgpt-shell-include-local-file-link-content
+      (unless (yes-or-no-p "Link file and potentially send content? ")
+        (error "Aborted"))
+      (customize-save-variable 'chatgpt-shell-include-local-file-link-content t))
+    (save-excursion
+      (insert "\n\n" link))))
+
+(defun chatgpt-shell-insert-buffer-file-link ()
+  "Select and insert a link to a buffer's local file.
+
+Requires `chatgpt-shell-include-local-file-link-content' set."
+  (interactive)
+  (let* ((buffer (get-buffer
+                  (completing-read
+                   "Select buffer: "
+                   (mapcar #'buffer-name
+                           (seq-filter #'buffer-file-name (buffer-list))) nil t)))
+         (file (buffer-file-name buffer))
+         (link (markdown-overlays-make-local-file-link file)))
+    (unless link
+      (error "File not found"))
+    (unless chatgpt-shell-include-local-file-link-content
+      (unless (yes-or-no-p "Link file and potentially send content? ")
+        (error "Aborted"))
+      (customize-save-variable 'chatgpt-shell-include-local-file-link-content t))
+    (save-excursion
+      (insert "\n\n" link))))
 
 (defun chatgpt-shell-ctrl-c-ctrl-c (ignore-item)
   "If point in source block, execute it.  Otherwise interrupt.
@@ -2025,6 +2083,17 @@ If in a `dired' buffer, use selection (single image only for now)."
                           :prompt-url file
                           :streaming nil)))
 
+(defcustom chatgpt-shell-screenshot-command
+  (if (eq system-type 'darwin)
+      '("/usr/sbin/screencapture" "-i")
+    ;; ImageMagick is common on Linux and many other *nix systems.
+    '("/usr/bin/import"))
+  "The program to use for capturing screenshots.
+
+Assume screenshot file path will be appended to this list."
+  :type '(repeat string)
+  :group 'chatgpt-shell)
+
 (defun chatgpt-shell--current-image-file (&optional capture)
   "Return buffer image file, Dired selected file, or image at point.
 
@@ -2035,8 +2104,15 @@ If optional CAPTURE is non-nil, cature a screenshot."
   (cond (capture
          (redisplay) ;; Call process will block. Give redisplay a chance.
          (when-let ((file (make-temp-file "screenshot" nil ".png"))
-                    ;; TODO: Make screenshot utility configurable.
-                    (success (eq 0 (call-process "/usr/sbin/screencapture" nil nil nil "-i" file)))
+                    (success (eq 0 (apply #'call-process
+                                          (append
+                                           (list
+                                            (car chatgpt-shell-screenshot-command)
+                                            nil
+                                            nil
+                                            nil)
+                                           (cdr chatgpt-shell-screenshot-command)
+                                           (list file)))))
                     (found (file-exists-p file))
                     (written (not (zerop (nth 7 (file-attributes file))))))
            file))

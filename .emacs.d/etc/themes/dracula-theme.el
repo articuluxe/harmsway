@@ -6,7 +6,7 @@
 
 ;; Maintainer: Étienne Deparis <etienne@depar.is>
 ;; Author: film42
-;; Version: 1.8.2
+;; Version: 1.8.3
 ;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/dracula/emacs
 
@@ -24,6 +24,7 @@
 ;; Change default region face
 ;; Improve tab-line-* faces
 ;; Improve auctex (LaTeX) faces
+;; Support imenu-list
 
 ;;;; Version 1.8.2
 
@@ -176,6 +177,7 @@ read it before opening a new issue about your will.")
                 (dracula-bg      "#282a36" "unspecified-bg" "unspecified-bg") ; official background
                 (dracula-fg      "#f8f8f2" "#ffffff" "brightwhite") ; official foreground
                 (dracula-current "#44475a" "#303030" "brightblack") ; official current-line/selection
+                (dracula-region  "#454759" "#303030" "brightblack") ; dracula-current with fake 75% alpha
                 (dracula-comment "#6272a4" "#5f5faf" "blue")        ; official comment
                 (dracula-cyan    "#8be9fd" "#87d7ff" "brightcyan")  ; official cyan
                 (dracula-green   "#50fa7b" "#5fff87" "green")       ; official green
@@ -229,7 +231,7 @@ read it before opening a new issue about your will.")
                       (list :foreground dracula-comment :box dracula-bg)
                     (list :foreground fg4 :box bg2)))
                (read-multiple-choice-face :inherit completions-first-difference)
-               (region :background ,dracula-current :extend nil)
+               (region :background ,dracula-region :extend nil)
                (shadow :foreground ,dracula-comment)
                (success :foreground ,dracula-green)
                (tooltip :foreground ,dracula-fg :background ,dracula-current)
@@ -580,11 +582,34 @@ read it before opening a new issue about your will.")
                (ido-virtual :foreground ,dracula-cyan)
                (ido-incomplete-regexp :inherit font-lock-warning-face)
                (ido-indicator :foreground ,dracula-fg :background ,dracula-pink)
+               ;; imenu-list
+               (imenu-list-entry-face-0 :foreground ,dracula-pink)
+               (imenu-list-entry-face-1 :foreground ,dracula-purple)
+               (imenu-list-entry-face-2 :foreground ,dracula-green)
+               (imenu-list-entry-face-3 :foreground ,dracula-yellow)
+               (imenu-list-entry-subalist-face-0 :inherit imenu-list-entry-face-0
+                                                 :weight bold :underline t
+                                                 ,@(when dracula-enlarge-headings
+                                                     (list :height dracula-height-title-1)))
+               (imenu-list-entry-subalist-face-1 :inherit imenu-list-entry-face-1
+                                                 :weight bold :underline t
+                                                 ,@(when dracula-enlarge-headings
+                                                     (list :height dracula-height-title-2)))
+               (imenu-list-entry-subalist-face-2 :inherit imenu-list-entry-face-2
+                                                 :weight bold :underline t
+                                                 ,@(when dracula-enlarge-headings
+                                                     (list :height dracula-height-title-3)))
+               (imenu-list-entry-subalist-face-3 :inherit imenu-list-entry-face-3
+                                                 :weight bold :underline t)
                ;; ivy
                (ivy-current-match
                 ,@(if dracula-alternate-mode-line-and-minibuffer
-                      (list :weight 'normal :background dracula-current :foreground dracula-green)
-                    (list :weight 'bold :background dracula-current :foreground dracula-pink)))
+                      (list :background dracula-current
+                            :foreground dracula-green
+                            :weight 'normal)
+                    (list :background dracula-current
+                          :foreground dracula-pink
+                          :weight 'bold)))
                ;; Highlights the background of the match.
                (ivy-minibuffer-match-face-1 :background ,dracula-current)
                ;; Highlights the first matched group.

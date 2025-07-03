@@ -83,14 +83,13 @@ behave as for `ghub-request' (which see)."
                          headers
                          callback errorback)
   "An experimental and unfinished replacement for `ghub-graphql'."
-  (let ((ghub-graphql-message-progress nil))
-    (ghub--graphql-vacuum graphql variables callback nil
-                          :username  username
-                          :auth      auth
-                          :host      host
-                          :forge     forge
-                          :headers   headers
-                          :errorback errorback)))
+  (ghub--graphql-vacuum graphql variables callback nil
+                        :username  username
+                        :auth      auth
+                        :host      host
+                        :forge     forge
+                        :headers   headers
+                        :errorback errorback))
 
 ;;; Queries
 
@@ -460,10 +459,10 @@ See Info node `(ghub)GraphQL Support'."
 
 (cl-defun ghub--graphql-retrieve (req &optional lineage cursor)
   (let ((p (cl-incf (ghub--graphql-req-pages req))))
-    (when ghub-graphql-message-progress
-      (let ((message-log-max nil))
-        (message "Fetching page %s..." p)))
     (when (> p 1)
+      (when ghub-graphql-message-progress
+        (let ((message-log-max nil))
+          (message "Fetching page %s..." p)))
       (ghub--graphql-set-mode-line req "Fetching page %s" p)))
   (setf (ghub--graphql-req-query-str req)
         (gsexp-encode
@@ -478,10 +477,10 @@ See Info node `(ghub)GraphQL Support'."
         (insert (ghub--encode-payload (ghub--graphql-req-variables req)) "\n")
         (ignore-errors (json-pretty-print pos (point))))))
   (ghub--retrieve
-   (let ((json-false nil))
-     (ghub--encode-payload
-      `((query     . ,(ghub--graphql-req-query-str req))
-        (variables . ,(ghub--graphql-req-variables req)))))
+   (ghub--encode-payload
+    `((query . ,(ghub--graphql-req-query-str req))
+      ,@(and-let* ((variables (ghub--graphql-req-variables req)))
+          `((variables . ,variables)))))
    req))
 
 (defun ghub--graphql-prepare-query (query &optional lineage cursor paginate)
@@ -489,13 +488,13 @@ See Info node `(ghub)GraphQL Support'."
     (setq query (ghub--graphql-narrow-query query lineage cursor)))
   (let ((loc (ghub--alist-zip query))
         variables)
-    (cl-block nil
+    (catch :done
       (while t
         (let ((node (treepy-node loc)))
           (when (and (vectorp node)
                      (listp (aref node 0)))
-            (let ((alist (cl-coerce node 'list))
-                  vars)
+            (let ((alist (append node ()))
+                  (vars nil))
               (when-let ((edges (cadr (assq :edges alist))))
                 (push (list 'first
                             (apply
@@ -524,9 +523,9 @@ See Info node `(ghub)GraphQL Support'."
         (if (treepy-end-p loc)
             (let ((node (copy-sequence (treepy-node loc))))
               (when variables
-                (push (cl-coerce variables 'vector)
+                (push (vconcat variables)
                       (cdr node)))
-              (cl-return node))
+              (throw :done node))
           (setq loc (treepy-next loc)))))))
 
 (defun ghub--graphql-handle-response (status req)
@@ -581,7 +580,7 @@ See Info node `(ghub)GraphQL Support'."
                               (or (alist-get 'edges data)
                                   (error "BUG: Expected new nodes"))))
                 (treepy-replace loc data))))
-    (cl-block nil
+    (catch :done
       (while t
         (when (eq (car-safe (treepy-node loc)) 'edges)
           (setq loc (treepy-up loc))
@@ -605,17 +604,17 @@ See Info node `(ghub)GraphQL Support'."
                        (ghub--graphql-retrieve req
                                                (ghub--graphql-lineage loc)
                                                cursor)
-                       (cl-return))
+                       (throw :done nil))
                       ((setq loc (treepy-replace loc (cons key nodes)))))))))
         (cond ((not (treepy-end-p loc))
                (setq loc (treepy-next loc)))
               ((ghub--req-callback req)
                (ghub--graphql-handle-success req (treepy-root loc))
                (ghub--graphql-set-mode-line req nil)
-               (cl-return))
+               (throw :done nil))
               (t
                (setq ghub--graphql-synchronous-value (treepy-root loc))
-               (cl-return)))))))
+               (throw :done nil)))))))
 
 (defun ghub--graphql-lineage (loc)
   (let (lineage)
@@ -635,7 +634,7 @@ See Info node `(ghub)GraphQL Support'."
 (defun ghub--graphql-narrow-query (query lineage &optional cursor)
   (if (consp (car lineage))
       (let* ((child  (cddr query))
-             (alist  (cl-coerce (cadr query) 'list))
+             (alist  (append (cadr query) ()))
              (single (cdr (assq :singular alist))))
         `(,(car single)
           ,(vector (list (cadr single) (cdr (car lineage))))
@@ -653,8 +652,7 @@ See Info node `(ghub)GraphQL Support'."
                                      (and (listp c)
                                           (vectorp (cadr c))
                                           (eq (cadr (assq :singular
-                                                          (cl-coerce (cadr c)
-                                                                     'list)))
+                                                          (append (cadr c) ())))
                                               (car lineage))))
                                    (cdr query))
                        (error "BUG: Failed to narrow query")))
@@ -688,17 +686,6 @@ See Info node `(ghub)GraphQL Support'."
 
 (defun ghub--graphql-pp-response (data)
   (pp-display-expression data "*Pp Eval Output*"))
-
-(cl-defun ghub--repository-id (owner name &key username auth host)
-  "Return the id of the repository specified by OWNER, NAME and HOST."
-  (let-alist (ghub-graphql
-              '(query (repository [(owner $owner String!)
-                                   (name  $name  String!)]
-                                  id))
-              `((owner . ,owner)
-                (name  . ,name))
-              :username username :auth auth :host host)
-    .data.repository.id))
 
 ;;; _
 (provide 'ghub-graphql)

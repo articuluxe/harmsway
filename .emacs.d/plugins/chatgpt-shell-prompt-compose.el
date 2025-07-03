@@ -36,23 +36,29 @@
 (require 'transient)
 (require 'svg nil :noerror)
 
-(declare-function chatgpt-shell-previous-source-block "chatgpt-shell")
-(declare-function chatgpt-shell-next-source-block "chatgpt-shell")
-(declare-function chatgpt-shell-swap-model "chatgpt-shell")
-(declare-function chatgpt-shell-swap-system-prompt "chatgpt-shell")
+(declare-function chatgpt-shell--eshell-last-last-command "chatgpt-shell")
 (declare-function chatgpt-shell--minibuffer-prompt "chatgpt-shell")
-(declare-function chatgpt-shell-send-to-buffer "chatgpt-shell")
-(declare-function chatgpt-shell-execute-block-action-at-point "chatgpt-shell")
+(declare-function chatgpt-shell--model-label "chatgpt-shell")
+(declare-function chatgpt-shell--model-short-version "chatgpt-shell")
+(declare-function chatgpt-shell--pretty-smerge-insert "chatgpt-shell")
+(declare-function chatgpt-shell--primary-buffer "chatgpt-shell")
+(declare-function chatgpt-shell--region "chatgpt-shell")
+(declare-function chatgpt-shell--resolved-model "chatgpt-shell")
+(declare-function chatgpt-shell--system-prompt-name "chatgpt-shell")
 (declare-function chatgpt-shell-block-action-at-point "chatgpt-shell")
 (declare-function chatgpt-shell-clear-buffer "chatgpt-shell")
-(declare-function chatgpt-shell--primary-buffer "chatgpt-shell")
-(declare-function chatgpt-shell--eshell-last-last-command "chatgpt-shell")
-(declare-function chatgpt-shell-mark-block "chatgpt-shell")
-(declare-function chatgpt-shell--region "chatgpt-shell")
-(declare-function chatgpt-shell--pretty-smerge-insert "chatgpt-shell")
-(declare-function chatgpt-shell-markdown-block-at-point "chatgpt-shell")
-(declare-function chatgpt-shell-view-block-at-point "chatgpt-shell")
 (declare-function chatgpt-shell-copy-block-at-point "chatgpt-shell")
+(declare-function chatgpt-shell-execute-block-action-at-point "chatgpt-shell")
+(declare-function chatgpt-shell-mark-block "chatgpt-shell")
+(declare-function chatgpt-shell-markdown-block-at-point "chatgpt-shell")
+(declare-function chatgpt-shell-next-link "chatgpt-shell")
+(declare-function chatgpt-shell-next-source-block "chatgpt-shell")
+(declare-function chatgpt-shell-previous-link "chatgpt-shell")
+(declare-function chatgpt-shell-previous-source-block "chatgpt-shell")
+(declare-function chatgpt-shell-send-to-buffer "chatgpt-shell")
+(declare-function chatgpt-shell-swap-model "chatgpt-shell")
+(declare-function chatgpt-shell-swap-system-prompt "chatgpt-shell")
+(declare-function chatgpt-shell-view-block-at-point "chatgpt-shell")
 
 (defcustom chatgpt-shell-compose-auto-transient nil
   "When non-nil automatically display transient menu post compose submission."
@@ -251,6 +257,8 @@ Set TRANSIENT-FRAME-P to also close frame on exit."
       (visual-line-mode +1)
       (when clear-history
         (with-current-buffer (chatgpt-shell--primary-buffer)
+          ;; Starting new session, interrupt pending ones.
+          (shell-maker-interrupt t)
           (chatgpt-shell-clear-buffer)))
       (when (or erase-buffer
                 (string-empty-p (string-trim (chatgpt-shell-prompt-compose--text))))
@@ -404,7 +412,8 @@ Optionally set its PROMPT and RESPONSE."
             (chatgpt-shell-prompt-compose-view-mode -1)
             (chatgpt-shell-prompt-compose--initialize)))
         (user-error "Aborted")))
-    (when (chatgpt-shell-block-action-at-point)
+    (when (and chatgpt-shell-prompt-compose-view-mode
+               (chatgpt-shell-block-action-at-point))
       (chatgpt-shell-execute-block-action-at-point)
       (throw 'exit nil))
     (when (string-empty-p
@@ -538,7 +547,7 @@ If BACKWARDS is non-nil, go to previous interaction."
                               (chatgpt-shell--model-short-version))
                   :x (+ image-width 10) :y (* 2 text-height)
                   :fill "#C3E88D")
-        (svg-text svg (or (chatgpt-shell--system-prompt-name) "")
+        (svg-text svg (or (chatgpt-shell--system-prompt-name) "No system prompt")
                   :x (+ image-width 10) :y (* 3 text-height)
                   :fill "#FF5370")
         (propertize (format "%s\n\n" (with-temp-buffer
@@ -872,7 +881,7 @@ Useful if sending a request failed, perhaps from failed connectivity."
   (switch-to-buffer (chatgpt-shell--primary-buffer)))
 
 (defun chatgpt-shell-prompt-compose--fetch-model-icon (icon)
-  "Download ICON filename from GitHub's lobehub, only if it exists and save as binary."
+  "Download ICON filename from GitHub, only if it exists and save as binary."
   (when icon
     (let* ((mode (if (eq (frame-parameter nil 'background-mode) 'dark) "dark" "light"))
            (url (concat "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/"

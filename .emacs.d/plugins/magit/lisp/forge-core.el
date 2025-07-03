@@ -382,21 +382,23 @@ parent object (determined using `forge-get-parent')."
                           &key username host forge
                           headers
                           callback errorback)
-  (let ((ghub-graphql-message-progress nil))
-    (ghub--graphql-vacuum graphql variables callback nil
-                          :username  username
-                          :auth      'forge
-                          :host      host
-                          :forge     forge
-                          :headers   headers
-                          :errorback errorback)))
+  (ghub--graphql-vacuum graphql variables callback nil
+                        :username  username
+                        :auth      'forge
+                        :host      host
+                        :forge     forge
+                        :headers   headers
+                        :errorback errorback))
 
 (defun forge-refresh-buffer (&optional buffer)
   "Refresh the current buffer, if it is a Magit or Forge buffer.
+
 Refresh the buffer if its major-mode derives from `magit-mode'
 or `forge-repository-list-mode'.  If optional BUFFER is non-nil,
 then refresh that buffer, provided it is alive and satisfies
-the mode requirement."
+the mode requirement.
+
+When certain Forge menus are active, refresh them too."
   (interactive)
   (cond (buffer
          (when (buffer-live-p buffer)
@@ -411,7 +413,12 @@ the mode requirement."
               (oref forge--buffer-topics-spec global))
          (revert-buffer))
         ((derived-mode-p 'forge-repository-list-mode)
-         (revert-buffer))))
+         (revert-buffer)))
+  (when (transient-active-prefix
+         '(forge-topic-menu
+           forge-topics-menu
+           forge-notifications-menu))
+    (transient--refresh-transient)))
 
 (defun forge--sanitize-string (string)
   ;; For Gitlab this may also be nil.
