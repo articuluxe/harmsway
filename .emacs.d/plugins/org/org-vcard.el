@@ -1,4 +1,4 @@
-;;; org-vcard.el --- org-mode support for vCard export and import.
+;;; org-vcard.el --- org-mode support for vCard export and import. -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014-2019,2021-2022 Alexis <flexibeast@gmail.com>
 ;; Copyright (C) 2019 Will Dey <will123dey@gmail.com>
@@ -30,223 +30,10 @@
 
 ;;; Commentary:
 
-;; *As of march 2024, I (pinoaffe) have taken over maintainership of
-;; org-vcard.*
-
 ;; `org-vcard' is a package for exporting and importing
 ;; [vCards](https://en.wikipedia.org/wiki/Vcard) from within [GNU
 ;; Emacs](https://www.gnu.org/software/emacs/)' [Org
 ;; mode](http://orgmode.org/).
-
-;; ## Table of Contents
-
-;; - [Features](#features)
-;; - [Installation](#installation)
-;; - [Usage](#usage)
-;; - [TODO](#todo)
-;; - [Issues](#issues)
-;; - [Testing](#testing)
-;; - [License](#license)
-
-;; ## Features
-
-;; * _Backwards-compatible with org-contacts.el._
-
-;; `org-vcard' comes with a built-in contacts style called `flat',
-;; which adheres to org-contacts' method of structuring contacts and
-;; contact information. It not only supports the properties specified
-;; in org-contacts.el, but many other properties as well.
-
-;; * _Basic support for vCard 4.0, 3.0 and 2.1._
-
-;; `org-vcard' is working towards full compliance with the vCard 4.0
-;; ([RFC 6350](https://tools.ietf.org/html/rfc6350)), 3.0 ([RFC
-;; 2426](https://tools.ietf.org/html/rfc2426) and [RFC
-;; 4770](https://tools.ietf.org/html/rfc4770)) and
-;; [2.1](https://web.archive.org/web/20120501162958/http://www.imc.org/pdi/vcard-21.doc)
-;; specifications.
-
-;; * _New contacts style: `tree'._
-
-;; `org-vcard' introduces a new style for Org contacts, called
-;; `tree'. More details [below](#tree).
-
-;; * _Highly customisable, via Emacs' `customize' interface._
-
-;; Modify existing contact styles; change the labels used to map
-;; contact details in `org-mode' to various vCard properties/types, or
-;; add new ones. Create completely new contact styles by plugging in
-;; your own code to handle export and import.
-
-;; ## Installation
-
-;; Install `org-vcard' from [MELPA](http://melpa.org/#/org-vcard),
-;; [MELPA Stable](http://stable.melpa.org/#/org-vcard), or put the
-;; `org-vcard' folder in your load-path and do a `(require
-;; 'org-vcard)'.
-
-;; ## Usage
-
-;; The main user commands are `org-vcard-export' and
-;; `org-vcard-import', which are intended to be called interactively;
-;; you can press TAB at many of the minibuffer prompts to get a list
-;; of the available options for a prompt.
-
-;; Both `org-vcard-export' and `org-vcard-import' are wrappers around
-;; the `org-vcard-transfer-helper'
-;; function. `org-vcard-transfer-helper' can be used to export and
-;; import programmatically (i.e. via Emacs Lisp).
-
-;; Enabling `org-vcard-mode' will add an "Org-vCard" menu to the menu
-;; bar, from which one can access the various export, import and
-;; customisation options.
-
-;; **Note!** When exporting to vCard using the source `buffer',
-;; narrowing is respected. If you wish to export the entire buffer
-;; without restriction, remove any narrowing in effect.
-
-;; For a list of the properties available by default for each contacts
-;; style and related vCard versions, visit the "Org Vcard Styles
-;; Languages Mappings" setting in the Org Vcard customize group, or
-;; examine the value of the `org-vcard-styles-languages-mappings'
-;; variable.
-
-;; **Note!** The default mappings might need to be tweaked for
-;; particular use-cases. For example, some systems create vCards
-;; with a bare `TEL' property, whereas others use `TEL;TYPE=voice';
-;; but both are mapped to the Org `PHONE' property (for `flat'
-;; style) or `phone' FIELDTYPE (for `tree' style). In this case, the
-;; `customize' interface could be used to delete whichever of the
-;; two mappings is unwanted.
-
-;; The value of the `org-vcard-include-import-unknowns' (boolean)
-;; variable specifies whether the import process should include vCard
-;; properties not listed in the mapping being used.
-
-;; The value of the `org-vcard-append-to-existing-import-buffer' and
-;; `org-vcard-append-to-existing-export-buffer' (boolean) variables
-;; specify whether the import/export process should append to any
-;; existing import/export buffer. If not, a new import/export buffer
-;; is created for each import/export.
-
-;; <a name="tree"></a>
-
-;; ### The `tree' contacts style
-
-;; The structure of the `tree' contacts style is:
-
-;;     * [Contact name]
-;;     :PROPERTIES:
-;;     :KIND: individual
-;;     :FIELDTYPE: name
-;;     :END:
-;;     ** [Information type]
-;;     *** [Information value]
-;;     :PROPERTIES:
-;;     :FIELDTYPE: [Field type]
-;;     [:PREFERRED:]
-;;     :END:
-
-;; Here's an example:
-
-;;     * Joan Smith
-;;     :PROPERTIES:
-;;     :KIND: individual
-;;     :FIELDTYPE: name
-;;     :END:
-;;     ** Mobile
-;;     *** 0000 999 999
-;;     :PROPERTIES:
-;;     :FIELDTYPE: cell
-;;     :END:
-;;     ** Email
-;;     *** Work
-;;     **** address1@hidden
-;;     :PROPERTIES:
-;;     :FIELDTYPE: email-work
-;;     :PREFERRED:
-;;     :END:
-;;     *** Home
-;;     **** address2@hidden
-;;     :PROPERTIES:
-;;     :FIELDTYPE: email-home
-;;     :END:
-
-;; As the `tree' style uses a heading's FIELDTYPE property to
-;; associate fields with their data, the above hierarchy is only one
-;; way to structure contacts; equivalently, one could do:
-
-;;     * People
-;;     ** Joan Smith
-;;     :PROPERTIES:
-;;     :KIND: individual
-;;     :FIELDTYPE: name
-;;     :END:
-;;     *** Cell
-;;     **** 0000 999 999
-;;     :PROPERTIES:
-;;     :FIELDTYPE: cell
-;;     :END:
-;;     *** Email
-;;     **** address1@hidden
-;;     :PROPERTIES:
-;;     :FIELDTYPE: email-work
-;;     :PREFERRED:
-;;     :END:
-;;     **** address2@hidden
-;;     :PROPERTIES:
-;;     :FIELDTYPE: email-home
-;;     :END:
-
-;; ## TODO
-
-;; * Add support for one-vCard-per-file export.
-
-;; * Add support for line folding when exporting.
-
-;; * Add support for multiple instances of EMAIL property.
-
-;; * Add support for vCard PREF for style `flat'.
-
-;; * Add support for vCard KINDs `group' and `org'.
-
-;; * Add support for per-card version handling on import.
-
-;; * Improve compliance with each version of the vCard specification.
-
-;; * Extend test coverage.
-
-;; <a name="issues"></a>
-
-;; ## Issues / bugs
-
-;; If you discover an issue or bug in `org-vcard' not already noted:
-
-;; * as a TODO item, or
-
-;; * in [the project's "Issues" section on
-;; GitHub](https://github.com/pinoaffe/org-vcard/issues),
-
-;; please create a new issue with as much detail as possible, including:
-
-;; * which version of Emacs you're running on which operating system, and
-
-;; * how you installed `org-vcard'.
-
-;; ## Testing
-
-;; A basic test suite is located in the repository `tests' directory,
-;; in `org-vcard-tests.el`. To run the suite:
-
-;; 1. Ensure `org-vcard.el' has been loaded, e.g. `(load "~/org-vcard/org-vcard.el")'.
-;; 2. Load the test suite: e.g. `(load "~/org-vcard/tests/org-vcard-tests.el")'.
-;; 3. Run the tests by evaluating `(ert '(tag org-vcard))'.
-
-;; ## License
-
-;; [GNU General Public License version
-;; 3](http://www.gnu.org/licenses/gpl.html), or (at your option) any
-;; later version.
 
 ;;; Code:
 
@@ -285,7 +72,6 @@
 
 (defconst org-vcard-mode-keymap (make-sparse-keymap))
 
-
 ;;
 ;; Directory configuration.
 ;;
@@ -306,10 +92,271 @@
         (list default org-vcard-custom-styles-dir)
       (list default))))
 
+;;
+;; User-customisable variables.
+;;
+
+(defgroup org-vcard nil
+  "Import and export vCard files for Org mode."
+  :group 'org
+  :prefix "org-vcard-")
+
+(defcustom org-vcard-append-to-existing-export-buffer t
+  "Whether export should append to an existing export buffer.
+
+If not, create a new export buffer per export."
+  :type 'boolean
+  :group 'org-vcard)
+
+(defcustom org-vcard-append-to-existing-import-buffer t
+  "Whether import should append to an existing import buffer.
+
+If not, create a new import buffer per import."
+  :type 'boolean
+  :group 'org-vcard)
+
+(defcustom org-vcard-character-set-mapping
+  '(("Big5" . big5)
+    ("EUC-JP" . euc-jp)
+    ("EUC-KR" . euc-kr)
+    ("GB2312" . gb2312)
+    ("ISO-2022-JP" . iso-2022-jp)
+    ("ISO-2022-JP-2" . iso-2022-jp-2)
+    ("ISO-2022-KR" . iso-2022-kr)
+    ("ISO-8859-1" . iso-8859-1)
+    ("ISO-8859-2" . iso-8859-2)
+    ("ISO-8859-3" . iso-8859-3)
+    ("ISO-8859-4" . iso-8859-4)
+    ("ISO-8859-5" . iso-8859-5)
+    ("ISO-8859-6" . iso-8859-6)
+    ("ISO-8859-6-E" . iso-8859-6-e)
+    ("ISO-8859-6-I" . iso-8859-6-i)
+    ("ISO-8859-7" . iso-8859-7)
+    ("ISO-8859-8" . iso-8859-8)
+    ("ISO-8859-8-E" . iso-8859-8-e)
+    ("ISO-8859-8-I" . iso-8859-8-i)
+    ("ISO-8859-9" . iso-8859-9)
+    ("ISO-8859-10" . iso-8859-10)
+    ("KOI8-R" . koi8-r)
+    ("Shift_JIS" . shift_jis)
+    ("US-ASCII" . us-ascii)
+    ("UTF-8" . utf-8)
+    ("UTF-16" . utf-16))
+  "Alist mapping IANA MIME names for character sets to Emacs coding systems.
+
+Derived from:
+http://www.iana.org/assignments/character-sets/character-sets.xhtml"
+  :type '(repeat (cons string symbol))
+  :group 'org-vcard)
+
+(defcustom org-vcard-default-export-file "~/org-vcard-export.vcf"
+  "Default file to which to export."
+  :type 'file
+  :group 'org-vcard)
+
+(defcustom org-vcard-default-import-file "~/org-vcard-import.vcf"
+  "Default file from which to import."
+  :type 'file
+  :group 'org-vcard)
+
+;; The in-buffer setting #+CONTACT_LANGUAGE.
+(defcustom org-vcard-default-language "en"
+  "Default language to use.
+
+Initially set to \"en\"."
+  :type 'string
+  :group 'org-vcard)
+
+(defcustom org-vcard-default-property-for-heading "FN"
+  "Which vCard property to use for a contact's Org heading."
+  :type '(radio (const :tag "FN" "FN")
+                (const :tag "N" "N"))
+  :group 'org-vcard)
+
+(defvar org-vcard--styles-functions
+  nil ;; NOTE: later updated by `org-vcard-reload-styles'
+  "Available styles and associated import/export functions.")
+
+;; The in-buffer setting #+CONTACT_STYLE.
+(defcustom org-vcard-default-style "flat"
+  "Default contact style to use.
+
+Initially set to \"flat\"."
+  :type 'string
+  :group 'org-vcard)
+
+(defcustom org-vcard-styles-languages-mappings
+  nil ;; NOTE: later updated by `org-vcard-reload-styles'
+  "Details of the available styles and their associated mappings."
+  :type '(repeat
+          (list string
+                (repeat
+                 (list string
+                       (repeat
+                        (list string
+                              (repeat (cons string string))))))))
+  :group 'org-vcard)
+
+(defvar org-vcard--styles-languages-mappings
+  nil ;; NOTE: later updated by `org-vcard-reload-styles'
+  "Details of the available styles and their associated mappings.")
+
+(make-obsolete-variable 'org-vcard-styles-languages-mappings
+                        'org-vcard--styles-languages-mappings
+                        "org-vcard 0.8.0")
+
+(defcustom org-vcard-default-vcard-21-character-set 'us-ascii
+  "CHARSET modifier for all vCard properties when exporting to vCard 2.1."
+  :type `(radio ,@(mapcar #'(lambda (entry)
+                              `(const :tag ,(car entry) ,(cdr entry)))
+                          org-vcard-character-set-mapping))
+  :group 'org-vcard)
+
+;; The in-buffer setting #+VCARD_VERSION;
+;; can be "4.0", "3.0" or "2.1".
+(defcustom org-vcard-default-version "4.0"
+  "Default version of the vCard standard to use.
+
+Initially set to 4.0."
+  :type '(radio (const "4.0") (const "3.0") (const "2.1"))
+  :group 'org-vcard)
+
+(defcustom org-vcard-include-import-unknowns nil
+  "Whether to import vCard properties not listed in the mapping being used."
+  :type 'boolean
+  :group 'org-vcard)
+
+(defcustom org-vcard-remove-external-semicolons nil
+  "Whether import should remove leading/trailing semicolons from compound values.
+
+NB! Since the components of compound values are positional,
+removing such semicolons will change the meaning of the value
+if/when it is subsequently exported to vCard.  If in doubt, leave
+this set to nil."
+  :type 'boolean
+  :group 'org-vcard)
+
+(defvar org-vcard-active-style ""
+  "The currently-active contacts style.")
+
+(defvar org-vcard-active-language ""
+  "The currently-active language.")
+
+(defvar org-vcard-active-version ""
+  "The currently-active version of vCard.")
+
+(defvar org-vcard-comma-separated-properties '("CATEGORIES" "NICKNAME")
+  "List of non-compound vCard properties.
+
+Such properties can contain one or more values, separated by commas.")
+
+(defvar org-vcard-compound-properties '("ADR" "N" "ORG")
+  "List of compound vCard properties.
+
+Such properties contain a value with multiple components,
+each component separated by a semicolon.")
+
 
 ;;
 ;; Internal functions and variables.
 ;;
+
+(defun org-vcard--ensure-n-property (version)
+  "Return a string containing empty N property if vCard VERSION requires it.
+Otherwise, return empty string."
+  (if (and (string= "FN" org-vcard-default-property-for-heading)
+           (or (string= "3.0" version)
+               (string= "2.1" version)))
+      ;; vCard 2.1 and 3.0 require the 'N' property be present.
+      ;; Trying to create this by parsing the heading which has
+      ;; FIELDTYPE 'name' is fraught with challenges - cf.
+      ;; http://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/
+      ;; - so we just create an empty 'N' property.
+      (org-vcard--export-line "N" "")
+    ""))
+
+(defun org-vcard--property-name (property)
+  "Return name of PROPERTY, without any parameter annotations."
+  ;; TODO: actually properly parse property
+  (string-match "^[^;:]+" property)
+  (match-string 0 property))
+
+(defun org-vcard--remove-external-semicolons (property-value)
+  "Remove starting and trailing semicolons from PROPERTY-VALUE."
+  (replace-regexp-in-string
+   "^[;]+\\|[;]+$"
+   ""
+   property-value))
+
+(defun org-vcard--property-with-pref (version property)
+  "Return PROPERTY annotated to be preferred according to vCard VERSION."
+  ;; TODO: actually properly parse property
+  (cond
+   ((string= "4.0" version)
+    (concat property ";PREF=1"))
+   ((and (string= "3.0" version)
+         (string-match "TYPE=" property))
+    (concat property ",pref"))
+   ((string= "3.0" version)
+    (concat property ";TYPE=pref"))
+   ((string= "2.1" version)
+    (concat property ";PREF"))
+   (t (error "Unsupported org version"))))
+
+(defun org-vcard--property-without-pref (version property)
+  "Remove any preference annotation from PROPERTY according to vCard VERSION."
+  ;; TODO: actually properly parse property
+  (cond
+   ((or (string= "4.0" version)
+        (string= "2.1" version))
+    (replace-regexp-in-string
+     ";PREF\\(?:=\\w+\\)?"
+     ""
+     property))
+   ((string= "3.0" version)
+    (setq property
+     (replace-regexp-in-string
+      ",?pref"
+      ""
+      property))
+    (if (string-match ";TYPE=\\(?:;\\|$\\)" property)
+        (replace-regexp-in-string
+         ";TYPE="
+         ""
+         property)
+      property))))
+
+(defun org-vcard--card-name (card)
+  "Derive the name associated with CARD."
+  (or (cdr (assoc org-vcard-default-property-for-heading card))
+      (cdr (assoc "FN" card))
+      (or (cdr (assoc "FN" card))
+          (replace-regexp-in-string
+             "^;\\|;$"
+             ""
+             (cdr (assoc "FN" card))))
+      "NO TITLE"))
+
+(defun org-vcard--get-mapping (version language style)
+  "Get the correct alist mapping org properties to vCard properties.
+
+This looks through `org-vcard--styles-languages-mappings' for a fitting
+VERSION, LANGUAGE, and STYLE."
+  (or
+   (cadr (assoc version
+                (cadr (assoc
+                       language
+                       (cadr (assoc style
+                                    org-vcard--styles-languages-mappings))))))
+   (error "No mapping available for specified vCard version")))
+
+(defun org-vcard--get-encoding (version _language)
+  "Get the correct text encoding for vCard VERSION."
+  (cond
+   ((string= "4.0" version) 'utf-8)
+   ((string= "3.0" version) 'utf-8)
+   ((string= "2.1" version) 'us-ascii)
+   (t (error "Unsupported version"))))
 
 (defun org-vcard--canonicalise-adr-property (property-name)
   "Canonicalise a vCard ADR property.
@@ -412,17 +459,17 @@ PROPERTY-NAME must be a string containing the vCard property name."
                 nil)))
         (cond
          ((string-match "^ADR" property-name)
-          (progn 
+          (progn
             (setq retval (org-vcard--canonicalise-adr-property property-name))
             (setq property-canonicalised (car retval))
             (setq property-type-data (cadr retval))))
          ((string-match "^EMAIL" property-name)
-          (progn 
+          (progn
             (setq retval (org-vcard--canonicalise-email-property property-name))
             (setq property-canonicalised (car retval))
             (setq property-type-data (cadr retval))))
          ((string-match "^TEL" property-name)
-          (progn 
+          (progn
             (setq retval (org-vcard--canonicalise-tel-property property-name))
             (setq property-canonicalised (car retval))
             (setq property-type-data (cadr retval)))))
@@ -574,7 +621,7 @@ PROPERTY-NAME must be a string containing a vCard property name."
 
 (defun org-vcard--create-styles-functions ()
   "Create a data structure for use by `org-vcard-styles-functions'."
-  (let ((the-list) '())
+  (let ((the-list '()))
     (dolist (style-dir (org-vcard--styles-dirs))
       (dolist (style (directory-files style-dir))
         (if (and
@@ -585,8 +632,7 @@ PROPERTY-NAME must be a string containing a vCard property name."
                (concat
                 (file-name-as-directory (concat style-dir style))
                 "functions.el"))
-              (add-to-list
-               'the-list
+              (push
                `(,(file-name-nondirectory style)
                  ,(list
                    (intern
@@ -596,18 +642,19 @@ PROPERTY-NAME must be a string containing a vCard property name."
                    (intern
                     (concat
                      "org-vcard-import-to-"
-                     (file-name-nondirectory style))))))))))
+                     (file-name-nondirectory style)))))
+               the-list)))))
     (sort the-list
           #'(lambda (a b)
               (string< (car a) (car b))))))
 
 (defun org-vcard--create-styles-languages-mappings ()
-  "Create a data structure for use by `org-vcard-styles-languages-mappings'."
+  "Create a data structure for use by `org-vcard--styles-languages-mappings'."
   (let ((style-mappings '()))
     (dolist (style-dir (org-vcard--styles-dirs))
       (dolist (style
                ;; Reverse the list so the repeated calls to
-               ;; add-to-list will produce a lexicographically-sorted
+               ;; push will produce a lexicographically-sorted
                ;; list.
                (sort (directory-files style-dir)
                      #'(lambda (a b)
@@ -619,7 +666,7 @@ PROPERTY-NAME must be a string containing a vCard property name."
               (let ((language-mapping '()))
                 (dolist
                     (mapping
-                     ;; Reverse the list so the repeated calls to add-to-list
+                     ;; Reverse the list so the repeated calls to push
                      ;; will produce a lexicographically-sorted list.
                      (sort (directory-files
                             (file-name-as-directory
@@ -640,26 +687,26 @@ PROPERTY-NAME must be a string containing a vCard property name."
                          ".."
                          (file-name-nondirectory mapping))))
                       (progn
-                        (add-to-list
-                         'language-mapping
+                        (push
                          `(,(file-name-nondirectory mapping)
                            ,@(list
                               (car
                                (read-from-string
                                 (with-temp-buffer
                                   (insert-file-contents-literally mapping)
-                                  (buffer-string))))))))))
+                                  (buffer-string))))))
+                         language-mapping))))
                 (setq language-mapping (list language-mapping))
-                (add-to-list
-                 'style-mappings
+                (push
                  `(,style
-                   ,@language-mapping)))))))
+                   ,@language-mapping)
+                 style-mappings))))))
     style-mappings))
 
 (defun org-vcard--escape-value-string (characters value)
   "Escape each instance of each character in CHARACTERS.
 
-CHARACTERS must be a list of strings. VALUE is the string to be
+CHARACTERS must be a list of strings.  VALUE is the string to be
 escaped."
   (if (member "\134" characters)
       ;; Process backslashes first.
@@ -810,7 +857,7 @@ Fall back to value of custom variables."
 (defun org-vcard--transfer-write (direction content destination &optional filename)
   "During import, write CONTENT to DESTINATION.
 
-DIRECTION must be either 'import or 'export. CONTENT must be a string.
+DIRECTION must be either \='import or \='export.  CONTENT must be a string.
 DESTINATION must be either \"buffer\" or \"file\"."
   (if (not
        (or
@@ -843,7 +890,10 @@ DESTINATION must be either \"buffer\" or \"file\"."
             (setq the-buffer
                   (generate-new-buffer "*org-vcard-export*")))))
         (set-buffer the-buffer)
-        (insert (string-as-multibyte content))
+        ;; NOTE: this used to be as below, but that strips CR
+        ;; TODO: investigate why CR are stripped, fix, and decode again
+        (insert content)
+        ;; (insert (decode-coding-string content 'utf-8))
         (message
          (concat
           direction-string
@@ -864,7 +914,7 @@ DESTINATION must be either \"buffer\" or \"file\"."
                   org-vcard-default-export-file))
                 nil))))
         (with-temp-buffer
-          (insert (string-as-multibyte content))
+          (insert (decode-coding-string content 'utf-8-emacs))
           (when (file-writable-p filename)
             (write-region
              (point-min)
@@ -884,27 +934,14 @@ DESTINATION must be either \"buffer\" or \"file\"."
 ;; org-vcard-mode menu setup.
 ;;
 
-(defvar org-vcard--styles-functions (org-vcard--create-styles-functions)
-  "Available styles and associated import/export functions.")
-
-(defcustom org-vcard-styles-languages-mappings
-  (org-vcard--create-styles-languages-mappings)
-  "Details of the available styles and their associated mappings."
-  :type '(repeat
-          (list string
-                (repeat
-                 (list string
-                       (repeat
-                        (list string
-                              (repeat (cons string string))))))))
-  :group 'org-vcard)
-
 (defun org-vcard--sort-by-car (list)
+  "Sort alist LIST by the string keys."
   (sort list
         (lambda (a b)
           (string< (car a) (car b)))))
 
 (defun org-vcard--conversion-menu-helper (exportp)
+  "Helper to create import or export conversion menu based on flag EXPORTP."
   (mapcar (lambda (style)
             (cons (concat (if exportp
                               "from "
@@ -927,7 +964,7 @@ DESTINATION must be either \"buffer\" or \"file\"."
                                              t))
                                           (org-vcard--sort-by-car (cadr language)))))
                           (org-vcard--sort-by-car (cadr style)))))
-          (org-vcard--sort-by-car org-vcard-styles-languages-mappings)))
+          (org-vcard--sort-by-car org-vcard--styles-languages-mappings)))
 
 (defun org-vcard--create-org-vcard-mode-menu ()
   "Create or recreate the `org-vcard-mode' menu."
@@ -939,8 +976,6 @@ DESTINATION must be either \"buffer\" or \"file\"."
       ("Import" .
        ,(org-vcard--conversion-menu-helper nil))
       ["Customize" (customize-group 'org-vcard) t])))
-
-(org-vcard--create-org-vcard-mode-menu)
 
 ;;
 ;; Org-mode element functions.
@@ -955,145 +990,6 @@ DESTINATION must be either \"buffer\" or \"file\"."
           (org-element-properties-resolve node 'force-undefer)))
     #'identity))
 
-;;
-;; Additional user-customisable variables.
-;;
-
-(defgroup org-vcard nil
-  "vCard support for Org mode."
-  :group 'org
-  :prefix "org-vcard-")
-
-(defcustom org-vcard-append-to-existing-export-buffer t
-  "Whether export should append to an existing export buffer.
-
-If not, create a new export buffer per export."
-  :type 'boolean
-  :group 'org-vcard)
-
-(defcustom org-vcard-append-to-existing-import-buffer t
-  "Whether import should append to an existing import buffer.
-
-If not, create a new import buffer per import."
-  :type 'boolean
-  :group 'org-vcard)
-
-(defcustom org-vcard-character-set-mapping
-  '(("Big5" . big5)
-    ("EUC-JP" . euc-jp)
-    ("EUC-KR" . euc-kr)
-    ("GB2312" . gb2312)
-    ("ISO-2022-JP" . iso-2022-jp)
-    ("ISO-2022-JP-2" . iso-2022-jp-2)
-    ("ISO-2022-KR" . iso-2022-kr)
-    ("ISO-8859-1" . iso-8859-1)
-    ("ISO-8859-2" . iso-8859-2)
-    ("ISO-8859-3" . iso-8859-3)
-    ("ISO-8859-4" . iso-8859-4)
-    ("ISO-8859-5" . iso-8859-5)
-    ("ISO-8859-6" . iso-8859-6)
-    ("ISO-8859-6-E" . iso-8859-6-e)
-    ("ISO-8859-6-I" . iso-8859-6-i)
-    ("ISO-8859-7" . iso-8859-7)
-    ("ISO-8859-8" . iso-8859-8)
-    ("ISO-8859-8-E" . iso-8859-8-e)
-    ("ISO-8859-8-I" . iso-8859-8-i)
-    ("ISO-8859-9" . iso-8859-9)
-    ("ISO-8859-10" . iso-8859-10)
-    ("KOI8-R" . koi8-r)
-    ("Shift_JIS" . shift_jis)
-    ("US-ASCII" . us-ascii)
-    ("UTF-8" . utf-8)
-    ("UTF-16" . utf-16))
-  "Alist mapping IANA MIME names for character sets to Emacs coding systems.
-
-Derived from:
-http://www.iana.org/assignments/character-sets/character-sets.xhtml"
-  :type '(repeat (cons string symbol))
-  :group 'org-vcard)
-
-(defcustom org-vcard-default-export-file "~/org-vcard-export.vcf"
-  "Default file to which to export."
-  :type 'file
-  :group 'org-vcard)
-
-(defcustom org-vcard-default-import-file "~/org-vcard-import.vcf"
-  "Default file from which to import."
-  :type 'file
-  :group 'org-vcard)
-
-;; The in-buffer setting #+CONTACT_LANGUAGE.
-(defcustom org-vcard-default-language "en"
-  "Default language to use.
-
-Initially set to \"en\"."
-  :type 'string
-  :group 'org-vcard)
-
-(defcustom org-vcard-default-property-for-heading "FN"
-  "vCard property whose value to use for a contact's Org heading."
-  :type '(radio (const :tag "FN" "FN")
-                (const :tag "N" "N"))
-  :group 'org-vcard)
-
-;; The in-buffer setting #+CONTACT_STYLE.
-(defcustom org-vcard-default-style "flat"
-  "Default contact style to use.
-
-Initially set to \"flat\"."
-  :type 'string
-  :group 'org-vcard)
-
-(defcustom org-vcard-default-vcard-21-character-set 'us-ascii
-  "CHARSET modifier for all vCard properties when exporting to vCard 2.1."
-  :type `(radio ,@(mapcar #'(lambda (entry)
-                              `(const :tag ,(car entry) ,(cdr entry)))
-                          org-vcard-character-set-mapping))
-  :group 'org-vcard)
-
-;; The in-buffer setting #+VCARD_VERSION;
-;; can be "4.0", "3.0" or "2.1".
-(defcustom org-vcard-default-version "4.0"
-  "Default version of the vCard standard to use.
-
-Initially set to 4.0."
-  :type '(radio (const "4.0") (const "3.0") (const "2.1"))
-  :group 'org-vcard)
-
-(defcustom org-vcard-include-import-unknowns nil
-  "Whether to import vCard properties not listed in the mapping being used."
-  :type 'boolean
-  :group 'org-vcard)
-
-(defcustom org-vcard-remove-external-semicolons nil
-  "Whether import should remove leading/trailing semicolons from compound values.
-
-NB! Since the components of compound values are positional,
-removing such semicolons will change the meaning of the value
-if/when it is subsequently exported to vCard. If in doubt, leave
-this set to nil."
-  :type 'boolean
-  :group 'org-vcard)
-
-(defvar org-vcard-active-style ""
-  "The currently-active contacts style.")
-
-(defvar org-vcard-active-language ""
-  "The currently-active language.")
-
-(defvar org-vcard-active-version ""
-  "The currently-active version of vCard.")
-
-(defvar org-vcard-comma-separated-properties '("CATEGORIES" "NICKNAME")
-  "List of non-compound vCard properties.
-
-Such properties can contain one or more values, separated by commas.")
-
-(defvar org-vcard-compound-properties '("ADR" "N" "ORG")
-  "List of compound vCard properties.
-
-Such properties contain a value with multiple components,
-each component separated by a semicolon.")
 
 
 ;;
@@ -1102,10 +998,10 @@ each component separated by a semicolon.")
 
 ;;;###autoload
 (defun org-vcard-export (arg)
-  "User command to export to vCard. Intended only for interactive use.
+  "User command to export to vCard.  Intended only for interactive use.
 
-With no prefix argument, use the values of `org-vcard-default-version',
-`org-vcard-default-language' and `org-vcard-default-style'. With prefix
+With no prefix ARG, use the values of `org-vcard-default-version',
+`org-vcard-default-language' and `org-vcard-default-style'.  With prefix
 argument of:
 
 1 : prompt for version;
@@ -1141,7 +1037,7 @@ argument of:
                 (cadr
                  (assoc
                   style
-                  org-vcard-styles-languages-mappings)))))
+                  org-vcard--styles-languages-mappings)))))
              nil t org-vcard-default-version)))
      ((= 2 arg)
       (setq language
@@ -1152,7 +1048,7 @@ argument of:
               (cadr
                (assoc
                 style
-                org-vcard-styles-languages-mappings)))
+                org-vcard--styles-languages-mappings)))
              nil t org-vcard-default-language)))
      ((= 3 arg)
       (setq style
@@ -1175,7 +1071,7 @@ argument of:
                   (cadr
                    (assoc
                     style
-                    org-vcard-styles-languages-mappings)))))
+                    org-vcard--styles-languages-mappings)))))
                nil t org-vcard-default-version))
         (setq language
               (completing-read
@@ -1185,7 +1081,7 @@ argument of:
                 (cadr
                  (assoc
                   style
-                  org-vcard-styles-languages-mappings)))
+                  org-vcard--styles-languages-mappings)))
                nil t org-vcard-default-language))
         (setq style
               (completing-read
@@ -1199,7 +1095,10 @@ argument of:
 
 ;;;###autoload
 (defun org-vcard-export-via-menu (style language version)
-  "User command for exporting to vCard via Emacs' menu bar."
+  "User command for exporting to vCard via Emacs' menu bar.
+
+STYLE defines the org format to use, LANGUAGE the language to use for
+vCard attribute mapping, and VERSION the vCard version."
   (let ((source nil)
         (destination nil))
     (setq source
@@ -1215,10 +1114,10 @@ argument of:
 
 ;;;###autoload
 (defun org-vcard-import (arg)
-  "User command to import from vCard. Intended only for interactive use.
+  "User command to import from vCard.  Intended only for interactive use.
 
-With no prefix argument, use the values of `org-vcard-default-version',
-`org-vcard-default-language' and `org-vcard-default-style'. With prefix
+With no prefix ARG, use the values of `org-vcard-default-version',
+`org-vcard-default-language' and `org-vcard-default-style'.  With prefix
 argument of:
 
 1 : prompt for version;
@@ -1254,7 +1153,7 @@ argument of:
                 (cadr
                  (assoc
                   style
-                  org-vcard-styles-languages-mappings)))))
+                  org-vcard--styles-languages-mappings)))))
              nil t org-vcard-default-version)))
      ((= 2 arg)
       (setq language
@@ -1265,7 +1164,7 @@ argument of:
               (cadr
                (assoc
                 style
-                org-vcard-styles-languages-mappings)))
+                org-vcard--styles-languages-mappings)))
              nil t org-vcard-default-language)))
      ((= 3 arg)
       (setq style
@@ -1288,7 +1187,7 @@ argument of:
                   (cadr
                    (assoc
                     style
-                    org-vcard-styles-languages-mappings)))))
+                    org-vcard--styles-languages-mappings)))))
                nil t org-vcard-default-version))
         (setq language
               (completing-read
@@ -1298,7 +1197,7 @@ argument of:
                 (cadr
                  (assoc
                   style
-                  org-vcard-styles-languages-mappings)))
+                  org-vcard--styles-languages-mappings)))
                nil t org-vcard-default-language))
         (setq style
               (completing-read
@@ -1317,30 +1216,38 @@ argument of:
 Each vCard is a list of cons cells, each cell containing the vCard property
 in the car, and the value of that property in the cdr.
 
-SOURCE must be one of \"file\", \"buffer\" or \"region\"."
+SOURCE must be one of \"file\", \"buffer\" or \"region\".
+
+If SOURCE is \"file\" and FILENAME is a filename, use that, otherwise,
+query the user for a filename."
+  (cond
+   ((string= "file" source)
+    (with-temp-buffer
+      (insert-file-contents-literally (or filename
+                                          (read-file-name
+                                           "Source filename? "
+                                           default-directory
+                                           org-vcard-default-import-file
+                                           t)))
+      (org-vcard-import-parse-buffer)))
+   ((string= "region" source)
+    (narrow-to-region (region-beginning)
+                      (region-end))
+    (org-vcard-import-parse-buffer))
+   ((string= "buffer" source)
+    (org-vcard-import-parse-buffer))
+   (t
+    (error "Invalid source type"))))
+
+(defun org-vcard-import-parse-buffer ()
+  "Read and parse (narrowed) buffer of vCards."
   (let ((property "")
         (value "")
         (charset "")
         (encoding "")
         (cards '())
         (current-card '()))
-    (cond
-     ((string= "file" source)
-      (unless filename
-        (setq filename
-              (read-file-name
-               "Source filename? "
-               default-directory
-               org-vcard-default-import-file
-               t))))
-     ((string= "region" source)
-      (narrow-to-region (region-beginning) (region-end)))
-     ((string= "buffer" source)
-      t)
-     (t
-      (error "Invalid source type")))
-    (with-temp-buffer
-      (insert-file-contents-literally filename)
+    (save-excursion
       (goto-char (point-min))
       (setq case-fold-search t)
       (while (re-search-forward "BEGIN:VCARD" (point-max) t)
@@ -1418,8 +1325,9 @@ SOURCE must be one of \"file\", \"buffer\" or \"region\"."
              t)
             ("2.1"
              (setq value
-                   (string-as-multibyte
-                    (encode-coding-string value charset)))))
+                   (decode-coding-string
+                    (encode-coding-string value charset)
+                    'utf-8-emacs))))
           (setq property
                 (org-vcard--canonicalise-property-name property))
           (setq current-card
@@ -1429,7 +1337,10 @@ SOURCE must be one of \"file\", \"buffer\" or \"region\"."
 
 ;;;###autoload
 (defun org-vcard-import-via-menu (style language version)
-  "User command for importing from vCard via Emacs' menu bar."
+  "User command for importing from vCard via Emacs' menu bar.
+
+STYLE defines the org format to use, LANGUAGE the language to use for
+vCard attribute mapping, and VERSION the vCard version."
   (let ((source nil)
         (destination nil))
     (setq source
@@ -1448,9 +1359,10 @@ SOURCE must be one of \"file\", \"buffer\" or \"region\"."
   "Dispatch export and import requests to the appropriate functions.
 
 Appropriate values for SOURCE and DESTINATION are determined by
-the functions called. Appropriate values for STYLE and VERSION are
+the functions called.  Appropriate values for STYLE and VERSION are
 determined by the contents of the `org-vcard-contacts-styles-mappings'
-variable. DIRECTION must be either 'export or 'import."
+variable.  LANGUAGE determines the language used for vCard files.
+DIRECTION must be either \='export or \='import."
   (let ((position nil))
     (org-vcard--check-contacts-styles)
     (setq org-vcard-active-style style)
@@ -1473,20 +1385,30 @@ variable. DIRECTION must be either 'export or 'import."
 ;;
 
 (defun org-vcard-reload-styles ()
-  "Reload the styles in the org-vcard 'styles' directory."
+  "Reload the styles in the org-vcard `styles' directory."
   (interactive)
   (setq org-vcard--styles-functions
         (org-vcard--create-styles-functions))
-  (setq org-vcard-styles-languages-mappings
+  (setq org-vcard--styles-languages-mappings
         (org-vcard--create-styles-languages-mappings))
   (org-vcard--create-org-vcard-mode-menu))
+
+
+(org-vcard-reload-styles)
 
 
 ;;
 ;; Export backend
 ;;
 
-(defun org-vcard-export-helper (&optional mode async subtreep visible-only body-only ext-plist)
+(defun org-vcard--export-helper (&optional mode _async subtreep _visible-only _body-only _ext-plist)
+  "Helper function to export org file containing contacts to vcf format.
+
+For use in an org export backend.  MODE is one of buffer, file, or open.
+SUBTREEP encodes whether to export the file or just the current tree.
+_ASYNC, _VISIBLE-ONLY, _BODY-ONLY, and _EXT-PLIST are currently ignored."
+  (when (get-buffer "*org-vcard-export*")
+    (kill-buffer "*org-vcard-export*"))
   (let ((filename (org-export-output-file-name ".vcf" subtreep))
         (source (if (region-active-p)
                     "region"
@@ -1505,20 +1427,31 @@ variable. DIRECTION must be either 'export or 'import."
     (when (equal mode 'open)
       (org-open-file org-vcard-default-export-file))))
 
-(defun org-vcard-export-helper-buffer (&optional async subtreep visible-only body-only ext-plist)
-  (org-vcard-export-helper 'buffer async subtreep visible-only body-only ext-plist))
-(defun org-vcard-export-helper-file (&optional async subtreep visible-only body-only ext-plist)
-  (org-vcard-export-helper 'file async subtreep visible-only body-only ext-plist))
-(defun org-vcard-export-helper-open (&optional async subtreep visible-only body-only ext-plist)
-  (org-vcard-export-helper 'open async subtreep visible-only body-only ext-plist))
+(defun org-vcard--export-helper-buffer (&optional async subtreep visible-only body-only ext-plist)
+  "Export an org file containing contacts to a vcf format buffer.
+For use in an org export backend.  See `org-vcard--export-helper' for
+valid values of ASYNC, SUBTREEP, VISIBLE-ONLY, BODY-ONLY, and EXT-PLIST."
+  (org-vcard--export-helper 'buffer async subtreep visible-only body-only ext-plist))
+
+(defun org-vcard--export-helper-file (&optional async subtreep visible-only body-only ext-plist)
+  "Export an org file containing contacts to a vcf file.
+For use in an org export backend.  See `org-vcard--export-helper' for
+valid values of ASYNC, SUBTREEP, VISIBLE-ONLY, BODY-ONLY, and EXT-PLIST."
+  (org-vcard--export-helper 'file async subtreep visible-only body-only ext-plist))
+
+(defun org-vcard--export-helper-open (&optional async subtreep visible-only body-only ext-plist)
+  "Export an org file containing contacts to a vcf file and open it.
+For use in an org export backend.  See `org-vcard--export-helper' for
+valid values of ASYNC, SUBTREEP, VISIBLE-ONLY, BODY-ONLY, and EXT-PLIST."
+  (org-vcard--export-helper 'open async subtreep visible-only body-only ext-plist))
 
 
 (org-export-define-backend
     'contacts
   '()
-  :menu-entry '(?v "Export to VCARD" ((?V "As VCARD buffer" org-vcard-export-helper-buffer)
-                                      (?v "As VCARD file" org-vcard-export-helper-file)
-                                      (?o "As VCARD file and open" org-vcard-export-helper-open))))
+  :menu-entry '(?v "Export to VCARD" ((?V "As VCARD buffer" org-vcard--export-helper-buffer)
+                                      (?v "As VCARD file" org-vcard--export-helper-file)
+                                      (?o "As VCARD file and open" org-vcard--export-helper-open))))
 
 
 ;;

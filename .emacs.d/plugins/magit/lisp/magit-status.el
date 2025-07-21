@@ -346,8 +346,12 @@ also contains other useful hints.")
 
 ;;;###autoload
 (defun magit-status-here ()
-  "Like `magit-status' but with non-nil `magit-status-goto-file-position'."
+  "Like `magit-status' but with non-nil `magit-status-goto-file-position'.
+Before doing so, save all file-visiting buffers belonging to the current
+repository without prompting."
   (interactive)
+  (let ((magit-inhibit-refresh t))
+    (magit-save-repository-buffers t))
   (let ((magit-status-goto-file-position t))
     (call-interactively #'magit-status)))
 
@@ -433,9 +437,6 @@ Type \\[magit-commit] to create a commit.
   :interactive nil
   :group 'magit-status
   (magit-hack-dir-local-variables)
-  (when magit-status-initial-section
-    (add-hook 'magit--initial-section-hook
-              #'magit-status-goto-initial-section nil t))
   (setq magit--imenu-group-types '(not branch commit)))
 
 (put 'magit-status-mode 'magit-diff-default-arguments
@@ -445,41 +446,46 @@ Type \\[magit-commit] to create a commit.
 
 ;;;###autoload
 (defun magit-status-setup-buffer (&optional directory)
-  (unless directory
-    (setq directory default-directory))
-  (when (file-remote-p directory)
-    (magit-git-version-assert))
-  (let* ((default-directory directory)
-         (d (magit-diff--get-value 'magit-status-mode
-                                   magit-status-use-buffer-arguments))
-         (l (magit-log--get-value 'magit-status-mode
-                                  magit-status-use-buffer-arguments))
-         (file (and magit-status-goto-file-position
-                    (magit-file-relative-name)))
-         (line (and file (save-restriction (widen) (line-number-at-pos))))
-         (col  (and file (save-restriction (widen) (current-column))))
-         (buf  (magit-setup-buffer #'magit-status-mode nil
-                 (magit-buffer-diff-args  (nth 0 d))
-                 (magit-buffer-diff-files (nth 1 d))
-                 (magit-buffer-log-args   (nth 0 l))
-                 (magit-buffer-log-files  (nth 1 l)))))
-    (when file
-      (with-current-buffer buf
-        (let ((staged (magit-get-section '((staged) (status)))))
-          (if (and staged
-                   (cadr (magit-diff--locate-hunk file line staged)))
-              (magit-diff--goto-position file line col staged)
-            (let ((unstaged (magit-get-section '((unstaged) (status)))))
-              (unless (and unstaged
-                           (magit-diff--goto-position file line col unstaged))
-                (when staged
-                  (magit-diff--goto-position file line col staged))))))))
-    buf))
+  (let ((default-directory (or directory default-directory)))
+    (when (file-remote-p default-directory)
+      (magit-git-version-assert))
+    (pcase-let
+        ((`(,dargs ,dfiles) (magit-diff--get-value 'magit-status-mode 'status))
+         (`(,largs ,lfiles) (magit-log--get-value  'magit-status-mode 'status)))
+      (magit-setup-buffer #'magit-status-mode nil
+        :initial-section #'magit-status-goto-initial-section
+        :select-section (and-let* ((args (magit-status--get-file-position)))
+                          (lambda () (apply #'magit-status--goto-file-position args)))
+        (magit-buffer-diff-args  dargs)
+        (magit-buffer-diff-files dfiles)
+        (magit-buffer-log-args   largs)
+        (magit-buffer-log-files  lfiles)))))
 
 (defun magit-status-refresh-buffer ()
   (magit-git-exit-code "update-index" "--refresh")
   (magit-insert-section (status)
     (magit-run-section-hook 'magit-status-sections-hook)))
+
+(defun magit-status--get-file-position ()
+  (and-let* ((magit-status-goto-file-position)
+             (file (magit-file-relative-name)))
+    (save-excursion
+      (widen)
+      (list file (line-number-at-pos) (current-column)))))
+
+(defun magit-status--goto-file-position (file line column)
+  (pcase-let ((`(,upos ,uloc)
+               (magit-diff--locate-file-position file line column 'unstaged))
+              (`(,spos ,sloc)
+               (magit-diff--locate-file-position file line column 'staged)))
+    (cond ((eq uloc 'line) (goto-char upos))
+          ((eq sloc 'line) (goto-char spos))
+          ((eq uloc 'hunk) (goto-char upos))
+          ((eq sloc 'hunk) (goto-char spos))
+          (upos            (goto-char upos))
+          (spos            (goto-char spos)))
+    (when (or upos spos)
+      (magit-section-reveal (magit-current-section)))))
 
 (defun magit-status-goto-initial-section ()
   "Jump to the section specified by `magit-status-initial-section'."

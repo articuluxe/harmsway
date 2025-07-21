@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 ;;; conda.el --- Work with your conda environments
 
 ;; Copyright (C) 2016-2024 Rami Chowdhury
@@ -21,6 +22,7 @@
 (require 'pythonic)
 (require 'f)
 (require 'eshell)
+(require 'em-dirs)
 (require 'json)
 
 ;; TODO:
@@ -274,42 +276,54 @@ Set for the lifetime of the process.")
                (format " (currently %s)" conda-env-current-name)
              ""))))
 
-(defun conda--contains-env-yml? (candidate)
-  "Does CANDIDATE contain an environment.yml?"
-  (f-exists? (f-expand "environment.yml" candidate)))
+(defcustom conda-env-yaml-base-name "environment"
+  "Base filename for acceptable Conda environment YAML files."
+  :type 'string
+  :safe #'stringp
+  :group 'conda)
 
-(defun conda--find-env-yml (dir)
-  "Find an environment.yml in DIR or its parent directories."
+(make-variable-buffer-local
+ 'conda-env-yaml-base-name)
+
+(defun conda--env-yaml-expand (dir)
+  "If DIR contains an environment YAML file named as `conda-env-yaml-base-name',
+its absolute path is returned. Otherwise, it returns nil."
+  (seq-find #'f-exists?
+   (list (f-expand (concat conda-env-yaml-base-name ".yaml") dir)
+         (f-expand (concat conda-env-yaml-base-name ".yml") dir))))
+
+(defun conda--find-env-yaml (&optional dir)
+  "Finds the path of an environment YAML file in DIR,
+or one of its parent directories, or else returns nil."
   ;; TODO: implement an optimized finder with e.g. projectile? Or a series of
   ;; finder functions, that stop at the project root when traversing
-  (let ((containing-path (f-traverse-upwards 'conda--contains-env-yml? dir)))
-    (if containing-path
-        (f-expand "environment.yml" containing-path)
-      nil)))
+  (let* ((dir (or dir default-directory))
+         (containing-path (f-traverse-upwards #'conda--env-yaml-expand dir)))
+    (if containing-path (conda--env-yaml-expand containing-path))))
 
-(defun conda--get-name-from-env-yml (filename)
-  "Pull the `name` property out of the YAML file at FILENAME."
+(defun conda--get-name-from-env-yaml (&optional file-path)
+  "If FILE-PATH is non-nil, retrieves the `name` property
+from the YAML file FILE-PATH. Otherwise, returns nil."
   ;; TODO: find a better way than slurping it in and using a regex...
-  (when filename
-    (let ((env-yml-contents (f-read-text filename)))
-      (if (string-match "name:[ ]*\\([A-z0-9-_.]+\\)[ ]*$" env-yml-contents)
-          (match-string 1 env-yml-contents)
+  (when (and file-path (file-exists-p file-path))
+    (let ((env-yaml-contents (f-read-text file-path)))
+      (if (string-match "name:[ ]*\\([A-z0-9-_.]+\\)[ ]*$" env-yaml-contents)
+          (match-string 1 env-yaml-contents)
         nil))))
 
 (defun conda--infer-env-from-buffer ()
-  "Search up the project tree for an `environment.yml` defining a conda env."
-  (let* ((filename (buffer-file-name))
-         (working-dir (if filename
-                          (f-dirname filename)
-                        default-directory)))
-    (when working-dir
-      (or
-       (conda--get-name-from-env-yml (conda--find-env-yml working-dir))
-       (if (or
-            conda-activate-base-by-default
-            (alist-get 'auto_activate_base (conda--get-config)))
-           "base"
-	 nil)))))
+  "Infer conda environment name by looking for an environment
+YAML file in parent directories, or in `default-directory`.
+
+Otherwise use \"base\" environment if available."
+  (let* ((filename (buffer-file-name)))
+    (or (conda--get-name-from-env-yaml
+         (conda--find-env-yaml
+          (and filename (f-dirname filename))))
+        (if (or conda-activate-base-by-default
+                (alist-get 'auto_activate_base
+                           (conda--get-config)))
+            "base"))))
 
 (cl-defstruct conda-env-params
   "Parameters necessary for (de)activating a Conda environment."
@@ -489,10 +503,12 @@ Returns a list of new path elements."
 (defun conda-env-deactivate ()
   "Deactivate the current conda env."
   (interactive)
-  (when (bound-and-true-p conda-env-current-path)
+  (if (not (bound-and-true-p conda-env-current-path))
+      (message "No Conda environment is active")
     (run-hooks 'conda-predeactivate-hook)
     (setq python-shell-virtualenv-root nil)
-    (let ((params (conda--get-deactivation-parameters conda-env-current-path)))
+    (let ((params (conda--get-deactivation-parameters conda-env-current-path))
+          (env-name conda-env-current-name))
       (if (not (eq nil (conda-env-params-vars-export params)))
           (conda--update-env-from-params params)
         (progn ;; otherwise we fall back to legacy heuristics
@@ -500,14 +516,14 @@ Returns a list of new path elements."
           (setenv "CONDA_PREFIX" nil)))
       (setq exec-path (s-split (if (eq system-type 'windows-nt) ";" ":" )
                                (conda-env-params-path params)))
-      (setenv "PATH" (conda-env-params-path params)))
+      (setenv "PATH" (conda-env-params-path params))
     (setq conda-env-current-path nil)
     (setq conda-env-current-name nil)
     (conda--eshell-update-path)
     (conda--set-system-gud-pdb-command-name)
     (run-hooks 'conda-postdeactivate-hook)
     (when (called-interactively-p 'interactive)
-      (message "conda env deactivated"))))
+      (message "Deactivated Conda environment <%s>" env-name)))))
 
 ;;;###autoload
 (defun conda-env-activate (&optional name)
@@ -678,18 +694,189 @@ Returns a list of new path elements."
 
 This can be set by a buffer-local or project-local variable (e.g. a
 `.dir-locals.el` that defines `conda-project-env-path`), or inferred from an
-`environment.yml` or similar at the project level."
+environment YAML file or similar at the project level."
   (interactive)
-  (let* ((inferred-env (conda--infer-env-from-buffer))
-         (env-path (cond
-                    ((bound-and-true-p conda-project-env-path) conda-project-env-path)
-                    ((not (eql inferred-env nil)) (conda-env-name-to-dir inferred-env))
-                    (t nil))))
+  (let ((env-path (if (bound-and-true-p conda-project-env-path) conda-project-env-path
+                    (let ((inferred-env (conda--infer-env-from-buffer)))
+                      (if (not (eql inferred-env nil))
+                          (conda-env-name-to-dir inferred-env))))))
 
     (if (not (eql env-path nil))
         (conda-env-activate env-path)
       (if conda-message-on-environment-switch
           (message "No Conda environment found for <%s>" (buffer-file-name))))))
+
+(defun conda--env-process-exit-message (op env-name &optional callback)
+  ;; capture dynamically scoped closures
+  (lambda (proc _event)
+    (when (memq (process-status proc) '(exit signal))
+      (if (zerop (process-exit-status proc))
+          (message "Finished %s Conda environment <%s>" op env-name)
+        (message "Error while %s Conda environment <%s>" op env-name)))
+    (when callback (funcall callback proc _event))))
+
+;;;###autoload
+(defun conda-env-yaml-process-for-buffer (&optional remove env-file)
+  "Operate on conda environment defined by ENV-FILE, a YAML file.
+
+When ENV-FILE is nil, it attempts to look it up in the parent directories
+If not found it raises an error. When ENV-FILE is non-nil, or is found,
+and REMOVE is nil, it calls a shell process to update environment,
+or to create it if it doesn't yet exist.
+
+If REMOVE is non-nil it attempts to remove the environment if exists,
+or reports an error otherwise."
+  (interactive "P")
+  (let* ((env-file
+          (cond ((and env-file (not (f-exists-p env-file)))
+                 (user-error "Environment YAML file %s does not exist." env-file))
+                (env-file) ; if the file exists, use it!
+                ((conda--find-env-yaml
+                  (if-let ((filename (buffer-file-name)))
+                      (f-dirname filename) default-directory)))))
+         (env-name
+          (when env-file
+            (or (conda--get-name-from-env-yaml env-file)
+                (user-error "Could not parse environment name from %s" env-file))))
+         (params
+          (cond (remove (let* ((candidates (conda-env-candidates))
+                               (env-name (and (member env-name candidates) env-name))
+                               (env-name (completing-read "Remove Conda environment: "
+                                          candidates nil t nil nil env-name)))
+                       (list "Removing" "remove" "-y" "-n" env-name)))
+                ((member env-name (conda-env-candidates))
+                 (list "Updating" "update" "-f" env-file))
+                (t (list "Creating" "create" "-f" env-file))))
+         (term-buffer
+          (unless (and remove (not (y-or-n-p (format "Proceed with removing Conda environment <%s>?"
+                                                  (nth 4 params)))))
+            (when (and remove (bound-and-true-p conda-env-current-path))
+              (conda-env-deactivate))
+            (apply #'make-term (concat "conda-env-" (cadr params))
+                   (conda--get-executable-path) nil "env" (cdr params)))))
+    (when term-buffer
+      (message "%s Conda environment <%s>" (car params) env-name)
+      (let* ((proc (get-buffer-process term-buffer))
+             (current-sentinel (process-sentinel proc)))
+        (set-process-sentinel proc
+         (conda--env-process-exit-message
+          (downcase (car params)) env-name
+          current-sentinel)))
+      (with-current-buffer term-buffer
+        (unless (term-check-proc term-buffer)
+          (term-mode)
+          (term-line-mode)))
+      (switch-to-buffer term-buffer))))
+
+(defcustom conda-env-yaml-default-channels '("conda-forge" "defaults")
+  "List of Anaconda channels for new environment YAML files,
+used by `conda-env-manage-for-buffer'."
+  :type '(list string)
+  :group 'conda)
+
+(defcustom conda-env-yaml-default-dependencies '("python" "pip")
+  "List of Anaconda package dependencies for new environment YAML files,
+used by `conda-env-manage-for-buffer'."
+  :type '(list string)
+  :group 'conda)
+
+(defcustom conda-env-yaml-default-pip-dependencies '("build" "wheel")
+  "List of PIP package dependencies for new environment YAML files,
+used by `conda-env-manage-for-buffer'."
+  :type '(list string)
+  :group 'conda)
+
+(defcustom conda-pip-requirements-filename "requirements.txt"
+  "Filename for PIP requirements to be detected when generating new Conda environment YAML files."
+  :type 'string
+  :safe #'stringp
+  :group 'conda)
+
+(make-variable-buffer-local
+ 'conda-pip-requirements-filename)
+
+(defun conda--pip-requirements-file-expand (dir)
+  (let ((path (f-expand conda-pip-requirements-filename dir)))
+    (if (f-exists? path) path)))
+
+(defun conda--find-pip-requirements-file (&optional dir)
+  "Finds the path of an `conda-env-yaml-pip-requirements-filename' file in DIR,
+or one of its parent directories, or else returns nil."
+  (let* ((dir (or dir (if-let ((file-name (buffer-file-name))) (f-dirname (f-expand file-name)))))
+         (containing-path (and dir (f-traverse-upwards #'conda--pip-requirements-file-expand dir))))
+    (and containing-path (conda--pip-requirements-file-expand containing-path))))
+
+(defun conda--choose-new-environment-name (&optional prompt)
+  "Prompt for new environment name with PROMPT, ensuring it does not already exist."
+  (let ((env-name (read-string (or prompt "Enter name for new conda environment: "))))
+    (if (member env-name (conda-env-candidates))
+        (conda--choose-new-environment-name (format "Conda environment %s already exists. Try again: " env-name))
+      env-name)))
+
+;;;###autoload
+(defun conda-env-manage-for-buffer (&optional arg)
+  "Edit the Conda environment YAML file implied by the current buffer,
+or create, update, remove environments using it.
+
+If an environment YAML file named `conda-env-yaml-base-name' exists, then is used as the reference.
+
+If called without \\[universal-argument] prefix, and an environment file exists, then opens it for editing.
+If called without \\[universal-argument] prefix, and no environment file exists, then prompts for an
+environment name, and generates a buffer for a new YAML file in the root directory of the current project,
+or in the `default-directory'.
+
+The newly generated environment YAML file takes its defaults from these variables:
+
+- `conda-env-yaml-default-channels',
+- `conda-env-yaml-default-dependencies',
+- `conda-env-yaml-default-pip-dependencies'.
+
+If file named `conda-pip-requirements-filename' exists in one of the parent
+directories, then the generated file will be placed next to it instead,
+and will be referenced directly for PIP dependencies, instead of using
+the `conda-env-yaml-default-pip-dependencies' variable.
+
+If called with one \\[universal-argument] prefix, and an environment file exists,
+then updates the environment from the file, or creates it if not yet exists.
+
+If called with two \\[universal-argument] prefix, it prompts for an environment
+to be removed. In environment YAML file exists its name is used as default."
+  (interactive "P")
+  (let* ((dir (if-let ((filename (buffer-file-name)))
+                  (f-dirname filename) default-directory))
+         (env-file (conda--find-env-yaml dir))
+         (project (project-current dir)))
+    (cond
+     ((and (not env-file) (or (not arg) (and (consp arg) (= (car arg) 4))))
+      (let* ((pip-reqs-file (conda--find-pip-requirements-file))
+             (env-dir (or (if pip-reqs-file (f-dirname pip-reqs-file))
+                          (if project (project-root project)) dir))
+             (env-file (f-expand (concat conda-env-yaml-base-name ".yaml") env-dir)))
+        (find-file env-file)
+        (insert "name: " (conda--choose-new-environment-name))
+        (when conda-env-yaml-default-channels
+          (insert (mapconcat #'identity
+                   (cons "\nchannels:" conda-env-yaml-default-channels)
+                   "\n  - ")))
+        (when conda-env-yaml-default-dependencies
+          (insert (mapconcat #'identity
+                   (cons "\ndependencies:" conda-env-yaml-default-dependencies)
+                   "\n  - ")))
+        (cond
+         (pip-reqs-file
+          (insert "\n  - pip:\n    - -r " conda-pip-requirements-filename))
+         (conda-env-yaml-default-pip-dependencies
+          (insert (mapconcat #'identity
+                   (cons "\n  - pip:" conda-env-yaml-default-pip-dependencies)
+                   "\n    - "))))
+        (insert "\n")
+        (message "Generated new Conda environment file %s" env-file)))
+     ((consp arg)
+      (conda-env-yaml-process-for-buffer (<= 14 (car arg)) env-file))
+     ;; only interactive universal prefix arguments are expected
+     (arg (error "Unsupported prefix argument %s" arg))
+     (env-file (find-file env-file)
+      (message "Opened Conda environment file %s" env-file)))))
 
 (defun conda--switch-buffer-auto-activate (&rest args)
   "Add Conda environment activation if a buffer has a file, handling ARGS."

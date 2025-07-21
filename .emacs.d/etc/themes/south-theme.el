@@ -1,11 +1,11 @@
 ;;; south-theme.el --- A bright, summery companion to Nord  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024  Sophie Bosio
+;; Copyright (C) 2024-2025  Sophie Bosio
 
 ;; Author: Sophie Bosio <sophie.bosio@outlook.com>
 ;; URL: https://github.com/SophieBosio/south-theme
 ;; Package-Version: 0.0.1
-;; Package-Requires: ((emacs "26.3") (magit-section "0.1"))
+;; Package-Requires: ((emacs "26.3") (magit-section "0.1") (autothemer "0.2.17"))
 ;; Keywords: nord, light, solarized, blue, green
 
 ;;; License:

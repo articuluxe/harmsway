@@ -321,6 +321,10 @@ region is active, act on all lines touched by the region."
    (abbrev)))
 
 (defvar git-rebase-line-regexps
+  ;; 1: action, 2: option, 3: target, 4: "#", 5: description.
+  ;;
+  ;; <action> <commit> [[# ] <oneline>]
+  ;; fixup [-C|-c] <commit> [[# ] <oneline>]
   `((commit . ,(concat
                 (regexp-opt '("d"    "drop"
                               "e"    "edit"
@@ -331,7 +335,8 @@ region is active, act on all lines touched by the region."
                               "r"    "reword"
                               "s"    "squash")
                             "\\(?1:")
-                " \\(?3:[^ \n]+\\) ?\\(?4:.*\\)"))
+                " \\(?3:[^ \n]+\\)"
+                "\\(?: \\(?4:# \\)?\\(?5:.*\\)\\)?"))
     (exec . "\\(?1:x\\|exec\\) \\(?3:.*\\)")
     (bare . ,(concat (regexp-opt '("b" "break" "noop") "\\(?1:")
                      " *$"))
@@ -339,11 +344,14 @@ region is active, act on all lines touched by the region."
                                     "t" "reset"
                                     "u" "update-ref")
                                   "\\(?1:")
-                      " \\(?3:[^ \n]+\\) ?\\(?4:.*\\)"))
+                      " \\(?3:[^ \n]+\\)"
+                      "\\(?: \\(?4:# \\)?\\(?5:.*\\)\\)?"))
+    ;; merge [-C <commit> | -c <commit>] <label> [# <oneline>]
+    ;; <commit> is matched by group 22 (part of group 2), not group 3
     (merge . ,(concat "\\(?1:m\\|merge\\) "
-                      "\\(?:\\(?2:-[cC] [^ \n]+\\) \\)?"
+                      "\\(?:\\(?2:\\(?21:-[cC]\\) \\(?22:[^ \n]+\\)\\) \\)?"
                       "\\(?3:[^ \n]+\\)"
-                      " ?\\(?4:.*\\)"))))
+                      "\\(?: \\(?4:# \\)?\\(?5:.*\\)\\)?"))))
 
 ;;;###autoload
 (defun git-rebase-current-line (&optional batch)
@@ -356,7 +364,7 @@ BATCH also ignores commented lines."
     (goto-char (line-beginning-position))
     (if-let ((re-start (if batch
                            "^"
-                         (format "^\\(?5:%s\\)? *"
+                         (format "^\\(?99:%s\\)? *"
                                  (regexp-quote comment-start))))
              (type (seq-some (pcase-lambda (`(,type . ,re))
                                (let ((case-fold-search nil))
@@ -369,8 +377,8 @@ BATCH also ignores commented lines."
                                action))
          :action-options (match-string-no-properties 2)
          :target         (match-string-no-properties 3)
-         :trailer        (match-string-no-properties 4)
-         :comment-p      (and (match-string 5) t))
+         :trailer        (match-string-no-properties 5)
+         :comment-p      (and (match-string 99) t))
       (and (not batch)
            ;; Use empty object rather than nil to ease handling.
            (git-rebase-action)))))
@@ -394,7 +402,10 @@ of its action type."
             ((and action (eq action-type 'commit))
              (let ((inhibit-read-only t))
                (magit-delete-line)
-               (insert (concat action " " target " " trailer "\n"))))
+               (insert (concat action " " target " "))
+               (when (magit-git-version>= "2.50.0")
+                 (insert "# "))
+               (insert (concat trailer "\n"))))
             ((and (not action) action-type)
              (let ((inhibit-read-only t))
                (if comment-p
@@ -804,7 +815,8 @@ running \"man git-rebase\" at the command line) for details."
   `((,(concat "^" (cdr (assq 'commit git-rebase-line-regexps)))
      (1 'git-rebase-action)
      (3 'git-rebase-hash)
-     (4 'git-rebase-description))
+     (4 'font-lock-comment-face nil t)
+     (5 'git-rebase-description nil t))
     (,(concat "^" (cdr (assq 'exec git-rebase-line-regexps)))
      (1 'git-rebase-action)
      (3 'git-rebase-description))
@@ -813,32 +825,33 @@ running \"man git-rebase\" at the command line) for details."
     (,(concat "^" (cdr (assq 'label git-rebase-line-regexps)))
      (1 'git-rebase-action)
      (3 'git-rebase-label)
-     (4 'font-lock-comment-face))
-    ("^\\(m\\(?:erge\\)?\\) -[Cc] \\([^ \n]+\\) \\([^ \n]+\\)\\( #.*\\)?"
-     (1 'git-rebase-action)
-     (2 'git-rebase-hash)
-     (3 'git-rebase-label)
-     (4 'font-lock-comment-face))
-    ("^\\(m\\(?:erge\\)?\\) \\([^ \n]+\\)"
-     (1 'git-rebase-action)
-     (2 'git-rebase-label))
+     (4 'font-lock-comment-face nil t)
+     (5 'git-rebase-description nil t))
+    (,(concat "^" (cdr (assq 'merge git-rebase-line-regexps)))
+     (1  'git-rebase-action)
+     (21 'git-rebase-action nil t)
+     (22 'git-rebase-hash t t)
+     (3  'magit-branch-local)
+     (4  'font-lock-comment-face nil t)
+     (5  'git-rebase-description nil t))
+    (,(format "^%s Branch \\(.*\\)" comment-start)
+     (1 'magit-branch-local t))
     ("^drop \\(.+\\)"
-     1 'git-rebase-killed-action t)
+     (1 'git-rebase-killed-action t))
     (,(concat git-rebase-comment-re " *"
               (cdr (assq 'commit git-rebase-line-regexps)))
-     0 'git-rebase-killed-action t)
-    (git-rebase-match-comment-line 0 'font-lock-comment-face)
+     (0 'git-rebase-killed-action t))
+    (git-rebase-match-comment-line
+     (0 'font-lock-comment-face))
     ("\\[[^[]*\\]"
-     0 'magit-keyword t)
+     (0 'magit-keyword t))
     ("\\(?:fixup!\\|squash!\\|amend!\\)"
-     0 'magit-keyword-squash t)
+     (0 'magit-keyword-squash t))
     (,(format "^%s Rebase \\([^ ]*\\) onto \\([^ ]*\\)" comment-start)
      (1 'git-rebase-comment-hash t)
      (2 'git-rebase-comment-hash t))
     (,(format "^%s \\(Commands:\\)" comment-start)
-     (1 'git-rebase-comment-heading t))
-    (,(format "^%s Branch \\(.*\\)" comment-start)
-     (1 'git-rebase-label t))))
+     (1 'git-rebase-comment-heading t))))
 
 (defun git-rebase-mode-show-keybindings ()
   "Modify the \"Commands:\" section of the comment Git generates.

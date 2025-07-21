@@ -75,7 +75,7 @@ The value can be overrided by `type' slot of render."
                  (const :tag "Help Echo" help-echo)
                  (const :tag "After" after)
                  (other :tag "Before" before))
-  :group 'go-translate)
+  :group 'gt)
 
 (defvar gt-overlay-render-map
   (let ((map (make-sparse-keymap)))

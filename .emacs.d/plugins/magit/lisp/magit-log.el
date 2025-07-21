@@ -51,6 +51,7 @@
 (defvar magit-buffer-margin)
 (defvar magit-status-margin)
 (defvar magit-status-sections-hook)
+(defvar magit-status-use-buffer-arguments)
 
 (require 'ansi-color)
 (require 'crm)
@@ -372,8 +373,7 @@ commits before and half after."
 
 (cl-defmethod transient-init-value ((obj magit-log-prefix))
   (pcase-let ((`(,args ,files)
-               (magit-log--get-value 'magit-log-mode
-                                     magit-prefix-use-buffer-arguments)))
+               (magit-log--get-value 'magit-log-mode 'prefix)))
     (when-let (((not (eq transient-current-command 'magit-dispatch)))
                (file (magit-file-relative-name)))
       (setq files (list file)))
@@ -397,11 +397,17 @@ commits before and half after."
   "Return the current log arguments."
   (if (memq transient-current-command '(magit-log magit-log-refresh))
       (magit--transient-args-and-files)
-    (magit-log--get-value (or mode 'magit-log-mode))))
+    (magit-log--get-value (or mode 'magit-log-mode) 'direct)))
 
 (defun magit-log--get-value (mode &optional use-buffer-args)
-  (unless use-buffer-args
-    (setq use-buffer-args magit-direct-use-buffer-arguments))
+  (setq use-buffer-args
+        (pcase-exhaustive use-buffer-args
+          ('prefix magit-prefix-use-buffer-arguments)
+          ('status magit-status-use-buffer-arguments)
+          ('direct magit-direct-use-buffer-arguments)
+          ('nil    magit-direct-use-buffer-arguments)
+          ((or 'always 'selected 'current 'never)
+           use-buffer-args)))
   (let (args files)
     (cond
      ((and (memq use-buffer-args '(always selected current))
@@ -780,7 +786,7 @@ restrict the log to the lines that the region touches."
     (user-error "Buffer isn't visiting a file")))
 
 ;;;###autoload
-(defun magit-log-trace-definition (file fn rev)
+(defun magit-log-trace-definition (file fn commit)
   "Show log for the definition at point."
   (interactive (list (or (magit-file-relative-name)
                          (user-error "Buffer isn't visiting a file"))
@@ -791,7 +797,7 @@ restrict the log to the lines that the region touches."
                          "HEAD")))
   (require 'magit)
   (magit-log-setup-buffer
-   (list rev)
+   (list commit)
    (cons (format "-L:%s%s:%s"
                  (string-replace ":" "\\:" (regexp-quote fn))
                  (if (derived-mode-p 'lisp-mode 'emacs-lisp-mode)
@@ -937,10 +943,10 @@ is displayed in the current frame."
                       "\\[magit-log-double-commit-limit] first"))))
         (user-error "Parent %s does not exist" parent-rev)))))
 
-(defun magit-log-move-to-revision (rev)
-  "Read a revision and move to it in current log buffer.
+(defun magit-log-move-to-revision (commit)
+  "Read a commit and move to it in current log buffer.
 
-If the chosen reference or revision isn't being displayed in
+If the chosen reference or commit isn't being displayed in
 the current log buffer, then inform the user about that and do
 nothing else.
 
@@ -962,8 +968,8 @@ of the current repository first; creating it if necessary."
                (pop-to-buffer-same-window buf)))
             (t
              (apply #'magit-log-all-branches (magit-log-arguments))))
-    (unless (magit-log-goto-commit-section (magit-rev-abbrev rev))
-      (user-error "%s isn't visible in the current log buffer" rev))))
+    (unless (magit-log-goto-commit-section (magit-rev-abbrev commit))
+      (user-error "%s isn't visible in the current log buffer" commit))))
 
 ;;;; Shortlog Commands
 
@@ -996,12 +1002,12 @@ of the current repository first; creating it if necessary."
         (switch-to-buffer-other-window (current-buffer))))))
 
 ;;;###autoload
-(defun magit-shortlog-since (rev args)
+(defun magit-shortlog-since (commit args)
   "Show a history summary for commits since REV."
   (interactive
    (list (magit-read-branch-or-commit "Shortlog since" (magit-get-current-tag))
          (transient-args 'magit-shortlog)))
-  (magit-git-shortlog (concat rev "..") args))
+  (magit-git-shortlog (concat commit "..") args))
 
 ;;;###autoload
 (defun magit-shortlog-range (rev-or-range args)
@@ -1745,8 +1751,7 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
   (magit-log-select-setup-buffer
    (or branch (magit-get-current-branch) "HEAD")
    (append args
-           (car (magit-log--get-value 'magit-log-select-mode
-                                      magit-direct-use-buffer-arguments))))
+           (car (magit-log--get-value 'magit-log-select-mode 'direct))))
   (if initial
       (magit-log-goto-commit-section initial)
     (while-let ((rev (magit-section-value-if 'commit))

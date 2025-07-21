@@ -101,20 +101,21 @@ only serves as documentation.")
 (cl-defstruct (ghub--req
                (:constructor ghub--make-req)
                (:copier nil))
-  (url        nil :read-only nil)
-  (forge      nil :read-only t)
-  (silent     nil :read-only t)
-  (method     nil :read-only t)
-  (headers    nil :read-only t)
-  (handler    nil :read-only t)
-  (unpaginate nil :read-only nil)
-  (noerror    nil :read-only t)
-  (reader     nil :read-only t)
-  (buffer     nil :read-only t)
-  (callback   nil :read-only t)
-  (errorback  nil :read-only t)
-  (value      nil :read-only nil)
-  (extra      nil :read-only nil))
+  (url         nil :read-only nil)
+  (forge       nil :read-only t)
+  (silent      nil :read-only t)
+  (method      nil :read-only t)
+  (headers     nil :read-only t)
+  (handler     nil :read-only t)
+  (unpaginate  nil :read-only nil)
+  (noerror     nil :read-only t)
+  (reader      nil :read-only t)
+  (buffer      nil :read-only t)
+  (synchronous nil :read-only t)
+  (callback    nil :read-only t)
+  (errorback   nil :read-only t)
+  (value       nil :read-only nil)
+  (extra       nil :read-only nil))
 
 (defalias 'ghub-req-extra #'ghub--req-extra)
 
@@ -315,6 +316,7 @@ Both callbacks are called with four arguments.
      argument.
   4. A `ghub--req' struct, which can be passed to `ghub-continue'
      (which see) to retrieve the next page, if any."
+  (declare (indent defun))
   (cl-assert (or (booleanp unpaginate) (natnump unpaginate)))
   (unless (string-prefix-p "/" resource)
     (setq resource (concat "/" resource)))
@@ -338,32 +340,21 @@ Both callbacks are called with four arguments.
   (ghub--retrieve
    (ghub--encode-payload payload)
    (ghub--make-req
-    :url (url-generic-parse-url
-          (concat (if (member host ghub-insecure-hosts) "http://" "https://")
-                  (cond ((and (equal resource "/graphql")
-                              (string-suffix-p "/v3" host))
-                         ;; Needed for some Github Enterprise instances.
-                         (substring host 0 -3))
-                        ((and (equal resource "/api/graphql")
-                              (string-suffix-p "/api/v4" host))
-                         ;; Needed for all Gitlab instances.
-                         (substring host 0 -7))
-                        (host))
-                  resource
-                  (and query (concat "?" (ghub--url-encode-params query)))))
-    :forge      forge
-    :silent     silent
-    :method     (encode-coding-string method 'utf-8) ;#35
-    :headers    (ghub--headers headers host auth username forge)
-    :handler    #'ghub--handle-response
-    :unpaginate unpaginate
-    :noerror    noerror
-    :reader     reader
-    :buffer     (current-buffer)
-    :callback   callback
-    :errorback  errorback
-    :value      value
-    :extra      extra)))
+    :url         (ghub--encode-url host resource query)
+    :forge       forge
+    :silent      silent
+    :method      (encode-coding-string method 'utf-8) ;#35
+    :headers     (ghub--headers headers host auth username forge)
+    :handler     #'ghub--handle-response
+    :unpaginate  unpaginate
+    :noerror     noerror
+    :reader      reader
+    :buffer      (current-buffer)
+    :synchronous (not (or callback errorback))
+    :callback    callback
+    :errorback   errorback
+    :value       value
+    :extra       extra)))
 
 (defun ghub-continue (req)
   "If there is a next page, then retrieve that.
@@ -466,7 +457,7 @@ Signal an error if the id cannot be determined."
                                  name)
                          nil :forge 'gitlab
                          :username username :auth auth :host host))))
-        ((or 'gitea 'gogs)
+        ((or 'forgejo 'gitea 'gogs)
          (number-to-string
           (alist-get
            'id (ghub-get (format "/repos/%s/%s" owner name)
@@ -491,19 +482,18 @@ Signal an error if the id cannot be determined."
 
 (cl-defun ghub--retrieve (payload req)
   (pcase-let*
-      (((cl-struct ghub--req headers method url handler silent) req)
+      (((cl-struct ghub--req headers method url handler silent synchronous) req)
        (url-request-extra-headers
         (if (functionp headers) (funcall headers) headers))
        (url-request-method method)
        (url-request-data payload)
        (url-show-status nil))
-    (if (or (ghub--req-callback  req)
-            (ghub--req-errorback req))
-        (url-retrieve url handler (list req) silent)
-      (if-let ((buf (url-retrieve-synchronously url silent)))
-          (with-current-buffer buf
-            (funcall handler (car url-callback-arguments) req))
-        (error "ghub--retrieve: No buffer returned")))))
+    (if synchronous
+        (if-let ((buf (url-retrieve-synchronously url silent)))
+            (with-current-buffer buf
+              (funcall handler (car url-callback-arguments) req))
+          (error "ghub--retrieve: No buffer returned"))
+      (url-retrieve url handler (list req) silent))))
 
 (defun ghub--handle-response (status req)
   (let ((buf (current-buffer)))
@@ -647,6 +637,22 @@ Signal an error if the id cannot be determined."
                         :false-object nil)
         'utf-8))))
 
+(defun ghub--encode-url (host resource &optional query)
+  (url-generic-parse-url
+   (concat (if (member host ghub-insecure-hosts) "http://" "https://")
+           ;; Needed for some Github Enterprise instances.
+           (cond
+            ((and (equal resource "/graphql")
+                  (string-suffix-p "/v3" host))
+             (substring host 0 -3))
+            ;; Needed for all Gitlab instances.
+            ((and (equal resource "/api/graphql")
+                  (string-suffix-p "/api/v4" host))
+             (substring host 0 -7))
+            (host))
+           resource
+           (and query (concat "?" (ghub--url-encode-params query))))))
+
 (defun ghub--url-encode-params (params)
   (mapconcat (lambda (param)
                (pcase-let ((`(,key . ,val) param))
@@ -698,13 +704,13 @@ and call `auth-source-forget+'."
     (setq username (ghub--username host forge)))
   (if (eq auth 'basic)
       (pcase-exhaustive forge
-        ((or 'nil 'gitea 'gogs 'bitbucket)
+        ((or 'nil 'forgejo 'gitea 'gogs 'bitbucket)
          (cons "Authorization" (ghub--basic-auth host username)))
         ((or 'github 'gitlab)
          (error "%s does not support basic authentication"
                 (capitalize (symbol-name forge)))))
     (cons (pcase-exhaustive forge
-            ((or 'nil 'github 'gitea 'gogs 'bitbucket) "Authorization")
+            ((or 'nil 'forgejo 'github 'gitea 'gogs 'bitbucket) "Authorization")
             ('gitlab "Private-Token"))
           (if (eq forge 'bitbucket)
               ;; For some undocumented reason Bitbucket supports
@@ -799,4 +805,5 @@ or (info \"(ghub)Getting Started\") for instructions."
 ;;; _
 (provide 'ghub)
 (require 'ghub-graphql)
+(require 'ghub-legacy)
 ;;; ghub.el ends here

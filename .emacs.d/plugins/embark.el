@@ -1123,7 +1123,8 @@ If CYCLE is non-nil bind `embark-cycle'."
 This function uses the eldoc REPORT callback and is meant to be
 added to `eldoc-documentation-functions'."
   (when-let (((not (minibufferp)))
-             (target (car (embark--targets))))
+             (target (let (file-name-handler-alist) ;; Prevent Tramp slowdown.
+                       (car (embark--targets)))))
     (funcall report
              (format "Embark on %s ‘%s’"
                      (plist-get target :type)
@@ -1135,7 +1136,8 @@ added to `eldoc-documentation-functions'."
 This function uses the eldoc REPORT callback and is meant to be
 added to `eldoc-documentation-functions'."
   (when-let (((not (minibufferp)))
-             (targets (embark--targets)))
+             (targets (let (file-name-handler-alist) ;; Prevent Tramp slowdown.
+                        (embark--targets))))
     (funcall report
              (format "Embark target types: %s"
                      (mapconcat
@@ -4067,14 +4069,15 @@ not handle that themselves."
   (when (minibufferp)
     (embark--become-command embark--command (minibuffer-contents))))
 
-(defun embark--shell-prep (&rest _)
+(cl-defun embark--shell-prep (&key type &allow-other-keys)
   "Prepare target for use as argument for a shell command.
-This quotes the spaces, inserts an extra space at the beginning
-and leaves the point to the left of it."
-  (let ((contents (minibuffer-contents)))
-    (delete-minibuffer-contents)
-    (insert " " (shell-quote-wildcard-pattern contents))
-    (goto-char (minibuffer-prompt-end))))
+If the target's TYPE is file, this quotes the spaces, inserts an extra
+space at the beginning and leaves the point to the left of it."
+  (when (eq type 'file)
+    (let ((contents (minibuffer-contents)))
+      (delete-minibuffer-contents)
+      (insert " " (shell-quote-wildcard-pattern contents))
+      (goto-char (minibuffer-prompt-end)))))
 
 (defun embark--force-complete (&rest _)
   "Select first minibuffer completion candidate matching target."

@@ -28,15 +28,15 @@
 
 (require 'gt-engine-google)
 
-(defgroup go-translate-google-rpc nil
+(defgroup gt-google-rpc nil
   "Configs for GoogleRPC engine."
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-google-rpc-host "https://translate.google.com"
   "The base url of Google translate used by google-rpc engine.
 you can customize it according to your country region."
   :type 'string
-  :group 'go-translate-google-rpc)
+  :group 'gt-google-rpc)
 
 
 ;;; Components
@@ -66,7 +66,7 @@ you can customize it according to your country region."
     ("Content-Type" . "application/x-www-form-urlencoded;charset=UTF-8"))
   "Extra request headers send to google-rpc server."
   :type '(alist :key-type (string :tag "Key") :value-type (string :tag "Value"))
-  :group 'go-translate-google-rpc)
+  :group 'gt-google-rpc)
 
 (defun gt-google-rpc-token (engine)
   (with-slots (host path rpc-sid rpc-bl) engine

@@ -38,12 +38,9 @@
 
 (eval-when-compile
   (cl-pushnew 'forge-id eieio--known-slot-names)
-  (cl-pushnew 'id       eieio--known-slot-names)
-  (cl-pushnew 'name     eieio--known-slot-names)
   (cl-pushnew 'number   eieio--known-slot-names)
   (cl-pushnew 'owner    eieio--known-slot-names)
-  (cl-pushnew 'their-id eieio--known-slot-names)
-  (cl-pushnew 'worktree eieio--known-slot-names))
+  (cl-pushnew 'their-id eieio--known-slot-names))
 
 ;;; Options
 
@@ -294,16 +291,50 @@ is non-nil."
                                        &optional stub noerror)
   "Return the database and forge ids for the specified CLASS object.")
 
-(defun forge--their-id (id/obj)
-  "Return the forge's id for the ID used in the local database."
+(defun forge--their-id (arg &optional type repo)
+  "Return the forge's ID for ARG.
+This deals with technical debt related to our handling of IDs."
   (cond
-   ((stringp id/obj)
-    (car (last (split-string (base64-decode-string id/obj) ":"))))
-   ((slot-exists-p id/obj 'their-id)
-    (oref id/obj their-id))
-   ((slot-exists-p id/obj 'forge-id)
-    (oref id/obj forge-id))
-   ((forge--their-id (oref id/obj id)))))
+   (type
+    (pcase type
+      ('assignee
+       (forge-sql1 [:select [forge-id]
+                    :from assignee
+                    :where (and (= repository $s1)
+                                (= login $s2))]
+                   (oref repo id) arg))
+      ('assignees
+       (forge-sql-car [:select [forge-id]
+                       :from assignee
+                       :where (and (= repository $s1)
+                                   (in login $v2))]
+                      (oref repo id)
+                      (vconcat arg)))
+      ('category
+       (forge-sql1 [:select [their-id]
+                    :from discussion-category
+                    :where (and (= repository $s1)
+                                (= name $s2))]
+                   (oref repo id) arg))
+      ('label
+       (forge--their-id
+        (forge-sql1 [:select [id]
+                     :from label
+                     :where (and (= repository $s1)
+                                 (= name $s2))]
+                    (oref repo id) arg)))
+      ('labels
+       (mapcar (##forge--their-id % 'label repo) arg))
+      ('milestone
+       (forge--their-id
+        (forge-sql1 [:select [id] :from milestone :where (= title $s1)] arg)))))
+   ((stringp arg)
+    (car (last (split-string (base64-decode-string arg) ":"))))
+   ((slot-exists-p arg 'their-id)
+    (oref arg their-id))
+   ((slot-exists-p arg 'forge-id)
+    (oref arg forge-id))
+   ((forge--their-id (oref arg id)))))
 
 (cl-defmethod magit-section-ident-value ((obj forge-object))
   "Return the value ob OBJ's `id' slot.
@@ -339,7 +370,7 @@ of SLOT.")
 
 (cl-defmethod forge--format-resource ((object forge-object) resource)
   "Return an API resource based on RESOURCE and slots of OBJECT.
-For use in `forge--FORGE-METHOD' such as `forge--ghub-get'.
+This is used by `forge--rest' and by extension `forge-rest'.
 RESOURCE is a string separated by slashes.  Each part that begins
 with a colon is replaced with a value from OBJECT.  `:repo' is a
 synonym for `:name'.  `:project' is a like `:owner/:name', but the
@@ -376,19 +407,6 @@ parent object (determined using `forge-get-parent')."
       resource)))
 
 ;;; Miscellaneous
-
-(cl-defun forge--graphql (graphql
-                          &optional variables
-                          &key username host forge
-                          headers
-                          callback errorback)
-  (ghub--graphql-vacuum graphql variables callback nil
-                        :username  username
-                        :auth      'forge
-                        :host      host
-                        :forge     forge
-                        :headers   headers
-                        :errorback errorback))
 
 (defun forge-refresh-buffer (&optional buffer)
   "Refresh the current buffer, if it is a Magit or Forge buffer.

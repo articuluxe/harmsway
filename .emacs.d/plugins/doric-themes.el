@@ -1,11 +1,11 @@
-;;; doric-themes.el --- Highly legible minimalist themes -*- lexical-binding:t -*-
+;;; doric-themes.el --- Highly legible minimalist themes with precise typography -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -61,7 +61,6 @@
 (defgroup doric-themes nil
   "Highly legible minimalist themes with precise typography."
   :group 'faces
-  :link '(url-link :tag "Homepage" "https://protesilaos.com/emacs/doric-themes")
   :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/doric-themes-pictures"))
 
 ;;;; User options
@@ -1505,6 +1504,9 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(org-verbatim ((t :inherit (fixed-pitch italic) :foreground ,fg-shadow-subtle)))
             '(org-verse ((t :inherit org-block)))
             `(org-table ((t :inherit fixed-pitch :foreground ,fg-accent)))
+
+            `(package-mark-delete-line ((t :inherit bold-italic :background ,bg-shadow-intense :foreground ,fg-main)))
+            `(package-mark-install-line ((t :inherit bold-italic :background ,bg-accent :foreground ,fg-main)))
 
             '(rcirc-monospace-text ((t :inherit fixed-pitch)))
             '(rcirc-server ((t :inherit font-lock-comment-face)))

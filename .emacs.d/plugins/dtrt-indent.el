@@ -6,9 +6,9 @@
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
 ;; URL: https://github.com/jscheid/dtrt-indent
-;; Version: 1.24
+;; Version: 1.25
 ;; Keywords: convenience files languages c
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "28.1"))
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -208,16 +208,10 @@ adjusted transparently."
     (dtrt-indent-undo)))
 
 ;;;###autoload
-(define-globalized-minor-mode dtrt-indent-global-mode dtrt-indent-mode dtrt-indent--mode
+(define-globalized-minor-mode dtrt-indent-global-mode dtrt-indent-mode
+  (lambda () (dtrt-indent-mode 1))
+  :predicate t '(prog-mode text-mode)
   :group 'dtrt-indent)
-
-(defun dtrt-indent--mode ()
-  "Enable `dtrt-indent-mode'."
-  ;; javascript-mode is an alias for js-mode, so derived-mode-p does not
-  ;; detect it is derived from 'prog-mode (Emacs bug #46331: remove once
-  ;; Emacs >= 28.1 can be assumed)
-  (when (derived-mode-p 'prog-mode 'text-mode 'javascript-mode)
-    (dtrt-indent-mode)))
 
 (defvar dtrt-indent-language-syntax-table
   '((c/c++/java ("\""                    0   "\""       nil "\\\\.")

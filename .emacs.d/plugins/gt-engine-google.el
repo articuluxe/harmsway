@@ -28,15 +28,15 @@
 
 (require 'gt-core)
 
-(defgroup go-translate-google nil
+(defgroup gt-google nil
   "Configs for Google engine."
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-google-host "https://translate.googleapis.com"
   "The base url of Google translate used by google engine.
 you can customize it according to your country region."
   :type 'string
-  :group 'go-translate-google)
+  :group 'gt-google)
 
 
 ;;; Components
@@ -63,7 +63,7 @@ you can customize it according to your country region."
 (defcustom gt-google-headers '(("Connection" . "Keep-Alive"))
   "Extra request headers send to google server."
   :type '(alist :key-type (string :tag "Key") :value-type (string :tag "Value"))
-  :group 'go-translate-google)
+  :group 'gt-google)
 
 (defun gt-google-gen-url (engine text src tgt)
   "Generate url for google ENGINE with TEXT, SRC and TGT."

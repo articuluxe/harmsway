@@ -388,7 +388,13 @@ It can be a relative expression as well, such as \"HEAD^\" with Git, or
   (let* ((file buffer-file-name)
          (backend (vc-backend file)))
     (when backend
-      (let ((state (vc-state file backend)))
+      (let ((state (vc-state file backend))
+            ;; Workaround for debbugs#78946.
+            ;; This is fiddly, but we basically allow the thread to start, while
+            ;; prohibiting the async process call inside.
+            ;; That still makes it partially async.
+            (diff-hl-update-async (and diff-hl-update-async
+                                       (not (eq window-system 'ns)))))
         (cond
          ((diff-hl-modified-p state)
           (diff-hl-changes-from-buffer
@@ -922,6 +928,7 @@ Pops up a diff buffer that can be edited to choose the changes to stage."
          (file buffer-file-name)
          (dest-buffer (get-buffer-create "*diff-hl-stage-some*"))
          (orig-buffer (current-buffer))
+         (diff-hl-update-async nil)
          ;; FIXME: If the file name has double quotes, these need to be quoted.
          (file-base (file-name-nondirectory file)))
     (with-current-buffer dest-buffer
@@ -964,14 +971,18 @@ Pops up a diff buffer that can be edited to choose the changes to stage."
 
 (defun diff-hl-stage-finish ()
   (interactive)
-  (let ((count 0))
-    (when (diff-hl-stage-diff diff-hl-stage--orig)
+  (let ((count 0)
+        (orig-buffer diff-hl-stage--orig))
+    (when (diff-hl-stage-diff orig-buffer)
       (save-excursion
         (goto-char (point-min))
         (while (re-search-forward diff-hunk-header-re-unified nil t)
           (cl-incf count)))
       (message "Staged %d hunks" count)
-      (bury-buffer))))
+      (bury-buffer)
+      (unless diff-hl-show-staged-changes
+        (with-current-buffer orig-buffer
+          (diff-hl-update))))))
 
 (defvar diff-hl-command-map
   (let ((map (make-sparse-keymap)))
@@ -1026,7 +1037,7 @@ The value of this variable is a mode line template as in
         (add-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps nil t))
     (remove-hook 'after-save-hook 'diff-hl-update t)
     (remove-hook 'after-change-functions 'diff-hl-edit t)
-    (remove-hook 'find-file-hook 'diff-hl-update t)
+    (remove-hook 'find-file-hook 'diff-hl-update-once t)
     (remove-hook 'after-revert-hook 'diff-hl-after-revert t)
     (remove-hook 'magit-revert-buffer-hook 'diff-hl-update t)
     (remove-hook 'magit-not-reverted-hook 'diff-hl-update t)

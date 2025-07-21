@@ -29,9 +29,9 @@
 
 (require 'gt-core)
 
-(defgroup go-translate-libre nil
+(defgroup gt-libre nil
   "Configs for LibreTranslate engine."
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-libre-host "https://translate.disroot.org/"
   "API host of LibreTranslate.
@@ -39,7 +39,7 @@
 The official host is: https://libretranslate.com/, you can config this
 to use third-party or your local service."
   :type 'string
-  :group 'go-translate-libre)
+  :group 'gt-libre)
 
 
 ;;; Components

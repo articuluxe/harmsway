@@ -28,9 +28,9 @@
 
 (require 'gt-core)
 
-(defgroup go-translate-deepl nil
+(defgroup gt-deepl nil
   "Configs for DeepL engine."
-  :group 'go-translate)
+  :group 'gt)
 
 
 ;;; Components
@@ -54,7 +54,7 @@
   "Extra translation params send to DeepL server."
   :type '(alist :key-type (string :tag "Key")
                 :value-type (string :tag "Value"))
-  :group 'go-translate-deepl)
+  :group 'gt-deepl)
 
 (defvar gt-deepl-langs-mapping '((en . "EN")
                                  (zh . "ZH")

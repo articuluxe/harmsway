@@ -28,9 +28,9 @@
 
 (require 'gt-core)
 
-(defgroup go-translate-bing nil
+(defgroup gt-bing nil
   "Configs for Bing engine."
-  :group 'go-translate)
+  :group 'gt)
 
 
 
@@ -112,7 +112,7 @@
 (defcustom gt-bing-tts-speed 1.0
   "Playing speed of TTS audio, 1.0 is normal speed."
   :type 'number
-  :group 'go-translate-bing)
+  :group 'gt-bing)
 
 (defvar gt-bing-tts-mapping '((zh . ("zh-CN" "Female" "zh-CN-XiaoxiaoNeural"))
                               (en . ("en-US" "Female" "en-US-AriaNeural"))

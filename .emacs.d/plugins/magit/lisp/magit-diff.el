@@ -35,6 +35,8 @@
 (require 'image)
 (require 'smerge-mode)
 
+;; For `magit-diff--get-value'
+(defvar magit-status-use-buffer-arguments)
 ;; For `magit-diff-popup'
 (declare-function magit-stash-show "magit-stash" (stash &optional args files))
 ;; For `magit-diff-visit-file'
@@ -828,8 +830,7 @@ and `:slant'."
 
 (cl-defmethod transient-init-value ((obj magit-diff-prefix))
   (pcase-let ((`(,args ,files)
-               (magit-diff--get-value 'magit-diff-mode
-                                      magit-prefix-use-buffer-arguments)))
+               (magit-diff--get-value 'magit-diff-mode 'prefix)))
     (when-let (((not (eq transient-current-command 'magit-dispatch)))
                (file (magit-file-relative-name)))
       (setq files (list file)))
@@ -853,11 +854,17 @@ and `:slant'."
   "Return the current diff arguments."
   (if (memq transient-current-command '(magit-diff magit-diff-refresh))
       (magit--transient-args-and-files)
-    (magit-diff--get-value (or mode 'magit-diff-mode))))
+    (magit-diff--get-value (or mode 'magit-diff-mode) 'direct)))
 
 (defun magit-diff--get-value (mode &optional use-buffer-args)
-  (unless use-buffer-args
-    (setq use-buffer-args magit-direct-use-buffer-arguments))
+  (setq use-buffer-args
+        (pcase-exhaustive use-buffer-args
+          ('prefix magit-prefix-use-buffer-arguments)
+          ('status magit-status-use-buffer-arguments)
+          ('direct magit-direct-use-buffer-arguments)
+          ('nil    magit-direct-use-buffer-arguments)
+          ((or 'always 'selected 'current 'never)
+           use-buffer-args)))
   (let (args files)
     (cond
      ((and (memq use-buffer-args '(always selected current))
@@ -1362,7 +1369,7 @@ the file or blob."
                                        (list file)
                                        'unstaged
                                        magit-diff-buffer-file-locked)
-            (magit-diff--goto-position file line col))))
+            (magit-diff--goto-file-position file line col))))
     (user-error "Buffer isn't visiting a file")))
 
 ;;;###autoload
@@ -1419,44 +1426,51 @@ for a revision."
           (let ((line (magit-diff-visit--offset file (list "-R" rev) line))
                 (col (current-column)))
             (with-current-buffer buf
-              (magit-diff--goto-position file line col))))))))
+              (magit-diff--goto-file-position file line col))))))))
 
-(defun magit-diff--locate-hunk (file line &optional parent)
-  (and-let* ((diff (cl-find-if (##and (cl-typep % 'magit-file-section)
-                                      (equal (oref % value) file))
-                               (oref (or parent magit-root-section) children))))
-    (let ((hunks (oref diff children)))
-      (cl-block nil
-        (while-let ((hunk (pop hunks)))
-          (when-let ((range (oref hunk to-range)))
-            (pcase-let* ((`(,beg ,len) range)
-                         (end (+ beg len)))
-              (cond ((>  beg line)     (cl-return (list diff nil)))
-                    ((<= beg line end) (cl-return (list hunk t)))
-                    ((null hunks)      (cl-return (list hunk nil)))))))))))
+(defun magit-diff--locate-file-position (file line column &optional parent)
+  (and-let*
+      ((parent (pcase parent
+                 ('unstaged (magit-get-section '((unstaged) (status))))
+                 ('staged   (magit-get-section '((staged)   (status))))
+                 ('nil (and (cl-typep (car (oref magit-root-section children))
+                                      'magit-file-section)
+                            magit-root-section))
+                 (_ parent)))
+       (diff (cl-find-if (##equal (oref % value) file)
+                         (oref parent children)))
+       (hunks (oref diff children)))
+    (let (hunk pos found)
+      (while (and (setq hunk (pop hunks))
+                  (not pos))
+        (when-let* ((range (oref hunk to-range))
+                    (beg (car range))
+                    (len (cadr range))
+                    (end (+ beg len)))
+          (cond
+           ((> beg line)
+            (setq pos (oref diff start)))
+           ((<= beg line end)
+            (save-excursion
+              (goto-char (oref hunk content))
+              (let ((l beg))
+                (while (or (< l line)
+                           (= (char-after) ?-))
+                  (unless (= (char-after) ?-)
+                    (cl-incf l))
+                  (forward-line)))
+              (setq found (if (= (char-after) ?+) 'line 'hunk))
+              (forward-char (1+ column))
+              (setq pos (point))))
+           ((null hunks)
+            (setq pos (oref hunk start))))))
+      (and pos
+           (list pos (or found file))))))
 
-(defun magit-diff--goto-position (file line column &optional parent)
-  (when-let ((pos (magit-diff--locate-hunk file line parent)))
-    (pcase-let ((`(,section ,exact) pos))
-      (cond ((cl-typep section 'magit-file-section)
-             (goto-char (oref section start)))
-            (exact
-             (goto-char (oref section content))
-             (let ((pos (car (oref section to-range))))
-               (while (or (< pos line)
-                          (= (char-after) ?-))
-                 (unless (= (char-after) ?-)
-                   (cl-incf pos))
-                 (forward-line)))
-             (forward-char (1+ column)))
-            (t
-             (goto-char (oref section start))
-             (setq section (oref section parent))))
-      (while section
-        (when (oref section hidden)
-          (magit-section-show section))
-        (setq section (oref section parent))))
-    t))
+(defun magit-diff--goto-file-position (file line column &optional parent)
+  (when-let ((pos (magit-diff--locate-file-position file line column parent)))
+    (goto-char (car pos))
+    (magit-section-reveal (magit-current-section))))
 
 ;;;; Setting Commands
 
@@ -2012,6 +2026,52 @@ commit or stash at point, then prompt for a commit."
                (mapc #'magit-section-show-children sections))
               (t
                (mapc #'magit-section-hide sections)))))))
+
+;;;; Jump Commands
+
+(transient-define-prefix magit-revision-jump (&optional menu)
+  "In a Magit-Revision buffer, jump to a section.
+Show a menu to choose a section, unless point is on a file
+heading, or with a prefix argument, in which case behave
+like 'magit-jump-to-diffstat-or-diff'."
+  [["Jump to"
+    ("h" magit-jump-to-revision-headers)
+    ("m" magit-jump-to-revision-message)
+    ("n" magit-jump-to-revision-notes)
+    ("s" magit-jump-to-revision-diffstat)
+    ("d" magit-jump-to-revision-diff)]
+   ["Jump using"
+    ("j" "Imenu" imenu)]]
+  (interactive (list (or (not (magit-section-match 'file))
+                         current-prefix-arg)))
+  (if menu
+      (transient-setup 'magit-revision-jump)
+    (magit-jump-to-diffstat-or-diff)))
+
+(magit-define-section-jumper magit-jump-to-revision-headers
+  "Headings" headers nil magit-insert-revision-headers)
+
+(magit-define-section-jumper magit-jump-to-revision-message
+  "Message" commit-message nil magit-insert-revision-message)
+
+(magit-define-section-jumper magit-jump-to-revision-notes
+  "Notes" notes nil magit-insert-revision-notes)
+
+(magit-define-section-jumper magit-jump-to-revision-diffstat
+  "Diffstat" diffstat nil magit-insert-revision-diff)
+
+(transient-define-suffix magit-jump-to-revision-diff (&optional expand)
+  :description "Diff"
+  :inapt-if-not (##cl-find-if (##eq (oref % type) 'file)
+                              (oref magit-root-section children))
+  (interactive "P")
+  (if-let ((section (cl-find-if (##eq (oref % type) 'file)
+                                (oref magit-root-section children))))
+      (progn (goto-char (oref section start))
+             (when expand
+               (with-local-quit (magit-section-show section))
+               (recenter 0)))
+    (message (format "No diff sections found"))))
 
 ;;; Diff Mode
 
@@ -2649,6 +2709,11 @@ function errors."
 (add-hook 'magit-section-set-visibility-hook #'magit-diff-expansion-threshold)
 
 ;;; Revision Mode
+
+(defvar-keymap magit-revision-mode-map
+  :doc "Keymap for `magit-revision-mode'."
+  :parent magit-diff-mode-map
+  "j" #'magit-revision-jump)
 
 (define-derived-mode magit-revision-mode magit-diff-mode "Magit Rev"
   "Mode for looking at a Git commit.

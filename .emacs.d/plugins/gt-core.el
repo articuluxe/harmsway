@@ -33,7 +33,7 @@
 (require 'text-property-search)
 (require 'pdd)
 
-(defgroup go-translate nil
+(defgroup gt nil
   "Translation framework on Emacs, with high configurability and extensibility."
   :group 'external
   :prefix 'gt-)
@@ -41,7 +41,7 @@
 (defcustom gt-debug-p nil
   "Whether enable the debug message."
   :type 'boolean
-  :group 'go-translate)
+  :group 'gt)
 
 
 ;;; Variables and Components
@@ -192,6 +192,10 @@
 (defvar gt-current-command nil)
 
 (defvar gt-current-translator nil)
+
+(defvar gt-source-text-transformer nil
+  "A function used to preprocessing the text to translate or speak.
+With function signature (text &optional engine speak-p).")
 
 (defvar-local gt-tracking-marker nil)
 
@@ -553,7 +557,9 @@ That is: 1) define the translator 2) executable `gt-start'.")
 
 (cl-defgeneric gt-str (object)
   "Return the string representation of the OBJECT."
-  (format "%s" (eieio-object-class object)))
+  (format "%s" (if (eieio-object-p object)
+                   (eieio-object-class object)
+                 object)))
 
 (cl-defgeneric gt-tag (object)
   "Return the display tag for OBJECT."
@@ -660,6 +666,8 @@ PARAMS contains search keys like :user, :host same as `auth-source-search'."
   "Insert STR to position of MARKER.
 If END-MARKER exists, delete the content between the markers first.
 If KEEP-CURSOR is not nil, keep the cursor at front."
+  (cond ((null str) (setq str ""))
+        ((not (stringp str)) (user-error "What insert into marker should be a string: (%S)" str)))
   (with-current-buffer (marker-buffer marker)
     (let ((inhibit-read-only t)
           (fn (lambda ()
@@ -717,7 +725,7 @@ See gt-tests.el for details."
   "Make completion table that ensure ITEMS sort by original ORDER."
   (lambda (input pred action)
     (if (eq action 'metadata)
-        `(metadata (category . "go-translate")
+        `(metadata (category . "gt")
                    (display-sort-function . ,(or order #'identity)))
       (complete-with-action action items input pred))))
 
@@ -935,25 +943,25 @@ TAG is a label for message being logged."
   "Http client used by `gt-request' by default.
 See the descriptions from `pdd-http-backend'."
   :type 'sexp
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-http-proxy pdd-proxy
   "Proxy used by http request.
 See the descriptions from `pdd-proxy'."
   :type '(choice string function)
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-http-timeout pdd-timeout
   "Timeout for http request.
 See the descriptions from `pdd-timeout'."
   :type 'natnum
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-http-max-retry pdd-max-retry
   "Max retry times for http request.
 See the descriptions from `pdd-max-retry'."
   :type 'natnum
-  :group 'go-translate)
+  :group 'gt)
 
 (cl-defun gt-request (url &rest args &key fail max-retry &allow-other-keys)
   "Send request for URL with pdd backend specified by `gt-http-backend'.
@@ -1010,7 +1018,7 @@ the list, also you can switch between them in the following translation.
 Notice, the value can be overrided by `langs' slot in taker of translator. So
 config it for specific translator using slot is effectively."
   :type '(repeat (choice string symbol))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-polyglot-p nil
   "Toggle polyglot for translation.
@@ -1021,7 +1029,7 @@ For example, assuming `gt-langs' or slot of `langs' is (a b c), the text
 may be translated from a to a and c if this is t, but translated from
 a to b or a to c if this is nil."
   :type 'boolean
-  :group 'go-translate)
+  :group 'gt)
 
 (defvar gt-taker-text-things '(word paragraph sentence buffer line page list sexp defun symbol point))
 
@@ -1043,7 +1051,7 @@ Notice, the value can be overrided by `text' slot in taker of translator. So
 config it for specific translator using slot is effectively."
   :type `(choice function
                  (choice ,@(mapcar (lambda (item) `(const ,item)) gt-taker-text-things)))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-taker-pick 'paragraph
   "Filter the initial text and pick some for translation.
@@ -1066,7 +1074,7 @@ Notice, the value can be overrided by `pick' slot in taker of translator. So
 config it for specific translator using slot is effectively."
   :type `(choice function
                  (choice ,@(mapcar (lambda (item) `(const ,item)) gt-taker-pick-things)))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-taker-prompt nil
   "Whether or how to prompt for initial text and target.
@@ -1086,7 +1094,7 @@ config it for specific translator using slot is effectively."
                  (const :tag "With-Minibuffer" t)
                  (const :tag "With-Buffer" buffer)
                  symbol function)
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-lang-rules
   (list (cons 'ja "[\u3040-\u30FF]")
@@ -1111,7 +1119,7 @@ default rules to fit your need."
   :type '(alist :key-type (symbol :tag "Lang")
                 :value-type (choice (function :tag "Function Rule")
                                     (regexp :tag "Regexp rule")))
-  :group 'go-translate)
+  :group 'gt)
 
 (defvar gt-skip-lang-rules-p nil)
 
@@ -1432,12 +1440,12 @@ If BACKWARDP is not nil then switch to previous one."
 (defcustom gt-cache-p t
   "Whether enable the cache."
   :type 'boolean
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-cache-ttl (* 30 60)
   "Default cache alive time."
   :type 'integer
-  :group 'go-translate)
+  :group 'gt)
 
 (defvar gt-cache-store (make-hash-table :test #'equal))
 
@@ -1456,6 +1464,11 @@ If SKIP-PARSE is t, return the raw results directly."
     (with-slots (delimit parse stream then) engine
       (unless (or res err)
         (gt-log 'next (format "%s: %s prepare to translate" id (gt-str engine)))
+        ;; preprocessing text, clean it or transform it
+        (when (functionp gt-source-text-transformer)
+          (setf text (mapcar (lambda (c)
+                               (or (pdd-funcall gt-source-text-transformer (list c engine)) c))
+                             text)))
         ;; enable caching if necessary
         (let* ((cache-pred nil)
                (pdd-active-cacher
@@ -1472,7 +1485,7 @@ If SKIP-PARSE is t, return the raw results directly."
                                                     (if (> (length current-string) (length longest-so-far))
                                                         current-string
                                                       longest-so-far))
-                                                  (ensure-list text))
+                                                  text)
                                                  src tgt)))
                   (pdd-cacher :ttl gt-cache-ttl :key '(url data) :store 'gt-cache-store)))
                (delimiter (if (eq delimit t) gt-text-delimiter delimit)))
@@ -1695,7 +1708,7 @@ When output a task, hint that this is for a stream request.")
 It also can be a command with options like `mpv --af=xxx'.
 The value should not contain any space in the command path."
   :type 'string
-  :group 'go-translate)
+  :group 'gt)
 
 (defvar gt-tts-cache-ttl 30)
 
@@ -1710,6 +1723,9 @@ The value should not contain any space in the command path."
 (cl-defgeneric gt-speech (engine _text _lang &optional _play-fn)
   "Speak TEXT with LANG by ENGINE."
   (:method :around ((engine gt-engine) text lang &optional play-fn)
+           ;; preprocessing text, clean it or transform it
+           (when (functionp gt-source-text-transformer)
+             (setq text (or (pdd-funcall gt-source-text-transformer (list text engine t)) text)))
            (cl-call-next-method engine text (intern-soft lang) play-fn))
   (user-error "No TTS service found on engine `%s'" (gt-tag engine)))
 
@@ -1740,7 +1756,7 @@ The value should not contain any space in the command path."
         (t system-type))
   "Engine used as the native one."
   :type 'sexp
-  :group 'go-translate)
+  :group 'gt)
 
 (cl-defmethod gt-speech ((_ (eql 'native)) text lang &optional play-fn)
   (gt-speech gt-tts-native-engine text lang play-fn))
@@ -1750,12 +1766,12 @@ The value should not contain any space in the command path."
 (defcustom gt-tts-mac-say-voice nil
   "Speak voice, query with command `gt-tts-mac-say-voices'."
   :type '(choice string (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-tts-mac-say-speed nil
   "A natnum number representing words per minute."
   :type '(choice natnum (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defun gt-tts-mac-say-voices ()
   "Return the avaiable speech voices on macOS."
@@ -1776,12 +1792,12 @@ The value should not contain any space in the command path."
 (defcustom gt-tts-win-ps1-voice nil
   "Speak voice, query with command `gt-tts-win-ps1-voices'."
   :type '(choice string (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-tts-win-ps1-speed nil
   "A number from -10 to 10."
   :type '(choice number (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defun gt-tts-win-ps1-voices ()
   "Return the avaiable speech voices on Windows."
@@ -1808,22 +1824,22 @@ The value should not contain any space in the command path."
 (defcustom gt-tts-edge-tts-voice nil
   "Speak voice, query with: edge-tts --list-voices."
   :type '(choice string (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-tts-edge-tts-speed nil
   "A number from -10 to 10."
   :type '(choice number (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-tts-edge-tts-volume nil
   "A number from -10 to 10, representing dec/inc volume."
   :type '(choice number (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-tts-edge-tts-pitch nil
   "A number representing dec/inc pitch, like -50 as -50Hz."
   :type '(choice number (const nil))
-  :group 'go-translate)
+  :group 'gt)
 
 (defun gt-tts-edge-tts-change-voice ()
   "Change voice for `tts-edge' engine."

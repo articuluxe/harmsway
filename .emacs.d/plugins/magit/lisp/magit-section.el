@@ -8,11 +8,11 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: tools
 
-;; Package-Version: 4.3.7
+;; Package-Version: 4.3.8
 ;; Package-Requires: (
 ;;     (emacs "27.1")
 ;;     (compat "30.1")
-;;     (llama "0.6.3")
+;;     (llama "1.0.0")
 ;;     (seq "2.24"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -896,7 +896,7 @@ See info node `(magit)Section Movement'."
 
 (defmacro magit-define-section-jumper
     (name heading type &optional value inserter &rest properties)
-  "Define an interactive function to go some section.
+  "Define an interactive function to go to some section.
 Together TYPE and VALUE identify the section.
 HEADING is the displayed heading of the section."
   (declare (indent defun))
@@ -908,7 +908,10 @@ With a prefix argument also expand it." heading)
             (list :description heading))
      ,@(and inserter
             `(:if (##memq ',inserter
-                          (bound-and-true-p magit-status-sections-hook))))
+                          (symbol-value
+                           (intern (format "%s-sections-hook"
+                                           (substring (symbol-name major-mode)
+                                                      0 -5)))))))
      :inapt-if-not (##magit-get-section
                     (cons (cons ',type ,value)
                           (magit-section-ident magit-root-section)))
@@ -2101,6 +2104,12 @@ When `magit-section-preserve-visibility' is nil, return nil."
             (magit-section-hide section)))
         (setq magit-section--opened-sections nil))
     (funcall fn)))
+
+(defun magit-section-reveal (section)
+  (while section
+    (when (oref section hidden)
+      (magit-section-show section))
+    (setq section (oref section parent))))
 
 ;;; Utilities
 

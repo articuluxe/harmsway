@@ -325,7 +325,10 @@ This can be used when custom deployments serve SSH access and the
 web interface under different host names. For example, if Git
 uses \"ssh.gitlab.company.com\" but the web interface is at
 \"gitlab.company.com\", add
-`(\"ssh\\\\.gitlab\\\\.company\\\\.com\" . \"gitlab.company.com\")'."
+`(\"ssh\\\\.gitlab\\\\.company\\\\.com\" . \"gitlab.company.com\")'.
+By default this will create a link using the \\='https://\\=' scheme.
+If you want \\='http://\\=' instead prefix the host with it:
+`(\"ssh\\\\.gitlab\\\\.company\\\\.com\" . \"http://gitlab.company.com\")'."
   :type '(alist :key-type string :value-type string)
   :group 'git-link)
 
@@ -589,8 +592,21 @@ return (FILENAME . REVISION) otherwise nil."
   link
   )
 
+(defun git-link--web-host (git-host)
+  "Determine the web host to use for GIT-HOST.
+
+The translation is based on `git-link-web-host-alist'. If there
+is no entry for GIT-HOST in the list, it is returned unmodified.
+If a WEB-HOST value does not already have a URL scheme, \\='https://\\='
+is prepended to it."
+  (let ((web-host (or (assoc-default git-host git-link-web-host-alist #'string-match-p)
+                      git-host)))
+    (if (string-match-p "^[a-zA-Z][a-zA-Z0-9+.-]+://" web-host)
+        web-host
+      (concat "https://" web-host))))
+
 (defun git-link-codeberg (hostname dirname filename branch commit start end)
-    (format "https://%s/%s/src/%s/%s"
+    (format "%s/%s/src/%s/%s"
 	    hostname
 	    dirname
 	    (or branch commit)
@@ -602,7 +618,7 @@ return (FILENAME . REVISION) otherwise nil."
                                 (format "L%s" start)))))))
 
 (defun git-link-gitlab (hostname dirname filename branch commit start end)
-  (format "https://%s/%s/-/blob/%s/%s"
+  (format "%s/%s/-/blob/%s/%s"
 	  hostname
 	  dirname
 	  (or branch commit)
@@ -614,11 +630,11 @@ return (FILENAME . REVISION) otherwise nil."
                               (format "L%s" start)))))))
 
 (defun git-link-github (hostname dirname filename branch commit start end)
-  (format "https://%s/%s/blob/%s/%s"
-	  hostname
-	  dirname
-	  (or branch commit)
-	  (concat filename
+  (format "%s/%s/blob/%s/%s"
+          hostname
+          dirname
+          (or branch commit)
+          (concat filename
                   (when start
                     (concat (if (git-link--should-render-plain filename) "?plain=1#" "#")
                             (if end
@@ -626,7 +642,7 @@ return (FILENAME . REVISION) otherwise nil."
                               (format "L%s" start)))))))
 
 (defun git-link-googlesource (hostname dirname filename branch commit start _end)
-  (format "https://%s/%s/+/%s/%s"
+  (format "%s/%s/+/%s/%s"
 	  hostname
 	  dirname
 	  (or branch commit)
@@ -636,7 +652,7 @@ return (FILENAME . REVISION) otherwise nil."
                     ))))
 
 (defun git-link-azure (hostname dirname filename branch commit start end)
-  (format "https://%s/%s?path=%%2F%s&version=%s&line=%s&lineEnd=%s&lineStartColumn=1&lineEndColumn=9999&lineStyle=plain"
+  (format "%s/%s?path=%%2F%s&version=%s&line=%s&lineEnd=%s&lineStartColumn=1&lineEndColumn=9999&lineStyle=plain"
 	  hostname
 	  dirname
       filename
@@ -645,7 +661,7 @@ return (FILENAME . REVISION) otherwise nil."
       (or end start "")))
 
 (defun git-link-sourcehut (hostname dirname filename branch commit start end)
-  (format "https://%s/%s/tree/%s/%s"
+  (format "%s/%s/tree/%s/%s"
 	  hostname
 	  dirname
 	  (or branch commit)
@@ -657,25 +673,25 @@ return (FILENAME . REVISION) otherwise nil."
                               (format "L%s" start)))))))
 
 (defun git-link-commit-gitlab (hostname dirname commit)
-  (format "https://%s/%s/-/commit/%s"
+  (format "%s/%s/-/commit/%s"
 	  hostname
 	  dirname
 	  commit))
 
 (defun git-link-commit-github (hostname dirname commit)
-  (format "https://%s/%s/commit/%s"
+  (format "%s/%s/commit/%s"
 	  hostname
 	  dirname
 	  commit))
 
 (defun git-link-commit-googlesource (hostname dirname commit)
-  (format "https://%s/%s/+/%s"
+  (format "%s/%s/+/%s"
 	  hostname
 	  dirname
           commit))
 
 (defun git-link-commit-azure (hostname dirname commit)
- (format "https://%s/%s/commit/%s"
+ (format "%s/%s/commit/%s"
 	  hostname
 	  dirname
 
@@ -683,13 +699,13 @@ return (FILENAME . REVISION) otherwise nil."
       (car (git-link--exec "rev-parse" commit))))
 
 (defun git-link-commit-codeberg (hostname dirname commit)
-    (format "https://%s/%s/commit/%s"
+    (format "%s/%s/commit/%s"
 	    hostname
 	    dirname
 	    commit))
 
 (defun git-link-gitorious (hostname dirname filename _branch commit start _end)
-  (format "https://%s/%s/source/%s:%s#L%s"
+  (format "%s/%s/source/%s:%s#L%s"
 	  hostname
 	  dirname
 	  commit
@@ -697,14 +713,14 @@ return (FILENAME . REVISION) otherwise nil."
 	  start))
 
 (defun git-link-commit-gitorious (hostname dirname commit)
-  (format "https://%s/%s/commit/%s"
+  (format "%s/%s/commit/%s"
 	  hostname
 	  dirname
 	  commit))
 
 (defun git-link-bitbucket (hostname dirname filename _branch commit start end)
   ;; ?at=branch-name
-  (format "https://%s/%s/%s/%s/%s"
+  (format "%s/%s/%s/%s/%s"
           hostname
           dirname
           (git-link--should-render-via-bitbucket-annotate filename)
@@ -721,13 +737,13 @@ return (FILENAME . REVISION) otherwise nil."
 
 (defun git-link-commit-bitbucket (hostname dirname commit)
   ;; ?at=branch-name
-  (format "https://%s/%s/commits/%s"
+  (format "%s/%s/commits/%s"
 	  hostname
 	  dirname
 	  commit))
 
 (defun git-link-cgit (hostname dirname filename branch commit start _end)
-  (format "https://%s/%s/tree/%s?h=%s"
+  (format "%s/%s/tree/%s?h=%s"
 	  hostname
 	  dirname
           filename
@@ -737,7 +753,7 @@ return (FILENAME . REVISION) otherwise nil."
              (concat "#" (format "n%s" start))))))
 
 (defun git-link-commit-cgit (hostname dirname commit)
-  (format "https://%s/%s/commit/?id=%s"
+  (format "%s/%s/commit/?id=%s"
 	  hostname
           dirname
 	  commit))
@@ -762,7 +778,7 @@ return (FILENAME . REVISION) otherwise nil."
                              (t "")))
         (branch-or-commit (or branch commit))
         (dir-file-name (directory-file-name dirname)))
-    (format "https://%s/%s@%s/-/blob/%s%s"
+    (format "%s/%s@%s/-/blob/%s%s"
             hostname
             dir-file-name
             branch-or-commit
@@ -771,18 +787,18 @@ return (FILENAME . REVISION) otherwise nil."
 
 (defun git-link-commit-sourcegraph (hostname dirname commit)
   (let ((dir-file-name (directory-file-name dirname)))
-    (format "https://%s/%s/-/commit/%s"
+    (format "%s/%s/-/commit/%s"
             hostname
             dir-file-name
             commit)))
 
 (defun git-link-homepage-github (hostname dirname)
-  (format "https://%s/%s"
+  (format "%s/%s"
 	  hostname
 	  dirname))
 
 (defun git-link-homepage-savannah (hostname dirname)
-  (format "https://%s/cgit/%s.git/"
+  (format "%s/cgit/%s.git/"
 	  hostname
 	  dirname))
 
@@ -793,7 +809,7 @@ return (FILENAME . REVISION) otherwise nil."
                             commit
                             start
                             end)
-  (format "https://%s/%s/browse/refs/heads/%s/--/%s"
+  (format "%s/%s/browse/refs/heads/%s/--/%s"
           hostname
           dirname
           (or branch commit)
@@ -804,10 +820,10 @@ return (FILENAME . REVISION) otherwise nil."
                             (or end start))))))
 
 (defun git-link-commit-codecommit (hostname dirname commit)
-  (format "https://%s/%s/commit/%s" hostname dirname commit))
+  (format "%s/%s/commit/%s" hostname dirname commit))
 
 (defun git-link-homepage-codecommit (hostname dirname)
-  (format "https://%s/%s/browse" hostname dirname))
+  (format "%s/%s/browse" hostname dirname))
 
 (define-obsolete-function-alias
   'git-link-homepage-svannah 'git-link-homepage-savannah "cf947f9")
@@ -873,8 +889,7 @@ With a double prefix argument invert the value of
             branch      (git-link--branch)
             commit      (git-link--commit)
             handler     (git-link--handler git-link-remote-alist git-host)
-            web-host    (or (assoc-default git-host git-link-web-host-alist #'string-match-p)
-                            git-host))
+            web-host    (git-link--web-host git-host))
 
       (cond ((null filename)
              (message "Can't figure out what to link to"))
@@ -918,24 +933,27 @@ With a prefix argument prompt for the remote's name.
 Defaults to \"origin\"."
 
   (interactive (list (git-link--select-remote)))
-  (let* (commit handler remote-info (remote-url (git-link--remote-url remote)))
+  (let* ((remote-url (git-link--remote-url remote))
+         commit handler remote-info git-host web-host)
     (if (null remote-url)
         (message "Remote `%s' not found" remote)
 
       (setq remote-info (git-link--parse-remote remote-url)
+            git-host (car remote-info)
             commit (word-at-point)
-            handler (git-link--handler git-link-commit-remote-alist (car remote-info)))
+            handler (git-link--handler git-link-commit-remote-alist git-host)
+            web-host (git-link--web-host git-host))
 
-      (cond ((null (car remote-info))
+      (cond ((null git-host)
              (message "Remote `%s' contains an unsupported URL" remote))
             ((not (string-match-p "[a-fA-F0-9]\\{7,40\\}" (or commit "")))
              (message "Point is not on a commit hash"))
             ((not (functionp handler))
-             (message "No handler for %s" (car remote-info)))
+             (message "No handler for %s" git-host))
             ;; null ret val
             ((git-link--new
               (funcall handler
-                       (car remote-info)
+                       web-host
                        (cadr remote-info)
                        (substring-no-properties commit))))))))
 
@@ -952,15 +970,17 @@ Defaults to \"origin\"."
 
   (interactive (list (git-link--select-remote)))
 
-  (let* (handler remote-info
-		 (remote-url (git-link--remote-url remote))
-		 (git-link-open-in-browser (or git-link-open-in-browser (equal (list 16) current-prefix-arg))))
+  (let* ((remote-url (git-link--remote-url remote))
+	 (git-link-open-in-browser (or git-link-open-in-browser (equal (list 16) current-prefix-arg)))
+         handler remote-info git-host web-host)
 
     (if (null remote-url)
         (message "Remote `%s' not found" remote)
 
       (setq remote-info (git-link--parse-remote remote-url)
-            handler (git-link--handler git-link-homepage-remote-alist (car remote-info)))
+            git-host (car remote-info)
+            handler (git-link--handler git-link-homepage-remote-alist git-host)
+            web-host (git-link--web-host git-host))
 
       (cond ((null (car remote-info))
              (message "Remote `%s' contains an unsupported URL" remote))
@@ -969,7 +989,7 @@ Defaults to \"origin\"."
             ;; null ret val
             ((git-link--new
               (funcall handler
-                       (car remote-info)
+                       web-host
                        (cadr remote-info))))))))
 
 (provide 'git-link)

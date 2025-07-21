@@ -191,14 +191,14 @@ that change the upstream and many that create new branches."
 (defcustom magit-list-refs-namespaces
   '("refs/heads"
     "refs/remotes"
-    "refs/tags"
-    "refs/pullreqs")
+    "refs/tags")
   "List of ref namespaces considered when reading a ref.
 
-This controls the order of refs returned by `magit-list-refs',
-which is called by functions like `magit-list-branch-names' to
-generate the collection of refs."
-  :package-version '(magit . "3.1.0")
+This controls which refs are returned by `magit-list-refs', which
+is called by functions like `magit-list-branch-names' to generate
+the collection of refs.  Additionally namespaces appear in the same
+order as specified here."
+  :package-version '(magit . "4.3.9")
   :group 'magit-commands
   :type '(repeat string))
 
@@ -216,6 +216,9 @@ be used.  For example, \"-creatordate\" places refs with more
 recent committer or tagger dates earlier in the list.  A list of
 strings can also be given in order to pass multiple sort keys to
 \"git for-each-ref\".
+
+Regardless of what is specified here, refs are first sorted by
+namespace, according to the order of `magit-list-refs-namespaces'.
 
 Note that, depending on the completion framework you use, this
 may not be sufficient to change the order in which the refs are
@@ -1973,22 +1976,26 @@ rather than those from `magit-list-refs-namespaces'.
 FORMAT is passed to the `--format' flag of `git for-each-ref'
 and defaults to \"%(refname)\".
 
-SORTBY is a key or list of keys to pass to the `--sort' flag of
-`git for-each-ref'.  When nil, use `magit-list-refs-sortby'"
-  (unless format
-    (setq format "%(refname)"))
-  (seq-keep (lambda (line)
-              (pcase-let* ((`(,symrefp ,value)
-                            (split-string line ""))
-                           (symrefp (not (equal symrefp ""))))
-                (and (not symrefp) value)))
-            (magit-git-lines "for-each-ref"
-                             (concat "--format=%(symref)" format)
-                             (mapcar (##concat "--sort=" %)
-                                     (pcase (or sortby magit-list-refs-sortby)
-                                       ((and val (pred stringp)) (list val))
-                                       ((and val (pred listp)) val)))
-                             (or namespaces magit-list-refs-namespaces))))
+SORTBY is a key or list of keys to pass to the `--sort' flag
+of `git for-each-ref' to sort the refs within each namespace.
+When nil, use `magit-list-refs-sortby'.  If both are nil, use
+\"version:refname\", but only for \"refs/tags\"."
+  (let ((format (concat "--format=%(symref)" (or format "%(refname)")))
+        (sortby (mapcar (##concat "--sort=" %)
+                        (ensure-list (or sortby magit-list-refs-sortby)))))
+    (seq-keep (lambda (line)
+                (pcase-let* ((`(,symrefp ,value)
+                              (split-string line ""))
+                             (symrefp (not (equal symrefp ""))))
+                  (and (not symrefp) value)))
+              (mapcan (lambda (ns)
+                        (if (and (not sortby)
+                                 (equal ns "refs/tags"))
+                            (magit-git-lines "for-each-ref" format
+                                             "--sort=-version:refname" ns)
+                          (magit-git-lines "for-each-ref" format sortby ns)))
+                      (ensure-list
+                       (or namespaces magit-list-refs-namespaces))))))
 
 (defun magit-list-branches ()
   (magit-list-refs (list "refs/heads" "refs/remotes")))
@@ -1999,32 +2006,32 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
 (defun magit-list-remote-branches (&optional remote)
   (magit-list-refs (concat "refs/remotes/" remote)))
 
-(defun magit-list-related-branches (relation &optional commit &rest args)
+(defun magit-list-related-branches (relation &optional rev &rest args)
   (seq-remove (##string-match-p "\\(\\`(HEAD\\|HEAD -> \\)" %)
               (mapcar (##substring % 2)
-                      (magit-git-lines "branch" args relation commit))))
+                      (magit-git-lines "branch" args relation rev))))
 
-(defun magit-list-containing-branches (&optional commit &rest args)
-  (magit-list-related-branches "--contains" commit args))
+(defun magit-list-containing-branches (&optional rev &rest args)
+  (magit-list-related-branches "--contains" rev args))
 
-(defun magit-list-publishing-branches (&optional commit)
-  (seq-filter (##magit-rev-ancestor-p (or commit "HEAD") %)
+(defun magit-list-publishing-branches (&optional rev)
+  (seq-filter (##magit-rev-ancestor-p (or rev "HEAD") %)
               magit-published-branches))
 
-(defun magit-list-merged-branches (&optional commit &rest args)
-  (magit-list-related-branches "--merged" commit args))
+(defun magit-list-merged-branches (&optional rev &rest args)
+  (magit-list-related-branches "--merged" rev args))
 
-(defun magit-list-unmerged-branches (&optional commit &rest args)
-  (magit-list-related-branches "--no-merged" commit args))
+(defun magit-list-unmerged-branches (&optional rev &rest args)
+  (magit-list-related-branches "--no-merged" rev args))
 
 (defun magit-list-unmerged-to-upstream-branches ()
   (seq-filter (##and-let* ((upstream (magit-get-upstream-branch %)))
                 (member % (magit-list-unmerged-branches upstream)))
               (magit-list-local-branch-names)))
 
-(defun magit-list-branches-pointing-at (commit)
+(defun magit-list-branches-pointing-at (rev)
   (let ((re (format "\\`%s refs/\\(heads\\|remotes\\)/\\(.*\\)\\'"
-                    (magit-rev-verify commit))))
+                    (magit-rev-verify rev))))
     (seq-keep (##and (string-match re %)
                      (let ((name (match-string 2 %)))
                        (and (not (string-suffix-p "HEAD" name))
@@ -2285,16 +2292,16 @@ If `first-parent' is set, traverse only first parents."
 (defun magit-rev-abbrev (rev)
   (magit-rev-parse (magit-abbrev-arg "short") rev))
 
-(defun magit-commit-children (commit &optional args)
+(defun magit-commit-children (rev &optional args)
   (seq-keep (lambda (line)
               (pcase-let ((`(,child . ,parents) (split-string line " ")))
-                (and (member commit parents) child)))
+                (and (member rev parents) child)))
             (magit-git-lines "log" "--format=%H %P"
                              (or args (list "--branches" "--tags" "--remotes"))
-                             "--not" commit)))
+                             "--not" rev)))
 
-(defun magit-commit-parents (commit)
-  (and-let* ((str (magit-git-string "rev-list" "-1" "--parents" commit)))
+(defun magit-commit-parents (rev)
+  (and-let* ((str (magit-git-string "rev-list" "-1" "--parents" rev)))
     (cdr (split-string str))))
 
 (defun magit-patch-id (rev)
@@ -2444,14 +2451,14 @@ and this option only controls what face is used.")
 (defun magit-object-type (object)
   (magit-git-string "cat-file" "-t" object))
 
-(defmacro magit-with-blob (commit file &rest body)
+(defmacro magit-with-blob (rev file &rest body)
   (declare (indent 2)
            (debug (form form body)))
   `(magit--with-temp-process-buffer
      (let ((buffer-file-name ,file))
        (save-excursion
          (magit-git-insert "cat-file" "-p"
-                           (concat ,commit ":" buffer-file-name)))
+                           (concat ,rev ":" buffer-file-name)))
        (decode-coding-inserted-region
         (point-min) (point-max) buffer-file-name t nil nil t)
        ,@body)))
@@ -2635,13 +2642,15 @@ and this option only controls what face is used.")
                              (magit-get-current-branch))))
 
 (defun magit-read-branch-or-commit (prompt &optional secondary-default exclude)
-  (let ((current (magit-get-current-branch))
-        (branch-at-point (magit-branch-at-point))
-        (commit-at-point (magit-commit-at-point))
-        (choices (delete exclude (magit-list-refnames nil t))))
-    (when (equal current exclude)
+  (let* ((current (magit-get-current-branch))
+         (branch-at-point (magit-branch-at-point))
+         (commit-at-point (magit-commit-at-point))
+         (exclude (ensure-list exclude))
+         (choices (cl-set-difference (magit-list-refnames nil t)
+                                     exclude :test #'equal)))
+    (when (member current exclude)
       (setq current nil))
-    (when (equal branch-at-point exclude)
+    (when (member branch-at-point exclude)
       (setq branch-at-point nil))
     (when (and commit-at-point (not branch-at-point))
       (setq choices (cons commit-at-point choices)))

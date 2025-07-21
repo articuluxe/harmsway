@@ -32,7 +32,7 @@
   '((display-buffer-reuse-window display-buffer-below-selected))
   "Window configuration of taker's buffer prompt window."
   :type 'sexp
-  :group 'go-translate)
+  :group 'gt)
 
 (defvar gt-buffer-prompt-name "*gt-taker*")
 
@@ -42,9 +42,9 @@
   "Function with no argument, executed after prompt buffer init.
 Can do extra setup works for the buffer through this function.")
 
-(declare-function gt-set-render "ext:go-translate")
-(declare-function gt-set-engines "ext:go-translate")
-(declare-function gt-translator-info "ext:go-translate")
+(declare-function gt-set-render "ext:gt")
+(declare-function gt-set-engines "ext:gt")
+(declare-function gt-translator-info "ext:gt")
 
 (cl-defmethod gt-prompt ((taker gt-taker) translator (_ (eql 'buffer)))
   "Prompt the TAKER's result using a new buffer for TRANSLATOR.

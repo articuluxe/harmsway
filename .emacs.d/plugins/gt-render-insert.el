@@ -60,13 +60,13 @@ otherwise, insert after the source text.
 The value can be overrided by `type' slot of render."
   :type '(choice (const :tag "Repace" replace)
                  (other :tag "Insert after" after))
-  :group 'go-translate)
+  :group 'gt)
 
 (defcustom gt-insert-render-output-hook nil
   "Hook run after output finished in Insert-Render.
 With current translator as the only argument."
   :type 'hook
-  :group 'go-translate)
+  :group 'gt)
 
 (defun gt-insert-render-format (render src res)
   "Format RES for insert RENDER.

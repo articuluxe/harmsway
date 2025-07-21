@@ -50,7 +50,7 @@ It depends on the `alert' package.")
           (push (concat prefix result) lst)))
       ;; output
       (message "")
-      (apply #'alert (string-join (nreverse lst) "\n") :title "*Go-Translate*" gt-alert-render-args))))
+      (apply #'alert (string-join (nreverse lst) "\n") :title "*GT*" gt-alert-render-args))))
 
 (provide 'gt-render-alert)
 
