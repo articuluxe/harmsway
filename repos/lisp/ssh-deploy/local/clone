@@ -1,1 +1,1 @@
-git clone https://github.com/cjohansson/emacs-ssh-deploy.git src
+git clone https://github.com/emacs-straight/ssh-deploy.git src

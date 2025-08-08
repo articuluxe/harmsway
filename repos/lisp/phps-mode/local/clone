@@ -1,1 +1,1 @@
-git clone https://github.com/cjohansson/emacs-phps-mode.git src
+git clone https://github.com/emacsmirror/phps-mode.git src
