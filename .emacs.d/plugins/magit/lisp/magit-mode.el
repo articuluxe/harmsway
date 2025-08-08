@@ -435,52 +435,51 @@ recommended value."
   "This is a placeholder command, which signals an error if called.
 Where applicable, other keymaps remap this command to another,
 which actually deletes the thing at point."
+  (declare (completion ignore))
   (interactive)
   (user-error "There is no thing at point that could be deleted"))
-;; Starting with Emacs 28.1 we could use (declare (completion ignore)).
-(put 'magit-delete-thing 'completion-predicate #'ignore)
 
 (defun magit-visit-thing ()
   "This is a placeholder command, which may signal an error if called.
 Where applicable, other keymaps remap this command to another,
 which actually visits the thing at point."
+  (declare (completion ignore))
   (interactive)
   (if (eq transient-current-command 'magit-dispatch)
       (call-interactively (key-binding (this-command-keys)))
     (if-let ((url (thing-at-point 'url t)))
         (browse-url url)
       (user-error "There is no thing at point that could be visited"))))
-(put 'magit-visit-thing 'completion-predicate #'ignore)
 
 (defun magit-edit-thing ()
   "This is a placeholder command, which may signal an error if called.
 Where applicable, other keymaps remap this command to another,
 which actually lets you edit the thing at point, likely in another
 buffer."
+  (declare (completion ignore))
   (interactive)
   (if (eq transient-current-command 'magit-dispatch)
       (call-interactively (key-binding (this-command-keys)))
     (user-error "There is no thing at point that could be edited")))
-(put 'magit-edit-thing 'completion-predicate #'ignore)
 
 (defun magit-browse-thing ()
   "This is a placeholder command, which may signal an error if called.
 Where applicable, other keymaps remap this command to another,
 which actually visits thing at point using `browse-url'."
+  (declare (completion ignore))
   (interactive)
   (if-let ((url (thing-at-point 'url t)))
       (browse-url url)
     (user-error "There is no thing at point that could be browsed")))
-(put 'magit-browse-thing 'completion-predicate #'ignore)
 
 (defun magit-copy-thing ()
   "This is a placeholder command, which signals an error if called.
 Where applicable, other keymaps remap this command to another,
 which actually copies some representation of the thing at point
 to the kill ring."
+  (declare (completion ignore))
   (interactive)
   (user-error "There is no thing at point that we know how to copy"))
-(put 'magit-copy-thing 'completion-predicate #'ignore)
 
 ;;;###autoload
 (defun magit-info ()
@@ -1139,7 +1138,10 @@ The arguments are for internal use."
                         (list ws
                               (car (magit-section-get-relative-position ws))
                               (window-start)))))))))
-         (get-buffer-window-list buffer nil t)))
+         ;; For hunks we run `magit-section-movement-hook' (once for
+         ;; each window displaying the buffer).  The selected window
+         ;; comes first in this list, but we want to process it last.
+         (nreverse (get-buffer-window-list buffer nil t))))
       (and-let* ((section (magit-section-at)))
         `((nil ,section ,@(magit-section-get-relative-position section))))))
 
@@ -1161,7 +1163,15 @@ The arguments are for internal use."
                                     ws-section ws-line 0)
                                    (point)))))
               (set-window-start window pos t)))))
-      (magit-section-goto-successor section line char))))
+      ;; We must make sure this does not call `set-window-start',
+      ;; which the HUNK METHOD does by calling `magit-section-goto'
+      ;; because that runs the `magit-section-goto-successor-hook'
+      ;; and thus `magit-hunk-set-window-start'.  The window does
+      ;; not display this buffer, so the window start would be set
+      ;; for the wrong buffer.  Originally reported in #4196 and
+      ;; fixed with 482c25a3204468a4f6c2fe12ff061666b61f5f4d.
+      (let ((magit-section-movement-hook nil))
+        (magit-section-goto-successor section line char)))))
 
 (defun magit-revert-buffer (_ignore-auto _noconfirm)
   "Wrapper around `magit-refresh-buffer' suitable as `revert-buffer-function'."
@@ -1228,8 +1238,8 @@ Note that refreshing a Magit buffer is done by re-creating its
 contents from scratch, which can be slow in large repositories.
 If you are not satisfied with Magit's performance, then you
 should obviously not add this function to that hook."
-  (when-let (((and (not magit-inhibit-refresh)
-                   (magit-inside-worktree-p t)))
+  (when-let ((_(not magit-inhibit-refresh))
+             (_(magit-inside-worktree-p t))
              (buf (ignore-errors (magit-get-mode-buffer 'magit-status-mode))))
     (cl-pushnew buf magit-after-save-refresh-buffers)
     (add-hook 'post-command-hook #'magit-after-save-refresh-buffers)))
@@ -1409,8 +1419,7 @@ Later, when the buffer is buried, it may be restored by
     (when-let ((tail (nthcdr 30 help-xref-stack)))
       (setcdr tail nil))
     (setq help-xref-stack-item
-          (list 'magit-xref-restore fn args
-                :directory default-directory))))
+          (list 'magit-xref-restore fn default-directory args))))
 
 (defun magit-xref-restore (fn dir args)
   (setq default-directory dir)
@@ -1584,4 +1593,9 @@ line.  Avoid including the line after the end of the file."
 
 ;;; _
 (provide 'magit-mode)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-mode.el ends here

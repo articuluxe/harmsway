@@ -442,6 +442,13 @@ When certain Forge menus are active, refresh them too."
   ;; For Gitlab this may also be nil.
   (if string (string-replace "\r\n" "\n" string) ""))
 
+(defun forge--buffer-substring-no-properties (&optional start end)
+  "Like `buffer-substring-no-properties' but the arguments are optional.
+Optional START defaults to the value of `point-min'.
+Optional END defaults to the value of `point-max'."
+  (buffer-substring-no-properties (or start (point-min))
+                                  (or end   (point-max))))
+
 (defun forge--uuid ()
   "Return string with random (version 4) UUID."
   ;; This is a copy of `org-id-uuid'.
@@ -469,10 +476,5 @@ When certain Forge menus are active, refresh them too."
             (substring rnd 20 32))))
 
 ;;; _
-;; Local Variables:
-;; read-symbol-shorthands: (
-;;   ("partial" . "llama--left-apply-partially")
-;;   ("rpartial" . "llama--right-apply-partially"))
-;; End:
 (provide 'forge-core)
 ;;; forge-core.el ends here

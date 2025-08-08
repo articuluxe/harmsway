@@ -33,7 +33,7 @@
 ;;; Code:
 
 ;; Also update EMACS_VERSION in "default.mk".
-(defconst magit--minimal-emacs "27.1")
+(defconst magit--minimal-emacs "28.1")
 (defconst magit--minimal-git "2.25.0")
 
 (require 'cl-lib)
@@ -576,6 +576,10 @@ acts similarly to `completing-read', except for the following:
 - If REQUIRE-MATCH is nil and the user exits without a choice,
   then nil is returned instead of an empty string.
 
+- If REQUIRE-MATCH is `any', then do not require a match but
+  do require non-empty input (or non-nil DEFAULT, since that
+  is substituted for empty input).
+
 - If REQUIRE-MATCH is non-nil and the user exits without a
   choice, `user-error' is raised.
 
@@ -591,12 +595,13 @@ acts similarly to `completing-read', except for the following:
   `minibuffer-default-prompt-format' and depending on
   `magit-completing-read-default-prompt-predicate'."
   (setq magit-completing-read--silent-default nil)
-  (if-let ((dwim (and def
-                      (nth 2 (seq-find (pcase-lambda (`(,cmd ,re ,_))
-                                         (and (eq this-command cmd)
-                                              (or (not re)
-                                                  (string-match-p re prompt))))
-                                       magit-dwim-selection)))))
+  (if-let ((_ def)
+           (dwim (seq-some (pcase-lambda (`(,cmd ,re ,dwim))
+                             (and (eq cmd this-command)
+                                  (or (not re)
+                                      (string-match-p re prompt))
+                                  dwim))
+                           magit-dwim-selection)))
       (if (eq dwim 'ask)
           (if (y-or-n-p (format "%s %s? " prompt def))
               def
@@ -613,7 +618,8 @@ acts similarly to `completing-read', except for the following:
           (reply (funcall magit-completing-read-function
                           (magit--format-prompt prompt def)
                           collection predicate
-                          require-match initial-input hist def)))
+                          (if (eq require-match 'any) nil require-match)
+                          initial-input hist def)))
       (setq this-command command)
       ;; Note: Avoid `string=' to support `helm-comp-read-use-marked'.
       (if (equal reply "")
@@ -887,21 +893,20 @@ See info node `(magit)Debugging Tools' for more information."
 
 (defmacro magit-bind-match-strings (varlist string &rest body)
   "Bind variables to submatches according to VARLIST then evaluate BODY.
-Bind the symbols in VARLIST to submatches of the current match
-data, starting with 1 and incrementing by 1 for each symbol.  If
-the last match was against a string, then that has to be provided
-as STRING."
+Bind the symbols in VARLIST to submatches of the current match data,
+starting with 1 and incrementing by 1 for each symbol.  If the last
+match was against a string, then that has to be provided as STRING."
   (declare (indent 2) (debug (listp form body)))
   (let ((s (gensym "string"))
         (i 0))
-    `(let ((,s ,string))
-       (let ,(save-match-data
-               (mapcan (lambda (sym)
-                         (cl-incf i)
-                         (and (not (eq (aref (symbol-name sym) 0) ?_))
-                              (list (list sym (list 'match-string i s)))))
-                       varlist))
-         ,@body))))
+    `(let* ((,s ,string)
+            ,@(save-match-data
+                (seq-keep (lambda (sym)
+                            (cl-incf i)
+                            (and (not (eq (aref (symbol-name sym) 0) ?_))
+                                 `(,sym (match-str ,i ,s))))
+                          varlist)))
+       ,@body)))
 
 (defun magit-delete-line ()
   "Delete the rest of the current line."
@@ -948,8 +953,8 @@ Pad the left side of STRING so that it aligns with the text area."
         (delete-char 1))
        ;; Valid format spec.
        ((looking-at "\\([-0-9.]*\\)\\([a-zA-Z]\\)")
-        (let* ((num (match-string 1))
-               (spec (string-to-char (match-string 2)))
+        (let* ((num (match-str 1))
+               (spec (string-to-char (match-str 2)))
                (val (assq spec specification)))
           (unless val
             (error "Invalid format character: `%%%c'" spec))
@@ -973,31 +978,6 @@ Pad the left side of STRING so that it aligns with the text area."
     (buffer-string)))
 
 ;;; Missing from Emacs
-
-(defun magit--buffer-string (&optional min max trim)
-  "Like `buffer-substring-no-properties' but the arguments are optional.
-
-This combines the benefits of `buffer-string', `buffer-substring'
-and `buffer-substring-no-properties' into one function that is
-not as painful to use as the latter.  I.e., you can write
-  (magit--buffer-string)
-instead of
-  (buffer-substring-no-properties (point-min)
-                                  (point-max))
-
-Optional MIN defaults to the value of `point-min'.
-Optional MAX defaults to the value of `point-max'.
-
-If optional TRIM is non-nil, then all leading and trailing
-whitespace is remove.  If it is the newline character, then
-one trailing newline is added."
-  ;; Lets write that one last time and be done with it:
-  (let ((str (buffer-substring-no-properties (or min (point-min))
-                                             (or max (point-max)))))
-    (if trim
-        (concat (string-trim str)
-                (and (eq trim ?\n) "\n"))
-      str)))
 
 (defun magit--separate (pred list)
   "Separate elements of LIST that do and don't satisfy PRED.
@@ -1087,9 +1067,9 @@ the value in the symbol's `saved-value' property if any, or
         (pcase magit-view-git-manual-method
           ('info  (funcall fn fork))
           ('man   (require 'man)
-                  (man (match-string 1 node)))
+                  (man (match-str 1 node)))
           ('woman (require 'woman)
-                  (woman (match-string 1 node)))
+                  (woman (match-str 1 node)))
           (_ (user-error "Invalid value for `magit-view-git-manual-method'")))
       (funcall fn fork))))
 
@@ -1129,7 +1109,7 @@ See <https://github.com/raxod502/straight.el/issues/520>."
        (build (pcase manager
                 ('straight (bound-and-true-p straight-build-dir))
                 ('elpaca (bound-and-true-p elpaca-builds-directory))))
-       ((string-prefix-p build filename))
+       (_(string-prefix-p build filename))
        (repo (pcase manager
                ('straight
                 (and (bound-and-true-p straight-base-dir)
@@ -1172,13 +1152,13 @@ Like `message', except that `message-log-max' is bound to nil."
     (if-let ((pair (car (or
                          (alist-get (or where t) magit-ellipsis)
                          (alist-get t magit-ellipsis)))))
-        (pcase-let ((`(,fancy . ,universal) pair))
-          (let ((ellipsis (if (and fancy (char-displayable-p fancy))
-                              fancy
-                            universal)))
-            (if (characterp ellipsis)
-                (char-to-string ellipsis)
-              ellipsis)))
+        (pcase-let* ((`(,fancy . ,universal) pair)
+                     (ellipsis (if (and fancy (char-displayable-p fancy))
+                                   fancy
+                                 universal)))
+          (if (characterp ellipsis)
+              (char-to-string ellipsis)
+            ellipsis))
       (user-error "Variable magit-ellipsis is invalid"))))
 
 (defun magit--ext-regexp-quote (string)
@@ -1193,4 +1173,9 @@ Like `message', except that `message-log-max' is bound to nil."
 
 ;;; _
 (provide 'magit-base)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-base.el ends here

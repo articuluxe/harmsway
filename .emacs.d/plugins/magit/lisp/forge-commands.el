@@ -674,10 +674,10 @@ point is currently on."
   (let* ((quote (cond
                  ((not (magit-section-match 'post)) nil)
                  ((use-region-p)
-                  (magit--buffer-string (region-beginning) (region-end)))
+                  (buffer-str (region-beginning) (region-end)))
                  (quote
                   (with-slots (content end) (magit-current-section)
-                    (magit--buffer-string content end t)))))
+                    (string-trim (buffer-str content end))))))
          (quote (and quote
                      (lambda ()
                        (goto-char (point-max))
@@ -1320,15 +1320,15 @@ upstream remote."
                      :scope (forge-add-repository--scope repo)))
    (t
     (when-let*
-        (((not (eq limit :selective)))
-         ((magit-git-config-p "forge.autoPull" t))
+        ((_(not (eq limit :selective)))
+         (_(magit-git-config-p "forge.autoPull" t))
          (remote  (oref repo remote))
          (refspec (oref repo pullreq-refspec))
          (default-directory (forge-get-worktree repo))
-         ((and (not (member refspec (magit-get-all "remote" remote "fetch")))
-               (or (eq forge-add-pullreq-refspec t)
-                   (and (eq forge-add-pullreq-refspec 'ask)
-                        (y-or-n-p (format "Also add %S refspec? " refspec)))))))
+         (_(and (not (member refspec (magit-get-all "remote" remote "fetch")))
+                (or (eq forge-add-pullreq-refspec t)
+                    (and (eq forge-add-pullreq-refspec 'ask)
+                         (y-or-n-p (format "Also add %S refspec? " refspec)))))))
       (magit-call-git "config" "--add"
                       (format "remote.%s.fetch" remote)
                       refspec))
@@ -1434,9 +1434,9 @@ when that happens, because given how the APIs work, this would be too
 expensive."
   (interactive
    (list (if-let* ((topics (magit-region-values '(issue pullreq) t))
-                   ((magit-confirm 'remove-topics-locally nil
-                      "Delete %d topics locally" nil
-                      (mapcar #'forge--format-topic-line topics))))
+                   (_(magit-confirm 'remove-topics-locally nil
+                       "Delete %d topics locally" nil
+                       (mapcar #'forge--format-topic-line topics))))
              topics
            (forge-read-topic "Delete topic LOCALLY only"))))
   (if (listp topic)
@@ -1499,8 +1499,9 @@ context."
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
-;;   ("partial" . "llama--left-apply-partially")
-;;   ("rpartial" . "llama--right-apply-partially"))
+;;   ("buffer-string" . "buffer-string")
+;;   ("buffer-str" . "forge--buffer-substring-no-properties")
+;;   ("partial" . "llama--left-apply-partially"))
 ;; End:
 (provide 'forge-commands)
 ;;; forge-commands.el ends here

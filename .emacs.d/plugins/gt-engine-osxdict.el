@@ -24,15 +24,24 @@
 
 ;; Engine for osx-dictionary (macOS only).
 ;;
-;; osx-dictionary, a program written by itchyny, is Dictionary.app interface for macOS.
-;; I know it from https://github.com/xuchunyang/osx-dictionary.el. This engine is working
-;; with it, and can be used offline for macOS user.
+;; osx-dictionary, a program written by itchyny, is Dictionary.app interface
+;; for macOS.
 ;;
-;; Make sure program `osx-dictionary' is on your PATH, or config it with `gt-osxdict-program'.
+;; I know it from https://github.com/xuchunyang/osx-dictionary.el. This engine
+;; is working with it, and can be used offline for macOS user.
 ;;
-;;   Source: https://github.com/itchyny/dictionary.vim/tree/master/autoload/dictionary.m
-;;   Build:  clang -framework CoreServices -framework Foundation dictionary.m -o osx-dictionary
+;; Make sure program `osx-dictionary' is on your PATH, or config it with
+;; variable `gt-osxdict-program'.
 ;;
+;;  Source:
+;;
+;;  https://github.com/itchyny/dictionary.vim/tree/master/autoload/dictionary.m
+;;
+;;  Build:
+;;
+;;  clang -framework CoreServices -framework Foundation dictionary.m
+;;
+
 ;;; Code:
 
 (require 'gt-core)
@@ -51,10 +60,10 @@
   (let ((program (or (oref engine program) gt-osxdict-program))
         (text (oref task text)))
     (unless (executable-find program)
-      (user-error (format "[gt-osxdict-engine] Make sure executable `%s' is available'.\n
+      (user-error "[gt-osxdict-engine] Make sure executable `%s' is available'.\n
  Source: https://github.com/itchyny/dictionary.vim/tree/master/autoload/dictionary.m
  Build:  clang -framework CoreServices -framework Foundation dictionary.m -o %s
-" program program)))
+" program program))
     (when (cdr text)
       (user-error "[gt-osxdict-engine] Multiple parts translation is not supported"))
     (pdd-exec program text

@@ -410,7 +410,7 @@ other buffers without actually expanding the embedded code tags.")
 (defvar verb-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-s") #'verb-send-request-on-point-other-window)
-    (define-key map (kbd "C-r") #'verb-send-request-on-point-other-window-stay)
+    (define-key map (kbd "C-r") #'verb-send-request-on-point-display)
     (define-key map (kbd "C-<return>") #'verb-send-request-on-point-no-window)
     (define-key map (kbd "C-f") #'verb-send-request-on-point)
     (define-key map (kbd "C-k") #'verb-kill-all-response-buffers)
@@ -458,7 +458,7 @@ If REMOVE is nil, add the necessary keywords to
         ["Send request on other window & switch"
          verb-send-request-on-point-other-window]
         ["Send request on other window"
-         verb-send-request-on-point-other-window-stay]
+         verb-send-request-on-point-display]
         ["Send request without showing response"
          verb-send-request-on-point-no-window]
         "--"
@@ -497,7 +497,7 @@ more details on how to use it."
                     #'verb-elisp-completion-at-point
                     nil 'local))
         (when verb-enable-ctrl-c-ctrl-c
-          (add-hook 'org-ctrl-c-ctrl-c-hook
+          (add-hook 'org-ctrl-c-ctrl-c-final-hook
                     #'verb-ctrl-c-ctrl-c-context-behavior
                     nil 'local))
         (add-hook 'post-command-hook #'verb--var-preview nil t)
@@ -711,14 +711,24 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
 
 (defun verb-ctrl-c-ctrl-c-context-behavior ()
   "Contextual behavior in `org-mode' buffer for ctrl-c ctrl-c binding."
-  ;; Probably not necessary to check mode, since the hook is in the local
-  ;; hooks anyways.
+  ;; Since this function is added to `org-ctrl-c-ctrl-c-final-hook', we
+  ;; don't need to worry about accidentally intercepting C-c C-c when
+  ;; used on a Babel source block.
   (when (and verb-mode
-             (or (not (eq (car (org-element-at-point)) 'src-block))
-                 (not (string= "verb"
-                               (org-element-property
-                                :language (org-element-at-point))))))
-    (call-interactively #'verb-send-request-on-point-other-window-stay)))
+             ;; Only try sending a request if it is possible to actually
+             ;; build a request spec. Otherwise, return nil and let other
+             ;; hook functions run.
+             ;; The only downside to this setup is that if users press
+             ;; C-c C-c fully intending to send a request, but something
+             ;; is not properly set up (e.g. :verb: tag is missing), then
+             ;; Emacs will print "C-c C-c can do nothing useful here",
+             ;; which is not very useful. However, this is how the hook
+             ;; is designed to work.
+             (ignore-errors
+               (let ((verb--inhibit-code-tags-evaluation t))
+                 (verb--request-spec-from-hierarchy))
+               t))
+    (call-interactively #'verb-send-request-on-point-display)))
 
 (defun verb--ensure-org-mode ()
   "Ensure `org-mode' is enabled in the current buffer."
@@ -1416,13 +1426,19 @@ description of prefix argument ARG."
   (verb-send-request-on-point 'other-window arg))
 
 ;;;###autoload
-(defun verb-send-request-on-point-other-window-stay (&optional arg)
+(defun verb-send-request-on-point-display (&optional arg)
   "Send the request specified by the selected heading's text contents.
 Show the results on another window but don't switch to it, using
 `verb-send-request-on-point'.  See that function's documentation for a
 description of prefix argument ARG."
   (interactive "P")
   (verb-send-request-on-point 'stay-window arg))
+
+(defalias 'verb-send-request-on-point-other-window-stay
+  #'verb-send-request-on-point-display)
+(make-obsolete 'verb-send-request-on-point-other-window-stay
+               "Use `verb-send-request-on-point-display' instead."
+               "2025-07-26")
 
 ;;;###autoload
 (defun verb-send-request-on-point-no-window (&optional arg)
@@ -1530,7 +1546,7 @@ After the user has finished modifying the buffer, they can press
   ;; Unbind keys for verb-send-request-on-point-* commands.
   (dolist (cmd '(verb-send-request-on-point
                  verb-send-request-on-point-other-window
-                 verb-send-request-on-point-other-window-stay
+                 verb-send-request-on-point-display
                  verb-send-request-on-point-no-window))
     (when-let ((key (where-is-internal cmd nil t)))
       (local-unset-key key)))

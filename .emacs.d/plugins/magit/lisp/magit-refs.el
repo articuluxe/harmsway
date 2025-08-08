@@ -366,9 +366,8 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
            (and-let* ((buffer (magit-get-mode-buffer
                                'magit-refs-mode nil
                                (eq use-buffer-args 'selected))))
-             (progn
-               (setq args (buffer-local-value 'magit-buffer-arguments buffer))
-               t))))
+             (setq args (buffer-local-value 'magit-buffer-arguments buffer))
+             t)))
      (t
       (setq args (alist-get 'magit-show-refs transient-values))))
     args))
@@ -509,8 +508,8 @@ Branch %s already exists.
   "<1>" (magit-menu-item "Visit %s"  #'magit-visit-ref))
 
 (defun magit--painted-branch-as-menu-section (section)
-  (and-let* ((branch (and (magit-section-match 'commit)
-                          (magit--painted-branch-at-point))))
+  (and-let* ((_(magit-section-match 'commit))
+             (branch (magit--painted-branch-at-point)))
     (let ((dummy (magit-section :type 'branch :value branch)))
       (oset dummy keymap magit-branch-section-map)
       (dolist (slot '(start content hidden parent children))
@@ -547,8 +546,8 @@ line is inserted at all."
         (magit-insert-heading (length tags) "Tags")
         (dolist (tag tags)
           (string-match "^\\([^ \t]+\\)[ \t]+\\([^ \t\n].*\\)?" tag)
-          (let ((tag (match-string 1 tag))
-                (msg (match-string 2 tag)))
+          (let ((tag (match-str 1 tag))
+                (msg (match-str 2 tag)))
             (when (magit-refs--insert-refname-p tag)
               (magit-insert-section (tag tag t)
                 (magit-insert-heading
@@ -642,7 +641,7 @@ line is inserted at all."
 (defun magit-insert-shelved-branches ()
   "Insert sections showing all shelved branches."
   (when-let ((refs (magit-list-refs "refs/shelved/")))
-    (magit-insert-section (shelved nil)
+    (magit-insert-section (shelved nil t)
       (magit-insert-heading t "Shelved branches")
       (dolist (ref (nreverse refs))
         (magit-insert-section (shelved-branch ref t)
@@ -709,20 +708,20 @@ line is inserted at all."
                             (string-match "ahead \\([0-9]+\\)" u:track)
                             (magit--propertize-face
                              (concat (and magit-refs-pad-commit-counts " ")
-                                     (match-string 1 u:track)
+                                     (match-str 1 u:track)
                                      ">")
                              'magit-dimmed)))
              (u:behind (and u:track
                             (string-match "behind \\([0-9]+\\)" u:track)
                             (magit--propertize-face
                              (concat "<"
-                                     (match-string 1 u:track)
+                                     (match-str 1 u:track)
                                      (and magit-refs-pad-commit-counts " "))
                              'magit-dimmed)))
              (p:ahead  (and pushp p:track
                             (string-match "ahead \\([0-9]+\\)" p:track)
                             (magit--propertize-face
-                             (concat (match-string 1 p:track)
+                             (concat (match-str 1 p:track)
                                      ">"
                                      (and magit-refs-pad-commit-counts " "))
                              'magit-branch-remote)))
@@ -730,7 +729,7 @@ line is inserted at all."
                             (string-match "behind \\([0-9]+\\)" p:track)
                             (magit--propertize-face
                              (concat "<"
-                                     (match-string 1 p:track)
+                                     (match-str 1 p:track)
                                      (and magit-refs-pad-commit-counts " "))
                              'magit-dimmed))))
         (list (1+ (length (concat branch-pretty u:ahead p:ahead u:behind)))
@@ -748,7 +747,7 @@ line is inserted at all."
                            (magit--propertize-face
                             push 'magit-branch-remote)
                            " "))
-              (if-let ((magit-refs-show-branch-descriptions)
+              (if-let ((_ magit-refs-show-branch-descriptions)
                        (desc (magit-get "branch" branch "description")))
                   (magit--propertize-face desc 'bold)
                 (and msg (magit-log--wash-summary msg))))))))
@@ -811,4 +810,9 @@ line is inserted at all."
 
 ;;; _
 (provide 'magit-refs)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-refs.el ends here

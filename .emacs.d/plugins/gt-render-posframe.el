@@ -31,6 +31,8 @@
 
 ;; implements via package Posframe, you should install it before use this
 
+(declare-function evil-define-key* "ext:evil-core.el" t t)
+
 
 ;;; Popup Mode
 

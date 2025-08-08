@@ -11,7 +11,7 @@
 ;;     (emacs "29.1")
 ;;     (compat "30.1")
 ;;     (let-alist "1.0.6")
-;;     (llama "0.6.3")
+;;     (llama "1.0")
 ;;     (treepy "0.1.2"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -772,7 +772,7 @@ or (info \"(ghub)Getting Started\") for instructions."
          (host (or host (ghub--host forge)))
          (var (format "%s.%s.user" forge host)))
     (or (ghub--git-get var)
-        (if-let (((equal host (alist-get forge ghub-default-host-alist)))
+        (if-let ((_(equal host (alist-get forge ghub-default-host-alist)))
                  (default-var (format "%s.user" forge)))
             (or (ghub--git-get default-var)
                 (user-error "%s; `%s' and `%s' are both unset"

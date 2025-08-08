@@ -37,6 +37,25 @@
 (require 'cl-lib)
 (require 'all-the-icons)
 
+;; Declare optional functions to suppress compiler warnings
+(declare-function magit-get-current-branch "magit-git")
+(declare-function magit-toplevel "magit-repos")
+(declare-function flycheck-count-errors "flycheck")
+(declare-function lsp-workspaces "lsp-mode")
+(declare-function eglot-managed-p "eglot")
+(declare-function vc-git--run-command-string "vc-git")
+(declare-function mu4e-message-at-point "mu4e-view")
+(declare-function mu4e-message-field "mu4e-message")
+(declare-function mu4e-context-current "mu4e-context")
+(declare-function mu4e-context-name "mu4e-context")
+(declare-function elfeed-entry-title "elfeed-show")
+(declare-function elfeed-entry-tags "elfeed-show")
+(declare-function elfeed-db-last-update "elfeed-db")
+(declare-function org-capture-get "org-capture")
+(declare-function doc-view-current-page "doc-view")
+(declare-function pdf-cache-number-of-pages "pdf-cache")
+(declare-function Info-toc-nodes "info")
+
 ;;;; Group
 
 (defgroup lambda-line nil
@@ -70,7 +89,12 @@ displayed. It can be an integer or a float number. `nil' means no limit."
 
 (defcustom lambda-line-prefix-padding t
   "Include prefix padding."
-  :type 'boolean
+  :type '(choice boolean string)
+  :group 'lambda-line)
+
+(defcustom lambda-line-prefix-padding-left nil
+  "Include prefix padding to the left."
+  :type '(choice boolean string)
   :group 'lambda-line)
 
 (defcustom lambda-line-user-mode nil
@@ -188,6 +212,11 @@ Time info is only shown `display-time-mode' is non-nil"
   :type 'boolean
   :group 'lambda-line)
 
+(defcustom lambda-line-position-format "%l:%c:%o"
+  "`format-mode-line'."
+  :type 'string
+  :group 'lambda-line)
+
 (defcustom lambda-line-time-day-and-date-format "  %H:%M %Y-%m-%e "
   "`format-time-string'."
   :type 'string
@@ -224,7 +253,8 @@ Time info is only shown `display-time-mode' is non-nil"
     (prog-mode              :mode-p lambda-line-prog-mode-p
                             :format lambda-line-prog-mode
                             :on-activate lambda-line-prog-activate
-                            :on-deactivate lambda-line-prog-deactivate)
+                            :on-deactivate lambda-line-prog-deactivate
+                            :abbrev "PR")
     (mu4e-dashboard-mode    :mode-p lambda-line-mu4e-dashboard-mode-p
                             :format lambda-line-mu4e-dashboard-mode)
     (messages-mode          :mode-p lambda-line-messages-mode-p
@@ -232,11 +262,29 @@ Time info is only shown `display-time-mode' is non-nil"
     (message-mode           :mode-p lambda-line-message-mode-p
                             :format lambda-line-message-mode)
     (term-mode              :mode-p lambda-line-term-mode-p
-                            :format lambda-line-term-mode)
+                            :format lambda-line-term-mode
+                            :prefix-symbol " >_"
+                            :face-prefix-active 'lambda-line-active-status-MD
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
     (vterm-mode             :mode-p lambda-line-vterm-mode-p
-                            :format lambda-line-term-mode)
+                            :format lambda-line-term-mode
+                            :prefix-symbol " >_"
+                            :face-prefix-active 'lambda-line-active-status-MD
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
     (eshell-mode            :mode-p lambda-line-eshell-mode-p
-                            :format lambda-line-eshell-mode)
+                            :format lambda-line-eshell-mode
+                            :prefix-symbol " λ:"
+                            :face-prefix-active 'lambda-line-active-status-MD
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
+    (shell-mode             :mode-p lambda-line-shell-mode-p
+                            :format lambda-line-shell-mode
+                            :prefix-symbol " >"
+                            :face-prefix-active 'lambda-line-active-status-MD
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
     (buffer-menu-mode       :mode-p lambda-line-buffer-menu-mode-p
                             :format lambda-line-buffer-menu-mode
                             :on-activate lambda-line-buffer-menu-activate
@@ -248,28 +296,55 @@ Time info is only shown `display-time-mode' is non-nil"
     (completion-list-mode   :mode-p lambda-line-completion-list-mode-p
                             :format lambda-line-completion-list-mode)
     (deft-mode              :mode-p lambda-line-deft-mode-p
-      :format lambda-line-deft-mode)
+                            :format lambda-line-deft-mode)
+    (Dired-mode             :abbrev "Dir")
     (doc-view-mode          :mode-p lambda-line-doc-view-mode-p
                             :format lambda-line-doc-view-mode)
     (elfeed-search-mode     :mode-p lambda-line-elfeed-search-mode-p
                             :format lambda-line-elfeed-search-mode
                             :on-activate lambda-line-elfeed-search-activate
-                            :on-deactivate lambda-line-elfeed-search-deactivate)
+                            :on-deactivate lambda-line-elfeed-search-deactivate
+                            :always-modifiable t)
     (elfeed-show-mode       :mode-p lambda-line-elfeed-show-mode-p
-                            :format lambda-line-elfeed-show-mode)
+                            :format lambda-line-elfeed-show-mode
+                            :always-modifiable t)
     (elpher-mode            :mode-p lambda-line-elpher-mode-p
                             :format lambda-line-elpher-mode
                             :on-activate lambda-line-elpher-activate)
+    (emacs-lisp-mode        :abbrev "λ")
+    (gud-mode               :prefix-symbol " 🐞"
+                            :face-prefix-active 'lambda-line-active-status-MD
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
     (help-mode              :mode-p lambda-line-help-mode-p
-                            :format lambda-line-help-mode)
+                            :format lambda-line-help-mode
+                            :abbrev "?"
+                            :prefix-symbol " ?"
+                            :face-prefix-active 'lambda-line-active-status-RO
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
     (helpful-mode           :mode-p lambda-line-helpful-mode-p
-                            :format lambda-line-help-mode)
-    (info-mode              :mode-p lambda-line-info-mode-p
+                            :format lambda-line-help-mode
+                            :abbrev "?"
+                            :prefix-symbol " ?"
+                            :face-prefix-active 'lambda-line-active-status-RO
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
+    (Info-mode              :mode-p lambda-line-info-mode-p
                             :format lambda-line-info-mode
                             :on-activate lambda-line-info-activate
-                            :on-deactivate lambda-line-info-deactivate)
+                            :on-deactivate lambda-line-info-deactivate
+                            :prefix-symbol " ℹ"
+                            :face-prefix-active 'lambda-line-active-status-RO
+                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :always-modifiable t)
+    (lisp-interaction-mode  :abbrev "λΙ"
+                            :always-modifiable t)
     (magit-mode             :mode-p lambda-line-magit-mode-p
-                            :format lambda-line-magit-mode)
+                            :format lambda-line-magit-mode
+                            :abbrev "MG"
+                            :prefix-symbol " ✨")
+    (markdown-mode          :abbrev "MD")
     (mu4e-compose-mode      :mode-p lambda-line-mu4e-compose-mode-p
                             :format lambda-line-mu4e-compose-mode)
     (mu4e-headers-mode      :mode-p lambda-line-mu4e-headers-mode-p
@@ -280,19 +355,22 @@ Time info is only shown `display-time-mode' is non-nil"
                             :format lambda-line-mu4e-main-mode)
     (mu4e-view-mode         :mode-p lambda-line-mu4e-view-mode-p
                             :format lambda-line-mu4e-view-mode)
+    (nxhtml-mode            :abbrev "NX")
     (org-agenda-mode        :mode-p lambda-line-org-agenda-mode-p
                             :format lambda-line-org-agenda-mode)
-
     (org-clock-mode         :mode-p lambda-line-org-clock-mode-p
                             :format lambda-line-org-clock-mode
                             :on-activate lambda-line-org-clock-activate
                             :on-deactivate lambda-line-org-clock-deactivate)
     (pdf-view-mode          :mode-p lambda-line-pdf-view-mode-p
                             :format lambda-line-pdf-view-mode)
+    (python-mode            :abbrev "PY")
     (fundamental-mode       :mode-p lambda-line-fundamental-mode-p
-                            :format lambda-line-fundamental-mode)
+                            :format lambda-line-fundamental-mode
+                            :abbrev "F")
     (text-mode              :mode-p lambda-line-text-mode-p
-                            :format lambda-line-text-mode)
+                            :format lambda-line-text-mode
+                            :abbrev "TX")
 
     ;; hooks only go last
     (ein-notebook-mode      :on-activate lambda-line-ein-notebook-activate
@@ -308,13 +386,21 @@ Time info is only shown `display-time-mode' is non-nil"
 KEY mode name, for reference only. Easier to do lookups and/or replacements.
 :MODE-P the function to check if :FORMAT needs to be used, first one wins.
 :ON-ACTIVATE and :ON-DEACTIVATE do hook magic on enabling/disabling the mode.
+:ABBREV substitutes an abbreviation if given the correct minor/major mode symbol
+and a string you want to use in the modeline *as substitute for* the original.
 "
-  :type '(alist :key-type symbol
+  :type '(alist :key-type (symbol :tag "Major mode")
                 :value-type (plist :key-type (choice (const :mode-p)
                                                      (const :format)
                                                      (const :on-activate)
-                                                     (const :on-deactivate))
-                                   :value-type function))
+                                                     (const :on-deactivate)
+                                                     (const :abbrev)
+                                                     (const :prefix-symbol)  ;; custom prefix
+                                                     (const :face-prefix-active)
+                                                     (const :face-prefix-inactive)
+                                                     (const :always-modifiable))  ;; never read-only?
+                                   :value-type (choice (function) (string) (boolean))
+                                   :tag "Mode formats"))
   :group 'lambda-line)
 
 (defcustom lambda-line-mode-format-activate-hook nil
@@ -337,64 +423,99 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   :type 'function
   :group 'lambda-line)
 
+(defcustom lambda-line-default-tertiary-function nil
+  "Default tertiary format format function to evaluate."
+  :type '(choice (const nil) function)
+  :group 'lambda-line)
+
+(defcustom lambda-line-default-vc-mode-function 'lambda-line-vc-project-branch
+  "Default version control format function to evaluate."
+  :type '(choice (const :tag "None" nil)
+                 (function :tag "Function"))
+  :group 'lambda-line)
+
+(defcustom lambda-line-prog-mode-info-function nil
+  "Default prog-mode info format function to evaluate."
+  :type '(choice (const :tag "None" nil)
+                 (function :tag "Function"))
+  :group 'lambda-line)
+
+(defcustom lambda-line-lsp-indicator t
+  "Show LSP/Eglot server status in modeline."
+  :type 'boolean
+  :group 'lambda-line)
+
 ;;;; Faces
 ;;;;; Line Faces
 
+(defface lambda-line
+  '((t (:inherit mode-line)))
+  "Modeline face for modeline.")
+
 (defface lambda-line-active
-  '((t (:inherit (mode-line))))
+  '((t (:inherit lambda-line)))
   "Modeline face for active modeline."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive
-  '((t (:inherit (mode-line-inactive))))
+  '((default
+      :inherit lambda-line)
+    (((class color) (min-colors 88) (background light))
+     :weight light
+     :box (:line-width -1 :color "grey75" :style nil)
+     :foreground "grey20" :background "grey90")
+    (((class color) (min-colors 88) (background dark) )
+     :weight light
+     :box (:line-width -1 :color "grey40" :style nil)
+     :foreground "grey80" :background "grey30"))
   "Modeline face for inactive line."
   :group 'lambda-line-inactive)
 
 (defface lambda-line-hspace-active
-  '((t (:invisible t :family "Monospace" :inherit (mode-line))))
+  '((t (:invisible t :family "Monospace" :inherit (lambda-line))))
   "Face for vertical spacer in active line.")
 
 (defface lambda-line-hspace-inactive
-  '((t (:invisible t :family "Monospace" :inherit (mode-line-inactive))))
+  '((t (:invisible t :family "Monospace" :inherit (lambda-line-inactive))))
   "Face for vertical spacer in inactive line.")
 
 (defface lambda-line-active-name
-  '((t (:inherit (mode-line))))
+  '((t (:inherit (lambda-line))))
   "Modeline face for active name element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-name
-  '((t (:inherit (mode-line-inactive))))
+  '((t (:inherit (lambda-line-inactive))))
   "Modeline face for inactive name element."
   :group 'lambda-line-inactive)
 
 (defface lambda-line-active-primary
-  '((t (:weight light :inherit (mode-line))))
+  '((t (:weight light :inherit (lambda-line))))
   "Modeline face for active primary element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-primary
-  '((t (:inherit (mode-line-inactive))))
+  '((t (:inherit (lambda-line-inactive))))
   "Modeline face for inactive primary element."
   :group 'lambda-line-inactive)
 
 (defface lambda-line-active-secondary
-  '((t (:inherit mode-line)))
+  '((t (:inherit lambda-line)))
   "Modeline face for active secondary element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-secondary
-  '((t (:inherit (mode-line-inactive))))
+  '((t (:inherit (lambda-line-inactive))))
   "Modeline face for inactive secondary element."
   :group 'lambda-line-inactive)
 
 (defface lambda-line-active-tertiary
-  '((t (:inherit mode-line)))
+  '((t (:inherit lambda-line)))
   "Modeline face for active tertiary element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-tertiary
-  '((t (:inherit (mode-line-inactive))))
+  '((t (:inherit (lambda-line-inactive))))
   "Modeline face for inactive tertiary element."
   :group 'lambda-line-inactive)
 
@@ -404,34 +525,40 @@ This is if no match could be found in `lambda-lines-mode-formats'"
 ;; lambda-line uses a colored symbol to indicate the status of the buffer
 
 (defface lambda-line-active-status-RO
-  '((t (:inherit (mode-line) :foreground "yellow" (when lambda-line-status-invert :inverse-video t))))
+  '((t (:inherit lambda-line :foreground "yellow")))
   "Modeline face for active READ-ONLY element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-status-RO
-  '((t (:inherit (mode-line-inactive) :foreground "light gray" (when lambda-line-status-invert :inverse-video t))))
+  '((t (:inherit lambda-line-inactive :foreground "light gray")))
   "Modeline face for inactive READ-ONLY element."
   :group 'lambda-line-inactive)
 
 (defface lambda-line-active-status-RW
-  '((t (:inherit (mode-line) :foreground "green" (when lambda-line-status-invert :inverse-video t))))
+  '((t (:inherit lambda-line :foreground "green")))
   "Modeline face for active READ-WRITE element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-status-RW
-  '((t (:inherit (mode-line-inactive) :foreground "light gray"  (when lambda-line-status-invert :inverse-video t))))
+  '((t (:inherit lambda-line-inactive :foreground "light gray")))
   "Modeline face for inactive READ-WRITE element."
   :group 'lambda-line-inactive)
 
 (defface lambda-line-active-status-MD
-  '((t (:inherit (mode-line) :foreground "red" (when lambda-line-status-invert :inverse-video t))))
+  '((t (:inherit lambda-line :foreground "red")))
   "Modeline face for active MODIFIED element."
   :group 'lambda-line-active)
 
 (defface lambda-line-inactive-status-MD
-  '((t (:inherit (mode-line-inactive) :foreground "light gray"  (when lambda-line-status-invert :inverse-video t))))
+  '((t (:inherit lambda-line-inactive :foreground "light gray")))
   "Modeline face for inactive MODIFIED element."
   :group 'lambda-line-inactive)
+
+(defun lambda-line--apply-status-face (face)
+  "Apply FACE with optional inverse video based on lambda-line-status-invert."
+  (if lambda-line-status-invert
+      `(,face :inverse-video t)
+    face))
 
 
 ;;;;; Bell Faces
@@ -449,7 +576,7 @@ This is if no match could be found in `lambda-lines-mode-formats'"
 (defun lambda-line-visual-bell-fn ()
   "Blink the status-line red briefly. Set `ring-bell-function' to this to use it."
   (let ((lambda-line--bell-cookie (if (eq lambda-line-position 'bottom)
-                                      (face-remap-add-relative 'mode-line 'lambda-line-visual-bell)
+                                      (face-remap-add-relative 'lambda-line 'lambda-line-visual-bell)
                                     (face-remap-add-relative 'header-line 'lambda-line-visual-bell)))
         (force-mode-line-update t))
     (run-with-timer 0.15 nil
@@ -468,39 +595,18 @@ This is if no match could be found in `lambda-lines-mode-formats'"
 ;;;;; Abbreviate Major-Mode
 ;; Source: https://www.masteringemacs.org/article/hiding-replacing-modeline-strings
 
-(defcustom lambda-line-abbrev-alist
-  `((dired-mode . "Dir")
-    (emacs-lisp-mode . "λ")
-    (fundamental-mode . "F")
-    (helpful-mode . "?")
-    (help-mode . "?")
-    (lisp-interaction-mode . "λΙ")
-    (markdown-mode . "MD")
-    (magit-mode . "MG")
-    (nxhtml-mode . "NX")
-    (prog-mode . "PR")
-    (python-mode . "PY")
-    (text-mode . "TX"))
-  "Alist for `lambda-line--abbrev'.
-
-When you add a new element to the alist, keep in mind that you
-must pass the correct minor/major mode symbol and a string you
-want to use in the modeline *as substitute for* the original."
-  :type '(alist
-          :key-type (symbol :tag "Major mode")
-          :value-type (string :tag "Abbreviation"))
-  :group 'lambda-line)
-
 (defun lambda-line--abbrev ()
-  (cl-loop for abbrev in lambda-line-abbrev-alist
-           do (let* ((mode (car abbrev))
-                     (mode-str (cdr abbrev))
-                     (old-mode-str (cdr (assq mode minor-mode-alist))))
-                (when old-mode-str
-                  (setcar old-mode-str mode-str))
-                ;; major mode
-                (when (eq mode major-mode)
-                  (setq mode-name mode-str)))))
+  (cl-loop for elt in lambda-line-mode-formats
+           do (let* ((mode (car elt))
+                     (config (cdr elt))
+                     (mode-str (plist-get config :abbrev))
+                     (old-mode-str (when mode-str (cdr (assq mode minor-mode-alist)))))
+                (when mode-str
+                  (when old-mode-str
+                    (setcar old-mode-str mode-str))
+                  ;; major mode
+                  (when (eq mode major-mode)
+                    (setq mode-name mode-str))))))
 
 ;; Set abbrev (default is nil)
 (when lambda-line-abbrev
@@ -524,16 +630,119 @@ want to use in the modeline *as substitute for* the original."
         (format "%s%s" (substring str 0 (- size (length ellipsis))) ellipsis)
       str)))
 
+(defun lambda-line--padding (pref)
+  "Return padding for the prefix."
+  (cond ((stringp pref) pref)
+        (pref " ")
+        (t "")))
+
+;;;;; Get mode-formats config
+(defun lambda-line--mode-format-config (cfg &optional exact)
+  "Retrieve a config from the mode's mode-format; derived mode unless EXACT."
+  (let ((found
+          (cl-find-if
+            (lambda (elt)
+              (let ((mode (car elt))
+                     (config (cdr elt)))
+                (and (if exact (eq mode major-mode) (derived-mode-p mode)) (plist-member config cfg))))
+            lambda-line-mode-formats)))
+    (when found
+      (plist-get (cdr found) cfg))))
+
+;;;;; Performance Caching
+;; -------------------------------------------------------------------
+(defvar-local lambda-line--cache-project-name nil
+  "Cached project name for current buffer.")
+(defvar-local lambda-line--cache-vc-backend nil
+  "Cached VC backend for current buffer.")
+(defvar-local lambda-line--cache-git-diff nil
+  "Cached git diff information for current buffer.")
+(defvar-local lambda-line--cache-timestamp nil
+  "Timestamp of last cache update.")
+
+(defcustom lambda-line-cache-duration 2.0
+  "Duration in seconds to cache expensive operations."
+  :type 'float
+  :group 'lambda-line)
+
+(defun lambda-line--cache-expired-p ()
+  "Return t if cache has expired."
+  (or (null lambda-line--cache-timestamp)
+      (> (float-time (time-since lambda-line--cache-timestamp))
+         lambda-line-cache-duration)))
+
+(defun lambda-line--invalidate-cache ()
+  "Invalidate all cached values."
+  (setq lambda-line--cache-project-name nil
+        lambda-line--cache-vc-backend nil
+        lambda-line--cache-git-diff nil
+        lambda-line--cache-timestamp nil))
+
+(defun lambda-line--update-cache-timestamp ()
+  "Update cache timestamp."
+  (setq lambda-line--cache-timestamp (current-time)))
+
+;; Cache invalidation hooks
+(add-hook 'after-save-hook #'lambda-line--invalidate-cache)
+(add-hook 'after-revert-hook #'lambda-line--invalidate-cache)
+(add-hook 'vc-checkin-hook #'lambda-line--invalidate-cache)
+(add-hook 'find-file-hook #'lambda-line--invalidate-cache)
+
+;;;;; Version Control
+;; -------------------------------------------------------------------
+(defun lambda-line--vc-info ()
+  "Return the version control information."
+  (if lambda-line-default-vc-mode-function
+    (funcall lambda-line-default-vc-mode-function)
+    ""))
+
+(defun lambda-line--prog-mode-info ()
+  "Return the prog-mode information."
+  (if lambda-line-prog-mode-info-function
+    (funcall lambda-line-prog-mode-info-function)
+    ""))
+
+(defun lambda-line--lsp-status ()
+  "Return LSP server status indicator."
+  (when lambda-line-lsp-indicator
+    (cond
+     ;; LSP mode
+     ((and (featurep 'lsp-mode) (bound-and-true-p lsp-mode))
+      (when (lsp-workspaces)
+        (propertize " LSP" 'face '(:inherit success))))
+     ;; Eglot
+     ((and (featurep 'eglot) (eglot-managed-p))
+      (propertize " Eglot" 'face '(:inherit success)))
+     ;; LSP not active but available
+     ((or (featurep 'lsp-mode) (featurep 'eglot))
+      (propertize " LSP?" 'face '(:inherit warning)))
+     (t ""))))
+
+
 ;;;;; Branch display
 ;; -------------------------------------------------------------------
 (defun lambda-line-project-name ()
   "Return name of project without path."
-  (file-name-nondirectory (directory-file-name (if (vc-root-dir) (vc-root-dir) "-"))))
+  (if (and lambda-line--cache-project-name
+           (not (lambda-line--cache-expired-p)))
+      lambda-line--cache-project-name
+    (progn
+      (lambda-line--update-cache-timestamp)
+      (setq lambda-line--cache-project-name
+            (file-name-nondirectory 
+             (directory-file-name 
+              (if (vc-root-dir) (vc-root-dir) "-")))))))
 
 (defun lambda-line-vc-project-branch ()
   "Show project and branch name for file.
 Otherwise show '-'."
-  (let ((backend (vc-backend buffer-file-name)))
+  (let ((backend (if (and lambda-line--cache-vc-backend
+                          (not (lambda-line--cache-expired-p)))
+                     lambda-line--cache-vc-backend
+                   (progn
+                     (lambda-line--update-cache-timestamp)
+                     (setq lambda-line--cache-vc-backend 
+                           (vc-backend buffer-file-name))))))
     (concat
      (if buffer-file-name
          (if vc-mode
@@ -568,20 +777,38 @@ Otherwise show '-'."
 
 ;;;;; Git diff in modeline
 ;; https://cocktailmake.github.io/posts/emacs-modeline-enhancement-for-git-diff/
-(when lambda-line-git-diff-mode-line
-  (defadvice vc-git-mode-line-string (after plus-minus (file) compile activate)
-    "Show the information of git diff in status-line"
-    (setq ad-return-value
-          (concat ad-return-value
-                  (let ((plus-minus (vc-git--run-command-string
-                                     file "diff" "--numstat" "--")))
-                    (if (and plus-minus
-                             (string-match "^\\([0-9]+\\)\t\\([0-9]+\\)\t" plus-minus))
-                        (concat
-                         " "
-                         (format "+%s" (match-string 1 plus-minus))
-                         (format "-%s" (match-string 2 plus-minus)))
-                      ""))))))
+(defun lambda-line--get-git-diff (file)
+  "Get cached git diff information for FILE."
+  (when (and lambda-line-git-diff-mode-line file)
+    (if (and lambda-line--cache-git-diff
+             (not (lambda-line--cache-expired-p)))
+        lambda-line--cache-git-diff
+      (progn
+        (lambda-line--update-cache-timestamp)
+        (setq lambda-line--cache-git-diff
+              (let ((plus-minus (vc-git--run-command-string
+                                 file "diff" "--numstat" "--")))
+                (if (and plus-minus
+                         (string-match "^\\([0-9]+\\)\t\\([0-9]+\\)\t" plus-minus))
+                    (concat
+                     " "
+                     (format "+%s" (match-string 1 plus-minus))
+                     (format "-%s" (match-string 2 plus-minus)))
+                  "")))))))
+
+(define-advice vc-git-mode-line-string (:around (orig-fun file) lambda-line-git-diff)
+  "Add git diff information to mode-line."
+  (condition-case err
+      (let ((result (funcall orig-fun file)))
+        (if (and lambda-line-git-diff-mode-line
+                 file
+                 (stringp result))
+            (concat result (lambda-line--get-git-diff file))
+          result))
+    (error
+     ;; If there's an error, just return empty string to avoid breaking mode-line
+     (message "lambda-line git diff error: %s" err)
+     "")))
 
 ;;;;; Git Parse Repo Status
 ;; See https://kitchingroup.cheme.cmu.edu/blog/2014/09/19/A-git-status-Emacs-modeline/
@@ -609,23 +836,41 @@ Otherwise show '-'."
        ((string-match "^ M" line)
         (setq M (+ 1 M))
         (setq M-files (concat M-files "\n" line))
-        )))
+         )
 
+       ((string-match "^M " line)
+        (setq M (+ 1 M))
+        (setq M-files (concat M-files "\n" line))
+         )
+
+       (t
+        ;;(message "detected other in %s" line)
+        (setq O (+ 1 O))
+        (setq O-files (concat O-files "\n" line)))))
+      
     ;; construct propertized string
     (concat
      (propertize
-      (format "M:%d" M)
+      (format "M%d" M)
       'face (if (> M 0)
                 'error
               'success)
       'help-echo M-files)
      (propertize "|" 'face 'magit-dimmed)
      (propertize
-      (format "?:%d" U)
+      (format "U%d" U)
       'face (if (> U 0)
+                'error
+              'success)
+      'help-echo U-files)
+     (propertize "|" 'face 'magit-dimmed)
+     (propertize
+      (format "O%d" O)
+      'face (if (> O 0)
                 'warning
               'success)
-      'help-echo U-files))))
+       'help-echo O-files)
+      " ")))
 
 ;;;;; Flycheck/Flymake Segment
 (defvar-local lambda-line--flycheck-text nil)
@@ -643,7 +888,7 @@ Otherwise show '-'."
                                                    'error
                                                  'warning))))
                        (propertize "Good " 'face 'success)))
-          ('running (propertize "Checking " 'face 'info))
+          ('running (propertize "Checking " 'face 'flycheck-info))
           ('errored (propertize "Error " 'face 'error))
           ('interrupted (propertize "Paused " 'face 'fringe))
           ('no-checker ""))))
@@ -779,21 +1024,16 @@ Optionally use another clockface font."
 (defun lambda-line-status ()
   "Return buffer status, one of 'read-only, 'modified or 'read-write."
 
-  (let ((read-only  (when (not (or (derived-mode-p 'vterm-mode)
-                                   (derived-mode-p 'term-mode)
-                                   (derived-mode-p 'Info-mode)
-                                   (derived-mode-p 'help-mode)
-                                   (derived-mode-p 'helpful-mode)
-                                   (derived-mode-p 'elfeed-search)
-                                   (derived-mode-p 'elfeed-show)))
+  (let ((read-only  (when (not (lambda-line--mode-format-config :always-modifiable))
                       buffer-read-only))
         (modified    (and buffer-file-name (buffer-modified-p))))
     (cond (modified  'modified)
           (read-only 'read-only)
           (t         'read-write))))
 
+
 ;;;;; Compose Status-Line
-(defun lambda-line-compose (status name primary tertiary secondary)
+(defun lambda-line-compose (status name primary tertiary secondary &optional prefix)
   "Compose a string with provided information.
 Each section is first defined, along with a measure of the width of the status-line.
 STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed only in some modes."
@@ -813,15 +1053,14 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 
          (active (eq window lambda-line--selected-window))
 
-         (prefix (cond ((eq lambda-line-prefix nil) "")
+         ;; Is the current mode designated to have an explicit prefix symbol?
+         (explicit-prefix (lambda-line--mode-format-config :prefix-symbol))
+
+         (prefix (cond ((stringp prefix) prefix)
+                       ((eq lambda-line-prefix nil) "")
+                       ((stringp explicit-prefix) explicit-prefix)
                        (t
-                        (cond ((derived-mode-p 'term-mode) " >_")
-                              ((derived-mode-p 'vterm-mode) " >_")
-                              ((derived-mode-p 'eshell-mode) " λ:")
-                              ((derived-mode-p 'Info-mode) " ℹ")
-                              ((derived-mode-p 'help-mode) " ?")
-                              ((derived-mode-p 'helpful-mode) " ?")
-                              ((eq status 'read-only)
+                        (cond ((eq status 'read-only)
                                (if (display-graphic-p) lambda-line-gui-ro-symbol
                                  lambda-line-tty-ro-symbol))
                               ((eq status 'read-write) (if (display-graphic-p) lambda-line-gui-rw-symbol
@@ -836,30 +1075,21 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
          (face-modeline (if active
                             'lambda-line-active
                           'lambda-line-inactive))
+
+         (explicit-face-prefix-active (lambda-line--mode-format-config :face-prefix-active))
+         (explicit-face-prefix-inactive (lambda-line--mode-format-config :face-prefix-inactive))
+
          (face-prefix (if (not prefix) face-modeline
                         (if active
-                            (cond ((eq status 'read-only)  'lambda-line-active-status-RO)
-                                  ((eq status 'read-write) 'lambda-line-active-status-RW)
-                                  ((eq status 'modified)   'lambda-line-active-status-MD)
-                                  ((or (derived-mode-p 'term-mode)
-                                       (derived-mode-p 'vterm-mode)
-                                       (derived-mode-p 'eshell-mode))
-                                   'lambda-line-active-status-MD)
-                                  ((or (derived-mode-p 'Info-mode)
-                                       (derived-mode-p 'help-mode)
-                                       (derived-mode-p 'helpful-mode))
-                                   'lambda-line-active-status-RO)
+                            (cond ((eq status 'read-only)  (lambda-line--apply-status-face 'lambda-line-active-status-RO))
+                                  ((eq status 'read-write) (lambda-line--apply-status-face 'lambda-line-active-status-RW))
+                                  ((eq status 'modified)   (lambda-line--apply-status-face 'lambda-line-active-status-MD))
+                                  (explicit-face-prefix-active explicit-face-prefix-active)
                                   (t                       'lambda-line-active))
-                          (cond ((eq status 'read-only)  'lambda-line-inactive-status-RO)
-                                ((eq status 'read-write) 'lambda-line-inactive-status-RW)
-                                ((eq status 'modified)   'lambda-line-inactive-status-MD)
-                                ((or (derived-mode-p 'term-mode)
-                                     (derived-mode-p 'vterm-mode)
-                                     (derived-mode-p 'eshell-mode)
-                                     (derived-mode-p 'Info-mode)
-                                     (derived-mode-p 'help-mode)
-                                     (derived-mode-p 'helpful-mode))
-                                 'lambda-line-inactive-status-RW)
+                          (cond ((eq status 'read-only)  (lambda-line--apply-status-face 'lambda-line-inactive-status-RO))
+                                ((eq status 'read-write) (lambda-line--apply-status-face 'lambda-line-inactive-status-RW))
+                                ((eq status 'modified)   (lambda-line--apply-status-face 'lambda-line-inactive-status-MD))
+                                (explicit-face-prefix-inactive explicit-face-prefix-inactive)
                                 (t                       'lambda-line-inactive)))))
          (face-name (if active
                         'lambda-line-active-name
@@ -876,12 +1106,12 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
          (left
           ;; special face for special mode prefixes
           (concat
+           (propertize (lambda-line--padding lambda-line-prefix-padding-left) 'face face-modeline)
            (propertize prefix 'face face-prefix 'display `(raise ,lambda-line-symbol-position))
            ;; this matters for inverse-video!
            (propertize " " 'face face-prefix  'display `(raise ,lambda-line-space-top))
 
-           (when lambda-line-prefix-padding
-             (propertize " " 'face face-modeline))
+           (propertize (lambda-line--padding lambda-line-prefix-padding) 'face face-modeline)
 
            (propertize name 'face face-name)
 
@@ -891,9 +1121,18 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 
            (propertize primary 'face face-primary)))
 
-         (right (concat tertiary (propertize secondary 'face face-secondary) (propertize  lambda-line-hspace 'face face-modeline)))
+          (tertiary (if (not (string-empty-p tertiary)) 
+                       tertiary 
+                     (if lambda-line-default-tertiary-function
+                         (funcall lambda-line-default-tertiary-function)
+                       "")))
 
-         (right-len (length (format-mode-line right))))
+          (right (concat
+                   (propertize tertiary 'face face-tertiary)
+                   (propertize secondary 'face face-secondary)
+                   (propertize lambda-line-hspace 'face face-modeline)))
+
+          (right-len (length (format-mode-line right))))
     (concat
      left
      (propertize " " 'face face-modeline 'display `(space :align-to (- right ,right-len)))
@@ -907,14 +1146,14 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                                            (file-name-nondirectory (buffer-file-name))
                                          "%b")))
         (mode-name   (lambda-line-mode-name))
-        (branch      (lambda-line-vc-project-branch))
-        (position    (format-mode-line "%l:%c:%o")))
+        (vc-info     (lambda-line--vc-info))
+        (position    (format-mode-line lambda-line-position-format)))
     (lambda-line-compose (lambda-line-status)
                          (lambda-line-truncate buffer-name lambda-line-truncate-value)
                          (concat lambda-line-display-group-start
                                  mode-name
-                                 (when branch
-                                   branch)
+                                 (when vc-info
+                                   vc-info)
                                  lambda-line-display-group-end)
                          ""
                          ;; Narrowed buffer
@@ -933,12 +1172,16 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-prog-mode ()
   (let ((buffer-name (format-mode-line (if buffer-file-name (file-name-nondirectory (buffer-file-name)) "%b")))
         (mode-name   (lambda-line-mode-name))
-        (branch      (lambda-line-vc-project-branch))
-        (position    (format-mode-line "%l:%c:%o")))
+        (vc-info     (lambda-line--vc-info))
+        (prog-info   (lambda-line--prog-mode-info))
+        (lsp-info    (lambda-line--lsp-status))
+        (position    (format-mode-line lambda-line-position-format)))
     (lambda-line-compose (lambda-line-status)
                          (lambda-line-truncate buffer-name lambda-line-truncate-value)
                          (concat lambda-line-display-group-start mode-name
-                                 (when branch branch)
+                                 (when vc-info vc-info)
+                                 (when prog-info prog-info)
+                                 (when lsp-info lsp-info)
                                  lambda-line-display-group-end)
 
                          (concat
@@ -954,7 +1197,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                           (if lambda-line-syntax
                               (if (or (boundp 'flycheck-mode)
                                       (boundp 'flymake-mode))
-                                  ;; (concat position lambda-line-hspace)
+                                  (concat position lambda-line-hspace)
                                   position)
                             position)
 
@@ -964,8 +1207,9 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
   "Setup flycheck hooks."
   (add-hook 'flycheck-status-changed-functions #'lambda-line--update-flycheck-segment)
   (add-hook 'flycheck-mode-hook #'lambda-line--update-flycheck-segment)
-  (when lambda-line-git-diff-mode-line
-    (add-hook 'after-save-hook #'vc-refresh-state)))
+  (if lambda-line-git-diff-mode-line
+    (add-hook 'after-save-hook #'vc-refresh-state)
+    (remove-hook 'after-save-hook #'vc-refresh-state)))
 
 (defun lambda-line-prog-deactivate ()
   "Remove flycheck hooks."
@@ -1003,7 +1247,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                        (format-mode-line "%b")
                        ""
                        ""
-                       (format-mode-line "%l:%c:%o")))
+                       (format-mode-line lambda-line-position-format)))
 
 
 ;;;;; Info Display
@@ -1118,6 +1362,21 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-esh-deactivate ()
   (custom-reevaluate-setting 'eshell-status-in-mode-line))
 
+;;;; Shell
+;; ---------------------------------------------------------------------
+(defun lambda-line-shell-mode-p ()
+  (derived-mode-p 'shell-mode))
+
+(defun lambda-line-shell-mode ()
+  (lambda-line-compose " >_ "
+                       "Shell"
+                       (concat lambda-line-display-group-start
+                               (buffer-name)
+                               lambda-line-display-group-end)
+                       ""
+                       (concat (lambda-line-shorten-directory default-directory 32)
+                               (lambda-line-time))))
+
 ;;;; Messages Buffer Mode
 ;; ---------------------------------------------------------------------
 (defun lambda-line-messages-mode-p ()
@@ -1147,7 +1406,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-doc-view-mode ()
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
-        (branch      (lambda-line-vc-project-branch))
+        (vc-info     (lambda-line--vc-info))
         (page-number (concat
                           (number-to-string (doc-view-current-page)) "/"
                           (or (ignore-errors
@@ -1157,7 +1416,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
      (lambda-line-status)
      buffer-name
      (concat lambda-line-display-group-start mode-name
-             branch
+             vc-info
              lambda-line-display-group-end)
      nil
      (concat page-number
@@ -1174,7 +1433,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-pdf-view-mode ()
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
-        (branch      (lambda-line-vc-project-branch))
+        (vc-info     (funcall lambda-line-default-vc-mode-function))
         (page-number (concat
                       (number-to-string (eval `(pdf-view-current-page))) "/"
                       (or (ignore-errors
@@ -1195,7 +1454,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-buffer-menu-mode ()
   (let ((buffer-name "Buffer list")
         (mode-name   (lambda-line-mode-name))
-        (position    (format-mode-line "%l:%c:%o")))
+        (position    (format-mode-line lambda-line-position-format)))
 
     (lambda-line-compose (lambda-line-status)
                          buffer-name "" nil (concat position lambda-line-hspace (lambda-line-time)))))
@@ -1208,7 +1467,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
   (let (
         ;; We take into account the case of narrowed buffers
         (buffer-name (buffer-name imenu-list--displayed-buffer))
-        (branch      (lambda-line-vc-project-branch))
+        (vc-info     (lambda-line--vc-info))
         (position    (format-mode-line "%l:%c")))
     (lambda-line-compose (lambda-line-status)
                          buffer-name
@@ -1223,7 +1482,7 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-completion-list-mode ()
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
-        (position    (format-mode-line "%l:%c:%o")))
+        (position    (format-mode-line lambda-line-position-format)))
 
     (lambda-line-compose (lambda-line-status)
                          buffer-name "" nil (concat position lambda-line-hspace))))
@@ -1326,14 +1585,14 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-org-clock-mode ()
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
-        (branch      (lambda-line-vc-project-branch))
-        (position    (format-mode-line "%l:%c:%o")))
+        (vc-info     (lambda-line--vc-info))
+        (position    (format-mode-line lambda-line-position-format)))
     (lambda-line-compose (lambda-line-status)
                          buffer-name
                          (concat lambda-line-display-group-start
                                  mode-name
-                                 (when branch
-                                   branch)
+                                 (when vc-info
+                                   vc-info)
                                  lambda-line-display-group-end)
 			 ""
                          (concat
@@ -1725,7 +1984,7 @@ depending on the version of mu4e."
                       (let* ((config (cdr elt))
                              (mode-p (plist-get config :mode-p))
                              (format (plist-get config :format)))
-                        (when mode-p
+                        (when (and mode-p (functionp mode-p))
                           (when (funcall mode-p)
                             (throw 'found format))))))
                   lambda-line-default-mode-format))))))

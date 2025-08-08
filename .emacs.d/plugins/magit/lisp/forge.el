@@ -15,7 +15,7 @@
 ;;     (emacsql "4.3.1")
 ;;     (ghub "4.3.2")
 ;;     (let-alist "1.0.6")
-;;     (llama "0.6.3")
+;;     (llama "1.0")
 ;;     (magit "4.3.6")
 ;;     (markdown-mode "2.7")
 ;;     (seq "2.24")
@@ -186,10 +186,4 @@ too.\n" forge--minimal-git version) :error))))
     (forge-startup-asserts)
   (add-hook 'after-init-hook #'forge-startup-asserts t))
 
-;;; _
-;; Local Variables:
-;; read-symbol-shorthands: (
-;;   ("partial" . "llama--left-apply-partially")
-;;   ("rpartial" . "llama--right-apply-partially"))
-;; End:
 ;;; forge.el ends here

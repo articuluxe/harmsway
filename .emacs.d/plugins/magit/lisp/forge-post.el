@@ -212,7 +212,7 @@ One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
   "When creating a pull-request from a single commit, insert its message."
   (when-let* ((source forge--buffer-head-branch)
               (target forge--buffer-base-branch)
-              ((= (car (magit-rev-diff-count source target)) 1)))
+              (_(= (car (magit-rev-diff-count source target)) 1)))
     (when (alist-get 'text forge--buffer-template)
       (goto-char (point-max))
       (unless (eq (char-before) ?\n)
@@ -256,9 +256,9 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
       (let (title body)
         (when (looking-at "^#*[\s\t]*")
           (goto-char (match-end 0)))
-        (setq title (magit--buffer-string (point) (line-end-position) t))
+        (setq title (buffer-str (point) (line-end-position)))
         (forward-line)
-        (setq body (magit--buffer-string (point) nil ?\n))
+        (setq body (buffer-str (point)))
         (cons (string-trim title)
               (string-trim body))))))
 
@@ -393,7 +393,7 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
   "<remap> <magit-edit-thing>" #'forge-edit-topic-note)
 
 (defun forge--save-note (_repo topic)
-  (let ((value (string-trim (magit--buffer-string))))
+  (let ((value (string-trim (buffer-str))))
     (oset topic note (if (equal value "") nil value)))
   (delete-file buffer-file-name t)
   (let ((dir (file-name-directory buffer-file-name)))
@@ -406,8 +406,8 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
-;;   ("partial" . "llama--left-apply-partially")
-;;   ("rpartial" . "llama--right-apply-partially"))
+;;   ("buffer-string" . "buffer-string")
+;;   ("buffer-str" . "forge--buffer-substring-no-properties"))
 ;; End:
 (provide 'forge-post)
 ;;; forge-post.el ends here

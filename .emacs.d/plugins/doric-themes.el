@@ -43,6 +43,7 @@
     doric-earth
     doric-light
     doric-marble
+    doric-oak
     doric-wind)
   "Light themes.")
 
@@ -50,6 +51,7 @@
   '(doric-dark
     doric-fire
     doric-obsidian
+    doric-pine
     doric-plum
     doric-water)
   "Dark themes.")

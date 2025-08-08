@@ -374,7 +374,7 @@ commits before and half after."
 (cl-defmethod transient-init-value ((obj magit-log-prefix))
   (pcase-let ((`(,args ,files)
                (magit-log--get-value 'magit-log-mode 'prefix)))
-    (when-let (((not (eq transient-current-command 'magit-dispatch)))
+    (when-let ((_(not (eq transient-current-command 'magit-dispatch)))
                (file (magit-file-relative-name)))
       (setq files (list file)))
     (oset obj value (if files `(("--" ,@files) ,@args) args))))
@@ -414,7 +414,7 @@ commits before and half after."
            (eq major-mode mode))
       (setq args  magit-buffer-log-args)
       (setq files magit-buffer-log-files))
-     ((when-let (((memq use-buffer-args '(always selected)))
+     ((when-let ((_(memq use-buffer-args '(always selected)))
                  (buffer (magit-get-mode-buffer
                           mode nil
                           (eq use-buffer-args 'selected))))
@@ -651,7 +651,7 @@ commits before and half after."
         (split-string (magit-completing-read-multiple
                        "Log rev,s: "
                        (magit-list-refnames nil t)
-                       nil nil nil 'magit-revision-history
+                       nil 'any nil 'magit-revision-history
                        (or (magit-branch-or-commit-at-point)
                            (and (not use-current)
                                 (magit-get-previous-branch)))
@@ -893,7 +893,7 @@ limit.  Otherwise set it to 256."
 (defun magit-log-set-commit-limit (fn)
   (let* ((val magit-buffer-log-args)
          (arg (seq-find (##string-match "^-n\\([0-9]+\\)?$" %) val))
-         (num (and arg (string-to-number (match-string 1 arg))))
+         (num (and arg (string-to-number (match-str 1 arg))))
          (num (if num (funcall fn num 2) 256)))
     (setq val (remove arg val))
     (setq magit-buffer-log-args
@@ -905,7 +905,7 @@ limit.  Otherwise set it to 256."
 (defun magit-log-get-commit-limit (&optional args)
   (and-let* ((str (seq-find (##string-match "^-n\\([0-9]+\\)?$" %)
                             (or args magit-buffer-log-args))))
-    (string-to-number (match-string 1 str))))
+    (string-to-number (match-str 1 str))))
 
 ;;;; Mode Commands
 
@@ -953,14 +953,13 @@ nothing else.
 If invoked outside any log buffer, then display the log buffer
 of the current repository first; creating it if necessary."
   (interactive
-   (list (or (magit-completing-read
-              "In log, jump to"
-              (magit-list-refnames nil t)
-              nil nil nil 'magit-revision-history
-              (or (and-let* ((rev (magit-commit-at-point)))
-                    (magit-rev-fixup-target rev))
-                  (magit-get-current-branch)))
-             (user-error "Nothing selected"))))
+   (list (magit-completing-read
+          "In log, jump to"
+          (magit-list-refnames nil t)
+          nil 'any nil 'magit-revision-history
+          (or (and-let* ((rev (magit-commit-at-point)))
+                (magit-rev-fixup-target rev))
+              (magit-get-current-branch)))))
   (with-current-buffer
       (cond ((derived-mode-p 'magit-log-mode)
              (current-buffer))
@@ -1249,7 +1248,7 @@ Do not add this to a hook variable."
       (progn
         (when-let ((order (seq-find (##string-match "^\\+\\+order=\\(.+\\)$" %)
                                     args)))
-          (setq args (cons (format "--%s-order" (match-string 1 order))
+          (setq args (cons (format "--%s-order" (match-str 1 order))
                            (remove order args))))
         (when (member "--decorate" args)
           (setq args (cons "--decorate=full" (remove "--decorate" args))))
@@ -1456,9 +1455,9 @@ Do not add this to a hook variable."
           (goto-char (line-beginning-position))
           (when (and refsub
                      (string-match "\\`\\([^ ]\\) \\+\\(..\\)\\(..\\)" date))
-            (setq date (+ (string-to-number (match-string 1 date))
-                          (* (string-to-number (match-string 2 date)) 60 60)
-                          (* (string-to-number (match-string 3 date)) 60))))
+            (setq date (+ (string-to-number (match-str 1 date))
+                          (* (string-to-number (match-str 2 date)) 60 60)
+                          (* (string-to-number (match-str 3 date)) 60))))
           (magit-log-format-margin hash author date))
         (when (and (eq style 'cherry)
                    (magit-buffer-margin-p))
@@ -1502,7 +1501,7 @@ Do not add this to a hook variable."
               (save-excursion
                 (forward-line -1)
                 (looking-at "[-_/|\\*o<>. ]*"))
-              (setq graph (match-string 0))
+              (setq graph (match-str 0))
               (unless (string-match-p "[/\\.]" graph)
                 (insert graph ?\n))))))))
   t)
@@ -1755,8 +1754,8 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
   (if initial
       (magit-log-goto-commit-section initial)
     (while-let ((rev (magit-section-value-if 'commit))
-                ((string-match-p "\\`\\(squash!\\|fixup!\\|amend!\\)"
-                                 (magit-rev-format "%s" rev)))
+                (_(string-match-p "\\`\\(squash!\\|fixup!\\|amend!\\)"
+                                  (magit-rev-format "%s" rev)))
                 (section (magit-current-section))
                 (next (car (magit-section-siblings section 'next))))
       (magit-section-goto next)))
@@ -1916,7 +1915,7 @@ need an unique value, so we use that string in the pushremote case."
   "Insert commits that haven't been pulled from the push-remote yet."
   (when-let* ((target (magit-get-push-branch))
               (range  (concat ".." target))
-              ((magit--insert-pushremote-log-p)))
+              (_(magit--insert-pushremote-log-p)))
     (magit-insert-section (unpulled range t)
       (magit-insert-heading
         (format (propertize "Unpulled from %s."
@@ -1996,7 +1995,7 @@ Show the last `magit-log-section-commit-count' commits."
   "Insert commits that haven't been pushed to the push-remote yet."
   (when-let* ((target (magit-get-push-branch))
               (range  (concat target ".."))
-              ((magit--insert-pushremote-log-p)))
+              (_(magit--insert-pushremote-log-p)))
     (magit-insert-section (unpushed range t)
       (magit-insert-heading
         (format (propertize "Unpushed to %s."
@@ -2055,4 +2054,9 @@ all others with \"-\"."
 
 ;;; _
 (provide 'magit-log)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-log.el ends here

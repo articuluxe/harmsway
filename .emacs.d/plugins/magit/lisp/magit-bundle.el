@@ -99,7 +99,7 @@
 ;;;###autoload
 (defun magit-bundle-update-tracked (tag)
   "Update a bundle that is being tracked using TAG."
-  (interactive (list (magit-read-tag "Update bundle tracked by tag" t)))
+  (interactive (list (magit-read-tag "Update bundle tracked by tag")))
   (let (msg)
     (let-alist (magit--with-temp-process-buffer
                  (save-excursion
@@ -136,4 +136,9 @@
 
 ;;; _
 (provide 'magit-bundle)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-bundle.el ends here

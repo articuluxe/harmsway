@@ -241,7 +241,7 @@ then also remove the respective remote branch."
   "During a conflict checkout and stage side, or restore conflict."
   (interactive
    (let ((file (magit-completing-read "Checkout file"
-                                      (magit-tracked-files) nil nil nil
+                                      (magit-tracked-files) nil 'any nil
                                       'magit-read-file-hist
                                       (magit-current-file))))
      (cond ((member file (magit-unmerged-files))
@@ -312,4 +312,9 @@ If no merge is in progress, do nothing."
 
 ;;; _
 (provide 'magit-merge)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-merge.el ends here

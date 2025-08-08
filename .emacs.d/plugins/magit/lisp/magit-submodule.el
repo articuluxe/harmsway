@@ -230,7 +230,7 @@ it is nil, then PATH also becomes the name."
    (file-relative-name
     (read-directory-name prompt nil nil nil
                          (and (string-match "\\([^./]+\\)\\(\\.git\\)?$" url)
-                              (match-string 1 url))))))
+                              (match-str 1 url))))))
 
 (defun magit-submodule-add-1 (url &optional path name args)
   (magit-with-toplevel
@@ -587,24 +587,24 @@ These sections can be expanded to show the respective commits."
 
 (defun magit--insert-modules-logs (heading type range)
   "For internal use, don't add to a hook."
-  (when-let (((not (magit-ignore-submodules-p)))
+  (when-let ((_(not (magit-ignore-submodules-p)))
              (modules (magit-list-module-paths)))
     (magit-insert-section ((eval type) nil t)
       (string-match "\\`\\(.+\\) \\([^ ]+\\)\\'" heading)
       (magit-insert-heading
-        (propertize (match-string 1 heading)
+        (propertize (match-str 1 heading)
                     'font-lock-face 'magit-section-heading)
         " "
-        (propertize (match-string 2 heading)
+        (propertize (match-str 2 heading)
                     'font-lock-face 'magit-branch-remote)
         ":")
       (dolist (module modules)
         (when-let* ((default-directory (expand-file-name module))
-                    ((file-exists-p (expand-file-name ".git")))
+                    (_(file-exists-p (expand-file-name ".git")))
                     (lines (magit-git-lines "-c" "push.default=current"
                                             "log" "--oneline" range))
                     (count (length lines))
-                    ((> count 0)))
+                    (_(> count 0)))
           (magit-insert-section
               ( module module t
                 :range range)
@@ -612,8 +612,8 @@ These sections can be expanded to show the respective commits."
               (propertize module 'font-lock-face 'magit-diff-file-heading))
             (dolist (line lines)
               (string-match magit-log-module-re line)
-              (let ((rev (match-string 1 line))
-                    (msg (match-string 2 line)))
+              (let ((rev (match-str 1 line))
+                    (msg (match-str 2 line)))
                 (magit-insert-section (module-commit rev t)
                   (insert (propertize rev 'font-lock-face 'magit-hash) " "
                           (magit-log--wash-summary msg) "\n")))))))
@@ -713,4 +713,9 @@ These sections can be expanded to show the respective commits."
 
 ;;; _
 (provide 'magit-submodule)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-submodule.el ends here

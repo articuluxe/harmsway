@@ -380,7 +380,7 @@ an error."
 
 (put 'forge-topic 'thing-at-point #'forge-thingatpt--topic)
 (defun forge-thingatpt--topic ()
-  (and-let* (((thing-at-point-looking-at "\\([#!]\\)\\([0-9]+\\)\\_>"))
+  (and-let* ((_(thing-at-point-looking-at "\\([#!]\\)\\([0-9]+\\)\\_>"))
              (prefix (match-string-no-properties 1))
              (number (string-to-number (match-string-no-properties 2)))
              (repo (forge--repo-for-thingatpt)))
@@ -1161,7 +1161,7 @@ Grep Forge for more examples.
 Alternatively you can use `forge-topics-setup-buffer' to list a set
 of topics in a dedicated buffer."
   (declare (indent defun))
-  (when-let (((forge-db t))
+  (when-let ((_(forge-db t))
              (repo (forge-get-repository :tracked?))
              (spec (funcall prepare repo)))
     (forge--insert-topics type heading (forge--list-topics spec repo))))
@@ -1960,7 +1960,7 @@ When point is on the answer, then unmark it and mark no other."
               (magit-git-insert "cat-file" "-p" file)
               (if (equal (file-name-nondirectory file) "config.yml")
                   (forge--topic-parse-template-config)
-                (list (forge--topic-parse-template)))))
+                (list (forge--topic-parse-template (file-name-base file))))))
           (forge--topic-template-files repo class)))
 
 (cl-defgeneric forge--topic-template-files (repo class))
@@ -1978,7 +1978,7 @@ When point is on the answer, then unmark it and mark no other."
                                branch "--" paths))))
 
 (defun forge--topic-parse-template-config ()
-  (let-alist (yaml-parse-string (magit--buffer-string)
+  (let-alist (yaml-parse-string (buffer-str)
                                 :object-type 'alist
                                 :sequence-type 'list)
     (nconc
@@ -1992,7 +1992,7 @@ When point is on the answer, then unmark it and mark no other."
                                       " — " .about)))))
              .contact_links))))
 
-(defun forge--topic-parse-template ()
+(defun forge--topic-parse-template (name)
   (goto-char (point-min))
   (skip-chars-forward "\s\t\n\r")
   (if-let ((beg (and (looking-at "^---[\s\t]*$")
@@ -2001,20 +2001,19 @@ When point is on the answer, then unmark it and mark no other."
                      (re-search-forward "^---[\s\t]*$" nil t)
                      (match-beginning 0)))
            (repoid (oref (forge-get-repository :tracked) id)))
-      (let-alist (yaml-parse-string (magit--buffer-string beg end)
+      (let-alist (yaml-parse-string (buffer-str beg end)
                                     :object-type 'alist
                                     :sequence-type 'list
                                     :null-object nil
                                     :false-object nil)
-        `((prompt    . ,(format "%s — %s"
-                                (and .name
-                                     (stringp .name)
-                                     (propertize .name 'face 'bold))
-                                .about))
+        (when (stringp .name)
+          (setq name .name))
+        (setq name (propertize .name 'face 'bold))
+        `((prompt    . ,(if .about (format "%s — %s" name .about) name))
           (title     . ,(and .title
                              (stringp .title)
                              (string-trim .title)))
-          (text      . ,(magit--buffer-string (point) nil ?\n))
+          (text      . ,(string-trim (buffer-str (point))))
           ;; Prevent ad hock creation or previously unknown labels.
           (labels    . ,(cl-intersection
                          (ensure-list .labels)
@@ -2030,7 +2029,8 @@ When point is on the answer, then unmark it and mark no other."
                                         repoid)
                          :test #'equal))
           (draft     . ,(and (booleanp .draft) .draft))))
-    `((text . ,(magit--buffer-string)))))
+    `((prompt . ,(propertize name 'face 'bold))
+      (text   . ,(string-trim (buffer-str))))))
 
 ;;; Bug-Reference
 
@@ -2079,8 +2079,9 @@ modify `bug-reference-bug-regexp' if appropriate."
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
-;;   ("partial" . "llama--left-apply-partially")
-;;   ("rpartial" . "llama--right-apply-partially"))
+;;   ("buffer-string" . "buffer-string")
+;;   ("buffer-str" . "forge--buffer-substring-no-properties")
+;;   ("partial" . "llama--left-apply-partially"))
 ;; End:
 (provide 'forge-topic)
 ;;; forge-topic.el ends here

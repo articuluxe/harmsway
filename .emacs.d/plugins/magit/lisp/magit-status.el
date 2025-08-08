@@ -147,7 +147,7 @@ The functions which respect this option are
 
 - If nil, do not list any untracked files.
 - If t, list untracked files, but if a directory does not contain any
-  untracked files, then only list that directory, not the contained
+  tracked files, then only list that directory, not the contained
   untracked files.
 - If all, then list each individual untracked files.  This is can be
   very slow and is discouraged.
@@ -467,7 +467,7 @@ Type \\[magit-commit] to create a commit.
     (magit-run-section-hook 'magit-status-sections-hook)))
 
 (defun magit-status--get-file-position ()
-  (and-let* ((magit-status-goto-file-position)
+  (and-let* ((_ magit-status-goto-file-position)
              (file (magit-file-relative-name)))
     (save-excursion
       (widen)
@@ -553,7 +553,7 @@ the status buffer causes this section to disappear again."
       (insert (propertize (format "%-10s" "GitError! ")
                           'font-lock-face 'magit-section-heading))
       (insert (propertize magit-this-error 'font-lock-face 'error))
-      (when-let ((magit-show-process-buffer-hint)
+      (when-let ((_ magit-show-process-buffer-hint)
                  (key (car (where-is-internal 'magit-process-buffer))))
         (insert (format "  [Type `%s' for details]" (key-description key))))
       (insert ?\n))
@@ -817,4 +817,9 @@ Honor the buffer's file filter, which can be set using \"D - -\"."
 
 ;;; _
 (provide 'magit-status)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-status.el ends here

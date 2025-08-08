@@ -22,7 +22,7 @@
 
 ;;; Commentary:
 
-;; Integrate md5, sha1, base64, qrcode and others into this translation framework.
+;; Integrate md5, sha1, base64, qrcode and others into the framework.
 ;;
 ;; Shows that this framework is more than just translation purposes.
 ;;
@@ -32,11 +32,16 @@
 ;;
 ;; To avoid be prompted, specify the targets like this:
 ;;
-;;   \\=(gt-start (gt-text-utility :taker (gt-taker :langs '(md5 sha1)) :render (gt-insert-render)))
+;;   \\=(gt-start (gt-text-utility
+;;                  :taker (gt-taker :langs '(md5 sha1))
+;;                  :render (gt-insert-render)))
+;;
 
 ;;; Code:
 
 (require 'gt-render-buffer)
+
+(declare-function evil-define-key* "ext:evil-core.el" t t)
 
 (defvar gt-text-utilities `(base64 rot13 qrcode speak ,@(secure-hash-algorithms))
   "List of available targets for `gt-text-utility-engine'.")
@@ -64,7 +69,7 @@
     (unless tgts (user-error "No targets found"))
     (cons nil (cl-delete-duplicates tgts))))
 
-(cl-defmethod gt-start ((_ gt-text-utility-engine) task)
+(cl-defmethod gt-execute ((_ gt-text-utility-engine) task)
   "Translate and render the TASK directly, skip parse and other steps."
   (with-slots (text tgt res translator) task
     (setf res (mapcar (lambda (c) (gt-text-util tgt (encode-coding-string c 'utf-8))) text))

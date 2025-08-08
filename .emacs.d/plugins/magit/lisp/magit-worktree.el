@@ -226,7 +226,8 @@ then show it in Dired instead."
               "Show status for worktree"
               (cl-delete (directory-file-name (magit-toplevel))
                          (magit-list-worktrees)
-                         :test #'equal :key #'car)))))
+                         :test #'equal :key #'car)
+              nil t))))
   (magit-diff-visit-directory worktree))
 
 (defun magit--expand-worktree (directory)
@@ -293,4 +294,9 @@ with padding for alignment."
 
 ;;; _
 (provide 'magit-worktree)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-worktree.el ends here

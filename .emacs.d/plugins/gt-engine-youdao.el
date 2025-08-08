@@ -28,7 +28,8 @@
 ;;
 ;; > 此引擎仅供中文翻译使用
 ;;
-;; There are two engine implements here, one is `gt-youdao-dict-engine' and another is `gt-youdao-suggest-engine'.
+;; There are two engine implements here, one is `gt-youdao-dict-engine' and
+;; another is `gt-youdao-suggest-engine'.
 ;;
 ;; > 这里为有道实现了两个引擎：
 ;; > 1. `gt-youdao-dict-engine'，基于网页翻译接口，具备基本的翻译能力
@@ -39,6 +40,9 @@
 ;;; Code:
 
 (require 'gt-core)
+
+(declare-function dom-by-id "dom")
+(declare-function dom-by-class "dom")
 
 
 ;;; 有道词典
@@ -67,6 +71,7 @@
 
 (defun gt-youdao-dict--extract (dom)
   "从 DOM 中解析结果。"
+  (require 'dom)
   (let* ((phonetic (cl-loop for p in (dom-by-class dom "per-phone")
                             collect (cons (nth 2 (nth 2 p)) (nth 2 (nth 3 p)))))
          (node (dom-by-id dom "catalogue_author"))

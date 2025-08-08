@@ -205,9 +205,6 @@ to nil before loading Magit to prevent \"m\" from being bound.")
 
 (with-eval-after-load 'project
   (when (and magit-bind-magit-project-status
-             ;; Added in Emacs 28.1.
-             (boundp 'project-prefix-map)
-             (boundp 'project-switch-commands)
              ;; Only modify if it hasn't already been modified.
              (equal project-switch-commands
                     (eval (car (get 'project-switch-commands 'standard-value))
@@ -396,7 +393,7 @@ points at it) otherwise."
 (put 'magit-edit-line-commit 'disabled t)
 
 ;;;###autoload
-(defun magit-diff-edit-hunk-commit (file)
+(defun magit-diff-edit-hunk-commit ()
   "From a hunk, edit the respective commit and visit the file.
 
 First visit the file being modified by the hunk at the correct
@@ -413,10 +410,10 @@ to be visited.
 Neither the blob nor the file buffer are killed when finishing
 the rebase.  If that is undesirable, then it might be better to
 use `magit-rebase-edit-commit' instead of this command."
-  (interactive (list (magit-file-at-point t t)))
+  (interactive)
   (let ((magit-diff-visit-previous-blob nil))
     (with-current-buffer
-        (magit-diff-visit-file--internal file nil #'pop-to-buffer-same-window)
+        (magit-diff-visit-file--internal nil #'pop-to-buffer-same-window)
       (magit-edit-line-commit))))
 
 (put 'magit-diff-edit-hunk-commit 'disabled t)
@@ -617,7 +614,7 @@ the minibuffer too."
                         (save-excursion
                           (if (re-search-backward idx-format nil t)
                               (number-to-string
-                               (1+ (string-to-number (match-string 1))))
+                               (1+ (string-to-number (match-str 1))))
                             "1"))))
               pnt-args eob-args)
           (when (listp pnt-format)
@@ -746,7 +743,7 @@ abbreviated revision to the `kill-ring' and the
                           (magit-diff-mode
                            (if (string-match "\\.\\.\\.?\\(.+\\)"
                                              magit-buffer-range)
-                               (match-string 1 magit-buffer-range)
+                               (match-str 1 magit-buffer-range)
                              magit-buffer-range))
                           (magit-status-mode "HEAD")))))
       (when (magit-commit-p rev)
@@ -835,4 +832,9 @@ In Magit diffs, also skip over - and + at the beginning of the line."
 
 ;;; _
 (provide 'magit-extras)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-extras.el ends here

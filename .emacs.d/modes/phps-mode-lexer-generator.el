@@ -478,14 +478,6 @@
 
   (phps-mode-lexer-generator--add-rule
    phps-mode-lexer-generator--table
-   'ST_LOOKING_FOR_PROPERTY
-   (lambda() (looking-at phps-mode-lexer--any-char))
-   (lambda() (phps-mode-lexer--yyless 0)
-     (phps-mode-lexer--yy-pop-state)
-     (phps-mode-lexer--restart)))
-
-  (phps-mode-lexer-generator--add-rule
-   phps-mode-lexer-generator--table
    'ST_IN_SCRIPTING
    (lambda() (looking-at "::"))
    (lambda() (phps-mode-lexer--return-token 'T_PAAMAYIM_NEKUDOTAYIM)))
@@ -734,6 +726,24 @@
    'ST_IN_SCRIPTING
    (lambda() (looking-at "protected"))
    (lambda() (phps-mode-lexer--return-token-with-indent 'T_PROTECTED)))
+
+  (phps-mode-lexer-generator--add-rule
+   phps-mode-lexer-generator--table
+   'ST_IN_SCRIPTING
+   (lambda() (looking-at "public(set)"))
+   (lambda() (phps-mode-lexer--return-token-with-indent 'T_PUBLIC_SET)))
+
+  (phps-mode-lexer-generator--add-rule
+   phps-mode-lexer-generator--table
+   'ST_IN_SCRIPTING
+   (lambda() (looking-at "protected(set)"))
+   (lambda() (phps-mode-lexer--return-token-with-indent 'T_PROTECTED_SET)))
+
+  (phps-mode-lexer-generator--add-rule
+   phps-mode-lexer-generator--table
+   'ST_IN_SCRIPTING
+   (lambda() (looking-at "private(set)"))
+   (lambda() (phps-mode-lexer--return-token-with-indent 'T_PRIVATE_SET)))
 
   (phps-mode-lexer-generator--add-rule
    phps-mode-lexer-generator--table
@@ -1165,6 +1175,12 @@
   (phps-mode-lexer-generator--add-rule
    phps-mode-lexer-generator--table
    'ST_IN_SCRIPTING
+   (lambda() (looking-at "__PROPERTY__"))
+   (lambda() (phps-mode-lexer--return-token-with-indent 'T_PROPERTY_C)))
+
+  (phps-mode-lexer-generator--add-rule
+   phps-mode-lexer-generator--table
+   'ST_IN_SCRIPTING
    (lambda() (looking-at "__METHOD__"))
    (lambda() (phps-mode-lexer--return-token-with-indent 'T_METHOD_C)))
 
@@ -1371,7 +1387,7 @@
    (lambda()
      (looking-at
       (concat "\\(" phps-mode-lexer--tokens
-              "\\|[{}\"`]\\)")))
+              "\\|[(){}\"`]\\)")))
    (lambda()
      (let* ((start (match-beginning 0))
             (end (match-end 0))
@@ -1501,6 +1517,15 @@
                 start)
                start))))))))
 
+  (phps-mode-lexer-generator--add-rule
+   phps-mode-lexer-generator--table
+   'ST_LOOKING_FOR_PROPERTY
+   (lambda() (looking-at phps-mode-lexer--any-char))
+   (lambda()
+     (phps-mode-lexer--yyless 0)
+     (phps-mode-lexer--yy-pop-state)
+     (phps-mode-lexer--restart)))
+  
   (phps-mode-lexer-generator--add-rule
    phps-mode-lexer-generator--table
    'ST_IN_SCRIPTING
@@ -1690,9 +1715,7 @@
   (phps-mode-lexer-generator--add-rule
    phps-mode-lexer-generator--table
    'ST_END_HEREDOC
-   (lambda()
-     (looking-at
-      (concat phps-mode-lexer--any-char)))
+   (lambda() (looking-at phps-mode-lexer--any-char))
    (lambda()
      (let* ((start (match-beginning 0))
             (end (+ start

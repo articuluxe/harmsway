@@ -32,7 +32,7 @@
 
 ;; For `magit-rebase--todo'.
 (declare-function git-rebase-current-line "git-rebase" (&optional batch))
-(eval-when-compile
+(eval-and-compile
   (cl-pushnew 'action-type eieio--known-slot-names)
   (cl-pushnew 'action eieio--known-slot-names)
   (cl-pushnew 'action-options eieio--known-slot-names)
@@ -764,7 +764,7 @@ argument, prompt for the first commit to potentially squash into."
   (interactive (list current-prefix-arg
                      (magit-rebase-arguments)))
   (magit-rebase-interactive-1
-      (and-let* (((not select))
+      (and-let* ((_(not select))
                  (upstream (magit-get-upstream-branch)))
         (magit-git-string "merge-base" upstream "HEAD"))
       (nconc (list "--autosquash" "--keep-empty") args)
@@ -1010,7 +1010,7 @@ status buffer (i.e., the reverse of how they will be applied)."
                            (if (eq (oref obj action-type) 'merge)
                                (let ((options (oref obj action-options)))
                                  (and (string-match "-[cC] \\([^ ]+\\)" options)
-                                      (match-string 1 options)))
+                                      (match-str 1 options)))
                              (oref obj target)))
                          commits)))))
       (cl-assert (equal (length commits) (length abbrevs)))
@@ -1141,4 +1141,9 @@ status buffer (i.e., the reverse of how they will be applied)."
 
 ;;; _
 (provide 'magit-sequence)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-sequence.el ends here

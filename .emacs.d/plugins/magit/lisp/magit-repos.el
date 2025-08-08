@@ -31,6 +31,7 @@
 (require 'magit-core)
 
 (declare-function magit-status-setup-buffer "magit-status" (&optional directory))
+(declare-function magit-dired-jump "magit-dired" (&optional other-window))
 
 (defvar x-stretch-cursor)
 
@@ -262,7 +263,8 @@ If it contains \"%s\" then the directory is substituted for that."
   "m"   #'magit-repolist-mark
   "u"   #'magit-repolist-unmark
   "f"   #'magit-repolist-fetch
-  "5"   #'magit-repolist-find-file-other-frame)
+  "5"   #'magit-repolist-find-file-other-frame
+  "<remap> <dired-jump>" #'magit-dired-jump)
 
 (define-derived-mode magit-repolist-mode tabulated-list-mode "Repos"
   "Major mode for browsing a list of Git repositories."
@@ -384,7 +386,7 @@ Usually this is just its basename."
         (when (match-end 4)
           (magit--put-face (or (match-beginning 3) (match-beginning 4))
                            (match-end 4) 'error v))
-        (when (and (equal (match-string 2 v) "1")
+        (when (and (equal (match-str 2 v) "1")
                    (string-match-p magit-repolist-column-version-resume-regexp
                                    (magit-rev-format "%s")))
           (setq v (replace-match (propertize "+" 'face 'shadow) t t v 1))))
@@ -397,8 +399,8 @@ Usually this is just its basename."
 (defun magit-repolist-version< (a b)
   (save-match-data
     (let ((re "[0-9]+\\(\\.[0-9]*\\)*"))
-      (setq a (and (string-match re a) (match-string 0 a)))
-      (setq b (and (string-match re b) (match-string 0 b)))
+      (setq a (and (string-match re a) (match-str 0 a)))
+      (setq b (and (string-match re b) (match-str 0 b)))
       (cond ((and a b) (version< a b))
             (b nil)
             (t t)))))
@@ -490,7 +492,7 @@ instead."
   (if-let ((repos (and (not read-directory-name)
                        magit-repository-directories
                        (magit-repos-alist))))
-      (let ((reply (magit-completing-read "Git repository" repos)))
+      (let ((reply (magit-completing-read "Git repository" repos nil 'any)))
         (file-name-as-directory
          (or (cdr (assoc reply repos))
              (if (file-directory-p reply)
@@ -544,4 +546,9 @@ instead."
 
 ;;; _
 (provide 'magit-repos)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-repos.el ends here

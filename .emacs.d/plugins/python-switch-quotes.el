@@ -1,4 +1,4 @@
-;;; python-switch-quotes.el --- cycle between ' and " quotes in python strings
+;;; python-switch-quotes.el --- cycle between single and double quotes in python strings
 ;;; Copyright (C) 2016 Vladimir Lagunov
 
 ;;; Author: Vladimir Lagunov <lagunov.vladimir@gmail.com>

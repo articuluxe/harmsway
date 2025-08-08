@@ -4,9 +4,9 @@
 
 ;; Author: lorniu <lorniu@gmail.com>
 ;; URL: https://github.com/lorniu/gt.el
-;; Package-Requires: ((emacs "28.1") (pdd "0.21"))
+;; Package-Requires: ((emacs "28.1") (pdd "0.2.3"))
 ;; Keywords: convenience
-;; Version: 3.2.0
+;; Version: 3.2.1
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 

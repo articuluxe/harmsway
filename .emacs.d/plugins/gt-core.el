@@ -2,7 +2,6 @@
 
 ;; Copyright (C) 2024 lorniu <lorniu@gmail.com>
 ;; Author: lorniu <lorniu@gmail.com>
-;; Package-Requires: ((emacs "28.1") (pdd "0.21"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -42,6 +41,8 @@
   "Whether enable the debug message."
   :type 'boolean
   :group 'gt)
+
+(declare-function dom-by-tag "dom")
 
 
 ;;; Variables and Components
@@ -657,7 +658,7 @@ When `space' in DISPLAY, prepend a space to the STR."
 (defun gt-lookup-password (&rest params)
   "Query password stored in '.authinfo'.
 PARAMS contains search keys like :user, :host same as `auth-source-search'."
-  (when-let* ((secret (plist-get (car (apply 'auth-source-search params)) :secret)))
+  (when-let* ((secret (plist-get (car (apply #'auth-source-search params)) :secret)))
     (if (functionp secret)
         (funcall secret)
       secret)))
@@ -1580,7 +1581,7 @@ When output a task, hint that this is for a stream request.")
       (progn (cl-call-next-method render translator)
              (gt-update translator))
     (error (gt-log 'render (format "%s initialize failed, abort" (gt-str render)))
-           (user-error (format "[output init error] %s" err)))))
+           (user-error "[output init error] %s" err))))
 
 (cl-defmethod gt-output :around ((render gt-render) (translator gt-translator))
   (with-slots (state) translator
@@ -1732,7 +1733,7 @@ The value should not contain any space in the command path."
 (defun gt-play-audio (data)
   "Play audio DATA and return a promise that resolves when finished."
   (unless (and gt-tts-speaker (executable-find (car (split-string gt-tts-speaker))))
-    (user-error "Speaker '%s' not found. Please install it or configure `gt-tts-speaker'" gt-tts-speaker))
+    (user-error "Speaker not found (%s).\n\nPlease install `mpv' or configure `gt-tts-speaker' to specify the player" gt-tts-speaker))
   (pdd-then (cond ((bufferp data)
                    (with-current-buffer data (buffer-string)))
                   ((and (stringp data) (string-prefix-p "http" data))

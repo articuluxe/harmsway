@@ -1,0 +1,2 @@
+;; Generated package description from ssh-deploy.el  -*- no-byte-compile: t -*-
+(define-package "ssh-deploy" "3.1.16.0.20241117.185025" "Deployment via Tramp, global or per directory." '((emacs "25")) :commit "dc8882d1806c0fdd635bc625b109179dfa3c929c" :authors '(("Christian Johansson" . "christian@cvj.se")) :maintainer '("Christian Johansson" . "christian@cvj.se") :keywords '("tools" "convenience") :url "https://github.com/cjohansson/emacs-ssh-deploy")

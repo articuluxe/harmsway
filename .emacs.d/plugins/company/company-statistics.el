@@ -346,7 +346,9 @@ preserved automatically between Emacs sessions in the default
 configuration.  You can customize this behavior with
 `company-statistics-auto-save', `company-statistics-auto-restore' and
 `company-statistics-file'."
-  nil nil nil
+  :init-value nil
+  :lighter nil
+  :keymap nil
   :global t
   (if company-statistics-mode
       (progn

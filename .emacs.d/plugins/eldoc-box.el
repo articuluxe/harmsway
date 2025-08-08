@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Yuan Fu
 
-;; Version: 1.13.2
+;; Version: 1.14.1
 
 ;; Author: Yuan Fu <casouri@gmail.com>
 ;; URL: https://github.com/casouri/eldoc-box
@@ -62,6 +62,7 @@
 ;; - ‘eldoc-box-cleanup-interval’
 ;; - ‘eldoc-box-fringe-use-same-bg’
 ;; - ‘eldoc-box-self-insert-command-list’
+;; - ‘eldoc-box-hover-display-frame-above-point’
 
 ;;; Code:
 
@@ -88,6 +89,7 @@
   "Body face used in documentation childframe.")
 
 (defface eldoc-box-markdown-separator '((t . ( :strike-through t
+                                               :extend t
                                                :height 0.4)))
   "Face for the separator line in Markdown.")
 
@@ -180,6 +182,12 @@ Its value should be a list: (left right top)"
           (integer :tag "Left")
           (integer :tag "Right")
           (integer :tag "Top")))
+
+(defcustom eldoc-box-hover-display-frame-above-point nil
+  "Whether to display childframe above point in at-point mode.
+If non-nil, in ‘eldoc-box-hover-at-point-mode’, the childframe is
+displayed above point rather than below it."
+  :type 'boolean)
 
 (defvar eldoc-box-position-function #'eldoc-box--default-upper-corner-position-function
   "Eldoc-box uses this function to set childframe's position.
@@ -469,17 +477,28 @@ WINDOW nil means use selected window."
          (y (cdr point-pos))
          (em (frame-char-height)))
     (cons (if (< (- (frame-inner-width) width) x)
-              ;; space on the right of the pos is not enough
-              ;; put to left
-              (max 0 (- x width))
+              ;; Space on the right of the pos is not enough. Make
+              ;; sure the right edge of the child frame still in the
+              ;; Emacs frame. 16 is just a heuristic buffer value so
+              ;; the edge of the childframe doesn’t overlap with or
+              ;; exceed the edge of the parent frame.
+              (max 0 (- (frame-inner-width) width 16))
             ;; normal, just return x
             x)
-          (if (< (- (frame-inner-height) height) y)
+          (if eldoc-box-hover-display-frame-above-point
+              (if (< y height)
+                  ;; space above the pos is not enough
+                  ;; put below
+                  (min (- (frame-inner-height) height) (+ y em))
+                ;; normal, just return y - height
+                (- y height))
+            (if (< (- (frame-inner-height) height) y)
               ;; space under the pos is not enough
               ;; put above
               (max 0 (- y height))
             ;; normal, just return y + em
-            (+ y em)))))
+            (+ y em)))
+	  )))
 
 (defun eldoc-box--default-at-point-position-function (width height)
   "Set `eldoc-box-position-function' to this function.
@@ -491,8 +510,6 @@ base on WIDTH and HEIGHT of childframe text window."
     (or (eldoc-box--at-point-x-y-by-corfu)
         (cons (or (eldoc-box--at-point-x-by-company) x)
               y))))
-
-(defvar eldoc-box--markdown-separator-display-props)
 
 (defun eldoc-box--update-childframe-geometry (frame window)
   "Update the size and the position of childframe.
@@ -511,9 +528,15 @@ FRAME is the childframe, WINDOW is the primary window."
   ;; small before calling ‘window-text-pixel-size’ works, but brings
   ;; other problems. Now we just set the display property to nil
   ;; before calling ‘window-text-pixel-size’, and set them back after.
-  (setcdr eldoc-box--markdown-separator-display-props nil)
+  ;;
+  ;; This workaround still doesn’t work all the time, and the problem
+  ;; can be avoided by simply not using the display property ofr
+  ;; markdown prettifier and rather use (:extend t) face attribute.
+  ;; But let’s keep the comment in case someone does something similar
+  ;; in the future.
 
-  (let* ((size
+  (let* ((parent-frame (frame-parent frame))
+         (size
           (window-text-pixel-size
            window nil nil
            (if (functionp eldoc-box-max-pixel-width) (funcall eldoc-box-max-pixel-width) eldoc-box-max-pixel-width)
@@ -522,13 +545,19 @@ FRAME is the childframe, WINDOW is the primary window."
          (width (car size))
          (height (cdr size))
          (width (+ width (frame-char-width frame))) ; add margin
+         ;; On non-mac systems, childframe outside of the parent frame
+         ;; is clipped.
+         (width (if (eq (window-system) 'ns)
+                    width
+                  (min width (- (frame-pixel-width parent-frame)
+                                32)))) ; Some buffer.
+         (height (if (eq (window-system) 'ns)
+                     height
+                   (min height (- (frame-pixel-height parent-frame)
+                                  32))))
          (frame-resize-pixelwise t)
          (pos (funcall eldoc-box-position-function width height)))
     (set-frame-size frame width height t)
-
-    ;; Set the display property back.
-    (setcdr eldoc-box--markdown-separator-display-props
-            '(:width text))
 
     ;; move position
     (set-frame-position frame (car pos) (cdr pos))))
@@ -821,11 +850,15 @@ childframe."
     (goto-char (point-min))
     (let (prop)
       (while (setq prop (text-property-search-forward 'markdown-hr))
-        (add-text-properties
-         (prop-match-beginning prop)
-         (prop-match-end prop)
-         `( display ,eldoc-box--markdown-separator-display-props
-            face eldoc-box-markdown-separator))))))
+        (let* ((beg (prop-match-beginning prop))
+               (end (prop-match-end prop))
+               (end-plus-newline
+                (save-excursion
+                  (goto-char end)
+                  (min (1+ (line-end-position)) (point-max)))))
+          (add-text-properties beg end '(display " "))
+          (add-text-properties beg end-plus-newline
+                               '(face eldoc-box-markdown-separator)))))))
 
 (defun eldoc-box--replace-en-space ()
   "Display the en spaces in documentation as regular spaces."

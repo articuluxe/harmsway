@@ -66,7 +66,7 @@
   "Create a new tag with the given NAME at COMMIT.
 With a prefix argument annotate the tag.
 \n(git tag [--annotate] NAME REV)"
-  (interactive (list (magit-read-tag "Tag name")
+  (interactive (list (magit-completing-read "Create tag" (magit-list-tags))
                      (magit-read-branch-or-commit "Place tag on")
                      (let ((args (magit-tag-arguments)))
                        (when current-prefix-arg
@@ -84,7 +84,7 @@ defaulting to the tag at point.
   (interactive (list (if-let ((tags (magit-region-values 'tag)))
                          (magit-confirm t nil "Delete %d tags" nil tags)
                        (let ((helm-comp-read-use-marked t))
-                         (magit-read-tag "Delete tag" t)))))
+                         (magit-read-tag "Delete tag")))))
   (magit-run-git "tag" "-d" tags))
 
 ;;;###autoload
@@ -128,7 +128,7 @@ defaulting to the tag at point.
 See also `magit-release-tag-regexp'.")
 
 (defvar magit-release-tag-regexp "\\`\
-\\(?1:\\(?:v\\(?:ersion\\)?\\|r\\(?:elease\\)?\\)[-_]?\\)?\
+\\(?1:\\(?:v\\(?:ersion\\)?\\|r\\(?:elease\\)?\\)[-_/]?\\)?\
 \\(?2:[0-9]+\\(?:\\.[0-9]+\\)*\
 \\(?:-[a-zA-Z0-9-]+\\(?:\\.[a-zA-Z0-9-]+\\)*\\)?\\)\\'"
   "Regexp used by `magit-tag-release' to parse release tags.
@@ -167,7 +167,7 @@ that is not the case, propose a message using a reasonable format."
           (`(,pver ,ptag ,pmsg) (car (magit--list-releases)))
           (msg (magit-rev-format "%s"))
           (ver (and (string-match magit-release-commit-regexp msg)
-                    (match-string 1 msg)))
+                    (match-str 1 msg)))
           (_   (and (not ver)
                     (require (quote sisyphus) nil t)
                     (string-match magit-release-commit-regexp
@@ -185,14 +185,14 @@ that is not the case, propose a message using a reasonable format."
                                 ver)))
                 (ver
                  (concat (and (string-match magit-release-tag-regexp ptag)
-                              (match-string 1 ptag))
+                              (match-str 1 ptag))
                          ver))
                 (t
                  (read-string
                   (format "Create release tag (previous was %s): " ptag)
                   ptag))))
           (ver (and (string-match magit-release-tag-regexp tag)
-                    (match-string 2 tag))))
+                    (match-str 2 tag))))
        (list tag
              (and (seq-some (apply-partially
                              #'string-match-p
@@ -232,7 +232,7 @@ a tag qualifies as a release tag."
                        (let ((tag (substring line 0 (match-beginning 0)))
                              (msg (substring line (match-end 0))))
                          (and (string-match magit-release-tag-regexp tag)
-                              (let ((ver (match-string 2 tag))
+                              (let ((ver (match-str 2 tag))
                                     (version-regexp-alist
                                      magit-tag-version-regexp-alist))
                                 (list (list (version-to-list ver)
@@ -245,4 +245,9 @@ a tag qualifies as a release tag."
 
 ;;; _
 (provide 'magit-tag)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-tag.el ends here

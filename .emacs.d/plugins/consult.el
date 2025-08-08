@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 2.6
+;; Version: 2.7
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -227,10 +227,22 @@ with a space character, the *Completions* buffer and a few log
 buffers.  The regular expressions are matched case sensitively."
   :type '(repeat regexp))
 
+(defcustom consult-buffer-list-function #'buffer-list
+  "List of buffers to use for selection.
+By default, the variable is set to the function `buffer-list', which
+returns all buffers from all frames.  Set it to
+`consult--frame-buffer-list' to only use buffers belonging to the
+current frame (or tab-bar tab).  Alternatively use a custom function for
+custom buffer isolation."
+  :type `(choice (const :tag "All buffers" ,#'buffer-list)
+                 (const :tag "Frame/Tab buffers" ,#'consult--frame-buffer-list)
+                 (function :tag "Custom function")))
+
 (defcustom consult-buffer-sources
-  '(consult--source-hidden-buffer
+  '(consult--source-buffer
+    consult--source-hidden-buffer
     consult--source-modified-buffer
-    consult--source-buffer
+    consult--source-other-buffer
     consult--source-recent-file
     consult--source-buffer-register
     consult--source-file-register
@@ -563,7 +575,7 @@ We use invalid characters outside the Unicode range.")
   "Special character regexp.")
 
 (defvar-local consult--narrow nil
-  "Current narrowing key.")
+  "Current narrow key.")
 
 (defvar-local consult--narrow-config nil
   "Narrowing config of the current completion.")
@@ -4691,9 +4703,14 @@ to search and is passed to `consult--buffer-query'."
                    (t "")))
           buffers)))
 
+(defun consult--frame-buffer-list ()
+  "List of buffers belonging to the current frame or tab."
+  (append (frame-parameter nil 'buffer-list)
+          (reverse (frame-parameter nil 'buried-buffer-list))))
+
 (cl-defun consult--buffer-query ( &key sort directory mode as predicate (filter t)
                                   include (exclude consult-buffer-filter)
-                                  (buffer-list t))
+                                  (buffer-list consult-buffer-list-function))
   "Query for a list of matching buffers.
 The function supports filtering by various criteria which are
 used throughout Consult.  In particular it is the backbone of
@@ -4705,13 +4722,14 @@ EXCLUDE is a list of regexps.
 INCLUDE is a list of regexps.
 MODE can be a mode or a list of modes to restrict the returned buffers.
 PREDICATE is a predicate function.
-BUFFER-LIST is the unfiltered list of buffers.
+BUFFER-LIST is a function or a list of buffers.
 AS is a conversion function."
   (let ((root (consult--normalize-directory directory)))
-    (setq buffer-list (if (eq buffer-list t) (buffer-list) (copy-sequence buffer-list)))
-    (when sort
-      (setq buffer-list (funcall (intern (format "consult--buffer-sort-%s" sort)) buffer-list)))
-    (when (or filter mode as root)
+    (setq buffer-list (cond
+                        ((functionp buffer-list) (funcall buffer-list))
+                        ((listp buffer-list) (copy-sequence buffer-list))
+                        (t (buffer-list))))
+    (when (or filter mode root)
       (let ((exclude-re (consult--regexp-filter exclude))
             (include-re (consult--regexp-filter include))
             (case-fold-search))
@@ -4738,7 +4756,11 @@ AS is a conversion function."
                                       dir
                                     (expand-file-name dir)))))
            (or (not predicate) (funcall predicate it))
-           (if as (funcall as it) it)))))
+           it))))
+    (when sort
+      (setq buffer-list (funcall (intern (format "consult--buffer-sort-%s" sort)) buffer-list)))
+    (when as
+      (cl-loop for it in-ref buffer-list do (setf it (funcall as it))))
     buffer-list))
 
 (defun consult--buffer-file-hash ()
@@ -4890,8 +4912,12 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
      :items
      ,(lambda () (consult--buffer-query :sort 'visibility
                                         :filter 'invert
-                                        :as #'consult--buffer-pair)))
-  "Hidden buffer source for `consult-buffer'.")
+                                        :as #'consult--buffer-pair
+                                        :buffer-list t)))
+  "Hidden buffer source for `consult-buffer'.
+The source is hidden by default and can be summoned via its narrow key.
+All buffers are taken into account, i.e., the entire `buffer-list' from
+all frames.")
 
 (defvar consult--source-modified-buffer
   `( :name     "Modified Buffer"
@@ -4908,7 +4934,10 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
                                         (lambda (buf)
                                           (and (buffer-modified-p buf)
                                                (buffer-file-name buf))))))
-  "Modified buffer source for `consult-buffer'.")
+  "Modified buffer source for `consult-buffer'.
+The source is hidden by default and can be summoned via its narrow key.
+Only buffers returned by the `consult-buffer-list-function' are taken
+into account.")
 
 (defvar consult--source-buffer
   `( :name     "Buffer"
@@ -4921,7 +4950,30 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
      :items
      ,(lambda () (consult--buffer-query :sort 'visibility
                                         :as #'consult--buffer-pair)))
-  "Buffer source for `consult-buffer'.")
+  "Buffer source for `consult-buffer'.
+Only buffers returned by the `consult-buffer-list-function' are taken into
+account.")
+
+(defvar consult--source-other-buffer
+  `( :name     "Other Buffer"
+     :narrow   ?o
+     :hidden   t
+     :category buffer
+     :face     consult-buffer
+     :history  buffer-name-history
+     :state    ,#'consult--buffer-state
+     :enabled  ,(lambda () (not (eq consult-buffer-list-function #'buffer-list)))
+     :items
+     ,(lambda ()
+        (let ((local (consult--string-hash (consult--buffer-query))))
+          (consult--buffer-query :sort 'visibility
+                                 :predicate (lambda (buf) (not (gethash buf local)))
+                                 :as #'consult--buffer-pair
+                                 :buffer-list t))))
+  "Source for `consult-buffer' for buffers from other frames or tabs.
+The source is hidden by default and can be summoned via its narrow key.
+Only buffers returned by the `consult-buffer-list-function' are taken
+into account.")
 
 (autoload 'consult-register--candidates "consult-register")
 

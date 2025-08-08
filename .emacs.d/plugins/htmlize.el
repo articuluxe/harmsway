@@ -5,7 +5,7 @@
 ;; Author: Hrvoje Niksic <hniksic@gmail.com>
 ;; Homepage: https://github.com/emacsorphanage/htmlize
 ;; Keywords: hypermedia, extensions
-;; Version: 1.58
+;; Package-Version: 1.59
 ;; Package-Requires: ((emacs "26.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -75,7 +75,7 @@
 
 (require 'cl-lib)
 
-(defconst htmlize-version "1.58")
+(defconst htmlize-version "1.59")
 
 (defgroup htmlize nil
   "Convert buffer text and faces to HTML."
@@ -350,8 +350,8 @@ https://www.iana.org/assignments/media-types/media-types.xhtml#image")
   ;; overlays that specify the `face' property, even when they
   ;; contain smaller text properties that also specify `face'.
   ;; Emacs display engine merges those faces, and so must we.
-  (or limit
-      (setq limit (point-max)))
+  (unless limit
+    (setq limit (point-max)))
   (let ((next-prop (next-single-property-change pos 'face nil limit))
         (overlay-faces (htmlize-overlay-faces-at pos)))
     (while (progn
@@ -680,9 +680,9 @@ list."
              (push (htmlize-get-text-with-display pos next-change)
                    visible-list))
             ((and (eq show 'ellipsis)
-                  (not (eq last-show 'ellipsis))
-                  ;; Conflate successive ellipses.
-                  (push htmlize-ellipsis visible-list))))
+                  (not (eq last-show 'ellipsis)))
+             ;; Conflate successive ellipses.
+             (push htmlize-ellipsis visible-list)))
       (setq pos next-change last-show show))
     (htmlize-concat (nreverse visible-list))))
 
@@ -981,7 +981,7 @@ If no rgb.txt file is found, return nil."
   foreground                            ; foreground color, #rrggbb
   background                            ; background color, #rrggbb
   size                                  ; size
-  boldp                                         ; whether face is bold
+  boldp                                 ; whether face is bold
   italicp                               ; whether face is italic
   underlinep                            ; whether face is underlined
   overlinep                             ; whether face is overlined
@@ -1205,9 +1205,8 @@ If no rgb.txt file is found, return nil."
          (def (cond ((stringp raw-def) (list :foreground raw-def))
                     ((listp raw-def) raw-def)
                     (t
-                     (error (format (concat "face override must be an "
-                                            "attribute list or string, got %s")
-                                    raw-def))))))
+                     (error "Face override must be %s, got %S"
+                            "an attribute list or string" raw-def)))))
     (and def
          (htmlize-attrlist-to-fstruct def (symbol-name face)))))
 
@@ -1315,8 +1314,8 @@ overlays that specify `face'."
   (let ((sym (intern (format "htmlize-%s-%s" htmlize-output-type method))))
     (indirect-function (if (fboundp sym)
                            sym
-                         (let ((default (intern (concat "htmlize-default-"
-                                                        (symbol-name method)))))
+                         (let ((default (intern (format "htmlize-default-%s"
+                                                        method))))
                            (if (fboundp default)
                                default
                              'ignore))))))

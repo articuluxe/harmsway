@@ -68,17 +68,15 @@ the line and column corresponding to that location."
 
 (defun magit-find-file-read-args (prompt)
   (let ((pseudo-revs '("{worktree}" "{index}")))
-    (if-let ((rev (magit-completing-read "Find file from revision"
-                                         (append pseudo-revs
-                                                 (magit-list-refnames nil t))
-                                         nil nil nil 'magit-revision-history
-                                         (or (magit-branch-or-commit-at-point)
-                                             (magit-get-current-branch)))))
-        (list rev (magit-read-file-from-rev (if (member rev pseudo-revs)
-                                                "HEAD"
-                                              rev)
-                                            prompt))
-      (user-error "Nothing selected"))))
+    (let ((rev (magit-completing-read "Find file from revision"
+                                      (append pseudo-revs
+                                              (magit-list-refnames nil t))
+                                      nil 'any nil 'magit-revision-history
+                                      (or (magit-branch-or-commit-at-point)
+                                          (magit-get-current-branch)))))
+      (list rev
+            (magit-read-file-from-rev (if (member rev pseudo-revs) "HEAD" rev)
+                                      prompt)))))
 
 (defun magit-find-file--internal (rev file fn)
   (let ((buf (magit-find-file-noselect rev file))
@@ -107,39 +105,30 @@ the line and column corresponding to that location."
         (move-to-column col)))
     buf))
 
-(defun magit-find-file-noselect (rev file)
+(defun magit-find-file-noselect (rev file &optional revert)
   "Read FILE from REV into a buffer and return the buffer.
-REV is a revision or one of \"{worktree}\" or \"{index}\".
-FILE must be relative to the top directory of the repository."
-  (magit-find-file-noselect-1 rev file))
-
-(defun magit-find-file-noselect-1 (rev file &optional revert)
-  "Read FILE from REV into a buffer and return the buffer.
-REV is a revision or one of \"{worktree}\" or \"{index}\".
-FILE must be relative to the top directory of the repository.
-Non-nil REVERT means to revert the buffer.  If `ask-revert',
-then only after asking.  A non-nil value for REVERT is ignored if REV is
-\"{worktree}\"."
-  (if (equal rev "{worktree}")
-      (find-file-noselect (expand-file-name file (magit-toplevel)))
-    (let ((topdir (magit-toplevel)))
-      (when (file-name-absolute-p file)
-        (setq file (file-relative-name file topdir)))
-      (with-current-buffer (magit-get-revision-buffer-create rev file)
+REV is a revision or one of \"{worktree}\" or \"{index}\".  FILE must
+be relative to the top directory of the repository.  Non-nil REVERT
+means to revert the buffer.  If `ask-revert', then only after asking.
+A non-nil value for REVERT is ignored if REV is \"{worktree}\"."
+  (let* ((topdir   (magit-toplevel))
+         (absolute (file-name-absolute-p file))
+         (file-abs (if absolute file (expand-file-name file topdir)))
+         (file-rel (if absolute (file-relative-name file topdir) file))
+         (defdir   (file-name-directory file-abs))
+         (rev      (magit--abbrev-if-hash rev)))
+    (if (equal rev "{worktree}")
+        (find-file-noselect file-abs)
+      (with-current-buffer (magit-get-revision-buffer-create rev file-rel)
         (when (or (not magit-buffer-file-name)
                   (if (eq revert 'ask-revert)
                       (y-or-n-p (format "%s already exists; revert it? "
                                         (buffer-name))))
                   revert)
-          (setq magit-buffer-revision
-                (if (equal rev "{index}")
-                    "{index}"
-                  (magit-rev-format "%H" rev)))
+          (setq magit-buffer-revision rev)
           (setq magit-buffer-refname rev)
-          (setq magit-buffer-file-name (expand-file-name file topdir))
-          (setq default-directory
-                (let ((dir (file-name-directory magit-buffer-file-name)))
-                  (if (file-exists-p dir) dir topdir)))
+          (setq magit-buffer-file-name file-abs)
+          (setq default-directory (if (file-exists-p defdir) defdir topdir))
           (setq-local revert-buffer-function #'magit-revert-rev-file-buffer)
           (revert-buffer t t)
           (run-hooks (if (equal rev "{index}")
@@ -196,11 +185,12 @@ See also https://github.com/doomemacs/doomemacs/pull/6309."
 ;;; Find Index
 
 (defvar magit-find-index-hook nil)
+(add-hook 'magit-find-index-hook #'magit-blob-mode)
 
 (defun magit-find-file-index-noselect (file &optional revert)
   "Read FILE from the index into a buffer and return the buffer.
 FILE must to be relative to the top directory of the repository."
-  (magit-find-file-noselect-1 "{index}" file (or revert 'ask-revert)))
+  (magit-find-file-noselect "{index}" file (or revert 'ask-revert)))
 
 (defun magit-update-index ()
   "Update the index with the contents of the current buffer.
@@ -386,13 +376,14 @@ in a single window."
 (defun magit-blob-next ()
   "Visit the next blob which modified the current file."
   (interactive)
-  (if magit-buffer-file-name
-      (magit-blob-visit (or (magit-blob-successor magit-buffer-revision
-                                                  magit-buffer-file-name)
-                            magit-buffer-file-name))
-    (if (buffer-file-name (buffer-base-buffer))
-        (user-error "You have reached the end of time")
-      (user-error "Buffer isn't visiting a file or blob"))))
+  (cond
+   (magit-buffer-file-name
+    (magit-blob-visit
+     (or (magit-blob-successor magit-buffer-revision magit-buffer-file-name)
+         magit-buffer-file-name)))
+   ((buffer-file-name (buffer-base-buffer))
+    (user-error "You have reached the end of time"))
+   ((user-error "Buffer isn't visiting a file or blob"))))
 
 (defun magit-blob-previous ()
   "Visit the previous blob which modified the current file."
@@ -610,5 +601,13 @@ If DEFAULT is non-nil, use this as the default value instead of
 (define-obsolete-function-alias 'magit-unstage-buffer-file
   'magit-file-unstage "Magit 4.3.2")
 
+(define-obsolete-function-alias 'magit-find-file-noselect-1
+  'magit-find-file-noselect "Magit 4.3.9")
+
 (provide 'magit-files)
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("match-string" . "match-string")
+;;   ("match-str" . "match-string-no-properties"))
+;; End:
 ;;; magit-files.el ends here

@@ -4,8 +4,8 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.24.1
-;; Package-Requires: ((emacs "28.1") (shell-maker "0.78.1"))
+;; Version: 2.24.2
+;; Package-Requires: ((emacs "28.1") (shell-maker "0.78.2") (transient "0.9.3"))
 (defconst chatgpt-shell--version "2.24.1")
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -86,6 +86,7 @@
 (require 'chatgpt-shell-openrouter)
 (require 'chatgpt-shell-perplexity)
 (require 'chatgpt-shell-prompt-compose)
+(require 'chatgpt-shell-transient)
 
 (defcustom chatgpt-shell-request-timeout 600
   "How long to wait for a request to time out in seconds."
@@ -823,6 +824,8 @@ Set SYSTEM-PROMPT to override variable `chatgpt-shell-system-prompt'"
       #'chatgpt-shell-next-item)
     (define-key chatgpt-shell-mode-map (kbd "C-c C-e")
       #'chatgpt-shell-prompt-compose)
+    (define-key chatgpt-shell-mode-map (kbd "C-c C-t")
+      #'chatgpt-shell-transient)
     shell-buffer))
 
 (defun chatgpt-shell--shrink-system-prompt (prompt)
