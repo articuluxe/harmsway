@@ -1,0 +1,1 @@
+find src -maxdepth 1 -name \*.el | grep -v -- pkg | grep -v tests | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins
