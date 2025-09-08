@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2022, 2024  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2022, 2024-2025  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2024-12-03 10:22:23 dharms>
+;; Modified Time-stamp: <2025-09-08 12:29:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -229,7 +229,6 @@
           ((eq sym 'sourcerer)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow3"))))))
           ((eq sym 'srcery)
-           (custom-theme-set-faces sym '(show-paren-match ((t (:background "#FF8700" :foreground "#FED06E")))))
            (custom-theme-set-faces sym '(region ((t (:background "tomato4")))))
            )
           ((eq sym 'subatomic)
