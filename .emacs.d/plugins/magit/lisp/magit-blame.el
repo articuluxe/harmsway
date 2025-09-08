@@ -747,14 +747,14 @@ modes is toggled, then this mode also gets toggled automatically.
         (delete-overlay ov)))))
 
 (defun magit-blame-maybe-show-message ()
-  (when (magit-blame--style-get 'show-message)
-    (if-let ((msg (cdr (assoc "summary"
-                              (gethash (oref (magit-current-blame-chunk)
-                                             orig-rev)
-                                       magit-blame-cache)))))
-        (progn (set-text-properties 0 (length msg) nil msg)
-               (magit-msg "%S" msg))
-      (magit-msg "Commit data not available yet.  Still blaming."))))
+  (cond-let
+    ((not (magit-blame--style-get 'show-message)))
+    ([msg (cdr (assoc "summary"
+                      (gethash (oref (magit-current-blame-chunk) orig-rev)
+                               magit-blame-cache)))]
+     (set-text-properties 0 (length msg) nil msg)
+     (magit-msg "%S" msg))
+    ((magit-msg "Commit data not available yet.  Still blaming."))))
 
 ;;; Commands
 
@@ -999,7 +999,13 @@ instead of the hash, like `kill-ring-save' would."
 (provide 'magit-blame)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-blame.el ends here

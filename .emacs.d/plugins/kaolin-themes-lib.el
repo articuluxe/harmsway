@@ -456,6 +456,7 @@
     (diff-mod    purple3)
     (diff-rem    red1)
 
+    ;; TODO: rework & remove that block
     (diff-bg-add spring-green2)
     (diff-bg-mod vermilion4)
     (diff-bg-rem crimson4)
@@ -1089,14 +1090,14 @@
     ;; TODO:
     ;; (magit-diff-file-heading-selection (:background selection))
     ;; TODO:
-    (magit-diff-base              (:background vermilion3 :foreground fg2))
-    (magit-diff-base-highlight    (:background vermilion3 :foreground fg1))
+    ;; (magit-diff-base              (:background vermilion3 :foreground fg2))
+    ;; (magit-diff-base-highlight    (:background vermilion3 :foreground fg1))
     (magit-diff-context           (:background bg1 :foreground fg3))
     (magit-diff-context-highlight (:background bg2 :foreground fg2))
-    (magit-diff-added             (:background bg1 :foreground diff-bg-add))
-    (magit-diff-added-highlight   (:background diff-bg-add :foreground fg1))
-    (magit-diff-removed           (:background bg1 :foreground diff-bg-rem))
-    (magit-diff-removed-highlight (:background diff-bg-rem :foreground fg1))
+    (magit-diff-added             (:foreground diff-add))
+    (magit-diff-added-highlight   (:background bg2 :foreground diff-add))
+    (magit-diff-removed           (:background bg1 :foreground diff-rem))
+    (magit-diff-removed-highlight (:background bg2 :foreground diff-rem))
     (magit-diffstat-added         (:foreground diff-add))
     (magit-diffstat-removed       (:foreground diff-rem))
     (magit-tag                    (:foreground orange1))
@@ -1296,33 +1297,31 @@
     (diff-nonexistent       (:foreground err))
     (diff-hunk-header       (:background bg4))
     (diff-file-header       (:background 'unspecified :foreground keyword))
-    (diff-added             (:background diff-bg-add :foreground adaptive-fg))
-    (diff-changed           (:background diff-bg-mod :foreground adaptive-fg))
-    (diff-removed           (:background diff-bg-rem :foreground adaptive-fg))
-    (diff-refine-added      (:background diff-add :foreground adaptive-fg))
-    (diff-refine-changed    (:background diff-mod :foreground adaptive-fg))
-    (diff-refine-removed    (:background diff-rem :foreground adaptive-fg))
-    (diff-indicator-added   (:background diff-bg-add :foreground adaptive-fg))
-    (diff-indicator-changed (:background diff-bg-mod :foreground adaptive-fg))
-    (diff-indicator-removed (:background diff-bg-rem :foreground adaptive-fg))
+    (diff-added             (:foreground diff-add))
+    (diff-changed           (:foreground diff-mod))
+    (diff-removed           (:foreground diff-rem))
+    ;; (diff-refine-added      (:background diff-add :foreground adaptive-fg))
+    ;; (diff-refine-changed    (:background diff-mod :foreground adaptive-fg))
+    ;; (diff-refine-removed    (:background diff-rem :foreground adaptive-fg))
+    (diff-indicator-added   (:foreground diff-add))
+    (diff-indicator-changed (:foreground diff-mod))
+    (diff-indicator-removed (:foreground diff-rem))
 
     ;; smerge
     (smerge-base    (:background bg2))
-    (smerge-upper   (:background diff-bg-add))
-    (smerge-lower   (:background diff-bg-rem))
+    (smerge-upper   (:foreground diff-add))
+    (smerge-lower   (:foreground diff-rem))
     (smerge-markers (:background comment :foreground bg1))
     ;; Emacs version <= 25
-    (smerge-mine    (:background diff-bg-add))
-    (smerge-other   (:background diff-bg-rem))
+    (smerge-mine    (:background diff-add))
+    (smerge-other   (:background diff-rem))
     ;; ??
     ;; smerge-refined-added
     ;; smerge-refined-removed
 
     ;; Ediff
-    ;; (ediff-current-diff-A (:background hl-line :foreground fg4))
-    ;; (ediff-current-diff-B (:background hl-line :foreground fg4))
-    ;; (ediff-current-diff-C (:background hl-line :foreground fg4))
-    (ediff-current-diff-Ancestor (:background diff-bg-mod :foreground fg2))
+    ;; TODO: rework
+    (ediff-current-diff-Ancestor (:background  :foreground fg2))
     (ediff-current-diff-A (:background red2 :foreground fg2))
     (ediff-current-diff-B (:background spring-green2 :foreground fg2))
     (ediff-current-diff-C (:background cyan2 :foreground fg2))
@@ -1343,8 +1342,8 @@
     (ediff-odd-diff-C (:background bg4))
 
     ;; calendar.el
-    (diary (:foreground kaolin-yellow))
-    (holiday (:foreground bg1 :background kaolin-red))
+    (diary          (:foreground kaolin-yellow))
+    (holiday        (:foreground bg1 :background kaolin-red))
     (calendar-today (:background bg4 :foreground keyword))
 
     ;; calfw
@@ -1390,7 +1389,7 @@
     (treemacs-git-modified-face     (:foreground diff-mod))
     (treemacs-fringe-indicator-face (:foreground prep))
     (treemacs-tags-face             (:foreground fg1))
-    (treemacs-on-success-pulse-face (:background diff-bg-add :foreground bg1))
+    (treemacs-on-success-pulse-face (:background done :foreground bg1))
     (treemacs-on-failure-pulse-face (:background err :foreground bg1))
     (treemacs-term-node-face        (:foreground prep))
 
@@ -1740,7 +1739,7 @@
     (helm-match                               (:foreground search1 :bold bold))
     (helm-selection                           (:background bg3 :foreground hl :bold bold))
     (helm-selection-line                      (:inherit 'helm-selection))
-    (helm-visible-mark                        (:background diff-bg-add :foreground bg1))
+    (helm-visible-mark                        (:foreground done))
     (helm-candidate-number                    (:foreground str))
     (helm-separator                           (:foreground type))
 
@@ -1753,7 +1752,7 @@
     (helm-bookmark-w3m                        (:foreground search1))
 
     (helm-buffer-process                      (:foreground str))
-    (helm-buffer-saved-out                    (:background diff-bg-mod :foreground bg1))
+    (helm-buffer-saved-out                    (:background done :foreground bg1))
     (helm-buffer-size                         (:foreground fg1))
     (helm-buffer-directory                    (:foreground keyword))
     (helm-buffer-archive                      (:foreground const))
@@ -1804,7 +1803,7 @@
 
     ;; Wgrep
     (wgrep-face        (:background bg2 :foreground diff-mod))
-    (wgrep-delete-face (:background diff-bg-rem :foreground bg2))
+    (wgrep-delete-face (:background err :foreground bg2))
     (wgrep-done-face   (:foreground done))
     (wgrep-file-face   (:foreground comment))
     (wgrep-reject-face (:inherit 'error))

@@ -175,17 +175,18 @@ repository cannot be determined, instead invoke `forge-add-repository'."
   (magit-git-fetch (oref repo remote) (magit-fetch-arguments)))
 
 (defun forge--maybe-git-fetch (repo &optional buffer)
-  (if (buffer-live-p buffer)
-      (with-current-buffer buffer
-        (if (and (derived-mode-p 'magit-mode)
-                 (forge-repository-equal (forge-get-repository :stub?) repo)
-                 (magit-toplevel))
-            (magit-git-fetch (oref repo remote) (magit-fetch-arguments))
-          (magit-refresh-buffer)))
-    (when-let ((worktree (forge-get-worktree repo)))
-      (let ((default-directory worktree)
-            (magit-inhibit-refresh t))
-        (magit-git-fetch (oref repo remote) (magit-fetch-arguments))))))
+  (cond-let
+    ((buffer-live-p buffer)
+     (with-current-buffer buffer
+       (if (and (derived-mode-p 'magit-mode)
+                (forge-repository-equal (forge-get-repository :stub?) repo)
+                (magit-toplevel))
+           (magit-git-fetch (oref repo remote) (magit-fetch-arguments))
+         (magit-refresh-buffer))))
+    ([worktree (forge-get-worktree repo)]
+     (let ((default-directory worktree)
+           (magit-inhibit-refresh t))
+       (magit-git-fetch (oref repo remote) (magit-fetch-arguments))))))
 
 ;;;###autoload(autoload 'forge-pull-notifications "forge-commands" nil t)
 (transient-define-suffix forge-pull-notifications ()
@@ -207,8 +208,7 @@ repository cannot be determined, instead invoke `forge-add-repository'."
                            (forge--get-github-repository)))
   (interactive
    (list (read-number "Pull topic: "
-                      (and-let* ((topic (forge-current-topic)))
-                        (oref topic number)))))
+                      (and$ (forge-current-topic) (oref $ number)))))
   (forge--pull-topic (forge-get-repository :tracked) number))
 
 ;;;###autoload(autoload 'forge-pull-this-topic "forge-commands" nil t)
@@ -367,16 +367,11 @@ commit, and for a file."
     (user-error "Nothing to browse here")))
 
 (defun forge--browse-target ()
-  (or (and-let* ((branch (magit--painted-branch-at-point)))
-        (forge-get-url :branch branch))
-      (and-let* ((commit (magit-commit-at-point)))
-        (forge-get-url :commit commit))
-      (and-let* ((branch (magit-branch-at-point)))
-        (forge-get-url :branch branch))
-      (and-let* ((remote (magit-remote-at-point)))
-        (forge-get-url :remote remote))
-      (and-let* ((file (magit-file-at-point)))
-        (forge-get-url :blob nil file))
+  (or (and$ (magit--painted-branch-at-point) (forge-get-url :branch $))
+      (and$ (magit-commit-at-point)          (forge-get-url :commit $))
+      (and$ (magit-branch-at-point)          (forge-get-url :branch $))
+      (and$ (magit-remote-at-point)          (forge-get-url :remote $))
+      (and$ (magit-file-at-point)            (forge-get-url :blob nil $))
       (forge-post-at-point)
       (forge-current-topic)
       (and (or magit-buffer-file-name buffer-file-name)
@@ -420,13 +415,14 @@ commit, and for a file."
 
 (cl-defmethod forge-get-url ((_(eql :commit)) commit)
   (let ((repo (forge-get-repository :stub)))
-    (unless (magit-list-containing-branches
-             commit "-r" (concat (oref repo remote) "/*"))
-      (if-let* ((branch (car (magit-list-containing-branches commit "-r")))
-                (remote (car (magit-split-branch-name branch))))
-          (setq repo (forge-get-repository :stub remote))
-        (message "%s does not appear to be available on any remote.  %s"
-                 commit "You might have to push it first.")))
+    (cond-let*
+      ((magit-list-containing-branches
+        commit "-r" (concat (oref repo remote) "/*")))
+      ([branch (car (magit-list-containing-branches commit "-r"))]
+       [remote (car (magit-split-branch-name branch))]
+       (setq repo (forge-get-repository :stub remote)))
+      ((message "%s does not appear to be available on any remote.  %s"
+                commit "You might have to push it first.")))
     (forge--format repo 'commit-url-format
                    `((?r . ,(magit-commit-p commit))))))
 
@@ -576,10 +572,11 @@ With prefix argument MENU, also show the topic menu."
     (cond
      ((and (eq transient-current-command 'forge-repositories-menu)
            (forge-get-repository repo nil :tracked?))
-      (if-let ((buffer (get-buffer (forge-topics-buffer-name repo))))
-          (progn (switch-to-buffer buffer)
-                 (transient-setup 'forge-topics-menu))
-        (forge-list-topics repo)))
+      (cond-let
+        ([buffer (get-buffer (forge-topics-buffer-name repo))]
+         (switch-to-buffer buffer)
+         (transient-setup 'forge-topics-menu))
+        ((forge-list-topics repo))))
      (worktree
       (magit-status-setup-buffer worktree))
      ((forge-get-repository repo nil :tracked?)
@@ -639,11 +636,11 @@ With prefix argument MENU, also show the topic menu."
                    "Source branch"
                    (magit-list-remote-branch-names)
                    nil t nil 'magit-revision-history
-                   (or (and-let* ((d (magit-branch-at-point)))
+                   (or (and-let ((d (magit-branch-at-point)))
                          (if (magit-remote-branch-p d)
                              d
                            (magit-get-push-branch d t)))
-                       (and-let* ((d (magit-get-current-branch)))
+                       (and-let ((d (magit-get-current-branch)))
                          (if (magit-remote-branch-p d)
                              d
                            (magit-get-push-branch d t))))))
@@ -786,8 +783,8 @@ Please see the manual for more information."
   (interactive (list (forge-read-pullreq "Branch pull request")))
   (let ((pullreq (forge-get-pullreq pullreq)))
     (if-let ((branch (forge--pullreq-branch-active pullreq)))
-        (progn (message "Branch %S already exists and is configured" branch)
-               branch)
+        (prog1 branch
+          (message "Branch %S already exists and is configured" branch))
       (forge--branch-pullreq pullreq)
       (forge-refresh-buffer))))
 
@@ -811,7 +808,7 @@ Please see the manual for more information."
          (branch-n (format "pr-%s" number))
          (branch (or (forge--pullreq-branch-internal pullreq) branch-n))
          (pullreq-ref (format "refs/pullreqs/%s" number)))
-    (cond ((and-let* ((pr-branch (oref pullreq head-ref)))
+    (cond ((and-let ((pr-branch (oref pullreq head-ref)))
              (string-search ":" pr-branch))
            ;; Such a branch name would be invalid.  If we encounter
            ;; it anyway, then that means that the source branch and
@@ -980,7 +977,7 @@ pull-request locally, is named \"pr-N\" (where N is the pull-request
 number) and this command is made available as a substitute in the
 `magit-push' menu."
   :if (lambda ()
-        (and-let* ((branch (magit-get-current-branch)))
+        (and-let ((branch (magit-get-current-branch)))
           (and (forge-get-pullreq :branch branch)
                (string-match-p "\\`pr-[0-9]+\\'" branch))))
   :description (lambda ()
@@ -993,15 +990,15 @@ number) and this command is made available as a substitute in the
                                     (oref pullreq head-ref))
                             'magit-branch-remote))))
   (interactive (list (magit-push-arguments)))
-  (if-let* ((branch (magit-get-current-branch))
-            (pullreq (forge-get-pullreq :branch branch)))
-      (progn
-        (run-hooks 'magit-credential-hook)
-        (magit-run-git-async "push" "-v"
-                             (delete "--tags" (delete "--follow-tags" args))
-                             (oref pullreq head-user)
-                             (format "%s:%s" branch (oref pullreq head-ref))))
-    (error "Checked out branch is not an unnamed pull-request branch")))
+  (cond-let*
+    ([branch (magit-get-current-branch)]
+     [pullreq (forge-get-pullreq :branch branch)]
+     (run-hooks 'magit-credential-hook)
+     (magit-run-git-async "push" "-v"
+                          (delete "--tags" (delete "--follow-tags" args))
+                          (oref pullreq head-user)
+                          (format "%s:%s" branch (oref pullreq head-ref))))
+    ((error "Checked out branch is not an unnamed pull-request branch"))))
 
 ;;; Marks
 
@@ -1499,9 +1496,13 @@ context."
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"          . "cond-let--and$")
+;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let"      . "cond-let--when-let")
 ;;   ("buffer-string" . "buffer-string")
-;;   ("buffer-str" . "forge--buffer-substring-no-properties")
-;;   ("partial" . "llama--left-apply-partially"))
+;;   ("buffer-str"    . "forge--buffer-substring-no-properties")
+;;   ("partial"       . "llama--left-apply-partially"))
 ;; End:
 (provide 'forge-commands)
 ;;; forge-commands.el ends here

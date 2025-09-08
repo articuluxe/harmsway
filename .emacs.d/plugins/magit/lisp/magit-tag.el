@@ -187,10 +187,9 @@ that is not the case, propose a message using a reasonable format."
                  (concat (and (string-match magit-release-tag-regexp ptag)
                               (match-str 1 ptag))
                          ver))
-                (t
-                 (read-string
-                  (format "Create release tag (previous was %s): " ptag)
-                  ptag))))
+                ((read-string (format "Create release tag (previous was %s): "
+                                      ptag)
+                              ptag))))
           (ver (and (string-match magit-release-tag-regexp tag)
                     (match-str 2 tag))))
        (list tag
@@ -247,7 +246,13 @@ a tag qualifies as a release tag."
 (provide 'magit-tag)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-tag.el ends here

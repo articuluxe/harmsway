@@ -362,26 +362,26 @@ BATCH is non-nil, in which case nil is returned.  Non-nil
 BATCH also ignores commented lines."
   (save-excursion
     (goto-char (line-beginning-position))
-    (if-let ((re-start (if batch
-                           "^"
-                         (format "^\\(?99:%s\\)? *"
-                                 (regexp-quote comment-start))))
-             (type (seq-some (pcase-lambda (`(,type . ,re))
-                               (let ((case-fold-search nil))
-                                 (and (looking-at (concat re-start re)) type)))
-                             git-rebase-line-regexps)))
-        (git-rebase-action
+    (cond-let*
+      ([re-start (if batch
+                     "^"
+                   (format "^\\(?99:%s\\)? *" (regexp-quote comment-start)))]
+       [type (seq-some (pcase-lambda (`(,type . ,re))
+                         (let ((case-fold-search nil))
+                           (and (looking-at (concat re-start re)) type)))
+                       git-rebase-line-regexps)]
+       (git-rebase-action
          :action-type    type
-         :action         (and-let* ((action (match-str 1)))
+         :action         (and-let ((action (match-str 1)))
                            (or (cdr (assoc action git-rebase-short-options))
                                action))
          :action-options (match-str 2)
          :target         (match-str 3)
          :trailer        (match-str 5)
-         :comment-p      (and (match-str 99) t))
-      (and (not batch)
-           ;; Use empty object rather than nil to ease handling.
-           (git-rebase-action)))))
+         :comment-p      (and (match-str 99) t)))
+      ((not batch)
+       ;; Use empty object rather than nil to ease handling.
+       (git-rebase-action)))))
 
 (defun git-rebase-set-action (action)
   "Set action of commit line to ACTION.
@@ -412,11 +412,10 @@ of its action type."
                    (delete-region beg (+ beg 2))
                  (insert comment-start " ")))
              (forward-line))
-            (t
-             ;; In the case of --rebase-merges, commit lines may have
-             ;; other lines with other action types, empty lines, and
-             ;; "Branch" comments interspersed.  Move along.
-             (forward-line)))))
+            ;; In the case of --rebase-merges, commit lines may have
+            ;; other lines with other action types, empty lines, and
+            ;; "Branch" comments interspersed.  Move along.
+            ((forward-line)))))
        (goto-char
         (if git-rebase-auto-advance
             end-marker
@@ -946,7 +945,13 @@ is used as a value for `imenu-extract-index-name-function'."
 (provide 'git-rebase)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; git-rebase.el ends here

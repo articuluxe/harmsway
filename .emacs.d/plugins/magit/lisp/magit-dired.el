@@ -40,9 +40,9 @@ With a prefix argument, visit in another window.  If there
 is no file at point, then instead visit `default-directory'."
   (interactive "P")
   (dired-jump other-window
-              (and-let* ((file (if (derived-mode-p 'magit-repolist-mode)
-                                   (tabulated-list-get-id)
-                                 (magit-file-at-point))))
+              (and-let ((file (if (derived-mode-p 'magit-repolist-mode)
+                                  (tabulated-list-get-id)
+                                (magit-file-at-point))))
                 (expand-file-name (if (file-directory-p file)
                                       (file-name-as-directory file)
                                     file)))))
@@ -110,7 +110,13 @@ Interactively, open the file at point."
 (provide 'magit-dired)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-dired.el ends here

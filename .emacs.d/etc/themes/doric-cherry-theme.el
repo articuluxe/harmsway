@@ -1,4 +1,4 @@
-;;; doric-cherry-theme.el --- Minimalist light theme -*- lexical-binding:t -*-
+;;; doric-cherry-theme.el --- Minimalist theme with light background and pink+purple hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -56,18 +56,25 @@
       (bg-shadow-intense "#cc95b7")
       (fg-shadow-intense "#683455")
 
-      (bg-accent "#edcae5")
-      (fg-accent "#77266e")
+      (bg-accent "#ecc0e4")
+      (fg-accent "#a03068")
 
-      (fg-faint-red "#750000")
-      (fg-faint-green "#056100")
-      (fg-faint-yellow "#5f4602")
-      (fg-faint-blue "#353362")
-      (fg-faint-magenta "#553372")
-      (fg-faint-cyan "#35485e"))
+      (fg-red "#a00040")
+      (fg-green "#006730")
+      (fg-yellow "#704000")
+      (fg-blue "#203080")
+      (fg-magenta "#800060")
+      (fg-cyan "#005560")
+
+      (bg-red "#f2c0c5")
+      (bg-green "#b9e2d0")
+      (bg-yellow "#e9e6b0")
+      (bg-blue "#bbcce8")
+      (bg-magenta "#e0c0e7")
+      (bg-cyan "#c2ebe8"))
   "Palette of `doric-cherry' theme.")
 
-  (doric-themes-define-theme doric-cherry light))
+  (doric-themes-define-theme doric-cherry light "Minimalist theme with light background and pink+purple hues"))
 
 (provide 'doric-cherry-theme)
 ;;; doric-cherry-theme.el ends here

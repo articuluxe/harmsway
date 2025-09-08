@@ -1,4 +1,4 @@
-;;; doric-fire-theme.el --- Minimalist theme with dark background and orange hues -*- lexical-binding:t -*-
+;;; doric-valley-theme.el --- Minimalist theme with dark background and gold+teal hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -41,40 +41,40 @@
                (require-theme 'doric-themes t))
     (require 'doric-themes))
 
-  (defvar doric-fire-palette
-    '((cursor "#ef7839")
-      (bg-main "#282420")
-      (fg-main "#f5ceb0")
-      (border "#706061")
+  (defvar doric-valley-palette
+    '((cursor "#94d0eb")
+      (bg-main "#383035")
+      (fg-main "#e0d5b7")
+      (border "#7a787f")
 
-      (bg-shadow-subtle "#40332b")
+      (bg-shadow-subtle "#484040")
       (fg-shadow-subtle "#afa497")
 
-      (bg-neutral "#4f4542")
+      (bg-neutral "#554f52")
       (fg-neutral "#d9cfbe")
 
-      (bg-shadow-intense "#7c362c")
-      (fg-shadow-intense "#f3ac6f")
+      (bg-shadow-intense "#3d5e57")
+      (fg-shadow-intense "#99dec7")
 
-      (bg-accent "#56452f")
-      (fg-accent "#d6b577")
+      (bg-accent "#714d4c")
+      (fg-accent "#f6c097")
 
-      (fg-red "#eca27f")
-      (fg-green "#b9d08a")
-      (fg-yellow "#c5ba80")
+      (fg-red "#eca28f")
+      (fg-green "#b9d0aa")
+      (fg-yellow "#c0b060")
       (fg-blue "#9fbfe7")
       (fg-magenta "#e9acbf")
       (fg-cyan "#a0c0d0")
 
-      (bg-red "#54241f")
-      (bg-green "#2f401f")
-      (bg-yellow "#504420")
-      (bg-blue "#363457")
+      (bg-red "#613229")
+      (bg-green "#325331")
+      (bg-yellow "#514e2f")
+      (bg-blue "#2a3f5d")
       (bg-magenta "#5a2f40")
-      (bg-cyan "#2f4954"))
-  "Palette of `doric-fire' theme.")
+      (bg-cyan "#2f4e4f"))
+  "Palette of `doric-valley' theme.")
 
-  (doric-themes-define-theme doric-fire dark "Minimalist theme with dark background and orange hues"))
+  (doric-themes-define-theme doric-valley dark "Minimalist theme with dark background and gold+teal hues"))
 
-(provide 'doric-fire-theme)
-;;; doric-fire-theme.el ends here
+(provide 'doric-valley-theme)
+;;; doric-valley-theme.el ends here

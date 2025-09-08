@@ -21,7 +21,8 @@
 ;; Package-Requires: (
 ;;     (emacs "28.1")
 ;;     (compat "30.1")
-;;     (llama "1.0.0")
+;;     (cond-let "0.1")
+;;     (llama "1.0")
 ;;     (magit-section "4.3.8")
 ;;     (seq "2.24")
 ;;     (transient "0.9.3")
@@ -531,8 +532,8 @@ is run in the top-level directory of the current working tree."
                               (fpr (epg-sub-key-fingerprint key))
                               (id  (epg-sub-key-id key))
                               (author
-                               (and-let* ((id-obj
-                                           (car (epg-key-user-id-list cert))))
+                               (and-let ((id-obj
+                                          (car (epg-key-user-id-list cert))))
                                  (let ((id-str (epg-user-id-string id-obj)))
                                    (if (stringp id-str)
                                        id-str
@@ -798,7 +799,13 @@ For X11 something like ~/.xinitrc should work.\n"
 
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit.el ends here

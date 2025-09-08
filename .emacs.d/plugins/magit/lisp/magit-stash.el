@@ -448,7 +448,7 @@ Then apply STASH, dropping it if it applies cleanly."
     (unless noerror
       (user-error "No %s changes to save" (cond ((not index)  "unstaged")
                                                 ((not worktree) "staged")
-                                                (t "local"))))))
+                                                ("local"))))))
 
 (defun magit-stash-store (message ref rev)
   (magit-update-ref ref message rev))
@@ -683,7 +683,13 @@ that make up the stash."
 (provide 'magit-stash)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-stash.el ends here

@@ -1,4 +1,4 @@
-;;; doric-obsidian-theme.el --- Minimalist dark theme -*- lexical-binding:t -*-
+;;; doric-obsidian-theme.el --- Minimalist theme with dark grey background and rocky hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -59,15 +59,22 @@
       (bg-accent "#432f2a")
       (fg-accent "#b59487")
 
-      (fg-faint-red "#dba2a2")
-      (fg-faint-green "#85c397")
-      (fg-faint-yellow "#c4a992")
-      (fg-faint-blue "#95afd2")
-      (fg-faint-magenta "#c5a3b2")
-      (fg-faint-cyan "#a5bfce"))
+      (fg-red "#eca28f")
+      (fg-green "#b9d0aa")
+      (fg-yellow "#c0b080")
+      (fg-blue "#9fbfe7")
+      (fg-magenta "#e9acbf")
+      (fg-cyan "#a0c0d0")
+
+      (bg-red "#4d1f20")
+      (bg-green "#1f402e")
+      (bg-yellow "#504432")
+      (bg-blue "#223567")
+      (bg-magenta "#603254")
+      (bg-cyan "#2f4f54"))
   "Palette of `doric-obsidian' theme.")
 
-  (doric-themes-define-theme doric-obsidian dark))
+  (doric-themes-define-theme doric-obsidian dark "Minimalist theme with dark grey background and rocky hues"))
 
 (provide 'doric-obsidian-theme)
 ;;; doric-obsidian-theme.el ends here

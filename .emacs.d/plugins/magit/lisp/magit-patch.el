@@ -116,8 +116,8 @@ which creates patches for all commits that are reachable from
       (save-match-data
         (find-file
          (expand-file-name
-          (concat (and-let* ((v (transient-arg-value "--reroll-count=" args)))
-                    (format "v%s-" v))
+          (concat (and$ (transient-arg-value "--reroll-count=" args)
+                        (format "v%s-" $))
                   "0000-cover-letter.patch")
           (let ((topdir (magit-toplevel)))
             (if-let ((dir (transient-arg-value "--output-directory=" args)))
@@ -250,8 +250,8 @@ which creates patches for all commits that are reachable from
      (list (expand-file-name
             (read-file-name "Apply patch: "
                             default-directory nil nil
-                            (and-let* ((file (magit-file-at-point)))
-                              (file-relative-name file))))
+                            (and$ (magit-file-at-point)
+                                  (file-relative-name $))))
            (transient-args 'magit-patch-apply))))
   (if (not file)
       (transient-setup 'magit-patch-apply)
@@ -326,7 +326,13 @@ is asked to pull.  START has to be reachable from that commit."
 (provide 'magit-patch)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-patch.el ends here

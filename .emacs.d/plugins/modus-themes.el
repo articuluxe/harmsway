@@ -3059,6 +3059,7 @@ FG and BG are the main colors."
     `(magit-section-heading ((,c :inherit bold)))
     `(magit-section-heading-selection ((,c :inherit bold :background ,bg-hover-secondary)))
     `(magit-section-highlight ((,c :background ,bg-dim)))
+    `(magit-section-secondary-heading ((,c :inherit bold)))
     `(magit-sequence-done ((,c :inherit success)))
     `(magit-sequence-drop ((,c :inherit error)))
     `(magit-sequence-exec ((,c :inherit bold :foreground ,magenta)))
@@ -3189,18 +3190,28 @@ FG and BG are the main colors."
     `(minimap-active-region-background ((,c :background ,bg-active)))
     `(minimap-current-line-face ((,c :background ,bg-cyan-intense :foreground ,fg-main)))
 ;;;;; mode-line
-    `(mode-line ((,c :inherit modus-themes-ui-variable-pitch
-                     :box ,border-mode-line-active
-                     :background ,bg-mode-line-active
-                     :foreground ,fg-mode-line-active)))
+    `(mode-line
+      ((default :inherit modus-themes-ui-variable-pitch
+                :background ,bg-mode-line-active
+                :foreground ,fg-mode-line-active)
+       (((supports :box t))
+        :box ,border-mode-line-active)
+       (t :underline ,border-mode-line-active)))
     `(mode-line-active ((,c :inherit mode-line)))
     `(mode-line-buffer-id ((,c :inherit bold)))
     `(mode-line-emphasis ((,c :inherit bold :foreground ,modeline-info)))
-    `(mode-line-highlight ((,c :background ,bg-hover :foreground ,fg-main :box ,fg-main)))
-    `(mode-line-inactive ((,c :inherit modus-themes-ui-variable-pitch
-                              :box ,border-mode-line-inactive
-                              :background ,bg-mode-line-inactive
-                              :foreground ,fg-mode-line-inactive)))
+    `(mode-line-highlight
+      ((default :background ,bg-hover :foreground ,fg-main)
+       (((supports :box t))
+        :box ,fg-main)
+       (t :underline ,fg-main)))
+    `(mode-line-inactive
+      ((default :inherit modus-themes-ui-variable-pitch
+                :background ,bg-mode-line-inactive
+                :foreground ,fg-mode-line-inactive)
+       (((supports :box t))
+        :box ,border-mode-line-inactive)
+       (t :underline ,border-mode-line-inactive)))
 ;;;;; mood-line
     `(mood-line-modified ((,c :inherit italic)))
     `(mood-line-status-error ((,c :inherit error)))
@@ -3328,7 +3339,10 @@ FG and BG are the main colors."
     `(notmuch-crypto-signature-good-key ((,c :inherit success)))
     `(notmuch-crypto-signature-unknown ((,c :inherit warning)))
     `(notmuch-jump-key ((,c :inherit modus-themes-key-binding)))
-    `(notmuch-message-summary-face ((,c :inherit bold :background ,bg-inactive)))
+    `(notmuch-message-summary-face
+      ((default :inherit bold :background ,bg-inactive)
+       (((supports :overline t))
+        :overline ,border)))
     `(notmuch-search-count ((,c :foreground ,fg-dim)))
     `(notmuch-search-date ((,c :foreground ,date-common)))
     `(notmuch-search-flagged-face ((,c :foreground ,keyword)))

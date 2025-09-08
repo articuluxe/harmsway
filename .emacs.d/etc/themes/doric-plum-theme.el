@@ -1,4 +1,4 @@
-;;; doric-plum-theme.el --- Minimalist dark theme -*- lexical-binding:t -*-
+;;; doric-plum-theme.el --- Minimalist theme with dark background and pink+purple hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -59,15 +59,22 @@
       (bg-accent "#501e3e")
       (fg-accent "#c586ba")
 
-      (fg-faint-red "#dba2a2")
-      (fg-faint-green "#85c397")
-      (fg-faint-yellow "#c4a992")
-      (fg-faint-blue "#95afd2")
-      (fg-faint-magenta "#c5a3b2")
-      (fg-faint-cyan "#a5bfce"))
+      (fg-red "#eca28f")
+      (fg-green "#b9d0aa")
+      (fg-yellow "#c0b080")
+      (fg-blue "#9fbfe7")
+      (fg-magenta "#e9acbf")
+      (fg-cyan "#a0c0d0")
+
+      (bg-red "#602038")
+      (bg-green "#124438")
+      (bg-yellow "#50442f")
+      (bg-blue "#3a386b")
+      (bg-magenta "#5a2f40")
+      (bg-cyan "#2f495f"))
   "Palette of `doric-plum' theme.")
 
-  (doric-themes-define-theme doric-plum dark))
+  (doric-themes-define-theme doric-plum dark "Minimalist theme with dark background and pink+purple hues"))
 
 (provide 'doric-plum-theme)
 ;;; doric-plum-theme.el ends here

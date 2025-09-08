@@ -172,14 +172,15 @@ One of `new-discussion', `new-issue', `new-pullreq', `reply' and `edit'.")
             (setq forge--buffer-assignees .assignees)
             (setq forge--buffer-labels .labels)
             (setq forge--buffer-draft-p .draft))))
-      (when (and (not resume)
-                 (memq action '(new-discussion new-issue new-pullreq)))
-        (if-let ((template (alist-get 'text forge--buffer-template)))
-            (progn (unless (string-prefix-p "# " template)
-                     (insert "# \n\n"))
-                   (insert template)
-                   (goto-char 3))
-          (insert "# ")))
+      (cond-let
+        (resume)
+        ((not (memq action '(new-discussion new-issue new-pullreq))))
+        ([template (alist-get 'text forge--buffer-template)]
+         (unless (string-prefix-p "# " template)
+           (insert "# \n\n"))
+         (insert template)
+         (goto-char 3))
+        ((insert "# ")))
       (when fn
         (funcall fn)))
     (run-hook-wrapped 'forge-edit-post-hook
@@ -406,8 +407,12 @@ Insert the value of `branch.BRANCH.description' of the source BRANCH."
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"          . "cond-let--and$")
+;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let"      . "cond-let--when-let")
 ;;   ("buffer-string" . "buffer-string")
-;;   ("buffer-str" . "forge--buffer-substring-no-properties"))
+;;   ("buffer-str"    . "forge--buffer-substring-no-properties"))
 ;; End:
 (provide 'forge-post)
 ;;; forge-post.el ends here

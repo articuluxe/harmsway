@@ -454,8 +454,8 @@ Type \\[magit-commit] to create a commit.
          (`(,largs ,lfiles) (magit-log--get-value  'magit-status-mode 'status)))
       (magit-setup-buffer #'magit-status-mode nil
         :initial-section #'magit-status-goto-initial-section
-        :select-section (and-let* ((args (magit-status--get-file-position)))
-                          (lambda () (apply #'magit-status--goto-file-position args)))
+        :select-section (and$ (magit-status--get-file-position)
+                              (lambda () (apply #'magit-status--goto-file-position $)))
         (magit-buffer-diff-args  dargs)
         (magit-buffer-diff-files dfiles)
         (magit-buffer-log-args   largs)
@@ -645,8 +645,7 @@ arguments are for internal use only."
                   (propertize "does not exist on"
                               'font-lock-face 'magit-branch-warning)
                   (propertize remote 'font-lock-face 'magit-branch-remote))))
-              (t
-               (propertize "invalid upstream configuration"
+              ((propertize "invalid upstream configuration"
                            'font-lock-face 'magit-branch-warning)))))
           (insert ?\n))))))
 
@@ -819,7 +818,13 @@ Honor the buffer's file filter, which can be set using \"D - -\"."
 (provide 'magit-status)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-status.el ends here

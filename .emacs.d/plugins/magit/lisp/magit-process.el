@@ -784,7 +784,8 @@ Magit status buffer."
                                                       default-directory))))
                        (concat (file-relative-name pwd default-directory) " "))
                   (magit-process--format-arguments program args))))
-        (magit-insert-heading (if face (propertize cmd 'face face) cmd)))
+        (magit-insert-heading
+          (if face (magit--propertize-face cmd face) cmd)))
       (when errlog
         (if (bufferp errlog)
             (insert (with-current-buffer errlog
@@ -810,8 +811,7 @@ Magit status buffer."
    ((and args (equal program shell-file-name))
     (propertize (cadr args)
                 'font-lock-face 'magit-section-heading))
-   (t
-    (concat (propertize (file-name-nondirectory program)
+   ((concat (propertize (file-name-nondirectory program)
                         'font-lock-face 'magit-section-heading)
             " "
             (propertize (mapconcat #'shell-quote-argument args " ")
@@ -832,8 +832,7 @@ Magit status buffer."
                  (delete-region (oref section start)
                                 (1+ (oref section end)))
                  (cl-decf count))
-                (t
-                 (push section head))))
+                ((push section head))))
         (pop tail))
       (oset magit-root-section children
             (nconc (reverse head) tail)))))
@@ -1026,9 +1025,9 @@ from the user."
                       magit-process-password-prompt-regexps string)))
     (process-send-string
      process
-     (concat (or (and-let* ((key (match-str 99 string)))
-                   (run-hook-with-args-until-success
-                    'magit-process-find-password-functions key))
+     (concat (or (and$ (match-str 99 string)
+                       (run-hook-with-args-until-success
+                        'magit-process-find-password-functions $))
                  (let ((read-passwd-map
                         (magit-process-make-keymap process read-passwd-map)))
                    (read-passwd prompt)))
@@ -1346,7 +1345,13 @@ Limited by `magit-process-error-tooltip-max-lines'."
 (provide 'magit-process)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-process.el ends here

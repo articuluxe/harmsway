@@ -498,13 +498,14 @@ or, failing that, the abbreviated HEAD commit hash."
                 (if-let ((branch (magit-get-current-branch)))
                     (propertize branch 'font-lock-face 'magit-branch-local)
                   (propertize "(detached)" 'font-lock-face 'warning))))
-              (if-let ((desc (magit-git-string "describe" "--tags")))
-                  (progn (when (and magit-modules-overview-align-numbers
-                                    (string-match-p "\\`[0-9]" desc))
-                           (insert ?\s))
-                         (insert (propertize desc 'font-lock-face 'magit-tag)))
-                (when-let ((abbrev (magit-rev-format "%h")))
-                  (insert (propertize abbrev 'font-lock-face 'magit-hash)))))
+              (cond-let
+                ([desc (magit-git-string "describe" "--tags")]
+                 (when (and magit-modules-overview-align-numbers
+                            (string-match-p "\\`[0-9]" desc))
+                   (insert ?\s))
+                 (insert (propertize desc 'font-lock-face 'magit-tag)))
+                ([abbrev (magit-rev-format "%h")]
+                 (insert (propertize abbrev 'font-lock-face 'magit-hash)))))
             (insert ?\n))))))
   (insert ?\n))
 
@@ -715,7 +716,13 @@ These sections can be expanded to show the respective commits."
 (provide 'magit-submodule)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-submodule.el ends here

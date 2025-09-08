@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.24.2
-;; Package-Requires: ((emacs "28.1") (shell-maker "0.78.2") (transient "0.9.3"))
-(defconst chatgpt-shell--version "2.24.1")
+;; Version: 2.30.2
+;; Package-Requires: ((emacs "28.1") (shell-maker "0.81.1") (transient "0.9.3"))
+(defconst chatgpt-shell--version "2.30.2")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -179,6 +179,13 @@ For example:
      (message \"Output: %s\" output)))"
   :type 'hook
   :group 'shell-maker)
+
+(defcustom chatgpt-shell-show-model-icons t
+  "When non-nil display model image icons.
+
+For example, when swapping models."
+  :type 'boolean
+  :group 'chatgpt-shell)
 
 (defvaralias 'chatgpt-shell-swap-model-version 'chatgpt-shell-swap-model)
 
@@ -588,7 +595,17 @@ non-nil; otherwise `completing-read'."
                            chatgpt-shell-models)
                      width))
             (models (seq-map (lambda (model)
-                               (format (format "%%-%ds   %%s" width)
+                               (format (format "%%s%%-%ds   %%s" width)
+                                       (if-let* ((show-icon chatgpt-shell-show-model-icons)
+                                                 (icon (map-elt model :icon))
+                                                 (icon-filename (chatgpt-shell--fetch-model-icon icon)))
+                                           (with-temp-buffer
+                                             (insert-image (create-image icon-filename nil nil
+                                                                         :ascent 'center
+                                                                         :height (frame-char-height)))
+                                             (insert "  ")
+                                             (buffer-string))
+                                         "")
                                        (map-elt model :provider)
                                        (map-elt model :version)))
                              (if chatgpt-shell-swap-model-filter
@@ -607,6 +624,79 @@ non-nil; otherwise `completing-read'."
             (chatgpt-shell-clear-buffer)))
         (setq-default chatgpt-shell-model-version selection))
     (error "No other providers found")))
+
+(defun chatgpt-shell--unsorted-collection (collection)
+  "Return a completion table from COLLECTION that inhibits sorting.
+
+See `completing-read' for the types that are supported for
+COLLECTION."
+  (lambda (string predicate action)
+    (if (eq action 'metadata)
+        (let ((current-metadata (cdr (completion-metadata (minibuffer-contents)
+                                                          collection
+                                                          minibuffer-completion-predicate))))
+          `(metadata
+            ,@(map-merge 'alist
+                         current-metadata
+                         '((display-sort-function . identity)
+                           (cycle-sort-function . identity)))))
+      (complete-with-action action collection string predicate))))
+(defun chatgpt-shell-select-reasoning-effort (&optional global)
+  "Interactively set the reasoning effort for the current model.
+
+By default, this is done buffer-locally when in a
+`chatgpt-shell-mode' buffer `chatgpt-shell-prompt-compose-mode'
+buffer. When GLOBAL is non-nil (interactively with a prefix
+argument), it is set globally."
+  (interactive "P")
+  (let* ((model (chatgpt-shell--resolved-model))
+         (selector (map-elt model :reasoning-effort-selector)))
+    (unless selector
+      (user-error "No reasoning effort selector is defined for %s" (chatgpt-shell-model-version)))
+    (let* ((buf (cond
+                 (global
+                  nil)
+                 ((eq major-mode 'chatgpt-shell-mode)
+                  (current-buffer))
+                 ((memq major-mode '(chatgpt-shell-prompt-compose-mode chatgpt-shell-prompt-compose-view-mode))
+                  (chatgpt-shell--primary-buffer))))
+           ;; The call to the selector returns a list of bindings. Some models
+           ;; (e.g. those by Anthropic) have multiple variables that control
+           ;; reasoning so in some cases it is necessary to set more than one.
+           ;; An example return value is
+           ;;
+           ;; '(((:symbol chatgpt-shell-anthropic-thinking-budget-tokens)
+           ;;    (:value 3000)
+           ;;    (:kind thinking-budget)
+           ;;    ;; This indicates if the budget will be set to the max by this
+           ;;    ;; binding. It is only needed when it is non-nil.
+           ;;    (:max nil))
+           ;;   ((:symbol chatgpt-shell-anthropic-thinking)
+           ;;    (:value t)
+           ;;    (:kind thinking-toggle)))
+           (bindings (if buf
+                         (with-current-buffer buf
+                           (funcall selector model))
+                       (funcall selector model))))
+      (dolist (binding bindings)
+        (unless (memq (map-elt binding :kind)
+                      '(thinking-budget thinking-toggle))
+          (error "Unknown kind %S returned by reasoning effort selector" (map-elt binding :kind)))
+        (if buf
+            ;; Ensure that the variable is set buffer-locally.
+            (with-current-buffer buf
+              (set (make-local-variable (map-elt binding :symbol))
+                   (map-elt binding :value)))
+          ;; Set the global value even if it has already been bound
+          ;; buffer-locally. Note that using `set' on var will set the
+          ;; buffer-local value if one already exists.
+          (set-default (map-elt binding :symbol) (map-elt binding :value)))
+        ;; Let the user know what the thinking budget was set to.
+        (when (eq (map-elt binding :kind) 'thinking-budget)
+          (message "Set %s to %s%s"
+                   (map-elt binding :symbol)
+                   (if (map-elt binding :max) "max" (map-elt binding :value))
+                   (if buf " locally" " globally")))))))
 
 (defcustom chatgpt-shell-streaming t
   "Whether or not to stream ChatGPT responses (show chunks as they arrive)."
@@ -687,6 +777,9 @@ See `shell-maker-welcome-message' as an example."
          (progn
            (unless (fboundp 'markdown-overlays-expand-local-links)
              (error "Please update 'shell-maker' to v0.78.1 or newer"))
+           (unless (and (boundp 'shell-maker-version)
+                        (version<= "0.79.1" shell-maker-version))
+             (error "Please update 'shell-maker' to v0.79.1 or newer"))
            (funcall handler
                     :model model
                     :command (if chatgpt-shell-include-local-file-link-content
@@ -724,7 +817,21 @@ See `shell-maker-welcome-message' as an example."
 ;; Aliasing enables editing as text in babel.
 (defalias 'chatgpt-shell-mode #'text-mode)
 
-(shell-maker-define-major-mode chatgpt-shell--config)
+(defvar-keymap chatgpt-shell-mode-map
+  :parent shell-maker-mode-map
+  :doc "Keymap for `chatgpt-shell-mode'."
+  "C-M-h" #'chatgpt-shell-mark-at-point-dwim
+  "C-c C-c" #'chatgpt-shell-ctrl-c-ctrl-c
+  "C-c C-v" #'chatgpt-shell-swap-model
+  "C-c C-s" #'chatgpt-shell-swap-system-prompt
+  "C-c C-p" #'chatgpt-shell-previous-item
+  "<backtab>" #'chatgpt-shell-previous-item
+  "C-c C-n" #'chatgpt-shell-next-item
+  "<tab>" #'chatgpt-shell-next-item
+  "C-c C-e" #'chatgpt-shell-prompt-compose
+  "C-c C-t" #'chatgpt-shell-transient)
+
+(shell-maker-define-major-mode chatgpt-shell--config chatgpt-shell-mode-map)
 
 ;; Implementation generated by shell-maker
 (declare-function chatgpt-shell-clear-buffer "chatgpt-shell")
@@ -760,9 +867,6 @@ With NEW-SESSION, start a new session."
   (chatgpt-shell-start nil (or new-session
                                chatgpt-shell-always-create-new)))
 
-(defvar chatgpt-shell-mode-map (make-sparse-keymap)
-  "Keymap for `chatgpt-shell-mode'.")
-
 (defun chatgpt-shell-start (&optional no-focus new-session ignore-as-primary model-version system-prompt)
   "Start a ChatGPT shell programmatically.
 
@@ -789,9 +893,9 @@ Set SYSTEM-PROMPT to override variable `chatgpt-shell-system-prompt'"
                              no-focus
                              chatgpt-shell-welcome-function
                              new-session
-                             (if (and (chatgpt-shell--primary-buffer)
+                             (if (and (chatgpt-shell--primary-buffer :create nil)
                                       (not ignore-as-primary))
-                                 (buffer-name (chatgpt-shell--primary-buffer))
+                                 (buffer-name (chatgpt-shell--primary-buffer :create nil))
                                (chatgpt-shell--make-buffer-name))
                              "LLM")))
     (when (and (not ignore-as-primary)
@@ -806,26 +910,6 @@ Set SYSTEM-PROMPT to override variable `chatgpt-shell-system-prompt'"
       (setq-local chatgpt-shell-system-prompt system-prompt)
       (chatgpt-shell--update-prompt t)
       (chatgpt-shell--add-menus))
-    (define-key chatgpt-shell-mode-map (kbd "C-M-h")
-      #'chatgpt-shell-mark-at-point-dwim)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-c")
-      #'chatgpt-shell-ctrl-c-ctrl-c)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-v")
-      #'chatgpt-shell-swap-model)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-s")
-      #'chatgpt-shell-swap-system-prompt)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-p")
-      #'chatgpt-shell-previous-item)
-    (define-key chatgpt-shell-mode-map (kbd "<backtab>")
-      #'chatgpt-shell-previous-item)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-n")
-      #'chatgpt-shell-next-item)
-    (define-key chatgpt-shell-mode-map (kbd "<tab>")
-      #'chatgpt-shell-next-item)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-e")
-      #'chatgpt-shell-prompt-compose)
-    (define-key chatgpt-shell-mode-map (kbd "C-c C-t")
-      #'chatgpt-shell-transient)
     shell-buffer))
 
 (defun chatgpt-shell--shrink-system-prompt (prompt)
@@ -912,8 +996,10 @@ Set SYSTEM-PROMPT to override variable `chatgpt-shell-system-prompt'"
   (with-current-buffer primary-shell-buffer
     (setq chatgpt-shell--is-primary-p t)))
 
-(defun chatgpt-shell--primary-buffer ()
+(cl-defun chatgpt-shell--primary-buffer (&key (create t))
   "Return the primary shell buffer.
+
+:CREATE nil to avoid automatic buffer creation.
 
 This is used for sending a prompt to in the background."
   (let* ((shell-buffers (chatgpt-shell--shell-buffers))
@@ -922,7 +1008,7 @@ This is used for sending a prompt to in the background."
                                   (with-current-buffer shell-buffer
                                     chatgpt-shell--is-primary-p))
                                 shell-buffers)))
-    (unless primary-shell-buffer
+    (when (and create (not primary-shell-buffer))
       (setq primary-shell-buffer
             (or (seq-first shell-buffers)
                 (shell-maker-start chatgpt-shell--config
@@ -1098,7 +1184,7 @@ With prefix IGNORE-ITEM, do not use interrupted item in context."
                     (when (re-search-forward "^[ \t]*```" nil t)
                       (forward-line 0)
                       (point)))))
-        (when (and start end
+        (when (and start end language
                    (>= (point) start)
                    (< (point) end))
           (list (cons 'language language)
@@ -1862,11 +1948,11 @@ Display result in org table of the form:
                           :system-prompt "
 1. Fill out an org mode table using this format as an example:
 
-|---------------+----------+-------+-------------------+---------+-------------------|
-| Hiragana      | Katakana | Kanji | Romaji            | English | Tags              |
-|---------------+----------+-------+-------------------+---------+-------------------|
-| おなかすきました |          | 空腹   | onaka sukimashita | hungry  | #describe #myself |
-|---------------+----------+-------+-------------------+---------+-------------------|
+|-------------------+----------+-------+-------------------+---------+-------------------|
+| Hiragana          | Katakana | Kanji | Romaji            | English | Tags              |
+|-------------------+----------+-------+-------------------+---------+-------------------|
+| おなかすきました  |          | 空腹  | onaka sukimashita | hungry  | #describe #myself |
+|-------------------+----------+-------+-------------------+---------+-------------------|
 2. ALWAYS Fill out Hiragana when appropriate.
 3. ALWAYS Fill out Katakana when appropriate.
 4. ALWAYS Fill out Kanji when appropriate.
@@ -1875,7 +1961,6 @@ Display result in org table of the form:
 7. Do NOT wrap anything in Markdown source blocks.
 8. Do NOT add any text or explanations outside the org table.")))
 
-;; TODO: Make service agnostic.
 (cl-defun chatgpt-shell-lookup (&key buffer model-version system-prompt prompt prompt-url streaming
                                      temperature on-success on-failure)
   "Look something up as a one-off (no shell history) and output to BUFFER.
@@ -1917,23 +2002,26 @@ ON-FAILURE: (lambda (output)) for completion event."
                              :settings settings))))
     (when streaming
       (display-buffer buffer))
-    (unless (equal (map-elt model :provider) "OpenAI")
+    (unless (map-elt model :payload)
       (error "%s's %s not yet supported (please sponsor development)"
+             (map-elt model :provider) (map-elt model :version)))
+    ;; TODO: Make file access service agnostic.
+    (when (and prompt-url
+               (not (equal (map-elt model :provider) "OpenAI")))
+      (error "%s's %s file upload is not yet supported (please sponsor development)"
              (map-elt model :provider) (map-elt model :version)))
     (shell-maker-make-http-request
      :async t
      :url url
      :proxy chatgpt-shell-proxy
-     :data (chatgpt-shell-openai-make-chatgpt-request-data
-            :prompt prompt
-            :prompt-url prompt-url
-            :system-prompt system-prompt
-            :version (map-elt model :version)
-            :temperature (or temperature 1)
-            :streaming streaming
-            :other-params (map-elt model :other-params))
+     :data (apply (map-elt model :payload)
+                  (append (list :model model
+                                :context (list (cons prompt nil))
+                                :settings settings)
+                          (when (equal (map-elt model :provider) "OpenAI")
+                            (list :prompt-url prompt-url))))
      :headers headers
-     :filter #'chatgpt-shell-openai--filter-output
+     :filter (map-elt model :filter)
      :on-output
      (lambda (output)
        (with-current-buffer buffer
@@ -2919,6 +3007,37 @@ Write solutions in their entirety.")
   (when-let ((block (chatgpt-shell-markdown-block-at-point)))
     (set-mark (map-elt block 'end))
     (goto-char (map-elt block 'start))))
+
+(defun chatgpt-shell--fetch-model-icon (icon)
+  "Download ICON filename from GitHub, only if it exists and save as binary.
+
+ICON names can be found at https://github.com/lobehub/lobe-icons/tree/master/packages/static-png
+
+ICONs starting with https:// are downloaded directly from that location."
+  (when icon
+    (let* ((mode (if (eq (frame-parameter nil 'background-mode) 'dark) "dark" "light"))
+           (url (if (string-prefix-p "https://" (downcase icon))
+                    icon
+                  (concat "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/"
+                          mode "/" icon)))
+           (filename (file-name-nondirectory url))
+           (cache-dir (file-name-concat (temporary-file-directory) "chatgpt-shell" mode))
+           (cache-path (expand-file-name filename cache-dir)))
+      (unless (file-exists-p cache-path)
+        (make-directory cache-dir t)
+        (let ((buffer (url-retrieve-synchronously url t t 5.0)))
+          (when buffer
+            (with-current-buffer buffer
+              (goto-char (point-min))
+              (if (re-search-forward "^HTTP/1.1 200 OK" nil t)
+                  (progn
+                    (re-search-forward "\r?\n\r?\n")
+                    (let ((coding-system-for-write 'no-conversion))
+                      (write-region (point) (point-max) cache-path)))
+                (message "Icon fetch failed: %s" url)))
+            (kill-buffer buffer))))
+      (when (file-exists-p cache-path)
+        cache-path))))
 
 ;; pretty smerge start
 

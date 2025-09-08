@@ -75,6 +75,10 @@ A prefix argument causes the SQL to be printed into the current buffer.
 
 ;;;***
 
+;;;### (autoloads nil nil ("emacsql-sqlite-common.el") (0 0 0 0))
+
+;;;***
+
 ;;; End of scraped data
 
 ;; Local Variables:

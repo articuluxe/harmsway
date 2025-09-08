@@ -78,7 +78,7 @@
 ;; Usage example:
 ;;
 ;; You can use the theme as a regular theme or you can call
-;; (nano-light) / (nano-dark) explicitely to install the light or dark
+;; (nano-light) / (nano-dark) explicitly to install the light or dark
 ;; version.
 ;;
 ;; With GUI, you can mix frames with light and dark mode. Just call
@@ -371,8 +371,8 @@ background color that is barely perceptible."
   ;; No dialog box
   (setq use-dialog-box nil)
 
-  ;; No popup windows
-  (setq pop-up-windows nil)
+  ;; No popup windows (see fix #32)
+  ;; (setq pop-up-windows nil)
 
   ;; No empty line indicators
   (setq indicate-empty-lines nil)
@@ -1325,7 +1325,7 @@ background color that is barely perceptible."
     '(elpher-gemini-heading1                 ((t (:inherit nano-strong))))
     '(elpher-gemini-heading2                 ((t (:inherit nano-strong))))
     '(elpher-gemini-heading3                 ((t (:inherit nano-strong))))
- 
+
     ;; ---SHR ---------------------------------------------------------
     '(shr-abbreviation                    ((t (:inherit nano-popout))))
     '(shr-text                            ((t (:inherit nano-default))))
@@ -1543,11 +1543,12 @@ background color that is barely perceptible."
                              :background "#FFF9C4"))))  ;; material color yellow L100
     ))
 
-  (dolist (buffer (list " *Minibuf-0*" " *Echo Area 0*"
-                        " *Minibuf-1*" " *Echo Area 1*"))
-    (when (get-buffer buffer)
-      (with-current-buffer buffer
-        (face-remap-add-relative 'default 'nano-faded))))
+  ;; (dolist (buffer (list " *Minibuf-0*" " *Echo Area 0*"
+  ;;                       " *Minibuf-1*" " *Echo Area 1*"))
+  ;;   (when (get-buffer buffer)
+  ;;     (with-current-buffer buffer
+  ;;       (face-remap-add-relative 'default 'nano-faded))))
+
   (advice-remove 'frame-list #'nano-frame-list-advice-selected))
 
 ;;;###autoload

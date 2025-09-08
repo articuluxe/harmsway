@@ -1,4 +1,4 @@
-;;; doric-dark-theme.el --- Minimalist dark theme -*- lexical-binding:t -*-
+;;; doric-dark-theme.el --- Minimalist theme with dark background and cool hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -59,15 +59,22 @@
       (bg-accent "#521e40")
       (fg-accent "#cda4df")
 
-      (fg-faint-red "#dba2a2")
-      (fg-faint-green "#85c397")
-      (fg-faint-yellow "#c4a992")
-      (fg-faint-blue "#95afd2")
-      (fg-faint-magenta "#c5a3b2")
-      (fg-faint-cyan "#a5bfce"))
+      (fg-red "#eca28f")
+      (fg-green "#b9d0aa")
+      (fg-yellow "#c0b080")
+      (fg-blue "#9fbfe7")
+      (fg-magenta "#e9acbf")
+      (fg-cyan "#a0c0d0")
+
+      (bg-red "#4d1f20")
+      (bg-green "#1f402e")
+      (bg-yellow "#504432")
+      (bg-blue "#223567")
+      (bg-magenta "#603254")
+      (bg-cyan "#2f4f54"))
   "Palette of `doric-dark' theme.")
 
-  (doric-themes-define-theme doric-dark dark))
+  (doric-themes-define-theme doric-dark dark "Minimalist theme with dark background and cool hues"))
 
 (provide 'doric-dark-theme)
 ;;; doric-dark-theme.el ends here

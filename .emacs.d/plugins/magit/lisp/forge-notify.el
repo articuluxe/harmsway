@@ -48,22 +48,22 @@
 
 (cl-defmethod forge-get-repository ((notify forge-notification))
   "Return the object for the repository that NOTIFY belongs to."
-  (and-let* ((id (oref notify repository)))
+  (and-let ((id (oref notify repository)))
     (closql-get (forge-db) id 'forge-repository)))
 
 (cl-defmethod forge-get-topic ((notify forge-notification))
-  (and-let* ((repo (forge-get-repository notify)))
+  (and-let ((repo (forge-get-repository notify)))
     (forge-get-topic repo (oref notify topic))))
 
 (cl-defmethod forge-get-notification ((id string))
   (closql-get (forge-db) id 'forge-notification))
 
 (cl-defmethod forge-get-notification ((topic forge-topic))
-  (and-let* ((row (car (forge-sql [:select * :from notification
-                                   :where (and (= repository $s1)
-                                               (= topic $s2))]
-                                  (oref topic repository)
-                                  (oref topic number)))))
+  (and-let ((row (car (forge-sql [:select * :from notification
+                                  :where (and (= repository $s1)
+                                              (= topic $s2))]
+                                 (oref topic repository)
+                                 (oref topic number)))))
     (closql--remake-instance 'forge-notification (forge-db) row)))
 
 ;;;; Current
@@ -73,8 +73,8 @@
 If there is no such notification and DEMAND is non-nil, then
 signal an error."
   (or (magit-section-value-if 'notification)
-      (and-let* ((topic (forge-current-topic)))
-        (forge-get-notification topic))
+      (and$ (forge-current-topic)
+            (forge-get-notification $))
       (and demand (user-error "No current notification"))))
 
 (defun forge-notification-at-point (&optional demand)
@@ -82,8 +82,8 @@ signal an error."
 If there is no such notification and DEMAND is non-nil, then
 signal an error."
   (or (magit-section-value-if 'notification)
-      (and-let* ((topic (forge-topic-at-point)))
-        (forge-get-notification topic))
+      (and$ (forge-topic-at-point)
+            (forge-get-notification $))
       (and demand (user-error "No notification at point"))))
 
 ;;;; List
@@ -322,7 +322,11 @@ signal an error."
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
-;;   ("partial" . "llama--left-apply-partially"))
+;;   ("and$"          . "cond-let--and$")
+;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let"      . "cond-let--when-let")
+;;   ("partial"       . "llama--left-apply-partially"))
 ;; End:
 (provide 'forge-notify)
 ;;; forge-notify.el ends here

@@ -1,4 +1,4 @@
-;;; doric-water-theme.el --- Minimalist dark theme -*- lexical-binding:t -*-
+;;; doric-water-theme.el --- Minimalist theme with dark background and blue+teal hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -59,15 +59,22 @@
       (bg-accent "#403f75")
       (fg-accent "#adade0")
 
-      (fg-faint-red "#dba2a2")
-      (fg-faint-green "#85c397")
-      (fg-faint-yellow "#c4a992")
-      (fg-faint-blue "#95afd2")
-      (fg-faint-magenta "#c5a3b2")
-      (fg-faint-cyan "#a5bfce"))
+      (fg-red "#eca28f")
+      (fg-green "#a0d0ba")
+      (fg-yellow "#c0b080")
+      (fg-blue "#9fbfe7")
+      (fg-magenta "#e9acbf")
+      (fg-cyan "#a0c0d0")
+
+      (bg-red "#602638")
+      (bg-green "#104c3a")
+      (bg-yellow "#50442f")
+      (bg-blue "#323a6b")
+      (bg-magenta "#5a2855")
+      (bg-cyan "#2f495f"))
   "Palette of `doric-water' theme.")
 
-  (doric-themes-define-theme doric-water dark))
+  (doric-themes-define-theme doric-water dark "Minimalist theme with dark background and blue+teal hues"))
 
 (provide 'doric-water-theme)
 ;;; doric-water-theme.el ends here

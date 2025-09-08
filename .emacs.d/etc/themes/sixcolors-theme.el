@@ -2,7 +2,7 @@
 
 ;; Author: Davide Mastromatteo <mastro35@gmail.com>
 ;; URL: https://github.com/mastro35/sixcolors-theme
-;; Keywords: faces, colors
+;; Keywords: faces, colors, apple, sixcolors, vintage, dark
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; SPDX-License-Identifier: GPL-2.0-only

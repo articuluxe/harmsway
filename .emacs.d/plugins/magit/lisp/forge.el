@@ -11,10 +11,10 @@
 ;; Package-Requires: (
 ;;     (emacs "29.1")
 ;;     (compat "30.1")
+;;     (cond-let "0.1")
 ;;     (closql "2.2.2")
 ;;     (emacsql "4.3.1")
 ;;     (ghub "4.3.2")
-;;     (let-alist "1.0.6")
 ;;     (llama "1.0")
 ;;     (magit "4.3.6")
 ;;     (markdown-mode "2.7")

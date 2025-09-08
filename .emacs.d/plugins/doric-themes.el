@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 0.2.0
+;; Version: 0.4.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -36,10 +36,12 @@
 ;;; Code:
 
 (require 'seq)
+(require 'color)
 (eval-when-compile (require 'subr-x))
 
 (defconst doric-themes-light-themes
-  '(doric-cherry
+  '(doric-beach
+    doric-cherry
     doric-earth
     doric-light
     doric-marble
@@ -53,6 +55,7 @@
     doric-obsidian
     doric-pine
     doric-plum
+    doric-valley
     doric-water)
   "Dark themes.")
 
@@ -170,8 +173,6 @@ With optional PROMPT string, use it.  Else use a generic prompt."
 ;;;###autoload
 (defun doric-themes-select (theme)
   "Load a Doric THEME using minibuffer completion.
-Disable other themes per `doric-themes-disable-other-themes'.
-
 Run `doric-themes-after-load-theme-hook' after loading the theme."
   (interactive (list (doric-themes-select-prompt)))
   (doric-themes-load-theme theme))
@@ -313,7 +314,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     icomplete-selected-match
     ido-first-match
     magit-diff-file-heading-selection
-    magit-section-heading-selection
     markdown-highlighting-face
     mode-line-highlight
     next-error
@@ -345,10 +345,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     substitute-match))
 
 (defconst doric-themes-intense-shadow-foreground-only-faces
-  '(all-the-icons-completion-dir-face
-    all-the-icons-dired-dir-face
-    all-the-icons-ibuffer-dir-face
-    calendar-month-header
+  '(calendar-weekday-header
     change-log-date
     denote-faces-date
     denote-faces-day
@@ -371,9 +368,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-log-author
     magit-log-date
     marginalia-date
-    nerd-icons-completion-dir-face
-    nerd-icons-dired-dir-face
-    nerd-icons-ibuffer-dir-face
+    message-header-cc
+    message-header-other
     notmuch-search-date
     org-agenda-calendar-daterange
     org-agenda-column-dateline
@@ -390,7 +386,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     company-tooltip-scrollbar-track
     consult-preview-line
     corfu-popupinfo
-    diff-header
+    diary
     ediff-even-diff-A
     ediff-even-diff-Ancestor
     ediff-even-diff-B
@@ -408,6 +404,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-blame-margin
     match
     menu
+    message-separator
     mu4e-region-code
     notmuch-crypto-decryption
     notmuch-crypto-signature-bad
@@ -415,6 +412,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     notmuch-crypto-signature-good-key
     notmuch-crypto-signature-unknown
     org-agenda-clocking
+    org-agenda-diary
     org-agenda-restriction-lock
     org-clock-overlay
     secondary-selection
@@ -435,11 +433,13 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 (defconst doric-themes-subtle-shadow-foreground-only-faces
   '(all-the-icons-blue
     all-the-icons-blue-alt
+    all-the-icons-completion-dir-face
     all-the-icons-cyan
     all-the-icons-cyan-alt
     all-the-icons-dblue
     all-the-icons-dcyan
     all-the-icons-dgreen
+    all-the-icons-dired-dir-face
     all-the-icons-dmaroon
     all-the-icons-dorange
     all-the-icons-dpink
@@ -448,6 +448,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     all-the-icons-dsilver
     all-the-icons-dyellow
     all-the-icons-green
+    all-the-icons-ibuffer-dir-face
     all-the-icons-ibuffer-file-face
     all-the-icons-ibuffer-mode-face
     all-the-icons-ibuffer-size-face
@@ -546,19 +547,18 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     marginalia-type
     marginalia-value
     marginalia-version
-    markdown-metadata-key-face
-    message-header-mml
-    message-header-name
     message-header-newsgroups
     message-header-xheader
     mu4e-header-face
     nerd-icons-blue
     nerd-icons-blue-alt
+    nerd-icons-completion-dir-face
     nerd-icons-cyan
     nerd-icons-cyan-alt
     nerd-icons-dblue
     nerd-icons-dcyan
     nerd-icons-dgreen
+    nerd-icons-dired-dir-face
     nerd-icons-dmaroon
     nerd-icons-dorange
     nerd-icons-dpink
@@ -567,6 +567,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     nerd-icons-dsilver
     nerd-icons-dyellow
     nerd-icons-green
+    nerd-icons-ibuffer-dir-face
     nerd-icons-ibuffer-file-face
     nerd-icons-ibuffer-mode-face
     nerd-icons-ibuffer-size-face
@@ -598,18 +599,14 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     notmuch-tree-no-match-face
     org-agenda-dimmed-todo-face
     org-agenda-done
-    org-agenda-structure-secondary
     org-column
     org-done
     org-headline-done
-    org-scheduled
-    org-scheduled-today
     org-special-keyword
     org-tag
     org-time-grid
     org-upcoming-deadline
     org-upcoming-distant-deadline
-    package-help-section-name
     package-status-available
     package-status-built-in
     package-status-dependency
@@ -626,8 +623,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     transient-inactive-value
     transient-unreachable
     transient-unreachable-key
-    vertico-multiline
     vc-ignored-state
+    vertico-multiline
     window-divider
     window-divider-first-pixel
     window-divider-last-pixel
@@ -659,6 +656,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     notmuch-tree-match-author-face
     notmuch-search-flagged-face
     org-headline-todo
+    org-scheduled-previously
     org-table-row
     org-todo
     org-warning
@@ -689,7 +687,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     consult-file
     denote-faces-prompt-current-name
     denote-faces-title
-    diary
     dictionary-word-definition-face
     dired-mark
     dired-perm-write
@@ -722,14 +719,12 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     icomplete-vertical-selected-prefix-indicator-face
     ido-only-match
     icon
-    log-edit-header
     kmacro-menu-flagged
     kmacro-menu-mark
     kmacro-menu-marked
     log-edit-unknown-header
     log-view-commit-body
     magit-cherry-equivalent
-    magit-diff-context-highlight
     magit-bisect-bad
     magit-bisect-good
     magit-bisect-skip
@@ -764,20 +759,18 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     notmuch-tag-unread
     notmuch-tag-flagged
     org-agenda-current-time
-    org-agenda-date
-    org-agenda-date-weekend
-    org-agenda-diary
     org-agenda-filter-category
     org-agenda-filter-effort
     org-agenda-filter-regexp
     org-agenda-filter-tags
-    org-agenda-structure-filter
     org-archived
     org-default
     org-document-info
     org-inline-src-block
     org-latex-and-related
     org-mode-line-clock
+    org-scheduled
+    org-scheduled-today
     proced-cpu
     proced-mark
     proced-memory-low-usage
@@ -811,7 +804,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     breadcrumb-imenu-leaf-face
     breadcrumb-project-leaf-face
     buffer-menu-buffer
-    calendar-weekday-header
+    calendar-month-header
     change-log-name
     change-log-file
     circe-prompt-face
@@ -841,15 +834,12 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     denote-faces-subdirectory
     dictionary-button-face
     diff-nonexistent
-    dired-header
-    diredfl-dir-heading
     ediff-fine-diff-Ancestor
     edmacro-label
     elfeed-log-debug-level-face
     elfeed-log-error-level-face
     elfeed-log-info-level-face
     elfeed-log-warn-level-face
-    elfeed-search-unread-title-face
     erc-prompt-face
     eshell-ls-archive
     eshell-ls-backup
@@ -871,9 +861,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     font-lock-regexp-grouping-backslash
     font-lock-regexp-grouping-construct
     geiser-font-lock-repl-prompt
-    git-commit-comment-action
-    git-commit-comment-branch-local
-    git-commit-comment-heading
     git-commit-summary
     gnus-emphasis-bold
     gnus-header-content
@@ -913,11 +900,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-branch-remote
     magit-branch-remote-head
     magit-branch-upstream
-    magit-diff-conflict-heading
-    magit-diff-hunk-heading-highlight
     magit-mode-line-process
     magit-process-ok
-    magit-section-heading
     magit-signature-good
     magit-tag
     Man-overstrike
@@ -927,16 +911,12 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     markdown-header-face-4
     markdown-header-face-5
     markdown-header-face-6
-    message-header-cc
-    message-header-other
     message-header-subject
     message-header-to
     minibuffer-prompt
     mode-line-buffer-id
     mode-line-emphasis
-    org-agenda-date-today
-    org-agenda-date-weekend-today
-    org-agenda-structure
+    org-agenda-date
     org-checkbox-statistics-done
     org-checkbox-statistics-todo
     org-document-title
@@ -999,6 +979,20 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     ztreep-diff-header-face
     ztreep-header-face))
 
+(defconst doric-themes-bold-intense-faces
+  '(dired-header
+    diredfl-dir-heading
+    elfeed-search-unread-title-face
+    git-commit-comment-heading
+    git-commit-summary
+    line-number-current-line
+    log-edit-header
+    magit-section-heading
+    markdown-metadata-key-face
+    message-header-name
+    org-agenda-structure
+    package-help-section-name))
+
 (defconst doric-themes-bold-italic-faces
   '(appt-notification
     aw-key-face
@@ -1017,13 +1011,15 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     dictionary-word-entry-face
     diff-error
     diff-file-header
-    diff-hunk-header
     dired-warning
     elfeed-search-filter-face
     eww-invalid-certificate
     font-lock-builtin-face
     font-lock-preprocessor-face
     font-lock-type-face
+    git-commit-comment-action
+    git-commit-comment-branch-remote
+    git-commit-comment-branch-local
     gnus-emphasis-bold-italic
     gnus-server-denied
     ibuffer-locked-buffer
@@ -1031,14 +1027,11 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     info-header-xref
     line-number-major-tick
     magit-branch-warning
-    magit-diff-file-heading-highlight
-    magit-diff-lines-heading
     magit-process-ng
     magit-signature-bad
     marginalia-file-priv-dir
     marginalia-key
     message-mml
-    message-separator
     org-mode-line-clock-overrun
     package-status-avail-obso
     package-status-disabled
@@ -1076,6 +1069,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     custom-state
     custom-themed
     diary-anniversary
+    diary-time
     diff-function
     diff-index
     elfeed-search-tag-face
@@ -1089,17 +1083,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     git-commit-comment-file
     git-commit-nonempty-second-line
     git-commit-overlong-summary
-    gnus-cite-1
-    gnus-cite-10
-    gnus-cite-11
-    gnus-cite-2
-    gnus-cite-3
-    gnus-cite-4
-    gnus-cite-5
-    gnus-cite-6
-    gnus-cite-7
-    gnus-cite-8
-    gnus-cite-9
     gnus-cite-attribution
     gnus-emphasis-italic
     gnus-group-mail-1-empty
@@ -1115,12 +1098,9 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     gnus-group-news-low-empty
     gnus-server-offline
     help-argument-name
-    holiday
     line-number-minor-tick
     magit-branch-current
     magit-cherry-unmatched
-    magit-diff-hunk-heading
-    magit-diff-file-heading
     magit-signature-error
     magit-signature-expired
     magit-signature-expired-key
@@ -1129,20 +1109,10 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-mode-line-process-error
     markdown-blockquote-face
     markdown-inline-code-face
-    message-cited-text-1
-    message-cited-text-2
-    message-cited-text-3
-    message-cited-text-4
-    mu4e-cited-1-face
-    mu4e-cited-2-face
-    mu4e-cited-3-face
-    mu4e-cited-4-face
-    mu4e-cited-5-face
-    mu4e-cited-6-face
-    mu4e-cited-7-face
     notmuch-wash-cited-text
     org-agenda-calendar-event
     org-agenda-calendar-sexp
+    org-agenda-structure-secondary
     org-inline-src-block
     org-latex-and-related
     org-macro
@@ -1221,12 +1191,22 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(denote-faces-prompt-new-name
     diff-added
     diff-indicator-added
-    ediff-current-diff-B
     magit-diff-added
-    magit-diff-added-highlight
     magit-diffstat-added
     smerge-lower
     ztreep-diff-model-add-face))
+
+(defconst doric-themes-diff-added-highlight-faces
+  '(ediff-current-diff-B
+    magit-diff-added-highlight))
+
+(defconst doric-themes-diff-changed-highlight-faces
+  '(ediff-current-diff-C
+    magit-diff-base-highlight))
+
+(defconst doric-themes-diff-removed-highlight-faces
+  '(ediff-current-diff-A
+    magit-diff-removed-highlight))
 
 (defconst doric-themes-diff-added-refine-faces
   '(diff-refine-added
@@ -1237,9 +1217,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(diff-changed
     diff-changed-unspecified
     diff-indicator-changed
-    ediff-current-diff-C
     magit-diff-base
-    magit-diff-base-highlight
     smerge-base))
 
 (defconst doric-themes-diff-changed-refine-faces
@@ -1251,9 +1229,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(denote-faces-prompt-old-name
     diff-removed
     diff-indicator-removed
-    ediff-current-diff-A
     magit-diff-removed
-    magit-diff-removed-highlight
     magit-diffstat-removed
     smerge-upper
     ztreep-diff-model-diff-face))
@@ -1280,6 +1256,65 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     TeX-error-description-tex-said
     success))
 
+(defconst doric-themes-error-underline-faces
+  '(flycheck-error
+    flyspell-incorrect
+    flymake-error
+    writegood-duplicates-face))
+
+(defconst doric-themes-warning-underline-faces
+  '(flycheck-warning
+    flyspell-duplicate
+    flymake-warning
+    jinx-misspelled
+    writegood-passive-voice-face
+    writegood-weasels-face))
+
+(defconst doric-themes-success-underline-faces
+  '(flycheck-info
+    flymake-note))
+
+(defconst doric-themes-cite-odd
+  '(gnus-cite-1
+    gnus-cite-3
+    gnus-cite-5
+    gnus-cite-7
+    gnus-cite-9
+    gnus-cite-11
+    message-cited-text-1
+    message-cited-text-3
+    mu4e-cited-1-face
+    mu4e-cited-3-face
+    mu4e-cited-5-face
+    mu4e-cited-7-face))
+
+(defconst doric-themes-cite-even
+  '(gnus-cite-2
+    gnus-cite-4
+    gnus-cite-6
+    gnus-cite-8
+    gnus-cite-10
+    message-cited-text-2
+    message-cited-text-4
+    mu4e-cited-2-face
+    mu4e-cited-4-face
+    mu4e-cited-6-face))
+
+(defgroup doric-themes-faces ()
+  "Faces defined by the Doric themes."
+  :group 'doric-themes
+  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/doric-themes-pictures")
+  :prefix "doric-themes-"
+  :tag "Doric themes Faces")
+
+(dolist (scope '(note warning error))
+  (custom-declare-face
+   (intern (format "doric-themes-prominent-%s" scope))
+   nil (format "Prominent notification of type %s." scope)
+   :package-version '(doric-themes . "0.4.0")
+   :version "30.1"
+   :group 'doric-themes-faces))
+
 (defun doric-themes-prepare-faces (&rest faces-and-attributes)
   "Set faces to their respective attributes in FACES-AND-ATTRIBUTES."
   (pcase-let ((`(,faces . ,attributes) faces-and-attributes))
@@ -1288,9 +1323,19 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
        (backquote (list ',face (list (list t ,@attributes)))))
      faces)))
 
+(defun doric-themes-adjust-value (hex-rgb percentage)
+  "Adjust value of HEX-RGB colour by PERCENTAGE."
+  (pcase-let* ((`(,r ,g ,b) (color-name-to-rgb hex-rgb))
+               (fn (if (color-dark-p (list r g b))
+                       #'color-lighten-name
+                     #'color-darken-name)))
+    (funcall fn hex-rgb percentage)))
+
 ;;;###autoload
-(defmacro doric-themes-define-theme (name background-mode)
-  "Define theme with NAME and `light' or `dark' BACKGROUND-MODE."
+(defmacro doric-themes-define-theme (name background-mode &optional description)
+  "Define theme with NAME and `light' or `dark' BACKGROUND-MODE.
+With optional DESCRIPTION use it to describe the theme, otherwise
+default a generic text that mentions the BACKGROUND-MODE."
   (declare (indent 0))
   (unless (memq background-mode '(light dark))
     (error "The BACKGROUND-MODE must be either `light' or `dark'"))
@@ -1298,7 +1343,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
       `(progn
          (custom-declare-theme
           ',name 'doric-themes
-          ,(format "Minimalist %s theme." background-mode)
+          ,(or description (format "Minimalist %s theme." background-mode))
           (list :kind 'color-scheme :background-mode ',background-mode :family 'doric))
          (let ,palette
            (custom-theme-set-faces
@@ -1331,18 +1376,18 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(ansi-color-black ((t :background "black" :foreground "black")))
             `(ansi-color-bright-white ((t :background "white" :foreground "white")))
             `(ansi-color-white ((t :background "gray70" :foreground "gray70")))
-            `(ansi-color-bright-red ((t :background ,fg-faint-red :foreground ,fg-faint-red)))
-            `(ansi-color-red ((t :background ,fg-faint-red :foreground ,fg-faint-red)))
-            `(ansi-color-bright-green ((t :background ,fg-faint-green :foreground ,fg-faint-green)))
-            `(ansi-color-green ((t :background ,fg-faint-green :foreground ,fg-faint-green)))
-            `(ansi-color-bright-yellow ((t :background ,fg-faint-yellow :foreground ,fg-faint-yellow)))
-            `(ansi-color-yellow ((t :background ,fg-faint-yellow :foreground ,fg-faint-yellow)))
-            `(ansi-color-bright-blue ((t :background ,fg-faint-blue :foreground ,fg-faint-blue)))
-            `(ansi-color-blue ((t :background ,fg-faint-blue :foreground ,fg-faint-blue)))
-            `(ansi-color-bright-magenta ((t :background ,fg-faint-magenta :foreground ,fg-faint-magenta)))
-            `(ansi-color-magenta ((t :background ,fg-faint-magenta :foreground ,fg-faint-magenta)))
-            `(ansi-color-bright-cyan ((t :background ,fg-faint-cyan :foreground ,fg-faint-cyan)))
-            `(ansi-color-cyan ((t :background ,fg-faint-cyan :foreground ,fg-faint-cyan)))
+            `(ansi-color-bright-red ((t :background ,fg-red :foreground ,fg-red)))
+            `(ansi-color-red ((t :background ,fg-red :foreground ,fg-red)))
+            `(ansi-color-bright-green ((t :background ,fg-green :foreground ,fg-green)))
+            `(ansi-color-green ((t :background ,fg-green :foreground ,fg-green)))
+            `(ansi-color-bright-yellow ((t :background ,fg-yellow :foreground ,fg-yellow)))
+            `(ansi-color-yellow ((t :background ,fg-yellow :foreground ,fg-yellow)))
+            `(ansi-color-bright-blue ((t :background ,fg-blue :foreground ,fg-blue)))
+            `(ansi-color-blue ((t :background ,fg-blue :foreground ,fg-blue)))
+            `(ansi-color-bright-magenta ((t :background ,fg-magenta :foreground ,fg-magenta)))
+            `(ansi-color-magenta ((t :background ,fg-magenta :foreground ,fg-magenta)))
+            `(ansi-color-bright-cyan ((t :background ,fg-cyan :foreground ,fg-cyan)))
+            `(ansi-color-cyan ((t :background ,fg-cyan :foreground ,fg-cyan)))
 
             `(aw-leading-char-face ((t :inherit bold-italic :height 1.5 :foreground ,fg-accent)))
 
@@ -1351,6 +1396,10 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(corfu-default ((t :inherit fixed-pitch :background ,bg-shadow-subtle :foreground ,fg-shadow-subtle)))
 
             '(devdocs-code-block ((t :inherit fixed-pitch)))
+
+            '(diff-header (( )))
+            `(diff-hunk-header ((t :inherit bold :background ,bg-shadow-subtle)))
+            `(diff-function ((t :background ,bg-shadow-subtle)))
 
             `(dired-marked ((t :inherit bold-italic :background ,bg-accent :foreground ,fg-main)))
             `(dired-flagged ((t :inherit bold-italic :background ,bg-shadow-intense :foreground ,fg-main)))
@@ -1367,11 +1416,15 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             ,@(doric-themes-prepare-faces doric-themes-accent-foreground-only-faces :foreground 'fg-accent)
             ,@(doric-themes-prepare-faces doric-themes-main-foreground-only-faces :foreground 'fg-main)
 
-            ,@(doric-themes-prepare-faces doric-themes-error-foreground-only-faces :inherit ''bold :foreground 'fg-faint-red)
-            ,@(doric-themes-prepare-faces doric-themes-warning-foreground-only-faces :inherit ''bold :foreground 'fg-faint-yellow)
-            ,@(doric-themes-prepare-faces doric-themes-success-foreground-only-faces :inherit ''bold :foreground 'fg-faint-green)
+            ,@(doric-themes-prepare-faces doric-themes-error-foreground-only-faces :inherit ''bold :foreground 'fg-red)
+            ,@(doric-themes-prepare-faces doric-themes-warning-foreground-only-faces :inherit ''bold :foreground 'fg-yellow)
+            ,@(doric-themes-prepare-faces doric-themes-success-foreground-only-faces :inherit ''bold :foreground 'fg-green)
+            ,@(doric-themes-prepare-faces doric-themes-error-underline-faces :underline '(list :style 'wave :color fg-red))
+            ,@(doric-themes-prepare-faces doric-themes-warning-underline-faces :underline '(list :style 'wave :color fg-yellow))
+            ,@(doric-themes-prepare-faces doric-themes-success-underline-faces :underline '(list :style 'wave :color fg-cyan))
 
             ,@(doric-themes-prepare-faces doric-themes-bold-faces :inherit ''bold :foreground 'fg-shadow-intense)
+            ,@(doric-themes-prepare-faces doric-themes-bold-intense-faces :inherit ''bold :foreground 'fg-main)
             ,@(doric-themes-prepare-faces doric-themes-bold-italic-faces :inherit ''bold-italic :foreground 'fg-shadow-subtle)
             ,@(doric-themes-prepare-faces doric-themes-italic-faces :inherit ''italic :foreground 'fg-shadow-subtle)
             ,@(doric-themes-prepare-faces doric-themes-underline-link-faces :inherit ''underline :foreground 'fg-accent)
@@ -1379,12 +1432,22 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 
             ,@(doric-themes-prepare-faces doric-themes-selection-faces :background 'bg-accent)
 
-            ,@(doric-themes-prepare-faces doric-themes-diff-added-faces :background ''unspecified :foreground 'fg-faint-green)
-            ,@(doric-themes-prepare-faces doric-themes-diff-added-refine-faces :inherit ''bold :background ''unspecified :foreground 'fg-faint-green)
-            ,@(doric-themes-prepare-faces doric-themes-diff-changed-faces :background ''unspecified :foreground 'fg-faint-yellow)
-            ,@(doric-themes-prepare-faces doric-themes-diff-changed-refine-faces :inherit ''bold :background ''unspecified :foreground 'fg-faint-yellow)
-            ,@(doric-themes-prepare-faces doric-themes-diff-removed-faces :background ''unspecified :foreground 'fg-faint-red)
-            ,@(doric-themes-prepare-faces doric-themes-diff-removed-refine-faces :inherit ''bold :background ''unspecified :foreground 'fg-faint-red)
+            ,@(doric-themes-prepare-faces doric-themes-diff-added-faces :background '(doric-themes-adjust-value bg-green -10) :foreground 'fg-neutral)
+            ,@(doric-themes-prepare-faces doric-themes-diff-added-highlight-faces :background 'bg-green :foreground 'fg-green)
+            ,@(doric-themes-prepare-faces doric-themes-diff-added-refine-faces :inherit ''bold :background '(doric-themes-adjust-value bg-green 10))
+            ,@(doric-themes-prepare-faces doric-themes-diff-changed-faces :background '(doric-themes-adjust-value bg-yellow -10) :foreground 'fg-neutral)
+            ,@(doric-themes-prepare-faces doric-themes-diff-changed-highlight-faces :background 'bg-yellow :foreground 'fg-yellow)
+            ,@(doric-themes-prepare-faces doric-themes-diff-changed-refine-faces :inherit ''bold :background '(doric-themes-adjust-value bg-yellow 10))
+            ,@(doric-themes-prepare-faces doric-themes-diff-removed-faces :background '(doric-themes-adjust-value bg-red -10) :foreground 'fg-neutral)
+            ,@(doric-themes-prepare-faces doric-themes-diff-removed-highlight-faces :background 'bg-red :foreground 'fg-red)
+            ,@(doric-themes-prepare-faces doric-themes-diff-removed-refine-faces :inherit ''bold :background '(doric-themes-adjust-value bg-red 10))
+
+            ,@(doric-themes-prepare-faces doric-themes-cite-odd :inherit ''italic :foreground 'fg-accent)
+            ,@(doric-themes-prepare-faces doric-themes-cite-even :inherit ''italic :foreground 'fg-shadow-subtle)
+
+            `(doric-themes-prominent-error ((t :background ,bg-red :foreground ,fg-red)))
+            `(doric-themes-prominent-warning ((t :background ,bg-yellow :foreground ,fg-yellow)))
+            `(doric-themes-prominent-note ((t :background ,bg-cyan :foreground ,fg-cyan)))
 
             '(embark-keybinding ((t :inherit (fixed-pitch bold-italic))))
 
@@ -1442,6 +1505,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
                (((class color) (min-colors 88) (background dark))
                 :background "#000000" :foreground "#cab000")))
 
+            `(holiday ((t :inherit bold :background ,bg-shadow-subtle :foreground ,fg-main)))
+
             `(isearch ((t :background ,bg-shadow-intense :foreground ,fg-main)))
             `(isearch-fail ((t :inherit (underline bold))))
             `(isearch-group-1 ((t :background ,bg-accent :foreground ,fg-accent)))
@@ -1450,12 +1515,31 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 
             '(help-key-binding ((t :inherit (fixed-pitch bold-italic))))
 
-            '(line-number-current-line ((t :inherit (highlight bold))))
-
             `(keycast-key ((t :inherit bold-italic :background ,fg-shadow-intense :foreground ,bg-main)))
 
-            `(magit-diff-context-highlight (( )))
-            `(magit-section-highlight (( )))
+            `(lin-blue ((t :background ,bg-blue)))
+            `(lin-cyan ((t :background ,bg-cyan)))
+            `(lin-green ((t :background ,bg-green)))
+            `(lin-magenta ((t :background ,bg-magenta)))
+            `(lin-red ((t :background ,bg-red)))
+            `(lin-yellow ((t :background ,bg-yellow)))
+            `(lin-blue-override-fg ((t :background ,bg-blue :foreground ,fg-main)))
+            `(lin-cyan-override-fg ((t :background ,bg-cyan :foreground ,fg-main)))
+            `(lin-green-override-fg ((t :background ,bg-green :foreground ,fg-main)))
+            `(lin-magenta-override-fg ((t :background ,bg-magenta :foreground ,fg-main)))
+            `(lin-red-override-fg ((t :background ,bg-red :foreground ,fg-main)))
+            `(lin-yellow-override-fg ((t :background ,bg-yellow :foreground ,fg-main)))
+
+            `(magit-diff-context-highlight ((t :background ,bg-shadow-subtle :foreground ,fg-shadow-subtle)))
+            `(magit-diff-file-heading ((t :inherit bold :foreground ,fg-accent)))
+            `(magit-diff-file-heading-highlight ((t :inherit magit-diff-file-heading :background ,bg-shadow-subtle)))
+            `(magit-diff-file-heading-selection ((t :inherit bold :background ,bg-accent)))
+            `(magit-diff-hunk-heading ((t :background ,bg-shadow-subtle)))
+            `(magit-diff-hunk-heading-highlight ((t :inherit bold :background ,bg-neutral)))
+            `(magit-diff-hunk-heading-selection ((t :inherit bold :background ,bg-accent)))
+            `(magit-diff-lines-heading ((t :background ,fg-shadow-subtle :foreground ,bg-main)))
+            `(magit-section-heading-selection ((t :inherit bold :background ,bg-accent)))
+            `(magit-section-highlight ((t :background ,bg-shadow-subtle)))
 
             `(markdown-code-face ((t :inherit fixed-pitch :background ,bg-shadow-subtle :extend t)))
             `(markdown-language-keyword-face ((t :inherit fixed-pitch :background ,bg-neutral :foreground ,fg-neutral)))
@@ -1480,7 +1564,11 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(notmuch-message-summary-face
               ((default :background ,bg-shadow-subtle)
                (((supports :overline t))
-                 :overline ,fg-shadow-subtle)))
+                :overline ,fg-shadow-subtle)))
+
+            `(org-agenda-date-weekend ((t :inherit (bold shadow))))
+            `(org-agenda-date-today ((t :inherit (underline org-agenda-date))))
+            `(org-agenda-date-weekend-today ((t :inherit (underline org-agenda-date-weekend))))
 
             `(org-block ((t :inherit fixed-pitch :background ,bg-shadow-subtle :extend t)))
             `(org-block-begin-line ((t :inherit fixed-pitch :background ,bg-neutral :foreground ,fg-neutral :extend t)))
@@ -1502,13 +1590,19 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(org-meta-line ((t :inherit fixed-pitch :foreground ,fg-shadow-subtle)))
             '(org-property-value ((t :inherit fixed-pitch)))
             '(org-quote ((t :inherit org-block)))
-            `(org-scheduled-previously ((t :inherit bold :foreground ,fg-shadow-subtle)))
             `(org-verbatim ((t :inherit (fixed-pitch italic) :foreground ,fg-shadow-subtle)))
             '(org-verse ((t :inherit org-block)))
             `(org-table ((t :inherit fixed-pitch :foreground ,fg-accent)))
 
             `(package-mark-delete-line ((t :inherit bold-italic :background ,bg-shadow-intense :foreground ,fg-main)))
             `(package-mark-install-line ((t :inherit bold-italic :background ,bg-accent :foreground ,fg-main)))
+
+            `(pulsar-blue ((t :background ,bg-blue)))
+            `(pulsar-cyan ((t :background ,bg-cyan)))
+            `(pulsar-green ((t :background ,bg-green)))
+            `(pulsar-magenta ((t :background ,bg-magenta)))
+            `(pulsar-red ((t :background ,bg-red)))
+            `(pulsar-yellow ((t :background ,bg-yellow)))
 
             '(rcirc-monospace-text ((t :inherit fixed-pitch)))
             '(rcirc-server ((t :inherit font-lock-comment-face)))
@@ -1556,6 +1650,9 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
             `(whitespace-tab ((t :foreground ,bg-shadow-intense)))))
          (custom-theme-set-variables
           ',name
+          `(flymake-error-bitmap '(flymake-double-exclamation-mark doric-themes-prominent-error))
+          `(flymake-warning-bitmap '(exclamation-mark doric-themes-prominent-warning))
+          `(flymake-note-bitmap '(exclamation-mark doric-themes-prominent-note))
           '(frame-background-mode ',background-mode)
           '(diff-font-lock-syntax nil))
          (provide-theme ',name))

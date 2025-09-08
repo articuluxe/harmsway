@@ -488,8 +488,7 @@ mind at all, then it asks the user for a command to run."
               (magit-ediff-show-stash revB))
              (file
               (funcall command file))
-             (t
-              (call-interactively command)))))))
+             ((call-interactively command)))))))
 
 ;;;###autoload
 (defun magit-ediff-show-staged (file)
@@ -604,7 +603,13 @@ stash that were staged."
 (provide 'magit-ediff)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-ediff.el ends here

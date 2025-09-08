@@ -107,8 +107,7 @@ argument the push-remote can be changed before pushed to it."
                                       'magit-branch-remote)))
      (remote
       (format "%s, replacing invalid" v))
-     (t
-      (format "%s, setting that" v)))))
+     ((format "%s, setting that" v)))))
 
 ;;;###autoload (autoload 'magit-push-current-to-upstream "magit-push" nil t)
 (transient-define-suffix magit-push-current-to-upstream (args)
@@ -155,7 +154,7 @@ the upstream."
     (magit-run-git-async "push" "-v" args remote (concat branch ":" merge))))
 
 (defun magit-push--upstream-description ()
-  (and-let* ((branch (magit-get-current-branch)))
+  (and-let ((branch (magit-get-current-branch)))
     (or (magit-get-upstream-branch branch)
         (let ((remote (magit-get "branch" branch "remote"))
               (merge  (magit-get "branch" branch "merge"))
@@ -171,8 +170,7 @@ the upstream."
                     (magit--propertize-face merge 'magit-branch-remote)))
            ((or remote merge)
             (concat u ", creating it and replacing invalid"))
-           (t
-            (concat u ", creating it")))))))
+           ((concat u ", creating it")))))))
 
 ;;;###autoload
 (defun magit-push-current (target args)
@@ -302,12 +300,12 @@ what this command will do.  To add it use something like:
                      ;; Note: Avoid `magit-get-remote' because it
                      ;; filters out the local repo case (".").
                      (magit-get "branch" branch "remote")
-                     (let ((remotes (magit-list-remotes)))
-                       (cond
-                        ((and (magit-git-version>= "2.27")
-                              (length= remotes 1))
-                         (car remotes))
-                        ((member "origin" remotes) "origin"))))))
+                       (cond-let
+                         [[remotes (magit-list-remotes)]]
+                         ((and (magit-git-version>= "2.27")
+                               (length= remotes 1))
+                          (car remotes))
+                         ((car (member "origin" remotes)))))))
     (if (null remote)
         "nothing (no remote)"
       (let ((refspec (magit-get "remote" remote "push")))
@@ -372,7 +370,13 @@ You can add this command as a suffix using something like:
 (provide 'magit-push)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-push.el ends here

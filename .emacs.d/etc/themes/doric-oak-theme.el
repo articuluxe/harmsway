@@ -1,4 +1,4 @@
-;;; doric-oak-theme.el --- Minimalist light theme -*- lexical-binding:t -*-
+;;; doric-oak-theme.el --- Minimalist theme with light background and woody+earthly hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -59,15 +59,22 @@
       (bg-accent "#b7d2b7")
       (fg-accent "#0f5420")
 
-      (fg-faint-red "#750000")
-      (fg-faint-green "#056100")
-      (fg-faint-yellow "#5f4602")
-      (fg-faint-blue "#353362")
-      (fg-faint-magenta "#553372")
-      (fg-faint-cyan "#35485e"))
+      (fg-red "#982500")
+      (fg-green "#226700")
+      (fg-yellow "#595000")
+      (fg-blue "#103077")
+      (fg-magenta "#700054")
+      (fg-cyan "#005460")
+
+      (bg-red "#e3b8a0")
+      (bg-green "#b8caa0")
+      (bg-yellow "#e2e0a8")
+      (bg-blue "#c4c8dd")
+      (bg-magenta "#d8bade")
+      (bg-cyan "#bee0db"))
   "Palette of `doric-oak' theme.")
 
-  (doric-themes-define-theme doric-oak light))
+  (doric-themes-define-theme doric-oak light "Minimalist theme with light background and woody+earthly hues"))
 
 (provide 'doric-oak-theme)
 ;;; doric-oak-theme.el ends here

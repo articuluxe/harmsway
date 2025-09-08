@@ -721,5 +721,13 @@ Expunged topics include:
   (forge-refresh-buffer))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("and$"          . "cond-let--and$")
+;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let"      . "cond-let--when-let")
+;;   ("while-let"     . "cond-let--while-let"))
+;; End:
 (provide 'forge-topics)
 ;;; forge-topics.el ends here

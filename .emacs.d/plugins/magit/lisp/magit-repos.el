@@ -310,7 +310,7 @@ If it contains \"%s\" then the directory is substituted for that."
                                            sort-fn #'identity idx))
                                          (sort-fn sort-fn)
                                          (sort-set nil)
-                                         (t t)))
+                                         (t)))
                              (flatten-tree props))))
                   magit-repolist-columns))))
 
@@ -374,10 +374,10 @@ Usually this is just its basename."
 
 (defun magit-repolist-column-version (_)
   "Insert a description of the repository's `HEAD' revision."
-  (and-let* ((v (or (magit-git-string "describe" "--tags" "--dirty")
-                    ;; If there are no tags, use the date in MELPA format.
-                    (magit-rev-format "%cd-g%h" nil
-                                      "--date=format:%Y%m%d.%H%M"))))
+  (and-let ((v (or (magit-git-string "describe" "--tags" "--dirty")
+                   ;; If there are no tags, use the date in MELPA format.
+                   (magit-rev-format "%cd-g%h" nil
+                                     "--date=format:%Y%m%d.%H%M"))))
     (save-match-data
       (when (string-match magit-repolist-column-version-regexp v)
         (magit--put-face (match-beginning 0) (match-end 0) 'shadow v)
@@ -403,7 +403,7 @@ Usually this is just its basename."
       (setq b (and (string-match re b) (match-str 0 b)))
       (cond ((and a b) (version< a b))
             (b nil)
-            (t t)))))
+            (t)))))
 
 (defun magit-repolist-column-branch (_)
   "Insert the current branch."
@@ -439,23 +439,27 @@ which only lists the first one found."
 
 (defun magit-repolist-column-unpulled-from-upstream (spec)
   "Insert number of upstream commits not in the current branch."
-  (and-let* ((br (magit-get-upstream-branch)))
-    (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" br)) spec)))
+  (and$ (magit-get-upstream-branch)
+        (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" $))
+                                     spec)))
 
 (defun magit-repolist-column-unpulled-from-pushremote (spec)
   "Insert number of commits in the push branch but not the current branch."
-  (and-let* ((br (magit-get-push-branch nil t)))
-    (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" br)) spec)))
+  (and$ (magit-get-push-branch nil t)
+        (magit-repolist-insert-count (cadr (magit-rev-diff-count "HEAD" $))
+                                     spec)))
 
 (defun magit-repolist-column-unpushed-to-upstream (spec)
   "Insert number of commits in the current branch but not its upstream."
-  (and-let* ((br (magit-get-upstream-branch)))
-    (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" br)) spec)))
+  (and$ (magit-get-upstream-branch)
+        (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" $))
+                                     spec)))
 
 (defun magit-repolist-column-unpushed-to-pushremote (spec)
   "Insert number of commits in the current branch but not its push branch."
-  (and-let* ((br (magit-get-push-branch nil t)))
-    (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" br)) spec)))
+  (and$ (magit-get-push-branch nil t)
+        (magit-repolist-insert-count (car (magit-rev-diff-count "HEAD" $))
+                                     spec)))
 
 (defun magit-repolist-column-branches (spec)
   "Insert number of branches."
@@ -548,7 +552,13 @@ instead."
 (provide 'magit-repos)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-repos.el ends here

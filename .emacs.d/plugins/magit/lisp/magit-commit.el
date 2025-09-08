@@ -707,8 +707,8 @@ an alternative implementation."
     (cond
      ((not
        (and (eq this-command 'magit-diff-while-committing)
-            (and-let* ((buf (magit-get-mode-buffer
-                             'magit-diff-mode nil 'selected)))
+            (and-let ((buf (magit-get-mode-buffer
+                            'magit-diff-mode nil 'selected)))
               (and (equal rev (buffer-local-value 'magit-buffer-range buf))
                    (equal arg (buffer-local-value 'magit-buffer-typearg buf)))))))
      ((eq command 'magit-commit-amend)
@@ -815,7 +815,13 @@ actually insert the entry."
 (provide 'magit-commit)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-commit.el ends here

@@ -1,4 +1,4 @@
-;;; doric-wind-theme.el --- Minimalist light theme -*- lexical-binding:t -*-
+;;; doric-wind-theme.el --- Minimalist theme with light background and green+teal hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -59,15 +59,22 @@
       (bg-accent "#c7e2c1")
       (fg-accent "#2f6920")
 
-      (fg-faint-red "#750000")
-      (fg-faint-green "#006500")
-      (fg-faint-yellow "#5f4602")
-      (fg-faint-blue "#353362")
-      (fg-faint-magenta "#553372")
-      (fg-faint-cyan "#35485e"))
+      (fg-red "#990020")
+      (fg-green "#006710")
+      (fg-yellow "#706000")
+      (fg-blue "#003370")
+      (fg-magenta "#782050")
+      (fg-cyan "#006070")
+
+      (bg-red "#e4c2c7")
+      (bg-green "#b0e0d0")
+      (bg-yellow "#e9e6b0")
+      (bg-blue "#bbd1e8")
+      (bg-magenta "#e0c3e7")
+      (bg-cyan "#c2ebe8"))
     "Palette of `doric-wind' theme.")
 
-  (doric-themes-define-theme doric-wind light))
+  (doric-themes-define-theme doric-wind light "Minimalist theme with light background and green+teal hues"))
 
 (provide 'doric-wind-theme)
 ;;; doric-wind-theme.el ends here

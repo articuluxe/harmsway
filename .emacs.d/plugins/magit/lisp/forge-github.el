@@ -704,19 +704,19 @@
                            (if (zerop tries)
                                (ghub--signal-error errors)
                              (cl-decf tries)
-                             (if-let ((notfound
-                                       (seq-keep
-                                        (lambda (err)
-                                          (and (equal (cdr (assq 'type err))
-                                                      "NOT_FOUND")
-                                               (cadr (assq 'path err))
-                                               (intern (cadr (assq 'path err)))))
-                                        (cdr errors))))
-                                 (progn
-                                   (setq query (cl-delete-if (##memq % notfound)
-                                                             query :key #'caar))
-                                   (funcall vacuum))
-                               (ghub--signal-error errors)))))
+                             (cond-let
+                               ([notfound
+                                 (seq-keep
+                                  (lambda (err)
+                                    (and (equal (cdr (assq 'type err))
+                                                "NOT_FOUND")
+                                         (cadr (assq 'path err))
+                                         (intern (cadr (assq 'path err)))))
+                                  (cdr errors))]
+                                (setq query (cl-delete-if (##memq % notfound)
+                                                          query :key #'caar))
+                                (funcall vacuum))
+                               ((ghub--signal-error errors))))))
                    (cl-incf page)
                    (forge--msg nil t nil
                                "Pulling notifications (page %s/%s)" page pages)
@@ -785,7 +785,7 @@
   (closql-with-transaction (forge-db)
     (pcase-dolist (`(,alias ,id ,_query ,repo ,type ,data) notifs)
       (let-alist data
-        (and-let*
+        (when-let*
             ((topic-data (cdr (cadr (assq alias topics))))
              (topic (funcall (pcase-exhaustive type
                                ('discussion #'forge--update-discussion)
@@ -1296,9 +1296,13 @@
 ;;; _
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"          . "cond-let--and$")
+;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let"      . "cond-let--when-let")
 ;;   ("buffer-string" . "buffer-string")
-;;   ("buffer-str" . "forge--buffer-substring-no-properties")
-;;   ("partial" . "llama--left-apply-partially"))
+;;   ("buffer-str"    . "forge--buffer-substring-no-properties")
+;;   ("partial"       . "llama--left-apply-partially"))
 ;; End:
 (provide 'forge-github)
 ;;; forge-github.el ends here

@@ -56,7 +56,7 @@
 (defcustom vertico-group-format
   (concat #("    " 0 4 (face vertico-group-separator))
           #(" %s " 0 4 (face vertico-group-title))
-          #(" " 0 1 (face vertico-group-separator display (space :align-to right))))
+          #(" " 0 1 (face vertico-group-separator display (space :align-to (- right 1)))))
   "Format string used for the group title."
   :type '(choice (const :tag "No group titles" nil) string))
 
@@ -143,6 +143,13 @@ The value should lie between 0 and vertico-count/2."
   "M-RET" #'vertico-exit-input
   "TAB" #'vertico-insert
   "<touchscreen-begin>" #'ignore)
+
+(defvar vertico--locals
+  '((scroll-margin . 0)
+    (completion-auto-help . nil)
+    (completion-show-inline-help . nil)
+    (pixel-scroll-precision-mode . nil))
+  "Vertico minibuffer local variables.")
 
 (defvar-local vertico--hilit #'identity
   "Lazy candidate highlighting function.")
@@ -500,8 +507,7 @@ the stack trace is shown in the *Messages* buffer."
        (vertico--update 'interruptible)
        (vertico--prompt-selection)
        (vertico--display-count)
-       (vertico--display-candidates (vertico--arrange-candidates))
-       (vertico--resize)))))
+       (vertico--display-candidates (vertico--arrange-candidates))))))
 
 (defun vertico--goto (index)
   "Go to candidate with INDEX."
@@ -582,20 +588,24 @@ the stack trace is shown in the *Messages* buffer."
 (cl-defgeneric vertico--display-candidates (lines)
   "Update candidates overlay `vertico--candidates-ov' with LINES."
   (move-overlay vertico--candidates-ov (point-max) (point-max))
-  (overlay-put vertico--candidates-ov 'after-string
-               (apply #'concat #(" " 0 1 (cursor t)) (and lines "\n") lines)))
+  (overlay-put vertico--candidates-ov 'before-string
+               (apply #'concat #(" " 0 1 (cursor t)) (and lines "\n") lines))
+  (vertico--resize-window (length lines)))
 
-(cl-defgeneric vertico--resize ()
-  "Resize active minibuffer window."
+(cl-defgeneric vertico--resize-window (height)
+  "Resize active minibuffer window to HEIGHT."
   (setq-local truncate-lines (< (point) (* 0.8 (vertico--window-width)))
-              resize-mini-windows vertico-resize
+              resize-mini-windows 'grow-only
               max-mini-window-height 1.0)
   (unless truncate-lines (set-window-hscroll nil 0))
-  (unless (or vertico-resize (frame-root-window-p (active-minibuffer-window)))
-    (let ((delta (- (max (cdr (window-text-pixel-size))
-                         (* (default-line-height) (1+ vertico-count)))
+  (unless (frame-root-window-p (active-minibuffer-window))
+    (unless vertico-resize (setq height (max height vertico-count)))
+    (let ((dp (- (max (cdr (window-text-pixel-size))
+                      (* (default-line-height) (1+ height)))
                  (window-pixel-height))))
-      (when (/= 0 delta) (window-resize nil delta nil nil 'pixelwise)))))
+      (when (or (and (> dp 0) (/= height 0))
+                (and (< dp 0) (eq vertico-resize t)))
+        (window-resize nil dp nil nil 'pixelwise)))))
 
 (cl-defgeneric vertico--prepare ()
   "Ensure that the state is prepared before running the next command."
@@ -606,13 +616,9 @@ the stack trace is shown in the *Messages* buffer."
 
 (cl-defgeneric vertico--setup ()
   "Setup completion UI."
-  (when (boundp 'pixel-scroll-precision-mode)
-    (setq-local pixel-scroll-precision-mode nil))
-  (setq-local scroll-margin 0
-              vertico--input t
-              completion-auto-help nil
-              completion-show-inline-help nil
-              fringe-indicator-alist '((continuation) (truncation))
+  (dolist (var vertico--locals)
+    (set (make-local-variable (car var)) (cdr var)))
+  (setq-local vertico--input t
               vertico--candidates-ov (make-overlay (point-max) (point-max) nil t t)
               vertico--count-ov (make-overlay (point-min) (point-min) nil t t))
   (overlay-put vertico--count-ov 'priority 1) ;; For `minibuffer-depth-indicate-mode'

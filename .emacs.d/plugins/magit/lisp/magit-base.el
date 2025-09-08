@@ -38,6 +38,7 @@
 
 (require 'cl-lib)
 (require 'compat)
+(require 'cond-let)
 (require 'eieio)
 (require 'llama)
 (require 'subr-x)
@@ -687,6 +688,14 @@ third-party completion frameworks."
                      (equal omit-nulls t))
             (setq input string))
           (funcall split-string string separators omit-nulls trim)))
+       ;; Add the default to the table if absent, which is necessary
+       ;; because we don't add it to the prompt for some frameworks.
+       (table (if (and def
+                       (listp table)
+                       (not (listp (car table)))
+                       (not (member def table)))
+                  (cons def table)
+                table))
        ;; Prevent `BUILT-IN' completion from messing up our existing
        ;; order of the completion candidates. aa5f098ab
        (table (magit--completion-table table))
@@ -702,8 +711,11 @@ third-party completion frameworks."
        ;; And now, the moment we have all been waiting for...
        (values (completing-read-multiple
                 (magit--format-prompt prompt def)
-                table predicate require-match initial-input
-                hist def inherit-input-method)))
+                table predicate
+                (if (eq require-match 'any) nil require-match)
+                initial-input hist def inherit-input-method)))
+    (when (and require-match (not values))
+      (user-error "Nothing selected"))
     (if no-split input values)))
 
 (defvar-keymap magit-minibuffer-local-ns-map
@@ -754,7 +766,7 @@ This is similar to `read-string', but
            (user-error "Need non-empty input"))
           ((and no-whitespace (string-match-p "[\s\t\n]" val))
            (user-error "Input contains whitespace"))
-          (t val))))
+          (val))))
 
 (defun magit-read-string-ns ( prompt &optional initial-input history
                               default-value inherit-input-method)
@@ -873,6 +885,7 @@ See info node `(magit)Debugging Tools' for more information."
                          (error "Cannot find mandatory dependency %s" lib)))
                      '(;; Like `LOAD_PATH' in `default.mk'.
                        "compat"
+                       "cond-let"
                        "llama"
                        "seq"
                        "transient"
@@ -973,8 +986,7 @@ Pad the left side of STRING so that it aligns with the text area."
             ;; Delete the percent sign.
             (delete-region (1- (match-beginning 0)) (match-beginning 0)))))
        ;; Signal an error on bogus format strings.
-       (t
-        (error "Invalid format string"))))
+       ((error "Invalid format string"))))
     (buffer-string)))
 
 ;;; Missing from Emacs
@@ -1147,19 +1159,19 @@ Like `message', except that `message-log-max' is bound to nil."
 
 (defun magit--ellipsis (&optional where)
   "Build an ellipsis always as string, depending on WHERE."
-  (if (stringp magit-ellipsis)
-      magit-ellipsis
-    (if-let ((pair (car (or
-                         (alist-get (or where t) magit-ellipsis)
-                         (alist-get t magit-ellipsis)))))
-        (pcase-let* ((`(,fancy . ,universal) pair)
-                     (ellipsis (if (and fancy (char-displayable-p fancy))
-                                   fancy
-                                 universal)))
-          (if (characterp ellipsis)
-              (char-to-string ellipsis)
-            ellipsis))
-      (user-error "Variable magit-ellipsis is invalid"))))
+  (cond-let
+    ((stringp magit-ellipsis)
+     magit-ellipsis)
+    ([pair (car (or (alist-get (or where t) magit-ellipsis)
+                    (alist-get t magit-ellipsis)))]
+     (pcase-let* ((`(,fancy . ,universal) pair)
+                  (ellipsis (if (and fancy (char-displayable-p fancy))
+                                fancy
+                              universal)))
+       (if (characterp ellipsis)
+           (char-to-string ellipsis)
+         ellipsis)))
+    ((user-error "Variable magit-ellipsis is invalid"))))
 
 (defun magit--ext-regexp-quote (string)
   "Like `reqexp-quote', but for Extended Regular Expressions."
@@ -1175,7 +1187,13 @@ Like `message', except that `message-log-max' is bound to nil."
 (provide 'magit-base)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-base.el ends here

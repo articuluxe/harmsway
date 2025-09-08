@@ -118,9 +118,9 @@ Rules that are defined in that file affect all local repositories."
            (mapcan
             (lambda (file)
               (cons (concat "/" file)
-                    (and-let* ((ext (file-name-extension file)))
-                      (list (concat "/" (file-name-directory file) "*." ext)
-                            (concat "*." ext)))))
+                    (and$ (file-name-extension file)
+                          (list (concat "/" (file-name-directory file) "*." $)
+                                (concat "*." $)))))
             (sort (nconc
                    (magit-untracked-files nil base)
                    ;; The untracked section of the status buffer lists
@@ -194,7 +194,13 @@ Rules that are defined in that file affect all local repositories."
 (provide 'magit-gitignore)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-gitignore.el ends here

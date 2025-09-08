@@ -677,7 +677,7 @@
 
 ;;;;; help
       `(help-key-binding ((,c :foreground ,purple :weight bold)))
-      `(help-argument-name ((,c ::foreground ,cyan+1)))
+      `(help-argument-name ((,c :foreground ,green+2)))
       `(describe-variable-value ((,c :foreground ,cyan+2 :weight bold)))
 
 ;;;;; hi-lock-mode
@@ -1132,10 +1132,10 @@
 ;;;;; tab-bar-mode
       `(tab-bar ((,c :background ,bg-slate-2 :foreground ,fg)))
       `(tab-bar-tab-group-current ((,c :box (:line-width -4 :color ,bg) :background ,bg :foreground ,fg :weight bold)))
-      `(tab-bar-tab-group-inactive ((,c :box (:line-width -4 :color ,bg-header) :background ,bg-header :foreground ,fg-1)))
+      `(tab-bar-tab-group-inactive ((,c :box (:line-width -4 :color ,bg-header+1) :background ,bg-header+1 :foreground ,fg-1)))
       `(tab-bar-tab ((,c :box (:line-width -4 :color ,bg) :background ,bg :foreground ,fg+2 :weight bold)))
-      `(tab-bar-tab-inactive ((,c :box (:line-width -4 :color ,bg-header) :background ,bg-header :foreground ,fg-slate-1)))
-      `(tab-bar-tab-ungrouped ((,c :box (:line-width -4 :color ,bg-header) :background ,bg-header :foreground ,fg)))
+      `(tab-bar-tab-inactive ((,c :box (:line-width -4 :color ,bg-header+1) :background ,bg-header+1 :foreground ,fg-slate)))
+      `(tab-bar-tab-ungrouped ((,c :box (:line-width -4 :color ,bg-header+1) :background ,bg-header+1 :foreground ,fg)))
 
 ;;;;; tab-line-mode
       `(tab-line ((,c :background ,bg-header :foreground ,fg)))

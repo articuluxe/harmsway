@@ -172,21 +172,21 @@ then also remove the respective remote branch."
              (format "Do you really want to merge `%s' into another branch? "
                      branch))
       (user-error "Abort")))
-  (if-let ((target (magit-get-push-branch branch t)))
-      (progn
-        (magit-git-push branch target (list "--force-with-lease"))
-        (set-process-sentinel
-         magit-this-process
-         (lambda (process event)
-           (when (memq (process-status process) '(exit signal))
-             (if (not (zerop (process-exit-status process)))
-                 (magit-process-sentinel process event)
-               (process-put process 'inhibit-refresh t)
-               (magit-process-sentinel process event)
-               (magit--merge-absorb-1 branch args))
-             (when message
-               (message message))))))
-    (magit--merge-absorb-1 branch args)))
+  (cond-let
+    ([target (magit-get-push-branch branch t)]
+     (magit-git-push branch target (list "--force-with-lease"))
+     (set-process-sentinel
+      magit-this-process
+      (lambda (process event)
+        (when (memq (process-status process) '(exit signal))
+          (if (not (zerop (process-exit-status process)))
+              (magit-process-sentinel process event)
+            (process-put process 'inhibit-refresh t)
+            (magit-process-sentinel process event)
+            (magit--merge-absorb-1 branch args))
+          (when message
+            (message message))))))
+    ((magit--merge-absorb-1 branch args))))
 
 (defun magit--merge-absorb-1 (branch args)
   (if-let ((pr (magit-get "branch" branch "pullRequest")))
@@ -248,8 +248,7 @@ then also remove the respective remote branch."
             (list file (magit-checkout-read-stage file)))
            ((yes-or-no-p (format "Restore conflicts in %s? " file))
             (list file "--merge"))
-           (t
-            (user-error "Quit")))))
+           ((user-error "Quit")))))
   (pcase (cons arg (cddr (car (magit-file-status file))))
     ((or `("--ours"   ?D ,_)
          '("--ours"   ?U ?A)
@@ -314,7 +313,13 @@ If no merge is in progress, do nothing."
 (provide 'magit-merge)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-merge.el ends here

@@ -1,4 +1,4 @@
-;;; doric-fire-theme.el --- Minimalist theme with dark background and orange hues -*- lexical-binding:t -*-
+;;; doric-beach-theme.el --- Minimalist theme with light background and gold+teal hues -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2025  Free Software Foundation, Inc.
 
@@ -41,40 +41,40 @@
                (require-theme 'doric-themes t))
     (require 'doric-themes))
 
-  (defvar doric-fire-palette
-    '((cursor "#ef7839")
-      (bg-main "#282420")
-      (fg-main "#f5ceb0")
-      (border "#706061")
+  (defvar doric-beach-palette
+    '((cursor "#3f8cab")
+      (bg-main "#eae3d8")
+      (fg-main "#213937")
+      (border "#b4afb0")
 
-      (bg-shadow-subtle "#40332b")
-      (fg-shadow-subtle "#afa497")
+      (bg-shadow-subtle "#ded4c0")
+      (fg-shadow-subtle "#605d48")
 
-      (bg-neutral "#4f4542")
-      (fg-neutral "#d9cfbe")
+      (bg-neutral "#d4c2ab")
+      (fg-neutral "#504533")
 
-      (bg-shadow-intense "#7c362c")
-      (fg-shadow-intense "#f3ac6f")
+      (bg-shadow-intense "#abd2c9")
+      (fg-shadow-intense "#045e53")
 
-      (bg-accent "#56452f")
-      (fg-accent "#d6b577")
+      (bg-accent "#efd0a9")
+      (fg-accent "#834328")
 
-      (fg-red "#eca27f")
-      (fg-green "#b9d08a")
-      (fg-yellow "#c5ba80")
-      (fg-blue "#9fbfe7")
-      (fg-magenta "#e9acbf")
-      (fg-cyan "#a0c0d0")
+      (fg-red "#902000")
+      (fg-green "#006000")
+      (fg-yellow "#595000")
+      (fg-blue "#103077")
+      (fg-magenta "#700054")
+      (fg-cyan "#005460")
 
-      (bg-red "#54241f")
-      (bg-green "#2f401f")
-      (bg-yellow "#504420")
-      (bg-blue "#363457")
-      (bg-magenta "#5a2f40")
-      (bg-cyan "#2f4954"))
-  "Palette of `doric-fire' theme.")
+      (bg-red "#e0baa5")
+      (bg-green "#bfcba8")
+      (bg-yellow "#d5cc98")
+      (bg-blue "#c4c8dd")
+      (bg-magenta "#d8bade")
+      (bg-cyan "#bee0db"))
+  "Palette of `doric-beach' theme.")
 
-  (doric-themes-define-theme doric-fire dark "Minimalist theme with dark background and orange hues"))
+  (doric-themes-define-theme doric-beach light "Minimalist theme with light background and gold+teal hues"))
 
-(provide 'doric-fire-theme)
-;;; doric-fire-theme.el ends here
+(provide 'doric-beach-theme)
+;;; doric-beach-theme.el ends here

@@ -504,7 +504,7 @@ Optional argument ARGS as per `browse-url-default-browser'"
   (interactive)
   (dwim-shell-command-on-marked-files
    "Convert to webp"
-   "ffmpeg -i '<<f>>' -vcodec libwebp -filter:v fps=fps=10 -compression_level 3 -lossless 1 -loop 0 -preset default -an -vsync 0 '<<fne>>'.webp"
+   "ffmpeg -i '<<f>>' -vcodec libwebp -filter:v fps=fps=10 -compression_level 3 -loop 0 -preset default -an -vsync 0 '<<fne>>'.webp"
    :utils "ffmpeg"))
 
 ;;;###autoload
@@ -1381,6 +1381,7 @@ echo \"<<fne>>.svg\"
         "macosrec --record '%s' --gif --output '<<f>>'"
         (cdr window))
        :silent-success t
+       :focus-now nil
        :monitor-directory "~/Screenshots"
        :no-progress t
        :utils '("ffmpeg" "macosrec")
@@ -1642,13 +1643,29 @@ Needs ideviceinstaller and libmobiledevice installed."
    :monitor-directory "~/Downloads"))
 
 ;;;###autoload
-(defun dwim-shell-commands-duplicate ()
-  "Duplicate file."
-  (interactive)
-  (dwim-shell-command-on-marked-files
-   "Duplicate file(s)."
-   "cp -R '<<f>>' '<<f(u)>>'"
-   :utils "cp"))
+(defun dwim-shell-commands-duplicate (times)
+  "Duplicate file.
+
+With prefix, duplicate it n TIMES."
+  (interactive "p")
+  (dwim-shell-commands--duplicate (list times)))
+
+(defun dwim-shell-commands--duplicate (remaining)
+  "Helper using REMAINING as a list to share recursion state."
+  (let ((current-buffer (current-buffer)))
+    (dwim-shell-command-on-marked-files
+     "Duplicate file(s)."
+     "cp -R '<<f>>' '<<f(u)>>'"
+     :utils "cp"
+     :on-completion
+     (lambda (buffer _process)
+       (kill-buffer buffer)
+       (setcar remaining (1- (car remaining)))
+       (if (> (car remaining) 0)
+           (with-current-buffer current-buffer
+             (dwim-shell-commands--duplicate remaining))
+         (dired-jump nil (with-current-buffer current-buffer
+                           default-directory)))))))
 
 ;;;###autoload
 (defun dwim-shell-commands-rename-all ()

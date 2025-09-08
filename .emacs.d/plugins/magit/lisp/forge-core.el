@@ -26,6 +26,7 @@
 
 (require 'cl-lib)
 (require 'compat)
+(require 'cond-let)
 (require 'eieio)
 (require 'llama)
 (require 'seq)
@@ -267,7 +268,7 @@ is non-nil."
                "\\(?:\\.git\\|/\\)?"
                "\\'")
        url)
-      (and-let* ((elt (forge--get-forge-host (match-string 1 url) (not relax))))
+      (and-let ((elt (forge--get-forge-host (match-string 1 url) (not relax))))
         ;; Return the WEBHOST (not the GITHOST, URLs passed to this
         ;; function usually contain a GITHOST) because the IDs used to
         ;; identify a repository in the database are based on WEBHOSTs.
@@ -384,27 +385,27 @@ parent object (determined using `forge-get-parent')."
            ":\\([^/]+\\)"
            (lambda (str)
              (let ((slot (intern (substring str 1))))
-               (or (and-let*
-                       ((v (ignore-errors
-                             (pcase slot
-                               ('repo    (oref object name))
-                               ('project (concat (string-replace
-                                                  "/" "%2F" (oref object owner))
-                                                 "%2F"
-                                                 (oref object name)))
-                               ('topic   (and (forge--childp object 'forge-topic)
-                                              (oref object number)))
-                               (_        (eieio-oref object slot))))))
-                     (format "%s" v))
+               (or (and$ (ignore-errors
+                           (pcase slot
+                             ('repo    (oref object name))
+                             ('project (concat (string-replace
+                                                "/" "%2F" (oref object owner))
+                                               "%2F"
+                                               (oref object name)))
+                             ('topic   (and (forge--childp object 'forge-topic)
+                                            (oref object number)))
+                             (_        (eieio-oref object slot))))
+                         (format "%s" $))
                    str)))
            resource t t))
-    (if (string-match ":[^/]*" resource)
-        (if-let ((parent (ignore-errors (forge-get-parent object))))
-            (forge--format-resource parent resource)
-          (error "Cannot resolve %s for a %s"
-                 (match-string 0 resource)
-                 (eieio-object-class object)))
-      resource)))
+    (cond-let
+      ((not (string-match ":[^/]*" resource))
+       resource)
+      ([parent (ignore-errors (forge-get-parent object))]
+       (forge--format-resource parent resource))
+      ((error "Cannot resolve %s for a %s"
+              (match-string 0 resource)
+              (eieio-object-class object))))))
 
 ;;; Miscellaneous
 
@@ -476,5 +477,12 @@ Optional END defaults to the value of `point-max'."
             (substring rnd 20 32))))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("and$"          . "cond-let--and$")
+;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let"      . "cond-let--when-let"))
+;; End:
 (provide 'forge-core)
 ;;; forge-core.el ends here

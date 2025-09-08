@@ -374,8 +374,7 @@ when using `magit-branch-and-checkout'."
                   choice))
            ((member choice local)
             (list choice))
-           (t
-            (list choice (magit-read-starting-point "Create" choice))))))
+           ((list choice (magit-read-starting-point "Create" choice))))))
   (cond
    ((not start-point)
     (magit--checkout branch (magit-branch-arguments))
@@ -496,37 +495,38 @@ from the source branch's upstream, then an error is raised."
              (magit-anything-modified-p))
     (message "Staying on HEAD due to uncommitted changes")
     (setq checkout t))
-  (if-let ((current (magit-get-current-branch)))
-      (let ((tracked (magit-get-upstream-branch current))
-            base)
-        (when from
-          (unless (magit-rev-ancestor-p from current)
-            (user-error "Cannot spin off %s.  %s is not reachable from %s"
-                        branch from current))
-          (when (and tracked
-                     (magit-rev-ancestor-p from tracked))
-            (user-error "Cannot spin off %s.  %s is ancestor of upstream %s"
-                        branch from tracked)))
-        (let ((magit-process-raise-error t))
-          (if checkout
-              (magit-call-git "checkout" "-b" branch current)
-            (magit-call-git "branch" branch current)))
-        (when-let ((upstream (magit-get-indirect-upstream-branch current)))
-          (magit-call-git "branch" "--set-upstream-to" upstream branch))
-        (when (and tracked
-                   (setq base
-                         (if from
-                             (concat from "^")
-                           (magit-git-string "merge-base" current tracked)))
-                   (not (magit-rev-eq base current)))
-          (if checkout
-              (magit-call-git "update-ref" "-m"
-                              (format "reset: moving to %s" base)
-                              (concat "refs/heads/" current) base)
-            (magit-call-git "reset" "--hard" base))))
-    (if checkout
-        (magit-call-git "checkout" "-b" branch)
-      (magit-call-git "branch" branch)))
+  (cond-let
+    ([current (magit-get-current-branch)]
+     (let ((tracked (magit-get-upstream-branch current))
+           base)
+       (when from
+         (unless (magit-rev-ancestor-p from current)
+           (user-error "Cannot spin off %s.  %s is not reachable from %s"
+                       branch from current))
+         (when (and tracked
+                    (magit-rev-ancestor-p from tracked))
+           (user-error "Cannot spin off %s.  %s is ancestor of upstream %s"
+                       branch from tracked)))
+       (let ((magit-process-raise-error t))
+         (if checkout
+             (magit-call-git "checkout" "-b" branch current)
+           (magit-call-git "branch" branch current)))
+       (when-let ((upstream (magit-get-indirect-upstream-branch current)))
+         (magit-call-git "branch" "--set-upstream-to" upstream branch))
+       (when (and tracked
+                  (setq base
+                        (if from
+                            (concat from "^")
+                          (magit-git-string "merge-base" current tracked)))
+                  (not (magit-rev-eq base current)))
+         (if checkout
+             (magit-call-git "update-ref" "-m"
+                             (format "reset: moving to %s" base)
+                             (concat "refs/heads/" current) base)
+           (magit-call-git "reset" "--hard" base)))))
+    (checkout
+     (magit-call-git "checkout" "-b" branch))
+    ((magit-call-git "branch" branch)))
   (magit-refresh))
 
 ;;;###autoload
@@ -618,8 +618,7 @@ prompt is confusing."
            (format "%s is" (seq-find #'magit-ref-ambiguous-p branches)))
           ((= len (length refs))
            (format "These %s names are" len))
-          (t
-           (format "%s of these names are" len))))))
+          ((format "%s of these names are" len))))))
     (cond
      ((string-match "^refs/remotes/\\([^/]+\\)" (car refs))
       (let* ((remote (match-str 1 (car refs)))
@@ -728,25 +727,24 @@ prompt is confusing."
   (magit-set nil "branch" branch "pushRemote"))
 
 (defun magit-delete-remote-branch-sentinel (remote refs process event)
-  (when (memq (process-status process) '(exit signal))
-    (if (= (process-exit-status process) 1)
-        (if-let ((on-remote (mapcar (##concat "refs/remotes/" remote "/" %)
-                                    (magit-remote-list-branches remote)))
-                 (rest (seq-filter (##and (not (member % on-remote))
-                                          (magit-ref-exists-p %))
-                                   refs)))
-            (progn
-              (process-put process 'inhibit-refresh t)
-              (magit-process-sentinel process event)
-              (setq magit-this-error nil)
-              (message "Some remote branches no longer exist.  %s"
-                       "Deleting just the local tracking refs instead...")
-              (dolist (ref rest)
-                (magit-call-git "update-ref" "-d" ref))
-              (magit-refresh)
-              (message "Deleting local remote-tracking refs...done"))
-          (magit-process-sentinel process event))
-      (magit-process-sentinel process event))))
+  (cond-let*
+    ((not (memq (process-status process) '(exit signal))))
+    ([_(= (process-exit-status process) 1)]
+     [on-remote (mapcar (##concat "refs/remotes/" remote "/" %)
+                        (magit-remote-list-branches remote))]
+     [rest (seq-filter (##and (not (member % on-remote))
+                              (magit-ref-exists-p %))
+                       refs)]
+     (process-put process 'inhibit-refresh t)
+     (magit-process-sentinel process event)
+     (setq magit-this-error nil)
+     (message "Some remote branches no longer exist.  %s"
+              "Deleting just the local tracking refs instead...")
+     (dolist (ref rest)
+       (magit-call-git "update-ref" "-d" ref))
+     (magit-refresh)
+     (message "Deleting local remote-tracking refs...done"))
+    ((magit-process-sentinel process event))))
 
 ;;;###autoload
 (defun magit-branch-rename (old new &optional force)
@@ -787,9 +785,8 @@ the remote."
                  (or (not (eq magit-branch-rename-push-target 'forge-only))
                      (and (require (quote forge) nil t)
                           (fboundp 'forge--split-forge-url)
-                          (and-let* ((url (magit-git-string
-                                           "remote" "get-url" remote)))
-                            (forge--split-forge-url url)))))
+                          (and$ (magit-git-string "remote" "get-url" remote)
+                                (forge--split-forge-url $)))))
         (let ((old-target (magit-get-push-branch old t))
               (new-target (magit-get-push-branch new t))
               (remote (magit-get-push-remote new)))
@@ -981,7 +978,13 @@ Also rename the respective reflog file."
 (provide 'magit-branch)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-branch.el ends here

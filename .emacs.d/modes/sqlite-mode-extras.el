@@ -163,10 +163,7 @@ Takes TABLE to query and COLUMN to select from for completions."
                                               nil
                                               (sqlite-mode-extras--row-field-value-at-point)))
                          (read-string (format "%s: " column)
-                                      (sqlite-mode-extras--row-field-value-at-point)))
-
-                       (read-string (format "%s: " column)
-                                    (sqlite-mode-extras--row-field-value-at-point)))))
+                                      (sqlite-mode-extras--row-field-value-at-point))))))
     (unless (string-equal (car (seq-first columns)) "id")
       (error "First column must be 'id'"))
     (sqlite-execute

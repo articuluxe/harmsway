@@ -1,11 +1,11 @@
 ;;; org-superstar.el --- Prettify headings and plain lists in Org mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020, 2021  D. Williams, sabof
+;; Copyright (C) 2020-2025  D. Williams, sabof
 
 ;; Author: D. Williams <d.williams@posteo.net>
 ;; Maintainer: D. Williams <d.williams@posteo.net>
 ;; Keywords: faces, outlines
-;; Version: 1.5.1
+;; Version: 1.6.1
 ;; Homepage: https://github.com/integral-dw/org-superstar-mode
 ;; Package-Requires: ((org "9.1.9") (emacs "26.1"))
 
@@ -365,8 +365,13 @@ corresponding UTF8 character in ‘org-superstar-item-bullet-alist’.
 If set to the symbol ‘only’, disable fontifying headlines entirely.
 This takes precedence over all other customizations.
 
-You should call ‘org-superstar-restart’ after changing this
-variable for your changes to take effect."
+Ordered plain list bullets are *not* fontified, but their appearance can
+be changed by customizing the face ‘org-superstar-ordered-item’.
+Alphabetic bullets are recognized depending on the value of
+‘org-list-allow-alphabetical’.
+
+You should call ‘org-superstar-restart’ after changing this variable
+\(or ‘org-list-allow-alphabetical’) for your changes to take effect."
   :group 'org-superstar
   :type '(choice (const :tag "Enable item bullet fontification" t)
                  (const :tag "Disable item bullet fontification" nil)
@@ -440,6 +445,11 @@ unspecified inherits the org-level-X faces for header bullets."
 (defface org-superstar-item
   '((default . (:inherit default)))
   "Face used to display prettified item bullets."
+  :group 'org-superstar)
+
+(defface org-superstar-ordered-item
+  '((default . (:inherit default)))
+  "Face used to display ordered list item bullets."
   :group 'org-superstar)
 
 (defface org-superstar-first
@@ -631,7 +641,6 @@ replaced by their corresponding entry in ‘org-superstar-item-bullet-alist’."
 
 ;;; Predicates
 
-;; ‘org-list-in-valid-context-p’ is currently not working.
 (defun org-superstar-plain-list-p ()
   "Return non-nil if the current match is a proper plain list.
 
@@ -640,7 +649,7 @@ lists; consider using ‘org-superstar-toggle-lightweight-lists’ in
 such cases to avoid slowdown."
   (or org-superstar-lightweight-lists
       (save-match-data
-        (not (org-in-src-block-p)))))
+        (org-list-in-valid-context-p))))
 
 (defun org-superstar-headline-or-inlinetask-p ()
   "Return t if the current match is a proper headline or inlinetask."
@@ -684,6 +693,21 @@ prettifying bullets in (for example) source blocks."
     (goto-char (point-min))
     (while (re-search-forward "^[ \t]+\\([-+*]\\) " nil t)
       (decompose-region (match-beginning 1) (match-end 1)))))
+
+(defun org-superstar--prettify-obullets ()
+  "Prettify ordered list bullets.
+
+This function uses ‘org-superstar-plain-list-p’ to avoid
+prettifying bullets in (for example) source blocks."
+  (when (org-superstar-plain-list-p)
+    'org-superstar-ordered-item))
+
+(defun org-superstar--unprettify-obullets ()
+  "Revert visual tweaks made to ordered item bullets in current buffer.
+
+This function does nothing, as no compose-related features are
+implemented for ordered list bullets.  It is nonetheless provided if the
+user wishes to extend Org Superstar using function advice.")
 
 (defun org-superstar--prettify-main-hbullet ()
   "Prettify the trailing star in a headline.
@@ -810,8 +834,8 @@ last regexp.  If there is no SUBEXPth pair, do nothing."
   (let ((start (match-beginning subexp))
         (end (match-end subexp)))
     (when start
-      (add-text-properties
-       start end '(invisible org-superstar-hide)))))
+      (put-text-property
+       start end 'invisible 'org-superstar-hide))))
 
 (defun org-superstar--unprettify-hbullets ()
   "Revert visual tweaks made to header bullets in current buffer."
@@ -836,7 +860,13 @@ cleanup routines."
   (setq org-superstar--font-lock-keywords
         `(,@(when org-superstar-prettify-item-bullets
               '(("^[ \t]*?\\(?:\\(?1:[-+]\\)\\|[ \t]\\(?1:\\*\\)\\) "
-                 (1 (org-superstar--prettify-ibullets)))))
+                 (1 (org-superstar--prettify-ibullets)))
+                ("^[ \t]*\\(?1:[[:digit:]]+[.)]\\) "
+                 (1 (org-superstar--prettify-obullets)))))
+          ,@(when (and org-superstar-prettify-item-bullets
+                       org-list-allow-alphabetical)
+              '(("^[ \t]*\\(?1:[a-zA-Z][.)]\\) "
+                 (1 (org-superstar--prettify-obullets)))))
           ,@(unless (eq org-superstar-prettify-item-bullets 'only)
               `(("^\\(?3:\\**?\\)\\(?2:\\*?\\)\\(?1:\\*\\) "
                  (1 (org-superstar--prettify-main-hbullet) prepend)
@@ -890,7 +920,9 @@ cleanup routines."
                             'append)
     (org-superstar--fontify-buffer)
     (add-to-invisibility-spec '(org-superstar-hide))
-    (org-superstar--prettify-indent))
+    (org-superstar--prettify-indent)
+    (when org-superstar-remove-leading-stars
+      (setq-local global-disable-point-adjustment t)))
    ;; Clean up and exit.
    (t
     (remove-from-invisibility-spec '(org-superstar-hide))

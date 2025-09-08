@@ -349,8 +349,7 @@ the process manually."
                      command))
         ((seq-find (##string-prefix-p "--mainline=" %) args)
          args)
-        (t
-         (cons (format "--mainline=%s"
+        ((cons (format "--mainline=%s"
                        (read-number "Replay merges relative to parent: "))
                args))))
      commits)))
@@ -361,9 +360,8 @@ the process manually."
     (or (file-exists-p (expand-file-name "CHERRY_PICK_HEAD" dir))
         ;; And CHERRY_PICK_HEAD does not exist when a conflict happens
         ;; while picking a series of commits with --no-commit.
-        (and-let* ((line (magit-file-line
-                          (expand-file-name "sequencer/todo" dir))))
-          (string-prefix-p "pick" line)))))
+        (and$ (magit-file-line (expand-file-name "sequencer/todo" dir))
+              (string-prefix-p "pick" $)))))
 
 ;;; Revert
 
@@ -419,9 +417,8 @@ without prompting."
     (or (file-exists-p (expand-file-name "REVERT_HEAD" dir))
         ;; And REVERT_HEAD does not exist when a conflict happens
         ;; while reverting a series of commits with --no-commit.
-        (and-let* ((line (magit-file-line
-                          (expand-file-name "sequencer/todo" dir))))
-          (string-prefix-p "revert" line)))))
+        (and$ (magit-file-line (expand-file-name "sequencer/todo" dir))
+              (string-prefix-p "revert" $)))))
 
 ;;; Patch
 
@@ -622,7 +619,7 @@ the upstream."
     (magit-git-rebase upstream args)))
 
 (defun magit-rebase--upstream-description ()
-  (and-let* ((branch (magit-get-current-branch)))
+  (and-let ((branch (magit-get-current-branch)))
     (or (magit-get-upstream-branch branch)
         (let ((remote (magit-get "branch" branch "remote"))
               (merge  (magit-get "branch" branch "merge"))
@@ -634,8 +631,7 @@ the upstream."
             (concat u ", replacing non-existent"))
            ((or remote merge)
             (concat u ", replacing invalid"))
-           (t
-            (concat u ", setting that")))))))
+           ((concat u ", setting that")))))))
 
 ;;;###autoload
 (defun magit-rebase-branch (target args)
@@ -764,8 +760,8 @@ argument, prompt for the first commit to potentially squash into."
   (interactive (list current-prefix-arg
                      (magit-rebase-arguments)))
   (magit-rebase-interactive-1
-      (and-let* ((_(not select))
-                 (upstream (magit-get-upstream-branch)))
+      (and-let ((_(not select))
+                (upstream (magit-get-upstream-branch)))
         (magit-git-string "merge-base" upstream "HEAD"))
       (nconc (list "--autosquash" "--keep-empty") args)
     "Type %p on a commit to squash into it and then rebase as necessary,"
@@ -942,8 +938,7 @@ If no such sequence is in progress, do nothing."
                 (commit
                  (magit-sequence-insert-commit
                   "pick" commit 'magit-sequence-pick))
-                (t
-                 (magit-sequence-insert-am-patch
+                ((magit-sequence-insert-am-patch
                   "pick" patch 'magit-sequence-pick)))
           (cl-decf i)))
       (magit-sequence-insert-sequence nil "ORIG_HEAD")
@@ -1031,9 +1026,8 @@ status buffer (i.e., the reverse of how they will be applied)."
     (magit-sequence-insert-sequence
      (magit-file-line (expand-file-name "rebase-merge/stopped-sha" dir))
      onto
-     (and-let* ((lines (magit-file-lines
-                        (expand-file-name "rebase-merge/done" dir))))
-       (cadr (split-string (car (last lines))))))))
+     (and$ (magit-file-lines (expand-file-name "rebase-merge/done" dir))
+           (cadr (split-string (car (last $))))))))
 
 (defun magit-rebase-insert-apply-sequence (onto)
   (let* ((dir (magit-gitdir))
@@ -1090,15 +1084,14 @@ status buffer (i.e., the reverse of how they will be applied)."
                      (equal (magit-patch-id unstaged) id))
                  "same")
                 ;; ...and some changes are gone and/or others were added.
-                (t "work")))
+                ("work")))
              stop 'magit-sequence-part))
            ;; The commit is definitely gone...
            ((assoc (##magit-rev-equal % stop) done)
             ;; ...but all of its changes are still in effect.
             (magit-sequence-insert-commit "poof" stop 'magit-sequence-drop))
-           (t
-            ;; ...and some changes are gone and/or other changes were added.
-            (magit-sequence-insert-commit "gone" stop 'magit-sequence-drop)))
+           ;; ...and some changes are gone and/or other changes were added.
+           ((magit-sequence-insert-commit "gone" stop 'magit-sequence-drop)))
           (setq stop nil))))
     (pcase-dolist (`(,rev ,abbrev ,msg) done)
       (apply #'magit-sequence-insert-commit
@@ -1116,8 +1109,7 @@ status buffer (i.e., the reverse of how they will be applied)."
                           abbrev msg))
                    ((equal rev head)
                     (list "done" rev 'magit-sequence-head abbrev msg))
-                   (t
-                    (list "done" rev 'magit-sequence-done abbrev msg)))))
+                   ((list "done" rev 'magit-sequence-done abbrev msg)))))
     (magit-sequence-insert-commit "onto" onto
                                   (if (equal onto head)
                                       'magit-sequence-head
@@ -1126,9 +1118,9 @@ status buffer (i.e., the reverse of how they will be applied)."
 (defun magit-sequence-insert-commit (type hash face &optional abbrev msg)
   (magit-insert-section (commit hash)
     (magit-insert-heading
-      (propertize type 'font-lock-face face) " "
+      (magit--propertize-face type face) " "
       (if abbrev
-          (concat (propertize abbrev 'face 'magit-hash) " " msg "\n")
+          (concat (magit--propertize-face abbrev 'magit-hash) " " msg "\n")
         (concat (magit-format-rev-summary hash) "\n")))))
 
 (defun magit-sequence-insert-step (type target)
@@ -1143,7 +1135,13 @@ status buffer (i.e., the reverse of how they will be applied)."
 (provide 'magit-sequence)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("and>"         . "cond-let--and>")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
-;;   ("match-str" . "match-string-no-properties"))
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; magit-sequence.el ends here
