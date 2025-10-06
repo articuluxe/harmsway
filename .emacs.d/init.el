@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-06-17 15:20:36 dharms>
+;; Modified Time-stamp: <2025-10-06 14:50:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -48,8 +48,9 @@
                             ,(concat my/user-directory "modes/haskell/")
                             ,(concat my/user-directory "custom/"))
                           load-path))
-  (push "~/src/" trusted-content)
-  (push my/user-directory trusted-content)
+  (when (> emacs-major-version 29)
+    (push "~/src/" trusted-content)
+    (push my/user-directory trusted-content))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compat ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   (when (< emacs-major-version 27)
@@ -3942,6 +3943,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; chatgpt-shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-maker)
 (use-package chatgpt-shell
+  :if (version<= "30.0" emacs-version)
   :bind ("C-c 0#")
   :init
   (setq chatgpt-shell-openai-key
