@@ -40,7 +40,7 @@
 (require 'compat)
 (require 'cond-let)
 (require 'eieio)
-(require 'llama)
+(require 'llama) ; For (##these ...) see M-x describe-function RET # # RET.
 (require 'subr-x)
 
 ;; For older Emacs releases we depend on an updated `seq' release from
@@ -494,6 +494,7 @@ and delay of your graphical environment or operating system."
 (defclass magit-hunk-section (magit-diff-section)
   ((keymap      :initform 'magit-hunk-section-map)
    (painted     :initform nil)
+   (fontified   :initform nil) ;TODO
    (refined     :initform nil)
    (combined    :initform nil :initarg :combined)
    (from-range  :initform nil :initarg :from-range)
@@ -714,7 +715,8 @@ third-party completion frameworks."
                 table predicate
                 (if (eq require-match 'any) nil require-match)
                 initial-input hist def inherit-input-method)))
-    (when (and require-match (not values))
+    (when (and (eq require-match 'any)
+               (not values))
       (user-error "Nothing selected"))
     (if no-split input values)))
 
@@ -1072,6 +1074,8 @@ the value in the symbol's `saved-value' property if any, or
 
 ;;;###autoload
 (define-advice Info-follow-nearest-node (:around (fn &optional fork) gitman)
+  ;; Do not use `if-let*' (aka `cond-let--if-let*') because this is
+  ;; copied to the autoload file, which does not require `cond-let'.
   (let ((node (Info-get-token
                (point) "\\*note[ \n\t]+"
                "\\*note[ \n\t]+\\([^:]*\\):\\(:\\|[ \n\t]*(\\)?")))

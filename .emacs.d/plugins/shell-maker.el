@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.81.1
+;; Version: 0.82.3
 ;; Package-Requires: ((emacs "27.1"))
-(defconst shell-maker-version "0.81.1")
+(defconst shell-maker-version "0.82.3")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -230,18 +230,26 @@ Set MODE-LINE-NAME to override the mode line name."
   "Define the major mode for the shell using CONFIG.
 
 Optionally use MODE-MAP."
-  (eval
-   (macroexpand
-    `(define-derived-mode ,(shell-maker-major-mode config) comint-mode
-       ,(shell-maker-config-name config)
-       ,(format "Major mode for %s shell." (shell-maker-config-name config))
-       (when ,mode-map
-         (use-local-map ,mode-map))))))
+  (if mode-map
+      (eval `(define-derived-mode ,(shell-maker-major-mode config) comint-mode
+               ,(shell-maker-config-name config)
+               ,(format "Major mode for %s shell." (shell-maker-config-name config))
+               (use-local-map ,mode-map)))
+    (let ((mode-map-symbol (intern (format "%s-shell-mode-map"
+                                           (downcase (shell-maker-config-name config))))))
+      (when (boundp mode-map-symbol)
+        (makunbound mode-map-symbol))
+      (eval `(defvar-keymap ,mode-map-symbol
+               :parent shell-maker-mode-map))
+      (eval `(define-derived-mode ,(shell-maker-major-mode config) comint-mode
+               ,(shell-maker-config-name config)
+               ,(format "Major mode for %s shell." (shell-maker-config-name config))
+               (use-local-map ,mode-map-symbol))))))
 
 (defun shell-maker-welcome-message (config)
   "Return a welcome message to be printed using CONFIG."
   (format
-   "Welcome to %s shell\n\n  Type %s and press %s for details.\n\n  Like this package? Consider ✨%s✨\n\n"
+   "\n\n\n     Welcome to %s shell\n\n\n       Type %s and press %s for details.\n\n       Like this package? Consider ✨%s✨\n\n\n\n\n"
    (propertize (shell-maker-config-name config)
                'font-lock-face 'font-lock-comment-face)
    (propertize "help" 'font-lock-face 'italic)
@@ -312,17 +320,21 @@ Use ON-OUTPUT function to monitor output text."
   (unless reply
     (error "Missing reply"))
   (let ((inhibit-read-only t)
-        (shell-buffer (shell-maker-buffer config)))
+        (shell-buffer (shell-maker-buffer config))
+        (output (concat reply
+                        (if failed
+                            (propertize "\n<shell-maker-failed-command>\n"
+                                        'invisible (not shell-maker--show-invisible-markers))
+                          "")
+                        (shell-maker-prompt shell-maker--config))))
     (with-current-buffer shell-buffer
-      (save-excursion
-        (goto-char (point-max))
-        (comint-output-filter (shell-maker--process)
-                              (concat reply
-                                      (if failed
-                                          (propertize "\n<shell-maker-failed-command>\n"
-                                                      'invisible (not shell-maker--show-invisible-markers))
-                                        "")
-                                      (shell-maker-prompt shell-maker--config))))))
+      (if (eobp) ;; auto-scroll
+          (progn
+            (goto-char (point-max))
+            (shell-maker--output-filter (shell-maker--process) output))
+        (save-excursion
+          (goto-char (point-max))
+          (shell-maker--output-filter (shell-maker--process) output)))))
   (when on-output
     (funcall on-output reply)))
 
@@ -349,6 +361,8 @@ Of the form:
   (interactive)
   (unless (eq major-mode (shell-maker-major-mode shell-maker--config))
     (user-error "Not in a shell"))
+  (unless (shell-maker-point-at-last-prompt-p)
+    (goto-char (point-max)))
   (let* ((shell-buffer (shell-maker-buffer shell-maker--config))
          (called-interactively (called-interactively-p #'interactive))
          (shell-maker--input))
@@ -366,6 +380,17 @@ Of the form:
                                               :config shell-maker--config
                                               :on-output on-output
                                               :on-finished on-finished)))))
+
+(defun shell-maker-point-at-last-prompt-p ()
+  "Return non-nil if point is at last prompt."
+  (unless (eq major-mode (shell-maker-major-mode shell-maker--config))
+    (user-error "Not in a shell"))
+  (save-excursion
+    (let ((point (point)))
+      (goto-char (point-max))
+      (when (re-search-backward comint-prompt-regexp nil t)
+        (>= point (match-end 0))))))
+
 (defun shell-maker-clear-buffer ()
   "Clear the current shell buffer."
   (interactive)
@@ -1275,6 +1300,40 @@ Use ON-OUTPUT function to monitor output text."
     (when on-output
       (funcall on-output reply))))
 
+(defmacro shell-maker-with-auto-scroll-edit (&rest body)
+  "Execute BODY, preserving point unless already at end of buffer."
+  (save-restriction)
+  `(let ((new-location))
+     (if (eobp)
+         (progn
+           (goto-char (point-max))
+           (set-marker comint-last-output-start (point))
+           ,@body
+           (let ((proc (get-buffer-process (current-buffer)))
+                 (point (point)))
+             (when (and proc (> point (process-mark proc)))
+               (set-marker (process-mark proc) point))
+             (setq new-location point))
+           (goto-char (point-max)))
+       (save-excursion
+         (goto-char (point-max))
+         (set-marker comint-last-output-start (point))
+         ,@body
+         (let ((proc (get-buffer-process (current-buffer)))
+               (point (point)))
+           (when (and proc (> point (process-mark proc)))
+             (set-marker (process-mark proc) point))
+           (setq new-location point))))
+     (unless comint-use-prompt-regexp
+       (with-silent-modifications
+         (add-text-properties comint-last-output-start new-location
+                              `(rear-nonsticky
+                                ,shell-maker--prompt-rear-nonsticky
+                                front-sticky
+                                (field inhibit-line-move-field-capture)
+                                field output
+                                inhibit-line-move-field-capture t))))))
+
 (defun shell-maker--preparse-json (json)
   "Preparse JSON and return a cons of parsed objects vs unparsed text."
   (let ((parsed)
@@ -1502,7 +1561,7 @@ Uses PROCESS and STRING same as `comint-output-filter'."
       (let ((inhibit-read-only t))
         (save-restriction
           (widen)
-          (goto-char (process-mark process))
+          (goto-char (point-max))
           (set-marker comint-last-output-start (point))
           (insert string)
           (set-marker (process-mark process) (point))
@@ -1865,11 +1924,13 @@ Of the form:
               (cons :history history)
               (cons :log (lambda (format &rest args)
                            (apply #'shell-maker--log (append (list config format) args))))
-              (cons :write-output (lambda (output)
+              (cons :buffer shell-buffer)
+              (cons :write-output (lambda (output &optional force)
                                     (setq output (or output "<nil-message>"))
-                                    (when-let ((active (and (eq request-id (with-current-buffer shell-buffer
-                                                                             (shell-maker--current-request-id)))
-                                                            (buffer-live-p shell-buffer))))
+                                    (when-let ((active (or force
+                                                           (and (eq request-id (with-current-buffer shell-buffer
+                                                                                 (shell-maker--current-request-id)))
+                                                                (buffer-live-p shell-buffer)))))
                                       (with-current-buffer shell-buffer
                                         (shell-maker--write-partial-reply :config config
                                                                           :reply output

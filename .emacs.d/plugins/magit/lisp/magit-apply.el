@@ -33,6 +33,7 @@
 (require 'magit-diff)
 (require 'magit-wip)
 
+(require 'dired)
 (require 'transient) ; See #3732.
 
 ;; For `magit-apply'
@@ -515,39 +516,26 @@ of a side, then keep that side without prompting."
       ('(?U ?U) (magit-smerge-keep-current))
       (_ (magit-discard-apply section #'magit-apply-hunk)))))
 
-(defun magit-discard-apply (section apply)
-  (if (eq (magit-diff-type section) 'unstaged)
-      (funcall apply section "--reverse")
-    (if (magit-anything-unstaged-p
-         nil (if (magit-file-section-p section)
-                 (oref section value)
-               (magit-section-parent-value section)))
-        (progn (let ((magit-inhibit-refresh t))
-                 (funcall apply section "--reverse" "--cached")
-                 (funcall apply section "--reverse" "--reject"))
-               (magit-refresh))
-      (funcall apply section "--reverse" "--index"))))
-
 (defun magit-discard-hunks (sections)
   (magit-confirm 'discard
     (list "Discard %d hunks from %s"
           (length sections)
           (magit-section-parent-value (car sections))))
-  (magit-discard-apply-n sections #'magit-apply-hunks))
+  (magit-discard-apply sections #'magit-apply-hunks))
 
-(defun magit-discard-apply-n (sections apply)
-  (let ((section (car sections)))
-    (if (eq (magit-diff-type section) 'unstaged)
-        (funcall apply sections "--reverse")
-      (if (magit-anything-unstaged-p
-           nil (if (magit-file-section-p section)
-                   (oref section value)
-                 (magit-section-parent-value section)))
-          (progn (let ((magit-inhibit-refresh t))
-                   (funcall apply sections "--reverse" "--cached")
-                   (funcall apply sections "--reverse" "--reject"))
-                 (magit-refresh))
-        (funcall apply sections "--reverse" "--index")))))
+(defun magit-discard-apply (section:s apply)
+  (let ((primus (if (atom section:s) section:s (car section:s))))
+    (cond ((eq (magit-diff-type primus) 'unstaged)
+           (funcall apply section:s "--reverse"))
+          ((magit-anything-unstaged-p
+            nil (if (magit-file-section-p primus)
+                    (oref primus value)
+                  (magit-section-parent-value primus)))
+           (let ((magit-inhibit-refresh t))
+             (funcall apply section:s "--reverse" "--cached")
+             (funcall apply section:s "--reverse" "--reject"))
+           (magit-refresh))
+          ((funcall apply section:s "--reverse" "--index")))))
 
 (defun magit-discard-file (section)
   (magit-discard-files (list section)))
@@ -675,10 +663,8 @@ of a side, then keep that side without prompting."
           (setq sections
                 (seq-remove (##member (oref % value) binaries)
                             sections)))
-        (cond ((length= sections 1)
-               (magit-discard-apply (car sections) 'magit-apply-diff))
-              (sections
-               (magit-discard-apply-n sections #'magit-apply-diffs)))
+        (when sections
+          (magit-discard-apply sections #'magit-apply-diffs))
         (when binaries
           (let ((modified (magit-unstaged-files t)))
             (setq binaries (magit--separate (##member % modified) binaries)))

@@ -897,7 +897,7 @@ and `:slant'."
   (pcase-let* ((obj  (oref obj prototype))
                (mode (or (oref obj major-mode) major-mode))
                (key  (intern (format "magit-diff:%s" mode)))
-               (`(,args ,files) (transient-args obj)))
+               (`(,args ,files) (transient-args (oref obj command))))
     (put mode 'magit-diff-current-arguments args)
     (when save
       (setf (alist-get key transient-values) args)
@@ -1482,31 +1482,29 @@ for a revision."
   "Convert diff range type.
 Change \"revA..revB\" to \"revA...revB\", or vice versa."
   (interactive)
-  (if (and magit-buffer-range
-           (derived-mode-p 'magit-diff-mode)
-           (string-match magit-range-re magit-buffer-range))
-      (setq magit-buffer-range
-            (replace-match (if (string= (match-str 2 magit-buffer-range) "..")
-                               "..."
-                             "..")
-                           t t magit-buffer-range 2))
-    (user-error "No range to change"))
-  (magit-refresh))
+  (cond ((and magit-buffer-range
+              (derived-mode-p 'magit-diff-mode)
+              (string-match magit-range-re magit-buffer-range))
+         (setq magit-buffer-range
+               (replace-match
+                (if (string= (match-str 2 magit-buffer-range) "..") "..." "..")
+                t t magit-buffer-range 2))
+         (magit-refresh))
+        ((user-error "No range to change"))))
 
 (defun magit-diff-flip-revs ()
   "Swap revisions in diff range.
 Change \"revA..revB\" to \"revB..revA\"."
   (interactive)
-  (if (and magit-buffer-range
-           (derived-mode-p 'magit-diff-mode)
-           (string-match magit-range-re magit-buffer-range))
-      (progn
-        (setq magit-buffer-range
-              (concat (match-str 3 magit-buffer-range)
-                      (match-str 2 magit-buffer-range)
-                      (match-str 1 magit-buffer-range)))
-        (magit-refresh))
-    (user-error "No range to swap")))
+  (cond ((and magit-buffer-range
+              (derived-mode-p 'magit-diff-mode)
+              (string-match magit-range-re magit-buffer-range))
+         (setq magit-buffer-range
+               (concat (match-str 3 magit-buffer-range)
+                       (match-str 2 magit-buffer-range)
+                       (match-str 1 magit-buffer-range)))
+         (magit-refresh))
+        ((user-error "No range to swap"))))
 
 (defun magit-diff-toggle-file-filter ()
   "Toggle the file restriction of the current buffer's diffs.
@@ -1795,8 +1793,8 @@ the Magit-Status buffer for DIRECTORY."
 
 (defun magit-diff-visit--position (buffer rev file goto-from goto-file)
   (and-let ((hunk (magit-diff--hunk-section)))
-    (let* ((line   (magit-diff-hunk-line   hunk goto-from))
-           (column (magit-diff-hunk-column hunk goto-from)))
+    (let ((line   (magit-diff-hunk-line   hunk goto-from))
+          (column (magit-diff-hunk-column hunk goto-from)))
       (with-current-buffer buffer
         (when (and goto-file (not (equal rev "{worktree}")))
           (setq line (magit-diff-visit--offset
@@ -1863,23 +1861,6 @@ the Magit-Status buffer for DIRECTORY."
                       (forward-line))))
               (throw 'found nil))))))
     (+ line offset)))
-
-;;;;; Movement
-
-(defun magit-jump-to-diffstat-or-diff ()
-  "Jump to the diffstat or diff.
-When point is on a file inside the diffstat section, then jump
-to the respective diff section, otherwise jump to the diffstat
-section or a child thereof."
-  (interactive)
-  (if-let ((section (magit-get-section
-                     (append (magit-section-case
-                               ([file diffstat] `((file . ,(oref it value))))
-                               (file `((file . ,(oref it value)) (diffstat)))
-                               (t '((diffstat))))
-                             (magit-section-ident magit-root-section)))))
-      (magit-section-goto section)
-    (user-error "No diffstat in this buffer")))
 
 ;;;; Scroll Commands
 
@@ -2018,8 +1999,24 @@ like 'magit-jump-to-diffstat-or-diff'."
 (magit-define-section-jumper magit-jump-to-revision-notes
   "Notes" notes nil magit-insert-revision-notes)
 
-(magit-define-section-jumper magit-jump-to-revision-diffstat
-  "Diffstat" diffstat nil magit-insert-revision-diff)
+(transient-define-suffix magit-jump-to-revision-diffstat (&optional expand)
+  :description "Diffstat"
+  :inapt-if-not (##cl-find-if (##eq (oref % type) 'diffstat)
+                              (oref magit-root-section children))
+  (interactive "P")
+  (cond-let
+    ([section (magit-get-section
+               (append (magit-section-case
+                         (file `((file . ,(oref it value)) (diffstat)))
+                         (hunk `((file . ,(magit-section-parent-value it))
+                                 (diffstat)))
+                         (t '((diffstat))))
+                       (magit-section-ident magit-root-section)))]
+     (goto-char (oref section start))
+     (when expand
+       (with-local-quit (magit-section-show section))
+       (recenter 0)))
+    ((message (format "No diff sections found")))))
 
 (transient-define-suffix magit-jump-to-revision-diff (&optional expand)
   :description "Diff"
@@ -2035,6 +2032,27 @@ like 'magit-jump-to-diffstat-or-diff'."
        (recenter 0)))
     ((message (format "No diff sections found")))))
 
+(defun magit-jump-to-diffstat-or-diff (&optional expand)
+  "Jump to the diffstat or diff.
+When point is on a file inside the diffstat section, then jump
+to the respective diff section, otherwise jump to the diffstat
+section or a child thereof."
+  (interactive)
+  (cond-let
+    ([section (magit-get-section
+               (append (magit-section-case
+                         ([file diffstat] `((file . ,(oref it value))))
+                         (file `((file . ,(oref it value)) (diffstat)))
+                         (hunk `((file . ,(magit-section-parent-value it))
+                                 (diffstat)))
+                         (t '((diffstat))))
+                       (magit-section-ident magit-root-section)))]
+     (goto-char (oref section start))
+     (when expand
+       (with-local-quit (magit-section-show section))
+       (recenter 0)))
+    ((user-error "No diffstat in this buffer"))))
+
 ;;; Diff Mode
 
 (defvar-keymap magit-diff-mode-map
@@ -2044,6 +2062,7 @@ like 'magit-jump-to-diffstat-or-diff'."
   "C-c C-b" #'magit-go-backward
   "C-c C-f" #'magit-go-forward
   "SPC"     #'scroll-up
+  "S-SPC"   #'scroll-down
   "DEL"     #'scroll-down
   "j"       #'magit-jump-to-diffstat-or-diff
   "<remap> <write-file>" #'magit-patch-save)
@@ -2093,23 +2112,23 @@ Staging and applying changes is documented in info node
   (magit-set-header-line-format
    (if (equal magit-buffer-typearg "--no-index")
        (apply #'format "Differences between %s and %s" magit-buffer-diff-files)
-     (concat (if magit-buffer-range
-                 (if (string-match-p "\\(\\.\\.\\|\\^-\\)"
-                                     magit-buffer-range)
-                     (format "Changes in %s" magit-buffer-range)
-                   (let ((msg "Changes from %s to %s")
-                         (end (if (equal magit-buffer-typearg "--cached")
-                                  "index"
-                                "working tree")))
-                     (if (member "-R" magit-buffer-diff-args)
-                         (format msg end magit-buffer-range)
-                       (format msg magit-buffer-range end))))
-               (cond ((equal magit-buffer-typearg "--cached")
-                      "Staged changes")
-                     ((and (magit-repository-local-get 'this-commit-command)
-                           (not (magit-anything-staged-p)))
-                      "Uncommitting changes")
-                     ("Unstaged changes")))
+     (concat (cond (magit-buffer-range
+                    (if (string-match-p "\\(\\.\\.\\|\\^-\\)"
+                                        magit-buffer-range)
+                        (format "Changes in %s" magit-buffer-range)
+                      (let ((msg "Changes from %s to %s")
+                            (end (if (equal magit-buffer-typearg "--cached")
+                                     "index"
+                                   "working tree")))
+                        (if (member "-R" magit-buffer-diff-args)
+                            (format msg end magit-buffer-range)
+                          (format msg magit-buffer-range end)))))
+                   ((equal magit-buffer-typearg "--cached")
+                    "Staged changes")
+                   ((and (magit-repository-local-get 'this-commit-command)
+                         (not (magit-anything-staged-p)))
+                    "Uncommitting changes")
+                   ("Unstaged changes"))
              (pcase (length magit-buffer-diff-files)
                (0)
                (1 (concat " in file " (car magit-buffer-diff-files)))
@@ -2439,7 +2458,9 @@ keymap is the parent of their keymaps."
           (rename nil)
           (binary nil))
       (magit-delete-line)
-      (while (not (or (eobp) (looking-at magit-diff-headline-re)))
+      (while (not (or (eobp)
+                      (looking-at magit-diff-headline-re)
+                      (looking-at magit-log-heading-re)))
         (cond
          ((looking-at "old mode \\(?:[^\n]+\\)\nnew mode \\(?:[^\n]+\\)\n")
           (setq modes (match-str 0)))
@@ -3227,20 +3248,19 @@ Do not confuse this with `magit-diff-scope' (which see)."
                       'undefined)) ; i.e., committed and staged
                    ('committed))))
           ((derived-mode-p 'magit-status-mode)
-           (let ((stype (oref section type)))
-             (if (memq stype '(staged unstaged tracked untracked))
-                 stype
-               (pcase stype
-                 ((or 'file 'module)
-                  (let* ((parent (oref section parent))
-                         (type   (oref parent type)))
-                    (if (memq type '(file module))
-                        (magit-diff-type parent)
-                      type)))
-                 ('hunk (thread-first section
-                          (oref parent)
-                          (oref parent)
-                          (oref type)))))))
+           (pcase (oref section type)
+             ((and type (or 'staged 'unstaged 'tracked 'untracked))
+              type)
+             ((or 'file 'module)
+              (let* ((parent (oref section parent))
+                     (type   (oref parent type)))
+                (if (memq type '(file module))
+                    (magit-diff-type parent)
+                  type)))
+             ('hunk (thread-first section
+                      (oref parent)
+                      (oref parent)
+                      (oref type)))))
           ((derived-mode-p 'magit-log-mode)
            (if (or (and (magit-section-match 'commit section)
                         (oref section children))
@@ -3486,12 +3506,11 @@ actually a `diff' but a `diffstat' section."
            (remove-overlays (oref section start)
                             (oref section end)
                             'diff-mode 'fine))))
-    (cl-labels ((recurse (section)
-                  (if (magit-section-match 'hunk section)
-                      (magit-diff-update-hunk-refinement section t)
-                    (dolist (child (oref section children))
-                      (recurse child)))))
-      (recurse magit-root-section))))
+    (named-let update ((section magit-root-section))
+      (if (magit-section-match 'hunk section)
+          (magit-diff-update-hunk-refinement section t)
+        (dolist (child (oref section children))
+          (update child))))))
 
 ;;; Hunk Region
 

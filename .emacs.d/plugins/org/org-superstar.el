@@ -5,7 +5,7 @@
 ;; Author: D. Williams <d.williams@posteo.net>
 ;; Maintainer: D. Williams <d.williams@posteo.net>
 ;; Keywords: faces, outlines
-;; Version: 1.6.1
+;; Version: 1.7.0
 ;; Homepage: https://github.com/integral-dw/org-superstar-mode
 ;; Package-Requires: ((org "9.1.9") (emacs "26.1"))
 
@@ -71,14 +71,14 @@
 
 ;;; Code:
 
-(require 'org)
 (require 'org-element)
 (require 'wid-edit)
 
 (declare-function org-indent-mode "org-indent" (arg))
-(defvar org-indent-mode)
 (defvar org-inlinetask-show-first-star)
 (defvar org-indent-inlinetask-first-star)
+(defvar org-indent-mode)
+
 
 (defgroup org-superstar nil
   "Use UTF8 bullets for headlines and plain lists."
@@ -98,19 +98,25 @@ corresponding to the bullet used for level N.  The way this list
 is cycled through can use fine-tuned by customizing
 ‘org-superstar-cycle-headline-bullets’.
 
-Every entry in this list can either be a string, a character, or
-a cons cell.  Characters and strings are used as simple, verbatim
-replacements of the asterisk for every display (be it graphical
-or terminal).  In the case of strings, everything past the first
-character is ignored.  If the list element is a cons cell, it
-should be a proper list of the form
+Every entry in this list can either be a string, a character, a cons
+cell or nil.  Characters and strings are used as simple, verbatim
+replacements of the asterisk for every display (be it graphical or
+terminal).  In the case of strings, everything past the first character
+is ignored.  If an element is nil, the bullet is hidden from view
+entirely, including indentation.
+
+If the list element is a cons cell, it should be a proper list of the
+form
 \(COMPOSE-STRING CHARACTER [REST...])
 
-where COMPOSE-STRING should be a string according to the rules of
-the third argument of ‘compose-region’.  It will be used to
-compose the specific headline bullet.  CHARACTER is the fallback
-character used in terminal displays, where composing characters
-cannot be relied upon.
+where COMPOSE-STRING should be a string according to the rules of the
+third argument of ‘compose-region’.  It will be used to compose the
+specific headline bullet.  CHARACTER is the fallback character used in
+terminal displays, where composing characters cannot be relied upon.
+
+The syntax of the above list will change with version 2.0.0 of this
+package, where compose support will be replaced with display properties,
+see Info node ‘(elisp) Display Property’.
 
 You should call ‘org-superstar-restart’ after changing this
 variable for your changes to take effect."
@@ -121,6 +127,8 @@ variable for your changes to take effect."
                              :tag "Simple bullet character")
                   (string :value "◉"
                           :tag "Bullet character (legacy method)")
+                  (const :value nil
+                         :tag "Hide bullet entirely.")
                   (list :tag "Advanced string and fallback"
                         (string :value "◉"
                                 :format "String of characters to compose: %v")
@@ -154,13 +162,16 @@ are not included in the alist are handled like normal headings.
 Alternatively, each alist element may be a proper list of the form
 \(KEYWORD COMPOSE-STRING CHARACTER [REST...])
 
-where KEYWORD should be a TODO keyword (a string), and
-COMPOSE-STRING should be a string according to the rules of the
-third argument of ‘compose-region’.  It will be used to compose
-the specific TODO item bullet.  CHARACTER is the fallback
-character used in terminal displays, where composing characters
-cannot be relied upon.  See also
+where KEYWORD should be a TODO keyword (a string), and COMPOSE-STRING
+should be a string according to the rules of the third argument of
+‘compose-region’.  It will be used to compose the specific TODO item
+bullet.  CHARACTER is the fallback character used in terminal displays,
+where composing characters cannot be relied upon.  See also
 ‘org-superstar-leading-fallback’.
+
+The syntax of the above list will change with version 2.0.0 of this
+package, where compose support will be replaced with display properties,
+see Info node ‘(elisp) Display Property’.
 
 KEYWORD may also be the symbol ‘default’ instead of a string.  In
 this case, this bullet is used for all TODO unspecified keywords.
@@ -198,6 +209,10 @@ If set to a character, also set ‘org-superstar-first-inlinetask-fallback’."
 Normally, this variable is a character replacing the default
 star.  If it’s a string, compose the replacement according to the
 rules of ‘compose-region’ for the COMPONENTS argument.
+
+The syntax of this variable will change with version 2.0.0 of this
+package, where compose support will be replaced with display properties,
+see Info node ‘(elisp) Display Property’.
 
 This bullet is displayed using the dedicated face
 ‘org-superstar-first’.
@@ -256,6 +271,10 @@ Normally, this variable is a character replacing the default
 stars.  If it’s a string, list, or vector, compose the
 replacement according to the rules of ‘compose-region’ for the
 COMPONENTS argument.
+
+The syntax of the above variable will change with version 2.0.0 of this
+package, where compose support will be replaced with display properties,
+see Info node ‘(elisp) Display Property’.
 
 If ‘org-hide-leading-stars’ is nil, leading stars in a headline
 are represented as a sequence of this bullet using the face
@@ -320,8 +339,9 @@ variable for your changes to take effect."
 
 The following values are meaningful:
 
-An integer value of N cycles through the first N entries of the
-list instead of the whole list.
+An integer value of N cycles through the first N entries of the list
+instead of the whole list.  If N is negative, cycle through the last -N
+entries instead.
 
 If otherwise non-nil, cycle through the entirety of the list.
 This is the default behavior inherited from org-bullets.
@@ -338,22 +358,34 @@ variable for your changes to take effect."
                    :format "Repeat the first %v entries exclusively.\n"
                    :size 8
                    :value 1
-                   :validate org-superstar--validate-hcycle)))
+                   :match (lambda (_ x) (and (integerp x) (> x 0)))
+                   :validate org-superstar--validate-hcycle)
+          (integer :tag "Repeat the last -<integer> elements only."
+                   :format "Repeat the last -(%v) entries exclusively.\n"
+                   :size 8
+                   :value -1
+                   :match (lambda (_ x) (and (integerp x) (< x 0)))
+                   :validate (lambda (x) (org-superstar--validate-hcycle x t)))))
 
-(defun org-superstar--validate-hcycle (text-field)
+(defun org-superstar--validate-hcycle (text-field &optional negative)
   "Raise an error if TEXT-FIELD’s value is an invalid hbullet number.
+
+If the optional argument NEGATIVE is given, flip the sign of the value
+read from TEXT-FIELD.
+
 This function is used for ‘org-superstar-cycle-headline-bullets’.
 If the integer exceeds the length of
 ‘org-superstar-headline-bullets-list’, set it to the length and
 raise an error."
-  (let ((ncycle (widget-value text-field))
-        (maxcycle (org-superstar--hbullets-length)))
+  (let* ((sign (if negative -1 1))
+         (ncycle (* sign (widget-value text-field)))
+         (maxcycle (org-superstar--hbullets-length)))
     (unless (<= 1 ncycle maxcycle)
       (widget-put
        text-field
-       :error (format "Value must be between 1 and %i"
-                      maxcycle))
-      (widget-value-set text-field maxcycle)
+       :error (format "Value must be between %i and %i"
+                      sign (* sign maxcycle)))
+      (widget-value-set text-field (* sign maxcycle))
       text-field)))
 
 (defcustom org-superstar-prettify-item-bullets t
@@ -501,7 +533,146 @@ containing several hundred list items."
         (not org-superstar-lightweight-lists)))
 
 
-;;; Accessor Functions
+;;; Hooks
+
+(defvar org-superstar-prettify-headline-hook nil
+  "Hook run when Org Superstar prettifies a headline.
+
+The hook functions can access the match data, with the following groups
+defined for access with functions like ‘match-beginning’ and
+‘match-end’:
+
+0: The headline, defined as all asterisks from beginning of line,
+   followed by a (mandatory) space character, inclusive.
+1: The trailing asterisk (headline star/bullet).
+2: The second last asterisk.  By default only used for inline tasks.
+3: All asterisks except for the trailing asterisk (leading stars).
+4: The first asterisk.  By default only used for inline tasks.
+
+Groups 2 and 4 are contained in 3.  In the special case of level 2
+headings (2 asterisks), the second asterisk is part of group 4, taking
+precedence.")
+
+(defvar org-superstar-prettify-inlinetask-hook nil
+  "Hook run when Org Superstar prettifies an inline task.
+
+The hook functions have access to the same match data as those in
+‘org-superstar-prettify-headline-hook', which see.")
+
+
+;;; Predicates
+
+(defun org-superstar-plain-list-p ()
+  "Return non-nil if the current match is a proper plain list.
+
+This function may be expensive for files with very large plain
+lists; consider using ‘org-superstar-toggle-lightweight-lists’ in
+such cases to avoid slowdown."
+  (or org-superstar-lightweight-lists
+      (save-match-data
+        (org-list-in-valid-context-p))))
+
+(defun org-superstar-headline-or-inlinetask-p ()
+  "Return t if the current match is a proper headline or inlinetask."
+  (save-match-data
+    (and (org-at-heading-p) t)))
+
+(defun org-superstar-headline-p ()
+  "Return t if the current match is a proper headline."
+  (save-match-data
+    (org-with-limited-levels
+     (and (org-at-heading-p) t))))
+
+(defun org-superstar-inlinetask-p ()
+  "Return t if the current match is a proper inlinetask."
+  (and (featurep 'org-inlinetask)
+       (org-superstar-headline-or-inlinetask-p)
+       (not (org-superstar-headline-p))))
+
+(defun org-superstar-graphic-p ()
+  "Return t if the current display supports proper composing."
+  (display-graphic-p))
+
+
+;;; Public Accessor Functions
+
+(defun org-superstar-heading-level ()
+  "Return the heading level N of the currently matched headline.
+
+It is computed from the match data, which is expected to
+encompass the headline (N asterisks) and a single whitespace."
+  (- (match-end 0) (match-beginning 0) 1))
+
+(defun org-superstar-hbullet (&optional level)
+  "Return the desired headline bullet replacement for LEVEL N.
+
+This function either returns a character, a string, or nil.  A character
+is meant to be a drop-in replacement for the default asterisk, a string
+is meant to be processed by ‘compose-region’, and nil means to hide the
+bullet from view entirely.
+
+If LEVEL nil, it is computed from the match data, which is expected to
+encompass the headline (N asterisks) and a single whitespace.
+
+If the headline is also a TODO item, you can override the usually
+displayed bullet depending on the TODO keyword by setting
+‘org-superstar-special-todo-items’ to t and adding relevant TODO
+keyword entries to ‘org-superstar-todo-bullet-alist’.
+
+This function takes user set variables such as
+‘org-superstar-cycle-headline-bullets’ into account.  For more
+information on how to customize headline bullets, see
+‘org-superstar-headline-bullets-list’."
+  ;; string-to-char no longer makes sense here.
+  ;; If you want to support strings properly, return the string.
+  ;; However, allowing for fallback means the list may contain
+  ;; strings, chars or conses.  The cons must be resolved.
+  ;; Hence, a new funtion is needed to keep the complexity to a minimum.
+  (let* ((level (or level (org-superstar-heading-level)))
+         (ncycle org-superstar-cycle-headline-bullets)
+         (n (if org-odd-levels-only (/ (1- level) 2) (1- level)))
+         (todo-bullet (when org-superstar-special-todo-items
+                        (org-superstar--todo-bullet))))
+    (cond (todo-bullet
+           (unless (eq todo-bullet 'hide)
+             todo-bullet))
+          ((and (integerp ncycle) (> ncycle 0))
+           (org-superstar--nth-headline-bullet (% n ncycle)))
+          ((and (integerp ncycle) (< ncycle 0))
+           ;; Remember, ncycle is negative.
+           (let* ((loop-start (+ (org-superstar--hbullets-length) ncycle))
+                  (k (- n loop-start)))
+             (org-superstar--nth-headline-bullet
+              (if (< n loop-start)
+                  n
+                (+ loop-start (% k (- ncycle)))))))
+          (ncycle
+           (org-superstar--nth-headline-bullet
+            (% n (org-superstar--hbullets-length))))
+          (t
+           (org-superstar--nth-headline-bullet
+            (min n (1- (org-superstar--hbullets-length))))))))
+
+
+(defun org-superstar-lbullet ()
+  "Return the correct leading bullet for the current display.
+
+See ‘org-superstar-leading-bullet’ and ‘org-superstar-leading-fallback’."
+  (if (org-superstar-graphic-p)
+      org-superstar-leading-bullet
+    org-superstar-leading-fallback))
+
+(defun org-superstar-fbullet ()
+  "Return the correct first inline task star for the current display.
+
+See ‘org-superstar-first-inlinetask-bullet’ and
+‘org-superstar-first-inlinetask-fallback’."
+  (if (org-superstar-graphic-p)
+      org-superstar-first-inlinetask-bullet
+    org-superstar-first-inlinetask-fallback))
+
+
+;;; Private Accessor Functions
 
 (defun org-superstar--get-todo (pom)
   "Return the TODO keyword at point or marker POM.
@@ -559,38 +730,9 @@ If ‘org-superstar-special-todo-items’ is set to the symbol
   "Return the length of ‘org-superstar-headline-bullets-list’."
   (length org-superstar-headline-bullets-list))
 
-(defun org-superstar--hbullet (level)
-  "Return the desired headline bullet replacement for LEVEL N.
-
-If the headline is also a TODO item, you can override the usually
-displayed bullet depending on the TODO keyword by setting
-‘org-superstar-special-todo-items’ to t and adding relevant TODO
-keyword entries to ‘org-superstar-todo-bullet-alist’.
-
-For more information on how to customize headline bullets, see
-‘org-superstar-headline-bullets-list’.
-
-See also ‘org-superstar-cycle-headline-bullets’."
-  ;; string-to-char no longer makes sense here.
-  ;; If you want to support strings properly, return the string.
-  ;; However, allowing for fallback means the list may contain
-  ;; strings, chars or conses.  The cons must be resolved.
-  ;; Hence, a new funtion is needed to keep the complexity to a minimum.
-  (let ((max-bullets org-superstar-cycle-headline-bullets)
-        (n (if org-odd-levels-only (/ (1- level) 2) (1- level)))
-        (todo-bullet (when org-superstar-special-todo-items
-                       (org-superstar--todo-bullet))))
-    (cond (todo-bullet
-           (unless (eq todo-bullet 'hide)
-             todo-bullet))
-          ((integerp max-bullets)
-           (org-superstar--nth-headline-bullet (% n max-bullets)))
-          (max-bullets
-           (org-superstar--nth-headline-bullet
-            (% n (org-superstar--hbullets-length))))
-          (t
-           (org-superstar--nth-headline-bullet
-            (min n (1- (org-superstar--hbullets-length))))))))
+(define-obsolete-function-alias
+  'org-superstar--hbullet
+  'org-superstar-hbullet "1.7.0")
 
 (defun org-superstar--nth-headline-bullet (n)
   "Return the Nth specified headline bullet or its corresponding fallback.
@@ -618,59 +760,19 @@ N counts from zero.  Headline bullets are specified in
 
 Each of the three regular plain list bullets +, - and * will be
 replaced by their corresponding entry in ‘org-superstar-item-bullet-alist’."
-  (or (cdr (assq (string-to-char bullet-string)
-                 org-superstar-item-bullet-alist))
-      (string-to-char bullet-string)))
+  (if-let ((new-bullet (cdr (assq (string-to-char bullet-string)
+                                  org-superstar-item-bullet-alist))))
+      (string new-bullet)
+    bullet-string))
 
-(defun org-superstar--lbullet ()
-  "Return the correct leading bullet for the current display."
-  (if (org-superstar-graphic-p)
-      org-superstar-leading-bullet
-    org-superstar-leading-fallback))
+(define-obsolete-function-alias 'org-superstar--lbullet
+  'org-superstar-lbullet "1.7.0")
 
-(defun org-superstar--fbullet ()
-  "Return the correct first inline task star for the current display."
-  (if (org-superstar-graphic-p)
-      org-superstar-first-inlinetask-bullet
-    org-superstar-first-inlinetask-fallback))
+(define-obsolete-function-alias 'org-superstar--fbullet
+  'org-superstar-fbullet "1.7.0")
 
-(defun org-superstar--heading-level ()
-  "Return the heading level of the currently matched headline."
-  (- (match-end 0) (match-beginning 0) 1))
-
-
-;;; Predicates
-
-(defun org-superstar-plain-list-p ()
-  "Return non-nil if the current match is a proper plain list.
-
-This function may be expensive for files with very large plain
-lists; consider using ‘org-superstar-toggle-lightweight-lists’ in
-such cases to avoid slowdown."
-  (or org-superstar-lightweight-lists
-      (save-match-data
-        (org-list-in-valid-context-p))))
-
-(defun org-superstar-headline-or-inlinetask-p ()
-  "Return t if the current match is a proper headline or inlinetask."
-  (save-match-data
-    (and (org-at-heading-p) t)))
-
-(defun org-superstar-headline-p ()
-  "Return t if the current match is a proper headline."
-  (save-match-data
-    (org-with-limited-levels
-     (and (org-at-heading-p) t))))
-
-(defun org-superstar-inlinetask-p ()
-  "Return t if the current match is a proper inlinetask."
-  (and (featurep 'org-inlinetask)
-       (org-superstar-headline-or-inlinetask-p)
-       (not (org-superstar-headline-p))))
-
-(defun org-superstar-graphic-p ()
-  "Return t if the current display supports proper composing."
-  (display-graphic-p))
+(define-obsolete-function-alias 'org-superstar--heading-level
+  'org-superstar-heading-level "1.7.0")
 
 
 ;;; Fontification
@@ -681,18 +783,12 @@ such cases to avoid slowdown."
 This function uses ‘org-superstar-plain-list-p’ to avoid
 prettifying bullets in (for example) source blocks."
   (when (org-superstar-plain-list-p)
-    (let* ((current-bullet (match-string 1)))
-      (compose-region (match-beginning 1)
-                      (match-end 1)
-                      (org-superstar--ibullet current-bullet)))
-    'org-superstar-item))
-
-(defun org-superstar--unprettify-ibullets ()
-  "Revert visual tweaks made to item bullets in current buffer."
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward "^[ \t]+\\([-+*]\\) " nil t)
-      (decompose-region (match-beginning 1) (match-end 1)))))
+    (let ((current-bullet (match-string 1)))
+      (put-text-property (match-beginning 1)
+                         (match-end 1)
+                         'display
+                         (org-superstar--ibullet current-bullet))
+    'org-superstar-item)))
 
 (defun org-superstar--prettify-obullets ()
   "Prettify ordered list bullets.
@@ -702,20 +798,13 @@ prettifying bullets in (for example) source blocks."
   (when (org-superstar-plain-list-p)
     'org-superstar-ordered-item))
 
-(defun org-superstar--unprettify-obullets ()
-  "Revert visual tweaks made to ordered item bullets in current buffer.
-
-This function does nothing, as no compose-related features are
-implemented for ordered list bullets.  It is nonetheless provided if the
-user wishes to extend Org Superstar using function advice.")
-
 (defun org-superstar--prettify-main-hbullet ()
   "Prettify the trailing star in a headline.
 
 This function uses ‘org-superstar-headline-or-inlinetask-p’ to avoid
 prettifying bullets in (for example) source blocks."
   (when (org-superstar-headline-or-inlinetask-p)
-    (let ((bullet (org-superstar--hbullet (org-superstar--heading-level))))
+    (let ((bullet (org-superstar-hbullet)))
       (if bullet
           (compose-region (match-beginning 1) (match-end 1)
                           bullet)
@@ -730,23 +819,12 @@ inline task, see ‘org-inlinetask-min-level’.
 This function uses ‘org-superstar-inlinetask-p’ to avoid
 prettifying bullets in (for example) source blocks."
   (when (org-superstar-inlinetask-p)
-    (let ((level (org-superstar--heading-level)))
-      (compose-region (match-beginning 2) (match-end 2)
-                      (org-superstar--hbullet level))
-      'org-superstar-header-bullet)))
-
-(defun org-superstar--prettify-other-lbullet ()
-  "Prettify the first leading bullet after the headline bullet.
-This function serves as an extension of
-‘org-superstar--prettify-leading-hbullets’, only providing the
-correct face for the bullet, without doing any composing.
-
-This function uses ‘org-superstar-headline-p’ to avoid
-prettifying bullets in (for example) source blocks."
-  (cond ((org-superstar-headline-p)
-         'org-superstar-leading)
-        ((org-superstar-inlinetask-p)
-         'org-inlinetask)))
+    (let ((bullet (org-superstar-hbullet)))
+      (if bullet
+          (compose-region (match-beginning 2) (match-end 2)
+                          bullet)
+        (org-superstar--make-invisible 2)))
+    '(org-superstar-header-bullet org-inlinetask)))
 
 (defun org-superstar--prettify-leading-hbullets ()
   "Prettify the leading bullets of a header line.
@@ -765,7 +843,7 @@ prettifying bullets in (for example) source blocks."
                         (match-end 2) (match-end 3))))
       (while (< star-beg lead-end)
         (compose-region star-beg (setq star-beg (1+ star-beg))
-                        (org-superstar--lbullet)))
+                        (org-superstar-lbullet)))
       'org-superstar-leading)))
 
 (defun org-superstar--prettify-first-bullet ()
@@ -779,16 +857,23 @@ is used instead of the regular bullet to avoid errors.
 
 This function uses ‘org-superstar-inlinetask-p’ to avoid
 prettifying bullets in (for example) source blocks."
-  (cond
-   ((and (featurep 'org-indent) org-indent-mode)
-    'org-hide)
-   ((org-superstar-inlinetask-p)
+  (when (org-superstar-inlinetask-p)
     (let ((star-beg (match-beginning 4)))
       (compose-region star-beg (1+ star-beg)
-                      (org-superstar--fbullet))
-      'org-superstar-first))
-   (org-hide-leading-stars 'org-hide)
-   (t 'org-superstar-leading)))
+                      (org-superstar-fbullet))
+      'org-superstar-first)))
+
+(defun org-superstar--run-heading-hooks ()
+  "Run hooks for user-defined modifications to headlines and inline tasks.
+
+This function will only execute the appropriate hooks for the type of
+heading at point."
+  (cond
+   ((org-superstar-headline-p)
+    (run-hooks 'org-superstar-prettify-headline-hook))
+   ((org-superstar-inlinetask-p)
+    (run-hooks 'org-superstar-prettify-inlinetask-hook)))
+  nil)
 
 (defun org-superstar--prettify-indent ()
   "Set up ‘org-indent-inlinetask-first-star’ buffer-locally.
@@ -799,7 +884,7 @@ does nothing.
 
 See also ‘org-superstar-first-inlinetask-bullet’."
   (when (featurep 'org-indent)
-    (let ((bullet-components (org-superstar--fbullet))
+    (let ((bullet-components (org-superstar-fbullet))
           (bullet "*"))
       (cond
        ((characterp bullet-components)
@@ -830,12 +915,18 @@ If Org Indent Mode is enabled, also restart it if necessary."
   "Make part of the text matched by the last search invisible.
 SUBEXP, a number, specifies which parenthesized expression in the
 last regexp.  If there is no SUBEXPth pair, do nothing."
-  ;; REVIEW: Do you think when-let would be nicer here?
-  (let ((start (match-beginning subexp))
-        (end (match-end subexp)))
-    (when start
-      (put-text-property
-       start end 'invisible 'org-superstar-hide))))
+  (when-let ((start (match-beginning subexp))
+             (end (match-end subexp)))
+    (put-text-property
+     start end 'invisible 'org-superstar-hide)))
+
+(defun org-superstar--invisibility-off ()
+  "Disable invisibility caused by Org Superstar."
+  (remove-from-invisibility-spec '(org-superstar-hide)))
+
+(defun org-superstar--invisibility-on ()
+  "Enable invisibility caused by Org Superstar."
+  (add-to-invisibility-spec '(org-superstar-hide)))
 
 (defun org-superstar--unprettify-hbullets ()
   "Revert visual tweaks made to header bullets in current buffer."
@@ -868,27 +959,24 @@ cleanup routines."
               '(("^[ \t]*\\(?1:[a-zA-Z][.)]\\) "
                  (1 (org-superstar--prettify-obullets)))))
           ,@(unless (eq org-superstar-prettify-item-bullets 'only)
-              `(("^\\(?3:\\**?\\)\\(?2:\\*?\\)\\(?1:\\*\\) "
+              `(("^\\(?3:\\(?4:\\*?\\)\\**?\\(?2:\\*?\\)\\)\\(?1:\\*\\) "
                  (1 (org-superstar--prettify-main-hbullet) prepend)
                  ,@(unless (or org-hide-leading-stars
                                org-superstar-remove-leading-stars)
                      '((3 (org-superstar--prettify-leading-hbullets)
-                          t)
-                       (2 (org-superstar--prettify-other-lbullet)
                           t)))
                  ,@(when org-superstar-remove-leading-stars
-                     '((3 (org-superstar--make-invisible 3))
-                       (2 (org-superstar--make-invisible 2))))
+                     '((3 (org-superstar--make-invisible 3))))
                  ,@(when (featurep 'org-inlinetask)
                      '((2 (org-superstar--prettify-other-hbullet)
-                          prepend))))))
-          ,@(when (and (featurep 'org-inlinetask)
-                       (not (eq org-superstar-prettify-item-bullets 'only))
-                       org-inlinetask-show-first-star
-                       (not org-superstar-remove-leading-stars))
-              '(("^\\(?4:\\*\\)\\(?:\\*\\{2,\\}\\) "
-                 (4 (org-superstar--prettify-first-bullet)
-                    t)))))))
+                          t)))
+                 ,@(when (and (featurep 'org-inlinetask)
+                              org-inlinetask-show-first-star
+                              (not org-superstar-remove-leading-stars)
+                              (not (and (featurep 'org-indent) org-indent-mode)))
+                     '((4 (org-superstar--prettify-first-bullet)
+                          prepend)))
+                 (0 (org-superstar--run-heading-hooks))))))))
 
 (defun org-superstar--fontify-buffer ()
   "Fontify the buffer."
@@ -919,20 +1007,25 @@ cleanup routines."
     (font-lock-add-keywords nil org-superstar--font-lock-keywords
                             'append)
     (org-superstar--fontify-buffer)
-    (add-to-invisibility-spec '(org-superstar-hide))
+    (org-superstar--invisibility-on)
     (org-superstar--prettify-indent)
     (when org-superstar-remove-leading-stars
-      (setq-local global-disable-point-adjustment t)))
+      ;; perhaps no longer necessary
+      (setq-local global-disable-point-adjustment t))
+    (add-hook 'pre-command-hook #'org-superstar--invisibility-off nil t)
+    (add-hook 'post-command-hook #'org-superstar--invisibility-on nil t))
    ;; Clean up and exit.
    (t
-    (remove-from-invisibility-spec '(org-superstar-hide))
+    (org-superstar--invisibility-off)
     (font-lock-remove-keywords nil org-superstar--font-lock-keywords)
     (setq org-superstar--font-lock-keywords
           (default-value 'org-superstar--font-lock-keywords))
-    (org-superstar--unprettify-ibullets)
     (org-superstar--unprettify-hbullets)
     (org-superstar--fontify-buffer)
-    (org-superstar--unprettify-indent))))
+    (org-superstar--unprettify-indent)
+    (remove-hook 'pre-command-hook #'org-superstar--invisibility-off t)
+    (remove-hook 'post-command-hook #'org-superstar--invisibility-on t)
+    nil)))
 
 (defun org-superstar-restart ()
   "Re-enable Org Superstar mode, if the mode is enabled."

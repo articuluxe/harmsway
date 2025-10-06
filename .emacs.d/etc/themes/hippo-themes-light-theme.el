@@ -202,8 +202,23 @@
             (term-color-blue :foreground "blue")
             (next-error :inherit highlight)
             (lsp-ui-doc-highlight-hover :inherit highlight)
-            (yas-field-highlight-face :inherit highlight)))))
-
+            (yas-field-highlight-face :inherit highlight)
+            (vterm-color-black :foreground ,hippo-theme-fg)
+            (vterm-color-red :foreground ,hippo-theme-error)
+            (vterm-color-green :foreground ,hippo-theme-comment)
+            (vterm-color-yellow :foreground "sienna")
+            (vterm-color-blue :foreground "blue4")
+            (vterm-color-magenta :foreground "magenta4")
+            (vterm-color-cyan :foreground "cyan4")
+            (vterm-color-white :foreground "white")
+            (vterm-color-bright-black :foreground "black")
+            (vterm-color-bright-red :foreground "dark red")
+            (vterm-color-bright-green :foreground "dark green")
+            (vterm-color-bright-yellow :foreground "chocolate")
+            (vterm-color-bright-blue :foreground "blue")
+            (vterm-color-bright-magenta :foreground "dark magenta")
+            (vterm-color-bright-cyan :foreground "dark cyan")
+            (vterm-color-bright-white :foreground "white")))))
 
 (custom-theme-set-variables
  'hippo-themes-light

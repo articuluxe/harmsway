@@ -1670,9 +1670,9 @@ The amount of time spent searching is limited by
   (let ((t0 (float-time))
         (current (magit-get-current-branch))
         (i 1) prev)
-    (while (if (> (- (float-time) t0) magit-get-previous-branch-timeout)
-               (setq prev nil) ;; Timed out.
-             (and (setq prev (magit-rev-verify (format "@{-%d}" i)))
+    (while (cond ((> (- (float-time) t0) magit-get-previous-branch-timeout)
+                  (setq prev nil))
+                 ((setq prev (magit-rev-verify (format "@{-%d}" i)))
                   (or (not (setq prev (magit-rev-branch prev)))
                       (equal prev current))))
       (cl-incf i))
@@ -2851,6 +2851,15 @@ out.  Only existing branches can be selected."
          (string-match "^\\([^ ]+\\) \\(.+\\)" choice)
          (substring-no-properties (match-str 1 choice)))))
 
+(defun magit-read-shelved-branch (prompt)
+  (magit-completing-read
+   prompt
+   (mapcar (##substring % 8)
+           (nreverse (magit-list-refnames "refs/shelved")))
+   nil t nil nil
+   (and$ (magit-section-value-if 'shelved-branch)
+         (substring $ 13))))
+
 (defun magit-read-remote (prompt &optional default use-only)
   (let ((remotes (magit-list-remotes)))
     (if (and use-only (length= remotes 1))
@@ -2880,21 +2889,21 @@ out.  Only existing branches can be selected."
   ;; and some repositories have thousands of submodules.
   (let ((magit--refresh-cache (list (cons 0 0)))
         (modules nil))
-    (if current-prefix-arg
-        (progn
-          (setq modules (magit-list-module-paths))
-          (when predicate
-            (setq modules (seq-filter predicate modules)))
-          (unless modules
-            (if predicate
-                (user-error "No modules satisfying %s available" predicate)
-              (user-error "No modules available"))))
-      (setq modules (magit-region-values 'module))
-      (when modules
-        (when predicate
-          (setq modules (seq-filter predicate modules)))
-        (unless modules
-          (user-error "No modules satisfying %s selected" predicate))))
+    (cond (current-prefix-arg
+           (setq modules (magit-list-module-paths))
+           (when predicate
+             (setq modules (seq-filter predicate modules)))
+           (unless modules
+             (if predicate
+                 (user-error "No modules satisfying %s available" predicate)
+               (user-error "No modules available"))))
+          (t
+           (setq modules (magit-region-values 'module))
+           (when modules
+             (when predicate
+               (setq modules (seq-filter predicate modules)))
+             (unless modules
+               (user-error "No modules satisfying %s selected" predicate)))))
     (if (or (length> modules 1) current-prefix-arg)
         (magit-confirm t nil (format "%s %%d modules" verb) nil modules)
       (list (magit-read-module-path (format "%s module" verb) predicate)))))

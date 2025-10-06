@@ -619,34 +619,34 @@ arguments are for internal use only."
             (_       (setq rebase (magit-get-boolean "pull.rebase"))))
           (insert (format "%-10s" (or keyword (if rebase "Rebase: " "Merge: "))))
           (insert
-           (if upstream
-               (concat (and magit-status-show-hashes-in-headers
-                            (concat (propertize (magit-rev-format "%h" upstream)
-                                                'font-lock-face 'magit-hash)
-                                    " "))
-                       upstream " "
-                       (magit-log--wash-summary
-                        (or (magit-rev-format "%s" upstream)
-                            "(no commit message)")))
-             (cond
-              ((magit--unnamed-upstream-p remote merge)
-               (concat (propertize merge  'font-lock-face 'magit-branch-remote)
-                       " from "
-                       (propertize remote 'font-lock-face 'bold)))
-              ((magit--valid-upstream-p remote merge)
-               (if (equal remote ".")
-                   (concat
-                    (propertize merge 'font-lock-face 'magit-branch-local) " "
-                    (propertize "does not exist"
-                                'font-lock-face 'magit-branch-warning))
-                 (format
-                  "%s %s %s"
-                  (propertize merge 'font-lock-face 'magit-branch-remote)
-                  (propertize "does not exist on"
-                              'font-lock-face 'magit-branch-warning)
-                  (propertize remote 'font-lock-face 'magit-branch-remote))))
-              ((propertize "invalid upstream configuration"
-                           'font-lock-face 'magit-branch-warning)))))
+           (cond
+            (upstream
+             (concat (and magit-status-show-hashes-in-headers
+                          (concat (propertize (magit-rev-format "%h" upstream)
+                                              'font-lock-face 'magit-hash)
+                                  " "))
+                     upstream " "
+                     (magit-log--wash-summary
+                      (or (magit-rev-format "%s" upstream)
+                          "(no commit message)"))))
+            ((magit--unnamed-upstream-p remote merge)
+             (concat (propertize merge  'font-lock-face 'magit-branch-remote)
+                     " from "
+                     (propertize remote 'font-lock-face 'bold)))
+            ((magit--valid-upstream-p remote merge)
+             (if (equal remote ".")
+                 (concat
+                  (propertize merge 'font-lock-face 'magit-branch-local) " "
+                  (propertize "does not exist"
+                              'font-lock-face 'magit-branch-warning))
+               (format
+                "%s %s %s"
+                (propertize merge 'font-lock-face 'magit-branch-remote)
+                (propertize "does not exist on"
+                            'font-lock-face 'magit-branch-warning)
+                (propertize remote 'font-lock-face 'magit-branch-remote))))
+            ((propertize "invalid upstream configuration"
+                         'font-lock-face 'magit-branch-warning))))
           (insert ?\n))))))
 
 (defun magit-insert-push-branch-header ()
@@ -656,22 +656,24 @@ arguments are for internal use only."
     (magit-insert-section (branch target)
       (insert (format "%-10s" "Push: "))
       (insert
-       (if (magit-rev-verify target)
-           (concat (and magit-status-show-hashes-in-headers
-                        (concat (propertize (magit-rev-format "%h" target)
-                                            'font-lock-face 'magit-hash)
-                                " "))
-                   target " "
-                   (magit-log--wash-summary (or (magit-rev-format "%s" target)
-                                                "(no commit message)")))
-         (let ((remote (magit-get-push-remote branch)))
-           (if (magit-remote-p remote)
-               (concat target " "
-                       (propertize "does not exist"
-                                   'font-lock-face 'magit-branch-warning))
-             (concat remote " "
-                     (propertize "remote does not exist"
-                                 'font-lock-face 'magit-branch-warning))))))
+       (cond-let
+        ((magit-rev-verify target)
+         (concat (and magit-status-show-hashes-in-headers
+                      (concat (propertize (magit-rev-format "%h" target)
+                                          'font-lock-face 'magit-hash)
+                              " "))
+                 target " "
+                 (magit-log--wash-summary
+                  (or (magit-rev-format "%s" target)
+                      "(no commit message)"))))
+        [[remote (magit-get-push-remote branch)]]
+        ((magit-remote-p remote)
+         (concat target " "
+                 (propertize "does not exist"
+                             'font-lock-face 'magit-branch-warning)))
+        ((concat remote " "
+                 (propertize "remote does not exist"
+                             'font-lock-face 'magit-branch-warning)))))
       (insert ?\n))))
 
 (defun magit-insert-tags-header ()

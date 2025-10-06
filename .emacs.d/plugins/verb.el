@@ -42,6 +42,7 @@
 (require 'js)
 (require 'seq)
 (require 'verb-util)
+(require 'rx)
 
 (defgroup verb nil
   "An HTTP client for Emacs that extends Org mode."
@@ -1715,9 +1716,13 @@ non-nil, do not add the command to the kill ring."
       ((or "PATCH" "PUT" "POST")
        (insert "-X "
                (oref rs method)
-               " \\\n--data-raw '"
-               (or (oref rs body) "")
-               "'"))
+               " \\\n--data-raw "
+               (if (verb-util--seq-contains-p (oref rs body) ?')
+                   ;; use heredoc if body contains single quote
+                   (concat "\"$(cat <<'VERB_DATA_EOF'\n"
+                           (or (oref rs body) "")
+                           "\nVERB_DATA_EOF\n)\"")
+                 (concat "'" (or (oref rs body) "") "'"))))
       ("DELETE"
        (insert "-X DELETE"))
       ("OPTIONS"
@@ -1784,6 +1789,18 @@ non-nil, do not add the command to the kill ring."
             json-pretty-print-max-secs))
       (buffer-enable-undo))
     (goto-char (point-min))))
+
+(defun verb--get-src-block-lang (headers)
+  "Return `org-mode''s source block lang from HEADERS."
+  (let* ((handler (car (verb--get-handler
+                        (verb--headers-content-type headers))))
+         (handler-mode (if (string= handler "verb-handler-json")
+                           verb-json-use-mode
+                         handler))
+         (org-lang-match (string-match (rx (group (0+ nonl)) "-mode")
+                                       (symbol-name handler-mode))))
+    (when org-lang-match
+        (match-string 1 (symbol-name handler-mode)))))
 
 (defun verb--headers-content-type (headers)
   "Return the value of the \"Content-Type\" header in HEADERS.
@@ -2324,7 +2341,12 @@ This string should be able to be used with
     (dolist (key-value (oref rs headers))
       (insert (car key-value) ": " (cdr key-value) "\n"))
     (when-let ((body (oref rs body)))
-      (insert "\n" body))
+      (if-let* ((headers (oref rs headers))
+                (lang (verb--get-src-block-lang headers)))
+          (progn (insert "\n#+begin_src " lang "\n" body)
+                 (when (not (looking-at-p "^$")) (insert "\n"))
+                 (insert "#+end_src\n"))
+        (insert "\n" body)))
     (verb--buffer-string-no-properties)))
 
 (cl-defmethod verb-response-to-string ((resp verb-response) buf)

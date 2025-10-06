@@ -595,16 +595,16 @@ prompt is confusing."
        (setq branches
              (list (magit-read-branch-prefer-other
                     (if force "Force delete branch" "Delete branch")))))
-     (when-let ((_(not force))
-                (unmerged (seq-remove #'magit-branch-merged-p branches)))
-       (if (magit-confirm 'delete-unmerged-branch
-             "Delete unmerged branch %s"
-             "Delete %d unmerged branches"
-             'noabort unmerged)
-           (setq force branches)
-         (or (setq branches
-                   (cl-set-difference branches unmerged :test #'equal))
-             (user-error "Abort"))))
+     (cond-let
+       (force)
+       [[unmerged (seq-remove #'magit-branch-merged-p branches)]]
+       ((magit-confirm 'delete-unmerged-branch
+          "Delete unmerged branch %s"
+          "Delete %d unmerged branches"
+          'noabort unmerged)
+        (setq force branches))
+       ((setq branches (cl-set-difference branches unmerged :test #'equal)))
+       ((user-error "Abort")))
      (list branches force)))
   (let ((refs (mapcar #'magit-ref-fullname branches)))
     ;; If a member of refs is nil, that means that
@@ -827,12 +827,7 @@ and also rename the respective reflog file."
 Rename \"refs/shelved/BRANCH\" to \"refs/heads/BRANCH\".  If BRANCH
 is prefixed with \"YYYY-MM-DD\", then drop that part of the name.
 Also rename the respective reflog file."
-  (interactive
-   (list (magit-completing-read
-          "Unshelve branch"
-          (mapcar (##substring % 8)
-                  (nreverse (magit-list-refnames "refs/shelved")))
-          nil t)))
+  (interactive (list (magit-read-shelved-branch "Unshelve branch")))
   (let ((old (concat "refs/shelved/" branch))
         (new (concat "refs/heads/"
                      (if (string-match-p

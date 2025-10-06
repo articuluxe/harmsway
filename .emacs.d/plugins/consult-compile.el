@@ -19,9 +19,10 @@
 
 ;;; Commentary:
 
-;; Provides the command `consult-compile-error'.  This is an extra
-;; package, to allow lazy loading of compile.el.  The
-;; `consult-compile-error' command is autoloaded.
+;; Provides the command `consult-compile-error'.  This is an extra package, to
+;; allow lazy loading of compile.el.  The `consult-compile-error' command is
+;; autoloaded.  See also the command `consult-grep-match' which adapts
+;; `consult-compile-error' to Grep buffers.
 
 ;;; Code:
 
@@ -35,16 +36,6 @@
     (?w . "Warning")
     (?i . "Info")))
 
-(defun consult-compile--font-lock (str)
-  "Apply `font-lock' faces in STR, copy them to `face'."
-  (let ((pos 0) (len (length str)))
-    (while (< pos len)
-      (let* ((face (get-text-property pos 'font-lock-face str))
-             (end (or (text-property-not-all pos len 'font-lock-face face str) len)))
-        (put-text-property pos end 'face face str)
-        (setq pos end)))
-    str))
-
 (defun consult-compile--candidates (buffer)
   "Return alist of errors and positions in BUFFER, a compilation buffer."
   (with-current-buffer buffer
@@ -53,11 +44,11 @@
           (pos (point-min)))
       (save-excursion
         (while (setq pos (compilation-next-single-property-change pos 'compilation-message))
-          (when-let* ((msg (get-text-property pos 'compilation-message))
-                      ((compilation--message->loc msg)))
+          (when-let ((msg (get-text-property pos 'compilation-message))
+                     ((compilation--message->loc msg)))
             (goto-char pos)
             (push (propertize
-                   (consult-compile--font-lock (consult--buffer-substring pos (pos-eol)))
+                   (consult--buffer-substring pos (pos-eol))
                    'consult--type (and (not grep)
                                        (pcase (compilation--message->type msg)
                                          (0 ?i) (1 ?w) (_ ?e)))
@@ -109,7 +100,7 @@ This command collects entries from all related compilation buffers.  The
 command supports preview of the currently selected error.  With prefix
 ARG, jump to the error message in the compilation buffer, instead of to
 the actual location of the error.  If GREP is non-nil, Grep buffers are
-searched."
+searched.  See also `consult-grep-match'."
   (interactive "P")
   (consult--read
    (or (mapcan #'consult-compile--candidates

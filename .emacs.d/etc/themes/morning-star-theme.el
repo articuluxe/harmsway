@@ -31,7 +31,7 @@
 (deftheme morning-star)
 (let ((class '((class color) (min-colors 89)))
       (fg      "#DFDFDF")
-      (bg      "#19191D")
+      (bg      "#19191C")
       (bg2     "#090909")
       (grey1   "#666666")
       (grey2   "#282832")
@@ -571,10 +571,23 @@
    `(magit-signature-untrusted         ((,class (:foreground ,red1    :italic t :underline (:style wave)))))
    `(magit-tag                         ((,class (:foreground ,yellow1 :bold t))))
 
+   ;; Forge
+   `(forge-topic-slug-open      ((,class (:foreground ,yellow1))))
+   `(forge-topic-slug-completed ((,class (:foreground ,grey1 ))))
+   `(forge-topic-unread         ((,class (:bold t))))
+   `(forge-topic-pending        ((,class (:italic t))))
+   `(forge-pullreq-open         ((,class (:foreground ,green1))))
+   `(forge-pullreq-merged       ((,class (:foreground ,grey1 :strike-through t))))
+   `(forge-pullreq-rejected     ((,class (:foreground ,red2  :strike-through t))))
+
    ;; Diff
-   `(diff-refine-added   ((,class (:foreground ,bg :background ,green1 :bold t))))
-   `(diff-refine-removed ((,class (:foreground ,bg :background ,red1   :bold t))))
-   `(diff-refine-changed ((,class (:foreground ,blue1  :background ,bg2 :bold t))))
+   `(diff-removed        ((,class (:foreground ,bg      :background ,red2   :bold t))))
+   `(diff-added          ((,class (:foreground ,bg      :background ,green2 :bold t))))
+   `(diff-refine-added   ((,class (:foreground ,bg      :background ,green1 :bold t))))
+   `(diff-refine-removed ((,class (:foreground ,bg      :background ,red1   :bold t))))
+   `(diff-refine-changed ((,class (:foreground ,blue1   :background ,bg2    :bold t))))
+   `(diff-header         ((,class (:foreground ,purple1                     :bold t))))
+   `(diff-file-header    ((,class (:foreground ,green2                      :bold t))))
 
    ;; Git
    `(git-commit-keyword              ((,class (:foreground ,brown2 :bold t))))
@@ -584,7 +597,7 @@
    `(git-commit-comment-file         ((,class (:foreground ,green1))))
    `(git-commit-comment-heading      ((,class (:foreground ,purple1 :underline t))))
    `(git-commit-known-pseudo-header  ((,class (:inherit git-commit-pseudo-header))))
-   `(git-commit-nonempty-second-line ((,class (:foreground ,red1 :underline t))))
+   `(git-commit-nonempty-second-line ((,class (:foreground ,brown2 :underline t))))
    `(git-commit-overlong-summary     ((,class (:foreground ,red1))))
    `(git-commit-pseudo-header        ((,class (:foreground ,purple1 :underline t :height 1.3))))
    `(git-commit-summary              ((,class (:foreground ,yellow1))))

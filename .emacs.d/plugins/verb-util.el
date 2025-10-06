@@ -170,7 +170,6 @@ All hyperlinks are replaced with the link they contain."
   (replace-regexp-in-string verb-util--org-hyperlink-regexp
                             "\\1" s t))
 
-
 (defun verb-util-form-url-encode (values)
   "URL-encode VALUES for a form submission (x-www-form-urlencoded).
 VALUES must be an alist of (KEY . VALUE) elements, with KEY and VALUE
@@ -180,6 +179,13 @@ being strings."
                        "="
                        (url-hexify-string (cdr elem))))
              values "&"))
+
+(defun verb-util--seq-contains-p (sequence elt)
+  "Call the appropriate sequence-related function on SEQUENCE and ELT."
+  ;; TODO: Update once Verb depende on Emacs 27.1+.
+  (if (fboundp 'seq-contains-p)
+      (funcall #'seq-contains-p sequence elt)
+    (funcall (symbol-function (intern "seq-contains")) sequence elt)))
 
 (provide 'verb-util)
 ;;; verb-util.el ends here

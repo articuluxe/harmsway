@@ -17,16 +17,16 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: git tools vc
 
-;; Package-Version: 4.3.8
+;; Package-Version: 4.4.0
 ;; Package-Requires: (
-;;     (emacs "28.1")
-;;     (compat "30.1")
-;;     (cond-let "0.1")
-;;     (llama "1.0")
-;;     (magit-section "4.3.8")
-;;     (seq "2.24")
-;;     (transient "0.9.3")
-;;     (with-editor "3.4.4"))
+;;     (emacs        "28.1")
+;;     (compat       "30.1")
+;;     (cond-let      "0.1")
+;;     (llama         "1.0")
+;;     (magit-section "4.4")
+;;     (seq           "2.24")
+;;     (transient     "0.10")
+;;     (with-editor   "3.4"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -69,14 +69,9 @@
 (require 'magit-repos)
 (require 'git-commit)
 
+(require 'epa) ;used in magit-read-gpg-{secret,signing}-key
 (require 'format-spec)
-(require 'package nil t) ; used in `magit-version'
 (require 'with-editor)
-
-;; For `magit:--gpg-sign'
-(declare-function epg-list-keys "epg" (context &optional name mode))
-(declare-function epg-decode-dn "epg" (alist))
-(defvar epa-protocol)
 
 ;;; Options
 
@@ -638,7 +633,9 @@ the output in the kill ring.
                 (push t debug)
                 (load-file static)
                 magit-version))
-            (when (featurep 'package)
+            (when (and (featurep 'package)
+                       (boundp 'package-alist)
+                       (fboundp 'package-version-join))
               (push 'elpa debug)
               (ignore-errors
                 (when-let ((version (cadr (assq 'magit package-alist))))
@@ -667,44 +664,44 @@ the output in the kill ring.
                         (magit-git-string "rev-parse" "HEAD"))))))))
     (if (stringp magit-version)
         (when print-dest
-          (let ((str (format
-                      "Magit %s%s, Transient %s,%s Git %s, Emacs %s, %s"
-                      (or magit-version "(unknown)")
-                      (or (and (ignore-errors
+          (let* ((alt (or (and (ignore-errors
                                  (magit--version>= magit-version "2008"))
                                (ignore-errors
                                  (require 'lisp-mnt)
                                  (and (fboundp 'lm-header)
-                                      (format
-                                       " [>= %s]"
-                                       (with-temp-buffer
-                                         (insert-file-contents
-                                          (locate-library "magit.el" t))
-                                         (lm-header "Package-Version"))))))
-                          "")
-                      (or (ignore-errors
-                            (require 'lisp-mnt)
-                            (and (fboundp 'lm-header)
-                                 (with-temp-buffer
-                                   (insert-file-contents
-                                    (locate-library "transient.el" t))
-                                   (lm-header "Package-Version"))))
-                          "(unknown)")
-                      (let ((lib (locate-library "forge.el" t)))
-                        (or (and lib
-                                 (format
-                                  " Forge %s,"
-                                  (or (ignore-errors
-                                        (require 'lisp-mnt)
-                                        (with-temp-buffer
-                                          (insert-file-contents lib)
-                                          (and (fboundp 'lm-header)
-                                               (lm-header "Package-Version"))))
-                                      "(unknown)")))
-                            ""))
-                      (magit--safe-git-version)
-                      emacs-version
-                      system-type)))
+                                      (with-temp-buffer
+                                        (insert-file-contents
+                                         (locate-library "magit.el" t))
+                                        (lm-header "Package-Version")))))))
+                 (str (format
+                       "Magit %s%s, Transient %s,%s Git %s, Emacs %s, %s"
+                       (or magit-version "(unknown)")
+                       (if (and alt (not (equal alt magit-version)))
+                           (format " [>= %s]" alt)
+                         "")
+                       (or (ignore-errors
+                             (require 'lisp-mnt)
+                             (and (fboundp 'lm-header)
+                                  (with-temp-buffer
+                                    (insert-file-contents
+                                     (locate-library "transient.el" t))
+                                    (lm-header "Package-Version"))))
+                           "(unknown)")
+                       (let ((lib (locate-library "forge.el" t)))
+                         (or (and lib
+                                  (format
+                                   " Forge %s,"
+                                   (or (ignore-errors
+                                         (require 'lisp-mnt)
+                                         (with-temp-buffer
+                                           (insert-file-contents lib)
+                                           (and (fboundp 'lm-header)
+                                                (lm-header "Package-Version"))))
+                                       "(unknown)")))
+                             ""))
+                       (magit--safe-git-version)
+                       emacs-version
+                       system-type)))
             (when interactive
               (kill-new str))
             (princ str print-dest)))

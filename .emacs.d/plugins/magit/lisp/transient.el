@@ -2304,10 +2304,10 @@ of the corresponding object."
     map))
 
 (defun transient--make-predicate-map ()
-  (let* ((default (transient--resolve-pre-command
-                   (oref transient--prefix transient-suffix)))
-         (return (and transient--stack (oref transient--prefix return)))
-         (map (make-sparse-keymap)))
+  (let ((default (transient--resolve-pre-command
+                  (oref transient--prefix transient-suffix)))
+        (return (and transient--stack (oref transient--prefix return)))
+        (map (make-sparse-keymap)))
     (set-keymap-parent map transient-predicate-map)
     (when (or (and (slot-boundp transient--prefix 'transient-switch-frame)
                    (transient--resolve-pre-command
@@ -2518,9 +2518,9 @@ value.  Otherwise return CHILDREN as is.")
   (cl-etypecase spec
     (symbol (mapcan (lambda (c) (transient--init-child levels c parent))
                     (transient--get-children spec)))
-    (vector  (transient--init-group  levels spec parent))
-    (list    (transient--init-suffix levels spec parent))
-    (string  (list spec))))
+    (vector (transient--init-group  levels spec parent))
+    (list   (transient--init-suffix levels spec parent))
+    (string (list spec))))
 
 (defun transient--init-group (levels spec parent)
   (pcase-let* ((`[,class ,args ,children] spec)
@@ -4147,7 +4147,7 @@ the value."
               (and (not (and (slot-exists-p obj 'unsavable)
                              (oref obj unsavable)))
                    (transient--get-wrapped-value obj)))
-            transient--suffixes)))
+            (or transient--suffixes transient-current-suffixes))))
 
 (defun transient--get-wrapped-value (obj)
   "Return a list of the value(s) of suffix object OBJ.

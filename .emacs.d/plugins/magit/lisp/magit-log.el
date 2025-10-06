@@ -171,6 +171,23 @@ want to use the same functions for both hooks."
   :options (list #'magit-highlight-squash-markers
                  #'magit-highlight-bracket-keywords))
 
+(defcustom magit-log-trailer-labels nil
+  "Whether and how to insert labels, derived from commit message trailers.
+
+If non-nil, the value has the form (FUNCTION . OPTIONS).  FUNCTION is
+called with one argument, the trailers as an alist, and should return a
+string, which is then inserted in between the refnames and the message,
+or nil.  OPTIONS specifies additional options for \"%(trailers)\".  You
+should probably use something like \"key=KEY1,key=KEY2,only=true\".
+\"unfold=true,separator=^^,key_value_separator=^_\" is always appended
+to the options specified here.  See the git-log(1) manpage."
+  :package-version '(magit . "4.4.1")
+  :group 'magit-log
+  :type '(choice (const :tag "Ignore trailers" nil)
+                 (cons  :tag "Process trailers"
+                        (function :tag "Formatting function")
+                        (string   :tag "Options for %%(trailers)"))))
+
 (defcustom magit-log-header-line-function #'magit-log-header-line-sentence
   "Function used to generate text shown in header line of log buffers."
   :package-version '(magit . "2.12.0")
@@ -432,7 +449,7 @@ commits before and half after."
   (pcase-let* ((obj  (oref obj prototype))
                (mode (or (oref obj major-mode) major-mode))
                (key  (intern (format "magit-log:%s" mode)))
-               (`(,args ,files) (transient-args obj)))
+               (`(,args ,files) (transient-args (oref obj command))))
     (put mode 'magit-log-current-arguments args)
     (when save
       (setf (alist-get key transient-values) args)
@@ -725,18 +742,18 @@ completion candidates."
 ;;;###autoload
 (defun magit-log-matching-branches (pattern &optional args files)
   "Show log for all branches matching PATTERN and `HEAD'."
-  (interactive (cons (magit-log-read-pattern "--branches") (magit-log-arguments)))
-  (magit-log-setup-buffer
-   (list "HEAD" (format "--branches=%s" pattern))
-   args files))
+  (interactive (cons (magit-log-read-pattern "--branches")
+                     (magit-log-arguments)))
+  (magit-log-setup-buffer (list "HEAD" (format "--branches=%s" pattern))
+                          args files))
 
 ;;;###autoload
 (defun magit-log-matching-tags (pattern &optional args files)
   "Show log for all tags matching PATTERN and `HEAD'."
-  (interactive (cons (magit-log-read-pattern "--tags") (magit-log-arguments)))
-  (magit-log-setup-buffer
-   (list "HEAD" (format "--tags=%s" pattern))
-   args files))
+  (interactive (cons (magit-log-read-pattern "--tags")
+                     (magit-log-arguments)))
+  (magit-log-setup-buffer (list "HEAD" (format "--tags=%s" pattern))
+                          args files))
 
 ;;;###autoload
 (defun magit-log-all-branches (&optional args files)
@@ -868,6 +885,13 @@ https://github.com/mhagger/git-when-merged."
         (user-error "Could not find when %s was merged into %s: %s"
                     commit branch m)))))
 
+;;;###autoload
+(defun magit-delete-shelved-branch (branch)
+  "Delete the shelved BRANCH.
+Delete a ref created by `magit-branch-shelve'."
+  (interactive (list (magit-read-shelved-branch "Log shelved branch")))
+  (magit-run-git "update-ref" "-d" (concat "refs/shelved/" branch)))
+
 ;;;; Limit Commands
 
 (defun magit-log-toggle-commit-limit ()
@@ -912,15 +936,15 @@ Like `magit-mode-bury-buffer' (which see) but with a negative
 prefix argument instead bury the revision buffer, provided it
 is displayed in the current frame."
   (interactive "p")
-  (if (< arg 0)
-      (let* ((buf (magit-get-mode-buffer 'magit-revision-mode))
-             (win (and buf (get-buffer-window buf (selected-frame)))))
-        (if win
-            (with-selected-window win
-              (with-current-buffer buf
-                (magit-mode-bury-buffer (> (abs arg) 1))))
-          (user-error "No revision buffer in this frame")))
-    (magit-mode-bury-buffer (> arg 1))))
+  (cond-let*
+    ((>= arg 0)
+     (magit-mode-bury-buffer (> arg 1)))
+    ([buf (magit-get-mode-buffer 'magit-revision-mode)]
+     [win (get-buffer-window buf (selected-frame))]
+     (with-selected-window win
+       (with-current-buffer buf
+         (magit-mode-bury-buffer (> (abs arg) 1)))))
+    ((user-error "No revision buffer in this frame"))))
 
 ;;;###autoload
 (defun magit-log-move-to-parent (&optional n)
@@ -1204,6 +1228,19 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
   (declare (obsolete magit--insert-log "Magit 4.0.0"))
   (magit--insert-log nil revs args files))
 
+(defconst magit-log-heading-format
+  ;; See `magit-log-heading-re'.
+  (concat "--format="
+          "%s"         ;  4     graph    --graph
+          "%%h%%x0c"   ;  1 %h  hash
+          "%s%%x0c"    ;  3 %D  refs     --decorate
+          "%s%%x0c"    ;  7 %G? gpg      --show-signature
+          "%%aN%%x0c"  ;  5 %aN author
+          "%s%%x0c"    ;  6 %at date     magit-log-margin-show-committer-date
+          "%s%%x0c"    ; 12 %() trailers magit-log-trailer-labels
+          "%%s"        ;  2 %s  msg
+          "%s"))       ; \n ..  headers  magit-log-revision-headers-format
+
 (defun magit--insert-log (keep-error revs &optional args files)
   "Insert a log section.
 Do not add this to a hook variable."
@@ -1213,7 +1250,7 @@ Do not add this to a hook variable."
          (remove "--literal-pathspecs" magit-git-global-arguments)))
     (magit--git-wash (apply-partially #'magit-log-wash-log 'log) keep-error
       "log"
-      (format "--format=%s%%h%%x0c%s%%x0c%s%%x0c%%aN%%x0c%s%%x0c%%s%s"
+      (format magit-log-heading-format
               (if (and (member "--left-right" args)
                        (not (member "--graph" args)))
                   "%m "
@@ -1236,6 +1273,13 @@ Do not add this to a hook variable."
                     "")
                    ("%G?"))))
               (if magit-log-margin-show-committer-date "%ct" "%at")
+              (if magit-log-trailer-labels
+                  (format "%%(trailers:%s%s)"
+                          (if (not (equal (cdr magit-log-trailer-labels) ""))
+                              (concat (cdr magit-log-trailer-labels) ",")
+                            "")
+                          "unfold=true,separator=,key_value_separator=")
+                "")
               (if (member "++header" args)
                   (if (member "--graph" (setq args (remove "++header" args)))
                       (concat "\n" magit-log-revision-headers-format "\n")
@@ -1284,6 +1328,7 @@ Do not add this to a hook variable."
           ;; Note: Date is optional because, prior to Git v2.19.0,
           ;; `git rebase -i --root` corrupts the root's author date.
           "\\(?6:[^\n]*\\)"                    ; date
+          "\\(?12:[^\n]+\\)?"                  ; trailers
           "\\(?2:.*\\)$"))                         ; msg
 
 (defconst magit-log-cherry-re
@@ -1377,134 +1422,145 @@ Do not add this to a hook variable."
                 ('stash      magit-log-stash-re)
                 ('bisect-vis magit-log-bisect-vis-re)
                 ('bisect-log magit-log-bisect-log-re)))
-  (let ((hash   (match-str 1))
-        (msg    (match-str 2))
-        (refs   (match-str 3))
-        (graph  (match-string 4))
-        (author (match-str 5))
-        (date   (match-str 6))
-        (gpg    (match-str 7))
-        (cherry (match-str 8))
-        (refsub (match-str 10))
-        (side   (match-str 11)))
-    (let ((align (or (eq style 'cherry)
-                     (not (member "--stat" magit-buffer-log-args))))
-          (non-graph-re (if (eq style 'bisect-vis)
-                            magit-log-bisect-vis-re
-                          magit-log-heading-re)))
-      (magit-delete-line)
-      ;; If the reflog entries have been pruned, the output of `git
-      ;; reflog show' includes a partial line that refers to the hash
-      ;; of the youngest expired reflog entry.
-      (when (and (eq style 'reflog) (not date))
-        (cl-return-from magit-log-wash-rev t))
-      (magit-insert-section
-          ((eval (pcase style
-                   ('stash  'stash)
-                   ('module 'module-commit)
-                   (_       'commit)))
-           hash)
-        (setq hash (propertize (if (eq style 'bisect-log)
-                                   (magit-rev-parse "--short" hash)
-                                 hash)
-                               'font-lock-face
-                               (pcase (and gpg (aref gpg 0))
-                                 (?G 'magit-signature-good)
-                                 (?B 'magit-signature-bad)
-                                 (?U 'magit-signature-untrusted)
-                                 (?X 'magit-signature-expired)
-                                 (?Y 'magit-signature-expired-key)
-                                 (?R 'magit-signature-revoked)
-                                 (?E 'magit-signature-error)
-                                 (?N 'magit-hash)
-                                 (_  'magit-hash))))
-        (when cherry
-          (when (and (derived-mode-p 'magit-refs-mode)
-                     magit-refs-show-commit-count)
-            (insert (make-string (1- magit-refs-focus-column-width) ?\s)))
-          (insert (propertize cherry 'font-lock-face
-                              (if (string= cherry "-")
-                                  'magit-cherry-equivalent
-                                'magit-cherry-unmatched)))
-          (insert ?\s))
-        (when side
-          (insert (propertize side 'font-lock-face
-                              (if (string= side "<")
-                                  'magit-cherry-equivalent
-                                'magit-cherry-unmatched)))
-          (insert ?\s))
-        (when align
-          (insert hash ?\s))
-        (when graph
-          (insert graph))
-        (unless align
-          (insert hash ?\s))
-        (when (and refs (not magit-log-show-refname-after-summary))
-          (insert (magit-format-ref-labels refs) ?\s))
-        (when (eq style 'reflog)
-          (insert (format "%-2s " (1- magit-log-count)))
-          (when refsub
-            (insert (magit-reflog-format-subject
-                     (substring refsub 0
-                                (if (string-search ":" refsub) -2 -1))))))
-        (insert (magit-log--wash-summary msg))
-        (when (and refs magit-log-show-refname-after-summary)
-          (insert ?\s)
-          (insert (magit-format-ref-labels refs)))
-        (insert ?\n)
-        (when (memq style '(log reflog stash))
-          (goto-char (line-beginning-position))
-          (when (and refsub
-                     (string-match "\\`\\([^ ]\\) \\+\\(..\\)\\(..\\)" date))
-            (setq date (+ (string-to-number (match-str 1 date))
-                          (* (string-to-number (match-str 2 date)) 60 60)
-                          (* (string-to-number (match-str 3 date)) 60))))
-          (magit-log-format-margin hash author date))
-        (when (and (eq style 'cherry)
-                   (magit--right-margin-active))
-          (apply #'magit-log-format-margin hash
-                 (split-string (magit-rev-format "%aN%x00%ct" hash) "\0")))
-        (when (and graph
-                   (not (eobp))
-                   (not (looking-at non-graph-re)))
-          (when (looking-at "")
+  (let* ((hash     (match-str 1))
+         (msg      (match-str 2))
+         (refs     (match-str 3))
+         (refs     (and refs (magit-format-ref-labels refs)))
+         (graph    (match-string 4))
+         (author   (match-str 5))
+         (date     (match-str 6))
+         (gpg      (match-str 7))
+         (cherry   (match-str 8))
+         (refsub   (match-str 10))
+         (side     (match-str 11))
+         (trailers (match-str 12))
+         (trailers (and trailers
+                        (funcall (car magit-log-trailer-labels)
+                                 (mapcar (##split-string % "")
+                                         (split-string trailers "")))))
+         (align    (or (eq style 'cherry)
+                       (not (member "--stat" magit-buffer-log-args))))
+         (non-graph-re (if (eq style 'bisect-vis)
+                           magit-log-bisect-vis-re
+                         magit-log-heading-re)))
+    (magit-delete-line)
+    ;; If the reflog entries have been pruned, the output of `git
+    ;; reflog show' includes a partial line that refers to the hash
+    ;; of the youngest expired reflog entry.
+    (when (and (eq style 'reflog) (not date))
+      (cl-return-from magit-log-wash-rev t))
+    (magit-insert-section
+        ((eval (pcase style
+                 ('stash  'stash)
+                 ('module 'module-commit)
+                 (_       'commit)))
+         hash)
+      (setq hash (propertize (if (eq style 'bisect-log)
+                                 (magit-rev-parse "--short" hash)
+                               hash)
+                             'font-lock-face
+                             (pcase (and gpg (aref gpg 0))
+                               (?G 'magit-signature-good)
+                               (?B 'magit-signature-bad)
+                               (?U 'magit-signature-untrusted)
+                               (?X 'magit-signature-expired)
+                               (?Y 'magit-signature-expired-key)
+                               (?R 'magit-signature-revoked)
+                               (?E 'magit-signature-error)
+                               (?N 'magit-hash)
+                               (_  'magit-hash))))
+      (when cherry
+        (when (and (derived-mode-p 'magit-refs-mode)
+                   magit-refs-show-commit-count)
+          (insert (make-string (1- magit-refs-focus-column-width) ?\s)))
+        (insert (propertize cherry 'font-lock-face
+                            (if (string= cherry "-")
+                                'magit-cherry-equivalent
+                              'magit-cherry-unmatched)))
+        (insert ?\s))
+      (when side
+        (insert (propertize side 'font-lock-face
+                            (if (string= side "<")
+                                'magit-cherry-equivalent
+                              'magit-cherry-unmatched)))
+        (insert ?\s))
+      (when align
+        (insert hash ?\s))
+      (when graph
+        (insert graph))
+      (unless align
+        (insert hash ?\s))
+      (unless magit-log-show-refname-after-summary
+        (when refs
+          (insert refs ?\s))
+        (when trailers
+          (insert trailers ?\s)))
+      (when (eq style 'reflog)
+        (insert (format "%-2s " (1- magit-log-count)))
+        (when refsub
+          (insert (magit-reflog-format-subject
+                   (substring refsub 0
+                              (if (string-search ":" refsub) -2 -1))))))
+      (insert (magit-log--wash-summary msg))
+      (when magit-log-show-refname-after-summary
+        (when refs
+          (insert ?\s refs))
+        (when trailers
+          (insert ?\s trailers)))
+      (insert ?\n)
+      (when (memq style '(log reflog stash))
+        (goto-char (line-beginning-position))
+        (when (and refsub
+                   (string-match "\\`\\([^ ]\\) \\+\\(..\\)\\(..\\)" date))
+          (setq date (+ (string-to-number (match-str 1 date))
+                        (* (string-to-number (match-str 2 date)) 60 60)
+                        (* (string-to-number (match-str 3 date)) 60))))
+        (magit-log-format-margin hash author date))
+      (when (and (eq style 'cherry)
+                 (magit--right-margin-active))
+        (apply #'magit-log-format-margin hash
+               (split-string (magit-rev-format "%aN%x00%ct" hash) "\0")))
+      (when (and graph
+                 (not (eobp))
+                 (not (looking-at non-graph-re)))
+        (when (looking-at "")
+          (magit-insert-heading)
+          (delete-char 1)
+          (magit-insert-section (commit-header)
+            (forward-line)
             (magit-insert-heading)
-            (delete-char 1)
-            (magit-insert-section (commit-header)
-              (forward-line)
-              (magit-insert-heading)
-              (re-search-forward "")
-              (delete-char -1)
-              (forward-char)
-              (insert ?\n))
-            (delete-char 1))
-          (if (looking-at "^\\(---\\|\n\s\\|\ndiff\\)")
-              (let ((limit (save-excursion
-                             (and (re-search-forward non-graph-re nil t)
-                                  (match-beginning 0)))))
-                (unless (oref magit-insert-section--current content)
-                  (magit-insert-heading))
-                (delete-char (if (looking-at "\n") 1 4))
-                (magit-diff-wash-diffs (list "--stat") limit))
+            (re-search-forward "")
+            (delete-char -1)
+            (forward-char)
+            (insert ?\n))
+          (delete-char 1))
+        (if (looking-at "^\\(---\\|\n\s\\|\ndiff\\)")
+            (let ((limit (save-excursion
+                           (and (re-search-forward non-graph-re nil t)
+                                (match-beginning 0)))))
+              (unless (oref magit-insert-section--current content)
+                (magit-insert-heading))
+              (delete-char (if (looking-at "\n") 1 4))
+              (magit-diff-wash-diffs (list "--stat") limit))
+          (when align
+            (setq align (make-string (1+ abbrev) ? )))
+          (when (and (not (eobp)) (not (looking-at non-graph-re)))
             (when align
               (setq align (make-string (1+ abbrev) ? )))
-            (when (and (not (eobp)) (not (looking-at non-graph-re)))
+            (while (and (not (eobp)) (not (looking-at non-graph-re)))
               (when align
-                (setq align (make-string (1+ abbrev) ? )))
-              (while (and (not (eobp)) (not (looking-at non-graph-re)))
-                (when align
-                  (save-excursion (insert align)))
-                (forward-line)
-                (magit-make-margin-overlay))
-              ;; When `--format' is used and its value isn't one of the
-              ;; predefined formats, then `git-log' does not insert a
-              ;; separator line.
-              (save-excursion
-                (forward-line -1)
-                (looking-at "[-_/|\\*o<>. ]*"))
-              (setq graph (match-string 0))
-              (unless (string-match-p "[/\\.]" graph)
-                (insert graph ?\n))))))))
+                (save-excursion (insert align)))
+              (forward-line)
+              (magit-make-margin-overlay))
+            ;; When `--format' is used and its value isn't one of the
+            ;; predefined formats, then `git-log' does not insert a
+            ;; separator line.
+            (save-excursion
+              (forward-line -1)
+              (looking-at "[-_/|\\*o<>. ]*"))
+            (setq graph (match-string 0))
+            (unless (string-match-p "[/\\.]" graph)
+              (insert graph ?\n)))))))
   t)
 
 (defun magit-log--wash-summary (summary)

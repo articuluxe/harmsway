@@ -391,7 +391,7 @@ Will show the available `blamer-bindings'."
 
 (defun blamer--git-exist-p ()
   "Return t if .git exist."
-  (when-let* ((file-name (blamer--get-local-name (buffer-file-name))))
+  (when-let* ((file-name (buffer-file-name)))
     (vc-backend file-name)))
 
 ;;;###autoload
@@ -545,7 +545,8 @@ Run CALLBACK with partial user-info plist."
     (blamer--async-start
      `(lambda ()
         (require 'vc-git)
-        (let* ((author-email (vc-git--run-command-string nil "log" "-n1" "--pretty=format:%ae" ,commit-hash))
+        (let* ((default-directory ,default-directory)
+	       (author-email (vc-git--run-command-string nil "log" "-n1" "--pretty=format:%ae" ,commit-hash))
                (commit-res (vc-git--run-command-string nil ,@commit-info-args)))
           (list author-email commit-res)))
      callback)))
@@ -759,12 +760,6 @@ Optional disable truncating with NOT-TRUNCATE-P."
           ((bound-and-true-p hl-line-mode) (face-attribute 'hl-line :background))
           ((not face) 'unspecified)
           (t (face-attribute (or (car-safe face) face) :background)))))
-
-(defun blamer--get-local-name (filename)
-  "Return local FILENAME if path is in the tramp format."
-  (if (and (file-remote-p default-directory) filename)
-      (tramp-file-name-localname (tramp-dissect-file-name filename))
-    filename))
 
 (defun blamer--apply-tooltip(text commit-info)
   "Compute the tooltip from `blamer-tooltip-function', TEXT and COMMIT-INFO."
@@ -992,7 +987,8 @@ CALLBACK will be called with result."
     (blamer--async-start
      `(lambda ()
         (require 'vc-git)
-        (apply #'vc-git--run-command-string ,file-name ',command))
+	(let ((default-directory ,default-directory))
+          (apply #'vc-git--run-command-string ,file-name ',command)))
      callback)))
 
 (defun blamer--render (&optional type explicit)
@@ -1013,7 +1009,7 @@ EXPLICIT - flag this rendering as interactive."
                                       (goto-char (region-beginning))
                                       (line-number-at-pos))
                                   (line-number-at-pos)))
-             (file-name (blamer--get-local-name (buffer-file-name)))
+             (file-name (buffer-file-name))
              (include-avatar-p (member type '(posframe-popup overlay-popup)))
              (current-buffer (current-buffer)))
 
@@ -1236,7 +1232,7 @@ FINISH-FUNC - callback which will be printed after main function finished"
   (interactive)
   (let ((this-line-number (line-number-at-pos)))
     (blamer--get-async-blame-info
-     (blamer--get-local-name (buffer-file-name))
+     (buffer-file-name)
      this-line-number this-line-number
      (lambda (commit-info)
        (unless commit-info
