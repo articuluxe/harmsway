@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2025-04-01 10:45:57 dharms>
+;; Modified Time-stamp: <2025-10-06 11:22:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -87,6 +87,7 @@
                             "Code New Roman 14"
                             "LiterationMono Nerd Font Mono 14"
                             "DinaRemasterII 16"
+                            "Offlig D 14"
                             "Hermit 12"
                             "Panic Sans 14"
                             "Excalibur Monospace 12"
