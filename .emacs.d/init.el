@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-10-06 14:50:16 dharms>
+;; Modified Time-stamp: <2025-10-07 12:06:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4835,7 +4835,7 @@ This function's result only has value if it is preceded by any font changes."
                   (flymake-mode 1)))
               (subword-mode 1)
               ;; (highlight-indentation-mode 1)
-              (highlight-indent-guides-mode 1)
+              ;; (highlight-indent-guides-mode 1)
               (setq python-indent-guess-indent-offset nil)
               (setq python-indent-offset 4)
               (setq-local electric-indent-chars
