@@ -91,11 +91,11 @@ CALLBACK receives the candidates."
              (dest (+ (cadr pos) (car matches))))
     `( ,(cdr matches) ,dest . ,pos)))
 
-(defun consult-info--action (cand)
-  "Jump to info CAND."
+(defun consult-info--action (cand &optional buf)
+  "Jump to info CAND, optionally reuse BUF."
   (pcase (consult-info--position cand)
     (`( ,_matches ,pos ,node ,_bol ,_buf)
-     (info node)
+     (info node buf)
      (widen)
      (goto-char pos)
      (Info-select-node)
@@ -103,7 +103,8 @@ CALLBACK receives the candidates."
 
 (defun consult-info--state ()
   "Info manual preview state."
-  (let ((preview (consult--jump-preview)))
+  (let ((preview (consult--jump-preview))
+        (buf (and Info-current-file (current-buffer))))
     (lambda (action cand)
       (pcase action
         ('preview
@@ -115,7 +116,7 @@ CALLBACK receives the candidates."
          (let (Info-history Info-history-list Info-history-forward)
            (when cand (ignore-errors (Info-select-node)))))
         ('return
-         (consult-info--action cand))))))
+         (consult-info--action cand (and (buffer-live-p buf) buf)))))))
 
 (defun consult-info--group (cand transform)
   "Return title for CAND or TRANSFORM the candidate."
@@ -138,34 +139,33 @@ CALLBACK receives the candidates."
                    (setq buf nil)))))
       (when buf (kill-buffer buf)))))
 
-(defun consult-info--with-buffers (manuals fun)
+(defun consult-info--prepare-buffers (manuals fun)
   "Prepare buffers for MANUALS and call FUN with buffers."
   (declare (indent 1))
   (let (buffers)
     (unwind-protect
         (let ((reporter (make-progress-reporter "Preparing" 0 (length manuals))))
           (consult--with-increased-gc
-            (save-window-excursion
-              (cl-loop
-               for idx from 0 for manual in manuals do
-               (push (consult-info--buffer manual #'always) buffers)
-               ;; Create a separate buffer if the info manual has subfiles. They
-               ;; are present on my system and have names like
-               ;; /usr/share/info/texinfo.info-2.gz.
-               (while-let
-                   ((sub (buffer-local-value 'Info-current-subfile (car buffers)))
-                    (pos (string-match-p "-\\([0-9]+\\)\\'" sub))
-                    (buf (consult-info--buffer
-                          manual
-                          (lambda ()
-                            (ignore-errors
-                              (Info-read-subfile
-                               (format "%s%s" (substring sub 0 pos)
-                                       (1- (string-to-number (substring sub pos)))))
-                              (Info-select-node)
-                              t)))))
-                 (push buf buffers))
-               (progress-reporter-update reporter (1+ idx) manual))))
+           (cl-loop
+            for idx from 0 for manual in manuals do
+            (push (consult-info--buffer manual #'always) buffers)
+            ;; Create a separate buffer if the info manual has subfiles. They
+            ;; are present on my system and have names like
+            ;; /usr/share/info/texinfo.info-2.gz.
+            (while-let
+                ((sub (buffer-local-value 'Info-current-subfile (car buffers)))
+                 (pos (string-match-p "-\\([0-9]+\\)\\'" sub))
+                 (buf (consult-info--buffer
+                       manual
+                       (lambda ()
+                         (ignore-errors
+                           (Info-read-subfile
+                            (format "%s%s" (substring sub 0 pos)
+                                    (1- (string-to-number (substring sub pos)))))
+                           (Info-select-node)
+                           t)))))
+              (push buf buffers))
+            (progress-reporter-update reporter (1+ idx) manual)))
           (progress-reporter-done reporter)
           (funcall fun (reverse buffers)))
       (mapc #'kill-buffer buffers))))
@@ -177,11 +177,8 @@ CALLBACK receives the candidates."
    (if Info-current-file
        (list (file-name-base Info-current-file))
      (info-initialize)
-     (completing-read-multiple
-      "Info Manuals: "
-      (info--manual-names current-prefix-arg)
-      nil t)))
-  (consult-info--with-buffers manuals
+     (completing-read-multiple "Info Manuals: " (info--manual-names nil) nil t)))
+  (consult-info--prepare-buffers manuals
     (lambda (buffers)
       (consult--read
        (consult--dynamic-collection

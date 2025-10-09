@@ -1321,10 +1321,10 @@
 
     ;; Ediff
     ;; TODO: rework
-    (ediff-current-diff-Ancestor (:background bg2 :foreground fg2))
-    (ediff-current-diff-A (:background red2 :foreground fg2))
-    (ediff-current-diff-B (:background spring-green2 :foreground fg2))
-    (ediff-current-diff-C (:background cyan2 :foreground fg2))
+    (ediff-current-diff-Ancestor (:background bg2 :foreground adaptive-fg))
+    (ediff-current-diff-A        (:background red2 :foreground adaptive-fg))
+    (ediff-current-diff-B        (:background spring-green2 :foreground adaptive-fg))
+    (ediff-current-diff-C        (:background cyan2 :foreground adaptive-fg))
 
     (ediff-even-diff-Ancestor (:background bg3))
     (ediff-even-diff-A (:background bg3))
