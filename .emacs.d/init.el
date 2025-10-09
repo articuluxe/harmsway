@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-10-07 12:06:07 dharms>
+;; Modified Time-stamp: <2025-10-09 15:20:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1682,28 +1682,39 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; enlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar harmsway-enlight-projects nil
   "A list of projects suitable for a global menu.")
+(defvar harmsway-enlight-special-dirs
+  '(("Harmsway" "~/src/harmsway" "h")
+    ("Downloads" "~/Downloads" "w")
+    ("Desktop" "~/Desktop" "k")
+    ("Documents" "~/Documents" "d")
+    ("Source" "~/src" "s")
+    )
+  "A list of special directories suitable for a global menu.")
 
-(defun harmsway-create-enlight-content-string (dirs)
-  "Create the menu string, including a list of projects from DIRS."
+(defun harmsway-create-enlight-content-string (dirs projects)
+  "Create the menu string, a list of dirs from DIRS and projects from PROJECTS."
   (let ((i 0))
-    (list (list "Special"
-                (list "Harmsway" '(dired "~/src/harmsway") "h")
-                (list "Downloads" '(dired "~/Downloads") "w")
-                (list "Desktop" '(dired "~/Desktop") "k")
-                (list "Documents" '(dired "~/Documents") "d")
-                (list "Source" '(dired "~/src") "s"))
-          (list "Other"
-                (list "Bookmarks" #'bookmark-bmenu-list "b")
-                (list "Switch project" #'project-switch-project "p"))
-          (append (list "Projects")
-                (mapcar (lambda (dir)
-                          (cl-incf i)
-                          (list
-                           (file-name-nondirectory dir)
-                           `(dired ,dir)
-                           (number-to-string i)))
-                        dirs)
-                ))))
+    (list
+     (append (list "Special")
+             (mapcar (lambda (dir)
+                       (list
+                        (nth 0 dir)
+                        `(dired ,(nth 1 dir))
+                        (nth 2 dir)))
+                     dirs)
+             )
+     (list "Other"
+           (list "Bookmarks" #'bookmark-bmenu-list "b")
+           (list "Switch project" #'project-switch-project "p"))
+     (append (list "Projects")
+             (mapcar (lambda (dir)
+                       (cl-incf i)
+                       (list
+                        (file-name-nondirectory dir)
+                        `(dired ,dir)
+                        (number-to-string i)))
+                     projects)
+             ))))
 
 (defun harmsway-create-enlight-content ()
   "Create the enlight string."
@@ -1711,7 +1722,9 @@ ARGS are the additional arguments."
    (propertize "MENU" 'face 'highlight)
    "\n\n"
    (enlight-menu
-    (harmsway-create-enlight-content-string harmsway-enlight-projects))))
+    (harmsway-create-enlight-content-string
+     harmsway-enlight-special-dirs
+     harmsway-enlight-projects))))
 
 (use-package enlight-menu)
 (use-package enlight
