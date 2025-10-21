@@ -61,7 +61,9 @@
  '(tab-line ((t (:background "#122b3b" :foreground "#a8e1fe" :box (:line-width 2 :color "#122b3b")))))
  '(tab-line-tab ((t (:background "#4e5d62" :foreground "#faf6e4" :box (:line-width 2 :color "#4e5d62")))))
  '(tab-line-tab-inactive ((t (:background "#1c2f3b" :foreground "#6c8b9f" :box (:line-width 2 :color "#1c2f3b")))))
- '(tab-line-tab-current ((t (:background "#4e5d62" :foreground "#faf6e4" :box (:line-width 2 :color "#4e5d62"))))))
+ '(tab-line-tab-current ((t (:background "#4e5d62" :foreground "#faf6e4" :box (:line-width 2 :color "#4e5d62")))))
+ ;; Widget faces
+ '(widget-field ((t (:foreground "#faf6e4" :background "#1c2f3b" :box (:line-width 1 :color "#6c8b9f"))))))
 
 (provide-theme 'thankful-eyes)
 

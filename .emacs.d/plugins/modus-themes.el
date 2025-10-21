@@ -993,7 +993,6 @@ represents."
      (builtin magenta-warmer)
      (comment fg-dim)
      (constant blue-cooler)
-     (docmarkup magenta-faint)
      (docstring green-faint)
      (fnname magenta)
      (keyword magenta-cooler)
@@ -1320,7 +1319,6 @@ exists in the palette and is associated with a HEX-VALUE.")
      (builtin magenta)
      (comment red-faint)
      (constant magenta-cooler)
-     (docmarkup magenta-faint)
      (docstring cyan-faint)
      (fnname yellow-cooler)
      (keyword blue)
@@ -1991,13 +1989,6 @@ exists in the palette and is associated with a HEX-VALUE.")
      (accent-2 cyan-cooler)
      (accent-3 magenta)
 
-     ;; Button mappings
-
-     (fg-button-active fg-main)
-     (fg-button-inactive fg-dim)
-     (bg-button-active bg-active)
-     (bg-button-inactive bg-dim)
-
      ;; Completion mappings
 
      (fg-completion-match-0 cyan)
@@ -2322,13 +2313,6 @@ exists in the palette and is associated with a HEX-VALUE.")
      (accent-1 magenta-warmer)
      (accent-2 cyan-cooler)
      (accent-3 yellow)
-
-     ;; Button mappings
-
-     (fg-button-active fg-main)
-     (fg-button-inactive fg-dim)
-     (bg-button-active bg-active)
-     (bg-button-inactive bg-dim)
 
      ;; Completion mappings
 
@@ -2655,13 +2639,6 @@ exists in the palette and is associated with a HEX-VALUE.")
      (accent-2 magenta-warmer)
      (accent-3 yellow-warmer)
 
-     ;; Button mappings
-
-     (fg-button-active fg-main)
-     (fg-button-inactive fg-dim)
-     (bg-button-active bg-active)
-     (bg-button-inactive bg-dim)
-
      ;; Completion mappings
 
      (fg-completion-match-0 blue-cooler)
@@ -2986,13 +2963,6 @@ exists in the palette and is associated with a HEX-VALUE.")
      (accent-1 yellow)
      (accent-2 cyan-cooler)
      (accent-3 yellow-cooler)
-
-     ;; Button mappings
-
-     (fg-button-active fg-main)
-     (fg-button-inactive fg-dim)
-     (bg-button-active bg-active)
-     (bg-button-inactive bg-dim)
 
      ;; Completion mappings
 
@@ -3320,13 +3290,6 @@ exists in the palette and is associated with a HEX-VALUE.")
      (accent-1 red-warmer)
      (accent-2 cyan-cooler)
      (accent-3 magenta)
-
-     ;; Button mappings
-
-     (fg-button-active fg-main)
-     (fg-button-inactive fg-dim)
-     (bg-button-active bg-active)
-     (bg-button-inactive bg-dim)
 
      ;; Completion mappings
 
@@ -3900,12 +3863,8 @@ WITH-OVERRIDES and WITH-USER-PALETTE are described in
             (core-palette (symbol-value (plist-get properties :modus-core-palette))))
       (let* ((user-palette (when with-user-palette (symbol-value (plist-get properties :modus-user-palette))))
              (overrides-palette (when with-overrides (symbol-value (plist-get properties :modus-overrides-palette))))
-             (family (plist-get properties :family))
              (all-overrides (when with-overrides
-                              (append
-                               overrides-palette
-                               (when (eq family 'modus-themes)
-                                 modus-themes-common-palette-overrides)))))
+                              (append overrides-palette modus-themes-common-palette-overrides))))
         (append all-overrides user-palette core-palette))
     (error "The theme must have at least a `:modus-core-palette' property")))
 
@@ -4558,7 +4517,7 @@ FG and BG are the main colors."
     `(escape-glyph ((,c :foreground ,err)))
     `(file-name-shadow ((,c :inherit shadow)))
     `(header-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-dim)))
-    `(header-line-inactive ((,c :inherit (modus-themes-ui-variable-pitch shadow))))
+    `(header-line-inactive ((,c :inherit (shadow header-line))))
     `(header-line-highlight ((,c :background ,bg-hover :foreground ,fg-main :box ,fg-main)))
     `(help-argument-name ((,c :inherit modus-themes-slant :foreground ,variable)))
     `(help-key-binding ((,c :inherit modus-themes-key-binding)))
@@ -5924,12 +5883,12 @@ FG and BG are the main colors."
     `(magit-process-ng ((,c :inherit error)))
     `(magit-process-ok ((,c :inherit success)))
     `(magit-reflog-amend ((,c :inherit warning)))
-    `(magit-reflog-checkout ((,c :inherit bold :foreground ,blue)))
+    `(magit-reflog-checkout ((,c :inherit bold)))
     `(magit-reflog-cherry-pick ((,c :inherit success)))
     `(magit-reflog-commit ((,c :inherit bold)))
     `(magit-reflog-merge ((,c :inherit success)))
-    `(magit-reflog-other ((,c :inherit bold :foreground ,cyan)))
-    `(magit-reflog-rebase ((,c :inherit bold :foreground ,magenta)))
+    `(magit-reflog-other ((,c :inherit bold :foreground ,accent-3)))
+    `(magit-reflog-rebase ((,c :inherit bold :foreground ,accent-2)))
     `(magit-reflog-remote ((,c :inherit (bold magit-branch-remote))))
     `(magit-reflog-reset ((,c :inherit error)))
     `(magit-refname ((,c :inherit shadow)))
@@ -5943,8 +5902,8 @@ FG and BG are the main colors."
     `(magit-section-secondary-heading ((,c :inherit bold)))
     `(magit-sequence-done ((,c :inherit success)))
     `(magit-sequence-drop ((,c :inherit error)))
-    `(magit-sequence-exec ((,c :inherit bold :foreground ,magenta)))
-    `(magit-sequence-head ((,c :inherit bold :foreground ,cyan)))
+    `(magit-sequence-exec ((,c :inherit bold)))
+    `(magit-sequence-head ((,c :inherit bold :foreground ,accent-0)))
     `(magit-sequence-onto ((,c :inherit (bold shadow))))
     `(magit-sequence-part ((,c :inherit warning)))
     `(magit-sequence-pick ((,c :inherit bold)))
@@ -5996,7 +5955,7 @@ FG and BG are the main colors."
 ;;;;; markdown-mode
     `(markdown-blockquote-face ((,c :inherit font-lock-doc-face)))
     `(markdown-bold-face ((,c :inherit bold)))
-    `(markdown-code-face ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim :extend t)))
+    `(markdown-code-face ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
     `(markdown-gfm-checkbox-face ((,c :foreground ,warning)))
     `(markdown-header-face (( )))
     `(markdown-header-face-1 ((,c :inherit modus-themes-heading-1)))
@@ -7135,7 +7094,7 @@ FG and BG are the main colors."
     `(widget-button ((,c :inherit bold :foreground ,fg-link)))
     `(widget-button-pressed ((,c :inherit widget-button :foreground ,fg-link-visited)))
     `(widget-documentation ((,c :inherit font-lock-doc-face)))
-    `(widget-field ((,c :background ,bg-inactive :foreground ,fg-main :extend nil)))
+    `(widget-field ((,c :background ,bg-button-inactive :foreground ,fg-button-active :extend nil :underline (:position t))))
     `(widget-inactive ((,c :background ,bg-button-inactive :foreground ,fg-button-inactive)))
     `(widget-single-line-field ((,c :inherit widget-field)))
 ;;;;; writegood-mode
@@ -7307,7 +7266,7 @@ properties, use `modus-themes-declare'."
   (add-to-list 'modus-themes-registered-items name))
 
 ;;;###autoload
-(defmacro modus-themes-theme (name family description background-mode core-palette user-palette overrides-palette &optional custom-faces custom-variables)
+(defun modus-themes-theme (name family description background-mode core-palette user-palette overrides-palette &optional custom-faces custom-variables)
   "Define a Modus theme or derivative thereof.
 NAME is the name of the new theme.  FAMILY is the collection of themes
 it belongs to.  DESCRIPTION is its documentation string.
@@ -7323,40 +7282,37 @@ the Modus themess have by default.
 
 Consult the manual for details on how to build a theme on top of the
 `modus-themes': Info node `(modus-themes) Build on top of the Modus themes'."
-  (declare (indent 0))
-  (let ((sym (gensym))
-        (colors (mapcar #'car (symbol-value core-palette)))
-        (theme-exists-p (custom-theme-p name)))
-    `(progn
-       ,@(unless theme-exists-p
-           (list
-            `(modus-themes-declare
-              ',name ',family
-              ,description ',background-mode
-              ',core-palette ',user-palette ',overrides-palette)))
-       ,@(unless (eq family 'modus-themes)
-           (list
-            `(modus-themes-register ',name)))
-       (let* ((c '((class color) (min-colors 256)))
-              (,sym (modus-themes--get-theme-palette-subr ',name :with-overrides :with-user-palette))
-              ,@(mapcar
-                 (lambda (color)
-                   (list color `(modus-themes--retrieve-palette-value ',color ,sym)))
-                 colors))
-         (ignore c ,@colors) ; Silence unused variable warnings
-         (custom-theme-set-faces
-          ',name
-          ,@(append
-             (symbol-value custom-faces)
-             modus-themes-faces))
-         (custom-theme-set-variables
-          ',name
-          ,@(append
-             modus-themes-custom-variables
-             (symbol-value custom-variables)
-             (list `'(frame-background-mode ',background-mode))))
-         ,@(unless theme-exists-p
-             (list `(provide-theme ',name)))))))
+  (let ((theme-exists-p (custom-theme-p name))
+        (faces (append
+                (symbol-value custom-faces)
+                modus-themes-faces))
+        (variables (append
+                    modus-themes-custom-variables
+                    (symbol-value custom-variables)
+                    (list `'(frame-background-mode ',background-mode)))))
+    (unless theme-exists-p
+      (modus-themes-declare
+       name family
+       description background-mode
+       core-palette user-palette overrides-palette))
+    (let ((palette (modus-themes--get-theme-palette-subr name :with-overrides :with-user-palette)))
+      (eval
+       `(let* ((c '((class color) (min-colors 256)))
+               ,@(mapcar
+                  (pcase-lambda (`(,name ,value))
+                    (pcase value
+                      ('unspecified (list name ''unspecified))
+                      ((pred symbolp) (list name `(modus-themes--retrieve-palette-value ',name ',palette)))
+                      ((pred stringp) (list name value))))
+                  palette))
+          (custom-theme-set-faces
+           ',name
+           ,@faces)
+          (custom-theme-set-variables
+           ',name
+           ,@variables))))
+    (unless theme-exists-p
+      (provide-theme name))))
 
 ;;;; Use theme colors
 
@@ -7432,15 +7388,19 @@ accordingly."
 
 (defmacro modus-themes-define-derivative-command (family suffix)
   "Define convenience command with SUFFIX to load only FAMILY themes.
-The command's symbol is FAMILY-SUFFIX, like `modus-themes-rotate'."
+SUFFIX is a symbol among those listed in the variable
+`modus-themes-define-derivative-command-known-suffixes'.  The newly
+defined command's symbol is FAMILY-SUFFIX, like `modus-themes-rotate'."
   (unless (memq suffix modus-themes-define-derivative-command-known-suffixes)
     (error "Cannot define command with unknown suffix `%s'" suffix))
-  `(defun ,(intern (format "%s-%s" family suffix)) ()
-     (interactive)
-     (cl-letf (((symbol-function 'modus-themes-get-themes)
-                (lambda ()
-                  (modus-themes-get-all-known-themes ',family))))
-       (call-interactively ',(intern (format "modus-themes-%s" suffix))))))
+  (let ((modus-command (intern (format "modus-themes-%s" suffix))))
+    `(defun ,(intern (format "%s-%s" family suffix)) ()
+       ,(format "Like `%s' but only consider members of the `%s'" modus-command family)
+       (interactive)
+       (cl-letf (((symbol-function 'modus-themes-get-themes)
+                  (lambda ()
+                    (modus-themes-get-all-known-themes ',family))))
+         (call-interactively ',modus-command)))))
 
 ;;;; Add themes from package to path
 

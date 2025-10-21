@@ -6,8 +6,10 @@
 ;; Homepage: https://github.com/tarsius/moody
 ;; Keywords: faces
 
-;; Package-Version: 1.1.5
-;; Package-Requires: ((emacs "26.1") (compat "30.1"))
+;; Package-Version: 1.2.0
+;; Package-Requires: (
+;;     (emacs  "28.1")
+;;     (compat "30.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -141,6 +143,16 @@ of the mode-line."
                  (function-item moody-default-mode-line-height)
                  (function-item window-mode-line-height)
                  function)
+  :group 'mode-line)
+
+(defcustom moody-display-scale 1
+  "Factor by which to scale tab slant images.
+Slant image height is increased by this factor, and the image
+`:scale' is set to one over the factor.  This can be helpful
+to improve smoothness for high-DPI systems like MacOS which use
+\"logical\" pixels coarser than the physical display resolution
+\(usually by 2x)."
+  :type 'number
   :group 'mode-line)
 
 (defcustom moody-slant-function 'moody-slant
@@ -285,6 +297,7 @@ not specified, then ad hoc faces based on `default', `mode-line',
                          (funcall moody-mode-line-height)
                        moody-mode-line-height)
                      (window-mode-line-height))))
+  (setq height (* height moody-display-scale))
   (unless (cl-evenp height)
     (cl-incf height))
   (let ((key (list direction c1 c2 c3 height)))
@@ -306,7 +319,7 @@ not specified, then ad hoc faces based on `default', `mode-line',
                                     (if (eq direction 'down)
                                         (concat a b c)
                                       (concat c b a))))))
-                 'xpm t :scale 1 :ascent 'center)))
+                 'xpm t :scale (/ 1.0 moody-display-scale) :ascent 'center)))
           (push (cons key image) moody--cache)
           image))))
 

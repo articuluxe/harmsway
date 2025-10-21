@@ -225,7 +225,7 @@
                                   (string-to-number (match-string 1 output))))))
                 (unless (>= version 14.1)
                   (user-error "Requires gdb version >= 14.1"))))
-     modes (c-mode c-ts-mode c++-mode c++-ts-mode)
+     modes (c-mode c-ts-mode c++-mode c++-ts-mode hare-mode hare-ts-mode)
      command-cwd dape-command-cwd
      command "gdb"
      command-args ("--interpreter=dap")
@@ -1548,11 +1548,9 @@ If `dape--request-blocking' is non-nil do blocking request."
         (let ((result (jsonrpc-request conn command arguments)))
           (when cb (success-fn result)))
       (jsonrpc-async-request conn command arguments
-                             :success-fn
-                             (when cb #'success-fn)
-                             :error-fn #'ignore ;; will never be called
-                             :timeout-fn
-                             (when cb #'timeout-fn)
+                             :success-fn (when cb #'success-fn)
+                             :error-fn #'ignore ; will never be called
+                             :timeout-fn (when cb #'timeout-fn)
                              :timeout dape-request-timeout))))
 
 (defun dape--initialize (conn)
@@ -3181,6 +3179,7 @@ Source is either a buffer or file name."
     map)
   "Keymap for `dape-breakpoint-global-mode'.")
 
+;;;###autoload
 (define-minor-mode dape-breakpoint-global-mode
   "Toggle clickable breakpoint controls in fringe or margins."
   :global t

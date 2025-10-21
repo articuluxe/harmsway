@@ -1,4 +1,4 @@
-;;; ialign.el --- visual align-regexp  -*- lexical-binding: t; -*-
+;;; ialign.el --- Interactive align-regexp  -*- lexical-binding: t; -*-
 
 ;;
 ;; Author: Michał Krzywkowski <k.michal@zoho.com>

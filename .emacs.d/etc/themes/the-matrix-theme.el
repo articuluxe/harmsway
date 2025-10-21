@@ -1,10 +1,10 @@
-;;; the-matrix-theme.el --- Green-on-black dark theme inspired by "The Matrix" movie  -*- lexical-binding: t; -*-
+;;; the-matrix-theme.el --- Green-on-black dark theme inspired by "The Matrix" movie -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021–2024 Dan Dee
+;; Copyright (C) 2021–2025 Dan Dee
 
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
 ;; URL: https://github.com/monkeyjunglejuice/matrix-emacs-theme
-;; Version: 1.4
+;; Version: 1.4.1
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT
@@ -12,6 +12,7 @@
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
+;;
 ;; "Unfortunately, no one can be told what The Matrix Theme is.
 ;; You'll have to see it for yourself." --Morpheus
 ;; I've made this almost monochrome green-on-black theme, because
@@ -20,8 +21,8 @@
 ;; and luminosity, with additional clues in red and blue.
 ;;
 ;; Other themes:
-;; - "Beach Bar" https://github.com/monkeyjunglejuice/beach-bar-emacs-theme
-
+;; - "Beach" <https://github.com/monkeyjunglejuice/beach-emacs-theme>
+;;
 ;;; Code:
 
 (deftheme the-matrix
@@ -45,49 +46,52 @@ You'll have to see it for yourself. --Morpheus")
 
   (custom-theme-set-faces
    'the-matrix
-   `(default ((t (:background ,color-bg :foreground ,color-fg))))
-   `(cursor ((t (:background ,color-bright))))
-   `(region ((t (:foreground ,color-middle :background ,color-darker))))
-   `(success ((t (:foreground ,color-middle))))
-   `(warning ((t (:foreground ,color-blue))))
-   `(error ((t (:foreground ,color-red))))
-   `(secondary-selection ((t (:background ,color-bg-alt))))
-   `(mode-line ((t (:foreground ,color-dark :box (:color ,color-fg)))))
-   `(mode-line-buffer-id ((t (:foreground ,color-bright :weight bold))))
-   `(mode-line-inactive ((t (:foreground ,color-dark :box (:color ,color-darker)))))
-   `(fringe ((t (:background ,color-bg-alt))))
-   `(vertical-border ((t (:foreground ,color-dark :background unspecified))))
-   `(minibuffer-prompt ((t (:foreground ,color-bright :weight bold))))
-   `(isearch ((t (:foreground ,color-hl :weight bold :underline t))))
-   `(isearch-fail ((t (:inherit error))))
-   `(lazy-highlight ((t (:underline t))))
-   `(link ((t (:foreground ,color-fg :underline t))))
-   `(link-visited ((t (:foreground ,color-dark :underline t))))
+
    `(button ((t (:weight bold :inherit link))))
+   `(cursor ((t (:background ,color-bright))))
+   `(default ((t (:background ,color-bg :foreground ,color-fg))))
+   `(error ((t (:foreground ,color-red))))
+   `(escape-glyph ((t (:weight bold :inherit font-lock-string-face))))
+   `(fringe ((t (:background ,color-bg-alt))))
+   `(header-line ((t (:foreground ,color-dark))))
    `(help-face-button ((t (:inherit button))))
    `(help-key-binding ((t (:foreground ,color-fg :weight bold :inherit fixed-pitch-serif))))
-   `(transient-key-stay ((t (:foreground ,color-blue))))
-   `(header-line ((t (:foreground ,color-dark))))
+   `(highlight ((t (:background ,color-darkest :underline (:color ,color-hl)))))
+   `(hl-line ((t (:underline (:color ,color-dark) :extend t))))
+   `(isearch ((t (:foreground ,color-hl :weight bold :underline t))))
+   `(isearch-fail ((t (:inherit error))))
+   `(lazy-highlight ((t (:foreground ,color-blue :background ,color-bg-blue :underline t))))
+   `(line-number ((t (:foreground ,color-darker :inherit default))))
+   `(line-number-current-line ((t (:foreground ,color-dark :weight bold))))
+   `(link ((t (:foreground ,color-fg :underline t))))
+   `(link-visited ((t (:foreground ,color-dark :underline t))))
+   `(match ((t (:foreground ,color-bright :weight bold))))
+   `(minibuffer-prompt ((t (:foreground ,color-bright :weight bold))))
+   `(mode-line ((t (:foreground ,color-dark :box (:color ,color-fg)))))
+   `(mode-line-buffer-id ((t (:foreground ,color-bright :weight bold))))
+   `(mode-line-highlight ((t (:inherit highlight))))
+   `(mode-line-inactive ((t (:foreground ,color-dark :box (:color ,color-darker)))))
+   `(region ((t (:foreground ,color-middle :background ,color-darker))))
+   `(secondary-selection ((t (:background ,color-bg-alt))))
+   `(separator-line ((t (:height 0.1 :background ,color-darker))))
    `(shadow ((t (:foreground ,color-dark))))
    `(show-paren-match ((t (:foreground ,color-hl :weight bold :underline t))))
    `(show-paren-match-expression ((t (:underline (:color ,color-dark)))))
    `(show-paren-mismatch ((t (:inherit error))))
-   `(highlight ((t (:background ,color-darkest :underline (:color ,color-hl)))))
-   ;; `(highlight ((t (:inverse-video t))))
-   `(match ((t (:foreground ,color-bright :weight bold))))
-   `(hl-line ((t (:underline (:color ,color-dark) :extend t))))
-   `(separator-line ((t (:height 0.1 :background ,color-darker))))
-   `(widget-field ((t (:foreground ,color-bright :background ,color-bg-alt))))
+   `(success ((t (:foreground ,color-middle))))
    `(trailing-whitespace ((t (:background ,color-bg-red))))
-   `(escape-glyph ((t (:weight bold :inherit font-lock-string-face))))
+   `(transient-key-stay ((t (:foreground ,color-blue))))
+   `(vertical-border ((t (:foreground ,color-dark :background unspecified))))
+   `(warning ((t (:foreground ,color-blue))))
+   `(widget-field ((t (:foreground ,color-bright :background ,color-bg-alt))))
 
-   `(font-lock-face ((t (:foreground ,color-middle))))
+   ;; font-lock
    `(font-lock-builtin-face ((t (:foreground ,color-fg :slant italic))))
-   `(font-lock-comment-face ((t (:foreground ,color-dark :slant italic :inherit fixed-pitch-serif))))
+   `(font-lock-comment-face ((t (:foreground ,color-dark :inherit fixed-pitch-serif))))
    `(font-lock-constant-face ((t (:foreground ,color-fg))))
    `(font-lock-doc-face ((t (:foreground ,color-dark :slant italic :inherit fixed-pitch-serif))))
-   `(font-lock-function-name-face ((t (:foreground ,color-bright :weight bold))))
-   `(font-lock-keyword-face ((t (:foreground ,color-fg :slant italic))))
+   `(font-lock-function-name-face ((t (:foreground ,color-middle))))
+   `(font-lock-keyword-face ((t (:foreground ,color-bright))))
    `(font-lock-operator-face ((t (:foreground ,color-middle :weight bold))))
    `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-middle))))
    `(font-lock-regexp-grouping-construct ((t (:foreground ,color-middle))))
@@ -120,7 +124,7 @@ You'll have to see it for yourself. --Morpheus")
    `(term-underline ((t (:underline t))))
 
    ;; shell-script-mode
-   `(sh-heredoc ((t (:foreground nil :inherit font-lock-string-face))))
+   `(sh-heredoc ((t (:foreground unspecified :inherit font-lock-string-face))))
    `(sh-quoted-exec ((t (:inherit font-lock-function-name-face))))
 
    ;; dired
@@ -173,7 +177,7 @@ You'll have to see it for yourself. --Morpheus")
    `(diff-added ((t (:foreground ,color-blue :background ,color-bg-blue))))
    `(diff-removed ((t (:foreground ,color-red :background ,color-bg-red))))
    `(diff-context ((t (:inherit shadow))))
-   `(diff-file-header ((t (:bold t :background ,color-hl :weight bold))))
+   `(diff-file-header ((t (:background ,color-hl :weight bold))))
    `(diff-header ((t (:background ,color-hl :foreground ,color-fg))))
 
    ;; package
@@ -229,6 +233,20 @@ You'll have to see it for yourself. --Morpheus")
    ;; table
    `(table-cell ((t (:foreground ,color-fg :background ,color-bg-alt))))
 
+   ;; tab-bar and tab-line
+   `(tab-bar ((t (:foreground ,color-darker :background ,color-bg-alt :box (:color ,color-bg-alt)))))
+   `(tab-bar-tab ((t (:inherit tab-bar :foreground ,color-dark :background ,color-bg-alt))))
+   `(tab-bar-tab-group-current ((t (:foreground ,color-fg))))
+   `(tab-bar-tab-group-inactive ((t (:foreground ,color-dark))))
+   `(tab-bar-tab-inactive ((t (:inherit tab-bar :foreground ,color-darker :background ,color-bg-alt))))
+   `(tab-line ((t (:foreground ,color-dark :background ,color-bg-alt :box (:color ,color-bg-alt)))))
+   `(tab-line-close-highlight ((t (:foreground ,color-hl))))
+   `(tab-line-highlight ((t (:foreground ,color-hl))))
+   `(tab-line-tab ((t (:inherit tab-line :foreground ,color-dark :background ,color-darkest))))
+   `(tab-line-tab-current ((t (:inherit tab-line :foreground ,color-fg))))
+   `(tab-line-tab-inactive ((t (:inherit tab-line :foreground ,color-darker :background ,color-bg))))
+   `(tab-line-tab-inactive-alternate ((t (:inherit tab-line-tab-inactive))))
+
    ;; tex
    `(font-latex-sedate-face ((t (:foreground ,color-dark))))
    `(font-latex-math-face ((t (:inherit default))))
@@ -264,13 +282,14 @@ You'll have to see it for yourself. --Morpheus")
    `(org-link ((t (:inherit link))))
    `(org-meta-line ((t (:foreground ,color-dark))))
    `(org-mode-line-clock ((t (:background unspecified))))
-   `(org-table ((t (:foreground ,color-fg :inherit fixed-pitch-serif))))
+   `(org-table ((t (:inherit table-cell))))
+   `(org-table-header ((t (:inherit org-table :foreground ,color-middle))))
    `(org-tag ((t (:foreground ,color-dark :slant italic :weight normal))))
    `(org-todo ((t (:foreground ,color-red :background ,color-bg-red :weight normal))))
    `(org-verbatim ((t (:inherit font-lock-string-face))))
 
    ;; org-tree-slide
-   `(org-tree-slide-header-overlay-face ((t (:inherit font-lock-comment-face :foreground nil :background unspecified))))
+   `(org-tree-slide-header-overlay-face ((t (:inherit font-lock-comment-face :foreground unspecified :background unspecified))))
 
    ;; shortdoc
    `(shortdoc-heading ((t (:inherit outline-1))))
@@ -426,7 +445,7 @@ You'll have to see it for yourself. --Morpheus")
 
    ;; slime
    `(slime-repl-inputed-output-face ((t (:foreground ,color-middle))))
-   `(slime-repl-output-mouseover-face ((t (:foreground ,color-bright :box nil))))
+   `(slime-repl-output-mouseover-face ((t (:foreground ,color-bright :box unspecified))))
    `(slime-repl-input-face ((t (:foreground ,color-fg))))
    `(slime-repl-prompt ((t (:inherit minibuffer-prompt))))
    `(slime-highlight-edits-face ((t (:underline (:color ,color-darker)))))
@@ -479,9 +498,9 @@ You'll have to see it for yourself. --Morpheus")
    ;; tuareg
    `(tuareg-font-lock-constructor-face ((t (:foreground ,color-middle))))
    `(tuareg-font-double-semicolon-face ((t (:inherit tuareg-font-lock-interactive-directive-face))))
-   `(tuareg-font-double-colon-face ((t (:inherit tuareg-font-double-semicolon-face))))
+   `(tuareg-font-double-colon-face ((t (:inherit tuareg-font-lock-operator-face))))
    `(tuareg-font-lock-error-face ((t (:inherit error))))
-   `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold :slant italic))))
+   `(tuareg-font-lock-governing-face ((t (:foreground ,color-bright :weight bold))))
    `(tuareg-font-lock-label-face ((t (:inherit shadow))))
    `(tuareg-font-lock-interactive-output-face ((t (:foreground ,color-bright))))
    `(tuareg-font-lock-interactive-error-face ((t (:inherit font-lock-warning-face))))
@@ -517,9 +536,9 @@ You'll have to see it for yourself. --Morpheus")
    `(selectrum-prescient-primary-highlight ((t (:inherit completions-common-part))))
 
    ;; marginalia
-   `(marginalia-archive ((t (:inherit nil))))
-   `(marginalia-key ((t (:inherit nil))))
-   `(marginalia-number ((t (:inherit nil))))
+   `(marginalia-archive ((t (:inherit unspecified))))
+   `(marginalia-key ((t (:inherit unspecified))))
+   `(marginalia-number ((t (:inherit unspecified))))
    `(marginalia-file-priv-dir ((t (:weight bold))))
    `(marginalia-file-priv-read ((t (:foreground ,color-fg))))
    `(marginalia-file-priv-write ((t (:foreground ,color-red))))
@@ -527,7 +546,7 @@ You'll have to see it for yourself. --Morpheus")
 
    ;; consult
    `(consult-preview-line ((t (:inherit highlight))))
-   `(consult-preview-cursor ((t (:background ,color-bg :underline nil))))
+   `(consult-preview-cursor ((t (:background ,color-bg :underline unspecified))))
 
    ;; helm
    `(helm-candidate-number ((t (:foreground ,color-dark :background unspecified))))
@@ -540,7 +559,7 @@ You'll have to see it for yourself. --Morpheus")
    `(helm-ff-file ((t (:foreground ,color-fg))))
    `(helm-ff-directory ((t (:inherit dired-directory :foreground unspecified))))
    `(helm-ff-executable ((t (:inherit eshell-ls-executable :foreground unspecified))))
-   `(helm-ff-file-extension ((t (:foreground nil :background unspecified))))
+   `(helm-ff-file-extension ((t (:foreground unspecified :background unspecified))))
    `(helm-ff-invalid-symlink ((t (:slant italic :inherit error))))
    `(helm-ff-symlink ((t (:inherit dired-symlink))))
    `(helm-ff-prefix ((t (:background unspecified))))
@@ -574,13 +593,13 @@ You'll have to see it for yourself. --Morpheus")
    ;; adoc-mode
    `(markup-code-face ((t (:inherit markup-verbatim-face))))
    `(markup-complex-replacement-face ((t (:background ,color-hl :foreground ,color-fg))))
-   `(markup-gen-face ((t (:inherit default :foreground nil))))
+   `(markup-gen-face ((t (:inherit default :foreground unspecified))))
    `(markup-list-face ((t (:weight bold))))
-   `(markup-meta-face ((t (:height 1.0 :foreground ,color-dark :family nil))))
+   `(markup-meta-face ((t (:height 1.0 :foreground ,color-dark :family unspecified))))
    `(markup-meta-hide-face ((t (:height 1.0 :foreground ,color-bright))))
    `(markup-passthrough-face ((t (:inherit markup-dark))))
-   `(markup-reference-face ((t (:underline nil :foreground ,color-dark))))
-   `(markup-replacement-face ((t (:family nil :foreground ,color-dark))))
+   `(markup-reference-face ((t (:underline unspecified :foreground ,color-dark))))
+   `(markup-replacement-face ((t (:family unspecified :foreground ,color-dark))))
    `(markup-secondary-text-face ((t (:height 1.0 :foreground ,color-dark))))
    `(markup-table-cell-face ((t (:inherit table-cell))))
    `(markup-title-0-face ((t (:height 1.2 :inherit markup-gen-face))))
@@ -589,7 +608,7 @@ You'll have to see it for yourself. --Morpheus")
    `(markup-title-3-face ((t (:height 1.0 :inherit markup-gen-face))))
    `(markup-title-4-face ((t (:height 1.0 :inherit markup-gen-face))))
    `(markup-title-5-face ((t (:height 1.0 :inherit markup-gen-face))))
-   `(markup-typewriter-face ((t (:inherit nil))))
+   `(markup-typewriter-face ((t (:inherit unspecified))))
    `(markup-verbatim-face ((t (:foreground ,color-dark :inherit fixed-pitch-serif))))
 
    ;; highlight-indent-guides
@@ -610,12 +629,12 @@ You'll have to see it for yourself. --Morpheus")
    `(switch-window-label ((t (:foreground ,color-bright :height 3.0))))
 
    ;; telega
-   `(telega-msg-heading ((t (:foreground ,color-dark :background unspecified :inherit nil))))
-   `(telega-msg-inline-reply ((t (:foreground ,color-bright :inherit nil))))
-   `(telega-entity-type-texturl ((t (:inherit nil :foreground ,color-dark))))
+   `(telega-msg-heading ((t (:foreground ,color-dark :background unspecified :inherit unspecified))))
+   `(telega-msg-inline-reply ((t (:foreground ,color-bright :inherit unspecified))))
+   `(telega-entity-type-texturl ((t (:inherit unspecified :foreground ,color-dark))))
 
    ;; beancount
-   `(beancount-date ((t (:inherit italic :foreground nil))))
+   `(beancount-date ((t (:inherit italic :foreground unspecified))))
    `(beancount-account ((t (:inherit default))))
 
    ;; w3m
@@ -665,6 +684,8 @@ You'll have to see it for yourself. --Morpheus")
    ;; yasnippet
    `(yas-field-highlight-face ((t (:inherit lazy-highlight))))
 
+   ;; hl-todo
+   `(hl-todo ((t (:inherit font-lock-comment-face))))
    ))
 
 ;;;###autoload

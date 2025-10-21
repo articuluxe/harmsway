@@ -4,9 +4,9 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/chatgpt-shell
-;; Version: 2.30.2
-;; Package-Requires: ((emacs "28.1") (shell-maker "0.81.1") (transient "0.9.3"))
-(defconst chatgpt-shell--version "2.30.2")
+;; Version: 2.30.3
+;; Package-Requires: ((emacs "28.1") (shell-maker "0.82.3") (transient "0.9.3"))
+(defconst chatgpt-shell--version "2.30.3")
 
 ;; This package is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -1010,13 +1010,7 @@ This is used for sending a prompt to in the background."
                                 shell-buffers)))
     (when (and create (not primary-shell-buffer))
       (setq primary-shell-buffer
-            (or (seq-first shell-buffers)
-                (shell-maker-start chatgpt-shell--config
-                                   t
-                                   chatgpt-shell-welcome-function
-                                   t
-                                   (chatgpt-shell--make-buffer-name)
-                                   "LLM")))
+            (or (seq-first shell-buffers) (chatgpt-shell-start t t)))
       (chatgpt-shell--set-primary-buffer primary-shell-buffer))
     primary-shell-buffer))
 
