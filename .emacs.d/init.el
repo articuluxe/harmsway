@@ -2225,6 +2225,7 @@ ARGS are the additional arguments."
 (use-package lambda-line
   :init
   (setq lambda-line-git-diff-mode-line nil) ;conflicts with magit rebases
+  (setq lambda-line-default-vc-mode-function nil)
   (setq lambda-line-position 'bottom)
   (setq lambda-line-abbrev t)
   (setq lambda-line-hspace "  ")
