@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-10-09 15:20:34 dharms>
+;; Modified Time-stamp: <2025-10-29 11:41:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -541,6 +541,7 @@ not an error if any files do not exist."
          ("C-c c" . insert-cast)
          ("C-c it" . insert-todo)
          ("C-c id" . insert-debug-statement)
+         ("C-c ib" . print-current-branch)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

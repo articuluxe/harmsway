@@ -1,8 +1,8 @@
 ;;; custom-coding.el --- custom coding utilities
-;; Copyright (C) 2016-2017, 2021-2022  Dan Harms (dharms)
+;; Copyright (C) 2016-2017, 2021-2022, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
-;; Modified Time-stamp: <2022-09-28 12:40:30 dharms>
+;; Modified Time-stamp: <2025-10-29 11:58:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -27,6 +27,7 @@
 (require 'cc-defs)
 (require 'cc-vars)
 (require 'cc-cmds)
+(require 'popup)
 (require 's)
 (require 'subr-x)
 (require 'which-func)
@@ -34,6 +35,18 @@
 (defun print-current-function() "Print current function under point."
   (interactive)
   (message (which-function)))
+
+(defun print-current-branch()
+  "Print current vc branch, if any."
+  (interactive)
+  (if vc-mode
+      (let* ((backend (vc-backend buffer-file-name))
+             (branch (substring-no-properties
+                     vc-mode
+                     (+ (if (eq backend 'Hg) 2 3) 2))))
+        (popup-tip branch
+                   :point (point)))
+    (message "No source control")))
 
 ;; include ifdefs
 (defvar site-name nil "A possibly empty name of the current site.")
