@@ -1,0 +1,2 @@
+cp src/modus-catppuccin.el ../../../../.emacs.d/plugins
+cp src/catppuccin-*-theme.el ../../../../.emacs.d/etc/themes
