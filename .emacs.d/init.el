@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-10-29 11:41:06 dharms>
+;; Modified Time-stamp: <2025-11-11 19:15:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -637,6 +637,10 @@ line."
   :bind (:map csv-mode-map ("C-c C-l" . gridlock-csv-mode)))
 (use-package gridlock-fix
   :bind ("C-c M-f" . gridlock-fix-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; electric-list-directory ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package electric-list-directory
+  :bind ("C-x C-d" . electric-list-directory))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-epa-file-encrypt-to ()
