@@ -42,7 +42,7 @@ function __prompt_command() {
 
     PS1+="${red}\h:${rst}"
     if [ ! -z "$CONDA_DEFAULT_ENV" ] && [ "$CONDA_DEFAULT_ENV" != "base" ]; then
-        PS1+=" ${green}($(basename $CONDA_DEFAULT_ENV)) ${rst}"
+        PS1+=" ${green}($(basename "$CONDA_DEFAULT_ENV")) ${rst}"
     fi
     PS1+="${yellow}\w${rst}${purple}\$(__git_ps1 \" (%s)\")${rst}"
     if [ $EXIT != 0 ]; then
