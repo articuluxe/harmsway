@@ -10,12 +10,19 @@ export EDITOR="et"
 [ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
 # ssh keys
+SSH_FILE=~/.ssh-agent
+HOST=$(hostname -s)
 if [ ! -S ~/.ssh/ssh_auth_sock ]; then
-    eval `ssh-agent`
+    eval `ssh-agent -s`
     ln -sf "$SSH_AUTH_SOCK" ~/.ssh/ssh_auth_sock
+    echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" > "$SSH_FILE"
+    echo "export SSH_AGENT_PID=$SSH_AGENT_PID" >> "$SSH_FILE"
+else
+    echo "Loading $SSH_FILE"
+    [ -r "$SSH_FILE" ] && . "$SSH_FILE"
 fi
-export SSH_AUTH_SOCK=~/.ssh/ssh_auth_sock
-ssh-add -l > /dev/null || ssh-add ~/.ssh/viking.ssh.ed25519
+
+ssh-add -l > /dev/null || ssh-add ~/.ssh/"$HOST".ssh.ed25519
 
 use_clang()
 {
