@@ -1,0 +1,49 @@
+[user]
+	name = Dan Harms
+	email = danielrharms@gmail.com
+[core]
+	editor = $EDITOR
+	excludesfile = ~/.gitignore
+[color]
+	ui = true
+[push]
+	default = simple
+[pull]
+	rebase = true
+[diff]
+	tool = diffgui
+[difftool]
+	prompt = false
+[difftool.diffterm]
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
+[difftool.diffgui]
+    cmd = $VISUAL --eval \"(progn\
+	(color-theme-zenburn)\
+	(setq ediff-quit-hook 'kill-emacs \
+	ediff-split-window-function 'split-window-horizontally\
+	ediff-keep-variants t)\
+	(add-to-list 'initial-frame-alist '(fullscreen . fullwidth))\
+	(ediff-files \\\"$LOCAL\\\" \\\"$REMOTE\\\"))\"
+[merge]
+	tool = mergegui
+	conflictstyle = diff3
+[mergetool]
+	prompt = false
+[mergetool.mergeterm]
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el
+[mergetool.mergegui]
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $VISUAL --load ~/config/mergetool.el
+[branch "master"]
+	mergeoptions = --squash
+[credential]
+	helper = store
+	# helper = cache --timeout=86400
+[alias]
+    recent = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(refname:short)|%(objectname:short)|%(contents:subject)|%(authorname)|(%(committerdate:relative))' | column -ts'|' ; }; sh"
+    # column on linux chokes on colors
+    overview = log --all --oneline --no-merges
+    recap = log --all --oneline --no-merges --author=danielrharms@gmail.com
+    last = log -1 HEAD
+    unstage = reset HEAD --
+    stats = shortlog -sn --all --no-merges
+    graph = log --graph --all --decorate --stat --date=iso

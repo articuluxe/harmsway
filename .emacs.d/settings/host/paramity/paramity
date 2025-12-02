@@ -1,0 +1,117 @@
+;; -*- Mode: Emacs-Lisp -*-
+;; paramity --- host file
+;; Copyright (C) 2015-2024  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Saturday, February 28, 2015
+;; Modified Time-stamp: <2024-03-08 10:31:41 dharms>
+;; Modified by: dharms
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;;
+
+;;; Code:
+(with-eval-after-load 'choose-font
+  (setq choose-font-list '( "Office Code Pro 12"
+                            "CamingoCode 12"
+                            "AurulentSansMono 12"
+                            "FantasqueSansMono 14"
+                            "Luculent 14"
+                            "Cascadia Code 13"
+                            "Dank Mono 14"
+                            "Monego 12"
+                            "Meslo LG S 11"
+                            "Menlo 14"
+                            "IBM Plex Mono 12"
+                            "Edlo 12"
+                            "Essential PragmataPro 14"
+                            "mononoki 13"
+                            "Victor Mono 14"
+                            "Hasklig 12"
+                            "Source Code Pro 12"
+                            "Inconsolata 14"
+                            "NanumGothicCoding 14"
+                            "Iosevka 12"
+                            "Iosevka Comfy 13"
+                            "Hack 11"
+                            "Jetbrains Mono 12"
+                            "Cousine 12"
+                            "PT Mono 12"
+                            "InputMono 12"
+                            "Go Mono 12"
+                            "Anka/Coder 12"
+                            "League Mono Variable 14"
+                            "QuickType Mono 13"
+                            "Ubuntu Mono 14"
+                            "ProggyVector 14"
+                            "Andale Mono 12"
+                            "M+ 2m regular 12"
+                            "Droid Sans Mono 12"
+                            "Ricty Diminished 14"
+                            "BPmono 12"
+                            "Oxygen Mono 12"
+                            "NotoMono Nerd Font Mono 12"
+                            "Code New Roman 12"
+                            "LiterationMono Nerd Font Mono 14"
+                            "Hermit 12"
+                            "PanicSans 12"
+                            "agave 16"
+                            "Overpass Mono 12"
+                            "Lekton 14"
+                            "Julia Mono 12"
+                            "Share Tech Mono 14"
+                            "Envy Code R 12"
+                            "Courier Prime Code 12"
+                            "Recursive Monospace 12"
+                            "TerminessTTF Nerd Font Mono 14"
+                            "DaddyTimeMono 14"
+                            "Monoid 12"
+                            "APL385 Unicode 14"
+                            "Space Mono 12"
+                            "Roboto Mono 12"
+                            "SegoeMonoBoot 12"
+                            "Novamono 14"
+                            "IBM 3270 16"
+                            "M+ 1m 13"
+                            "B612 Mono 14"
+                            "Crystal 14"
+                            "Anonymous Pro 14"
+                            "Fira Code 12"
+                            "Cutive Mono 14"
+                            "saxMono 14"
+                            "Akkurat-Mono 14"
+                            "Bedstead 12"
+                            "ProggyCleanTT 18"
+                            "Monofur 15"
+                            "LinuxLibertine O 14"
+                            "Linux Biolinum O 14"
+                            "iMWritingMonoS Nerd Font Mono 12"
+                            ))
+  (choose-font-init))
+
+(add-to-list 'default-frame-alist
+             '(width . 90))
+
+(setq epg-gpg-program "gpg2")
+
+(harmsway-load-site-file "talbot")
+
+;; (setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
+
+(setq-default proviso-cpp-language-standard "c++14")
+
+;;; paramity ends here
