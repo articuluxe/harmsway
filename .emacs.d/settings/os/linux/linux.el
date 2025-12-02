@@ -1,8 +1,8 @@
 ;; linux.el --- linux os settings file
-;; Copyright (C) 2015-2017, 2019, 2021, 2023  Dan Harms (dharms)
+;; Copyright (C) 2015-2017, 2019, 2021, 2023, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2023-09-05 16:58:14 dharms>
+;; Modified Time-stamp: <2025-12-02 11:23:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,13 +28,13 @@
 (require 'use-package)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package proced :bind ("C-c 0p" . proced))
+(use-package proced :bind ("C-c 0pp" . proced))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mount ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mount :bind ("C-c 0m" . mount))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neato-graph-bar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package neato-graph-bar :bind ("C-c 0o" . neato-graph-bar))
+(use-package neato-graph-bar :bind ("C-c 0pg" . neato-graph-bar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; trashed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package trashed

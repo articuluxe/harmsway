@@ -1,9 +1,9 @@
 ;;; custom-buffer-utils.el --- custom buffer utilities
-;; Copyright (C) 2016, 2019, 2023  Dan Harms (dharms)
+;; Copyright (C) 2016, 2019, 2023, 2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2023-09-05 15:04:12 dharms>
+;; Modified Time-stamp: <2025-12-02 11:23:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: buffer utilities
 
@@ -85,7 +85,7 @@
       (set-window-start win1 pos2)
       (set-window-start win2 pos1))))
 
-(defun my/toggle-window-dedicated ()
+(defun harmsway-toggle-window-dedicated ()
   "Toggle whether active window is dedicated."
   (interactive)
   (message

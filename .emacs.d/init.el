@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-11-11 19:15:01 dharms>
+;; Modified Time-stamp: <2025-12-02 11:55:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -510,7 +510,7 @@ not an error if any files do not exist."
          ("\e\ep" . switch-to-most-recent-buffer)
          ("C-x 4z" . window-toggle-split-direction)
          ("C-x 4s" . swap-buffers)
-         ("C-c 0w" . my/toggle-window-dedicated)
+         ("C-x 4e" . harmsway-toggle-window-dedicated)
          ("C-x 5x" . move-buffer-to-new-frame)
          )
   :init
@@ -1603,7 +1603,7 @@ ARGS are the additional arguments."
 
 (defvar harmsway-web-keymap)
 (define-prefix-command 'harmsway-web-keymap)
-(global-set-key "\C-c0o" 'harmsway-web-keymap)
+(global-set-key "\C-c0w" 'harmsway-web-keymap)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-link ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-link
