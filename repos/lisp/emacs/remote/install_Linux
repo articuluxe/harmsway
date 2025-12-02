@@ -1,10 +1,10 @@
 test -e
 mkdir -p $HOME/opt/stow
-cd src/emacs-29.1
+cd src/emacs-30.2
 mkdir -p bld
 cd bld
 export LD_LIBRARY_PATH=/usr/local/lib:$HOME/opt/lib
-../configure --with-modules --with-native-compilation=aot --with-imagemagick --with-tree-sitter=ifavailable --prefix=$HOME/opt/stow/emacs
+../configure --with-modules --with-native-compilation=aot --with-tree-sitter=ifavailable --prefix=$HOME/opt/stow/emacs
 make
 make install
 cd $HOME/opt/stow
