@@ -1606,9 +1606,31 @@ ARGS are the additional arguments."
 (global-set-key "\C-c0w" 'harmsway-web-keymap)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-link ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-git-link-copy-clipboard ()
+  "Copy `git-link' to `kill-ring' and possibly clipboard."
+  (interactive)
+  (let (str start end)
+    (if (region-active-p)
+        (progn
+          (setq start (region-beginning))
+          (setq end (region-end)))
+      (let ((bounds (bounds-of-thing-at-point 'symbol)))
+        (when bounds
+          (setq start (car bounds))
+          (setq end (cdr bounds)))))
+    (require 'git-link)
+    (call-interactively 'git-link t (vector "origin" start end))
+    (setq str (substring-no-properties (car kill-ring)))
+    (when (and str (not (string-empty-p str)))
+      (if (featurep 'simpleclip)
+          (simpleclip-set-contents str))
+      (message str))))
+
 (use-package git-link
   :bind (:map harmsway-web-keymap
-              ("l" . git-link))
+              ("l" . git-link)
+              ("L" . harmsway-git-link-copy-clipboard)
+              )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; browse-url ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
