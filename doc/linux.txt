@@ -1,11 +1,11 @@
 #!/bin/sh
 # -*- Mode: sh -*-
 # linux.txt --- linux administration hints
-# Copyright (C) 2016, 2019-2021, 2023  Dan Harms (dharms)
+# Copyright (C) 2016, 2019-2021, 2023, 2025  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2023-10-01 20:03:25 dharms>
+# Modified Time-stamp: <2025-12-02 14:34:07 dharms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -49,6 +49,9 @@ systemctl start --user emacs
 systemctl stop --user emacs
 # Permanently disable
 systemctl disable --user emacs
+# run syncthing for user
+systemctl --user enable syncthing.service
+systemctl --user start syncthing.service
 
 # free up swqp (read pages from swap into ram)
 /sudo /sbin/swapoff -a
