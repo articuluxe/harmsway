@@ -85,6 +85,17 @@ complete -F _completemarks jump unmark
 # }
 # end marks
 
+function harmsway-adjust-permissions {
+    mkdir -p ~/.gnupg
+    chown -R "$(whoami)" ~/.gnupg
+    chmod 700 ~/.gnupg
+    chmod 600 ~/.gnupg/*
+    chmod 700 ~/.gnupg/*.d
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    chmod 600 ~/.ssh/*.ssh.ed25519*
+}
+
 # git helpers
 function ahead_behind {
     curr_branch=$(git rev-parse --abbrev-ref HEAD);
