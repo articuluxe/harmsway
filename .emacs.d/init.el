@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-12-02 11:55:25 dharms>
+;; Modified Time-stamp: <2025-12-03 16:48:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3947,9 +3947,12 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; syncthing ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package syncthing
   :bind ("C-c 0s" . syncthing)
+  :commands syncthing
   :init
-  (setq syncthing-default-server-token "")
   (setq syncthing-thousands-separator ",")
+  :config
+  (setq syncthing-default-server-token
+        (auth-source-pick-first-password :host "api.syncthing"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; request-deferred ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
