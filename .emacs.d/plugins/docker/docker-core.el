@@ -22,6 +22,8 @@
 ;;; Commentary:
 
 ;;; Code:
+(eval-when-compile
+  (setq-local byte-compile-warnings '(not docstrings)))
 
 (require 'aio)
 (require 'transient)
@@ -41,10 +43,18 @@
 (defvar docker-status-strings '(:containers "" :images "" :networks "" :volumes "" :contexts "")
   "Plist of statuses for `docker' transient.")
 
-(defcustom docker-show-status t
+(defcustom docker-show-status 'local-only
   "Whether to display docker status in the main transient buffer."
   :group 'docker
-  :type 'boolean)
+  :type '(choice
+          (const :tag "Always" t)
+          (const :tag "Local Only" local-only)
+          (const :tag "Never" nil)))
+
+(defcustom docker-inspect-view-mode (if (fboundp 'json-mode) 'json-mode 'js-mode)
+  "Major mode used in `docker inspect' buffers."
+  :group 'docker
+  :type 'symbol)
 
 (defun docker-run-docker-async (&rest args)
   "Execute \"`docker-command' ARGS\" and return a promise with the results."
@@ -97,9 +107,7 @@
            (data (aio-await (docker-run-docker-async (concat (or subcmd "") " inspect") id))))
       (docker-utils-with-buffer (format "inspect %s" id)
         (insert data)
-        (if (fboundp 'json-mode)
-            (json-mode)
-          (js-mode))
+        (funcall docker-inspect-view-mode)
         (view-mode)))))
 
 (defun docker-read-log-level (prompt &rest _args)

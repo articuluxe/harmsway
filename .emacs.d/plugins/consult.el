@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 2.9
+;; Version: 3.1
 ;; Package-Requires: ((emacs "29.1") (compat "30"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -204,12 +204,10 @@ See also `display-line-numbers-widen'."
   "Preserve fontification for line-based commands."
   :type 'boolean)
 
-(defcustom consult-fontify-max-size 1048576
-  "Buffers larger than this byte limit are not fontified.
-
-This is necessary in order to prevent a large startup time
-for navigation commands like `consult-line'."
-  :type '(natnum :tag "Buffer size in bytes"))
+(defcustom consult-fontify-max-size (* 1024 1024)
+  "Avoid whole-buffer fontification for buffers larger than this character limit.
+This setting affects the command `consult-keep-lines'."
+  :type '(natnum :tag "Buffer size in characters"))
 
 (defcustom consult-buffer-filter
   '("\\` "
@@ -239,26 +237,26 @@ custom buffer isolation."
                  (function :tag "Custom function")))
 
 (defcustom consult-buffer-sources
-  '(consult--source-buffer
-    consult--source-hidden-buffer
-    consult--source-modified-buffer
-    consult--source-other-buffer
-    consult--source-recent-file
-    consult--source-buffer-register
-    consult--source-file-register
-    consult--source-bookmark
-    consult--source-project-buffer-hidden
-    consult--source-project-recent-file-hidden
-    consult--source-project-root-hidden)
+  '(consult-source-buffer
+    consult-source-hidden-buffer
+    consult-source-modified-buffer
+    consult-source-other-buffer
+    consult-source-recent-file
+    consult-source-buffer-register
+    consult-source-file-register
+    consult-source-bookmark
+    consult-source-project-buffer-hidden
+    consult-source-project-recent-file-hidden
+    consult-source-project-root-hidden)
   "Sources used by `consult-buffer'.
 See also `consult-project-buffer-sources'.
 See `consult--multi' for a description of the source data structure."
   :type '(repeat symbol))
 
 (defcustom consult-project-buffer-sources
-  '(consult--source-project-buffer
-    consult--source-project-recent-file
-    consult--source-project-root)
+  '(consult-source-project-buffer
+    consult-source-project-recent-file
+    consult-source-project-root)
   "Sources used by `consult-project-buffer'.
 See also `consult-buffer-sources'.
 See `consult--multi' for a description of the source data structure."
@@ -350,11 +348,11 @@ individual keys must be strings accepted by `key-valid-p'."
                  (key :tag "Key")
                  (repeat :tag "List of keys" key)))
 
-(defcustom consult-preview-partial-size 1048576
+(defcustom consult-preview-partial-size (* 1024 1024)
   "Files larger than this byte limit are previewed partially."
   :type '(natnum :tag "File size in bytes"))
 
-(defcustom consult-preview-partial-chunk 102400
+(defcustom consult-preview-partial-chunk (* 10 1024)
   "Partial preview chunk size in bytes.
 If a file is larger than `consult-preview-partial-size' only the
 chunk from the beginning of the file is previewed."
@@ -956,18 +954,7 @@ always return an appropriate non-minibuffer window."
   (unless (minibufferp)
     (user-error "`%s' must be called inside the minibuffer" this-command)))
 
-(defun consult--fontify-all ()
-  "Ensure that the whole buffer is fontified."
-  ;; Font-locking is lazy, i.e., if a line has not been looked at yet, the line
-  ;; is not font-locked.  We would observe this if consulting an unfontified
-  ;; line.  Therefore we have to enforce font-locking now, which is slow.  In
-  ;; order to prevent is hang-up we check the buffer size against
-  ;; `consult-fontify-max-size'.
-  (when (and consult-fontify-preserve jit-lock-mode
-             (< (buffer-size) consult-fontify-max-size))
-    (jit-lock-fontify-now)))
-
-(defun consult--fontify-region (start end)
+(defsubst consult--fontify-region (start end)
   "Ensure that region between START and END is fontified."
   (when (and consult-fontify-preserve jit-lock-mode)
     (jit-lock-fontify-now start end)))
@@ -1011,17 +998,51 @@ Also temporarily increase the GC limit via `consult--with-increased-gc'."
             (goto-char (min (+ (point) column) (pos-eol))))
           (point-marker))))))
 
-(defun consult--line-prefix (&optional curr-line)
-  "Annotate `consult-location' candidates with line numbers.
+(defsubst consult--copy-property (beg end str prop)
+  "Copy PROP from buffer region BEG to END to STR.
+The string STR is modified."
+  (let ((pos beg))
+    (while (< pos end)
+      (let ((next (next-single-property-change pos prop nil end))
+            (val (get-text-property pos prop)))
+        (when val
+          (if (eq prop 'face)
+              (add-face-text-property (- pos beg) (- next beg) val t str)
+            (put-text-property (- pos beg) (- next beg) prop val str)))
+        (setq pos next)))))
+
+(defun consult--copy-faces (beg end str)
+  "Copy faces from buffer region BEG to END to STR.
+The string STR is modified."
+  (consult--copy-property beg end str 'face)
+  (consult--copy-property beg end str 'invisible)
+  (consult--copy-property beg end str 'display))
+
+(defun consult--line-fontify (&optional curr-line)
+  "Annotation function to fontify `consult-location' line and add line number.
 CURR-LINE is the current line number."
   (setq curr-line (or curr-line -1))
   (let* ((width (length (number-to-string (line-number-at-pos
                                            (point-max)
                                            consult-line-numbers-widen))))
          (before (format #("%%%dd " 0 6 (face consult-line-number-wrapped)) width))
-         (after (format #("%%%dd " 0 6 (face consult-line-number-prefix)) width)))
+         (after (propertize before 'face 'consult-line-number-prefix)))
     (lambda (cand)
-      (let ((line (cdr (get-text-property 0 'consult-location cand))))
+      (pcase-let* ((`(,pos . ,line) (get-text-property 0 'consult-location cand))
+                   (buf (when consult-fontify-preserve
+                          (if (consp pos)
+                              (car pos)
+                            (and (markerp pos) (marker-buffer pos))))))
+        (when (buffer-live-p buf)
+          (with-current-buffer buf
+            (goto-char (if (markerp pos) pos (cdr pos)))
+            (let ((beg (pos-bol))
+                  (end (pos-eol)))
+              ;; Only apply lazy highlighting if the buffer has not been changed.
+              (when (string-prefix-p (buffer-substring-no-properties beg end) cand)
+                (setq cand (copy-sequence cand))
+                (consult--fontify-region beg end)
+                (consult--copy-faces beg end cand)))))
         (list cand (format (if (< line curr-line) before after) line) "")))))
 
 (defsubst consult--location-candidate (cand marker line tofu &rest props)
@@ -1032,29 +1053,14 @@ TOFU suffix for disambiguation."
   (add-text-properties 0 1 `(consult-location (,marker . ,line) ,@props) cand)
   cand)
 
-;; There is a similar variable `yank-excluded-properties'.  Unfortunately
-;; we cannot use it here since it excludes too much (e.g., invisible)
-;; and at the same time not enough (e.g., cursor-sensor-functions).
-(defconst consult--remove-text-properties
-  '( category cursor cursor-intangible cursor-sensor-functions field follow-link
-     fontified front-sticky help-echo insert-behind-hooks insert-in-front-hooks
-     intangible keymap local-map modification-hooks mouse-face pointer read-only
-     rear-nonsticky yank-handler)
-  "List of text properties to remove from buffer strings.")
-
 (defsubst consult--buffer-substring (beg end &optional fontify)
   "Return buffer substring between BEG and END.
-If FONTIFY and `consult-fontify-preserve' are non-nil, first ensure that the
-region has been fontified."
+If FONTIFY and `consult-fontify-preserve' are non-nil, first ensure that
+the region has been fontified."
   (if consult-fontify-preserve
-      (let (str)
+      (let ((str (buffer-substring-no-properties beg end)))
         (when fontify (consult--fontify-region beg end))
-        (setq str (buffer-substring beg end))
-        ;; TODO Propose the upstream addition of a function
-        ;; `preserve-list-of-text-properties', which should be as efficient as
-        ;; `remove-list-of-text-properties'.
-        (remove-list-of-text-properties
-         0 (- end beg) consult--remove-text-properties str)
+        (consult--copy-faces beg end str)
         str)
     (buffer-substring-no-properties beg end)))
 
@@ -1520,9 +1526,9 @@ ORIG is the original function, HOOKS the arguments."
   "Open overlays which hide the current line.
 See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
   (dolist (ov (overlays-in (pos-bol) (pos-eol)))
-    (when-let (fun (overlay-get ov 'isearch-open-invisible))
-      (when (invisible-p (overlay-get ov 'invisible))
-        (funcall fun ov)))))
+    (when-let ((fun (overlay-get ov 'isearch-open-invisible))
+               ((invisible-p (overlay-get ov 'invisible))))
+      (funcall fun ov))))
 
 (defun consult--invisible-open-temporarily ()
   "Temporarily open overlays which hide the current line.
@@ -2795,12 +2801,6 @@ PREVIEW-KEY are the preview keys."
     (when (< pos max)
       (add-text-properties pos max '(invisible t rear-nonsticky t cursor-intangible t)))))
 
-(defun consult--read-annotate (fun cand)
-  "Annotate CAND with annotation function FUN."
-  (pcase (funcall fun cand)
-    (`(,_ ,_ ,suffix) suffix)
-    (ann ann)))
-
 (defun consult--read-affixate (fun cands)
   "Affixate CANDS with annotation function FUN."
   (mapcar (lambda (cand)
@@ -2852,9 +2852,7 @@ PREVIEW-KEY are the preview keys."
                            ,@(when group `((group-function . ,group)))
                            ,@(when annotate
                                `((affixation-function
-                                  . ,(apply-partially #'consult--read-affixate annotate))
-                                 (annotation-function
-                                  . ,(apply-partially #'consult--read-annotate annotate))))
+                                  . ,(apply-partially #'consult--read-affixate annotate))))
                            ,@(unless sort '((cycle-sort-function . identity)
                                             (display-sort-function . identity)))))
                (consult--annotate-align-width 0)
@@ -3392,7 +3390,7 @@ a value for `completion-in-region-function'."
 ;;;;; Command: consult-outline
 
 (defun consult--outline-candidates ()
-  "Return alist of outline headings and positions."
+  "Return list of outline heading strings with position attached."
   (consult--forbid-minibuffer)
   (let* ((line (line-number-at-pos (point-min) consult-line-numbers-widen))
          (heading-regexp (concat "^\\(?:"
@@ -3414,7 +3412,7 @@ a value for `completion-in-region-function'."
                  (re-search-forward heading-regexp nil t)))
         (cl-incf line (consult--count-lines (match-beginning 0)))
         (push (consult--location-candidate
-               (consult--buffer-substring (pos-bol) (pos-eol) 'fontify)
+               (buffer-substring-no-properties (pos-bol) (pos-eol))
                (cons buffer (point)) (1- line) (1- line)
                'consult--outline-level (funcall level-fun))
               candidates)
@@ -3447,7 +3445,7 @@ argument.  The symbol at point is added to the future history."
     (consult--read
      candidates
      :prompt "Go to heading: "
-     :annotate (consult--line-prefix)
+     :annotate (consult--line-fontify)
      :category 'consult-location
      :sort nil
      :require-match t
@@ -3463,24 +3461,27 @@ argument.  The symbol at point is added to the future history."
 (defun consult--mark-candidates (markers)
   "Return list of candidates strings for MARKERS."
   (consult--forbid-minibuffer)
-  (let ((candidates)
-        (current-buf (current-buffer)))
+  (let* ((candidates)
+         (current-buf (current-buffer))
+         (width (length (number-to-string (line-number-at-pos
+                                           (point-max)
+                                           consult-line-numbers-widen))))
+         (fmt (format #("%%%dd %%s%%s" 0 6 (face consult-line-number-prefix)) width)))
     (save-excursion
       (dolist (marker markers)
         (when-let ((pos (marker-position marker))
-                   (buf (marker-buffer marker)))
-          (when (and (eq buf current-buf)
-                     (consult--in-range-p pos))
-            (goto-char pos)
-            ;; `line-number-at-pos' is a very slow function, which should be
-            ;; replaced everywhere.  However in this case the slow
-            ;; line-number-at-pos does not hurt much, since the mark ring is
-            ;; usually small since it is limited by `mark-ring-max'.
-            (push (consult--location-candidate
-                   (consult--line-with-mark marker) marker
-                   (line-number-at-pos pos consult-line-numbers-widen)
-                   marker)
-                  candidates)))))
+                   (buf (marker-buffer marker))
+                   ((and (eq buf current-buf) (consult--in-range-p pos))))
+          (goto-char pos)
+          ;; `line-number-at-pos' is a very slow function, which should be
+          ;; replaced everywhere.  However in this case the slow
+          ;; line-number-at-pos does not hurt much, since the mark ring is
+          ;; usually small since it is limited by `mark-ring-max'.
+          (let* ((line (line-number-at-pos pos consult-line-numbers-widen))
+                 (cand (format fmt line (consult--line-with-mark marker) (consult--tofu-encode marker))))
+            (put-text-property 0 width 'consult-strip t cand)
+            (put-text-property 0 (length cand) 'consult-location (cons marker line) cand)
+            (push cand candidates)))))
     (unless candidates
       (user-error "No marks"))
     (nreverse (delete-dups candidates))))
@@ -3496,7 +3497,6 @@ The symbol at point is added to the future history."
    (consult--mark-candidates
     (or markers (cons (mark-marker) mark-ring)))
    :prompt "Go to mark: "
-   :annotate (consult--line-prefix)
    :category 'consult-location
    :sort nil
    :require-match t
@@ -3514,18 +3514,18 @@ The symbol at point is added to the future history."
     (save-excursion
       (dolist (marker markers)
         (when-let ((pos (marker-position marker))
-                   (buf (marker-buffer marker)))
-          (unless (minibufferp buf)
-            (with-current-buffer buf
-              (when (consult--in-range-p pos)
-                (goto-char pos)
-                ;; `line-number-at-pos' is slow, see comment in `consult--mark-candidates'.
-                (let* ((line (line-number-at-pos pos consult-line-numbers-widen))
-                       (prefix (consult--format-file-line-match (buffer-name buf) line ""))
-                       (cand (concat prefix (consult--line-with-mark marker) (consult--tofu-encode marker))))
-                  (put-text-property 0 (length prefix) 'consult-strip t cand)
-                  (put-text-property 0 (length cand) 'consult-location (cons marker line) cand)
-                  (push cand candidates))))))))
+                   (buf (marker-buffer marker))
+                   ((not (minibufferp buf))))
+          (with-current-buffer buf
+            (when (consult--in-range-p pos)
+              (goto-char pos)
+              ;; `line-number-at-pos' is slow, see comment in `consult--mark-candidates'.
+              (let* ((line (line-number-at-pos pos consult-line-numbers-widen))
+                     (prefix (consult--format-file-line-match (buffer-name buf) line ""))
+                     (cand (concat prefix (consult--line-with-mark marker) (consult--tofu-encode marker))))
+                (put-text-property 0 (length prefix) 'consult-strip t cand)
+                (put-text-property 0 (length cand) 'consult-location (cons marker line) cand)
+                (push cand candidates)))))))
     (unless candidates
       (user-error "No global marks"))
     (nreverse (delete-dups candidates))))
@@ -3559,14 +3559,13 @@ The symbol at point is added to the future history."
 Start from top if TOP non-nil.
 CURR-LINE is the current line number."
   (consult--forbid-minibuffer)
-  (consult--fontify-all)
   (let* ((buffer (current-buffer))
          (line (line-number-at-pos (point-min) consult-line-numbers-widen))
          default-cand candidates)
     (consult--each-line beg end
       (unless (looking-at-p "^\\s-*$")
         (push (consult--location-candidate
-               (consult--buffer-substring beg end)
+               (buffer-substring-no-properties beg end)
                (cons buffer beg) line line)
               candidates)
         (when (and (not default-cand) (>= line curr-line))
@@ -3631,7 +3630,7 @@ and the last `isearch-string' is added to the future history."
     (consult--read
      candidates
      :prompt (if top "Go to line from top: " "Go to line: ")
-     :annotate (consult--line-prefix curr-line)
+     :annotate (consult--line-fontify curr-line)
      :category 'consult-location
      :sort nil
      :require-match t
@@ -3719,7 +3718,7 @@ to `consult--buffer-query'."
     (consult--read
      collection
      :prompt prompt
-     :annotate (consult--line-prefix)
+     :annotate (consult--line-fontify)
      :category 'consult-location
      :sort nil
      :require-match t
@@ -3763,7 +3762,12 @@ to `consult--buffer-query'."
                             (goto-char (or pos rbeg))
                             (setq rend (+ rbeg (length content)))
                             (add-face-text-property rbeg rend 'region t)))))
-      (consult--fontify-all)
+      ;; Font-locking is lazy, i.e., if a line has not been looked at yet, the
+      ;; line is not font-locked. Therefore we have to enforce slow font-locking
+      ;; now.  In order to prevent is hang-up we check the region size against
+      ;; `consult-fontify-max-size'.
+      (when (< (- (point-max) (point-min)) consult-fontify-max-size)
+        (consult--fontify-region (point-min) (point-max)))
       (setq content-orig (buffer-string)
             replace (lambda (content &optional pos)
                       (delete-region (point-min) (point-max))
@@ -3862,9 +3866,7 @@ INITIAL is the initial input."
   (let (lines overlays last-input pt-orig pt-min pt-max)
     (save-excursion
       (save-restriction
-        (if (not (use-region-p))
-            (consult--fontify-all)
-          (consult--fontify-region (region-beginning) (region-end))
+        (when (use-region-p)
           (narrow-to-region
            (region-beginning)
            ;; Behave the same as `keep-lines'.
@@ -4820,7 +4822,22 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
 
 (consult--define-state buffer)
 
-(defvar consult--source-bookmark
+(define-obsolete-variable-alias 'consult--source-bookmark 'consult-source-bookmark "2.9")
+(define-obsolete-variable-alias 'consult--source-buffer 'consult-source-buffer "2.9")
+(define-obsolete-variable-alias 'consult--source-buffer-register 'consult-source-buffer-register "2.9")
+(define-obsolete-variable-alias 'consult--source-file-register 'consult-source-file-register "2.9")
+(define-obsolete-variable-alias 'consult--source-hidden-buffer 'consult-source-hidden-buffer "2.9")
+(define-obsolete-variable-alias 'consult--source-modified-buffer 'consult-source-modified-buffer "2.9")
+(define-obsolete-variable-alias 'consult--source-other-buffer 'consult-source-other-buffer "2.9")
+(define-obsolete-variable-alias 'consult--source-project-buffer 'consult-source-project-buffer "2.9")
+(define-obsolete-variable-alias 'consult--source-project-buffer-hidden 'consult-source-project-buffer-hidden "2.9")
+(define-obsolete-variable-alias 'consult--source-project-recent-file 'consult-source-project-recent-file "2.9")
+(define-obsolete-variable-alias 'consult--source-project-recent-file-hidden 'consult-source-project-recent-file-hidden "2.9")
+(define-obsolete-variable-alias 'consult--source-project-root 'consult-source-project-root "2.9")
+(define-obsolete-variable-alias 'consult--source-project-root-hidden 'consult-source-project-root-hidden "2.9")
+(define-obsolete-variable-alias 'consult--source-recent-file 'consult-source-recent-file "2.9")
+
+(defvar consult-source-bookmark
   `( :name     "Bookmark"
      :narrow   ?m
      :category bookmark
@@ -4830,7 +4847,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
      :state    ,#'consult--bookmark-state)
   "Bookmark source for `consult-buffer'.")
 
-(defvar consult--source-project-buffer
+(defvar consult-source-project-buffer
   `( :name     "Project Buffer"
      :narrow   ?b
      :category buffer
@@ -4846,7 +4863,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
                                  :as #'consult--buffer-pair))))
   "Project buffer source for `consult-buffer'.")
 
-(defvar consult--source-project-recent-file
+(defvar consult-source-project-recent-file
   `( :name     "Project File"
      :narrow   ?f
      :category file
@@ -4880,7 +4897,7 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
                   (push (cons part file) items))))))))
   "Project file source for `consult-buffer'.")
 
-(defvar consult--source-project-root
+(defvar consult-source-project-root
   `( :name     "Project Root"
      :narrow   ?r
      :category file
@@ -4892,22 +4909,22 @@ If NORECORD is non-nil, do not record the buffer switch in the buffer list."
      :items    ,#'consult--project-known-roots)
   "Known project root source.")
 
-(defvar consult--source-project-buffer-hidden
+(defvar consult-source-project-buffer-hidden
   `( :hidden t :narrow ((?p . "Project") (?B . "Project Buffer"))
-     ,@consult--source-project-buffer)
-  "Like `consult--source-project-buffer' but hidden by default.")
+     ,@consult-source-project-buffer)
+  "Like `consult-source-project-buffer' but hidden by default.")
 
-(defvar consult--source-project-recent-file-hidden
+(defvar consult-source-project-recent-file-hidden
   `( :hidden t :narrow ((?p . "Project") (?F . "Project File"))
-     ,@consult--source-project-recent-file)
-  "Like `consult--source-project-recent-file' but hidden by default.")
+     ,@consult-source-project-recent-file)
+  "Like `consult-source-project-recent-file' but hidden by default.")
 
-(defvar consult--source-project-root-hidden
+(defvar consult-source-project-root-hidden
   `( :hidden t :narrow ((?p . "Project") (?R . "Project Root"))
-     ,@consult--source-project-root)
-  "Like `consult--source-project-root' but hidden by default.")
+     ,@consult-source-project-root)
+  "Like `consult-source-project-root' but hidden by default.")
 
-(defvar consult--source-hidden-buffer
+(defvar consult-source-hidden-buffer
   `( :name     "Hidden Buffer"
      :narrow   ?\s
      :hidden   t
@@ -4925,7 +4942,7 @@ The source is hidden by default and can be summoned via its narrow key.
 All buffers are taken into account, i.e., the entire `buffer-list' from
 all frames.")
 
-(defvar consult--source-modified-buffer
+(defvar consult-source-modified-buffer
   `( :name     "Modified Buffer"
      :narrow   ?*
      :hidden   t
@@ -4945,7 +4962,7 @@ The source is hidden by default and can be summoned via its narrow key.
 Only buffers returned by the `consult-buffer-list-function' are taken
 into account.")
 
-(defvar consult--source-buffer
+(defvar consult-source-buffer
   `( :name     "Buffer"
      :narrow   ?b
      :category buffer
@@ -4960,7 +4977,7 @@ into account.")
 Only buffers returned by the `consult-buffer-list-function' are taken into
 account.")
 
-(defvar consult--source-other-buffer
+(defvar consult-source-other-buffer
   `( :name     "Other Buffer"
      :narrow   ?o
      :hidden   t
@@ -4987,7 +5004,7 @@ into account.")
   "Return non-nil if REG is a buffer register."
   (and (eq (car-safe reg) 'buffer) (buffer-live-p (get-buffer (cdr reg)))))
 
-(defvar consult--source-buffer-register
+(defvar consult-source-buffer-register
   `( :name     "Buffer Register"
      :narrow   (?r . "Register")
      :category buffer
@@ -5001,7 +5018,7 @@ into account.")
   "Return non-nil if REG is a file register."
   (memq (car-safe reg) '(file-query file)))
 
-(defvar consult--source-file-register
+(defvar consult-source-file-register
   `( :name     "File Register"
      :narrow   (?r . "Register")
      :category file
@@ -5011,7 +5028,7 @@ into account.")
      :items    ,(lambda () (consult-register--candidates #'consult--file-register-p)))
   "File register source.")
 
-(defvar consult--source-recent-file
+(defvar consult-source-recent-file
   `( :name     "File"
      :narrow   ?f
      :category file
@@ -5173,7 +5190,7 @@ FIND-FILE is the file open function, defaulting to `find-file-noselect'."
 
 (defun consult--grep-exclude-args ()
   "Produce grep exclude arguments.
-Take the variables `grep-find-ignored-directories' and
+Take the variable `grep-find-ignored-directories' and the variable
 `grep-find-ignored-files' into account."
   (unless (boundp 'grep-find-ignored-files) (require 'grep))
   (nconc (mapcar (lambda (s) (concat "--exclude=" s))

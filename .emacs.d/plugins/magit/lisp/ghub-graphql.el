@@ -201,14 +201,15 @@ repositories.")
 (defun ghub--graphql-handle-failure (req errors headers status)
   (ghub--graphql-set-mode-line req)
   (setf (ghub--req-value req) errors)
-  (if-let ((errorback (ghub--req-errorback req)))
-      (ghub--graphql-run-callback req errorback errors headers status req)
-    (if (ghub--req-noerror req)
-        (when-let ((callback (ghub--req-callback req)))
-          (ghub--graphql-run-callback req callback errors))
-      (ghub--signal-error (if (eq (car errors) 'errors)
-                              (cons 'ghub-graphql-error (cdr errors))
-                            errors)))))
+  (cond-let
+    ([errorback (ghub--req-errorback req)]
+     (ghub--graphql-run-callback req errorback errors headers status req))
+    ((ghub--req-noerror req)
+     (when-let ((callback (ghub--req-callback req)))
+       (ghub--graphql-run-callback req callback errors)))
+    ((ghub--signal-error (if (eq (car errors) 'errors)
+                             (cons 'ghub-graphql-error (cdr errors))
+                           errors)))))
 
 (defun ghub--graphql-handle-success (req data)
   (ghub--graphql-set-mode-line req)
@@ -340,5 +341,12 @@ repositories.")
     (treepy-zipper branchp #'identity make-node root)))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("and-let"   . "cond-let--and-let")
+;;   ("if-let"    . "cond-let--if-let")
+;;   ("when-let"  . "cond-let--when-let")
+;;   ("while-let" . "cond-let--while-let"))
+;; End:
 (provide 'ghub-graphql)
 ;;; ghub-graphql.el ends here

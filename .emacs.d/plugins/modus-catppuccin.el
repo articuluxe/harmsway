@@ -4,7 +4,7 @@
 ;; Maintainer: Magnus Therning <magnus@therning.org>
 ;; URL: https://gitlab.com/magus/modus-catppuccin
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "28.1") (modus-themes "4.8.1"))
+;; Package-Requires: ((emacs "28.1") (modus-themes "5.1.0"))
 ;; Keywords: faces, theme, accessibility
 
 ;; This file is NOT part of GNU Emacs.
@@ -30,8 +30,13 @@
 
 
 
+(require 'color)
 (require 'modus-themes)
 (eval-when-compile (require 'subr-x))
+
+;;;; Color functions
+(defun ctp-color (h s l)
+  (apply #'color-rgb-to-hex (color-hsl-to-rgb h s l)))
 
 ;;;; Basics for building on top of Modus
 
@@ -73,7 +78,7 @@ if you prefer to blend Standard and Modus into a single group, enable
     (fg-main text)
     (fg-dim subtext0)
     (fg-alt subtext1)
-    (bg-active bg-main)
+    (bg-active overlay0)
     (bg-inactive surface1)
     (border crust)
 
@@ -103,39 +108,39 @@ if you prefer to blend Standard and Modus into a single group, enable
 
     ;; Diffs
 
-    ;; (bg-added           "#c1f2d1") "#364144"
-    ;; (bg-added-faint     "#d8f8e1")
-    ;; (bg-added-refine    "#aee5be") "#4A5457"
-    ;; (bg-added-fringe    "#6cc06c")
-    ;; (fg-added           "#005000")
-    ;; (fg-added-intense   "#006700")
+    (bg-added bg-main)
+    (bg-added-faint bg-main)
+    (bg-added-refine bg-main)
+    (bg-added-fringe bg-main)
+    (fg-added green)
+    (fg-added-intense green)
 
-    ;; (bg-changed         "#ffdfa9") "#3e4b6c"
-    ;; (bg-changed-faint   "#ffefbf")
-    ;; (bg-changed-refine  "#fac090") "#515D7B"
-    ;; (bg-changed-fringe  "#d7c20a")
-    ;; (fg-changed         "#553d00")
-    ;; (fg-changed-intense "#655000")
+    (bg-changed bg-main)
+    (bg-changed-faint bg-main)
+    (bg-changed-refine bg-main)
+    (bg-changed-fringe bg-main)
+    (fg-changed sky)
+    (fg-changed-intense sky)
 
-    ;; (bg-removed         "#ffd8d5") "#443245"
-    ;; (bg-removed-faint   "#ffe9e9")
-    ;; (bg-removed-refine  "#f3b5af") "#574658"
-    ;; (bg-removed-fringe  "#d84a4f")
-    ;; (fg-removed         "#8f1313")
-    ;; (fg-removed-intense "#aa2222")
+    (bg-removed bg-main)
+    (bg-removed-faint bg-main)
+    (bg-removed-refine bg-main)
+    (bg-removed-fringe bg-main)
+    (fg-removed maroon)
+    (fg-removed-intense maroon)
 
-    ;; (bg-diff-context    "#f3f3f3")
+    (bg-diff-context bg-main)
 
     ;; Paren match
 
-    ;; (bg-paren-match        "#5fcfff")
-    ;; (bg-paren-expression   "#efd3f5")
-    ;; (underline-paren-match unspecified)
+    (bg-paren-match surface0)
+    (bg-paren-expression bg-paren-match)
+    (underline-paren-match unspecified)
 
     ;; General mappings
 
-    ;; (cursor fg-main)  "#f5e0dc"
-    ;; (keybind blue-cooler)
+    (cursor fg-main)
+    (keybind blue)
     (name blue)
     (identifier mauve)
 
@@ -143,21 +148,21 @@ if you prefer to blend Standard and Modus into a single group, enable
     (warning yellow)
     (info teal)
 
-    ;; (underline-err red-intense)
-    ;; (underline-warning yellow-intense)
-    ;; (underline-note cyan-intense)
+    (underline-err red)
+    (underline-warning yellow)
+    (underline-note green)
 
-    ;; (bg-prominent-err bg-red-intense)
-    ;; (fg-prominent-err fg-main)
-    ;; (bg-prominent-warning bg-yellow-intense)
-    ;; (fg-prominent-warning fg-main)
-    ;; (bg-prominent-note bg-cyan-intense)
-    ;; (fg-prominent-note fg-main)
+    (bg-prominent-err err)
+    (fg-prominent-err fg-main)
+    (bg-prominent-warning yellow)
+    (fg-prominent-warning fg-main)
+    (bg-prominent-note teal)
+    (fg-prominent-note fg-main)
 
-    ;; (bg-active-argument bg-yellow-nuanced)
-    ;; (fg-active-argument yellow-warmer)
-    ;; (bg-active-value bg-cyan-nuanced)
-    ;; (fg-active-value cyan-warmer)
+    (bg-active-argument rosewater)
+    (fg-active-argument base)
+    (bg-active-value teal)
+    (fg-active-value base)
 
     ;; Code mappings
 
@@ -295,15 +300,9 @@ if you prefer to blend Standard and Modus into a single group, enable
 
 (defconst modus-catppuccin-custom-faces
   '(
-    `(magit-section-highlight ((,c :background ,bg-alt)))
-    `(magit-diff-file-heading-highlight ((,c :inherit magit-diff-file-heading :background ,bg-alt)))
-    `(mode-line
-      ((default :inherit modus-themes-ui-variable-pitch
-                :background ,bg-mode-line-active
-                :foreground ,fg-mode-line-active)
-       (((supports :box t))
-        :box (:style released-button :color ,border-mode-line-active))
-       (t :underline ,border-mode-line-active)))))
+    `(cursor ((,c :background ,rosewater)))
+    `(tab-bar ((,c :foreground ,rosewater)))
+    `(tab-bar-tab-inactive ((,c :foreground ,subtext0)))))
 
 (defconst modus-catppuccin-with-properties
   '((catppuccin-latte modus-catppuccin "Our lightest theme harmoniously inverting the essence of Catppuccin's dark themes."

@@ -86,6 +86,7 @@
 (defvar iedit-occurrences-overlays)
 (defvar kele-menu-map)
 (defvar meow--indicator)
+(defvar meow--current-state)
 (defvar minions-mode-line-lighter)
 (defvar minions-mode-line-minor-modes-map)
 (defvar mlscroll-right-align)
@@ -204,12 +205,6 @@
 (declare-function lsp-workspaces "ext:lsp-mode")
 (declare-function lv-message "ext:lv")
 (declare-function mc/num-cursors "ext:multiple-cursors-core")
-(declare-function meow--current-state "ext:meow")
-(declare-function meow-beacon-mode-p "ext:meow")
-(declare-function meow-insert-mode-p "ext:meow")
-(declare-function meow-keypad-mode-p "ext:meow")
-(declare-function meow-motion-mode-p "ext:meow")
-(declare-function meow-normal-mode-p "ext:meow")
 (declare-function minions--prominent-modes "ext:minions")
 (declare-function mlscroll-mode-line "ext:mlscroll")
 (declare-function mu4e--modeline-string "ext:mu4e-modeline")
@@ -1092,7 +1087,8 @@ Respects `doom-modeline-enable-word-count'."
 
 Such as how many characters and lines are selected, or the NxM dimensions of a
 block selection."
-  (when (and (or mark-active (and (bound-and-true-p evil-local-mode)
+  (when (and doom-modeline-selection-info
+             (or mark-active (and (bound-and-true-p evil-local-mode)
                                   (eq evil-state 'visual)))
              (doom-modeline--active))
     (cl-destructuring-bind (beg . end)
@@ -1101,25 +1097,31 @@ block selection."
         (cons (region-beginning) (region-end)))
       (propertize
        (let ((lines (count-lines beg (min end (point-max)))))
-         (concat
-          " "
-          (cond ((or (bound-and-true-p rectangle-mark-mode)
-                     (and (bound-and-true-p evil-visual-selection)
-                          (eq 'block evil-visual-selection)))
-                 (let ((cols (abs (- (doom-modeline-column end)
-                                     (doom-modeline-column beg)))))
-                   (format "%dx%dB" lines cols)))
-                ((and (bound-and-true-p evil-visual-selection)
-                      (eq evil-visual-selection 'line))
-                 (format "%dL" lines))
-                ((> lines 1)
-                 (format "%dC %dL" (- end beg) lines))
-                (t
-                 (format "%dC" (- end beg))))
-          (when doom-modeline-enable-word-count
-            (format " %dW" (count-words beg end)))
-          " "))
+       (concat
+        " "
+        (cond ((or (bound-and-true-p rectangle-mark-mode)
+                   (and (bound-and-true-p evil-visual-selection)
+                        (eq 'block evil-visual-selection)))
+               (let ((cols (abs (- (doom-modeline-column end)
+                                   (doom-modeline-column beg)))))
+                 (format "%dx%dB" lines cols)))
+              ((and (bound-and-true-p evil-visual-selection)
+                    (eq evil-visual-selection 'line))
+               (format "%dL" lines))
+              ((> lines 1)
+               (format "%dC %dL" (- end beg) lines))
+              (t
+               (format "%dC" (- end beg))))
+        (when doom-modeline-enable-word-count
+          (format " %dW" (count-words beg end)))
+        " "))
        'face 'doom-modeline-emphasis))))
+
+;; Ensure selection info updates on cursor movements
+;; NOTE: No issue with mouse movements
+(add-hook 'post-command-hook
+          (lambda ()
+            (and mark-active (force-mode-line-update))))
 
 
 ;;
@@ -1947,29 +1949,29 @@ TEXT is alternative if icon is not available."
 (defsubst doom-modeline--meow ()
   "The current Meow state. Requires `meow-mode' to be enabled."
   (when (bound-and-true-p meow-mode)
-    (let-alist (cond
-                ((meow-normal-mode-p) '((face    . doom-modeline-meow-normal-state)
-                                        (icon    . "nf-md-alpha_n_circle")
-                                        (unicode . "🅝")))
-                ((meow-insert-mode-p) '((face    . doom-modeline-meow-insert-state)
-                                        (icon    . "nf-md-alpha_i_circle")
-                                        (unicode . "🅘")))
-                ((meow-beacon-mode-p) '((face    . doom-modeline-meow-beacon-state)
-                                        (icon    . "nf-md-alpha_b_circle")
-                                        (unicode . "🅑")))
-                ((meow-motion-mode-p) '((face    . doom-modeline-meow-motion-state)
-                                        (icon    . "nf-md-alpha_m_circle")
-                                        (unicode . "🅜")))
-                ((meow-keypad-mode-p) '((face    . doom-modeline-meow-keypad-state)
-                                        (icon    . "nf-md-alpha_k_circle")
-                                        (unicode . "🅚")))
-                (t                    '((face    . doom-modeline-meow-normal-state)
-                                        (icon    . "nf-md-alpha_n_circle")
-                                        (unicode . "🅝"))))
+    (let-alist (pcase meow--current-state
+                 ('normal '((face    . doom-modeline-meow-normal-state)
+                            (icon    . "nf-md-alpha_n_circle")
+                            (unicode . "🅝")))
+                 ('insert '((face    . doom-modeline-meow-insert-state)
+                            (icon    . "nf-md-alpha_i_circle")
+                            (unicode . "🅘")))
+                 ('beacon '((face    . doom-modeline-meow-beacon-state)
+                            (icon    . "nf-md-alpha_b_circle")
+                            (unicode . "🅑")))
+                 ('motion '((face    . doom-modeline-meow-motion-state)
+                            (icon    . "nf-md-alpha_m_circle")
+                            (unicode . "🅜")))
+                 ('keypad '((face    . doom-modeline-meow-keypad-state)
+                            (icon    . "nf-md-alpha_k_circle")
+                            (unicode . "🅚")))
+                 (_       '((face    . doom-modeline-meow-normal-state)
+                            (icon    . "nf-md-alpha_n_circle")
+                            (unicode . "🅝"))))
       (doom-modeline--modal-icon
        (substring-no-properties meow--indicator)
        .face
-       (symbol-name (meow--current-state))
+       (symbol-name meow--current-state)
        .icon
        .unicode))))
 

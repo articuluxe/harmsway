@@ -1,10 +1,10 @@
 ;;; alect-themes.el --- Configurable light, dark and black themes for Emacs 24 or later   -*- lexical-binding: t -*-
 
-;; Copyright © 2013–2021 Alex Kost
+;; Copyright © 2013–2025 Alex Kost
 
 ;; Author: Alex Kost <alezost@gmail.com>
 ;; Created: 10 Jul 2013
-;; Version: 0.10
+;; Version: 0.11
 ;; Package-Requires: ((emacs "24.0"))
 ;; URL: https://github.com/alezost/alect-themes
 ;; Keywords: color theme
@@ -118,7 +118,7 @@ Used for date/time faces like `org-date' or `erc-timestamp-face'."
 (defface alect-file
   '((t nil))
   "Auxiliary face for inheriting by some other faces.
-Used for 'file name' faces like `change-log-file' or
+Used for file name faces like `change-log-file' or
 `compilation-info'."
   :group 'alect-faces)
 
@@ -139,6 +139,16 @@ Used for key faces like `apropos-keybinding' or `magit-popup-key'."
   "Auxiliary face for inheriting by some other faces.
 Used for selected items like `org-date-selected' or
 `gnus-summary-selected'."
+  :group 'alect-faces)
+
+(defface alect-line-number
+  '((t nil))
+  "Auxiliary face for inheriting by some other faces.
+Used for selected items like `compilation-line-number' or
+`helm-grep-lineno'.
+
+Unfortunately, `display-line-numbers-mode' uses `shadow' face for line
+numbers, so we cannot make `alect-line-number' work for this mode."
   :group 'alect-faces)
 
 (defface alect-title
@@ -269,7 +279,7 @@ specifications of faces.
 
 Example:
   (setq alect-overriding-faces
-        '((mode-line-buffer-id ((t :foreground bg-2 :weight bold)))
+        \\='((mode-line-buffer-id ((t :foreground bg-2 :weight bold)))
           (mode-line           ((t :foreground bg-1 :background fg+1
                                    :box (:line-width 2 :color bg-2))))))
 Evaluate it and reload an alect-theme to see the difference."
@@ -306,7 +316,7 @@ Evaluate it and reload an alect-theme to see the difference."
      (red-bg+1     "#eec5c5" "#6a3636" "#531311")
      (yellow-2     "#ab9c3a" "#f8ffa0" "#e9e953")
      (yellow-1     "#9ca30b" "#e8e815" "#c9d617")
-     (yellow       "#ef8300" "#fe8b04" "#dc7700")
+     (yellow       "#da7710" "#fe8b04" "#dc7700")
      (yellow+1     "#958323" "#e5c900" "#bcaa00")
      (yellow+2     "#6a621b" "#abab3a" "#959508")
      (yellow-bg-1  "#cbcb20" "#909032" "#73712a")
@@ -496,6 +506,7 @@ For INVERT, see `alect-get-color'."
                                     :box (:line-width -1
                                           :color ,(gc 'fg+1)
                                           :style nil))))
+         (alect-line-number    ((,c :foreground ,(gc 'yellow+2))))
          (alect-color-level-1  ((,c :foreground ,(gc 'blue+1))))
          (alect-color-level-2  ((,c :foreground ,(gc 'green))))
          (alect-color-level-3  ((,c :foreground ,(gc 'red+1))))
@@ -646,14 +657,17 @@ For INVERT, see `alect-get-color'."
          (compilation-info                  ((,c :inherit alect-file)))
          (compilation-warning               ((,c :inherit warning)))
          (compilation-error                 ((,c :inherit error)))
-         (compilation-line-number           ((,c :foreground ,(gc 'yellow))))
-         (compilation-column-number         ((,c :foreground ,(gc 'yellow+2))))
+         (compilation-line-number           ((,c :inherit alect-line-number)))
+         (compilation-column-number         ((,c :inherit alect-line-number)))
          (compilation-mode-line-run         ((,c :foreground ,(gc 'blue))))
          (compilation-mode-line-exit        ((,c :inherit success)))
          (compilation-mode-line-fail        ((,c :inherit compilation-error)))
 
          ;; completions
-         (completions-common-part ((,c :foreground ,(gc 'fg-2))))
+         (completions-annotations ((,c :inherit alect-key)))
+         (completions-highlight   ((,c :inherit alect-selected-item)))
+         (completions-common-part ((,c :background ,(gc 'bg+1))))
+         (completions-first-difference ((,c :foreground ,(gc 'blue-1))))
 
          ;; cperl
          (cperl-hash-face           ((,c :foreground ,(gc 'cyan+1))))
@@ -749,6 +763,7 @@ For INVERT, see `alect-get-color'."
          (dired-marked     ((,c :inherit warning)))
          (dired-perm-write ((,c :foreground ,(gc 'green-1))))
          (dired-symlink    ((,c :inherit font-lock-constant-face)))
+         (dired-broken-symlink ((,c :inherit error)))
          (dired-warning    ((,c :inherit font-lock-warning-face
                                 :background ,(gc 'bg-2))))
 
@@ -825,7 +840,7 @@ For INVERT, see `alect-get-color'."
          (eshell-ls-backup      ((,c :inherit dired-ignored)))
          (eshell-ls-clutter     ((,c :inherit font-lock-comment-face)))
          (eshell-ls-directory   ((,c :inherit dired-directory)))
-         (eshell-ls-executable  ((,c :foreground ,(gc 'yellow))))
+         (eshell-ls-executable  ((,c :foreground ,(gc 'green-1))))
          (eshell-ls-unreadable  ((,c :foreground ,(gc 'red-2))))
          (eshell-ls-readonly    ((,c :foreground ,(gc 'fg-2))))
          (eshell-ls-missing     ((,c :inherit dired-warning)))
@@ -872,13 +887,15 @@ For INVERT, see `alect-get-color'."
                                                 :weight bold)))
          (font-lock-negation-char-face     ((,c :foreground ,(gc 'blue))))
          (font-lock-preprocessor-face      ((,c :foreground ,(gc 'green-1))))
-         (font-lock-string-face            ((,c :foreground ,(gc 'red-2))))
+         (font-lock-string-face            ((,c :foreground ,(gc 'red-1))))
          (font-lock-type-face              ((,c :foreground ,(gc 'magenta+1))))
          (font-lock-variable-name-face     ((,c :foreground ,(gc 'yellow+2))))
          (font-lock-warning-face           ((,c :foreground ,(gc 'red)
                                                 :weight bold)))
          (font-lock-regexp-grouping-backslash ((,c :foreground ,(gc 'red+2))))
          (font-lock-regexp-grouping-construct ((,c :foreground ,(gc 'yellow-1))))
+         (elisp-shorthand-font-lock-face   ((,c :inherit font-lock-keyword-face
+                                                :foreground ,(gc 'green-1))))
 
          ;; gdb
          (breakpoint-enabled  ((,c :foreground ,(gc 'red))))
@@ -1013,19 +1030,31 @@ For INVERT, see `alect-get-color'."
          (helm-header             ((,c :inherit header-line)))
          (helm-source-header      ((,c :inherit alect-title)))
          (helm-separator          ((,c :foreground ,(gc 'blue+2))))
-         (helm-M-x-key            ((,c :foreground ,(gc 'yellow))))
+         (helm-M-x-key            ((,c :inherit alect-key)))
          (helm-selection          ((,c :background ,(gc 'bg))))
          (helm-selection-line     ((,c :background ,(gc 'bg))))
          (helm-visible-mark       ((,c :foreground ,(gc 'yellow-1))))
          (helm-candidate-number   ((,c :background ,(gc 'bg-2)
                                        :foreground ,(gc 'green-2))))
          (helm-ff-file            ((,c)))
+         (helm-ff-file-extension  ((,c :slant italic)))
          (helm-ff-executable      ((,c :foreground ,(gc 'green-1))))
          (helm-ff-directory       ((,c :inherit dired-directory)))
+         (helm-ff-dotted-directory ((,c :inherit helm-ff-directory
+                                        :background ,(gc 'blue-bg+1))))
+         (helm-ff-dotted-symlink-directory ((,c :inherit helm-ff-symlink
+                                                :inverse-video t)))
          (helm-ff-symlink         ((,c :inherit dired-symlink)))
          (helm-ff-invalid-symlink ((,c :inherit dired-warning)))
+         (helm-ff-pipe            ((,c :foreground ,(gc 'yellow-1))))
+         (helm-ff-socket          ((,c :foreground ,(gc 'yellow))))
+         (helm-ff-suid            ((,c :inherit error :inverse-video t)))
          (helm-ff-prefix          ((,c :background ,(gc 'bg)
                                        :foreground ,(gc 'red+1))))
+         (helm-buffer-file        ((,c :inherit helm-ff-file)))
+         (helm-non-file-buffer    ((,c :foreground ,(gc 'yellow+2))))
+         (helm-buffer-modified    ((,c :weight bold)))
+         (helm-buffer-archive     ((,c :foreground ,(gc 'magenta))))
          (helm-buffer-directory   ((,c :inherit helm-ff-directory)))
          (helm-buffer-saved-out   ((,c :background ,(gc 'bg-2)
                                        :foreground ,(gc 'red))))
@@ -1033,9 +1062,12 @@ For INVERT, see `alect-get-color'."
          (helm-buffer-process     ((,c :foreground ,(gc 'green+1))))
          (helm-buffer-size        ((,c :foreground ,(gc 'cyan))))
          (helm-grep-file          ((,c :inherit compilation-info)))
+         (helm-grep-lineno        ((,c :inherit alect-line-number)))
+         (helm-match              ((,c :inherit lazy-highlight)))
 
          ;; help
          (help-argument-name ((,c :inherit font-lock-variable-name-face)))
+         (help-key-binding   ((,c :inherit alect-key)))
 
          ;; hl-line-mode
          (hl-line ((,c :background ,(gc 'bg))))
@@ -1049,6 +1081,11 @@ For INVERT, see `alect-get-color'."
          (hydra-face-pink     ((,c :foreground ,(gc 'magenta-2) :weight bold)))
          (hydra-face-blue     ((,c :foreground ,(gc 'blue-1)    :weight bold)))
          (hydra-face-teal     ((,c :foreground ,(gc 'cyan+1)    :weight bold)))
+
+         ;; icomplete-mode
+         (icomplete-first-match    ((,c :weight bold)))
+         (icomplete-section        ((,c :foreground ,(gc 'green+1))))
+         (icomplete-selected-match ((,c :inherit icomplete-first-match)))
 
          ;; indent-guide
          (indent-guide-face ((,c :foreground ,(gc 'yellow+1))))
@@ -1079,9 +1116,14 @@ For INVERT, see `alect-get-color'."
                                :foreground ,(gc 'fg+1))))
 
          ;; isearch
-         (isearch-fail         ((,c :background ,(gc 'red-bg))))
+         (isearch-fail         ((,c :foreground ,(gc 'fg+1)
+                                    :background ,(gc 'red-bg))))
          (isearch              ((,c :foreground ,(gc 'fg+1)
                                     :background ,(gc 'blue-bg-1))))
+         (isearch-group-1      ((,c :foreground ,(gc 'fg+1)
+                                    :background ,(gc 'green-bg-1))))
+         (isearch-group-2      ((,c :foreground ,(gc 'fg+1)
+                                    :background ,(gc 'green-bg))))
          (lazy-highlight       ((,c :foreground ,(gc 'fg+1)
                                     :background ,(gc 'bg+2))))
 
@@ -1197,6 +1239,7 @@ For INVERT, see `alect-get-color'."
                                                            magit-diff-context-highlight))))
          (magit-diffstat-added              ((,c :inherit magit-diff-added)))
          (magit-diffstat-removed            ((,c :inherit magit-diff-removed)))
+         (magit-keyword                     ((,c :weight bold)))
          (magit-popup-heading               ((,c :inherit alect-title)))
          (magit-popup-key                   ((,c :inherit alect-key)))
          (magit-popup-argument              ((,c :foreground ,(gc 'blue-2)
@@ -1224,7 +1267,8 @@ For INVERT, see `alect-get-color'."
          (git-rebase-hash                   ((,c :inherit magit-hash)))
          (git-rebase-comment-heading        ((,c :inherit alect-title)))
          (git-commit-summary                ((,c :weight bold)))
-         (git-commit-comment-branch         ((,c :foreground ,(gc 'blue))))
+         (git-commit-comment-branch-local   ((,c :inherit magit-branch-local)))
+         (git-commit-comment-branch-remote  ((,c :inherit magit-branch-remote)))
          (git-commit-comment-file           ((,c :inherit default)))
          (git-commit-comment-heading        ((,c :inherit alect-title)))
          (git-commit-comment-action         ((,c :foreground ,(gc 'yellow+1))))
@@ -1374,6 +1418,7 @@ For INVERT, see `alect-get-color'."
          (org-date                  ((,c :inherit alect-time)))
          (org-date-selected         ((,c :inherit alect-selected-item)))
          (org-deadline-announce     ((,c :foreground ,(gc 'red-1))))
+         (org-dispatcher-highlight  ((,c :inherit alect-key)))
          (org-done                  ((,c :foreground ,(gc 'cyan-1)
                                          :weight bold)))
          (org-document-title        ((,c :inherit alect-title)))
@@ -1384,7 +1429,7 @@ For INVERT, see `alect-get-color'."
                                          :underline t)))
          (org-formula               ((,c :foreground ,(gc 'yellow-2))))
          (org-headline-done         ((,c :foreground ,(gc 'cyan-1))))
-         (org-hide                  ((,c :foreground ,(gc 'bg-2))))
+         (org-hide                  ((,c :inherit shadow)))
          (org-level-1               ((,c :inherit alect-title-1)))
          (org-level-2               ((,c :inherit alect-title-2)))
          (org-level-3               ((,c :inherit alect-title-3)))
@@ -1487,7 +1532,7 @@ For INVERT, see `alect-get-color'."
          (realgud-bp-line-enabled-face  ((,c :box (:color ,(gc 'red) :style nil))))
          (realgud-bp-line-disabled-face ((,c :box (:color ,(gc 'gray) :style nil))))
          (realgud-file-name             ((,c :inherit alect-file)))
-         (realgud-line-number           ((,c :foreground ,(gc 'yellow))))
+         (realgud-line-number           ((,c :inherit alect-line-number)))
          (realgud-backtrace-number      ((,c :foreground ,(gc 'fg+2)
                                              :weight bold)))
 
@@ -1568,6 +1613,10 @@ For INVERT, see `alect-get-color'."
          (sh-escaped-newline ((,c :foreground ,(gc 'fg-1)
                                   :weight bold)))
 
+         ;; shortdoc
+         (shortdoc-heading  ((,c :inherit alect-title)))
+         (shortdoc-section  ((,c :inherit italic)))
+
          ;; show-paren
          (show-paren-mismatch  ((,c :foreground ,(gc 'gray-2)
                                     :background ,(gc 'red))))
@@ -1589,6 +1638,13 @@ For INVERT, see `alect-get-color'."
          (sldb-detailed-frame-line-face    ((,c :weight bold)))
          (sldb-restartable-frame-line-face ((,c :foreground ,(gc 'green+1))))
          (sldb-non-restartable-frame-line-face ((,c :foreground ,(gc 'red+1))))
+
+         ;; smerge
+         (smerge-base            ((,c :background ,(gc 'yellow-bg))))
+         (smerge-upper           ((,c :background ,(gc 'red-bg+1))))
+         (smerge-lower           ((,c :background ,(gc 'green-bg+1))))
+         (smerge-refined-removed ((,c :background ,(gc 'red-bg))))
+         (smerge-refined-added   ((,c :background ,(gc 'green-bg))))
 
          ;; speedbar
          (speedbar-file-face      ((,c)))
@@ -1685,6 +1741,17 @@ For INVERT, see `alect-get-color'."
          ;; transient
          (transient-heading               ((,c :inherit alect-title)))
          (transient-key                   ((,c :inherit alect-key)))
+         (transient-key-exit              ((,c :inherit alect-key)))
+         (transient-key-recurse           ((,c :inherit alect-key
+                                               :foreground ,(gc 'blue-2))))
+         (transient-key-noop              ((,c :inherit alect-key
+                                               :foreground ,(gc 'gray))))
+         (transient-key-stay              ((,c :inherit alect-key
+                                               :foreground ,(gc 'green-1))))
+         (transient-key-stack             ((,c :inherit alect-key
+                                               :box (:style released-button))))
+         (transient-key-return             ((,c :inherit alect-key
+                                               :box (:style pressed-button))))
          (transient-unreachable           ((,c :foreground ,(gc 'fg-2))))
          (transient-unreachable-key       ((,c :inherit (transient-unreachable
                                                          alect-key))))
@@ -1693,8 +1760,7 @@ For INVERT, see `alect-get-color'."
          (transient-mismatched-key        ((,c :inherit (error
                                                          alect-key))))
          (transient-separator             ((,c :background ,(gc 'gray))))
-         (transient-argument              ((,c :foreground ,(gc 'blue-2)
-                                               :weight bold)))
+         (transient-argument              ((,c :foreground ,(gc 'blue))))
          (transient-value                 ((,c :inherit (italic
                                                          font-lock-string-face))))
          (transient-inactive-argument     ((,c :inherit shadow)))
@@ -1708,7 +1774,7 @@ For INVERT, see `alect-get-color'."
                                                         :weight bold)))
          (tuareg-font-lock-multistage-face         ((,c :foreground ,(gc 'blue-2)
                                                         :background ,(gc 'bg))))
-         (tuareg-font-lock-line-number-face        ((,c :foreground ,(gc 'fg-2))))
+         (tuareg-font-lock-line-number-face        ((,c :inherit alect-line-number)))
          (tuareg-font-lock-operator-face           ((,c :foreground ,(gc 'green-1))))
          (tuareg-font-lock-module-face             ((,c :foreground ,(gc 'cyan))))
          (tuareg-font-lock-constructor-face        ((,c :foreground ,(gc 'yellow))))
@@ -1721,6 +1787,9 @@ For INVERT, see `alect-get-color'."
          (utop-prompt ((,c :inherit alect-prompt)))
          (utop-error  ((,c :inherit error)))
          (utop-stderr ((,c :foreground ,(gc 'red+1))))
+
+         ;; vertico
+         (vertico-current    ((,c :weight bold)))
 
          ;; vc
          (vc-up-to-date-state    ((,c :foreground ,(gc 'green-1))))

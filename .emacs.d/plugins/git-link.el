@@ -1,8 +1,8 @@
 ;;; git-link.el --- Get the GitHub/Bitbucket/GitLab URL for a buffer location -*- lexical-binding: t -*-
 
-;; Copyright (C) 2013-2022 Skye Shaw and others
+;; Copyright (C) 2013-2025 Skye Shaw and others
 ;; Author: Skye Shaw <skye.shaw@gmail.com>
-;; Version: 0.9.2
+;; Version: 0.10.0
 ;; Keywords: git, vc, github, bitbucket, gitlab, sourcehut, aws, azure, convenience
 ;; URL: http://github.com/sshaw/git-link
 ;; Package-Requires: ((emacs "24.3"))
@@ -35,6 +35,13 @@
 
 ;;; Change Log:
 
+;; 2025-10-23 - v0.10.0
+;; * Add: support for linking to custom web hosts (Issue #136, thanks Sebastian Poeplau)
+;; * Add: Transient menu interface (Issues #128 and #132, thanks Yikai Zhao and David Morgan)
+;; * Fix: linking under vc mode when default-directory is nil
+;; * Fix: hexification of nil branch name (Issue #127, thanks Michael Hauser-Raspe)
+;; * Fix: Codeberg permalinks (Issue #147, thanks Marty Hiatt)
+;;
 ;; 2024-06-29 - v0.9.2
 ;; * Add git-link-add-to-kill-ring to not add to kill ring (thanks Michael Hauser-Raspe)
 ;; * Add prefix arg to open in browser when calling git-link-homepage (thanks Sibi Prabakaran)
@@ -243,7 +250,8 @@ See its docs."
     ("googlesource.com" git-link-googlesource)
     ("visualstudio\\|azure" git-link-azure)
     ("sourcegraph" git-link-sourcegraph)
-    ("\\(amazonaws\\|amazon\\)\\.com" git-link-codecommit))
+    ("\\(amazonaws\\|amazon\\)\\.com" git-link-codecommit)
+    ("forge.fedoraproject.org" git-link-codeberg))
   "Alist of host names and functions creating file links for those.
 Each element looks like (REGEXP FUNCTION) where REGEXP is used to
 match the remote's host name and FUNCTION is used to generate a link
@@ -265,7 +273,8 @@ As an example, \"gitlab\" will match with both \"gitlab.com\" and
     ("googlesource.com" git-link-commit-googlesource)
     ("visualstudio\\|azure" git-link-commit-azure)
     ("sourcegraph" git-link-commit-sourcegraph)
-    ("\\(amazonaws\\|amazon\\)\\.com" git-link-commit-codecommit))
+    ("\\(amazonaws\\|amazon\\)\\.com" git-link-commit-codecommit)
+    ("forge.fedoraproject.org" git-link-commit-codeberg))
   "Alist of host names and functions creating commit links for those.
 Each element looks like (REGEXP FUNCTION) where REGEXP is used to
 match the remote's host name and FUNCTION is used to generate a link
@@ -286,7 +295,8 @@ As an example, \"gitlab\" will match with both \"gitlab.com\" and
     ("googlesource.com" git-link-homepage-github)
     ("visualstudio\\|azure" git-link-homepage-github)
     ("sourcegraph" git-link-homepage-github)
-    ("\\(amazonaws\\|amazon\\)\\.com" git-link-homepage-codecommit))
+    ("\\(amazonaws\\|amazon\\)\\.com" git-link-homepage-codecommit)
+    ("forge.fedoraproject.org" git-link-homepage-codeberg))
   "Alist of host names and functions creating homepage links for those.
 Each element looks like (REGEXP FUNCTION) where REGEXP is used to
 match the remote's host name and FUNCTION is used to generate a link
@@ -824,6 +834,9 @@ is prepended to it."
 
 (defun git-link-homepage-codecommit (hostname dirname)
   (format "%s/%s/browse" hostname dirname))
+
+(defun git-link-homepage-codeberg (hostname dirname)
+  (format "%s/%s" hostname dirname))
 
 (define-obsolete-function-alias
   'git-link-homepage-svannah 'git-link-homepage-savannah "cf947f9")

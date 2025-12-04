@@ -4,7 +4,7 @@
 
 ;; Author: Dan Dee <monkeyjunglejuice@pm.me>
 ;; URL: https://github.com/monkeyjunglejuice/matrix-emacs-theme
-;; Version: 1.4.1
+;; Version: 1.4.2
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT
@@ -44,6 +44,22 @@ You'll have to see it for yourself. --Morpheus")
        (color-red     "#cc0037")
        (color-blue    "#0081c7"))
 
+  (custom-theme-set-variables
+   'the-matrix
+
+   `(frame-background-mode 'dark)
+   `(ansi-color-bold-is-bright t)
+   `(ansi-color-names-vector
+     [,color-dark   ; black
+      ,color-red    ; red
+      ,color-bright ; green
+      ,color-bright ; yellow
+      ,color-blue   ; blue
+      ,color-middle ; magenta
+      ,color-middle ; cyan
+      ,color-fg]    ; white
+     ))
+
   (custom-theme-set-faces
    'the-matrix
 
@@ -68,10 +84,10 @@ You'll have to see it for yourself. --Morpheus")
    `(match ((t (:foreground ,color-bright :weight bold))))
    `(minibuffer-prompt ((t (:foreground ,color-bright :weight bold))))
    `(mode-line ((t (:foreground ,color-dark :box (:color ,color-fg)))))
-   `(mode-line-buffer-id ((t (:foreground ,color-bright :weight bold))))
+   `(mode-line-buffer-id ((t (:foreground ,color-bright :distant-foreground ,color-fg :weight bold))))
    `(mode-line-highlight ((t (:inherit highlight))))
    `(mode-line-inactive ((t (:foreground ,color-dark :box (:color ,color-darker)))))
-   `(region ((t (:foreground ,color-middle :background ,color-darker))))
+   `(region ((t (:foreground ,color-middle :background ,color-darkest))))
    `(secondary-selection ((t (:background ,color-bg-alt))))
    `(separator-line ((t (:height 0.1 :background ,color-darker))))
    `(shadow ((t (:foreground ,color-dark))))
@@ -84,18 +100,19 @@ You'll have to see it for yourself. --Morpheus")
    `(vertical-border ((t (:foreground ,color-dark :background unspecified))))
    `(warning ((t (:foreground ,color-blue))))
    `(widget-field ((t (:foreground ,color-bright :background ,color-bg-alt))))
+   `(widget-inactive ((t (:inherit shadow :background ,color-darker :box (:color ,color-darker)))))
 
    ;; font-lock
    `(font-lock-builtin-face ((t (:foreground ,color-fg :slant italic))))
-   `(font-lock-comment-face ((t (:foreground ,color-dark :inherit fixed-pitch-serif))))
-   `(font-lock-constant-face ((t (:foreground ,color-fg))))
-   `(font-lock-doc-face ((t (:foreground ,color-dark :slant italic :inherit fixed-pitch-serif))))
+   `(font-lock-comment-face ((t (:foreground ,color-dark))))
+   `(font-lock-constant-face ((t (:weight bold))))
+   `(font-lock-doc-face ((t (:foreground ,color-dark :slant italic))))
    `(font-lock-function-name-face ((t (:foreground ,color-middle))))
    `(font-lock-keyword-face ((t (:foreground ,color-bright))))
    `(font-lock-operator-face ((t (:foreground ,color-middle :weight bold))))
    `(font-lock-regexp-grouping-backslash ((t (:foreground ,color-middle))))
    `(font-lock-regexp-grouping-construct ((t (:foreground ,color-middle))))
-   `(font-lock-string-face ((t (:background ,color-darkest :inherit fixed-pitch-serif))))
+   `(font-lock-string-face ((t (:background ,color-darkest))))
    `(font-lock-type-face ((t (:weight bold))))
    `(font-lock-variable-name-face ((t (:foreground ,color-fg))))
    `(font-lock-warning-face ((t (:foreground ,color-red :slant italic))))
@@ -220,6 +237,76 @@ You'll have to see it for yourself. --Morpheus")
    `(message-mml ((t (:foreground ,color-bright))))
    `(message-separator ((t (:inherit font-lock-comment-face))))
 
+   ;; nerd icons
+   ;; Face for red icons
+   `(nerd-icons-red ((t (:foreground ,color-bright))))
+   ;; Face for lred icons
+   `(nerd-icons-lred ((t (:foreground ,color-bright))))
+   ;; Face for dred icons
+   `(nerd-icons-dred ((t (:foreground ,color-bright))))
+   ;; Face for dred icons
+   `(nerd-icons-red-alt ((t (:foreground ,color-bright))))
+   ;; Face for green icons
+   `(nerd-icons-green ((t (:foreground ,color-bright))))
+   ;; Face for lgreen icons
+   `(nerd-icons-lgreen ((t (:foreground ,color-bright))))
+   ;; Face for dgreen icons
+   `(nerd-icons-dgreen ((t (:foreground ,color-bright))))
+   ;; Face for yellow icons
+   `(nerd-icons-yellow ((t (:foreground ,color-bright))))
+   ;; Face for lyellow icons
+   `(nerd-icons-lyellow ((t (:foreground ,color-bright))))
+   ;; Face for dyellow icons
+   `(nerd-icons-dyellow ((t (:foreground ,color-bright))))
+   ;; Face for blue icons
+   `(nerd-icons-blue ((t (:foreground ,color-bright))))
+   ;; Face for blue icons
+   `(nerd-icons-blue-alt ((t (:foreground ,color-bright))))
+   ;; Face for lblue icons
+   `(nerd-icons-lblue ((t (:foreground ,color-bright))))
+   ;; Face for dblue icons
+   `(nerd-icons-dblue ((t (:foreground ,color-bright))))
+   ;; Face for maroon icons
+   `(nerd-icons-maroon ((t (:foreground ,color-bright))))
+   ;; Face for lmaroon icons
+   `(nerd-icons-lmaroon ((t (:foreground ,color-bright))))
+   ;; Face for dmaroon icons
+   `(nerd-icons-dmaroon ((t (:foreground ,color-bright))))
+   ;; Face for purple icons
+   `(nerd-icons-purple ((t (:foreground ,color-bright))))
+   ;; Face for purple icons
+   `(nerd-icons-purple-alt ((t (:foreground ,color-bright))))
+   ;; Face for lpurple icons
+   `(nerd-icons-lpurple ((t (:foreground ,color-bright))))
+   ;; Face for dpurple icons
+   `(nerd-icons-dpurple ((t (:foreground ,color-bright))))
+   ;; Face for orange icons
+   `(nerd-icons-orange ((t (:foreground ,color-bright))))
+   ;; Face for lorange icons
+   `(nerd-icons-lorange ((t (:foreground ,color-bright))))
+   ;; Face for dorange icons
+   `(nerd-icons-dorange ((t (:foreground ,color-bright))))
+   ;; Face for cyan icons
+   `(nerd-icons-cyan ((t (:foreground ,color-bright))))
+   ;; Face for cyan icons
+   `(nerd-icons-cyan-alt ((t (:foreground ,color-bright))))
+   ;; Face for lcyan icons
+   `(nerd-icons-lcyan ((t (:foreground ,color-bright))))
+   ;; Face for dcyan icons
+   `(nerd-icons-dcyan ((t (:foreground ,color-bright))))
+   ;; Face for pink icons
+   `(nerd-icons-pink ((t (:foreground ,color-bright))))
+   ;; Face for lpink icons
+   `(nerd-icons-lpink ((t (:foreground ,color-bright))))
+   ;; Face for dpink icons
+   `(nerd-icons-dpink ((t (:foreground ,color-bright))))
+   ;; Face for silver icons
+   `(nerd-icons-silver ((t (:foreground ,color-bright))))
+   ;; Face for lsilver icons
+   `(nerd-icons-lsilver ((t (:foreground ,color-bright))))
+   ;; Face for dsilver icons
+   `(nerd-icons-dsilver ((t (:foreground ,color-bright))))
+
    ;; erc
    `(erc-notice-face ((t (:foreground ,color-dark :weight unspecified))))
    `(erc-header-line ((t (:inherit header-line))))
@@ -233,19 +320,23 @@ You'll have to see it for yourself. --Morpheus")
    ;; table
    `(table-cell ((t (:foreground ,color-fg :background ,color-bg-alt))))
 
-   ;; tab-bar and tab-line
-   `(tab-bar ((t (:foreground ,color-darker :background ,color-bg-alt :box (:color ,color-bg-alt)))))
-   `(tab-bar-tab ((t (:inherit tab-bar :foreground ,color-dark :background ,color-bg-alt))))
+   ;; tabs
+   `(tab-bar ((t (:foreground ,color-dark :background ,color-bg-alt :box (:color ,color-bg-alt)))))
+   `(tab-bar-tab ((t (:foreground ,color-fg))))
+   `(tab-bar-tab-ungrouped ((t (:inherit tab-bar-tab))))
    `(tab-bar-tab-group-current ((t (:foreground ,color-fg))))
    `(tab-bar-tab-group-inactive ((t (:foreground ,color-dark))))
-   `(tab-bar-tab-inactive ((t (:inherit tab-bar :foreground ,color-darker :background ,color-bg-alt))))
+   `(tab-bar-tab-inactive ((t (:foreground ,color-dark))))
    `(tab-line ((t (:foreground ,color-dark :background ,color-bg-alt :box (:color ,color-bg-alt)))))
    `(tab-line-close-highlight ((t (:foreground ,color-hl))))
    `(tab-line-highlight ((t (:foreground ,color-hl))))
-   `(tab-line-tab ((t (:inherit tab-line :foreground ,color-dark :background ,color-darkest))))
-   `(tab-line-tab-current ((t (:inherit tab-line :foreground ,color-fg))))
-   `(tab-line-tab-inactive ((t (:inherit tab-line :foreground ,color-darker :background ,color-bg))))
+   `(tab-line-tab ((t (:foreground ,color-dark))))
+   `(tab-line-tab-current ((t (:foreground ,color-fg))))
+   `(tab-line-tab-inactive ((t (:foreground ,color-darker))))
    `(tab-line-tab-inactive-alternate ((t (:inherit tab-line-tab-inactive))))
+
+   ;; activities
+   `(activities-tabs ((t (:weight bold))))
 
    ;; tex
    `(font-latex-sedate-face ((t (:foreground ,color-dark))))
@@ -505,7 +596,7 @@ You'll have to see it for yourself. --Morpheus")
    `(tuareg-font-lock-interactive-output-face ((t (:foreground ,color-bright))))
    `(tuareg-font-lock-interactive-error-face ((t (:inherit font-lock-warning-face))))
    `(tuareg-font-lock-interactive-directive-face ((t (:foreground ,color-middle))))
-   `(tuareg-font-lock-line-number-face ((t (:inherit linum))))
+   `(tuareg-font-lock-line-number-face ((t (:inherit line-number))))
    `(tuareg-font-lock-module-face ((t (:inherit shadow))))
    `(tuareg-font-lock-operator-face ((t (:inherit font-lock-operator-face))))
 
@@ -626,7 +717,7 @@ You'll have to see it for yourself. --Morpheus")
 
    ;; switch-window
    `(switch-window-background ((t (:foreground ,color-darker))))
-   `(switch-window-label ((t (:foreground ,color-bright :height 3.0))))
+   `(switch-window-label ((t (:foreground ,color-bright :height 1.5))))
 
    ;; telega
    `(telega-msg-heading ((t (:foreground ,color-dark :background unspecified :inherit unspecified))))
@@ -686,6 +777,12 @@ You'll have to see it for yourself. --Morpheus")
 
    ;; hl-todo
    `(hl-todo ((t (:inherit font-lock-comment-face))))
+
+   ;; which-key
+   `(which-key-key-face ((t (:foreground ,color-fg :weight bold))))
+   `(which-key-group-description-face ((t (:inherit font-lock-comment-face :weight bold))))
+   `(which-key-command-description-face ((t (:inherit font-lock-comment-face))))
+
    ))
 
 ;;;###autoload

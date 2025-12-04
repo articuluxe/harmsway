@@ -2,7 +2,7 @@
 
 ;;
 ;; Author: Michał Krzywkowski <k.michal@zoho.com>
-;; URL: https://github.com/mkcms/interactive-align
+;; URL: https://github.com/mkcms/ialign
 ;; Package-Requires: ((emacs "25.1"))
 ;; Version: 0.5.0
 ;; Keywords: tools, editing, align, interactive

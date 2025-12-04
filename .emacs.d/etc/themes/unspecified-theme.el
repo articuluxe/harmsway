@@ -9,7 +9,7 @@
 ;; Maintainer:              Mekeor Melire <mekeor@posteo.de>
 ;; Package-Requires:        ((emacs "25") (most-faces "0.0.3"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Version:                 0.2
+;; Version:                 0.4
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -100,6 +100,7 @@
 Only the `default' face is not themed at all.")
 
 (defvar unspecified-theme-unspecified-spec
+  ;; The list of attributes copied from `face-attribute-name-alist'.
   '((t :background     unspecified
        :box            unspecified
        :extend         unspecified

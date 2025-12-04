@@ -5,10 +5,9 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.34
+;; Version: 2.90
 ;; Keywords: text, pandoc
 ;; URL: http://joostkremers.github.io/pandoc-mode/
-;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
 
 ;; Redistribution and use in source and binary forms, with or without
 ;; modification, are permitted provided that the following conditions
@@ -43,8 +42,7 @@
 ;;; Code:
 
 (require 'easymenu)
-(require 'hydra)
-(require 'dash)
+(require 'transient)
 (require 'pandoc-mode-utils)
 (require 'cl-lib)
 (require 'thingatpt)
@@ -147,7 +145,7 @@
 
 (defvar pandoc-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map "\C-c/" #'pandoc-main-hydra/body)
+    (define-key map "\C-c/" #'pandoc-main-transient)
     map)
   "Keymap for pandoc-mode.")
 
@@ -892,6 +890,37 @@ file exists, display the *Pandoc output* buffer."
 ;; Functions to set specific options. ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun pandoc--read-completion-function (formats)
+  "Create a completion function for `pandoc-set-read-from-category' for FORMATS.
+Return a function that can be used in `completing-read' as the
+COLLECTION function, using TABLE as the completion table."
+  (lambda (str pred flag)
+    (if (eq flag 'metadata)
+        `(metadata (category . pandoc-format)
+                   (annotation-function . ,(lambda (format)
+                                             (propertize (concat (make-string (- 30 (length format)) ?\s)
+                                                                 (nth 1 (assoc format formats)))
+                                                         'face 'italic))))
+      (complete-with-action flag formats str pred))))
+
+(defun pandoc-set-read-from-category (category)
+  "Set the input format.
+CATEGORY is a string naming a category of formats as listed in
+`pandoc--formats'.  Only formats from CATEGORY are offered as completion
+candidates."
+  (let* ((formats (drop 3 (assoc category pandoc--formats)))
+         (format (completing-read "Input format: " (pandoc--read-completion-function formats))))
+    (pandoc--set 'read format)
+    (message "Input format set to `%s'" format)))
+
+(defun pandoc-set-read (format)
+  "Set the input format to FORMAT."
+  (interactive (list (completing-read "Set input format to: "
+                                      (pandoc--extract-formats 'input)
+                                      nil t)))
+  (pandoc--set 'read format)
+  (message "Input format set to `%s'" format))
+
 (defun pandoc-set-write (format)
   "Set the output format to FORMAT.
 If a settings and/or project file exists for FORMAT, they are
@@ -910,14 +939,6 @@ format)."
   (setq pandoc--settings-modified-flag nil)
   (setq pandoc--output-format-for-pdf nil)
   (message "Output format set to `%s'" format))
-
-(defun pandoc-set-read (format)
-  "Set the input format to FORMAT."
-  (interactive (list (completing-read "Set input format to: "
-                                      (pandoc--extract-formats 'input)
-                                      nil t)))
-  (pandoc--set 'read format)
-  (message "Input format set to `%s'" format))
 
 (defun pandoc-set-output (prefix)
   "Set the output file.
@@ -979,6 +1000,13 @@ If called with the PREFIX argument `\\[universal-argument] -' (or
 `\\[negative-argument]'), document scope is used."
   (interactive "P")
   (pandoc--set 'file-scope (if (eq prefix '-) nil t)))
+
+(defun pandoc-set-sandbox (prefix)
+  "Set the option `Sandbox'.
+If called with the PREFIX argument `\\[universal-argument] -' (or
+`\\[negative-argument]'), no sandbox is used."
+  (interactive "P")
+  (pandoc--set 'sandbox (if (eq prefix '-) nil t)))
 
 (defun pandoc-set-master-file (prefix)
   "Set the master file.
@@ -1126,14 +1154,14 @@ argument, the option is toggled."
      "--"
      ("HTML-Based Formats"
       ,@pandoc--html-menu-list)
-     ("TeX-Based Formats"
-      ,@pandoc--tex-menu-list)
      ("EPUB"
       ,@pandoc--epub-menu-list))
     ("Citations"
      ,@pandoc--citations-menu-list)
     ("Math Rendering"
-     ,@pandoc--math-menu-list)))
+     ,@pandoc--math-menu-list)
+    ("Obsolete options"
+     ,@pandoc--obsolete-menu-list)))
 
 ;; ("Options"
 ;;  ,@pandoc--options-menu)
@@ -1146,279 +1174,359 @@ argument, the option is toggled."
 ;;                      :selected `(pandoc--get (quote ,(cdr option)))))
 ;;            pandoc--switches))
 
-;; hydras
+;;;; Transients
 
-(defhydra pandoc-main-hydra (:foreign-keys warn :exit t :hint nil)
-  "
-Main menu
+(transient-define-prefix pandoc-main-transient ()
+  "Pandoc-mode main menu."
+  ["Pandoc\n"
+   ["Actions"
+    ("r" "Run Pandoc"            pandoc-run-pandoc)
+    ("p" "Convert to PDF"        pandoc-convert-to-pdf)
+    ("v" "View output file"      pandoc-view-output)
+    ("b" "View output buffer"    pandoc-view-output-buffer)
+    ("S" "View current settings" pandoc-view-settings)
+    ("l" "View log buffer"       pandoc-view-log)]
+   ["Settings"
+    ("o" "Options"               pandoc-options-transient)
+    ("I" pandoc-input-formats-transient
+     :description (lambda ()
+                    (format "Input format [%s]" (propertize (or (pandoc--get 'read) "none") 'face 'warning))))
+    ("O" pandoc-output-formats-transient
+     :description (lambda ()
+                    (format "Output format [%s]" (propertize (or (pandoc--get 'write) "none") 'face 'warning))))
+    ("s" "Settings files"        pandoc-settings-file-transient)
+    ("e" "Example lists"         pandoc-@-transient)]]
+  [("q" "Quit" transient-quit-all)])
 
-_r_: Run Pandoc               _o_: Options
-_p_: Convert to pdf           _I_: Input format    [%s(pandoc--get 'read)]
-_v_: View output file         _O_: Output format   [%s(pandoc--get 'write)]
-_V_: View output buffer       _s_: Settings files
-_S_: View current settings    _e_: Example lists
-_L_: View log buffer
+;;; Generate the main input & output format transients.
+(transient-define-prefix pandoc-input-formats-transient ()
+  "Pandoc-mode main input formats menu."
+  [:class transient-column
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-input-formats-transient
+             (vconcat (list "Input formats")
+                      (mapcar (lambda (format)
+                                (let ((submenu (nth 0 format))
+                                      (description (nth 1 format))
+                                      (key (nth 2 format)))
+                                  (list key description (intern (format "pandoc-%s-input-formats-transient" submenu)))))
+                              (mapcar (lambda (elt)
+                                        (take 3 elt))
+                                      pandoc--formats))
+                      (list " "         ; empty line
+                            '("X" "Extensions" pandoc-read-exts-transient)
+                            " "
+                            '("b" "Back" transient-quit-one)
+                            '("q" "Quit" transient-quit-all)))))])
 
-"
-  ("r" pandoc-run-pandoc)
-  ("p" pandoc-convert-to-pdf)
-  ("v" pandoc-view-output)
-  ("V" pandoc-view-output-buffer)
-  ("S" pandoc-view-settings)
-  ("L" pandoc-view-log)
-  ("o" pandoc-options-hydra/body)
-  ("I" pandoc-input-format-hydra/body)
-  ("O" pandoc-output-format-hydra/body)
-  ("s" pandoc-settings-file-hydra/body)
-  ("e" pandoc-@-hydra/body)
-  ("q" nil "Quit"))
+(transient-define-prefix pandoc-output-formats-transient ()
+  "Pandoc-mode main output formats menu."
+  [:class transient-column
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-output-formats-transient
+             (vconcat (list "Output formats")
+                      (mapcar (lambda (format)
+                                (let ((submenu (nth 0 format))
+                                      (description (nth 1 format))
+                                      (key (nth 2 format)))
+                                  (list key description (intern (format "pandoc-%s-output-formats-transient" submenu)))))
+                              (mapcar (lambda (elt)
+                                        (take 3 elt))
+                                      pandoc--formats))
+                      (list " "         ; empty line
+                            '("X" "Extensions" pandoc-write-exts-transient)
+                            " "
+                            '("b" "Back" transient-quit-one)
+                            '("q" "Quit" transient-quit-all)))))])
 
-;; Input and Output formats hydras
-(let (input-formats-hydra
-      output-formats-hydra)
-  ;; Five helper functions take apart the description of the formats and/or the
-  ;; categories as defined in `pandoc--formats' and return a docstring or a hydra
-  ;; head.
-  (cl-flet ((make-format-docstring ((_format descr key _mode))
-                                   (format "_%s_: %s" key descr))
-            (make-input-format-head ((format _descr key _mode))
-                                    (list key `(pandoc-set-read ,format)))
-            (make-output-format-head ((format _descr key _mode))
-                                     (list key `(pandoc-set-write ,format)))
-            (make-main-docstring ((_command descr key))
-                                 (format "_%s_: %s" key descr))
-            (make-main-head ((command _descr key))
-                            (list key command)))
+;;; Generate the specific input & output format transients.
+(mapc (lambda (group)
+        (let* ((category (car group))
+               (group-description (nth 1 group))
+               (transient-name (intern (format "pandoc-%s-input-formats-transient" category))))
+          (eval `(transient-define-prefix ,transient-name ()
+                   ,(format "Pandoc-mode %s input formats menu." category)
+                   [:class transient-column
+                           :pad-keys t
+                           :setup-children
+                           (lambda (_)
+                             (transient-parse-suffixes
+                              (quote ,transient-name)
+                              (vconcat (list ,group-description)
+                                       (mapcar ,(lambda (format-spec)
+                                                  (let ((format-name (nth 0 format-spec))
+                                                        (description (nth 1 format-spec))
+                                                        (key (nth 2 format-spec)))
+                                                    (list key description (lambda ()
+                                                                            (interactive)
+                                                                            (pandoc-set-read format-name))
+                                                          :transient t)))
+                                               (seq-filter (lambda (elt)
+                                                             (not (eq (nth 3 elt) 'output)))
+                                                           (drop 3 (quote ,group))))
+                                       (list " " ; empty line
+                                             '("b" "Back" transient-quit-one)
+                                             '("q" "Quit" transient-quit-all)))))]))))
+      pandoc--formats)
 
-    ;; Define hydras for each category and collect everything needed to construct
-    ;; the output format menu.
-    (mapc (lambda (submenu)
-            (-let [(name description key . formats) submenu]
-              ;; First the input formats in this category.
-              (-when-let (input-formats (--filter (memq (-last-item it) '(input both)) formats))
-                (let ((input-name (concat "pandoc-input-format-" name "-hydra")))
-                  (push (list (intern (concat input-name "/body")) description key) input-formats-hydra)
-                  (let ((docstring (concat (--reduce-from (concat acc "\n" (make-format-docstring it))
-                                                          (concat "\n" description "\n\n")
-                                                          input-formats)
-                                           "\n\n"))
-                        (heads (--map (make-input-format-head it) input-formats)))
-                    (eval `(defhydra ,(intern input-name) (:foreign-keys warn :hint nil)
-                             ,docstring
-                             ,@(append heads '(("q" nil "Quit") ("b" pandoc-input-format-hydra/body "Back" :exit t))))))))
+(mapc (lambda (group)
+        (let* ((category (car group))
+               (group-description (nth 1 group))
+               (transient-name (intern (format "pandoc-%s-output-formats-transient" category))))
+          (eval `(transient-define-prefix ,transient-name ()
+                   ,(format "Pandoc-mode %s output formats menu." category)
+                   [:class transient-column
+                           :pad-keys t
+                           :setup-children
+                           (lambda (_)
+                             (transient-parse-suffixes
+                              (quote ,transient-name)
+                              (vconcat (list ,group-description)
+                                       (mapcar ,(lambda (format-spec)
+                                                  (let ((format-name (nth 0 format-spec))
+                                                        (description (nth 1 format-spec))
+                                                        (key (nth 2 format-spec)))
+                                                    (list key description (lambda ()
+                                                                            (interactive)
+                                                                            (pandoc-set-write format-name))
+                                                          :transient t)))
+                                               (seq-filter (lambda (elt)
+                                                             (not (eq (nth 3 elt) 'input)))
+                                                           (drop 3 (quote ,group))))
+                                       (list " " ; empty line
+                                             '("b" "Back" transient-quit-one)
+                                             '("q" "Quit" transient-quit-all)))))]))))
+      pandoc--formats)
 
-              ;; Then the output formats in this category.
-              (-when-let (output-formats (--filter (memq (-last-item it) '(output both)) formats))
-                (let ((output-name (concat "pandoc-output-format-" name "-hydra")))
-                  (push (list (intern (concat output-name "/body")) description key) output-formats-hydra)
-                  (let ((docstring (concat (--reduce-from (concat acc "\n" (make-format-docstring it))
-                                                          (concat "\n" description "\n\n")
-                                                          output-formats)
-                                           "\n\n"))
-                        (heads (--map (make-output-format-head it) output-formats)))
-                    (eval `(defhydra ,(intern output-name) (:foreign-keys warn :hint nil)
-                             ,docstring
-                             ,@(append heads '(("q" nil "Quit") ("b" pandoc-output-format-hydra/body "Back" :exit t))))))))))
-          pandoc--formats)
+(transient-define-prefix pandoc-settings-file-transient ()
+  "Transient for settings files."
+  ["Settings files"
+   ("s" "Save file settings"            pandoc-save-settings-file)
+   ("p" "Save project file"             pandoc-save-project-file)
+   ("g" "Save global settings file"     pandoc-save-global-settings-file)
+   ("d" "Set current format as default" pandoc-set-default-format)
+   ("r" "Revert settings"               pandoc-revert-settings)
+   " "
+   ("b" "Back"                          transient-quit-one)
+   ("q" "Quit"                          transient-quit-all)])
 
-    ;; Now create the main input and output format hydras.
-    (let ((docstring (concat (--reduce-from (concat acc "\n" (make-main-docstring it))
-                                            (concat "\n" "Current input format: %s(pandoc--get 'read)\n")
-                                            (reverse input-formats-hydra))
-                             "\n\n_X_: Extensions\n\n"))
-          (heads (--map (make-main-head it) input-formats-hydra)))
-      (eval `(defhydra pandoc-input-format-hydra (:foreign-keys warn :exit t :hint nil)
-               ,docstring
-               ,@(append heads '(("X" pandoc-read-exts-hydra/body) ("q" nil "Quit") ("b" pandoc-main-hydra/body "Back"))))))
+(transient-define-prefix pandoc-@-transient ()
+  "Transient for example lists."
+  ["Example lists"
+   ("i" "Insert new example" pandoc-insert-@)
+   ("s" "Select and insert example reference" pandoc-select-@)
+   " "
+   ("b" "Back" transient-quit-one)
+   ("q" "Quit" transient-quit-all)])
 
-    (let ((docstring (concat (--reduce-from (concat acc "\n" (make-main-docstring it))
-                                            (concat "\n" "Current output format: %s(pandoc--get 'write)\n")
-                                            (reverse output-formats-hydra))
-                             "\n\n_X_: Extensions\n\n"))
-          (heads (--map (make-main-head it) output-formats-hydra)))
-      (eval `(defhydra pandoc-output-format-hydra (:foreign-keys warn :exit t :hint nil)
-               ,docstring
-               ,@(append heads '(("X" pandoc-write-exts-hydra/body) ("q" nil "Quit") ("b" pandoc-main-hydra/body "Back"))))))))
+(transient-define-prefix pandoc-read-exts-transient ()
+  "Pandoc-mode reader extensions menu."
+  [:class transient-columns
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-read-exts-transient
+             (let ((num 0))
+               (append (mapcar
+                        (lambda (partition)
+                          (vconcat
+                           (mapcar (lambda (elt)
+                                     (let ((extension (car elt)))
+                                       (list (format "%02d" (cl-incf num))
+                                             (format " %s %s"
+                                                     (pandoc--extension-active-marker extension 'read)
+                                                     extension)
+                                             `(lambda ()
+                                                (interactive)
+                                                (pandoc-toggle-extension ,extension 'read))
+                                             :transient t)))
+                                   partition)))
+                        (seq-partition pandoc--extensions 26))
+                       (list [("b" "Back" transient-quit-one)
+                              ("q" "Quit" transient-quit-all)])))))])
 
-(defhydra pandoc-settings-file-hydra (:foreign-keys warn :hint nil)
-  "
-Settings files
+(transient-define-prefix pandoc-write-exts-transient ()
+  "Pandoc-mode writer extensions menu."
+  [:class transient-columns
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-write-exts-transient
+             (let ((num 0))
+               (append (mapcar
+                        (lambda (partition)
+                          (vconcat
+                           (mapcar (lambda (elt)
+                                     (let ((extension (car elt)))
+                                       (list (format "%02d" (cl-incf num))
+                                             (format " %s %s"
+                                                     (pandoc--extension-active-marker extension 'write)
+                                                     extension)
+                                             `(lambda ()
+                                                (interactive)
+                                                (pandoc-toggle-extension ,extension 'write))
+                                             :transient t)))
+                                   partition)))
+                        (seq-partition pandoc--extensions 26))
+                       (list [("b" "Back" transient-quit-one)
+                              ("q" "Quit" transient-quit-all)])))))])
 
-_s_: Save file settings
-_p_: Save project file
-_g_: Save global settings file
-_d_: Set current format as default
-_r_: Revert settings
+(transient-define-prefix pandoc-options-transient ()
+  "Pandoc-mode options menu."
+  ["Options menu"
+   ("f" "Files"                        pandoc-file-transient)
+   ("r" "Reader options"               pandoc-reader-options-transient)
+   ("w" "General writer options"       pandoc-writer-options-transient)
+   ("s" "Options for specific writers" pandoc-specific-options-transient)
+   ("c" "Citations"                    pandoc-citations-transient)
+   ("m" "Math rendering"               pandoc-math-transient)
+   ("O" "Obsolete options"             pandoc-obsolete-options-transient)
+   " "
+   ("b" "Back"                         transient-quit-one)
+   ("q" "Quit"                         transient-quit-all)])
 
-"
-  ("s" pandoc-save-settings-file)
-  ("p" pandoc-save-project-file)
-  ("g" pandoc-save-global-settings-file)
-  ("d" pandoc-set-default-format)
-  ("r" pandoc-revert-settings)
-  ("q" nil "Quit")
-  ("b" pandoc-main-hydra/body "Back" :exit t))
+(transient-define-prefix pandoc-file-transient ()
+  "Pandoc-mode file menu."
+  ["File menu"
+   ("o" pandoc-set-output :description (lambda ()
+                                         (format "%-27s[%s]" "Output file" (pandoc--pp-option 'output))))
+   ("O" pandoc-set-output-dir :description (lambda ()
+                                             (format "%-27s[%s]" "Output directory" (pandoc--pp-option 'output-dir))))
+   ("d" pandoc-set-defaults :description (lambda ()
+                                           (format "%-27s[%s]" "Data directory" (pandoc--pp-option 'data-dir))))
+   ("D" pandoc-set-data-dir :description (lambda ()
+                                           (format "%-27s[%s]" "Defaults file" (pandoc--pp-option 'defaults))))
+   ("e" pandoc-set-extract-media :description (lambda ()
+                                                (format "%-27s[%s]" "Extract media files" (pandoc--pp-option 'extract-media))))
+   ("f" pandoc-set-file-scope :description (lambda ()
+                                             (format "%-27s[%s]" "File Scope" (pandoc--pp-option 'file-scope))))
+   ("m" pandoc-set-master-file :description (lambda ()
+                                              (format "%-27s[%s]" "Master file" (pandoc--pp-option 'master-file))))
+   ("M" "Use current file as master file" pandoc-set-this-file-as-master)
+   " "
+   ("b" "Back" transient-quit-one)
+   ("q" "Quit" transient-quit-all)])
 
-(defhydra pandoc-@-hydra (:foreign-keys warn :exit t :hint nil)
-  "
-Example lists
+(transient-define-prefix pandoc-reader-options-transient ()
+  "Pandoc-mode reader options menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-reader-options-transient
+             (list (vconcat (list "Reader options")
+                            pandoc--reader-transient-list
+                            '(" "
+                              ("b" "Back" transient-quit-one)
+                              ("q" "Quit" transient-quit-all))))))])
 
-_i_: Insert new example
-_s_: Select and insert example label
+(transient-define-prefix pandoc-writer-options-transient ()
+  "Pandoc-mode general writer options menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-writer-options-transient
+             (list (vconcat  (list "General writer options")
+                             pandoc--writer-transient-list
+                             '(" "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
-"
-  ("i" pandoc-insert-@)
-  ("s" pandoc-select-@)
-  ("q" nil "Quit")
-  ("b" pandoc-main-hydra/body "Back"))
+(transient-define-prefix pandoc-specific-options-transient ()
+  "Pandoc-mode specific writer options menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-specific-options-transient
+             (list (vconcat  (list "Specific writer options")
+                             pandoc--specific-transient-list
+                             '(" "
+                               ("H" "HTML-based writers" pandoc-html-options-transient)
+                               ("E" "EPUB" pandoc-epub-options-transient)
+                               " "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
-(defun pandoc--extension-active-marker (extension rw)
-  "Return a marker indicating whether EXTENSION is active.
-RW is either `read' or `write', indicating whether to take the
-input or the output format."
-  (if (pandoc--extension-active-p extension rw)
-      pandoc-extension-active-marker
-    pandoc-extension-inactive-marker))
+(transient-define-prefix pandoc-html-options-transient ()
+  "Pandoc-mode HTML options menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-html-options-transient
+             (list (vconcat  (list "HTML-based writer options")
+                             pandoc--html-transient-list
+                             '(" "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
-(defhydra pandoc-read-exts-hydra (:foreign-keys warn :hint nil)
-  (concat "\n" (pandoc--tabulate-extensions 'read) "\n\n<number> [_t_]: Toggle extension, [_q_]: Quit, [_b_]: Back")
-  ("t" pandoc-toggle-read-extension-by-number)
-  ("q" nil)
-  ("b" pandoc-input-format-hydra/body :exit t))
+(transient-define-prefix pandoc-obsolete-options-transient ()
+  "Pandoc-mode obsolete options menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-obsolete-options-transient
+             (list (vconcat  (list "Obsolete options")
+                             pandoc--obsolete-transient-list
+                             '(" "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
-(defhydra pandoc-write-exts-hydra (:foreign-keys warn :hint nil)
-  (concat "\n" (pandoc--tabulate-extensions 'write) "\n\n<number> [_t_]: Toggle extension, [_q_]: Quit, [_b_]: Back")
-  ("t" pandoc-toggle-write-extension-by-number)
-  ("q" nil)
-  ("b" pandoc-output-format-hydra/body :exit t))
+(transient-define-prefix pandoc-epub-options-transient ()
+  "Pandoc-mode EPUB options menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-epub-options-transient
+             (list (vconcat  (list "TeX-based writer options")
+                             pandoc--epub-transient-list
+                             '(" "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
-(defhydra pandoc-options-hydra (:foreign-keys warn :exit t :hint nil)
-  "
-Options menu
+(transient-define-prefix pandoc-citations-transient ()
+  "Pandoc-mode citations menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-citations-transient
+             (list (vconcat  (list "Citations menu")
+                             pandoc--citations-transient-list
+                             '(" "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
-_f_: Files
-_r_: Reader options
-_w_: General writer options
-_s_: Options for specific writers
-_c_: Citations
-_m_: Math rendering
-
-"
-  ("f" pandoc-file-hydra/body)
-  ("r" pandoc-reader-options-hydra/body)
-  ("w" pandoc-writer-options-hydra/body)
-  ("s" pandoc-specific-options-hydra/body)
-  ("c" pandoc-citations-hydra/body)
-  ("m" pandoc-math-hydra/body)
-  ("q" nil "Quit")
-  ("b" pandoc-main-hydra/body "Back"))
-
-(defhydra pandoc-file-hydra (:foreign-keys warn :hint nil)
-  "
-File options
-
-_o_: Output file           [%s(pandoc--pp-option 'output)]
-_O_: Output directory      [%s(pandoc--pp-option 'output-dir)]
-_D_: Data directory        [%s(pandoc--pp-option 'data-dir)]
-_d_: Defaults file         [%s(pandoc--pp-option 'defaults)]
-_e_: Extract media files   [%s(pandoc--pp-option 'extract-media)]
-_f_: File Scope            [%s(pandoc--pp-option 'file-scope)]
-_m_: Master file           [%s(pandoc--pp-option 'master-file)]
-_M_: Use current file as master file
-
-"
-  ("o" pandoc-set-output)
-  ("O" pandoc-set-output-dir)
-  ("d" pandoc-set-defaults)
-  ("D" pandoc-set-data-dir)
-  ("e" pandoc-set-extract-media)
-  ("f" pandoc-set-file-scope)
-  ("m" pandoc-set-master-file)
-  ("M" pandoc-set-this-file-as-master)
-  ("q" nil "Quit")
-  ("b" pandoc-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-reader-options-hydra (:foreign-keys warn :hint nil)
-  (concat "Reader options"
-          "\n\n"
-          (mapconcat #'car pandoc--reader-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--reader-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-writer-options-hydra (:foreign-keys warn :hint nil)
-  (concat "General writer options"
-          "\n\n"
-          (mapconcat #'car pandoc--writer-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--writer-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-specific-options-hydra (:foreign-keys warn :hint nil)
-  (concat "Specific writer options"
-          "\n\n"
-          (mapconcat #'car pandoc--specific-hydra-list "\n")
-          "\n"
-          (make-string 50 ?-)
-          "\n"
-          "_H_: HTML-based writers\n"
-          "_T_: TeX-based writers\n"
-          "_E_: Epub"
-          "\n\n")
-  (mapcar #'cdr pandoc--specific-hydra-list)
-  ("H" pandoc-html-options-hydra/body :exit t)
-  ("T" pandoc-tex-options-hydra/body :exit t)
-  ("E" pandoc-epub-options-hydra/body :exit t)
-  ("q" nil "Quit")
-  ("b" pandoc-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-html-options-hydra (:foreign-keys warn :hint nil)
-  (concat "HTML-based writer options"
-          "\n\n"
-          (mapconcat #'car pandoc--html-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--html-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-specific-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-tex-options-hydra (:foreign-keys warn :hint nil)
-  (concat "TeX-based writer options"
-          "\n\n"
-          (mapconcat #'car pandoc--tex-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--tex-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-specific-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-epub-options-hydra (:foreign-keys warn :hint nil)
-  (concat "Epub writer options"
-          "\n\n"
-          (mapconcat #'car pandoc--epub-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--epub-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-specific-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-citations-hydra (:foreign-keys warn :hint nil)
-  (concat "Citations menu"
-          "\n\n"
-          (mapconcat #'car pandoc--citations-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--citations-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-options-hydra/body "Back" :exit t))
-
-(define-pandoc-hydra pandoc-math-hydra (:foreign-keys warn :hint nil)
-  (concat "Math rendering"
-          "\n\n"
-          (mapconcat #'car pandoc--math-hydra-list "\n")
-          "\n\n")
-  (mapcar #'cdr pandoc--math-hydra-list)
-  ("q" nil "Quit")
-  ("b" pandoc-options-hydra/body "Back" :exit t))
-
+(transient-define-prefix pandoc-math-transient ()
+  "Pandoc-mode math rendering menu."
+  [:class transient-columns
+          :pad-keys t
+          :setup-children
+          (lambda (_)
+            (transient-parse-suffixes
+             'pandoc-math-transient
+             (list (vconcat  (list "Math rendering")
+                             pandoc--math-transient-list
+                             '(" "
+                               ("b" "Back" transient-quit-one)
+                               ("q" "Quit" transient-quit-all))))))])
 
 ;;; Faces:
 ;;; Regexp based on github.com/vim-pandoc/vim-pandoc-syntax.
@@ -1477,7 +1585,7 @@ _M_: Use current file as master file
 
 (defface pandoc-directive-type-face
   '((t (:inherit font-lock-preprocessor-face)))
-  "Base face for pandoc-mode @@directive type (include or lisp)."
+  "Base face for pandoc-mode @@directive type."
   :group 'pandoc)
 
 (defface pandoc-directive-braces-face
@@ -1487,7 +1595,7 @@ _M_: Use current file as master file
 
 (defface pandoc-directive-contents-face
   '((t (:inherit font-lock-constant-face)))
-  "Base face for pandoc-mode @@directive type (include or lisp)."
+  "Base face for pandoc-mode @@directive type."
   :group 'pandoc)
 
 (defconst pandoc-regex-citation-key

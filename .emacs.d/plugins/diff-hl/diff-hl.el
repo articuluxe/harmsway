@@ -69,7 +69,18 @@
   (require 'vc-git)
   (require 'vc-hg)
   (require 'face-remap)
-  (declare-function smartrep-define-key 'smartrep))
+  (require 'project))
+
+(defmacro static-if (condition then-form &rest else-forms) ; since Emacs 30.1
+  "A conditional compilation macro.
+Evaluate CONDITION at macro-expansion time.  If it is non-nil,
+expand the macro to THEN-FORM.  Otherwise expand it to ELSE-FORMS
+enclosed in a `progn' form.  ELSE-FORMS may be empty."
+  (declare (indent 2)
+           (debug (sexp sexp &rest sexp)))
+  (if (eval condition lexical-binding)
+      then-form
+    (cons 'progn else-forms)))
 
 (defgroup diff-hl nil
   "VC diff highlighting on the side of a window"
@@ -282,11 +293,21 @@ and passed the value `default-directory'.
 If any returns non-nil, `diff-hl-update' will run synchronously anyway."
   :type '(repeat :tag "Predicate" function))
 
+(defvar diff-hl-reference-revision-projects-cache '()
+  "Alist of cached directory roots for per-project reference revisions.
+Each element in this list has the form (DIR . REV).
+DIR is the expanded name of the directory.
+REV is the current reference revision.")
+
 (defvar diff-hl-reference-revision nil
   "Revision to diff against.  nil means the most recent one.
 
 It can be a relative expression as well, such as \"HEAD^\" with Git, or
 \"-2\" with Mercurial.")
+
+(put 'diff-hl-reference-revision 'safe-local-variable
+     (lambda (value)
+       (or (null value) (stringp value))))
 
 (defun diff-hl-define-bitmaps ()
   (let* ((scale (if (and (boundp 'text-scale-mode-amount)
@@ -372,35 +393,37 @@ It can be a relative expression as well, such as \"HEAD^\" with Git, or
     (ignored 'diff-hl-bmp-i)
     (t (intern (format "diff-hl-bmp-%s" type)))))
 
-(defvar vc-svn-diff-switches)
-(defvar vc-fossil-diff-switches)
-(defvar vc-jj-diff-switches)
-
 (defmacro diff-hl-with-diff-switches (body)
-  `(let ((vc-git-diff-switches
-          ;; https://github.com/dgutov/diff-hl/issues/67
-          (cons "-U0"
-                ;; https://github.com/dgutov/diff-hl/issues/9
-                (and (boundp 'vc-git-diff-switches)
-                     (listp vc-git-diff-switches)
-                     (cl-remove-if-not
-                      (lambda (arg)
-                        (member arg '("--histogram" "--patience" "--minimal" "--textconv")))
-                      vc-git-diff-switches))))
-         (vc-hg-diff-switches nil)
-         (vc-svn-diff-switches nil)
-         (vc-fossil-diff-switches '("-c" "0"))
-         (vc-jj-diff-switches '("--git" "--context=0"))
-         (vc-diff-switches '("-U0"))
-         ,@(when (boundp 'vc-disable-async-diff)
-             '((vc-disable-async-diff t))))
-     ,body))
+  `(progn
+     (defvar vc-svn-diff-switches)
+     (defvar vc-fossil-diff-switches)
+     (defvar vc-jj-diff-switches)
+     (let ((vc-git-diff-switches
+            ;; https://github.com/dgutov/diff-hl/issues/67
+            (cons "-U0"
+                  ;; https://github.com/dgutov/diff-hl/issues/9
+                  (and (boundp 'vc-git-diff-switches)
+                       (listp vc-git-diff-switches)
+                       (cl-remove-if-not
+                        (lambda (arg)
+                          (member arg '("--histogram" "--patience" "--minimal" "--textconv")))
+                        vc-git-diff-switches))))
+           (vc-hg-diff-switches nil)
+           (vc-svn-diff-switches nil)
+           (vc-fossil-diff-switches '("-c" "0"))
+           (vc-jj-diff-switches '("--git" "--context=0"))
+           (vc-diff-switches '("-U0"))
+           ,@(when (boundp 'vc-disable-async-diff)
+               '((vc-disable-async-diff t))))
+       ,body)))
 
 (defun diff-hl-modified-p (state)
   (or (memq state '(edited conflict))
       (and (eq state 'up-to-date)
            ;; VC state is stale in after-revert-hook.
-           (or revert-buffer-in-progress-p
+           (or (static-if (>= emacs-major-version 31)
+                   revert-buffer-in-progress
+                 revert-buffer-in-progress-p)
                ;; Diffing against an older revision.
                diff-hl-reference-revision))))
 
@@ -489,7 +512,8 @@ It can be a relative expression as well, such as \"HEAD^\" with Git, or
          ((eq state 'removed)
           `((:working . ,`((1 0 ,(line-number-at-pos (point-max)) delete))))))))))
 
-(defvar diff-hl-head-revision-alist '((Git . "HEAD") (Bzr . "last:1") (Hg . ".")))
+(defvar diff-hl-head-revision-alist '((Git . "HEAD") (Bzr . "last:1") (Hg . ".")
+                                      (JJ . "@-")))
 
 (defun diff-hl-head-revision (backend)
   (or (assoc-default backend diff-hl-head-revision-alist)
@@ -620,6 +644,11 @@ contents as they are (or would be) after applying the changes in NEW."
            "diff-hl--update-safe")))
     (diff-hl--update)))
 
+(defun diff-hl--update-buffer (buf)
+  (when (buffer-live-p buf)
+    (with-current-buffer buf
+      (diff-hl-update))))
+
 (defun diff-hl-with-editor-p (_dir)
   (bound-and-true-p with-editor-mode))
 
@@ -677,14 +706,23 @@ Return a list of line overlays used."
                 (overlay-put h 'insert-behind-hooks hook)))))))
     (nreverse ovls)))
 
+(defun diff-hl--no-query-on-exit (value)
+  (when-let* ((buf (and (stringp value) (get-buffer value)))
+              (proc (get-buffer-process buf)))
+    (set-process-query-on-exit-flag proc nil)))
+
 (defun diff-hl--update ()
   (let* ((orig (current-buffer))
-         (cc (diff-hl-changes)))
+         (cc (diff-hl-changes))
+         (working (assoc-default :working cc))
+         (reference (assoc-default :reference cc)))
+    (diff-hl--no-query-on-exit working)
+    (diff-hl--no-query-on-exit reference)
     (diff-hl--resolve
-     (assoc-default :working cc)
+     working
      (lambda (changes)
        (diff-hl--resolve
-        (assoc-default :reference cc)
+        reference
         (lambda (ref-changes)
           (let ((ref-changes (diff-hl-adjust-changes ref-changes changes))
                 reuse)
@@ -702,9 +740,31 @@ Return a list of line overlays used."
 (defun diff-hl--resolve (value-or-buffer cb)
   (if (listp value-or-buffer)
       (funcall cb value-or-buffer)
-    (with-current-buffer value-or-buffer
-      (vc-run-delayed
-        (funcall cb (diff-hl-changes-from-buffer (current-buffer)))))))
+    (diff-hl--when-done value-or-buffer
+                        #'diff-hl-changes-from-buffer
+                        cb)))
+
+(defun diff-hl--when-done (buffer get-value callback &optional proc)
+  (let ((proc (or proc (get-buffer-process buffer))))
+    (cond
+     ;; If there's no background process, just execute the code.
+     ((or (null proc) (eq (process-status proc) 'exit))
+      ;; Make sure we've read the process's output before going further.
+      (when proc (accept-process-output proc))
+      (when (get-buffer buffer)
+        (with-current-buffer buffer
+          (funcall callback (funcall get-value buffer)))))
+     ;; If process was deleted, we ignore it.
+     ((eq (process-status proc) 'signal))
+     ;; If a process is running, set the sentinel.
+     ((eq (process-status proc) 'run)
+      (set-process-sentinel
+       proc
+       (lambda (proc _status)
+         ;; Delegate to the parent cond for decision logic.
+         (diff-hl--when-done buffer get-value callback proc))))
+     ;; Maybe we should ignore all other states as well.
+     (t (error "Unexpected process state")))))
 
 (defun diff-hl--autohide-margin ()
   (let ((width-var (intern (format "%s-margin-width" diff-hl-side))))
@@ -716,14 +776,12 @@ Return a list of line overlays used."
       (dolist (win (get-buffer-window-list))
         (set-window-buffer win (current-buffer))))))
 
-(put 'diff-hl--modified-tick 'permanent-local t)
-
 (defun diff-hl-update-once ()
   ;; Ensure that the update happens once, after all major mode changes.
   ;; That will keep the the local value of <side>-margin-width, if any.
   (unless diff-hl-timer
     (setq diff-hl-timer
-          (run-with-idle-timer 0 nil #'diff-hl-update))))
+          (run-with-idle-timer 0 nil #'diff-hl--update-buffer (current-buffer)))))
 
 (defun diff-hl-add-highlighting (type shape &optional ovl)
   (let ((o (or ovl (make-overlay (point) (point)))))
@@ -944,8 +1002,9 @@ that file, if it's present."
       (unwind-protect
           (progn
             (vc-setup-buffer diff-buffer)
-            (diff-hl-diff-against-reference file backend diff-buffer)
-            (set-buffer diff-buffer)
+            (with-current-buffer buffer
+              ;; Ensure that the buffer-local variable value is applied.
+              (diff-hl-diff-against-reference file backend diff-buffer))
             (diff-mode)
             (setq-local diff-vc-backend backend)
             (setq-local diff-vc-revisions (list diff-hl-reference-revision nil))
@@ -1282,7 +1341,12 @@ The value of this variable is a mode line template as in
         ;; Magit versions 2.0-2.3 don't do the above and call this
         ;; instead, but only when they don't call `revert-buffer':
         (add-hook 'magit-not-reverted-hook 'diff-hl-update nil t)
-        (add-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps nil t))
+        (add-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps nil t)
+        (when-let* ((rev (cdr
+                          (cl-find-if
+                           (lambda (pair) (string-prefix-p (car pair) default-directory))
+                           diff-hl-reference-revision-projects-cache))))
+          (setq-local diff-hl-reference-revision rev)))
     (remove-hook 'after-save-hook 'diff-hl-update t)
     (remove-hook 'after-change-functions 'diff-hl-edit t)
     (remove-hook 'find-file-hook 'diff-hl-update-once t)
@@ -1291,7 +1355,8 @@ The value of this variable is a mode line template as in
     (remove-hook 'magit-not-reverted-hook 'diff-hl-update t)
     (remove-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps t)
     (diff-hl-remove-overlays)
-    (diff-hl--autohide-margin)))
+    (diff-hl--autohide-margin)
+    (kill-local-variable 'diff-hl-reference-revision)))
 
 (defun diff-hl-after-checkin ()
   (let ((fileset (vc-deduce-fileset t)))
@@ -1307,6 +1372,7 @@ The value of this variable is a mode line template as in
                                     diff-hl-show-hunk-next))
 
 (when (require 'smartrep nil t)
+  (declare-function smartrep-define-key 'smartrep)
   (let (smart-keys)
     (cl-labels ((scan (map)
                       (map-keymap
@@ -1451,8 +1517,11 @@ CONTEXT-LINES is the size of the unified diff context, defaults to 0."
                  (diff-hl-git-index-object-name file))
               (diff-hl-create-revision
                file
-               (or (diff-hl-resolved-reference-revision backend)
-                   (diff-hl-working-revision file backend)))))
+               (or (diff-hl-resolved-revision
+                    backend
+                    (or diff-hl-reference-revision
+                        (assoc-default backend diff-hl-head-revision-alist)))
+                   (diff-hl-working-revision buffer-file-name backend)))))
            (switches (format "-U %d --strip-trailing-cr" (or context-lines 0))))
       (diff-no-select rev (current-buffer) switches (not (diff-hl--use-async-p))
                       (get-buffer-create dest-buffer))
@@ -1460,42 +1529,32 @@ CONTEXT-LINES is the size of the unified diff context, defaults to 0."
       ;; In all commands which use exact text we call it synchronously.
       (get-buffer-create dest-buffer))))
 
-(defun diff-hl-resolved-reference-revision (backend)
+(declare-function vc-jj--process-lines "vc-jj")
+
+(defun diff-hl-resolved-revision (backend revision)
   (cond
-   ((null diff-hl-reference-revision)
-    nil)
    ((eq backend 'Git)
-    (vc-git--rev-parse diff-hl-reference-revision))
+    (vc-git--rev-parse revision))
    ((eq backend 'Hg)
-    ;;  Preserve the potentially buffer-local variables (e.g.,
-    ;;  `diff-hl-reference-revision`, `vc-hg-program`) by not switching buffer
-    ;;  until the vc-hg-command is done.
-    (let ((temp-buffer (generate-new-buffer " *temp*")))
-      (unwind-protect
-          (progn
-            (vc-hg-command temp-buffer 0 nil
-                           "identify" "-r" diff-hl-reference-revision "-i")
-            (with-current-buffer temp-buffer
-              (goto-char (point-min))
-              (buffer-substring-no-properties (point) (line-end-position))))
-        (kill-buffer temp-buffer))))
+    (with-temp-buffer
+      (vc-hg-command (current-buffer) 0 nil
+                     "identify" "-r" revision "-i")
+      (goto-char (point-min))
+      (buffer-substring-no-properties (point) (line-end-position))))
    ((eq backend 'Bzr)
-    ;;  Preserve the potentially buffer-local variables (e.g.,
-    ;;  `diff-hl-reference-revision`, `vc-bzr-program`) by not switching buffer
-    ;;  until the vc-bzr-command is done.
-    (let ((temp-buffer (generate-new-buffer " *temp*")))
-      (unwind-protect
-          (progn
-            (vc-bzr-command temp-buffer 0 nil
-                            "log" "--log-format=template"
-                            "--template-str='{revno}'"
-                            "-r" diff-hl-reference-revision)
-            (with-current-buffer temp-buffer
-              (goto-char (point-min))
-              (buffer-substring-no-properties (point) (line-end-position))))
-        (kill-buffer temp-buffer))))
-    (t
-     diff-hl-reference-revision)))
+    (with-temp-buffer
+      (vc-bzr-command (current-buffer) 0 nil
+                      "log" "--log-format=template"
+                      "--template-str='{revno}'"
+                      "-r" revision)
+      (goto-char (point-min))
+      (buffer-substring-no-properties (point) (line-end-position))))
+   ((eq backend 'JJ)
+    (car (last (vc-jj--process-lines "log" "--no-graph"
+                                     "-r" revision
+                                     "-T" "change_id" "-n" "1"))))
+   (t
+    revision)))
 
 ;; TODO: Cache based on .git/index's mtime, maybe.
 (defun diff-hl-git-index-object-name (file)
@@ -1556,6 +1615,11 @@ CONTEXT-LINES is the size of the unified diff context, defaults to 0."
   "Set the reference revision globally to REV.
 When called interactively, REV read with completion.
 
+When called with a prefix argument, reset the global reference to the most
+recent one instead.  With two prefix arguments, do the same and discard
+every per-project reference created by
+`diff-hl-set-reference-rev-in-project`.
+
 The default value chosen using one of methods below:
 
 - In a log view buffer, it uses the revision of current entry.
@@ -1564,42 +1628,159 @@ view buffer.
 - In a VC annotate buffer, it uses the revision of current line.
 - In other situations, it uses the symbol at point.
 
-Notice that this sets the reference revision globally, so in
-files from other repositories, `diff-hl-mode' will not highlight
-changes correctly, until you run `diff-hl-reset-reference-rev'.
+Notice that this sets the reference revision globally, so in files from
+other repositories, `diff-hl-mode' will not highlight changes correctly,
+until you run `diff-hl-reset-reference-rev'.  To set the reference on a
+per-project basis, see `diff-hl-set-reference-rev-in-project`.
 
 Also notice that this will disable `diff-hl-amend-mode' in
 buffers that enables it, since `diff-hl-amend-mode' overrides its
 effect."
   (interactive
-   (let* ((def (or (and (equal major-mode 'vc-annotate-mode)
-                        (car (vc-annotate-extract-revision-at-line)))
-                   (log-view-current-tag)
-                   (thing-at-point 'symbol t)))
-          (prompt (if def
-                      (format "Reference revision (default %s): " def)
-                    "Reference revision: ")))
-     (list (vc-read-revision prompt nil nil def))))
-  (if rev
-      (message "Set reference revision to %s" rev)
+   (if current-prefix-arg current-prefix-arg
+     (let* ((def (or (and (equal major-mode 'vc-annotate-mode)
+                          (car (vc-annotate-extract-revision-at-line)))
+                     (log-view-current-tag)
+                     (thing-at-point 'symbol t)))
+            (prompt (if def
+                        (format "Reference revision (default %s): " def)
+                      "Reference revision: ")))
+       (list (vc-read-revision prompt nil nil def)))))
+  (unless rev
     (user-error "No reference revision specified"))
-  (setq diff-hl-reference-revision rev)
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (when diff-hl-mode
-        (when (bound-and-true-p diff-hl-amend-mode)
-          (diff-hl-amend-mode -1))
-        (diff-hl-update)))))
+  (cond
+   ((equal '(4) current-prefix-arg)
+    ;; reset global value
+    (diff-hl-reset-reference-rev))
+   ((equal '(16) current-prefix-arg)
+    ;; reset global value and remove per-project value
+    (diff-hl-reset-reference-rev '(4)))
+   ;; change only global value
+   (t (setq-default diff-hl-reference-revision rev)
+      (unless current-prefix-arg
+        (message "Set global reference revision to %s" rev))
+      (dolist (buf (buffer-list))
+        (with-current-buffer buf
+          (when diff-hl-mode
+            (when (bound-and-true-p diff-hl-amend-mode)
+              (diff-hl-amend-mode -1))
+            (when (not (local-variable-p 'diff-hl-reference-revision))
+              (diff-hl-update))))))))
 
 ;;;###autoload
-(defun diff-hl-reset-reference-rev ()
-  "Reset the reference revision globally to the most recent one."
-  (interactive)
-  (setq diff-hl-reference-revision nil)
+(defun diff-hl-set-reference-rev-in-project (rev)
+  "Set the reference revision in the current project to REV.
+When called interactively, REV read with completion.
+
+When called with a prefix argument, reset to the global value instead.
+
+The default value chosen using one of methods below:
+
+- In a log view buffer, it uses the revision of current entry.
+Call `vc-print-log' or `vc-print-root-log' first to open a log
+view buffer.
+- In a VC annotate buffer, it uses the revision of current line.
+- In other situations, it uses the symbol at point.
+
+Projects whose reference was set with this command are unaffected by
+subsequent changes to the global reference (see
+`diff-hl-set-reference-rev`).
+
+Also notice that this will disable `diff-hl-amend-mode' in
+buffers that enables it, since `diff-hl-amend-mode' overrides its
+effect."
+  (interactive
+   (if current-prefix-arg current-prefix-arg
+     (let* ((def (or (and (equal major-mode 'vc-annotate-mode)
+                          (car (vc-annotate-extract-revision-at-line)))
+                     (log-view-current-tag)
+                     (thing-at-point 'symbol t)))
+            (prompt (if def
+                        (format "Reference revision (default %s): " def)
+                      "Reference revision: ")))
+       (list (vc-read-revision prompt nil nil def)))))
+  (unless rev
+    (user-error "No reference revision specified"))
+  (let* ((proj (project-current))
+         (name (project-name proj)))
+    (cond
+     ;; reset
+     (current-prefix-arg
+      (diff-hl-reset-reference-rev-in-project proj))
+     ;; set
+     (t
+      (diff-hl-set-reference-rev-in-project-internal rev proj)
+      (message "Showing changes against %s (project %s)" rev name)))))
+
+(defun diff-hl--project-root (proj)
+  ;; Emacs 26 and 27 don't have `project-root'.
+  (expand-file-name (static-if (>= emacs-major-version 28)
+                        (project-root proj)
+                      (project-roots proj))))
+
+(defun diff-hl-set-reference-rev-in-project-internal (rev proj)
+  (let* ((root (diff-hl--project-root proj)))
+    ;; newly opened files will share this value
+    (setf (alist-get root diff-hl-reference-revision-projects-cache
+                     nil nil #'string-equal)
+          rev)
+    ;; update currently open files
+    (dolist (buf (project-buffers proj))
+      (with-current-buffer buf
+        (when diff-hl-mode
+          (when (bound-and-true-p diff-hl-amend-mode)
+            (diff-hl-amend-mode -1))
+          (setq-local diff-hl-reference-revision rev)
+          (diff-hl-update))))))
+
+;;;###autoload
+(defun diff-hl-reset-reference-rev (&optional arg)
+  "Reset the reference revision globally to the most recent one.
+
+When called with a prefix argument, do the same and discard every
+per-project reference created by `diff-hl-set-reference-rev-in-project'."
+  (interactive "P")
+  (setq-default diff-hl-reference-revision nil)
+  (when arg
+    ;; reset all cache
+    (setq diff-hl-reference-revision-projects-cache nil))
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       (when diff-hl-mode
-        (diff-hl-update)))))
+        (when arg
+          ;; reset value in buffers
+          (kill-local-variable 'diff-hl-reference-revision))
+        (when (bound-and-true-p diff-hl-amend-mode)
+          (diff-hl-amend-mode -1))
+        ;; Don't touch buffers with the local reference (set by
+        ;; `diff-hl-set-reference-rev-in-project' ), when called without a
+        ;; prefix.
+        (unless (local-variable-p 'diff-hl-reference-revision)
+          (diff-hl-update)))))
+  (message "Reference revision reset globally to the most recent revision"))
+
+(defun diff-hl-reset-reference-rev-in-project (&optional proj)
+  "Reset the reference revision in the project PROJ to the
+global value.
+
+PROJ defaults to the current project."
+  (interactive)
+  (when-let* ((proj (or proj (project-current))))
+    ;; reset cache for the project
+    (setq diff-hl-reference-revision-projects-cache
+          (assoc-delete-all (diff-hl--project-root proj)
+                            diff-hl-reference-revision-projects-cache
+                            #'string-equal))
+    ;; reset value in project buffers
+    (dolist (buf (project-buffers proj))
+      (with-current-buffer buf
+        (when diff-hl-mode
+          (when (bound-and-true-p diff-hl-amend-mode)
+            (diff-hl-amend-mode -1))
+          (kill-local-variable 'diff-hl-reference-revision)
+          (diff-hl-update))))
+    (message "Reference revision reset to the global value (project %s)"
+             (project-name proj))))
 
 ;;;###autoload
 (define-globalized-minor-mode global-diff-hl-mode diff-hl-mode

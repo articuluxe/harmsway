@@ -4,7 +4,7 @@
 
 ;; Author: James Ferguson <(concat "wjcferguson" at-sign "gmail.com")>
 ;; URL: https://github.com/WJCFerguson/emacs-faff-theme
-;; Version: 3.7
+;; Version: 3.8
 ;; Keywords: color theme
 
 ;; This file is not part of GNU Emacs.
@@ -48,7 +48,7 @@
  '(ansi-color-blue ((t (:background "blue4" :foreground "blue4"))))
  '(ansi-color-bright-blue ((t (:background "blue2" :foreground "blue2"))))
  '(ansi-color-bright-cyan ((t (:background "cyan1" :foreground "cyan1"))))
- '(ansi-color-bright-green ((t (:background "green1" :foreground "green1"))))
+ '(ansi-color-bright-green ((t (:background "green2" :foreground "green1"))))
  '(ansi-color-bright-yellow ((t (:background "yellow1" :foreground "yellow1"))))
  '(ansi-color-cyan ((t (:background "cyan4" :foreground "cyan4"))))
  '(ansi-color-fast-blink ((t (:box (1 . -1)))))
@@ -91,11 +91,13 @@
  '(font-lock-function-name-face ((t (:foreground "midnightblue"))))
  '(font-lock-keyword-face ((t (:weight bold))))
  '(font-lock-negation-char-face ((t (:background "cornsilk2"))))
+ '(font-lock-property-use-face ((t nil)))
  '(font-lock-regexp-grouping-backslash ((t (:inherit (bold)))))
  '(font-lock-regexp-grouping-construct ((t (:inherit (bold)))))
  '(font-lock-string-face ((t (:foreground "darkgreen"))))
  '(font-lock-type-face ((t (:foreground "#004000" :weight bold))))
  '(font-lock-variable-name-face ((t (:foreground "#502010"))))
+ '(font-lock-variable-use-face ((t nil)))
  '(button ((t (:inherit (link)))))
  '(link ((t (:foreground "RoyalBlue4" :underline t))))
  '(ein:cell-input-area ((t (:background "cornsilk2"))) t)

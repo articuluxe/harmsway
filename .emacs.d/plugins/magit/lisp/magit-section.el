@@ -104,6 +104,9 @@ similar defect.")
 (define-obsolete-variable-alias 'magit-keep-region-overlay
   'magit-section-keep-region-overlay "Magit-Section 4.0.0")
 
+(define-obsolete-variable-alias 'magit-section-visibility-indicator
+  'magit-section-visibility-indicators "Magit-Section 4.4.3")
+
 ;;; Hooks
 
 (defvar magit-section-movement-hook nil
@@ -193,15 +196,17 @@ entries of this alist."
                                     (const show)
                                     function)))
 
-(defcustom magit-section-visibility-indicator
-  (if (window-system)
-      '(magit-fringe-bitmap> . magit-fringe-bitmapv)
-    (cons (if (char-displayable-p ?…) "…" "...")
-          t))
+(defcustom magit-section-visibility-indicators
+  `((magit-fringe-bitmap> . magit-fringe-bitmapv)
+    (,(if (char-displayable-p ?…) "…" "...") . t))
   "Whether and how to indicate that a section can be expanded/collapsed.
 
-If nil, then don't show any indicators.
-Otherwise the value has to have one of these three forms:
+If nil, then don't show any indicators.  Otherwise the value has to
+be a list with two elements.  The first controls the indicators used
+in graphical frames, the second the indicators in terminal frames.
+For graphical frames all of the following forms are valid, while
+terminal frames do not have fringes and thus do not support the first
+form.
 
 \(EXPANDABLE-BITMAP . COLLAPSIBLE-BITMAP)
 
@@ -227,27 +232,41 @@ Otherwise the value has to have one of these three forms:
   doing so is kinda ugly."
   :package-version '(magit-section . "3.0.0")
   :group 'magit-section
-  :type '(choice (const :tag "No indicators" nil)
+  :type '(choice
+          (const :tag "No indicators" nil)
+          (list (choice :tag "In graphical frames"
                  (cons  :tag "Use +- fringe indicators"
-                        (const magit-fringe-bitmap+)
-                        (const magit-fringe-bitmap-))
+                        :format "%{%t%}%v\n"
+                        (const :format " " magit-fringe-bitmap+)
+                        (const :format " " magit-fringe-bitmap-))
                  (cons  :tag "Use >v fringe indicators"
-                        (const magit-fringe-bitmap>)
-                        (const magit-fringe-bitmapv))
-                 (cons  :tag "Use bold >v fringe indicators)"
-                        (const magit-fringe-bitmap-bold>)
-                        (const magit-fringe-bitmap-boldv))
+                        :format "%{%t%}%v\n"
+                        (const :format " " magit-fringe-bitmap>)
+                        (const :format " " magit-fringe-bitmapv))
+                 (cons  :tag "Use bold >v fringe indicators"
+                        :format "%{%t%}%v\n"
+                        (const :format " " magit-fringe-bitmap-bold>)
+                        (const :format " " magit-fringe-bitmap-boldv))
                  (cons  :tag "Use custom fringe indicators"
                         (variable :tag "Expandable bitmap variable")
                         (variable :tag "Collapsible bitmap variable"))
                  (cons  :tag "Use margin indicators"
-                        (char :tag "Expandable char" ?+)
-                        (char :tag "Collapsible char" ?-))
+                        (character :tag "Expandable char" ?+)
+                        (character :tag "Collapsible char" ?-))
                  (cons  :tag "Use ellipses at end of headings"
                         (string :tag "Ellipsis" "…")
                         (choice :tag "Use face kludge"
                                 (const :tag "Yes (potentially slow)" t)
-                                (const :tag "No (kinda ugly)" nil)))))
+                                (const :tag "No (kinda ugly)" nil))))
+                (choice :tag "In terminal frames"
+                 (cons  :tag "Use margin indicators"
+                        (character :tag "Expandable char" ?+)
+                        (character :tag "Collapsible char" ?-))
+                 (cons  :tag "Use ellipses at end of headings"
+                        (string :tag "Ellipsis" "…")
+                        (choice :tag "Use face kludge"
+                                (const :tag "Yes (potentially slow)" t)
+                                (const :tag "No (kinda ugly)" nil)))))))
 
 (defcustom magit-section-keep-region-overlay nil
   "Whether to keep the region overlay when there is a valid selection.
@@ -1971,10 +1990,9 @@ When `magit-section-preserve-visibility' is nil, return nil."
 (cl-defun magit-section-cache-visibility
     (&optional (section magit-insert-section--current))
   "Cache SECTION's current visibility."
-  (setf (compat-call alist-get
-                     (magit-section-ident section)
-                     magit-section-visibility-cache
-                     nil nil #'equal)
+  (setf (alist-get (magit-section-ident section)
+                   magit-section-visibility-cache
+                   nil nil #'equal)
         (if (oref section hidden) 'hide 'show)))
 
 (cl-defun magit-section-maybe-cache-visibility
@@ -1984,18 +2002,24 @@ When `magit-section-preserve-visibility' is nil, return nil."
                   magit-section-cache-visibility))
     (magit-section-cache-visibility section)))
 
+(defun magit-section-visibility-indicator ()
+  (if (window-system)
+      (car magit-section-visibility-indicators)
+    (cadr magit-section-visibility-indicators)))
+
 (defun magit-section-maybe-update-visibility-indicator (section)
-  (when (and magit-section-visibility-indicator
-             (magit-section-content-p section))
+  (when-let* ((indicator (magit-section-visibility-indicator))
+              (_(magit-section-content-p section)))
     (let* ((beg (oref section start))
            (eoh (magit--eol-position beg))
-           (indicator (if (oref section hidden)
-                          (car magit-section-visibility-indicator)
-                        (cdr magit-section-visibility-indicator)))
-           (kind (cl-typecase (car magit-section-visibility-indicator)
+           (kind (cl-typecase (car indicator)
                    (symbol    'fringe)
                    (character 'margin)
-                   (string    'ellipsis))))
+                   (string    'ellipsis)))
+           (indicator (if (or (oref section hidden)
+                              (eq kind 'ellipsis))
+                          (car indicator)
+                        (cdr indicator))))
       (pcase kind
         ((or 'fringe 'margin)
          (let ((ov (magit--overlay-at beg 'magit-vis-indicator kind)))
@@ -2031,7 +2055,8 @@ When `magit-section-preserve-visibility' is nil, return nil."
   ;; This is needed because we hide the body instead of "the body
   ;; except the final newline and additionally the newline before
   ;; the body"; otherwise we could use `buffer-invisibility-spec'.
-  (when (stringp (car-safe magit-section-visibility-indicator))
+  (when-let* ((indicator (car (magit-section-visibility-indicator)))
+              (_(stringp indicator)))
     (let* ((sections (append magit--ellipses-sections
                              (setq magit--ellipses-sections
                                    (or (magit-region-sections)
@@ -2053,7 +2078,7 @@ When `magit-section-preserve-visibility' is nil, return nil."
           (overlay-put
            ov 'after-string
            (propertize
-            (car magit-section-visibility-indicator) 'font-lock-face
+            indicator 'font-lock-face
             (let ((pos (overlay-start ov)))
               (delq nil (nconc (mapcar (##overlay-get % 'font-lock-face)
                                        (overlays-at pos))
@@ -2061,7 +2086,7 @@ When `magit-section-preserve-visibility' is nil, return nil."
                                       pos 'font-lock-face))))))))))))
 
 (defun magit-section-maybe-remove-visibility-indicator (section)
-  (when (and magit-section-visibility-indicator
+  (when (and (magit-section-visibility-indicator)
              (= (oref section content)
                 (oref section end)))
     (dolist (o (overlays-in (oref section start)

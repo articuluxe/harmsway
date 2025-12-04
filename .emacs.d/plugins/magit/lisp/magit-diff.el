@@ -89,7 +89,7 @@
 (declare-function magit-smerge-keep-base "magit-apply" ())
 (declare-function magit-smerge-keep-lower "magit-apply" ())
 
-(eval-and-compile
+(eval-and-compile ;declare slot names
   (cl-pushnew 'orig-rev eieio--known-slot-names)
   (cl-pushnew 'action-type eieio--known-slot-names)
   (cl-pushnew 'target eieio--known-slot-names))
@@ -935,7 +935,7 @@ and `:slant'."
    (magit-diff:--stat)
    (magit-diff:--show-signature)])
 
-;;;###autoload (autoload 'magit-diff "magit-diff" nil t)
+;;;###autoload(autoload 'magit-diff "magit-diff" nil t)
 (transient-define-prefix magit-diff ()
   "Show changes between different versions."
   :man-page "git-diff"
@@ -951,7 +951,7 @@ and `:slant'."
    [("c" "Show commit"   magit-show-commit)
     ("t" "Show stash"    magit-stash-show)]])
 
-;;;###autoload (autoload 'magit-diff-refresh "magit-diff" nil t)
+;;;###autoload(autoload 'magit-diff-refresh "magit-diff" nil t)
 (transient-define-prefix magit-diff-refresh ()
   "Change the arguments used for the diff(s) in the current buffer."
   :man-page "git-diff"

@@ -67,7 +67,7 @@
 ;; From `magit-status'.
 (defvar magit-status-show-untracked-files)
 
-(eval-and-compile
+(eval-and-compile ;declare slot names
   (cl-pushnew 'orig-rev eieio--known-slot-names)
   (cl-pushnew 'number eieio--known-slot-names))
 
@@ -94,6 +94,12 @@ this."
   :type '(choice (coding-system :tag "Coding system to decode Git output")
                  (const :tag "Use system default" nil)))
 
+(defun magit--early-process-lines (program &rest args)
+  "Only used to initialize custom options."
+  (let ((process-environment
+         (append magit-git-environment process-environment)))
+    (apply #'process-lines-ignore-status program args)))
+
 (defvar magit-git-w32-path-hack nil
   "Alist of (EXE . (PATHENTRY)).
 This specifies what additional PATH setting needs to be added to
@@ -105,31 +111,29 @@ successfully.")
            ;; Avoid the wrappers "cmd/git.exe" and "cmd/git.cmd",
            ;; which are much slower than using "bin/git.exe" directly.
            (and-let ((exec (executable-find "git")))
-             (ignore-errors
-               ;; Git for Windows 2.x provides cygpath so we can
-               ;; ask it for native paths.
-               (let* ((core-exe
-                       (car
-                        (process-lines
-                         exec "-c"
-                         "alias.X=!x() { which \"$1\" | cygpath -mf -; }; x"
-                         "X" "git")))
-                      (hack-entry (assoc core-exe magit-git-w32-path-hack))
-                      ;; Running the libexec/git-core executable
-                      ;; requires some extra PATH entries.
-                      (path-hack
-                       (list (concat "PATH="
-                                     (car (process-lines
-                                           exec "-c"
-                                           "alias.P=!cygpath -wp \"$PATH\""
-                                           "P"))))))
-                 ;; The defcustom STANDARD expression can be
-                 ;; evaluated many times, so make sure it is
-                 ;; idempotent.
-                 (if hack-entry
-                     (setcdr hack-entry path-hack)
-                   (push (cons core-exe path-hack) magit-git-w32-path-hack))
-                 core-exe))))
+             ;; Git for Windows 2.x provides cygpath so we can
+             ;; ask it for native paths.
+             (let* ((core-exe
+                     (car (magit--early-process-lines
+                           exec "-c"
+                           "alias.X=!x() { which \"$1\" | cygpath -mf -; }; x"
+                           "X" "git")))
+                    (hack-entry (assoc core-exe magit-git-w32-path-hack))
+                    ;; Running the libexec/git-core executable
+                    ;; requires some extra PATH entries.
+                    (path-hack
+                     (list (concat "PATH="
+                                   (car (magit--early-process-lines
+                                         exec "-c"
+                                         "alias.P=!cygpath -wp \"$PATH\""
+                                         "P"))))))
+               ;; The defcustom STANDARD expression can be
+               ;; evaluated many times, so make sure it is
+               ;; idempotent.
+               (if hack-entry
+                   (setcdr hack-entry path-hack)
+                 (push (cons core-exe path-hack) magit-git-w32-path-hack))
+               core-exe)))
       (and (eq system-type 'darwin)
            (executable-find "git"))
       "git")
@@ -150,7 +154,7 @@ option."
 
 (defcustom magit-git-global-arguments
   `("--no-pager" "--literal-pathspecs"
-    "-c" "core.preloadindex=true"
+    "-c" "core.preloadIndex=true"
     "-c" "log.showSignature=false"
     "-c" "color.ui=false"
     "-c" "color.diff=false"
@@ -338,9 +342,9 @@ Magit has many specialized functions for running Git; they all
 pass arguments through this function before handing them to Git,
 to do the following.
 
-* Flatten ARGS, removing nil arguments.
 * Prepend `magit-git-global-arguments' to ARGS.
-* On w32 systems, encode to `w32-ansi-code-page'."
+* Flatten ARGS, removing nil arguments.
+* If `system-type' is `windows-nt', encode ARGS to `w32-ansi-code-page'."
   (setq args (append magit-git-global-arguments (flatten-tree args)))
   (if (and (eq system-type 'windows-nt) (boundp 'w32-ansi-code-page))
       ;; On w32, the process arguments *must* be encoded in the
@@ -606,7 +610,7 @@ executable."
                               (error "`git --exec-path' failed"))))
                    exec-suffixes
                    #'file-executable-p)
-      (compat-call executable-find command t)))
+      (executable-find command t)))
 
 ;;; Git Version
 
@@ -953,17 +957,15 @@ returning the truename."
                       "(see https://magit.vc/goto/e6a78ed2)"))
 
 (defun magit--assert-usable-git ()
-  (if (not (compat-call executable-find (magit-git-executable) t))
+  (if (not (executable-find (magit-git-executable) t))
       (signal 'magit-git-executable-not-found (magit-git-executable))
     (let ((magit-git-debug
            (lambda (err)
              (signal 'magit-corrupt-git-config
                      (format "%s: %s" default-directory err)))))
-      ;; This should always succeed unless there's a corrupt config
-      ;; (or at least a similarly severe failing state).  Note that
-      ;; git-config's --default is avoided because it's not available
-      ;; until Git 2.18.
-      (magit-git-string "config" "--get-color" "" "reset"))
+      ;; This should always succeed unless there is a corrupt
+      ;; config (or possibly a similarly severe failing state).
+      (magit-git-string "config" "--default=_" "core.bare"))
     nil))
 
 (defun magit--not-inside-repository-error ()
@@ -985,7 +987,7 @@ is non-nil, in which case return nil."
                ((signal 'magit-outside-git-repo default-directory))))))
 
 (defun magit-inside-worktree-p (&optional noerror)
-  "Return t if `default-directory' is below the working directory.
+  "Return t if `default-directory' is below a working directory.
 If it is below the repository directory, then return nil.
 If it isn't below either, then signal an error unless NOERROR
 is non-nil, in which case return nil."
@@ -1045,11 +1047,10 @@ tracked file."
                          (magit-buffer-file-name)
                          (and (derived-mode-p 'dired-mode)
                               default-directory)))
+               (dir (magit-toplevel (magit--safe-default-directory
+                                     (file-name-parent-directory file))))
                (_(or (not tracked)
-                     (magit-file-tracked-p (file-relative-name file))))
-               (dir (magit-toplevel
-                     (magit--safe-default-directory
-                      (directory-file-name (file-name-directory file))))))
+                     (magit-file-tracked-p file))))
       (file-relative-name file dir))))
 
 (defun magit-file-ignored-p (file)
@@ -1096,12 +1097,12 @@ See also `magit-untracked-files'."
                     ("all" 'all))
                   magit-status-show-untracked-files))
        (_(not (eq value 'no))))
-    (mapcan (##and (eq (aref % 0) ??)
-                   (list (substring % 3)))
-            (apply #'magit-git-items "status" "-z" "--porcelain"
-                   (format "--untracked-files=%s"
-                           (if (eq value 'all) "all" "normal"))
-                   "--" files))))
+    (seq-keep (##and (eq (aref % 0) ??)
+                     (substring % 3))
+              (apply #'magit-git-items "status" "-z" "--porcelain"
+                     (format "--untracked-files=%s"
+                             (if (eq value 'all) "all" "normal"))
+                     "--" files))))
 
 (defun magit-ignored-files (&rest args)
   (magit-list-files "--others" "--ignored" "--exclude-standard" args))
@@ -1125,11 +1126,11 @@ See also `magit-untracked-files'."
                    (magit-headish) "--" files))
 
 (defun magit-binary-files (&rest args)
-  (mapcan (##and (string-match "^-\t-\t\\(.+\\)" %)
-                 (list (match-str 1 %)))
-          (apply #'magit-git-items
-                 "diff" "-z" "--numstat" "--ignore-submodules"
-                 args)))
+  (seq-keep (##and (string-match "^-\t-\t\\(.+\\)" %)
+                   (match-str 1 %))
+            (apply #'magit-git-items
+                   "diff" "-z" "--numstat" "--ignore-submodules"
+                   args)))
 
 (defun magit-unmerged-files ()
   (magit-git-items "diff-files" "-z" "--name-only" "--diff-filter=U"))
@@ -1211,14 +1212,11 @@ or if no rename is detected."
                             "Failed to parse Cygwin mount: %S" mount)))
                  ;; If --exec-path is not a native Windows path,
                  ;; then we probably have a cygwin git.
-                 (let ((process-environment
-                        (append magit-git-environment
-                                process-environment)))
-                   (and (not (string-match-p
-                              "\\`[a-zA-Z]:"
-                              (car (process-lines
-                                    magit-git-executable "--exec-path"))))
-                        (ignore-errors (process-lines "mount")))))
+                 (and (not (string-match-p
+                            "\\`[a-zA-Z]:"
+                            (car (magit--early-process-lines
+                                  magit-git-executable "--exec-path"))))
+                      (magit--early-process-lines "mount")))
                 #'> :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
   "Alist of (CYGWIN . WIN32) directory names.
 Sorted from longest to shortest CYGWIN name."
@@ -1425,19 +1423,10 @@ of REV."
 (defun magit-rev-name (rev &optional pattern not-anchored)
   "Return a symbolic name for REV using `git-name-rev'.
 
-PATTERN can be used to limit the result to a matching ref.
-Unless NOT-ANCHORED is non-nil, the beginning of the ref must
-match PATTERN.
-
-An anchored lookup is done using the arguments
-\"--exclude=*/<PATTERN> --exclude=*/HEAD\" in addition to
-\"--refs=<PATTERN>\", provided at least version v2.13 of Git is
-used.  Older versions did not support the \"--exclude\" argument.
-When \"--exclude\" cannot be used and `git-name-rev' returns a
-ref that should have been excluded, then that is discarded and
-this function returns nil instead.  This is unfortunate because
-there might be other refs that do match.  To fix that, update
-Git."
+PATTERN can be used to limit the result to a matching ref.  Unless
+NOT-ANCHORED is non-nil, the beginning of the ref must match PATTERN.
+An anchored lookup is done using the arguments \"--exclude=*/<PATTERN>\"
+and \"--exclude=*/HEAD\", in addition to \"--refs=<PATTERN>\"."
   (magit-git-string "name-rev" "--name-only" "--no-undefined"
                     (and pattern (concat "--refs=" pattern))
                     (and pattern
@@ -2055,9 +2044,9 @@ When nil, use `magit-list-refs-sortby'.  If both are nil, use
 (defun magit-list-remote-branch-names (&optional remote relative)
   (if (and remote relative)
       (let ((regexp (format "^refs/remotes/%s/\\(.+\\)" remote)))
-        (mapcan (##when (string-match regexp %)
-                  (list (match-str 1 %)))
-                (magit-list-remote-branches remote)))
+        (seq-keep (##and (string-match regexp %)
+                         (match-str 1 %))
+                  (magit-list-remote-branches remote)))
     (magit-list-refnames (concat "refs/remotes/" remote))))
 
 (defun magit-format-refs (format &rest args)
@@ -2114,9 +2103,9 @@ When nil, use `magit-list-refs-sortby'.  If both are nil, use
 
 (defun magit-list-module-paths ()
   (magit-with-toplevel
-    (mapcan (##and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" %)
-                   (list (match-str 1 %)))
-            (magit-git-items "ls-files" "-z" "--stage"))))
+    (seq-keep (##and (string-match "^160000 [0-9a-z]\\{40,\\} 0\t\\(.+\\)$" %)
+                     (match-str 1 %))
+              (magit-git-items "ls-files" "-z" "--stage"))))
 
 (defun magit-list-module-names ()
   (mapcar #'magit-get-submodule-name (magit-list-module-paths)))

@@ -5,8 +5,8 @@
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; URL: https://github.com/kickingvegas/casual
 ;; Keywords: tools, wp
-;; Version: 2.9.1
-;; Package-Requires: ((emacs "29.1") (transient "0.9.0"))
+;; Version: 2.11.2
+;; Package-Requires: ((emacs "29.1") (transient "0.9.0") (csv-mode "1.27"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -48,8 +48,14 @@
 ;; - Compile (Elisp library: `casual-compile.el')
 ;;   An interface for the output of the `compile' and Grep commands.
 
+;; - CSV (Elisp library: `casual-csv.el')
+;;   An interface for CSV mode.
+
 ;; - Dired (Elisp library: `casual-dired.el')
 ;;   An interface for the venerable file manager Dired.
+
+;; - Ediff (Elisp library: `casual-ediff.el')
+;;   An interface for Ediff, a visual interface for Unix diff.
 
 ;; - EditKit (Elisp library: `casual-editkit.el')
 ;;   A cornucopia of interfaces for the different editing features (e.g.

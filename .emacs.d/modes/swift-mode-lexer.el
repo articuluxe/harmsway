@@ -257,16 +257,14 @@ Intended for `syntax-propertize-function'."
        (swift-mode:chunk:start chunk)
        end
        "\"\"\""
-       (swift-mode:chunk:pound-count
-        chunk)))
+       (swift-mode:chunk:pound-count chunk)))
 
      ((swift-mode:chunk:single-line-string-p chunk)
       (swift-mode:syntax-propertize:scan-string
        (swift-mode:chunk:start chunk)
        end
        "\""
-       (swift-mode:chunk:pound-count
-        chunk)))
+       (swift-mode:chunk:pound-count chunk)))
 
      ((swift-mode:chunk:escaped-identifier-p chunk)
       (swift-mode:syntax-propertize:scan-string
@@ -307,9 +305,11 @@ stops where the level becomes zero.
 
 Return non-nil if the matching parenthesis found, or return nil otherwise."
   (let ((found-matching-parenthesis nil)
-        (pattern (mapconcat #'regexp-quote
-                            '("\"\"\"" "\"" "`" "/" "(" ")")
-                            "\\|")))
+        (pattern (concat
+                  "\"\"\"$\\|"
+                  (mapconcat #'regexp-quote
+                             '("\"" "`" "/" "(" ")")
+                             "\\|"))))
     (while (and (not found-matching-parenthesis)
                 (< (point) end)
                 (search-forward-regexp pattern end t))
@@ -581,6 +581,7 @@ pound signs."
                 (setq chunk-start (1- (point))))
             ;; Incomplete interpolated expression.
             (setq done t)
+            (swift-mode:put-syntax-multiline-property start end)
             (goto-char end))))
 
        ;; Other escape sequences
@@ -1914,7 +1915,7 @@ If PARSER-STATE is given, it is used instead of (syntax-ppss)."
       ;; single-line string delimiters.
       (cond
        ((save-excursion (goto-char (nth 8 parser-state))
-                        (looking-at "#*\"\"\""))
+                        (looking-at "#*\"\"\"$"))
         (swift-mode:chunk 'multiline-string (nth 8 parser-state)))
        ((save-excursion (goto-char (nth 8 parser-state))
                         (looking-at "#*/"))

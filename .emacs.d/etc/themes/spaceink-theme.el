@@ -167,7 +167,7 @@
       (magenta       "#bd4766")
       ;; (magenta-1     "#ad3354")
       (magenta-2     "#952845")
-      ;; (magenta-bg    "#35111b")
+      (magenta-bg    "#35111b")
       ))
 
 
@@ -290,11 +290,11 @@
 
 ;;;;; avy
       `(avy-background-face ((,c :foreground ,fg-slate-bg)))
-      `(avy-goto-char-timer-face ((,c :background ,bg-slate+1 :weight bold)))
-      `(avy-lead-face ((,c :foreground ,fg+2 :background ,magenta-2 :weight bold)))
-      `(avy-lead-face-0 ((,c :foreground ,fg+2 :background ,purple-bg :weight bold)))
-      `(avy-lead-face-1 ((,c :foreground ,fg+2 :background ,fg-slate-bg)))
-      `(avy-lead-face-2 ((,c :foreground ,fg+2 :background ,red-bg :weight bold)))
+      `(avy-goto-char-timer-face ((,c :inherit lazy-highlight :weight bold)))
+      `(avy-lead-face ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(avy-lead-face-0 ((,c :foreground ,fg+2 :background ,magenta-bg :weight bold)))
+      `(avy-lead-face-1 ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(avy-lead-face-2 ((,c :foreground ,fg+2 :background ,magenta-bg :weight bold)))
 
 ;;;;; bookmark
       `(bookmark-face ((,c :background unspecified :foreground ,fg-slate-1)))
@@ -344,6 +344,8 @@
       `(corfu-bar ((,c :background ,region)))
       `(corfu-border ((,c :background ,border)))
       `(corfu-indexed ((,c :background ,bg-slate-1 :foreground ,fg-1 :height 0.80)))
+      `(corfu-quick1 ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(corfu-quick2 ((,c ::foreground ,fg+2 :background ,magenta-bg :weight bold)))
 
 ;;;;; cus-edit
       `(custom-variable-tag ((,c :foreground ,cyan)))
@@ -873,7 +875,7 @@
 
 ;;;;; message-mode
       `(message-cited-text ((,c :foreground ,fg-slate)))
-      `(message-cited-text-1 ((,c :inherit message-cited-text)))
+      `(message-cited-text-1 ((,c :foreground ,fg-slate)))
       `(message-cited-text-2 ((,c :foreground ,fg-2)))
       `(message-cited-text-3 ((,c :foreground ,magenta-fg)))
       `(message-cited-text-4 ((,c :foreground ,purple-fg)))
@@ -952,18 +954,19 @@
       `(orderless-match-face-3 ((,c :foreground ,yellow+1 :weight bold)))
 
 ;;;;; org-mode
-      `(org-agenda-structure ((,c :foreground ,purple :height 1.1)))
       `(org-agenda-date ((,c :foreground ,blue :underline nil)))
       `(org-agenda-date-today ((,c :weight bold :underline nil :foreground ,blue+1)))
-      `(org-agenda-done ((,c :foreground ,green)))
       `(org-agenda-dimmed-todo-face ((,c :foreground ,comment)))
-      `(org-super-agenda-header ((,c :inherit org-agenda-structure :weight bold :foreground ,fg-slate)))
+      `(org-agenda-done ((,c :foreground ,green)))
+      `(org-agenda-structure ((,c :foreground ,purple :height 1.1)))
       `(org-block ((,c :background ,bg-quote :foreground ,fg-slate+2 :extend t)))
       `(org-block-begin-line ((,c :foreground ,fg-slate-1 :background ,bg-header :extend t)))
       `(org-block-end-line ((,c :inherit org-block-begin-line)))
       `(org-checkbox ((,c :foreground ,orange+1)))
       `(org-checkbox-statistics-done ((,c :foreground ,green-1 :weight bold)))
       `(org-checkbox-statistics-todo ((,c :foreground ,magenta+1 :weight bold)))
+      `(org-cite ((,c :foreground ,fg-slate+2)))
+      `(org-cite-key ((,c :foreground ,green+1 :slant normal)))
       `(org-code ((,c :foreground ,green-fg)))
       `(org-column ((,c :background ,highlight :foreground ,fg)))
       `(org-column-title ((,c :inherit org-column :weight bold :underline t)))
@@ -980,21 +983,6 @@
       `(org-headline-done ((,c :foreground ,fg-slate+1 :weight normal)))
       `(org-hide ((,c :foreground ,bg :background ,bg)))
       `(org-imminent-deadline ((,c :foreground ,magenta-fg)))
-      `(org-link ((,c :inherit link)))
-      `(org-meta-line ((,c :foreground ,fg-slate)))
-      `(org-ref-cite-face ((,c :slant italic :foreground ,cyan+1)))
-      `(org-scheduled ((,c :foreground ,fg-slate+2)))
-      `(org-scheduled-previously ((,c :foreground ,orange+2)))
-      `(org-scheduled-today ((,c :foreground ,orange-fg)))
-      `(org-special-keyword ((,c :inherit org-drawer)))
-      `(org-table ((,c :foreground ,blue)))
-      `(org-tag ((,c :weight semi-bold :foreground ,fg-slate+1)))
-      `(org-todo ((,c :weight bold :foreground ,red)))
-      `(org-upcoming-deadline ((,c :foreground ,purple+2)))
-      `(org-verbatim ((,c :foreground ,green+1)))
-      `(org-warning ((,c :slant italic :foreground ,red+1)))
-      `(org-cite ((,c :foreground ,fg-slate+2)))
-      `(org-cite-key ((,c :foreground ,green+1 :slant normal)))
       `(org-level-1 ((,c :weight semi-bold :foreground ,blue)))
       `(org-level-2 ((,c :weight semi-bold :foreground ,cyan)))
       `(org-level-3 ((,c :weight semi-bold :foreground ,purple+1)))
@@ -1003,6 +991,22 @@
       `(org-level-6 ((,c :weight semi-bold :foreground ,yellow+1)))
       `(org-level-7 ((,c :weight semi-bold :foreground ,green+1)))
       `(org-level-8 ((,c :weight semi-bold :foreground ,red+2)))
+      `(org-link ((,c :inherit link)))
+      `(org-meta-line ((,c :foreground ,fg-slate)))
+      `(org-mode-line-clock ((,c :inherit mode-line)))
+      `(org-mode-line-clock-overrun ((,c :inherit mode-line :foreground ,red+1 :weight bold)))
+      `(org-ref-cite-face ((,c :slant italic :foreground ,cyan+1)))
+      `(org-scheduled ((,c :foreground ,fg-slate+2)))
+      `(org-scheduled-previously ((,c :foreground ,orange+2)))
+      `(org-scheduled-today ((,c :foreground ,orange-fg)))
+      `(org-special-keyword ((,c :inherit org-drawer)))
+      `(org-super-agenda-header ((,c :inherit org-agenda-structure :weight bold :foreground ,fg-slate)))
+      `(org-table ((,c :foreground ,blue)))
+      `(org-tag ((,c :weight semi-bold :foreground ,fg-slate+1)))
+      `(org-todo ((,c :weight bold :foreground ,red)))
+      `(org-upcoming-deadline ((,c :foreground ,purple+2)))
+      `(org-verbatim ((,c :foreground ,green+1)))
+      `(org-warning ((,c :slant italic :foreground ,red+1)))
 
 ;;;;; org-habit
       `(org-habit-alert-face ((,c :background ,yellow :foreground ,bg)))
@@ -1164,6 +1168,8 @@
 
 ;;;;; vertico
       `(vertico-group-title ((,c :inherit completions-group-title)))
+      `(vertico-quick1 ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(vertico-quick2 ((,c :foreground ,fg+2 :background ,magenta-bg :weight bold)))
 
 ;;;;; vundo
       `(vundo-default ((,c :inherit default)))

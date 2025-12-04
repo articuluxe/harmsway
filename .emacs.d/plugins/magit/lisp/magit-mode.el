@@ -47,7 +47,7 @@
 (declare-function elp-restore-all "elp" ())
 
 (defvar magit--wip-inhibit-autosave)
-(defvar magit-wip-after-save-local-mode)
+(defvar magit-wip-mode)
 (declare-function magit-wip-get-ref "magit-wip" ())
 (declare-function magit-wip-commit-worktree "magit-wip" (ref files msg))
 
@@ -93,6 +93,7 @@ inside your function."
 
 (defcustom magit-post-refresh-hook
   ;; Do not function-quote to avoid circular dependencies.
+  ;; Functions added here have to be autoloaded.
   '(magit-auto-revert-buffers
     magit-run-post-commit-hook
     magit-run-post-stage-hook
@@ -423,6 +424,7 @@ recommended value."
   "C-c C-w" 'magit-copy-thing
   "C-w"     'magit-copy-section-value
   "M-w"     'magit-copy-buffer-revision
+  "<remap> <mouse-set-point>"     'magit-mouse-set-point
   "<remap> <back-to-indentation>" 'magit-back-to-indentation
   "<remap> <previous-line>"       'magit-previous-line
   "<remap> <next-line>"           'magit-next-line
@@ -1321,8 +1323,7 @@ argument (the prefix) non-nil means save all with no questions."
                     (setq magit-inhibit-refresh-save t))
                  "to skip the current buffer and remember choice")
              ,@save-some-buffers-action-alist))
-          ;; Create a single wip commit for all saved files, for
-          ;; which `magit-wip-after-save-local-mode' is enabled.
+          ;; Create a single wip commit for all saved files.
           (magit--wip-inhibit-autosave t)
           (saved nil))
       (unwind-protect
@@ -1331,7 +1332,7 @@ argument (the prefix) non-nil means save all with no questions."
            (lambda ()
              (and (funcall magit-save-repository-buffers-predicate topdir)
                   (prog1 t
-                    (when magit-wip-after-save-local-mode
+                    (when magit-wip-mode
                       (push (expand-file-name buffer-file-name) saved))))))
         (when saved
           (let ((default-directory topdir))
@@ -1508,10 +1509,10 @@ repositories."
   (cond-let
     ((eq repository 'all)
      (dolist (cache magit-repository-local-cache)
-       (setf cache (compat-call assoc-delete-all key cache))))
+       (setf cache (assoc-delete-all key cache))))
     ([cache (assoc (or repository (magit-repository-local-repository))
                    magit-repository-local-cache)]
-     (setf cache (compat-call assoc-delete-all key cache)))))
+     (setf cache (assoc-delete-all key cache)))))
 
 (defmacro magit--with-repository-local-cache (key &rest body)
   (declare (indent 1) (debug (form body)))

@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; paramity --- host file
-;; Copyright (C) 2015-2024  Dan Harms (dharms)
+;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2024-03-08 10:31:41 dharms>
-;; Modified by: dharms
+;; Modified Time-stamp: <2025-12-03 22:28:55 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -105,6 +105,13 @@
 
 (add-to-list 'default-frame-alist
              '(width . 90))
+(add-to-list 'default-frame-alist
+             '(height . 75))
+(add-to-list 'initial-frame-alist
+             '(width . 90))
+(add-to-list 'initial-frame-alist
+             '(height . 75))
+
 
 (setq epg-gpg-program "gpg2")
 
@@ -112,6 +119,6 @@
 
 ;; (setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
 
-(setq-default proviso-cpp-language-standard "c++14")
+(setq-default proviso-cpp-language-standard "c++20")
 
 ;;; paramity ends here

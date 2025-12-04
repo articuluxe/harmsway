@@ -6,10 +6,11 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 5.0.1
+;; Package-Version: 5.0.2
 ;; Package-Requires: (
 ;;     (emacs   "29.1")
 ;;     (compat  "30.1")
+;;     (cond-let "0.2")
 ;;     (llama    "1.0")
 ;;     (treepy "0.1.2"))
 
@@ -57,6 +58,7 @@
 (require 'auth-source)
 (require 'cl-lib)
 (require 'compat)
+(require 'cond-let)
 (require 'gnutls)
 (require 'let-alist)
 (require 'llama)
@@ -598,26 +600,27 @@ Signal an error if the id cannot be determined."
 
 (defun ghub--read-json-payload (_status &optional json-type-args)
   (and-let* ((payload (ghub--decode-payload)))
-    (ghub--assert-json-available)
-    (condition-case nil
-        (apply #'json-parse-string payload
-               (or json-type-args
-                   '( :object-type alist
-                      :array-type list
-                      :null-object nil
-                      :false-object nil)))
-      (json-parse-error
-       (when ghub-debug
-         (pop-to-buffer (current-buffer)))
-       (setq-local ghub-debug t)
-       `((message . ,(if (looking-at "<!DOCTYPE html>")
-                         (if (re-search-forward
-                              "<p>\\(?:<strong>\\)?\\([^<]+\\)" nil t)
-                             (match-string 1)
-                           "error description missing")
-                       (string-trim (buffer-substring (point) (point-max)))))
-         (documentation_url
-          . "https://github.com/magit/ghub/wiki/Github-Errors"))))))
+    (progn
+      (ghub--assert-json-available)
+      (condition-case nil
+          (apply #'json-parse-string payload
+                 (or json-type-args
+                     '( :object-type alist
+                        :array-type list
+                        :null-object nil
+                        :false-object nil)))
+        (json-parse-error
+         (when ghub-debug
+           (pop-to-buffer (current-buffer)))
+         (setq-local ghub-debug t)
+         `((message . ,(if (looking-at "<!DOCTYPE html>")
+                           (if (re-search-forward
+                                "<p>\\(?:<strong>\\)?\\([^<]+\\)" nil t)
+                               (match-string 1)
+                             "error description missing")
+                         (string-trim (buffer-substring (point) (point-max)))))
+           (documentation_url
+            . "https://github.com/magit/ghub/wiki/Github-Errors")))))))
 
 (defun ghub--decode-payload (&optional _status)
   (and (not (eobp))
@@ -751,7 +754,7 @@ and call `auth-source-forget+'."
     (unless (or token nocreate)
       (error "\
 Required %s token (%S for %s%S) does not exist.
-See https://magit.vc/manual/ghub/Getting-Started.html
+See https://docs.magit.vc/ghub/Getting-Started.html
 or (info \"(ghub)Getting Started\") for instructions."
              (capitalize (symbol-name (or forge 'github)))
              user
@@ -769,14 +772,14 @@ or (info \"(ghub)Getting Started\") for instructions."
 (cl-defmethod ghub--username (host &optional forge)
   (let* ((forge (or forge 'github))
          (host (or host (ghub--host forge)))
-         (var (format "%s.%s.user" forge host)))
-    (or (ghub--git-get var)
-        (if-let ((_(equal host (alist-get forge ghub-default-host-alist)))
-                 (default-var (format "%s.user" forge)))
-            (or (ghub--git-get default-var)
-                (user-error "%s; `%s' and `%s' are both unset"
-                            "Cannot determine username" var default-var))
-          (user-error "Cannot determine username; `%s' is unset" var)))))
+         (var (format "%s.%s.user" forge host))
+         (default-var (format "%s.user" forge)))
+    (cond ((ghub--git-get var))
+          ((not (equal host (alist-get forge ghub-default-host-alist)))
+           (user-error "Cannot determine username; `%s' is unset" var))
+          ((ghub--git-get default-var))
+          ((user-error "%s; `%s' and `%s' are both unset"
+                       "Cannot determine username" var default-var)))))
 
 (defun ghub--ident (username package)
   (format "%s^%s" username package))
@@ -809,6 +812,13 @@ or (info \"(ghub)Getting Started\") for instructions."
           "config" "--get" var))))
 
 ;;; _
+;; Local Variables:
+;; read-symbol-shorthands: (
+;;   ("and-let"   . "cond-let--and-let")
+;;   ("if-let"    . "cond-let--if-let")
+;;   ("when-let"  . "cond-let--when-let")
+;;   ("while-let" . "cond-let--while-let"))
+;; End:
 (provide 'ghub)
 (require 'ghub-graphql)
 (require 'ghub-legacy)

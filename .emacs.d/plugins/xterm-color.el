@@ -196,15 +196,24 @@ frame, overline.")
                                            59))
 
 (cl-defun xterm-color--string-properties (string)
+  "Split STRING into substrings according to text properties.
+Returns a list of (POS PROPERTIES SUBSTRING) elements."
   (cl-loop
-   with pos = 0 and result do
-   (let ((next-pos (next-property-change pos string)))
-     (if next-pos
-         (progn
-           (push (list pos (text-properties-at pos string) (substring string pos next-pos)) result)
-           (setq pos next-pos))
-       (push (list pos (text-properties-at pos string) (substring string pos)) result)
-       (cl-return-from xterm-color--string-properties (nreverse result))))))
+   with pos = 0 and result
+   for next-pos = (next-property-change pos string)
+   while next-pos do
+   (push (list pos
+               (text-properties-at pos string)
+               (substring string pos next-pos))
+         result)
+   (setq pos next-pos)
+   finally
+   (push (list pos
+               (text-properties-at pos string)
+               (substring string pos))
+         result)
+   (cl-return-from xterm-color--string-properties
+     (nreverse result))))
 
 (defun xterm-color--convert-text-properties-to-overlays (beg end)
   "Transform face text properties between BEG and END, to equivalent overlays."
@@ -220,7 +229,8 @@ frame, overline.")
           (when current-value
             (let ((ov (make-overlay pos next-change)))
               (overlay-put ov face-prop current-value)
-              (overlay-put ov 'xterm-color t)))
+              (overlay-put ov 'xterm-color t)
+              (overlay-put ov 'evaporate t)))
           (goto-char next-change)))
       (remove-text-properties beg end (list 'xterm-color nil face-prop nil)))))
 
@@ -562,8 +572,7 @@ in LIFO order."
                                         (add-text-properties
                                          0 (length s)
                                          (list 'xterm-color t
-                                               (if font-lock-mode 'font-lock-face 'face)
-                                               (make-face))
+                                               (if font-lock-mode 'font-lock-face 'face) (make-face))
                                          s))
                                       (out! s))
                                     (setq xterm-color--char-list nil))))
@@ -578,7 +587,7 @@ in LIFO order."
 ;;;###autoload
 (defun xterm-color-filter-strip (string)
   "Translate ANSI color sequences in STRING into text properties.
-Return new STRING with text properties applied.
+Returns new STRING with text properties applied.
 
 In order to get maximum performance, this function strips text properties
 if they are present in STRING."
@@ -641,7 +650,7 @@ if they are present in STRING."
 ;;;###autoload
 (defun xterm-color-filter (string)
   "Translate ANSI color sequences in STRING into text properties.
-Return new STRING with text properties applied.
+Returns new STRING with text properties applied.
 
 This function checks if `xterm-color-preserve-properties' is non-nil
 and only calls `xterm-color-filter-strip' on substrings that do not

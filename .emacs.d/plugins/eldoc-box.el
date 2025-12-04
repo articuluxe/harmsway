@@ -862,14 +862,17 @@ But only if mouse is currently hovering over a valid
 `eldoc-box-mouse-mode' position. And only triggers if there is not
 already a previous documentation box active."
   (when (not (eldoc-box--frame-visible-p))
-	(when-let*
-		((mouse-pos (mouse-pixel-position))
-		 (frame (car mouse-pos))
-		 (xy (cdr mouse-pos))
-		 (info (posn-at-x-y (car xy) (cdr xy) frame))
-		 (window (nth 0 info))
-		 (pos (nth 5 info))
-		 (buffer (window-buffer window)))
+	(when-let* ((mouse-pos (mouse-pixel-position))
+		        (frame (car mouse-pos))
+		        (xy (cdr mouse-pos))
+		        (posn (and (> (car xy) 0)
+                           (> (cdr xy) 0)
+                           (posn-at-x-y (car xy) (cdr xy) frame)))
+                ;; This can be a frame if x,y is outside of the frame.
+		        (window (and (windowp (posn-window posn))
+                             (posn-window posn)))
+		        (pos (posn-point posn))
+		        (buffer (window-buffer window)))
 	  (when (buffer-local-value 'eldoc-box-mouse-mode buffer)
 		(setq eldoc-box--mouse-location (cons window pos))
         (with-current-buffer buffer
@@ -884,14 +887,16 @@ already a previous documentation box active."
   "Returns non-nil if mouse is still hovering at the same position.
 
 This is used for deciding whether to keep showing the doc childframe."
-  (let*
-	  ((mouse-pos (mouse-pixel-position))
-	   (frame (car mouse-pos))
-	   (xy (cdr mouse-pos))
-	   (info (posn-at-x-y (car xy) (cdr xy) frame))
-	   (window (nth 0 info))
-	   (pos (nth 5 info))
-	   (buffer (window-buffer window)))
+  (let* ((mouse-pos (mouse-pixel-position))
+	     (frame (car mouse-pos))
+	     (xy (cdr mouse-pos))
+	     (posn (and (> (car xy) 0)
+                    (> (cdr xy) 0)
+                    (posn-at-x-y (car xy) (cdr xy) frame)))
+	     (window (and (windowp (posn-window posn))
+                      (posn-window posn)))
+	     (pos (posn-point posn))
+	     (buffer (window-buffer window)))
 	(cond
      ;; Keep the frame if mouse pointer is in it.
 	 ((eldoc-box--pos-in-frame-p xy))

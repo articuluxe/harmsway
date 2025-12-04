@@ -42,7 +42,7 @@
 ;;; Git Tools
 ;;;; Git-Mergetool
 
-;;;###autoload (autoload 'magit-git-mergetool "magit-extras" nil t)
+;;;###autoload(autoload 'magit-git-mergetool "magit-extras" nil t)
 (transient-define-prefix magit-git-mergetool (file args &optional transient)
   "Resolve conflicts in FILE using \"git mergetool --gui\".
 With a prefix argument allow changing ARGS using a transient
@@ -279,7 +279,7 @@ with two prefix arguments remove ignored files only.
                                (1 "untracked")
                                (4 "untracked and ignored")
                                (_ "ignored"))))
-    (magit-wip-commit-before-change)
+    (magit-run-before-change-functions nil "clean")
     (magit-run-git "clean" "-f" "-d" (pcase arg (4 "-x") (16 "-X")))))
 
 (put 'magit-clean 'disabled t)

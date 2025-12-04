@@ -31,7 +31,6 @@
 (require 'magit-core)
 (require 'magit-diff)
 
-(declare-function magit--any-wip-mode-enabled-p "magit-wip" ())
 (declare-function magit-blob-visit "magit-files" (rev file))
 (declare-function magit-cherry-apply "magit-sequence" (commit &optional args))
 (declare-function magit-insert-head-branch-header "magit-status"
@@ -514,7 +513,7 @@ commits before and half after."
       (eq major-mode 'magit-log-mode)
     t))
 
-;;;###autoload (autoload 'magit-log "magit-log" nil t)
+;;;###autoload(autoload 'magit-log "magit-log" nil t)
 (transient-define-prefix magit-log ()
   "Show a commit or reference log."
   :man-page "git-log"
@@ -536,14 +535,14 @@ commits before and half after."
     ("r" "current"           magit-reflog-current)
     ("O" "other"             magit-reflog-other)
     ("H" "HEAD"              magit-reflog-head)]
-   [:if magit--any-wip-mode-enabled-p
+   [:if-non-nil magit-wip-mode
     :description "Wiplog"
     ("i" "index"             magit-wip-log-index)
     ("w" "worktree"          magit-wip-log-worktree)]
    ["Other"
     ("s" "shortlog"          magit-shortlog)]])
 
-;;;###autoload (autoload 'magit-log-refresh "magit-log" nil t)
+;;;###autoload(autoload 'magit-log-refresh "magit-log" nil t)
 (transient-define-prefix magit-log-refresh ()
   "Change the arguments used for the log(s) in the current buffer."
   :man-page "git-log"
@@ -676,7 +675,7 @@ commits before and half after."
   "Read a string from the user to pass as parameter to OPTION."
   (magit-read-string (format "Type a pattern to pass to %s" option)))
 
-;;;###autoload (autoload 'magit-log-current "magit-log" nil t)
+;;;###autoload(autoload 'magit-log-current "magit-log" nil t)
 (transient-define-suffix magit-log-current (&optional args files)
   "Show log for the current branch, or `HEAD' if no branch is checked out."
   :description (##if (magit-get-current-branch) "current" "HEAD")
@@ -989,7 +988,7 @@ of the current repository first; creating it if necessary."
 
 ;;;; Shortlog Commands
 
-;;;###autoload (autoload 'magit-shortlog "magit-log" nil t)
+;;;###autoload(autoload 'magit-shortlog "magit-log" nil t)
 (transient-define-prefix magit-shortlog ()
   "Show a history summary."
   :man-page "git-shortlog"
@@ -1313,17 +1312,18 @@ Do not add this to a hook variable."
   :parent magit-commit-section-map)
 
 (defconst magit-log-heading-re
-  ;; Note: A form feed instead of a null byte is used as the delimiter
-  ;; because using the latter interferes with the graph prefix when
-  ;; ++header is used.
+  ;; Use a form feed instead of a null byte as the delimiter because using
+  ;; the latter interferes with the graph prefix when ++header is used.
   (concat "^"
           "\\(?4:[-_/|\\*o<>. ]*\\)"               ; graph
           "\\(?1:[0-9a-fA-F]+\\)?"               ; hash
           "\\(?3:[^\n]+\\)?"                   ; refs
           "\\(?7:[BGUXYREN]\\)?"                 ; gpg
           "\\(?5:[^\n]*\\)"                    ; author
-          ;; Note: Date is optional because, prior to Git v2.19.0,
-          ;; `git rebase -i --root` corrupts the root's author date.
+          ;; Prior to Git v2.19.0, "git rebase -i --root" corrupted the
+          ;; root's author date.  Keep date optional because even though
+          ;; we no longer support such old releases, the roots they create
+          ;; may live on.
           "\\(?6:[^\n]*\\)"                    ; date
           "\\(?12:[^\n]+\\)?"                  ; trailers
           "\\(?2:.*\\)$"))                         ; msg

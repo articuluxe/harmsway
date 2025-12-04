@@ -43,7 +43,7 @@
 ;; emacs-libvterm will downloaded and compiled.  In this case, libtool is
 ;; needed.
 
-;; The reccomended way to install emacs-libvterm is from MELPA.
+;; The recommended way to install emacs-libvterm is from MELPA.
 
 ;;; Usage
 
@@ -383,10 +383,13 @@ This means that vterm will render bold with the default face weight."
   :type  'boolean
   :group 'vterm)
 
-(defcustom vterm-set-bold-hightbright nil
-  "When not-nil, using hightbright colors for bolded text, see #549."
+(defcustom vterm-set-bold-highbright nil
+  "When not-nil, using highbright colors for bolded text, see #549."
   :type  'boolean
   :group 'vterm)
+
+(define-obsolete-variable-alias 'vterm-set-bold-hightbright
+  'vterm-set-bold-highbright "0.0.2")
 
 (defcustom vterm-ignore-blink-cursor t
   "When t, vterm will ignore request from application to turn on/off cursor blink.
@@ -429,7 +432,7 @@ not require any shell-side configuration. See
 
 vterm inserts \\='fake\\=' newlines purely for rendering. When using
 vterm-copy-mode these are in conflict with many emacs functions
-like isearch-forward. if this varialbe is not-nil the
+like isearch-forward. if this variable is not-nil the
 fake-newlines are removed on entering copy-mode and re-inserted
 on leaving copy mode. Also truncate-lines is set to t on entering
 copy-mode and set to nil on leaving."
@@ -775,7 +778,7 @@ Exceptions are defined by `vterm-keymap-exceptions'."
                                   vterm-disable-underline
                                   vterm-disable-inverse-video
                                   vterm-ignore-blink-cursor
-                                  vterm-set-bold-hightbright))
+                                  vterm-set-bold-highbright))
     (setq buffer-read-only t)
     (setq-local scroll-conservatively 101)
     (setq-local scroll-margin 0)
@@ -995,7 +998,7 @@ additional output received from the underlying process and will
 behave similarly to buffer in `fundamental-mode'.  This mode is
 typically used to copy text from vterm buffers.
 
-A conventient way to exit `vterm-copy-mode' is with
+A convenient way to exit `vterm-copy-mode' is with
 `vterm-copy-mode-done', which copies the selected text and exit
 `vterm-copy-mode'."
   :group 'vterm
@@ -1276,7 +1279,7 @@ Provide similar behavior as `insert' for vterm."
     (accept-process-output vterm--process vterm-timer-delay nil t)))
 
 (defun vterm-delete-region (start end)
-  "Delete the text between START and END for vterm. "
+  "Delete the text between START and END for vterm."
   (when vterm--term
     (save-excursion
       (when (get-text-property start 'vterm-line-wrap)
@@ -1314,9 +1317,9 @@ The return value is `t' when point moved successfully."
 ;;; Internal
 
 (defun vterm--forward-char ()
-  "Move point 1 character forward ().
+  "Move point 1 character forward.
 
-the return value is `t' when cursor moved."
+The return value is `t' when cursor moved."
   (vterm-reset-cursor-point)
   (let ((pt (point)))
     (vterm-send-key "<right>" nil nil nil t)
@@ -1340,7 +1343,7 @@ the return value is `t' when cursor moved."
 (defun vterm--backward-char ()
   "Move point N characters backward.
 
-Return count of moved characeters."
+Return count of moved characters."
   (vterm-reset-cursor-point)
   (let ((pt (point)))
     (vterm-send-key "<left>" nil nil nil t)
@@ -1815,7 +1818,7 @@ in README."
 
 (defun vterm--get-beginning-of-line (&optional pt)
   "Find the start of the line, bypassing line wraps.
-If PT is specified, find it's beginning of the line instead of the beginning
+If PT is specified, find its beginning of the line instead of the beginning
 of the line at cursor."
   (save-excursion
     (when pt (goto-char pt))
@@ -1827,8 +1830,8 @@ of the line at cursor."
     (point)))
 
 (defun vterm--get-end-of-line (&optional pt)
-  "Find the start of the line, bypassing line wraps.
-If PT is specified, find it's end of the line instead of the end
+  "Find the end of the line, bypassing line wraps.
+If PT is specified, find its end of the line instead of the end
 of the line at cursor."
   (save-excursion
     (when pt (goto-char pt))
@@ -1863,7 +1866,7 @@ More information see `vterm--prompt-tracking-enabled-p' and
   (= (point) (or (vterm--get-prompt-point) 0)))
 
 (defun vterm-cursor-in-command-buffer-p (&optional pt)
-  "Check whether cursor in command buffer area."
+  "Check whether cursor is in command buffer area."
   (save-excursion
     (vterm-reset-cursor-point)
     (let ((promp-pt (vterm--get-prompt-point)))

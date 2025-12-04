@@ -34,34 +34,34 @@
 
 (defconst catppuccin-macchiato-palette
   (append
-   '(
+   `(
 ;;; Catppuccin values
-     (rosewater "#f4dbd6")
-     (flamingo  "#f0c6c6")
-     (pink      "#f5bde6")
-     (mauve     "#c6a0f6")
-     (red       "#ed8796")
-     (maroon    "#ee99a0")
-     (peach     "#f5a97f")
-     (yellow    "#eed49f")
-     (green     "#a6da95")
-     (teal      "#8bd5ca")
-     (sky       "#91d7e3")
-     (sapphire  "#7dc4e4")
-     (blue      "#8aadf4")
-     (lavender  "#b7bdf8")
-     (text      "#cad3f5")
-     (subtext1  "#b8c0e0")
-     (subtext0  "#a5adcb")
-     (overlay2  "#939ab7")
-     (overlay1  "#8087a2")
-     (overlay0  "#6e738d")
-     (surface2  "#5b6078")
-     (surface1  "#494d64")
-     (surface0  "#363a4f")
-     (base      "#24273a")
-     (mantle    "#1e2030")
-     (crust     "#181926"))
+     (rosewater ,(ctp-color 0.027777777777777676 0.5769230769230775 0.8980392156862745))
+     (flamingo  ,(ctp-color 0.0 0.5833333333333333 0.8588235294117648))
+     (pink      ,(ctp-color 0.8779761904761906 0.7368421052631583 0.8509803921568628))
+     (mauve     ,(ctp-color 0.7403100775193798 0.8269230769230772 0.7960784313725491))
+     (red       ,(ctp-color 0.9754901960784313 0.7391304347826088 0.7294117647058824))
+     (maroon    ,(ctp-color 0.9862745098039216 0.7142857142857143 0.7666666666666666))
+     (peach     ,(ctp-color 0.05932203389830507 0.8550724637681162 0.7294117647058824))
+     (yellow    ,(ctp-color 0.1118143459915612 0.6991150442477877 0.7784313725490196))
+     (green     ,(ctp-color 0.2922705314009662 0.4825174825174825 0.7196078431372549))
+     (teal      ,(ctp-color 0.4752252252252252 0.46835443037974706 0.6901960784313725))
+     (sky       ,(ctp-color 0.5243902439024389 0.5942028985507245 0.7294117647058823))
+     (sapphire  ,(ctp-color 0.5517799352750808 0.6560509554140128 0.692156862745098))
+     (blue      ,(ctp-color 0.6116352201257861 0.8281250000000003 0.7490196078431373))
+     (lavender  ,(ctp-color 0.6512820512820513 0.8227848101265824 0.8450980392156863))
+     (text      ,(ctp-color 0.6317829457364341 0.6825396825396831 0.8764705882352941))
+     (subtext1  ,(ctp-color 0.6333333333333333 0.39215686274509803 0.8))
+     (subtext0  ,(ctp-color 0.631578947368421 0.2676056338028167 0.7215686274509804))
+     (overlay2  ,(ctp-color 0.6342592592592592 0.2000000000000001 0.6470588235294117))
+     (overlay1  ,(ctp-color 0.6323529411764706 0.1545454545454545 0.5686274509803921))
+     (overlay0  ,(ctp-color 0.6397849462365591 0.12350597609561753 0.49215686274509807))
+     (surface2  ,(ctp-color 0.6379310344827586 0.13744075829383887 0.4137254901960784))
+     (surface1  ,(ctp-color 0.6419753086419754 0.15606936416184972 0.3392156862745098))
+     (surface0  ,(ctp-color 0.64 0.1879699248120301 0.2607843137254902))
+     (base      ,(ctp-color 0.6439393939393939 0.23404255319148934 0.1843137254901961))
+     (mantle    ,(ctp-color 0.6481481481481481 0.23076923076923075 0.15294117647058825))
+     (crust     ,(ctp-color 0.6547619047619048 0.22580645161290322 0.12156862745098039)))
    modus-catppuccin-common-palette-mappings)
   "The `macchiato' palette.
 Color values have the form (COLOR-NAME HEX-VALUE) with the former
@@ -98,6 +98,7 @@ represents."
  'dark
  'modus-themes-operandi-palette
  'macchiato-palette
- 'macchiato-palette-overrides)
+ 'macchiato-palette-overrides
+ 'modus-catppuccin-custom-faces)
 
 ;;; catpuccin-macchiato-theme.el ends here

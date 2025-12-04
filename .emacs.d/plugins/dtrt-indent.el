@@ -6,7 +6,7 @@
 ;; Author: Julian Scheid <julians37@googlemail.com>
 ;; Maintainer: Reuben Thomas <rrt@sc3d.org>
 ;; URL: https://github.com/jscheid/dtrt-indent
-;; Version: 1.25
+;; Version: 1.26
 ;; Keywords: convenience files languages c
 ;; Package-Requires: ((emacs "28.1"))
 
@@ -210,7 +210,7 @@ adjusted transparently."
 ;;;###autoload
 (define-globalized-minor-mode dtrt-indent-global-mode dtrt-indent-mode
   (lambda () (dtrt-indent-mode 1))
-  :predicate t '(prog-mode text-mode)
+  :predicate '(prog-mode text-mode)
   :group 'dtrt-indent)
 
 (defvar dtrt-indent-language-syntax-table

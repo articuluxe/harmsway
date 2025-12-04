@@ -38,6 +38,7 @@
 (require 'thingatpt)
 (require 'cl-lib)
 (require 'url-parse)
+(require 'url-util)
 (require 'button)
 (require 'color)
 (require 'rx)
@@ -8167,6 +8168,27 @@ See `markdown-wiki-link-p' for more information."
             (thing-at-point-looking-at markdown-regex-uri)
             (thing-at-point-looking-at markdown-regex-angle-uri))))))
 
+(defun markdown--unhex-url-string (url)
+  "Unhex control characters and spaces in URL.
+This is similar to `url-unhex-string' but this doesn't unhex all percent-encoded
+characters."
+  (let ((str (or url ""))
+        (tmp "")
+        (case-fold-search t))
+    (while (string-match "%\\([01][0-9a-f]\\|20\\)" str)
+      (let* ((start (match-beginning 0))
+             (ch1 (url-unhex (elt str (+ start 1))))
+             (code (+ (* 16 ch1)
+                      (url-unhex (elt str (+ start 2))))))
+        (setq tmp (concat
+                   tmp (substring str 0 start)
+                   (cond
+                    ((or (= code ?\n) (= code ?\r))
+                     " ")
+                    (t (byte-to-string code))))
+              str (substring str (match-end 0)))))
+    (concat tmp str)))
+
 (defun markdown-link-at-pos (pos)
   "Return properties of link or image at position POS.
 Value is a list of elements describing the link:
@@ -8202,7 +8224,7 @@ Value is a list of elements describing the link:
                  (setq url (match-string-no-properties 1 destination-part)
                        title (substring (match-string-no-properties 2 destination-part) 1 -1)))
                 (t (setq url destination-part)))
-          (setq url (url-unhex-string url))))
+          (setq url (markdown--unhex-url-string url))))
        ;; Reference link at point.
        ((thing-at-point-looking-at markdown-regex-link-reference)
         (setq bang (match-string-no-properties 1)
@@ -9737,6 +9759,18 @@ This function assumes point is on a table."
        (cl-loop for c across line
                 always (member c '(?| ?- ?: ?\t ? )))))
 
+(defun markdown-table-align-raw (cells fmtspec widths)
+  (let (fmt width)
+    (mapconcat
+     (lambda (cell)
+       (setq fmt (car fmtspec) fmtspec (cdr fmtspec))
+       (setq width (car widths) widths (cdr widths))
+       (if (equal fmt 'c)
+           (setq cell (concat (make-string (/ (- width (length cell)) 2) ?\s) cell)))
+       (unless (equal fmt 'r) (setq width (- width)))
+       (format (format " %%%ds " width) cell))
+     cells "|")))
+
 (defun markdown-table-align ()
   "Align table at point.
 This function assumes point is on a table."
@@ -9761,8 +9795,6 @@ This function assumes point is on a table."
             (maxcells (if cells
                           (apply #'max (mapcar #'length cells))
                         (user-error "Empty table")))
-            ;; Empty cells to fill short lines
-            (emptycells (make-list maxcells ""))
             maxwidths)
        ;; Calculate maximum width for each column
        (dotimes (i maxcells)
@@ -9774,20 +9806,20 @@ This function assumes point is on a table."
        (setq fmtspec (markdown-table-colfmt fmtspec))
        ;; Compute formats needed for output of table lines
        (let ((hfmt (concat indent "|"))
-             (rfmt (concat indent "|"))
-             hfmt1 rfmt1 fmt)
-         (dolist (width maxwidths (setq hfmt (concat (substring hfmt 0 -1) "|")))
-           (setq fmt (pop fmtspec))
-           (cond ((equal fmt 'l) (setq hfmt1 ":%s-|" rfmt1 " %%-%ds |"))
-                 ((equal fmt 'r) (setq hfmt1 "-%s:|" rfmt1  " %%%ds |"))
-                 ((equal fmt 'c) (setq hfmt1 ":%s:|" rfmt1 " %%-%ds |"))
-                 (t              (setq hfmt1 "-%s-|" rfmt1 " %%-%ds |")))
-           (setq rfmt (concat rfmt (format rfmt1 width)))
+             hfmt1 fmt (fmts fmtspec))
+         (dolist (width maxwidths)
+           (setq fmt (car fmts) fmts (cdr fmts))
+           (cond ((equal fmt 'l) (setq hfmt1 ":%s-|"))
+                 ((equal fmt 'r) (setq hfmt1 "-%s:|"))
+                 ((equal fmt 'c) (setq hfmt1 ":%s:|"))
+                 (t              (setq hfmt1 "-%s-|")))
            (setq hfmt (concat hfmt (format hfmt1 (make-string width ?-)))))
          ;; Replace modified lines only
          (dolist (line lines)
            (let ((line (if line
-                           (apply #'format rfmt (append (pop cells) emptycells))
+                           (concat indent "|"
+                                   (markdown-table-align-raw (pop cells) fmtspec maxwidths)
+                                   "|")
                          hfmt))
                  (previous (buffer-substring (point) (line-end-position))))
              (if (equal previous line)

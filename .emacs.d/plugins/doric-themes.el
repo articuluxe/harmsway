@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 0.4.0
+;; Version: 0.5.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -46,12 +46,14 @@
     doric-light
     doric-marble
     doric-oak
+    doric-siren
     doric-wind)
   "Light themes.")
 
 (defconst doric-themes-dark-themes
   '(doric-dark
     doric-fire
+    doric-mermaid
     doric-obsidian
     doric-pine
     doric-plum
@@ -303,6 +305,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     consult-highlight-mark
     consult-highlight-match
     consult-preview-insertion
+    elisp-symbol-at-mouse
     header-line-highlight
     highlight
     hl-line
@@ -320,6 +323,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     tab-bar-tab-highlight
     tab-line-highlight
     transient-enabled-suffix
+    transient-value
     vertico-current))
 
 (defconst doric-themes-intense-shadow-faces
@@ -328,15 +332,21 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     company-tooltip-selection
     company-tooltip-scrollbar-thumb
     corfu-current
+    eldoc-highlight-function-argument
     eww-form-file
     eww-form-submit
+    geiser-font-lock-autodoc-current-arg
+    git-gutter:unchanged
     gnus-summary-cancelled
+    lsp-signature-highlight-function-argument
     magit-blame-highlight
     magit-diff-lines-boundary
+    org-agenda-clocking
     region
     show-paren-match
     speedbar-separator-face
-    substitute-match))
+    substitute-match
+    transient-argument))
 
 (defconst doric-themes-intense-shadow-foreground-only-faces
   '(calendar-weekday-header
@@ -353,10 +363,14 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     display-time-date-and-time
     ediff-current-diff-Ancestor
     elfeed-search-date-face
+    elisp-defmacro
+    elisp-defun
+    elisp-function
     epa-field-body
     epa-field-name
     eshell-ls-readonly
     font-lock-function-name-face
+    font-lock-function-call-face
     haskell-constructor-face
     mm-uu-extract
     magit-log-author
@@ -380,6 +394,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     company-tooltip-scrollbar-track
     consult-preview-line
     corfu-popupinfo
+    edebug-enabled-breakpoint
     ediff-even-diff-A
     ediff-even-diff-Ancestor
     ediff-even-diff-B
@@ -388,10 +403,12 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     ediff-odd-diff-Ancestor
     ediff-odd-diff-B
     ediff-odd-diff-C
+    elisp-unknown-call
     eww-form-checkbox
     eww-form-select
     eww-form-textarea
     eww-form-text
+    git-gutter:separator
     header-line
     magit-blame-heading
     magit-blame-margin
@@ -399,7 +416,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     menu
     message-separator
     mu4e-region-code
-    org-agenda-clocking
     org-agenda-diary
     org-agenda-restriction-lock
     org-clock-overlay
@@ -490,6 +506,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     diredfl-read-priv
     diredfl-tagged-autofile-name
     diredfl-write-priv
+    edebug-disabled-breakpoint
     elfeed-search-title-face
     epa-validity-disabled
     eshell-ls-unreadable
@@ -655,7 +672,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     proced-sess
     speedbar-directory-face
     tab-line-close-highlight
-    transient-value
     which-key-command-description-face
     widget-button
     widget-button-pressed
@@ -689,6 +705,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     diredfl-compressed-file-name
     diredfl-file-name
     diredfl-number
+    elisp-completion-category-definition
+    elisp-feature
     epa-mark
     epa-validity-low
     epa-validity-medium
@@ -828,6 +846,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     elfeed-log-error-level-face
     elfeed-log-info-level-face
     elfeed-log-warn-level-face
+    elisp-macro
+    elisp-special-form
     erc-prompt-face
     eshell-ls-archive
     eshell-ls-backup
@@ -871,6 +891,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     gnus-summary-normal-ticked
     grep-heading
     help-for-help-header
+    ibuffer-filter-group-name
+    ibuffer-title
     icomplete-first-match
     indium-repl-prompt-face
     info-header-node
@@ -949,8 +971,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     telega-chat-prompt
     texinfo-heading
     transient-heading
-    transient-mismatched-key
-    transient-nonstandard-key
     trashed-directory
     vc-conflict-state
     vc-dir-header
@@ -970,6 +990,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(dired-header
     diredfl-dir-heading
     elfeed-search-unread-title-face
+    elisp-throw-tag
     git-commit-comment-heading
     git-commit-summary
     line-number-current-line
@@ -1005,6 +1026,20 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     diff-file-header
     dired-warning
     elfeed-search-filter-face
+    elisp-ampersand
+    elisp-condition
+    elisp-defcharset
+    elisp-defcoding
+    elisp-defface
+    elisp-deficon
+    elisp-defoclosure
+    elisp-function-property-declaration
+    elisp-major-mode-name
+    elisp-nnoo-backend
+    elisp-rx
+    elisp-shorthand-font-lock-face
+    elisp-slot
+    elisp-symbol-role-definition
     eww-invalid-certificate
     font-lock-builtin-face
     font-lock-preprocessor-face
@@ -1038,11 +1073,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     smerge-markers
     tab-line-tab-modified
     transient-key
-    transient-key-exit
-    transient-key-recurse
-    transient-key-return
-    transient-key-stack
-    transient-key-stay
     vertico-group-title))
 
 (defconst doric-themes-italic-faces
@@ -1065,7 +1095,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     diff-function
     diff-index
     elfeed-search-tag-face
-    elisp-shorthand-font-lock-face
     epa-string
     font-latex-doctex-documentation-face
     font-latex-doctex-preprocessor-face
@@ -1126,6 +1155,13 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     woman-italic
     ztreep-node-count-children-face))
 
+(defconst doric-themes-italic-only-faces
+  '(elisp-bound-variable
+    elisp-defvar
+    elisp-shadowed-variable
+    font-lock-variable-name-face
+    font-lock-variable-use-face))
+
 (defconst doric-themes-underline-emphasis-faces
   '(company-echo-common
     company-preview-common
@@ -1136,7 +1172,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     completions-first-difference
     consult-preview-match
     custom-visibility
-    eldoc-highlight-function-argument
     font-latex-underline-face
     gnus-emphasis-highlight-words
     lazy-highlight
@@ -1153,8 +1188,13 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     rcirc-track-nick
     show-paren-mismatch
     speedbar-selected-face
-    transient-argument
+    transient-mismatched-key
+    transient-nonstandard-key
     which-key-special-key-face))
+
+(defconst doric-themes-underline-emphasis-subtle-faces
+  '(eglot-highlight-symbol-face
+    elisp-variable-at-point))
 
 (defconst doric-themes-underline-link-faces
   '(browse-url-button
@@ -1193,19 +1233,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(diff-hl-insert
     diff-hl-dired-insert
     ediff-current-diff-B
+    git-gutter:added
     magit-diff-added-highlight))
-
-(defconst doric-themes-diff-changed-highlight-faces
-  '(diff-hl-change
-    diff-hl-dired-change
-    ediff-current-diff-C
-    magit-diff-base-highlight))
-
-(defconst doric-themes-diff-removed-highlight-faces
-  '(diff-hl-delete
-    diff-hl-dired-delete
-    ediff-current-diff-A
-    magit-diff-removed-highlight))
 
 (defconst doric-themes-diff-added-refine-faces
   '(diff-refine-added
@@ -1218,6 +1247,13 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     diff-indicator-changed
     magit-diff-base
     smerge-base))
+
+(defconst doric-themes-diff-changed-highlight-faces
+  '(diff-hl-change
+    diff-hl-dired-change
+    ediff-current-diff-C
+    git-gutter:modified
+    magit-diff-base-highlight))
 
 (defconst doric-themes-diff-changed-refine-faces
   '(diff-refine-changed
@@ -1233,6 +1269,13 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     smerge-upper
     ztreep-diff-model-diff-face))
 
+(defconst doric-themes-diff-removed-highlight-faces
+  '(diff-hl-delete
+    diff-hl-dired-delete
+    ediff-current-diff-A
+    git-gutter:deleted
+    magit-diff-removed-highlight))
+
 (defconst doric-themes-diff-removed-refine-faces
   '(diff-refine-removed
     ediff-fine-diff-A
@@ -1241,10 +1284,15 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 (defconst doric-themes-error-foreground-only-faces
   '(TeX-error-description-error
     dired-broken-symlink
-    error))
+    error
+    ert-test-result-unexpected
+    flymake-error-fringe))
 
 (defconst doric-themes-warning-foreground-only-faces
   '(TeX-error-description-warning
+    elisp-non-local-exit
+    elisp-warning-type
+    flymake-warning-fringe
     font-latex-warning-face
     font-lock-escape-facex
     font-lock-warning-face
@@ -1253,6 +1301,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 (defconst doric-themes-success-foreground-only-faces
   '(TeX-error-description-help
     TeX-error-description-tex-said
+    ert-test-result-expected
+    flymake-note-fringe
     success))
 
 (defconst doric-themes-error-underline-faces
@@ -1273,7 +1323,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(flycheck-info
     flymake-note))
 
-(defconst doric-themes-cite-odd
+(defconst doric-themes-cite-odd-faces
   '(gnus-cite-1
     gnus-cite-3
     gnus-cite-5
@@ -1287,7 +1337,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     mu4e-cited-5-face
     mu4e-cited-7-face))
 
-(defconst doric-themes-cite-even
+(defconst doric-themes-cite-even-faces
   '(gnus-cite-2
     gnus-cite-4
     gnus-cite-6
@@ -1299,20 +1349,17 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     mu4e-cited-4-face
     mu4e-cited-6-face))
 
-(defgroup doric-themes-faces ()
-  "Faces defined by the Doric themes."
-  :group 'doric-themes
-  :link '(url-link :tag "Sample pictures" "https://protesilaos.com/emacs/doric-themes-pictures")
-  :prefix "doric-themes-"
-  :tag "Doric themes Faces")
+(defconst doric-themes-mark-select-faces
+  '(dired-marked
+    diredfl-flag-mark
+    diredfl-flag-mark-line
+    ibuffer-marked))
 
-(dolist (scope '(note warning error))
-  (custom-declare-face
-   (intern (format "doric-themes-prominent-%s" scope))
-   nil (format "Prominent notification of type %s." scope)
-   :package-version '(doric-themes . "0.4.0")
-   :version "30.1"
-   :group 'doric-themes-faces))
+(defconst doric-themes-mark-delete-faces
+  '(dired-flagged
+    diredfl-deletion
+    diredfl-deletion-file-name
+    ibuffer-deletion))
 
 (defun doric-themes-prepare-faces (&rest faces-and-attributes)
   "Set faces to their respective attributes in FACES-AND-ATTRIBUTES."
@@ -1362,9 +1409,7 @@ default to a generic text that mentions the BACKGROUND-MODE."
               `(separator-line ((t :underline ,border)))
               `(scroll-bar ((t :background ,bg-main :foreground ,border)))
               `(fill-column-indicator ((t :foreground ,bg-shadow-intense)))
-              `(minibuffer-nonselected
-                ((((supports :strike-through t)) :strike-through t)
-                 (t :inverse-video t)))
+              `(minibuffer-nonselected ((t :inverse-video t)))
               `(tooltip ((t :background ,bg-accent :foreground ,fg-accent)))
               `(tty-menu-disabled-face ((t :background ,bg-accent :foreground ,fg-shadow-subtle)))
               `(tty-menu-enabled-face ((t :background ,bg-accent :foreground ,fg-main)))
@@ -1396,7 +1441,7 @@ default to a generic text that mentions the BACKGROUND-MODE."
               `(aw-leading-char-face ((t :inherit bold-italic :height 1.5 :foreground ,fg-accent)))
 
               `(calendar-today
-                ((default :foreground ,fg-accent :inverse-video t)
+                ((default :foreground ,fg-main :inverse-video t)
                  (((supports :box t))
                   :box (:line-width (-1 . -1) :color ,fg-main))))
 
@@ -1419,20 +1464,13 @@ default to a generic text that mentions the BACKGROUND-MODE."
                  (((supports :box t))
                   :box (:line-width 1 :color ,border :style pressed-button))
                  (t :underline ,border)))
+              `(custom-button-pressed-unraised ((t :foreground ,fg-accent :underline ,border)))
 
               '(devdocs-code-block ((t :inherit fixed-pitch)))
 
               '(diff-header (( )))
               `(diff-hunk-header ((t :inherit bold :background ,bg-shadow-subtle)))
               `(diff-function ((t :background ,bg-shadow-subtle)))
-
-              `(dired-marked ((t :inherit bold-italic :background ,bg-accent :foreground ,fg-main)))
-              `(dired-flagged ((t :inherit bold-italic :background ,bg-shadow-intense :foreground ,fg-main)))
-
-              `(diredfl-deletion ((t :inherit dired-mark)))
-              `(diredfl-deletion-file-name ((t :inherit dired-flagged)))
-              `(diredfl-flag-mark ((t :inherit dired-mark)))
-              `(diredfl-flag-mark-line ((t :inherit dired-marked)))
 
               ,@(doric-themes-prepare-faces doric-themes-intense-shadow-faces :background 'bg-shadow-intense :foreground 'fg-shadow-intense)
               ,@(doric-themes-prepare-faces doric-themes-subtle-shadow-faces :background 'bg-shadow-subtle :foreground 'fg-shadow-subtle)
@@ -1453,8 +1491,10 @@ default to a generic text that mentions the BACKGROUND-MODE."
               ,@(doric-themes-prepare-faces doric-themes-bold-intense-faces :inherit ''bold :foreground 'fg-main)
               ,@(doric-themes-prepare-faces doric-themes-bold-italic-faces :inherit ''bold-italic :foreground 'fg-shadow-subtle)
               ,@(doric-themes-prepare-faces doric-themes-italic-faces :inherit ''italic :foreground 'fg-shadow-subtle)
+              ,@(doric-themes-prepare-faces doric-themes-italic-only-faces :inherit ''italic)
               ,@(doric-themes-prepare-faces doric-themes-underline-link-faces :inherit ''underline :foreground 'fg-accent)
               ,@(doric-themes-prepare-faces doric-themes-underline-emphasis-faces :inherit ''(underline italic) :foreground 'fg-shadow-subtle)
+              ,@(doric-themes-prepare-faces doric-themes-underline-emphasis-subtle-faces :underline 'border)
 
               ,@(doric-themes-prepare-faces doric-themes-selection-faces :background 'bg-accent)
 
@@ -1468,18 +1508,34 @@ default to a generic text that mentions the BACKGROUND-MODE."
               ,@(doric-themes-prepare-faces doric-themes-diff-removed-highlight-faces :background 'bg-red :foreground 'fg-red)
               ,@(doric-themes-prepare-faces doric-themes-diff-removed-refine-faces :inherit ''bold :background '(doric-themes-adjust-value bg-red 10))
 
-              ,@(doric-themes-prepare-faces doric-themes-cite-odd :inherit ''italic :foreground 'fg-accent)
-              ,@(doric-themes-prepare-faces doric-themes-cite-even :inherit ''italic :foreground 'fg-shadow-subtle)
+              ,@(doric-themes-prepare-faces doric-themes-cite-odd-faces :inherit ''italic :foreground 'fg-accent)
+              ,@(doric-themes-prepare-faces doric-themes-cite-even-faces :inherit ''italic :foreground 'fg-shadow-subtle)
 
-              `(doric-themes-prominent-error ((t :background ,bg-red :foreground ,fg-red)))
-              `(doric-themes-prominent-warning ((t :background ,bg-yellow :foreground ,fg-yellow)))
-              `(doric-themes-prominent-note ((t :background ,bg-cyan :foreground ,fg-cyan)))
+              ,@(doric-themes-prepare-faces doric-themes-mark-select-faces :inherit ''bold-italic :background 'bg-accent :foreground 'fg-main)
+              ,@(doric-themes-prepare-faces doric-themes-mark-delete-faces :inherit ''bold-italic :background 'bg-shadow-intense :foreground 'fg-main)
+
+              '(elisp-binding-variable (( )))
+              '(elisp-charset (( )))
+              '(elisp-coding (( )))
+              '(elisp-completion-category (( )))
+              '(elisp-constant (( )))
+              '(elisp-face (( )))
+              '(elisp-free-variable (( )))
+              '(elisp-group (( )))
+              '(elisp-icon (( )))
+              '(elisp-oclosure (( )))
+              '(elisp-shadowing-variable (( )))
+              '(elisp-special-variable-declaration (( )))
+              '(elisp-symbol-role (( )))
+              '(elisp-theme (( )))
+              '(elisp-thing (( )))
+              '(elisp-type (( )))
+              '(elisp-widget-type (( )))
 
               '(embark-keybinding ((t :inherit (fixed-pitch bold-italic))))
 
               `(font-lock-comment-delimiter-face ((t :inherit italic :foreground ,fg-accent)))
               `(font-lock-comment-face ((t :inherit italic :foreground ,fg-accent)))
-              `(font-lock-variable-name-face  ((t :inherit italic)))
 
               ;; The :inverse-video prevents hl-line-mode from
               ;; overriding the background.  Such an override really
@@ -1599,7 +1655,10 @@ default to a generic text that mentions the BACKGROUND-MODE."
               '(org-checkbox ((t :inherit (fixed-pitch bold))))
               `(org-code ((t :inherit (fixed-pitch italic) :foreground ,fg-shadow-subtle)))
               `(org-column-title ((t :inherit fixed-pitch :foreground ,fg-shadow-subtle)))
-              '(org-date-selected ((t :inherit calendar-today)))
+              `(org-date-selected
+                ((default :foreground ,fg-accent :inverse-video t)
+                 (((supports :box t))
+                  :box (:line-width (-1 . -1) :color ,fg-main))))
               `(org-document-info-keyword ((t :inherit fixed-pitch :foreground ,fg-shadow-subtle)))
               `(org-drawer ((t :inherit fixed-pitch :foreground ,fg-shadow-subtle)))
               `(org-ellipsis (( ))) ; inherits from the heading's color
@@ -1659,6 +1718,13 @@ default to a generic text that mentions the BACKGROUND-MODE."
 
               '(textsec-suspicious (( )))
 
+              `(transient-key-exit ((t :inherit (fixed-pitch bold-italic) :foreground ,fg-red)))
+              `(transient-key-noop ((t :inherit fixed-pitch :foreground ,fg-shadow-subtle)))
+              `(transient-key-recurse ((t :inherit (fixed-pitch bold-italic) :foreground ,fg-main)))
+              `(transient-key-return ((t :inherit (fixed-pitch bold-italic) :foreground ,fg-yellow)))
+              `(transient-key-stack ((t :inherit (fixed-pitch bold-italic) :foreground ,fg-blue)))
+              `(transient-key-stay ((t :inherit (fixed-pitch bold-italic) :foreground ,fg-green)))
+
               `(vc-edited-state ((t :inherit italic)))
               `(vc-locally-added-state ((t :inherit italic)))
 
@@ -1679,11 +1745,8 @@ default to a generic text that mentions the BACKGROUND-MODE."
               `(whitespace-tab ((t :foreground ,bg-shadow-intense)))))
            (custom-theme-set-variables
             ',name
-            `(flymake-error-bitmap '(flymake-double-exclamation-mark doric-themes-prominent-error))
-            `(flymake-warning-bitmap '(exclamation-mark doric-themes-prominent-warning))
-            `(flymake-note-bitmap '(exclamation-mark doric-themes-prominent-note))
-            '(frame-background-mode ',background-mode)
-            '(diff-font-lock-syntax nil))
+            '(diff-font-lock-syntax nil)
+            '(frame-background-mode ',background-mode))
            ,@(unless theme-exists-p
                (list `(provide-theme ',name)))))
     (error "No palette found for `%s'" name)))

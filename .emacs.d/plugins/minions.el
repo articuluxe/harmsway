@@ -6,8 +6,10 @@
 ;; Homepage: https://github.com/tarsius/minions
 ;; Keywords: convenience
 
-;; Package-Version: 1.1.1
-;; Package-Requires: ((emacs "26.1") (compat "30.1"))
+;; Package-Version: 1.1.2
+;; Package-Requires: (
+;;     (emacs  "26.1")
+;;     (compat "30.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -108,15 +110,6 @@ be placed in a sub-menu, even when enabled."
   :group 'minions
   :type 'string)
 
-;;; Element
-
-(defvar minions--mode-line-minor-modes
-  '(:eval (propertize minions-mode-line-lighter
-                      'face minions-mode-line-face
-                      'mouse-face 'mode-line-highlight
-                      'help-echo "Minions\nmouse-1: Display minor modes menu"
-                      'local-map minions-mode-line-minor-modes-map)))
-
 ;;; Mode
 
 ;;;###autoload
@@ -130,7 +123,7 @@ minor modes that is usually displayed directly in the mode line."
   (static-if (boundp 'mode-line-minor-modes)
       (setq-default mode-line-minor-modes
                     (if minions-mode
-                        minions--mode-line-minor-modes
+                        '(:eval (minions--mode-line-minor-modes))
                       '(:eval (mode-line--minor-modes))))
     (setq-default mode-line-format
                   (if minions-mode
@@ -282,6 +275,24 @@ are enabled."
          (string-match "\\`.+" doc)
          (match-string 0 doc))))
 
+;;; Element
+
+(defun minions--mode-line-minor-modes ()
+  `(""
+    (:propertize ("" ,(minions--prominent-modes))
+                 mouse-face mode-line-highlight
+                 local-map ,mode-line-minor-mode-keymap
+                 help-echo "Minor mode
+mouse-1: Display minor mode menu
+mouse-2: Show help for minor mode
+mouse-3: Toggle minor modes")
+    (:propertize minions-mode-line-lighter
+                 face ,minions-mode-line-face
+                 mouse-face mode-line-highlight
+                 local-map ,minions-mode-line-minor-modes-map
+                 help-echo "Minions
+mouse-1: Display minor modes menu")))
+
 ;;; Backward Compatibility
 
 (static-if (boundp 'mode-line-modes-delimiters)
@@ -322,7 +333,7 @@ mouse-2: Show help for minor mode
 mouse-3: Toggle minor modes"
                           local-map ,mode-line-minor-mode-keymap)
             '(:eval (and (not (member minions-mode-line-lighter '("" nil))) " "))
-            minions--mode-line-minor-modes
+            '(:eval (minions--mode-line-minor-modes))
             '(:eval (cdr minions-mode-line-delimiters))
             (propertize "%]" 'help-echo recursive-edit-help-echo)
             " "))

@@ -88,8 +88,7 @@ Objective-C -> (\"objective-c\" . \"objc\")"
                                   (map-elt block 'body))
                                 source-blocks)))
     (markdown-overlays-remove)
-    (when markdown-overlays-highlight-blocks
-      (dolist (block source-blocks)
+    (dolist (block source-blocks)
         (markdown-overlays--fontify-source-block
          (car (map-elt block 'start))
          (cdr (map-elt block 'start))
@@ -100,7 +99,7 @@ Objective-C -> (\"objective-c\" . \"objc\")"
          (car (map-elt block 'body))
          (cdr (map-elt block 'body))
          (car (map-elt block 'end))
-         (cdr (map-elt block 'end)))))
+         (cdr (map-elt block 'end))))
     (when markdown-overlays-insert-dividers
       (dolist (divider (markdown-overlays--divider-markers))
         (markdown-overlays--fontify-divider (car divider) (cdr divider))))
@@ -252,7 +251,8 @@ Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
         (props)
         (overlay)
         (propertized-text))
-    (if (fboundp lang-mode)
+    (if (and markdown-overlays-highlight-blocks
+             (fboundp lang-mode))
         (progn
           (setq propertized-text
                 (with-current-buffer
@@ -389,11 +389,14 @@ Use START END TITLE-START TITLE-END URL-START URL-END."
     (save-excursion
       (goto-char (point-min))
       (while (re-search-forward
-              (rx (or (group "**" (group (one-or-more (not (any "\n*")))) "**")
-                      (group "__" (group (one-or-more (not (any "\n_")))) "__")))
+              (rx (or line-start (syntax whitespace))
+                  (group
+                   (or (seq "**" (group (one-or-more (not (any "\n*")))) "**")
+                       (seq "__" (group (one-or-more (not (any "\n_")))) "__")))
+                  (or (syntax punctuation) (syntax whitespace) line-end))
               nil t)
-        (when-let ((begin (match-beginning 0))
-                   (end (match-end 0)))
+        (when-let ((begin (match-beginning 1))
+                   (end (match-end 1)))
           (unless (seq-find (lambda (avoided)
                               (and (>= begin (car avoided))
                                    (<= end (cdr avoided))))

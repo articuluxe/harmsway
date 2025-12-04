@@ -596,9 +596,7 @@ Used as the local value of `header-line-format', in buffer using
     (add-hook 'with-editor-post-finish-hook
               (apply-partially #'git-commit-run-post-finish-hook
                                (magit-rev-parse "HEAD"))
-              nil t)
-    (when (fboundp 'magit-wip-maybe-add-commit-hook)
-      (magit-wip-maybe-add-commit-hook)))
+              nil t))
   (setq with-editor-cancel-message
         #'git-commit-cancel-message)
   (git-commit-setup-font-lock)
@@ -1171,6 +1169,11 @@ Added to `font-lock-extend-region-functions'."
                 (delete-region (point) (point-max)))))
            (let ((diff-default-read-only nil))
              (diff-mode))
+           ;; These won't survive copying to another buffer,
+           ;; so let's not waste any time.  See #5483.
+           (setq-local diff-refine nil)
+           (setq-local diff-font-lock-syntax nil)
+           (setq-local diff-font-lock-prettify nil)
            (let ((font-lock-verbose nil)
                  (font-lock-support-mode nil))
              (font-lock-ensure))

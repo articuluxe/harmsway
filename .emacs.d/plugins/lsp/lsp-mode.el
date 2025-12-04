@@ -352,6 +352,7 @@ the server has requested that."
     "[/\\\\]_darcs\\'"
     "[/\\\\]\\.svn\\'"
     "[/\\\\]_FOSSIL_\\'"
+    "[/\\\\]\\.jj\\'"
     ;; IDE or build tools
     "[/\\\\]\\.idea\\'"
     "[/\\\\]\\.ensime_cache\\'"
@@ -423,7 +424,9 @@ the server has requested that."
     ;; nix-direnv
     "[/\\\\]\\result"
     "[/\\\\]\\result-bin"
-    "[/\\\\]\\.direnv\\'")
+    "[/\\\\]\\.direnv\\'"
+    ;; nix-devenv
+    "[/\\\\]\\.devenv\\'")
   "List of regexps matching directory paths which won't be monitored when
 creating file watches. Customization of this variable is only honored at
 the global level or at a root of an lsp workspace."
@@ -807,6 +810,7 @@ Changes take effect only when a new session is started."
     ("\\.nu$" . "nushell")
     ("\\.php$" . "php")
     ("\\.ps[dm]?1\\'" . "powershell")
+    ("\\.qml$" . "qml")
     ("\\.rs\\'" . "rust")
     ("\\.spec\\'" . "rpm-spec")
     ("\\.sql$" . "sql")
@@ -962,6 +966,7 @@ Changes take effect only when a new session is started."
     (gdscript-ts-mode . "gdscript")
     (perl-mode . "perl")
     (cperl-mode . "perl")
+    (perl-ts-mode . "perl")
     (robot-mode . "robot")
     (roc-ts-mode . "roc")
     (racket-mode . "racket")
@@ -1012,7 +1017,9 @@ Changes take effect only when a new session is started."
     (message-mode . "plaintext")
     (mu4e-compose-mode . "plaintext")
     (odin-mode . "odin")
-    (odin-ts-mode . "odin"))
+    (odin-ts-mode . "odin")
+    (qml-mode . "qml")
+    (qml-ts-mode . "qml"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -6296,6 +6303,8 @@ one or more symbols, and STRUCTURE should be compatible with
     (toml-ts-mode               . toml-ts-mode-indent-offset)
     (typescript-mode            . typescript-indent-level)          ; Typescript
     (typescript-ts-mode         . typescript-ts-mode-indent-offset) ; Typescript (tree-sitter, Emacs29)
+    (tsx-mode                   . typescript-indent-level)          ; TSX
+    (tsx-ts-mode                . typescript-ts-mode-indent-offset) ; TSX (tree-sitter, Emacs29)
     (yaml-mode                  . yaml-indent-offset)               ; YAML
     (yang-mode                  . c-basic-offset)                   ; YANG (yang-mode)
 

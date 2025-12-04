@@ -32,11 +32,14 @@
 
 ;; For `magit-rebase--todo'.
 (declare-function git-rebase-current-line "git-rebase" (&optional batch))
-(eval-and-compile
-  (cl-pushnew 'action-type eieio--known-slot-names)
+
+(eval-and-compile ;declare slot names
+  (cl-pushnew 'abbrev eieio--known-slot-names)
   (cl-pushnew 'action eieio--known-slot-names)
   (cl-pushnew 'action-options eieio--known-slot-names)
-  (cl-pushnew 'target eieio--known-slot-names))
+  (cl-pushnew 'action-type eieio--known-slot-names)
+  (cl-pushnew 'target eieio--known-slot-names)
+  (cl-pushnew 'trailer eieio--known-slot-names))
 
 ;;; Options
 ;;;; Faces
@@ -131,7 +134,7 @@ This discards all changes made since the sequence started."
 (defvar magit-perl-executable "perl"
   "The Perl executable.")
 
-;;;###autoload (autoload 'magit-cherry-pick "magit-sequence" nil t)
+;;;###autoload(autoload 'magit-cherry-pick "magit-sequence" nil t)
 (transient-define-prefix magit-cherry-pick ()
   "Apply or transplant commits."
   :man-page "git-cherry-pick"
@@ -365,7 +368,7 @@ the process manually."
 
 ;;; Revert
 
-;;;###autoload (autoload 'magit-revert "magit-sequence" nil t)
+;;;###autoload(autoload 'magit-revert "magit-sequence" nil t)
 (transient-define-prefix magit-revert ()
   "Revert existing commits, with or without creating new commits."
   :man-page "git-revert"
@@ -422,7 +425,7 @@ without prompting."
 
 ;;; Patch
 
-;;;###autoload (autoload 'magit-am "magit-sequence" nil t)
+;;;###autoload(autoload 'magit-am "magit-sequence" nil t)
 (transient-define-prefix magit-am ()
   "Apply patches received by email."
   :man-page "git-am"
@@ -516,7 +519,7 @@ This discards all changes made since the sequence started."
 
 ;;; Rebase
 
-;;;###autoload (autoload 'magit-rebase "magit-sequence" nil t)
+;;;###autoload(autoload 'magit-rebase "magit-sequence" nil t)
 (transient-define-prefix magit-rebase ()
   "Transplant commits and/or modify existing commits."
   :man-page "git-rebase"
@@ -584,7 +587,7 @@ This discards all changes made since the sequence started."
 (defun magit-git-rebase (target args)
   (magit-run-git-sequencer "rebase" args target))
 
-;;;###autoload (autoload 'magit-rebase-onto-pushremote "magit-sequence" nil t)
+;;;###autoload(autoload 'magit-rebase-onto-pushremote "magit-sequence" nil t)
 (transient-define-suffix magit-rebase-onto-pushremote (args)
   "Rebase the current branch onto its push-remote branch.
 
@@ -598,7 +601,7 @@ push-remote."
                (magit--select-push-remote "rebase onto that")))
     (magit-git-rebase (concat remote "/" branch) args)))
 
-;;;###autoload (autoload 'magit-rebase-onto-upstream "magit-sequence" nil t)
+;;;###autoload(autoload 'magit-rebase-onto-upstream "magit-sequence" nil t)
 (transient-define-suffix magit-rebase-onto-upstream (args)
   "Rebase the current branch onto its upstream branch.
 
@@ -664,19 +667,17 @@ START has to be selected from a list of recent commits."
            (concat "Type %p on a commit to rebase it "
                    "and commits above it onto " newbase ",")))))
 
-(defvar magit-rebase-interactive-include-selected t)
-
 (defun magit-rebase-interactive-1
-    (commit args message &optional editor delay-edit-confirm noassert confirm)
+    ( commit args message
+      &optional editor delay-edit-confirm noassert confirm exact)
   (declare (indent 2))
-  (when commit
-    (unless (magit-rev-ancestor-p commit "HEAD")
-      (user-error "%s isn't an ancestor of HEAD" commit))
-    (if (magit-commit-parents commit)
-        (when (or (not (eq this-command 'magit-rebase-interactive))
-                  magit-rebase-interactive-include-selected)
-          (setq commit (concat commit "^")))
-      (setq args (cons "--root" args))))
+  (cond ((not commit))
+        ((not (magit-rev-ancestor-p commit "HEAD"))
+         (user-error "%s isn't an ancestor of HEAD" commit))
+        ((not (magit-commit-parents commit))
+         (setq args (cons "--root" args)))
+        ((not exact)
+         (setq commit (concat commit "^"))))
   (when (and commit (not noassert))
     (setq commit (magit-rebase-interactive-assert
                   commit delay-edit-confirm
@@ -742,6 +743,8 @@ START has to be selected from a list of recent commits."
     ;; The "--root" argument is being used.
     since))
 
+(defvar magit-rebase-interactive-include-selected t)
+
 ;;;###autoload
 (defun magit-rebase-interactive (commit args)
   "Start an interactive rebase sequence."
@@ -749,7 +752,8 @@ START has to be selected from a list of recent commits."
                      (magit-rebase-arguments)))
   (magit-rebase-interactive-1 commit args
     "Type %p on a commit to rebase it and all commits above it,"
-    nil t))
+    nil t nil nil
+    (not magit-rebase-interactive-include-selected)))
 
 ;;;###autoload
 (defun magit-rebase-autosquash (select args)
@@ -765,7 +769,7 @@ argument, prompt for the first commit to potentially squash into."
         (magit-git-string "merge-base" upstream "HEAD"))
       (nconc (list "--autosquash" "--keep-empty") args)
     "Type %p on a commit to squash into it and then rebase as necessary,"
-    "true" nil t))
+    "true" nil t nil t))
 
 ;;;###autoload
 (defun magit-rebase-edit-commit (commit args)
