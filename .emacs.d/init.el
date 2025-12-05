@@ -3075,10 +3075,23 @@ ARGS are the additional arguments."
 (defun harmsway-diff-hl-revert-hide-other-hunks (_end)
   "Show only the current hunk to be reverted."
   (diff-restrict-view))
+(defun harmsway-diff-hl-show-hunk ()
+  "Open `diff-hl-show-hunk' depending on tty type."
+  (interactive)
+  (if (display-graphic-p)
+      (progn
+        (require 'diff-hl-show-hunk-posframe)
+        (setq diff-hl-show-hunk-function 'diff-hl-show-hunk-posframe)
+        (diff-hl-show-hunk))
+    (require 'diff-hl-show-hunk-inline)
+    (setq diff-hl-show-hunk-function 'diff-hl-show-hunk-inline)
+    (diff-hl-show-hunk)))
 
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
+  :bind (:map diff-hl-mode-map
+              ("*" . harmsway-diff-hl-show-hunk))
   :config
   (setq diff-hl-highlight-revert-hunk-function
         #'harmsway-diff-hl-revert-highlight-hunk)
