@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-12-03 16:48:27 dharms>
+;; Modified Time-stamp: <2025-12-05 15:22:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1272,7 +1272,6 @@ Based on `https://emacs.ch/@bram85/112365691040649759'."
   (setq magit-process-find-password-functions 'magit-process-password-auth-source)
   (setq magit-auto-revert-tracked-only t)
   (setq magit-prefer-remote-upstream t)
-  (setq magit-section-visibility-indicator '("…" . t))
   (setq magit-clone-always-transient t)
   (setq magit-diff-refine-hunk t)
   (setq magit-diff-paint-whitespace 'uncommitted)
