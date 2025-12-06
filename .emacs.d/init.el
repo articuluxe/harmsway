@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2025  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-12-05 15:22:19 dharms>
+;; Modified Time-stamp: <2025-12-05 18:26:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3090,7 +3090,7 @@ ARGS are the additional arguments."
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
-  :bind (:map diff-hl-mode-map
+  :bind (:map diff-hl-command-map
               ("*" . harmsway-diff-hl-show-hunk))
   :config
   (setq diff-hl-highlight-revert-hunk-function
