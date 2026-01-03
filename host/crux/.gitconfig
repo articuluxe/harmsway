@@ -1,6 +1,8 @@
 [user]
 	name = Dan Harms
 	email = danielrharms@gmail.com
+[init]
+	defaultBranch = master
 [core]
 	editor = $EDITOR
 	excludesfile = ~/.gitignore
