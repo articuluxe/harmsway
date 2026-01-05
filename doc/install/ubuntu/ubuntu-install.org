@@ -128,6 +128,14 @@ curl -fsSL https://raw.githubusercontent.com/cask/cask/master/go | python
 export PATH=~/.cask/bin:$PATH
 #+END_SRC
 
+* veracrypt
+#+begin_src 
+https://veracrypt.io/en/Downloads.html
+curl -fsSL https://amcrypto.jp/VeraCrypt/VeraCrypt_PGP_public_key.asc | sudo gpg --dearmor -o /usr/share/keyrings/veracrypt-archive-keyring.gpg
+gpg --verify veracrypt-*.deb.sig veracrypt-*.deb
+#+end_src
+
+
 sudo apt install autoconf
 sudo apt install automake
 sudo apt install bison
