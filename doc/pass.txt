@@ -1,0 +1,13 @@
+
+# Init pass
+pass init <GPG_KEY>
+pass git init
+pass insert <ENTRY>
+pass git remote add origin git@github.com:articuluxe/pass.git
+pass git push -u --all
+# Init pass from existing configuration
+pass init <GPG_KEY>
+pass git init
+pass git remote add origin git@github.com:articuluxe/pass.git
+pass git fetch
+pass git rebase origin/master
