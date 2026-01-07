@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2025  Dan Harms (dharms)
+;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2025-12-05 18:26:28 dharms>
+;; Modified Time-stamp: <2026-01-07 17:18:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2762,8 +2762,16 @@ ARGS are the additional arguments."
   ;;     (setq ls-lisp-use-insert-directory-program t))
   ;;   (dired-quick-sort-setup))
   (use-package dired-sort)
-  ;; du
-  (use-package dired-du :init (setq dired-du-size-format t))
+  ;; du or duc
+  (if (executable-find "duc")
+      (use-package dired-du-duc
+        :init
+        (setq dired-du-duc-index-predicate 'dired-du-duc-local-p)
+        (setq dired-du-duc-delay 3600)
+        :config
+        (global-dired-du-duc-mode)
+        )
+    (use-package dired-du :init (setq dired-du-size-format t)))
   (setq-default dired-listing-switches "-alhvGg")
   (put 'dired-find-alternate-file 'disabled nil)
 
