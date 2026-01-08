@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2022, 2024-2025  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2022, 2024-2026  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2025-09-08 12:29:47 dharms>
+;; Modified Time-stamp: <2026-01-07 19:08:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -183,6 +183,11 @@
                                                     ,(cadr (assoc 'teal1 kaolin-palette))))))))
           ((eq sym 'klere)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow3"))))))
+          ((eq sym 'koishi)
+           (custom-theme-set-faces sym `(font-lock-comment-face
+                                         ((t (:foreground ,(face-attribute
+                                                            'font-lock-comment-delimiter-face
+                                                            :foreground nil 'default)))))))
           ((eq sym 'ld-dark)
            (harmsway/make-all-font-sizes-the-same-please))
           ((eq sym 'light-soap)
