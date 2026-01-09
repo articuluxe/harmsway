@@ -41,8 +41,9 @@
 (require 'json)
 (require 'js)
 (require 'seq)
-(require 'verb-util)
 (require 'rx)
+(require 'verb-util)
+(require 'verb-restclient)
 
 (defgroup verb nil
   "An HTTP client for Emacs that extends Org mode."
@@ -1742,6 +1743,17 @@ non-nil, do not add the command to the kill ring."
       ;; Return the generated command.
       result)))
 
+(defun verb-import-from-restclient.el ()
+  "Import requests from a restclient.el-formatted buffer to Verb format.
+Requests will be read from the current buffer.
+
+Note: This feature is experimental, and may not parse all restclient.el
+files correctly.  Manual user adjustments may be necessary after the import
+has finished."
+  (interactive)
+  (let ((buf (verb-restclient--import #'verb-request-spec-from-string)))
+    (display-buffer buf)))
+
 (cl-defmethod verb--response-header-line-string ((response verb-response))
   "Return a short description of an HTTP RESPONSE's properties."
   (let ((status-line (oref response status))
@@ -2774,7 +2786,7 @@ signal an error.
 Before returning the request specification, set its metadata to
 METADATA."
   (let ((context (current-buffer))
-        method url headers headers-start body)
+        method url headers headers-start body backslash)
     (with-temp-buffer
       (insert text)
       (goto-char (point-min))
@@ -2831,6 +2843,7 @@ METADATA."
                   (user-error
                    "Backslash in URL not followed by additional content"))
 
+                (setq backslash t)
                 (setq url (concat url (string-remove-suffix "\\" line)))))
 
           (when (string-match (concat "^\\s-*\\("
@@ -2863,7 +2876,7 @@ METADATA."
       ;; these headers have been commented out.  Finally, go back to
       ;; where we started.
       (save-excursion
-        (while (re-search-forward "^\\(.+\\)$" (line-end-position) t)
+        (while (re-search-forward "^.+$" (line-end-position) t)
           (unless (eobp) (forward-char)))
         (delete-matching-lines "^[[:blank:]]*#" headers-start (point)))
 
@@ -2880,10 +2893,12 @@ METADATA."
               (push (cons (string-trim (match-string 1 line))
                           (string-trim (match-string 2 line)))
                     headers)
-            (user-error (concat "Invalid HTTP header: \"%s\"\n"
-                                "Make sure there's a blank line between"
-                                " the headers and the request body")
-                        line)))
+            (let ((msg (concat "Invalid HTTP header: \"%s\"\n"
+                               "Make sure there's a blank line between"
+                               " the headers and the request body")))
+              (when (and backslash (string-match-p "^\\s-+" line))
+                (setq msg (concat msg " (did you forget a backslash '\\'?)")))
+              (user-error msg line))))
         (unless (eobp) (forward-char)))
       (setq headers (nreverse headers))
 

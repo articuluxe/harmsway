@@ -1,6 +1,6 @@
 ;;; ghub-graphql.el --- Access Github API using GraphQL  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2016-2025 Jonas Bernoulli
+;; Copyright (C) 2016-2026 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.ghub@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/magit/ghub
@@ -51,8 +51,8 @@ repositories.")
 (cl-defun ghub-graphql-rate-limit (&key username auth host)
   "Return rate limit information."
   (let-alist (ghub-query
-              '(query (rateLimit limit cost remaining resetAt)) nil
-              :synchronous t :username username :auth auth :host host)
+               '(query (rateLimit limit cost remaining resetAt)) nil
+               :synchronous t :username username :auth auth :host host)
     .data.rateLimit))
 
 (cl-defstruct (ghub--graphql-req
@@ -341,6 +341,7 @@ repositories.")
     (treepy-zipper branchp #'identity make-node root)))
 
 ;;; _
+(provide 'ghub-graphql)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and-let"   . "cond-let--and-let")
@@ -348,5 +349,4 @@ repositories.")
 ;;   ("when-let"  . "cond-let--when-let")
 ;;   ("while-let" . "cond-let--while-let"))
 ;; End:
-(provide 'ghub-graphql)
 ;;; ghub-graphql.el ends here

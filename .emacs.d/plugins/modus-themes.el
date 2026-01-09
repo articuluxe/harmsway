@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/modus-themes
-;; Version: 5.1.0
+;; Version: 5.2.0
 ;; Package-Requires: ((emacs "28.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -624,7 +624,7 @@ Individual theme overrides take precedence over these common
 overrides.
 
 The idea of common overrides is to change semantic color
-mappings, such as to make the cursor red.  Wherea theme-specific
+mappings, such as to make the cursor red.  Whereas theme-specific
 overrides can also be used to change the value of a named color,
 such as what hexadecimal RGB value the red-warmer symbol
 represents."
@@ -1117,7 +1117,7 @@ represents."
      (fg-heading-7 cyan-warmer)
      (fg-heading-8 fg-dim))
    modus-themes-common-palette-mappings)
-    "The entire palette of the `modus-operandi' theme.
+  "The entire palette of the `modus-operandi' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -1773,7 +1773,7 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-7 cyan)
      (fg-heading-8 fg-dim))
    modus-themes-common-palette-mappings)
-    "The entire palette of the `modus-operandi-deuteranopia' theme.
+  "The entire palette of the `modus-operandi-deuteranopia' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -2100,7 +2100,7 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-7 cyan-warmer)
      (fg-heading-8 fg-dim))
    modus-themes-common-palette-mappings)
-    "The entire palette of the `modus-operandi-tritanopia' theme.
+  "The entire palette of the `modus-operandi-tritanopia' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -2427,7 +2427,7 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-7 cyan-faint)
      (fg-heading-8 fg-dim))
    modus-themes-common-palette-mappings)
-    "The entire palette of the `modus-vivendi' theme.
+  "The entire palette of the `modus-vivendi' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -2754,7 +2754,7 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-7 cyan-faint)
      (fg-heading-8 fg-dim))
    modus-themes-common-palette-mappings)
-    "The entire palette of the `modus-vivendi-tinted' theme.
+  "The entire palette of the `modus-vivendi-tinted' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -3412,7 +3412,7 @@ exists in the palette and is associated with a HEX-VALUE.")
      (fg-heading-7 cyan-faint)
      (fg-heading-8 fg-dim))
    modus-themes-common-palette-mappings)
-    "The entire palette of the `modus-vivendi-tritanopia' theme.
+  "The entire palette of the `modus-vivendi-tritanopia' theme.
 
 Named colors have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
@@ -3796,17 +3796,17 @@ Also see `modus-themes-get-themes'.")
       ;; those are reified.
       (if (null properties)
           (progn
-            (add-to-list 'modus-themes--activated-themes theme)
+            (push theme modus-themes--activated-themes)
             (load-theme theme t t))
         (let ((core-palette (plist-get properties :modus-core-palette))
-               (user-palette (plist-get properties :modus-user-palette)))
-          ;; If its core palette is or nil, then we need to load it.
+              (user-palette (plist-get properties :modus-user-palette)))
+          ;; If its core palette is void or nil, then we need to load it.
           ;; Same if its user palette is void, but it is okay if that
           ;; one is nil.
-          (when (or (not (boundp core-palette))
-                    (null core-palette)
-                    (not (boundp user-palette)))
-            (add-to-list 'modus-themes--activated-themes theme)
+          (unless (and (boundp core-palette)
+                       core-palette
+                       (boundp user-palette))
+            (push theme modus-themes--activated-themes)
             (load-theme theme t t)))))))
 
 (defun modus-themes--belongs-to-family-p (theme family)
@@ -3824,7 +3824,7 @@ derivatives.
 Also see `modus-themes-sort'."
   (let ((themes (pcase theme-family
                   ('modus-themes modus-themes-items)
-                  ((pred (not null)) modus-themes-registered-items)
+                  ((pred identity) modus-themes-registered-items)
                   (_ (seq-union modus-themes-items modus-themes-registered-items)))))
     (if theme-family
         (seq-filter
@@ -3874,6 +3874,12 @@ With optional SHOW-ERROR, throw an error instead of returning nil."
      (t
       (error "Themes `%S' is not a symbol or a list of symbols" themes)))))
 
+(defun modus-themes--modus-theme-p (theme)
+  "Return non-nil if THEME has a :modus-core-palette property."
+  (when-let* ((properties (get theme 'theme-properties))
+              (core (plist-get properties :modus-core-palette)))
+    theme))
+
 (defun modus-themes-get-current-theme ()
   "Return currently enabled Modus theme.
 More specifically, return the first of the currently enabled Modus
@@ -3881,12 +3887,7 @@ themes among the `custom-enabled-themes'.
 
 Assume that a Modus theme has a `theme-properties' entry of
 `:modus-core-palette'."
-  (seq-find
-   (lambda (theme)
-     (when-let* ((properties (get theme 'theme-properties))
-                 (core (plist-get properties :modus-core-palette)))
-       theme))
-   custom-enabled-themes))
+  (seq-find #'modus-themes--modus-theme-p custom-enabled-themes))
 
 (defun modus-themes--get-theme-palette-subr (theme with-overrides with-user-palette)
   "Get THEME palette without `modus-themes-known-p'.
@@ -3916,8 +3917,10 @@ If THEME is unknown, return nil.  Else return (append OVERRIDES USER CORE)."
 
 (defun modus-themes--disable-themes (themes)
   "Disable THEMES per `modus-themes-disable-other-themes'."
-  (when modus-themes-disable-other-themes
-    (mapc #'disable-theme themes)))
+  (mapc #'disable-theme
+        (if modus-themes-disable-other-themes
+            themes
+          (seq-filter #'modus-themes--modus-theme-p themes))))
 
 (defun modus-themes-load-theme (theme &optional hook)
   "Load THEME while disabling other themes.
@@ -3942,8 +3945,7 @@ doing so if the value of COLOR is not a key in the PALETTE.
 Return `unspecified' if the value of COLOR cannot be determined.
 This symbol is accepted by faces and is thus harmless.
 
-This function is used in the macros `modus-themes-theme',
-`modus-themes-with-colors'."
+This function is used in the macro `modus-themes-theme'"
   (let ((value (car (alist-get color palette))))
     (cond
      ((or (stringp value)
@@ -3989,33 +3991,46 @@ symbol, which is safe when used as a face attribute's value."
   "Minibuffer history of `modus-themes-select-prompt'.")
 
 (defun modus-themes--annotate-theme (theme)
-  "Return completion annotation for THEME."
+  "Return description of THEME ."
   (when-let* ((symbol (intern-soft theme))
-              (doc-string (get symbol 'theme-documentation)))
-    (format " -- %s"
-            (propertize (car (split-string doc-string "\\."))
+              (properties (get symbol 'theme-properties))
+              (doc-string (or (get symbol 'theme-documentation)
+                              (plist-get properties :modus-documentation))))
+    (format " %s"
+            (propertize (concat "-- " (car (split-string doc-string "\\.")))
                         'face 'completions-annotations))))
 
 (defun modus-themes--group-themes (theme transform)
-  "Group THEME by its background.
+  "Group THEME by its background for minibuffer completion.
 If TRANSFORM is non-nil, return THEME as-is."
-  (if transform
-      theme
-    (when-let* ((symbol (intern-soft theme))
-                (properties (get symbol 'theme-properties))
-                (background (plist-get properties :background-mode)))
-      (capitalize (format "%s" background)))))
+  (let ((symbol (intern-soft theme)))
+    (cond
+     (transform
+      theme)
+     ((eq symbol (modus-themes-get-current-theme))
+      "Current")
+     ((when-let* ((properties (get symbol 'theme-properties))
+                  (background (plist-get properties :background-mode)))
+        (capitalize (format "%s" background)))))))
 
-(defun modus-themes--completion-table (category candidates)
-  "Pass appropriate metadata CATEGORY to completion CANDIDATES."
+(defun modus-themes--display-sort (themes)
+  "Put the current theme before other THEMES for minibuffer completion."
+  (let* ((current (modus-themes-get-current-theme))
+         (current-theme-p (lambda (theme) (eq (intern-soft theme) current))))
+    (nconc
+     (seq-filter current-theme-p themes)
+     (seq-remove current-theme-p themes))))
+
+(defun modus-themes--completion-table (themes)
+  "Pass appropriate metadata to THEMES for minibuffer completion."
   (lambda (string pred action)
     (if (eq action 'metadata)
-        `(metadata (category . ,category))
-      (complete-with-action action candidates string pred))))
-
-(defun modus-themes--completion-table-candidates (themes)
-  "Render THEMES as a completion table."
-  (modus-themes--completion-table 'theme themes))
+        (list 'metadata
+              (cons 'category 'theme)
+              (cons 'annotation-function #'modus-themes--annotate-theme)
+              (cons 'group-function #'modus-themes--group-themes)
+              (cons 'display-sort-function #'modus-themes--display-sort))
+      (complete-with-action action themes string pred))))
 
 (defun modus-themes-select-prompt (&optional prompt background-mode)
   "Minibuffer prompt to select a Modus theme.
@@ -4024,20 +4039,17 @@ With optional PROMPT string, use it as the first argument of
 
 With optional BACKGROUND-MODE as either `dark' or `light' limit the
 themes accordingly."
-  (let ((completion-extra-properties
-         (list :annotation-function #'modus-themes--annotate-theme
-               :category 'modus-theme
-               :group-function #'modus-themes--group-themes)))
-    (intern
-     (completing-read
-      (format-prompt (or prompt "Select theme") nil)
-      (if background-mode
-          (modus-themes-filter-by-background-mode
-           (modus-themes-get-themes)
-           background-mode)
-        (modus-themes-get-themes))
-      nil t nil
-      'modus-themes--select-theme-history))))
+  (intern
+   (completing-read
+    (format-prompt (or prompt "Select theme") nil)
+    (modus-themes--completion-table
+     (if background-mode
+         (modus-themes-filter-by-background-mode
+          (modus-themes-get-themes)
+          background-mode)
+       (modus-themes-get-themes)))
+    nil t nil
+    'modus-themes--select-theme-history)))
 
 ;;;###autoload
 (defun modus-themes-select (theme)
@@ -4081,8 +4093,9 @@ Disable other themes per `modus-themes-disable-other-themes'."
   (interactive)
   (if-let* ((themes (modus-themes-known-p modus-themes-to-toggle))
             (one (car themes))
-            (two (cadr themes)))
-      (modus-themes-load-theme (if (eq (car custom-enabled-themes) one) two one))
+            (two (cadr themes))
+            (current (modus-themes-get-current-theme)))
+      (modus-themes-load-theme (if (eq current one) two one))
     (modus-themes-load-theme (modus-themes-select-prompt "No valid theme to toggle; select other"))))
 
 ;;;;; Rotate through a list of themes
@@ -4620,7 +4633,6 @@ If COLOR is unspecified, then return :box unspecified."
     `(italic ((,c :slant italic)))
     `(cursor ((,c :background ,cursor)))
     `(fringe ((,c :background ,fringe :foreground ,fg-main)))
-    `(menu ((,c :background ,bg-dim :foreground ,fg-main)))
     `(scroll-bar ((,c :background ,fringe :foreground ,border)))
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
@@ -4774,7 +4786,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(font-latex-math-face ((,c :foreground ,constant)))
     `(font-latex-script-char-face ((,c :inherit modus-themes-bold :foreground ,builtin)))
     `(font-latex-sectioning-5-face ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
-    `(font-latex-sedate-face ((,c :inherit mouds-themes-bold :foreground ,keyword)))
+    `(font-latex-sedate-face ((,c :inherit modus-themes-bold :foreground ,keyword)))
     `(font-latex-slide-title-face ((,c :inherit modus-themes-heading-1)))
     `(font-latex-string-face ((,c :foreground ,string)))
     `(font-latex-subscript-face ((,c :height 0.9)))
@@ -4954,12 +4966,11 @@ If COLOR is unspecified, then return :box unspecified."
     `(compilation-warning ((,c :inherit modus-themes-bold :foreground ,warning)))
 ;;;;; completion-preview
     `(completion-preview ((,c :foreground ,fg-dim)))
+    ;; We set the following faces to inherit from `completion-preview',
+    ;; as they do by default.  If we ever want them not to inherit from
+    ;; `completion-preview', then we should remember to customize
+    ;; `completion-preview-adapt-background-color' accordingly.
     `(completion-preview-common ((,c :inherit completion-preview :underline t)))
-    ;; NOTE 2025-11-18: We have to inherit `completion-preview'
-    ;; otherwise the `hl-line-mode' line loses its background where
-    ;; the `completion-preview-mode' overlay is.  This is not
-    ;; intuitive, given that we do not set a background for
-    ;; `completion-preview'.
     `(completion-preview-exact ((,c :inherit (modus-themes-completion-match-0 completion-preview))))
 ;;;;; completions
     `(completions-annotations ((,c :inherit modus-themes-slant :foreground ,docstring)))
@@ -5442,7 +5453,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(flycheck-color-mode-line-error-face ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
     `(flycheck-color-mode-line-info-face ((,c :background ,bg-prominent-note :foreground ,fg-prominent-note)))
     `(flycheck-color-mode-line-running-face ((,c :inherit modus-themes-slant)))
-    `(flycheck-color-mode-line-info-face ((,c :background ,bg-prominent-warning :foreground ,fg-prominent-warning)))
+    `(flycheck-color-mode-line-warning-face ((,c :background ,bg-prominent-warning :foreground ,fg-prominent-warning)))
 ;;;;; flycheck-indicator
     `(flycheck-indicator-disabled ((,c :inherit modus-themes-slant :foreground ,fg-dim)))
     `(flycheck-indicator-error ((,c :foreground ,err)))
@@ -5900,6 +5911,19 @@ If COLOR is unspecified, then return :box unspecified."
     `(ledger-font-xact-highlight-face ((,c :background ,bg-hl-line :extend t)))
 ;;;;; leerzeichen
     `(leerzeichen ((,c :background ,bg-inactive)))
+;;;;; lin
+    `(lin-blue ((,c :background ,bg-blue-subtle)))
+    `(lin-cyan ((,c :background ,bg-cyan-subtle)))
+    `(lin-green ((,c :background ,bg-green-subtle)))
+    `(lin-magenta ((,c :background ,bg-magenta-subtle)))
+    `(lin-red ((,c :background ,bg-red-subtle)))
+    `(lin-yellow ((,c :background ,bg-yellow-subtle)))
+    `(lin-blue-override-fg ((,c :background ,bg-blue-subtle :foreground ,fg-main)))
+    `(lin-cyan-override-fg ((,c :background ,bg-cyan-subtle :foreground ,fg-main)))
+    `(lin-green-override-fg ((,c :background ,bg-green-subtle :foreground ,fg-main)))
+    `(lin-magenta-override-fg ((,c :background ,bg-magenta-subtle :foreground ,fg-main)))
+    `(lin-red-override-fg ((,c :background ,bg-red-subtle :foreground ,fg-main)))
+    `(lin-yellow-override-fg ((,c :background ,bg-yellow-subtle :foreground ,fg-main)))
 ;;;;; line numbers (display-line-numbers-mode and global variant)
     ;; Here we cannot inherit `modus-themes-fixed-pitch'.  We need to
     ;; fall back to `default' otherwise line numbers do not scale when
@@ -6041,7 +6065,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(marginalia-char ((,c :foreground ,accent-2)))
     `(marginalia-date ((,c :foreground ,date-common)))
     `(marginalia-documentation ((,c :inherit modus-themes-slant :foreground ,docstring)))
-    `(marginalia-file-name (( )))
+    `(marginalia-file-name ((,c :foreground ,fg-dim)))
     `(marginalia-file-owner ((,c :foreground ,fg-dim)))
     `(marginalia-file-priv-dir ((,c :foreground ,accent-0)))
     `(marginalia-file-priv-exec ((,c :foreground ,accent-1)))
@@ -6619,6 +6643,13 @@ If COLOR is unspecified, then return :box unspecified."
     `(prodigy-green-face ((,c :foreground ,info)))
     `(prodigy-red-face ((,c :foreground ,err)))
     `(prodigy-yellow-face ((,c :foreground ,warning)))
+;;;;; pulsar
+    `(pulsar-blue ((,c :background ,bg-blue-subtle)))
+    `(pulsar-cyan ((,c :background ,bg-cyan-subtle)))
+    `(pulsar-green ((,c :background ,bg-green-subtle)))
+    `(pulsar-magenta ((,c :background ,bg-magenta-subtle)))
+    `(pulsar-red ((,c :background ,bg-red-subtle)))
+    `(pulsar-yellow ((,c :background ,bg-yellow-subtle)))
 ;;;;; pulse
     `(pulse-highlight-start-face ((,c :background ,bg-blue-intense :extend t)))
 ;;;;; pyim
@@ -6767,7 +6798,6 @@ If COLOR is unspecified, then return :box unspecified."
     `(sly-db-restartable-frame-line-face ((,c :foreground ,info)))
     `(sly-error-face ((,c :underline (:style wave :color ,underline-err))))
     `(sly-mode-line ((,c :inherit italic :foreground ,modeline-info)))
-    `(sly-mrepl-output-face ((,c :foreground ,string)))
     `(sly-mrepl-output-face ((,c :foreground ,string)))
     `(sly-mrepl-prompt-face ((,c :inherit modus-themes-prompt)))
     `(sly-note-face ((,c :underline (:style wave :color ,underline-note))))
@@ -7222,9 +7252,9 @@ If COLOR is unspecified, then return :box unspecified."
     `(widget-button ((,c :inherit modus-themes-bold :foreground ,fg-link)))
     `(widget-button-pressed ((,c :inherit modus-themes-bold :foreground ,fg-link-visited)))
     `(widget-documentation ((,c :inherit modus-themes-slant :foreground ,docstring)))
-    `(widget-field ((,c :background ,bg-button-inactive :foreground ,fg-button-active :extend nil :underline (:position t))))
+    `(widget-field ((,c :background ,bg-button-inactive :foreground ,fg-button-active :extend nil :underline (:position t :color ,border))))
     `(widget-inactive ((,c :background ,bg-button-inactive :foreground ,fg-button-inactive)))
-    `(widget-single-line-field ((,c :background ,bg-button-inactive :foreground ,fg-button-active :extend nil :underline (:position t))))
+    `(widget-single-line-field ((,c :background ,bg-button-inactive :foreground ,fg-button-active :extend nil :underline (:position t :color ,border))))
 ;;;;; writegood-mode
     `(writegood-duplicates-face ((,c :underline (:style wave :color ,underline-err))))
     `(writegood-passive-voice-face ((,c :underline (:style wave :color ,underline-warning))))
@@ -7239,6 +7269,8 @@ If COLOR is unspecified, then return :box unspecified."
     `(xah-elisp-cap-variable ((,c :foreground ,preprocessor)))
     `(xah-elisp-command-face ((,c :inherit modus-themes-bold :foreground ,type)))
     `(xah-elisp-dollar-symbol ((,c :foreground ,variable)))
+;;;;; xref
+    `(xref-file-header ((,c :foreground ,name)))
 ;;;;; yaml-mode
     `(yaml-tab-face ((,c :background ,bg-space-err)))
 ;;;;; yasnippet
@@ -7367,7 +7399,7 @@ To simply register the theme, use `modus-themes-register'."
    description
    (list :kind 'color-scheme :background-mode background-mode :family family
          :modus-core-palette core-palette :modus-user-palette user-palette
-         :modus-overrides-palette overrides-palette)))
+         :modus-overrides-palette overrides-palette :modus-documentation description)))
 
 (defun modus-themes-register (name)
   "Add NAME theme to `modus-themes-registered-items'.
@@ -7388,7 +7420,7 @@ are symbols of variables which define palettes commensurate with
 The optional CUSTOM-FACES and CUSTOM-VARIABLES are joined together with
 the `modus-themes-faces' and `modus-themes-custom-variables',
 respectively.  A derivative theme defining those is thus overriding what
-the Modus themess have by default.
+the Modus themes have by default.
 
 Consult the manual for details on how to build a theme on top of the
 `modus-themes': Info node `(modus-themes) Build on top of the Modus themes'."
@@ -7459,23 +7491,18 @@ whose value is another symbol, which ultimately resolves to a string or
            (semantic-unique (funcall unique-fn semantic)))
       (nreverse (nconc semantic-unique named-unique)))))
 
-(defun modus-themes-with-colors-subr (expressions)
-  "Do the work of `modus-themes-with-colors' for EXPRESSIONS."
-  (condition-case data
-      (when-let* ((theme (modus-themes-get-current-theme)))
-        (eval
-         `(let* ((c '((class color) (min-colors 256)))
-                 (unspecified 'unspecified)
-                 ,@(modus-themes--with-colors-resolve-palette-sort
-                    (modus-themes--with-colors-get-palette theme)))
-            ,@expressions)
-         :lexical))
-    (error (message "Error in `modus-themes-with-colors': %s" data))))
-
 (defmacro modus-themes-with-colors (&rest body)
   "Evaluate BODY with colors from current palette bound."
   (declare (indent 0))
-  `(modus-themes-with-colors-subr ',body))
+  `(condition-case data
+       (when-let* ((theme (modus-themes-get-current-theme))
+                   (palette (modus-themes--with-colors-get-palette theme)))
+         (let ((bindings
+                (append
+                 '((c '((class color) (min-colors 256))) (unspecified 'unspecified))
+                 (cl-remove-duplicates (apply #'append palette) :key #'car))))
+           (eval (nconc `(cl-symbol-macrolet ,bindings) ',body))))
+     (error (message "Error in my/modus-with-color %s" data))))
 
 ;;;; Declare all the Modus themes
 
@@ -7577,7 +7604,7 @@ For instance:
         (concat "#" (string-join triplets-shortened))))))
 
 (defun modus-themes-generate-color-blend (color blended-with alpha)
-  "Return hexademical RGB of COLOR with BLENDED-WITH given ALPHA.
+  "Return hexadecimal RGB of COLOR with BLENDED-WITH given ALPHA.
 BLENDED-WITH is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
 inclusive."
   (let* ((blend-rgb (modus-themes-blend (color-name-to-rgb color) (color-name-to-rgb blended-with) alpha))
@@ -7596,6 +7623,7 @@ inclusive."
 (defun modus-themes-generate-gradient (color percent)
   "Adjust value of COLOR by PERCENT."
   (pcase-let* ((`(,r ,g ,b) (color-name-to-rgb color))
+               (color-luminance-dark-limit 0.5)
                (gradient (funcall (if (color-dark-p (list r g b))
                                       #'color-lighten-name
                                     #'color-darken-name)
@@ -7721,9 +7749,12 @@ rest come from CORE-PALETTE."
         (funcall push-derived-value-fn (intern (format "%s-cooler" name)) (modus-themes-generate-gradient (modus-themes-generate-color-cooler value 0.9) (if bg-main-dark-p 20 -20)))
         (funcall push-derived-value-fn (intern (format "%s-faint" name)) (modus-themes-generate-gradient value (if bg-main-dark-p 10 -10)))
         (funcall push-derived-value-fn (intern (format "%s-intense" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -5 5)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -50 50)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -70 70)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -90 90))))
+        ;; TODO 2025-12-06: We should have a function here that adjusts the value also up to a
+        ;; maximum distance from bg-main.  Basically, we want to avoid the scenario where a given
+        ;; base value produces something that is virtually indistinguishable from bg-main.
+        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -40 40)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -60 60)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -80 80))))
       ;; Mappings
       (funcall push-mapping-fn 'bg-completion (if prefers-cool-p 'bg-cyan-subtle 'bg-yellow-subtle))
       (funcall push-mapping-fn 'bg-hover (if prefers-cool-p 'bg-green-intense 'bg-magenta-intense))

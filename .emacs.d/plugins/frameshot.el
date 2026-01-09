@@ -1,12 +1,12 @@
 ;;; frameshot.el --- Take screenshots of a frame  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2025 Jonas Bernoulli
+;; Copyright (C) 2018-2026 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.frameshot@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/tarsius/frameshot
 ;; Keywords: multimedia
 
-;; Package-Version: 1.2.0
+;; Package-Version: 1.2.1
 ;; Package-Requires: (
 ;;     (emacs "26.1")
 ;;     (compat "30.1"))
@@ -257,5 +257,6 @@ loading the package that you want to demo."
 (provide 'frameshot)
 ;; Local Variables:
 ;; indent-tabs-mode: nil
+;; lisp-indent-local-overrides: ((cond . 0) (interactive . 0))
 ;; End:
 ;;; frameshot.el ends here

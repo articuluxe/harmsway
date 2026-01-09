@@ -1,6 +1,6 @@
 ;;; magit-pull.el --- Update local objects and refs  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2025 The Magit Project Contributors
+;; Copyright (C) 2008-2026 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -138,15 +138,15 @@ the upstream."
               (merge  (magit-get "branch" branch "merge"))
               (u (magit--propertize-face "@{upstream}" 'bold)))
           (cond
-           ((magit--unnamed-upstream-p remote merge)
-            (format "%s of %s"
-                    (magit--propertize-face merge 'magit-branch-remote)
-                    (magit--propertize-face remote 'bold)))
-           ((magit--valid-upstream-p remote merge)
-            (concat u ", replacing non-existent"))
-           ((or remote merge)
-            (concat u ", replacing invalid"))
-           ((concat u ", setting that")))))))
+            ((magit--unnamed-upstream-p remote merge)
+             (format "%s of %s"
+                     (magit--propertize-face merge 'magit-branch-remote)
+                     (magit--propertize-face remote 'bold)))
+            ((magit--valid-upstream-p remote merge)
+             (concat u ", replacing non-existent"))
+            ((or remote merge)
+             (concat u ", replacing invalid"))
+            ((concat u ", setting that")))))))
 
 ;;;###autoload
 (defun magit-pull-branch (source args)

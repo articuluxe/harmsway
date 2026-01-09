@@ -1,6 +1,6 @@
 ;;; starlit-theme.el --- Deep blue dark theme with bright colors from the starlit sky  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2022-2024
+;; Copyright (C) 2022-2025
 
 ;; Author: Jonas Jelten <jj@sft.lol>
 ;; Keywords: faces
@@ -80,9 +80,9 @@ Each element has the form (NAME . HEX).")
         ("redhighlight"                . "#ee0212")
         ("red"                         . "#de4e53")
         ("softred"                     . "#f08080")
-        ("orange"                      . "#da9520")
+        ("orange"                      . "#da9721")
+        ("yellow"                      . "#e8cb47")
         ("gold"                        . "#ffd700")
-        ("yellow"                      . "#e7c547")
         ("string"                      . "#e5b489")
         ("docstring"                   . "#ffe4b5")
         ("shadow"                      . "#cdc9c9")
@@ -202,6 +202,11 @@ in the theme."
        `(ediff-even-diff-B ((,colorful (:foreground unspecified :background unspecified :inverse-video t))))
        `(ediff-odd-diff-A  ((,colorful (:foreground ,.gray :background unspecified :inverse-video t))))
        `(ediff-odd-diff-B  ((,colorful (:foreground ,.gray :background unspecified :inverse-video t))))
+       `(eglot-semantic-namespace-face ((,colorful (:foreground ,.aqua))))
+       `(eglot-semantic-declaration-face nil)
+       `(eglot-semantic-definition-face nil)
+       `(eglot-semantic-static-face nil)
+       `(eglot-semantic-abstract-face nil)
        `(flx-highlight-face ((,colorful (:inherit nil :foreground ,.yellow :weight bold :underline nil))))
        `(flycheck-error ((,colorful (:underline (:style wave :color ,.red)))))
        `(flycheck-warning ((,colorful (:underline (:style wave :color ,.orange)))))

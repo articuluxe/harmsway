@@ -421,7 +421,8 @@ It can be a relative expression as well, such as \"HEAD^\" with Git, or
   (or (memq state '(edited conflict))
       (and (eq state 'up-to-date)
            ;; VC state is stale in after-revert-hook.
-           (or (static-if (>= emacs-major-version 31)
+           (or (static-if (boundp 'revert-buffer-in-progress)
+                   ;; Emacs 31.
                    revert-buffer-in-progress
                  revert-buffer-in-progress-p)
                ;; Diffing against an older revision.
@@ -740,9 +741,14 @@ Return a list of line overlays used."
 (defun diff-hl--resolve (value-or-buffer cb)
   (if (listp value-or-buffer)
       (funcall cb value-or-buffer)
-    (diff-hl--when-done value-or-buffer
-                        #'diff-hl-changes-from-buffer
-                        cb)))
+    (static-if (fboundp 'vc-run-delayed-success)
+        ;; Emacs 31.
+        (with-current-buffer value-or-buffer
+          (vc-run-delayed-success 1
+            (funcall cb (diff-hl-changes-from-buffer (current-buffer)))))
+      (diff-hl--when-done value-or-buffer
+                          #'diff-hl-changes-from-buffer
+                          cb))))
 
 (defun diff-hl--when-done (buffer get-value callback &optional proc)
   (let ((proc (or proc (get-buffer-process buffer))))

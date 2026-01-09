@@ -1,6 +1,6 @@
 ;;; forge-db.el --- Database implementation  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2025 Jonas Bernoulli
+;; Copyright (C) 2018-2026 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -640,7 +640,7 @@
         (emacsql db [:create-table discussion-post $S1]
                  (cdr (assq 'discussion-post forge--db-table-schemata)))
         (emacsql db [:create-table discussion-reply $S1]
-                 (cdr (assq 'discussion-reply forge--db-table-schemata))))
+                 (cdr (assq 'discussion-reply forge--db-table-schemata)))
         (emacsql db [:alter-table repository :add-column discussion-categories
                      :default 'eieio-unbound])
         (emacsql db [:alter-table repository :add-column discussions
@@ -648,7 +648,7 @@
         (emacsql db [:alter-table repository :add-column discussions-p
                      :default nil])
         (emacsql db [:alter-table repository :add-column discussions-until
-                     :default nil])
+                     :default nil]))
     ))
 
 (defun forge--backup-database (db)

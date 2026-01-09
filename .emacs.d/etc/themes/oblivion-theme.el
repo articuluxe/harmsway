@@ -196,7 +196,7 @@
    `(ediff-even-diff-B ((t (:background ,ob-aluminium6+5))))
    `(ediff-even-diff-C ((t (:background ,ob-aluminium6+5))))
    `(ediff-fine-diff-A ((t (:foreground ,ob-aluminium2 :background ,ob-scarletred1 :weight bold))))
-   `(ediff-fine-diff-Ancestor ((t (:foreground ,ob-aluminium2 :background ,ob-scarletred1 weight bold))))
+   `(ediff-fine-diff-Ancestor ((t (:foreground ,ob-aluminium2 :background ,ob-scarletred1 :weight bold))))
    `(ediff-fine-diff-B ((t (:foreground ,ob-aluminium2 :background ,ob-chameleon1 :weight bold))))
    `(ediff-fine-diff-C ((t (:foreground ,ob-aluminium2 :background ,ob-skyblue1 :weight bold))))
    `(ediff-odd-diff-A ((t (:background ,ob-aluminium6+16))))

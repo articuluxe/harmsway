@@ -129,7 +129,7 @@ if you prefer to blend Standard and Modus into a single group, enable
     (fg-removed maroon)
     (fg-removed-intense maroon)
 
-    (bg-diff-context bg-main)
+    (bg-diff-context surface1)
 
     ;; Paren match
 

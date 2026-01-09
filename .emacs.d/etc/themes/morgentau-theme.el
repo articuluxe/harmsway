@@ -35,13 +35,13 @@
       (alum-4 "#888a85") (alum-5 "#555753") (alum-6 "#2e3436")
       ;; Not in Tango palette; used for better contrast.
       (butter-0 "#f5d080") (cham-0 "#9ce389") (blue-0 "#61afef") (plum-0 "#e9b2e3")
-      (red-0 "#ff4b4b")  (alum-5.5 "#41423f") (alum-7 "#282c34") (alum-8 "#282c34"))
+      (red-0 "#ff4b4b")  (alum-5.5 "#41423f") (alum-7 "#282c34") (alum-8 "#282c34") (alum-9 "#080c14"))
 
   (custom-theme-set-faces
    'morgentau
    ;; Ensure sufficient contrast on low-color terminals.
    `(default ((((class color) (min-colors 4096))
-               (:foreground ,alum-1 :background ,alum-8))
+               (:foreground ,alum-1 :background ,alum-9))
               (((class color) (min-colors 256))
                (:foreground ,alum-1 :background "undefined"))
               (,class
@@ -66,12 +66,10 @@
    `(trailing-whitespace ((,class (:foreground ,alum-1 :background ,red-4))))
    `(whitespace-trailing ((,class (:foreground ,alum-1 :background ,red-4))))
    ;; Mode line faces
-   `(mode-line ((,class (:box (:line-width -1 :style released-button)
-                  :foreground ,butter-1 :background ,blue-2))))
+   `(mode-line ((,class (:foreground ,butter-1 :background ,blue-2))))
    `(mode-line-buffer-id ((,class (:weight normal))))
    `(mode-line-inactive ((,class
-                          (:box (:line-width -1 :style released-button)
-                           :background ,alum-5 :foreground ,alum-1))))
+                          (:background ,alum-5 :foreground ,alum-1))))
    `(compilation-mode-line-fail ((,class (:foreground ,red-3))))
    `(compilation-mode-line-run  ((,class (:foreground ,butter-3))))
    `(compilation-mode-line-exit ((,class (:foreground ,cham-3))))

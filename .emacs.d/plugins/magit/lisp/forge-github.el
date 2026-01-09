@@ -1,6 +1,6 @@
 ;;; forge-github.el --- Github support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2025 Jonas Bernoulli
+;; Copyright (C) 2018-2026 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -235,9 +235,9 @@
           (oset repo condition :tracked))
         (forge--msg repo t t   "Storing REPO")
         (cond
-         ((oref repo selective-p))
-         (callback (funcall callback))
-         ((forge--maybe-git-fetch repo buf))))
+          ((oref repo selective-p))
+          (callback (funcall callback))
+          ((forge--maybe-git-fetch repo buf))))
       :narrow '(repository)
       :until
       ;; Keys have the form `FIELD-until', where FIELD is the name of a
@@ -359,8 +359,8 @@
       [($owner String!)
        ($name  String!)]
       (repository
-      [(owner $owner)
-       (name  $name)]
+       [(owner $owner)
+        (name  $name)]
        ,(caddr (caddr (ghub--graphql-prepare-query
                        forge--github-repository-query
                        `(repository discussions (discussion . ,number)))))

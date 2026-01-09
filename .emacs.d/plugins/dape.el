@@ -527,7 +527,16 @@ Example value:
 
 (define-obsolete-variable-alias 'dape-buffer-window-arrangment 'dape-buffer-window-arrangement "0.3.0")
 (defcustom dape-buffer-window-arrangement 'left
-  "How to generally display buffers."
+  "How to generally display buffers.
+For additional configuration of which mode buffers are placed in which
+windows, see `dape-info-buffer-window-groups'.
+
+If further customization is needed, use `display-buffer-alist'.  Note
+that each buffer is displayed with `display-buffer' action ALIST entry
+`category' as `dape-info-' + group index, which can be used with
+`display-buffer-alist' for group-based actions.
+
+See `dape--display-buffer' for additional details."
   :type '(choice (const :tag "GUD gdb like" gud)
                  (const :tag "Left side" left)
                  (const :tag "Right side" right)
@@ -5831,7 +5840,8 @@ mouse-1: Display minor mode menu"
                dape-select-stack
                dape-select-thread
                dape-watch-dwim
-               dape-evaluate-expression))
+               dape-evaluate-expression
+               dape-info))
   (put cmd 'repeat-map 'dape-global-map))
 
 (when dape-key-prefix (global-set-key dape-key-prefix dape-global-map))

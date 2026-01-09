@@ -1,12 +1,12 @@
 ;;; hl-todo.el --- Highlight TODO and similar keywords  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2013-2025 Jonas Bernoulli
+;; Copyright (C) 2013-2026 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.hl-todo@jonas.bernoulli.dev>
 ;; Homepage: https://github.com/tarsius/hl-todo
 ;; Keywords: convenience
 
-;; Package-Version: 3.9.2
+;; Package-Version: 3.9.3
 ;; Package-Requires: (
 ;;     (emacs  "26.1")
 ;;     (compat "30.1"))
@@ -429,16 +429,16 @@ argument does not matter; with any prefix you can edit the
 constructed shell command line before it is executed.
 Also see option `hl-todo-keyword-faces'."
   (interactive
-   (progn
-     (require 'grep)
-     (grep-compute-defaults)
-     (unless grep-find-template
-       (error "grep.el: No `grep-find-template' available"))
-     (let ((regexp (with-temp-buffer (hl-todo--regexp t))))
-       (list regexp
-             (grep-read-files regexp)
-             (read-directory-name "Base directory: " nil default-directory t)
-             current-prefix-arg))))
+    (progn
+      (require 'grep)
+      (grep-compute-defaults)
+      (unless grep-find-template
+        (error "grep.el: No `grep-find-template' available"))
+      (let ((regexp (with-temp-buffer (hl-todo--regexp t))))
+        (list regexp
+              (grep-read-files regexp)
+              (read-directory-name "Base directory: " nil default-directory t)
+              current-prefix-arg))))
   (rgrep regexp files dir confirm))
 
 ;;;###autoload
@@ -505,37 +505,37 @@ If `hl-todo-require-punctuation' is non-nil and
 `hl-todo-highlight-punctuation' contains a single character,
 then append that character to the inserted string."
   (interactive
-   (list (completing-read
-          "Insert keyword: "
-          (mapcan (pcase-lambda (`(,keyword . ,face))
-                    (and (equal (regexp-quote keyword) keyword)
-                         (list (propertize keyword 'face
-                                           (hl-todo--combine-face face)))))
-                  hl-todo-keyword-faces))))
+    (list (completing-read
+           "Insert keyword: "
+           (mapcan (pcase-lambda (`(,keyword . ,face))
+                     (and (equal (regexp-quote keyword) keyword)
+                          (list (propertize keyword 'face
+                                            (hl-todo--combine-face face)))))
+                   hl-todo-keyword-faces))))
   (let ((keyword (if (and hl-todo-require-punctuation
                           (length= hl-todo-highlight-punctuation 1))
                      (concat keyword hl-todo-highlight-punctuation)
                    keyword)))
     (cond
-     ((hl-todo--inside-comment-or-string-p)
-      (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
-                      keyword
-                      (and (not (memq (char-after) '(?\s ?\t ?\n))) " "))))
-     ((and (eolp)
-           (not (looking-back "^[\s\t]*" (line-beginning-position) t)))
-      (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
-                      (format "%s %s " comment-start keyword))))
-     (t
-      (goto-char (line-beginning-position))
-      (insert (cond ((derived-mode-p 'lisp-mode 'emacs-lisp-mode)
-                     (format "%s%s %s" comment-start comment-start keyword))
-                    ((string-suffix-p " " comment-start)
-                     (format "%s%s" comment-start keyword))
-                    (t
-                     (format "%s %s" comment-start keyword))))
-      (unless (looking-at "[\s\t]*$")
-        (save-excursion (insert "\n")))
-      (indent-region (line-beginning-position) (line-end-position))))))
+      ((hl-todo--inside-comment-or-string-p)
+       (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
+                       keyword
+                       (and (not (memq (char-after) '(?\s ?\t ?\n))) " "))))
+      ((and (eolp)
+            (not (looking-back "^[\s\t]*" (line-beginning-position) t)))
+       (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
+                       (format "%s %s " comment-start keyword))))
+      (t
+       (goto-char (line-beginning-position))
+       (insert (cond ((derived-mode-p 'lisp-mode 'emacs-lisp-mode)
+                      (format "%s%s %s" comment-start comment-start keyword))
+                     ((string-suffix-p " " comment-start)
+                      (format "%s%s" comment-start keyword))
+                     (t
+                      (format "%s %s" comment-start keyword))))
+       (unless (looking-at "[\s\t]*$")
+         (save-excursion (insert "\n")))
+       (indent-region (line-beginning-position) (line-end-position))))))
 
 ;;;###autoload
 (defun hl-todo-search-and-highlight ()
@@ -553,5 +553,6 @@ Intended to be added to `magit-revision-wash-message-hook' and
 (provide 'hl-todo)
 ;; Local Variables:
 ;; indent-tabs-mode: nil
+;; lisp-indent-local-overrides: ((cond . 0) (interactive . 0))
 ;; End:
 ;;; hl-todo.el ends here

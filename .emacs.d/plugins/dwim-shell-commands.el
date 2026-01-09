@@ -358,6 +358,17 @@ Optional argument ARGS as per `browse-url-default-browser'"
    :utils "convert"))
 
 ;;;###autoload
+(defun dwim-shell-commands-kdeconnect-share ()
+  "Send file(s) to a device through KDE Connect."
+  (interactive)
+  (let* ((devices (process-lines "kdeconnect-cli" "--list-available" "--name-only"))
+         (device (completing-read "Device: " devices nil t)))
+    (dwim-shell-command-on-marked-files
+     "Send file(s) to DEVICE through KDE Connect."
+     (format "kdeconnect-cli -n '%s' --share '<<f>>'" device)
+     :utils "kdeconnect-cli")))
+
+;;;###autoload
 (defun dwim-shell-commands-keep-pdf-page ()
   "Keep a page from pdf."
   (interactive)
@@ -780,8 +791,10 @@ EOF"
                                (cons (nth 1 (split-string device " - "))
                                      (nth 0 (split-string device " - "))))
                              devices))
-         (selected-name (completing-read "Toggle connection: "
-                                         (seq-sort #'string-lessp candidates) nil t))
+         (selected-name (completing-read "Toggle BT connection: "
+                                         (seq-sort (lambda (a b)
+                                                     (string-lessp (car a) (car b)))
+                                                   candidates) nil t))
          (address (map-elt candidates selected-name)))
     (dwim-shell-command-on-marked-files
      (format "Toggle %s" selected-name)

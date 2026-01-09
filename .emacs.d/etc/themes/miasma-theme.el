@@ -2,7 +2,7 @@
 
 ;; Author: Bozidar Dautovic
 ;; URL: http://github.com/daut/miasma-theme.el
-;; Version: 1.6.1
+;; Version: 1.6.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -176,6 +176,27 @@
    ;;;;; tab-line
    `(tab-line ((,class (:background ,miasma-charcoal :foreground ,miasma-light-gray))))
 
+   ;;;;; vc-annotate
+   `(vc-annotate-color-map
+     '((20. . ,miasma-chestnut)
+       (40. . ,miasma-fire)
+       (60. . ,miasma-copper)
+       (80. . ,miasma-brass)
+       (100. . ,miasma-ecru)
+       (120. . ,miasma-lemon)
+       (140. . ,miasma-moss)
+       (160. . ,miasma-olive)
+       (180. . ,miasma-ivy)
+       (200. . ,miasma-eucalyptus)
+       (220. . ,miasma-reseda)
+       (240. . ,miasma-terracota)
+       (260. . ,miasma-tangerine)
+       (280. . ,miasma-sky)
+       (300. . ,miasma-marble)
+       (320. . ,miasma-light-gray)
+       (340. . ,miasma-dark-gray)
+       (360. . ,miasma-charcoal)))
+
    ;;;;; whitespace-mode
    `(whitespace-space ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal miasma-light-charcoal) :foreground ,miasma-dark-gray))))
    `(whitespace-tab ((,class (:background ,(if (bound-and-true-p solaire-mode) miasma-charcoal miasma-light-charcoal) :foreground ,miasma-dark-gray))))
@@ -292,6 +313,8 @@
    `(lsp-face-highlight-read ((,class (:underline t :background ,miasma-moss))))
    `(lsp-face-highlight-textual ((,class (:background ,miasma-forest))))
    `(lsp-modeline-code-actions-face ((,class (:foreground ,miasma-olive))))
+   `(lsp-flycheck-info-unnecessary-face ((,class (:underline (:style wave :color ,miasma-eucalyptus)))))
+   `(lsp-flycheck-error-unnecessary-face ((,class (:underline (:style wave :color ,miasma-terracota)))))
 
    ;;;;; magit
    `(magit-bisect-bad ((,class (:foreground ,miasma-fire))))
@@ -405,12 +428,12 @@
 
    ;;;;; vterm
    `(vterm-color-black ((,class (:foreground ,miasma-charcoal :background ,miasma-graphite))))
-   `(vterm-color-red ((,class (:foreground ,miasma-terracota :background ,miasma-chestnut))))
+   `(vterm-color-red ((,class (:foreground ,miasma-walnut :background ,miasma-terracota))))
    `(vterm-color-green ((,class (:foreground ,miasma-eucalyptus :background ,miasma-moss))))
-   `(vterm-color-yellow ((,class (:foreground ,miasma-ecru :background ,miasma-olive))))
-   `(vterm-color-blue ((,class (:foreground ,miasma-river :background ,miasma-obsidian))))
+   `(vterm-color-yellow ((,class (:foreground ,miasma-cedar :background ,miasma-olive))))
+   `(vterm-color-blue ((,class (:foreground ,miasma-reseda :background ,miasma-obsidian))))
    `(vterm-color-magenta ((,class (:foreground ,miasma-cedar :background ,miasma-chestnut))))
-   `(vterm-color-cyan ((,class (:foreground ,miasma-eucalyptus :background ,miasma-forest))))
+   `(vterm-color-cyan ((,class (:foreground ,miasma-ecru :background ,miasma-forest))))
    `(vterm-color-white ((,class (:foreground ,miasma-marble :background ,miasma-dark-gray))))
    `(vterm-color-bright-black ((,class (:foreground ,miasma-graphite :background ,miasma-dark-gray))))
    `(vterm-color-bright-red ((,class (:foreground ,miasma-tangerine :background ,miasma-chestnut))))
@@ -440,6 +463,21 @@
 (when (and (boundp 'custom-theme-load-path) load-file-name)
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
+
+;;; LSP Mode Configuration
+
+;; Configure lsp-mode to preserve syntax highlighting for "unnecessary" code.
+;; By default, lsp-mode applies gray foreground which overrides meaningful
+;; colors (variables, functions, etc.). This setting uses only wavy underlines.
+;; See README for customization options.
+
+;;;###autoload
+(with-eval-after-load 'lsp-diagnostics
+  ;; Only set if user hasn't customized it themselves
+  (unless (get 'lsp-diagnostics-attributes 'saved-value)
+    (setq lsp-diagnostics-attributes
+          '((unnecessary)  ; No :foreground - preserves syntax highlighting
+            (deprecated :strike-through t)))))
 
 (provide-theme 'miasma)
 

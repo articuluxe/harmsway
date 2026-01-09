@@ -32,6 +32,7 @@
 ;;; Code:
 
 (defconst fui-hint-ice "#c7ecee")
+(defconst fui-light-blue "#dbe4f1")
 (defconst fui-soaring-eagle "#4d687c")
 (defconst fui-turquoise "#1abc9c")
 (defconst fui-emerald "#2ecc71")
@@ -76,7 +77,7 @@
  `(link-visited ((t (:foreground ,fui-amethyst :underline t :weight normal))))
  `(escape-glyph ((t (:foreground ,fui-sunflower :bold t))))
  `(highlight ((t (:background ,fui-deep-clouds))))
- `(hl-line ((t (:inverse-video unspecified :background ,fui-deep-clouds))))
+ `(hl-line ((t (:inverse-video unspecified :background ,fui-hint-ice))))
  `(shadow ((t (:foreground ,fui-concrete))))
  `(success ((t (:foreground ,fui-dark-emerald :weight bold))))
  `(warning ((t (:foreground ,fui-dark-carrot :weight bold))))
@@ -190,8 +191,8 @@
  `(magit-tag ((t (:foreground ,fui-river :background ,fui-bg))))
  `(magit-hash ((t (:foreground ,fui-concrete))))
  `(magit-section-title ((t (:foreground ,fui-dark-emerald :background ,fui-bg))))
- `(magit-section-heading ((t (:background ,fui-bg :foreground ,fui-fg))))
- `(magit-section-highlight ((t (:background ,fui-bg))))
+ `(magit-section-heading ((t (:background ,fui-light-blue :foreground ,fui-fg))))
+ `(magit-section-highlight ((t (:background ,fui-light-blue))))
  `(magit-item-highlight ((t (:foreground ,fui-fg :background ,fui-dark-clouds))))
  `(magit-log-author ((t (:foreground ,fui-amethyst))))
  `(magit-diff-added ((t (:inherit diff-added))))

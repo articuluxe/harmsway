@@ -1,6 +1,6 @@
 ;;; magit-process.el --- Process functionality  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2025 The Magit Project Contributors
+;; Copyright (C) 2008-2026 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -524,12 +524,26 @@ eol conversion."
         (default-process-coding-system (magit--process-coding-system)))
     (apply #'process-file process infile buffer display args)))
 
+(defvar magit--shadowed-githook-directory nil)
+
+(defun magit--shadowed-githook-directory ()
+  (or magit--shadowed-githook-directory
+      (setq magit--shadowed-githook-directory
+            (let ((magit-git-global-arguments nil))
+              (cl-letf (((symbol-function 'magit-process-environment)
+                         (lambda () process-environment)))
+                (or (magit-get "core.hooksPath")
+                    (expand-file-name "hooks" (magit-gitdir))))))))
+
 (defun magit-process-environment ()
   ;; The various w32 hacks are only applicable when running on the local
   ;; machine.  A local binding of process-environment different from the
   ;; top-level value affects the environment used by Tramp.
   (let ((local (not (file-remote-p default-directory))))
     (append magit-git-environment
+            (and magit-overriding-githook-directory
+                 (list (concat "SHADOWED_GITHOOK_DIRECTORY="
+                               (magit--shadowed-githook-directory))))
             (and local
                  (cdr (assoc magit-git-executable magit-git-w32-path-hack)))
             (and local magit-need-cygwin-noglob
@@ -569,7 +583,7 @@ flattened before use."
     (run-hooks 'magit-pre-call-git-hook)
     (pcase-let* ((process-environment (magit-process-environment))
                  (default-process-coding-system (magit--process-coding-system))
-                 (flat-args (magit-process-git-arguments args))
+                 (flat-args (magit-process-git-arguments args t))
                  (`(,process-buf . ,section)
                   (magit-process-setup (magit-git-executable) flat-args))
                  (inhibit-read-only t))
@@ -652,7 +666,7 @@ See `magit-start-process' for more information."
   (run-hooks 'magit-pre-start-git-hook)
   (let ((default-process-coding-system (magit--process-coding-system)))
     (apply #'magit-start-process (magit-git-executable) input
-           (magit-process-git-arguments args))))
+           (magit-process-git-arguments args t))))
 
 (defun magit-start-process (program &optional input &rest args)
   "Start PROGRAM, prepare for refresh, and return the process object.
@@ -725,7 +739,7 @@ Magit status buffer."
     process))
 
 (defun magit-parse-git-async (&rest args)
-  (setq args (magit-process-git-arguments args))
+  (setq args (magit-process-git-arguments args t))
   (let ((command-buf (current-buffer))
         (stdout-buf (generate-new-buffer " *git-stdout*"))
         (stderr-buf (generate-new-buffer " *git-stderr*"))
@@ -791,26 +805,26 @@ Magit status buffer."
 
 (defun magit-process--format-arguments (program args)
   (cond
-   ((and args (equal program (magit-git-executable)))
-    (let ((global (length magit-git-global-arguments)))
-      (concat
-       (propertize (file-name-nondirectory program)
-                   'font-lock-face 'magit-section-heading)
-       " "
-       (propertize (magit--ellipsis)
-                   'font-lock-face 'magit-section-heading
-                   'help-echo (string-join (seq-take args global) " "))
-       " "
-       (propertize (mapconcat #'shell-quote-argument (seq-drop args global) " ")
-                   'font-lock-face 'magit-section-heading))))
-   ((and args (equal program shell-file-name))
-    (propertize (cadr args)
-                'font-lock-face 'magit-section-heading))
-   ((concat (propertize (file-name-nondirectory program)
-                        'font-lock-face 'magit-section-heading)
-            " "
-            (propertize (mapconcat #'shell-quote-argument args " ")
-                        'font-lock-face 'magit-section-heading)))))
+    ((and args (equal program (magit-git-executable)))
+     (let ((global (magit-process-git-arguments--length)))
+       (concat
+        (propertize (file-name-nondirectory program)
+                    'font-lock-face 'magit-section-heading)
+        " "
+        (propertize (magit--ellipsis)
+                    'font-lock-face 'magit-section-heading
+                    'help-echo (string-join (seq-take args global) " "))
+        " "
+        (propertize (mapconcat #'shell-quote-argument (seq-drop args global) " ")
+                    'font-lock-face 'magit-section-heading))))
+    ((and args (equal program shell-file-name))
+     (propertize (cadr args)
+                 'font-lock-face 'magit-section-heading))
+    ((concat (propertize (file-name-nondirectory program)
+                         'font-lock-face 'magit-section-heading)
+             " "
+             (propertize (mapconcat #'shell-quote-argument args " ")
+                         'font-lock-face 'magit-section-heading)))))
 
 (defun magit-process-truncate-log ()
   (let* ((head nil)
@@ -864,7 +878,7 @@ Magit status buffer."
                      `((commit . ,(magit-rev-parse "HEAD"))
                        (,(pcase (car (seq-drop
                                       (process-command process)
-                                      (1+ (length magit-git-global-arguments))))
+                                      (1+ (magit-process-git-arguments--length))))
                            ((or "rebase" "am") 'rebase-sequence)
                            ((or "cherry-pick" "revert") 'sequence)))
                        (status)))))
@@ -1101,7 +1115,7 @@ as argument."
 (defun magit-process-set-mode-line (program args)
   "Display the git command (sans arguments) in the mode line."
   (when (equal program (magit-git-executable))
-    (setq args (nthcdr (length magit-git-global-arguments) args)))
+    (setq args (nthcdr (magit-process-git-arguments--length) args)))
   (let ((str (concat " " (propertize
                           (concat (file-name-nondirectory program)
                                   (and args (concat " " (car args))))

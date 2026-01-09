@@ -795,6 +795,12 @@ For INVERT, see `alect-get-color'."
          (emms-stream-name-face       ((,c :foreground ,(gc 'blue+1))))
          (emms-stream-url-face        ((,c :inherit default)))
 
+         ;; emoji
+         (emoji-list-header        ((,c :inherit alect-title)))
+         (emoji                    ((,c :height 2.5)))
+         (emoji-with-derivations   ((,c :inherit emoji
+                                        :background ,(gc 'bg))))
+
          ;; erc
          (erc-header-line          ((,c :inherit header-line)))
          (erc-bold-face            ((,c :weight bold)))
@@ -1068,6 +1074,7 @@ For INVERT, see `alect-get-color'."
          ;; help
          (help-argument-name ((,c :inherit font-lock-variable-name-face)))
          (help-key-binding   ((,c :inherit alect-key)))
+         (help-for-help-header ((,c :inherit alect-title)))
 
          ;; hl-line-mode
          (hl-line ((,c :background ,(gc 'bg))))

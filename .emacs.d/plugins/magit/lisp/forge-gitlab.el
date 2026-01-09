@@ -1,6 +1,6 @@
 ;;; forge-gitlab.el --- Gitlab support  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2018-2025 Jonas Bernoulli
+;; Copyright (C) 2018-2026 Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.forge@jonas.bernoulli.dev>
@@ -57,35 +57,35 @@
                 (when v (if val (push v val) (setq val v)))
                 (let-alist val
                   (cond
-                   ((not val)
-                    (forge--fetch-repository repo cb))
-                   ((not (assq 'assignees val))
-                    (forge--fetch-assignees repo cb))
-                   ((not (assq 'forks val))
-                    (forge--fetch-forks repo cb))
-                   ((not (assq 'labels val))
-                    (forge--fetch-labels repo cb))
-                   ((and .issues_enabled
-                         (not (assq 'issues val)))
-                    (forge--fetch-issues repo cb since))
-                   ((and .merge_requests_enabled
-                         (not (assq 'pullreqs val)))
-                    (forge--fetch-pullreqs repo cb since))
-                   (t
-                    (forge--msg repo t t   "Pulling REPO")
-                    (forge--msg repo t nil "Storing REPO")
-                    (closql-with-transaction (forge-db)
-                      (forge--update-repository repo val)
-                      (forge--update-assignees  repo .assignees)
-                      (forge--update-labels     repo .labels)
-                      (dolist (v .issues)   (forge--update-issue repo v))
-                      (dolist (v .pullreqs) (forge--update-pullreq repo v))
-                      (oset repo condition :tracked))
-                    (forge--msg repo t t "Storing REPO")
-                    (cond
-                     ((oref repo selective-p))
-                     (callback (funcall callback))
-                     ((forge--maybe-git-fetch repo buf))))))))))
+                    ((not val)
+                     (forge--fetch-repository repo cb))
+                    ((not (assq 'assignees val))
+                     (forge--fetch-assignees repo cb))
+                    ((not (assq 'forks val))
+                     (forge--fetch-forks repo cb))
+                    ((not (assq 'labels val))
+                     (forge--fetch-labels repo cb))
+                    ((and .issues_enabled
+                          (not (assq 'issues val)))
+                     (forge--fetch-issues repo cb since))
+                    ((and .merge_requests_enabled
+                          (not (assq 'pullreqs val)))
+                     (forge--fetch-pullreqs repo cb since))
+                    (t
+                     (forge--msg repo t t   "Pulling REPO")
+                     (forge--msg repo t nil "Storing REPO")
+                     (closql-with-transaction (forge-db)
+                       (forge--update-repository repo val)
+                       (forge--update-assignees  repo .assignees)
+                       (forge--update-labels     repo .labels)
+                       (dolist (v .issues)   (forge--update-issue repo v))
+                       (dolist (v .pullreqs) (forge--update-pullreq repo v))
+                       (oset repo condition :tracked))
+                     (forge--msg repo t t "Storing REPO")
+                     (cond
+                       ((oref repo selective-p))
+                       (callback (funcall callback))
+                       ((forge--maybe-git-fetch repo buf))))))))))
     (funcall cb cb)))
 
 (cl-defmethod forge--fetch-repository ((repo forge-gitlab-repository) callback)
@@ -131,23 +131,23 @@
   (let ((cb (let (val cur cnt pos)
               (lambda (cb &optional v)
                 (cond
-                 ((not pos)
-                  (if (setq cur (setq val v))
-                      (progn
-                        (setq pos 1)
-                        (setq cnt (length val))
-                        (forge--msg nil nil nil "Pulling issue %s/%s" pos cnt)
-                        (forge--fetch-issue-posts repo cur cb))
-                    (forge--msg repo t t "Pulling REPO issues")
-                    (funcall callback callback (cons 'issues val))))
-                 (t
-                  (if (setq cur (cdr cur))
-                      (progn
-                        (cl-incf pos)
-                        (forge--msg nil nil nil "Pulling issue %s/%s" pos cnt)
-                        (forge--fetch-issue-posts repo cur cb))
-                    (forge--msg repo t t "Pulling REPO issues")
-                    (funcall callback callback (cons 'issues val)))))))))
+                  ((not pos)
+                   (if (setq cur (setq val v))
+                       (progn
+                         (setq pos 1)
+                         (setq cnt (length val))
+                         (forge--msg nil nil nil "Pulling issue %s/%s" pos cnt)
+                         (forge--fetch-issue-posts repo cur cb))
+                     (forge--msg repo t t "Pulling REPO issues")
+                     (funcall callback callback (cons 'issues val))))
+                  (t
+                   (if (setq cur (cdr cur))
+                       (progn
+                         (cl-incf pos)
+                         (forge--msg nil nil nil "Pulling issue %s/%s" pos cnt)
+                         (forge--fetch-issue-posts repo cur cb))
+                     (forge--msg repo t t "Pulling REPO issues")
+                     (funcall callback callback (cons 'issues val)))))))))
     (forge--msg repo t nil "Pulling REPO issues")
     (forge--glab-get repo "/projects/:project/issues"
       `((per_page . 100)
@@ -222,27 +222,27 @@
   (let ((cb (let (val cur cnt pos)
               (lambda (cb &optional v)
                 (cond
-                 ((not pos)
-                  (if (setq cur (setq val v))
-                      (progn
-                        (setq pos 1)
-                        (setq cnt (length val))
-                        (forge--msg nil nil nil "Pulling pullreq %s/%s" pos cnt)
-                        (forge--fetch-pullreq-posts repo cur cb))
-                    (forge--msg repo t t "Pulling REPO pullreqs")
-                    (funcall callback callback (cons 'pullreqs val))))
-                 ((not (assq 'source_project (car cur)))
-                  (forge--fetch-pullreq-source-repo repo cur cb))
-                 ((not (assq 'target_project (car cur)))
-                  (forge--fetch-pullreq-target-repo repo cur cb))
-                 (t
-                  (if (setq cur (cdr cur))
-                      (progn
-                        (cl-incf pos)
-                        (forge--msg nil nil nil "Pulling pullreq %s/%s" pos cnt)
-                        (forge--fetch-pullreq-posts repo cur cb))
-                    (forge--msg repo t t "Pulling REPO pullreqs")
-                    (funcall callback callback (cons 'pullreqs val)))))))))
+                  ((not pos)
+                   (if (setq cur (setq val v))
+                       (progn
+                         (setq pos 1)
+                         (setq cnt (length val))
+                         (forge--msg nil nil nil "Pulling pullreq %s/%s" pos cnt)
+                         (forge--fetch-pullreq-posts repo cur cb))
+                     (forge--msg repo t t "Pulling REPO pullreqs")
+                     (funcall callback callback (cons 'pullreqs val))))
+                  ((not (assq 'source_project (car cur)))
+                   (forge--fetch-pullreq-source-repo repo cur cb))
+                  ((not (assq 'target_project (car cur)))
+                   (forge--fetch-pullreq-target-repo repo cur cb))
+                  (t
+                   (if (setq cur (cdr cur))
+                       (progn
+                         (cl-incf pos)
+                         (forge--msg nil nil nil "Pulling pullreq %s/%s" pos cnt)
+                         (forge--fetch-pullreq-posts repo cur cb))
+                     (forge--msg repo t t "Pulling REPO pullreqs")
+                     (funcall callback callback (cons 'pullreqs val)))))))))
     (forge--msg repo t nil "Pulling REPO pullreqs")
     (forge--glab-get repo "/projects/:project/merge_requests"
       `((per_page . 100)
@@ -625,15 +625,15 @@
                                host callback errorback)
   (declare (indent defun))
   (ghub-request "GET" (if obj (forge--format-resource obj resource) resource)
-                params
-                :forge 'gitlab
-                :host (or host (oref (forge-get-repository obj) apihost))
-                :auth 'forge
-                :query query :payload payload :headers headers
-                :silent silent :unpaginate unpaginate
-                :noerror noerror :reader reader
-                :callback callback
-                :errorback (or errorback (and callback t))))
+    params
+    :forge 'gitlab
+    :host (or host (oref (forge-get-repository obj) apihost))
+    :auth 'forge
+    :query query :payload payload :headers headers
+    :silent silent :unpaginate unpaginate
+    :noerror noerror :reader reader
+    :callback callback
+    :errorback (or errorback (and callback t))))
 
 (cl-defun forge--glab-put (obj resource
                                &optional params
@@ -642,15 +642,15 @@
                                host callback errorback)
   (declare (indent defun))
   (ghub-request "PUT" (if obj (forge--format-resource obj resource) resource)
-                params
-                :forge 'gitlab
-                :host (or host (oref (forge-get-repository obj) apihost))
-                :auth 'forge
-                :query query :payload payload :headers headers
-                :silent silent :unpaginate unpaginate
-                :noerror noerror :reader reader
-                :callback callback
-                :errorback (or errorback (and callback t))))
+    params
+    :forge 'gitlab
+    :host (or host (oref (forge-get-repository obj) apihost))
+    :auth 'forge
+    :query query :payload payload :headers headers
+    :silent silent :unpaginate unpaginate
+    :noerror noerror :reader reader
+    :callback callback
+    :errorback (or errorback (and callback t))))
 
 (cl-defun forge--glab-post (obj resource
                                 &optional params
@@ -659,15 +659,15 @@
                                 host callback errorback)
   (declare (indent defun))
   (ghub-request "POST" (forge--format-resource obj resource)
-                params
-                :forge 'gitlab
-                :host (or host (oref (forge-get-repository obj) apihost))
-                :auth 'forge
-                :query query :payload payload :headers headers
-                :silent silent :unpaginate unpaginate
-                :noerror noerror :reader reader
-                :callback callback
-                :errorback (or errorback (and callback t))))
+    params
+    :forge 'gitlab
+    :host (or host (oref (forge-get-repository obj) apihost))
+    :auth 'forge
+    :query query :payload payload :headers headers
+    :silent silent :unpaginate unpaginate
+    :noerror noerror :reader reader
+    :callback callback
+    :errorback (or errorback (and callback t))))
 
 (cl-defun forge--glab-delete (obj resource
                                   &optional params
@@ -676,15 +676,15 @@
                                   host callback errorback)
   (declare (indent defun))
   (ghub-request "DELETE" (forge--format-resource obj resource)
-                params
-                :forge 'gitlab
-                :host (or host (oref (forge-get-repository obj) apihost))
-                :auth 'forge
-                :query query :payload payload :headers headers
-                :silent silent :unpaginate unpaginate
-                :noerror noerror :reader reader
-                :callback callback
-                :errorback (or errorback (and callback t))))
+    params
+    :forge 'gitlab
+    :host (or host (oref (forge-get-repository obj) apihost))
+    :auth 'forge
+    :query query :payload payload :headers headers
+    :silent silent :unpaginate unpaginate
+    :noerror noerror :reader reader
+    :callback callback
+    :errorback (or errorback (and callback t))))
 
 ;;; _
 ;; Local Variables:

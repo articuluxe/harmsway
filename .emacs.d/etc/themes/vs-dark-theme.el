@@ -1,6 +1,6 @@
 ;;; vs-dark-theme.el --- Visual Studio IDE dark theme  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2019-2025 Shen, Jen-Chieh
+;; Copyright (C) 2019-2026 Shen, Jen-Chieh
 
 ;; Author: Jen-Chieh Shen
 ;; URL: https://github.com/emacs-vs/vs-dark-theme
@@ -132,8 +132,9 @@
  `(tree-sitter-hl-face:doc                   ((t :foreground "olive drab")))
  `(tree-sitter-hl-face:string                ((t :foreground "#D69D78")))
  `(tree-sitter-hl-face:string.special        ((t :foreground "#D69D78")))
+ `(tree-sitter-hl-face:string.special.path   ((t :foreground "#D69D78")))
  `(tree-sitter-hl-face:escape                ((t :foreground "#D69D78")))
- `(tree-sitter-hl-face:embedded              ((t :foreground "#D69D78")))
+ `(tree-sitter-hl-face:embedded              ((t :foreground "#D2D2D2")))
  `(tree-sitter-hl-face:keyword               ((t :foreground "#17A0FB")))
  `(tree-sitter-hl-face:operator              ((t :foreground "#B4B4B3")))
  `(tree-sitter-hl-face:label                 ((t :foreground "#808080")))
@@ -222,9 +223,9 @@
  `(modablist-select-face ((t :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
  `(modablist-insert-face ((t :background "#565136" :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
 
- `(lsp-flycheck-info-unnecessary-face    ((t :inherit flycheck-info    :foreground "#B0B0B0")))
- `(lsp-flycheck-warning-unnecessary-face ((t :inherit flycheck-warning :foreground "#B0B0B0")))
- `(lsp-flycheck-error-unnecessary-face   ((t :inherit flycheck-error   :foreground "#B0B0B0")))
+ `(lsp-flycheck-info-unnecessary-face    ((t :inherit flycheck-info)))
+ `(lsp-flycheck-warning-unnecessary-face ((t :inherit flycheck-warning)))
+ `(lsp-flycheck-error-unnecessary-face   ((t :inherit flycheck-error)))
 
  `(lsp-inlay-hint-face           ((t :background "#252525" :foreground "#888581")))
  `(lsp-inlay-hint-type-face      ((t :background "#252525" :foreground "#888581")))
@@ -233,9 +234,35 @@
  `(dap-ui-breakpoint-verified-fringe ((t :foreground "#E71F2D")))
  `(breakpoint-disabled               ((t :foreground "#C55159")))
 
- `(diff-hl-insert ((t :background "#107C10")))
- `(diff-hl-delete ((t :background "#B01414")))
- `(diff-hl-change ((t :background "#0077D4")))
+ `(success ((t :foreground "#10CA00" :bold t)))
+ `(warning ((t :foreground "#F9983A" :bold t)))
+ `(error   ((t :foreground "#DF655D" :bold t)))
+
+ `(flycheck-info    ((t :underline (:style wave :color "#10CA00"))))
+ `(flycheck-warning ((t :underline (:style wave :color "#F9983A"))))
+ `(flycheck-error   ((t :underline (:style wave :color "#DF655D"))))
+
+ `(sideline-default ((t :foreground "yellow")))
+ `(sideline-backend ((t :background "#2B2B2B" :foreground "#9B9B9B")))
+
+ `(sideline-flycheck-info    ((t :foreground "#10CA00" :bold t)))
+ `(sideline-flycheck-warning ((t :foreground "#F9983A" :bold t)))
+ `(sideline-flycheck-error   ((t :foreground "#DF655D" :bold t)))
+
+ `(sideline-flymake-note    ((t :foreground "#10CA00" :bold t)))
+ `(sideline-flymake-warning ((t :foreground "#F9983A" :bold t)))
+ `(sideline-flymake-error   ((t :foreground "#DF655D" :bold t)))
+
+ `(diff-added   ((t :background "#0F6B0F")))
+ `(diff-removed ((t :background "#A91111")))
+ `(diff-changed ((t :background "#0065B4")))
+
+ `(diff-hl-insert ((t :background "#0F6B0F")))
+ `(diff-hl-delete ((t :background "#A91111")))
+ `(diff-hl-change ((t :background "#0065B4")))
+
+ `(tree-sitter-hl-face:diff.plus  ((t :background "#0F6B0F")))
+ `(tree-sitter-hl-face:diff.minus ((t :background "#A91111")))
 
  `(rjsx-tag              ((t (:foreground "#87CEFA"))))
  `(rjsx-attr             ((t (:foreground "#EEDD82"))))

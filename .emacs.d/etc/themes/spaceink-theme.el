@@ -291,9 +291,9 @@
 ;;;;; avy
       `(avy-background-face ((,c :foreground ,fg-slate-bg)))
       `(avy-goto-char-timer-face ((,c :inherit lazy-highlight :weight bold)))
-      `(avy-lead-face ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(avy-lead-face ((,c :foreground ,fg+2 :background ,blue-bg :weight bold)))
       `(avy-lead-face-0 ((,c :foreground ,fg+2 :background ,magenta-bg :weight bold)))
-      `(avy-lead-face-1 ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(avy-lead-face-1 ((,c :foreground ,fg+2 :background ,blue-bg :weight bold)))
       `(avy-lead-face-2 ((,c :foreground ,fg+2 :background ,magenta-bg :weight bold)))
 
 ;;;;; bookmark
@@ -344,7 +344,7 @@
       `(corfu-bar ((,c :background ,region)))
       `(corfu-border ((,c :background ,border)))
       `(corfu-indexed ((,c :background ,bg-slate-1 :foreground ,fg-1 :height 0.80)))
-      `(corfu-quick1 ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(corfu-quick1 ((,c :foreground ,fg+2 :background ,blue-bg :weight bold)))
       `(corfu-quick2 ((,c ::foreground ,fg+2 :background ,magenta-bg :weight bold)))
 
 ;;;;; cus-edit
@@ -421,6 +421,11 @@
       `(edts-face-error-line ((,c :background unspecified :inherit flymake-error)))
       `(edts-face-error-mode-line ((,c :background unspecified :foreground ,red :weight bold)))
 
+;;;;; eglot
+      `(eglot-highlight-symbol-face ((,c :underline ,bg-slate+2)))
+      `(eglot-mode-line ((,c :inherit font-lock-constant-face :weight bold)))
+      `(eglot-diagnostic-tag-unnecessary-face ((,c :underline (:style wave :color ,cyan))))
+
 ;;;;; eldoc
       `(eldoc-highlight-function-argument ((,c :inherit line-number-current-line :weight bold)))
 
@@ -490,6 +495,10 @@
       `(erc-prompt-face ((,c :foreground ,blue)))
       `(erc-timestamp-face ((,c :foreground ,cyan)))
       `(erc-keyword-face ((,c :foreground ,green)))
+
+;;;;; ert
+      `(ert-test-result-expected ((,c :background ,diff-add :foreground ,diff-add-fg)))
+      `(ert-test-result-unexpected ((,c :background ,diff-del :foreground ,diff-del-fg)))
 
 ;;;;; eshell
       `(eshell-ls-directory ((,c :inherit dired-directory)))
@@ -1168,7 +1177,7 @@
 
 ;;;;; vertico
       `(vertico-group-title ((,c :inherit completions-group-title)))
-      `(vertico-quick1 ((,c :foreground ,fg+2 :background ,green-bg :weight bold)))
+      `(vertico-quick1 ((,c :foreground ,fg+2 :background ,blue-bg :weight bold)))
       `(vertico-quick2 ((,c :foreground ,fg+2 :background ,magenta-bg :weight bold)))
 
 ;;;;; vundo

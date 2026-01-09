@@ -1,11 +1,11 @@
 ;;; flyspell-correct.el --- Correcting words with flyspell via custom interface  -*- lexical-binding: t; -*-
 ;;
-;; Copyright (c) 2016-2022 Boris Buliga
+;; Copyright (c) 2016-2026 Boris Buliga
 ;;
 ;; Author: Boris Buliga <boris@d12frosted.io>
 ;; URL: https://github.com/d12frosted/flyspell-correct
-;; Version: 0.6.1
-;; Package-Requires: ((emacs "24"))
+;; Version: 1.0.0
+;; Package-Requires: ((emacs "29.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -62,31 +62,22 @@
 
 (defcustom flyspell-correct-interface #'flyspell-correct-completing-read
   "Interface for `flyspell-correct-at-point'.
-
 `flyspell-correct-interface' is a function accepting two arguments:
-
   - candidates for correction (list of strings)
   - misspelled word (string)
-
 Result must be either a string (replacement word) or a cons of a
 command and a string (replacement word), where the command is one
 of the following:
-
   - skip - do nothing to misspelled word, in rapid mode used for
     jumping to the next (or previous) misspelled word
-
   - break - do nothing to misspelled word, break from rapid mode
-
   - stop - do nothing to misspelled word, break from rapid
     mode (if enabled) and leave the point at the misspelled word
-
   - save - replace misspelled word with replacement word and save
     it to the personal dictionary
-
   - session - replace misspelled word with replacement word and
     save it to the session dictionary (correction will be
     discarded upon quitting Emacs)
-
   - buffer - replace misspelled word with replacement word and
     save it to the buffer dictionary (added to the bottom of
     buffer)"
@@ -95,9 +86,24 @@ of the following:
 
 (defcustom flyspell-correct-highlight t
   "When non-nil highlight the word while correcting.
-
 The face `flyspell-correct-highlight-face' is used for
 highlighting."
+  :group 'flyspell-correct
+  :type 'boolean)
+
+(defcustom flyspell-correct-default-direction 'backward
+  "Default direction for `flyspell-correct-wrapper'.
+When set to `backward' (the default), search for misspelled words
+before point.  When set to `forward', search for misspelled words
+after point."
+  :group 'flyspell-correct
+  :type '(choice (const :tag "Backward" backward)
+                 (const :tag "Forward" forward)))
+
+(defcustom flyspell-correct-abort-on-quit t
+  "When non-nil, restore point when quitting correction.
+When set to nil, leave point at the misspelled word when quitting
+with \\[keyboard-quit] (similar to the `stop' action)."
   :group 'flyspell-correct
   :type 'boolean)
 
@@ -124,7 +130,6 @@ highlighting."
 
 (defun flyspell-correct--cr-index (n)
   "Generate a short unique index string for N.
-
 The index string is used to prefix suggestion candidates. The digits 12345
 encode (mod n 5) and occur as suffix of the index string. If one of the keys
 12345 is pressed, the selected candidate is automatically submitted. The
@@ -140,9 +145,7 @@ prefix of the index string."
 
 (defun flyspell-correct-completing-read (candidates word)
   "Run `completing-read' for the given CANDIDATES.
-
 List of CANDIDATES is given by flyspell for the WORD.
-
 Return a selected word to use as a replacement or a tuple
 of (command, word) to be used by `flyspell-do-correct'."
   (let* ((idx 0)
@@ -211,7 +214,7 @@ of (command, word) to be used by `flyspell-do-correct'."
 (define-obsolete-function-alias
   'flyspell-correct-dummy
   'flyspell-correct-completing-read
-  "0.6.1")
+  "1.0.0")
 
 ;;; On point word correction
 ;;
@@ -224,7 +227,9 @@ Adapted from `flyspell-correct-word-before-point'."
   (unless flyspell-correct-interface
     (error "Could not correct word because `flyspell-correct-interface' is not set"))
   (let ((res))
-    ;; use the correct dictionary
+    ;; Initialize spell checker and use the correct dictionary.
+    ;; This allows flyspell-correct-at-point to work without flyspell-mode.
+    (ispell-set-spellchecker-params)
     (flyspell-accept-buffer-local-defs)
     (flyspell-correct--highlight-add)
     (unwind-protect
@@ -292,10 +297,9 @@ Adapted from `flyspell-correct-word-before-point'."
 (defun flyspell-correct-previous (position)
   "Correct the first misspelled word that occurs before POSITION.
 But don't look beyond what's visible on the screen.
-
 Uses `flyspell-correct-at-point' function for correction.
-
-With a prefix argument, automatically continues to all prior misspelled words in the buffer."
+With a prefix argument, automatically continues to all prior
+misspelled words in the buffer."
   (interactive "d")
   (flyspell-correct-move position nil current-prefix-arg))
 
@@ -305,9 +309,7 @@ With a prefix argument, automatically continues to all prior misspelled words in
 ;;;###autoload
 (defun flyspell-correct-next (position)
   "Correct the first misspelled word that occurs after POSITION.
-
 Uses `flyspell-correct-at-point' function for correction.
-
 With a prefix argument, automatically continues to all further
 misspelled words in the buffer."
   (interactive "d")
@@ -319,48 +321,84 @@ misspelled words in the buffer."
 ;;;###autoload
 (defun flyspell-correct-wrapper ()
   "Correct spelling error in a dwim fashion based on universal argument.
-
 - One \\[universal-argument] enables rapid mode.
 - Two \\[universal-argument]'s changes direction of spelling
   errors search.
 - Three \\[universal-argument]'s changes direction of spelling
-  errors search and enables rapid mode."
+  errors search and enables rapid mode.
+
+The default direction is controlled by `flyspell-correct-default-direction'."
   (interactive)
-  (let ((forward-direction nil)
-		    (rapid nil))
+  (let ((forward-direction (eq flyspell-correct-default-direction 'forward))
+        (rapid nil))
     (cond
      ((equal current-prefix-arg '(4))  ; C-u = rapid
-	    (setq rapid t))
+      (setq rapid t))
      ((equal current-prefix-arg '(16)) ; C-u C-u = change direction
-      (setq forward-direction t))
+      (setq forward-direction (not forward-direction)))
      ((equal current-prefix-arg '(64)) ; C-u C-u C-u = do both
-	    (setq rapid t)
-	    (setq forward-direction t)))
+      (setq rapid t)
+      (setq forward-direction (not forward-direction))))
 
     (flyspell-correct-move (point) forward-direction rapid)))
 
 ;;;###autoload
+(defun flyspell-correct-region (beg end)
+  "Correct all misspelled words in region between BEG and END.
+Runs `flyspell-region' first to find misspelled words, then
+corrects them one by one using `flyspell-correct-at-point'.
+
+This is useful for spell-checking a specific portion of the buffer
+without affecting the rest."
+  (interactive "r")
+  (flyspell-region beg end)
+  (let ((overlay-list (seq-filter
+                       #'flyspell-overlay-p
+                       (overlays-in beg end))))
+    ;; Sort by position
+    (setq overlay-list (sort overlay-list
+                             (lambda (o1 o2)
+                               (< (overlay-start o1)
+                                  (overlay-start o2)))))
+    (when (or (not (mark t))
+              (/= (mark t) (point)))
+      (push-mark (point) t))
+    (unwind-protect
+        (save-excursion
+          (catch 'break
+            (dolist (overlay overlay-list)
+              (when (flyspell-overlay-p overlay)  ; Check again, might be deleted
+                (goto-char (overlay-start overlay))
+                (let ((scroll (> (point) (window-end))))
+                  (when scroll (ignore-errors (recenter))))
+                (let ((res (condition-case nil
+                               (flyspell-correct-at-point)
+                             (quit 'break))))
+                  (when (or (eq res 'break)
+                            (eq (car-safe res) 'break)
+                            (eq (car-safe res) 'stop))
+                    (throw 'break nil)))))))
+      (goto-char (mark t)))))
+
+;;;###autoload
 (defun flyspell-correct-move (position &optional forward rapid)
   "Correct the first misspelled word that occurs before POSITION.
-
 Uses `flyspell-correct-at-point' function for correction.
-
 With FORWARD set non-nil, check forward instead of backward.
-
 With RAPID set non-nil, automatically continues in direction
 until all errors in buffer have been addressed."
   ;; NOTE: The way I may be pushing the mark may possibly be more
   ;; idiomatically done using the opoint arg of
   ;; `flyspell-correct-word-before-point'.
   (interactive "d")
-  ;; push mark when starting
-  (when (or (not (mark t))
-            (/= (mark t) (point)))
-    (push-mark (point) t))
   (let ((original-pos (point))
         (target-pos (point))
         (hard-move-point)
-        (mark-opos))
+        (original-mark-ring mark-ring)
+        (preserve-mark))
+    (when (or (not (mark t))
+              (/= (mark t) (point)))
+      (push-mark (point) t))
     (unwind-protect
         (save-excursion
           (let ((incorrect-word-pos))
@@ -402,13 +440,19 @@ until all errors in buffer have been addressed."
                              (<= original-pos (overlay-end overlay))))
 
                   ;; Correct a word using `flyspell-correct-at-point'.
-                  (let ((res (flyspell-correct-at-point)))
+                  (let ((res (condition-case nil
+                                 (flyspell-correct-at-point)
+                               (quit
+                                ;; Handle C-g based on configuration
+                                (if flyspell-correct-abort-on-quit
+                                    'break
+                                  'stop)))))
                     (when res
                       ;; stop at misspelled word
                       (when (eq (car-safe res) 'stop)
-                        (setq target-pos incorrect-word-pos
-                              hard-move-point t
-                              mark-opos t))
+                        (setq target-pos incorrect-word-pos)
+                        (setq hard-move-point t)
+                        (setq preserve-mark t))
 
                       ;; break from rapid mode
                       (when (or
@@ -419,23 +463,15 @@ until all errors in buffer have been addressed."
                              ;; explicit rapid mode disablers
                              (eq (car-safe res) 'break)
                              (eq (car-safe res) 'stop))
-                        (setq overlay nil))
+                        (setq overlay nil)))))))))
 
-                      (when (and
-                             ;; don't push mark if there is no change
-                             (not (memq (car-safe res) '(stop break skip)))
-                             (/= (mark t) (point)))
-                        ;; `flyspell-correct-at-point' may move point, use
-                        ;; original `incorrect-word-pos' instead
-                        (push-mark incorrect-word-pos t)))))))))
-
-      (when hard-move-point
-        (when mark-opos
-          (push-mark (point) t))
-        (goto-char target-pos))
+      (if hard-move-point
+          (goto-char target-pos)
+        (goto-char (mark t)))
       ;; We pushed the mark when starting, but if the operation is canceled
       ;; without any change that mark is redundant and needs to be cleaned-up.
-      (when (= (mark t) (point)) (pop-mark)))))
+      (unless preserve-mark
+        (setq mark-ring original-mark-ring)))))
 
 ;;; Overlays
 
@@ -460,7 +496,6 @@ until all errors in buffer have been addressed."
 
 (defun flyspell-correct--overlay-loc ()
   "Return `cons' with start and end of `flyspell' overlay at point.
-
 Returns nil if no overlay is found."
   (let ((ovs (overlays-at (point)))
         ov)
@@ -487,12 +522,11 @@ Use floating point numbers to express fractions of seconds."
   "Interface to use in `flyspell-correct-auto-mode'.
 When set to nil `flyspell-correct-interface' is used.")
 
-(defvar flyspell-correct--auto-timer nil
+(defvar-local flyspell-correct--auto-timer nil
   "Timer to automatically call `flyspell-correct-previous'.")
-(make-variable-buffer-local 'flyspell-correct--auto-timer)
 
-(defvar flyspell-correct--auto-active-p nil)
-(make-variable-buffer-local 'flyspell-correct--auto-active-p)
+(defvar-local flyspell-correct--auto-active-p nil
+  "Non-nil when auto-correction is active.")
 
 (defun flyspell-correct-auto-cancel-timer ()
   "Cancel auto correct timer."
@@ -526,12 +560,10 @@ When set to nil `flyspell-correct-interface' is used.")
 ;;;###autoload
 (define-minor-mode flyspell-correct-auto-mode
   "Minor mode for automatically correcting word at point.
-
 Take my advice and don't use this functionality unless you find
 `flyspell-correct-previous' function useless for your purposes.
 Seriously, just try named function for completion. You can find
 more info in comment[1].
-
 [1]:
 https://github.com/syl20bnr/spacemacs/issues/6209#issuecomment-274320376"
   :group 'flyspell

@@ -44,7 +44,7 @@
       (pache-dark-bg+2      "#3c3836")
       (pache-dark-bg+3      "#504945")
       (pache-dark-bg+4      "#665c54")
-      (pache-dark-red-1     "#af1d1a")
+      (pache-dark-red-1     "#cc241d")
       (pache-dark-red       "#fb4934")
       (pache-dark-red+1     "#fe8019")
       (pache-dark-green     "#a9b665")
@@ -54,7 +54,8 @@
       (pache-dark-niagara-2 "#2a2827")
       (pache-dark-niagara-1 "#504945")
       (pache-dark-niagara   "#83a598")
-      (pache-dark-wisteria  "#d3869b"))
+      (pache-dark-wisteria  "#d3869b")
+      (pache-dark-string    "#8ec07c"))
   (custom-theme-set-variables
    'pache-dark
    '(frame-brackground-mode (quote dark)))
@@ -169,18 +170,18 @@
 
    ;; Font Lock
    `(font-lock-builtin-face ((t (:foreground ,pache-dark-yellow))))
-   `(font-lock-comment-face ((t (:foreground ,pache-dark-brown))))
+   `(font-lock-comment-face ((t (:foreground ,pache-dark-bg+4))))
    `(font-lock-comment-delimiter-face ((t (:foreground ,pache-dark-brown))))
    `(font-lock-constant-face ((t (:foreground ,pache-dark-quartz))))
-   `(font-lock-doc-face ((t (:foreground ,pache-dark-green))))
+   `(font-lock-doc-face ((t (:foreground ,pache-dark-string))))
    `(font-lock-doc-string-face ((t (:foreground ,pache-dark-green))))
    `(font-lock-function-name-face ((t (:foreground ,pache-dark-niagara))))
    `(font-lock-keyword-face ((t (:foreground ,pache-dark-red :bold t))))
    `(font-lock-preprocessor-face ((t (:foreground ,pache-dark-quartz))))
    `(font-lock-reference-face ((t (:foreground ,pache-dark-quartz))))
-   `(font-lock-string-face ((t (:foreground ,pache-dark-green))))
-   `(font-lock-type-face ((t (:foreground ,pache-dark-quartz))))
-   `(font-lock-variable-name-face ((t (:foreground ,pache-dark-fg+1))))
+   `(font-lock-string-face ((t (:foreground ,pache-dark-string))))
+   `(font-lock-type-face ((t (:foreground ,pache-dark-fg+1))))
+   `(font-lock-variable-name-face ((t (:foreground ,pache-dark-white))))
    `(font-lock-warning-face ((t (:foreground ,pache-dark-red))))
 
    ;; Flymake
@@ -378,6 +379,7 @@
    `(term-color-magenta ((t (:foreground ,pache-dark-wisteria :background ,pache-dark-wisteria))))
    `(term-color-cyan ((t (:foreground ,pache-dark-quartz :background ,pache-dark-quartz))))
    `(term-color-white ((t (:foreground ,pache-dark-fg :background ,pache-dark-white))))
+   `(ansi-color-bold ((t (:foreground ,pache-dark-yellow :background ,pache-dark-black))))
 
    ;; company-mode
    `(company-tooltip ((t (:foreground ,pache-dark-fg :background ,pache-dark-bg+1))))

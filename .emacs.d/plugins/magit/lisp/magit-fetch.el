@@ -1,6 +1,6 @@
 ;;; magit-fetch.el --- Download objects and refs  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2025 The Magit Project Contributors
+;; Copyright (C) 2008-2026 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -81,10 +81,10 @@ push-remote."
          (remote (magit-get-push-remote branch))
          (v (magit--push-remote-variable branch t)))
     (cond
-     ((member remote (magit-list-remotes)) remote)
-     (remote
-      (format "%s, replacing invalid" v))
-     ((format "%s, setting that" v)))))
+      ((member remote (magit-list-remotes)) remote)
+      (remote
+       (format "%s, replacing invalid" v))
+      ((format "%s, setting that" v)))))
 
 ;;;###autoload(autoload 'magit-fetch-from-upstream "magit-fetch" nil t)
 (transient-define-suffix magit-fetch-from-upstream (remote args)
@@ -117,20 +117,20 @@ results in an error."
 (defun magit-fetch-branch (remote branch args)
   "Fetch a BRANCH from a REMOTE."
   (interactive
-   (let ((remote (magit-read-remote-or-url "Fetch from remote or url")))
-     (list remote
-           (magit-read-remote-branch "Fetch branch" remote)
-           (magit-fetch-arguments))))
+    (let ((remote (magit-read-remote-or-url "Fetch from remote or url")))
+      (list remote
+            (magit-read-remote-branch "Fetch branch" remote)
+            (magit-fetch-arguments))))
   (magit-git-fetch remote (cons branch args)))
 
 ;;;###autoload
 (defun magit-fetch-refspec (remote refspec args)
   "Fetch a REFSPEC from a REMOTE."
   (interactive
-   (let ((remote (magit-read-remote-or-url "Fetch from remote or url")))
-     (list remote
-           (magit-read-refspec "Fetch using refspec" remote)
-           (magit-fetch-arguments))))
+    (let ((remote (magit-read-remote-or-url "Fetch from remote or url")))
+      (list remote
+            (magit-read-refspec "Fetch using refspec" remote)
+            (magit-fetch-arguments))))
   (magit-git-fetch remote (cons refspec args)))
 
 ;;;###autoload

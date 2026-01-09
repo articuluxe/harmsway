@@ -1,6 +1,6 @@
 ;;; vertico.el --- VERTical Interactive COmpletion -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2025 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2026 Free Software Foundation, Inc.
 
 ;; Author: Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
@@ -187,9 +187,6 @@ The value should lie between 0 and vertico-count/2."
 (defvar-local vertico--lock-groups nil
   "Lock-in current group order.")
 
-(defvar-local vertico--all-groups nil
-  "List of all group titles.")
-
 (defvar-local vertico--groups nil
   "List of current group titles.")
 
@@ -198,9 +195,9 @@ The value should lie between 0 and vertico-count/2."
 
 (defun vertico--affixate (cands)
   "Annotate CANDS with annotation function."
-  (if-let ((aff (vertico--metadata-get 'affixation-function)))
+  (if-let* ((aff (vertico--metadata-get 'affixation-function)))
       (funcall aff cands)
-    (if-let ((ann (vertico--metadata-get 'annotation-function)))
+    (if-let* ((ann (vertico--metadata-get 'annotation-function)))
         (cl-loop for cand in cands collect
                  (let ((suff (or (funcall ann cand) "")))
                    ;; The default completion UI adds the `completions-annotations'
@@ -212,7 +209,7 @@ The value should lie between 0 and vertico-count/2."
 
 (defun vertico--move-to-front (elem list)
   "Move ELEM to front of LIST."
-  (if-let ((found (member elem list))) ;; No duplicates, compare with Corfu.
+  (if-let* ((found (member elem list))) ;; No duplicates, compare with Corfu.
       (nconc (list (car found)) (delq (setcar found nil) list))
     list))
 
@@ -256,24 +253,25 @@ The value should lie between 0 and vertico-count/2."
       (vertico--metadata-get 'display-sort-function)
       vertico-sort-function))
 
-(defun vertico--recompute (pt content)
-  "Recompute state given PT and CONTENT."
-  (pcase-let* ((table minibuffer-completion-table)
+(defun vertico--compute (input)
+  "Compute state given INPUT."
+  (pcase-let* ((`(,str . ,pt) input)
+               (table minibuffer-completion-table)
                (pred minibuffer-completion-predicate)
-               (before (substring content 0 pt))
-               (after (substring content pt))
+               (before (substring str 0 pt))
+               (after (substring str pt))
                ;; bug#47678: `completion-boundaries' fails for `partial-completion'
                ;; if the cursor is moved before the slashes of "~//".
                ;; See also corfu.el which has the same issue.
                (bounds (condition-case nil
                            (completion-boundaries before table pred after)
                          (t (cons 0 (length after)))))
-               (field (substring content (car bounds) (+ pt (cdr bounds))))
+               (field (substring str (car bounds) (+ pt (cdr bounds))))
                ;; bug#75910: category instead of `minibuffer-completing-file-name'
                (completing-file (eq 'file (vertico--metadata-get 'category)))
-               (`(,all . ,hl) (vertico--filter-completions content table pred pt vertico--metadata))
-               (base (or (when-let ((z (last all))) (prog1 (cdr z) (setcdr z nil))) 0))
-               (vertico--base (substring content 0 base))
+               (`(,all . ,hl) (vertico--filter-completions str table pred pt vertico--metadata))
+               (base (or (when-let* ((z (last all))) (prog1 (cdr z) (setcdr z nil))) 0))
+               (vertico--base (substring str 0 base))
                (def (or (car-safe minibuffer-default) minibuffer-default))
                (groups) (def-missing) (lock))
     ;; Filter the ignored file extensions. We cannot use modified predicate for this filtering,
@@ -288,13 +286,14 @@ The value should lie between 0 and vertico-count/2."
     (when (and completing-file (not (string-suffix-p "/" field)))
       (setq all (vertico--move-to-front (concat field "/") all)))
     (setq all (vertico--move-to-front field all))
-    (when-let ((fun (and all (vertico--metadata-get 'group-function))))
+    (when-let* ((fun (and all (vertico--metadata-get 'group-function))))
       (setq groups (vertico--group-by fun all) all (car groups)))
-    (setq def-missing (and def (equal content "") (not (member def all)))
+    (setq def-missing (and def (equal str "") (not (member def all)))
           lock (and vertico--lock-candidate ;; Locked position of old candidate.
                     (if (< vertico--index 0) -1
                       (seq-position all (nth vertico--index vertico--candidates)))))
-    `((vertico--base . ,vertico--base)
+    `((vertico--input . ,input)
+      (vertico--base . ,vertico--base)
       (vertico--metadata . ,vertico--metadata)
       (vertico--candidates . ,all)
       (vertico--total . ,(length all))
@@ -304,13 +303,12 @@ The value should lie between 0 and vertico-count/2."
                                          (memq minibuffer--require-match
                                                '(nil confirm confirm-after-completion)))))
       (vertico--lock-candidate . ,lock)
-      (vertico--groups . ,(cadr groups))
-      (vertico--all-groups . ,(or (caddr groups) vertico--all-groups))
+      (vertico--groups . ,(cdr groups))
       (vertico--index . ,(or lock
                              (if (or def-missing (eq vertico-preselect 'prompt) (not all)
                                      (and completing-file (eq vertico-preselect 'directory)
-                                          (= (length vertico--base) (length content))
-                                          (test-completion content table pred)))
+                                          (= (length vertico--base) (length str))
+                                          (test-completion str table pred)))
                                  -1 0))))))
 
 (defun vertico--hilit (cand)
@@ -329,15 +327,14 @@ The value should lie between 0 and vertico-count/2."
     ;; Build hash table of groups
     (cl-loop for elem on elems
              for title = (funcall fun (car elem) nil) do
-             (if-let ((group (gethash title ht)))
+             (if-let* ((group (gethash title ht)))
                  (setcdr group (setcdr (cdr group) elem)) ;; Append to tail of group
                (puthash title (cons elem elem) ht) ;; New group element (head . tail)
                (push title titles)))
     (setq titles (nreverse titles))
     ;; Cycle groups if `vertico--lock-groups' is set
-    (when-let ((vertico--lock-groups)
-               (group (seq-find (lambda (group) (gethash group ht))
-                                vertico--all-groups)))
+    (when-let* ((group (seq-find (lambda (group) (gethash group ht))
+                                 vertico--lock-groups)))
       (setq titles (vertico--cycle titles (seq-position titles group))))
     ;; Build group list
     (dolist (title titles)
@@ -350,11 +347,7 @@ The value should lie between 0 and vertico-count/2."
       (while (cdr link)
         (setcdr (cdar link) (caadr link))
         (pop link)))
-    ;; Check if new groups are found
-    (dolist (group vertico--all-groups)
-      (remhash group ht))
-    (list (caar groups) titles
-          (if (hash-table-empty-p ht) vertico--all-groups titles))))
+    (cons (caar groups) titles)))
 
 (defun vertico--remote-p (path)
   "Return t if PATH is a remote path."
@@ -363,8 +356,8 @@ The value should lie between 0 and vertico-count/2."
 (defun vertico--update (&optional interruptible)
   "Update state, optionally INTERRUPTIBLE."
   (let* ((pt (max 0 (- (point) (minibuffer-prompt-end))))
-         (content (minibuffer-contents-no-properties))
-         (input (cons content pt)))
+         (str (minibuffer-contents-no-properties))
+         (input (cons str pt)))
     (unless (or (and interruptible (input-pending-p)) (equal vertico--input input))
       ;; Redisplay to make input immediately visible before expensive candidate
       ;; recomputation (gh:minad/vertico#89).  No redisplay during init because
@@ -372,7 +365,7 @@ The value should lie between 0 and vertico-count/2."
       (when (and interruptible (consp vertico--input))
         ;; Prevent recursive exhibit from timer (`consult-vertico--refresh').
         (cl-letf (((symbol-function #'vertico--exhibit) #'ignore)) (redisplay)))
-      (pcase (let ((vertico--metadata (completion-metadata (substring content 0 pt)
+      (pcase (let ((vertico--metadata (completion-metadata (substring str 0 pt)
                                                            minibuffer-completion-table
                                                            minibuffer-completion-predicate)))
                ;; If Tramp is used, do not compute the candidates in an
@@ -380,13 +373,12 @@ The value should lie between 0 and vertico-count/2."
                ;; password and user name prompts (See gh:minad/vertico#23).
                (if (or (not interruptible)
                        (and (eq 'file (vertico--metadata-get 'category))
-                            (or (vertico--remote-p content) (vertico--remote-p default-directory))))
-                   (vertico--recompute pt content)
+                            (or (vertico--remote-p str) (vertico--remote-p default-directory))))
+                   (vertico--compute input)
                  (let ((non-essential t))
-                   (while-no-input (vertico--recompute pt content)))))
+                   (while-no-input (vertico--compute input)))))
         ('nil (abort-recursive-edit))
         ((and state (pred consp))
-         (setq vertico--input input)
          (dolist (s state) (set (car s) (cdr s))))))))
 
 (defun vertico--display-string (str)
@@ -466,7 +458,7 @@ The value should lie between 0 and vertico-count/2."
   "Remove FACE between BEG and END from OBJ."
   (while (< beg end)
     (let ((next (next-single-property-change beg 'face obj end)))
-      (when-let ((val (get-text-property beg 'face obj)))
+      (when-let* ((val (get-text-property beg 'face obj)))
         (put-text-property beg next 'face (remq face (ensure-list val)) obj))
       (setq beg next))))
 
@@ -559,7 +551,7 @@ the stack trace is shown in the *Messages* buffer."
              (cl-loop repeat vertico-count for c in (nthcdr index vertico--candidates)
                       collect (vertico--hilit c)))))
       (pcase-dolist ((and cand `(,str . ,_)) candidates)
-        (when-let ((new-title (and group-fun (funcall group-fun str nil))))
+        (when-let* ((new-title (and group-fun (funcall group-fun str nil))))
           (unless (equal title new-title)
             (setq title new-title)
             (push (vertico--format-group-title title str) lines))
@@ -609,9 +601,9 @@ the stack trace is shown in the *Messages* buffer."
 
 (cl-defgeneric vertico--prepare ()
   "Ensure that the state is prepared before running the next command."
-  (when-let ((cmd (and (symbolp this-command) (symbol-name this-command)))
-             ((string-prefix-p "vertico-" cmd))
-             ((not (and vertico--metadata (string-prefix-p "vertico-directory-" cmd)))))
+  (when-let* ((cmd (and (symbolp this-command) (symbol-name this-command)))
+              ((string-prefix-p "vertico-" cmd))
+              ((not (and vertico--metadata (string-prefix-p "vertico-directory-" cmd)))))
     (vertico--update)))
 
 (cl-defgeneric vertico--setup ()
@@ -680,16 +672,12 @@ the stack trace is shown in the *Messages* buffer."
 When the prefix argument is 0, the group order is reset."
   (interactive "p")
   (when (cdr vertico--groups)
-    (if (setq vertico--lock-groups (not (eq n 0)))
-        (setq vertico--groups (vertico--cycle vertico--groups
-                                              (let ((len (length vertico--groups)))
-                                                (- len (mod (- (or n 1)) len))))
-              vertico--all-groups (vertico--cycle vertico--all-groups
-                                                  (seq-position vertico--all-groups
-                                                                (car vertico--groups))))
-      (setq vertico--groups nil
-            vertico--all-groups nil))
-    (setq vertico--lock-candidate nil
+    (setq vertico--groups (and (not (eq n 0))
+                               (vertico--cycle vertico--groups
+                                               (let ((len (length vertico--groups)))
+                                                 (- len (mod (- (or n 1)) len)))))
+          vertico--lock-groups vertico--groups
+          vertico--lock-candidate nil
           vertico--input nil)))
 
 (defun vertico-previous-group (&optional n)

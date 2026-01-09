@@ -1,6 +1,6 @@
 ;;; magit-extras.el --- Additional functionality for Magit  -*- lexical-binding:t -*-
 
-;; Copyright (C) 2008-2025 The Magit Project Contributors
+;; Copyright (C) 2008-2026 The Magit Project Contributors
 
 ;; Author: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
 ;; Maintainer: Jonas Bernoulli <emacs.magit@jonas.bernoulli.dev>
@@ -60,11 +60,11 @@ alternative commands."
   ["Actions"
    (" m" "Invoke mergetool" magit-git-mergetool)]
   (interactive
-   (if (and (not (eq transient-current-command 'magit-git-mergetool))
-            current-prefix-arg)
-       (list nil nil t)
-     (list (magit-read-unmerged-file "Resolve")
-           (transient-args 'magit-git-mergetool))))
+    (if (and (not (eq transient-current-command 'magit-git-mergetool))
+             current-prefix-arg)
+        (list nil nil t)
+      (list (magit-read-unmerged-file "Resolve")
+            (transient-args 'magit-git-mergetool))))
   (if transient
       (transient-setup 'magit-git-mergetool)
     (magit-run-git-async "mergetool" "--gui" args "--" file)))
@@ -131,18 +131,18 @@ prefix or when the current file cannot be determined let the user
 choose.  When the current buffer is visiting FILENAME instruct
 blame to center around the line point is on."
   (interactive
-   (let (revision filename)
-     (when (or current-prefix-arg
-               (progn
-                 (setq revision "HEAD")
-                 (not (setq filename (magit-file-relative-name nil 'tracked)))))
-       (setq revision (magit-read-branch-or-commit "Blame from revision"))
-       (setq filename (magit-read-file-from-rev revision "Blame file")))
-     (list revision filename
-           (and (equal filename
-                       (ignore-errors
-                         (magit-file-relative-name buffer-file-name)))
-                (line-number-at-pos)))))
+    (let (revision filename)
+      (when (or current-prefix-arg
+                (progn
+                  (setq revision "HEAD")
+                  (not (setq filename (magit-file-relative-name nil 'tracked)))))
+        (setq revision (magit-read-branch-or-commit "Blame from revision"))
+        (setq filename (magit-read-file-from-rev revision "Blame file")))
+      (list revision filename
+            (and (equal filename
+                        (ignore-errors
+                          (magit-file-relative-name buffer-file-name)))
+                 (line-number-at-pos)))))
   (magit-with-toplevel
     (magit-process-git 0 "gui" "blame"
                        (and linenum (list (format "--line=%d" linenum)))
@@ -447,69 +447,69 @@ list returned by `magit-rebase-arguments'."
                       (user-error "Refusing to reshelve detached head")))
          (backup (concat "refs/original/refs/heads/" current)))
     (cond
-     ((not commit)
-      (when (and (magit-ref-p backup)
-                 (not (magit-y-or-n-p
-                       (format "Backup ref %s already exists.  Override? "
-                               backup))))
-        (user-error "Abort"))
-      (magit-log-select
-        (lambda (rev)
-          (magit-reshelve-since rev keyid))
-        "Type %p on a commit to reshelve it and the commits above it,"))
-     (t
-      (cl-flet ((adjust (time offset)
-                  (format-time-string
-                   "%F %T %z"
-                   (+ (floor time)
-                      (* offset 60)
-                      (- (car (decode-time time)))))))
-        (let* ((start (concat commit "^"))
-               (range (concat start ".." current))
-               (time-rev (adjust (float-time (string-to-number
-                                              (magit-rev-format "%at" start)))
-                                 1))
-               (time-now (adjust (float-time)
-                                 (- (string-to-number
-                                     (magit-git-string "rev-list" "--count"
-                                                       range))))))
-          (push time-rev magit--reshelve-history)
-          (let ((date (floor
-                       (float-time
-                        (date-to-time
-                         (read-string "Date for first commit: "
-                                      time-now 'magit--reshelve-history))))))
-            (with-environment-variables (("FILTER_BRANCH_SQUELCH_WARNING" "1"))
-              (magit-with-toplevel
-                (magit-run-git-async
-                 "filter-branch" "--force" "--env-filter"
-                 (format
-                  "case $GIT_COMMIT in %s\nesac"
-                  (mapconcat
-                   (lambda (rev)
-                     (prog1
-                         (concat
-                          (format "%s) " rev)
-                          (and (not magit-reshelve-since-committer-only)
-                               (format "export GIT_AUTHOR_DATE=\"%s\"; " date))
-                          (format "export GIT_COMMITTER_DATE=\"%s\";;" date))
-                       (cl-incf date 60)))
-                   (magit-git-lines "rev-list" "--reverse" range)
-                   " "))
-                 (and keyid
-                      (list "--commit-filter"
-                            (format "git commit-tree --gpg-sign=%s \"$@\";"
-                                    keyid)))
-                 range "--"))
-              (set-process-sentinel
-               magit-this-process
-               (lambda (process event)
-                 (when (memq (process-status process) '(exit signal))
-                   (if (> (process-exit-status process) 0)
-                       (magit-process-sentinel process event)
-                     (process-put process 'inhibit-refresh t)
-                     (magit-process-sentinel process event)
-                     (magit-run-git "update-ref" "-d" backup)))))))))))))
+      ((not commit)
+       (when (and (magit-ref-p backup)
+                  (not (magit-y-or-n-p
+                        (format "Backup ref %s already exists.  Override? "
+                                backup))))
+         (user-error "Abort"))
+       (magit-log-select
+         (lambda (rev)
+           (magit-reshelve-since rev keyid))
+         "Type %p on a commit to reshelve it and the commits above it,"))
+      (t
+       (cl-flet ((adjust (time offset)
+                   (format-time-string
+                    "%F %T %z"
+                    (+ (floor time)
+                       (* offset 60)
+                       (- (car (decode-time time)))))))
+         (let* ((start (concat commit "^"))
+                (range (concat start ".." current))
+                (time-rev (adjust (float-time (string-to-number
+                                               (magit-rev-format "%at" start)))
+                                  1))
+                (time-now (adjust (float-time)
+                                  (- (string-to-number
+                                      (magit-git-string "rev-list" "--count"
+                                                        range))))))
+           (push time-rev magit--reshelve-history)
+           (let ((date (floor
+                        (float-time
+                         (date-to-time
+                          (read-string "Date for first commit: "
+                                       time-now 'magit--reshelve-history))))))
+             (with-environment-variables (("FILTER_BRANCH_SQUELCH_WARNING" "1"))
+               (magit-with-toplevel
+                 (magit-run-git-async
+                  "filter-branch" "--force" "--env-filter"
+                  (format
+                   "case $GIT_COMMIT in %s\nesac"
+                   (mapconcat
+                    (lambda (rev)
+                      (prog1
+                          (concat
+                           (format "%s) " rev)
+                           (and (not magit-reshelve-since-committer-only)
+                                (format "export GIT_AUTHOR_DATE=\"%s\"; " date))
+                           (format "export GIT_COMMITTER_DATE=\"%s\";;" date))
+                        (cl-incf date 60)))
+                    (magit-git-lines "rev-list" "--reverse" range)
+                    " "))
+                  (and keyid
+                       (list "--commit-filter"
+                             (format "git commit-tree --gpg-sign=%s \"$@\";"
+                                     keyid)))
+                  range "--"))
+               (set-process-sentinel
+                magit-this-process
+                (lambda (process event)
+                  (when (memq (process-status process) '(exit signal))
+                    (if (> (process-exit-status process) 0)
+                        (magit-process-sentinel process event)
+                      (process-put process 'inhibit-refresh t)
+                      (magit-process-sentinel process event)
+                      (magit-run-git "update-ref" "-d" backup)))))))))))))
 
 ;;; Revision Stack
 
@@ -593,16 +593,16 @@ revision).  If not called inside a repository and with an empty
 stack, or with two prefix arguments, then read the repository in
 the minibuffer too."
   (interactive
-   (if (or current-prefix-arg (not magit-revision-stack))
-       (let ((default-directory
-              (or (and (not (= (prefix-numeric-value current-prefix-arg) 16))
-                       (or (magit-toplevel)
-                           (cadr (car magit-revision-stack))))
-                  (magit-read-repository))))
-         (list (magit-read-branch-or-commit "Insert revision")
-               default-directory))
-     (push (caar magit-revision-stack) magit-revision-history)
-     (pop magit-revision-stack)))
+    (if (or current-prefix-arg (not magit-revision-stack))
+        (let ((default-directory
+               (or (and (not (= (prefix-numeric-value current-prefix-arg) 16))
+                        (or (magit-toplevel)
+                            (cadr (car magit-revision-stack))))
+                   (magit-read-repository))))
+          (list (magit-read-branch-or-commit "Insert revision")
+                default-directory))
+      (push (caar magit-revision-stack) magit-revision-history)
+      (pop magit-revision-stack)))
   (unless rev
     (user-error "Revision stack is empty"))
   (pcase-let ((`(,pnt-format ,eob-format ,idx-format)

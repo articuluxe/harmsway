@@ -1,11 +1,11 @@
 ;;; flyspell-correct-ido.el --- Correcting words with flyspell via ido interface -*- lexical-binding: t; -*-
 ;;
-;; Copyright (c) 2016-2022 Boris Buliga
+;; Copyright (c) 2016-2026 Boris Buliga
 ;;
 ;; Author: Boris Buliga <boris@d12frosted.io>
 ;; URL: https://github.com/d12frosted/flyspell-correct
-;; Version: 0.6.1
-;; Package-Requires: ((flyspell-correct "0.6.1") (emacs "24.1"))
+;; Version: 1.0.0
+;; Package-Requires: ((flyspell-correct "1.0.0") (emacs "29.1"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
