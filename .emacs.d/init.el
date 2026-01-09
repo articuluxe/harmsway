@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-01-07 17:18:04 dharms>
+;; Modified Time-stamp: <2026-01-09 11:06:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2270,23 +2270,6 @@ ARGS are the additional arguments."
   ;; so we set the clockface in choose-font.el: `choose-font-set-font'
   ;; after setting the frame font.
   )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package doom-modeline
-  :if (version<= "25.1" emacs-version)
-  :disabled
-  :init
-  (setq doom-modeline-checker-simple-format nil)
-  (setq doom-modeline-vcs-max-length 15)
-  (setq doom-modeline-persp-name nil)
-  (setq doom-modeline-buffer-file-name-style 'relative-from-project)
-  (setq doom-modeline-project-detection 'project)
-  (when (featurep 'minions)
-    (setq doom-modeline-minor-modes t))
-  (add-hook 'after-init-hook #'doom-modeline-mode)
-  :config
-  (when (featurep 'minions)
-    (minions-mode 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mood-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mood-line
