@@ -1,20 +1,6 @@
 # -*- Mode: sh -*-
 # .bash_talbot
 
-mount-secure()
-{
-    test -z "$SECURE_MOUNT" && echo "$SECURE_MOUNT not specified; exiting..." && exit 1
-    "$VERACRYPT_BIN" -t -k "" --protect-hidden=no --pim=0 ~/Sync/secure.volume "$SECURE_MOUNT"/Secure
-    test -d "$SECURE_MOUNT"/Secure && date > "$SECURE_MOUNT"/Secure/.secure.last-mounted
-}
-
-unmount-secure()
-{
-    test -z "$SECURE_MOUNT" && echo "$SECURE_MOUNT not specified; exiting..." && exit 1
-    test -d "$SECURE_MOUNT"/Secure && date > "$SECURE_MOUNT"/Secure/.secure.last-unmounted
-    "$VERACRYPT_BIN" -t -d ~/Sync/secure.volume
-}
-
 snapssh()
 {
     sshpass -e ssh snaptrader@"$1"
