@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-01-09 11:06:04 dharms>
+;; Modified Time-stamp: <2026-01-10 15:44:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3991,7 +3991,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package shell-maker)
 (use-package chatgpt-shell
   :if (version<= "30.0" emacs-version)
-  :bind ("C-c 0#")
+  :bind ("C-c 0#" . chatgpt-shell)
   :init
   (setq chatgpt-shell-openai-key
         (lambda ()
