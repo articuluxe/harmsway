@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-01-10 15:44:18 dharms>
+;; Modified Time-stamp: <2026-01-13 20:24:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1463,7 +1463,9 @@ ARGS are the additional arguments."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package shx :config (shx-global-mode 1))
+(use-package shx
+  :disabled
+  :config (shx-global-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xterm-color ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter)
@@ -2201,30 +2203,6 @@ ARGS are the additional arguments."
   :bind ("C-x M-i" . imenu-list-smart-toggle)
   :commands (imenu-list-smart-toggle imenu-list imenu-list-noselect
                                      imenu-list-show imenu-list-show))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package rich-minority
-  :disabled
-  ;; this dependency actually comes from smart-mode-line, which uses
-  ;; rich-minority.
-  :if (version<= "24.3" emacs-version)
-  :config
-  (rich-minority-mode 1)
-  (setq rm-blacklist
-        '(" AC" " yas" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
-          " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L" " be"
-          " counsel" " ivy" " WK" " company"))
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package smart-mode-line
-  :if (version<= "24.3" emacs-version)
-  :disabled
-  :config
-  (setq sml/no-confirm-load-theme t)
-  (sml/setup)
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; minions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package minions
