@@ -1,4 +1,3 @@
-### -*- mode: sh; -*-
 # .inputrc
 # $include /etc/inputrc
 "\e[5~":history-search-backward
