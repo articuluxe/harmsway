@@ -1,0 +1,2 @@
+cp src/*-themes.el ../../../../.emacs.d/plugins
+find src -maxdepth 1 -name \*-theme.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/etc/themes
