@@ -1,13 +1,16 @@
 #!/bin/bash
 # -*- Mode: sh -*-
-# mount_secure.sh --- mount secure volume
+# secure_mount.sh --- mount secure volume
 # Copyright (C) 2026  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, January  9, 2026
 # Version: 1.0
-# Modified Time-stamp: <2026-01-14 20:20:08 dharms>
+# Modified Time-stamp: <2026-02-03 17:08:20 dharms>
 # Modified by: Dan Harms
 # Keywords: utilities
+
+set -euo pipefail
+# set -x
 
 VERACRYPT=${VERACRYPT_BIN/veracrypt:-veracrypt}
 MOUNT=${SECURE_MOUNT:-~}
