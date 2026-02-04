@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-01-13 20:24:54 dharms>
+;; Modified Time-stamp: <2026-02-02 16:25:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1260,7 +1260,9 @@ Based on `https://emacs.ch/@bram85/112365691040649759'."
   ;; The following allows remote repositories to work under tramp on windows
   ;; (plink), and we put git in our exec-path anyways, so the full path is
   ;; unneeded.  This is also the default setting anyway on other platforms.
-  (setq magit-git-executable "git")
+  (if-let ((root (getenv "HOMEBREW_PREFIX")))
+      (setq magit-git-executable (concat root "/bin/git"))
+    (setq magit-git-executable "git"))
   (setq magit-show-process-buffer-hint nil)
   (setq magit-bury-buffer-function #'magit-restore-window-configuration)
   (setq magit-revision-filter-files-on-follow t)
