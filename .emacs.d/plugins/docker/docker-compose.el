@@ -49,7 +49,7 @@
 
 (defun docker-compose-run-docker-compose-async-with-buffer (action &rest args)
   "Execute \"`docker-compose-command' ACTION ARGS\" and display output in a new buffer."
-  (apply #'docker-run-async-with-buffer docker-compose-command (docker-compose-arguments) action args))
+  (apply #'docker-run-async-with-buffer-interactive docker-compose-command (docker-compose-arguments) action args))
 
 (aio-defun docker-compose-services ()
   "Return the list of services."
@@ -69,7 +69,7 @@
    prompt
    ;; in docker compose v2, we can obtain the list of
    ;; projects with 'ls' argument
-   (if (string-match-p "*?docker compose*?" docker-compose-command)
+   (if (string-match-p "\\bdocker\\s-+compose\\b" docker-compose-command)
        (split-string
 	(shell-command-to-string
 	 (concat docker-compose-command " ls" " --all" " -q"))

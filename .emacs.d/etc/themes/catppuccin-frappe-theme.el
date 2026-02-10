@@ -96,9 +96,9 @@ represents."
  'modus-catppuccin
  "The Original — Our darkest variant offering a cozy feeling with color-rich accents."
  'dark
- 'modus-themes-operandi-palette
- 'frappe-palette
- 'frappe-palette-overrides
+ 'modus-themes-vivendi-palette
+ 'catppuccin-frappe-palette
+ 'catppuccin-frappe-palette-overrides
  'modus-catppuccin-custom-faces)
 
 ;;; catpuccin-frappe-theme.el ends here

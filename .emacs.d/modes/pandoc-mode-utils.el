@@ -857,7 +857,7 @@ as argument."
                (cond
                 ((eq prefix '-)     ; C-u - or M--
                  nil)
-                ((and (listp prefix)
+                ((and (consp prefix)
                       (= (car prefix) 16)) ; C-u C-u
                  (read-string (concat prompt ": ")))
                 ;; otherwise no prefix or C-u
@@ -1028,7 +1028,7 @@ item is removed from the list.  If it is `\\[universal-argument]
 list of files, the function can also be called with the prefix argument
 `\\[universal-argument]' to store the full path."
   (cond
-   ((and (listp prefix)
+   ((and (consp prefix)
          (= (car prefix) 16))          ; C-u C-u
     (pandoc--set option nil)
     (message (concat description " removed.")))
@@ -1100,8 +1100,8 @@ the actual work.  PREFIX is the raw prefix argument from the calling
 function.  If it is nil, a new key:value item is added to the list.  If
 it is the negative prefix argument `\\[universal-argument] -' (or `\\[negative-argument]'), an item is
  removed from the list.  If it is`\\[universal-argument] \\[universal-argument]', the entire list is cleared."
-  (if (and (listp prefix)
-           (eq (car prefix) 16)) ; C-u C-u
+  (if (and (consp prefix)
+           (= (car prefix) 16)) ; C-u C-u
       (progn
         (pandoc--set option nil)
         (message (concat description " removed")))

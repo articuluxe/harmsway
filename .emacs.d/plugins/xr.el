@@ -1,9 +1,9 @@
 ;;; xr.el --- Convert string regexp to rx notation   -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019-2024 Free Software Foundation, Inc.
+;; Copyright (C) 2019-2026 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattias.engdegard@gmail.com>
-;; Version: 2.1
+;; Version: 2.2
 ;; Package-Requires: ((emacs "27.1"))
 ;; URL: https://github.com/mattiase/xr
 ;; Keywords: lisp, regexps
@@ -129,25 +129,35 @@ END is nil if unknown."
              (< (+ idx 3) len)
              (eq (aref string (1+ idx)) ?:)
              (let ((i (xr--string-search ":]" string (+ 2 idx))))
-               (and i
-                    (let ((sym (intern (substring string (+ idx 2) i))))
-                      (unless (memq sym (eval-when-compile xr--char-classes))
-                        (xr--error idx (1+ i)
-                                   "No character class `[:%s:]'"
-                                   (symbol-name sym)))
-                      (let ((prev (assq sym classes)))
-                        (if prev
-                            (let* ((prev-beg (cdr prev))
-                                   (prev-end (1+ (xr--string-search
-                                                  ":]" string prev-beg))))
-                              (xr--warn
-                               warnings idx (1+ i)
-                               (format-message
-                                "Duplicated character class `[:%s:]'" sym)
-                               prev-beg prev-end "Previous occurrence here"))
-                          (push (cons sym idx) classes)))
-                      (setq idx (+ i 2))
-                      t)))))
+               (if i
+                   (let* ((name (substring string (+ idx 2) i))
+                          (sym (intern-soft name)))
+                     (unless (memq sym (eval-when-compile xr--char-classes))
+                       (xr--error idx (1+ i)
+                                  "No character class `[:%s:]'" name))
+                     (let ((prev (assq sym classes)))
+                       (if prev
+                           (let* ((prev-beg (cdr prev))
+                                  (prev-end (1+ (xr--string-search
+                                                 ":]" string prev-beg))))
+                             (xr--warn
+                              warnings idx (1+ i)
+                              (format-message
+                               "Duplicated character class `[:%s:]'" sym)
+                              prev-beg prev-end "Previous occurrence here"))
+                         (push (cons sym idx) classes)))
+                     (setq idx (+ i 2))
+                     t)
+                 ;; Check for [:CLASS]
+                 (let ((rbrac (xr--string-search "]" string (+ 2 idx))))
+                   (when (and rbrac
+                              (member (substring string (+ 2 idx) rbrac)
+                                      (eval-when-compile
+                                        (mapcar #'symbol-name
+                                                xr--char-classes))))
+                     (xr--warn warnings idx rbrac
+                               "Possibly missing `:' after character class")))
+                 nil))))
        ;; character range
        ((and (< (+ idx 3) len)
              (eq (aref string (1+ idx)) ?-)
@@ -1822,12 +1832,12 @@ A-SETS and B-SETS are arguments to `any'."
            (< (1+ idx) len)
            (eq (aref string (1+ idx)) ?:)
            (let ((i (xr--string-search ":]" string (+ 2 idx))))
-             (and i
-                  (let ((sym (intern (substring string (+ idx 2) i))))
+             (if i
+                 (let* ((name (substring string (+ idx 2) i))
+                        (sym (intern-soft name)))
                     (unless (memq sym (eval-when-compile xr--char-classes))
                       (xr--error idx (1+ i)
-                                 "No character class `[:%s:]'"
-                                 (symbol-name sym)))
+                                 "No character class `[:%s:]'" name))
                     ;; Another useful ad-hoc check.
                     (when (and (> idx 0)
                                (eq (aref string (1- idx)) ?\[)
@@ -1844,8 +1854,16 @@ A-SETS and B-SETS are arguments to `any'."
                                      sym)))
                     (push sym classes)
                     (setq idx (+ 2 i))
-                    t)))))
-
+                    t)
+            ;; Check for [:CLASS]
+            (let ((rbrac (xr--string-search "]" string (+ 2 idx))))
+              (when (and rbrac
+                         (member (substring string (+ 2 idx) rbrac)
+                                 (eval-when-compile
+                                   (mapcar #'symbol-name xr--char-classes))))
+                (xr--warn warnings idx rbrac
+                          "Possibly missing `:' after character class"))
+              nil)))))
          ((and (eq ch ?\\) (not escaped))
           (setq idx (1+ idx))
           (if (= idx len)

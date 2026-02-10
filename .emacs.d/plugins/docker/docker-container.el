@@ -181,7 +181,7 @@ string that transforms the displayed values in the column."
 
 (defun docker-container-assert-tramp-docker ()
   "Assert tramp docker support is available."
-  (unless (or (docker-utils-package-p 'docker-container)
+  (unless (or (assoc docker-container-tramp-method tramp-methods)
               (docker-utils-package-p 'docker-tramp))
     (error "Tramp docker support was not detected, try installing docker-tramp")))
 
@@ -397,7 +397,12 @@ default directory set to workdir."
 (defun docker-container-shell-command (container)
   "Run exec of a CONTAINER."
   (interactive (list (docker-container-read-name)))
-  (shell-command (read-shell-command "Run: " (format "docker exec %s " container))))
+  (let* ((default-command (string-join (append (list docker-command)
+                                               (docker-arguments)
+                                               (list "exec" container))
+                                       " "))
+         (command (read-shell-command "Run: " default-command)))
+    (shell-command command)))
 
 (defun docker-container-shell-command-selection ()
   "Run `docker exec' on the containers selection."
@@ -427,7 +432,7 @@ default directory set to workdir."
    ("n" "No STDIN" "--no-stdin")
    ("d" "Key sequence for detaching" "--detach-keys " read-string)]
   [:description docker-generic-action-description
-   ("a" "Attach" docker-generic-action-with-buffer)])
+   ("a" "Attach" docker-generic-action-with-buffer-interactive)])
 
 (docker-utils-transient-define-prefix docker-container-cp ()
   "Transient for copying files from/to containers."
@@ -456,6 +461,15 @@ default directory set to workdir."
   [:description docker-generic-action-description
    ("K" "Kill" docker-generic-action-multiple-ids)])
 
+(defun docker-container-logs-action (action args)
+  "Show container logs, streaming if -f flag is present, otherwise collect then display.
+ACTION is the docker action, ARGS are the transient arguments."
+  (interactive (list (docker-get-transient-action)
+                     (transient-args transient-current-command)))
+  (if (member "-f" args)
+      (docker-generic-action-with-buffer-noninteractive action args)
+    (aio-wait-for (docker-generic-action-with-buffer action args))))
+
 (docker-utils-transient-define-prefix docker-container-logs ()
   "Transient for showing containers logs."
   :man-page "docker-container-logs"
@@ -465,7 +479,7 @@ default directory set to workdir."
    ("t" "Tail" "--tail " read-string)
    ("u" "Until" "--until " read-string)]
   [:description docker-generic-action-description
-   ("L" "Logs" docker-generic-action-with-buffer)])
+   ("L" "Logs" docker-container-logs-action)])
 
 (docker-utils-define-transient-arguments docker-container-ls)
 

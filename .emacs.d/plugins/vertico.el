@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2021
-;; Version: 2.6
+;; Version: 2.7
 ;; Package-Requires: ((emacs "29.1") (compat "30"))
 ;; URL: https://github.com/minad/vertico
 ;; Keywords: convenience, files, matching, completion
@@ -147,7 +147,6 @@ The value should lie between 0 and vertico-count/2."
 (defvar vertico--locals
   '((scroll-margin . 0)
     (completion-auto-help . nil)
-    (completion-show-inline-help . nil)
     (pixel-scroll-precision-mode . nil))
   "Vertico minibuffer local variables.")
 
@@ -714,10 +713,13 @@ When the prefix argument is 0, the group order is reset."
 (define-minor-mode vertico-mode
   "VERTical Interactive COmpletion."
   :global t :group 'vertico
-  (dolist (fun '(completing-read-default completing-read-multiple))
+  (if vertico-mode
+      (advice-add #'completing-read-default :around #'vertico--advice)
+    (advice-remove #'completing-read-default #'vertico--advice))
+  (static-if (< emacs-major-version 31)
     (if vertico-mode
-        (advice-add fun :around #'vertico--advice)
-      (advice-remove fun #'vertico--advice))))
+        (advice-add #'completing-read-multiple :around #'vertico--advice)
+      (advice-remove #'completing-read-multiple #'vertico--advice))))
 
 (defun vertico--command-p (_sym buffer)
   "Return non-nil if Vertico is active in BUFFER."

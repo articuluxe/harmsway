@@ -211,7 +211,8 @@ can be selected from the start."
   (forge--read-topic prompt
                      #'forge-current-pullreq
                      (forge--topics-spec :type 'pullreq :active t)
-                     (forge--topics-spec :type 'pullreq :active nil :state nil)))
+                     (forge--topics-spec :type 'pullreq :active nil
+                                         :state nil :limit nil)))
 
 ;;; Utilities
 
@@ -299,6 +300,7 @@ and optional HEADING to change the section heading."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
+;;   ("and>"          . "cond-let--and>")
 ;;   ("and-let"       . "cond-let--and-let")
 ;;   ("if-let"        . "cond-let--if-let")
 ;;   ("when-let"      . "cond-let--when-let"))

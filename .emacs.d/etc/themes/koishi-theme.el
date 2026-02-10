@@ -2,7 +2,7 @@
 
 ;; Author: gynamics
 ;; Maintainer: gynamics
-;; Package-Version: 2.1
+;; Package-Version: 3.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; URL: https://github.com/gynamics/koishi-theme.el
 ;; Keywords: faces
@@ -39,136 +39,241 @@
 (deftheme koishi
   "A sweet dark theme for koishimacs."
   :family 'koishi
-  :kind 'color-scheme
-  :background-mode 'dark)
+  :kind 'color-scheme)
 
 ;;;###autoload
-(defcustom koishi-theme-light nil
-  "Set this variable to t to make it a light theme with complementary colors."
-  :type 'boolean
+(defcustom koishi-theme-mode 'nil
+  "Set this variable to t to use complementary color."
+  :type '(choice (const :tag "Dark" nil)
+                 (const :tag "Light" t))
   :group 'koishi)
 
-(defun koishi--complementary-theme (sexp)
-  "Replace all RGB color strings in SEXP to its complementary color."
+(defun koishi-theme-effect--complement (color)
+  "Complement COLOR if `koishi-theme-mode' is set.
+COLOR should be an RGB color string."
+  (if koishi-theme-mode (color-complement-hex color) color))
+
+;;;###autoload
+(defcustom koishi-theme-afterglow-color nil
+  "Experimental Feature: RGB Color of afterglow for all initial colors."
+  :type '(string :tag "Afterglow Color"
+                 :match (lambda (_ val) (not (null (color-name-to-rgb val))))
+                 :type-error "Afterglow color should be a RGB color string.")
+  :group 'koishi)
+
+;;;###autoload
+(defcustom koishi-theme-afterglow-level 0
+  "Experimental Feature: Blend degree of afterglow for all initial colors."
+  :type '(number :tag "Afterglow Level"
+                 :match (lambda (_ val) (and val (<= 0 val) (>= 1 val)))
+                 :type-error "Afterglow level should between 0 and 1.")
+  :group 'koishi)
+
+(defun koishi-theme-effect--afterglow (color)
+  "Blend COLOR with layers in `koishi-theme-afterglow-level'."
+  (if (and koishi-theme-afterglow-color
+           (< 0 koishi-theme-afterglow-level))
+      (let ((rgb (color-name-to-rgb color))
+            (rgb1 (color-name-to-rgb koishi-theme-afterglow-color)))
+        (apply
+         #'color-rgb-to-hex
+         (mapcar (lambda (n)
+                   (let ((p koishi-theme-afterglow-level)
+                         (c (nth n rgb)))
+                     (let ((res (+ (* p (- (nth n rgb1) c))
+                                   (* (- 1 p) c))))
+                       (cond ((< 1 res) 1) ((< res 0) 0) (t res)))))
+                 '(0 1 2))))
+    color))
+
+;;;###autoload
+(defcustom koishi-theme-hsl-bias '(0 0 0)
+  "Experimental Feature: HSL bias value for all initial colors."
+  :type '(list
+          (number :tag "Hue"
+                  :match (lambda (_ val) (and val (<= -1 val) (>= 1 val)))
+                  :type-error "Hue should between -1 and 1.")
+          (number :tag "Saturation"
+                  :match (lambda (_ val) (and val (<= -1 val) (>= 1 val)))
+                  :type-error "Saturation should between -1 and 1.")
+          (number :tag "Luminance"
+                  :match (lambda (_ val) (and val (<= -1 val) (>= 1 val)))
+                  :type-error "Luminance should between -1 and 1."))
+  :group 'koishi)
+
+;;;###autoload
+(defcustom koishi-theme-hsl-bias-random 0
+  "Experimental Feature: Random range of HSL bias for all initial colors."
+  :type '(number :tag "Random Range"
+                 :match (lambda (_ val) (and val (<= 0 val) (>= 1 val)))
+                 :type-error "Random range should between 0 and 1.")
+  :group 'koishi)
+
+(defun koishi-theme-effect--hsl-bias (color)
+  "Bias COLOR in HSL space."
+  (if (and (equal koishi-theme-hsl-bias '(0 0 0))
+           (= 0 koishi-theme-hsl-bias-random))
+      color
+    (let ((hsl (apply #'color-rgb-to-hsl (color-name-to-rgb color))))
+      (apply
+       #'color-rgb-to-hex
+       (apply
+        #'color-hsl-to-rgb
+        (let ((bias (if (< 0 koishi-theme-hsl-bias-random)
+                        (mapcar (lambda (v)
+                                  (let ((d (* v koishi-theme-hsl-bias-random)))
+                                    (+ v (- (/ d 2) (random d)))))
+                                koishi-theme-hsl-bias)
+                      koishi-theme-hsl-bias)))
+          (mapcar (lambda (n)
+                    (let ((res (+ (nth n hsl) (nth n bias))))
+                      (cond ((< 1 res) 1) ((< res 0) 0) (t res))))
+                  '(0 1 2))))))))
+
+;;;###autoload
+(defcustom koishi-theme-effects '(koishi-theme-effect--complement
+                                  koishi-theme-effect--hsl-bias
+                                  koishi-theme-effect--afterglow)
+  "A list of effects to be applied to RGB color strings one by one.
+Set this variable to nil if you think it slowed down your startup."
+  :type '(repeat function)
+  :group 'koishi)
+
+(defun koishi-theme-apply-effects (sexp)
+  "Apply color effects to all RGB color strings in SEXP and replace them."
   (cond
    ((and (stringp sexp)
          (string-match "^#\\([0-9A-Fa-f]\\{3\\}\\)\\{1,2\\}$" sexp))
-    (color-complement-hex sexp))
+    (let ((res sexp))
+      (dolist (f koishi-theme-effects)
+        (setq res (funcall f res)))
+      res))
    ((listp sexp)
-    (mapcar #'koishi--complementary-theme sexp))
+    (mapcar #'koishi-theme-apply-effects sexp))
    (t sexp)))
 
-(defun koishi-theme-set-faces (&rest l)
-  "A wrapper to set faces of koishi-theme.
-L is face configuration arguments for `custom-theme-set-faces'."
-  (apply #'custom-theme-set-faces
-         (cons 'koishi
-               (if koishi-theme-light
-                   (koishi--complementary-theme l) l))))
+(defvar koishi-theme-faces
+  (list
+   ;; basic colors
+   '(default                          ((t (:foreground "#F7F7F7" :background "#2D2D2D"))))
+   '(cursor                           ((t (:background "#C6CC96"))))
+   '(fixed-pitch                      ((t (:foreground "#F7E7D7"))))
+   '(variable-pitch                   ((t (:foreground "#E7F7D7"))))
+   '(escape-glyph                     ((t (:foreground "#CF88A8"))))
+   '(homoglyph                        ((t (:foreground "#C76888"))))
+   '(minibuffer-prompt                ((t (:foreground "#8E44AD" :background "#2D2D2D"))))
+   '(region                           ((t (:extend t :background "#535456"))))
+   '(highlight                        ((t (:background "#434962"))))
+   '(shadow                           ((t (:foreground "#97AAB6"))))
+   '(secondary-selection              ((t (:extend t :foreground "#F7E7D7" :background "#555555"))
+                                       (t (:inverse-video t))))
+   '(error                            ((t (:foreground "#F078B8"))))
+   '(warning                          ((t (:foreground "#FBEB87"))))
+   '(success                          ((t (:foreground "#7FFF76"))))
+   ;; font locks
+   '(font-lock-keyword-face           ((t (:foreground "#F7DC64"))))
+   '(font-lock-builtin-face           ((t (:foreground "#A7C7EB"))))
+   '(font-lock-operator-face          ((t (:foreground "#F7E7A7"))))
+   '(font-lock-function-name-face     ((t (:foreground "#C5A8FB"))))
+   '(font-lock-function-call-face     ((t (:foreground "#E5C8FB"))))
+   '(font-lock-variable-name-face     ((t (:foreground "#97BEEB"))))
+   '(font-lock-variable-use-face      ((t (:foreground "#C7CEEB"))))
+   '(font-lock-property-name-face     ((t (:foreground "#95C062"))))
+   '(font-lock-property-use-face      ((t (:foreground "#C5C89B"))))
+   '(font-lock-preprocessor-face      ((t (:foreground "#E989EB"))))
+   '(font-lock-constant-face          ((t (:foreground "#DFA175"))))
+   '(font-lock-type-face              ((t (:foreground "#C2F03C"))))
+   '(font-lock-string-face            ((t (:foreground "#B7DC8C"))))
+   '(font-lock-number-face            ((t (:foreground "#E5C8BB"))))
+   '(font-lock-comment-face           ((t (:foreground "#F7D7E7"))))
+   '(font-lock-comment-delimiter-face ((t (:foreground "#DFA8CB"))))
+   '(font-lock-doc-face               ((t (:foreground "#97CCCB"))))
+   '(font-lock-doc-markup-face        ((t (:foreground "#97DC9B"))))
+   '(font-lock-escape-face            ((t (:foreground "#C5918F"))))
+   '(font-lock-warning-face           ((t (:foreground "#FBEB87"))))
+   '(font-lock-punctuation-face       ((t (:foreground "#E7C787"))))
+   '(font-lock-misc-punctuation-face  ((t (:foreground "#E7D7B7"))))
+   '(font-lock-bracket-face           ((t (:foreground "#CCACC8"))))
+   '(font-lock-delimiter-face         ((t (:foreground "#CCBCCB"))))
+   '(font-lock-regexp-grouping-backslash ((t (:foreground "#EBD7B7"))))
+   '(font-lock-regexp-grouping-construct ((t (:inherit (bold)))))
+   ;; decorations
+   '(underline                        ((t (:underline t))))
+   '(link                             ((t (:inherit (underline) :foreground "#A1EFDF"))))
+   '(link-visited                     ((t (:foreground "#B57EDC"))))
+   '(fringe                           ((t (:background "#393346"))))
+   '(header-line                      ((t (:underline (:color foreground-color :style line :position nil)
+                                                      :box nil :inverse-video nil :foreground "white" :background "black"))))
+   '(tooltip                          ((t (:inherit (variable-pitch) :background "#343434"))))
+   '(button                           ((t (:inherit (link)
+                                                    :box (:line-width 2 :color "#99DD66" :style released-button)))))
+   '(line-number                      ((t (:foreground "#7787A7" :background "#222222"))))
+   '(show-paren-match                 ((t (:foreground "#FFFFFF" :background "#8E44AD"))))
+   '(mode-line                        ((t (:foreground "#FFFFFF" :background "#5C3F8E"))))
+   '(mode-line-inactive               ((t (:foreground "#CCCCCC" :background "#3B3869"))))
+   '(mode-line-emphasis               ((t (:foreground "#FBEB87" :weight bold))))
+   '(mode-line-highlight              ((t (:inherit (button) :foreground "#CCFF99" :background "#5C4F8E"))))
+   '(completions-common-part          ((t (:foreground "#F1C40F" :background "#343434"))))
+   '(completions-first-difference     ((t (:foreground "#8BC34A" :background "#2D2D2D"))))
+   '(completions-annotations          ((t (:inherit (italic) :foreground "#EBDB87"))))
+   ;; company
+   '(company-tooltip                  ((t (:foreground "#FFFFFF" :background "#2D2D2D"))))
+   '(company-tooltip-selection        ((t (:foreground "#8BC34A" :background "#6C497F"))))
+   '(company-tooltip-common           ((t (:foreground "#F1C40F" :background "#343434"))))
+   '(company-tooltip-common-selection ((t (:foreground "#CCFF99" :background "#7A5F9E"))))
+   ;; isearch
+   '(isearch                          ((t (:foreground "#FFFFFF" :background "#436224"))))
+   '(isearch-fail                     ((t (:foreground "#FFFFFF" :background "#FF0033"))))
+   '(match                            ((t (:foreground "#FFFFFF" :background "#8E44AD"))))
+   '(next-error                       ((t (:foreground "#FFFFFF" :background "#E74CAC"))))
+   '(query-replace                    ((t (:foreground "#FFFFFF" :background "#256225"))))
+   ;; org-mode
+   '(org-document-title               ((t (:foreground "#AEEEEE"))))
+   '(org-document-info                ((t (:foreground "#A1CEBE"))))
+   '(org-level-1                      ((t (:foreground "#C7B8EA"))))
+   '(org-level-2                      ((t (:foreground "#A7DCCB"))))
+   '(org-level-3                      ((t (:foreground "#97CEEB"))))
+   '(org-level-4                      ((t (:foreground "#C7DC3C"))))
+   '(org-level-5                      ((t (:foreground "#F1C40F"))))
+   '(org-tag                          ((t (:foreground "#E7C7E7" :box (:line-width 1 :style released-button)))))
+   '(org-link                         ((t (:foreground "#AAF0CC" :underline t))))
+   '(org-date                         ((t (:foreground "#8CE5DB" :underline t))))
+   '(org-footnote                     ((t (:foreground "#7CD5EB"))))
+   '(org-done                         ((t (:foreground "#8BC34A" :strike-through t))))
+   '(org-todo                         ((t (:foreground "#FBEB87" :weight bold))))
+   '(org-headline-done                ((t (:foreground "#90A0B0"))))
+   '(org-block                        ((t (:foreground "#F7F7F7" :background "#222224"))))
+   '(org-block-begin-line             ((t (:foreground "#A7A8EA" :underline t :extend t))))
+   '(org-block-end-line               ((t (:foreground "#A7A8EA" :overline t :extend t))))
+   '(org-quote                        ((t (:foreground "#F2C464" :slant italic))))
+   '(org-verse                        ((t (:foreground "#F7DC64" :slant italic))))
+   '(org-code                         ((t (:foreground "#B7DC9C" :background "#28282A"))))
+   '(org-latex-and-related            ((t (:foreground "#D7E7F7"))))
+   '(org-special-keyword              ((t (:foreground "#C7B8EA"))))
+   '(org-meta-line                    ((t (:foreground "#F7D7E7"))))
+   '(org-priority                     ((t (:foreground "#E3A9B5"))))
+   '(org-checkbox                     ((t (:foreground "#E2C464" :box (:line-width 1 :style released-button)))))
+   '(org-checkbox-statistics-todo     ((t (:foreground "#FBEB87" :box (:line-width 1 :style released-button)))))
+   '(org-checkbox-statistics-done     ((t (:foreground "#8BC34A" :box (:line-width 1 :style released-button)))))
+   '(org-list-dt                      ((t (:foreground "#C0C0E1")))))
+  "Default faces for koishi-theme, defined as data.")
 
-(koishi-theme-set-faces
- ;; basic colors
- '(default                          ((t (:foreground "#F7F7F7" :background "#2D2D2D"))))
- '(cursor                           ((t (:background "#C6CC96"))))
- '(fixed-pitch                      ((t (:foreground "#F7E7D7"))))
- '(variable-pitch                   ((t (:foreground "#E7F7D7"))))
- '(escape-glyph                     ((t (:foreground "#CF88A8"))))
- '(homoglyph                        ((t (:foreground "#C76888"))))
- '(minibuffer-prompt                ((t (:foreground "#8E44AD" :background "#2D2D2D"))))
- '(region                           ((t (:extend t :background "#535456"))))
- '(highlight                        ((t (:background "#434962"))))
- '(shadow                           ((t (:foreground "#97AAB6"))))
- '(secondary-selection              ((t (:extend t :foreground "#F7E7D7" :background "#555555"))
-                                     (t (:inverse-video t))))
- '(error                            ((t (:foreground "#F078B8"))))
- '(warning                          ((t (:foreground "#FBEB87"))))
- '(success                          ((t (:foreground "#7FFF76"))))
- ;; font locks
- '(font-lock-keyword-face           ((t (:foreground "#F7DC64"))))
- '(font-lock-builtin-face           ((t (:foreground "#A7C7EB"))))
- '(font-lock-operator-face          ((t (:foreground "#F7E7A7"))))
- '(font-lock-function-name-face     ((t (:foreground "#C5A8FB"))))
- '(font-lock-function-call-face     ((t (:foreground "#E5C8FB"))))
- '(font-lock-variable-name-face     ((t (:foreground "#97BEEB"))))
- '(font-lock-variable-use-face      ((t (:foreground "#C7CEEB"))))
- '(font-lock-property-name-face     ((t (:foreground "#95C062"))))
- '(font-lock-property-use-face      ((t (:foreground "#C5C89B"))))
- '(font-lock-preprocessor-face      ((t (:foreground "#E989EB"))))
- '(font-lock-constant-face          ((t (:foreground "#DFA175"))))
- '(font-lock-type-face              ((t (:foreground "#C2F03C"))))
- '(font-lock-string-face            ((t (:foreground "#B7DC8C"))))
- '(font-lock-number-face            ((t (:foreground "#E5C8BB"))))
- '(font-lock-comment-face           ((t (:foreground "#F7D7E7"))))
- '(font-lock-comment-delimiter-face ((t (:foreground "#DFA8CB"))))
- '(font-lock-doc-face               ((t (:foreground "#97CCCB"))))
- '(font-lock-doc-markup-face        ((t (:foreground "#97DC9B"))))
- '(font-lock-escape-face            ((t (:foreground "#C5918F"))))
- '(font-lock-warning-face           ((t (:foreground "#FBEB87"))))
- '(font-lock-punctuation-face       ((t (:foreground "#E7C787"))))
- '(font-lock-misc-punctuation-face  ((t (:foreground "#E7D7B7"))))
- '(font-lock-bracket-face           ((t (:foreground "#CCACC8"))))
- '(font-lock-delimiter-face         ((t (:foreground "#CCBCCB"))))
- '(font-lock-regexp-grouping-backslash ((t (:foreground "#EBD7B7"))))
- '(font-lock-regexp-grouping-construct ((t (:inherit (bold)))))
- ;; decorations
- '(underline                        ((t (:underline t))))
- '(link                             ((t (:inherit (underline) :foreground "#A1EFDF"))))
- '(link-visited                     ((t (:foreground "#B57EDC"))))
- '(fringe                           ((t (:background "#393346"))))
- '(header-line                      ((t (:underline (:color foreground-color :style line :position nil)
-                                         :box nil :inverse-video nil :foreground "white" :background "black"))))
- '(tooltip                          ((t (:inherit (variable-pitch) :background "#343434"))))
- '(button                           ((t (:inherit (link)
-                                         :box (:line-width 2 :color "#99DD66" :style released-button)))))
- '(line-number                      ((t (:foreground "#7787A7" :background "#222222"))))
- '(show-paren-match                 ((t (:foreground "#FFFFFF" :background "#8E44AD"))))
- '(mode-line                        ((t (:foreground "#FFFFFF" :background "#5C3F8E"))))
- '(mode-line-inactive               ((t (:foreground "#CCCCCC" :background "#3B3869"))))
- '(mode-line-emphasis               ((t (:foreground "#FBEB87" :weight bold))))
- '(mode-line-highlight              ((t (:inherit (button) :foreground "#CCFF99" :background "#5C4F8E"))))
- '(completions-common-part          ((t (:foreground "#F1C40F" :background "#343434"))))
- '(completions-first-difference     ((t (:foreground "#8BC34A" :background "#2D2D2D"))))
- '(completions-annotations          ((t (:inherit (italic) :foreground "#EBDB87"))))
- ;; company
- '(company-tooltip                  ((t (:foreground "#FFFFFF" :background "#2D2D2D"))))
- '(company-tooltip-selection        ((t (:foreground "#8BC34A" :background "#6C497F"))))
- '(company-tooltip-common           ((t (:foreground "#F1C40F" :background "#343434"))))
- '(company-tooltip-common-selection ((t (:foreground "#CCFF99" :background "#7A5F9E"))))
- ;; isearch
- '(isearch                          ((t (:foreground "#FFFFFF" :background "#436224"))))
- '(isearch-fail                     ((t (:foreground "#FFFFFF" :background "#FF0033"))))
- '(match                            ((t (:foreground "#FFFFFF" :background "#8E44AD"))))
- '(next-error                       ((t (:foreground "#FFFFFF" :background "#E74CAC"))))
- '(query-replace                    ((t (:foreground "#FFFFFF" :background "#256225"))))
- ;; org-mode
- '(org-document-title               ((t (:foreground "#AEEEEE"))))
- '(org-document-info                ((t (:foreground "#A1CEBE"))))
- '(org-level-1                      ((t (:foreground "#C7B8EA"))))
- '(org-level-2                      ((t (:foreground "#A7DCCB"))))
- '(org-level-3                      ((t (:foreground "#97CEEB"))))
- '(org-level-4                      ((t (:foreground "#C7DC3C"))))
- '(org-level-5                      ((t (:foreground "#F1C40F"))))
- '(org-tag                          ((t (:foreground "#E7C7E7" :box (:line-width 1 :style released-button)))))
- '(org-link                         ((t (:foreground "#AAF0CC" :underline t))))
- '(org-date                         ((t (:foreground "#8CE5DB" :underline t))))
- '(org-footnote                     ((t (:foreground "#7CD5EB"))))
- '(org-done                         ((t (:foreground "#8BC34A" :strike-through t))))
- '(org-todo                         ((t (:foreground "#FBEB87" :weight bold))))
- '(org-headline-done                ((t (:foreground "#90A0B0"))))
- '(org-block                        ((t (:foreground "#F7F7F7" :background "#222224"))))
- '(org-block-begin-line             ((t (:foreground "#A7A8EA" :underline t :extend t))))
- '(org-block-end-line               ((t (:foreground "#A7A8EA" :overline t :extend t))))
- '(org-quote                        ((t (:foreground "#F2C464" :slant italic))))
- '(org-verse                        ((t (:foreground "#F7DC64" :slant italic))))
- '(org-code                         ((t (:foreground "#B7DC9C" :background "#28282A"))))
- '(org-latex-and-related            ((t (:foreground "#D7E7F7"))))
- '(org-special-keyword              ((t (:foreground "#C7B8EA"))))
- '(org-meta-line                    ((t (:foreground "#F7D7E7"))))
- '(org-priority                     ((t (:foreground "#E3A9B5"))))
- '(org-checkbox                     ((t (:foreground "#E2C464" :box (:line-width 1 :style released-button)))))
- '(org-checkbox-statistics-todo     ((t (:foreground "#FBEB87" :box (:line-width 1 :style released-button)))))
- '(org-checkbox-statistics-done     ((t (:foreground "#8BC34A" :box (:line-width 1 :style released-button)))))
- '(org-list-dt                      ((t (:foreground "#C0C0E1")))))
+;; define koishi-theme here
+(apply #'custom-theme-set-faces
+       (cons 'koishi
+             (if koishi-theme-effects
+                 (koishi-theme-apply-effects koishi-theme-faces)
+               koishi-theme-faces)))
+
+;;;###autoload
+(defun koishi-theme-reset-faces ()
+  "A wrapper to reset koishi-theme after it is loaded.
+This is achieved by calling `custom-set-faces'."
+  (interactive)
+  (apply #'custom-set-faces
+         (if koishi-theme-effects
+             (koishi-theme-apply-effects koishi-theme-faces)
+           koishi-theme-faces)))
 
 ;;;###autoload
 (when load-file-name

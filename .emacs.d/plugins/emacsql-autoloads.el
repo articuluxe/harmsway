@@ -77,6 +77,8 @@ A prefix argument causes the SQL to be printed into the current buffer.
 
 ;;; End of scraped data
 
+(provide 'emacsql-autoloads)
+
 ;; Local Variables:
 ;; version-control: never
 ;; no-byte-compile: t

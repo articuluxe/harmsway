@@ -6,7 +6,7 @@
 ;; Author: vs-123 (GitHub)
 ;; Homepage: https://github.com/vs-123/royal-hemlock-theme
 ;; Url: https://github.com/vs-123/royal-hemlock-theme
-;; Version: 1.0
+;; Version: 1.5
 ;; Filename: royal-hemlock-theme.el
 ;; Keywords: color theme faces
 ;; Package-Requires: ((emacs "24"))
@@ -27,7 +27,7 @@
       (royal-hemlock/grey                  "#AAAAAA")
       (royal-hemlock/white                 "#FFFFFF")
       
-      (royal-hemlock/background            "#FFFFED")
+      (royal-hemlock/background            "#FFFFEE")
       (royal-hemlock/hl-line-background    "#F2F2E1")
       (royal-hemlock/cursor                "#BFFFFF")
       (royal-hemlock/highlight-background  "#3FFFFF")
@@ -40,32 +40,30 @@
   (custom-theme-set-faces
    'royal-hemlock
 
-   `(cursor  ((,class (:foreground ,royal-hemlock/white       :background ,royal-hemlock/black))))
+   `(cursor  ((,class (:foreground ,royal-hemlock/white :background ,royal-hemlock/black))))
    `(default ((,class (:foreground ,royal-hemlock/text-colour :background ,royal-hemlock/background))))
    `(hl-line ((,class (:background ,royal-hemlock/hl-line-background))))   
-   `(isearch ((,class (:foreground ,royal-hemlock/black       :background ,royal-hemlock/highlight-background :weight bold))))
-   `(region  ((,class (:foreground ,royal-hemlock/black       :background ,royal-hemlock/cursor))))
+   `(isearch ((,class (:foreground ,royal-hemlock/black :background ,royal-hemlock/highlight-background :weight bold))))
+   `(region  ((,class (:foreground ,royal-hemlock/black :background ,royal-hemlock/cursor))))
+   `(match  ((,class (:foreground ,royal-hemlock/black :background ,royal-hemlock/highlight-background))))
 
-
-   `(mode-line         ((,class (:foreground ,royal-hemlock/white            :background ,royal-hemlock/majestic-hemlock :weight bold))))
+   `(mode-line         ((,class (:foreground ,royal-hemlock/white :background ,royal-hemlock/majestic-hemlock :weight bold))))
    `(minibuffer-prompt ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
 
-   `(font-lock-builtin-face       ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
-   `(font-lock-constant-face      ((,class (:foreground ,royal-hemlock/pink-colour    :weight bold))))      
-   `(font-lock-keyword-face       ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
-   `(font-lock-type-face          ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
+   `(font-lock-builtin-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
+   `(font-lock-constant-face ((,class (:foreground ,royal-hemlock/pink-colour :weight bold))))      
+   `(font-lock-keyword-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
+   `(font-lock-type-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
    
-   `(font-lock-comment-face       ((,class (:foreground ,royal-hemlock/grey))))
+   `(font-lock-comment-face((,class (:foreground ,royal-hemlock/string))))
    `(font-lock-function-name-face ((,class (:foreground ,royal-hemlock/text-colour))))
-   `(font-lock-string-face        ((,class (:foreground ,royal-hemlock/string))))
+   `(font-lock-string-face((,class (:foreground ,royal-hemlock/string))))
    `(font-lock-variable-name-face ((,class (:foreground ,royal-hemlock/black))))
-   `(font-lock-number-face        ((,class (:foreground ,royal-hemlock/pink-colour    :weight bold))))
-   `(font-lock-escape-face        ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))   
+   `(font-lock-number-face((,class (:foreground ,royal-hemlock/pink-colour      :weight bold))))
+   `(font-lock-escape-face((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))   
 
-   `(line-number              ((,class (:foreground ,royal-hemlock/grey             :background ,royal-hemlock/background :inherit 'default))))
-   `(line-number-current-line ((,class (:foreground ,royal-hemlock/majestic-hemlock :background ,royal-hemlock/background :weight bold :inherit 'default))))
-
-
+   `(line-number((,class (:foreground ,royal-hemlock/grey :background ,royal-hemlock/background :inherit 'default))))
+   `(line-number-current-line((,class (	:foreground ,royal-hemlock/majestic-hemlock :background ,royal-hemlock/background :weight bold :inherit 'default))))
 
    `(link ((,class (:foreground ,royal-hemlock/majestic-hemlock :underline t :weight bold))))))
 

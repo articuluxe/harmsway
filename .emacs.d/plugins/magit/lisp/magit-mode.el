@@ -578,35 +578,41 @@ Magit is documented in info node `(magit)'."
 
 ;;; Local Variables
 
-(defvar-local magit-buffer-arguments nil)
-(defvar-local magit-buffer-diff-type nil)
-(defvar-local magit-buffer-diff-args nil)
-(defvar-local magit-buffer-diff-files nil)
-(defvar-local magit-buffer-diff-files-suspended nil)
-(defvar-local magit-buffer-file-name nil)
-(defvar-local magit-buffer-files nil)
-(defvar-local magit-buffer-log-args nil)
-(defvar-local magit-buffer-log-files nil)
-(defvar-local magit-buffer-range nil)
-(defvar-local magit-buffer-range-hashed nil)
-(defvar-local magit-buffer-refname nil)
+(defvaralias 'magit-buffer-refname 'magit-buffer-revision)
 (defvar-local magit-buffer-revision nil)
-(defvar-local magit-buffer-revision-hash nil)
-(defvar-local magit-buffer-revisions nil)
-(defvar-local magit-buffer-typearg nil)
-(defvar-local magit-buffer-upstream nil)
+(defvar-local magit-buffer-revision-oid nil)
+(defvar-local magit-buffer-blob-oid nil)
+(defvar-local magit-buffer-file-name nil)
 
-;; These variables are also used in file-visiting buffers.
-;; Because the user may change the major-mode, they have
-;; to be permanent buffer-local.
-(put 'magit-buffer-file-name 'permanent-local t)
-(put 'magit-buffer-refname 'permanent-local t)
+;; Preserve when major-mode is changed in file-visiting buffers.
 (put 'magit-buffer-revision 'permanent-local t)
-(put 'magit-buffer-revision-hash 'permanent-local t)
+(put 'magit-buffer-revision-oid 'permanent-local t)
+(put 'magit-buffer-blob-oid 'permanent-local t)
+(put 'magit-buffer-file-name 'permanent-local t)
 
-;; `magit-status' re-enables mode function but its refresher
-;; function does not reinstate this.
-(put 'magit-buffer-diff-files-suspended 'permanent-local t)
+(eval-and-compile
+  (defvar magit-define-aliases-for:magit-buffer-* t)
+  (when magit-define-aliases-for:magit-buffer-*
+    ;; Unfortunately defvar-local can only be used at top-level,
+    ;; so instead we have to use make-variable-buffer-local below.
+    (defvar magit-buffer-arguments nil)
+    (make-obsolete-variable 'magit-buffer-arguments
+      "use a mode- or package-specific `magit-buffer-{*}-args' instead"
+      "magit 4.6.0")
+    (defvar magit-buffer-upstream nil)
+    (make-obsolete-variable 'magit-buffer-upstream
+      "use a mode- or package-specific `magit-buffer-{*}-upstream' instead"
+      "magit 4.6.0")
+    (define-obsolete-variable-alias 'magit-buffer-range-hashed
+      'magit-buffer-diff-range-oids "magit 4.6.0")
+    (define-obsolete-variable-alias 'magit-buffer-revisions
+      'magit-buffer-log-revisions "magit 4.6.0")
+    (define-obsolete-variable-alias 'magit-buffer-revision-hash
+      'magit-buffer-revision-oid "magit 4.6.0")
+    (define-obsolete-variable-alias 'magit-buffer-typearg
+      'magit-buffer-diff-typearg "magit 4.6.0")))
+(make-variable-buffer-local 'magit-buffer-arguments)
+(make-variable-buffer-local 'magit-buffer-upstream)
 
 (defun magit-buffer-file-name ()
   "Return `magit-buffer-file-name' or if that is nil `buffer-file-name'.

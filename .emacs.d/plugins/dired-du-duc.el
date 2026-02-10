@@ -58,6 +58,8 @@
   :link '(url-link "https://github.com/zevv/duc")
   :link '(url-link "https://duc.zevv.nl/"))
 
+(defvar dired-du-duc-debug nil)
+
 
 ;;;; Local mode
 
@@ -175,10 +177,11 @@ and arrange to run `dired-du-duc-after-re-index-hook' afterwards."
                         when (file-readable-p dir)
                         collect dir))
     (when dirs
-      (cl-assert
-       (not (cl-intersection dirs
-                             (seq-mapcat #'cdr dired-du-duc--process-dirs)
-                             :test #'equal)))
+      (when dired-du-duc-debug
+        (cl-assert
+         (not (cl-intersection dirs
+                               (seq-mapcat #'cdr dired-du-duc--process-dirs)
+                               :test #'equal))))
       (let ((proc (apply #'start-process
                          "duc" " *duc*"
                          "duc" "index" "-v" dirs)))
@@ -207,7 +210,8 @@ fewer directories than `dired-du-duc-before-index-functions' does.")
                    when (and (member dir newly-indexed)
                              (buffer-live-p buf))
                    do (with-current-buffer buf
-                        (when (derived-mode-p 'dired-mode)
+                        (when (and (derived-mode-p 'dired-mode)
+                                   (file-exists-p default-directory))
                           (if (dired-du-duc-indexed-p)
                               (let ((dired-du-duc--inhibit-index t))
                                 (setq-local dired-du-duc-using-duc t)

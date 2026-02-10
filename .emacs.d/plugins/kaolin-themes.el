@@ -1,11 +1,11 @@
 ;;; kaolin-themes.el --- A set of eye pleasing themes  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2025 ogdenwebb
+;; Copyright (C) 2017-2026 ogdenwebb
 
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
 ;; Package-Requires: ((emacs "25.1") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.7.3
+;; Version: 1.7.4
 ;; Keywords: dark light teal blue violet purple brown theme faces
 
 ;; This program is free software: you can redistribute it and/or modify

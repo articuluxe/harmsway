@@ -96,9 +96,9 @@ represents."
  'modus-catppuccin
  "The Original — Our darkest variant offering a cozy feeling with color-rich accents."
  'dark
- 'modus-themes-operandi-palette
- 'mocha-palette
- 'mocha-palette-overrides
+ 'modus-themes-vivendi-palette
+ 'catppuccin-mocha-palette
+ 'catppuccin-mocha-palette-overrides
  'modus-catppuccin-custom-faces)
 
 ;;; catpuccin-mocha-theme.el ends here

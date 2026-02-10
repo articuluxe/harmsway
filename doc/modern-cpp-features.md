@@ -22,8 +22,8 @@ C++20 includes the following new language features:
 - [\_\_VA\_OPT\_\_](#__VA_OPT__)
 
 C++20 includes the following new library features:
+- [text formatting](#text-formatting)
 - [concepts library](#concepts-library)
-- [formatting library](#formatting-library)
 - [synchronized buffered outputstream](#synchronized-buffered-outputstream)
 - [std::span](#stdspan)
 - [bit operations](#bit-operations)
@@ -39,6 +39,8 @@ C++20 includes the following new library features:
 - [uniform container erasure](#uniform-container-erasure)
 - [three-way comparison helpers](#three-way-comparison-helpers)
 - [std::lexicographical_compare_three_way](#stdlexicographical_compare_three_way)
+- [std::jthread](#stdjthread)
+- [safe integral comparisons](#safe-integral-comparisons)
 
 C++17 includes the following new language features:
 - [template argument deduction for class templates](#template-argument-deduction-for-class-templates)
@@ -611,6 +613,51 @@ F()        // replaced by f(0)
 
 ## C++20 Library Features
 
+### Text formatting
+Provides a compile-time, checked string formatting library to the standard library using `std::format`. Text formatting can also be done at runtime for dynamic formatted strings using `std::vformat` and other help utilities. Text formatting follows the given [specification](https://en.cppreference.com/w/cpp/utility/format/spec.html).
+
+`std::format` receives a format string as the first argument, and a variable number of arguments proceeding it. If formatting fails, the compilation will fail:
+
+```cpp
+std::format("{}", 123); // OK -- returns "123"
+std::format("{} {}", 123); // ERROR -- not enough arguments
+std::format("{} {}", "Here's a number:", 123); // OK
+```
+
+Formatting a string based on a formatter created at runtime:
+
+```cpp
+std::string fmt = "{} {}";
+fmt += "{}{}";
+std::vformat(fmt, std::make_format_args("Here's a number:", 1, 2, 3));
+// OK -- returns "Here's a number: 123"
+```
+
+When formatting fails (such as an invalid format string), `std::vformat` will throw a `std::format_error`.
+
+To format custom types:
+
+```c++
+struct fraction {
+  int numerator;
+  int denominator;
+};
+
+template <>
+struct std::formatter<fraction> {
+  constexpr auto parse(std::format_parse_context& ctx) {
+    return ctx.begin();
+  }
+
+  auto format(const fraction& f, std::format_context& ctx) const {
+    return std::format_to(ctx.out(), "{0:d}/{1:d}", f.numerator, f.denominator);
+  }
+};
+
+fraction f{1, 2};
+std::format("{}", f); // == "1/2"
+```
+
 ### Concepts library
 Concepts are also provided by the standard library for building more complicated concepts. Some of these include:
 
@@ -637,43 +684,6 @@ Concepts are also provided by the standard library for building more complicated
 - `predicate` - specifies that a callable type is a Boolean predicate.
 
 See also: [concepts](#concepts).
-
-### Formatting library
-Combine the simplicity of `printf` with the type-safety of `iostream`. Uses braces as placeholders, and supports custom formatting similar to printf-style specifiers.
-```c++
-std::format("{1} {0}", "world", "hello"); // == "hello world"
-
-int x = 123;
-std::string str = std::format("x: {}", x); // str == "x: 123"
-
-// Format to an output iterator:
-for (auto x : {1, 2, 3}) {
-  std::format_to(std::ostream_iterator<char>{std::cout, "\n"}, "{}", x);
-}
-```
-
-To format custom types:
-```c++
-struct fraction {
-  int numerator;
-  int denominator;
-};
-
-template <>
-struct std::formatter<fraction>
-{
-    constexpr auto parse(std::format_parse_context& ctx) {
-      return ctx.begin();
-    }
-
-    auto format(const fraction& f, std::format_context& ctx) const {
-      return std::format_to(ctx.out(), "{0:d}/{1:d}", f.numerator, f.denominator);
-    }
-};
-
-fraction f{1, 2};
-std::format("{}", f); // == "1/2"
-```
 
 ### Synchronized buffered outputstream
 Buffers output operations for the wrapped output stream ensuring synchronization (i.e. no interleaving of output).
@@ -845,6 +855,45 @@ std::is_lt(cmp_ac); // == true
 ```
 
 See also: [three-way comparison](#three-way-comparison), [three-way comparison helpers](#three-way-comparison-helpers).
+
+### std::jthread
+A thread of execution (like `std::thread`) that joins on destruction and can be signaled to stop.
+
+As opposed to `std::thread` where you need to check if a thread is joinable and then join on it, a `std::jthread` will automatically attempt to join through its destructor.
+
+Unlike `std::thread` you can request it stop by calling `std::jthread::request_stop` or through the thread's `stop_source`:
+
+```cpp
+std::jthread t{
+    [](std::stop_token stoken) {
+        while (!stoken.stop_requested()) {
+            std::this_thread::sleep_for(1s);
+        }
+    }
+};
+
+// Request stop from the thread object:
+t.request_stop();
+// OR, through the stop source:
+std::stop_source stopSource = t.get_stop_source();
+stopSource.request_stop();
+```
+
+A `std::stop_token` can be used to query the stop state of a thread.
+
+### Safe integral comparisons
+Compare integers, including those of distinct types, without the dangers of integer conversion.
+
+```cpp
+-1 > 0U; // == true
+std::cmp_greater(-1, 0U); // == false
+
+std::cmp_equal(0U, 0); // == true
+std::cmp_less_equal(-1, 1U); // == true
+
+std::in_range<unsigned>(-1); // == false
+std::in_range<char>(999999); // == false
+```
 
 ## C++17 Language Features
 

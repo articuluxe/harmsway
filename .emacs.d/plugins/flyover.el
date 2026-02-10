@@ -1,7 +1,7 @@
 ;;; flyover.el --- Display Flycheck and Flymake errors with overlays -*- lexical-binding: t -*-
 
 ;; Author: Mikael Konradsson <mikael.konradsson@outlook.com>
-;; Version: 0.9.6
+;; Version: 0.9.9
 ;; Package-Requires: ((emacs "27.1") (flymake "1.0"))
 ;; Keywords: convenience, tools, flycheck, flymake
 ;; URL: https://github.com/konrad1977/flyover
@@ -26,6 +26,8 @@
 ;; Declare flycheck functions to avoid byte-compilation warnings
 (declare-function flycheck-error-line "flycheck")
 (declare-function flycheck-error-column "flycheck")
+(declare-function flycheck-error-end-line "flycheck")
+(declare-function flycheck-error-end-column "flycheck")
 (declare-function flycheck-error-level "flycheck")
 (declare-function flycheck-error-message "flycheck")
 (declare-function flycheck-error-id "flycheck")
@@ -40,7 +42,7 @@
   "Error structure for flyover that works independently of flycheck.
 This allows flyover to work with either flycheck, flymake, or both
 without requiring flycheck to be installed."
-  line column level message id)
+  line column beg end level message id)
 
 (defgroup flyover nil
   "Display Flycheck/Flymake errors using overlays."
@@ -96,7 +98,9 @@ This affects the font size of error, warning and info messages."
        :height ,flyover-base-height
        :weight normal))
   "Face used for error overlays.
-Inherits from the theme's error face."
+Inherits from the theme's error face.
+To override both text and background colors for accessibility, set both
+:foreground and :background attributes explicitly."
   :group 'flyover)
 
 (defface flyover-warning
@@ -104,7 +108,9 @@ Inherits from the theme's error face."
        :height ,flyover-base-height
        :weight normal))
   "Face used for warning overlays.
-Inherits from the theme's warning face."
+Inherits from the theme's warning face.
+To override both text and background colors for accessibility, set both
+:foreground and :background attributes explicitly."
   :group 'flyover)
 
 (defface flyover-info
@@ -112,7 +118,9 @@ Inherits from the theme's warning face."
        :height ,flyover-base-height
        :weight normal))
   "Face used for info overlays.
-Inherits from the theme's success face."
+Inherits from the theme's success face.
+To override both text and background colors for accessibility, set both
+:foreground and :background attributes explicitly."
   :group 'flyover)
 
 (defface flyover-marker
@@ -123,14 +131,38 @@ Inherits from the theme's success face."
   :group 'flyover)
 
 (defcustom flyover-text-tint 'lighter
-  "Tint type for text.  Possible values: nil, \='lighter, \='darker."
+  "Tint type for text.  Possible values: nil, \\='lighter/\\='light, \\='darker/\\='dark."
   :type '(choice (const :tag "No tinting" nil)
-                 (const :tag "Lighter than base color" lighter)
-                 (const :tag "Darker than base color" darker))
+                 (const :tag "Lighter" lighter)
+                 (const :tag "Darker" darker))
   :group 'flyover)
 
 (defcustom flyover-text-tint-percent 50
   "Percentage to lighten or darken the text when tinting is enabled."
+  :type 'integer
+  :group 'flyover)
+
+(defcustom flyover-icon-tint 'lighter
+  "Tint type for icon.  Possible values: nil, \\='lighter/\\='light, \\='darker/\\='dark."
+  :type '(choice (const :tag "No tinting" nil)
+                 (const :tag "Lighter" lighter)
+                 (const :tag "Darker" darker))
+  :group 'flyover)
+
+(defcustom flyover-icon-tint-percent 50
+  "Percentage to lighten or darken the icon when tinting is enabled."
+  :type 'integer
+  :group 'flyover)
+
+(defcustom flyover-icon-background-tint 'darker
+  "Tint type for icon background.  Possible values: nil, \\='lighter/\\='light, \\='darker/\\='dark."
+  :type '(choice (const :tag "No tinting" nil)
+                 (const :tag "Lighter" lighter)
+                 (const :tag "Darker" darker))
+  :group 'flyover)
+
+(defcustom flyover-icon-background-tint-percent 50
+  "Percentage to lighten or darken the icon background when tinting is enabled."
   :type 'integer
   :group 'flyover)
 
@@ -191,6 +223,14 @@ Lower values make backgrounds darker."
   :type 'boolean
   :group 'flyover)
 
+(defcustom flyover-hide-during-completion t
+  "Hide flyover overlays when completion popup is active.
+When non-nil, flyover overlays are temporarily hidden while
+completion candidates are displayed (corfu, company, etc.).
+This prevents visual conflicts between the overlay and completion popup."
+  :type 'boolean
+  :group 'flyover)
+
 (defcustom flyover-display-mode 'always
   "Control when to display error overlays based on cursor position.
 
@@ -198,11 +238,13 @@ Available modes:
 - `always': Always show all error overlays (default behavior)
 - `hide-on-same-line': Hide overlays when cursor is on the same line as the error
 - `hide-at-exact-position': Hide overlays when cursor is at the exact position of the error
-- `show-only-on-same-line': Only show overlays for errors on the current line"
+- `show-only-on-same-line': Only show overlays for errors on the current line
+- `show-only-on-request': Only show when requested by `flyover-flash-error-at-point'"
   :type '(choice (const :tag "Always show overlays" always)
                  (const :tag "Hide when cursor on same line" hide-on-same-line)
                  (const :tag "Hide when cursor at exact position" hide-at-exact-position)
-                 (const :tag "Show only on current line" show-only-on-same-line))
+                 (const :tag "Show only on current line" show-only-on-same-line)
+                 (const :tat "Show only on request" show-only-on-request))
   :group 'flyover)
 
 ;; Obsolete variables for backward compatibility
@@ -386,6 +428,9 @@ Used to avoid unnecessary overlay rebuilds in cursor-dependent modes.")
   "Timer used for debouncing cursor movement updates.
 Separate from `flyover--debounce-timer' to allow different intervals.")
 
+(defvar-local flyover--hidden-for-completion nil
+  "Non-nil when overlays are hidden due to active completion.")
+
 ;; Color cache for performance optimization
 (defvar flyover--color-cache (make-hash-table :test 'equal)
   "Cache for computed colors to avoid repeated calculations.")
@@ -529,6 +574,7 @@ BG-COLOR is the overlay background color."
   "Convert a Flymake DIAG to flyover-error format.
 Only converts diagnostics whose level is in `flyover-levels'."
   (when-let* ((beg (flymake-diagnostic-beg diag))
+              (end (flymake-diagnostic-end diag))
               (type (flymake-diagnostic-type diag))
               (text (flymake-diagnostic-text diag))
               (level (flyover--flymake-type-to-level type)))
@@ -539,9 +585,38 @@ Only converts diagnostics whose level is in `flyover-levels'."
        :column (save-excursion
                  (goto-char beg)
                  (current-column))
+       :beg beg
+       :end end
        :level level
        :message text
        :id nil))))
+
+(defun flyover--flycheck-error-begin (err)
+  "Determine the starting position of ERR."
+  (let ((column (when-let* ((col (flycheck-error-column err))) (1- col))))
+    (save-excursion
+      (forward-line (- (flycheck-error-line err) (line-number-at-pos)))
+      (if column
+          (move-to-column column)
+        (end-of-line)
+        (beginning-of-visual-line)
+        (while (looking-at "[[:space:]]")
+          (forward-char)))
+      (point))))
+
+(defun flyover--flycheck-error-end (err)
+  "Determine the end position of ERR."
+  (if-let* ((error-end-line (flycheck-error-end-line err))
+            (error-end-col (flycheck-error-end-column err)))
+      (+ error-end-col (pos-bol (1+ (- error-end-line (line-number-at-pos)))))
+      (save-excursion
+          (goto-char (flyover--flycheck-error-begin err))
+          (if (flycheck-error-column err)
+              (end-of-thing 'symbol)
+            (end-of-visual-line)
+            (while (looking-at "[[:space:]]")
+              (backward-char))
+          (point)))))
 
 (defun flyover--convert-flycheck-error (err)
   "Convert a Flycheck ERR to flyover-error format."
@@ -553,6 +628,8 @@ Only converts diagnostics whose level is in `flyover-levels'."
          ;; Flycheck columns are 1-based, convert to 0-based for consistency
          :column (when-let* ((col (flycheck-error-column err)))
                    (max 0 (1- col)))
+         :beg (flyover--flycheck-error-begin err)
+         :end (flyover--flycheck-error-end err)
          :level level
          :message (flycheck-error-message err)
          :id (condition-case nil
@@ -794,9 +871,11 @@ Returns empty string if `flyover-show-icon' is nil."
                       (flyover--get-theme-face-color 'success :foreground))
                      (_ (face-attribute face-name :foreground)))
                  (face-attribute face-name :foreground)))
-           ;; Use override-bg for solid border styles, otherwise darken
+           ;; Use override-bg for solid border styles, otherwise apply icon bg tinting
            (bg-color (or override-bg
-                         (flyover--darken-color bg flyover-percent-darker))))
+                         (if flyover-icon-background-tint
+                             (flyover--tint-color bg flyover-icon-background-tint flyover-icon-background-tint-percent)
+                           bg))))
 
       (concat
        ;; Left padding
@@ -833,13 +912,16 @@ otherwise falls back to overlay position."
                            (_ flyover--warning-priority))))
     (- level-priority (or col-pos 0))))
 
-(defun flyover--setup-basic-overlay-properties (overlay error)
-  "Set up basic properties for OVERLAY with ERROR."
+(defun flyover--setup-basic-overlay-properties (overlay error &optional zero-width-p)
+  "Set up basic properties for OVERLAY with ERROR.
+If ZERO-WIDTH-P is non-nil, skip setting evaporate since zero-width
+overlays would be immediately deleted."
   (overlay-put overlay 'flyover t)
-  ;; Always set evaporate - overlays that become empty after buffer modifications
-  ;; should be cleaned up automatically. Zero-width overlays created intentionally
-  ;; won't be affected since evaporate only triggers when an overlay *becomes* empty.
-  (overlay-put overlay 'evaporate t)
+  ;; Only set evaporate for non-zero-width overlays.
+  ;; Zero-width overlays (used for EOL mode) would be immediately deleted
+  ;; if evaporate is set, since Emacs deletes empty overlays with this property.
+  (unless zero-width-p
+    (overlay-put overlay 'evaporate t))
   (overlay-put overlay 'modification-hooks
                '(flyover--clear-overlay-on-modification))
   (overlay-put overlay 'priority (flyover--calculate-overlay-priority error))
@@ -853,18 +935,31 @@ Returns a plist with :fg-color, :bg-color, :icon-bg-color, :tinted-fg,
   (let* ((colors (flyover--get-face-colors (flyover--normalize-level (flyover-error-level error))))
          (fg-color (car colors))
          (bg-color (cdr colors))
-         ;; Icon background is darker version of foreground
-         (icon-bg-color (flyover--darken-color fg-color flyover-percent-darker))
+         ;; Icon background tinting
+         (icon-bg-color (if flyover-icon-background-tint
+                            (flyover--tint-color
+                             fg-color
+                             flyover-icon-background-tint
+                             flyover-icon-background-tint-percent)
+                          fg-color))
+         ;; Text tinting
          (tinted-fg (if flyover-text-tint
                         (flyover--tint-color
                          fg-color
                          flyover-text-tint
                          flyover-text-tint-percent)
                       fg-color))
+         ;; Icon tinting (separate control)
+         (icon-fg (if flyover-icon-tint
+                      (flyover--tint-color
+                       fg-color
+                       flyover-icon-tint
+                       flyover-icon-tint-percent)
+                    fg-color))
          (face-with-colors `(:inherit ,face
                                       :foreground ,tinted-fg
                                       :background ,bg-color))
-         (indicator (flyover--get-indicator face tinted-fg))
+         (indicator (flyover--get-indicator face icon-fg))
          (virtual-line (when flyover-show-virtual-line
                          (propertize (flyover-get-arrow)
                                      'face `(:foreground ,fg-color))))
@@ -986,10 +1081,12 @@ ICON-BG-COLOR is the icon background (used for left border)."
      :property `(:inherit flyover-marker :background ,bg-color))))
 
 (defun flyover--configure-overlay (overlay face msg beg error)
-  "Configure OVERLAY with FACE, MSG, BEG, and ERROR."
+  "Configure OVERLAY with FACE, MSG, BEG, and ERROR.
+This function is used for zero-width overlays (EOL mode and fallback cases)."
   (condition-case configure-err
       (when (overlayp overlay)
-        (flyover--setup-basic-overlay-properties overlay error)
+        ;; Pass t for zero-width-p to prevent evaporate from deleting the overlay
+        (flyover--setup-basic-overlay-properties overlay error t)
         (let* ((components (flyover--create-overlay-display-components face error msg))
                (final-string (flyover--build-final-overlay-string components error msg)))
           (overlay-put overlay 'after-string
@@ -1276,9 +1373,16 @@ STATUS is the new flycheck status."
   ;; Use the cursor-specific debounce function for smoother navigation
   (when (memq flyover-display-mode '(show-only-on-same-line
                                      hide-on-same-line
-                                     hide-at-exact-position))
+                                     hide-at-exact-position
+                                     show-only-on-request))
     (flyover--safe-add-hook 'post-command-hook
                             #'flyover--cursor-display-debounced))
+  ;; Add completion detection hook when hide-during-completion is enabled
+  (when flyover-hide-during-completion
+    (when flyover-debug
+      (message "DEBUG enable: adding completion detection hook"))
+    (flyover--safe-add-hook 'post-command-hook
+                            #'flyover--check-completion-state))
   ;; Disable auto-window-vscroll to prevent scroll issues with overlays
   (setq-local auto-window-vscroll nil)
   ;; Force initial display of existing errors
@@ -1293,8 +1397,9 @@ STATUS is the new flycheck status."
   (when flyover--cursor-debounce-timer
     (cancel-timer flyover--cursor-debounce-timer)
     (setq flyover--cursor-debounce-timer nil))
-  ;; Reset cursor tracking
+  ;; Reset cursor tracking and completion state
   (setq flyover--last-cursor-line nil)
+  (setq flyover--hidden-for-completion nil)
   ;; Only remove flycheck hooks if flycheck is available
   (when (and (memq 'flycheck flyover-checkers)
              (featurep 'flycheck))
@@ -1307,27 +1412,43 @@ STATUS is the new flycheck status."
 
   (flyover--safe-remove-hook 'after-change-functions
                                       #'flyover--handle-buffer-changes)
-  ;; Remove post-command-hook (try both debounce functions for safety)
+  ;; Remove post-command-hook (try all functions for safety)
   (flyover--safe-remove-hook 'post-command-hook
                               #'flyover--cursor-display-debounced)
   (flyover--safe-remove-hook 'post-command-hook
                               #'flyover--maybe-display-errors-debounced)
+  (flyover--safe-remove-hook 'post-command-hook
+                              #'flyover--check-completion-state)
   (flyover--clear-overlays))
 
 (defun flyover--maybe-display-errors ()
   "Display errors based on cursor position and settings."
   ;; Migrate old settings if needed
   (flyover--migrate-display-settings)
-  ;; Only skip display if buffer is modified AND we're in a position-dependent mode
-  ;; For 'always mode, we should display even when buffer is modified
-  (unless (and (buffer-modified-p)
-               (memq flyover-display-mode '(show-only-on-same-line
-                                            hide-on-same-line
-                                            hide-at-exact-position)))
-    (let ((current-line (line-number-at-pos))
-          (current-col (current-column))
-          (to-delete))
-      (pcase flyover-display-mode
+  ;; Handle completion hiding
+  (let ((completion-active (and flyover-hide-during-completion
+                                (flyover--completion-active-p))))
+    (cond
+     ;; Completion is active - hide overlays and skip display
+     (completion-active
+      (when flyover-debug
+        (message "DEBUG maybe-display-errors: skipping due to active completion"))
+      (flyover--hide-overlays-for-completion))
+     ;; Completion just ended - restore overlays
+     (flyover--hidden-for-completion
+      (flyover--show-overlays-after-completion))
+     ;; Normal case - display errors
+     (t
+      ;; Only skip display if buffer is modified AND we're in a position-dependent mode
+      ;; For 'always mode, we should display even when buffer is modified
+      (unless (and (buffer-modified-p)
+                   (memq flyover-display-mode '(show-only-on-same-line
+                                                hide-on-same-line
+                                                hide-at-exact-position)))
+        (let ((current-line (line-number-at-pos))
+              (current-col (current-column))
+              (to-delete))
+          (pcase flyover-display-mode
         ;; Show only errors on the current line
         ('show-only-on-same-line
          ;; Only rebuild overlays if cursor moved to a different line
@@ -1355,11 +1476,11 @@ STATUS is the new flycheck status."
                ;; Only create overlays if there are errors on current line
                (when current-line-errors
                  (flyover--display-errors current-line-errors))))))
-        
+
         ;; Always show all errors (default)
         ('always
          (flyover--display-errors))
-        
+
         ;; Hide errors on the same line as cursor
         ('hide-on-same-line
          (flyover--display-errors)
@@ -1386,7 +1507,14 @@ STATUS is the new flycheck status."
          ;; Delete collected overlays
          (dolist (ov to-delete)
            (delete-overlay ov)
-           (setq flyover--overlays (delq ov flyover--overlays))))))))
+           (setq flyover--overlays (delq ov flyover--overlays))))
+
+        ;; Delete all overlays and errors that were shown on request and  need no longer be shown
+        ('show-only-on-request
+         (dolist (ov flyover--overlays)
+           (unless (flyover--error-at-point-p (overlay-get ov 'flyover-error))
+             (delete-overlay ov)
+             (setq flyover--overlays nil))))))))))) ;; close: pcase, let, unless, t-clause, cond, let)
 
 (defun flyover--maybe-display-errors-debounced (&rest _)
   "Debounced version of `flyover--maybe-display-errors'."
@@ -1527,17 +1655,39 @@ Lower LIGHTNESS values create darker backgrounds."
 
 (defun flyover--get-face-colors (level)
   "Get foreground and background colors for error LEVEL.
-Uses theme colors when `flyover-use-theme-colors' is non-nil."
-  (let ((fg (pcase level
-              ((or 'error "error") (flyover--get-theme-face-color 'error :foreground "#ea8faa"))
-              ((or 'warning "warning") (flyover--get-theme-face-color 'warning :foreground "#DCA561"))
-              ((or 'info "info") (flyover--get-theme-face-color 'success :foreground "#a8e3a9"))
-              (_ (flyover--get-theme-face-color 'warning :foreground "#DCA561")))))
-    (cons fg (flyover--create-background-from-foreground fg flyover-background-lightness))))
+Uses theme colors when `flyover-use-theme-colors' is non-nil.
+If the flyover face has an explicit :background, both foreground and
+background are taken from the face for full accessibility control."
+  (let* ((face-name (pcase level
+                      ((or 'error "error") 'flyover-error)
+                      ((or 'warning "warning") 'flyover-warning)
+                      ((or 'info "info") 'flyover-info)
+                      (_ 'flyover-warning)))
+         (explicit-bg (face-attribute face-name :background nil t))
+         (explicit-fg (face-attribute face-name :foreground nil t)))
+    (if (and explicit-bg (not (eq explicit-bg 'unspecified)))
+        ;; User has set explicit background - use both fg and bg from face
+        (cons (if (and explicit-fg (not (eq explicit-fg 'unspecified)))
+                  explicit-fg
+                (flyover--get-theme-face-color
+                 (pcase level
+                   ((or 'error "error") 'error)
+                   ((or 'warning "warning") 'warning)
+                   (_ 'success))
+                 :foreground "#DCA561"))
+              explicit-bg)
+      ;; No explicit background - use current computed behavior
+      (let ((fg (pcase level
+                  ((or 'error "error") (flyover--get-theme-face-color 'error :foreground "#ea8faa"))
+                  ((or 'warning "warning") (flyover--get-theme-face-color 'warning :foreground "#DCA561"))
+                  ((or 'info "info") (flyover--get-theme-face-color 'success :foreground "#a8e3a9"))
+                  (_ (flyover--get-theme-face-color 'warning :foreground "#DCA561")))))
+        (cons fg (flyover--create-background-from-foreground fg flyover-background-lightness))))))
 
 (defun flyover--tint-color (color tint percent)
   "Tint COLOR according to TINT type and PERCENT amount.
-TINT should be either =\'lighter or =\'darker."
+TINT should be \\='lighter or \\='darker.
+PERCENT controls how much to tint (0 = no change, 100 = full white/black)."
   (pcase tint
     ('lighter
      (let* ((rgb (flyover--color-to-rgb color))
@@ -1547,7 +1697,13 @@ TINT should be either =\'lighter or =\'darker."
                                rgb)))
        (apply #'flyover--rgb-to-hex lightened)))
     ('darker
-     (flyover--darken-color color percent))
+     ;; Symmetric with lighter: move toward 0 (black) by percent amount
+     (let* ((rgb (flyover--color-to-rgb color))
+            (darkened (mapcar (lambda (component)
+                                (max 0
+                                     (floor (- component (* component (/ percent 100.0))))))
+                              rgb)))
+       (apply #'flyover--rgb-to-hex darkened)))
     (_ color)))
 
 (defun flyover-toggle ()
@@ -1556,6 +1712,83 @@ TINT should be either =\'lighter or =\'darker."
   (if flyover-mode
       (flyover-mode -1)
     (flyover-mode 1)))
+
+;;; Completion integration
+
+(defun flyover--completion-active-p ()
+  "Return non-nil if a completion popup is currently active.
+Uses `completion-in-region-mode' which is the standard mechanism for
+corfu, cape, eglot, and other modern completion systems.
+Also checks for company-mode which uses its own mechanism."
+  (let ((completion-in-region (bound-and-true-p completion-in-region-mode))
+        (company-active (and (bound-and-true-p company-mode)
+                             (bound-and-true-p company-candidates))))
+    (when flyover-debug
+      (message "DEBUG completion-active-p: completion-in-region=%s company=%s"
+               completion-in-region company-active))
+    (or completion-in-region company-active)))
+
+(defun flyover--hide-overlays-for-completion ()
+  "Hide all flyover overlays by making them invisible.
+Stores their visibility state so they can be restored."
+  (unless flyover--hidden-for-completion
+    (when flyover-debug
+      (message "DEBUG hide-overlays: hiding %d overlays" (length flyover--overlays)))
+    (dolist (ov flyover--overlays)
+      (when (overlayp ov)
+        ;; Store original properties and hide
+        (overlay-put ov 'flyover--saved-after-string (overlay-get ov 'after-string))
+        (overlay-put ov 'flyover--saved-display (overlay-get ov 'display))
+        (overlay-put ov 'after-string nil)
+        (overlay-put ov 'display nil)))
+    (setq flyover--hidden-for-completion t)))
+
+(defun flyover--show-overlays-after-completion ()
+  "Restore flyover overlays that were hidden for completion."
+  (when flyover--hidden-for-completion
+    (when flyover-debug
+      (message "DEBUG show-overlays: restoring %d overlays" (length flyover--overlays)))
+    (dolist (ov flyover--overlays)
+      (when (overlayp ov)
+        ;; Restore saved properties
+        (when-let* ((saved-after (overlay-get ov 'flyover--saved-after-string)))
+          (overlay-put ov 'after-string saved-after))
+        (when-let* ((saved-display (overlay-get ov 'flyover--saved-display)))
+          (overlay-put ov 'display saved-display))
+        ;; Clean up saved properties
+        (overlay-put ov 'flyover--saved-after-string nil)
+        (overlay-put ov 'flyover--saved-display nil)))
+    (setq flyover--hidden-for-completion nil)))
+
+(defun flyover--check-completion-state ()
+  "Check completion state and hide/show overlays accordingly.
+Called from `post-command-hook' when `flyover-hide-during-completion' is enabled."
+  (when flyover-hide-during-completion
+    (let ((completion-active (flyover--completion-active-p)))
+      (when flyover-debug
+        (message "DEBUG check-completion-state: active=%s hidden=%s overlays=%d"
+                 completion-active flyover--hidden-for-completion (length flyover--overlays)))
+      (if completion-active
+          (flyover--hide-overlays-for-completion)
+        (flyover--show-overlays-after-completion)))))
+
+(defun flyover--error-at-point-p (err)
+  "Non-nil if error ERR is at current point."
+  (and (>= (point) (flyover-error-beg err))
+       (< (point) (flyover-error-end err))))
+
+(defun flyover--errors-at-point ()
+  "Return all errors at current point."
+  (seq-filter #'flyover--error-at-point-p (flyover--get-all-errors)))
+
+(defun flyover-flash-error-at-point ()
+  "Display error at current point."
+  (interactive)
+  (if flyover-mode
+      (and-let* (((eq flyover-display-mode 'show-only-on-request))
+                  (errors (flyover--errors-at-point)))
+        (flyover--display-errors errors))
+    (message "flyover-mode is disabled; not displaying errors.")))
 
 (provide 'flyover)
 ;;; flyover.el ends here

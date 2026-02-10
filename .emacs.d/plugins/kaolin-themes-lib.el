@@ -1277,8 +1277,8 @@
     (show-paren-match (:background bg2 :foreground rb-match :bold bold))
     (show-paren-mismatch (:background red2 :foreground bg2))
 
-    (rainbow-delimiters-mismatched-face (:background red2 :foreground err))
-    (rainbow-delimiters-unmatched-face (:inherit 'rainbow-delimiters-mismatched-face))
+    (rainbow-delimiters-unmatched-face (:background red2 :foreground err))
+    (rainbow-delimiters-mismatched-face (:inherit 'rainbow-delimiters-unmatched-face))
     (rainbow-delimiters-base-face    (:foreground rb1))
     (rainbow-delimiters-depth-1-face (:foreground rb1))
     (rainbow-delimiters-depth-2-face (:foreground rb2))

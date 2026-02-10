@@ -180,8 +180,7 @@ or signal an error, depending on DEMAND."
                                  $ "that remote does not exist.")))
                   ((magit-list-remotes) "Cannot decide on remote to use.")
                   (t "No remote configured."))
-            "https://docs.magit.vc/forge/How-Forge-Detection-Works.html"
-            ))))))
+            "https://docs.magit.vc/forge/How-Forge-Detection-Works.html"))))))
 
 (cl-defmethod forge-get-repository ((url string) &optional remote demand)
   "Return the repository at URL."
@@ -535,6 +534,7 @@ forges and hosts."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
+;;   ("and>"          . "cond-let--and>")
 ;;   ("and-let"       . "cond-let--and-let")
 ;;   ("if-let"        . "cond-let--if-let")
 ;;   ("when-let"      . "cond-let--when-let")

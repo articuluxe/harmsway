@@ -1,6 +1,6 @@
 ;;; modus-themes.el --- Elegant, highly legible and customizable themes -*- lexical-binding:t -*-
 
-;; Copyright (C) 2019-2025  Free Software Foundation, Inc.
+;; Copyright (C) 2019-2026  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
@@ -3756,22 +3756,22 @@ Info node `(modus-themes) Option for palette overrides'.")
          (/ channel 12.92)
        (expt (/ (+ channel 0.055) 1.055) 2.4))))
 
-(defun modus-themes-wcag-formula (hex)
-  "Get WCAG value of color value HEX.
+(defun modus-themes-wcag-formula (hex-color)
+  "Get WCAG value of color value HEX-COLOR.
 The value is defined in hexadecimal RGB notation, such #123456."
-  (let ((channels (color-name-to-rgb hex))
+  (let ((channels (color-name-to-rgb hex-color))
         (weights '(0.2126 0.7152 0.0722))
-        contribution)
+        (contribution nil))
     (while channels
       (push (modus-themes--wcag-contribution (pop channels) (pop weights)) contribution))
     (apply #'+ contribution)))
 
 ;;;###autoload
-(defun modus-themes-contrast (c1 c2)
-  "Measure WCAG contrast ratio between C1 and C2.
-C1 and C2 are color values written in hexadecimal RGB."
-  (let ((ct (/ (+ (modus-themes-wcag-formula c1) 0.05)
-               (+ (modus-themes-wcag-formula c2) 0.05))))
+(defun modus-themes-contrast (hex-color-1 hex-color-2)
+  "Measure WCAG contrast ratio between HEX-COLOR-1 and HEX-COLOR-2.
+HEX-COLOR-1 and HEX-COLOR-2 are color values written in hexadecimal RGB."
+  (let ((ct (/ (+ (modus-themes-wcag-formula hex-color-1) 0.05)
+               (+ (modus-themes-wcag-formula hex-color-2) 0.05))))
     (max ct (/ ct))))
 
 (defvar modus-themes-registered-items nil
@@ -4205,6 +4205,18 @@ Run `modus-themes-after-load-theme-hook' after loading a theme."
 
 ;;;;; Preview a theme palette
 
+(defun modus-themes-color-dark-p (hex-color)
+  "Return non-nil if hexadecimal RGB HEX-COLOR is dark.
+Test that HEX-COLOR has more contrast against white than black."
+  (> (modus-themes-contrast hex-color "#ffffff")
+     (modus-themes-contrast hex-color "#000000")))
+
+(defun modus-themes-get-readable-foreground (hex-color)
+  "Get readable foreground for background hexadecimal RGB HEX-COLOR."
+  (if (modus-themes-color-dark-p hex-color)
+      "#ffffff"
+    "#000000"))
+
 (defun modus-themes--list-colors-get-mappings (palette)
   "Get the semantic palette entries in PALETTE.
 PALETTE is the value of a variable like `modus-operandi-palette'."
@@ -4237,8 +4249,8 @@ PALETTE is the value of a variable like `modus-operandi-palette'."
            (propertize value-string 'face `( :foreground ,color))
            (propertize value-string-padded 'face `( :background ,color
                                                     :foreground ,(if (string= color "unspecified")
-                                                                     (readable-foreground-color (modus-themes-get-color-value 'bg-main nil theme))
-                                                                   (readable-foreground-color color))))))))
+                                                                     (modus-themes-get-readable-foreground (modus-themes-get-color-value 'bg-main nil theme))
+                                                                   (modus-themes-get-readable-foreground color))))))))
      palette)))
 
 (defvar modus-themes-current-preview nil)
@@ -4633,7 +4645,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(italic ((,c :slant italic)))
     `(cursor ((,c :background ,cursor)))
     `(fringe ((,c :background ,fringe :foreground ,fg-main)))
-    `(scroll-bar ((,c :background ,fringe :foreground ,border)))
+    `(scroll-bar ((,c :background ,bg-main :foreground ,border)))
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
 ;;;;; basic and/or ungrouped styles
@@ -4905,7 +4917,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(change-log-name ((,c :foreground ,name)))
     `(log-edit-header ((,c :inherit modus-themes-bold)))
     `(log-edit-headers-separator ((,c :height 1 :background ,border :extend t)))
-    `(log-edit-summary ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
+    `(log-edit-summary ((,c :inherit modus-themes-bold :foreground ,info)))
     `(log-edit-unknown-header ((,c :foreground ,fg-dim)))
     `(log-view-commit-body (( )))
     `(log-view-file ((,c :inherit modus-themes-bold)))
@@ -4975,6 +4987,8 @@ If COLOR is unspecified, then return :box unspecified."
 ;;;;; completions
     `(completions-annotations ((,c :inherit modus-themes-slant :foreground ,docstring)))
     `(completions-common-part ((,c :inherit modus-themes-completion-match-0)))
+    `(completions-group-title ((,c :inherit modus-themes-slant :foreground ,name :height 0.9)))
+    `(completions-group-separator ((,c :strike-through t :foreground ,border)))
     `(completions-first-difference ((,c :inherit modus-themes-completion-match-1)))
     `(completions-highlight ((,c :inherit modus-themes-completion-selected)))
 ;;;;; consult
@@ -5547,7 +5561,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(git-commit-keyword ((,c :foreground ,keyword)))
     `(git-commit-nonempty-second-line ((,c :foreground ,err)))
     `(git-commit-overlong-summary ((,c :foreground ,warning)))
-    `(git-commit-summary ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
+    `(git-commit-summary ((,c :inherit modus-themes-bold :foreground ,info)))
 ;;;;; git-gutter
     `(git-gutter:added ((,c :background ,bg-added-fringe)))
     `(git-gutter:deleted ((,c :background ,bg-removed-fringe)))
@@ -6453,7 +6467,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(org-level-7 ((,c :inherit modus-themes-heading-7)))
     `(org-level-8 ((,c :inherit modus-themes-heading-8)))
     `(org-link ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
-    `(org-list-dt ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
+    `(org-list-dt ((,c :inherit bold)))
     `(org-macro ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-macro :foreground ,fg-prose-macro)))
     `(org-meta-line ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-metadata)))
     `(org-mode-line-clock (( )))
@@ -6479,19 +6493,14 @@ If COLOR is unspecified, then return :box unspecified."
     `(org-verse ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
     `(org-warning ((,c :foreground ,warning)))
 ;;;;; org-habit
-    ;; NOTE 2025-11-12: We used to have `readable-foreground-color'
-    ;; for the foreground values of these faces, but that function
-    ;; breaks the theme if it is loaded in the early-init.el.  Maybe
-    ;; we can find a better solution.  I do not want to introduce new
-    ;; palette entries or a new function just for these faces though.
-    `(org-habit-alert-face ((,c :background ,bg-graph-yellow-0)))
-    `(org-habit-alert-future-face ((,c :background ,bg-graph-yellow-1)))
-    `(org-habit-clear-face ((,c :background ,bg-graph-blue-0)))
-    `(org-habit-clear-future-face ((,c :background ,bg-graph-blue-1)))
-    `(org-habit-overdue-face ((,c :background ,bg-graph-red-0)))
-    `(org-habit-overdue-future-face ((,c :background ,bg-graph-red-1)))
-    `(org-habit-ready-face ((,c :background ,bg-graph-green-0)))
-    `(org-habit-ready-future-face ((,c :background ,bg-graph-green-1)))
+    `(org-habit-alert-face ((,c :background ,bg-graph-yellow-0 :foreground ,(modus-themes-get-readable-foreground bg-graph-yellow-0))))
+    `(org-habit-alert-future-face ((,c :background ,bg-graph-yellow-1 :foreground ,(modus-themes-get-readable-foreground bg-graph-yellow-1))))
+    `(org-habit-clear-face ((,c :background ,bg-graph-blue-0 :foreground ,(modus-themes-get-readable-foreground bg-graph-blue-0))))
+    `(org-habit-clear-future-face ((,c :background ,bg-graph-blue-1 :foreground ,(modus-themes-get-readable-foreground bg-graph-blue-1))))
+    `(org-habit-overdue-face ((,c :background ,bg-graph-red-0 :foreground ,(modus-themes-get-readable-foreground bg-graph-red-0))))
+    `(org-habit-overdue-future-face ((,c :background ,bg-graph-red-1 :foreground ,(modus-themes-get-readable-foreground bg-graph-red-1))))
+    `(org-habit-ready-face ((,c :background ,bg-graph-green-0 :foreground ,(modus-themes-get-readable-foreground bg-graph-green-0))))
+    `(org-habit-ready-future-face ((,c :background ,bg-graph-green-1 :foreground ,(modus-themes-get-readable-foreground bg-graph-green-1))))
 ;;;;; org-journal
     `(org-journal-calendar-entry-face ((,c :inherit modus-themes-slant :foreground ,date-common)))
     `(org-journal-calendar-scheduled-face ((,c :inherit modus-themes-slant :foreground ,date-scheduled-subtle)))
@@ -7090,6 +7099,8 @@ If COLOR is unspecified, then return :box unspecified."
     `(vc-up-to-date-state (( )))
 ;;;;; vertico
     `(vertico-current ((,c :inherit modus-themes-completion-selected)))
+    `(vertico-group-title ((,c :inherit modus-themes-slant :foreground ,name :height 0.9)))
+    `(vertico-group-separator ((,c :strike-through t :foreground ,border)))
 ;;;;; vertico-quick
     `(vertico-quick1 ((,c :inherit bold :background ,bg-search-current :foreground ,fg-search-current)))
     `(vertico-quick2 ((,c :inherit bold :background ,bg-search-current :foreground ,fg-search-current)))
@@ -7424,7 +7435,7 @@ the Modus themes have by default.
 
 Consult the manual for details on how to build a theme on top of the
 `modus-themes': Info node `(modus-themes) Build on top of the Modus themes'."
-  (let ((theme-exists-p (custom-theme-p name))
+  (let ((theme-exists-p (get name 'theme-feature))
         (faces (append
                 (symbol-value custom-faces)
                 modus-themes-faces))
@@ -7502,7 +7513,7 @@ whose value is another symbol, which ultimately resolves to a string or
                  '((c '((class color) (min-colors 256))) (unspecified 'unspecified))
                  (cl-remove-duplicates (apply #'append palette) :key #'car))))
            (eval (nconc `(cl-symbol-macrolet ,bindings) ',body))))
-     (error (message "Error in my/modus-with-color %s" data))))
+     (error (message "Error in modus-themes-with-colors: %s" data))))
 
 ;;;; Declare all the Modus themes
 
@@ -7591,11 +7602,11 @@ For instance:
       (push (+ (* (nth i a) alpha) (* (nth i b) (- 1 alpha))) blend))
     (nreverse blend)))
 
-(defun modus-themes--color-six-digits (color)
-  "Reduce representation of hexadecimal RGB COLOR to six digits."
-  (let ((color-no-hash (substring color 1)))
+(defun modus-themes--color-six-digits (hex-color)
+  "Reduce representation of hexadecimal RGB HEX-COLOR to six digits."
+  (let ((color-no-hash (substring hex-color 1)))
     (if (= (length color-no-hash) 6)
-        color
+        hex-color
       (let* ((triplets (seq-split color-no-hash 4))
              (triplets-shortened (mapcar
                                   (lambda (string)
@@ -7603,11 +7614,14 @@ For instance:
                                   triplets)))
         (concat "#" (string-join triplets-shortened))))))
 
-(defun modus-themes-generate-color-blend (color blended-with alpha)
-  "Return hexadecimal RGB of COLOR with BLENDED-WITH given ALPHA.
-BLENDED-WITH is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
+(defun modus-themes-generate-color-blend (hex-color blended-with-hex alpha)
+  "Return hexadecimal RGB of HEX-COLOR with BLENDED-WITH-HEX given ALPHA.
+BLENDED-WITH-HEX is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
 inclusive."
-  (let* ((blend-rgb (modus-themes-blend (color-name-to-rgb color) (color-name-to-rgb blended-with) alpha))
+  (let* ((blend-rgb (modus-themes-blend
+                     (color-name-to-rgb hex-color)
+                     (color-name-to-rgb blended-with-hex)
+                     alpha))
          (blend-hex (apply #'color-rgb-to-hex blend-rgb)))
     (modus-themes--color-six-digits blend-hex)))
 
@@ -7619,16 +7633,9 @@ inclusive."
   "Return cooler COLOR by ALPHA, per `modus-themes-generate-color-blend'."
   (modus-themes-generate-color-blend color "#0000ff" alpha))
 
-;; NOTE 2025-11-24: I originally wrote a variation of this for my Doric themes.
 (defun modus-themes-generate-gradient (color percent)
   "Adjust value of COLOR by PERCENT."
-  (pcase-let* ((`(,r ,g ,b) (color-name-to-rgb color))
-               (color-luminance-dark-limit 0.5)
-               (gradient (funcall (if (color-dark-p (list r g b))
-                                      #'color-lighten-name
-                                    #'color-darken-name)
-                                  color
-                                  percent)))
+  (let ((gradient (color-lighten-name color percent)))
     (modus-themes--color-six-digits gradient)))
 
 ;; NOTE 2025-11-25: I used to rely on `color-distance', thinking that
@@ -7719,7 +7726,7 @@ rest come from CORE-PALETTE."
     (unless (and bg-main fg-main)
       (error "The palette must define at least a bg-main and fg-main entry with their values"))
     (let* ((bg-main (car bg-main))
-           (bg-main-dark-p (color-dark-p (color-name-to-rgb bg-main)))
+           (bg-main-dark-p (modus-themes-color-dark-p bg-main))
            (fg-main (car fg-main))
            (six-colors (seq-filter
                         (lambda (color)
@@ -7737,12 +7744,12 @@ rest come from CORE-PALETTE."
                               (unless (assq name mappings)
                                 (push (list name value) derived-mappings)))))
       ;; Base entries
-      (funcall push-derived-value-fn 'bg-dim (modus-themes-generate-gradient bg-main 5))
-      (funcall push-derived-value-fn 'bg-active (modus-themes-generate-gradient bg-main 10))
-      (funcall push-derived-value-fn 'bg-inactive (modus-themes-generate-gradient bg-main 8))
-      (funcall push-derived-value-fn 'border (modus-themes-generate-gradient bg-main 20))
-      (funcall push-derived-value-fn 'fg-dim (modus-themes-generate-gradient fg-main 20))
-      (funcall push-derived-value-fn 'fg-alt (modus-themes-generate-color-warmer-or-cooler (modus-themes-generate-gradient fg-main 10) 0.8 prefers-cool-p))
+      (funcall push-derived-value-fn 'bg-dim (modus-themes-generate-gradient bg-main (if bg-main-dark-p 5 -5)))
+      (funcall push-derived-value-fn 'bg-active (modus-themes-generate-gradient bg-main (if bg-main-dark-p 10 -10)))
+      (funcall push-derived-value-fn 'bg-inactive (modus-themes-generate-gradient bg-main (if bg-main-dark-p 8 -8)))
+      (funcall push-derived-value-fn 'border (modus-themes-generate-gradient bg-main (if bg-main-dark-p 20 -20)))
+      (funcall push-derived-value-fn 'fg-dim (modus-themes-generate-gradient fg-main (if bg-main-dark-p -20 20)))
+      (funcall push-derived-value-fn 'fg-alt (modus-themes-generate-color-warmer-or-cooler (modus-themes-generate-gradient fg-main (if bg-main-dark-p -10 10)) 0.8 prefers-cool-p))
       ;; Primary and secondary colors
       (pcase-dolist (`(,name ,value) six-colors)
         (funcall push-derived-value-fn (intern (format "%s-warmer" name)) (modus-themes-generate-gradient (modus-themes-generate-color-warmer value 0.9) (if bg-main-dark-p 20 -20)))

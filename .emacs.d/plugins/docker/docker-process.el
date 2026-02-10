@@ -42,12 +42,21 @@
   :group 'docker
   :type 'boolean)
 
-(defcustom docker-run-async-with-buffer-function (if (featurep 'vterm)
-                                                     'docker-run-async-with-buffer-vterm
-                                                   'docker-run-async-with-buffer-shell)
-  "Function used to run a program with a live buffer attached to it."
+(defcustom docker-terminal-backend 'auto
+  "Terminal backend used for commands that need a live buffer.
+When set to `auto', prefer eat, then vterm, then shell."
+  :group 'docker
+  :type '(choice (const :tag "Auto (eat > vterm > shell)" auto)
+                 (const :tag "Eat" eat)
+                 (const :tag "Vterm" vterm)
+                 (const :tag "Shell" shell)))
+
+(defcustom docker-run-async-with-buffer-function nil
+  "Obsolete; use `docker-terminal-backend' instead."
   :group 'docker
   :type 'symbol)
+
+(make-obsolete-variable 'docker-run-async-with-buffer-function 'docker-terminal-backend "2.5.0")
 
 
 (defmacro docker-with-sudo (&rest body)
@@ -74,37 +83,121 @@
     (set-process-sentinel process (-partial #'docker-process-sentinel promise))
     promise))
 
-(defun docker-run-async-with-buffer (program &rest args)
-  "Execute \"PROGRAM ARGS\" and display output in a new buffer."
-   (apply docker-run-async-with-buffer-function program args))
+(defun docker-run-async-with-buffer (program interactive &rest args)
+  "Execute \"PROGRAM ARGS\" and display output in a new buffer.
+INTERACTIVE selects an interactive terminal buffer when non-nil.
+Prefer `docker-run-async-with-buffer-interactive' or
+`docker-run-async-with-buffer-noninteractive'."
+  (if docker-run-async-with-buffer-function
+      (apply docker-run-async-with-buffer-function program interactive args)
+    (apply #'docker-run-async-with-buffer-dispatch
+           (docker--terminal-backend)
+           program interactive args)))
 
-(defun docker-run-async-with-buffer-shell (program &rest args)
-  "Execute \"PROGRAM ARGS\" and display output in a new `shell' buffer."
+(defun docker-run-async-with-buffer-interactive (program &rest args)
+  "Execute \"PROGRAM ARGS\" and display output in an interactive buffer."
+  (apply #'docker-run-async-with-buffer program t args))
+
+(defun docker-run-async-with-buffer-noninteractive (program &rest args)
+  "Execute \"PROGRAM ARGS\" and display output in a non-interactive buffer."
+  (apply #'docker-run-async-with-buffer program nil args))
+
+(defun docker--terminal-backend-available-p (backend)
+  "Return non-nil when BACKEND is available."
+  (pcase backend
+    ('eat (fboundp 'eat-other-window))
+    ('vterm (fboundp 'vterm-other-window))
+    ('shell t)
+    (_ nil)))
+
+(defun docker--terminal-backend ()
+  "Return the selected backend symbol."
+  (pcase docker-terminal-backend
+    ('auto (cond
+            ((docker--terminal-backend-available-p 'eat) 'eat)
+            ((docker--terminal-backend-available-p 'vterm) 'vterm)
+            (t 'shell)))
+    (_ docker-terminal-backend)))
+
+(defun docker-run-async-with-buffer-dispatch (backend program interactive &rest args)
+  "Dispatch PROGRAM to BACKEND and display output in a new buffer."
+  (pcase backend
+    ('eat (if (docker--terminal-backend-available-p 'eat)
+              (apply #'docker-run-async-with-buffer-eat program interactive args)
+            (error "The eat package is not installed")))
+    ('vterm (if (docker--terminal-backend-available-p 'vterm)
+                (apply #'docker-run-async-with-buffer-vterm program interactive args)
+              (error "The vterm package is not installed")))
+    ('shell (apply #'docker-run-async-with-buffer-shell program interactive args))
+    (_ (error "Unsupported docker terminal backend: %s" backend))))
+
+(defun docker-run-async-with-buffer-shell (program &optional interactive &rest args)
+  "Execute \"PROGRAM ARGS\" and display output in a new buffer.
+If INTERACTIVE is non-nil, use a `shell' buffer for interactive use.
+Otherwise, use a non-interactive buffer with ANSI color support."
   (let* ((process (apply #'docker-run-start-file-process-shell-command program args))
          (buffer (process-buffer process)))
     (set-process-query-on-exit-flag process nil)
-    (with-current-buffer buffer (shell-mode))
-    (set-process-filter process 'comint-output-filter)
+    (if interactive
+        (with-current-buffer buffer (shell-mode))
+      (with-current-buffer buffer (special-mode)))
+    (set-process-filter process
+                        (if interactive
+                            'comint-output-filter
+                          'docker-process-filter-noninteractive))
     (switch-to-buffer-other-window buffer)))
 
-(defun docker-run-async-with-buffer-vterm (program &rest args)
-  "Execute \"PROGRAM ARGS\" and display output in a new `vterm' buffer."
-  (defvar vterm-kill-buffer-on-exit)
-  (defvar vterm-shell)
-  (if (fboundp 'vterm-other-window)
-      (let* ((process-args (-remove 's-blank? (-flatten args)))
-             (vterm-shell (s-join " " (-insert-at 0 program process-args)))
-             (vterm-kill-buffer-on-exit nil))
-        (vterm-other-window
-         (apply #'docker-utils-generate-new-buffer-name program process-args)))
-    (error "The vterm package is not installed")))
+(defun docker-run-async-with-buffer-vterm (program &optional interactive &rest args)
+  "Execute \"PROGRAM ARGS\" and display output in a new `vterm' buffer.
+If INTERACTIVE is nil, fall back to shell mode since vterm is interactive."
+  (if (not interactive)
+      ;; vterm is interactive only, fall back to shell for non-interactive output
+      (apply #'docker-run-async-with-buffer-shell program nil args)
+    (defvar vterm-kill-buffer-on-exit)
+    (defvar vterm-shell)
+    (if (fboundp 'vterm-other-window)
+        (let* ((process-args (-remove 's-blank? (-flatten args)))
+               (vterm-shell (s-join " " (-insert-at 0 program process-args)))
+               (vterm-kill-buffer-on-exit nil))
+          (vterm-other-window
+           (apply #'docker-utils-generate-new-buffer-name program process-args)))
+      (error "The vterm package is not installed"))))
+
+(defun docker-run-async-with-buffer-eat (program &optional interactive &rest args)
+  "Execute \"PROGRAM ARGS\" and display output in a new `eat' buffer.
+If INTERACTIVE is nil, fall back to shell mode since eat is interactive."
+  (if (not interactive)
+      (apply #'docker-run-async-with-buffer-shell program nil args)
+    (defvar eat-buffer-name)
+    (if (fboundp 'eat-other-window)
+        (let* ((process-args (-remove 's-blank? (-flatten args)))
+               (command (s-join " " (-insert-at 0 program process-args)))
+               (eat-buffer-name (apply #'docker-utils-generate-new-buffer-name
+                                       program process-args)))
+          (eat-other-window command))
+      (error "The eat package is not installed"))))
+
+(defun docker-process-filter-noninteractive (proc string)
+  "Process filter for non-interactive streaming buffers.
+Strips carriage returns and applies ANSI color codes."
+  (when (buffer-live-p (process-buffer proc))
+    (with-current-buffer (process-buffer proc)
+      (let ((inhibit-read-only t)
+            (moving (= (point) (process-mark proc))))
+        (save-excursion
+          (goto-char (process-mark proc))
+          (insert (ansi-color-apply (replace-regexp-in-string "\r" "" string)))
+          (set-marker (process-mark proc) (point)))
+        (when moving (goto-char (process-mark proc)))))))
 
 (defun docker-process-sentinel (promise process event)
   "Sentinel that resolves the PROMISE using PROCESS and EVENT."
   (when (memq (process-status process) '(exit signal))
     (setq event (substring event 0 -1))
     (if (not (string-equal event "finished"))
-        (error "Error running: \"%s\" (%s)" (process-name process) event)
+        (aio-resolve promise
+                     (lambda ()
+                       (error "Error running: \"%s\" (%s)" (process-name process) event)))
       (aio-resolve promise
                    (lambda ()
                      (when docker-show-messages

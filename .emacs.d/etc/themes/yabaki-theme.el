@@ -1,6 +1,6 @@
 ;;; yabaki-theme.el --- Yabaki, the cast shadow -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023 David Goudou
+;; Copyright (C) 2026 David Goudou
 
 ;; Author: David Goudou <david.goudou@gmail.com>
 ;; Version: 2.0.1

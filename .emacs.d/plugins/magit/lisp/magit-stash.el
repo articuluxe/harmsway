@@ -620,7 +620,7 @@ See also info node `(magit)Section Movement'."
 (defun magit-stash-setup-buffer (stash args files)
   (magit-setup-buffer #'magit-stash-mode nil
     (magit-buffer-revision stash)
-    (magit-buffer-range (format "%s^..%s" stash stash))
+    (magit-buffer-diff-range (format "%s^..%s" stash stash))
     (magit-buffer-diff-args args)
     (magit-buffer-diff-files files)))
 
@@ -631,7 +631,7 @@ See also info node `(magit)Section Movement'."
                        'font-lock-face
                        (list :weight 'normal :foreground
                              (face-attribute 'default :foreground)))))
-  (setq magit-buffer-revision-hash (magit-rev-parse magit-buffer-revision))
+  (setq magit-buffer-revision-oid (magit-commit-oid magit-buffer-revision))
   (magit-insert-section (stash)
     (magit-run-section-hook 'magit-stash-sections-hook)))
 

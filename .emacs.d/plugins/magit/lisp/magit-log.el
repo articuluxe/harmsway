@@ -374,6 +374,12 @@ commits before and half after."
   :group 'magit-log
   :type 'integer)
 
+;;; Variables
+
+(defvar-local magit-buffer-log-revisions nil)
+(defvar-local magit-buffer-log-args nil)
+(defvar-local magit-buffer-log-files nil)
+
 ;;; Arguments
 ;;;; Prefix Classes
 
@@ -779,7 +785,7 @@ restrict the log to the lines that the region touches."
   (require 'magit)
   (if-let ((file (magit-file-relative-name)))
       (magit-log-setup-buffer
-       (list (or magit-buffer-refname
+       (list (or magit-buffer-revision
                  (magit-get-current-branch)
                  "HEAD"))
        (let ((args (car (magit-log-arguments))))
@@ -802,7 +808,7 @@ restrict the log to the lines that the region touches."
                          (user-error "Buffer isn't visiting a file"))
                      (or (funcall magit-log-trace-definition-function)
                          (user-error "No function at point found"))
-                     (or magit-buffer-refname
+                     (or magit-buffer-revision
                          (magit-get-current-branch)
                          "HEAD")))
   (require 'magit)
@@ -872,7 +878,7 @@ https://github.com/mhagger/git-when-merged."
                  (to (if (<= to 0)
                          branch
                        (format "%s~%s" branch to))))
-            (unless (magit-rev-verify-commit from)
+            (unless (magit-commit-p from)
               (setq from (magit-git-string "rev-list" "--max-parents=0"
                                            commit)))
             (magit-log-setup-buffer (list (concat from ".." to))
@@ -1131,7 +1137,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
   (require 'magit)
   (with-current-buffer
       (magit-setup-buffer #'magit-log-mode locked
-        (magit-buffer-revisions revs)
+        (magit-buffer-log-revisions revs)
         (magit-buffer-log-args args)
         (magit-buffer-log-files files))
     (when (if focus
@@ -1141,7 +1147,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
     (current-buffer)))
 
 (defun magit-log-refresh-buffer ()
-  (let ((revs  magit-buffer-revisions)
+  (let ((revs  magit-buffer-log-revisions)
         (args  magit-buffer-log-args)
         (files magit-buffer-log-files)
         (limit (magit-log-get-commit-limit)))
@@ -1197,8 +1203,8 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
   args)
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-log-mode))
-  (append magit-buffer-revisions
-          (if (and magit-buffer-revisions magit-buffer-log-files)
+  (append magit-buffer-log-revisions
+          (if (and magit-buffer-log-revisions magit-buffer-log-files)
               (cons "--" magit-buffer-log-files)
             magit-buffer-log-files)))
 
@@ -1779,20 +1785,20 @@ Type \\[magit-log-select-quit] to abort without selecting a commit."
 
 (defun magit-log-select-setup-buffer (revs args)
   (magit-setup-buffer #'magit-log-select-mode nil
-    (magit-buffer-revisions revs)
+    (magit-buffer-log-revisions revs)
     (magit-buffer-log-args args)))
 
 (defun magit-log-select-refresh-buffer ()
   (setq magit-section-inhibit-markers t)
   (setq magit-section-insert-in-reverse t)
   (magit-insert-section (logbuf)
-    (magit--insert-log t magit-buffer-revisions
+    (magit--insert-log t magit-buffer-log-revisions
       (magit-log--maybe-drop-color-graph
        magit-buffer-log-args
        (magit-log-get-commit-limit)))))
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-log-select-mode))
-  magit-buffer-revisions)
+  magit-buffer-log-revisions)
 
 (defvar-local magit-log-select-pick-function nil)
 (defvar-local magit-log-select-quit-function nil)
@@ -1881,11 +1887,14 @@ Type \\[magit-cherry-pick] to apply the commit at point.
   (magit-hack-dir-local-variables)
   (setq magit--imenu-group-types 'cherries))
 
+(defvar-local magit-buffer-cherry-upstream nil)
+(defvar-local magit-buffer-cherry-range nil)
+
 (defun magit-cherry-setup-buffer (head upstream)
   (magit-setup-buffer #'magit-cherry-mode nil
     (magit-buffer-refname head)
-    (magit-buffer-upstream upstream)
-    (magit-buffer-range (concat upstream ".." head))))
+    (magit-buffer-cherry-upstream upstream)
+    (magit-buffer-cherry-range (concat upstream ".." head))))
 
 (defun magit-cherry-refresh-buffer ()
   (setq magit-section-insert-in-reverse t)
@@ -1893,7 +1902,7 @@ Type \\[magit-cherry-pick] to apply the commit at point.
     (magit-run-section-hook 'magit-cherry-sections-hook)))
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-cherry-mode))
-  magit-buffer-range)
+  magit-buffer-cherry-range)
 
 ;;;###autoload
 (defun magit-cherry (head upstream)
@@ -1909,10 +1918,11 @@ Type \\[magit-cherry-pick] to apply the commit at point.
   "Insert headers appropriate for `magit-cherry-mode' buffers."
   (let ((branch (propertize magit-buffer-refname
                             'font-lock-face 'magit-branch-local))
-        (upstream (propertize magit-buffer-upstream 'font-lock-face
-                              (if (magit-local-branch-p magit-buffer-upstream)
-                                  'magit-branch-local
-                                'magit-branch-remote))))
+        (upstream (propertize
+                   magit-buffer-cherry-upstream 'font-lock-face
+                   (if (magit-local-branch-p magit-buffer-cherry-upstream)
+                       'magit-branch-local
+                     'magit-branch-remote))))
     (magit-insert-head-branch-header branch)
     (magit-insert-upstream-branch-header branch upstream "Upstream: ")
     (insert ?\n)))
@@ -1923,7 +1933,7 @@ Type \\[magit-cherry-pick] to apply the commit at point.
     (magit-insert-heading t "Cherry commits")
     (magit-git-wash (apply-partially #'magit-log-wash-log 'cherry)
       "cherry" "-v" "--abbrev"
-      magit-buffer-upstream
+      magit-buffer-cherry-upstream
       magit-buffer-refname)))
 
 ;;; Log Sections

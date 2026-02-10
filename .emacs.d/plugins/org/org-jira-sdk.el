@@ -35,6 +35,9 @@
 
 ;;; Code:
 
+;; Forward declarations for functions defined in org-jira.el
+(declare-function org-jira-decode "org-jira" (string))
+
 (require 'jiralib)
 (require 'cl-lib)
 (require 'eieio)
@@ -87,7 +90,8 @@
              slots))))
 
 (defun org-jira-sdk-path (alist key-chain)
-  "Query a nested path in some type of ALIST by traversing down the keys of KEY-CHAIN."
+  "Query a nested path in some type of ALIST.
+Traverse down the keys of KEY-CHAIN."
   (cl-reduce (lambda (a k) (alist-get k a)) key-chain :initial-value alist))
 
 (defclass org-jira-sdk-issue (org-jira-sdk-record)

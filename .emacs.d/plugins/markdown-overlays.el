@@ -86,9 +86,16 @@ Objective-C -> (\"objective-c\" . \"objc\")"
 (defun markdown-overlays-put ()
   "Put all Markdown overlays."
   (let* ((source-blocks (markdown-overlays--source-blocks))
-         (avoid-ranges (seq-map (lambda (block)
-                                  (map-elt block 'body))
-                                source-blocks)))
+         (source-block-ranges (seq-map (lambda (block)
+                                  (cons (car (map-elt block 'start))
+                                        (cdr (map-elt block 'end))))
+                                source-blocks))
+         (inline-codes (markdown-overlays--markdown-inline-codes source-block-ranges))
+         (inline-code-ranges (seq-map (lambda (inline)
+                                        (map-elt inline 'body))
+                                      inline-codes))
+         (avoid-ranges (append inline-code-ranges
+                               source-block-ranges)))
     (markdown-overlays-remove)
     (dolist (block source-blocks)
       (markdown-overlays--fontify-source-block
@@ -140,7 +147,7 @@ Objective-C -> (\"objective-c\" . \"objc\")"
        (map-elt strikethrough 'end)
        (car (map-elt strikethrough 'text))
        (cdr (map-elt strikethrough 'text))))
-    (dolist (inline-code (markdown-overlays--markdown-inline-codes avoid-ranges))
+    (dolist (inline-code inline-codes)
       (markdown-overlays--fontify-inline-code
        (car (map-elt inline-code 'body))
        (cdr (map-elt inline-code 'body))))
@@ -620,10 +627,12 @@ Use START END TEXT-START TEXT-END."
                  (end (match-end 0))
                  (body-start (match-beginning 1))
                  (body-end (match-end 1)))
-            (unless (seq-find (lambda (avoided)
-                                (and (>= begin (car avoided))
-                                     (<= end (cdr avoided))))
-                              avoid-ranges)
+            (if-let ((avoided (seq-find (lambda (avoided)
+                                          (not (or (> begin (cdr avoided))
+                                                   (< end (car avoided)))))
+                                        avoid-ranges)))
+                ;; Match overlaps an avoid range — skip past it and retry
+                (goto-char (1+ (cdr avoided)))
               (push
                (list
                 'body (cons body-start body-end)) codes))

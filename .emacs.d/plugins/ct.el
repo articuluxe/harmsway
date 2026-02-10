@@ -613,12 +613,12 @@ results."
 (defun ct-greaten (color &optional percent)
   "Make a light COLOR lighter, a dark COLOR darker (by PERCENT)."
   (ct-edit-lab-l-inc color
-    (* percent (if (ct-light-p color) 1 -1))))
+    (* (or percent 0.1) (if (ct-light-p color) 1 -1))))
 
 (defun ct-lessen (color &optional percent)
   "Make a light COLOR darker, or a dark COLOR lighter (by PERCENT)."
   (ct-edit-lab-l-inc color
-    (* percent (if (ct-light-p color) -1 1))))
+    (* (or percent 0.1) (if (ct-light-p color) -1 1))))
 
 (defmacro ct-change (color distance edit-fn)
   "Change COLOR using EDIT-FN until DISTANCE is reached."

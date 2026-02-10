@@ -155,8 +155,8 @@ Optional argument ARGS as per `browse-url-default-browser'"
   (cl-assert (string-match-p "^http[s]?://" (current-kill 0)) nil "Not a URL")
   (dwim-shell-command-on-marked-files
    "Downloading"
-   "youtube-dl --newline -o \"~/Downloads/%(title)s.%(ext)s\" \"<<cb>>\""
-   :utils "youtube-dl"
+   "yt-dlp --newline -o \"~/Downloads/%(title)s.%(ext)s\" \"<<cb>>\""
+   :utils "yt-dlp"
    :no-progress t
    :error-autofocus t
    :monitor-directory "~/Downloads"
@@ -1255,10 +1255,10 @@ echo \"<<fne>>.svg\"
   "Share selected files from macOS."
   (interactive)
   (let* ((services (dwim-shell-commands--macos-sharing-services))
-         (service-name (completing-read "Share via: " services))
+         (service-name (completing-read "macOS share via: " services))
          (selection (seq-position services service-name #'string-equal)))
     (dwim-shell-command-on-marked-files
-     "Share"
+     "macOS Share"
      (format
       "import AppKit
 
@@ -1363,6 +1363,21 @@ echo \"<<fne>>.svg\"
      :silent-success t
      :no-progress t
      :utils "duti")))
+
+;;;###autoload
+(defun dwim-shell-commands-macos-open-app ()
+  "Open a macOS app."
+  (interactive)
+  (let* ((apps (dwim-shell-commands--macos-apps))
+         (selection (progn
+                      (cl-assert apps nil "No apps found")
+                      (completing-read "Open with: " apps nil t))))
+    (dwim-shell-command-on-marked-files
+     "Open with"
+     (format "open '%s'" (map-elt apps selection))
+     :silent-success t
+     :no-progress t
+     :utils "open")))
 
 ;;;###autoload
 (defun dwim-shell-commands-macos-open-with ()

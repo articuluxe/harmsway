@@ -437,7 +437,8 @@ Optional argument ARGS optional args."
 
 (defun vterm-toggle--mode-hook()
   "Hook for `vterm-mode-hook'."
-  (add-to-list 'vterm-toggle--buffer-list (current-buffer)))
+  (when (vterm-toggle-togglable-buffer-p (current-buffer))
+    (add-to-list 'vterm-toggle--buffer-list (current-buffer))))
 (add-hook 'vterm-mode-hook #'vterm-toggle--mode-hook)
 
 (dolist (buf (buffer-list))

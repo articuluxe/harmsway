@@ -646,28 +646,29 @@ With prefix argument MENU, also show the topic menu."
                    "Source branch"
                    (magit-list-remote-branch-names)
                    nil t nil 'magit-revision-history
-                   (or (and-let ((d (magit-branch-at-point)))
-                         (if (magit-remote-branch-p d)
-                             d
-                           (magit-get-push-branch d t)))
-                       (and-let ((d (magit-get-current-branch)))
-                         (if (magit-remote-branch-p d)
-                             d
-                           (magit-get-push-branch d t))))))
+                   (or (and> (magit-branch-at-point)
+                             (if (magit-remote-branch-p $)
+                                 $
+                               (magit-get-push-branch $ t)))
+                       (and> (magit-get-current-branch)
+                             (if (magit-remote-branch-p $)
+                                 $
+                               (magit-get-push-branch $ t))))))
          (remote  (oref repo remote))
          (targets (delete source (magit-list-remote-branch-names remote)))
          (target  (magit-completing-read
                    "Target branch" targets nil t nil 'magit-revision-history
-                   (let* ((d (cdr (magit-split-branch-name source)))
-                          (d (and (magit-branch-p d) d))
-                          (d (and d (magit-get-upstream-branch d)))
-                          (d (and d (if (magit-remote-branch-p d)
-                                        d
-                                      (magit-get-upstream-branch d))))
-                          (d (or d (concat remote "/"
-                                           (or (oref repo default-branch)
-                                               "master")))))
-                     (car (member d targets))))))
+                   (or (and> (cdr (magit-split-branch-name source))
+                             (and (magit-branch-p $)
+                                  (magit-get-upstream-branch $))
+                             (if (magit-remote-branch-p $)
+                                 $
+                               (magit-get-upstream-branch $))
+                             (car (member $ targets)))
+                       (seq-some (##car (member (concat remote "/" %) targets))
+                                 (delete-dups
+                                  (cons (oref repo default-branch)
+                                        magit-main-branch-names)))))))
     (list source target)))
 
 (defun forge-create-post (&optional quote)
@@ -1101,7 +1102,7 @@ as merged."
   (let ((pullreq (forge-get-pullreq pullreq)))
     (forge--merge-pullreq (forge-get-repository pullreq)
                           pullreq
-                          (magit-rev-hash
+                          (magit-commit-oid
                            (forge--pullreq-branch-internal pullreq))
                           method)))
 
@@ -1478,33 +1479,6 @@ heavy development."
 
 ;;; Miscellaneous
 
-(defun forge-mark-completed-topics-as-done ()
-  "Mark completed topics of the current repository as done.
-Change the private status to \"done\" for topics whose private status is
-\"unread\" or \"pending\" and whose public state is \"completed\".
-Whether this affects all such topics or only all such topics of a
-certain type (discussion, issue or pull-request), depends on the
-context."
-  (interactive)
-  (let* ((type (forge-current-topic-type))
-         (desc (if (eq type 'pullreq) 'pull-request type))
-         (topics (forge--list-topics
-                  (forge--topics-spec :type type
-                                      :active nil
-                                      :state 'closed
-                                      :status 'inbox)
-                  (forge-get-repository :tracked))))
-    (cond ((not topics)
-           (message "No completed %s that could be marked as done" desc))
-          ((magit-confirm t
-             "Mark \"%s\" as done"
-             (format "Mark %%d %ss as done" desc)
-             nil
-             (mapcar #'forge--format-topic-line topics))
-           (dolist (topic topics)
-             (oset topic status 'done))
-           (forge-refresh-buffer)))))
-
 (magit-define-section-jumper forge-jump-to-pullreqs "Pull requests" pullreqs)
 (magit-define-section-jumper forge-jump-to-issues "Issues" issues)
 
@@ -1512,6 +1486,7 @@ context."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
+;;   ("and>"          . "cond-let--and>")
 ;;   ("and-let"       . "cond-let--and-let")
 ;;   ("if-let"        . "cond-let--if-let")
 ;;   ("when-let"      . "cond-let--when-let")

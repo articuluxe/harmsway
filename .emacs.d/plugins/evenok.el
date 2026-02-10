@@ -1,6 +1,7 @@
 ;;; evenok.el --- Themes with perceptively evenly distributed colors  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2024 Free Software Foundation, Inc.
+;; Copyright (C) 2026 Mekeor Melire
 
 ;; Author:                  Mekeor Melire <mekeor@posteo.de>
 ;; Created:                 2024
@@ -9,7 +10,7 @@
 ;; Maintainer:              Mekeor Melire <mekeor@posteo.de>
 ;; Package-Requires:        ((emacs "28.1"))
 ;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Version:                 0.12.2
+;; Version:                 0.12.3
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -209,6 +210,8 @@
            `(avy-lead-face-0                                      ((t :background ,white :foreground ,black :weight ,bold)))
            `(avy-lead-face-1                                      ((t :background ,white :foreground ,black :weight ,bold)))
            `(avy-lead-face-2                                      ((t :background ,white :foreground ,black :weight ,bold)))
+           `(battery-load-low                                     ((t :foreground ,bright-orange)))
+           `(battery-load-critical                                ((t :foreground ,bright-red)))
            `(bold                                                 ((t :weight ,bold)))
            `(bold-italic                                          ((t :slant italic :weight ,bold)))
            `(breadcrumb-face                                      ((t :foreground ,faded :slant italic :weight ,light)))
@@ -333,6 +336,7 @@
            `(dired-mark                                           ((t :foreground ,bright-orange)))
            `(dired-marked                                         ((t :foreground ,bright-orange)))
            `(dired-symlink                                        ((t :foreground ,bright-cyan)))
+           `(display-time-date-and-time                           ((t :foreground ,faded)))
            `(eat-shell-prompt-annotation-failure                  ((t :foreground ,bright-red)))
            `(eat-shell-prompt-annotation-running                  ((t :foreground ,bright-yellow)))
            `(eat-shell-prompt-annotation-success                  ((t :foreground ,bright-green)))
@@ -405,7 +409,7 @@
            `(ement-room-list-left                                 ((t :foreground ,bright-orange)))
            `(ement-room-list-low-priority                         ((t :foreground ,faded)))
            `(ement-room-list-unread                               ((t :foreground ,bright-yellow)))
-           `(ement-room-membership                                ((t :foreground ,bright-yellow)))
+           `(ement-room-membership                                ((t :foreground ,faded)))
            `(ement-room-mention                                   ((t :foreground ,bright-magenta)))
            `(ement-room-quote                                     ((t :slant italic :weight ,light)))
            `(ement-room-read-receipt-marker                       ((t :foreground ,bright-blue)))
@@ -452,8 +456,12 @@
            `(eshell-syntax-highlighting-option-face               ((t :foreground ,bright-magenta)))
            `(eshell-syntax-highlighting-shell-command-face        ((t :foreground ,bright-blue)))
            `(eshell-syntax-highlighting-string-face               ((t :foreground ,bright-green)))
+           `(eww-form-text                                        ((t :background ,dark)))
+           `(eww-form-textarea                                    ((t :background ,dark)))
+           `(excerpt                                              ((t :slant italic)))
            `(file-name-shadow                                     ((t :foreground ,faded)))
            `(fill-column-indicator                                ((t :background ,dim :height 1)))
+           `(fixed                                                ((t :weight ,bold)))
            `(flycheck-verify-select-checker                       ((t :underline t)))
            `(flymake-end-of-line-diagnostics-face                 ((t :foreground ,grey-red :slant italic :weight ,light)))
            `(flymake-error                                        ((t :underline (:color ,bright-red :style wave :position nil))))
@@ -469,7 +477,26 @@
            `(flymake-warning-echo-at-eol                          ((t :foreground ,grey-orange :weight ,light)))
            `(flyspell-duplicate                                   ((t :underline (:color ,faded-orange :style wave :position nil))))
            `(flyspell-incorrect                                   ((t :underline (:color ,faded-red :style wave :position nil))))
-           `(font-latex-math-face                                 ((t :background ,black)))
+           `(font-latex-bold-face                                 ((t :weight ,bold)))
+           `(font-latex-math-face                                 ((t :background ,black :foreground ,bright-yellow)))
+           `(font-latex-italic-face                               ((t :slant italic)))
+           `(font-latex-sedate-face                               ((t :foreground ,bright-purple)))
+           `(font-latex-string-face                               ((t :foreground ,bright-green)))
+           `(font-latex-warning-face                              ((t :foreground ,bright-orange)))
+           `(font-latex-verbatim-face                             ((t :foreground ,bright-cyan)))
+           `(font-latex-subscript-face                            ((t :foreground ,bright-blue)))
+           `(font-latex-underline-face                            ((t :underline t)))
+           `(font-latex-script-char-face                          ((t :foreground ,bright-magenta)))
+           `(font-latex-slide-title-face                          ((t :foreground ,white)))
+           `(font-latex-superscript-face                          ((t :foreground ,bright-blue)))
+           `(font-latex-sectioning-0-face                         ((t :foreground ,white)))
+           `(font-latex-sectioning-1-face                         ((t :foreground ,white)))
+           `(font-latex-sectioning-2-face                         ((t :foreground ,white)))
+           `(font-latex-sectioning-3-face                         ((t :foreground ,white)))
+           `(font-latex-sectioning-4-face                         ((t :foreground ,white)))
+           `(font-latex-sectioning-5-face                         ((t :foreground ,white)))
+           `(font-latex-doctex-preprocessor-face                  ((t :foreground ,faded)))
+           `(font-latex-doctex-documentation-face                 ((t :foreground ,faded)))
            `(font-lock-builtin-face                               ((t :foreground ,bright-cyan)))
            `(font-lock-comment-delimiter-face                     ((t :foreground ,faded :weight ,normal)))
            `(font-lock-comment-face                               ((t :foreground ,faded :weight ,normal)))
@@ -925,9 +952,9 @@
            `(widget-documentation                                 ((t :underline t)))
            `(widget-field                                         ((t :background ,dark)))
            `(widget-inactive                                      ((t :foreground ,faded)))
-           `(window-divider                                       ((t :foreground ,dark)))
-           `(window-divider-first-pixel                           ((t :foreground ,dark)))
-           `(window-divider-last-pixel                            ((t :foreground ,dark)))
+           `(window-divider                                       ((t :foreground ,faded)))
+           `(window-divider-first-pixel                           ((t :foreground ,faded)))
+           `(window-divider-last-pixel                            ((t :foreground ,faded)))
            `(woman-addition                                       ((t :foreground ,bright-yellow)))
            `(woman-bold                                           ((t :foreground ,white)))
            `(woman-italic                                         ((t :slant italic)))

@@ -6,7 +6,7 @@
 ;;         Naoya Yamashita <conao3@gmail.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/ivy-posframe
-;; Version: 0.6.3
+;; Version: 0.6.4
 ;; Keywords: abbrev, convenience, matching, ivy
 ;; Package-Requires: ((emacs "26.0") (posframe "1.0.0") (ivy "0.13.0"))
 
@@ -257,8 +257,8 @@ This variable is useful for `ivy-posframe-read-action' .")
     (or (ignore-errors
           (let ((info (elt exwm-workspace--workareas
                            exwm-workspace-current-index)))
-            (cons (elt info 0)
-                  (elt info 1))))
+            (cons (oref info x)
+                  (oref info y))))
         ;; Need user install xwininfo.
         (ignore-errors
           (posframe-refposhandler-xwininfo frame))

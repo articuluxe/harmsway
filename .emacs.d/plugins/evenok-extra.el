@@ -44,7 +44,7 @@
 (defface evenok-extra-flymake-note-bitmap nil nil)
 
 (defcustom evenok-extra-gnus-summary-dummy-line-format
-  "                                           ╤ "
+  "                                        ╤ "
   "String to which `evenok-extra-gnus-summary-dummy' face will be applied.
 
 The result will be put in place of `%uE' within

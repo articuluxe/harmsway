@@ -176,7 +176,8 @@ can be selected from the start."
   (forge--read-topic prompt
                      #'forge-current-issue
                      (forge--topics-spec :type 'issue :active t)
-                     (forge--topics-spec :type 'issue :active nil :state nil)))
+                     (forge--topics-spec :type 'issue :active nil
+                                         :state nil :limit nil)))
 
 (defun forge-read-open-issue (prompt)
   "Read an open issue with completion using PROMPT."
@@ -225,6 +226,7 @@ and optional HEADING to change the section heading."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
+;;   ("and>"          . "cond-let--and>")
 ;;   ("and-let"       . "cond-let--and-let")
 ;;   ("if-let"        . "cond-let--if-let")
 ;;   ("when-let"      . "cond-let--when-let"))

@@ -57,7 +57,7 @@
  `(mode-line          ((t :box ( :line-width -1 :style released-button))))
  `(mode-line-inactive ((t :box ( :line-width -1 :style released-button))))
 
- `(cursor  ((t :background "#A3A3A3")))
+ `(cursor  ((t :background "#949494")))
  `(hl-line ((t :background ,(if vs-light-theme-graphic-p "#F1F1F1" "#99C9EF"))))
  `(region  ((t :background "#8AB6DF")))
  `(fringe  ((t :background "#E6E7E8")))
@@ -185,12 +185,14 @@
 
  `(flx-highlight-face ((t :foreground "#223fbf" :weight bold)))
 
- `(ahs-plugin-default-face           ((t :background "#E2E6D6" :box (:line-width (-1 . -1) :style pressed-button :color "#525D68"))))
- `(ahs-plugin-default-face-unfocused ((t :background "#F1F2EE" :box (:line-width (-1 . -1) :style pressed-button :color "#525D68"))))
- `(ahs-face                          ((t :background "#E2E6D6" :box (:line-width (-1 . -1) :style pressed-button :color "#525D68"))))
- `(ahs-definition-face               ((t :background "#E2E6D6" :box (:line-width (-1 . -1) :style pressed-button :color "#525D68"))))
- `(ahs-face-unfocused                ((t :background "#F1F2EE" :box (:line-width (-1 . -1) :style pressed-button :color "#525D68"))))
- `(ahs-definition-face-unfocused     ((t :background "#F1F2EE" :box (:line-width (-1 . -1) :style pressed-button :color "#525D68"))))
+ `(ahs-plugin-default-face           ((t :background "#E2E6D6" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(ahs-plugin-default-face-unfocused ((t :background "#F1F2EE" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(ahs-face                          ((t :background "#E2E6D6" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(ahs-definition-face               ((t :background "#E2E6D6" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(ahs-face-unfocused                ((t :background "#F1F2EE" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(ahs-definition-face-unfocused     ((t :background "#F1F2EE" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+
+ `(jcs-echobar-default ((t :foreground "#4F4F4F")))
 
  `(tab-line     ((t :background "#D3D3D3")))
  `(tab-line-tab ((t :background "#D3D3D3")))
@@ -213,15 +215,29 @@
  `(yascroll:thumb-fringe    ((t :background "#C2C3C9" :foreground "#C2C3C9")))
  `(yascroll:thumb-text-area ((t :background "#C2C3C9" :foreground "#C2C3C9")))
 
- `(region-occurrences-highlighter-face ((t :background "#8FBEE3")))
+ `(region-occurrences-highlighter-face ((t :background "#88BAD6")))
 
- `(whitespace-indentation ((t :background "grey20" :foreground "aquamarine3")))
- `(whitespace-trailing    ((t :background "grey20" :foreground "red")))
+ `(whitespace-space       ((t :background "#FFFFFF" :foreground "#2B91AF")))
+ `(whitespace-tab         ((t :background "#FFFFFF" :foreground "#2B91AF")))
+ `(whitespace-indentation ((t :background "#FFFFFF" :foreground "#2B91AF")))
+ `(whitespace-trailing    ((t :background "#FFFFFF" :foreground "#EF1C0E")))
 
- `(highlight-numbers-number ((t :foreground "#9BCEA3")))
+ `(highlight-numbers-number ((t :foreground "#5DAC6A")))
 
  `(modablist-select-face ((t :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
  `(modablist-insert-face ((t :background "#565136" :box (:line-width (-1 . -1) :color "#65A7E2" :style nil))))
+
+ `(success ((t :foreground "#34DC25" :bold t)))
+ `(warning ((t :foreground "#E4B400" :bold t)))
+ `(error   ((t :foreground "#EF1C0E" :bold t)))
+
+ `(flycheck-info    ((t :underline (:style wave :color "#34DC25"))))
+ `(flycheck-warning ((t :underline (:style wave :color "#E4B400"))))
+ `(flycheck-error   ((t :underline (:style wave :color "#EF1C0E"))))
+
+ `(flymake-note    ((t :underline (:style wave :color "#34DC25"))))
+ `(flymake-warning ((t :underline (:style wave :color "#E4B400"))))
+ `(flymake-error   ((t :underline (:style wave :color "#EF1C0E"))))
 
  `(lsp-flycheck-info-unnecessary-face    ((t :inherit flycheck-info)))
  `(lsp-flycheck-warning-unnecessary-face ((t :inherit flycheck-warning)))
@@ -234,24 +250,22 @@
  `(dap-ui-breakpoint-verified-fringe ((t :foreground "#E71F2D")))
  `(breakpoint-disabled               ((t :foreground "#C55159")))
 
- `(success ((t :foreground "#10C800" :bold t)))
- `(warning ((t :foreground "#E4B400" :bold t)))
- `(error   ((t :foreground "#EF1C0E" :bold t)))
-
- `(flycheck-info    ((t :underline (:style wave :color "#10C800"))))
- `(flycheck-warning ((t :underline (:style wave :color "#E4B400"))))
- `(flycheck-error   ((t :underline (:style wave :color "#EF1C0E"))))
-
- `(sideline-default ((t :foreground "DarkOrange")))
+ `(sideline-default ((t :foreground "#E07B00")))
  `(sideline-backend ((t :background "#F6F6F6" :foreground "#7F7F7F")))
 
- `(sideline-flycheck-info    ((t :foreground "#10C800" :bold t)))
+ `(sideline-lsp-code-action ((t :foreground "#E07B00")))
+
+ `(sideline-flycheck-info    ((t :foreground "#34DC25" :bold t)))
  `(sideline-flycheck-warning ((t :foreground "#E4B400" :bold t)))
  `(sideline-flycheck-error   ((t :foreground "#EF1C0E" :bold t)))
 
- `(sideline-flymake-note    ((t :foreground "#10C800" :bold t)))
+ `(sideline-flymake-note    ((t :foreground "#34DC25" :bold t)))
  `(sideline-flymake-warning ((t :foreground "#E4B400" :bold t)))
  `(sideline-flymake-error   ((t :foreground "#EF1C0E" :bold t)))
+
+ `(isearch        ((t :background "#DCBE81" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(isearch-fail   ((t :background "#DD7272" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
+ `(lazy-highlight ((t :background "#E4D8C2" :box (:line-width (-1 . -1) :style pressed-button :color "#EAEAF2"))))
 
  `(diff-added   ((t :background "#1FDE1F")))
  `(diff-removed ((t :background "#E75858")))
@@ -312,8 +326,7 @@
 
  `(define-it-pop-tip-color ((t :background "#E9EAED")))
 
- `(preview-it-background ((t :background "#E9EAED")))
- )
+ `(preview-it-background ((t :background "#E9EAED"))))
 
 (custom-theme-set-variables
  'vs-light

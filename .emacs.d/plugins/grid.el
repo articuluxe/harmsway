@@ -68,24 +68,24 @@
   (map-let ((:content content) (:content-width content-width)
             (:width width) (:padding padding) (:margin margin))
       box
-    (pcase-let ((`(,ptop ,_ ,pbottom ,_) padding)
-                (`(,mtop ,mright ,mbottom ,mleft) margin))
-      (with-current-buffer (get-buffer-create "*grid-fill*")
-        (let ((vmargin-length (+ (car mright) (car mleft) width))
-              indent-tabs-mode sentence-end-double-space)
-          (erase-buffer)
-          (setq fill-column content-width)
-          (grid--insert-vspacing ptop content-width)
-          (insert content)
-          (grid--insert-vspacing pbottom content-width t)
-          (goto-char (point-min))
-          (grid--align-lines box)
-          (put-text-property 1 2 'grid-box-filled t)
-          (goto-char (point-min))
-          (grid--insert-vspacing mtop vmargin-length)
-          (goto-char (point-max))
-          (grid--insert-vspacing mbottom vmargin-length t)
-          (buffer-string))))))
+    (with-current-buffer (get-buffer-create "*grid-fill*")
+      (pcase-let* ((`(,ptop ,_ ,pbottom ,_) padding)
+                   (`(,mtop ,mright ,mbottom ,mleft) margin)
+                   (vmargin-length (+ (car mright) (car mleft) width))
+                   (indent-tabs-mode) (sentence-end-double-space))
+        (erase-buffer)
+        (setq fill-column content-width)
+        (grid--insert-vspacing ptop content-width)
+        (insert content)
+        (grid--insert-vspacing pbottom content-width t)
+        (goto-char (point-min))
+        (grid--align-lines box)
+        (put-text-property 1 2 'grid-box-filled t)
+        (goto-char (point-min))
+        (grid--insert-vspacing mtop vmargin-length)
+        (goto-char (point-max))
+        (grid--insert-vspacing mbottom vmargin-length t)
+        (buffer-string)))))
 
 (defun grid--longest-line-length (string)
   "Get the length of the longest line in STRING.
@@ -164,38 +164,38 @@ If the length of the longest line is 0, return 1."
                     i))))))
     (map-let ((:content content) (:width width) (:padding padding))
         box
-      (pcase-let ((`(,_ (,pright . ,_) ,_ (,pleft . ,_)) padding))
-        (let* ((id-of-box-inside
-                (with-temp-buffer
-                  (insert content)
-                  (goto-char (point-min))
-                  (text-property-search-forward 'grid-box-uuid)))
-               (uuid (or id-of-box-inside (grid--uuid)))
-               (width (max
-                       (grid--normalize-width
-                        (or width
-                            (+ (grid--longest-line-length content)
-                               pleft pright)))
-                       2)))
-          (setq box
-                (grid--merge-plists
-                 box
-                 (list
-                  :width width
-                  :content-width (max 2 (- width pleft pright))
-                  :uuid uuid)))
-          (let ((new-content
-                 (progn
-                   (unless id-of-box-inside
-                     (setf (plist-get box :content)
-                           (propertize content 'grid-box-uuid uuid)))
-                   (grid--reformat-content box))))
-            (grid--merge-plists
-             box
-             (list
-              :start-marker 0
-              :end-marker (length new-content)
-              :content new-content))))))))
+      (pcase-let* ((`(,_ (,pright . ,_) ,_ (,pleft . ,_)) padding)
+                   (id-of-box-inside
+                    (with-temp-buffer
+                      (insert content)
+                      (goto-char (point-min))
+                      (text-property-search-forward 'grid-box-uuid)))
+                   (uuid (or id-of-box-inside (grid--uuid)))
+                   (width (max
+                           (grid--normalize-width
+                            (or width
+                                (+ (grid--longest-line-length content)
+                                   pleft pright)))
+                           2)))
+        (setq box
+              (grid--merge-plists
+               box
+               (list
+                :width width
+                :content-width (max 2 (- width pleft pright))
+                :uuid uuid)))
+        (let ((new-content
+               (progn
+                 (unless id-of-box-inside
+                   (setf (plist-get box :content)
+                         (propertize content 'grid-box-uuid uuid)))
+                 (grid--reformat-content box))))
+          (grid--merge-plists
+           box
+           (list
+            :start-marker 0
+            :end-marker (length new-content)
+            :content new-content)))))))
 
 (defun grid--insert-box-line (box)
   "Format line from BOX and insert it."
@@ -247,61 +247,59 @@ If the length of the longest line is 0, return 1."
 ALIGN values: `left' (default), `right', `center', `full'."
   (interactive "P")
   (map-let ((:align align) (:padding padding)
-            (:start-marker start-marker) (:end-marker end-marker)
-            (:margin margin) (:border border) (:width width))
+            (:margin margin) (:border border))
       box
     (pcase-let ((`(,_ ,pright ,_ ,pleft) padding)
-                (`(,_ ,mright ,_ ,mleft) margin))
-      box
-      (let (space last-line)
-        ;; mark newlines from original text
-        (unless (or (eobp) (get-text-property 1 'grid-box-filled))
-          (while (search-forward "\n" (1- (point-max)) t)
-            (put-text-property (point) (1+ (point)) 'grid-box-newline t)
-            (when (eolp)
-              (insert-char ?\s)
-              (add-text-properties
-               (1- (point)) (point)
-               `( grid-box-emptyline t
-                  grid-box-newline t
-                  grid-box-uuid ,(get-text-property (point-min) 'grid-box-uuid))))))
-        (goto-char (point-min))
-        (while (progn
-                 (if align (grid--trim-line) (end-of-line))
-                 (setq space (- fill-column (current-column)))
-                 (when (< space 0)
-                   (let ((beg (line-beginning-position)))
-                     (fill-region beg (line-end-position) align)
-                     (goto-char beg)
-                     (grid--trim-line)
-                     (setq space (- fill-column (current-column)))
-                     (when (< space 0)
-                       (forward-char space)
-                       (insert ?\n)
-                       (setq space (+ fill-column space)))))
-                 (grid--align-line align space)
-                 (forward-line 1)
-                 (not (eobp))))
-        (goto-char (point-min))
-        (setq last-line (line-number-at-pos (1- (point-max))))
-        (while (progn
-                 (grid--insert-hspacing mleft)
-                 (let* ((beg (point))
-                        (current-line (line-number-at-pos))
-                        (border-face
-                         (append
-                          (and (= current-line 1) grid-overline)
-                          grid-vertical-borders
-                          (and (= current-line last-line) grid-underline))))
-                   (grid--insert-hspacing pleft)
-                   (end-of-line)
-                   (grid--insert-hspacing pright)
-                   (and border
-                        border-face
-                        (add-face-text-property beg (point) border-face t)))
-                 (grid--insert-hspacing mright)
-                 (forward-line 1)
-                 (not (eobp))))))))
+                (`(,_ ,mright ,_ ,mleft) margin)
+                (space) (last-line))
+      ;; mark newlines from original text
+      (unless (or (eobp) (get-text-property 1 'grid-box-filled))
+        (while (search-forward "\n" (1- (point-max)) t)
+          (put-text-property (point) (1+ (point)) 'grid-box-newline t)
+          (when (eolp)
+            (insert-char ?\s)
+            (add-text-properties
+             (1- (point)) (point)
+             `( grid-box-emptyline t
+                grid-box-newline t
+                grid-box-uuid ,(get-text-property (point-min) 'grid-box-uuid))))))
+      (goto-char (point-min))
+      (while (progn
+               (if align (grid--trim-line) (end-of-line))
+               (setq space (- fill-column (current-column)))
+               (when (< space 0)
+                 (let ((beg (line-beginning-position)))
+                   (fill-region beg (line-end-position) align)
+                   (goto-char beg)
+                   (grid--trim-line)
+                   (setq space (- fill-column (current-column)))
+                   (when (< space 0)
+                     (forward-char space)
+                     (insert ?\n)
+                     (setq space (+ fill-column space)))))
+               (grid--align-line align space)
+               (forward-line 1)
+               (not (eobp))))
+      (goto-char (point-min))
+      (setq last-line (line-number-at-pos (1- (point-max))))
+      (while (progn
+               (grid--insert-hspacing mleft)
+               (let* ((beg (point))
+                      (current-line (line-number-at-pos))
+                      (border-face
+                       (append
+                        (and (= current-line 1) grid-overline)
+                        grid-vertical-borders
+                        (and (= current-line last-line) grid-underline))))
+                 (grid--insert-hspacing pleft)
+                 (end-of-line)
+                 (grid--insert-hspacing pright)
+                 (and border
+                      border-face
+                      (add-face-text-property beg (point) border-face t)))
+               (grid--insert-hspacing mright)
+               (forward-line 1)
+               (not (eobp)))))))
 
 (defun grid--extract-content (arg)
   (pcase arg
@@ -440,6 +438,11 @@ ALIGN values: `left' (default), `right', `center', `full'."
     (overlay-put rol 'grid-box-uuid nil)
     (overlay-put rol 'grid-active-region-start nil)
     (overlay-put rol 'grid-active-region-end nil)))
+
+(defgroup grid nil
+  "Customization for `grid'."
+  :group 'display
+  :link '(url-link "https://github.com/ichernyshovvv/grid.el"))
 
 (defcustom grid-revert-delay 0.3
   "Seconds to wait before redisplaying buffers with grid blocks."

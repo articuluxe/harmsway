@@ -5,8 +5,8 @@
 ;; Author: Precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/sculpture-theme
 ;; Created: January 06, 2021
-;; Modified: May 30, 2025
-;; Version: 1.7.1
+;; Modified: February 04, 2026
+;; Version: 1.9
 
 ;; Local variables:
 ;; package-lint-main-file: "sculpture-themes.el"
@@ -15,7 +15,7 @@
 ;; sculpture-themes-dark : A dark theme for emacs with vivid colors, inspired by
 ;; coloring pigments.
 
-;; Copyright (C) 2025 Precompute
+;; Copyright (C) 2026 Precompute
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -163,11 +163,11 @@
    `(variable-pitch             ((,class (:height 1.0))))
    `(variable-pitch-text        ((,class (:height 1.0 :inherit variable-pitch))))
    `(sculpture-themes-dark-variable-pitch-italic      ((,class (:inherit variable-pitch :slant italic))))
-   `(fringe                     ((,class (:background ,bg))))
-   `(vertical-border            ((,class (:background ,bg :foreground ,bg))))
-   `(window-divider             ((,class (:background ,bg :foreground ,bg))))
-   `(window-divider-first-pixel ((,class (:background ,bg :foreground ,bg))))
-   `(window-divider-last-pixel  ((,class (:background ,bg :foreground ,bg))))
+   `(fringe                     ((,class (:background ,bg :foreground ,ot12))))
+   `(vertical-border            ((,class (:background ,ot22 :foreground ,ot22))))
+   `(window-divider             ((,class (:background ,ot22 :foreground ,ot22))))
+   `(window-divider-first-pixel ((,class (:background ,cs01 :foreground ,cs01))))
+   `(window-divider-last-pixel  ((,class (:background ,cs01 :foreground ,cs01))))
    `(hl-line                    ((,class (:background ,ot06))))
    `(button                     ((,class (:foreground ,fg :background ,ot06 :box (:line-width 2 :color ,bw06 :style released-button)))))
 
@@ -233,13 +233,13 @@
    `(font-lock-regexp-grouping-backslash ((,class (:foreground ,ot19))))
 
 ;;;;;; Header line and mode line
-   `(mode-line                  ((,class (:inherit variable-pitch :foreground ,cs01 :background ,bw00 :box (:line-width 1 :color ,ot22)))))
-   `(mode-line-buffer-id        ((,class (:inherit variable-pitch :foreground ,ot05))))
-   `(mode-line-emphasis         ((,class (:inherit variable-pitch :foreground ,bw12))))
-   `(mode-line-highlight        ((,class (:inherit variable-pitch :foreground ,ha00))))
-   `(mode-line-inactive         ((,class (:inherit variable-pitch :foreground ,bw08 :background ,ha09 :box (:line-width 1 :color ,bw02)))))
-   `(header-line                ((,class (:inherit (variable-pitch mode-line)))))
-   `(header-line-highlight      ((,class (:inherit (variable-pitch mode-line-highlight)))))
+   `(mode-line                  ((,class (:inherit :foreground ,cs01 :background ,bw00))))
+   `(mode-line-buffer-id        ((,class (:inherit :foreground ,ot05))))
+   `(mode-line-emphasis         ((,class (:inherit :foreground ,bw12))))
+   `(mode-line-highlight        ((,class (:inherit :foreground ,ha00))))
+   `(mode-line-inactive         ((,class (:inherit :foreground ,bw08 :background ,ha09))))
+   `(header-line                ((,class (:inherit mode-line))))
+   `(header-line-highlight      ((,class (:inherit mode-line-highlight))))
 ;;;;;;; doom-modeline
    `(doom-modeline-bar           ((,class (:background ,ot04))))
    ;; `(doom-modeline-bar-inactive  ((,class (:inherit (variable-pitch mode-line-highlight)))))

@@ -344,7 +344,11 @@ Time info is only shown `display-time-mode' is non-nil"
                             :format lambda-line-magit-mode
                             :abbrev "MG"
                             :prefix-symbol " ✨")
-    (markdown-mode          :abbrev "MD")
+    (org-mode               :mode-p lambda-line-org-mode-p
+                            :format lambda-line-org-mode)
+    (markdown-mode          :mode-p lambda-line-markdown-mode-p
+                            :format lambda-line-markdown-mode
+                            :abbrev "MD")
     (mu4e-compose-mode      :mode-p lambda-line-mu4e-compose-mode-p
                             :format lambda-line-mu4e-compose-mode)
     (mu4e-headers-mode      :mode-p lambda-line-mu4e-headers-mode-p
@@ -443,6 +447,31 @@ This is if no match could be found in `lambda-lines-mode-formats'"
 (defcustom lambda-line-lsp-indicator t
   "Show LSP/Eglot server status in modeline."
   :type 'boolean
+  :group 'lambda-line)
+
+(defcustom lambda-line-word-count-enabled nil
+  "When non-nil, show word count in status-line for applicable modes."
+  :type 'boolean
+  :group 'lambda-line)
+
+(defcustom lambda-line-word-count-modes '(org-mode markdown-mode text-mode)
+  "List of major modes where word count should be displayed."
+  :type '(repeat symbol)
+  :group 'lambda-line)
+
+(defcustom lambda-line-word-count-format " %d "
+  "Format string for word count display. %d is replaced with count."
+  :type 'string
+  :group 'lambda-line)
+
+(defcustom lambda-line-word-count-symbol "Ⓦ "
+  "Symbol to display before word count. Unicode options: w ⓦ ω § ¶ # ∑"
+  :type 'string
+  :group 'lambda-line)
+
+(defcustom lambda-line-word-count-separator " ∙ "
+  "Separator to display after word count. Unicode options: ∙ • · | - ‖ │"
+  :type 'string
   :group 'lambda-line)
 
 ;;;; Faces
@@ -657,6 +686,10 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   "Cached VC backend for current buffer.")
 (defvar-local lambda-line--cache-git-diff nil
   "Cached git diff information for current buffer.")
+(defvar-local lambda-line--cache-word-count nil
+  "Cached word count for current buffer.")
+(defvar-local lambda-line--cache-word-count-tick nil
+  "Buffer modification tick when word count was cached.")
 (defvar-local lambda-line--cache-timestamp nil
   "Timestamp of last cache update.")
 
@@ -676,6 +709,8 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   (setq lambda-line--cache-project-name nil
         lambda-line--cache-vc-backend nil
         lambda-line--cache-git-diff nil
+        lambda-line--cache-word-count nil
+        lambda-line--cache-word-count-tick nil
         lambda-line--cache-timestamp nil))
 
 (defun lambda-line--update-cache-timestamp ()
@@ -718,6 +753,37 @@ This is if no match could be found in `lambda-lines-mode-formats'"
       (propertize " LSP?" 'face '(:inherit warning)))
      (t ""))))
 
+;;;;; Word Count
+;; -------------------------------------------------------------------
+(defun lambda-line--calculate-word-count ()
+  "Calculate word count for current buffer using built-in count-words."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (count-words (point-min) (point-max)))))
+
+(defun lambda-line-word-count ()
+  "Return formatted word count string with caching."
+  (when (and lambda-line-word-count-enabled
+             (memq major-mode lambda-line-word-count-modes))
+    (let ((current-tick (buffer-chars-modified-tick)))
+      ;; Check if cache is valid
+      (unless (and lambda-line--cache-word-count
+                   lambda-line--cache-word-count-tick
+                   (= current-tick lambda-line--cache-word-count-tick))
+        ;; Update cache
+        (setq lambda-line--cache-word-count (lambda-line--calculate-word-count)
+              lambda-line--cache-word-count-tick current-tick))
+      ;; Return formatted string
+      (when lambda-line--cache-word-count
+        (concat
+         " "  ; Leading space for separation
+         (propertize lambda-line-word-count-symbol 
+                     'face 'lambda-line-active-tertiary)
+         (propertize (format "%d" lambda-line--cache-word-count)
+                     'face 'lambda-line-active-tertiary)
+         (propertize lambda-line-word-count-separator
+                     'face 'lambda-line-active-tertiary))))))
 
 ;;;;; Branch display
 ;; -------------------------------------------------------------------
@@ -1038,6 +1104,11 @@ Optionally use another clockface font."
 Each section is first defined, along with a measure of the width of the status-line.
 STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed only in some modes."
   (let* ((window (get-buffer-window (current-buffer)))
+         ;; Ensure all parameters are strings to prevent length calculation errors
+         (name (or name ""))
+         (primary (or primary ""))
+         (tertiary (or tertiary ""))
+         (secondary (or secondary ""))
 
          (name-max-width (max 12
                               (- (window-body-width)
@@ -1124,7 +1195,10 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
           (tertiary (if (not (string-empty-p tertiary)) 
                        tertiary 
                      (if lambda-line-default-tertiary-function
-                         (funcall lambda-line-default-tertiary-function)
+                         (condition-case nil
+                           (let ((result (funcall lambda-line-default-tertiary-function)))
+                             (if (stringp result) result ""))
+                           (error ""))
                        "")))
 
           (right (concat
@@ -1234,6 +1308,39 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-text-mode ()
   (lambda-line-default-mode))
 
+;;;;; Org Mode
+
+(defun lambda-line-org-mode-p ()
+  (derived-mode-p 'org-mode))
+
+(defun lambda-line-org-mode ()
+  (let ((buffer-name (format-mode-line (if buffer-file-name
+                                           (file-name-nondirectory (buffer-file-name))
+                                         "%b")))
+        (mode-name   (lambda-line-mode-name))
+        (vc-info     (lambda-line--vc-info))
+        (word-count  (lambda-line-word-count))
+        (position    (format-mode-line lambda-line-position-format)))
+    (lambda-line-compose (lambda-line-status)
+                         (lambda-line-truncate buffer-name lambda-line-truncate-value)
+                         (concat lambda-line-display-group-start
+                                 mode-name
+                                 (when vc-info vc-info)
+                                 lambda-line-display-group-end)
+                         (or word-count "")
+                         (concat (when (buffer-narrowed-p)
+                                   (propertize "⇥ " 'face `(:inherit lambda-line-inactive-secondary)))
+                                 position
+                                 (lambda-line-time)))))
+
+;;;;; Markdown Mode
+
+(defun lambda-line-markdown-mode-p ()
+  (derived-mode-p 'markdown-mode))
+
+(defun lambda-line-markdown-mode ()
+  ;; Same implementation as org-mode
+  (lambda-line-org-mode))
 
 ;;;;; Help (& Helpful) Mode
 (defun lambda-line-help-mode-p ()
@@ -1701,12 +1808,15 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 
 (defun lambda-line-mu4e-context ()
   "Return the current mu4e context as a non propertized string."
-  (if (> (length (mu4e-context-name (mu4e-context-current))) 0)
-      (concat
-       lambda-line-display-group-start
-       (substring-no-properties (mu4e-context-name (mu4e-context-current)))
-       lambda-line-display-group-end)
-    "(none)"))
+  (condition-case nil
+    (let ((context (mu4e-context-current)))
+      (if (and context (> (length (mu4e-context-name context)) 0))
+          (concat
+           lambda-line-display-group-start
+           (substring-no-properties (mu4e-context-name context))
+           lambda-line-display-group-end)
+        "(none)"))
+    (error "(none)")))
 
 (defun lambda-line-mu4e-server-props ()
   "Encapsulates the call to the variable mu4e-/~server-props
@@ -1728,8 +1838,10 @@ depending on the version of mu4e."
 
 (defun lambda-line-mu4e-dashboard-mode ()
   (lambda-line-compose (lambda-line-status)
-                       (format "%d messages"
-                               (plist-get (lambda-line-mu4e-server-props) :doccount))
+                       (condition-case nil
+                         (format "%d messages"
+                                 (or (plist-get (lambda-line-mu4e-server-props) :doccount) 0))
+                         (error "0 messages"))
                        ""
                        ""
                        (lambda-line-time)))
@@ -1762,18 +1874,27 @@ depending on the version of mu4e."
 
 (defun lambda-line-mu4e-compose-mode ()
   (lambda-line-compose (lambda-line-status)
-                       (format-mode-line "%b")
+                       (or (ignore-errors (format-mode-line "%b")) 
+                           (buffer-name) 
+                           "Compose")
                        ""
                        ""
-                       (format "[%s] "
-                               (lambda-line-mu4e-quote
-                                (mu4e-context-name (mu4e-context-current))))))
+                       (condition-case nil
+                         (let ((context (mu4e-context-current)))
+                           (if context
+                               (format "[%s] "
+                                       (lambda-line-mu4e-quote
+                                        (mu4e-context-name context)))
+                             "[none] "))
+                         (error "[none] "))))
 
 ;; ---------------------------------------------------------------------
 (defun lambda-line-mu4e-quote (str)
-  (if (version< mu4e-mu-version "1.8.0")
-      (mu4e~quote-for-modeline str)
-    (mu4e-quote-for-modeline str)))
+  (condition-case nil
+    (if (version< mu4e-mu-version "1.8.0")
+        (mu4e~quote-for-modeline str)
+      (mu4e-quote-for-modeline str))
+    (error (or str ""))))
 
 (defun lambda-line-mu4e-headers-mode-p ()
   (derived-mode-p 'mu4e-headers-mode))
@@ -1787,9 +1908,14 @@ depending on the version of mu4e."
           (lambda-line-mu4e-last-query)) "")
      ""
      (concat
-      (format "[%s] "
-              (lambda-line-mu4e-quote
-               (mu4e-context-name (mu4e-context-current))))
+      (condition-case nil
+        (let ((context (mu4e-context-current)))
+          (if context
+              (format "[%s] "
+                      (lambda-line-mu4e-quote
+                       (mu4e-context-name context)))
+            "[none] "))
+        (error "[none] "))
       (or (lambda-line-time) "")))))
 
 ;; ---------------------------------------------------------------------
@@ -1797,17 +1923,19 @@ depending on the version of mu4e."
   (derived-mode-p 'mu4e-view-mode))
 
 (defun lambda-line-mu4e-view-mode ()
-  (let* ((msg     (mu4e-message-at-point))
-         (subject (mu4e-message-field msg :subject))
-         (from    (mu4e~headers-contact-str (mu4e-message-field msg :from)))
-         (date    (mu4e-message-field msg :date)))
-    (lambda-line-compose (lambda-line-status)
-                         (or from "")
-                         (concat lambda-line-display-group-start
-                                 (lambda-line-truncate (or subject "") 50 "…")
-                                 lambda-line-display-group-end)
-                         ""
-                         (concat (or (format-time-string mu4e-headers-date-format date) "") " "))))
+  (condition-case nil
+    (let* ((msg     (mu4e-message-at-point))
+           (subject (and msg (mu4e-message-field msg :subject)))
+           (from    (and msg (mu4e~headers-contact-str (mu4e-message-field msg :from))))
+           (date    (and msg (mu4e-message-field msg :date))))
+      (lambda-line-compose (lambda-line-status)
+                           (or from "")
+                           (concat lambda-line-display-group-start
+                                   (lambda-line-truncate (or subject "") 50 "…")
+                                   lambda-line-display-group-end)
+                           ""
+                           (concat (or (and date (format-time-string mu4e-headers-date-format date)) "") " ")))
+    (error (lambda-line-compose (lambda-line-status) "Email" "" "" ""))))
 
 (defun lambda-line-mu4e-activate ()
   (with-eval-after-load 'mu4e
@@ -1978,16 +2106,21 @@ depending on the version of mu4e."
   "Build and set the modeline."
   (let* ((format
           '((:eval
-             (funcall
-              (or (catch 'found
-                    (dolist (elt lambda-line-mode-formats)
-                      (let* ((config (cdr elt))
-                             (mode-p (plist-get config :mode-p))
-                             (format (plist-get config :format)))
-                        (when (and mode-p (functionp mode-p))
-                          (when (funcall mode-p)
-                            (throw 'found format))))))
-                  lambda-line-default-mode-format))))))
+             (condition-case err
+               (let* ((format-func (or (catch 'found
+                                         (dolist (elt lambda-line-mode-formats)
+                                           (let* ((config (cdr elt))
+                                                  (mode-p (plist-get config :mode-p))
+                                                  (format (plist-get config :format)))
+                                             (when (and mode-p (functionp mode-p))
+                                               (when (funcall mode-p)
+                                                 (throw 'found format))))))
+                                       lambda-line-default-mode-format))
+                      (result (when (functionp format-func) (funcall format-func))))
+                 (if (stringp result)
+                     result
+                   (format "lambda-line error: function %S returned %S (expected string)" format-func result)))
+               (error (format "lambda-line error: %S" err)))))))
     (if (eq lambda-line-position 'top)
         (progn
           (setq header-line-format format)
@@ -2092,6 +2225,18 @@ below or a buffer local variable 'no-mode-line'."
 
   ;; Run any registered hooks
   (run-hooks 'lambda-line-mode-hook))
+
+;;;; Interactive Commands
+
+;;;###autoload
+(defun lambda-line-toggle-word-count ()
+  "Toggle word count display in lambda-line."
+  (interactive)
+  (setq lambda-line-word-count-enabled (not lambda-line-word-count-enabled))
+  (lambda-line--invalidate-cache)
+  (force-mode-line-update t)
+  (message "Lambda-line word count %s" 
+           (if lambda-line-word-count-enabled "enabled" "disabled")))
 
 ;;; Provide:
 (provide 'lambda-line)

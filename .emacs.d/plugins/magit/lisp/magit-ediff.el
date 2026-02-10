@@ -223,12 +223,12 @@ and alternative commands."
   (magit-with-toplevel
     (let* ((dir   (magit-gitdir))
            (revA  (or (magit-name-branch "HEAD")
-                      (magit-commit-p "HEAD")))
+                      (magit-commit-oid "HEAD")))
            (revB  (cl-find-if (##file-exists-p (expand-file-name % dir))
                               '("MERGE_HEAD" "CHERRY_PICK_HEAD" "REVERT_HEAD")))
            (revB  (or (magit-name-branch revB)
-                      (magit-commit-p revB)))
-           (revC  (magit-commit-p (magit-git-string "merge-base" revA revB)))
+                      (magit-commit-oid revB)))
+           (revC  (magit-commit-oid (magit-git-string "merge-base" revA revB)))
            (fileA (magit--rev-file-name file revA revB))
            (fileB (magit--rev-file-name file revB revA))
            (fileC (or (magit--rev-file-name file revC revA)
@@ -332,8 +332,8 @@ FILE has to be relative to the top directory of the repository."
            (bufC* (or bufC (find-file-noselect file)))
            (coding-system-for-read
             (buffer-local-value 'buffer-file-coding-system bufC*))
-           (bufA* (magit-find-file-noselect "HEAD" file t))
-           (bufB* (magit-find-file-index-noselect file t)))
+           (bufA* (magit-find-file-noselect "HEAD" file))
+           (bufB* (magit-find-file-index-noselect file)))
       (with-current-buffer bufB* (setq buffer-read-only nil))
       (magit-ediff-buffers
        (bufA bufA*)
@@ -459,7 +459,7 @@ mind at all, then it asks the user for a command to run."
             (pcase (magit-diff-type)
               ('committed (pcase-let ((`(,a ,b)
                                        (magit-ediff-compare--read-revisions
-                                        magit-buffer-range)))
+                                        magit-buffer-diff-range)))
                             (setq revA a)
                             (setq revB b)))
               ((guard (not magit-ediff-dwim-show-on-hunks))
@@ -505,7 +505,7 @@ FILE must be relative to the top directory of the repository."
   (magit-ediff-buffers ((magit-get-revision-buffer "HEAD" file)
                         (magit-find-file-noselect "HEAD" file))
                        ((get-buffer (concat file ".~{index}~"))
-                        (magit-find-file-index-noselect file t))))
+                        (magit-find-file-index-noselect file))))
 
 ;;;###autoload
 (defun magit-ediff-show-unstaged (file)
@@ -520,7 +520,7 @@ FILE must be relative to the top directory of the repository."
                                   (magit-unstaged-files)
                                   "No unstaged files")))
   (magit-ediff-buffers ((get-buffer (concat file ".~{index}~"))
-                        (magit-find-file-index-noselect file t))
+                        (magit-find-file-index-noselect file))
                        ((get-file-buffer file)
                         (find-file-noselect file))))
 

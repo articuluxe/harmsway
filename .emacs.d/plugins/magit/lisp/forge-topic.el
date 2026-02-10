@@ -717,7 +717,8 @@ can be selected from the start."
   (forge--read-topic prompt
                      #'forge-current-topic
                      (forge--topics-spec :type 'topic :active t)
-                     (forge--topics-spec :type 'topic :active nil :state nil)))
+                     (forge--topics-spec :type 'topic :active nil
+                                         :state nil :limit nil)))
 
 (defun forge--read-topic (prompt current active all)
   (let* ((current (funcall current))
@@ -742,20 +743,25 @@ can be selected from the start."
                                     (current-local-map))))
                 (magit-completing-read
                  (substitute-command-keys
-                  (format "%s \\<%s> (\\[%s] for all)" prompt
+                  (format "%s (\\<%s>\\[%s] for all)" prompt
                           'forge-read-topic-minibuffer-map
                           'forge-read-topic-lift-limit))
                  (completion-table-dynamic
                   (let (all-choices)
                     (lambda (_string)
-                      (cond
-                        (all-choices)
-                        (forge-limit-topic-choices choices)
-                        (t
-                         (forge--replace-minibuffer-prompt (concat prompt ": "))
-                         (setq alist (forge--topic-collection
-                                      (forge--list-topics all repo)))
-                         (setq all-choices (mapcar #'car alist)))))))
+                      ;; For other frameworks, the minibuffer is current
+                      ;; when this function is called, but for Helm we
+                      ;; have to make it so.  Starting with Helm commit
+                      ;; 5e7c8498, this isn't necessary anymore.  See
+                      ;; https://github.com/emacs-helm/helm/issues/2744.
+                      (with-selected-window (minibuffer-window)
+                        (cond
+                          (all-choices)
+                          (forge-limit-topic-choices choices)
+                          (t
+                           (setq alist (forge--topic-collection
+                                        (forge--list-topics all repo)))
+                           (setq all-choices (mapcar #'car alist))))))))
                  nil t nil nil default))
             (magit-completing-read prompt choices nil t nil nil default))))
     (cdr (assoc choice alist))))
@@ -774,31 +780,26 @@ can be selected from the start."
   (when (and (minibufferp)
              forge-limit-topic-choices)
     (setq-local forge-limit-topic-choices nil)
-    (when (and (bound-and-true-p vertico-mode)
-               (boundp 'vertico--input)
-               (fboundp 'vertico--exhibit))
-      (setq vertico--input t)
-      (vertico--exhibit))))
+    (cond
+      ((and (bound-and-true-p vertico-mode)
+            (boundp 'vertico--input)
+            (fboundp 'vertico--exhibit))
+       (setq vertico--input t)
+       (vertico--exhibit))
+      ((and (bound-and-true-p helm-mode)
+            (fboundp 'helm-force-update))
+       (helm-force-update))
+      ((minibuffer-completion-help (minibuffer--completion-prompt-end)
+                                   (point-max))))
+    (forge-read-topic--remove-prompt-hint)))
 
-(defun forge--replace-minibuffer-prompt (prompt)
-  (save-excursion
-    (goto-char (point-min))
-    (let ((inhibit-read-only t)
-          (end (length prompt)))
-      ;; (insert-and-inherit prompt) would discard all faces already
-      ;; present in PROMPT, so instead we do it like `read_minibuf'.
-      (put-text-property 0 end 'front-sticky t prompt)
-      (put-text-property 0 end 'rear-nonsticky t prompt)
-      (put-text-property 0 end 'field t prompt)
-      (let ((props minibuffer-prompt-properties))
-        (while props
-          (let ((key (pop props))
-                (val (pop props)))
-            (if (eq key 'face)
-                (add-face-text-property 0 end val t prompt)
-              (put-text-property 0 end key val prompt)))))
-      (insert prompt)
-      (delete-region (point) (minibuffer-prompt-end)))))
+(defun forge-read-topic--remove-prompt-hint ()
+  (when (minibufferp)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward " (.+? for all)" (minibuffer-prompt-end) t)
+        (let ((inhibit-read-only t))
+          (replace-match ""))))))
 
 (defun forge-topic-completion-at-point ()
   (let ((bol (line-beginning-position))
@@ -1509,7 +1510,13 @@ This mode itself is never used directly."
    ("l n" "notifications" forge-list-notifications)
    ("l g" "global topics" forge-list-global-topics)
    ("l t" "topics"        forge-list-topics)
-   ""])
+   ""
+   ( :info "Batch" :format "%d" :face transient-heading
+     :if (##memq (oref transient--prefix command)
+                 '(forge-topic-menu forge-topics-menu)))
+   ( "D" "done with closed" forge-mark-completed-topics-as-done
+     :if (##memq (oref transient--prefix command)
+                 '(forge-topic-menu forge-topics-menu)))])
 
 (transient-define-group forge--topic-menus-group
   ["Menu"
@@ -1570,8 +1577,9 @@ This mode itself is never used directly."
 ;;;; Menus
 
 ;;;###autoload(autoload 'forge-topic-menu "forge-topic" nil t)
-(transient-define-prefix forge-topic-menu ()
-  "Edit the topic at point."
+(transient-define-prefix forge-topic-menu (&optional visit)
+  "Show menu for the topic at point.
+With prefix argument VISIT, also visit the topic."
   :transient-suffix t
   :transient-non-suffix #'transient--do-call
   :transient-switch-frame nil
@@ -1605,7 +1613,11 @@ This mode itself is never used directly."
     ("-A" forge-discussion-set-answer)
     """Display"
     ("-H" forge-toggle-topic-legend)]]
-  [forge--topic-legend-group])
+  [forge--topic-legend-group]
+  (interactive (list current-prefix-arg))
+  (when visit
+    (forge-topic-setup-buffer (forge-topic-at-point)))
+  (transient-setup 'forge-topic-menu))
 
 (transient-augment-suffix forge-topic-menu
   :transient #'transient--do-replace
@@ -1781,6 +1793,33 @@ inferior process."
 (transient-define-suffix forge-topic-status-set-done ()
   "Set the notification status of the current topic to `done'."
   :class 'forge--topic-set-status-command :status 'done)
+
+(defun forge-mark-completed-topics-as-done ()
+  "Mark completed topics of the current repository as done.
+Change the private status to \"done\" for topics whose private status is
+\"unread\" or \"pending\" and whose public state is \"completed\".
+Whether this affects all such topics or only all such topics of a
+certain type (discussion, issue or pull-request), depends on the
+context."
+  (interactive)
+  (let* ((type (forge-current-topic-type))
+         (desc (if (eq type 'pullreq) 'pull-request type))
+         (topics (forge--list-topics
+                  (forge--topics-spec :type type
+                                      :active nil
+                                      :state 'closed
+                                      :status 'inbox)
+                  (forge-get-repository :tracked))))
+    (cond ((not topics)
+           (message "No completed %s that could be marked as done" desc))
+          ((magit-confirm t
+             "Mark \"%s\" as done"
+             (format "Mark %%d %ss as done" desc)
+             nil
+             (mapcar #'forge--format-topic-line topics))
+           (dolist (topic topics)
+             (oset topic status 'done))
+           (forge-refresh-buffer)))))
 
 ;;;; Set
 
@@ -2089,6 +2128,7 @@ modify `bug-reference-bug-regexp' if appropriate."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
+;;   ("and>"          . "cond-let--and>")
 ;;   ("and-let"       . "cond-let--and-let")
 ;;   ("if-let"        . "cond-let--if-let")
 ;;   ("when-let"      . "cond-let--when-let")

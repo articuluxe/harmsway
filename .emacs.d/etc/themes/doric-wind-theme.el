@@ -1,6 +1,6 @@
 ;;; doric-wind-theme.el --- Minimalist theme with light background and green+teal hues -*- lexical-binding:t -*-
 
-;; Copyright (C) 2025  Free Software Foundation, Inc.
+;; Copyright (C) 2025-2026  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
@@ -60,7 +60,7 @@
       (fg-accent "#2f6920")
 
       (fg-red "#990020")
-      (fg-green "#006710")
+      (fg-green "#006740")
       (fg-yellow "#706000")
       (fg-blue "#003370")
       (fg-magenta "#782050")

@@ -587,7 +587,7 @@ pandoc is always run on the master file)."
   ;; TODO When the region is active, it might be nice to run pandoc on the
   ;; region but use the master file's settings.
   (interactive "P")
-  (let ((ask (and (listp prefix) (eq (car prefix) 4))))
+  (let ((ask (and (consp prefix) (= (car prefix) 4))))
     (cond
      ((and (not ask)
            (member (pandoc--get 'write) pandoc--pdf-able-formats))

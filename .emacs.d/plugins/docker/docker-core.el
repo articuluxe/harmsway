@@ -60,9 +60,13 @@
   "Execute \"`docker-command' ARGS\" and return a promise with the results."
   (apply #'docker-run-async docker-command (docker-arguments) args))
 
-(defun docker-run-docker-async-with-buffer (&rest args)
-  "Execute \"`docker-command' ARGS\" and display the results in a buffer."
-  (apply #'docker-run-async-with-buffer docker-command (docker-arguments) args))
+(defun docker-run-docker-async-with-buffer-interactive (&rest args)
+  "Execute \"`docker-command' ARGS\" and display output in an interactive buffer."
+  (apply #'docker-run-async-with-buffer-interactive docker-command (docker-arguments) args))
+
+(defun docker-run-docker-async-with-buffer-noninteractive (&rest args)
+  "Execute \"`docker-command' ARGS\" and display output in a non-interactive buffer."
+  (apply #'docker-run-async-with-buffer-noninteractive docker-command (docker-arguments) args))
 
 (defun docker-get-transient-action ()
   "Extract the action out of `transient-current-command'."
@@ -91,12 +95,32 @@
   (aio-await (docker-run-docker-async action args (docker-utils-get-marked-items-ids)))
   (tablist-revert))
 
-(defun docker-generic-action-with-buffer (action args)
-  "Run \"`docker-command' ACTION ARGS\" and print output to a new buffer."
+(defun docker-generic-action-with-buffer-interactive (action args)
+  "Run \"`docker-command' ACTION ARGS\" and print output in an interactive buffer."
   (interactive (list (docker-get-transient-action)
                      (transient-args transient-current-command)))
   (--each (docker-utils-get-marked-items-ids)
-    (docker-run-docker-async-with-buffer (s-split " " action) args it)))
+    (docker-run-docker-async-with-buffer-interactive (s-split " " action) args it)))
+
+(defun docker-generic-action-with-buffer-noninteractive (action args)
+  "Run \"`docker-command' ACTION ARGS\" and print output in a non-interactive buffer."
+  (interactive (list (docker-get-transient-action)
+                     (transient-args transient-current-command)))
+  (--each (docker-utils-get-marked-items-ids)
+    (docker-run-docker-async-with-buffer-noninteractive (s-split " " action) args it)))
+
+(aio-defun docker-generic-action-with-buffer (action args)
+  "Run \"`docker-command' ACTION ARGS\", wait for completion, then display output.
+This collects all output before displaying, suitable for non-interactive commands."
+  (interactive (list (docker-get-transient-action)
+                     (transient-args transient-current-command)))
+  (--each (docker-utils-get-marked-items-ids)
+    (let* ((id it)
+           (output (aio-await (docker-run-docker-async (s-split " " action) args id))))
+      (docker-utils-with-buffer (format "%s %s" action id)
+        ;; Strip carriage returns (Docker outputs CRLF line endings)
+        (insert (ansi-color-apply (replace-regexp-in-string "\r" "" output)))
+        (special-mode)))))
 
 (aio-defun docker-inspect (&optional subcmd)
   "Run \"`docker-command' inspect\" on the selected items."

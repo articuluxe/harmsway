@@ -5,11 +5,11 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 1.5.0
+;; Version: 1.5.1
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26.1"))
 
-;; This file is not part of GNU Emacs.
+;; This file is part of GNU Emacs.
 
 ;; GNU Emacs is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -235,7 +235,7 @@ The builtin poshandler functions are listed below:
 7.  `posframe-poshandler-frame-bottom-left-corner'
 8.  `posframe-poshandler-frame-bottom-right-corner'
 9.  `posframe-poshandler-window-center'
-10.  `posframe-poshandler-window-top-center'
+10. `posframe-poshandler-window-top-center'
 11. `posframe-poshandler-window-top-left-corner'
 12. `posframe-poshandler-window-top-right-corner'
 13. `posframe-poshandler-window-bottom-center'
@@ -496,8 +496,14 @@ You can use `posframe-delete-all' to delete all posframes."
                        :font-height font-height
                        :font-width font-width
                        :posframe posframe
-                       :posframe-width (frame-pixel-width posframe)
-                       :posframe-height (frame-pixel-height posframe)
+                       :posframe-width
+                       (if width
+                           (* (default-font-width) width)
+                         (frame-pixel-width posframe))
+                       :posframe-height
+                       (if height
+                           (* (default-line-height) height)
+                         (frame-pixel-height posframe))
                        :posframe-buffer buffer
                        :parent-frame parent-frame
                        :parent-frame-width parent-frame-width
@@ -847,8 +853,14 @@ will be removed."
         (max-height (plist-get size-info :max-height))
         (min-width (plist-get size-info :min-width))
         (min-height (plist-get size-info :min-height)))
-    (when height (set-frame-height posframe height))
-    (when width (set-frame-width posframe width))
+    (cond
+     ((and width height)
+      (set-frame-size posframe
+                      (* (default-font-width) width)
+                      (* (default-line-height) height)
+                      t))
+     (height (set-frame-height posframe height))
+     (width (set-frame-width posframe width)))
     (unless (and height width)
       (posframe--fit-frame-to-buffer
        posframe max-height min-height max-width min-width
@@ -949,7 +961,8 @@ This need PARENT-FRAME-WIDTH and PARENT-FRAME-HEIGHT"
                (equal posframe--last-posframe-displayed-size
                       (cons (frame-pixel-width posframe)
                             (frame-pixel-height posframe))))
-    (set-frame-position posframe (car position) (cdr position))
+    (unless (equal (frame-position posframe) position)
+      (set-frame-position posframe (car position) (cdr position)))
     (setq-local posframe--last-posframe-pixel-position position)
     (setq-local posframe--last-parent-frame-size
                 (cons parent-frame-width parent-frame-height))

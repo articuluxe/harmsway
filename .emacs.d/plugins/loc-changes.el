@@ -1,10 +1,11 @@
-;;; loc-changes.el --- keep track of positions even after buffer changes
+;;; loc-changes.el --- Keep track of positions even after buffer changes
 
-;; Copyright (C) 2015, 2016, 2020 Free Software Foundation, Inc
+;; Copyright (C) 2015, 2016, 2020, 2026 Free Software Foundation, Inc
 
 ;; Author: Rocky Bernstein <rocky@gnu.org>
-;; Version: 1.2
+;; Version: 1.3
 ;; URL: https://github.com/rocky/emacs-loc-changes
+;; Package-Requires: ((emacs "24.4") (compat "30.1.0.1"))
 ;; Compatibility: GNU Emacs 24.x
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -37,26 +38,26 @@
 
 ;; Press C-x C-e at the end of the next line configure the program in GNU emacs
 ;; for building via "make" to get set up.
-;; (compile (format "EMACSLOADPATH=:%s ./autogen.sh" "."))
+;; (compile (format "EMACSLOADPATH=:%s ./autogen.sh" (file-name-directory (locate-library "test-simple.elc"))))
 ;; After that you can run:
-;; (compile "make check")
+;; (compile (format "EMACSLOADPATH=:%s make check" (file-name-directory (locate-library "test-simple.elc"))))
 
-(eval-when-compile (require 'cl))
+(eval-when-compile
+  (require 'cl-lib))
 
 (make-variable-buffer-local 'loc-changes-alist)
 (defvar loc-changes-alist '()
   "A buffer-local association-list (alist) of line numbers and
 their corresponding markers in the buffer. The key is the line
 number; the a list of value the marker and the initial 10
-characters after that mark" )
+characters after that mark")
 
-(defun loc-changes:follow-mark(event)
+(defun loc-changes:follow-mark (event)
   (interactive "e")
   (let* ((pos (posn-point (event-end event)))
-	 (mark (car (get-text-property pos 'mark))))
-    (switch-to-buffer-other-window  (marker-buffer mark))
-    (goto-char (marker-position mark))
-    ))
+         (mark (car (get-text-property pos 'mark))))
+    (switch-to-buffer-other-window (marker-buffer mark))
+    (goto-char (marker-position mark))))
 
 
 (defun loc-changes:alist-describe (&optional opt-buffer)
@@ -65,27 +66,25 @@ not given, the current buffer is used. Information is put in an
 internal buffer called *Describe*."
   (interactive "")
   (let ((buffer (or opt-buffer (current-buffer)))
-	(alist))
+        (alist))
     (with-current-buffer buffer
-	  (setq alist loc-changes-alist)
-	  (unless (listp alist) (error "expecting loc-changes-alist to be a list"))
-	  )
+      (setq alist loc-changes-alist)
+      (unless (listp alist)
+        (error "expecting loc-changes-alist to be a list")))
     (switch-to-buffer (get-buffer-create "*Describe*"))
     (setq buffer-read-only 'nil)
     (delete-region (point-min) (point-max))
     (dolist (assoc alist)
-	  (put-text-property
-	   (insert-text-button
-	    (format "line %d: %s" (car assoc) (cadr assoc))
-	    'action 'loc-changes:follow-mark
-	    'help-echo "mouse-2: go to this location")
-	   (point)
-	   'mark (cdr assoc)
-	    )
-	  (insert (format ":\t%s\n" (cl-caddr assoc)))
-	  )
-    (setq buffer-read-only 't)
-    ))
+      (put-text-property
+       (insert-text-button
+        (format "line %d: %s" (car assoc) (cadr assoc))
+        'action
+        'loc-changes:follow-mark
+        'help-echo
+        "mouse-2: go to this location")
+       (point) 'mark (cdr assoc))
+      (insert (format ":\t%s\n" (cl-caddr assoc))))
+    (setq buffer-read-only 't)))
 
 (defun loc-changes-goto-line (line-number &optional column-number)
   "Position `point' at LINE-NUMBER of the current buffer. If
@@ -103,68 +102,76 @@ is okay to use in a Lisp program."
        (list (prefix-numeric-value current-prefix-arg))
      ;; Look for a default, a number in the buffer at point.
      (let* ((default
-	      (save-excursion
-		(skip-chars-backward "0-9")
-		(if (looking-at "[0-9]")
-		    (string-to-number
-		     (buffer-substring-no-properties
-		      (point)
-		      (progn (skip-chars-forward "0-9")
-			     (point)))))))
-	    ;; Decide if we're switching buffers.
-	    (buffer
-	     (if (consp current-prefix-arg)
-		 (other-buffer (current-buffer) t)))
-	    (buffer-prompt
-	     (if buffer
-		 (concat " in " (buffer-name buffer))
-	       "")))
+             (save-excursion
+               (skip-chars-backward "0-9")
+               (if (looking-at "[0-9]")
+                   (string-to-number
+                    (buffer-substring-no-properties
+                     (point)
+                     (progn
+                       (skip-chars-forward "0-9")
+                       (point)))))))
+            ;; Decide if we're switching buffers.
+            (buffer
+             (if (consp current-prefix-arg)
+                 (other-buffer (current-buffer) t)))
+            (buffer-prompt
+             (if buffer
+                 (concat " in " (buffer-name buffer))
+               "")))
        ;; Read the argument, offering that number (if any) as default.
-       (list (read-number (format "Goto line%s: " buffer-prompt)
-                          (list default (line-number-at-pos)))
-	     buffer))))
+       (list
+        (read-number (format "Goto line%s: " buffer-prompt)
+                     (list default (line-number-at-pos)))
+        buffer))))
   (unless (wholenump line-number)
-    (error "Expecting line-number parameter `%s' to be a whole number"
-	   line-number))
+    (error
+     "Expecting line-number parameter `%s' to be a whole number"
+     line-number))
   (unless (> line-number 0)
-    (error "Expecting line-number parameter `%d' to be greater than 0"
-	   line-number))
+    (error
+     "Expecting line-number parameter `%d' to be greater than 0"
+     line-number))
   (let ((last-line (line-number-at-pos (point-max))))
     (unless (<= line-number last-line)
       (error
        "Line number %d should not exceed %d, the number of lines in the buffer"
-       line-number last-line))
+       line-number
+       last-line))
     (goto-char (point-min))
     (forward-line (1- line-number))
     (if column-number
-	(let ((last-column
-	       (save-excursion
-		 (move-end-of-line 1)
-		 (current-column))))
-	  (cond ((not (wholenump column-number))
-		 (message
-		  "Column ignored. Expecting column-number parameter `%s' to be a whole number"
-			  column-number))
-		((<= column-number 0)
-		 (message
-		  "Column ignored. Expecting column-number parameter `%d' to be a greater than 1"
-			  column-number))
-		((>= column-number last-column)
-		 (message
-		  "Column ignored. Expecting column-number parameter `%d' to be a less than %d"
-		   column-number last-column))
-		(t (forward-char (1- column-number)))))
-      )
-    (redisplay)
-    )
-  )
+        (let ((last-column
+               (save-excursion
+                 (move-end-of-line 1)
+                 (current-column))))
+          (cond
+           ((not (wholenump column-number))
+            (message
+             "Column ignored. Expecting column-number parameter `%s' to be a whole number"
+             column-number))
+           ((<= column-number 0)
+            (message
+             "Column ignored. Expecting column-number parameter `%d' to be a greater than 1"
+             column-number))
+           ((>= column-number last-column)
+            (message
+             "Column ignored. Expecting column-number parameter `%d' to be a less than %d"
+             column-number last-column))
+           (t
+            (forward-char (1- column-number))))))
+    (redisplay)))
 
 (defun loc-changes-add-elt (pos)
   "Add an element `loc-changes-alist'. The car will be POS and a
 marker for it will be created at the point."
   (setq loc-changes-alist
-	(cons (cons pos (list (point-marker) (buffer-substring (point) (point-at-eol))))
-		    loc-changes-alist)))
+        (cons
+         (cons
+          pos
+          (list
+           (point-marker) (buffer-substring (point) (pos-eol))))
+         loc-changes-alist)))
 
 (defun loc-changes-add-and-goto (line-number &optional opt-buffer)
   "Add a marker at LINE-NUMBER and record LINE-NUMBER and its
@@ -174,43 +181,40 @@ marker association in `loc-changes-alist'."
        (list (prefix-numeric-value current-prefix-arg))
      ;; Look for a default, a number in the buffer at point.
      (let* ((default
-	      (save-excursion
-		(skip-chars-backward "0-9")
-		(if (looking-at "[0-9]")
-		    (string-to-number
-		     (buffer-substring-no-properties
-		      (point)
-		      (progn (skip-chars-forward "0-9")
-			     (point)))))))
-	    ;; Decide if we're switching buffers.
-	    (buffer
-	     (if (consp current-prefix-arg)
-		 (other-buffer (current-buffer) t)))
-	    (buffer-prompt
-	     (if buffer
-		 (concat " in " (buffer-name buffer))
-	       "")))
+             (save-excursion
+               (skip-chars-backward "0-9")
+               (if (looking-at "[0-9]")
+                   (string-to-number
+                    (buffer-substring-no-properties
+                     (point)
+                     (progn
+                       (skip-chars-forward "0-9")
+                       (point)))))))
+            ;; Decide if we're switching buffers.
+            (buffer
+             (if (consp current-prefix-arg)
+                 (other-buffer (current-buffer) t)))
+            (buffer-prompt
+             (if buffer
+                 (concat " in " (buffer-name buffer))
+               "")))
        ;; Read the argument, offering that number (if any) as default.
-       (list (read-number (format "Goto line%s: " buffer-prompt)
-                          (list default (line-number-at-pos)))
-	     buffer))))
+       (list
+        (read-number (format "Goto line%s: " buffer-prompt)
+                     (list default (line-number-at-pos)))
+        buffer))))
 
   (let ((buffer (or opt-buffer (current-buffer))))
     (with-current-buffer buffer
       (loc-changes-goto-line line-number)
-      (loc-changes-add-elt line-number)
-      ))
-  )
+      (loc-changes-add-elt line-number))))
 
 (defun loc-changes-clear-buffer (&optional opt-buffer)
   "Remove all location-tracking associations in BUFFER."
   (interactive "bbuffer: ")
-  (let ((buffer (or opt-buffer (current-buffer)))
-	)
+  (let ((buffer (or opt-buffer (current-buffer))))
     (with-current-buffer buffer
-      (setq loc-changes-alist '())
-      ))
-  )
+      (setq loc-changes-alist '()))))
 
 (defun loc-changes-reset-position (&optional opt-buffer no-insert)
   "Update `loc-changes-alist' so that the line number of point is
@@ -224,19 +228,17 @@ buffer and then cause the debugger to reread/reevaluate the file
 so that its positions are will be reflected."
   (interactive "")
   (let* ((line-number (line-number-at-pos (point)))
-	 (elt (assq line-number loc-changes-alist)))
-    (let ((buffer (or opt-buffer (current-buffer)))
-	  )
+         (elt (assq line-number loc-changes-alist)))
+    (let ((buffer (or opt-buffer (current-buffer))))
       (with-current-buffer buffer
-	(if elt
-	    (setcdr elt
-		    (list (point-marker) (buffer-substring (point) (point-at-eol))))
-	  (unless no-insert
-	    (loc-changes-add-elt line-number)
-	    )
-	  ))
-      )
-    ))
+        (if elt
+            (setcdr
+             elt
+             (list
+              (point-marker)
+              (buffer-substring (point) (pos-eol))))
+          (unless no-insert
+            (loc-changes-add-elt line-number)))))))
 
 
 (defun loc-changes-goto (line-number &optional opt-buffer no-update)
@@ -246,20 +248,19 @@ seen before, we will add a new mark for this line-number. However if
 NO-UPDATE is set, no mark is added."
   ;;; FIXME: opt-buffer is not used
   (unless (wholenump line-number)
-    (error "Expecting line-number parameter `%s' to be a whole number"
-	   line-number))
+    (error
+     "Expecting line-number parameter `%s' to be a whole number"
+     line-number))
   (let ((elt (assq line-number loc-changes-alist)))
     (if elt
-	(let ((marker (cadr elt)))
-	  (unless (markerp marker)
-	    (error "Internal error: loc-changes-alist is not a marker"))
-	  (goto-char (marker-position marker)))
+        (let ((marker (cadr elt)))
+          (unless (markerp marker)
+            (error
+             "Internal error: loc-changes-alist is not a marker"))
+          (goto-char (marker-position marker)))
       (if no-update
-	  (loc-changes-goto-line line-number)
-	(loc-changes-add-and-goto line-number))
-      )
-    )
-  )
+          (loc-changes-goto-line line-number)
+        (loc-changes-add-and-goto line-number)))))
 
 (provide 'loc-changes)
 ;;; loc-changes.el ends here

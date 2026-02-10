@@ -201,11 +201,24 @@ The primary worktree cannot be deleted."
   (if (file-directory-p (expand-file-name ".git" worktree))
       (user-error "Deleting %s would delete the shared .git directory" worktree)
     (let ((primary (file-name-as-directory (caar (magit-list-worktrees)))))
-      (magit-confirm-files (if magit-delete-by-moving-to-trash 'trash 'delete)
-                           (list worktree))
       (when (file-exists-p worktree)
-        (let ((delete-by-moving-to-trash magit-delete-by-moving-to-trash))
-          (delete-directory worktree t magit-delete-by-moving-to-trash)))
+        (let (uncommitted)
+          (magit-confirm
+            (cond ((let ((default-directory worktree))
+                     (or (magit-anything-modified-p)
+                         (magit-untracked-files)))
+                   (setq uncommitted 'danger))
+                  (magit-delete-by-moving-to-trash 'trash)
+                  ('delete))
+            (format "%s worktree \"%s\"%s"
+                    (if magit-delete-by-moving-to-trash "Trash" "Delete")
+                    (file-name-nondirectory (directory-file-name worktree))
+                    (if uncommitted " despite uncommitted changes" ""))
+            nil nil (list worktree)))
+        (if magit-delete-by-moving-to-trash
+            (let ((delete-by-moving-to-trash t))
+              (delete-directory worktree t t))
+          (magit-call-git "worktree" "remove" "--force" worktree)))
       (if (file-exists-p default-directory)
           (magit-run-git "worktree" "prune")
         (let ((default-directory primary))
@@ -254,7 +267,7 @@ If there is only one worktree, then insert nothing."
         (let* ((cols
                 (mapcar
                  (lambda (config)
-                   (pcase-let ((`(,_ ,commit ,branch ,bare) config))
+                   (pcase-let ((`(,directory ,commit ,branch ,bare) config))
                      (cons (cond
                              (branch
                               (propertize
@@ -263,8 +276,11 @@ If there is only one worktree, then insert nothing."
                                    'magit-branch-current
                                  'magit-branch-local)))
                              (commit
-                              (propertize (magit-rev-abbrev commit)
-                                          'font-lock-face 'magit-hash))
+                              (propertize
+                               (magit-rev-abbrev commit) 'font-lock-face
+                               (if (file-equal-p default-directory directory)
+                                   '(magit-hash magit-branch-current)
+                                 'magit-hash)))
                              (bare "(bare)"))
                            config)))
                  worktrees))

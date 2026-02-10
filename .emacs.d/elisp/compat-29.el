@@ -1,6 +1,6 @@
 ;;; compat-29.el --- Functionality added in Emacs 29.1 -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2025 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2026 Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -640,6 +640,30 @@ The variable list SPEC is the same as in `if-let*'."
              (progn
                ,@body)
            (throw ',done nil))))))
+
+;;;; Defined in ucs-normalize.el
+
+(compat-defun string-glyph-compose (string) ;; <compat-tests:string-glyph-compose>
+  "Compose STRING according to the Unicode NFC.
+This returns a new string obtained by canonical decomposition
+of STRING (see `ucs-normalize-NFC-string') followed by canonical
+composition, a.k.a. the \"Unicode Normalization Form C\" of STRING.
+For instance:
+
+  (string-glyph-compose \"Å\") => \"Å\""
+  (unless (fboundp 'ucs-normalize-NFC-string)
+    (require 'ucs-normalize))
+  (ucs-normalize-NFC-string string))
+
+(compat-defun string-glyph-decompose (string) ;; <compat-tests:string-glyph-decompose>
+  "Decompose STRING according to the Unicode NFD.
+This returns a new string that is the canonical decomposition of STRING,
+a.k.a. the \"Unicode Normalization Form D\" of STRING.  For instance:
+
+  (ucs-normalize-NFD-string \"Å\") => \"Å\""
+  (unless (fboundp 'ucs-normalize-NFD-string)
+    (require 'ucs-normalize))
+  (ucs-normalize-NFD-string string))
 
 ;;;; Defined in files.el
 

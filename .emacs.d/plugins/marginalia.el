@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 2.7
+;; Version: 2.9
 ;; Package-Requires: ((emacs "29.1") (compat "30"))
 ;; URL: https://github.com/minad/marginalia
 ;; Keywords: docs, help, matching, completion
@@ -115,6 +115,7 @@ displayed instead."
      (library ,#'marginalia-annotate-library)
      (theme ,#'marginalia-annotate-theme)
      (tab ,#'marginalia-annotate-tab)
+     (frame ,#'marginalia-annotate-frame)
      (multi-category ,#'marginalia-annotate-multi-category)))
   "Annotator function registry.
 Associates completion categories with annotation functions.  Each
@@ -150,6 +151,7 @@ determine it."
     ("\\<minor mode\\>" . minor-mode)
     ("\\<kill-ring\\>" . kill-ring)
     ("\\<tab by name\\>" . tab)
+    ("\\<frame\\>" . frame)
     ("\\<library\\>" . library)
     ("\\<theme\\>" . theme))
   "Associates regexps to match against minibuffer prompts with categories.
@@ -643,7 +645,8 @@ Similar to `marginalia-annotate-symbol', but does not show symbol class."
   "Annotate Embark keybinding CAND with its documentation string.
 Similar to `marginalia-annotate-command', but does not show the
 keybinding since CAND includes it."
-  (when-let* ((cmd (get-text-property 0 'embark-command cand)))
+  (when-let* ((cmd (get-text-property 0 'embark-command cand))
+              ((symbolp cmd)))
     (marginalia--documentation (marginalia--function-doc cmd))))
 
 (defun marginalia-annotate-imenu (cand)
@@ -1177,6 +1180,23 @@ These annotations are skipped for remote paths."
       :truncate 1.0 :face 'marginalia-documentation)
      ((abbreviate-file-name (file-name-directory file))
       :truncate -1.0 :face 'marginalia-file-name))))
+
+(defun marginalia-annotate-frame (cand)
+  "Annotate frame named CAND with window and buffer information."
+  (when-let* ((frame (cl-loop
+                      for f in (frame-list)
+                      if (or (equal cand (frame-parameter f 'name))
+                             ;; `frame-id' is an Emacs 31 addition
+                             (when (fboundp 'frame-id)
+                               (equal cand (number-to-string (frame-id f)))))
+                      return f)))
+    (let ((wins (window-list frame)))
+      (marginalia--fields
+       ((length wins) :format "win:%s" :face 'marginalia-size)
+       ((if (eq frame (selected-frame))
+            "(current frame)"
+          (mapconcat (lambda (w) (buffer-name (window-buffer w))) wins " "))
+        :face 'marginalia-documentation)))))
 
 (defun marginalia-annotate-tab (cand)
   "Annotate named tab CAND with tab index, window and buffer information."
