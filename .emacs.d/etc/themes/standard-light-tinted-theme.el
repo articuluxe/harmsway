@@ -1,4 +1,4 @@
-;;; standard-light-theme.el --- Like the unthemed light Emacs, but more consistent -*- lexical-binding:t -*-
+;;; standard-light-tinted-theme.el --- Light ochre variant of the standard-light theme -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022-2026  Free Software Foundation, Inc.
 
@@ -40,17 +40,17 @@
 
 (require 'standard-themes)
 
-(defconst standard-light-palette
+(defconst standard-light-tinted-palette
   (modus-themes-generate-palette
-   '((bg-main     "#ffffff")
+   '((bg-main     "#eeecd9")
      (fg-main     "#000000")
-     (bg-dim      "#ebebeb")
-     (fg-dim      "#7f7f7f")
-     (bg-alt      "#dcdcdc")
+     (bg-dim      "#e2d3ca")
+     (fg-dim      "#606060")
+     (bg-alt      "#d0bfb8")
      (fg-alt      "#193f8f")
-     (bg-active   "#bfbfbf")
-     (bg-inactive "#f0f0f0")
-     (border      "#bababa")
+     (bg-active   "#b09a90")
+     (bg-inactive "#dedecd")
+     (border      "#9a7a7a")
      (red             "#b3303a")
      (red-warmer      "#e00033")
      (red-cooler      "#ce2b50")
@@ -93,53 +93,53 @@
      (bg-blue-nuanced    "#f3f3ff")
      (bg-magenta-nuanced "#fdf0ff")
      (bg-cyan-nuanced    "#ebf6fa")
-     (bg-added          "#c0f8d0")
-     (bg-added-faint    "#d0ffe0")
-     (bg-added-refine   "#b4e8c4")
-     (fg-added          "#007200")
-     (bg-changed        "#ffdfa9")
-     (bg-changed-faint  "#ffefbf")
-     (bg-changed-refine "#fac090")
-     (fg-changed        "#8d6a12")
-     (bg-removed        "#ffd8d5")
-     (bg-removed-faint  "#ffe9e9")
-     (bg-removed-refine "#f3b5af")
-     (fg-removed        "#a02a2a")
+     (bg-added           "#c3ebc1")
+     (bg-added-faint     "#d0eac0")
+     (bg-added-refine    "#acd6a5")
+     (fg-added           "#005000")
+     (bg-changed         "#ffdfa9")
+     (bg-changed-faint   "#ffe2bf")
+     (bg-changed-refine  "#fac090")
+     (fg-changed         "#553d00")
+     (bg-removed         "#f4c2c7")
+     (bg-removed-faint   "#f2d3d0")
+     (bg-removed-refine  "#f3b5a7")
+     (fg-removed         "#8f1313")
      (bg-mark-other  "#c0effa")
      (fg-mark-other  "#1f6fb0")
      (bg-mark-delete  "#ffd5ea")
-     (fg-mark-delete "#b32230")
+     (fg-mark-delete  "#b32230")
      (bg-mark-select  "#fafa7b")
      (fg-mark-select  "#805f00")
-     (bg-completion "#bfe8ff")
-     (bg-hover      "#aaeccf")
+     (bg-completion "#afc8df")
+     (bg-hover      "#8acf9f")
      (bg-hover-secondary  "#ffff00")
-     (bg-hl-line    "#b4eeb4")
-     (bg-region     "#eedc82")
-     (bg-paren-match "#40e0d0")
-     (bg-mode-line-active        "#b3b3b3")
+     (bg-hl-line    "#b6ded0")
+     (bg-region     "#d0acb2")
+     (bg-paren-match "#40aff0")
+     (bg-mode-line-active        "#cf93a0")
      (fg-mode-line-active        "#000000")
-     (border-mode-line-active    "#5a5a5a")
-     (bg-mode-line-inactive      "#e5e5e5")
-     (fg-mode-line-inactive      "#7f7f7f")
-     (border-mode-line-inactive  "#bababa")
+     (border-mode-line-active    "#7a5a50")
+     (bg-mode-line-inactive      "#d0baaf")
+     (fg-mode-line-inactive      "#503f3f")
+     (border-mode-line-inactive  "#b39590")
      (modeline-err     "#b02020")
      (modeline-warning "#5f1080")
      (modeline-info    "#002fb0")
      (underline-err     "#ef0f1f")
      (underline-warning "#bf5f00")
      (underline-note    "#02af52")
+     (cursor "#aa0090")
      (rainbow-0 "#191970"))
-   'cool
+   'warm
    nil
    (append
-    '((cursor fg-main)
-      (name green-cooler)
+    '((name green-cooler)
       (keybind blue)
       (err red-warmer)
       (warning yellow-warmer)
       (info green)
-      (fg-prompt blue-cooler)
+      (fg-prompt magenta)
       (builtin blue-faint)
       (comment red-faint)
       (constant cyan-cooler)
@@ -148,7 +148,6 @@
       (keyword magenta-cooler)
       (preprocessor blue-faint)
       (docstring magenta-warmer)
-      (string magenta-warmer)
       (type green)
       (variable yellow-cooler)
       (variable-use yellow-faint)
@@ -172,15 +171,15 @@
       (mail-subject magenta-cooler)
       (mail-other cyan))
     standard-themes-common-palette-mappings))
-  "The `standard-light' palette.
+  "The `standard-light-tinted' palette.
 Color values have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
 Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-(defcustom  standard-light-palette-overrides nil
-  "Overrides for `standard-light-palette'.
+(defcustom  standard-light-tinted-palette-overrides nil
+  "Overrides for `standard-light-tinted-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
@@ -200,13 +199,13 @@ represents."
   :link '(info-link "(standard-themes) Palette overrides"))
 
 (modus-themes-theme
- 'standard-light
+ 'standard-light-tinted
  'standard-themes
  "Like the unthemed light Emacs, but more consistent."
  'light
- 'modus-operandi-palette
- 'standard-light-palette
- 'standard-light-palette-overrides
+ 'modus-operandi-tinted-palette
+ 'standard-light-tinted-palette
+ 'standard-light-tinted-palette-overrides
  'standard-themes-custom-faces)
 
-;;; standard-light-theme.el ends here
+;;; standard-light-tinted-theme.el ends here

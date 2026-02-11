@@ -1,4 +1,4 @@
-;;; standard-dark-theme.el --- Like the unthemed dark Emacs, but more consistent -*- lexical-binding:t -*-
+;;; standard-dark-tinted-theme.el --- Night sky variant of standard-dark theme -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2022-2026  Free Software Foundation, Inc.
 
@@ -40,17 +40,17 @@
 
 (require 'standard-themes)
 
-(defconst standard-dark-palette
+(defconst standard-dark-tinted-palette
   (modus-themes-generate-palette
-   '((bg-main     "#000000")
+   '((bg-main     "#182440")
      (fg-main     "#ffffff")
-     (bg-dim      "#272727")
+     (bg-dim      "#2e3355")
      (fg-dim      "#a6a6a6")
-     (bg-alt      "#363636")
-     (fg-alt      "#a0afef")
-     (bg-active   "#606060")
-     (bg-inactive "#202020")
-     (border      "#606070")
+     (bg-alt      "#3f4560")
+     (fg-alt      "#ac90e0")
+     (bg-active   "#5f6580")
+     (bg-inactive "#203348")
+     (border      "#707090")
      (red             "#ff6f60")
      (red-warmer      "#ff7f24")
      (red-cooler      "#ff778f")
@@ -93,34 +93,34 @@
      (bg-blue-nuanced    "#0f0e39")
      (bg-magenta-nuanced "#230631")
      (bg-cyan-nuanced    "#041529")
-     (bg-added          "#00331f")
-     (bg-added-faint    "#002410")
-     (bg-added-refine   "#03492f")
+     (bg-added          "#12522f")
+     (bg-added-faint    "#0f3a30")
+     (bg-added-refine   "#17623f")
      (fg-added          "#4fb04f")
-     (bg-changed        "#323200")
-     (bg-changed-faint  "#281a00")
-     (bg-changed-refine "#484800")
+     (bg-changed        "#424200")
+     (bg-changed-faint  "#383a00")
+     (bg-changed-refine "#684f20")
      (fg-changed        "#e0cf03")
-     (bg-removed        "#4a1119")
-     (bg-removed-faint  "#320a0f")
-     (bg-removed-refine "#751a1f")
+     (bg-removed        "#602119")
+     (bg-removed-faint  "#4e0f1f")
+     (bg-removed-refine "#792f2f")
      (fg-removed        "#ff5f5f")
-     (bg-mark-other  "#002f4a")
-     (fg-mark-other  "#57cefa")
-     (bg-mark-delete  "#440d09")
-     (fg-mark-delete  "#ff5f60")
-     (bg-mark-select  "#333000")
+     (bg-mark-other  "#223f6a")
+     (fg-mark-other  "#57defa")
+     (bg-mark-delete  "#5a201f")
+     (fg-mark-delete  "#ff7f60")
+     (bg-mark-select  "#494000")
      (fg-mark-select  "#d0d082")
-     (bg-completion "#254b5f")
-     (bg-hover      "#457b2f")
+     (bg-completion "#406a70")
+     (bg-hover      "#35705f")
      (bg-hover-secondary  "#00688b")
-     (bg-hl-line    "#334815")
-     (bg-region     "#20009d")
+     (bg-hl-line    "#304845")
+     (bg-region     "#4f2f99")
      (bg-paren-match "#4f94cd")
-     (bg-mode-line-active        "#505050")
+     (bg-mode-line-active        "#5b59b2")
      (fg-mode-line-active        "#ffffff")
-     (border-mode-line-active    "#959595")
-     (bg-mode-line-inactive      "#323232")
+     (border-mode-line-active    "#9595b5")
+     (bg-mode-line-inactive      "#353a52")
      (fg-mode-line-inactive      "#a6a6a6")
      (border-mode-line-inactive  "#606070")
      (modeline-err     "#ff80af")
@@ -129,17 +129,17 @@
      (underline-err     "#df2f2f")
      (underline-warning "#c0b000")
      (underline-note    "#22b022")
+     (cursor "#d072f0")
      (rainbow-0 "#afeeee"))
-   'cool
+   'warm
    nil
    (append
-    '((cursor fg-main)
-      (name cyan-cooler)
+    '((name cyan-cooler)
       (keybind blue-cooler)
       (err red)
       (warning yellow-warmer)
       (info green)
-      (fg-prompt blue)
+      (fg-prompt cyan)
       (builtin blue-faint)
       (comment red-warmer)
       (constant cyan-cooler)
@@ -172,16 +172,15 @@
       (mail-subject magenta-cooler)
       (mail-other cyan))
     standard-themes-common-palette-mappings))
-  "The `standard-dark' palette.
+  "The `standard-dark-tinted' palette.
 Color values have the form (COLOR-NAME HEX-VALUE) with the former
 as a symbol and the latter as a string.
-
 Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
 with both as symbols.  The latter is a color that already exists
 in the palette and is associated with a HEX-VALUE.")
 
-(defcustom standard-dark-palette-overrides nil
-  "Overrides for `standard-dark-palette'.
+(defcustom standard-dark-tinted-palette-overrides nil
+  "Overrides for `standard-dark-tinted-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
@@ -201,13 +200,13 @@ represents."
   :link '(info-link "(standard-themes) Palette overrides"))
 
 (modus-themes-theme
- 'standard-dark
+ 'standard-dark-tinted
  'standard-themes
- "Like the unthemed dark Emacs, but more consistent."
+ "Night sky variant of standard-dark theme."
  'dark
- 'modus-vivendi-palette
- 'standard-dark-palette
- 'standard-dark-palette-overrides
+ 'modus-vivendi-tinted-palette
+ 'standard-dark-tinted-palette
+ 'standard-dark-tinted-palette-overrides
  'standard-themes-custom-faces)
 
-;;; standard-dark-theme.el ends here
+;;; standard-dark-tinted-theme.el ends here
