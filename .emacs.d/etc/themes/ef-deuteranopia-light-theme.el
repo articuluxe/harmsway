@@ -1,11 +1,10 @@
 ;;; ef-deuteranopia-light-theme.el --- Legible light theme, optimized for red-green color deficiency -*- lexical-binding:t -*-
 
-;; Copyright (C) 2022-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2022-2026  Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; Maintainer: Ef-Themes Development <~protesilaos/ef-themes@lists.sr.ht>
-;; URL: https://git.sr.ht/~protesilaos/ef-themes
-;; Mailing-List: https://lists.sr.ht/~protesilaos/ef-themes
+;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
+;; URL: https://github.com/protesilaos/ef-themes
 ;; Keywords: faces, theme, accessibility
 
 ;; This file is NOT part of GNU Emacs.
@@ -34,248 +33,177 @@
 
 
 
-(eval-and-compile
-  (require 'ef-themes)
+(require 'ef-themes)
 
-  ;; Most of the colors here, like the red and green hues, are defined
-  ;; simply to preserve compatibility with the rest of the project.  We
-  ;; don't actually rely on them for anything critical.
-;;;###theme-autoload
-  (deftheme ef-deuteranopia-light
-    "Legible light theme, optimized for red-green color deficiency."
-    :background-mode 'light
-    :kind 'color-scheme
-    :family 'ef)
+;; Most of the colors here, like the red and green hues, are defined
+;; simply to preserve compatibility with the rest of the project.  We
+;; don't actually rely on them for anything critical.
+(defconst ef-deuteranopia-light-palette-partial
+  '((cursor "#0000bb")
+    (bg-main "#f5f5ff")
+    (bg-dim "#e8e8ea")
+    (bg-alt "#d3d3e0")
+    (fg-main "#1a1a2f")
+    (fg-dim "#70627f")
+    (fg-alt "#196f70")
+    (bg-active "#b3b3c0")
+    (bg-inactive "#efeff5")
+    (border "#bcbcd0")
 
-  (defconst ef-deuteranopia-light-palette
-    '(
-;;; Basic values
+    (red "#d3303a")
+    (red-warmer "#e00033")
+    (red-cooler "#d50f7f")
+    (red-faint "#a04852")
+    (green "#217a3c")
+    (green-warmer "#4a7d00")
+    (green-cooler "#008058")
+    (green-faint "#61756c")
+    (yellow "#805d00")
+    (yellow-warmer "#965000")
+    (yellow-cooler "#765040")
+    (yellow-faint "#77604a")
+    (blue "#375cd8")
+    (blue-warmer "#4250ef")
+    (blue-cooler "#065fff")
+    (blue-faint "#6060d0")
+    (magenta "#ba35af")
+    (magenta-warmer "#cf25aa")
+    (magenta-cooler "#6052cf")
+    (magenta-faint "#9f5080")
+    (cyan "#1f6fbf")
+    (cyan-warmer "#3f6faf")
+    (cyan-cooler "#1477b2")
+    (cyan-faint "#506fa0")
 
-      (bg-main     "#f5f5ff")
-      (fg-main     "#1a1a2f")
-      (bg-dim      "#e8e8ea")
-      (fg-dim      "#70627f")
-      (bg-alt      "#d3d3e0")
-      (fg-alt      "#196f70")
+    (bg-red-intense "#cac200")
+    (bg-green-intense "#9aaf80")
+    (bg-yellow-intense "#fac200")
+    (bg-blue-intense "#cbcfff")
+    (bg-magenta-intense "#3fbfff")
+    (bg-cyan-intense "#98e8ff")
 
-      (bg-active   "#b3b3c0")
-      (bg-inactive "#efeff5")
+    (bg-red-subtle "#ead270")
+    (bg-green-subtle "#bae0a0")
+    (bg-yellow-subtle "#e6f270")
+    (bg-blue-subtle "#c0dfff")
+    (bg-magenta-subtle "#ccc8ff")
+    (bg-cyan-subtle "#afecf0")
 
-;;; Basic hues for foreground values
+    (bg-added "#dbdbff")
+    (bg-added-faint "#e4e4ff")
+    (bg-added-refine "#c0c0ef")
+    (fg-added "#333399")
 
-      (red             "#d3303a")
-      (red-warmer      "#e00033")
-      (red-cooler      "#d50f7f")
-      (red-faint       "#c24552")
-      (green           "#217a3c")
-      (green-warmer    "#4a7d00")
-      (green-cooler    "#008058")
-      (green-faint     "#61756c")
-      (yellow          "#805d00")
-      (yellow-warmer   "#965000")
-      (yellow-cooler   "#765040")
-      (yellow-faint    "#776d6a")
-      (blue            "#375cd8")
-      (blue-warmer     "#4250ef")
-      (blue-cooler     "#065fff")
-      (blue-faint      "#6060d0")
-      (magenta         "#ba35af")
-      (magenta-warmer  "#cf25aa")
-      (magenta-cooler  "#6052cf")
-      (magenta-faint   "#9f5080")
-      (cyan            "#1f6fbf")
-      (cyan-warmer     "#3f6faf")
-      (cyan-cooler     "#1f77bb")
-      (cyan-faint      "#506fa0")
+    (bg-changed "#eecfdf")
+    (bg-changed-faint "#f0dde5")
+    (bg-changed-refine "#e0b0d0")
+    (fg-changed "#6f1343")
 
-;;; Basic hues for background values
+    (bg-removed "#fff0af")
+    (bg-removed-faint "#efefcb")
+    (bg-removed-refine "#f0da88")
+    (fg-removed "#553d00")
 
-      (bg-red-intense     "#cac200")
-      (bg-green-intense   "#9aaf80")
-      (bg-yellow-intense  "#fac200")
-      (bg-blue-intense    "#cbcfff")
-      (bg-magenta-intense "#3fbfff")
-      (bg-cyan-intense    "#98e8ff")
+    (bg-mode-line-active "#99c7ff")
+    (fg-mode-line-active "#0a0a1f")
+    (bg-completion "#f0dacf")
+    (bg-hover "#eebb20")
+    (bg-hover-secondary "#afafef")
+    (bg-hl-line "#f3e0d5")
+    (bg-paren-match "#8fc0cf")
+    (bg-err "#f0e0a0") ; check with err
+    (bg-warning "#e3ea9a") ; check with warning
+    (bg-info "#d0dfff") ; check with info
+    (bg-region "#dadadf")))
 
-      (bg-red-subtle      "#ffcfbf")
-      (bg-green-subtle    "#afffbf")
-      (bg-yellow-subtle   "#fff576")
-      (bg-blue-subtle     "#ccdfff")
-      (bg-magenta-subtle  "#ffddff")
-      (bg-cyan-subtle     "#bfefff")
+(defconst ef-deuteranopia-light-palette-mappings-partial
+  '((err yellow-warmer)
+    (warning yellow-cooler)
+    (info blue-cooler)
 
-;;; Diffs
+    (fg-link blue)
+    (fg-link-visited yellow-cooler)
+    (name blue-warmer)
+    (keybind yellow-warmer)
+    (identifier cyan-faint)
+    (fg-prompt blue)
 
-      (bg-added          "#dbdbff")
-      (bg-added-faint    "#e4e4ff")
-      (bg-added-refine   "#c0c0ef")
-      (fg-added          "#333399")
+    (builtin cyan)
+    (comment yellow-faint)
+    (constant yellow-cooler)
+    (fnname blue-cooler)
+    (fnname-call blue-faint)
+    (keyword blue-warmer)
+    (preprocessor magenta-cooler)
+    (docstring cyan-faint)
+    (string yellow-warmer)
+    (type yellow)
+    (variable cyan-cooler)
+    (variable-use cyan-faint)
+    (rx-backslash cyan-faint) ; compare with `string'
+    (rx-construct blue-warmer)
 
-      (bg-changed        "#eecfdf")
-      (bg-changed-faint  "#f0dde5")
-      (bg-changed-refine "#e0b0d0")
-      (fg-changed        "#6f1343")
+    (accent-0 blue-cooler)
+    (accent-1 yellow-warmer)
+    (accent-2 cyan)
+    (accent-3 yellow-cooler)
 
-      (bg-removed        "#fff0af")
-      (bg-removed-faint  "#efefcb")
-      (bg-removed-refine "#f0da88")
-      (fg-removed        "#553d00")
+    (date-common yellow-cooler)
+    (date-deadline yellow-warmer)
+    (date-deadline-subtle red-faint)
+    (date-event fg-alt)
+    (date-holiday cyan)
+    (date-now fg-main)
+    (date-range fg-alt)
+    (date-scheduled yellow-cooler)
+    (date-scheduled-subtle yellow-faint)
+    (date-weekday cyan)
+    (date-weekend magenta-faint)
 
-;;; Graphs
+    (fg-prose-code yellow-warmer)
+    (prose-done blue-cooler)
+    (fg-prose-macro cyan)
+    (prose-metadata fg-dim)
+    (prose-metadata-value fg-alt)
+    (prose-table fg-alt)
+    (prose-table-formula err)
+    (prose-tag green-faint)
+    (prose-todo yellow-warmer)
+    (fg-prose-verbatim blue-cooler)
 
-      (bg-graph-red-0     "#d0b029")
-      (bg-graph-red-1     "#e0cab4")
-      (bg-graph-green-0   "#8ad080")
-      (bg-graph-green-1   "#afdfa5")
-      (bg-graph-yellow-0  "#ffcf00")
-      (bg-graph-yellow-1  "#f9ff00")
-      (bg-graph-blue-0    "#7f9fff")
-      (bg-graph-blue-1    "#9fc6ff")
-      (bg-graph-magenta-0 "#b0b0d0")
-      (bg-graph-magenta-1 "#d0dfdf")
-      (bg-graph-cyan-0    "#6faad9")
-      (bg-graph-cyan-1    "#bfe0ff")
+    (mail-cite-0 blue-warmer)
+    (mail-cite-1 yellow-cooler)
+    (mail-cite-2 cyan-cooler)
+    (mail-cite-3 yellow)
+    (mail-part blue-faint)
+    (mail-recipient blue-warmer)
+    (mail-subject blue-cooler)
+    (mail-other cyan)
 
-;;; Special hues
+    (bg-space-err bg-yellow-intense)
 
-      (bg-mode-line       "#99c7ff")
-      (fg-mode-line       "#0a0a1f")
-      (bg-completion      "#f0dacf")
-      (bg-hover           "#eebb20")
-      (bg-hover-secondary "#afafef")
-      (bg-hl-line         "#f3e0d5")
-      (bg-paren           "#8fc0cf")
-      (bg-err             "#f0e0a0") ; check with err
-      (bg-warning         "#e3ea9a") ; check with warning
-      (bg-info            "#d0dfff") ; check with info
+    (bg-search-static bg-warning)
+    (bg-search-current bg-yellow-intense)
+    (bg-search-lazy bg-blue-intense)
+    (bg-search-replace bg-magenta-intense)
 
-      (border        "#bcbcd0")
-      (cursor        "#0000bb")
-      (fg-intense    "#000000")
+    (bg-search-rx-group-0 bg-cyan-intense)
+    (bg-search-rx-group-1 bg-magenta-intense)
+    (bg-search-rx-group-2 bg-blue-subtle)
+    (bg-search-rx-group-3 bg-yellow-subtle)
 
-      (modeline-err     "#000000") ; too dark to have red/yellow here
-      (modeline-warning "#0a0a1f")
-      (modeline-info    "#2222c3")
+    (rainbow-0 blue)
+    (rainbow-1 yellow)
+    (rainbow-2 blue-warmer)
+    (rainbow-3 yellow-cooler)
+    (rainbow-4 blue-cooler)
+    (rainbow-5 yellow-warmer)
+    (rainbow-6 blue-faint)
+    (rainbow-7 yellow-faint)
+    (rainbow-8 cyan)))
 
-      (underline-err     "#c08f00")
-      (underline-warning "#6f3f00")
-      (underline-info    "#025f92")
-
-      (bg-char-0 "#7feaff")
-      (bg-char-1 "#ffaaff")
-      (bg-char-2 "#dff000")
-
-;;; Mappings
-
-;;;; General mappings
-
-      (fringe unspecified)
-
-      (err yellow-warmer)
-      (warning yellow-cooler)
-      (info blue-cooler)
-
-      (link blue)
-      (link-alt yellow-cooler)
-      (name blue-warmer)
-      (keybind yellow-warmer)
-      (identifier cyan-faint)
-      (prompt blue)
-
-      (bg-region "#dadadf")
-      (fg-region unspecified)
-
-;;;; Code mappings
-
-      (builtin cyan)
-      (comment yellow-faint)
-      (constant yellow-cooler)
-      (fnname blue-cooler)
-      (keyword blue-warmer)
-      (preprocessor magenta-cooler)
-      (docstring cyan-faint)
-      (string yellow-warmer)
-      (type yellow)
-      (variable cyan-cooler)
-      (rx-escape cyan-faint) ; compare with `string'
-      (rx-construct blue-warmer)
-
-;;;; Accent mappings
-
-      (accent-0 blue-cooler)
-      (accent-1 yellow-warmer)
-      (accent-2 cyan)
-      (accent-3 yellow-cooler)
-
-;;;; Date mappings
-
-      (date-common yellow-cooler)
-      (date-deadline yellow-warmer)
-      (date-event fg-alt)
-      (date-holiday cyan)
-      (date-now fg-main)
-      (date-range fg-alt)
-      (date-scheduled yellow-cooler)
-      (date-weekday cyan)
-      (date-weekend magenta-faint)
-
-;;;; Prose mappings
-
-      (prose-code yellow-warmer)
-      (prose-done blue-cooler)
-      (prose-macro cyan)
-      (prose-metadata fg-dim)
-      (prose-metadata-value fg-alt)
-      (prose-table fg-alt)
-      (prose-table-formula err)
-      (prose-tag green-faint)
-      (prose-todo yellow-warmer)
-      (prose-verbatim blue-cooler)
-
-;;;; Mail mappings
-
-      (mail-cite-0 blue-warmer)
-      (mail-cite-1 yellow-cooler)
-      (mail-cite-2 cyan-cooler)
-      (mail-cite-3 yellow)
-      (mail-part blue-faint)
-      (mail-recipient blue-warmer)
-      (mail-subject blue-cooler)
-      (mail-other cyan)
-
-;;;; Space mappings
-
-      (bg-space unspecified)
-      (fg-space border)
-      (bg-space-err bg-yellow-intense)
-
-;;;; Tab mappings
-
-      (bg-tab-bar      bg-alt)
-      (bg-tab-current  bg-main)
-      (bg-tab-other    bg-active)
-
-;;;; Rainbow mappings
-
-      (rainbow-0 blue)
-      (rainbow-1 yellow)
-      (rainbow-2 blue-warmer)
-      (rainbow-3 yellow-cooler)
-      (rainbow-4 blue-cooler)
-      (rainbow-5 yellow-warmer)
-      (rainbow-6 blue-faint)
-      (rainbow-7 yellow-faint)
-      (rainbow-8 cyan))
-    "The `ef-deuteranopia-light' palette.
-Color values have the form (COLOR-NAME HEX-VALUE) with the former
-as a symbol and the latter as a string.
-
-Semantic color mappings have the form (MAPPING-NAME COLOR-NAME)
-with both as symbols.  The latter is a color that already exists
-in the palette and is associated with a HEX-VALUE.")
-
-  (defcustom ef-deuteranopia-light-palette-overrides nil
-    "Overrides for `ef-deuteranopia-light-palette'.
+(defcustom ef-deuteranopia-light-palette-overrides nil
+  "Overrides for `ef-deuteranopia-light-palette'.
 
 Mirror the elements of the aforementioned palette, overriding
 their value.
@@ -291,8 +219,21 @@ further details)."
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(ef-themes) Palette overrides"))
 
-  (ef-themes-theme ef-deuteranopia-light ef-deuteranopia-light-palette ef-deuteranopia-light-palette-overrides)
+(defconst ef-deuteranopia-light-palette
+  (modus-themes-generate-palette
+   ef-deuteranopia-light-palette-partial
+   nil
+   nil
+   (append ef-deuteranopia-light-palette-mappings-partial ef-themes-palette-common)))
 
-  (provide-theme 'ef-deuteranopia-light))
+(modus-themes-theme
+ 'ef-deuteranopia-light
+ 'ef-themes
+ "Legible light theme, optimized for red-green color deficiency."
+ 'light
+ 'ef-deuteranopia-light-palette
+ nil
+ 'ef-deuteranopia-light-palette-overrides
+ 'ef-themes-custom-faces)
 
 ;;; ef-deuteranopia-light-theme.el ends here
