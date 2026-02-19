@@ -1,0 +1,1 @@
+cp src/dag-draw*.el ../../../.emacs.d/plugins/dag-draw

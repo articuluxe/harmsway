@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-02-19 11:06:40 dharms>
+;; Modified Time-stamp: <2026-02-19 14:45:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -75,6 +75,7 @@
                      ,(concat my/plugins-directory "company/")
                      ,(concat my/plugins-directory "ccls/")
                      ,(concat my/plugins-directory "cquery/")
+                     ,(concat my/plugins-directory "dag-draw/")
                      ,(concat my/plugins-directory "diff-hl/")
                      ,(concat my/plugins-directory "dirvish/")
                      ,(concat my/plugins-directory "docker/")
