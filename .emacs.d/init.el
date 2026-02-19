@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-02-02 16:25:49 dharms>
+;; Modified Time-stamp: <2026-02-19 11:06:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3038,14 +3038,6 @@ ARGS are the additional arguments."
               ("z" . ztree-diff)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun harmsway-diff-hl-revert-highlight-hunk (end)
-  "Highlight only the diff to be reverted, from point until END."
-  (redisplay)
-  (font-lock-unfontify-buffer)
-  (font-lock-fontify-region (point) end))
-(defun harmsway-diff-hl-revert-hide-other-hunks (_end)
-  "Show only the current hunk to be reverted."
-  (diff-restrict-view))
 (defun harmsway-diff-hl-show-hunk ()
   "Open `diff-hl-show-hunk' depending on tty type."
   (interactive)
@@ -3064,8 +3056,6 @@ ARGS are the additional arguments."
   :bind (:map diff-hl-command-map
               ("*" . harmsway-diff-hl-show-hunk))
   :config
-  (setq diff-hl-highlight-revert-hunk-function
-        #'harmsway-diff-hl-revert-highlight-hunk)
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (use-package diff-hl-amend)
   (global-diff-hl-mode 1)
