@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-02-19 14:45:33 dharms>
+;; Modified Time-stamp: <2026-02-20 11:12:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3362,7 +3362,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq-local company-alt-backend--prior 'company-alt-backend)
   (setq-local company-alt-backend 'company-capf)
   (setq-local company-backends
-              (copy-tree (remq 'company-capf (car company-backends)))))
+              (copy-tree
+               (remq 'company-etags (remq 'company-capf (car company-backends))))))
 
 (defun harmsway-customize-eglot-off ()
   "Customize eglot to turn off its functionality."
@@ -3603,6 +3604,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
            company-capf
            company-dabbrev-code
            company-keywords
+           company-etags
            )))
   (add-hook 'after-init-hook #'global-company-mode)
   :config
