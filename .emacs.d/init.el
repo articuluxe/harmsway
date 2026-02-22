@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-02-20 11:12:56 dharms>
+;; Modified Time-stamp: <2026-02-22 15:35:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4750,6 +4750,11 @@ This function's result only has value if it is preceded by any font changes."
                     (eglot-ensure)))
               ;; (good-word/init-word-processor)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mermaid ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package markdown-mermaid
+  :bind (:map markdown-mode-map
+              ("C-c m" . markdown-mermaid-preview)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mermaid-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mermaid-mode

@@ -1,1 +1,2 @@
 cp src/*.el ../../../.emacs.d/plugins
+npm install -g @mermaid-js/mermaid-cli

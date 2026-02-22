@@ -1,0 +1,5 @@
+sudo apt install -y nodejs npm
+sudo mkdir -p /usr/local/lib/node_modules
+sudo chown dharms /usr/local/lib/node_modules
+sudo chgrp dharms /usr/local/lib/node_modules
+./install
