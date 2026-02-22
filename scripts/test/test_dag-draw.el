@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, February 19, 2026
 ;; Version: 1.0
-;; Modified Time-stamp: <2026-02-19 14:58:41 dharms>
+;; Modified Time-stamp: <2026-02-22 15:47:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -27,17 +27,20 @@
 ;;; Code:
 (require 'dag-draw)
 
-(let (graph (dag-draw-create-graph))
-      (dag-draw-add-node graph 'start "Start Here")
-      (dag-draw-add-node graph 'middle "Do Work")
-      (dag-draw-add-node graph 'done "Finish")
-      (dag-draw-add-edge graph 'start 'middle)
-      (dag-draw-add-edge graph 'middle 'finish)
-      (dag-draw-layout-graph graph)
-      (dag-draw-render-graph graph 'ascii)
-      )
+;; 1. Create a graph
+(setq my-graph (dag-draw-create-graph))
 
+;; 2. Add your nodes
+(dag-draw-add-node my-graph 'start "Start Here")
+(dag-draw-add-node my-graph 'middle "Do Work")
+(dag-draw-add-node my-graph 'done "Finish")
 
+;; 3. Connect them
+(dag-draw-add-edge my-graph 'start 'middle)
+(dag-draw-add-edge my-graph 'middle 'done)
+
+;; 4. Layout and render
+(dag-draw-layout-graph my-graph)
+(dag-draw-render-graph my-graph 'ascii)
 
 ;;; test_dag-draw.el ends here
-)
