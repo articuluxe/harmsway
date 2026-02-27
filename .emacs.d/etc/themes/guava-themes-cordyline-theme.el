@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -37,6 +37,8 @@
       (guava-themes-cordyline-class '((class color) (min-colors 257)))
       (guava-themes-cordyline-black             "#000000")
       (guava-themes-cordyline-white             "#FFFFFF")
+
+      (guava-themes-cordyline-shadow            "#b3b3b3")
 
       (guava-themes-cordyline-pink              "#CB5F68")
       (guava-themes-cordyline-pink-purple       "#da70d6")
@@ -86,8 +88,11 @@
    `(line-number ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :height 1.35))))
    `(line-number-current-line ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :background ,guava-themes-cordyline-alt-purple :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-alt-purple))))
+   ;; highlight
+   `(highlight ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-alt-purple))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-shadow))))
 
    ;; region
    `(region ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-dark-purple))))

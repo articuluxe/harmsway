@@ -212,7 +212,7 @@ position.  Its argument is a plist of the following form:
    :parent-window-width  xxx
    :parent-window-height xxx
    :mouse-x xxx
-   ;mouse-y xxx
+   :mouse-y xxx
    :minibuffer-height xxx
    :mode-line-height  xxx
    :header-line-height xxx

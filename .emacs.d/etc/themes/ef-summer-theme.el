@@ -44,7 +44,7 @@
     (fg-dim "#786e74")
     (fg-alt "#af4988")
     (bg-active "#cfb3c4")
-    (bg-inactive "#f7ebee")
+    (bg-inactive "#efe2e5")
     (border "#c6bbc6")
 
     (red "#d3303a")
@@ -222,6 +222,7 @@ further details)."
    nil
    (append ef-summer-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-summer
  'ef-themes
@@ -229,7 +230,6 @@ further details)."
  'light
  'ef-summer-palette
  nil
- 'ef-summer-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-summer-palette-overrides)
 
 ;;; ef-summer-theme.el ends here

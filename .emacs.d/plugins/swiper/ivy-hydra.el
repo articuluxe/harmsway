@@ -1,6 +1,6 @@
 ;;; ivy-hydra.el --- Additional key bindings for Ivy  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2025 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2026 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; Maintainer: Basil L. Contovounesios <basil@contovou.net>
@@ -35,6 +35,9 @@
 (require 'ivy)
 (require 'hydra)
 
+(eval-when-compile
+  (require 'cl-lib))
+
 (defun ivy--matcher-desc ()
   "Return description of `ivy--regex-function'."
   (let ((cell (assq ivy--regex-function ivy-preferred-re-builders)))
@@ -47,6 +50,7 @@
   (interactive)
   (setq-local max-mini-window-height
               (cl-incf ivy-height)))
+(ivy--no-M-x #'ivy-minibuffer-grow #'ivy--minibuffer-p)
 
 (defun ivy-minibuffer-shrink ()
   "Shrink the minibuffer window by 1 line."
@@ -55,6 +59,7 @@
     (setq-local max-mini-window-height
                 (cl-decf ivy-height))
     (window-resize nil -1)))
+(ivy--no-M-x #'ivy-minibuffer-shrink #'ivy--minibuffer-p)
 
 (defun ivy-hydra--read-action ()
   "Read one of the available actions.
@@ -63,17 +68,20 @@ Like `ivy-read-action', but unaffected by
   (interactive)
   (let ((ivy-read-action-function #'ivy-read-action-by-key))
     (ivy-read-action)))
+(ivy--no-M-x #'ivy-hydra--read-action #'ivy--minibuffer-p)
 
 (defun ivy-hydra--toggle-truncate-lines ()
   "Toggle `truncate-lines'."
   (interactive)
   (setq truncate-lines (not truncate-lines)))
+(ivy--no-M-x #'ivy-hydra--toggle-truncate-lines #'ivy--minibuffer-p)
 
 (defun ivy-hydra--find-definition ()
   "Find the definition of `hydra-ivy'."
   (interactive)
   (ivy-exit-with-action
    (lambda (_) (find-function #'hydra-ivy/body))))
+(ivy--no-M-x #'ivy-hydra--find-definition #'ivy--minibuffer-p)
 
 (defhydra hydra-ivy (:hint nil :color pink)
   "
@@ -115,19 +123,6 @@ _h_ ^+^ _l_ | _d_one      ^ ^  | _o_ops   | _M_: matcher %-5s(ivy--matcher-desc)
   ("C" ivy-toggle-case-fold)
   ("U" ivy-occur :exit t)
   ("D" ivy-hydra--find-definition :exit t))
-(dolist (cmd '(;; These commands have a binding here.
-               ivy-hydra--find-definition
-               ivy-hydra--read-action
-               ivy-hydra--toggle-truncate-lines
-               ivy-next-action ivy-prev-action
-               ivy-unmark-backward ivy-toggle-case-fold
-               ivy-minibuffer-grow ivy-minibuffer-shrink
-               ivy-rotate-preferred-builders ivy-toggle-calling
-               ;; No binding.
-               ivy-next-line-or-history ivy-previous-line-or-history
-               ivy-toggle-fuzzy ivy-yank-symbol
-               ivy-occur-next-error))
-  (function-put cmd 'no-counsel-M-x t))
 
 (defvar ivy-dispatching-done-columns 2
   "Number of columns to use if the hint does not fit on one line.")

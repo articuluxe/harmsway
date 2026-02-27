@@ -1,9 +1,9 @@
-;;; dumb-jump.el --- Jump to definition for 50+ languages without configuration -*- lexical-binding: t; -*-
-;; Copyright (C) 2015-2021 jack angers
+;;; dumb-jump.el --- Jump to definition for 60+ languages without configuration -*- lexical-binding: t; -*-
+;; Copyright (C) 2015-2026 jack angers
 ;; Author: jack angers and contributors
 ;; Url: https://github.com/jacktasia/dumb-jump
-;; Version: 0.5.4
-;; Package-Requires: ((emacs "24.4") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
+;; Version: 0.5.5
+;; Package-Requires: ((emacs "24.4") (dash "2.9.0"))
 ;; Keywords: programming
 
 ;; Dumb Jump is free software; you can redistribute it and/or modify it
@@ -21,7 +21,7 @@
 
 ;;; Commentary:
 
-;; Dumb Jump is an Emacs "jump to definition" package with support for 50+ programming languages that favors
+;; Dumb Jump is an Emacs "jump to definition" package with support for 60+ programming languages that favors
 ;; "just working" over speed or accuracy.  This means minimal -- and ideally zero -- configuration with absolutely
 ;; no stored indexes (TAGS) or persistent background processes.
 ;;
@@ -43,12 +43,87 @@
 ;;; Code:
 (unless (require 'xref nil :noerror)
   (require 'etags))
-(require 's)
 (require 'dash)
-(require 'popup)
 (require 'cl-generic nil :noerror)
 (require 'cl-lib)
 (require 'subr-x)                       ; use: `string-blank-p'
+
+(defun dumb-jump--chop-prefix (prefix text)
+  "Remove PREFIX from TEXT when present."
+  (if (and (stringp prefix)
+           (stringp text)
+           (string-prefix-p prefix text))
+      (substring text (length prefix))
+    text))
+
+(defun dumb-jump--contains-p (needle text &optional ignore-case)
+  "Return non-nil when TEXT contains NEEDLE as a literal substring.
+When IGNORE-CASE is non-nil, match without case sensitivity."
+  (and (stringp needle)
+       (stringp text)
+       (save-match-data
+         (let ((case-fold-search ignore-case))
+           (if (string-match-p (regexp-quote needle) text) t nil)))))
+
+(defun dumb-jump--index-of (needle text)
+  "Return the index of NEEDLE in TEXT, or nil when not found."
+  (when (and (stringp needle) (stringp text))
+    (save-match-data
+      (string-match-p (regexp-quote needle) text))))
+
+(defun dumb-jump--join (separator strings)
+  "Join STRINGS using SEPARATOR."
+  (mapconcat #'identity strings separator))
+
+(defun dumb-jump--match (regexp text &optional start)
+  "Return list of REGEXP matches in TEXT from START, or nil."
+  (when (and (stringp regexp)
+             (stringp text))
+    (save-match-data
+      (when (string-match regexp text start)
+        (let* ((group-count (/ (length (match-data t)) 2))
+               (i 0)
+               matches)
+          (while (< i group-count)
+            (push (match-string i text) matches)
+            (setq i (1+ i)))
+          (nreverse matches))))))
+
+(defun dumb-jump--matched-positions-all (regexp text &optional start)
+  "Return a list of match ranges for REGEXP in TEXT from START.
+Each element is a cons cell of the form (START . END)."
+  (when (and (stringp regexp) (stringp text))
+    (save-match-data
+      (let ((pos (or start 0))
+            matches)
+        (while (string-match regexp text pos)
+          (let ((beg (match-beginning 0))
+                (end (match-end 0)))
+            (push (cons beg end) matches)
+            ;; Avoid infinite loops if REGEXP can match empty strings.
+            (setq pos (if (= beg end) (1+ end) end))))
+        (nreverse matches)))))
+
+(defun dumb-jump--replace (old new text)
+  "Replace all OLD literal matches in TEXT with NEW."
+  (replace-regexp-in-string (regexp-quote old) (or new "") (or text "") t t))
+
+(defun dumb-jump--split (regexp text &optional omit-nulls)
+  "Split TEXT on REGEXP and optionally OMIT-NULLS."
+  (split-string (or text "") regexp omit-nulls))
+
+(defun dumb-jump--trim (text)
+  "Trim leading and trailing whitespace from TEXT."
+  (string-trim (or text "")))
+
+(defun dumb-jump--select-choice (choices &optional prompt)
+  "Choose one of CHOICES with `completing-read'.
+PROMPT defaults to \"Jump to: \"."
+  (completing-read (or prompt "Jump to: ") choices nil t))
+
+(defun dumb-jump--show-preview (text)
+  "Display TEXT preview to the user."
+  (message "%s" text))
 
 (defgroup dumb-jump nil
   "Easily jump to project function and variable definitions."
@@ -78,19 +153,17 @@ Valid options are \\='current (default) or \\='other."
   :type 'boolean)
 
 (defcustom dumb-jump-selector
-  'popup
+  'completing-read
   "Which selector to use when there is multiple choices.
 The available selectors are:
-- popup: https://github.com/auto-complete/popup-el
 - helm : https://emacs-helm.github.io/helm/
 - ivy  : https://github.com/abo-abo/swiper
 - Completing Read: Emacs default `completing-read'.
 
 When selecting helm or ivy, if the corresponding package is not installed,
-the selector defaults to popup."
+the selector falls back to `completing-read'."
   :group 'dumb-jump
-  :type '(choice (const :tag "Popup" popup)
-                 (const :tag "Helm" helm)
+  :type '(choice (const :tag "Helm" helm)
                  (const :tag "Ivy" ivy)
                  (const :tag "Completing Read" completing-read)))
 
@@ -187,16 +260,7 @@ one of two preferred choice overriding methods:
   :type 'string)
 
 ;; ---------------------------------------------------------------------------
-;; Dumb-jump generic regular expression meta-concepts
-;;
-;; - `JJJ` : Is replaced by the searched identifier
-;; - `\\j` : Represents the word-boundary regular-expression to use instead
-;;           of `\\b` when word boundary must not include '-'.
-;;           In the Lisp family of programming languages the '-' character is
-;;           allowed in identifiers.
-;; - `\\s` : for a single white space character.
-;;           Replaced by `[[:space:]]` for some search tools as identified by
-;;           `dumb-jump-use-space-bracket-exp-for' returning t for a tool variant.
+;; Dumb Jump Regular Expressions  (see `dumb-jump-find-rules' docstring)
 
 (defcustom dumb-jump-force-using-space-bracket-exp
   (eq system-type 'windows-nt)
@@ -1050,11 +1114,30 @@ If nil add also the language type of current src block."
 
     ;;-- python
     (:language "python" :type "variable"
-           :supports ("ag" "grep" "rg" "git-grep")
-           :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
-           :tests ("test = 1234")
+           :supports ("ag" "rg")
+           :regex "\\s*\\bJJJ\\b(\\s*:[^=\\n]+)?\\s*=[^=\\n]+"
+           :tests ("test = 1234"
+                   "test: int = 1234"
+                   "test: int | None = 1234"
+                   "test: List[Optional[int]] = [1234, None]")
            :not ("if test == 1234:"
-                 "_test = 1234"))
+                 "_test = 1234"
+                 "if (test := 3):"
+                 "while test:"
+                 "test['key'] = 1234"))
+
+        (:language "python" :type "variable"
+           :supports ("grep" "git-grep")
+           :regex "\\s*\\bJJJ\\b(\\s*:[^=]+)?\\s*=[^=]+"
+           :tests ("test = 1234"
+                   "test: int = 1234"
+                   "test: int | None = 12i34"
+                   "test: List[Optional[int]] = [1234, None]")
+           :not ("if test == 1234:"
+                 "_test = 1234"
+                 "if (test := 3):"
+                 "while test:"
+                 "test['key'] = 1234"))
 
     (:language "python" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -1406,6 +1489,12 @@ If nil add also the language type of current src block."
            :tests ("contract test{"
                    "contract test {"
                    "contract test is foo"))
+    
+    (:language "solidity" :type "type" 
+           :supports ("ag" "grep" "rg" "git-grep") 
+           :regex  "struct\\s*JJJ\\s*\\\{"
+           :tests ("struct test{"
+                   "struct test {"))
 
     ;;-- R
     (:language "r" :type "variable"
@@ -1650,6 +1739,37 @@ If nil add also the language type of current src block."
            :tests ("class test(object) {"
                    "class test{"))
 
+    ;;-- dlang
+    (:language "dlang" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^[[:space:]]*([][[:alnum:]_!.*<>]+[[:space:]]+)+JJJ[[:space:]]*\\\([^;{}]*\\\)([[:space:]]+@?[[:alnum:]_]+)*[[:space:]]*[{]"
+           :tests ("void test() {"
+                   "public static int test(int value) {"
+                   "auto test(T)(T value) {"
+                   "void test() pure {"
+                   "void test() @safe {")
+           :not ("return test();"
+                 "auto value = test(arg);"
+                 "test();"))
+
+    (:language "dlang" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\s*\\bJJJ\\s*=[^=\\n)]+"
+           :tests ("int test = 1234;"
+                   "immutable test = 1;"
+                   "auto test = foo();")
+           :not ("if (test == 1234)"
+                 "int nottest = 44;"))
+
+    (:language "dlang" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(class|interface|struct|union|enum|alias)\\s+JJJ\\b"
+           :tests ("class test {"
+                   "struct test {"
+                   "alias test = int;")
+           :not ("class testnot {"
+                 "alias nottest = test;"))
+
     ;;-- faust
     (:language "faust" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -1845,13 +1965,64 @@ If nil add also the language type of current src block."
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ\\s*[\\\(\\\{]"
-           :tests ("class test{"))
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s*[\\\(\\\{]"
+           :tests ("class test{"
+                   "class test<T>{"))
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
-           :regex "class\\s*JJJ\\s+extends"
-           :tests ("class test extends Component{"))
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s+extends"
+           :tests ("class test extends Component{"
+                   "class test<T> extends Component{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s*[\\\(\\\{]"
+           :tests ("class test{"
+                   "class test<T>{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "class\\s*JJJ(\\s*<[^>]*>)?\\s+extends"
+           :tests ("class test extends Component{"
+                   "class test<T> extends Component{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?interface\\s+JJJ\\b"
+           :tests ("interface test{"
+                   "interface test extends Thing{"
+                   "export interface test{")
+           :not ("interface testnot{"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?type\\s+JJJ\\b"
+           :tests ("type test = number"
+                   "type test<T> = T"
+                   "export type test = number")
+           :not ("type testnot = number"))
+
+    (:language "typescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?enum\\s+JJJ\\b"
+           :tests ("enum test{"
+                   "export enum test{")
+           :not ("enum testnot{"))
+
+    (:language "typescript" :type "module"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(declare\\s+)?namespace\\s+JJJ\\b"
+           :tests ("declare namespace test"
+                   "namespace test")
+           :not ("declare testnot"))
+
+    (:language "typescript" :type "module"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "(export\\s+)?module\\s+JJJ\\b"
+           :tests ("export module test"
+                   "module test")
+           :not ("module testnot"))
 
     (:language "typescript" :type "function"
            :supports ("ag" "grep" "rg" "git-grep")
@@ -2027,12 +2198,53 @@ If nil add also the language type of current src block."
            :regex "^\\s*module\\s*\\bJJJ\\b"
            :tests ("module test ="))
 
-    (:language "ocaml" :type "module"
-           :supports ("ag" "rg")
-           :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
-           :tests ("module type test ="))
+     (:language "ocaml" :type "module"
+            :supports ("ag" "rg")
+            :regex "^\\s*module\\s*type\\s*\\bJJJ\\b"
+            :tests ("module type test ="))
 
-    ;; lua
+    ;;-- purescript
+    (:language "purescript" :type "function"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*\\bJJJ\\b\\s+(::|[^=]*\\s=[^=])"
+           :tests ("test :: Int -> String"
+                   "test :: Number -> Number -> Number"
+                   "  test :: Int -> String"
+                   "test x y = x + y"
+                   "test (Just x) = x"
+                   "test { x } = x")
+           :not ("nottest :: Int -> String"
+                 "testing x = 1"
+                 "test x == y"
+                 "test >>= bar"))
+
+    (:language "purescript" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*\\bJJJ\\s*=[^=]"
+           :tests ("test = 42"
+                   "test = \\x -> x + 1"
+                   "  test = compute x")
+           :not ("test == 42"
+                 "-- test = 42"))
+
+    (:language "purescript" :type "variable"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "\\blet\\s+JJJ\\s*(\\::|=[^=])"
+           :tests ("let test = 42"
+                   "let test :: Int")
+           :not ("let testing = 42"
+                 "let test == 42"))
+
+    (:language "purescript" :type "type"
+           :supports ("ag" "grep" "rg" "git-grep")
+           :regex "^\\s*(type|newtype|data)\\s+JJJ\\b"
+           :tests ("type test = Int"
+                   "newtype test = test Int"
+                   "data test = test Int | Other String")
+           :not ("type testOther = Int"
+                 "data testOther = testOther Int"))
+
+     ;; lua
     (:language "lua" :type "variable"
            :supports ("ag" "grep" "rg" "git-grep")
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
@@ -2646,16 +2858,34 @@ If nil add also the language type of current src block."
 
   "List of search regex pattern templates organized by language and type.
 Used for generating the grep tool search commands.
-Notes:
-- For a given language, a regular expression is only used by Dumb Jump when
-  the currently used search tool is identified in the :supports value.
 
-See relevant search tool command lines:
+For a given language, a regular expression is only used by Dumb Jump when
+the currently used search tool is identified in the :supports value.
 
+The regex string is a template filled by `dumb-jump-populate-regex' and
+should contain the \"JJJ\" string, a marker for the searched identifier.
+
+It may also contain the following:
+
+- \"\\\\j\" : a marker for word-boundary regular-expression to use instead
+          of \"\\\\b\" when word boundary concept must support Lisp language
+          family and must not include the characters '-', '?' and '*'.
+          In the Lisp family of programming languages a large number of
+          characters are allowed in identifiers, including '-', '?' and
+          '*'.
+          This marker is replaced by value of the search tool specific
+          dumb-jump-TOOL-word-boundary, like `dumb-jump-ag-word-boundary' for
+          ag.
+
+- \"\\\\s\" : for a single white space character.
+         Replaced by \"[[:space:]]\" for some search tools as identified by
+         `dumb-jump-use-space-bracket-exp-for' returning t for a tool variant.
+
+The language types supported are listed in the linked page below:
 - Ag:
-  https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t
+  URL \ `https://github.com/ggreer/the_silver_searcher/blob/master/tests/list_file_types.t'
 - rg:
-  https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/types.rs#L96
+  URL \ `https://github.com/BurntSushi/ripgrep/blob/master/crates/ignore/src/default_types.rs#L12'
 
 More information using the search tool command line help."
   :group 'dumb-jump
@@ -2734,6 +2964,8 @@ More information using the search tool command line help."
     (:language "typescript"    :ext "tsx"         :agtype "ts"        :rgtype "ts")
     (:language "typescript"    :ext "vue"         :agtype "ts"        :rgtype "ts")
     (:language "dart"          :ext "dart"        :agtype nil         :rgtype "dart")
+    (:language "dlang"         :ext "d"           :agtype "dlang"     :rgtype "d")
+    (:language "dlang"         :ext "di"          :agtype "dlang"     :rgtype "d")
     (:language "lua"           :ext "lua"         :agtype "lua"       :rgtype "lua")
     ;; the extension "m" is also used by obj-c so must use matlab-mode
     ;; since obj-c will win by file extension, but here for searcher types
@@ -2753,9 +2985,10 @@ More information using the search tool command line help."
     (:language "php"           :ext "php3"        :agtype "php"       :rgtype "php")
     (:language "php"           :ext "php4"        :agtype "php"       :rgtype "php")
     (:language "php"           :ext "php5"        :agtype "php"       :rgtype "php")
-    (:language "php"           :ext "phtml"       :agtype "php"       :rgtype "php")
-    (:language "php"           :ext "inc"         :agtype "php"       :rgtype nil)
-    (:language "python"        :ext "py"          :agtype "python"    :rgtype "py")
+     (:language "php"           :ext "phtml"       :agtype "php"       :rgtype "php")
+     (:language "php"           :ext "inc"         :agtype "php"       :rgtype nil)
+     (:language "purescript"    :ext "purs"        :agtype nil         :rgtype nil)
+     (:language "python"        :ext "py"          :agtype "python"    :rgtype "py")
     (:language "r"             :ext "R"           :agtype "r"         :rgtype "r")
     (:language "r"             :ext "r"           :agtype "r"         :rgtype "r")
     (:language "r"             :ext "Rmd"         :agtype "r"         :rgtype "r")
@@ -2837,6 +3070,8 @@ type for that tool."
     (:language "javascript" :type "variable"  :left nil           :right "^\\." )
     (:language "javascript" :type "variable"  :left nil           :right "^;" )
     (:language "typescript" :type "function"  :left nil           :right "^(" )
+    (:language "typescript" :type "type"      :left "\\(?:[:<>,|&]\\|\\_<\\(?:as\\|extends\\|implements\\)\\_>\\)\\s-*$" :right nil)
+    (:language "typescript" :type "type"      :left "\\_<\\(?:type\\|interface\\|enum\\|class\\)\\_>\\s-+$" :right nil)
     (:language "perl"       :type "function"  :left nil           :right "^(" )
     (:language "tcl"        :type "function"  :left "\\[$"        :right nil)
     (:language "tcl"        :type "function"  :left "^\\s*$"      :right nil)
@@ -2982,7 +3217,7 @@ key (such as `\\[universal-argument]')."
   "Return t if ag is installed."
   (if (eq dumb-jump--ag-installed? 'unset)
       (setq dumb-jump--ag-installed?
-            (s-contains? "ag version"
+            (dumb-jump--contains-p "ag version"
                          (shell-command-to-string
                           (concat dumb-jump-ag-cmd " --version"))))
     dumb-jump--ag-installed?))
@@ -3031,7 +3266,7 @@ variable `dumb-jump--detected-env-problems'."
   "Return t if git-grep is installed."
   (if (eq dumb-jump--git-grep-installed? 'unset)
       (setq dumb-jump--git-grep-installed?
-            (s-contains? "fatal: no pattern given"
+            (dumb-jump--contains-p "fatal: no pattern given"
                          (shell-command-to-string
                           (concat dumb-jump-git-grep-cmd))))
     dumb-jump--git-grep-installed?))
@@ -3043,8 +3278,8 @@ Return \\='gnu if GNU grep is installed, \\='bsd if BSD grep is installed."
   (if (eq dumb-jump--grep-installed? 'unset)
       (let* ((version (shell-command-to-string
                        (concat dumb-jump-grep-cmd " --version")))
-             (variant (cond ((s-match "GNU grep" version) 'gnu)
-                            ((s-match "[0-9]+\\.[0-9]+" version) 'bsd)
+             (variant (cond ((dumb-jump--match "GNU grep" version) 'gnu)
+                            ((dumb-jump--match "[0-9]+\\.[0-9]+" version) 'bsd)
                             (t nil))))
         (setq dumb-jump--grep-installed? variant))
     dumb-jump--grep-installed?))
@@ -3123,7 +3358,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                                 (plist-get rule :regex) "test" variant))))
                  (resp (dumb-jump-run-test test cmd)))
             (when (or
-                   (and (not run-not-tests) (not (s-contains? test resp)))
+                   (and (not run-not-tests) (not (dumb-jump--contains-p test resp)))
                    (and run-not-tests (> (length resp) 0)))
               (list (dumb-jump--search-failure-msg "grep"
                                                    test
@@ -3147,7 +3382,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                               (plist-get rule :regex) "test" 'ag))))
                (resp (dumb-jump-run-ag-test test cmd)))
           (when (or
-                 (and (not run-not-tests) (not (s-contains? test resp)))
+                 (and (not run-not-tests) (not (dumb-jump--contains-p test resp)))
                  (and run-not-tests (> (length resp) 0)))
             (list (dumb-jump--search-failure-msg "ag"
                                                  test
@@ -3171,7 +3406,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                               (plist-get rule :regex) "test" 'rg))))
                (resp (dumb-jump-run-test test cmd)))
           (when (or
-                 (and (not run-not-tests) (not (s-contains? test resp)))
+                 (and (not run-not-tests) (not (dumb-jump--contains-p test resp)))
                  (and run-not-tests (> (length resp) 0)))
             (list (dumb-jump--search-failure-msg "rg"
                                                  test
@@ -3199,7 +3434,7 @@ Optionally pass t for RUN-NOT-TESTS to see a list of all failed rules."
                               (plist-get rule :regex) "test" 'git-grep))))
                (resp (dumb-jump-run-git-grep-test test cmd)))
           (when (or
-                 (and (not run-not-tests) (not (s-contains? test resp)))
+                 (and (not run-not-tests) (not (dumb-jump--contains-p test resp)))
                  (and run-not-tests (> (length resp) 0)))
             (list (dumb-jump--search-failure-msg "git-grep"
                                                  test
@@ -3284,12 +3519,12 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
       (goto-char (point-min))
       (forward-line (1- line)))))
 
-(defun dumb-jump--format-result (proj result)
-  "Return formatted string for PROJ and RESULT."
+(defun dumb-jump--format-result (proj-root result)
+  "Return file:line:target formatted RESULT as a string stripped of PROJ-ROOT."
   (format "%s:%s: %s"
-          (s-replace proj "" (plist-get result :path))
+          (dumb-jump--replace proj-root "" (plist-get result :path))
           (plist-get result :line)
-          (s-trim (plist-get result :context))))
+          (dumb-jump--trim (plist-get result :context))))
 
 (defun dumb-jump-ivy-jump-to-selected (results choices _proj)
   "Offer CHOICES as candidates through `ivy-read'.
@@ -3302,18 +3537,22 @@ Ignore _PROJ."
                 :caller 'dumb-jump-ivy-jump-to-selected)
     (error "ivy-read is unknown.  Is it loaded?")))
 
-(defun dumb-jump-prompt-user-for-choice (proj results)
-  "Put a PROJ list of RESULTS in menu for user selection.
-The menu can be a `popup-menu' or helm/ivy menu.
-Filters PROJ path from files for display."
-  (let ((choices (--map (dumb-jump--format-result proj it) results)))
+(defun dumb-jump-prompt-user-for-choice (proj-root results)
+  "Prompt user to select one of the identified RESULTS in PROJ-ROOT.
+Strip the PROJ-ROOT (project root path) from the file name shown in each entry.
+Prompt with the mechanism selected by `dumb-jump-selector' user-option if
+available otherwise default to `completing-read'."
+  (let ((choices (--map (dumb-jump--format-result proj-root it) results)))
     (cond
      ((eq dumb-jump-selector 'completing-read)
       (dumb-jump-to-selected results choices
-                             (completing-read "Jump to: " choices)))
+                             (dumb-jump--select-choice choices "Jump to: ")))
+     ;;
      ((and (eq dumb-jump-selector 'ivy)
            (fboundp 'ivy-read))
-      (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
+      (funcall dumb-jump-ivy-jump-to-selected-function
+               results choices proj-root))
+     ;;
      ((and (eq dumb-jump-selector 'helm)
            (fboundp 'helm))
       (helm :sources
@@ -3323,8 +3562,9 @@ Filters PROJ path from files for display."
                 :candidates (-zip-pair choices results)
                 :persistent-action 'dumb-jump-helm-persist-action))
             :buffer "*helm dumb jump choices*"))
-     (t ; or popup
-      (dumb-jump-to-selected results choices (popup-menu* choices))))))
+     ;; fallback for unsupported selector values
+     (t (dumb-jump-to-selected results choices
+                               (dumb-jump--select-choice choices "Jump to: "))))))
 
 (defun dumb-jump-get-project-root (filepath)
   "Return project root holding FILEPATH.
@@ -3432,6 +3672,7 @@ Modify `dumb-jump-find-rules' and `dumb-jump-language-file-exts' accordingly
 
 (defcustom dumb-jump-language-aliases-alist
   '(("sh" . "shell")
+    ("d" . "dlang")
     ("cperl" . "perl")
     ("octave" . "matlab")
     ("emacs-lisp" . "elisp")
@@ -3451,7 +3692,7 @@ Return nil if LANG is not one of the supported aliases."
 
 (defun dumb-jump-get-mode-base-name ()
   "Get the base name of the mode."
-  (s-replace "-mode" "" (symbol-name major-mode)))
+  (dumb-jump--replace "-mode" "" (symbol-name major-mode)))
 
 (defun dumb-jump-get-language-from-mode ()
   "Extract the language from the `major-mode' name.
@@ -3484,15 +3725,15 @@ Currently just everything before \"-mode\"."
     :root nil
     :issue ,(intern issue)))
 
-(defun dumb-jump-get-results (&optional prompt)
-  "Perform the dumb-jump search for text at point, region or in PROMPT string.
+(defun dumb-jump-get-results (&optional entered-name)
+  "Perform the dumb-jump search for text at point, region or ENTERED-NAME.
 
 Runs `dumb-jump-fetch-results' under conditions adjusted to the current
 context.
 
 Perform the search if searcher is installed, buffer is saved, and
 there's a symbol under point or an item to search is specified by the
-PROMPT argument.
+ENTERED-NAME string.
 
 Return the dumb-jump alist result:
 - :results
@@ -3502,6 +3743,10 @@ Return the dumb-jump alist result:
 - :file    : string: file name
 - :root    : string: project root
 - :issue   : symbol: problem description symbol: nogrep or nosymbol."
+  ;; Prevent a empty string entered-name from being interpreted as user entry
+  ;; because `read-from-minibuffer' may return "".
+  (when (and entered-name (string-blank-p entered-name))
+    (setq entered-name nil))
   (cond
    ;; When no search tool is available just return an empty result identifying
    ;; a nogrep issue.
@@ -3513,21 +3758,21 @@ Return the dumb-jump alist result:
    ;; Inside a shell or eshell buffer,
    ((or (string= (buffer-name) "*shell*")
         (string= (buffer-name) "*eshell*"))
-    (dumb-jump-fetch-shell-results prompt))
-   ;; When inside a normal buffer but no string specified by PROMPT,
+    (dumb-jump-fetch-shell-results entered-name))
+   ;; When inside a normal buffer but no string specified by ENTERED-NAME,
    ;; point or region does not identify something to search,
    ;; just return an empty result identifying a nosymbol issue.
-   ((and (not prompt)
+   ((and (not entered-name)
          (not (region-active-p))
          (not (thing-at-point 'symbol)))
     (dumb-jump-issue-result "nosymbol"))
    ;; Otherwise, perform the search for the text identified by string specified
-   ;; by PROMPT, point or region.
+   ;; by ENTERED-NAME, point or region.
    (t
-    (dumb-jump-fetch-file-results prompt))))
+    (dumb-jump-fetch-file-results entered-name))))
 
-(defun dumb-jump-fetch-shell-results (&optional prompt)
-  "Perform search from shell buffer for text at point, region or PROMPT string.
+(defun dumb-jump-fetch-shell-results (&optional entered-name)
+  "Perform search from shell buffer for text at point, region or ENTERED-NAME.
 Return the dumb-jump alist result:
 - :results
 - :lang    : string: language name
@@ -3542,10 +3787,10 @@ Return the dumb-jump alist result:
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (car (dumb-jump-get-lang-by-shell-contents (buffer-name))))))
-    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
+    (dumb-jump-fetch-results cur-file proj-root lang config entered-name)))
 
-(defun dumb-jump-fetch-file-results (&optional prompt)
-  "Perform a file search for text at point, region or PROMPT string.
+(defun dumb-jump-fetch-file-results (&optional entered-name)
+  "Perform a file search for text at point, region or ENTERED-NAME string.
 Return the dumb-jump alist result:
 - :results
 - :lang    : string: language name
@@ -3560,7 +3805,7 @@ Return the dumb-jump alist result:
                    (dumb-jump-read-config proj-root proj-config)))
          (lang (or (plist-get config :language)
                    (dumb-jump-get-language cur-file))))
-    (dumb-jump-fetch-results cur-file proj-root lang config prompt)))
+    (dumb-jump-fetch-results cur-file proj-root lang config entered-name)))
 
 ;; --
 (defun dumb-jump-process-symbol-by-lang (lang look-for)
@@ -3568,25 +3813,25 @@ Return the dumb-jump alist result:
 For instance, remove clojure namespace prefix."
   (cond
    ((and (string= lang "commonlisp")
-         (s-contains? ":" look-for)
+         (dumb-jump--contains-p ":" look-for)
          (not (string-prefix-p ":" look-for)))
-    (nth 1 (s-split ":" look-for 'omit-nulls)))
+    (nth 1 (dumb-jump--split ":" look-for 'omit-nulls)))
    ((and (string= lang "clojure")
-         (s-contains? "/" look-for))
-    (nth 1 (s-split "/" look-for)))
+         (dumb-jump--contains-p "/" look-for))
+    (nth 1 (dumb-jump--split "/" look-for)))
    ((and (string= lang "fennel")
-         (s-contains? "." look-for))
-    (-last-item (s-split "\\." look-for)))
+         (dumb-jump--contains-p "." look-for))
+    (-last-item (dumb-jump--split "\\." look-for)))
    ((and (string= lang "ruby")
-         (s-contains? "::" look-for))
-    (-last-item (s-split "::" look-for)))
+         (dumb-jump--contains-p "::" look-for))
+    (-last-item (dumb-jump--split "::" look-for)))
    ((and (or (string= lang "ruby")
              (string= lang "crystal"))
          (string-prefix-p ":" look-for))
-    (s-chop-prefix ":" look-for))
+    (dumb-jump--chop-prefix ":" look-for))
    ((and (string= lang "systemverilog")
          (string-prefix-p "`" look-for))
-    (s-chop-prefix "`" look-for))
+    (dumb-jump--chop-prefix "`" look-for))
    (t
     look-for)))
 
@@ -3616,12 +3861,14 @@ For instance, remove clojure namespace prefix."
   (let* ((buffer-contents (with-current-buffer buffer
                             (buffer-string)))
 
-         (found (--filter (s-match (concat "\\." (plist-get it :ext) "\\b") buffer-contents)
+         (found (--filter (dumb-jump--match (concat "\\." (regexp-quote (plist-get it :ext)) "\\b")
+                                            buffer-contents)
                           dumb-jump-language-file-exts)))
     (--map (plist-get it :language) found)))
 
-(defun dumb-jump-fetch-results (cur-file proj-root lang _config &optional prompt)
-  "Search for symbol in PROMPT or symbol at point.
+(defun dumb-jump-fetch-results (cur-file proj-root lang _config
+                                         &optional entered-name)
+  "Search for symbol in ENTERED-NAME or symbol at point.
 
 Return a list of results based on current file context and calling the
 currently selected searcher tool (grep, ag, rg, ...).
@@ -3630,7 +3877,7 @@ CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
 LANG is a string programming language with CONFIG a property list
 of project configuration.
-PROMPT is an optional string identifying item to search.
+ENTERED-NAME is an optional string identifying item to search.
 The returned property list has the following members:
 - :results:
 - :lang    : string: language name
@@ -3642,10 +3889,10 @@ The returned property list has the following members:
          (proj-config (dumb-jump-get-config proj-root))
          (config (when (string-suffix-p ".dumbjump" proj-config)
                    (dumb-jump-read-config proj-root proj-config)))
-         (found-symbol (or prompt (dumb-jump-get-point-symbol)))
+         (found-symbol (or entered-name (dumb-jump-get-point-symbol)))
          (look-for (dumb-jump-process-symbol-by-lang lang found-symbol))
-         (pt-ctx (if prompt
-                     (get-text-property 0 :dumb-jump-ctx prompt)
+         (pt-ctx (if entered-name
+                     (get-text-property 0 :dumb-jump-ctx entered-name)
                    (dumb-jump-get-point-context
                     (dumb-jump-get-point-line)
                     look-for
@@ -3662,9 +3909,9 @@ The returned property list has the following members:
 
          (exclude-paths (when config (plist-get config :exclude)))
          (include-paths (when config (plist-get config :include)))
-                                        ; we will search proj root and all include paths
+         ;; we will search proj root and all include paths
          (search-paths (-distinct (-concat (list proj-root) include-paths)))
-                                        ; run command for all
+         ;; run command for all
          (raw-results (--mapcat
                        ;; TODO: should only pass exclude paths to actual project root
                        (dumb-jump-run-command look-for it
@@ -3674,7 +3921,8 @@ The returned property list has the following members:
                                               generate-fn)
                        search-paths))
 
-         (results (delete-dups (--map (plist-put it :target look-for) raw-results))))
+         (results
+          (delete-dups (--map (plist-put it :target look-for) raw-results))))
 
     `(:results ,results
       :lang ,(if (null lang) "" lang)
@@ -3698,7 +3946,7 @@ The returned property list has the following members:
 (defun dumb-jump-quick-look ()
   "Run `dumb-jump-go' in quick look mode.
 That is, show a tooltip of where it would jump instead."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go t)))
@@ -3706,7 +3954,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-other-window ()
   "Like dumb-jump-go' but use `find-file-other-window' instead of `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
     (with-no-warnings
@@ -3715,7 +3963,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-current-window ()
   "Like `dumb-jump-go' but always use `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'current))
     (with-no-warnings
@@ -3724,7 +3972,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-prefer-external ()
   "Like `dumb-jump-go' but prefer external matches from the current file."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil t)))
@@ -3732,7 +3980,7 @@ That is, show a tooltip of where it would jump instead."
 ;;;###autoload
 (defun dumb-jump-go-prompt ()
   "Like `dumb-jump-go' but prompt for function instead of using under point."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (with-no-warnings
     (dumb-jump-go nil nil (read-from-minibuffer "Jump to: "))))
@@ -3741,27 +3989,28 @@ That is, show a tooltip of where it would jump instead."
 (defun dumb-jump-go-prefer-external-other-window ()
   "Like `dumb-jump-go-prefer-external' but create another window.
 It uses `find-file-other-window' instead of `find-file'."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   (interactive)
   (let ((dumb-jump-window 'other))
     (with-no-warnings
       (dumb-jump-go-prefer-external))))
 
 ;;;###autoload
-(defun dumb-jump-go (&optional use-tooltip prefer-external prompt)
+(defun dumb-jump-go (&optional use-tooltip prefer-external entered-name)
   "Go to the function/variable declaration for thing at point.
 When USE-TOOLTIP is t a tooltip jump preview will show instead.
 When PREFER-EXTERNAL is t it will sort external matches before
 current file.
-PROMPT is an optional string: the name of the item to jump to."
-  ;; Note: made obsolete by Emacs xref interface.
+The optional ENTERED-NAME string is the name of the item to jump to
+manually selected by user as response to a prompt."
+  ;; Note: independent of the Emacs xref interface.
   (interactive "P")
   (let* ((start-time (float-time))
-         (info (dumb-jump-get-results prompt))
+         (info (dumb-jump-get-results entered-name))
          (end-time (float-time))
          (fetch-time (- end-time start-time))
          (results (plist-get info :results))
-         (look-for (or prompt (plist-get info :symbol)))
+         (look-for (or entered-name (plist-get info :symbol)))
          (proj-root (plist-get info :root))
          (issue (plist-get info :issue))
          (lang (plist-get info :lang))
@@ -3804,6 +4053,9 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "javascript")
     (:comment "//" :language "typescript")
     (:comment "//" :language "dart")
+    (:comment "//" :language "dlang")
+    (:comment "/*" :language "dlang")
+    (:comment "/+" :language "dlang")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
@@ -3820,9 +4072,10 @@ Please install ag or rg, or add a .dumbjump file to '%s' with path exclusions"
     (:comment "//" :language "zig")
     (:comment "#"  :language "perl")
     (:comment "#"  :language "tcl")
-    (:comment "//" :language "php")
-    (:comment "#"  :language "php")
-    (:comment "#"  :language "python")
+     (:comment "//" :language "php")
+     (:comment "#"  :language "php")
+     (:comment "--" :language "purescript")
+     (:comment "#"  :language "python")
     (:comment "%"  :language "matlab")
     (:comment "#"  :language "r")
     (:comment ";"  :language "racket")
@@ -3918,11 +4171,27 @@ LANGUAGE is an optional language to pass to `dumb-jump-process-results'."
      cur-file)
     (cond
      (use-tooltip ;; quick-look mode
-      (popup-menu* (--map (dumb-jump--format-result proj-root it) results)))
+      (let* ((choices (--map (dumb-jump--format-result proj-root it) results))
+             (selected-choice (dumb-jump--select-choice choices "Matches: "))
+             (selected-result (cdr (assoc selected-choice
+                                          (-zip-pair choices results)))))
+        (when selected-result
+          (dumb-jump--show-preview
+           (dumb-jump--format-result proj-root selected-result)))))
      (do-var-jump
       (dumb-jump-result-follow var-to-jump use-tooltip proj-root))
      (t
       (dumb-jump-prompt-user-for-choice proj-root match-cur-file-front)))))
+
+(defun dumb-jump--candidate-x<y (x y)
+  "Return non-nil if candidate X should sort before candidate Y.
+Order by :path length (shorter first), then by :line."
+  (let ((x-path-len (length (plist-get x :path)))
+        (y-path-len (length (plist-get y :path))))
+    (if (/= x-path-len y-path-len)
+        (< x-path-len y-path-len)
+      (< (plist-get x :line)
+         (plist-get y :line)))))
 
 (defun dumb-jump-process-results (results cur-file proj-root ctx-type
                                           _look-for _use-tooltip
@@ -3979,18 +4248,15 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
                                   (string= (plist-get it :path) rel-cur-file)))
                          match-no-comments)
 
-               ;; Sort non-current files by path length so the nearest file is more likely to be
-               ;; sorted higher to the top. Also sorts by line number for sanity.
-               (-sort (lambda (x y)
-                        (and (< (plist-get x :line) (plist-get y :line))
-                             (< (length (plist-get x :path)) (length (plist-get y :path)))))
+               ;; Sort non-current files by path length so the nearest file is
+               ;; more likely to be sorted higher to the top. Also sorts by
+               ;; line number for sanity.
+               (-sort #'dumb-jump--candidate-x<y
                       (--filter (not (or (string= (plist-get it :path) cur-file)
                                          (string= (plist-get it :path) rel-cur-file)))
                                 match-no-comments)))
             (-concat
-             (-sort (lambda (x y)
-                      (and (< (plist-get x :line) (plist-get y :line))
-                           (< (length (plist-get x :path)) (length (plist-get y :path)))))
+             (-sort #'dumb-jump--candidate-x<y
                     (--filter (not (or (string= (plist-get it :path) cur-file)
                                        (string= (plist-get it :path) rel-cur-file)))
                               match-no-comments))
@@ -4001,15 +4267,16 @@ Figure which of the RESULTS to jump to.  Favoring the CUR-FILE."
          (matches
           (if (not prefer-external)
               (-distinct
-               (append (dumb-jump-current-file-results cur-file match-cur-file-front)
-                       (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
+               (append
+                (dumb-jump-current-file-results cur-file match-cur-file-front)
+                (dumb-jump-current-file-results rel-cur-file match-cur-file-front)))
             match-cur-file-front))
 
          (var-to-jump (car matches))
          ;; TODO: handle if ctx-type is null but ALL results are variable
 
-         ;; When non-aggressive it should only jump when there is only one match, regardless of
-         ;; context.
+         ;; When non-aggressive it should only jump when there is only one
+         ;; match, regardless of context.
          (do-var-jump
           (and (or dumb-jump-aggressive
                    (= (length match-cur-file-front) 1))
@@ -4091,16 +4358,16 @@ Before jumping, record the jump to be able to jump back later.
 
 With optional USE-TOOLTIP non-nil, pop a tool-tip showing the project
 PROJ and RESULT information."
-  (let* ((target-boundary (s-matched-positions-all
+  (let* ((target-boundary (dumb-jump--matched-positions-all
                            (concat "\\b"
                                    (regexp-quote (plist-get result :target))
                                    "\\b")
                            (plist-get result :context)))
          ;; column position is either via tpos from ag or by using the regex
-         ;; above or last using old s-index-of
+         ;; above or last using old dumb-jump--index-of
          (column (if target-boundary
                      (car (car target-boundary))
-                   (s-index-of (plist-get result :target)
+                   (dumb-jump--index-of (plist-get result :target)
                                (plist-get result :context))))
 
          (result-path (plist-get result :path))
@@ -4119,7 +4386,7 @@ PROJ and RESULT information."
          (line (plist-get result :line)))
     (when thef
       (if use-tooltip
-          (popup-tip (dumb-jump--format-result proj result))
+          (dumb-jump--show-preview (dumb-jump--format-result proj result))
         (dumb-jump-goto-file-line thef line column)))
     ;; return the file for test
     thef))
@@ -4316,21 +4583,24 @@ The parameters are:
                       proj))
          (cmd (funcall generate-fn look-for cur-file proj-root regexes lang exclude-args))
          (shell-command-switch (dumb-jump-shell-command-switch))
-         (rawresults (shell-command-to-string cmd)))
+         (rawresults ""))
 
-    (dumb-jump-debug-message cmd rawresults)
+    (dumb-jump-debug-message cmd)
+    (setq rawresults (shell-command-to-string cmd))
+    (dumb-jump-debug-message rawresults)
     (when (and (string-blank-p rawresults) dumb-jump-fallback-search)
       (setq regexes (list dumb-jump-fallback-regex))
       (setq cmd (funcall generate-fn
                          look-for cur-file
                          proj-root regexes
                          lang exclude-args))
+      (dumb-jump-debug-message cmd)
       (setq rawresults (shell-command-to-string cmd))
-      (dumb-jump-debug-message cmd rawresults))
+      (dumb-jump-debug-message rawresults))
     (unless (string-blank-p (or cmd ""))
       (let ((results (funcall parse-fn rawresults cur-file line-num))
             (ignore-case (member lang dumb-jump--case-insensitive-languages)))
-        (--filter (s-contains? look-for
+        (--filter (dumb-jump--contains-p look-for
                                (plist-get it :context) ignore-case)
                   results)))))
 
@@ -4338,27 +4608,30 @@ The parameters are:
   "Parse a search program's single RESP-LINE for CUR-FILE.
 Return a list of (path line context)."
   (let* ((parts (--remove (string= it "")
-                          (s-split "\\(?:^\\|:\\)[0-9]+:"  resp-line)))
-         (line-num-raw (s-match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line)))
+                          (dumb-jump--split "\\(?:^\\|:\\)[0-9]+:"  resp-line)))
+         (line-num-raw (dumb-jump--match "\\(?:^\\|:\\)\\([0-9]+\\):" resp-line))
+         (line-num (and line-num-raw
+                        (> (length line-num-raw) 1)
+                        (nth 1 line-num-raw))))
 
     (cond
      ;; fixes rare bug where context is blank  but file is defined "/somepath/file.txt:14:"
      ;; OR: (and (= (length parts) 1) (file-name-exists (nth 0 parts)))
-     ((s-match ":[0-9]+:$" resp-line)
+     ((dumb-jump--match ":[0-9]+:$" resp-line)
       nil)
-     ((and parts line-num-raw)
+     ((and parts line-num)
       (if (= (length parts) 2)
           (list (let ((path (expand-file-name (nth 0 parts))))
                   (if (file-name-absolute-p (nth 0 parts))
                       path
                     (file-relative-name path)))
-                (nth 1 line-num-raw) (nth 1 parts))
+                line-num (nth 1 parts))
                                         ; this case is when they are searching a particular file...
         (list (let ((path (expand-file-name cur-file)))
                 (if (file-name-absolute-p cur-file)
                     path
                   (file-relative-name path)))
-              (nth 1 line-num-raw) (nth 0 parts)))))))
+              line-num (nth 0 parts)))))))
 
 ;; --
 ;; Parse Search Tool Results: indirectly called by `dumb-jump-run-command'
@@ -4394,8 +4667,8 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
 - CUR-LINE-NUM: current line number."
   (let* ((resp-no-warnings
           (--filter (and (not (string-prefix-p "grep:" it))
-                         (not (s-contains? "No such file or" it)))
-                    (s-split "\n" (s-trim resp))))
+                         (not (dumb-jump--contains-p "No such file or" it)))
+                    (dumb-jump--split "\n" (dumb-jump--trim resp))))
          (parsed (--map (dumb-jump-parse-response-line it cur-file)
                         resp-no-warnings)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
@@ -4404,7 +4677,7 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
   "Parse raw ag search response RESP into a list of plists.
 - CUR-FILE:     current file.
 - CUR-LINE-NUM: current line number."
-  (let* ((resp-lines (s-split "\n" (s-trim resp)))
+  (let* ((resp-lines (dumb-jump--split "\n" (dumb-jump--trim resp)))
          (parsed (--map (dumb-jump-parse-response-line it cur-file)
                         resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
@@ -4413,7 +4686,7 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
   "Parse raw rg search response RESP into a list of plists.
 - CUR-FILE:     current file.
 - CUR-LINE-NUM: current line number."
-  (let* ((resp-lines (s-split "\n" (s-trim resp)))
+  (let* ((resp-lines (dumb-jump--split "\n" (dumb-jump--trim resp)))
          (parsed (--map (dumb-jump-parse-response-line it cur-file)
                         resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
@@ -4422,7 +4695,7 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
   "Parse raw git grep response RESP into a list of plists.
 - CUR-FILE:     current file.
 - CUR-LINE-NUM: current line number."
-  (let* ((resp-lines (s-split "\n" (s-trim resp)))
+  (let* ((resp-lines (dumb-jump--split "\n" (dumb-jump--trim resp)))
          (parsed (--map (dumb-jump-parse-response-line it cur-file)
                         resp-lines)))
     (dumb-jump-parse-response-lines parsed cur-file cur-line-num)))
@@ -4432,7 +4705,7 @@ Using CUR-FILE and CUR-LINE-NUM to exclude jump origin."
 (defun dumb-jump-re-match (re s)
   "Does regular expression RE match string S. If RE is nil return nil."
   (when (and re s)
-    (s-match re s)))
+    (dumb-jump--match re s)))
 
 (defun dumb-jump-get-ctx-type-by-language (lang pt-ctx)
   "Detect the type of context by the language LANG and its context PT-CTX.
@@ -4468,8 +4741,10 @@ that are both strings."
 
 (defun dumb-jump-arg-joiner (prefix values)
   "Helper to generate command arg with its PREFIX for each value in VALUES."
-  (let ((args (s-join (format " %s " prefix) values)))
-    (if (and args values)
+  (let* ((normalized-values (--map (dumb-jump--trim (or it "")) values))
+         (non-empty-values (--filter (> (length it) 0) normalized-values))
+         (args (dumb-jump--join (format " %s " prefix) non-empty-values)))
+    (if non-empty-values
         (format " %s %s " prefix args)
       "")))
 
@@ -4506,10 +4781,10 @@ The arguments are:
                ((eq variant 'git-grep) dumb-jump-git-grep-word-boundary)
                (t dumb-jump-grep-word-boundary))))
     (let ((text it))
-      (setq text (s-replace "\\j" boundary text))
+      (setq text (dumb-jump--replace "\\j" boundary text))
       (when (dumb-jump-use-space-bracket-exp-for variant)
-        (setq text (s-replace "\\s" "[[:space:]]" text)))
-      (setq text (s-replace "JJJ" (regexp-quote look-for) text))
+        (setq text (dumb-jump--replace "\\s" "[[:space:]]" text)))
+      (setq text (dumb-jump--replace "JJJ" (regexp-quote look-for) text))
       text)))
 
 (defun dumb-jump-populate-regexes (look-for regexes variant)
@@ -4556,18 +4831,18 @@ The arguments are:
                       (unless (string-blank-p dumb-jump-ag-search-args)
                         (concat " " dumb-jump-ag-search-args))
                       (if agtypes
-                          (s-join "" (--map (format " --%s" it) agtypes))
+                          (dumb-jump--join "" (--map (format " --%s" it) agtypes))
                         ;; there can only be one `-G` arg
                         (concat " -G '("
-                                (s-join "|"
+                                (dumb-jump--join "|"
                                         (--map (format "\\.%s" it) lang-exts))
                                 ")$'"))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir"
                         (--map
-                         (shell-quote-argument (s-replace proj-dir "" it))
+                         (shell-quote-argument (dumb-jump--replace proj-dir "" it))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
+         (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
@@ -4578,17 +4853,17 @@ The arguments are:
 Search for matching files using git grep."
   (let* ((cmd (format "git grep --full-name -F -c %s %s"
                       (shell-quote-argument symbol) proj-root))
-         (result (s-trim (shell-command-to-string cmd)))
+         (result (dumb-jump--trim (shell-command-to-string cmd)))
          ;; result: '\n\ separated lines of: "path-name:count"
          ;; extract the name of files and return them in a list.
          (matched-files (--map
-                         (cl-first (s-split ":" it))
-                         (s-split "\n" result))))
+                         (cl-first (dumb-jump--split ":" it))
+                         (dumb-jump--split "\n" result))))
     matched-files))
 
 (defun dumb-jump-format-files-as-ag-arg (files proj-root)
   "Take a list of FILES and their PROJ-ROOT and return a `ag -G` argument."
-  (format "'(%s)'" (s-join "|" (--map (file-relative-name
+  (format "'(%s)'" (dumb-jump--join "|" (--map (file-relative-name
                                        (expand-file-name it proj-root))
                                       files))))
 
@@ -4636,9 +4911,9 @@ The arguments are:
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir"
                         (--map
-                         (shell-quote-argument (s-replace proj-dir "" it))
+                         (shell-quote-argument (dumb-jump--replace proj-dir "" it))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
+         (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args regex-args proj))))
@@ -4667,14 +4942,14 @@ The arguments are:
                         "")
                       (unless (string-blank-p dumb-jump-rg-search-args)
                         (concat " " dumb-jump-rg-search-args))
-                      (s-join "" (--map (format " --type %s" it) rgtypes))))
+                      (dumb-jump--join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g"
                         (--map
                          (shell-quote-argument
-                          (concat "!" (s-replace proj-dir "" it)))
+                          (concat "!" (dumb-jump--replace proj-dir "" it)))
                          exclude-paths)))
-         (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
+         (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd exclude-args "--" regex-args proj))))
@@ -4706,17 +4981,17 @@ The arguments are:
                       (unless (string-blank-p dumb-jump-git-grep-search-args)
                         (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
-         (fileexps (s-join " "
+         (fileexps (dumb-jump--join " "
                            (or
                             (--map (shell-quote-argument
                                     (format "%s/*.%s" proj it))
                                    ggtypes)
                             '(":/"))))
-         (exclude-args (s-join " "
+         (exclude-args (dumb-jump--join " "
                                (--map (shell-quote-argument
                                        (concat ":(exclude)" it))
                                       exclude-paths)))
-         (regex-args (shell-quote-argument (s-join "|" filled-regexes))))
+         (regex-args (shell-quote-argument (dumb-jump--join "|" filled-regexes))))
     (if (null regexes)
         ""
       (dumb-jump-concat-command cmd regex-args "--" fileexps exclude-args))))
@@ -4796,7 +5071,9 @@ The arguments are:
 
 (defun dumb-jump-concat-command (&rest parts)
   "Concat the PARTS of a command if each part has a length."
-  (s-join " " (-map #'s-trim (--filter (> (length it) 0) parts))))
+  (let* ((normalized-parts (--map (dumb-jump--trim (or it "")) parts))
+         (non-empty-parts (--filter (> (length it) 0) normalized-parts)))
+    (dumb-jump--join " " non-empty-parts)))
 
 (defun dumb-jump-get-file-exts-by-language (language)
   "Return list of file extensions for a LANGUAGE."
@@ -4846,7 +5123,7 @@ The arguments are:
 ;;;###autoload
 (define-minor-mode dumb-jump-mode
   "Minor mode for jumping to variable and function definitions."
-  ;; Note: made obsolete by Emacs xref interface.
+  ;; Note: independent of the Emacs xref interface.
   :global t
   :keymap dumb-jump-mode-map)
 
@@ -4884,10 +5161,11 @@ The arguments are:
 			 (ctx (dumb-jump-get-point-context line ident col)))
 		    (propertize ident :dumb-jump-ctx ctx)))))
 
-  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
-    (let* ((info (dumb-jump-get-results prompt))
+  (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump))
+                                          entered-name)
+    (let* ((info (dumb-jump-get-results entered-name))
            (results (plist-get info :results))
-           (look-for (or prompt (plist-get info :symbol)))
+           (look-for (or entered-name (plist-get info :symbol)))
            (proj-root (plist-get info :root))
            (issue (plist-get info :issue))
            (lang (plist-get info :lang))
@@ -4932,7 +5210,13 @@ The arguments are:
                            (xref-make
                             (plist-get res :context)
                             (xref-make-file-location
-                             (expand-file-name (plist-get res :path))
+                             (let* ((path (plist-get res :path))
+                                    (remote-prefix (file-remote-p default-directory)))
+                               (if remote-prefix
+                                   (if (file-name-absolute-p path)
+                                       (concat remote-prefix path)
+                                     (concat default-directory path))
+                                 (expand-file-name path)))
                              (plist-get res :line)
                              0))))
                        (if do-var-jump

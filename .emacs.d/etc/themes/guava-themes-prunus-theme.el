@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 29, 2025
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -37,6 +37,8 @@
       (guava-themes-prunus-class '((class color) (min-colors 257)))
       ;;(guava-themes-prunus-black             "#000000")
       (guava-themes-prunus-white             "#FFFFFF")
+
+      (guava-themes-prunus-shadow            "#b3b3b3")
 
       (guava-themes-prunus-cream             "#DEA2BD");fffef5,EBDCF5
       (guava-themes-prunus-light-brown       "#735944")
@@ -90,8 +92,11 @@
    `(line-number ((,guava-themes-prunus-class (:foreground ,guava-themes-prunus-purple-red :height 1.35))))
    `(line-number-current-line ((,guava-themes-prunus-class (:foreground ,guava-themes-prunus-cream :background ,guava-themes-prunus-brown :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-prunus-class (:background ,guava-themes-prunus-brown))))
+   ;; highlight
+   `(highlight ((,guava-themes-prunus-class (:background ,guava-themes-prunus-brown))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-prunus-class (:foreground ,guava-themes-prunus-shadow))))
 
    ;; region
    `(region ((,guava-themes-prunus-class (:background ,guava-themes-prunus-light-brown))))

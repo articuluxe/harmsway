@@ -5,8 +5,8 @@
 ;; Author: precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/hyperstitional-themes
 ;; Created: April 16, 2024
-;; Modified: January 30, 2026
-;; Version: 3.3
+;; Modified: February 15, 2026
+;; Version: 3.4
 ;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -89,10 +89,10 @@ Returns a color in hex as a string."
      `(underline                  ((,class (:underline t))))
      `(variable-pitch             ((,class (:height 1.0))))
      `(fringe                     ((,class (:background ,bg))))
-     `(vertical-border            ((,class (:background ,bg :foreground ,bg))))
-     `(window-divider             ((,class (:background ,bg :foreground ,bg))))
-     `(window-divider-first-pixel ((,class (:background ,bg :foreground ,bg))))
-     `(window-divider-last-pixel  ((,class (:background ,bg :foreground ,bg))))
+     `(vertical-border            ((,class (:background ,c0 :foreground ,c0))))
+     `(window-divider             ((,class (:background ,c0 :foreground ,c0))))
+     `(window-divider-first-pixel ((,class (:background ,c0 :foreground ,c0))))
+     `(window-divider-last-pixel  ((,class (:background ,c0 :foreground ,c0))))
 
      `(default ((,class (:foreground ,fg :background ,bg))))
 
@@ -1170,10 +1170,10 @@ Returns a color in hex as a string."
      `(diff-refine-added   ((,class (:foreground ,ww :background ,ga))))
 
 ;;;;;; orderless
-     `(orderless-match-face-0 ((,class (:background ,bg :weight bold :underline ,bd))))
-     `(orderless-match-face-1 ((,class (:background ,rg :weight bold :underline ,rd))))
-     `(orderless-match-face-2 ((,class (:background ,gg :weight bold :underline ,gd))))
-     `(orderless-match-face-3 ((,class (:background ,wg :weight bold :underline ,wd))))
+     `(orderless-match-face-0 ((,class (:inverse-video t :background ,bg :weight bold :underline ,bd))))
+     `(orderless-match-face-1 ((,class (:inverse-video t :background ,rg :weight bold :underline ,rd))))
+     `(orderless-match-face-2 ((,class (:inverse-video t :background ,gg :weight bold :underline ,gd))))
+     `(orderless-match-face-3 ((,class (:inverse-video t :background ,wg :weight bold :underline ,wd))))
 
 ;;;;;; vertico
      `(vertico-current     ((,class (:underline (:position 0 :color ,ra :style dots)))))

@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 27, 2025
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -36,8 +36,10 @@
 (let* (
       (guava-themes-jacaranda-class '((class color) (min-colors 257)))
       (guava-themes-jacaranda-black             "#000000")
-
       (guava-themes-jacaranda-white             "#FFFFFF")
+
+      (guava-themes-jacaranda-shadow            "#7f7f7f")
+
       (guava-themes-jacaranda-cream             "#e9d9f9");e9e4f9
 
       (guava-themes-jacaranda-light-green       "#52bc63")
@@ -92,8 +94,11 @@
    `(line-number ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-antarctic-blue :height 1.35))))
    `(line-number-current-line ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-black :background ,guava-themes-jacaranda-light-purple :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-light-purple))))
+   ;; highlight
+   `(highlight ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-light-purple))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-shadow))))
 
    ;; region
    `(region ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-light-blue))))

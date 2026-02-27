@@ -44,7 +44,7 @@
     (fg-dim "#857f8f")
     (fg-alt "#89afef")
     (bg-active "#4b3f47")
-    (bg-inactive "#191317")
+    (bg-inactive "#292327")
     (border "#4d4a4b")
 
     (red "#ef6360")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-symbiosis-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-symbiosis
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-symbiosis-palette
  nil
- 'ef-symbiosis-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-symbiosis-palette-overrides)
 
 ;;; ef-symbiosis-theme.el ends here

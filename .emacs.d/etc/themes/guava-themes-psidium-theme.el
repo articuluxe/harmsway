@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 07, 2025
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -36,8 +36,10 @@
 (let* (
       (guava-themes-psidium-class '((class color) (min-colors 257)))
       (guava-themes-psidium-black             "#000000")
-
       (guava-themes-psidium-white             "#FFFFFF")
+
+      (guava-themes-psidium-shadow            "#7f7f7f")
+
       (guava-themes-psidium-cream             "#F1EECE");F7DEB6
 
       (guava-themes-psidium-green             "#599F48")
@@ -95,8 +97,11 @@
    `(line-number ((,guava-themes-psidium-class (:foreground ,guava-themes-psidium-brown :height 1.35))))
    `(line-number-current-line ((,guava-themes-psidium-class (:foreground ,guava-themes-psidium-black :background ,guava-themes-psidium-light-pink :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-psidium-class (:background ,guava-themes-psidium-light-pink))))
+   ;; highlight
+   `(highlight ((,guava-themes-psidium-class (:background ,guava-themes-psidium-light-pink))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-psidium-class (:foreground ,guava-themes-psidium-shadow))))
 
    ;; region
    `(region ((,guava-themes-psidium-class (:background ,guava-themes-psidium-oceanic-green))))

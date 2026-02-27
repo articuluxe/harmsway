@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2024-2026 James Cherti
 
-;; Author: James Cherti
+;; Author: James Cherti <https://www.jamescherti.com/contact/>
 ;; URL: https://github.com/jamescherti/tomorrow-night-deepblue-theme.el
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces themes

@@ -38,6 +38,11 @@
 ;; - https://bottosson.github.io/posts/oklab/
 ;; - https://oklch.com
 
+;;;; Screenshots:
+
+;; - https://codeberg.org/mekeor/evenok/raw/branch/screenshots/dark.png
+;; - https://codeberg.org/mekeor/evenok/raw/branch/screenshots/light.png
+
 ;;;; Installation:
 
 ;; Clone the Git repository to your local persistent memory and put

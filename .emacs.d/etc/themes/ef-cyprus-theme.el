@@ -44,7 +44,7 @@
     (fg-dim "#59786f")
     (fg-alt "#7f475a")
     (bg-active "#c5c3b8")
-    (bg-inactive "#f8f3ea")
+    (bg-inactive "#eee7e0")
     (border "#c4c0b6")
 
     (red "#9f0d0f")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-cyprus-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-cyprus
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-cyprus-palette
  nil
- 'ef-cyprus-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-cyprus-palette-overrides)
 
 ;;; ef-cyprus-theme.el ends here

@@ -669,15 +669,22 @@ an alternative implementation."
                                   'magit-commit--rebase
                                 last-command))
   (when (and git-commit-mode magit-commit-show-diff)
-    (when-let ((diff-buffer (magit-get-mode-buffer 'magit-diff-mode)))
-      ;; This window just started displaying the commit message
-      ;; buffer.  Without this that buffer would immediately be
-      ;; replaced with the diff buffer.  See #2632.
+    (when-let ((diff-buffer
+                ;; This signals an error if not inside a Git repository,
+                ;; but the user may be visiting COMMIT_EDITMSG using a
+                ;; tool other than git, which can be used outside a Git
+                ;; repository.  See #5527.
+                (ignore-error magit-outside-git-repo
+                  (magit-get-mode-buffer 'magit-diff-mode))))
+      ;; This window just started displaying the commit message buffer.
+      ;; Without unrecording that buffer would immediately be replaced
+      ;; with the diff buffer.  See #2632.
       (unrecord-window-buffer nil diff-buffer))
     (message "Diffing changes to be committed (C-g to abort diffing)")
     (let ((inhibit-quit nil))
       (condition-case nil
-          (magit-commit-diff-1)
+          (with-demoted-errors "Error showing commit diff: %S"
+            (magit-commit-diff-1))
         (quit)))))
 
 (defun magit-commit-diff-1 ()
@@ -695,6 +702,9 @@ an alternative implementation."
                   (and (file-exists-p f) (length (magit-file-lines f)))))
         (noalt nil))
     (pcase (list staged unstaged command)
+      ((guard (not (magit-commit-p "HEAD^")))
+       (setq rev "HEAD")
+       (setq arg nil))
       ((and `(,_ ,_ magit-commit--rebase)
             (guard (integerp squash)))
        (setq rev (format "HEAD~%s" squash)))

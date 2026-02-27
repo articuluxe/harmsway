@@ -44,7 +44,7 @@
     (fg-dim "#908890")
     (fg-alt "#afdacf")
     (bg-active "#564f55")
-    (bg-inactive "#1c1719")
+    (bg-inactive "#2c2729")
     (border "#605760")
 
     (red "#f48359")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-trio-dark-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-trio-dark
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-trio-dark-palette
  nil
- 'ef-trio-dark-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-trio-dark-palette-overrides)
 
 ;;; ef-trio-dark-theme.el ends here

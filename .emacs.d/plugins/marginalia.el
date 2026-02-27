@@ -385,6 +385,11 @@ for performance profiling of the annotators.")
      ((char-displayable-p ?…) "…")
      ("..."))))
 
+(defun marginalia--abbreviate-file-name (file)
+  "Abbreviate FILE name without Tramp slowdown."
+  (let (file-name-handler-alist)
+    (abbreviate-file-name file)))
+
 (defun marginalia--truncate (str width)
   "Truncate string STR to WIDTH."
   (when (floatp width) (setq width (round (* width marginalia-field-width))))
@@ -630,7 +635,7 @@ originate from the `definition-prefixes' hash table."
              thereis (ignore-errors (documentation-property sym doc)))
             (marginalia--definition-prefix sym)))
       :truncate 1.0 :face 'marginalia-documentation)
-     ((abbreviate-file-name (or (symbol-file sym) ""))
+     ((marginalia--abbreviate-file-name (or (symbol-file sym) ""))
       :truncate -0.5 :face 'marginalia-file-name))))
 
 (defun marginalia-annotate-command (cand)
@@ -914,8 +919,8 @@ The string is transformed according to `marginalia--bookmark-type-transforms'."
   (if-let* ((proc (get-buffer-process buffer)))
       (format "(%s %s) %s"
               proc (process-status proc)
-              (abbreviate-file-name (buffer-local-value 'default-directory buffer)))
-    (abbreviate-file-name
+              (marginalia--abbreviate-file-name (buffer-local-value 'default-directory buffer)))
+    (marginalia--abbreviate-file-name
      (or (cond
           ;; see ibuffer-buffer-file-name
           ((buffer-file-name buffer))
@@ -1169,7 +1174,7 @@ These annotations are skipped for remote paths."
       :width 8)
      ((marginalia--library-doc file)
       :truncate 1.0 :face 'marginalia-documentation)
-     ((abbreviate-file-name (file-name-directory file))
+     ((marginalia--abbreviate-file-name (file-name-directory file))
       :truncate -0.5 :face 'marginalia-file-name))))
 
 (defun marginalia-annotate-theme (cand)
@@ -1178,7 +1183,7 @@ These annotations are skipped for remote paths."
     (marginalia--fields
      ((marginalia--library-doc file)
       :truncate 1.0 :face 'marginalia-documentation)
-     ((abbreviate-file-name (file-name-directory file))
+     ((marginalia--abbreviate-file-name (file-name-directory file))
       :truncate -1.0 :face 'marginalia-file-name))))
 
 (defun marginalia-annotate-frame (cand)

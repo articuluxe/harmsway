@@ -44,7 +44,7 @@
     (fg-dim "#777294")
     (fg-alt "#9d5e7a")
     (bg-active "#c0c6c3")
-    (bg-inactive "#f0f8f4")
+    (bg-inactive "#eaf0e9")
     (border "#b4c4c0")
 
     (red "#c42d2f")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-spring-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-spring
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-spring-palette
  nil
- 'ef-spring-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-spring-palette-overrides)
 
 ;;; ef-spring-theme.el ends here

@@ -1004,9 +1004,7 @@ returning the truename."
 
 (define-error 'magit-outside-git-repo "Not inside Git repository")
 (define-error 'magit-corrupt-git-config "Corrupt Git configuration")
-(define-error 'magit-git-executable-not-found
-              (concat "Git executable cannot be found "
-                      "(see https://magit.vc/goto/e6a78ed2)"))
+(define-error 'magit-git-executable-not-found "Git executable cannot be found")
 
 (defun magit--assert-usable-git ()
   (if (not (executable-find (magit-git-executable) t))
@@ -2823,6 +2821,23 @@ If either revision cannot be dereferenced as a commit, signal an error."
     (minibuffer-with-setup-hook #'magit--minibuf-default-add-commit
       (magit-completing-read prompt (delete exclude (magit-list-refnames))
                              nil 'any nil 'magit-revision-history default))))
+
+(defun magit-read-other-branches-or-commits
+    (prompt &optional exclude secondary-default)
+  (let* ((current (magit-get-current-branch))
+         (atpoint (magit-branch-or-commit-at-point))
+         (exclude (or exclude current))
+         (default (or (and (not (equal atpoint exclude))
+                           (not (and (not current)
+                                     (magit-rev-equal atpoint "HEAD")))
+                           atpoint)
+                      (and (not (equal current exclude)) current)
+                      secondary-default
+                      (magit-get-previous-branch))))
+    (minibuffer-with-setup-hook #'magit--minibuf-default-add-commit
+      (magit-completing-read-multiple
+       prompt (delete exclude (magit-list-refnames))
+       nil 'any nil 'magit-revision-history default))))
 
 (defun magit-read-other-local-branch
     (prompt &optional exclude secondary-default)

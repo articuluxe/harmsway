@@ -189,6 +189,7 @@
     `(message-header-name ((,c :foreground ,blue :weight bold)))
     `(message-separator ((,c :foreground ,red :weight bold)))))
 
+;;;###theme-autoload
 (modus-themes-theme
  'standard-wombat
  'standard-themes

@@ -1,6 +1,20 @@
-# C++20/17/14/11
+# C++23/20/17/14/11
 
 ## Overview
+
+C++23 includes the following new language features:
+- [consteval if](#consteval-if)
+- [deducing `this`](#deducing-this)
+- [multidimensional subscript operator](#multidimensional-subscript-operator)
+- [increasing range-based `for` safety](#increasing-range-based-for-safety)
+
+C++23 includes the following new library features:
+- [stacktrace library](#stacktrace-library)
+- [contains for strings and string views](#contains-for-strings-and-string-views)
+- [std::to_underlying](#stdto_underlying)
+- [`spanstream`](#spanstream)
+- [input/output pointers](#inputoutput-pointers)
+- [monadic operations for `std::optional`](monadic-operations-for-stdoptional)
 
 C++20 includes the following new language features:
 - [coroutines](#coroutines)
@@ -146,6 +160,170 @@ C++11 includes the following new library features:
 - [memory model](#memory-model)
 - [std::async](#stdasync)
 - [std::begin/end](#stdbeginend)
+
+## C++23 Language Features
+
+### consteval if
+Write code that is instantiated during constant evaluation.
+```c++
+consteval int f(int i) { return i; }
+
+constexpr int g(int i) {
+  if consteval {
+      return f(i);
+  } else {
+      return 42;
+  }
+}
+```
+
+### Deducing `this`
+Using explicit object member functions introduced in C++23, deducing the object's type and value category is now possible by specifying the first parameter of a member function prefixed with the `this` keyword:
+```c++
+// NEW WAY USING DEDUCING THIS:
+struct T {
+  decltype(auto) operator[](this auto& self, std::size_t idx) { 
+    return self.mVector[idx]; 
+  }
+};
+
+// OLD WAY:
+struct T {
+  value_t& operator[](std::size_t idx) {
+    return mVector[idx];
+  }
+  const value_t& operator[](std::size_t idx) const {
+    return mVector[idx];
+  }
+};
+```
+
+### Multidimensional subscript operator
+Specify zero or more arguments to the `operator[]` operator:
+```c++
+template <typename T, std::size_t Z, std::size_t Y, std::size_t X>
+struct Array3d {
+  std::array<T, X * Y * Z> m{};
+
+  T& operator[](std::size_t z, std::size_t y, std::size_t x) {
+      return m[z * Y * X + y * X + x];
+  }
+};
+
+Array3d<int, 4, 3, 2> v;
+v[3, 2, 1] = 42;
+```
+
+### Increasing range-based `for` safety
+Fixes some of the notorious lifetime issues with one of the most important control structures in C++.
+
+Some examples of code snippets that were broken pre-C++23 that are now fixed:
+
+* `for (auto e : getTmp().getRef())`
+* `for (auto e : getVector()[0])`
+* `for (auto valueElem : getMap()["key"])`
+* `for (auto e : get<0>(getTuple()))`
+* `for (auto e : getOptionalCollection().value())`
+* `for (char c : get<std::string>(getVariant()))`
+
+## C++23 Library Features
+
+### Stacktrace library
+A stacktrace is an approximate representation of an invocation sequence and consists of stacktrace entries. A stacktrace entry (represented by `std::stacktrace_entry`) consists of information including the source file and line number, and a description field.
+
+Example output on a Linux system:
+```c++
+#include <print>
+#include <stacktrace>
+
+int main() {
+    std::println("{}", std::stacktrace::current());
+}
+```
+```
+  0#  main at /app/example.cpp:5 [0x5ee42e3db747]
+  1#  <unknown> [0x76e76dc29d8f]
+  2#  __libc_start_main [0x76e76dc29e3f]
+  3#  _start [0x5ee42e3db644]
+```
+
+### `contains` for strings and string views
+A simpler function for querying if a substring is contained within a string or string view:
+```c++
+std::string{"foobarbaz"}.contains("bar"); // == true
+std::string{"foobarbaz"}.contains("bat"); // == false
+```
+
+### `std::to_underlying`
+Supports the common utility of converting an enumeration to its underlying type:
+```c++
+enum class MyEnum : int { A = 1, B, C };
+std::to_underlying(MyEnum::A); // == 1
+std::to_underlying(MyEnum::C); // == 3
+```
+
+### `spanstream`
+A `strstream` replacement using a character span as an externally-provided buffer. No ownership or re-allocation on the buffer.
+```c++
+char input[] = "10 20 30";
+std::ispanstream is{std::span<char>{input}};
+int i;
+is >> i; // i == 10
+is >> i; // i == 20
+is >> i; // i == 30
+```
+```c++
+char output[30]{}; // zero-initialize array
+std::ospanstream os{std::span<char>{output}};
+os << 10 << 20 << 30;
+std::span<char> sp = os.span();
+```
+
+### Input/output pointers
+`std::out_ptr` and `std::inout_ptr` are abstractions to support both C APIs and smart pointers by creating a temporary pointer-to-pointer that updates the smart pointer when it destructs. In short: it's a thing convertible to a `T**` that updates (with a `reset` call or semantically equivalent behavior) the smart pointer it is created with when it goes out of scope.
+
+This abstraction also safely manages the lifetime of the associated memory when exceptions are thrown.
+```c++
+// p_handle is written (out) to.
+int c_api_create_handle(MyHandle** p_handle);
+// p_handle is both read (in) and written (out) to.
+int c_api_recreate_handle(MyHandle** p_handle);
+void c_api_delete_handle(MyHandle* handle);
+
+struct resource_deleter {
+	void operator()(MyHandle* handle) {
+		c_api_delete_handle(handle);
+	}
+};
+```
+```c++
+std::unique_ptr<MyHandle, resource_deleter> resource(nullptr);
+int err = c_api_create_handle(std::out_ptr(resource));
+// `resource` now owns the memory allocated within `c_api_create_handle`.
+```
+```c++
+std::shared_ptr<MyHandle> resource(nullptr);
+int err = c_api_recreate_handle(std::inout_ptr(resource), resource_deleter{});
+// `resource` now shares the memory allocated within `c_api_recreate_handle`.
+```
+
+Both inout/out pointers support casts to `void**` (implicitly), and explicitly to user-specified types.
+
+### Monadic operations for `std::optional`
+Support various `and_then`, `transform`, and `or_else` operations for `std::optional`.
+```c++
+std::optional<double> stringToDouble(const std::string& input) {
+    return parse_int(input)
+        .and_then(ensure_non_negative)
+        .and_then(safe_sqrt)
+        .transform([](double x) -> std::optional<double> {
+            return x * 2.0;
+        })
+        .or_else([] -> std::optional<double> {
+            throw std::runtime_error{"bad number"};
+        });
+}
+```
 
 ## C++20 Language Features
 
@@ -597,10 +775,10 @@ char8_t utf8_str[] = u8"\u0123";
 The `constinit` specifier requires that a variable must be initialized at compile-time.
 ```c++
 const char* g() { return "dynamic initialization"; }
-constexpr const char* f(bool p) { return p ? "constant initializer" : g(); }
+constexpr const char* f() { return "constant initializer"; }
 
-constinit const char* c = f(true); // OK
-constinit const char* d = g(false); // ERROR: `g` is not constexpr, so `d` cannot be evaluated at compile-time.
+constinit const char* c = f();  // OK
+constinit const char* d = g();  // ERROR: `g` is not constexpr, so `d` cannot be evaluated at compile-time.
 ```
 
 ### \_\_VA\_OPT\_\_
@@ -1544,9 +1722,8 @@ else { /* handle failure */ }
 ### Rounding functions for chrono durations and timepoints
 Provides abs, round, ceil, and floor helper functions for `std::chrono::duration` and `std::chrono::time_point`.
 ```c++
-using seconds = std::chrono::seconds;
-std::chrono::milliseconds d{ 5500 };
-std::chrono::abs(d); // == 5s
+std::chrono::milliseconds a{ -5500 };
+std::chrono::milliseconds d = std::chrono::abs(a); // == 5500ms
 std::chrono::round<seconds>(d); // == 6s
 std::chrono::ceil<seconds>(d); // == 6s
 std::chrono::floor<seconds>(d); // == 5s

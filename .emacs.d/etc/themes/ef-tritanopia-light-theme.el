@@ -47,7 +47,7 @@
     (fg-dim "#756275")
     (fg-alt "#194f90")
     (bg-active "#bdb9b9")
-    (bg-inactive "#f7f2f2")
+    (bg-inactive "#efe8e8")
     (border "#adadad")
 
     (red "#aa0010")
@@ -226,6 +226,7 @@ further details)."
    nil
    (append ef-tritanopia-light-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-tritanopia-light
  'ef-themes
@@ -233,7 +234,6 @@ further details)."
  'light
  'ef-tritanopia-light-palette
  nil
- 'ef-tritanopia-light-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-tritanopia-light-palette-overrides)
 
 ;;; ef-tritanopia-light-theme.el ends here

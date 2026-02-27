@@ -47,7 +47,7 @@
     (fg-dim "#7f8797")
     (fg-alt "#90afef")
     (bg-active "#445165")
-    (bg-inactive "#0d1429")
+    (bg-inactive "#1d2439")
     (border "#555a64")
 
     (red "#cf8560")
@@ -226,6 +226,7 @@ further details)."
    nil
    (append ef-deuteranopia-dark-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-deuteranopia-dark
  'ef-themes
@@ -233,7 +234,6 @@ further details)."
  'dark
  'ef-deuteranopia-dark-palette
  nil
- 'ef-deuteranopia-dark-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-deuteranopia-dark-palette-overrides)
 
 ;;; ef-deuteranopia-dark-theme.el ends here

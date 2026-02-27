@@ -44,7 +44,7 @@
     (fg-dim "#68708a")
     (fg-alt "#80431a")
     (bg-active "#c7b7a6")
-    (bg-inactive "#f9efd4")
+    (bg-inactive "#f0e3cd")
     (border "#c5baa6")
 
     (red "#ba2d2f")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-melissa-light-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-melissa-light
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-melissa-light-palette
  nil
- 'ef-melissa-light-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-melissa-light-palette-overrides)
 
 ;;; ef-melissa-light-theme.el ends here

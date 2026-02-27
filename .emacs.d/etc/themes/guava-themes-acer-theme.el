@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -37,6 +37,8 @@
       (guava-themes-acer-class '((class color) (min-colors 257)))
       (guava-themes-acer-black             "#000000")
       (guava-themes-acer-white             "#FFFFFF")
+
+      (guava-themes-acer-shadow            "#7f7f7f")
 
       (guava-themes-acer-cream             "#dc8e64"); f68e64
 
@@ -90,8 +92,11 @@
    `(line-number ((,guava-themes-acer-class (:foreground ,guava-themes-acer-black :height 1.35))))
    `(line-number-current-line ((,guava-themes-acer-class (:foreground ,guava-themes-acer-red :background ,guava-themes-acer-cream :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-acer-class (:background ,guava-themes-acer-cream))))
+   ;; highlight
+   `(highlight ((,guava-themes-acer-class (:background ,guava-themes-acer-cream))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-acer-class (:foreground ,guava-themes-acer-shadow))))
 
    ;; region
    `(region ((,guava-themes-acer-class (:background ,guava-themes-acer-deep-orange))))

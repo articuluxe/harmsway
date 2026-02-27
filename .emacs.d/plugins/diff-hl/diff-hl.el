@@ -485,12 +485,14 @@ It can be a relative expression as well, such as \"HEAD^\" with Git, or
          (hide-staged (and (eq backend 'Git) (not diff-hl-show-staged-changes))))
     (when backend
       (let ((state (vc-state file backend))
-            ;; Workaround for debbugs#78946.
+            ;; Workaround for debbugs#78946 for the `thread' async update method.
             ;; This is fiddly, but we basically allow the thread to start, while
             ;; prohibiting the async process call inside.
-            ;; That still makes it partially async.
-            (diff-hl-update-async (and (not (eq window-system 'ns))
-                                       (eq diff-hl-update-async t))))
+            ;; That still makes it partially async on macOS.
+            ;; Or just use "simple async" if your Emacs is new enough.
+            (diff-hl-update-async (or (and (eq diff-hl-update-async 'thread)
+                                           (not (eq window-system 'ns)))
+                                      (eq diff-hl-update-async t))))
         (cond
          ((and
            (not diff-hl-highlight-reference-function)
@@ -582,11 +584,6 @@ contents as they are (or would be) after applying the changes in NEW."
       (cl-incf (nth 0 (car old)) acc)
       (setq old (cdr old)))
     ref))
-
-(defun diff-hl-process-wait (buf)
-  (let ((proc (get-buffer-process buf)))
-    (while (process-live-p proc)
-      (accept-process-output proc 0.01))))
 
 (defun diff-hl-changes-from-buffer (buf)
   (with-current-buffer buf
@@ -767,8 +764,9 @@ Return a list of line overlays used."
      ((eq (process-status proc) 'signal))
      ;; If a process is running, set the sentinel.
      ((eq (process-status proc) 'run)
-      (set-process-sentinel
-       proc
+      (add-function
+       :after
+       (process-sentinel proc)
        (lambda (proc _status)
          ;; Delegate to the parent cond for decision logic.
          (diff-hl--when-done buffer get-value callback proc))))

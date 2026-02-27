@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 19, 2026
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -37,6 +37,8 @@
       (guava-themes-rhododendron-class '((class color) (min-colors 257)))
       (guava-themes-rhododendron-black             "#000000")
       (guava-themes-rhododendron-white             "#FFFFFF")
+
+      (guava-themes-rhododendron-shadow            "#7f7f7f")
 
       (guava-themes-rhododendron-forest-green      "#228b22")
       (guava-themes-rhododendron-deep-green        "#3e7411");3e7011
@@ -90,8 +92,11 @@
    `(line-number ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-black :height 1.35))))
    `(line-number-current-line ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-red :background ,guava-themes-rhododendron-light-purple :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-light-purple))))
+   ;; highlight
+   `(highlight ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-light-purple))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-shadow))))
 
    ;; region
    `(region ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-alt-bright-pink))))

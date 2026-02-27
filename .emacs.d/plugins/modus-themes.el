@@ -3748,6 +3748,16 @@ Info node `(modus-themes) Option for palette overrides'.")
 
 ;;;; Helper functions for theme setup
 
+(defun modus-themes--hex-to-rgb (hex-color)
+  "Convert HEX-COLOR to a list of normalized RGB values.
+Use `color-values-from-color-spec' (a C built-in since Emacs 28.1)
+instead of `color-name-to-rgb' to avoid dependence on a display
+connection.  This matters when loading a theme during early init on
+GUI Emacs, where `color-values' returns nil before the display is
+ready (per issue #198)."
+  (mapcar (lambda (x) (/ x 65535.0))
+          (color-values-from-color-spec hex-color)))
+
 ;; This is the WCAG formula: https://www.w3.org/TR/WCAG20-TECHS/G18.html
 (defun modus-themes--wcag-contribution (channel weight)
   "Return the CHANNEL contribution to overall luminance given WEIGHT."
@@ -3759,7 +3769,7 @@ Info node `(modus-themes) Option for palette overrides'.")
 (defun modus-themes-wcag-formula (hex-color)
   "Get WCAG value of color value HEX-COLOR.
 The value is defined in hexadecimal RGB notation, such #123456."
-  (let ((channels (color-name-to-rgb hex-color))
+  (let ((channels (modus-themes--hex-to-rgb hex-color))
         (weights '(0.2126 0.7152 0.0722))
         (contribution nil))
     (while channels
@@ -3917,10 +3927,18 @@ If THEME is unknown, return nil.  Else return (append OVERRIDES USER CORE)."
 
 (defun modus-themes--disable-themes (themes)
   "Disable THEMES per `modus-themes-disable-other-themes'."
-  (mapc #'disable-theme
-        (if modus-themes-disable-other-themes
-            themes
-          (seq-filter #'modus-themes--modus-theme-p themes))))
+  (mapc
+   #'disable-theme
+   (if modus-themes-disable-other-themes
+       themes
+     (seq-filter #'modus-themes--modus-theme-p themes))))
+
+(defun modus-themes--get-color-schemes ()
+  "Return `custom-enabled-themes' of :kind `color-scheme'."
+  (seq-filter
+   (lambda (theme)
+     (eq (plist-get (get theme 'theme-properties) :kind) 'color-scheme))
+   custom-enabled-themes))
 
 (defun modus-themes-load-theme (theme &optional hook)
   "Load THEME while disabling other themes.
@@ -3933,7 +3951,7 @@ after loading the THEME.  If HOOK, then call that instead.
 
 Return THEME."
   (load-theme theme :no-confirm)
-  (modus-themes--disable-themes (remq theme custom-enabled-themes))
+  (modus-themes--disable-themes (remq theme (modus-themes--get-color-schemes)))
   (run-hooks (or hook 'modus-themes-after-load-theme-hook))
   theme)
 
@@ -5807,6 +5825,9 @@ If COLOR is unspecified, then return :box unspecified."
     `(info-colors-ref-item-type ((,c :inherit modus-themes-bold :foreground ,type)))
     `(info-colors-ref-item-user-option ((,c :foreground ,variable)))
     `(info-colors-ref-item-variable ((,c :foreground ,variable)))
+;;;;; institution-calendar
+    `(institution-calendar-term-indicator-regular-week ((,c :background ,bg-dim :foreground ,fg-alt)))
+    `(institution-calendar-term-indicator-extra-week ((,c :foreground ,fg-dim)))
 ;;;;; ioccur
     `(ioccur-cursor ((,c :foreground ,fg-main)))
     `(ioccur-invalid-regexp ((,c :foreground ,err)))
@@ -6047,7 +6068,6 @@ If COLOR is unspecified, then return :box unspecified."
     `(magit-refname-pullreq ((,c :foreground ,fg-dim)))
     `(magit-refname-stash ((,c :foreground ,fg-dim)))
     `(magit-refname-wip ((,c :foreground ,fg-dim)))
-    `(magit-section ((,c :background ,bg-dim :foreground ,fg-main)))
     `(magit-section-heading ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
     `(magit-section-heading-selection ((,c :inherit modus-themes-bold :background ,bg-hover-secondary)))
     `(magit-section-highlight ((,c :background ,bg-dim)))
@@ -7619,8 +7639,8 @@ For instance:
 BLENDED-WITH-HEX is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
 inclusive."
   (let* ((blend-rgb (modus-themes-blend
-                     (color-name-to-rgb hex-color)
-                     (color-name-to-rgb blended-with-hex)
+                     (modus-themes--hex-to-rgb hex-color)
+                     (modus-themes--hex-to-rgb blended-with-hex)
                      alpha))
          (blend-hex (apply #'color-rgb-to-hex blend-rgb)))
     (modus-themes--color-six-digits blend-hex)))
@@ -7649,7 +7669,7 @@ inclusive."
   "Return non-nil if COLOR is warm.
 A warm color has more contribution from the red channel of light than
 the blue one."
-  (pcase-let ((`(,r ,_ ,b) (color-name-to-rgb color)))
+  (pcase-let ((`(,r ,_ ,b) (modus-themes--hex-to-rgb color)))
     (> r b)))
 
 (defun modus-themes-color-is-warm-or-cool-p (color)

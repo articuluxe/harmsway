@@ -257,7 +257,15 @@ Returns the new boolean value of `:grounding-search'."
   "Build a list of Google LLM models available."
   ;; Context windows have been verified as of 11/26/2024. See
   ;; https://ai.google.dev/gemini-api/docs/models/gemini.
-  (list (chatgpt-shell-google-make-model :version "gemini-3-pro-preview"
+  (list (chatgpt-shell-google-make-model :version "gemini-3.1-pro-preview"
+                                         :short-version "gemini-3.1-pro-preview"
+                                         :path "/v1beta/models/gemini-3.1-pro-preview"
+                                         :grounding-search t
+                                         :url-context t
+                                         :reasoning-effort-selector #'chatgpt-shell-google-reasoning-effort-selector
+                                         :token-width 4
+                                         :context-window 1048576)
+        (chatgpt-shell-google-make-model :version "gemini-3-pro-preview"
                                          :short-version "gemini-3-pro-preview"
                                          :path "/v1beta/models/gemini-3-pro-preview"
                                          :grounding-search t

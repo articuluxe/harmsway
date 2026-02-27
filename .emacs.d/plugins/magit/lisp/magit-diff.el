@@ -40,7 +40,8 @@
 ;; For `magit-diff-popup'
 (declare-function magit-stash-show "magit-stash" (stash &optional args files))
 ;; For `magit-diff-visit-file'
-(declare-function magit-find-file-noselect "magit-files" (rev file))
+(declare-function magit-find-file-noselect "magit-files"
+                  (rev file &optional no-restore-position volatile))
 (declare-function magit-status-setup-buffer "magit-status" (&optional directory))
 ;; For `magit-diff-wash-diff'
 (defvar magit-log-heading-re)
@@ -196,7 +197,7 @@ keep their distinct foreground colors."
   :type 'boolean)
 
 (defcustom magit-diff-refine-hunk nil
-  "Whether to show word-granularity differences within diff hunks.
+  "Whether to refine hunks to show word-granularity differences.
 
 `nil'  Never show fine differences.
 `all'  Show fine differences for all displayed diff hunks.
@@ -304,10 +305,10 @@ If the used INDENT is `tabs', highlight indentation with tabs.
 If INDENT is an integer, highlight indentation with at least
 that many spaces.  Otherwise, highlight neither."
   :group 'magit-diff
-  :type `(repeat (cons (string :tag "Directory regexp")
-                       (choice (const :tag "Tabs" tabs)
-                               (integer :tag "Spaces" :value ,tab-width)
-                               (const :tag "Neither" nil)))))
+  :type `(alist :key-type (regexp :tag "Directory regexp")
+                :value-type (choice (const :tag "Tabs" tabs)
+                                    (natnum :tag "Spaces" :value ,tab-width)
+                                    (const :tag "Neither" nil))))
 
 (defcustom magit-diff-hide-trailing-cr-characters
   (and (memq system-type '(ms-dos windows-nt)) t)
@@ -587,6 +588,7 @@ side.  That way you don't lose the ability to visit the old side."
   :type 'boolean)
 
 ;;; Faces
+;;;; Headings
 
 (defface magit-diff-file-heading
   '((t :extend t :weight bold))
@@ -646,17 +648,9 @@ side.  That way you don't lose the ability to visit the old side."
   "Face for selected diff hunk headings."
   :group 'magit-faces)
 
-(defface magit-diff-hunk-region
-  `((t :inherit bold
-       :extend ,(ignore-errors (face-attribute 'region :extend))))
-  "Face used by `magit-diff-highlight-hunk-region-using-face'.
-
-This face is overlaid over text that uses other hunk faces,
-and those normally set the foreground and background colors.
-The `:foreground' and especially the `:background' properties
-should be avoided here.  Setting the latter would cause the
-loss of information.  Good properties to set here are `:weight'
-and `:slant'."
+(defface magit-diff-conflict-heading
+  '((t :inherit magit-diff-hunk-heading))
+  "Face for conflict markers."
   :group 'magit-faces)
 
 (defface magit-diff-conflict-heading-highlight
@@ -687,38 +681,83 @@ and `:slant'."
   "Face for diff hunk heading when lines are marked."
   :group 'magit-faces)
 
-(defface magit-diff-lines-boundary
-  '((t :extend t :inherit magit-diff-lines-heading))
-  "Face for boundary of marked lines in diff hunk."
-  :group 'magit-faces)
-
-(defface magit-diff-conflict-heading
-  '((t :inherit magit-diff-hunk-heading))
-  "Face for conflict markers."
-  :group 'magit-faces)
-
-(defface magit-diff-added
-  '((((class color) (background light))
+(defface magit-diff-our-heading
+  `((((class color) (background light))
      :extend t
-     :background "#ddffdd"
-     :foreground "#22aa22")
+     :background "#aa2222"
+     :foreground "#ffdddd")
     (((class color) (background dark))
      :extend t
-     :background "#335533"
-     :foreground "#ddffdd"))
-  "Face for lines in a diff that have been added."
+     :background "#ffdddd"
+     :foreground "#553333"))
+  "Face for headings of our side in merge conflicts."
+  :group 'magit-faces)
+
+(defface magit-diff-base-heading
+  `((((class color) (background light))
+     :extend t
+     :background "#aaaa11"
+     :foreground "#ffffcc")
+    (((class color) (background dark))
+     :extend t
+     :background "#ffffcc"
+     :foreground "#555522"))
+  "Face for headings of common base in merge conflicts."
+  :group 'magit-faces)
+
+(defface magit-diff-their-heading
+  `((((class color) (background light))
+     :extend t
+     :background "#22aa22"
+     :foreground "#ddffdd")
+    (((class color) (background dark))
+     :extend t
+     :background "#ddffdd"
+     :foreground "#335533"))
+  "Face for headings of their side in merge conflicts."
+  :group 'magit-faces)
+
+;;;; Lines
+
+(defcustom magit-diff-specify-hunk-foreground t
+  "Whether to specify foreground colors for hunk faces.
+Setting this only has an effect if done before Magit is loaded."
+  :package-version '(magit . "4.6.0")
+  :group 'magit-faces
+  :type 'boolean)
+
+(defface magit-diff-context
+  `((((class color) (background light))
+     :extend t
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "grey50")))
+    (((class color) (background  dark))
+     :extend t
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "grey70"))))
+  "Face for lines in a diff that are unchanged."
   :group 'magit-faces)
 
 (defface magit-diff-removed
-  '((((class color) (background light))
+  `((((class color) (background light))
      :extend t
      :background "#ffdddd"
-     :foreground "#aa2222")
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#aa2222")))
     (((class color) (background dark))
      :extend t
      :background "#553333"
-     :foreground "#ffdddd"))
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#ffdddd"))))
   "Face for lines in a diff that have been removed."
+  :group 'magit-faces)
+
+(defface magit-diff-added
+  `((((class color) (background light))
+     :extend t
+     :background "#ddffdd"
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#22aa22")))
+    (((class color) (background dark))
+     :extend t
+     :background "#335533"
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#ddffdd"))))
+  "Face for lines in a diff that have been added."
   :group 'magit-faces)
 
 (defface magit-diff-our
@@ -727,14 +766,14 @@ and `:slant'."
   :group 'magit-faces)
 
 (defface magit-diff-base
-  '((((class color) (background light))
+  `((((class color) (background light))
      :extend t
      :background "#ffffcc"
-     :foreground "#aaaa11")
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#aaaa11")))
     (((class color) (background dark))
      :extend t
      :background "#555522"
-     :foreground "#ffffcc"))
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#ffffcc"))))
   "Face for lines in a diff for the base side in a conflict."
   :group 'magit-faces)
 
@@ -743,38 +782,42 @@ and `:slant'."
   "Face for lines in a diff for their side in a conflict."
   :group 'magit-faces)
 
-(defface magit-diff-context
-  '((((class color) (background light))
-     :extend t
-     :foreground "grey50")
-    (((class color) (background  dark))
-     :extend t
-     :foreground "grey70"))
-  "Face for lines in a diff that are unchanged."
-  :group 'magit-faces)
+;;;; Highlights
 
-(defface magit-diff-added-highlight
-  '((((class color) (background light))
+(defface magit-diff-context-highlight
+  `((((class color) (background light))
      :extend t
-     :background "#cceecc"
-     :foreground "#22aa22")
+     :background "grey95"
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "grey50")))
     (((class color) (background dark))
      :extend t
-     :background "#336633"
-     :foreground "#cceecc"))
-  "Face for lines in a diff that have been added."
+     :background "grey20"
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "grey70"))))
+  "Face for lines in the current context in a diff."
   :group 'magit-faces)
 
 (defface magit-diff-removed-highlight
-  '((((class color) (background light))
+  `((((class color) (background light))
      :extend t
      :background "#eecccc"
-     :foreground "#aa2222")
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#aa2222")))
     (((class color) (background dark))
      :extend t
      :background "#663333"
-     :foreground "#eecccc"))
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#eecccc"))))
   "Face for lines in a diff that have been removed."
+  :group 'magit-faces)
+
+(defface magit-diff-added-highlight
+  `((((class color) (background light))
+     :extend t
+     :background "#cceecc"
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#22aa22")))
+    (((class color) (background dark))
+     :extend t
+     :background "#336633"
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#cceecc"))))
+  "Face for lines in a diff that have been added."
   :group 'magit-faces)
 
 (defface magit-diff-our-highlight
@@ -783,14 +826,14 @@ and `:slant'."
   :group 'magit-faces)
 
 (defface magit-diff-base-highlight
-  '((((class color) (background light))
+  `((((class color) (background light))
      :extend t
      :background "#eeeebb"
-     :foreground "#aaaa11")
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#aaaa11")))
     (((class color) (background dark))
      :extend t
      :background "#666622"
-     :foreground "#eeeebb"))
+     ,@(and magit-diff-specify-hunk-foreground '(:foreground "#eeeebb"))))
   "Face for lines in a diff for the base side in a conflict."
   :group 'magit-faces)
 
@@ -799,21 +842,56 @@ and `:slant'."
   "Face for lines in a diff for their side in a conflict."
   :group 'magit-faces)
 
-(defface magit-diff-context-highlight
-  '((((class color) (background light))
-     :extend t
-     :background "grey95"
-     :foreground "grey50")
-    (((class color) (background dark))
-     :extend t
-     :background "grey20"
-     :foreground "grey70"))
-  "Face for lines in the current context in a diff."
+;;;; Indicators
+
+(defcustom magit-diff-use-indicator-faces nil
+  "Whether to use separate faces for diff side indicators.
+If non-nil, use, for example, `magit-diff-removed-indicator' for the
+plus sign at the beginning of a removed line.  If nil, use the same
+face as for the rest of the line."
+  :package-version '(magit . "4.6.0")
+  :group 'magit-faces
+  :type 'boolean)
+
+(defface magit-diff-removed-indicator
+  `((((class color) (background light)) :foreground "#aa2222")
+    (((class color) (background  dark)) :foreground "#eecccc"))
+  "Face for indicators on lines in a diff that have been removed.
+Only used if `magit-diff-use-indicator-faces' is non-nil."
   :group 'magit-faces)
 
-(defface magit-diff-whitespace-warning
-  '((t :inherit trailing-whitespace))
-  "Face for highlighting whitespace errors added lines."
+(defface magit-diff-added-indicator
+  `((((class color) (background light)) :foreground "#22aa22")
+    (((class color) (background  dark)) :foreground "#cceecc"))
+  "Face for indicators on lines in a diff that have been added.
+Only used if `magit-diff-use-indicator-faces' is non-nil."
+  :group 'magit-faces)
+
+(defface magit-diff-our-indicator
+  '((t :inherit magit-diff-removed-indicator))
+  "Face for indicators on lines in a diff for our side in a conflict.
+Only used if `magit-diff-use-indicator-faces' is non-nil."
+  :group 'magit-faces)
+
+(defface magit-diff-base-indicator
+  `((((class color) (background light)) :foreground "#aaaa11")
+    (((class color) (background  dark)) :foreground "#ffffcc"))
+  "Face for indicators on lines in a diff for base side in a conflict.
+Only used if `magit-diff-use-indicator-faces' is non-nil."
+  :group 'magit-faces)
+
+(defface magit-diff-their-indicator
+  '((t :inherit magit-diff-added-indicator))
+  "Face for indicators on lines in a diff for their side in a conflict.
+Only used if `magit-diff-use-indicator-faces' is non-nil."
+  :group 'magit-faces)
+
+;;;; Diffstats
+
+(defface magit-diffstat-removed
+  '((((class color) (background light)) :foreground "#aa2222")
+    (((class color) (background  dark)) :foreground "#aa4444"))
+  "Face for removal indicator in diffstat."
   :group 'magit-faces)
 
 (defface magit-diffstat-added
@@ -822,10 +900,31 @@ and `:slant'."
   "Face for addition indicator in diffstat."
   :group 'magit-faces)
 
-(defface magit-diffstat-removed
-  '((((class color) (background light)) :foreground "#aa2222")
-    (((class color) (background  dark)) :foreground "#aa4444"))
-  "Face for removal indicator in diffstat."
+;;;; Region
+
+(defface magit-diff-lines-boundary
+  '((t :extend t :inherit magit-diff-lines-heading))
+  "Face for boundary of marked lines in diff hunk."
+  :group 'magit-faces)
+
+(defface magit-diff-hunk-region
+  `((t :inherit bold
+       :extend ,(ignore-errors (face-attribute 'region :extend))))
+  "Face used by `magit-diff-highlight-hunk-region-using-face'.
+
+This face is overlaid over text that uses other hunk faces,
+and those normally set the foreground and background colors.
+The `:foreground' and especially the `:background' properties
+should be avoided here.  Setting the latter would cause the
+loss of information.  Good properties to set here are `:weight'
+and `:slant'."
+  :group 'magit-faces)
+
+;;;; Whitespace
+
+(defface magit-diff-whitespace-warning
+  '((t :inherit trailing-whitespace))
+  "Face for highlighting whitespace errors added lines."
   :group 'magit-faces)
 
 ;;; Variables
@@ -1443,7 +1542,7 @@ for a revision."
         (save-buffer))
       (let ((buf (magit-revision-setup-buffer rev args files)))
         (when file
-          (let ((line (magit-diff-visit--offset file (list "-R" rev) line))
+          (let ((line (magit-diff-visit--offset line file "-R" rev))
                 (col (current-column)))
             (with-current-buffer buf
               (magit-diff--goto-file-position file line col))))))))
@@ -1605,24 +1704,25 @@ instead."
               "--ignore-blank-space")))
 
 (defun magit-diff-toggle-refine-hunk (&optional style)
-  "Turn diff-hunk refining on or off.
+  "Turn hunk refinement on or off, or switch refinement method.
 
-If hunk refining is currently on, then hunk refining is turned off.
-If hunk refining is off, then hunk refining is turned on, in
-`selected' mode (only the currently selected hunk is refined).
+If hunk refinement is currently on, then turn off hunk refinement.
+If hunk refinement is off, then turn on immediate hunk refinement.
 
-With a prefix argument, the \"third choice\" is used instead:
-If hunk refining is currently on, then refining is kept on, but
-the refining mode (`selected' or `all') is switched.
-If hunk refining is off, then hunk refining is turned on, in
-`all' mode (all hunks refined).
+With a prefix argument, an alternative refinement method comes into
+play.  When using that method, mode hunks are not refined immediately,
+instead each hunk is refined once it is selected, and then stays refined
+until the next refresh of the buffer.  If hunk refinement is currently
+on, then toggle between refining all hunks up front or only once they
+are selected.  If hunk refinement is off, then turn on hunk refinement,
+using the eventual refinement method.
 
-Customize variable `magit-diff-refine-hunk' to change the default mode."
+Customize option `magit-diff-refine-hunk' to change the default method."
   (interactive "P")
   (setq-local magit-diff-refine-hunk
               (if style
-                  (if (eq magit-diff-refine-hunk 'all) t 'all)
-                (not magit-diff-refine-hunk)))
+                  (if (eq magit-diff-refine-hunk t) 'all t)
+                (if magit-diff-refine-hunk nil 'all)))
   (magit-diff-update-hunk-refinement))
 
 ;;;; Visit Commands
@@ -1815,13 +1915,15 @@ the Magit-Status buffer for DIRECTORY."
              (line   (magit-diff-hunk-line   hunk goto-from))
              (column (magit-diff-hunk-column hunk goto-from)))
     (with-current-buffer buffer
-      (when (and goto-file (not (equal rev "{worktree}")))
-        (setq line (magit-diff-visit--offset
-                    file (if (equal rev "{index}") nil rev) line)))
       (save-restriction
         (widen)
         (goto-char (point-min))
-        (forward-line (1- line))
+        (forward-line
+         (1- (pcase rev
+               ((guard (not goto-file)) line)
+               ("{worktree}" line)
+               ("{index}" (magit-diff-visit--offset line file))
+               (_ (magit-diff-visit--offset line file rev)))))
         (move-to-column column)
         (point)))))
 
@@ -1855,12 +1957,15 @@ the Magit-Status buffer for DIRECTORY."
     (max 0 (- (+ (current-column) 2)
               (length (oref section value))))))
 
-(defun magit-diff-visit--offset (file rev line)
+(defun magit-diff-visit--offset (line file &rest args)
   (let ((offset 0))
     (with-temp-buffer
       (save-excursion
         (magit-with-toplevel
-          (magit-git-insert "diff" rev "--" file)))
+          (cond ((stringp file)
+                 (magit-git-insert "diff" args "--" file))
+                ((magit-git-version< "2.50"))
+                ((apply #'magit--diff-pair (current-buffer) file)))))
       (catch 'found
         (while (re-search-forward
                 "^@@ -\\([0-9]+\\),\\([0-9]+\\) \\+\\([0-9]+\\),\\([0-9]+\\) @@.*\n"
@@ -1880,6 +1985,13 @@ the Magit-Status buffer for DIRECTORY."
                       (forward-line))))
               (throw 'found nil))))))
     (+ line offset)))
+
+(defun magit--diff-pair (buffer a b &optional file)
+  (with-temp-buffer
+    (insert (format ":100644 100644 %s %s M\0%s\0" a b (or file "blob")))
+    (call-process-region (point-min) (point-max)
+                         (magit-git-executable) nil buffer nil
+                         "diff-pairs" "-z")))
 
 ;;;; Scroll Commands
 
@@ -3387,43 +3499,72 @@ actually a `diff' but a `diffstat' section."
   (let ((end (oref section end))
         (merging (looking-at "@@@"))
         (diff-type (magit-diff-type))
-        (stage nil)
+        (sign-face-side nil)
+        (line-face-side nil)
         (tab-width (magit-diff-tab-width
                     (magit-section-parent-value section))))
     (forward-line)
     (while (< (point) end)
-      (when (and magit-diff-hide-trailing-cr-characters
-                 (char-equal ?\r (char-before (line-end-position))))
-        (put-text-property (1- (line-end-position)) (line-end-position)
-                           'invisible t))
-      (put-text-property
-       (point) (1+ (line-end-position)) 'font-lock-face
-       (cond
-         ((looking-at "^\\+\\+?\\([<=|>]\\)\\{7\\}")
-          (setq stage (pcase (list (match-str 1) highlight)
-                        ('("<" nil) 'magit-diff-our)
-                        ('("<"   t) 'magit-diff-our-highlight)
-                        ('("|" nil) 'magit-diff-base)
-                        ('("|"   t) 'magit-diff-base-highlight)
-                        ('("=" nil) 'magit-diff-their)
-                        ('("="   t) 'magit-diff-their-highlight)
-                        ('(">" nil) nil)))
-          (if highlight
-              'magit-diff-conflict-heading-highlight
-            'magit-diff-conflict-heading))
-         ((looking-at (if merging "^\\(\\+\\| \\+\\)" "^\\+"))
-          (magit-diff-paint-tab merging tab-width)
-          (magit-diff-paint-whitespace merging 'added diff-type)
-          (or stage
-              (if highlight 'magit-diff-added-highlight 'magit-diff-added)))
-         ((looking-at (if merging "^\\(-\\| -\\)" "^-"))
-          (magit-diff-paint-tab merging tab-width)
-          (magit-diff-paint-whitespace merging 'removed diff-type)
-          (if highlight 'magit-diff-removed-highlight 'magit-diff-removed))
-         (t
-          (magit-diff-paint-tab merging tab-width)
-          (magit-diff-paint-whitespace merging 'context diff-type)
-          (if highlight 'magit-diff-context-highlight 'magit-diff-context))))
+      (let ((bol (point))
+            (eol (line-end-position))
+            (sign-face nil)
+            (line-face nil))
+        (when (and magit-diff-hide-trailing-cr-characters
+                   (char-equal ?\r (char-before eol)))
+          (put-text-property (1- eol) eol 'invisible t))
+        (cond
+          ((looking-at "^\\+\\+?\\([<=|>]\\)\\{7\\}")
+           (setq line-face
+                 (pcase (match-str 1)
+                   ("<" 'magit-diff-our-heading)
+                   ("|" 'magit-diff-base-heading)
+                   ("=" 'magit-diff-their-heading)
+                   (">" 'magit-diff-their-heading)))
+           (setq sign-face-side
+                 (pcase (match-str 1)
+                   ("<" 'magit-diff-our-indicator)
+                   ("|" 'magit-diff-base-indicator)
+                   ("=" 'magit-diff-their-indicator)
+                   (">" nil)))
+           (setq line-face-side
+                 (pcase (list (match-str 1) highlight)
+                   ('("<" nil) 'magit-diff-our)
+                   ('("<"   t) 'magit-diff-our-highlight)
+                   ('("|" nil) 'magit-diff-base)
+                   ('("|"   t) 'magit-diff-base-highlight)
+                   ('("=" nil) 'magit-diff-their)
+                   ('("="   t) 'magit-diff-their-highlight)
+                   ;; `(">" ,_) results in bogus warning.
+                   ('(">" nil) nil)
+                   ('(">"   t) nil))))
+          ((looking-at (if merging "^\\(\\+\\| \\+\\)" "^\\+"))
+           (magit-diff-paint-tab merging tab-width)
+           (magit-diff-paint-whitespace merging 'added diff-type)
+           (cond (line-face-side
+                  (setq sign-face sign-face-side)
+                  (setq line-face line-face-side))
+                 (t
+                  (setq sign-face 'magit-diff-added-indicator)
+                  (setq line-face (if highlight
+                                      'magit-diff-added-highlight
+                                    'magit-diff-added)))))
+          ((looking-at (if merging "^\\(-\\| -\\)" "^-"))
+           (magit-diff-paint-tab merging tab-width)
+           (magit-diff-paint-whitespace merging 'removed diff-type)
+           (setq sign-face 'magit-diff-removed-indicator)
+           (setq line-face (if highlight
+                               'magit-diff-removed-highlight
+                             'magit-diff-removed)))
+          (t
+           (magit-diff-paint-tab merging tab-width)
+           (magit-diff-paint-whitespace merging 'context diff-type)
+           (setq line-face (if highlight
+                               'magit-diff-context-highlight
+                             'magit-diff-context))))
+        (put-text-property bol (1+ eol) 'font-lock-face line-face)
+        (when (and sign-face magit-diff-use-indicator-faces)
+          (magit--add-face-text-property
+           bol (+ bol (if merging 2 1)) sign-face)))
       (forward-line)))
   (when (eq magit-diff-refine-hunk 'all)
     (magit-diff-update-hunk-refinement section))

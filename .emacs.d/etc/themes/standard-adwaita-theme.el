@@ -172,6 +172,7 @@
     `(gnus-header-content ((,c :foreground ,magenta-intense)))
     `(gnus-button ((,c :weight bold :foreground ,cyan-faint)))))
 
+;;;###theme-autoload
 (modus-themes-theme
  'standard-adwaita
  'standard-themes

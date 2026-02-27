@@ -44,7 +44,7 @@
     (fg-dim "#808f80")
     (fg-alt "#8fcfaf")
     (bg-active "#505250")
-    (bg-inactive "#161916")
+    (bg-inactive "#262926")
     (border "#525959")
 
     (red "#ef6560")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-bio-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-bio
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-bio-palette
  nil
- 'ef-bio-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-bio-palette-overrides)
 
 ;;; ef-bio-theme.el ends here

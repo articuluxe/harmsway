@@ -354,9 +354,10 @@ expansion, and the looks of this face should hint at that.")
            (prog1 t
              (save-excursion
                (goto-char (match-beginning 0))
-               (when-let ((_(save-match-data (not (nth 8 (syntax-ppss)))))
-                          (expr (ignore-errors
-                                  (read-positioning-symbols (current-buffer)))))
+               (when-let*
+                   ((_(save-match-data (not (nth 8 (syntax-ppss)))))
+                    (expr (ignore-errors
+                            (read-positioning-symbols (current-buffer)))))
                  (put-text-property (match-beginning 0) (point)
                                     'font-lock-multiline t)
                  (llama--fontify (cdr expr) nil nil t)))))

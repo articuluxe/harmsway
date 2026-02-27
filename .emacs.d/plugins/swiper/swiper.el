@@ -1,6 +1,6 @@
 ;;; swiper.el --- Isearch with an overview.  Oh, man! -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2025 Free Software Foundation, Inc.
+;; Copyright (C) 2015-2026 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; Maintainer: Basil L. Contovounesios <basil@contovou.net>
@@ -152,6 +152,7 @@ If the input is empty, select the previous history element instead."
   (if (string= ivy-text "")
       (ivy-previous-history-element 1)
     (ivy-next-line arg)))
+(ivy--no-M-x #'swiper-C-s #'ivy--minibuffer-p)
 
 (defvar swiper-map
   (let ((map (make-sparse-keymap)))
@@ -159,10 +160,11 @@ If the input is empty, select the previous history element instead."
     (define-key map (kbd "M-q") #'swiper-query-replace)
     (define-key map (kbd "C-l") #'swiper-recenter-top-bottom)
     (define-key map (kbd "C-'") #'swiper-avy)
+    (define-key map [remap ivy-avy] #'swiper-avy)
     (define-key map (kbd "C-7") #'swiper-mc)
     (define-key map (kbd "C-c C-f") #'swiper-toggle-face-matching)
     map)
-  "Keymap for swiper.")
+  "Keymap for `swiper'.")
 
 (defvar swiper--query-replace-overlays nil)
 
@@ -244,10 +246,10 @@ If the input is empty, select the previous history element instead."
                        (perform-replace from to
                                         t t nil))))))
            (swiper--query-replace-cleanup)))))
+(ivy--no-M-x #'swiper-query-replace #'ivy--minibuffer-p)
 
 (ivy-configure 'swiper-query-replace
   :update-fn #'swiper--query-replace-updatefn)
-(function-put #'swiper-query-replace 'no-counsel-M-x t)
 
 (defvar inhibit-message)
 
@@ -272,7 +274,7 @@ If the input is empty, select the previous history element instead."
                     (goto-char (point-min))
                     (perform-replace from to t t nil)))
              (set-window-configuration wnd-conf))))))))
-(function-put #'swiper-all-query-replace 'no-counsel-M-x t)
+(ivy--no-M-x #'swiper-all-query-replace #'ivy--minibuffer-p)
 
 (defvar avy-all-windows)
 (defvar avy-style)
@@ -391,6 +393,7 @@ If the input is empty, select the previous history element instead."
        (let ((swiper-min-highlight 1))
          (swiper--update-input-ivy)))))
   (swiper--avy-goto (swiper--avy-candidate)))
+(ivy--no-M-x #'swiper-avy #'ivy--minibuffer-p)
 
 (declare-function mc/create-fake-cursor-at-point "ext:multiple-cursors-core")
 (declare-function multiple-cursors-mode "ext:multiple-cursors-core")
@@ -414,6 +417,7 @@ Make sure `swiper-mc' is on `mc/cmds-to-run-once' list."
              (when cands
                (mc/create-fake-cursor-at-point))))
          (multiple-cursors-mode 1))))))
+(ivy--no-M-x #'swiper-mc #'ivy--minibuffer-p)
 
 (defvar swiper--current-window-start nil
   "Store `window-start' to restore it later.
@@ -426,6 +430,7 @@ such as `scroll-conservatively' are set to a high value.")
   (with-ivy-window
     (recenter-top-bottom arg)
     (setq swiper--current-window-start (window-start))))
+(ivy--no-M-x #'swiper-recenter-top-bottom #'ivy--minibuffer-p t)
 
 (defvar swiper-font-lock-exclude
   '(Man-mode
@@ -869,6 +874,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             nil
           #'swiper--face-matcher))
   (setq ivy--old-re nil))
+(ivy--no-M-x #'swiper-toggle-face-matching #'ivy--minibuffer-p)
 
 (defun swiper--face-matcher (regexp candidates)
   "Return REGEXP matching CANDIDATES.
@@ -1394,10 +1400,9 @@ See `ivy-format-functions-alist' for further information."
 
 (defun swiper-match-usable-p ()
   (or search-invisible
-      (not (cl-find-if
-            (lambda (ov)
-              (invisible-p (overlay-get ov 'invisible)))
-            (overlays-at (point))))))
+      (cl-notany (lambda (ov)
+                   (invisible-p (overlay-get ov 'invisible)))
+                 (overlays-at (point)))))
 
 (defvar swiper--isearch-backward nil
   "Non-nil when performing `swiper-isearch-backward'.")
@@ -1577,6 +1582,7 @@ Like `ivy-insert-current', but tailored for `swiper-isearch'."
   (delete-minibuffer-contents)
   (let ((cur (ivy-state-current ivy-last)))
     (insert (with-ivy-window (swiper--isearch-candidate-string cur)))))
+(ivy--no-M-x #'swiper--isearch-insert-current #'ivy--minibuffer-p)
 
 (defun swiper--isearch-kill-ring-save ()
   "Save the current candidates in the kill ring.
@@ -1587,6 +1593,7 @@ Like `ivy-kill-ring-save', but tailored for `swiper-isearch'."
       (call-interactively #'kill-ring-save)
     (kill-new (with-ivy-window
                 (mapconcat #'swiper--line-at-point ivy--old-cands "\n")))))
+(ivy--no-M-x #'swiper--isearch-kill-ring-save #'ivy--minibuffer-p)
 
 (defun swiper-isearch-thing-at-point ()
   "Insert `symbol-at-point' into the minibuffer of `swiper-isearch'.
@@ -1624,6 +1631,7 @@ When the input is empty, browse the search history instead."
   (if (string= ivy-text "")
       (ivy-reverse-i-search)
     (ivy-previous-line arg)))
+(ivy--no-M-x #'swiper-isearch-C-r #'ivy--minibuffer-p)
 
 (defvar swiper-isearch-map
   (let ((map (make-sparse-keymap)))

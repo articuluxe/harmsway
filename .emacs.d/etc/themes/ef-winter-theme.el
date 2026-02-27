@@ -44,7 +44,7 @@
     (fg-dim "#807c9f")
     (fg-alt "#bf8a9f")
     (bg-active "#4a4f62")
-    (bg-inactive "#19181f")
+    (bg-inactive "#29282f")
     (border "#4a4955")
 
     (red "#f47359")
@@ -222,6 +222,7 @@ further details)."
    nil
    (append ef-winter-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-winter
  'ef-themes
@@ -229,7 +230,6 @@ further details)."
  'dark
  'ef-winter-palette
  nil
- 'ef-winter-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-winter-palette-overrides)
 
 ;;; ef-winter-theme.el ends here

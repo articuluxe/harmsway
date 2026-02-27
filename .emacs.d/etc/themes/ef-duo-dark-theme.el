@@ -44,7 +44,7 @@
     (fg-dim "#857f8f")
     (fg-alt "#89afef")
     (bg-active "#4a4759")
-    (bg-inactive "#13101f")
+    (bg-inactive "#23202f")
     (border "#545f6f")
 
     (red "#ef656a")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-duo-dark-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-duo-dark
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-duo-dark-palette
  nil
- 'ef-duo-dark-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-duo-dark-palette-overrides)
 
 ;;; ef-duo-dark-theme.el ends here

@@ -462,11 +462,24 @@ CONTEXT provides operation context, and OPERATION is optional operation name."
     ;; Return nil to indicate failure
     nil))
 
-(defvar flyover-regex-mark-quotes  "\\('[^']+'\\|\"[^\"]+\"\\|\{[^\}]+\}\\)"
-  "Regex to match quoted strings or everything after a colon.")
+(defcustom flyover-marker-rules
+  '(("\\(\"[^\"]+\"\\)" . font-lock-string-face)
+    ("\\('[^']+'\\)" . font-lock-constant-face)
+    ("\\(-?\\[[^]]+\\]\\)" . font-lock-function-name-face)
+    ("\\(\([^\)]+\)\\)" . font-lock-bracket-face)
+    ("\\(\{[^\}]+\}\\)" . font-lock-bracket-face))
+  "Alist of (REGEX . FACE) rules for highlighting patterns in overlay messages.
+Each REGEX should have a capture group 1 for the text to highlight.
+FACE is inherited alongside the overlay background color.
 
-(defvar flyover-regex-mark-parens "\\(\([^\)]+\)\\)"
-  "Regex used to mark parentheses.")
+Default rules:
+  - `\"...\"` uses `font-lock-string-face'
+  - `\\='...\\=' ` uses `font-lock-constant-face'
+  - `[...]` and `-[...]` uses `font-lock-function-name-face'
+  - `(...)` uses `font-lock-bracket-face'
+  - `{...}` uses `font-lock-bracket-face'"
+  :type '(alist :key-type regexp :value-type face)
+  :group 'flyover)
 
 (defvar flyover-checker-regex "^[^\"'(]*?:\\(.*\\)"
   "Regex used to match the checker name at the start of the error message.")
@@ -784,7 +797,8 @@ This function ensures all errors are valid and have proper positions."
   "Create an overlay at REGION with LEVEL and message MSG.
 REGION should be a cons cell (BEG . END) of buffer positions.
 LEVEL is the error level (error, warning, or info).
-ERROR is the optional original flycheck error object."
+ERROR is the optional original flycheck error object.
+Returns a single overlay, or a list of overlays for EOL multiline."
   (let ((overlay nil))
     (condition-case ov-err
         (let* ((beg (car region))
@@ -794,10 +808,10 @@ ERROR is the optional original flycheck error object."
             (let* ((eol-pos (line-end-position))
                    (newline-pos (min (1+ eol-pos) (point-max)))
                    (overlay-pos (if flyover-show-at-eol
-                                    end
-                                  (progn
-                                    (forward-line flyover-line-position-offset)
-                                    (line-beginning-position))))
+                                     end
+                                   (progn
+                                     (forward-line flyover-line-position-offset)
+                                     (line-beginning-position))))
                    (face (flyover--get-face level)))
               (when (and (numberp beg)
                          (numberp end)
@@ -819,7 +833,7 @@ ERROR is the optional original flycheck error object."
                       (overlay-put overlay 'flyover-beg beg)
                       (when (overlayp overlay)
                         (flyover--configure-overlay-display overlay face msg beg error)))
-                  ;; Fallback to zero-width overlay
+                  ;; Fallback to zero-width overlay (also used for EOL mode)
                   (setq overlay (make-overlay overlay-pos overlay-pos))
                   (overlay-put overlay 'flyover-beg beg)
                   (when (overlayp overlay)
@@ -827,7 +841,15 @@ ERROR is the optional original flycheck error object."
       (error
        (flyover--handle-error 'overlay-creation ov-err "create-overlay"
                               (format "region=%S level=%S" region level))))
-    overlay))
+    ;; For EOL mode with wrapped messages, create continuation overlays
+    ;; on the lines below using display property on their newline characters
+    (if (and flyover-show-at-eol overlay flyover-wrap-messages)
+        (let ((continuation-overlays
+               (flyover--create-eol-continuation-overlays overlay msg error)))
+          (if continuation-overlays
+              (cons overlay continuation-overlays)
+            overlay))
+      overlay)))
 
 (defun flyover--get-face (type)
   "Return the face corresponding to the error TYPE."
@@ -964,14 +986,12 @@ Returns a plist with :fg-color, :bg-color, :icon-bg-color, :tinted-fg,
                          (propertize (flyover-get-arrow)
                                      'face `(:foreground ,fg-color))))
          (display-msg (concat " " msg " "))
-         (marked-string (flyover--mark-all-symbols
-                         :input (propertize display-msg
-                                            'face face-with-colors
-                                            'cursor-sensor-functions nil
-                                            'rear-nonsticky t)
-                         :regex flyover-regex-mark-quotes
-                         :property `(:inherit flyover-marker
-                                              :background ,bg-color))))
+         (marked-string (flyover--mark-all-patterns
+                         (propertize display-msg
+                                     'face face-with-colors
+                                     'cursor-sensor-functions nil
+                                     'rear-nonsticky t)
+                         bg-color)))
     (list :fg-color fg-color
           :bg-color bg-color
           :icon-bg-color icon-bg-color
@@ -980,6 +1000,81 @@ Returns a plist with :fg-color, :bg-color, :icon-bg-color, :tinted-fg,
           :indicator indicator
           :virtual-line virtual-line
           :marked-string marked-string)))
+
+(defun flyover--create-eol-continuation-overlays (main-overlay msg error)
+  "Create continuation overlays for EOL multiline display.
+MAIN-OVERLAY is the primary EOL overlay on the error line.
+MSG is the full error message, ERROR is the error object.
+Returns a list of continuation overlays, or nil if message fits on one line."
+  (condition-case cont-err
+      (let* ((wrapped-lines (flyover--wrap-message msg flyover-max-line-length))
+             (total-lines (length wrapped-lines)))
+        (when (> total-lines 1)
+          (let* ((face (flyover--get-face
+                        (flyover--normalize-level (flyover-error-level error))))
+                 (components (flyover--create-overlay-display-components face error msg))
+                 (face-with-colors (plist-get components :face-with-colors))
+                 (bg-color (plist-get components :bg-color))
+                 (icon-bg-color (plist-get components :icon-bg-color))
+                 (border-chars (flyover--get-border-chars))
+                 (left-border-color (if (and flyover-show-icon flyover-border-match-icon)
+                                        icon-bg-color bg-color))
+                 (right-border (flyover--get-border-right border-chars bg-color))
+                 ;; Compute indentation to align under the message text on first line
+                 (eol-col (save-excursion
+                            (goto-char (overlay-start main-overlay))
+                            (goto-char (line-end-position))
+                            (current-column)))
+                 (indicator (plist-get components :indicator))
+                 (virtual-line (plist-get components :virtual-line))
+                 (prefix-str (concat " " (or virtual-line "") (flyover--get-border-left border-chars left-border-color) indicator))
+                 (indent-width (+ eol-col (string-width prefix-str)))
+                 (indent-str (make-string indent-width ?\s))
+                 (continuation-ovs nil))
+            ;; Create an overlay for each continuation line on the lines below.
+            ;; First continuation goes on the error line's newline (right after
+            ;; the EOL after-string), subsequent ones on the lines below.
+            (save-excursion
+              (goto-char (overlay-start main-overlay))
+              (cl-loop for line in (cdr wrapped-lines)  ;; skip first line
+                       for idx from 1
+                       for is-last = (= idx (1- total-lines))
+                       do (let* ((eol (line-end-position))
+                                 (nl-pos (min (1+ eol) (point-max))))
+                             (when (and (< eol (point-max))
+                                        (= (char-after eol) ?\n))
+                               (let* ((line-content
+                                       (flyover--mark-all-patterns
+                                        (propertize (concat " " line " ")
+                                                    'face face-with-colors)
+                                        bg-color))
+                                      (cont-string
+                                       (concat indent-str
+                                               line-content
+                                               (if is-last right-border "")))
+                                      (ov (make-overlay eol nl-pos)))
+                                 (overlay-put ov 'flyover t)
+                                 (overlay-put ov 'flyover-continuation t)
+                                 (overlay-put ov 'flyover-parent main-overlay)
+                                 (overlay-put ov 'priority
+                                              (flyover--calculate-overlay-priority error))
+                                 (overlay-put ov 'modification-hooks
+                                              '(flyover--clear-overlay-on-modification))
+                                 ;; The display property replaces the newline character,
+                                 ;; so we need: \n + content + \n to preserve the line break
+                                 (overlay-put ov 'display
+                                              (propertize (concat "\n" cont-string "\n")
+                                                          'help-echo msg
+                                                          'rear-nonsticky t
+                                                          'cursor-sensor-functions nil))
+                                 (push ov continuation-ovs)))
+                             ;; Move to next line for the next continuation
+                             (forward-line 1))))
+            (nreverse continuation-ovs))))
+    (error
+     (flyover--handle-error 'overlay-creation cont-err
+                            "create-eol-continuation" nil)
+     nil)))
 
 (defun flyover--build-final-overlay-string (components error msg)
   "Build the final overlay string from display COMPONENTS, ERROR, and MSG."
@@ -1002,15 +1097,18 @@ Returns a plist with :fg-color, :bg-color, :icon-bg-color, :tinted-fg,
          (left-border (flyover--get-border-left border-chars left-border-color))
          (right-border (flyover--get-border-right border-chars bg-color))
          (wrapped-lines (flyover--wrap-message msg flyover-max-line-length))
+         (has-continuation (and flyover-show-at-eol (> (length wrapped-lines) 1)))
          (overlay-string (if flyover-show-at-eol
-                             (let ((msg-content (flyover--mark-all-symbols
-                                                 :input (propertize (concat " " (car wrapped-lines) " ")
-                                                                    'face face-with-colors)
-                                                 :regex flyover-regex-mark-quotes
-                                                 :property `(:inherit flyover-marker
-                                                                      :background ,bg-color))))
-                               ;; Structure: virtual-line + left-border + indicator + message + right-border
-                               (concat " " virtual-line left-border indicator msg-content right-border))
+                             ;; EOL mode: show first wrapped line.
+                             ;; Continuation lines are separate overlays.
+                             (let* ((first-line (car wrapped-lines))
+                                    (msg-content (flyover--mark-all-patterns
+                                                  (propertize (concat " " first-line " ")
+                                                              'face face-with-colors)
+                                                  bg-color))
+                                    (prefix (concat " " (or virtual-line "") left-border indicator)))
+                               ;; Only add right-border if this is the only line
+                               (concat prefix msg-content (unless has-continuation right-border)))
                            (flyover--create-multiline-overlay-string
                             (if is-empty-line 0 col-pos) virtual-line indicator
                             wrapped-lines face-with-colors bg-color icon-bg-color))))
@@ -1047,12 +1145,10 @@ ICON-BG-COLOR is the icon background (used for left border)."
                    for is-first = (= idx 0)
                    for is-last = (= idx (1- total-lines))
                    for is-single = (= total-lines 1)
-                   for line-content = (flyover--mark-all-symbols
-                                       :input (propertize (concat " " line " ")
-                                                          'face face-with-colors)
-                                       :regex flyover-regex-mark-quotes
-                                       :property `(:inherit flyover-marker
-                                                            :background ,bg-color))
+                   for line-content = (flyover--mark-all-patterns
+                                       (propertize (concat " " line " ")
+                                                   'face face-with-colors)
+                                       bg-color)
                    ;; Structure for multiline:
                    ;; First line: left-border + indicator + message
                    ;; Middle lines: padding + message
@@ -1075,10 +1171,7 @@ ICON-BG-COLOR is the icon background (used for left border)."
 
     (when flyover-debug
       (message "Debug multiline overlay-string: created string successfully"))
-    (flyover--mark-all-symbols
-     :input result-string
-     :regex flyover-regex-mark-parens
-     :property `(:inherit flyover-marker :background ,bg-color))))
+    result-string))
 
 (defun flyover--configure-overlay (overlay face msg beg error)
   "Configure OVERLAY with FACE, MSG, BEG, and ERROR.
@@ -1091,6 +1184,7 @@ This function is used for zero-width overlays (EOL mode and fallback cases)."
                (final-string (flyover--build-final-overlay-string components error msg)))
           (overlay-put overlay 'after-string
                        (propertize final-string
+                                   'help-echo msg
                                    'rear-nonsticky t
                                    'cursor-sensor-functions nil))))
     (error
@@ -1110,6 +1204,7 @@ ERROR is the original error object."
           ;; This replaces the newline character with: newline + overlay content
           (overlay-put overlay 'display
                        (propertize (concat "\n" final-string)
+                                   'help-echo msg
                                    'rear-nonsticky t
                                    'cursor-sensor-functions nil))))
     (error
@@ -1125,18 +1220,25 @@ ERROR is the original error object."
   (replace-regexp-in-string "[“”]" "\""
     (replace-regexp-in-string "[‘’]" "'" text)))
 
-(cl-defun flyover--mark-all-symbols (&key input regex property)
-  "Highlight all symbols matching REGEX in INPUT with specified PROPERTY."
+(defun flyover--mark-all-patterns (input bg-color)
+  "Highlight patterns in INPUT according to `flyover-marker-rules'.
+Each rule's face is inherited alongside BG-COLOR as the background."
   (save-match-data
-    (setq input (flyover-replace-curly-quotes input))  ; Replace curly quotes with straight quotes
-    (let ((pos 0))
-      (while (string-match regex input pos)
-        (let* ((start (match-beginning 1))
-               (end (match-end 1))
-               (existing-face (text-properties-at start input))
-               (new-face (append existing-face (list 'face property))))
-          (add-text-properties start end new-face input)
-          (setq pos end))))
+    (setq input (flyover-replace-curly-quotes input))
+    (dolist (rule flyover-marker-rules)
+      (let ((regex (car rule))
+            (face (cdr rule))
+            (pos 0))
+        (while (string-match regex input pos)
+          (let* ((start (match-beginning 1))
+                 (end (match-end 1))
+                 (existing-face (text-properties-at start input))
+                 (new-face (append existing-face
+                                    (list 'face `(:inherit ,face
+                                                           :background ,bg-color
+                                                           :height ,flyover-base-height)))))
+            (add-text-properties start end new-face input)
+            (setq pos end)))))
     input))
 
 (defun flyover-errors-at (pos)
@@ -1201,23 +1303,27 @@ Returns a list of strings, each representing a line."
 (defun flyover--overlays-match-errors-p (overlays errors)
   "Check if current OVERLAYS match the given ERRORS.
 Returns t if they match (no need to recreate), nil if they differ.
-Uses O(n) hash-based comparison instead of O(n*m) nested loops."
-  (and (= (length overlays) (length errors))
-       (let ((error-set (make-hash-table :test 'equal :size (max 1 (length errors)))))
-         ;; Build hash table of errors for O(1) lookup
-         (dolist (err errors)
-           (puthash (list (flyover-error-line err)
-                          (or (flyover-error-column err) 0)
-                          (flyover-error-message err))
-                    t error-set))
-         ;; Check all overlays exist in hash - O(n) total
-         (cl-every (lambda (overlay)
-                     (when-let* ((ov-err (overlay-get overlay 'flyover-error)))
-                       (gethash (list (flyover-error-line ov-err)
-                                      (or (flyover-error-column ov-err) 0)
-                                      (flyover-error-message ov-err))
-                                error-set)))
-                   overlays))))
+Uses O(n) hash-based comparison instead of O(n*m) nested loops.
+Continuation overlays (EOL multiline) are excluded from comparison."
+  (let ((primary-overlays (cl-remove-if
+                           (lambda (ov) (overlay-get ov 'flyover-continuation))
+                           overlays)))
+    (and (= (length primary-overlays) (length errors))
+         (let ((error-set (make-hash-table :test 'equal :size (max 1 (length errors)))))
+           ;; Build hash table of errors for O(1) lookup
+           (dolist (err errors)
+             (puthash (list (flyover-error-line err)
+                            (or (flyover-error-column err) 0)
+                            (flyover-error-message err))
+                      t error-set))
+           ;; Check all primary overlays exist in hash - O(n) total
+           (cl-every (lambda (overlay)
+                       (when-let* ((ov-err (overlay-get overlay 'flyover-error)))
+                         (gethash (list (flyover-error-line ov-err)
+                                        (or (flyover-error-column ov-err) 0)
+                                        (flyover-error-message ov-err))
+                                  error-set)))
+                     primary-overlays)))))
 
 (defun flyover--display-errors (&optional errors)
   "Display ERRORS using overlays."
@@ -1258,10 +1364,13 @@ Uses O(n) hash-based comparison instead of O(n*m) nested loops."
                            for final-msg = (and cleaned-msg
                                                 (flyover--format-message-with-id cleaned-msg err))
                            for region = (and final-msg (flyover--get-error-region err))
-                           for overlay = (and region (flyover--create-overlay
+                           for result = (and region (flyover--create-overlay
                                                       region level final-msg err))
-                           when overlay
-                           collect overlay)))))
+                           when result
+                           ;; result may be a single overlay or a list of overlays
+                           ;; (main + continuation) for EOL multiline
+                           if (listp result) append result
+                           else collect result)))))
     (error
      (when flyover-debug
        (message "Debug: Display error: %S" display-err)))))
@@ -1274,6 +1383,25 @@ Uses O(n) hash-based comparison instead of O(n*m) nested loops."
   (setq flyover--overlays nil)
   ;; Remove any remaining flyover overlays
   (remove-overlays (point-min) (point-max) 'flyover t))
+
+(defun flyover--delete-overlays-with-continuations (overlays-to-delete)
+  "Delete OVERLAYS-TO-DELETE and any continuation overlays that belong to them."
+  (let ((parents (make-hash-table :test 'eq)))
+    ;; Mark all overlays to delete
+    (dolist (ov overlays-to-delete)
+      (puthash ov t parents))
+    ;; Also find and collect continuation overlays belonging to these parents
+    (dolist (ov flyover--overlays)
+      (when (and (overlayp ov)
+                 (overlay-get ov 'flyover-continuation)
+                 (gethash (overlay-get ov 'flyover-parent) parents))
+        (puthash ov t parents)))
+    ;; Delete all collected overlays
+    (maphash (lambda (ov _)
+               (when (overlayp ov)
+                 (delete-overlay ov))
+               (setq flyover--overlays (delq ov flyover--overlays)))
+             parents)))
 
 ;;;###autoload
 (define-minor-mode flyover-mode
@@ -1486,28 +1614,26 @@ STATUS is the new flycheck status."
          (flyover--display-errors)
          (dolist (ov flyover--overlays)
            (when (and (overlayp ov)
+                      (not (overlay-get ov 'flyover-continuation))
                       (= (flyover--get-overlay-error-line ov) current-line))
              (push ov to-delete)))
-         ;; Delete collected overlays
-         (dolist (ov to-delete)
-           (delete-overlay ov)
-           (setq flyover--overlays (delq ov flyover--overlays))))
+         ;; Delete collected overlays and their continuations
+         (flyover--delete-overlays-with-continuations to-delete))
 
         ;; Hide errors at exact cursor position
         ('hide-at-exact-position
          (flyover--display-errors)
          (dolist (ov flyover--overlays)
            (when (and (overlayp ov)
+                      (not (overlay-get ov 'flyover-continuation))
                       (= (flyover--get-overlay-error-line ov) current-line)
                       (overlay-get ov 'flyover-error)
                       (let ((error (overlay-get ov 'flyover-error)))
                         (= (or (flyover-error-column error) 0)
                            current-col)))
              (push ov to-delete)))
-         ;; Delete collected overlays
-         (dolist (ov to-delete)
-           (delete-overlay ov)
-           (setq flyover--overlays (delq ov flyover--overlays))))
+         ;; Delete collected overlays and their continuations
+         (flyover--delete-overlays-with-continuations to-delete))
 
         ;; Delete all overlays and errors that were shown on request and  need no longer be shown
         ('show-only-on-request

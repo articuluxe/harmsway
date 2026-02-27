@@ -44,7 +44,7 @@
     (fg-dim "#969faf")
     (fg-alt "#90a0dc")
     (bg-active "#4a5664")
-    (bg-inactive "#1a2331")
+    (bg-inactive "#2a3341")
     (border "#595a63")
 
     (red "#ff6f6f")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-maris-dark-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-maris-dark
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-maris-dark-palette
  nil
- 'ef-maris-dark-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-maris-dark-palette-overrides)
 
 ;;; ef-maris-dark-theme.el ends here

@@ -198,6 +198,7 @@ represents."
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(standard-themes) Palette overrides"))
 
+;;;###theme-autoload
 (modus-themes-theme
  'standard-light-tinted
  'standard-themes

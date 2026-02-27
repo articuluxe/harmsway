@@ -36,6 +36,12 @@
 ;; in Magit.  It is distributed as a separate package, so that it can be
 ;; used to implement similar menus in other packages.
 
+;; You can contact the maintainer of this package by sending an email to
+;; <emacs.transient@jonas.bernoulli.dev>, or you can use the public issue
+;; tracker at <https://github.com/magit/transient>.  The latter can also
+;; be accessed using the `forge' package, which lets you avoid the sadly
+;; non-free javascript on that website.
+
 ;;; Code:
 
 (defconst transient-version "0.12.0")
@@ -168,8 +174,12 @@ from Emacs commit e680827e814e155cf79175d87ff7c6ee3a08b69a."
 (defcustom transient-enable-menu-navigation 'verbose
   "Whether navigation commands are enabled in the menu buffer.
 
-If the value is `verbose' (the default), additionally show brief
-documentation about the command under point in the echo area.
+If the value is `verbose' (the default), show additional documentation
+about the command at point in the echo area.  If this would result in
+the same documentation, which is being displayed inside the menu buffer,
+to be duplicated in the echo area, then `verbose' forgoes doing so.
+Use `force-verbose' to echo even such documentation.  If `t', enable
+navigation, but without echoing any documentation.
 
 While a transient is active, the menu buffer is (by default) not the
 current buffer, making it necessary to use dedicated commands to act
@@ -193,9 +203,12 @@ then it is likely that the user would want the former do what it would
 do if no transient were active."
   :package-version '(transient . "0.7.8")
   :group 'transient
-  :type '(choice (const :tag "Enable navigation and echo summary" verbose)
-                 (const :tag "Enable navigation commands" t)
-                 (const :tag "Disable navigation commands" nil)))
+  :type
+  '(choice
+    (const :tag "Enable navigation and force showing summary" force-verbose)
+    (const :tag "Enable navigation and enable showing summary" verbose)
+    (const :tag "Enable navigation commands" t)
+    (const :tag "Disable navigation commands" nil)))
 
 (defcustom transient-navigate-to-group-descriptions nil
   "Whether menu navigation commands stop at group descriptions.
@@ -209,6 +222,21 @@ is useful for blind users, who use a braille or audio output device."
   :package-version '(transient . "0.13.0")
   :group 'transient
   :type 'boolean)
+
+(defcustom transient-describe-menu nil
+  "Whether to begin the menu buffer with a very short description.
+
+When this is non-nil, then the menu buffer begins with a short
+description.  Ideally this is a string written exactly for that
+purpose, but because this is a new feature, most menu commands
+do not provide that yet.  In that case the first line of the prefix
+command's docstring is used as fallback.  If the value is `docstring',
+then the docstring is used even if a description is available."
+  :package-version '(transient . "0.13.0")
+  :group 'transient
+  :type '(choice (const :tag "Insert description" t)
+                 (const :tag "Insert docstring summary" docstring)
+                 (const :tag "Do not insert description" nil)))
 
 (defcustom transient-select-menu-window nil
   "Whether to select the window displaying the transient menu.
@@ -529,21 +557,6 @@ in a more natural order."
   :group 'transient
   :type 'boolean)
 
-(defcustom transient-describe-menu nil
-  "Whether to begin the menu buffer with a very short description.
-
-When this is non-nil, then the menu buffer begins with a short
-description.  Ideally this is a string written exactly for that
-purpose, but because this is a new feature, most menu commands
-do not provide that yet.  In that case the first line of its
-docstring is used as fallback.  If the value is `docstring',
-then the docstring is used even if a description is available."
-  :package-version '(transient . "0.13.0")
-  :group 'transient
-  :type '(choice (const :tag "Insert description" t)
-                 (const :tag "Insert docstring summary" docstring)
-                 (const :tag "Do not insert description" nil)))
-
 (defconst transient--max-level 7)
 (defconst transient--default-child-level 1)
 (defconst transient--default-prefix-level 4)
@@ -829,9 +842,13 @@ If `transient-save-history' is nil, then do nothing."
   (add-hook 'kill-emacs-hook #'transient-maybe-save-history))
 
 ;;; Classes
+;;;; Base
+
+(defclass transient-object () () :abstract t)
+
 ;;;; Prefix
 
-(defclass transient-prefix ()
+(defclass transient-prefix (transient-object)
   ((prototype   :initarg :prototype)
    (command     :initarg :command)
    (level       :initarg :level)
@@ -846,6 +863,7 @@ If `transient-save-history' is nil, then do nothing."
    (show-help   :initarg :show-help   :initform nil)
    (info-manual :initarg :info-manual :initform nil)
    (man-page    :initarg :man-page    :initform nil)
+   (summary     :initarg :summary     :initform nil)
    (transient-suffix     :initarg :transient-suffix     :initform nil)
    (transient-non-suffix :initarg :transient-non-suffix :initform nil)
    (transient-switch-frame :initarg :transient-switch-frame)
@@ -871,7 +889,7 @@ the prototype is stored in the clone's `prototype' slot.")
 
 ;;;; Suffix
 
-(defclass transient-child ()
+(defclass transient-child (transient-object)
   ((parent
     :initarg :parent
     :initform nil
@@ -958,7 +976,10 @@ the prototype is stored in the clone's `prototype' slot.")
    (advice*
     :initarg :advice*
     :initform nil
-    :documentation "Advise applied to the command body and interactive spec."))
+    :documentation "Advise applied to the command body and interactive spec.")
+   (summary
+    :initarg :summary
+    :initform nil))
   "Abstract superclass for group and suffix classes.
 
 It is undefined which predicates are used if more than one `if*'
@@ -973,13 +994,11 @@ predicate slots or more than one `inapt-if*' slots are non-nil."
    (format      :initarg :format      :initform " %k %d")
    (description :initarg :description :initform nil)
    (face        :initarg :face        :initform nil)
-   (show-help   :initarg :show-help   :initform nil)
-   (summary     :initarg :summary     :initform nil))
+   (show-help   :initarg :show-help   :initform nil))
   "Superclass for suffix command.")
 
 (defclass transient-information (transient-suffix)
-  ((format :initform " %k %d")
-   (key    :initform " "))
+  ((key :initform " "))
   "Display-only information, aligned with suffix keys.
 Technically a suffix object with no associated command.")
 
@@ -4753,18 +4772,27 @@ as a button."
 %k is formatted using `transient-format-key'.
 %d is formatted using `transient-format-description'.
 %v is formatted using `transient-format-value'."
-  (format-spec (oref obj format)
-               `((?k . ,(transient-format-key obj))
-                 (?d . ,(transient-format-description obj))
-                 (?v . ,(transient-format-value obj)))))
+  (static-if (>= emacs-major-version 29)
+      (format-spec (oref obj format)
+                   `((?k . ,(lambda () (transient-format-key obj)))
+                     (?d . ,(lambda () (transient-format-description obj)))
+                     (?v . ,(lambda () (transient-format-value obj)))))
+    (format-spec (oref obj format)
+                 `((?k . ,(transient-format-key obj))
+                   (?d . ,(transient-format-description obj))
+                   (?v . ,(transient-format-value obj))))))
 
 (cl-defmethod transient-format ((obj transient-suffix))
   "Return a string generated using OBJ's `format'.
 %k is formatted using `transient-format-key'.
 %d is formatted using `transient-format-description'."
-  (format-spec (oref obj format)
-               `((?k . ,(transient-format-key obj))
-                 (?d . ,(transient-format-description obj)))))
+  (static-if (>= emacs-major-version 29)
+      (format-spec (oref obj format)
+                   `((?k . ,(lambda () (transient-format-key obj)))
+                     (?d . ,(lambda () (transient-format-description obj)))))
+    (format-spec (oref obj format)
+                 `((?k . ,(transient-format-key obj))
+                   (?d . ,(transient-format-description obj))))))
 
 (cl-defgeneric transient-format-key (obj)
   "Format OBJ's `key' for display and return the result.")
@@ -5256,28 +5284,27 @@ of the documentation string, if any.
 If RETURN is non-nil, return the summary instead of showing it.
 This is used when a tooltip is needed.")
 
-(cl-defmethod transient-get-summary ((_obj transient-prefix)))
-
-(cl-defmethod transient-get-summary ((_obj transient-group)))
-
-(cl-defmethod transient-get-summary ((_obj transient-information)))
-
-(cl-defmethod transient-get-summary ((obj transient-suffix))
-  (with-slots (command summary) obj
-    (when-let*
-        ((doc (cond ((functionp summary)
-                     (funcall summary obj))
-                    (summary)
-                    ((documentation command)
-                     (car (split-string (documentation command) "\n")))))
-         (_(stringp doc))
-         (_(not (equal doc
-                       (car (split-string (documentation
-                                           'transient--default-infix-command)
-                                          "\n"))))))
-      (if (string-suffix-p "." doc)
-          (substring doc 0 -1)
-        doc))))
+(cl-defmethod transient-get-summary ((obj transient-object))
+  (cond-let*
+    ([summary (cond-let*
+                [[summary (oref obj summary)]]
+                ((functionp summary)
+                 (funcall summary obj))
+                (summary)
+                ([command (ignore-error (invalid-slot-name unbound-slot)
+                            (oref obj command))]
+                 [_(documentation command)]
+                 (car (split-string (documentation command) "\n"))))]
+     [_(stringp summary)]
+     [_(not (equal summary
+                   (car (split-string (documentation
+                                       'transient--default-infix-command)
+                                      "\n"))))]
+     (if (string-suffix-p "." summary)
+         (substring summary 0 -1)
+       summary))
+    ((eq transient-enable-menu-navigation 'force-verbose)
+     (transient--get-description obj))))
 
 ;;; Menu Navigation
 
@@ -5314,7 +5341,7 @@ See `forward-button' for information about N."
     (transient--button-move-echo)))
 
 (defun transient--button-move-echo ()
-  (when-let ((_(eq transient-enable-menu-navigation 'verbose))
+  (when-let ((_(memq transient-enable-menu-navigation '(verbose force-verbose)))
              (obj (get-text-property (point) 'button-data)))
     (let ((message-log-max nil))
       (message "%s" (or (transient-get-summary obj) "")))))

@@ -4,7 +4,7 @@
 
 ;; Author: James Ferguson <(concat "wjcferguson" at-sign "gmail.com")>
 ;; URL: https://github.com/WJCFerguson/emacs-faff-theme
-;; Version: 3.8
+;; Version: 3.9.1
 ;; Keywords: color theme
 
 ;; This file is not part of GNU Emacs.
@@ -237,8 +237,13 @@
  '(symbol-overlay-face-4 ((t (:background "orchid1" :foreground "black"))))
  '(symbol-overlay-face-5 ((t (:background "red1" :foreground "black"))))
  '(tab-bar ((t (:background "#aca895" :height 0.9))))
- '(tab-bar-tab-inactive ((t (:inherit (variable-pitch tab-tar)))))
+ '(tab-bar-tab-inactive ((t (:inherit (variable-pitch tab-bar)))))
  '(tab-bar-tab ((t (:inherit (tab-bar-tab-inactive) :background "cornsilk3"))))
+ '(tab-line ((t (:background "#aca895" :height 0.9))))
+ '(tab-line-tab ((t (:inherit (variable-pitch tab-line)))))
+ '(tab-line-tab-inactive ((t (:inherit (variable-pitch tab-line)))))
+ '(tab-line-tab-current ((t (:inherit (tab-line-tab-inactive) :background "cornsilk3"))))
+ '(tab-line-highlight ((t (:inherit (tab-line bold)))))
  '(term-color-green ((t (:background "green4" :foreground "green4"))))
  '(term-color-cyan ((t (:background "cyan4" :foreground "cyan4"))))
  '(term-color-magenta ((t (:background "magenta4" :foreground "magenta4"))))

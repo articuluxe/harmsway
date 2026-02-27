@@ -44,7 +44,7 @@
     (fg-dim "#63728f")
     (fg-alt "#856f4a")
     (bg-active "#c7c0ba")
-    (bg-inactive "#f9f2ef")
+    (bg-inactive "#f0eae7")
     (border "#baafba")
 
     (red "#cc3333")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-duo-light-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-duo-light
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-duo-light-palette
  nil
- 'ef-duo-light-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-duo-light-palette-overrides)
 
 ;;; ef-duo-light-theme.el ends here

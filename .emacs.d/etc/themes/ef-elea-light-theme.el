@@ -44,7 +44,7 @@
     (fg-dim "#676470")
     (fg-alt "#5f5f1f")
     (bg-active "#b0b7aa")
-    (bg-inactive "#e8eddc")
+    (bg-inactive "#e0e2d0")
     (border "#a5aaaf")
 
     (red "#c3303a")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-elea-light-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-elea-light
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-elea-light-palette
  nil
- 'ef-elea-light-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-elea-light-palette-overrides)
 
 ;;; ef-elea-light-theme.el ends here

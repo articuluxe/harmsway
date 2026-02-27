@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-fig-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-fig
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-fig-palette
  nil
- 'ef-fig-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-fig-palette-overrides)
 
 ;;; ef-fig-theme.el ends here

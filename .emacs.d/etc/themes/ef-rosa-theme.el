@@ -44,7 +44,7 @@
     (fg-dim "#9d9d9d")
     (fg-alt "#96c4af")
     (bg-active "#6a5862")
-    (bg-inactive "#362129")
+    (bg-inactive "#463139")
     (border "#6f5f58")
 
     (red "#ff707f")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-rosa-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-rosa
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-rosa-palette
  nil
- 'ef-rosa-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-rosa-palette-overrides)
 
 ;;; ef-rosa-theme.el ends here

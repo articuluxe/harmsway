@@ -44,7 +44,7 @@
     (fg-dim "#8f8886")
     (fg-alt "#b0a0cf")
     (bg-active "#5b595e")
-    (bg-inactive "#2a272c")
+    (bg-inactive "#3a373c")
     (border "#635850")
 
     (red "#ff6f6f")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-dream-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-dream
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'dark
  'ef-dream-palette
  nil
- 'ef-dream-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-dream-palette-overrides)
 
 ;;; ef-dream-theme.el ends here

@@ -44,7 +44,7 @@
     (fg-dim "#786e74")
     (fg-alt "#3f7668")
     (bg-active "#c3c0c9")
-    (bg-inactive "#efeef7")
+    (bg-inactive "#e7e2eb")
     (border "#c6bac5")
 
     (red "#c3303a")
@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-trio-light-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-trio-light
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-trio-light-palette
  nil
- 'ef-trio-light-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-trio-light-palette-overrides)
 
 ;;; ef-trio-light-theme.el ends here

@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 06, 2026
-;; Version: 0.9.0
+;; Version: 0.11.1
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -37,6 +37,8 @@
       (guava-themes-dracaena-class '((class color) (min-colors 257)))
       (guava-themes-dracaena-black             "#000000")
       (guava-themes-dracaena-white             "#FFFFFF")
+
+      (guava-themes-dracaena-shadow            "#b3b3b3")
 
       (guava-themes-dracaena-light-gray        "#4f4f4f")
       (guava-themes-dracaena-gray              "#424845");404242,3e4040,3d3f3f,424545
@@ -93,8 +95,11 @@
    `(line-number ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-antarctic-blue :height 1.35))))
    `(line-number-current-line ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-light-orange :background ,guava-themes-dracaena-light-gray :weight bold :height 1.35))))
 
-   ;; hl-line
-   `(hl-line ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-light-gray))))
+   ;; highlight
+   `(highlight ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-light-gray))))
+
+   ;; shadow
+   `(shadow ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-shadow))))
 
    ;; region
    `(region ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red))))

@@ -223,6 +223,7 @@ further details)."
    nil
    (append ef-orange-palette-mappings-partial ef-themes-palette-common)))
 
+;;;###theme-autoload
 (modus-themes-theme
  'ef-orange
  'ef-themes
@@ -230,7 +231,6 @@ further details)."
  'light
  'ef-orange-palette
  nil
- 'ef-orange-palette-overrides
- 'ef-themes-custom-faces)
+ 'ef-orange-palette-overrides)
 
 ;;; ef-orange-theme.el ends here
