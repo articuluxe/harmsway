@@ -5,32 +5,33 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, January  9, 2026
 # Version: 1.0
-# Modified Time-stamp: <2026-02-03 17:08:20 dharms>
+# Modified Time-stamp: <2026-02-24 08:32:14 dharms>
 # Modified by: Dan Harms
 # Keywords: utilities
 
 set -euo pipefail
-# set -x
+set -x
 
-VERACRYPT=${VERACRYPT_BIN/veracrypt:-veracrypt}
+VERACRYPT=$VERACRYPT_BIN/veracrypt
 MOUNT=${SECURE_MOUNT:-~}
 OS=$(uname -s)
-SUDO="sudo"
 
 if ! command -v "$VERACRYPT" > /dev/null ; then
-    echo "veracrypt not installed or found; exiting."
-    return 1
+    echo "veracrypt ($VERACRYPT) not installed or found; exiting."
+    exit 1
 fi
 
 if [ "$OS" = "Darwin" ]; then
-    SUDO=""
-fi
-
-pass App/veracrypt | \
-    "$SUDO" \
+    pass App/veracrypt | \
     "$VERACRYPT" -t -k "" --stdin --non-interactive --protect-hidden=no --pim=0 \
-               ~/Sync/secure.volume \
-               "$MOUNT"/Secure
+                 ~/Sync/secure.volume \
+                 "$MOUNT"/Secure
+else
+    pass App/veracrypt | \
+    sudo "$VERACRYPT" -t -k "" --stdin --non-interactive --protect-hidden=no --pim=0 \
+         ~/Sync/secure.volume \
+         "$MOUNT"/Secure
+fi
 
 test -d "$MOUNT"/Secure && date > "$MOUNT"/Secure/.secure.last-mounted
 

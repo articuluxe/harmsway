@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, January  9, 2026
 # Version: 1.0
-# Modified Time-stamp: <2026-02-03 17:08:20 dharms>
+# Modified Time-stamp: <2026-02-23 17:48:05 dharms>
 # Modified by: Dan Harms
 # Keywords: utilities
 
@@ -17,7 +17,7 @@ MOUNT=${SECURE_MOUNT:-~}
 
 if ! command -v "$VERACRYPT" > /dev/null ; then
     echo "veracrypt not installed or found; exiting."
-    return 1
+    exit 1
 fi
 
 if [ -d "$MOUNT"/Secure ]; then
