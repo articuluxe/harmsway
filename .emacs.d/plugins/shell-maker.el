@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.85.2
+;; Version: 0.86.1
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.85.2")
+(defconst shell-maker-version "0.86.1")
 
 (require 'comint)
 (require 'goto-addr)
@@ -1305,10 +1305,9 @@ Use ON-OUTPUT function to monitor output text."
   (unless reply
     (error "Missing reply"))
   (let ((inhibit-read-only t)
-        (shell-buffer (shell-maker-buffer config))
-        (auto-scroll (eobp)))
+        (shell-buffer (shell-maker-buffer config)))
     (with-current-buffer shell-buffer
-      (if auto-scroll
+      (if (eobp)
           (progn
             (goto-char (point-max))
             (shell-maker--output-filter (shell-maker--process) reply))
@@ -1346,7 +1345,9 @@ Use ON-OUTPUT function to monitor output text."
                               :on-output on-output
                               :failed (not success))
     (when auto-scroll
-      (goto-char (point-max)))))
+      (goto-char (point-max))))
+  (when success
+    (shell-maker--write-input-ring-history config)))
 
 (defmacro shell-maker-with-auto-scroll-edit (&rest body)
   "Execute BODY, preserving point unless already at end of buffer."

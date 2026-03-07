@@ -1,12 +1,13 @@
 ;;; mwim.el --- Switch between the beginning/end of line or code  -*- lexical-binding: t -*-
 
-;; Copyright © 2015, 2016, 2018 Alex Kost
+;; Copyright © 2015–2026 Alex Kost
 
 ;; Author: Alex Kost <alezost@gmail.com>
 ;; Created: 9 Jan 2015
 ;; Version: 0.4
 ;; URL: https://github.com/alezost/mwim.el
 ;; Keywords: convenience
+;; Package-Requires: ((seq "2.24"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -45,6 +46,8 @@
 ;; moving.  See README in the source repo for more details.
 
 ;;; Code:
+
+(require 'seq)
 
 (defgroup mwim nil
   "Move Where I Mean.
@@ -104,7 +107,7 @@ If this variable is nil, an appropriate function will be chosen
 automatically.  This is the recommended value, as it provides the
 speed when possible, and guaranteed cycling between all positions
 for complex cases."
-  :type '(choice (const nil :tag "Choose automatically")
+  :type '(choice (const :tag "Choose automatically" nil)
                  (function-item mwim-next-position)
                  (function-item mwim-next-unique-position)
                  (function :tag "Another function"))
@@ -207,14 +210,6 @@ the first position."
              (mwim-next-position rest position
                                  (or fallback-position pos)))))))))
 
-(defun mwim-delq-dups (list)
-  "Like `delete-dups' but using `eq'."
-  (let ((tail list))
-    (while tail
-      (setcdr tail (delq (car tail) (cdr tail)))
-      (setq tail (cdr tail))))
-  list)
-
 (defun mwim-next-unique-position (functions &optional position
                                             sort-predicate)
   "Return the next point position after POSITION from positions
@@ -231,8 +226,8 @@ If SORT-PREDICATE is non-nil, it should be a function taken by
 `sort'.  It is used to sort available positions, so most likely
 you want to use either `<' or `>' for SORT-PREDICATE."
   (or position (setq position (point)))
-  (let* ((positions (mwim-delq-dups
-                     (delq nil (mapcar #'funcall functions))))
+  (let* ((positions (seq-uniq (seq-keep #'funcall functions)
+                              #'eq))
          (positions (if sort-predicate
                         (sort positions sort-predicate)
                       positions))
@@ -351,9 +346,8 @@ the current comment, otherwise - of the code."
   "Move point to the beginning of comment on the current line.
 If the comment does not exist, do nothing."
   (interactive "^")
-  (let ((comment-beg (mwim-line-comment-beginning)))
-    (when comment-beg
-      (goto-char comment-beg))))
+  (when-let* ((comment-beg (mwim-line-comment-beginning)))
+    (goto-char comment-beg)))
 
 (defun mwim-beginning-of-line ()
   "Move point to the beginning of line.
@@ -378,7 +372,7 @@ Use `mwim-end-of-line-function'."
 (defun mwim-end-of-code ()
   "Move point to the end of code.
 
-'End of code' means before a possible comment and trailing
+\"End of code\" means before a possible comment and trailing
 whitespaces.  Comments are recognized in any mode that sets
 `syntax-ppss' properly.
 
@@ -386,13 +380,12 @@ If current line is fully commented (contains only comment), move
 to the end of line."
   (interactive "^")
   (mwim-end-of-line)
-  (let ((comment-beg (mwim-line-comment-beginning)))
-    (when comment-beg
-      (let ((eoc (mwim-point-at
-                   (goto-char comment-beg)
-                   (skip-chars-backward " \t"))))
-        (when (< (line-beginning-position) eoc)
-          (goto-char eoc)))))
+  (when-let* ((comment-beg (mwim-line-comment-beginning)))
+    (let ((eoc (mwim-point-at
+                 (goto-char comment-beg)
+                 (skip-chars-backward " \t"))))
+      (when (< (line-beginning-position) eoc)
+        (goto-char eoc))))
   (skip-chars-backward " \t"))
 
 (defmacro mwim-define-command (position &rest objects)

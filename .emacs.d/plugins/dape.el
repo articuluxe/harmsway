@@ -3665,7 +3665,6 @@ Each buffers store its own debounce context."
   "Major mode to derive all Dape info buffer modes from."
   :interactive nil
   (setq-local buffer-read-only t
-              truncate-lines t
               cursor-in-non-selected-windows nil
               revert-buffer-function #'dape--info-revert
               dape--info-debounce-timer (timer-create))
@@ -3918,7 +3917,8 @@ expression breakpoint")))))
 
 (define-derived-mode dape-info-breakpoints-mode dape-info-parent-mode "Breakpoints"
   "Major mode for viewing and editing breakpoints."
-  :interactive nil)
+  :interactive nil
+  (setq truncate-lines t))
 
 (cl-defmethod dape--info-revert (&context (major-mode dape-info-breakpoints-mode)
                                           &rest _)
@@ -4073,7 +4073,6 @@ See `dape-request' for expected CB signature."
   "Major mode for viewing and selecting threads."
   :interactive nil
   (setq font-lock-defaults '(dape--info-threads-font-lock-keywords)
-        truncate-lines nil
         dape--info-thread-position (make-marker))
   (add-to-list 'overlay-arrow-variable-list 'dape--info-thread-position))
 
@@ -4177,6 +4176,7 @@ See `dape-request' for expected CB signature."
   "Major mode for viewing and navigating the call stack."
   :interactive nil
   (setq font-lock-defaults '(dape--info-stack-font-lock-keywords)
+        truncate-lines t
         dape--info-stack-position (make-marker))
   (add-to-list 'overlay-arrow-variable-list 'dape--info-stack-position))
 
@@ -4472,6 +4472,9 @@ current buffer with CONN config."
 TEST-EXPANDED is called with PATH and OBJECT to determine if recursive
 calls should continue.  If NO-HANDLES is non-nil skip + - handles."
   (let* ((name (or (plist-get object :name) ""))
+         (name (if (string-empty-p name)
+                   (or (plist-get object :evaluateName) "")
+                 name))
          (type (or (plist-get object :type) ""))
          (value (or (plist-get object :value)
                     (plist-get object :result)
@@ -4910,6 +4913,12 @@ Called by `comint-input-sender' in `dape-repl-mode'."
                     (or (plist-get target :text) (plist-get target :label))
                     (when-let* ((start (plist-get target :start))
                                 (offset (- (car bounds) line-start))
+                                ;; XXX Assume server sends both start
+                                ;; and length (vscode convention) or
+                                ;; bail.  Seems successful in
+                                ;; identifying misbehaving servers
+                                ;; (e.g. jdtls).
+                                ((plist-get target :length))
                                 ((< start offset)))
                       ;; XXX Adapter gets line but Emacs completion is
                       ;; given `word' bounds, cut prefix off candidate
@@ -5526,14 +5535,12 @@ Where ALIST-KEY exists in `dape-configs'."
 If SIGNAL is non-nil raises `user-error' on failure otherwise returns
 nil."
   (if-let* ((ensure-fn (plist-get config 'ensure)))
-      (let ((default-directory
-             (if-let* ((command-cwd (plist-get config 'command-cwd)))
-                 (dape--config-eval-value command-cwd)
-               default-directory)))
-        (condition-case err
-            (or (funcall ensure-fn config) t)
-          (error
-           (if signal (user-error (error-message-string err)) nil))))
+      (condition-case err
+          (let ((default-directory (or (dape-config-get config 'command-cwd)
+                                       default-directory)))
+            (or (funcall ensure-fn config) t))
+        (error
+         (if signal (user-error (error-message-string err)) nil)))
     t))
 
 (defun dape--config-mode-p (config)
@@ -5604,7 +5611,7 @@ See `modes' and `ensure' in `dape-configs'."
   (let* ((suggested-configs
           (cl-loop for (name . config) in dape-configs
                    when (and (dape--config-mode-p config)
-                             (dape--config-ensure config))
+                             (ignore-errors (dape--config-ensure config)))
                    collect (symbol-name name)))
          (initial-contents
           (or
@@ -5617,7 +5624,7 @@ See `modes' and `ensure' in `dape-configs'."
                                        (dape--config-from-string string))
                     when (and config
                               (dape--config-mode-p config)
-                              (dape--config-ensure config))
+                              (ignore-errors (dape--config-ensure config)))
                     return string)
            ;; Take first suggested config if only one exist
            (when (and (length= suggested-configs 1)
@@ -5829,6 +5836,7 @@ mouse-1: Display minor mode menu"
     (define-key map "x" #'dape-evaluate-expression)
     (define-key map "w" #'dape-watch-dwim)
     (define-key map "D" #'dape-disconnect-quit)
+    (define-key map "K" #'dape-kill)
     (define-key map "q" #'dape-quit)
     map))
 

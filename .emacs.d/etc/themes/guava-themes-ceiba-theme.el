@@ -1,10 +1,10 @@
-;;; guava-themes-ceiba-theme.el --- A theme inspired by ceiba colors -*- lexical-binding: t; -*-
+;;; guava-themes-ceiba-theme.el --- A theme inspired by the ceiba tree colors -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025-2026
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 21, 2026
-;; Version: 0.11.1
+;; Version: 0.11.3
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -25,13 +25,13 @@
 
 ;;; Commentary:
 ;;
-;; A theme inspired by ceiba colors.
+;; A theme inspired by the ceiba tree colors.
 ;;
 ;;; Code:
 
 (require 'guava-themes)
 
-(deftheme guava-themes-ceiba "A theme inspired by ceiba tree colors.")
+(deftheme guava-themes-ceiba "A theme inspired by the ceiba tree colors.")
 
 (let* (
       (guava-themes-ceiba-class '((class color) (min-colors 257)))
@@ -45,7 +45,7 @@
       (guava-themes-ceiba-gray              "#9d9d9d");dcdcdc,656865,7f7f89,787882
       (guava-themes-ceiba-gray-blue         "#798585");8c857b,8d8d8b,6d726a,656865
 
-      (guava-themes-ceiba-light-green       "#5b6452");5a6352
+      (guava-themes-ceiba-green             "#5b6452");5a6352
       (guava-themes-ceiba-deep-green        "#2b5535");375033,395235,3a5435,3a5835,385635,375535
       (guava-themes-ceiba-green-blue        "#116452");5a6352
 
@@ -62,7 +62,7 @@
       (guava-themes-ceiba-light-brown       "#6d4b30");6b492e
       (guava-themes-ceiba-brown-wood        "#53453d");9c6d85,bf8987,514141,53423e
 
-      (guava-themes-ceiba-error             "#d70000");ff0000
+      (guava-themes-ceiba-error             "#ff0000");ff0000,d70000
       (guava-themes-ceiba-warning           "#f6c911");F68511
       (guava-themes-ceiba-success           "#29c825")
 
@@ -91,8 +91,8 @@
    `(diff-hl-delete ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-vc-delete :foreground ,guava-themes-ceiba-vc-delete))))
 
    ;; line-number
-   `(line-number ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-black :height 1.35))))
-   `(line-number-current-line ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-deep-green :background ,guava-themes-ceiba-gray :weight bold :height 1.35))))
+   `(line-number ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-black))))
+   `(line-number-current-line ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-deep-green :background ,guava-themes-ceiba-gray :weight bold))))
 
    ;; highlight
    `(highlight ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-gray))))
@@ -104,7 +104,7 @@
    `(region ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-gray-blue))))
 
    ;; mode-line
-   `(mode-line ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-light-green :foreground ,guava-themes-ceiba-white))))
+   `(mode-line ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-green :foreground ,guava-themes-ceiba-white))))
    `(mode-line-inactive ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-gray-blue :foreground ,guava-themes-ceiba-white))))
    `(guava-themes-visible-bell ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-steel-blue :foreground ,guava-themes-ceiba-white))))
 
@@ -115,41 +115,53 @@
    `(vertical-border ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-gray-green))))
 
    ;; header-line
-   `(header-line ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-light-green :foreground ,guava-themes-ceiba-white))))
-   `(which-func ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-light-green :foreground ,guava-themes-ceiba-white))))
+   `(header-line ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-green :foreground ,guava-themes-ceiba-white))))
+   `(which-func ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-green :foreground ,guava-themes-ceiba-white))))
 
    ;; tab-bar
    `(tab-bar ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-brown-sand :foreground ,guava-themes-ceiba-white))))
-   `(tab-bar-tab ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-light-green :foreground ,guava-themes-ceiba-white :weight bold :height 1.0))))
+   `(tab-bar-tab ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-green :foreground ,guava-themes-ceiba-white :weight bold :height 1.0))))
    `(tab-bar-tab-inactive ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-brown-sand :foreground ,guava-themes-ceiba-white :weight bold :height 1.0))))
 
    ;; tab-line
    `(tab-line ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-brown-sand :foreground ,guava-themes-ceiba-white))))
    `(tab-line-tab ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-brown-sand :foreground ,guava-themes-ceiba-white :weight bold :height 0.9))))
-   `(tab-line-tab-current ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-light-green :foreground ,guava-themes-ceiba-white :weight bold :height 0.9))))
+   `(tab-line-tab-current ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-green :foreground ,guava-themes-ceiba-white :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-brown-sand :foreground ,guava-themes-ceiba-white :weight bold :height 0.9))))
    `(tab-line-tab-modified ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-purple-red :weight bold :height 0.9))))
    `(tab-line-tab-special ((,guava-themes-ceiba-class (:slant italic :weight bold :height 0.9))))
 
    ;; font-lock
    `(font-lock-comment-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-deep-green :weight medium))))
-   `(font-lock-string-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-light-brown :weight bold))))
+   `(font-lock-string-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-light-brown :weight medium))))
    `(font-lock-keyword-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-purple :weight medium))))
    `(font-lock-builtin-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-alt-blue :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-error :weight medium))))
+   `(font-lock-warning-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-error :weight bold))))
    `(font-lock-type-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-green-blue :weight medium))))
    `(font-lock-constant-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-orange :weight medium))))
    `(font-lock-function-name-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-brown-wood :weight medium))))
    `(font-lock-bracket-face ((,guava-themes-ceiba-class (:weight medium))))
-   `(font-lock-variable-name-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-light-green :weight medium))))
+   `(font-lock-variable-name-face ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-green :weight medium))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-deep-green))))
+   `(show-paren-match ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-white :background ,guava-themes-ceiba-deep-green))))
+   `(show-paren-mismatch ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-white :background ,guava-themes-ceiba-error))))
+
+   ;; trailing whitespaces
+   `(trailing-whitespace ((,guava-themes-ceiba-class (:background ,guava-themes-ceiba-error))))
 
    ;; buttons
    `(link ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-purple :underline t :weight bold))))
    `(link-visited ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-purple-red :underline t :weight bold))))
-   `(button ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-purple :underline t :weight bold))))))
+   `(button ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-purple :underline t :weight bold))))
+
+
+   ;; external packages
+
+   ;; doom-modeline
+   `(doom-modeline-project-name ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-steel-blue))))
+   `(doom-modeline-project-parent-dir ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-steel-blue))))
+   `(doom-modeline-buffer-minor-mode ((,guava-themes-ceiba-class (:foreground ,guava-themes-ceiba-shadow))))))
 
 (provide-theme 'guava-themes-ceiba)
 

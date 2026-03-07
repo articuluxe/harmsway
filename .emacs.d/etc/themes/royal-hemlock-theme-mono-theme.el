@@ -52,6 +52,8 @@
    `(font-lock-keyword-face ((,class (   :foreground ,mono-hemlock/text-colour :weight bold))))
    `(font-lock-type-face ((,class (      :foreground ,mono-hemlock/text-colour :weight bold))))
 
+   `(dired-directory ((,class (:foreground ,mono-hemlock/text-colour :weight bold))))
+
    `(font-lock-function-name-face ((,class (  :foreground ,mono-hemlock/text-colour))))
    `(font-lock-string-face((,class (          :foreground ,mono-hemlock/text-colour))))
    `(font-lock-variable-name-face ((,class (  :foreground ,mono-hemlock/text-colour))))

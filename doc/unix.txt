@@ -1,13 +1,16 @@
 #!/usr/bin sh
 # -*- Mode: sh; comment-start: "#" -*-
 # unix.txt --- misc. helpful commands
-# Copyright (C) 2015-2020, 2023   (dan.harms)
+# Copyright (C) 2015-2020, 2023, 2026   (dan.harms)
 # Author:  <enniomore@icloud.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2023-02-14 14:48:20 dharms>
+# Modified Time-stamp: <2026-02-08 15:51:46 dharms>
 # Modified by: Dan Harms
 # Keywords: help
+
+# online FAQ
+https://devhints.io/bash
 
 # tell when machine was last rebooted
 who -b

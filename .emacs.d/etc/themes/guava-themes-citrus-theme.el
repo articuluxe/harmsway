@@ -1,10 +1,10 @@
-;;; guava-themes-citrus-theme.el --- A theme inspired by citrus colors -*- lexical-binding: t; -*-
+;;; guava-themes-citrus-theme.el --- A theme inspired by orange colors -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025-2026
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Feb 15, 2026
-;; Version: 0.11.1
+;; Version: 0.11.3
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -52,7 +52,7 @@
 
       (guava-themes-citrus-brown                   "#86626f")
 
-      (guava-themes-citrus-blue                    "#443f8d");2246d2
+      (guava-themes-citrus-blue                    "#2327dc");2246d2,443f8d,2327dc
       (guava-themes-citrus-light-blue              "#4e9496")
       (guava-themes-citrus-purple-red              "#77003a")
 
@@ -85,8 +85,8 @@
    `(diff-hl-delete ((,guava-themes-citrus-class (:background ,guava-themes-citrus-vc-delete :foreground ,guava-themes-citrus-vc-delete))))
 
    ;; line-number
-   `(line-number ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-black :height 1.35))))
-   `(line-number-current-line ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :background ,guava-themes-citrus-lemon-light-yellow :weight bold :height 1.35))))
+   `(line-number ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-black))))
+   `(line-number-current-line ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :background ,guava-themes-citrus-lemon-light-yellow :weight bold))))
 
    ;; highlight
    `(highlight ((,guava-themes-citrus-class (:background ,guava-themes-citrus-lemon-light-yellow))))
@@ -127,10 +127,10 @@
 
    ;; font-lock
    `(font-lock-comment-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :weight medium))))
-   `(font-lock-string-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-success :weight bold))))
+   `(font-lock-string-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-success :weight medium))))
    `(font-lock-keyword-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-deep-orange :weight medium))))
    `(font-lock-builtin-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-blue :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-error :weight medium))))
+   `(font-lock-warning-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-error :weight bold))))
    `(font-lock-type-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-purple-red :weight medium))))
    `(font-lock-constant-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :weight medium))))
    `(font-lock-function-name-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-brown :weight medium))))
@@ -138,12 +138,24 @@
    `(font-lock-variable-name-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :weight medium))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-citrus-class (:background ,guava-themes-citrus-light-blue))))
+   `(show-paren-match ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-white :background ,guava-themes-citrus-light-blue))))
+   `(show-paren-mismatch ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-white :background ,guava-themes-citrus-error))))
+
+   ;; trailing whitespaces
+   `(trailing-whitespace ((,guava-themes-citrus-class (:background ,guava-themes-citrus-error))))
 
    ;; buttons
    `(link ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :underline t :weight bold))))
    `(link-visited ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-blue :underline t :weight bold))))
-   `(button ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :underline t :weight bold))))))
+   `(button ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :underline t :weight bold))))
+
+
+   ;; external packages
+
+   ;; doom-modeline
+   `(doom-modeline-project-name ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-purple-red))))
+   `(doom-modeline-project-parent-dir ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-purple-red))))
+   `(doom-modeline-buffer-minor-mode ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-lemon-light-yellow))))))
 
 (provide-theme 'guava-themes-citrus)
 

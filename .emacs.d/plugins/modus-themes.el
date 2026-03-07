@@ -7486,7 +7486,7 @@ Consult the manual for details on how to build a theme on top of the
            ',name
            ,@variables))
        :lexical))
-    (unless theme-exists-p
+    (unless (featurep theme-exists-p)
       (provide-theme name))))
 
 ;;;; Use theme colors

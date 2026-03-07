@@ -121,6 +121,18 @@
 ; '(diredp-inode+size ((t (:foreground "white"))))
 ; '(diredp-compressed-file-suffix ((t (:foreground "cyan1"))))
 ; '(diredp-ignored-file-name ((t (:foreground "cyan1"))))
+ '(diredfl-dir-heading ((t (:bold t :underline t))))
+ '(diredfl-dir-name ((t (:bold t))))
+ '(diredfl-file-name ((t (:italic t))))
+ '(diredfl-file-suffix ((t (:italic t))))
+ '(diredfl-symlink ((t (:foreground "#003300"))))
+ ;; eglot customizations
+ '(eglot-inlay-hint-face ((t (:foreground "#003000"))))
+ ;; deadgrep customizations
+ '(deadgrep-match-face ((t (:background "#001100" :box (:line-width -1 :color "#007000")))))
+ '(deadgrep-meta-face ((t (:foreground "33FF33"))))
+ ;; eshell
+ '(eshell-prompt ((t (:bold t))))
  ;; nXML customizations
  ; '<' and '>' characters
  '(nxml-tag-delimiter ((t (:bold t))))

@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 27, 2025
-;; Version: 0.11.1
+;; Version: 0.11.3
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -62,9 +62,9 @@
       (guava-themes-jacaranda-deep-purple       "#740cbe");800080
       (guava-themes-jacaranda-purple-red        "#8b2252")
 
-      (guava-themes-jacaranda-error             "#bc0000");FF0000
+      (guava-themes-jacaranda-error             "#FF0000");FF0000
       (guava-themes-jacaranda-warning           "#ffc333");F68511
-      (guava-themes-jacaranda-success           "#007900");228B22
+      (guava-themes-jacaranda-success           "#00c200");228B22,007900
 
       (guava-themes-jacaranda-vc-change         guava-themes-jacaranda-blue)
       (guava-themes-jacaranda-vc-insert         guava-themes-jacaranda-green)
@@ -91,8 +91,8 @@
    `(diff-hl-delete ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-vc-delete :foreground ,guava-themes-jacaranda-vc-delete))))
 
    ;; line-number
-   `(line-number ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-antarctic-blue :height 1.35))))
-   `(line-number-current-line ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-black :background ,guava-themes-jacaranda-light-purple :weight bold :height 1.35))))
+   `(line-number ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-antarctic-blue))))
+   `(line-number-current-line ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-black :background ,guava-themes-jacaranda-light-purple :weight bold))))
 
    ;; highlight
    `(highlight ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-light-purple))))
@@ -104,7 +104,7 @@
    `(region ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-light-blue))))
 
    ;; mode-line
-   `(mode-line ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-purple :foreground ,guava-themes-jacaranda-white))))
+   `(mode-line ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-deep-blue :foreground ,guava-themes-jacaranda-white))))
    `(mode-line-inactive ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-light-blue :foreground ,guava-themes-jacaranda-white))))
    `(guava-themes-visible-bell ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-orange :foreground ,guava-themes-jacaranda-white))))
 
@@ -133,10 +133,10 @@
 
    ;; font-lock
    `(font-lock-comment-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-light-green :weight medium))))
-   `(font-lock-string-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-purple-red :weight bold))))
+   `(font-lock-string-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-purple-red :weight medium))))
    `(font-lock-keyword-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-deep-purple :weight medium))))
    `(font-lock-builtin-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-deep-blue :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-red :weight medium))))
+   `(font-lock-warning-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-error :weight bold))))
    `(font-lock-type-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-oceanic-green :weight medium))))
    `(font-lock-constant-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-cyan :weight medium))))
    `(font-lock-function-name-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-blue :weight medium))))
@@ -144,12 +144,24 @@
    `(font-lock-variable-name-face ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-deep-orange :weight medium))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-orange))))
+   `(show-paren-match ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-white :background ,guava-themes-jacaranda-blue))))
+   `(show-paren-mismatch ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-white :background ,guava-themes-jacaranda-error))))
+
+   ;; trailing whitespaces
+   `(trailing-whitespace ((,guava-themes-jacaranda-class (:background ,guava-themes-jacaranda-error))))
 
    ;; buttons
    `(link ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-oceanic-green :underline t :weight bold))))
    `(link-visited ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-deep-green :underline t :weight bold))))
-   `(button ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-blue :underline t :weight bold))))))
+   `(button ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-blue :underline t :weight bold))))
+
+
+   ;; external packages
+
+   ;; doom-modeline
+   `(doom-modeline-project-name ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-light-green))))
+   `(doom-modeline-project-parent-dir ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-light-green))))
+   `(doom-modeline-buffer-minor-mode ((,guava-themes-jacaranda-class (:foreground ,guava-themes-jacaranda-light-blue))))))
 
 (provide-theme 'guava-themes-jacaranda)
 

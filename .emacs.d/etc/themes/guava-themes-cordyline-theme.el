@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.11.1
+;; Version: 0.11.3
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -85,8 +85,8 @@
    `(diff-hl-delete ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-vc-delete :foreground ,guava-themes-cordyline-vc-delete))))
 
    ;; line-number
-   `(line-number ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :height 1.35))))
-   `(line-number-current-line ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :background ,guava-themes-cordyline-alt-purple :weight bold :height 1.35))))
+   `(line-number ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white))))
+   `(line-number-current-line ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :background ,guava-themes-cordyline-alt-purple :weight bold))))
 
    ;; highlight
    `(highlight ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-alt-purple))))
@@ -122,15 +122,15 @@
    `(tab-line-tab ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white :weight bold :height 0.9))))
    `(tab-line-tab-current ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-purple-red :foreground ,guava-themes-cordyline-white :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white :weight bold :height 0.9))))
-   `(tab-line-tab-modified ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :weight bold :height 0.9))))
    `(tab-line-tab-special ((,guava-themes-cordyline-class (:slant italic :weight bold :height 0.9))))
 
    ;; font-lock
    `(font-lock-comment-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :weight medium))))
-   `(font-lock-string-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink :weight bold))))
+   `(font-lock-string-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink :weight medium))))
    `(font-lock-keyword-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-purple :weight medium))))
    `(font-lock-builtin-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-purple-red :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-error :weight medium))))
+   `(font-lock-warning-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-error :weight bold))))
    `(font-lock-type-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-purple :weight medium))))
    `(font-lock-constant-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-dark-cyan :weight medium))))
    `(font-lock-function-name-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink-purple :weight medium))))
@@ -138,12 +138,24 @@
    `(font-lock-variable-name-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-deep-blue :weight medium))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-steel-blue))))
+   `(show-paren-match ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :background ,guava-themes-cordyline-steel-blue))))
+   `(show-paren-mismatch ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :background ,guava-themes-cordyline-error))))
+
+   ;; trailing whitespaces
+   `(trailing-whitespace ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-error))))
 
    ;; buttons
    `(link ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :underline t :weight bold))))
    `(link-visited ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-purple :underline t :weight bold))))
-   `(button ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :underline t :weight bold))))))
+   `(button ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :underline t :weight bold))))
+
+
+   ;; external packages
+
+   ;; doom-modeline
+   `(doom-modeline-project-name ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue))))
+   `(doom-modeline-project-parent-dir ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue))))
+   `(doom-modeline-buffer-minor-mode ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink))))))
 
 (provide-theme 'guava-themes-cordyline)
 

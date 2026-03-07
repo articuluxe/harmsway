@@ -1,10 +1,10 @@
-;;; guava-themes-rhododendron-theme.el --- A theme inspired by azalea colors -*- lexical-binding: t; -*-
+;;; guava-themes-rhododendron-theme.el --- A theme inspired by the azalea tree colors -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2025-2026
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 19, 2026
-;; Version: 0.11.1
+;; Version: 0.11.3
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -25,13 +25,13 @@
 
 ;;; Commentary:
 ;;
-;; A theme inspired by azalea colors.
+;; A theme inspired by the azalea tree colors.
 ;;
 ;;; Code:
 
 (require 'guava-themes)
 
-(deftheme guava-themes-rhododendron "A theme inspired by azalea tree colors.")
+(deftheme guava-themes-rhododendron "A theme inspired by the azalea tree colors.")
 
 (let* (
       (guava-themes-rhododendron-class '((class color) (min-colors 257)))
@@ -89,8 +89,8 @@
    `(diff-hl-delete ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-vc-delete :foreground ,guava-themes-rhododendron-vc-delete))))
 
    ;; line-number
-   `(line-number ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-black :height 1.35))))
-   `(line-number-current-line ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-red :background ,guava-themes-rhododendron-light-purple :weight bold :height 1.35))))
+   `(line-number ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-black))))
+   `(line-number-current-line ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-red :background ,guava-themes-rhododendron-light-purple :weight bold))))
 
    ;; highlight
    `(highlight ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-light-purple))))
@@ -131,10 +131,10 @@
 
    ;; font-lock
    `(font-lock-comment-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-deep-green :weight medium))))
-   `(font-lock-string-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-red :weight bold))))
+   `(font-lock-string-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-red :weight medium))))
    `(font-lock-keyword-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-bright-pink :weight medium))))
    `(font-lock-builtin-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-deep-blue :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-error :weight medium))))
+   `(font-lock-warning-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-error :weight bold))))
    `(font-lock-type-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-forest-green :weight medium))))
    `(font-lock-constant-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-blue :weight medium))))
    `(font-lock-function-name-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-deep-pink :weight medium))))
@@ -142,12 +142,24 @@
    `(font-lock-variable-name-face ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-bright-orange :weight medium))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-blue))))
+   `(show-paren-match ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-white :background ,guava-themes-rhododendron-blue))))
+   `(show-paren-mismatch ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-white :background ,guava-themes-rhododendron-error))))
+
+   ;; trailing whitespaces
+   `(trailing-whitespace ((,guava-themes-rhododendron-class (:background ,guava-themes-rhododendron-error))))
 
    ;; buttons
    `(link ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-blue :underline t :weight bold))))
    `(link-visited ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-pink :underline t :weight bold))))
-   `(button ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-blue :underline t :weight bold))))))
+   `(button ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-purple-blue :underline t :weight bold))))
+
+
+   ;; external packages
+
+   ;; doom-modeline
+   `(doom-modeline-project-name ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-light-purple))))
+   `(doom-modeline-project-parent-dir ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-light-purple))))
+   `(doom-modeline-buffer-minor-mode ((,guava-themes-rhododendron-class (:foreground ,guava-themes-rhododendron-bright-orange))))))
 
 (provide-theme 'guava-themes-rhododendron)
 

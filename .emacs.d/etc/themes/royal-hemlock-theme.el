@@ -6,7 +6,7 @@
 ;; Author: vs-123 (GitHub)
 ;; Homepage: https://github.com/vs-123/royal-hemlock-theme
 ;; Url: https://github.com/vs-123/royal-hemlock-theme
-;; Version: 1.5
+;; Version: 1.6
 ;; Filename: royal-hemlock-theme.el
 ;; Keywords: color theme faces
 ;; Package-Requires: ((emacs "24"))
@@ -54,6 +54,8 @@
    `(font-lock-constant-face ((,class (:foreground ,royal-hemlock/pink-colour :weight bold))))      
    `(font-lock-keyword-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
    `(font-lock-type-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
+
+   `(dired-directory ((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
    
    `(font-lock-comment-face((,class (:foreground ,royal-hemlock/string))))
    `(font-lock-function-name-face ((,class (:foreground ,royal-hemlock/text-colour))))

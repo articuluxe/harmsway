@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Feb 22, 2026
-;; Version: 0.11.1
+;; Version: 0.11.3
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -25,13 +25,13 @@
 
 ;;; Commentary:
 ;;
-;; A theme inspired by potato, tomato, and eggplant colors.
+;; A theme inspired by eggplant, potato, and tomato colors.
 ;;
 ;;; Code:
 
 (require 'guava-themes)
 
-(deftheme guava-themes-solanum "A theme inspired by potato, tomato, and eggplant colors.")
+(deftheme guava-themes-solanum "A theme inspired by eggplant, potato, and tomato colors.")
 
 (let* (
       (guava-themes-solanum-class '((class color) (min-colors 257)))
@@ -86,8 +86,8 @@
    `(diff-hl-delete ((,guava-themes-solanum-class (:background ,guava-themes-solanum-vc-delete :foreground ,guava-themes-solanum-vc-delete))))
 
    ;; line-number
-   `(line-number ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-white :height 1.35))))
-   `(line-number-current-line ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-green :background ,guava-themes-solanum-purple-red :weight bold :height 1.35))))
+   `(line-number ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-white))))
+   `(line-number-current-line ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-green :background ,guava-themes-solanum-purple-red :weight bold))))
 
    ;; highlight
    `(highlight ((,guava-themes-solanum-class (:background ,guava-themes-solanum-purple-red))))
@@ -128,10 +128,10 @@
 
    ;; font-lock
    `(font-lock-comment-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-red-tomato :weight medium))))
-   `(font-lock-string-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-yellow-potato :weight bold))))
+   `(font-lock-string-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-yellow-potato :weight medium))))
    `(font-lock-keyword-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-green :weight medium))))
    `(font-lock-builtin-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-blue :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-error :weight medium))))
+   `(font-lock-warning-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-error :weight bold))))
    `(font-lock-type-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-orange :weight medium))))
    `(font-lock-constant-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-purple :weight medium))))
    `(font-lock-function-name-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-purple :weight medium))))
@@ -139,12 +139,24 @@
    `(font-lock-variable-name-face ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-green :weight medium))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-solanum-class (:background ,guava-themes-solanum-light-blue))))
+   `(show-paren-match ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-purple-black :background ,guava-themes-solanum-light-blue))))
+   `(show-paren-mismatch ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-white :background ,guava-themes-solanum-error))))
+
+   ;; trailing whitespaces
+   `(trailing-whitespace ((,guava-themes-solanum-class (:background ,guava-themes-solanum-error))))
 
    ;; buttons
    `(link ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-purple :underline t :weight bold))))
    `(link-visited ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-dark-purple :underline t :weight bold))))
-   `(button ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-purple :underline t :weight bold))))))
+   `(button ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-light-purple :underline t :weight bold))))
+
+
+   ;; external packages
+
+   ;; doom-modeline
+   `(doom-modeline-project-name ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-red-tomato))))
+   `(doom-modeline-project-parent-dir ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-red-tomato))))
+   `(doom-modeline-buffer-minor-mode ((,guava-themes-solanum-class (:foreground ,guava-themes-solanum-yellow-potato))))))
 
 (provide-theme 'guava-themes-solanum)
 

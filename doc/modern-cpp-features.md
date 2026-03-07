@@ -15,6 +15,8 @@ C++23 includes the following new library features:
 - [`spanstream`](#spanstream)
 - [input/output pointers](#inputoutput-pointers)
 - [monadic operations for `std::optional`](monadic-operations-for-stdoptional)
+- [`std::expected`](#stdexpected)
+- [`std::unreachable`](#stdunreachable)
 
 C++20 includes the following new language features:
 - [coroutines](#coroutines)
@@ -312,16 +314,54 @@ Both inout/out pointers support casts to `void**` (implicitly), and explicitly t
 ### Monadic operations for `std::optional`
 Support various `and_then`, `transform`, and `or_else` operations for `std::optional`.
 ```c++
-std::optional<double> stringToDouble(const std::string& input) {
-    return parse_int(input)
-        .and_then(ensure_non_negative)
-        .and_then(safe_sqrt)
-        .transform([](double x) -> std::optional<double> {
-            return x * 2.0;
-        })
-        .or_else([] -> std::optional<double> {
-            throw std::runtime_error{"bad number"};
-        });
+std::optional<int> parse_int(const std::string&);
+std::optional<int> ensure_non_negative(int);
+std::optional<double> default_value_or_empty(double);
+
+std::optional<double> stringToSqrtDouble(const std::string& input) {
+  return parse_int(input)
+    .and_then(ensure_non_negative)
+    .transform([](int x) {
+      return std::sqrt(x);
+    })
+    .or_else(default_value_or_empty);
+}
+```
+
+### `std::expected`
+`std::expected` provides a way to represent a value and a potential error value, both contained in one type. Also supports a variety of monadic operations on both the expected and unexpected (i.e. error) values.
+
+Use `std::unexpected` to store an unexpected (i.e. error) value.
+```c++
+enum class StringToSqrtDoubleError {
+    ParseError, NegativeNumber
+};
+
+std::expected<int, StringToSqrtDoubleError> parse_int(const std::string&);
+
+std::expected<double, StringToSqrtDoubleError> stringToSqrtDouble(const std::string& input) {
+    auto parsed = parse_int(input);
+    if (!parsed) return parsed;
+
+    auto parsedInt = *parsed;
+    if (parsedInt < 0) return std::unexpected(StringToSqrtDoubleError::NegativeNumber);
+
+    return std::sqrt(parsedInt);
+}
+```
+
+### `std::unreachable`
+Provides a way to explicitly mark a code path as unreachable. May exhibit undefined behavior if the code path is reached.
+```c++
+enum class MyEnum { A, B, C };
+
+int convertMyEnumToInt(MyEnum e) {
+    switch (e) {
+        case MyEnum::A: return 0;
+        case MyEnum::B: return 1;
+        case MyEnum::C: return 2;
+        default: std::unreachable(); 
+    }
 }
 ```
 

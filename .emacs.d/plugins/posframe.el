@@ -136,7 +136,7 @@ effect.")
        (not emacs-basic-display)
        (or (display-graphic-p)
            (featurep 'tty-child-frames))
-       (eq (frame-parameter (selected-frame) 'minibuffer) 't)))
+       (not (eq (frame-parameter (selected-frame) 'minibuffer) 'only))))
 
 ;;;###autoload
 (cl-defun posframe-show (buffer-or-name
