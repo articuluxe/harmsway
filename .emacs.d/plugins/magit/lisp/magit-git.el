@@ -71,6 +71,8 @@
   (cl-pushnew 'orig-rev eieio--known-slot-names)
   (cl-pushnew 'number eieio--known-slot-names))
 
+(defvar crm-prompt) ; Emacs 31.1
+
 ;;; Options
 
 ;; For now this is shared between `magit-process' and `magit-git'.
@@ -509,9 +511,9 @@ signal `magit-invalid-git-boolean'."
 
 (defun magit-git-config-p (variable &optional default)
   "Return the boolean value of the Git variable VARIABLE.
-VARIABLE has to be specified as a string.  Return DEFAULT (which
-defaults to nil) if VARIABLE is unset.  If VARIABLE's value isn't
-a boolean, then raise an error."
+VARIABLE has to be specified as a string.  If VARIABLE is unset,
+return nil by default, unless DEFAULT is non-nil, in which case
+return t.  Signal an error if VARIABLE is set but not a boolean."
   (let ((args (list "config" "--bool" "--default" (if default "true" "false")
                     variable)))
     (magit--with-refresh-cache (cons default-directory args)
@@ -1332,11 +1334,13 @@ Sorted from longest to shortest CYGWIN name."
 (defun magit-blob-oid (rev file)
   (if (equal rev "{index}")
       (cadr (car (magit--file-index-stages file)))
-    (magit-git-string "ls-tree" "--object-only" rev "--" file)))
+    (magit-git-string "ls-tree" "--object-only" rev "--"
+                      (magit-convert-filename-for-git file))))
 
 (defun magit--file-index-stages (file)
   (mapcar (##split-string % " ")
-          (magit-git-lines "ls-files" "--stage" "--" file)))
+          (magit-git-lines "ls-files" "--stage" "--"
+                           (magit-convert-filename-for-git file))))
 
 (defun magit--insert-blob-contents (rev file)
   (let ((coding-system-for-read (or coding-system-for-read 'undecided)))
@@ -2739,10 +2743,11 @@ If either revision cannot be dereferenced as a commit, signal an error."
       (lambda ()
         (magit--minibuf-default-add-commit)
         (setq-local crm-separator "\\.\\.\\.?"))
-    (magit-completing-read-multiple
-     (concat prompt ": ")
-     (magit-list-refnames)
-     nil 'any nil 'magit-revision-history default nil t)))
+    (let ((crm-prompt "%p"))
+      (magit-completing-read-multiple
+       (concat prompt ": ")
+       (magit-list-refnames)
+       nil 'any nil 'magit-revision-history default nil t))))
 
 (defun magit-read-remote-branch
     (prompt &optional remote default local-branch require-match)

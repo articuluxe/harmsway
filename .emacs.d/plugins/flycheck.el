@@ -10049,7 +10049,7 @@ See URL `https://opam.ocaml.org/doc/man/opam-lint.html'."
   (lambda (errors)
     (flycheck-increment-error-columns
      (flycheck-fill-empty-line-numbers errors)))
-  :modes tuareg-opam-mode)
+  :modes (tuareg-opam-mode neocaml-opam-mode))
 
 (flycheck-def-option-var flycheck-perl-include-path nil perl
   "A list of include directories for Perl.

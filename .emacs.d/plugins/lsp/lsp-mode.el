@@ -175,7 +175,7 @@ As defined by the Language Server Protocol 3.16."
 
 (defcustom lsp-client-packages
   '( ccls lsp-actionscript lsp-ada lsp-angular lsp-ansible lsp-asm lsp-astro
-     lsp-autotools lsp-awk lsp-bash lsp-beancount lsp-bufls lsp-clangd
+     lsp-autotools lsp-awk lsp-bash lsp-beancount lsp-biome lsp-bufls lsp-clangd
      lsp-clojure lsp-cmake lsp-cobol lsp-credo lsp-crystal lsp-csharp lsp-c3
      lsp-css lsp-copilot lsp-crates lsp-cucumber lsp-cypher lsp-d lsp-dart
      lsp-dhall lsp-docker lsp-dockerfile lsp-earthly lsp-elixir lsp-elm lsp-emmet
@@ -945,6 +945,8 @@ Changes take effect only when a new session is started."
     (fsharp-mode . "fsharp")
     (reason-mode . "reason")
     (caml-mode . "ocaml")
+    (neocaml-mode . "ocaml")
+    (neocaml-interface-mode . "ocaml")
     (tuareg-mode . "ocaml")
     (futhark-mode . "futhark")
     (swift-mode . "swift")
@@ -1162,7 +1164,8 @@ must be used for handling a particular message.")
 (defcustom lsp-file-watch-threshold 1000
   "Show warning if the files to watch are more than.
 Set to nil to disable the warning."
-  :type 'number
+  :type '(choice (const :tag "No warning" nil)
+                 (integer :tag "Number of files"))
   :group 'lsp-mode)
 ;;;###autoload(put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
 
@@ -2014,45 +2017,49 @@ Used to prevent repeated warnings for the same invalid pattern.")
   "Return the first regex, if any, within REGEX-LIST matching STR.
 Returns the matching regex string on success, nil on no match or invalid regex.
 Invalid regex patterns are logged as warnings (once per pattern) and skipped."
-  (--first (condition-case err
-               (string-match it str)
-             (invalid-regexp
-              (unless (gethash it lsp--warned-invalid-regexps)
-                (puthash it t lsp--warned-invalid-regexps)
-                (lsp-warn "Invalid regexp in watch pattern: %s (parsing %s)"
-                          (error-message-string err) it))
-              nil))
-           regex-list))
+  (let (result)
+    (while regex-list
+      (let ((re (car regex-list)))
+        (setq regex-list (cdr regex-list))
+        (condition-case err
+            (when (string-match-p re str)
+              (setq result re
+                    regex-list nil))
+          (invalid-regexp
+           (unless (gethash re lsp--warned-invalid-regexps)
+             (puthash re t lsp--warned-invalid-regexps)
+             (lsp-warn "Invalid regexp in watch pattern: %s (parsing %s)"
+                       (error-message-string err) re))))))
+    result))
 
 (cl-defstruct lsp-watch
   (descriptors (make-hash-table :test 'equal))
   root-directory)
 
 (defun lsp--folder-watch-callback (event callback watch ignored-files ignored-directories)
-  (let ((file-name (cl-third event))
-        (event-type (cl-second event)))
+  (let ((file-name (nth 2 event))
+        (event-type (nth 1 event)))
     (cond
      ((and (file-directory-p file-name)
-           (equal 'created event-type)
+           (eq 'created event-type)
            (not (lsp--string-match-any ignored-directories file-name)))
 
       (lsp-watch-root-folder (file-truename file-name) callback ignored-files ignored-directories watch)
 
       ;; process the files that are already present in
       ;; the directory.
-      (->> (directory-files-recursively file-name ".*" t)
-           (seq-do (lambda (f)
-                     (unless (file-directory-p f)
-                       (funcall callback (list nil 'created f)))))))
+      (dolist (f (directory-files-recursively file-name ".*" t))
+        (unless (file-directory-p f)
+          (funcall callback (list nil 'created f)))))
      ((and (memq event-type '(created deleted changed))
            (not (file-directory-p file-name))
            (not (lsp--string-match-any ignored-files file-name)))
       (funcall callback event))
-     ((and (memq event-type '(renamed))
+     ((and (eq event-type 'renamed)
            (not (file-directory-p file-name))
            (not (lsp--string-match-any ignored-files file-name)))
-      (funcall callback `(,(cl-first event) deleted ,(cl-third event)))
-      (funcall callback `(,(cl-first event) created ,(cl-fourth event)))))))
+      (funcall callback (list (car event) 'deleted (nth 2 event)))
+      (funcall callback (list (car event) 'created (nth 3 event)))))))
 
 (defun lsp--ask-about-watching-big-repo (number-of-directories dir)
   "Ask the user if they want to watch NUMBER-OF-DIRECTORIES from a repository DIR.
@@ -2071,42 +2078,28 @@ Do you want to watch all files in %s? "
      (concat "You can configure this warning with the `lsp-enable-file-watchers' "
              "and `lsp-file-watch-threshold' variables"))))
 
-
-(defun lsp--path-is-watchable-directory (path dir ignored-directories)
-  "Figure out whether PATH (inside of DIR) is meant to have a file watcher set.
-IGNORED-DIRECTORIES is a list of regexes to filter out directories we don't
-want to watch."
-  (let
-      ((full-path (f-join dir path)))
-    (and (file-accessible-directory-p full-path)
-         (not (equal path "."))
-         (not (equal path ".."))
-         (not (lsp--string-match-any ignored-directories full-path)))))
-
-
 (defun lsp--all-watchable-directories (dir ignored-directories &optional visited)
   "Traverse DIR recursively returning a list of paths that should have watchers.
 IGNORED-DIRECTORIES will be used for exclusions.
 VISITED is used to track already-visited directories to avoid infinite loops."
-  (let* ((dir (if (f-symlink? dir)
-                  (file-truename dir)
-                dir))
-         ;; Initialize visited directories if not provided
-         (visited (or visited (make-hash-table :test 'equal))))
-    (if (gethash dir visited)
-        ;; If the directory has already been visited, skip it
-        nil
-      ;; Mark the current directory as visited
-      (puthash dir t visited)
-      (apply #'nconc
-             ;; the directory itself is assumed to be part of the set
-             (list dir)
-             ;; collect all subdirectories that are watchable
-             (-map
-              (lambda (path) (lsp--all-watchable-directories (f-join dir path) ignored-directories visited))
-              ;; but only look at subdirectories that are watchable
-              (-filter (lambda (path) (lsp--path-is-watchable-directory path dir ignored-directories))
-                       (directory-files dir)))))))
+  (let ((visited (or visited (make-hash-table :test 'equal)))
+        (stack (list (if (file-symlink-p dir) (file-truename dir) dir)))
+        result)
+    (while stack
+      (let ((cur (pop stack)))
+        (unless (gethash cur visited)
+          (puthash cur t visited)
+          (push cur result)
+          (dolist (entry (directory-files cur))
+            (unless (or (string= entry ".") (string= entry ".."))
+              (let ((full-path (expand-file-name entry cur)))
+                (when (and (file-accessible-directory-p full-path)
+                           (not (lsp--string-match-any ignored-directories full-path)))
+                  (push (if (file-symlink-p full-path)
+                            (file-truename full-path)
+                          full-path)
+                        stack))))))))
+    (nreverse result)))
 
 (defun lsp-watch-root-folder (dir callback ignored-files ignored-directories &optional watch warn-big-repo?)
   "Create recursive file notification watch in DIR.
@@ -3933,18 +3926,17 @@ disappearing, unset all the variables related to it."
                                          "workspace/didChangeWatchedFiles")
                                   (cl-loop for fs-watcher across (lsp:did-change-watched-files-registration-options-watchers
                                                               (lsp--registered-capability-options capability))
-                                           thereis (let ((glob-pattern (lsp:file-system-watcher-glob-pattern fs-watcher))
-                                                         (kind? (lsp:file-system-watcher-kind? fs-watcher))
-                                                         (cached-regexp (lsp-get fs-watcher :_cachedRegexp)))
+                                           thereis (let ((kind? (lsp:file-system-watcher-kind? fs-watcher)))
                                                      (when (or (null kind?)
                                                                (> (logand kind? watch-bit) 0))
-                                                       (let ((regexes (or cached-regexp
-                                                                          (let ((regexp (lsp-glob-to-regexps glob-pattern)))
+                                                       (let ((regexes (or (lsp-get fs-watcher :_cachedRegexp)
+                                                                          (let ((regexp (lsp-glob-to-regexps
+                                                                                         (lsp:file-system-watcher-glob-pattern fs-watcher))))
                                                                             (lsp-put fs-watcher :_cachedRegexp regexp)
                                                                             regexp))))
                                                          (cl-loop for re in regexes
-                                                                  thereis (or (string-match re changed-file)
-                                                                              (string-match re rel-changed-file)))))))))
+                                                                  thereis (or (string-match-p re changed-file)
+                                                                              (string-match-p re rel-changed-file)))))))))
         (with-lsp-workspace workspace
           (lsp-notify
            "workspace/didChangeWatchedFiles"
@@ -4076,7 +4068,7 @@ If any filters, checks if it applies for PATH."
                                          (string-prefix-p scheme? uri))
                                      (let ((regexes (lsp-glob-to-regexps glob)))
                                        (cl-loop for re in regexes
-                                                thereis (string-match re path))))))))))
+                                                thereis (string-match-p re path))))))))))
 
 (defun lsp--send-did-rename-files-p ()
   "Return whether didRenameFiles notification should be sent to the server."
@@ -7269,7 +7261,7 @@ server. WORKSPACE is the active workspace."
 
 (defun lsp--parse-header (s)
   "Parse string S as a LSP (KEY . VAL) header."
-  (let ((pos (string-match "\:" s))
+  (let ((pos (string-match-p "\:" s))
         key val)
     (unless pos
       (signal 'lsp-invalid-header-name (list s)))
@@ -8691,8 +8683,9 @@ nil."
             (:gzip (concat store-path ".gz"))
             (:zip (concat store-path ".zip"))
             (:targz (concat store-path ".tar.gz"))
+            (:tarxz (concat store-path ".tar.xz"))
             (`nil store-path)
-            (_ (error ":decompress must be `:gzip', `:zip', `:targz' or `nil'")))))
+            (_ (error ":decompress must be `:gzip', `:zip', `:targz', `:tarxz' or `nil'")))))
     (make-thread
      (lambda ()
        (condition-case err
@@ -8735,7 +8728,8 @@ nil."
                  (:gzip
                   (lsp-gunzip download-path))
                  (:zip (lsp-unzip download-path (f-parent store-path)))
-                 (:targz (lsp-tar-gz-decompress download-path (f-parent store-path))))
+                 (:targz (lsp-tar-gz-decompress download-path (f-parent store-path)))
+                 (:tarxz (lsp-tar-gz-decompress download-path (f-parent store-path)))) ;; NOTE: this function decompresses all tar compressed paths.
                (lsp--info "Decompressed %s..." store-path))
              (funcall callback))
          (error (funcall error-callback err)))))))

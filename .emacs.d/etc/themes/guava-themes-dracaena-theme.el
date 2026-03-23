@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 06, 2026
-;; Version: 0.11.3
+;; Version: 0.12.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -34,141 +34,178 @@
 (deftheme guava-themes-dracaena "A theme inspired by the dragon tree colors.")
 
 (let* (
-      (guava-themes-dracaena-class '((class color) (min-colors 257)))
-      (guava-themes-dracaena-black             "#000000")
-      (guava-themes-dracaena-white             "#FFFFFF")
+      (dracaena-class '((class color) (min-colors 257)))
+      (dracaena-black             "#000000")
+      (dracaena-white             "#FFFFFF")
 
-      (guava-themes-dracaena-shadow            "#b3b3b3")
+      (dracaena-shadow            "#b3b3b3")
 
-      (guava-themes-dracaena-light-gray        "#4f4f4f")
-      (guava-themes-dracaena-gray              "#424845");404242,3e4040,3d3f3f,424545
-      (guava-themes-dracaena-dark-gray         "#353838")
+      (dracaena-light-gray        "#4f4f4f")
+      (dracaena-gray              "#424845");404242,3e4040,3d3f3f,424545
+      (dracaena-dark-gray         "#353838")
 
-      (guava-themes-dracaena-guava-green       "#AED734")
-      (guava-themes-dracaena-deep-green        "#298e25")
+      (dracaena-guava-green       "#AED734")
+      (dracaena-deep-green        "#298e25")
 
-      (guava-themes-dracaena-snakeplant-yellow "#d9d389")
+      (dracaena-snakeplant-yellow "#d9d389")
 
-      (guava-themes-dracaena-light-orange      "#ffa07a")
-      (guava-themes-dracaena-red               "#c82333");c91628,cc192a,d7192a,ed2725,e92333,db2333,d32333
-      (guava-themes-dracaena-deep-red          "#792725")
+      (dracaena-light-orange      "#ffae7a")
+      (dracaena-orange            "#ffa07a")
+      (dracaena-red               "#c82333");c91628,cc192a,d7192a,ed2725,e92333,db2333,d32333
+      (dracaena-alt-deep-red      "#751e1e")
+      (dracaena-deep-red          "#792725")
 
-      (guava-themes-dracaena-light-brown       "#8b6c4d")
+      (dracaena-light-brown       "#a89d92");8b6c4d
 
-      (guava-themes-dracaena-light-blue        "#425fd5")
-      (guava-themes-dracaena-blue              "#2134d5")
-      (guava-themes-dracaena-antarctic-blue    "#bacce4");4f62be
-      (guava-themes-dracaena-steel-blue        "#4f94cd");b0c4de
+      (dracaena-light-blue        "#4272d5");425fd5
+      (dracaena-blue              "#2134d5")
+      (dracaena-antarctic-blue    "#bacce4");4f62be
+      (dracaena-steel-blue        "#4f94cd");b0c4de
+      (dracaena-dark-cyan         "#005f55")
 
-      (guava-themes-dracaena-pink-purple       "#a5225c");961250,b7125c
-      (guava-themes-dracaena-deep-purple       "#8f1ac8")
+      (dracaena-pink-purple       "#a54666");961250,b7125c,a5225c,a53c5c
+      (dracaena-deep-purple       "#7f6ddd");8f1ac8,8a34d7,7f3edd,7f46dd,7f53dd
 
-      (guava-themes-dracaena-error             "#FF0000")
-      (guava-themes-dracaena-warning           "#F68511")
-      (guava-themes-dracaena-success           "#29d925")
+      (dracaena-error             "#FF0000")
+      (dracaena-warning           "#f6be14");F68511,f6ad11
+      (dracaena-success           "#29d925")
 
-      (guava-themes-dracaena-vc-change         guava-themes-dracaena-blue)
-      (guava-themes-dracaena-vc-insert         guava-themes-dracaena-deep-green)
-      (guava-themes-dracaena-vc-delete         guava-themes-dracaena-error))
+      (dracaena-vc-change         dracaena-blue)
+      (dracaena-vc-insert         dracaena-deep-green)
+      (dracaena-vc-delete         dracaena-error))
 
   (custom-theme-set-faces
    'guava-themes-dracaena
 
-   ;; default for guava-themes-dracaena
-   `(default ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-antarctic-blue :background ,guava-themes-dracaena-gray))))
+   ;; built-in faces
+   ;; with unique colors
+
+   ;; default
+   `(default ((,dracaena-class (:foreground ,dracaena-antarctic-blue :background ,dracaena-gray))))
 
    ;; error, warning, success
-   `(error ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-error :weight bold))))
-   `(warning ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-warning :weight bold))))
-   `(success ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-success :weight bold))))
-
-   ;; cursor
-   `(cursor ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-light-orange :foreground ,guava-themes-dracaena-white))))
-
-   ;; fringe
-   `(fringe ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-gray :foreground ,guava-themes-dracaena-gray))))
-   `(diff-hl-change ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-vc-change :foreground ,guava-themes-dracaena-vc-change))))
-   `(diff-hl-insert ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-vc-insert :foreground ,guava-themes-dracaena-vc-insert))))
-   `(diff-hl-delete ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-vc-delete :foreground ,guava-themes-dracaena-vc-delete))))
-
-   ;; line-number
-   `(line-number ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-antarctic-blue))))
-   `(line-number-current-line ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-light-orange :background ,guava-themes-dracaena-light-gray :weight bold))))
+   `(error ((,dracaena-class (:foreground ,dracaena-error :weight bold))))
+   `(warning ((,dracaena-class (:foreground ,dracaena-warning :weight bold))))
+   `(success ((,dracaena-class (:foreground ,dracaena-success :weight bold))))
 
    ;; highlight
-   `(highlight ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-light-gray))))
+   `(highlight ((,dracaena-class (:background ,dracaena-light-gray))))
 
    ;; shadow
-   `(shadow ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-shadow))))
+   `(shadow ((,dracaena-class (:foreground ,dracaena-shadow))))
 
    ;; region
-   `(region ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red))))
-
-   ;; mode-line
-   `(mode-line ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red :foreground ,guava-themes-dracaena-white))))
-   `(mode-line-inactive ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-dark-gray :foreground ,guava-themes-dracaena-white))))
-   `(guava-themes-visible-bell ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-light-orange :foreground ,guava-themes-dracaena-white))))
-
-   ;; minibuffer
-   `(minibuffer-prompt ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-antarctic-blue))))
-
-   ;; borders
-   `(vertical-border ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-light-orange))))
-
-   ;; header-line
-   `(header-line ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red :foreground ,guava-themes-dracaena-white))))
-   `(which-func ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red :foreground ,guava-themes-dracaena-white))))
-
-   ;; tab-bar
-   `(tab-bar ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-dark-gray :foreground ,guava-themes-dracaena-white))))
-   `(tab-bar-tab ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red :foreground ,guava-themes-dracaena-white :weight bold :height 1.0))))
-   `(tab-bar-tab-inactive ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-dark-gray :foreground ,guava-themes-dracaena-white :weight bold :height 1.0))))
-
-   ;; tab-line
-   `(tab-line ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-dark-gray :foreground ,guava-themes-dracaena-white))))
-   `(tab-line-tab ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-dark-gray :foreground ,guava-themes-dracaena-white :weight bold :height 0.9))))
-   `(tab-line-tab-current ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-deep-red :foreground ,guava-themes-dracaena-white :weight bold :height 0.9))))
-   `(tab-line-tab-inactive ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-dark-gray :foreground ,guava-themes-dracaena-white :weight bold :height 0.9))))
-   `(tab-line-tab-modified ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,guava-themes-dracaena-class (:slant italic :weight bold :height 0.9))))
+   `(region ((,dracaena-class (:background ,dracaena-alt-deep-red))))
+   `(secondary-selection ((,dracaena-class (:background ,dracaena-dark-cyan :extend t))))
 
    ;; font-lock
-   `(font-lock-comment-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-deep-green :weight medium))))
-   `(font-lock-string-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-snakeplant-yellow :weight medium))))
-   `(font-lock-keyword-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-pink-purple :weight medium))))
-   `(font-lock-builtin-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-red :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-error :weight bold))))
-   `(font-lock-type-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-guava-green :weight medium))))
-   `(font-lock-constant-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-light-blue :weight medium))))
-   `(font-lock-function-name-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-light-orange :weight medium))))
-   `(font-lock-bracket-face ((,guava-themes-dracaena-class (:weight medium))))
-   `(font-lock-variable-name-face ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-deep-purple :weight medium))))
+   `(font-lock-comment-face ((,dracaena-class (:foreground ,dracaena-deep-green :weight medium))))
+   `(font-lock-string-face ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow :weight medium))))
+   `(font-lock-keyword-face ((,dracaena-class (:foreground ,dracaena-pink-purple :weight medium))))
+   `(font-lock-builtin-face ((,dracaena-class (:foreground ,dracaena-red :weight medium))))
+   `(font-lock-warning-face ((,dracaena-class (:foreground ,dracaena-warning :weight bold))))
+   `(font-lock-type-face ((,dracaena-class (:foreground ,dracaena-guava-green :weight medium))))
+   `(font-lock-constant-face ((,dracaena-class (:foreground ,dracaena-light-blue :weight medium))))
+   `(font-lock-function-name-face ((,dracaena-class (:foreground ,dracaena-light-orange :weight medium))))
+   `(font-lock-punctuation-face ((,dracaena-class (:foreground ,dracaena-light-brown :weight medium))))
+   `(font-lock-variable-name-face ((,dracaena-class (:foreground ,dracaena-deep-purple :weight medium))))
+   `(font-lock-negation-char-face ((,dracaena-class (:foreground ,dracaena-orange :weight medium))))
+
+   ;; built-in faces
+   ;; with non-unique colors
+
+   ;; cursor
+   `(cursor ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-orange))))
+
+   ;; fringe
+   `(fringe ((,dracaena-class (:foreground ,dracaena-light-orange :background ,dracaena-gray))))
+   `(diff-hl-change ((,dracaena-class (:foreground ,dracaena-vc-change :background ,dracaena-vc-change))))
+   `(diff-hl-insert ((,dracaena-class (:foreground ,dracaena-vc-insert :background ,dracaena-vc-insert))))
+   `(diff-hl-delete ((,dracaena-class (:foreground ,dracaena-vc-delete :background ,dracaena-vc-delete))))
+
+   ;; line-number
+   `(line-number ((,dracaena-class (:foreground ,dracaena-antarctic-blue))))
+   `(line-number-current-line ((,dracaena-class (:foreground ,dracaena-orange :weight bold :inherit highlight))))
+
+   ;; mode-line
+   `(mode-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red))))
+   `(mode-line-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray))))
+   `(guava-themes-visible-bell ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-orange))))
+
+   ;; minibuffer
+   `(minibuffer-prompt ((,dracaena-class (:foreground ,dracaena-antarctic-blue))))
+
+   ;; borders
+   `(vertical-border ((,dracaena-class (:foreground ,dracaena-orange))))
+
+   ;; header-line
+   `(header-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red))))
+   `(which-func ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red))))
+
+   ;; tab-bar
+   `(tab-bar ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray))))
+   `(tab-bar-tab ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red :weight bold :height 1.0))))
+   `(tab-bar-tab-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray :weight bold :height 1.0))))
+
+   ;; tab-line
+   `(tab-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray))))
+   `(tab-line-tab ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray :weight bold :height 0.9))))
+   `(tab-line-tab-current ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red :weight bold :height 0.9))))
+   `(tab-line-tab-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray :weight bold :height 0.9))))
+   `(tab-line-tab-inactive-alternate ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-light-gray :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,dracaena-class (:foreground ,dracaena-orange :weight bold :height 0.9))))
+   `(tab-line-tab-special ((,dracaena-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-black :background ,guava-themes-dracaena-steel-blue))))
-   `(show-paren-mismatch ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-white :background ,guava-themes-dracaena-error))))
+   `(show-paren-match ((,dracaena-class (:foreground ,dracaena-black :background ,dracaena-steel-blue))))
+   `(show-paren-mismatch ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-error))))
 
    ;; trailing whitespaces
-   `(trailing-whitespace ((,guava-themes-dracaena-class (:background ,guava-themes-dracaena-error))))
+   `(trailing-whitespace ((,dracaena-class (:background ,dracaena-error))))
 
-   ;; buttons
-   `(link ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-red :underline t :weight bold))))
-   `(link-visited ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-light-orange :underline t :weight bold))))
-   `(button ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-red :underline t :weight bold))))
+   ;; links
+   `(link ((,dracaena-class (:foreground ,dracaena-red :underline t :weight bold))))
+   `(link-visited ((,dracaena-class (:foreground ,dracaena-orange :underline t :weight bold))))
 
 
    ;; external packages
 
+   ;; elfeed
+   `(elfeed-search-tag-face ((,dracaena-class (:foreground ,dracaena-steel-blue))))
+   `(elfeed-search-date-face ((,dracaena-class (:foreground ,dracaena-light-blue))))
+   `(elfeed-search-feed-face ((,dracaena-class (:foreground ,dracaena-pink-purple))))
+   `(elfeed-search-title-face ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
+   `(elfeed-search-filter-face ((,dracaena-class (:foreground ,dracaena-deep-purple))))
+   `(elfeed-search-last-update-face ((,dracaena-class (:foreground ,dracaena-light-orange))))
+   `(elfeed-search-unread-title-face ((,dracaena-class (:weight bold :foreground ,dracaena-deep-green))))
+   `(elfeed-search-unread-count-face ((,dracaena-class (:weight bold :foreground ,dracaena-guava-green))))
+
    ;; doom-modeline
-   `(doom-modeline-project-name ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-snakeplant-yellow))))
-   `(doom-modeline-project-parent-dir ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-snakeplant-yellow))))
-   `(doom-modeline-buffer-minor-mode ((,guava-themes-dracaena-class (:foreground ,guava-themes-dracaena-deep-green))))))
+   `(doom-modeline-project-name ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
+   `(doom-modeline-project-parent-dir ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
+   `(doom-modeline-buffer-minor-mode ((,dracaena-class (:foreground ,dracaena-deep-green))))
+
+   ;; corfu
+   `(corfu-default ((,dracaena-class (:foreground ,dracaena-antarctic-blue :background ,dracaena-gray))))
+   `(corfu-current ((,dracaena-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-bar ((,dracaena-class (:background ,dracaena-shadow))))
+   `(corfu-border ((,dracaena-class (:background ,dracaena-shadow))))
+
+   ;; envrc
+   `(envrc-mode-line-error-face ((,dracaena-class (:inherit error))))
+   `(envrc-mode-line-none-face ((,dracaena-class (:inherit warning))))
+   `(envrc-mode-line-on-face ((,dracaena-class (:inherit success))))
+
+   ;; nerd-icons
+   ;; nerd-icons-completion
+   `(nerd-icons-completion-dir-face ((,dracaena-class (:foreground unspecified :inherit font-lock-function-name-face))))))
 
 (provide-theme 'guava-themes-dracaena)
 
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; indent-tabs-mode: nil
+;; eval: (when (featurep 'package-lint-flymake) (package-lint-flymake-setup))
 ;; End:
 
 ;;; guava-themes-dracaena-theme.el ends here

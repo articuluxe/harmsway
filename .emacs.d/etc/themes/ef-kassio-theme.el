@@ -104,6 +104,7 @@
     (bg-mode-line-active "#e0bfba")
     (fg-mode-line-active "#151515")
     (bg-completion "#f2d5c9")
+    (bg-popup "#ffdede")
     (bg-hover "#c0d0ff")
     (bg-hover-secondary "#efd5ff")
     (bg-hl-line "#f2e5d9")
@@ -194,8 +195,8 @@
     (rainbow-2 cyan)
     (rainbow-3 yellow-cooler)
     (rainbow-4 magenta-cooler)
-    (rainbow-5 magenta-warmer)
-    (rainbow-6 red-cooler)
+    (rainbow-5 red-cooler)
+    (rainbow-6 magenta-warmer)
     (rainbow-7 cyan-cooler)
     (rainbow-8 green-cooler)))
 

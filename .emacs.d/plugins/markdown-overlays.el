@@ -40,6 +40,7 @@
 (require 'org-faces)
 (require 'url-parse)
 (require 'url-util)
+(require 'markdown-overlays-tables)
 
 (defcustom markdown-overlays-highlight-blocks t
   "Whether or not to highlight source blocks."
@@ -101,6 +102,7 @@ Return an alist with details of all overlays added:
   `strikethroughs' - strikethrough text
   `images'         - markdown image references
   `image-file-paths' - bare image file paths on their own line
+  `tables'         - markdown tables
   `avoided-ranges' - list of (START . END) cons cells covering
                      source blocks and inline code spans"
   (let* ((source-blocks (markdown-overlays--source-blocks))
@@ -108,12 +110,20 @@ Return an alist with details of all overlays added:
                                   (cons (car (map-elt block 'start))
                                         (cdr (map-elt block 'end))))
                                 source-blocks))
-         (inline-codes (markdown-overlays--markdown-inline-codes source-block-ranges))
+         (tables (when markdown-overlays-prettify-tables
+                   (markdown-overlays--find-tables source-block-ranges)))
+         (table-ranges (seq-map (lambda (table)
+                                  (cons (map-elt table :start)
+                                        (map-elt table :end)))
+                                tables))
+         (inline-codes (markdown-overlays--markdown-inline-codes
+                        (append source-block-ranges table-ranges)))
          (inline-code-ranges (seq-map (lambda (inline)
                                         (map-elt inline 'body))
                                       inline-codes))
          (avoid-ranges (append inline-code-ranges
-                               source-block-ranges))
+                               source-block-ranges
+                               table-ranges))
          (links (markdown-overlays--markdown-links avoid-ranges))
          (images (markdown-overlays--markdown-images avoid-ranges))
          (image-file-paths (markdown-overlays--image-file-paths avoid-ranges))
@@ -189,6 +199,7 @@ Return an alist with details of all overlays added:
       (markdown-overlays--fontify-inline-code
        (car (map-elt inline-code 'body))
        (cdr (map-elt inline-code 'body))))
+    (markdown-overlays--fontify-tables tables)
     (when markdown-overlays-render-latex
       (require 'org)
       ;; Silence org-element warnings.
@@ -212,6 +223,7 @@ Return an alist with details of all overlays added:
       (bolds . ,bolds)
       (italics . ,italics)
       (strikethroughs . ,strikethroughs)
+      (tables . ,tables)
       (avoided-ranges . ,avoid-ranges))))
 
 (defun markdown-overlays--match-source-block ()
@@ -303,35 +315,34 @@ Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
                                     (markdown-overlays--resolve-internal-language lang)
                                     (downcase (string-trim lang)))
                                    "-mode")))
-        (string (buffer-substring-no-properties body-start body-end))
-        (pos 0)
-        (props)
-        (overlay)
-        (propertized-text))
+        (string (buffer-substring-no-properties body-start body-end)))
     (if (and markdown-overlays-highlight-blocks
              (fboundp lang-mode))
-        (progn
-          (setq propertized-text
-                (with-current-buffer
-                    (get-buffer-create
-                     (format " *markdown-overlays-fontification:%s*" lang-mode))
-                  (let ((inhibit-modification-hooks nil)
-                        (inhibit-message t))
-                    (erase-buffer)
-                    ;; Additional space ensures property change.
-                    (insert string " ")
-                    (funcall lang-mode)
-                    (font-lock-ensure))
-                  (buffer-string)))
-          (while (< pos (length propertized-text))
-            (setq props (text-properties-at pos propertized-text))
-            (setq overlay (make-overlay (+ body-start pos)
-                                        (+ body-start (1+ pos))))
-            (markdown-overlays--put
-             overlay
-             'evaporate t
-             'face (plist-get props 'face))
-            (setq pos (1+ pos))))
+        (let ((propertized
+               (with-current-buffer
+                   (get-buffer-create
+                    (format " *markdown-overlays-fontification:%s*" lang-mode))
+                 (let ((inhibit-modification-hooks nil)
+                       (inhibit-message t))
+                   (erase-buffer)
+                   ;; Additional space ensures property change.
+                   (insert string " ")
+                   (funcall lang-mode)
+                   (font-lock-ensure))
+                 (buffer-string)))
+              (len (- body-end body-start))
+              (pos 0))
+          (setq len (min len (length propertized)))
+          (while (< pos len)
+            (let ((next (next-single-property-change
+                         pos 'face propertized len))
+                  (face (get-text-property pos 'face propertized)))
+              (when face
+                (markdown-overlays--put
+                 (make-overlay (+ body-start pos) (+ body-start next))
+                 'evaporate t
+                 'face face))
+              (setq pos next))))
       (markdown-overlays--put
        (make-overlay body-start body-end)
        'evaporate t
@@ -697,7 +708,7 @@ Use START END TEXT-START TEXT-END."
                                           (not (or (> begin (cdr avoided))
                                                    (< end (car avoided)))))
                                         avoid-ranges)))
-                ;; Match overlaps an avoid range — skip past it and retry
+                ;; Match overlaps an avoid range — skip past range end and retry
                 (goto-char (1+ (cdr avoided)))
               (push
                (list

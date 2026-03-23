@@ -2163,6 +2163,18 @@ found, it falls back to the key t."
          ;; misearch.el
          (ivy--string-replace "RET to end" "C-M-j to end" prompt))))
 
+(defalias 'ivy--resignal
+  (if (let ((desc (list 'user-error)))
+        (condition-case err
+            (with-no-warnings (signal desc))
+          (user-error (eq err desc))
+          ;; Emacs 24 complains about an unused lexical argument.
+          (error (ignore err))))
+      #'signal
+    (lambda (err) (signal (car err) (cdr err))))
+  "Compatibility shim for Emacs 31 re-`signal'.
+\n(fn ERROR)")
+
 ;;;; Entry Point
 
 ;;;###autoload
@@ -2314,7 +2326,7 @@ customizations apply to the current completion session."
                     hist)
                  (error
                   (unless (equal err '(error "Selecting deleted buffer"))
-                    (signal (car err) (cdr err))))))
+                    (ivy--resignal err)))))
              (when (eq ivy-exit 'done)
                (ivy--update-history hist))))
       (let ((session (or (plist-get extra-props :session)
@@ -2497,7 +2509,8 @@ This is useful for recursive `ivy-read'."
                             ivy--all-candidates
                           (ivy--dynamic-collection-cands (or initial-input "")))))
             ((consp (car-safe collection))
-             (setq collection (cl-remove-if-not predicate collection))
+             (when predicate
+               (setq collection (cl-remove-if-not predicate collection)))
              (when (and sort (setq sort-fn (ivy--sort-function caller)))
                (setq collection (sort (copy-sequence collection) sort-fn))
                (setq sort nil))

@@ -104,6 +104,7 @@
     (bg-mode-line-active "#ddb4ff")
     (fg-mode-line-active "#241f48")
     (bg-completion "#f4cfff")
+    (bg-popup "#e7dcff")
     (bg-hover "#aaeccf")
     (bg-hover-secondary "#b4cfff")
     (bg-hl-line "#cfe6ff")
@@ -194,10 +195,10 @@
     (rainbow-2 green-cooler)
     (rainbow-3 magenta)
     (rainbow-4 cyan)
-    (rainbow-5 green-warmer)
+    (rainbow-5 yellow-cooler)
     (rainbow-6 magenta-cooler)
     (rainbow-7 cyan-warmer)
-    (rainbow-8 yellow-cooler)))
+    (rainbow-8 green-warmer)))
 
 (defcustom ef-trio-light-palette-overrides nil
   "Overrides for `ef-trio-light-palette'.

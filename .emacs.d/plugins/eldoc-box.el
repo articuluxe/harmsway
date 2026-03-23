@@ -258,11 +258,26 @@ See `eldoc-box-inhibit-display-when-moving'."
 (defvar eldoc-box--frame nil ;; A backstage variable
   "The frame to display doc.")
 
+(defvar eldoc-box--main-frame nil
+  "The main frame that user is in. Used by ‘eldoc-box-help-at-point’.")
+
 (defun eldoc-box-quit-frame ()
   "Hide documentation childframe."
   (interactive)
-  (when (and eldoc-box--frame (frame-live-p eldoc-box--frame))
+  (when (eldoc-box--frame-visible-p)
+    (eldoc-box-unfocus-frame)
     (make-frame-invisible eldoc-box--frame t)))
+
+(defun eldoc-box--quit-frame-not-in-childframe ()
+  "Hide documentation childframe.
+But not if point is in the childframe. If user uses
+‘eldoc-box-focus-frame’ to switch to the childframe, we don’t want C-g
+to close the frame when the user meant to use C-g to cancel the region
+in the childframe."
+  (interactive)
+  (when (and eldoc-box-clear-with-C-g
+             (not (eq (selected-frame) eldoc-box--frame)))
+    (eldoc-box-quit-frame)))
 
 (defvar-local eldoc-box--old-eldoc-functions nil
   "The original value of ‘eldoc-display-functions’.
@@ -283,7 +298,7 @@ Intended for internal use."
                             eldoc-display-functions))))
 
   (when eldoc-box-clear-with-C-g
-    (advice-add #'keyboard-quit :before #'eldoc-box-quit-frame)))
+    (advice-add #'keyboard-quit :before #'eldoc-box--quit-frame-not-in-childframe)))
 
 (defun eldoc-box--disable ()
   "Disable eldoc-box hover.
@@ -302,7 +317,7 @@ Intended for internal use."
                   (cons 'eldoc-display-in-echo-area
                         eldoc-display-functions))))
 
-  (advice-remove #'keyboard-quit #'eldoc-box-quit-frame)
+  (advice-remove #'keyboard-quit #'eldoc-box--quit-frame-not-in-childframe)
   ;; If minor mode is turned off when the childframe is visible, hide it.
   (when eldoc-box--frame
     (delete-frame eldoc-box--frame)
@@ -312,6 +327,7 @@ Intended for internal use."
   "Returns t when the childframe is visible."
   (and
    eldoc-box--frame
+   (frame-live-p eldoc-box--frame)
    (frame-visible-p eldoc-box--frame)))
 
 (defun eldoc-box--pos-in-frame-p (pos)
@@ -375,24 +391,52 @@ For DOCS, see ‘eldoc-display-functions’."
                 (or (bound-and-true-p eldoc-doc-buffer-separator) "---")
                 "\n"))))))
 
+(defun eldoc-box-focus-frame ()
+  "Switch focus to the childframe."
+  (interactive)
+  (when (eldoc-box--frame-visible-p)
+    (setq eldoc-box--main-frame (selected-frame))
+    (set-frame-parameter eldoc-box--frame 'no-accept-focus nil)
+    (set-frame-parameter eldoc-box--frame 'no-focus-on-map nil)
+    (select-frame-set-input-focus eldoc-box--frame)
+    (setq cursor-type 'bar)
+    (local-set-key (kbd "q") #'eldoc-box-quit-frame)))
+
+(defun eldoc-box-unfocus-frame ()
+  "Switch focus back to the main frame."
+  (interactive)
+  (when (eq (selected-frame) eldoc-box--frame)
+    (setq cursor-type nil)
+    (when (and eldoc-box--main-frame
+               (frame-live-p eldoc-box--main-frame))
+      (select-frame-set-input-focus eldoc-box--main-frame)
+      (set-frame-parameter eldoc-box--frame 'no-accept-focus t)
+      (set-frame-parameter eldoc-box--frame 'no-focus-on-map t))))
+
 ;;;###autoload
 (defun eldoc-box-help-at-point ()
   "Display documentation of the symbol at point."
   (interactive)
-  (when (boundp 'eldoc--doc-buffer)
-    (add-hook 'eldoc-display-functions
-              #'eldoc-box--help-at-point-async-update 0 t)
-    (let ((eldoc-box-position-function
-           eldoc-box-at-point-position-function)
-          (doc (with-current-buffer eldoc--doc-buffer
-                 (buffer-string))))
-      (eldoc-box--display
-       (if (equal doc "")
-           "There’s no doc to display at this point" doc)))
-    (setq eldoc-box--help-at-point-last-point (point))
-    (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup)
-    (when eldoc-box-clear-with-C-g
-      (advice-add #'keyboard-quit :before #'eldoc-box-quit-frame))))
+  (cond
+   ;; If childframe is already visible, switch to it.
+   ((eldoc-box--frame-visible-p)
+    (eldoc-box-focus-frame))
+   ;; Default, show childframe.
+   (t
+    (when (boundp 'eldoc--doc-buffer)
+      (add-hook 'eldoc-display-functions
+                #'eldoc-box--help-at-point-async-update 0 t)
+      (let ((eldoc-box-position-function
+             eldoc-box-at-point-position-function)
+            (doc (with-current-buffer eldoc--doc-buffer
+                   (buffer-string))))
+        (eldoc-box--display
+         (if (equal doc "")
+             "There’s no doc to display at this point" doc)))
+      (setq eldoc-box--help-at-point-last-point (point))
+      (run-with-timer 0.1 nil #'eldoc-box--help-at-point-cleanup)
+      (when eldoc-box-clear-with-C-g
+        (advice-add #'keyboard-quit :before #'eldoc-box--quit-frame-not-in-childframe))))))
 
 ;;;; Backstage
 ;;;;; Variable
@@ -613,9 +657,9 @@ FRAME is the childframe, WINDOW is the primary window."
   "Make childframe follow cursor in at-point mode."
   (unless eldoc-box--inhibit-childframe
     (if (member this-command eldoc-box-self-insert-command-list)
-        (progn (when (frame-live-p eldoc-box--frame)
-                 (eldoc-box--update-childframe-geometry
-                  eldoc-box--frame (frame-selected-window eldoc-box--frame))))
+        (when (eldoc-box--frame-visible-p)
+          (eldoc-box--update-childframe-geometry
+           eldoc-box--frame (frame-selected-window eldoc-box--frame)))
       ;; if not typing, inhibit display
       (eldoc-box--inhibit-childframe-for 0.5))))
 

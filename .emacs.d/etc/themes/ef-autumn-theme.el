@@ -104,6 +104,7 @@
     (bg-mode-line-active "#692a12")
     (fg-mode-line-active "#feeeca")
     (bg-completion "#36213a")
+    (bg-popup "#201e0d")
     (bg-hover "#265f4a")
     (bg-hover-secondary "#55345a")
     (bg-hl-line "#302a3a")
@@ -194,9 +195,9 @@
     (rainbow-2 red)
     (rainbow-3 cyan-cooler)
     (rainbow-4 yellow-cooler)
-    (rainbow-5 blue)
+    (rainbow-5 green)
     (rainbow-6 red-cooler)
-    (rainbow-7 green)
+    (rainbow-7 blue-warmer)
     (rainbow-8 yellow)))
 
 (defcustom ef-autumn-palette-overrides nil

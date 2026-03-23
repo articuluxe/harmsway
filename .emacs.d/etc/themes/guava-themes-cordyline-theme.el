@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.11.3
+;; Version: 0.12.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -34,134 +34,175 @@
 (deftheme guava-themes-cordyline "A theme inspired by the ti plant colors.")
 
 (let* (
-      (guava-themes-cordyline-class '((class color) (min-colors 257)))
-      (guava-themes-cordyline-black             "#000000")
-      (guava-themes-cordyline-white             "#FFFFFF")
+      (cordyline-class '((class color) (min-colors 257)))
+      ;; (cordyline-black             "#000000")
+      (cordyline-white             "#FFFFFF")
 
-      (guava-themes-cordyline-shadow            "#b3b3b3")
+      (cordyline-shadow            "#b3b3b3")
 
-      (guava-themes-cordyline-pink              "#CB5F68")
-      (guava-themes-cordyline-pink-purple       "#da70d6")
+      (cordyline-orange-red        "#ce462c")
+      (cordyline-pink-red          "#cb646e");CB5F68
+      (cordyline-pink-purple       "#da70d6")
+      (cordyline-deep-fuchsia      "#6e1551");69374e,741551
 
-      (guava-themes-cordyline-light-blue        "#5f70cb")
-      (guava-themes-cordyline-blue              "#2134d5")
-      (guava-themes-cordyline-deep-blue         "#1330af")
-      (guava-themes-cordyline-steel-blue        "#4f94cd")
-      (guava-themes-cordyline-dark-cyan         "#00708b")
+      (cordyline-light-blue        "#5f70cb")
+      (cordyline-blue              "#2134d5")
+      (cordyline-deep-blue         "#3146af");1330af
+      (cordyline-steel-blue        "#4f94cd")
+      (cordyline-dark-cyan         "#00708b")
 
-      (guava-themes-cordyline-light-purple      "#a21cd1");8b1cb0,9c1cbc,991cbc
-      (guava-themes-cordyline-purple            "#703aaf");54366d,583675,583683,583d83,59338f,673b94
-      (guava-themes-cordyline-deep-purple       "#392b38");3f323c
-      (guava-themes-cordyline-alt-purple        "#473b4c");433640,43364c
-      (guava-themes-cordyline-purple-red        "#982a51");8d2a46,982a46,982a51
-      (guava-themes-cordyline-dark-purple       "#211730")
+      (cordyline-light-green       "#c5ff6e")
+      (cordyline-green             "#005f55");006455
+      (cordyline-alt-green         "#00512c");006455
 
-      (guava-themes-cordyline-error             "#FF0000")
-      (guava-themes-cordyline-warning           "#f6d909");F68511
-      (guava-themes-cordyline-success           "#23a334");239834
+      (cordyline-light-purple      "#a226d1");8b1cb0,9c1cbc,991cbc,a21cd1
+      (cordyline-alt-light-purple  "#a29cf1")
+      (cordyline-purple            "#7044af");54366d,583675,583683,583d83,59338f,673b94,703aaf
+      (cordyline-deep-purple       "#392b38");3f323c
+      (cordyline-alt-purple        "#493d4e");433640,43364c,473b4c
+      (cordyline-purple-red        "#982a51");8d2a46,982a46,982a51
+      (cordyline-alt-deep-purple   "#211730")
 
-      (guava-themes-cordyline-vc-change         guava-themes-cordyline-blue)
-      (guava-themes-cordyline-vc-insert         guava-themes-cordyline-success)
-      (guava-themes-cordyline-vc-delete         guava-themes-cordyline-error))
+      (cordyline-error             "#FF0000")
+      (cordyline-warning           "#f6d909");F68511
+      (cordyline-success           "#23a334");239834
+
+      (cordyline-vc-change         cordyline-blue)
+      (cordyline-vc-insert         cordyline-success)
+      (cordyline-vc-delete         cordyline-error))
 
   (custom-theme-set-faces
    'guava-themes-cordyline
 
-   ;; default for guava-themes-cordyline
-   `(default ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :background ,guava-themes-cordyline-deep-purple))))
+   ;; built-in faces
+   ;; with unique colors
+
+   ;; default
+   `(default ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple))))
 
    ;; error, warning, success
-   `(error ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-error :weight bold))))
-   `(warning ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-warning :weight bold))))
-   `(success ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-success :weight bold))))
-
-   ;; cursor
-   `(cursor ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-pink :foreground ,guava-themes-cordyline-white))))
-
-   ;; fringe
-   `(fringe ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-deep-purple))))
-   `(diff-hl-change ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-vc-change :foreground ,guava-themes-cordyline-vc-change))))
-   `(diff-hl-insert ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-vc-insert :foreground ,guava-themes-cordyline-vc-insert))))
-   `(diff-hl-delete ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-vc-delete :foreground ,guava-themes-cordyline-vc-delete))))
-
-   ;; line-number
-   `(line-number ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white))))
-   `(line-number-current-line ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :background ,guava-themes-cordyline-alt-purple :weight bold))))
+   `(error ((,cordyline-class (:foreground ,cordyline-error :weight bold))))
+   `(warning ((,cordyline-class (:foreground ,cordyline-warning :weight bold))))
+   `(success ((,cordyline-class (:foreground ,cordyline-success :weight bold))))
 
    ;; highlight
-   `(highlight ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-alt-purple))))
+   `(highlight ((,cordyline-class (:background ,cordyline-alt-purple))))
 
    ;; shadow
-   `(shadow ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-shadow))))
+   `(shadow ((,cordyline-class (:foreground ,cordyline-shadow))))
 
    ;; region
-   `(region ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-dark-purple))))
-
-   ;; mode-line
-   `(mode-line ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-purple-red :foreground ,guava-themes-cordyline-white))))
-   `(mode-line-inactive ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-dark-purple :foreground ,guava-themes-cordyline-white))))
-   `(guava-themes-visible-bell ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-light-blue :foreground ,guava-themes-cordyline-white))))
-
-   ;; minibuffer
-   `(minibuffer-prompt ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white))))
-
-   ;; borders
-   `(vertical-border ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-deep-purple))))
-
-   ;; header-line
-   `(header-line ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-purple-red :foreground ,guava-themes-cordyline-white))))
-   `(which-func ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-purple-red :foreground ,guava-themes-cordyline-white))))
-
-   ;; tab-bar
-   `(tab-bar ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white))))
-   `(tab-bar-tab ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-purple-red :foreground ,guava-themes-cordyline-white :weight bold :height 1.0))))
-   `(tab-bar-tab-inactive ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white :weight bold :height 1.0))))
-
-   ;; tab-line
-   `(tab-line ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white))))
-   `(tab-line-tab ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white :weight bold :height 0.9))))
-   `(tab-line-tab-current ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-purple-red :foreground ,guava-themes-cordyline-white :weight bold :height 0.9))))
-   `(tab-line-tab-inactive ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-deep-purple :foreground ,guava-themes-cordyline-white :weight bold :height 0.9))))
-   `(tab-line-tab-modified ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,guava-themes-cordyline-class (:slant italic :weight bold :height 0.9))))
+   `(region ((,cordyline-class (:background ,cordyline-deep-fuchsia))))
+   `(secondary-selection ((,cordyline-class (:background ,cordyline-green :extend t))))
 
    ;; font-lock
-   `(font-lock-comment-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-blue :weight medium))))
-   `(font-lock-string-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink :weight medium))))
-   `(font-lock-keyword-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-purple :weight medium))))
-   `(font-lock-builtin-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-purple-red :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-error :weight bold))))
-   `(font-lock-type-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-light-purple :weight medium))))
-   `(font-lock-constant-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-dark-cyan :weight medium))))
-   `(font-lock-function-name-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink-purple :weight medium))))
-   `(font-lock-bracket-face ((,guava-themes-cordyline-class (:weight medium))))
-   `(font-lock-variable-name-face ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-deep-blue :weight medium))))
+   `(font-lock-comment-face ((,cordyline-class (:foreground ,cordyline-light-blue :weight medium))))
+   `(font-lock-string-face ((,cordyline-class (:foreground ,cordyline-pink-red :weight medium))))
+   `(font-lock-keyword-face ((,cordyline-class (:foreground ,cordyline-purple :weight medium))))
+   `(font-lock-builtin-face ((,cordyline-class (:foreground ,cordyline-purple-red :weight medium))))
+   `(font-lock-warning-face ((,cordyline-class (:foreground ,cordyline-warning :weight bold))))
+   `(font-lock-type-face ((,cordyline-class (:foreground ,cordyline-light-purple :weight medium))))
+   `(font-lock-constant-face ((,cordyline-class (:foreground ,cordyline-dark-cyan :weight medium))))
+   `(font-lock-function-name-face ((,cordyline-class (:foreground ,cordyline-pink-purple :weight medium))))
+   `(font-lock-punctuation-face ((,cordyline-class (:foreground ,cordyline-alt-green :weight medium))))
+   `(font-lock-variable-name-face ((,cordyline-class (:foreground ,cordyline-deep-blue :weight medium))))
+   `(font-lock-negation-char-face ((,cordyline-class (:foreground ,cordyline-orange-red :weight medium))))
+
+   ;; built-in faces
+   ;; with non-unique colors
+
+   ;; cursor
+   `(cursor ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-pink-red))))
+
+   ;; fringe
+   `(fringe ((,cordyline-class (:foreground ,cordyline-light-green :background ,cordyline-deep-purple))))
+   `(diff-hl-change ((,cordyline-class (:foreground ,cordyline-vc-change :background ,cordyline-vc-change))))
+   `(diff-hl-insert ((,cordyline-class (:foreground ,cordyline-vc-insert :background ,cordyline-vc-insert))))
+   `(diff-hl-delete ((,cordyline-class (:foreground ,cordyline-vc-delete :background ,cordyline-vc-delete))))
+
+   ;; line-number
+   `(line-number ((,cordyline-class (:foreground ,cordyline-white))))
+   `(line-number-current-line ((,cordyline-class (:foreground ,cordyline-light-blue :weight bold :inherit highlight))))
+
+   ;; mode-line
+   `(mode-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red))))
+   `(mode-line-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-alt-deep-purple))))
+   `(guava-themes-visible-bell ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-light-blue))))
+
+   ;; minibuffer
+   `(minibuffer-prompt ((,cordyline-class (:foreground ,cordyline-white))))
+
+   ;; borders
+   `(vertical-border ((,cordyline-class (:foreground ,cordyline-deep-purple))))
+
+   ;; header-line
+   `(header-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red))))
+   `(which-func ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red))))
+
+   ;; tab-bar
+   `(tab-bar ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple))))
+   `(tab-bar-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red :weight bold :height 1.0))))
+   `(tab-bar-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple :weight bold :height 1.0))))
+
+   ;; tab-line
+   `(tab-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple))))
+   `(tab-line-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple :weight bold :height 0.9))))
+   `(tab-line-tab-current ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red :weight bold :height 0.9))))
+   `(tab-line-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple :weight bold :height 0.9))))
+   `(tab-line-tab-inactive-alternate ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-alt-purple :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,cordyline-class (:foreground ,cordyline-steel-blue :weight bold :height 0.9))))
+   `(tab-line-tab-special ((,cordyline-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :background ,guava-themes-cordyline-steel-blue))))
-   `(show-paren-mismatch ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-white :background ,guava-themes-cordyline-error))))
+   `(show-paren-match ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-steel-blue))))
+   `(show-paren-mismatch ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-error))))
 
    ;; trailing whitespaces
-   `(trailing-whitespace ((,guava-themes-cordyline-class (:background ,guava-themes-cordyline-error))))
+   `(trailing-whitespace ((,cordyline-class (:background ,cordyline-error))))
 
-   ;; buttons
-   `(link ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :underline t :weight bold))))
-   `(link-visited ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-purple :underline t :weight bold))))
-   `(button ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue :underline t :weight bold))))
+   ;; links
+   `(link ((,cordyline-class (:foreground ,cordyline-steel-blue :underline t :weight bold))))
+   `(link-visited ((,cordyline-class (:foreground ,cordyline-purple :underline t :weight bold))))
 
 
    ;; external packages
 
+   ;; elfeed
+   `(elfeed-search-tag-face ((,cordyline-class (:foreground ,cordyline-light-blue))))
+   `(elfeed-search-date-face ((,cordyline-class (:foreground ,cordyline-green))))
+   `(elfeed-search-feed-face ((,cordyline-class (:foreground ,cordyline-dark-cyan))))
+   `(elfeed-search-title-face ((,cordyline-class (:foreground ,cordyline-pink-red))))
+   `(elfeed-search-filter-face ((,cordyline-class (:foreground ,cordyline-alt-light-purple))))
+   `(elfeed-search-last-update-face ((,cordyline-class (:foreground ,cordyline-steel-blue))))
+   `(elfeed-search-unread-title-face ((,cordyline-class (:weight bold :foreground ,cordyline-light-purple))))
+   `(elfeed-search-unread-count-face ((,cordyline-class (:weight bold :foreground ,cordyline-light-green))))
+
    ;; doom-modeline
-   `(doom-modeline-project-name ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue))))
-   `(doom-modeline-project-parent-dir ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-steel-blue))))
-   `(doom-modeline-buffer-minor-mode ((,guava-themes-cordyline-class (:foreground ,guava-themes-cordyline-pink))))))
+   `(doom-modeline-project-name ((,cordyline-class (:foreground ,cordyline-steel-blue))))
+   `(doom-modeline-project-parent-dir ((,cordyline-class (:foreground ,cordyline-steel-blue))))
+   `(doom-modeline-buffer-minor-mode ((,cordyline-class (:foreground ,cordyline-pink-red))))
+
+   ;; corfu
+   `(corfu-default ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple))))
+   `(corfu-current ((,cordyline-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-bar ((,cordyline-class (:background ,cordyline-shadow))))
+   `(corfu-border ((,cordyline-class (:background ,cordyline-shadow))))
+
+   ;; envrc
+   `(envrc-mode-line-error-face ((,cordyline-class (:inherit error))))
+   `(envrc-mode-line-none-face ((,cordyline-class (:inherit warning))))
+   `(envrc-mode-line-on-face ((,cordyline-class (:inherit success))))
+
+   ;; nerd-icons
+   ;; nerd-icons-completion
+   `(nerd-icons-completion-dir-face ((,cordyline-class (:foreground unspecified :inherit font-lock-function-name-face))))))
 
 (provide-theme 'guava-themes-cordyline)
 
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; indent-tabs-mode: nil
+;; eval: (when (featurep 'package-lint-flymake) (package-lint-flymake-setup))
 ;; End:
 
 ;;; guava-themes-cordyline-theme.el ends here

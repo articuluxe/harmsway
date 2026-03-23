@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 07, 2025
-;; Version: 0.11.3
+;; Version: 0.12.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,13 +35,39 @@
   (error "A version of Emacs equal or superior to 24 is required"))
 
 (defgroup guava-themes nil
-  "Guava theme options.
+  "Options for guava-themes.
 The theme has to be reloaded after changing anything in this group."
   :prefix "guava-themes-" :group 'faces)
 
-(defface guava-themes-visible-bell '()
-  "Face to use as a replacement for `visible-bell'."
+(defface guava-themes-visible-bell
+  '((t (:foreground "#FFFFFF" :background "#808080")))
+  "Face used on `guava-themes-change-visible-bell' as a replacement for `visible-bell'."
   :group 'guava-themes)
+
+(defcustom guava-themes-visible-bell-idle-delay 0.0
+  "Number of seconds to wait before displaying `guava-themes-visible-bell'.
+
+If this variable is set to 0.0, display `guava-themes-visible-bell' without any delay."
+  :group 'guava-themes
+  :type 'float)
+
+(defcustom guava-themes-visible-bell-duration 0.15
+  "Number of seconds used to display `guava-themes-visible-bell'.
+
+If this variable is set to 0.0, the function `guava-themes-change-visible-bell'
+is still called but does not display `guava-themes-visible-bell'."
+  :group 'guava-themes
+  :type 'float)
+
+(defcustom guava-themes-before-change-visible-bell-hook nil
+  "Hook that is run before displaying `guava-themes-visible-bell'."
+  :group 'guava-themes
+  :type 'hook)
+
+(defcustom guava-themes-after-change-visible-bell-hook nil
+  "Hook that is run after displaying `guava-themes-visible-bell'."
+  :group 'guava-themes
+  :type 'hook)
 
 ;; Henrik Lissner / Doom Emacs are the original authors of `doom-themes-visual-bell-fn'
 ;; As per the MIT license, here is the original copyright and permission notice of `doom-themes-ext-visual-bell.el'
@@ -62,6 +88,8 @@ The theme has to be reloaded after changing anything in this group."
 (defun guava-themes-change-visible-bell ()
   "Change the blink of the minibuffer with a blink for the mode-line.
 Set `ring-bell-function' with this function as its value to use it."
+  (run-hooks 'guava-themes-before-change-visible-bell-hook)
+  (sit-for guava-themes-visible-bell-idle-delay)
   (let* ((buf (current-buffer))
          (faces (if (facep 'mode-line-active)
                     '(mode-line-active)
@@ -71,11 +99,12 @@ Set `ring-bell-function' with this function as its value to use it."
                               (face-remap-add-relative face 'guava-themes-visible-bell)))
                           faces)))
     (force-mode-line-update)
-    (run-with-timer 0.15 nil
+    (run-with-timer guava-themes-visible-bell-duration nil
                     (lambda ()
                       (with-current-buffer buf
                         (mapc #'face-remap-remove-relative cookies)
-                        (force-mode-line-update))))))
+                        (force-mode-line-update)))))
+  (run-hooks 'guava-themes-after-change-visible-bell-hook))
 
 ;;;###autoload
 (when load-file-name
@@ -90,6 +119,7 @@ Set `ring-bell-function' with this function as its value to use it."
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; indent-tabs-mode: nil
+;; eval: (when (featurep 'package-lint-flymake) (package-lint-flymake-setup))
 ;; End:
 
 ;;; guava-themes.el ends here

@@ -104,6 +104,7 @@
     (bg-mode-line-active "#b7c7ff")
     (fg-mode-line-active "#151515")
     (bg-completion "#bfe8ff")
+    (bg-popup "#f3f3f3")
     (bg-hover "#aaeccf")
     (bg-hover-secondary "#ccbfff")
     (bg-hl-line "#e4efd8")
@@ -194,9 +195,9 @@
     (rainbow-2 magenta)
     (rainbow-3 cyan-cooler)
     (rainbow-4 yellow-cooler)
-    (rainbow-5 magenta-cooler)
-    (rainbow-6 red-cooler)
-    (rainbow-7 green-cooler)
+    (rainbow-5 blue-warmer)
+    (rainbow-6 green-cooler)
+    (rainbow-7 magenta-cooler)
     (rainbow-8 yellow)))
 
 (defcustom ef-light-palette-overrides nil

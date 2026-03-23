@@ -5,7 +5,7 @@
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -169,6 +169,7 @@ If TRANSFORM is non-nil, return THEME as-is."
 
 (defun doric-themes--display-sort (themes)
   "Put the current theme before other THEMES for minibuffer completion."
+  (setq themes (sort themes #'string-lessp))
   (let* ((current (doric-themes--current-theme))
          (current-theme-p (lambda (theme) (eq (intern-soft theme) current))))
     (nconc
@@ -344,6 +345,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     proced-marked
     pulse-highlight-start-face
     rectangle-preview
+    shr-selected-link
     speedbar-highlight-face
     tab-bar-tab-highlight
     tab-line-highlight
@@ -376,8 +378,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     substitute-match))
 
 (defconst doric-themes-intense-shadow-foreground-only-faces
-  '(calendar-weekday-header
-    change-log-date
+  '(change-log-date
     denote-faces-date
     denote-faces-day
     denote-faces-hour
@@ -436,6 +437,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     eww-form-text
     git-gutter:separator
     header-line
+    header-line-inactive
     magit-blame-heading
     magit-blame-margin
     match
@@ -446,6 +448,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     org-clock-overlay
     secondary-selection
     show-paren-match-expression
+    shr-mark
     tab-bar
     tab-line
     tool-bar
@@ -968,7 +971,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     ztreep-header-face))
 
 (defconst doric-themes-bold-intense-faces
-  '(change-log-list
+  '(calendar-weekday-header
+    change-log-list
     dired-header
     diredfl-dir-heading
     elfeed-search-unread-title-face

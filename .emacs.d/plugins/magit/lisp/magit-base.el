@@ -494,7 +494,7 @@ and delay of your graphical environment or operating system."
 (defclass magit-hunk-section (magit-diff-section)
   ((keymap      :initform 'magit-hunk-section-map)
    (painted     :initform nil)
-   (fontified   :initform nil) ;TODO
+   (fontified   :initform nil)
    (refined     :initform nil)
    (combined    :initform nil :initarg :combined)
    (from-range  :initform nil :initarg :from-range)
@@ -824,13 +824,13 @@ ACTION is a member of option `magit-slow-confirm'."
   (or (cond ((and (not (eq action t))
                   (or (eq magit-no-confirm t)
                       (memq action magit-no-confirm)
-                      (cl-member-if (pcase-lambda (`(,key ,var . ,sub))
-                                      (and (memq key magit-no-confirm)
-                                           (memq action sub)
-                                           (or (not var)
-                                               (and (boundp var)
-                                                    (symbol-value var)))))
-                                    magit--no-confirm-alist)))
+                      (magit--any (pcase-lambda (`(,key ,var . ,sub))
+                                    (and (memq key magit-no-confirm)
+                                         (memq action sub)
+                                         (or (not var)
+                                             (and (boundp var)
+                                                  (symbol-value var)))))
+                                  magit--no-confirm-alist)))
              (or (not sitems) items))
             ((not sitems)
              (magit-y-or-n-p prompt action))
@@ -1012,6 +1012,24 @@ This function should be named `version>' and be part of Emacs."
   "Return t if version V1 is higher (younger) than or equal to V2.
 This function should be named `version>=' and be part of Emacs."
   (version-list-<= (version-to-list v2) (version-to-list v1)))
+
+(defun magit--delete-text-properties (string &optional props)
+  "Delete text properties PROPS from STRING and return it.
+If PROPS is nil, remove all properties.  To leave STRING unchanged
+and return a new string, instead use `magit--remove-text-properties'."
+  (set-text-properties 0 (length string) props string)
+  string)
+
+(defun magit--remove-text-properties (string &optional props)
+  "Return a copy of STRING with text properties PROPS removed.
+If PROPS is nil, remove all properties."
+  (magit--delete-text-properties (copy-sequence string) props))
+
+;;; Emacs Compatibility
+
+(static-if (fboundp 'member-if) ; Emacs 31.1
+    (defalias 'magit--any 'member-if)
+  (defalias 'magit--any 'cl-member-if))
 
 ;;; Kludges for Emacs Bugs
 

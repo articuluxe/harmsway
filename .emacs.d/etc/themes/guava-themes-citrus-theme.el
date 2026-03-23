@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Feb 15, 2026
-;; Version: 0.11.3
+;; Version: 0.12.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -34,134 +34,174 @@
 (deftheme guava-themes-citrus "A theme inspired by orange, lime, lemon, and grapefruit colors.")
 
 (let* (
-      (guava-themes-citrus-class '((class color) (min-colors 257)))
-      (guava-themes-citrus-black                   "#000000")
-      (guava-themes-citrus-white                   "#f1f0f5");FFFFFF,eeeeee,f0eff5
+      (citrus-class '((class color) (min-colors 257)))
+      (citrus-black                   "#000000")
+      (citrus-white                   "#f1f0f5");FFFFFF,eeeeee,f0eff5
 
-      (guava-themes-citrus-shadow                  "#7f7f7f")
+      (citrus-shadow                  "#7f7f7f")
 
-      (guava-themes-citrus-lime-green              "#589337");589337
-      (guava-themes-citrus-green                   "#136b16")
+      (citrus-lime-green              "#589337");589337
+      (citrus-green                   "#136b16")
+      (citrus-deep-green              "#2b5b26");2b5726
 
-      (guava-themes-citrus-lemon-light-yellow      "#f5cb6d")
-      (guava-themes-citrus-lemon-yellow            "#c3af50")
+      (citrus-light-yellow            "#f5cb6d")
+      (citrus-yellow                  "#c3af50")
 
-      (guava-themes-citrus-orange-orange           "#f29a43")
-      (guava-themes-citrus-orange-red              "#ce462c")
-      (guava-themes-citrus-deep-orange             "#da5802")
+      (citrus-red                     "#960000");a50000
+      (citrus-orange-red              "#ce462c")
+      (citrus-orange-orange           "#f29a43")
+      (citrus-alt-orange              "#f26e43")
+      (citrus-deep-orange             "#da5802")
 
-      (guava-themes-citrus-brown                   "#86626f")
+      (citrus-brown                   "#86626f")
 
-      (guava-themes-citrus-blue                    "#2327dc");2246d2,443f8d,2327dc
-      (guava-themes-citrus-light-blue              "#4e9496")
-      (guava-themes-citrus-purple-red              "#77003a")
+      (citrus-light-blue              "#4eb096");4e9496
+      (citrus-blue                    "#3275a5")
+      (citrus-deep-blue               "#2327dc");2246d2,443f8d,2327dc
+      (citrus-light-purple            "#bec8ff")
+      (citrus-purple-red              "#77003a")
+      (citrus-purple-blue             "#6b4a82")
 
-      (guava-themes-citrus-error                   "#FF0000")
-      (guava-themes-citrus-warning                 "#F68511")
-      (guava-themes-citrus-success                 "#2b5b26");2b5726
+      (citrus-error                   "#FF0000")
+      (citrus-warning                 "#F68511")
+      (citrus-success                 "#2b5b26");2b5726
 
-      (guava-themes-citrus-vc-change               guava-themes-citrus-blue)
-      (guava-themes-citrus-vc-insert               guava-themes-citrus-success)
-      (guava-themes-citrus-vc-delete               guava-themes-citrus-error))
+      (citrus-vc-change               citrus-deep-blue)
+      (citrus-vc-insert               citrus-success)
+      (citrus-vc-delete               citrus-error))
 
   (custom-theme-set-faces
    'guava-themes-citrus
 
-   ;; default for guava-themes-citrus
-   `(default ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-black :background ,guava-themes-citrus-white))))
+   ;; built-in faces
+   ;; with unique colors
+
+   ;; default
+   `(default ((,citrus-class (:foreground ,citrus-black :background ,citrus-white))))
 
    ;; error, warning, success
-   `(error ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-error :weight bold))))
-   `(warning ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-warning :weight bold))))
-   `(success ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-success :weight bold))))
-
-   ;; cursor
-   `(cursor ((,guava-themes-citrus-class (:background ,guava-themes-citrus-green :foreground ,guava-themes-citrus-black))))
-
-   ;; fringe
-   `(fringe ((,guava-themes-citrus-class (:background ,guava-themes-citrus-white :foreground ,guava-themes-citrus-black))))
-   `(diff-hl-change ((,guava-themes-citrus-class (:background ,guava-themes-citrus-vc-change :foreground ,guava-themes-citrus-vc-change))))
-   `(diff-hl-insert ((,guava-themes-citrus-class (:background ,guava-themes-citrus-vc-insert :foreground ,guava-themes-citrus-vc-insert))))
-   `(diff-hl-delete ((,guava-themes-citrus-class (:background ,guava-themes-citrus-vc-delete :foreground ,guava-themes-citrus-vc-delete))))
-
-   ;; line-number
-   `(line-number ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-black))))
-   `(line-number-current-line ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :background ,guava-themes-citrus-lemon-light-yellow :weight bold))))
+   `(error ((,citrus-class (:foreground ,citrus-error :weight bold))))
+   `(warning ((,citrus-class (:foreground ,citrus-warning :weight bold))))
+   `(success ((,citrus-class (:foreground ,citrus-success :weight bold))))
 
    ;; highlight
-   `(highlight ((,guava-themes-citrus-class (:background ,guava-themes-citrus-lemon-light-yellow))))
+   `(highlight ((,citrus-class (:background ,citrus-light-yellow))))
 
    ;; shadow
-   `(shadow ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-shadow))))
+   `(shadow ((,citrus-class (:foreground ,citrus-shadow))))
 
    ;; region
-   `(region ((,guava-themes-citrus-class (:background ,guava-themes-citrus-lemon-yellow))))
-
-   ;; mode-line
-   `(mode-line ((,guava-themes-citrus-class (:background ,guava-themes-citrus-lime-green :foreground ,guava-themes-citrus-white))))
-   `(mode-line-inactive ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-orange :foreground ,guava-themes-citrus-white))))
-   `(guava-themes-visible-bell ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-red :foreground ,guava-themes-citrus-white))))
-
-   ;; minibuffer
-   `(minibuffer-prompt ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-black))))
-
-   ;; borders
-   `(vertical-border ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-white))))
-
-   ;; header-line
-   `(header-line ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-red :foreground ,guava-themes-citrus-white))))
-   `(which-func ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-red :foreground ,guava-themes-citrus-white))))
-
-   ;; tab-bar
-   `(tab-bar ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-orange :foreground ,guava-themes-citrus-white))))
-   `(tab-bar-tab ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-red :foreground ,guava-themes-citrus-white :weight bold :height 1.0))))
-   `(tab-bar-tab-inactive ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-orange :foreground ,guava-themes-citrus-white :weight bold :height 1.0))))
-
-   ;; tab-line
-   `(tab-line ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-orange :foreground ,guava-themes-citrus-white))))
-   `(tab-line-tab ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-orange :foreground ,guava-themes-citrus-white :weight bold :height 0.9))))
-   `(tab-line-tab-current ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-red :foreground ,guava-themes-citrus-white :weight bold :height 0.9))))
-   `(tab-line-tab-inactive ((,guava-themes-citrus-class (:background ,guava-themes-citrus-orange-orange :foreground ,guava-themes-citrus-white :weight bold :height 0.9))))
-   `(tab-line-tab-modified ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-blue :weight bold :height 0.9))))
-   `(tab-line-tab-special ((,guava-themes-citrus-class (:slant italic :weight bold :height 0.9))))
+   `(region ((,citrus-class (:background ,citrus-yellow))))
+   `(secondary-selection ((,citrus-class (:background ,citrus-orange-orange :extend t))))
 
    ;; font-lock
-   `(font-lock-comment-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :weight medium))))
-   `(font-lock-string-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-success :weight medium))))
-   `(font-lock-keyword-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-deep-orange :weight medium))))
-   `(font-lock-builtin-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-blue :weight medium))))
-   `(font-lock-warning-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-error :weight bold))))
-   `(font-lock-type-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-purple-red :weight medium))))
-   `(font-lock-constant-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :weight medium))))
-   `(font-lock-function-name-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-brown :weight medium))))
-   `(font-lock-bracket-face ((,guava-themes-citrus-class (:weight medium))))
-   `(font-lock-variable-name-face ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-green :weight medium))))
+   `(font-lock-comment-face ((,citrus-class (:foreground ,citrus-green :weight medium))))
+   `(font-lock-string-face ((,citrus-class (:foreground ,citrus-brown :weight medium))))
+   `(font-lock-keyword-face ((,citrus-class (:foreground ,citrus-purple-red :weight medium))))
+   `(font-lock-builtin-face ((,citrus-class (:foreground ,citrus-deep-blue :weight medium))))
+   `(font-lock-warning-face ((,citrus-class (:foreground ,citrus-warning :weight bold))))
+   `(font-lock-type-face ((,citrus-class (:foreground ,citrus-deep-orange :weight medium))))
+   `(font-lock-constant-face ((,citrus-class (:foreground ,citrus-blue :weight medium))))
+   `(font-lock-function-name-face ((,citrus-class (:foreground ,citrus-lime-green :weight medium))))
+   `(font-lock-punctuation-face ((,citrus-class (:foreground ,citrus-purple-blue :weight medium))))
+   `(font-lock-variable-name-face ((,citrus-class (:foreground ,citrus-deep-green :weight medium))))
+   `(font-lock-negation-char-face ((,citrus-class (:foreground ,citrus-orange-red :weight medium))))
+
+   ;; built-in faces
+   ;; with non-unique colors
+
+   ;; cursor
+   `(cursor ((,citrus-class (:foreground ,citrus-black :background ,citrus-alt-orange))))
+
+   ;; fringe
+   `(fringe ((,citrus-class (:foreground ,citrus-red :background ,citrus-white))))
+   `(diff-hl-change ((,citrus-class (:foreground ,citrus-vc-change :background ,citrus-vc-change))))
+   `(diff-hl-insert ((,citrus-class (:foreground ,citrus-vc-insert :background ,citrus-vc-insert))))
+   `(diff-hl-delete ((,citrus-class (:foreground ,citrus-vc-delete :background ,citrus-vc-delete))))
+
+   ;; line-number
+   `(line-number ((,citrus-class (:foreground ,citrus-black))))
+   `(line-number-current-line ((,citrus-class (:foreground ,citrus-green :weight bold :inherit highlight))))
+
+   ;; mode-line
+   `(mode-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-lime-green))))
+   `(mode-line-inactive ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-orange))))
+   `(guava-themes-visible-bell ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-red))))
+
+   ;; minibuffer
+   `(minibuffer-prompt ((,citrus-class (:foreground ,citrus-black))))
+
+   ;; borders
+   `(vertical-border ((,citrus-class (:foreground ,citrus-white))))
+
+   ;; header-line
+   `(header-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-red))))
+   `(which-func ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-red))))
+
+   ;; tab-bar
+   `(tab-bar ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-orange))))
+   `(tab-bar-tab ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-red :weight bold :height 1.0))))
+   `(tab-bar-tab-inactive ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-orange :weight bold :height 1.0))))
+
+   ;; tab-line
+   `(tab-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-orange))))
+   `(tab-line-tab ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-orange :weight bold :height 0.9))))
+   `(tab-line-tab-current ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-red :weight bold :height 0.9))))
+   `(tab-line-tab-inactive ((,citrus-class (:foreground ,citrus-white :background ,citrus-orange-orange :weight bold :height 0.9))))
+   `(tab-line-tab-inactive-alternate ((,citrus-class (:foreground ,citrus-white :background ,citrus-alt-orange :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,citrus-class (:foreground ,citrus-deep-blue :weight bold :height 0.9))))
+   `(tab-line-tab-special ((,citrus-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-white :background ,guava-themes-citrus-light-blue))))
-   `(show-paren-mismatch ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-white :background ,guava-themes-citrus-error))))
+   `(show-paren-match ((,citrus-class (:foreground ,citrus-white :background ,citrus-lime-green))))
+   `(show-paren-mismatch ((,citrus-class (:foreground ,citrus-white :background ,citrus-error))))
 
    ;; trailing whitespaces
-   `(trailing-whitespace ((,guava-themes-citrus-class (:background ,guava-themes-citrus-error))))
+   `(trailing-whitespace ((,citrus-class (:background ,citrus-error))))
 
-   ;; buttons
-   `(link ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :underline t :weight bold))))
-   `(link-visited ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-blue :underline t :weight bold))))
-   `(button ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-light-blue :underline t :weight bold))))
+   ;; links
+   `(link ((,citrus-class (:foreground ,citrus-light-blue :underline t :weight bold))))
+   `(link-visited ((,citrus-class (:foreground ,citrus-deep-blue :underline t :weight bold))))
 
 
    ;; external packages
 
+   ;; elfeed
+   `(elfeed-search-tag-face ((,citrus-class (:foreground ,citrus-lime-green))))
+   `(elfeed-search-date-face ((,citrus-class (:foreground ,citrus-deep-blue))))
+   `(elfeed-search-feed-face ((,citrus-class (:foreground ,citrus-alt-orange))))
+   `(elfeed-search-title-face ((,citrus-class (:foreground ,citrus-purple-red))))
+   `(elfeed-search-filter-face ((,citrus-class (:foreground ,citrus-light-yellow))))
+   `(elfeed-search-last-update-face ((,citrus-class (:foreground ,citrus-light-purple))))
+   `(elfeed-search-unread-title-face ((,citrus-class (:weight bold :foreground ,citrus-green))))
+   `(elfeed-search-unread-count-face ((,citrus-class (:weight bold :foreground ,citrus-light-blue))))
+
    ;; doom-modeline
-   `(doom-modeline-project-name ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-purple-red))))
-   `(doom-modeline-project-parent-dir ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-purple-red))))
-   `(doom-modeline-buffer-minor-mode ((,guava-themes-citrus-class (:foreground ,guava-themes-citrus-lemon-light-yellow))))))
+   `(doom-modeline-project-name ((,citrus-class (:foreground ,citrus-purple-red))))
+   `(doom-modeline-project-parent-dir ((,citrus-class (:foreground ,citrus-purple-red))))
+   `(doom-modeline-buffer-minor-mode ((,citrus-class (:foreground ,citrus-light-yellow))))
+
+   ;; corfu
+   `(corfu-default ((,citrus-class (:foreground ,citrus-black :background ,citrus-white))))
+   `(corfu-current ((,citrus-class (:foreground unspecified :background unspecified :inherit region))))
+   `(corfu-bar ((,citrus-class (:background ,citrus-shadow))))
+   `(corfu-border ((,citrus-class (:background ,citrus-shadow))))
+
+   ;; envrc
+   `(envrc-mode-line-error-face ((,citrus-class (:inherit error))))
+   `(envrc-mode-line-none-face ((,citrus-class (:inherit warning))))
+   `(envrc-mode-line-on-face ((,citrus-class (:inherit success))))
+
+   ;; nerd-icons
+   ;; nerd-icons-completion
+   `(nerd-icons-completion-dir-face ((,citrus-class (:foreground unspecified :inherit font-lock-function-name-face))))))
 
 (provide-theme 'guava-themes-citrus)
 
 ;; Local Variables:
 ;; no-byte-compile: t
 ;; indent-tabs-mode: nil
+;; eval: (when (featurep 'package-lint-flymake) (package-lint-flymake-setup))
 ;; End:
 
 ;;; guava-themes-citrus-theme.el ends here

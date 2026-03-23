@@ -118,6 +118,8 @@
 
 (defvar git-commit-need-summary-line)
 
+(declare-function dabbrev-capf "dabbrev" ())
+
 (define-obsolete-variable-alias
   'git-commit-known-pseudo-headers
   'git-commit-trailers
@@ -131,42 +133,6 @@
   :prefix "git-commit-"
   :link '(info-link "(magit)Editing Commit Messages")
   :group 'tools)
-
-(define-minor-mode global-git-commit-mode
-  "Edit Git commit messages.
-
-This global mode arranges for `git-commit-setup' to be called
-when a Git commit message file is opened.  That usually happens
-when Git uses the Emacsclient as $GIT_EDITOR to have the user
-provide such a commit message.
-
-Loading the library `git-commit' by default enables this mode,
-but the library is not automatically loaded because doing that
-would pull in many dependencies and increase startup time too
-much.  You can either rely on `magit' loading this library or
-you can load it explicitly.  Autoloading is not an alternative
-because in this case autoloading would immediately trigger
-full loading."
-  :group 'git-commit
-  :type 'boolean
-  :global t
-  :init-value t
-  :initialize
-  (lambda (symbol exp)
-    (custom-initialize-default symbol exp)
-    (when global-git-commit-mode
-      (add-hook 'find-file-hook #'git-commit-setup-check-buffer)
-      (remove-hook 'after-change-major-mode-hook
-                   #'git-commit-setup-font-lock-in-buffer)))
-  (cond
-    (global-git-commit-mode
-     (add-hook 'find-file-hook #'git-commit-setup-check-buffer)
-     (add-hook 'after-change-major-mode-hook
-               #'git-commit-setup-font-lock-in-buffer))
-    (t
-     (remove-hook 'find-file-hook #'git-commit-setup-check-buffer)
-     (remove-hook 'after-change-major-mode-hook
-                  #'git-commit-setup-font-lock-in-buffer))))
 
 (defcustom git-commit-major-mode #'text-mode
   "Major mode used to edit Git commit messages.
@@ -198,9 +164,11 @@ Also note that `git-commit-mode' (which see) is not a major-mode.")
 (defcustom git-commit-setup-hook
   (list #'git-commit-ensure-comment-gap
         #'git-commit-save-message
+        #'git-commit-setup-capf
         #'git-commit-setup-changelog-support
         #'git-commit-turn-on-auto-fill
         #'git-commit-propertize-diff
+        #'git-commit-collapse-diff
         #'bug-reference-mode)
   "Hook run at the end of `git-commit-setup'."
   :group 'git-commit
@@ -208,12 +176,14 @@ Also note that `git-commit-mode' (which see) is not a major-mode.")
   :get #'magit-hook-custom-get
   :options '(git-commit-ensure-comment-gap
              git-commit-save-message
+             git-commit-setup-capf
              git-commit-setup-changelog-support
              magit-generate-changelog
              git-commit-turn-on-auto-fill
              git-commit-turn-on-orglink
              git-commit-turn-on-flyspell
              git-commit-propertize-diff
+             git-commit-collapse-diff
              bug-reference-mode))
 
 (defcustom git-commit-finish-query-functions
@@ -363,6 +333,11 @@ In this context a \"keyword\" is text surrounded by brackets."
   "Face used for headings in commit message comments."
   :group 'git-commit-faces)
 
+(defface git-commit-comment-button
+  '((t :inherit git-commit-comment-heading :underline t))
+  "Face used for buttons in commit message comments."
+  :group 'git-commit-faces)
+
 (defface git-commit-comment-file
   '((t :inherit git-commit-trailer-value))
   "Face used for file names in commit message comments."
@@ -437,7 +412,43 @@ the redundant bindings, then set this to nil, before loading
     ["Cancel" with-editor-cancel t]
     ["Commit" with-editor-finish t]))
 
-;;; Hooks
+;;; Global Mode
+
+(define-minor-mode global-git-commit-mode
+  "Edit Git commit messages.
+
+This global mode arranges for `git-commit-setup' to be called
+when a Git commit message file is opened.  That usually happens
+when Git uses the Emacsclient as $GIT_EDITOR to have the user
+provide such a commit message.
+
+Loading the library `git-commit' by default enables this mode,
+but the library is not automatically loaded because doing that
+would pull in many dependencies and increase startup time too
+much.  You can either rely on `magit' loading this library or
+you can load it explicitly.  Autoloading is not an alternative
+because in this case autoloading would immediately trigger
+full loading."
+  :group 'git-commit
+  :type 'boolean
+  :global t
+  :init-value t
+  :initialize
+  (lambda (symbol exp)
+    (custom-initialize-default symbol exp)
+    (when global-git-commit-mode
+      (add-hook 'find-file-hook #'git-commit-setup-check-buffer)
+      (remove-hook 'after-change-major-mode-hook
+                   #'git-commit-setup-font-lock-in-buffer)))
+  (cond
+    (global-git-commit-mode
+     (add-hook 'find-file-hook #'git-commit-setup-check-buffer)
+     (add-hook 'after-change-major-mode-hook
+               #'git-commit-setup-font-lock-in-buffer))
+    (t
+     (remove-hook 'find-file-hook #'git-commit-setup-check-buffer)
+     (remove-hook 'after-change-major-mode-hook
+                  #'git-commit-setup-font-lock-in-buffer))))
 
 (defconst git-commit-filename-regexp "/\\(\
 \\(\\(COMMIT\\|NOTES\\|PULLREQ\\|MERGEREQ\\|TAG\\)_EDIT\\|MERGE_\\|\\)MSG\
@@ -458,8 +469,6 @@ the redundant bindings, then set this to nil, before loading
              (string-match-p git-commit-filename-regexp buffer-file-name))
     (git-commit-setup)))
 
-(defvar git-commit-mode)
-
 (defun git-commit-file-not-found ()
   ;; cygwin git will pass a cygwin path (/cygdrive/c/foo/.git/...),
   ;; try to handle this in window-nt Emacs.
@@ -479,6 +488,10 @@ the redundant bindings, then set this to nil, before loading
 
 (when (eq system-type 'windows-nt)
   (add-hook 'find-file-not-found-functions #'git-commit-file-not-found))
+
+;;; Local Mode
+
+(defvar git-commit-mode)
 
 (defconst git-commit-default-usage-message "\
 Type \\[with-editor-finish] to finish, \
@@ -591,6 +604,8 @@ used."
 
 (put 'git-commit-mode 'permanent-local t)
 
+;;; Setup
+
 (defun git-commit-ensure-comment-gap ()
   "Separate initial empty line from initial comment.
 If the buffer begins with an empty line followed by a comment, insert
@@ -600,6 +615,13 @@ the input isn't tacked to the comment."
     (goto-char (point-min))
     (when (looking-at (format "\\`\n%s" comment-start))
       (open-line 1))))
+
+(defun git-commit-setup-capf ()
+  "Teach `complete-symbol' about `dabbrev-capf'.
+When \"git commit\"'s \"--verbose\" argument is used, this allows
+completing modified symbols and other text appearing in the diff."
+  (require 'dabbrev)
+  (add-hook 'completion-at-point-functions #'dabbrev-capf -90 t))
 
 (defun git-commit-setup-changelog-support ()
   "Treat ChangeLog entries as unindented paragraphs."
@@ -656,6 +678,31 @@ comment and anything below the cut line (\"--- >8 ---\")."
 (defun git-commit-flyspell-verify ()
   (not (= (char-after (line-beginning-position))
           (aref comment-start 0))))
+
+(defun git-commit-collapse-diff ()
+  "Collapse inline diff and add button to allow expanding it."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward (format "%s -+ >8 -+" comment-start) nil t)
+      (let ((elt '(git-commit-diff t)))
+        (add-to-invisibility-spec elt)
+        (make-button (line-beginning-position) (point)
+                     'face 'git-commit-comment-button
+                     'keymap (define-keymap :parent button-map
+                               "<return>" #'push-button
+                               "<tab>" #'push-button)
+                     'action (lambda (_)
+                               (if (memq elt buffer-invisibility-spec)
+                                   (remove-from-invisibility-spec elt)
+                                 (add-to-invisibility-spec elt))
+                               ;; KLUDGE Force "redisplay".
+                               (when-let ((w1 (selected-window))
+                                          (w2 (next-window)))
+                                 (select-window w2)
+                                 (select-window w1)))))
+      (add-text-properties (point) (point-max) '(invisible git-commit-diff)))))
+
+;;; Finish
 
 (defun git-commit-finish-query-functions (force)
   (run-hook-with-args-until-failure

@@ -5,7 +5,7 @@
 ;; Author: Wataru MIYAGUNI <gonngo@gmail.com>
 ;; URL: https://github.com/gongo/emacs-toml
 ;; Keywords: toml parser
-;; Version: 0.5.0
+;; Version: 1.1.0.0
 
 ;; MIT License
 ;;
@@ -46,6 +46,7 @@
     (?n . ?\n)    ; linefeed        (U+000A)
     (?f . ?\f)    ; form feed       (U+000C)
     (?r . ?\r)    ; carriage return (U+000D)
+    (?e . ?\e)    ; escape          (U+001B)
     (?\" . ?\")   ; quote           (U+0022)
     (?\\ . ?\\))  ; backslash       (U+005C)
   "Alist mapping TOML escape characters to their actual values.
@@ -72,10 +73,9 @@ Excludes \\uXXXX which is handled separately in `toml:read-escaped-char'.")
 \\(0[1-9]\\|1[0-2]\\)-\
 \\(0[1-9]\\|[1-2][0-9]\\|3[0-1]\\)[Tt ]\
 \\([0-1][0-9]\\|2[0-3]\\):\
-\\([0-5][0-9]\\):\
 \\([0-5][0-9]\\)\
-\\(?:\\.\\([0-9]+\\)\\)?\
-\\(Z\\|[+-][0-9]\\{2\\}:[0-9]\\{2\\}\\)"
+\\(?::\\([0-5][0-9]\\)\\(?:\\.\\([0-9]+\\)\\)?\\)?\
+\\([Zz]\\|[+-][0-9]\\{2\\}:[0-9]\\{2\\}\\)"
   "Regular expression for RFC 3339 datetime with timezone and fractional seconds.")
 
 (defconst toml->regexp-local-datetime
@@ -84,9 +84,8 @@ Excludes \\uXXXX which is handled separately in `toml:read-escaped-char'.")
 \\(0[1-9]\\|1[0-2]\\)-\
 \\(0[1-9]\\|[1-2][0-9]\\|3[0-1]\\)[Tt ]\
 \\([0-1][0-9]\\|2[0-3]\\):\
-\\([0-5][0-9]\\):\
 \\([0-5][0-9]\\)\
-\\(?:\\.\\([0-9]+\\)\\)?"
+\\(?::\\([0-5][0-9]\\)\\(?:\\.\\([0-9]+\\)\\)?\\)?"
   "Regular expression for local date-time (no timezone).")
 
 (defconst toml->regexp-local-date
@@ -99,9 +98,8 @@ Excludes \\uXXXX which is handled separately in `toml:read-escaped-char'.")
 (defconst toml->regexp-local-time
   "\
 \\([0-1][0-9]\\|2[0-3]\\):\
-\\([0-5][0-9]\\):\
 \\([0-5][0-9]\\)\
-\\(?:\\.\\([0-9]+\\)\\)?"
+\\(?::\\([0-5][0-9]\\)\\(?:\\.\\([0-9]+\\)\\)?\\)?"
   "Regular expression for local time (time only, no date).")
 
 (defconst toml->regexp-hex
@@ -187,9 +185,21 @@ Excludes \\uXXXX which is handled separately in `toml:read-escaped-char'.")
 (put 'toml-array-table-error 'error-conditions
      '(toml-array-table-error toml-error error))
 
+(put 'toml-comment-error 'error-message "Bad comment")
+(put 'toml-comment-error 'error-conditions
+     '(toml-comment-error toml-error error))
+
 (put 'toml-inline-table-error 'error-message "Bad inline table")
 (put 'toml-inline-table-error 'error-conditions
      '(toml-inline-table-error toml-error error))
+
+(put 'toml-inline-table-immutable-error 'error-message "Inline table is immutable")
+(put 'toml-inline-table-immutable-error 'error-conditions
+     '(toml-inline-table-immutable-error toml-error error))
+
+(put 'toml-encoding-error 'error-message "Bad encoding")
+(put 'toml-encoding-error 'error-conditions
+     '(toml-encoding-error toml-error error))
 
 (defun toml:assoc (keys hash)
   "Look up nested KEYS in HASH and return the found element.
@@ -206,6 +216,11 @@ Example:
           (throw 'break nil)))
       element)))
 
+(defsubst toml:array-table-elem (elem)
+  "Return ELEM as an alist for array table operations.
+Converts the :toml-empty-table sentinel to nil (empty alist)."
+  (if (eq elem :toml-empty-table) nil elem))
+
 (defun toml:alistp (alist)
   "Return t if ALIST is a list of association lists, nil otherwise."
   (when (listp alist)
@@ -213,6 +228,24 @@ Example:
       (dolist (al alist)
         (unless (consp al) (throw 'break nil)))
       t)))
+
+(defun toml:collect-inline-table-paths (prefix alist)
+  "Collect PREFIX and all nested sub-table paths within ALIST."
+  (let ((result (list prefix)))
+    (dolist (entry alist)
+      (when (toml:alistp (cdr entry))
+        (setq result (append result
+                             (toml:collect-inline-table-paths
+                              (append prefix (list (car entry)))
+                              (cdr entry))))))
+    result))
+
+(defun toml:check-inline-table-conflict (path registry)
+  "Signal error if PATH equals or extends any path in REGISTRY."
+  (dolist (registered registry)
+    (when (and (<= (length registered) (length path))
+               (equal registered (butlast path (- (length path) (length registered)))))
+      (signal 'toml-inline-table-immutable-error (list path)))))
 
 (defun toml:end-of-line-p ()
   (looking-at "$"))
@@ -235,7 +268,11 @@ Skip target:
   (toml:seek-non-whitespace)
   (while (and (not (eobp))
               (char-equal (toml:get-char-at-point) ?#))
-    (end-of-line)
+    (forward-char) ; skip '#'
+    (while (and (not (eobp)) (not (toml:end-of-line-p)))
+      (when (toml:control-char-p (toml:get-char-at-point))
+        (signal 'toml-comment-error (list (point))))
+      (forward-char))
     (unless (eobp)
       (toml:seek-beginning-of-next-line)
       (toml:seek-non-whitespace))))
@@ -249,9 +286,10 @@ Skip target:
 (defun toml:search-forward (regexp)
   "Search forward from point for regular expression REGEXP.
 Move point to the end of the occurrence found, and return point."
-  (when (looking-at regexp)
-    (forward-char (length (match-string-no-properties 0)))
-    t))
+  (let ((case-fold-search nil))
+    (when (looking-at regexp)
+      (forward-char (length (match-string-no-properties 0)))
+      t)))
 
 (defun toml:read-char (&optional char-p)
   "Read character at point.  Set point to next point.
@@ -273,6 +311,9 @@ Move point to the end of read characters."
          (mapped (assq char toml->escape-sequence-alist)))
     (cond
      (mapped (char-to-string (cdr mapped)))
+     ((and (eq char ?x)
+           (toml:search-forward "[0-9A-Fa-f]\\{2\\}"))
+      (char-to-string (string-to-number (match-string 0) 16)))
      ((and (eq char ?u)
            (toml:search-forward "[0-9A-Fa-f]\\{4\\}"))
       (let ((code-point (string-to-number (match-string 0) 16)))
@@ -316,15 +357,23 @@ and trims immediate newline after opening delimiter."
        (t
         (let ((char (toml:get-char-at-point)))
           (when (and (toml:control-char-p char)
-                     (not (eq char ?\n))
-                     (not (eq char ?\r)))
+                     (not (eq char ?\n)))
             (signal 'toml-string-error (list (point))))
           ;; Regular escape sequence or regular character
           (if (eq char ?\\)
               (push (toml:read-escaped-char) characters)
             (push (toml:read-char) characters))))))
-    ;; Skip the closing """
-    (forward-char 3)
+    ;; Up to 2 extra quotes allowed before closing """
+    (let ((quote-count 0))
+      (save-excursion
+        (while (and (not (eobp)) (eq (char-after) ?\"))
+          (setq quote-count (1+ quote-count))
+          (forward-char)))
+      (when (>= quote-count 6)
+        (signal 'toml-string-error (list (point))))
+      (dotimes (_ (- quote-count 3))
+        (push "\"" characters))
+      (forward-char quote-count))
     (apply #'concat (nreverse characters))))
 
 (defun toml:read-string ()
@@ -363,12 +412,20 @@ No escape processing. Trims immediate newline after opening delimiter."
         (signal 'toml-string-error (list (point))))
       (let ((char (toml:get-char-at-point)))
         (when (and (toml:control-char-p char)
-                   (not (eq char ?\n))
-                   (not (eq char ?\r)))
+                   (not (eq char ?\n)))
           (signal 'toml-string-error (list (point)))))
       (push (toml:read-char) characters))
-    ;; Skip the closing '''
-    (forward-char 3)
+    ;; Up to 2 extra quotes allowed before closing '''
+    (let ((quote-count 0))
+      (save-excursion
+        (while (and (not (eobp)) (eq (char-after) ?\'))
+          (setq quote-count (1+ quote-count))
+          (forward-char)))
+      (when (>= quote-count 6)
+        (signal 'toml-string-error (list (point))))
+      (dotimes (_ (- quote-count 3))
+        (push "'" characters))
+      (forward-char quote-count))
     (apply #'concat (nreverse characters))))
 
 (defun toml:read-literal-string ()
@@ -421,9 +478,15 @@ Move point to the end of read datetime string."
         (day      (string-to-number (match-string-no-properties 3)))
         (hour     (string-to-number (match-string-no-properties 4)))
         (minute   (string-to-number (match-string-no-properties 5)))
-        (second   (string-to-number (match-string-no-properties 6)))
+        (second   (let ((s (match-string-no-properties 6))) (if s (string-to-number s) 0)))
         (fraction (match-string-no-properties 7))  ; optional
-        (timezone (match-string-no-properties 8))) ; Z or +HH:MM or -HH:MM
+        (timezone (let ((tz (match-string-no-properties 8)))
+                    (if (and tz (string= (upcase tz) "Z")) "Z" tz))))
+    (when (and timezone (not (string= timezone "Z")))
+      (let ((tz-hour (string-to-number (substring timezone 1 3)))
+            (tz-minute (string-to-number (substring timezone 4 6))))
+        (unless (and (<= 0 tz-hour 23) (<= 0 tz-minute 59))
+          (signal 'toml-datetime-error (list (point))))))
     (toml:validate-date year month day)
     `((year . ,year)
       (month . ,month)
@@ -445,7 +508,7 @@ Move point to the end of read datetime string."
         (day      (string-to-number (match-string-no-properties 3)))
         (hour     (string-to-number (match-string-no-properties 4)))
         (minute   (string-to-number (match-string-no-properties 5)))
-        (second   (string-to-number (match-string-no-properties 6)))
+        (second   (let ((s (match-string-no-properties 6))) (if s (string-to-number s) 0)))
         (fraction (match-string-no-properties 7)))
     (toml:validate-date year month day)
     `((year . ,year)
@@ -478,7 +541,7 @@ Move point to the end of read time string."
     (signal 'toml-datetime-error (list (point))))
   (let ((hour     (string-to-number (match-string-no-properties 1)))
         (minute   (string-to-number (match-string-no-properties 2)))
-        (second   (string-to-number (match-string-no-properties 3)))
+        (second   (let ((s (match-string-no-properties 3))) (if s (string-to-number s) 0)))
         (fraction (match-string-no-properties 4)))
     `((hour . ,hour)
       (minute . ,minute)
@@ -511,6 +574,17 @@ Move point to the end of read numeric string."
    ;; Regular decimal numeric
    ((toml:search-forward toml->regexp-numeric)
     (let ((numeric-str (match-string-no-properties 0)))
+      ;; Reject leading zeros in decimal numbers (e.g., 01, 00, 03.14)
+      ;; Leading zero is only valid for: 0, 0.x, 0ex
+      (let ((abs-str (if (string-match-p "^[+-]" numeric-str)
+                         (substring numeric-str 1)
+                       numeric-str)))
+        (when (and (> (length abs-str) 1)
+                   (eq (aref abs-str 0) ?0)
+                   (let ((c (aref abs-str 1)))
+                     (and (not (eq c ?.))
+                          (not (memq c '(?e ?E))))))
+          (signal 'toml-numeric-error (list (point)))))
       ;; Two-stage validation:
       ;; 1. toml->regexp-numeric (loose) - greedily captures all numeric-like
       ;;    characters to ensure invalid trailing chars (e.g., "1.1.1") are
@@ -557,6 +631,7 @@ Move point to the end of read string."
     (signal 'toml-array-error (list (point))))
   (mark-sexp)
   (forward-char)
+  (toml:seek-readable-point)
   (let (elements-list char-after-read)
     (while (not (char-equal (toml:get-char-at-point) ?\]))
       (push (toml:read-value) elements-list)
@@ -588,10 +663,50 @@ Otherwise the NEW value takes precedence."
   (unless (eq ?{ (toml:get-char-at-point))
     (signal 'toml-inline-table-error (list (point))))
   (forward-char)
-  (let (elements char-after-read)
+  (toml:seek-readable-point)
+  (let (elements char-after-read
+		 defined-paths implicit-paths inline-table-paths)
     (while (not (char-equal (toml:get-char-at-point) ?}))
       (let* ((key-segments (toml:read-key))
-             (value (toml:read-value)))
+             (value (toml:read-value))
+             (full-path key-segments))
+        ;; Validation 1: exact duplicate
+        (when (member full-path defined-paths)
+          (signal 'toml-redefine-key-error (list full-path)))
+        ;; Validation 2: implicit table overwrite
+        ;; (full-path is a proper prefix of an existing defined-path)
+        (dolist (dp defined-paths)
+          (when (and (< (length full-path) (length dp))
+                     (equal full-path (butlast dp (- (length dp) (length full-path)))))
+            (signal 'toml-redefine-key-error (list full-path))))
+        ;; Validation 3: inline table immutability
+        ;; (a proper prefix of full-path is an inline-table-path)
+        (dolist (itp inline-table-paths)
+          (when (and (< (length itp) (length full-path))
+                     (equal itp (butlast full-path (- (length full-path) (length itp)))))
+            (signal 'toml-inline-table-immutable-error (list full-path))))
+        ;; Validation 4: nesting into non-table scalar
+        ;; (a proper prefix of full-path is in defined-paths but not in
+        ;;  implicit-paths or inline-table-paths)
+        (dolist (dp defined-paths)
+          (when (and (< (length dp) (length full-path))
+                     (equal dp (butlast full-path (- (length full-path) (length dp))))
+                     (not (member dp implicit-paths))
+                     (not (member dp inline-table-paths)))
+            (signal 'toml-redefine-key-error (list full-path))))
+        ;; Register paths
+        (push full-path defined-paths)
+        ;; Register intermediate segments as implicit paths
+        (when (> (length key-segments) 1)
+          (let ((prefix nil))
+            (dolist (seg (butlast key-segments))
+              (setq prefix (append prefix (list seg)))
+              (unless (member prefix implicit-paths)
+                (push prefix implicit-paths)))))
+        ;; Register inline table value paths
+        (when (or (toml:alistp value) (eq value :toml-empty-table))
+          (push full-path inline-table-paths))
+        ;; Build elements
         (if (= 1 (length key-segments))
             ;; Simple key: traditional (key . value)
             (push `(,(car key-segments) . ,value) elements)
@@ -611,14 +726,19 @@ Otherwise the NEW value takes precedence."
         (if (char-equal char-after-read ?,)
             (progn
               (forward-char)
-              (toml:seek-readable-point)
-              ;; TODO: Trailing comma in inline tables is allowed from TOML v1.1.0.
-              ;; Until then, it should be rejected.
-              (when (char-equal (toml:get-char-at-point) ?})
-                (signal 'toml-inline-table-error (list (point)))))
+              (toml:seek-readable-point))
           (signal 'toml-inline-table-error (list (point))))))
     (forward-char)
-    (nreverse elements)))
+    (if elements (nreverse elements) :toml-empty-table)))
+
+(defun toml:ensure-value-on-same-line ()
+  "Ensure that a value starts on the same line after `='.
+Only skips spaces and tabs; signals `toml-key-error' if EOL or EOB."
+  (skip-chars-forward " \t")
+  (when (or (eobp)
+	    (toml:end-of-line-p)
+            (char-equal (toml:get-char-at-point) ?#))
+    (signal 'toml-key-error (list (point)))))
 
 (defun toml:read-value ()
   (toml:seek-readable-point)
@@ -682,6 +802,10 @@ Behavior differences:
               (signal 'toml-table-error (list (point)))))
           (setq table-keys (nreverse segments))
           (setq table-type (if is-array 'array 'single))
+          ;; After table header, ensure no extra tokens on the same line
+          (skip-chars-forward " \t")
+          (unless (or (eobp) (toml:end-of-line-p) (eq (toml:get-char-at-point) ?#))
+            (signal 'toml-table-error (list (point))))
           ;; Check for table redefinition if checker is provided
           (when (and table-history-checker (eq table-type 'single))
             (funcall table-history-checker table-keys))))
@@ -694,8 +818,14 @@ Returns the key string, or signals toml-table-error."
   (condition-case err
       (cond
        ((eobp) (signal 'toml-table-error (list (point))))
-       ((char-equal (toml:get-char-at-point) ?\") (toml:read-string))
-       ((char-equal (toml:get-char-at-point) ?\') (toml:read-literal-string))
+       ((char-equal (toml:get-char-at-point) ?\")
+        (when (looking-at "\"\"\"")
+          (signal 'toml-table-error (list (point))))
+        (toml:read-string))
+       ((char-equal (toml:get-char-at-point) ?\')
+        (when (looking-at "'''")
+          (signal 'toml-table-error (list (point))))
+        (toml:read-literal-string))
        ((toml:search-forward "\\([A-Za-z0-9_-]+\\)")
         (match-string-no-properties 1))
        (t (signal 'toml-table-error (list (point)))))
@@ -709,8 +839,14 @@ Returns the key string, or nil if at eob or table header."
       (cond
        ((eobp) nil)
        ((char-equal (toml:get-char-at-point) ?\[) nil)
-       ((char-equal (toml:get-char-at-point) ?\") (toml:read-string))
-       ((char-equal (toml:get-char-at-point) ?\') (toml:read-literal-string))
+       ((char-equal (toml:get-char-at-point) ?\")
+        (when (looking-at "\"\"\"")
+          (signal 'toml-key-error (list (point))))
+        (toml:read-string))
+       ((char-equal (toml:get-char-at-point) ?\')
+        (when (looking-at "'''")
+          (signal 'toml-key-error (list (point))))
+        (toml:read-literal-string))
        ((toml:search-forward "\\([A-Za-z0-9_-]+\\)")
         (match-string-no-properties 1))
        (t (signal 'toml-key-error (list (point)))))
@@ -785,15 +921,13 @@ Example:
   (let ((result nil)
         (prefix nil)
         (keys-len (length keys)))
-    (catch 'found
-      (dolist (key keys)
-        (setq prefix (append prefix (list key)))
-        ;; Only consider proper prefixes (not the full path)
-        (when (< (length prefix) keys-len)
-          (let ((key-str (mapconcat 'identity prefix ".")))
-            (when (assoc key-str array-table-registry)
-              (setq result prefix)
-              (throw 'found result))))))
+    (dolist (key keys)
+      (setq prefix (append prefix (list key)))
+      ;; Only consider proper prefixes (not the full path)
+      (when (< (length prefix) keys-len)
+        (let ((key-str (mapconcat 'identity prefix ".")))
+          (when (assoc key-str array-table-registry)
+            (setq result (copy-sequence prefix))))))
     result))
 
 (defun toml:make-array-table-hashes (array-keys hashes &optional parent-array-context)
@@ -823,7 +957,7 @@ Example:
                (parent-entry (assoc (car parent-keys) hashes))
                (parent-array (cdr parent-entry)))
           (when (and parent-array (vectorp parent-array))
-            (let* ((last-elem (aref parent-array parent-index))
+            (let* ((last-elem (toml:array-table-elem (aref parent-array parent-index)))
                    (updated-elem (toml:make-array-table-hashes
                                   array-keys last-elem nil)))
               (aset parent-array parent-index updated-elem)))
@@ -835,12 +969,12 @@ Example:
               (if (vectorp current-val)
                   ;; Extend existing array with new empty element
                   (progn
-                    (setcdr existing (vconcat current-val (vector nil)))
+                    (setcdr existing (vconcat current-val (vector :toml-empty-table)))
                     hashes)
                 ;; Conflict: trying to redefine non-array as array table
                 (signal 'toml-array-table-error (list (point)))))
           ;; Create new array with one empty element
-          (cons (cons key (vector nil)) hashes)))
+          (cons (cons key (vector :toml-empty-table)) hashes)))
        ;; More keys to traverse - recurse
        (t
         (let* ((children (if existing (cdr existing) nil))
@@ -858,16 +992,16 @@ Returns updated hashes."
   (let* ((parent-entry (toml:assoc parent-keys hashes))
          (parent-array (cdr parent-entry)))
     (when (and parent-array (vectorp parent-array))
-      (let* ((current-elem (aref parent-array parent-index))
+      (let* ((current-elem (toml:array-table-elem (aref parent-array parent-index)))
              (child-key (car child-keys))
              (existing-child (assoc child-key current-elem)))
         (if existing-child
             ;; Extend existing nested array
             (let ((child-array (cdr existing-child)))
               (when (vectorp child-array)
-                (setcdr existing-child (vconcat child-array (vector nil)))))
+                (setcdr existing-child (vconcat child-array (vector :toml-empty-table)))))
           ;; Create new nested array
-          (let ((new-elem (cons (cons child-key (vector nil)) current-elem)))
+          (let ((new-elem (cons (cons child-key (vector :toml-empty-table)) current-elem)))
             (aset parent-array parent-index new-elem)))))
     hashes))
 
@@ -897,7 +1031,7 @@ Example:
                (parent-entry (toml:assoc parent-array hashes))
                (parent-vec (cdr parent-entry)))
           (when (and parent-vec (vectorp parent-vec) parent-index)
-            (let* ((parent-elem (aref parent-vec parent-index))
+            (let* ((parent-elem (toml:array-table-elem (aref parent-vec parent-index)))
                    (child-keys (nthcdr (length parent-array) array-keys))
                    (child-key (car child-keys))
                    (child-entry (assoc child-key parent-elem))
@@ -905,7 +1039,7 @@ Example:
                    (child-key-str (mapconcat 'identity array-keys "."))
                    (child-index (cdr (assoc child-key-str array-registry))))
               (when (and child-array (vectorp child-array) child-index)
-                (let* ((current-elem (aref child-array child-index))
+                (let* ((current-elem (toml:array-table-elem (aref child-array child-index)))
                        (updated-elem (toml:make-table-hashes sub-keys key value current-elem)))
                   (aset child-array child-index updated-elem))))))
       ;; Top-level array table
@@ -914,7 +1048,7 @@ Example:
              (entry (toml:assoc array-keys hashes))
              (array-vec (cdr entry)))
         (when (and array-vec (vectorp array-vec) index)
-          (let* ((current-elem (aref array-vec index))
+          (let* ((current-elem (toml:array-table-elem (aref array-vec index)))
                  (updated-elem (toml:make-table-hashes sub-keys key value current-elem)))
             (aset array-vec index updated-elem)))))
     hashes))
@@ -928,7 +1062,10 @@ Example:
         current-value
         hashes
         table-history
-        array-table-registry)    ; Alist of ("key.path" . last-index)
+        array-table-registry     ; Alist of ("key.path" . last-index)
+        inline-table-registry    ; List of paths defined by inline tables
+        scalar-key-registry      ; List of key paths that hold scalar values
+        explicit-table-registry) ; List of key paths explicitly defined by [table] headers
     (while (not (eobp))
       (toml:seek-readable-point)
 
@@ -940,9 +1077,12 @@ Example:
              (unless (toml:find-parent-array-table keys array-table-registry)
                (when (member keys table-history)
                  (signal 'toml-redefine-table-error (list (point))))
-               (push keys table-history))))
+               (push keys table-history)
+               (push keys explicit-table-registry))))
         (cond
          ((eq type 'single)
+          ;; Check if this table conflicts with an inline table
+          (toml:check-inline-table-conflict keys inline-table-registry)
           ;; Check if this table conflicts with an existing array table
           (let ((key-str (mapconcat 'identity keys ".")))
             (when (assoc key-str array-table-registry)
@@ -962,6 +1102,11 @@ Example:
               (setq current-array-sub-keys nil))))
 
          ((eq type 'array)
+          ;; Check if this array table conflicts with an inline table
+          (toml:check-inline-table-conflict keys inline-table-registry)
+          ;; Check if this array table conflicts with an existing single table
+          (when (member keys table-history)
+            (signal 'toml-array-table-error (list (point))))
           ;; Array of tables
           ;; Check if trying to append to a statically defined array
           (let* ((key-str (mapconcat 'identity keys "."))
@@ -1012,6 +1157,15 @@ Example:
 
       ;; Validate table doesn't conflict with existing keys
       (when current-table
+        ;; Check all intermediate prefixes for scalar conflicts
+        (let ((prefix nil))
+          (dolist (seg (butlast current-table))
+            (setq prefix (append prefix (list seg)))
+            (when (or (member prefix scalar-key-registry)
+                      (let ((elm (toml:assoc prefix hashes)))
+                        (and elm (not (toml:alistp (cdr elm))))))
+              (signal 'toml-redefine-key-error (list (point))))))
+        ;; Check the full path
         (let ((elm (toml:assoc current-table hashes)))
           (when (and elm (not (toml:alistp (cdr elm))))
             (signal 'toml-redefine-key-error (list (point))))))
@@ -1033,11 +1187,47 @@ Example:
                 (let ((prefix current-table))
                   (dolist (seg dotted-table)
                     (setq prefix (append prefix (list seg)))
-                    (let ((existing (toml:assoc prefix hashes)))
-                      (when (and existing (not (toml:alistp (cdr existing))))
-                        (signal 'toml-redefine-key-error (list (point)))))))))
+                    (when (or (member prefix scalar-key-registry)
+                              (let ((existing (toml:assoc prefix hashes)))
+                                (and existing (not (toml:alistp (cdr existing))))))
+                      (signal 'toml-redefine-key-error (list (point)))))))
+              ;; Check inline table immutability
+              (when full-path
+                (toml:check-inline-table-conflict full-path inline-table-registry))
 
-            (setq current-value (toml:read-value))
+              (toml:ensure-value-on-same-line)
+              (setq current-value (toml:read-value))
+
+              ;; Register scalar key paths (non-alist values)
+              ;; Note: (toml:alistp nil) returns t since nil is an empty list,
+              ;; but false/nil is a scalar value, so we check explicitly.
+              ;; :toml-empty-table is an empty table, not a scalar.
+              (when (and full-path
+                         (not (eq current-value :toml-empty-table))
+                         (or (not (toml:alistp current-value))
+                             (null current-value)))
+                (push full-path scalar-key-registry)))
+
+            ;; Register inline table paths
+            (when (and (not current-array-table) current-value
+                       (or (toml:alistp current-value) (eq current-value :toml-empty-table)))
+              (let ((base-path (append effective-table (list leaf-key))))
+                (if (eq current-value :toml-empty-table)
+                    (push base-path inline-table-registry)
+                  (dolist (path (toml:collect-inline-table-paths base-path current-value))
+                    (push path inline-table-registry)))))
+
+            ;; Register dotted-key-defined implicit tables in table-history
+            ;; to prevent [table] headers from reopening them (TOML v1.0.0)
+            (when (and (not current-array-table) dotted-table)
+              (let ((prefix current-table))
+                (dolist (seg dotted-table)
+                  (setq prefix (append prefix (list seg)))
+                  ;; Dotted keys must not add to explicitly defined tables
+                  (when (member prefix explicit-table-registry)
+                    (signal 'toml-redefine-table-error (list (point))))
+                  (unless (member prefix table-history)
+                    (push prefix table-history)))))
 
             ;; Add to appropriate structure
             (if current-array-table
@@ -1052,23 +1242,136 @@ Example:
               (setq hashes (toml:make-table-hashes effective-table
                                                    leaf-key
                                                    current-value
-                                                   hashes))))))
+                                                   hashes)))
+
+            ;; After key-value pair, ensure no extra tokens on the same line
+            (skip-chars-forward " \t")
+            (unless (or (eobp) (toml:end-of-line-p) (eq (toml:get-char-at-point) ?#))
+              (signal 'toml-key-error (list (point)))))))
 
       (toml:seek-readable-point))
     hashes))
+
+(defun toml:--validate-string-characters ()
+  "Check for raw-byte characters in the current multibyte buffer.
+Signals `toml-encoding-error' if problematic characters are found.
+This provides best-effort validation for `toml:read-from-string'."
+  (save-excursion
+    (goto-char (point-min))
+    (while (not (eobp))
+      (let ((ch (char-after)))
+        (when (and (>= ch #x3FFF80) (<= ch #x3FFFFF))
+          (signal 'toml-encoding-error
+                  (list (format "Raw byte character at pos %d" (point))))))
+      (forward-char 1))))
 
 (defun toml:read-from-string (string)
   "Read the TOML object contained in STRING and return it."
   (with-temp-buffer
     (insert string)
+    (toml:--validate-string-characters)
     (toml:--normalize-newlines)
     (goto-char (point-min))
     (toml:read)))
 
+(defun toml:--expect-continuation-bytes (n)
+  "Advance past a multi-byte UTF-8 sequence expecting N continuation bytes.
+Point should be on the leading byte.  Signals `toml-encoding-error'
+if any continuation byte is missing or invalid (not 10xxxxxx)."
+  (let ((start (point)))
+    (forward-char 1)
+    (dotimes (_ n)
+      (if (eobp)
+          (signal 'toml-encoding-error
+                  (list (format "Truncated UTF-8 sequence starting at pos %d" start)))
+        (let ((b (char-after)))
+          (unless (and (>= b #x80) (<= b #xBF))
+            (signal 'toml-encoding-error
+                    (list (format "Invalid continuation byte 0x%02X at pos %d"
+                                  b (point)))))
+          (forward-char 1))))))
+
+(defun toml:--validate-utf8-bytes ()
+  "Validate that the current unibyte buffer contains well-formed UTF-8.
+Signals `toml-encoding-error' if invalid bytes are found.
+Must be called in a unibyte buffer (e.g., read with `binary').
+
+Why manual byte validation instead of Emacs built-in functions:
+- `detect-coding-string': An encoding guesser, not a validator.
+  It cannot reliably reject invalid UTF-8 (e.g., surrogate 0xED 0xA0 0x80
+  may be guessed as `utf-8'; results vary by environment).
+- `decode-coding-string'/`decode-coding-region' with `utf-8': Does not
+  signal errors on invalid input.  Instead, it silently converts bad bytes
+  to raw-byte characters (#x3FFF80-#x3FFFFF).  This catches most cases,
+  but surrogate codepoints (U+D800-U+DFFF) are decoded as normal
+  characters (e.g., 0xED 0xA0 0x80 → U+D800), not raw-bytes.
+- `check-coding-systems-region': Returns nil (= OK) for all invalid
+  UTF-8 patterns tested, providing no validation."
+  (goto-char (point-min))
+  ;; Check for UTF-16 BOM
+  (when (>= (buffer-size) 2)
+    (let ((b0 (char-after (point-min)))
+          (b1 (char-after (1+ (point-min)))))
+      (when (or (and (= b0 #xFE) (= b1 #xFF))
+                (and (= b0 #xFF) (= b1 #xFE)))
+        (signal 'toml-encoding-error (list "UTF-16 BOM detected")))))
+  ;; Skip UTF-8 BOM at file start only
+  (when (and (>= (buffer-size) 3)
+             (= (char-after (point-min)) #xEF)
+             (= (char-after (+ (point-min) 1)) #xBB)
+             (= (char-after (+ (point-min) 2)) #xBF))
+    (goto-char (+ (point-min) 3)))
+  ;; Walk through bytes validating UTF-8 sequences
+  (while (not (eobp))
+    (let ((byte (char-after)))
+      (cond
+       ;; ASCII: 0x00-0x7F
+       ((<= byte #x7F)
+        (forward-char 1))
+       ;; 2-byte: 0xC2-0xDF
+       ((and (>= byte #xC2) (<= byte #xDF))
+        (toml:--expect-continuation-bytes 1))
+       ;; 3-byte: 0xE0-0xEF
+       ((and (>= byte #xE0) (<= byte #xEF))
+        (let ((b1 (char-after (1+ (point)))))
+          ;; 0xE0: reject overlong (second byte must be >= 0xA0)
+          (when (and (= byte #xE0) b1 (< b1 #xA0))
+            (signal 'toml-encoding-error
+                    (list (format "Overlong 3-byte sequence at pos %d" (point)))))
+          ;; 0xED: reject surrogates U+D800-U+DFFF (second byte must be < 0xA0)
+          (when (and (= byte #xED) b1 (>= b1 #xA0))
+            (signal 'toml-encoding-error
+                    (list (format "Surrogate codepoint at pos %d" (point))))))
+        (toml:--expect-continuation-bytes 2))
+       ;; 4-byte: 0xF0-0xF4
+       ((and (>= byte #xF0) (<= byte #xF4))
+        (let ((b1 (char-after (1+ (point)))))
+          ;; 0xF0: reject overlong (second byte must be >= 0x90)
+          (when (and (= byte #xF0) b1 (< b1 #x90))
+            (signal 'toml-encoding-error
+                    (list (format "Overlong 4-byte sequence at pos %d" (point)))))
+          ;; 0xF4: reject > U+10FFFF (second byte must be <= 0x8F)
+          (when (and (= byte #xF4) b1 (> b1 #x8F))
+            (signal 'toml-encoding-error
+                    (list (format "Codepoint > U+10FFFF at pos %d" (point))))))
+        (toml:--expect-continuation-bytes 3))
+       ;; Invalid leading byte (0x80-0xBF, 0xC0-0xC1, 0xF5-0xFF)
+       (t
+        (signal 'toml-encoding-error
+                (list (format "Invalid UTF-8 byte 0x%02X at pos %d"
+                              byte (point)))))))))
+
 (defun toml:read-from-file (file)
   "Read the TOML object contained in FILE and return it."
   (with-temp-buffer
-    (insert-file-contents file)
+    ;; Phase 1: Read as raw bytes and validate UTF-8
+    (set-buffer-multibyte nil)
+    (let ((coding-system-for-read 'binary))
+      (insert-file-contents file))
+    (toml:--validate-utf8-bytes)
+    ;; Phase 2: Convert to multibyte and parse
+    (decode-coding-region (point-min) (point-max) 'utf-8-with-signature)
+    (set-buffer-multibyte t)
     (toml:--normalize-newlines)
     (goto-char (point-min))
     (toml:read)))
