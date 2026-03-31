@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 27, 2025
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -61,7 +61,7 @@
       (jacaranda-light-purple      "#dbd0fd")
       (jacaranda-alt-light-purple  "#C0B4E4")
       (jacaranda-purple            "#aa69e6");984ee6
-      (jacaranda-deep-purple       "#740cbe");800080
+      (jacaranda-deep-purple       "#640cbe");800080,740cbe
       (jacaranda-purple-red        "#8b2252")
 
       (jacaranda-error             "#FF0000");FF0000
@@ -124,21 +124,23 @@
    ;; line-number
    `(line-number ((,jacaranda-class (:foreground ,jacaranda-deep-blue))))
    `(line-number-current-line ((,jacaranda-class (:foreground ,jacaranda-black :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,jacaranda-class (:background ,jacaranda-antarctic-blue))))
+   `(line-number-major-tick ((,jacaranda-class (:background ,jacaranda-purple))))
 
    ;; mode-line
    `(mode-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-blue))))
-   `(mode-line-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-alt-light-purple))))
+   `(mode-line-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-purple))))
    `(guava-themes-visible-bell ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-orange))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,jacaranda-class (:foreground ,jacaranda-black))))
 
    ;; borders
-   `(vertical-border ((,jacaranda-class (:foreground ,jacaranda-light-purple))))
+   `(vertical-border ((,jacaranda-class (:foreground ,jacaranda-deep-blue))))
 
    ;; header-line
    `(header-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-blue))))
-   `(which-func ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-blue))))
+   `(which-func ((,jacaranda-class (:foreground ,jacaranda-white))))
 
    ;; tab-bar
    `(tab-bar ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-purple))))
@@ -147,7 +149,7 @@
 
    ;; tab-line
    `(tab-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-purple))))
-   `(tab-line-tab ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-purple :weight bold :height 0.9))))
+   `(tab-line-tab ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-purple :weight bold :height 0.9))))
    `(tab-line-tab-current ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-blue :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-purple :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-alt-light-purple :weight bold :height 0.9))))
@@ -164,6 +166,21 @@
    ;; links
    `(link ((,jacaranda-class (:foreground ,jacaranda-oceanic-green :underline t :weight bold))))
    `(link-visited ((,jacaranda-class (:foreground ,jacaranda-deep-green :underline t :weight bold))))
+
+   ;; outline
+   `(outline-1 ((,jacaranda-class (:foreground ,jacaranda-red :weight medium))))
+   `(outline-2 ((,jacaranda-class (:foreground ,jacaranda-light-cyan :weight medium))))
+   `(outline-3 ((,jacaranda-class (:foreground ,jacaranda-light-green :weight medium))))
+   `(outline-4 ((,jacaranda-class (:foreground ,jacaranda-purple :weight medium))))
+   `(outline-5 ((,jacaranda-class (:foreground ,jacaranda-purple-red :weight medium))))
+   `(outline-6 ((,jacaranda-class (:foreground ,jacaranda-blue :weight medium))))
+   `(outline-7 ((,jacaranda-class (:foreground ,jacaranda-deep-green :weight medium))))
+   `(outline-8 ((,jacaranda-class (:foreground ,jacaranda-deep-purple :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,jacaranda-class (:foreground ,jacaranda-blue))))
+   `(escape-glyph ((,jacaranda-class (:inherit homoglyph))))
+   `(nobreak-space ((,jacaranda-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

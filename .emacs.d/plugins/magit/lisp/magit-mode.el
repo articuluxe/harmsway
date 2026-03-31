@@ -625,6 +625,7 @@ In an indirect buffer get the value for its base buffer."
 (defun magit-buffer-revision ()
   "Return `magit-buffer-revision' or if that is nil \"{worktree}\".
 If not visiting a blob or file, or the file isn't being tracked,
+return nil.  If visiting a blob but `magit-buffer-revision' is nil,
 return nil."
   (or magit-buffer-revision
       (and buffer-file-name
@@ -1638,6 +1639,7 @@ line.  Avoid including the line after the end of the file."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

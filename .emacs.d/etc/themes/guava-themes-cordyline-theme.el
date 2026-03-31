@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -49,6 +49,7 @@
       (cordyline-blue              "#2134d5")
       (cordyline-deep-blue         "#3146af");1330af
       (cordyline-steel-blue        "#4f94cd")
+      (cordyline-cyan              "#00ffff")
       (cordyline-dark-cyan         "#00708b")
 
       (cordyline-light-green       "#c5ff6e")
@@ -123,6 +124,8 @@
    ;; line-number
    `(line-number ((,cordyline-class (:foreground ,cordyline-white))))
    `(line-number-current-line ((,cordyline-class (:foreground ,cordyline-light-blue :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,cordyline-class (:background ,cordyline-alt-light-purple))))
+   `(line-number-major-tick ((,cordyline-class (:background ,cordyline-light-purple))))
 
    ;; mode-line
    `(mode-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red))))
@@ -133,11 +136,11 @@
    `(minibuffer-prompt ((,cordyline-class (:foreground ,cordyline-white))))
 
    ;; borders
-   `(vertical-border ((,cordyline-class (:foreground ,cordyline-deep-purple))))
+   `(vertical-border ((,cordyline-class (:foreground ,cordyline-purple-red))))
 
    ;; header-line
    `(header-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red))))
-   `(which-func ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red))))
+   `(which-func ((,cordyline-class (:foreground ,cordyline-white))))
 
    ;; tab-bar
    `(tab-bar ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple))))
@@ -146,7 +149,7 @@
 
    ;; tab-line
    `(tab-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple))))
-   `(tab-line-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple :weight bold :height 0.9))))
+   `(tab-line-tab ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-alt-deep-purple :weight bold :height 0.9))))
    `(tab-line-tab-current ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-purple-red :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-deep-purple :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-alt-purple :weight bold :height 0.9))))
@@ -163,6 +166,21 @@
    ;; links
    `(link ((,cordyline-class (:foreground ,cordyline-steel-blue :underline t :weight bold))))
    `(link-visited ((,cordyline-class (:foreground ,cordyline-purple :underline t :weight bold))))
+
+   ;; outline
+   `(outline-1 ((,cordyline-class (:foreground ,cordyline-pink-purple :weight medium))))
+   `(outline-2 ((,cordyline-class (:foreground ,cordyline-deep-blue :weight medium))))
+   `(outline-3 ((,cordyline-class (:foreground ,cordyline-purple :weight medium))))
+   `(outline-4 ((,cordyline-class (:foreground ,cordyline-light-blue :weight medium))))
+   `(outline-5 ((,cordyline-class (:foreground ,cordyline-light-purple :weight medium))))
+   `(outline-6 ((,cordyline-class (:foreground ,cordyline-dark-cyan :weight medium))))
+   `(outline-7 ((,cordyline-class (:foreground ,cordyline-purple-red :weight medium))))
+   `(outline-8 ((,cordyline-class (:foreground ,cordyline-pink-red :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,cordyline-class (:foreground ,cordyline-cyan))))
+   `(escape-glyph ((,cordyline-class (:inherit homoglyph))))
+   `(nobreak-space ((,cordyline-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

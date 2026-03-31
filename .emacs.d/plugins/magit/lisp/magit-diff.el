@@ -34,6 +34,7 @@
 (require 'diff-mode)
 (require 'image)
 (require 'smerge-mode)
+(require 'which-func)
 
 ;; For `magit-diff--get-value'
 (defvar magit-status-use-buffer-arguments)
@@ -46,7 +47,7 @@
 ;; For `magit-diff-wash-diff'
 (defvar magit-log-heading-re)
 ;; For `magit-diff-while-committing'
-(declare-function magit-commit-diff-1 "magit-commit" ())
+(declare-function magit-commit-diff--show "magit-commit" ())
 (declare-function magit-commit-message-buffer "magit-commit" ())
 ;; For `magit-insert-revision-gravatar'
 (defvar gravatar-size)
@@ -228,7 +229,7 @@ be disabled.  Also consider enabling `magit-diff-use-indicator-faces'.
 Emacs has to be restarted, after changing the value of the former.
 
 This is considered experimental and is disabled by default, because the
-fontification is done synchronously, and that can lead to a noticable
+fontification is done synchronously, and that can lead to a noticeable
 delay.  The plan is to make it asynchronous, probably with the help of
 the new `futur' package, which itself still under heavy development."
   :package-version '(magit . "4.6.0")
@@ -1489,7 +1490,7 @@ be committed."
   (interactive)
   (unless (magit-commit-message-buffer)
     (user-error "No commit in progress"))
-  (magit-commit-diff-1))
+  (magit-commit-diff--show))
 
 ;;;###autoload
 (defun magit-diff-buffer-file ()
@@ -1944,7 +1945,7 @@ the Magit-Status buffer for DIRECTORY."
                    (magit-split-range spec t))
                   (`(,(or 'commit 'stash) . ,rev)
                    (cons (magit-rev-abbrev (concat rev "^"))
-                         (magit--abbrev-if-hash rev)))
+                         (magit--abbrev-if-oid rev)))
                   ('staged    (cons (magit-rev-abbrev "HEAD") "{index}"))
                   ('unstaged  (cons (if (magit-anything-staged-p nil old-file)
                                         "{index}"
@@ -2042,6 +2043,73 @@ the Magit-Status buffer for DIRECTORY."
     (call-process-region (point-min) (point-max)
                          (magit-git-executable) nil buffer nil
                          "diff-pairs" "-z")))
+
+;;;;; Modified
+
+(defun magit-diff--modified-defuns ()
+  (let (value eof)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^diff --git" nil t)
+        (save-excursion
+          (setq eof (and (re-search-forward "^diff --git" nil t)
+                         (match-beginning 0))))
+        (let (-rev +rev)
+          (while (progn (forward-line) (looking-at "^[a-z]"))
+            (when (looking-at "^index \\([^.]+\\)\\.\\.\\([^ ]+\\)")
+              (setq -rev (magit-rev-parse (match-string 1)))
+              (setq +rev (magit-rev-parse (match-string 2)))))
+          (pcase-let*
+              ((-file (and (looking-at "^--- a/\\(.+\\)")
+                           (prog1 (match-str 1) (forward-line))))
+               (+file (and (looking-at "^\\+\\+\\+ b/\\(.+\\)")
+                           (prog1 (match-str 1) (forward-line))))
+               (`(,-lines ,+lines) (magit-diff--modified-lines eof))
+               (-defuns (and -lines (magit-diff--modified-defuns-1
+                                     -rev -file -lines)))
+               (+defuns (and +lines (magit-diff--modified-defuns-1
+                                     +rev +file +lines))))
+            (if (equal -file +file)
+                (when$ (nconc +defuns -defuns)
+                  (push (cons +file (delete-dups $)) value))
+              (when -defuns (push (cons -file -defuns) value))
+              (when +defuns (push (cons +file +defuns) value)))))))
+    (nreverse value)))
+
+(defun magit-diff--modified-defuns-1 (rev file lines)
+  (with-current-buffer (magit-find-file-noselect rev file t t)
+    (save-excursion
+      (save-restriction
+        (widen)
+        (let (defuns)
+          (while-let ((line (pop lines)))
+            (goto-char (point-min))
+            (forward-line line)
+            (when-let ((def (which-function)))
+              (cl-pushnew def defuns :test #'equal)
+              (when-let ((end (condition-case nil (end-of-defun)
+                                (:success (line-number-at-pos))
+                                (error nil))))
+                (while (and lines (> end (car lines)))
+                  (pop lines)))))
+          (nreverse defuns))))))
+
+(defun magit-diff--modified-lines (bound)
+  (let (-lines +lines)
+    (while (re-search-forward
+            "^@@ -\\([0-9]+\\),[^ ]+ \\+\\([0-9]+\\),[^ ]+ @@.*\n" bound t)
+      (let ((-line (string-to-number (match-string 1)))
+            (+line (string-to-number (match-string 2))))
+        (while (and (not (eobp))
+                    (memq (char-after) '(?\s ?- ?+)))
+          (pcase (char-after)
+            (?\s (cl-incf -line)
+                 (cl-incf +line))
+            (?-  (push (cl-incf -line) -lines))
+            (?+  (push (cl-incf +line) +lines)))
+          (forward-line))))
+    (list (nreverse -lines)
+          (nreverse +lines))))
 
 ;;;; Scroll Commands
 
@@ -2601,17 +2669,18 @@ keymap is the parent of their keymaps."
      (let ((long-status (match-str 0))
            (status "BUG")
            file orig base)
-       (if (equal long-status "merged")
-           (progn (setq status long-status)
-                  (setq long-status nil))
-         (setq status (pcase-exhaustive long-status
-                        ("added in remote"   "new file")
-                        ("added in both"     "new file")
-                        ("added in local"    "new file")
-                        ("removed in both"   "removed")
-                        ("changed in both"   "changed")
-                        ("removed in local"  "removed")
-                        ("removed in remote" "removed"))))
+       (cond ((equal long-status "merged")
+              (setq status long-status)
+              (setq long-status nil))
+             ((setq status
+                    (pcase-exhaustive long-status
+                      ("added in remote"   "new file")
+                      ("added in both"     "new file")
+                      ("added in local"    "new file")
+                      ("removed in both"   "removed")
+                      ("changed in both"   "changed")
+                      ("removed in local"  "removed")
+                      ("removed in remote" "removed")))))
        (magit-delete-line)
        (while (looking-at
                "^  \\([^ ]+\\) +[0-9]\\{6\\} \\([a-z0-9]\\{40,\\}\\) \\(.+\\)$")
@@ -2953,7 +3022,7 @@ Staging and applying changes is documented in info node
 This function only inserts anything when `magit-show-commit' is
 called with a tag as argument, when that is called with a commit
 or a ref which is not a branch, then it inserts nothing."
-  (when (equal (magit-object-type magit-buffer-revision) "tag")
+  (when (magit-tag-p magit-buffer-revision)
     (magit-insert-section (taginfo)
       (let ((beg (point)))
         ;; "git verify-tag -v" would output what we need, but the gpg
@@ -2988,15 +3057,14 @@ or a ref which is not a branch, then it inserts nothing."
             (goto-char (match-beginning 0))
           (goto-char (point-max)))
         (insert ?\n))
-      (if (re-search-forward "-----BEGIN PGP SIGNATURE-----" nil t)
-          (progn
-            (let ((beg (match-beginning 0)))
-              (re-search-forward "-----END PGP SIGNATURE-----\n")
-              (delete-region beg (point)))
-            (save-excursion
-              (magit-process-git t "verify-tag" magit-buffer-revision))
-            (magit-diff-wash-signature magit-buffer-revision))
-        (goto-char (point-max)))
+      (cond ((re-search-forward "-----BEGIN PGP SIGNATURE-----" nil t)
+             (let ((beg (match-beginning 0)))
+               (re-search-forward "-----END PGP SIGNATURE-----\n")
+               (delete-region beg (point)))
+             (save-excursion
+               (magit-process-git t "verify-tag" magit-buffer-revision))
+             (magit-diff-wash-signature magit-buffer-revision))
+            ((goto-char (point-max))))
       (insert ?\n))))
 
 (defvar-keymap magit-commit-message-section-map
@@ -3951,6 +4019,7 @@ If `magit-diff-visit-previous-blob' is nil, then always return nil."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Mar 22, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -54,11 +54,12 @@
 
       (vaccinium-blueberry         "#5582d7");77aff9,5587d2
       (vaccinium-alt-blueberry     "#3755a0");77aff9,5587d2,3764b9
-      (vaccinium-blue              "#0d62b2")
-      (vaccinium-alt-blue          "#1559f1")
+      (vaccinium-blue              "#0f69b4");0d62b2
+      (vaccinium-alt-blue          "#1455f1");1559f1
       (vaccinium-deep-blue         "#1c5367");303053,1c3053,1c3f53
       (vaccinium-steel-blue        "#6a7e98")
       (vaccinium-alt-steel-blue    "#566a84")
+      (vaccinium-cyan              "#00ffff")
 
       (vaccinium-light-purple      "#5978b9")
       (vaccinium-purple            "#625fac")
@@ -125,6 +126,8 @@
    ;; line-number
    `(line-number ((,vaccinium-class (:foreground ,vaccinium-white))))
    `(line-number-current-line ((,vaccinium-class (:foreground ,vaccinium-steel-blue :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,vaccinium-class (:background ,vaccinium-orange))))
+   `(line-number-major-tick ((,vaccinium-class (:background ,vaccinium-purple))))
 
    ;; mode-line
    `(mode-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-blueberry))))
@@ -135,11 +138,11 @@
    `(minibuffer-prompt ((,vaccinium-class (:foreground ,vaccinium-blueberry))))
 
    ;; borders
-   `(vertical-border ((,vaccinium-class (:foreground ,vaccinium-black-gray))))
+   `(vertical-border ((,vaccinium-class (:foreground ,vaccinium-blueberry))))
 
    ;; header-line
    `(header-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-blueberry))))
-   `(which-func ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-blueberry))))
+   `(which-func ((,vaccinium-class (:foreground ,vaccinium-white))))
 
    ;; tab-bar
    `(tab-bar ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-steel-blue))))
@@ -148,7 +151,7 @@
 
    ;; tab-line
    `(tab-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-steel-blue))))
-   `(tab-line-tab ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-steel-blue :weight bold :height 0.9))))
+   `(tab-line-tab ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-alt-blueberry :weight bold :height 0.9))))
    `(tab-line-tab-current ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-blueberry :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-steel-blue :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-alt-steel-blue :weight bold :height 0.9))))
@@ -166,6 +169,21 @@
    `(link ((,vaccinium-class (:foreground ,vaccinium-yellow :underline t :weight bold))))
    `(link-visited ((,vaccinium-class (:foreground ,vaccinium-orange :underline t :weight bold))))
 
+   ;; outline
+   `(outline-1 ((,vaccinium-class (:foreground ,vaccinium-blue :weight medium))))
+   `(outline-2 ((,vaccinium-class (:foreground ,vaccinium-red :weight medium))))
+   `(outline-3 ((,vaccinium-class (:foreground ,vaccinium-green-subdued :weight medium))))
+   `(outline-4 ((,vaccinium-class (:foreground ,vaccinium-purple :weight medium))))
+   `(outline-5 ((,vaccinium-class (:foreground ,vaccinium-pink :weight medium))))
+   `(outline-6 ((,vaccinium-class (:foreground ,vaccinium-green-forest :weight medium))))
+   `(outline-7 ((,vaccinium-class (:foreground ,vaccinium-steel-blue :weight medium))))
+   `(outline-8 ((,vaccinium-class (:foreground ,vaccinium-orange :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,vaccinium-class (:foreground ,vaccinium-cyan))))
+   `(escape-glyph ((,vaccinium-class (:inherit homoglyph))))
+   `(nobreak-space ((,vaccinium-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
 
    ;; external packages
 
@@ -181,7 +199,7 @@
 
    ;; doom-modeline
    `(doom-modeline-project-name ((,vaccinium-class (:foreground ,vaccinium-purple-red))))
-   `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-red))))
+   `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-purple-red))))
    `(doom-modeline-buffer-minor-mode ((,vaccinium-class (:foreground ,vaccinium-yellow))))
 
    ;; corfu

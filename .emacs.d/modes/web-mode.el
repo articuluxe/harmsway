@@ -2,10 +2,10 @@
 
 ;; Copyright 2011-2025 François-Xavier Bois
 
-;; Version: 17.3.22
+;; Version: 17.3.23
 ;; Author: François-Xavier Bois
 ;; Maintainer: François-Xavier Bois <fxbois@gmail.com>
-;; Package-Requires: ((emacs "23.1"))
+;; Package-Requires: ((emacs "24.3.1"))
 ;; URL: https://web-mode.org
 ;; Repository: http://github.com/fxbois/web-mode
 ;; Created: July 2011
@@ -8083,7 +8083,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
   (let ((index 0) overlay diff column line-to line-from line-delta last-line-no)
     (web-mode-column-hide)
     (setq web-mode-enable-current-column-highlight t)
-    (save-excursion ;;save-mark-and-excursion
+    (save-mark-and-excursion
       (back-to-indentation)
       (setq column (current-column)
             line-to (web-mode-line-number))
@@ -8103,7 +8103,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
         (when (> line-from 1)
           (forward-line (1- line-from)))
         ;; Added by JMA
-        (save-excursion ;;save-mark-and-excursion
+        (save-mark-and-excursion
           (let (start-point end-point)
             (goto-line line-from)
             (move-to-column column)

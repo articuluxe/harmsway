@@ -93,6 +93,11 @@
     ("mandm-fg-1"     . ,(color-darken-name mmfg-color 10))
     ("mandm-fg-2"     . ,(color-darken-name mmfg-color 20))
     ("mandm-fg-4"     . ,(color-darken-name mmfg-color 40))
+
+    ("mandm-bg+7"     . ,(color-lighten-name mmbg-color 113))
+    ("mandm-bg+6"     . ,(color-lighten-name mmbg-color 93))
+    ("mandm-bg+5"     . ,(color-lighten-name mmbg-color 73))
+    ("mandm-bg+4"     . ,(color-lighten-name mmbg-color 53))
     ("mandm-bg+3"     . ,(color-lighten-name mmbg-color 33))
     ("mandm-bg+2"     . ,(color-lighten-name mmbg-color 23))
     ("mandm-bg+1"     . ,(color-lighten-name mmbg-color 13))
@@ -137,6 +142,7 @@
     ("mandm-green-6"  . ,(color-darken-name mmgreen-color 40))
     ("mandm-green-7"  . ,(color-darken-name mmgreen-color 50))
     ("mandm-green-8"  . ,(color-darken-name mmgreen-color 60))
+    ("mandm-green-9"  . ,(color-darken-name mmgreen-color 80))
     ("mandm-cyan"     . "#93E0E3")
     ("mandm-blue+4"   . ,(color-lighten-name mmblue-color 50))
     ("mandm-blue+3"   . ,(color-lighten-name mmblue-color 40))
@@ -188,8 +194,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(escape-glyph ((t (:foreground ,mandm-yellow :bold t))))
    `(fringe ((t (:foreground ,mandm-fg :background ,mandm-bg+05))))
    `(header-line ((t (:foreground ,mandm-yellow
-                                  :background ,mandm-bg-1
-                                  :box (:line-width -1 :style released-button)))))
+                      :background ,mandm-bg-1
+                      :box (:line-width -1 :style released-button)))))
    `(highlight ((t (:foreground ,mandm-bg+1 :background ,mandm-yellow))))
    `(success ((t (:foreground ,mandm-green :weight bold))))
    `(warning ((t (:foreground ,mandm-orange-1 :weight bold))))
@@ -223,14 +229,14 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(minibuffer-prompt ((t (:foreground ,mandm-yellow))))
    `(mode-line
      ((,class (:foreground ,mandm-green+1
-                           :background ,mandm-bg-1
-                           :box (:line-width -1 :style released-button)))
+               :background ,mandm-bg-1
+               :box (:line-width -1 :style released-button)))
       (t :inverse-video t)))
    `(mode-line-buffer-id ((t (:foreground ,mandm-yellow :weight bold))))
    `(mode-line-inactive
      ((t (:foreground ,mandm-green-1
-                      :background ,mandm-bg-05
-                      :box (:line-width -1 :style released-button)))))
+          :background ,mandm-bg-05
+          :box (:line-width -1 :style released-button)))))
    `(region ((,class (:background ,mandm-blue-5))
              (t :inverse-video t)))
    `(secondary-selection ((t (:background ,mandm-bg+2))))
@@ -302,15 +308,18 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(popup-scroll-bar-background-face ((t (:background ,mandm-bg-1))))
    `(popup-isearch-match ((t (:background ,mandm-bg :foreground ,mandm-fg))))
 ;;;;; company-mode
-   `(company-tooltip ((t (:foreground ,mandm-fg :background ,mandm-bg+1))))
-   `(company-tooltip-selection ((t (:foreground ,mandm-fg :background ,mandm-bg-1))))
+   ;; The unselected entry
+   `(company-tooltip ((t (:foreground ,mandm-fg :background ,mandm-bg+7))))
+   ;; The selected entry
+   `(company-tooltip-selection ((t (:foreground ,mandm-bg :background ,mandm-blue+1))))
    `(company-tooltip-mouse ((t (:background ,mandm-bg-1))))
-   `(company-tooltip-common ((t (:foreground ,mandm-green+2))))
-   `(company-tooltip-common-selection ((t (:foreground ,mandm-green+2))))
-   `(company-scrollbar-fg ((t (:background ,mandm-bg-1))))
-   `(company-scrollbar-bg ((t (:background ,mandm-bg+2))))
-   `(company-preview ((t (:background ,mandm-green+2))))
-   `(company-preview-common ((t (:foreground ,mandm-green+2 :background ,mandm-bg-1))))
+   ;; the common text being completed
+   `(company-tooltip-common ((t (:weight bold :slant italic))))
+   `(company-tooltip-common-selection ((t (:weight bold :slant italic))))
+   ;; `(company-scrollbar-fg ((t (:background ,mandm-bg-1))))
+   ;; `(company-scrollbar-bg ((t (:background ,mandm-bg+2))))
+   ;; `(company-preview ((t (:background ,mandm-green+2))))
+   ;; `(company-preview-common ((t (:foreground ,mandm-green+2 :background ,mandm-bg-1))))
 ;;;;; bm
    `(bm-face ((t (:background ,mandm-yellow-1 :foreground ,mandm-bg))))
    `(bm-fringe-face ((t (:background ,mandm-yellow-1 :foreground ,mandm-bg))))
@@ -390,8 +399,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(doom-modeline-warning ((t (:foreground ,mandm-orange :weight bold :inherit doom-modeline))))
    `(doom-modeline-lsp-warning ((t (:foreground ,mandm-orange :weight bold :inherit doom-modeline))))
 
-;; doom-modeline-lsp-running
-;; doom-modeline-lsp-success
+   ;; doom-modeline-lsp-running
+   ;; doom-modeline-lsp-success
    `(doom-modeline-evil-emacs-state ((t (:background ,mandm-blue+3 :foreground ,mandm-bg-2 :inherit doom-modeline))))
    `(doom-modeline-evil-insert-state ((t (:background ,mandm-blue+3 :foreground ,mandm-bg-2 :inherit doom-modeline))))
    `(doom-modeline-evil-replace-state ((t (:background ,mandm-blue+3 :foreground ,mandm-bg-3 :inherit doom-modeline))))
@@ -470,22 +479,22 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(egg-stash-mono ((t (:foreground ,mandm-green+4))))
 ;;;;; elfeed
    `(elfeed-search-date-face ((t (:foreground ,mandm-yellow-1 :underline t
-                                              :weight bold))))
+                                  :weight bold))))
    `(elfeed-search-tag-face ((t (:foreground ,mandm-green))))
    `(elfeed-search-feed-face ((t (:foreground ,mandm-cyan))))
 ;;;;; emacs-w3m
    `(w3m-anchor ((t (:foreground ,mandm-yellow :underline t
-                                 :weight bold))))
+                     :weight bold))))
    `(w3m-arrived-anchor ((t (:foreground ,mandm-yellow-2
-                                         :underline t :weight normal))))
+                             :underline t :weight normal))))
    `(w3m-form ((t (:foreground ,mandm-red-1 :underline t))))
    `(w3m-header-line-location-title ((t (:foreground ,mandm-yellow
-                                                     :underline t :weight bold))))
+                                         :underline t :weight bold))))
    '(w3m-history-current-url ((t (:inherit match))))
    `(w3m-lnum ((t (:foreground ,mandm-green+2 :background ,mandm-bg))))
    `(w3m-lnum-match ((t (:background ,mandm-bg-1
-                                     :foreground ,mandm-orange
-                                     :weight bold))))
+                         :foreground ,mandm-orange
+                         :weight bold))))
    `(w3m-lnum-minibuffer-prompt ((t (:foreground ,mandm-yellow))))
 ;;;;; erc
    `(erc-action-face ((t (:inherit erc-default-face))))
@@ -643,15 +652,15 @@ Also bind `class' to ((class color) (min-colors 89))."
 ;;;;; helm
    `(helm-header
      ((t (:foreground ,mandm-green
-                      :background ,mandm-bg
-                      :underline nil
-                      :box nil))))
+          :background ,mandm-bg
+          :underline nil
+          :box nil))))
    `(helm-source-header
      ((t (:foreground ,mandm-yellow
-                      :background ,mandm-bg-1
-                      :underline nil
-                      :weight bold
-                      :box (:line-width -1 :style released-button)))))
+          :background ,mandm-bg-1
+          :underline nil
+          :weight bold
+          :box (:line-width -1 :style released-button)))))
    `(helm-selection ((t (:background ,(color-desaturate-name mandm-yellow 80) :foreground ,mandm-bg))))
    `(helm-selection-line ((t (:background ,mandm-bg+3))))
    `(helm-visible-mark ((t (:foreground ,mandm-bg :background ,mandm-yellow-2))))
@@ -856,7 +865,7 @@ Also bind `class' to ((class color) (min-colors 89))."
      ((t (:inherit font-lock-comment-face))))
    `(org-archived ((t (:foreground ,mandm-fg :weight bold))))
    `(org-checkbox ((t (:background ,mandm-bg+2 :foreground ,mandm-fg+1
-                                   :box (:line-width 1 :style released-button)))))
+                       :box (:line-width 1 :style released-button)))))
    `(org-date ((t (:foreground ,mandm-blue :underline t))))
    `(org-deadline-announce ((t (:foreground ,mandm-red-1))))
    `(org-done ((t (:bold t :weight bold :foreground ,mandm-green+3))))
@@ -1023,30 +1032,30 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(speedbar-tag-face ((t (:foreground ,mandm-yellow))))
 ;;;;; tabbar
    `(tabbar-button ((t (:foreground ,mandm-fg
-                                    :background ,mandm-bg))))
+                        :background ,mandm-bg))))
    `(tabbar-selected ((t (:foreground ,mandm-fg
-                                      :background ,mandm-bg
-                                      :box (:line-width -1 :style pressed-button)))))
+                          :background ,mandm-bg
+                          :box (:line-width -1 :style pressed-button)))))
    `(tabbar-unselected ((t (:foreground ,mandm-fg
-                                        :background ,mandm-bg+1
-                                        :box (:line-width -1 :style released-button)))))
+                            :background ,mandm-bg+1
+                            :box (:line-width -1 :style released-button)))))
 ;;;;; term
    `(term-color-black ((t (:foreground ,mandm-bg
-                                       :background ,mandm-bg-1))))
+                           :background ,mandm-bg-1))))
    `(term-color-red ((t (:foreground ,mandm-red-2
-                                     :background ,mandm-red-4))))
+                         :background ,mandm-red-4))))
    `(term-color-green ((t (:foreground ,mandm-green
-                                       :background ,mandm-green+2))))
+                           :background ,mandm-green+2))))
    `(term-color-yellow ((t (:foreground ,mandm-orange
-                                        :background ,mandm-yellow))))
+                            :background ,mandm-yellow))))
    `(term-color-blue ((t (:foreground ,mandm-blue-1
-                                      :background ,mandm-blue-4))))
+                          :background ,mandm-blue-4))))
    `(term-color-magenta ((t (:foreground ,mandm-violet
-                                         :background ,mandm-red))))
+                             :background ,mandm-red))))
    `(term-color-cyan ((t (:foreground ,mandm-cyan
-                                      :background ,mandm-blue))))
+                          :background ,mandm-blue))))
    `(term-color-white ((t (:foreground ,mandm-fg
-                                       :background ,mandm-fg-1))))
+                           :background ,mandm-fg-1))))
    '(term-default-fg-color ((t (:inherit term-color-white))))
    '(term-default-bg-color ((t (:inherit term-color-black))))
 ;;;;; undo-tree
@@ -1114,7 +1123,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(wl-highlight-message-unimportant-header-contents ((t (:foreground ,mandm-fg))))
    `(wl-highlight-summary-answered-face ((t (:foreground ,mandm-blue))))
    `(wl-highlight-summary-disposed-face ((t (:foreground ,mandm-fg
-                                                         :slant italic))))
+                                             :slant italic))))
    `(wl-highlight-summary-new-face ((t (:foreground ,mandm-blue))))
    `(wl-highlight-summary-normal-face ((t (:foreground ,mandm-fg))))
    `(wl-highlight-summary-thread-top-face ((t (:foreground ,mandm-yellow))))

@@ -515,7 +515,6 @@ is done setting up buffers."
     (when magit-ediff-use-indirect-buffers
       (setq buffer (make-indirect-buffer
                     buffer (generate-new-buffer-name (buffer-name buffer)) t)))
-    (with-current-buffer buffer (font-lock-ensure))
     buffer))
 
 ;;; Quit
@@ -566,6 +565,7 @@ is done setting up buffers."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

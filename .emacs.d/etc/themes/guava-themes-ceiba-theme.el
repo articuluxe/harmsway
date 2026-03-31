@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 21, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -128,6 +128,8 @@
    ;; line-number
    `(line-number ((,ceiba-class (:foreground ,ceiba-black))))
    `(line-number-current-line ((,ceiba-class (:foreground ,ceiba-deep-green :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,ceiba-class (:background ,ceiba-light-brown))))
+   `(line-number-major-tick ((,ceiba-class (:background ,ceiba-brown-sand))))
 
    ;; mode-line
    `(mode-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-green))))
@@ -138,11 +140,11 @@
    `(minibuffer-prompt ((,ceiba-class (:foreground ,ceiba-black))))
 
    ;; borders
-   `(vertical-border ((,ceiba-class (:foreground ,ceiba-gray-green))))
+   `(vertical-border ((,ceiba-class (:foreground ,ceiba-green))))
 
    ;; header-line
    `(header-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-green))))
-   `(which-func ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-green))))
+   `(which-func ((,ceiba-class (:foreground ,ceiba-white))))
 
    ;; tab-bar
    `(tab-bar ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-brown-sand))))
@@ -151,7 +153,7 @@
 
    ;; tab-line
    `(tab-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-brown-sand))))
-   `(tab-line-tab ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-brown-sand :weight bold :height 0.9))))
+   `(tab-line-tab ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-gray-blue :weight bold :height 0.9))))
    `(tab-line-tab-current ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-green :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-brown-sand :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-light-brown :weight bold :height 0.9))))
@@ -159,7 +161,7 @@
    `(tab-line-tab-special ((,ceiba-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-orange))))
+   `(show-paren-match ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-alt-blue))))
    `(show-paren-mismatch ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-error))))
 
    ;; trailing whitespaces
@@ -168,6 +170,21 @@
    ;; links
    `(link ((,ceiba-class (:foreground ,ceiba-purple :underline t :weight bold))))
    `(link-visited ((,ceiba-class (:foreground ,ceiba-purple-red :underline t :weight bold))))
+
+   ;; outline
+   `(outline-1 ((,ceiba-class (:foreground ,ceiba-alt-blue :weight medium))))
+   `(outline-2 ((,ceiba-class (:foreground ,ceiba-deep-green :weight medium))))
+   `(outline-3 ((,ceiba-class (:foreground ,ceiba-purple-red :weight medium))))
+   `(outline-4 ((,ceiba-class (:foreground ,ceiba-green :weight medium))))
+   `(outline-5 ((,ceiba-class (:foreground ,ceiba-green-blue :weight medium))))
+   `(outline-6 ((,ceiba-class (:foreground ,ceiba-brown-wood :weight medium))))
+   `(outline-7 ((,ceiba-class (:foreground ,ceiba-deep-orange :weight medium))))
+   `(outline-8 ((,ceiba-class (:foreground ,ceiba-purple :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,ceiba-class (:foreground ,ceiba-blue))))
+   `(escape-glyph ((,ceiba-class (:inherit homoglyph))))
+   `(nobreak-space ((,ceiba-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

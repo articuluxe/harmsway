@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Feb 22, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -52,11 +52,13 @@
 
       (solanum-light-blue        "#8ec4de")
       (solanum-blue              "#0d62b2")
+      (solanum-cyan              "#00ffff")
 
       (solanum-light-purple      "#bec8ff");c4aeff,ccbcff,d4cbff
       (solanum-purple            "#9c69e8");9e7ae8,9c69e8
+      (solanum-alt-purple        "#a394ff");9e7ae8,9c69e8
       (solanum-purple-red        "#64143d");6a143d,64143d
-      (solanum-purple-pink       "#7d5d93");bb5d93
+      (solanum-purple-pink       "#915d93");bb5d93,7d5d93
       (solanum-purple-blue       "#492b91")
       (solanum-dark-purple       "#672b5f");41143d,672b5f
       (solanum-purple-black      "#130d1a")
@@ -122,6 +124,8 @@
    ;; line-number
    `(line-number ((,solanum-class (:foreground ,solanum-white))))
    `(line-number-current-line ((,solanum-class (:foreground ,solanum-light-green :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,solanum-class (:background ,solanum-alt-purple))))
+   `(line-number-major-tick ((,solanum-class (:background ,solanum-purple-blue))))
 
    ;; mode-line
    `(mode-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-dark-purple))))
@@ -132,11 +136,11 @@
    `(minibuffer-prompt ((,solanum-class (:foreground ,solanum-yellow-potato))))
 
    ;; borders
-   `(vertical-border ((,solanum-class (:foreground ,solanum-purple-black))))
+   `(vertical-border ((,solanum-class (:foreground ,solanum-dark-purple))))
 
    ;; header-line
    `(header-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-dark-purple))))
-   `(which-func ((,solanum-class (:foreground ,solanum-white :background ,solanum-dark-purple))))
+   `(which-func ((,solanum-class (:foreground ,solanum-white))))
 
    ;; tab-bar
    `(tab-bar ((,solanum-class (:foreground ,solanum-white :background ,solanum-purple-black))))
@@ -145,7 +149,7 @@
 
    ;; tab-line
    `(tab-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-purple-black))))
-   `(tab-line-tab ((,solanum-class (:foreground ,solanum-white :background ,solanum-purple-black :weight bold :height 0.9))))
+   `(tab-line-tab ((,solanum-class (:foreground ,solanum-white :background ,solanum-purple-red :weight bold :height 0.9))))
    `(tab-line-tab-current ((,solanum-class (:foreground ,solanum-white :background ,solanum-dark-purple :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,solanum-class (:foreground ,solanum-white :background ,solanum-purple-black :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,solanum-class (:foreground ,solanum-white :background ,solanum-alt-purple-black :weight bold :height 0.9))))
@@ -172,6 +176,11 @@
    `(outline-6 ((,solanum-class (:foreground ,solanum-light-purple :weight medium))))
    `(outline-7 ((,solanum-class (:foreground ,solanum-yellow-potato :weight medium))))
    `(outline-8 ((,solanum-class (:foreground ,solanum-light-blue :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,solanum-class (:foreground ,solanum-cyan))))
+   `(escape-glyph ((,solanum-class (:inherit homoglyph))))
+   `(nobreak-space ((,solanum-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

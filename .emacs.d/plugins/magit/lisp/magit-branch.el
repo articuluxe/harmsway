@@ -511,8 +511,8 @@ from the source branch's upstream, then an error is raised."
          (if checkout
              (magit-call-git "checkout" "-b" branch current)
            (magit-call-git "branch" branch current)))
-       (when-let ((upstream (magit-get-indirect-upstream-branch current)))
-         (magit-call-git "branch" "--set-upstream-to" upstream branch))
+       (when$ (magit-get-indirect-upstream-branch current)
+         (magit-call-git "branch" "--set-upstream-to" $ branch))
        (when (and tracked
                   (setq base
                         (if from
@@ -638,10 +638,10 @@ prompt is confusing."
                        (magit-rev-parse "--short" ref)))
             ;; Assume the branches actually still exist on the remote.
             (magit-run-git-async
-             "push"
+             "push" "--delete"
              (and (or force magit-branch-delete-never-verify) "--no-verify")
              remote
-             (mapcar (##concat ":" (substring % offset)) branches))
+             (mapcar (##concat "refs/heads/" (substring % offset)) branches))
             ;; If that is not the case, then this deletes the tracking branches.
             (set-process-sentinel
              magit-this-process
@@ -977,6 +977,7 @@ Also rename the respective reflog file."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

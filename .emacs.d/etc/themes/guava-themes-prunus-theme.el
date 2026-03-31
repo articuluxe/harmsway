@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 29, 2025
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -55,14 +55,14 @@
       (prunus-light-pink        "#cd7888")
       (prunus-pink              "#CD2788");dc6199,cd4f88
 
-      (prunus-blue              "#453ee3");4534e3,120cdc,4534E3
+      (prunus-blue              "#4548e3");4534e3,120cdc,4534E3,453ee3
       (prunus-deep-blue         "#655DB0")
       (prunus-antarctic-blue    "#8d82ca");8D76CA
-      (prunus-cyan              "#008B8B")
+      (prunus-cyan              "#00988b")
       (prunus-dark-cyan         "#005555")
 
-      (prunus-deep-purple       "#7420be");800080,740CBE
-      (prunus-indigo            "#2C2C54")
+      (prunus-deep-purple       "#742fbe");800080,740CBE,7420be
+      (prunus-indigo            "#2c4154");2C2C54
       (prunus-purple-red        "#8B2252")
 
       (prunus-error             "#FF0000");FF0000,bc0000,890014
@@ -125,6 +125,8 @@
    ;; line-number
    `(line-number ((,prunus-class (:foreground ,prunus-purple-red))))
    `(line-number-current-line ((,prunus-class (:foreground ,prunus-cream :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,prunus-class (:background ,prunus-light-pink))))
+   `(line-number-major-tick ((,prunus-class (:background ,prunus-pink))))
 
    ;; mode-line
    `(mode-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-red))))
@@ -135,11 +137,11 @@
    `(minibuffer-prompt ((,prunus-class (:foreground ,prunus-white))))
 
    ;; borders
-   `(vertical-border ((,prunus-class (:foreground ,prunus-pink))))
+   `(vertical-border ((,prunus-class (:foreground ,prunus-red))))
 
    ;; header-line
    `(header-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-red))))
-   `(which-func ((,prunus-class (:foreground ,prunus-white :background ,prunus-red))))
+   `(which-func ((,prunus-class (:foreground ,prunus-white))))
 
    ;; tab-bar
    `(tab-bar ((,prunus-class (:foreground ,prunus-white :background ,prunus-pink))))
@@ -148,7 +150,7 @@
 
    ;; tab-line
    `(tab-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-pink))))
-   `(tab-line-tab ((,prunus-class (:foreground ,prunus-white :background ,prunus-pink :weight bold :height 0.9))))
+   `(tab-line-tab ((,prunus-class (:foreground ,prunus-white :background ,prunus-brown :weight bold :height 0.9))))
    `(tab-line-tab-current ((,prunus-class (:foreground ,prunus-white :background ,prunus-red :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,prunus-class (:foreground ,prunus-white :background ,prunus-pink :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,prunus-class (:foreground ,prunus-white :background ,prunus-light-pink :weight bold :height 0.9))))
@@ -165,6 +167,21 @@
    ;; links
    `(link ((,prunus-class (:foreground ,prunus-blue :underline t :weight bold))))
    `(link-visited ((,prunus-class (:foreground ,prunus-oceanic-green :underline t :weight bold))))
+
+   ;; outline
+   `(outline-1 ((,prunus-class (:foreground ,prunus-antarctic-blue :weight medium))))
+   `(outline-2 ((,prunus-class (:foreground ,prunus-oceanic-green :weight medium))))
+   `(outline-3 ((,prunus-class (:foreground ,prunus-deep-blue :weight medium))))
+   `(outline-4 ((,prunus-class (:foreground ,prunus-cyan :weight medium))))
+   `(outline-5 ((,prunus-class (:foreground ,prunus-deep-purple :weight medium))))
+   `(outline-6 ((,prunus-class (:foreground ,prunus-light-green :weight medium))))
+   `(outline-7 ((,prunus-class (:foreground ,prunus-purple-red :weight medium))))
+   `(outline-8 ((,prunus-class (:foreground ,prunus-indigo :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,prunus-class (:foreground ,prunus-cyan))))
+   `(escape-glyph ((,prunus-class (:inherit homoglyph))))
+   `(nobreak-space ((,prunus-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

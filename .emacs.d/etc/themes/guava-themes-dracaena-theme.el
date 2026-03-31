@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 06, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -49,8 +49,9 @@
 
       (dracaena-snakeplant-yellow "#d9d389")
 
-      (dracaena-light-orange      "#ffae7a")
-      (dracaena-orange            "#ffa07a")
+      (dracaena-light-orange      "#ffb38f");ffae7a
+      (dracaena-orange            "#e88e6b");ffa07a
+      (dracaena-deep-orange       "#c95909")
       (dracaena-red               "#c82333");c91628,cc192a,d7192a,ed2725,e92333,db2333,d32333
       (dracaena-alt-deep-red      "#751e1e")
       (dracaena-deep-red          "#792725")
@@ -58,9 +59,10 @@
       (dracaena-light-brown       "#a89d92");8b6c4d
 
       (dracaena-light-blue        "#4272d5");425fd5
-      (dracaena-blue              "#2134d5")
+      (dracaena-blue              "#2d44d5");2134d5
       (dracaena-antarctic-blue    "#bacce4");4f62be
       (dracaena-steel-blue        "#4f94cd");b0c4de
+      (dracaena-cyan              "#00ffff")
       (dracaena-dark-cyan         "#005f55")
 
       (dracaena-pink-purple       "#a54666");961250,b7125c,a5225c,a53c5c
@@ -126,21 +128,23 @@
    ;; line-number
    `(line-number ((,dracaena-class (:foreground ,dracaena-antarctic-blue))))
    `(line-number-current-line ((,dracaena-class (:foreground ,dracaena-orange :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,dracaena-class (:background ,dracaena-steel-blue))))
+   `(line-number-major-tick ((,dracaena-class (:background ,dracaena-orange))))
 
    ;; mode-line
    `(mode-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red))))
-   `(mode-line-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray))))
+   `(mode-line-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-orange))))
    `(guava-themes-visible-bell ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-orange))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,dracaena-class (:foreground ,dracaena-antarctic-blue))))
 
    ;; borders
-   `(vertical-border ((,dracaena-class (:foreground ,dracaena-orange))))
+   `(vertical-border ((,dracaena-class (:foreground ,dracaena-deep-red))))
 
    ;; header-line
    `(header-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red))))
-   `(which-func ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red))))
+   `(which-func ((,dracaena-class (:foreground ,dracaena-white))))
 
    ;; tab-bar
    `(tab-bar ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray))))
@@ -149,7 +153,7 @@
 
    ;; tab-line
    `(tab-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray))))
-   `(tab-line-tab ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray :weight bold :height 0.9))))
+   `(tab-line-tab ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-orange :weight bold :height 0.9))))
    `(tab-line-tab-current ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-deep-red :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-dark-gray :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-light-gray :weight bold :height 0.9))))
@@ -166,6 +170,21 @@
    ;; links
    `(link ((,dracaena-class (:foreground ,dracaena-red :underline t :weight bold))))
    `(link-visited ((,dracaena-class (:foreground ,dracaena-orange :underline t :weight bold))))
+
+   ;; outline
+   `(outline-1 ((,dracaena-class (:foreground ,dracaena-light-orange :weight medium))))
+   `(outline-2 ((,dracaena-class (:foreground ,dracaena-deep-purple :weight medium))))
+   `(outline-3 ((,dracaena-class (:foreground ,dracaena-pink-purple :weight medium))))
+   `(outline-4 ((,dracaena-class (:foreground ,dracaena-deep-green :weight medium))))
+   `(outline-5 ((,dracaena-class (:foreground ,dracaena-guava-green :weight medium))))
+   `(outline-6 ((,dracaena-class (:foreground ,dracaena-light-blue :weight medium))))
+   `(outline-7 ((,dracaena-class (:foreground ,dracaena-red :weight medium))))
+   `(outline-8 ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,dracaena-class (:foreground ,dracaena-cyan))))
+   `(escape-glyph ((,dracaena-class (:inherit homoglyph))))
+   `(nobreak-space ((,dracaena-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

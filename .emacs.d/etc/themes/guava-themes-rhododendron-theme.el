@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 19, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -46,6 +46,7 @@
 
       (rhododendron-red               "#c00353")
       (rhododendron-red-orange        "#cd605f");ff605f,cd605f
+      (rhododendron-light-orange      "#ff967c")
       (rhododendron-bright-orange     "#ff5b4c")
       (rhododendron-cream             "#fcbdb2")
 
@@ -58,9 +59,11 @@
       (rhododendron-deep-pink         "#c00e88");d00e88
 
       (rhododendron-light-purple      "#e0bde7")
+      (rhododendron-purple            "#a08ce8")
       (rhododendron-purple-pink       "#ad20f0");a020f0
       (rhododendron-purple-blue       "#5346cc");534bcc
       (rhododendron-purple-red        "#a8206f")
+      (rhododendron-dark-purple-red   "#7d2061");77206f,7d2761
 
       (rhododendron-error             "#FF0000")
       (rhododendron-warning           "#F68511")
@@ -122,21 +125,23 @@
    ;; line-number
    `(line-number ((,rhododendron-class (:foreground ,rhododendron-black))))
    `(line-number-current-line ((,rhododendron-class (:foreground ,rhododendron-purple-red :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,rhododendron-class (:background ,rhododendron-light-orange))))
+   `(line-number-major-tick ((,rhododendron-class (:background ,rhododendron-purple))))
 
    ;; mode-line
    `(mode-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-red))))
-   `(mode-line-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bright-pink))))
+   `(mode-line-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-dark-purple-red))))
    `(guava-themes-visible-bell ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-purple-blue))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,rhododendron-class (:foreground ,rhododendron-black))))
 
    ;; borders
-   `(vertical-border ((,rhododendron-class (:foreground ,rhododendron-bright-pink))))
+   `(vertical-border ((,rhododendron-class (:foreground ,rhododendron-red))))
 
    ;; header-line
    `(header-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-red))))
-   `(which-func ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-red))))
+   `(which-func ((,rhododendron-class (:foreground ,rhododendron-white))))
 
    ;; tab-bar
    `(tab-bar ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bright-pink))))
@@ -145,7 +150,7 @@
 
    ;; tab-line
    `(tab-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bright-pink))))
-   `(tab-line-tab ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bright-pink :weight bold :height 0.9))))
+   `(tab-line-tab ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-dark-purple-red :weight bold :height 0.9))))
    `(tab-line-tab-current ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-red :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bright-pink :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-purple-red :weight bold :height 0.9))))
@@ -162,6 +167,21 @@
    ;; links
    `(link ((,rhododendron-class (:foreground ,rhododendron-purple-blue :underline t :weight bold))))
    `(link-visited ((,rhododendron-class (:foreground ,rhododendron-purple-pink :underline t :weight bold))))
+
+   ;; outline
+   `(outline-1 ((,rhododendron-class (:foreground ,rhododendron-deep-pink :weight medium))))
+   `(outline-2 ((,rhododendron-class (:foreground ,rhododendron-bright-orange :weight medium))))
+   `(outline-3 ((,rhododendron-class (:foreground ,rhododendron-forest-green :weight medium))))
+   `(outline-4 ((,rhododendron-class (:foreground ,rhododendron-bright-pink :weight medium))))
+   `(outline-5 ((,rhododendron-class (:foreground ,rhododendron-purple-blue :weight medium))))
+   `(outline-6 ((,rhododendron-class (:foreground ,rhododendron-deep-green :weight medium))))
+   `(outline-7 ((,rhododendron-class (:foreground ,rhododendron-deep-blue :weight medium))))
+   `(outline-8 ((,rhododendron-class (:foreground ,rhododendron-purple-red :weight medium))))
+
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,rhododendron-class (:foreground ,rhododendron-blue))))
+   `(escape-glyph ((,rhododendron-class (:inherit homoglyph))))
+   `(nobreak-space ((,rhododendron-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
 
 
    ;; external packages

@@ -41,9 +41,9 @@
 (define-obsolete-variable-alias 'magit-find-index-hook
   'magit-find-blob-hook "Magit 4.6.0")
 
-(defvar magit-find-blob-hook nil)
-(add-hook 'magit-find-blob-hook #'magit-blob-mode)
+(defvar magit-find-blob-hook (list #'magit-blob-mode))
 
+(defvar-local magit-buffer-blob-oid--init nil)
 (defvar-local magit-buffer--volatile nil)
 (put 'magit-buffer--volatile 'permanent-local t)
 
@@ -91,7 +91,8 @@ the line and column corresponding to that location."
 
 (defun magit-find-file-noselect (rev file &optional no-restore-position volatile)
   "Read FILE from REV into a buffer and return the buffer.
-REV is a revision or one of \"{worktree}\" or \"{index}\"."
+REV is a revision or one of \"{worktree}\" or \"{index}\".
+Non-interactively REV can also be a blob object."
   (let* ((rev (pcase rev
                 ('nil "{worktree}")
                 ((and "{index}"
@@ -113,12 +114,14 @@ REV is a revision or one of \"{worktree}\" or \"{index}\"."
             ((not topdir)
              (error "%s is not inside a Git repository" file))
             ([defdir (file-name-directory file)]
-             [rev (magit--abbrev-if-hash rev)]
+             [rev (magit--abbrev-if-oid rev)]
              (unless (file-in-directory-p file topdir)
                (error "%s is not inside Git repository %s" file topdir))
              (with-current-buffer
                  (magit--get-blob-buffer rev file-relative volatile)
-               (setq magit-buffer-revision rev)
+               (if (magit-blob-p rev)
+                   (setq magit-buffer-blob-oid--init (magit-rev-parse rev))
+                 (setq magit-buffer-revision rev))
                (setq magit-buffer-file-name file)
                (setq default-directory
                      (if (file-exists-p defdir) defdir topdir))
@@ -133,28 +136,33 @@ REV is a revision or one of \"{worktree}\" or \"{index}\"."
           (apply #'magit-find-file--restore-position pos))))
     buffer))
 
-(defun magit--get-blob-buffer (rev file &optional volatile)
-  ;; REV is assummed to be abbreviated and FILE to be relative.
+(defun magit--get-blob-buffer (obj file &optional volatile)
+  ;; If OBJ is a commit, is assummed to be abbreviated.
+  ;; FILE is assumed to be relative to the top-level.
   (cond-let
-    ([buf (magit--find-buffer 'magit-buffer-revision rev
-                              'magit-buffer-file-name file)]
+    ([buf (if (magit-blob-p obj)
+              (magit--find-buffer 'magit-buffer-blob-oid (magit-rev-parse obj)
+                                  'magit-buffer-file-name file)
+            (magit--find-buffer 'magit-buffer-revision obj
+                                'magit-buffer-file-name file))]
      (with-current-buffer buf
        (when (and (not volatile) magit-buffer--volatile)
          (setq magit-buffer--volatile nil)
-         (rename-buffer (magit--blob-buffer-name rev file))
+         (rename-buffer (magit--blob-buffer-name obj file))
          (magit--blob-cache-remove buf)))
      buf)
-    ([buf (get-buffer-create (magit--blob-buffer-name rev file volatile))]
+    ([buf (get-buffer-create (magit--blob-buffer-name obj file volatile))]
      (with-current-buffer buf
        (setq magit-buffer--volatile volatile)
        (magit--blob-cache-put buf))
+     (buffer-enable-undo buf)
      buf)))
 
-(defun magit--blob-buffer-name (rev file &optional volatile)
+(defun magit--blob-buffer-name (obj file &optional volatile)
   (format "%s%s.~%s~"
           (if volatile " " "")
-          file
-          (subst-char-in-string ?/ ?_ rev)))
+          (or file (and (magit-blob-p obj) "{blob}"))
+          (subst-char-in-string ?/ ?_ obj)))
 
 (defun magit--revert-blob-buffer (_ignore-auto _noconfirm)
   (let ((pos (magit-find-file--position)))
@@ -163,17 +171,22 @@ REV is a revision or one of \"{worktree}\" or \"{index}\"."
 
 (defun magit--refresh-blob-buffer (&optional force)
   (let ((old-blob-oid magit-buffer-blob-oid))
-    (setq magit-buffer-revision-oid
-          (magit-commit-oid magit-buffer-revision t))
-    (setq magit-buffer-blob-oid
-          (magit-blob-oid magit-buffer-revision magit-buffer-file-name))
+    (cond
+      (magit-buffer-revision
+       (setq magit-buffer-revision-oid
+             (magit-commit-oid magit-buffer-revision t))
+       (setq magit-buffer-blob-oid
+             (magit-blob-oid magit-buffer-revision magit-buffer-file-name)))
+      (magit-buffer-blob-oid--init
+       (setq magit-buffer-blob-oid magit-buffer-blob-oid--init)
+       (setq magit-buffer-blob-oid--init nil)))
     (when (or force (not (equal old-blob-oid magit-buffer-blob-oid)))
       (let ((inhibit-read-only t))
         (erase-buffer)
         (save-excursion
           (magit--insert-blob-contents magit-buffer-revision
-                                       (magit-file-relative-name))))))
-  (magit--blob-normal-mode))
+                                       (magit-file-relative-name))))
+      (magit--blob-normal-mode))))
 
 (defun magit--blob-normal-mode ()
   (let ((buffer-file-name magit-buffer-file-name)
@@ -183,11 +196,25 @@ REV is a revision or one of \"{worktree}\" or \"{index}\"."
                          '(global-diff-hl-mode-enable-in-buffer ; Emacs >= 30
                            global-diff-hl-mode-enable-in-buffers ; Emacs < 30
                            eglot--maybe-activate-editing-mode)
-                         #'eq)))
-    ;; We want `normal-mode' to respect nil `enable-local-variables'.
-    ;; The FIND-FILE argument wasn't designed for our use case,
-    ;; so we have to use this strange invocation to achieve that.
-    (normal-mode (not enable-local-variables))
+                         #'eq))
+        (buffer-name (buffer-name)))
+    ;; `font-lock-mode' contains a hardcoded condition that prevents it
+    ;; from being enabled in hidden buffers.  Use a fake `buffer-name'
+    ;; to trick it into believing the buffer is not hidden.
+    (if (eq (aref buffer-name 0) ?\s)
+        (letrec ((adv (lambda (fn &optional buffer)
+                        (let ((name (funcall fn buffer)))
+                          (if (equal name buffer-name)
+                              (substring name 1)
+                            name)))))
+          (advice-add 'buffer-name :around adv)
+          (unwind-protect
+              (normal-mode (not enable-local-variables))
+            (advice-remove 'buffer-name adv)))
+      ;; We want `normal-mode' to respect nil `enable-local-variables'.
+      ;; The FIND-FILE argument wasn't designed for our use case,
+      ;; so we have to use this strange invocation to achieve that.
+      (normal-mode (not enable-local-variables)))
     (setq buffer-read-only t)
     (set-buffer-modified-p nil)
     (run-hooks 'magit-find-blob-hook)))
@@ -294,7 +321,7 @@ Age is tracked in seconds.  If nil, only use `magit--blob-cache-limit'.")
 (define-advice lsp (:around (fn &rest args) magit-find-file)
   "Do nothing when visiting blob using `magit-find-file' and similar.
 See also https://github.com/doomemacs/doomemacs/pull/6309."
-  (unless magit-buffer-revision
+  (unless magit-buffer-blob-oid
     (apply fn args)))
 
 ;;; Update Index
@@ -330,8 +357,8 @@ is done using `magit-find-index-noselect'."
           (set-buffer-modified-p nil)
           (magit-run-after-apply-functions file "un-/stage"))
       (message "Abort")))
-  (when-let ((buffer (magit-get-mode-buffer 'magit-status-mode)))
-    (with-current-buffer buffer
+  (when$ (magit-get-mode-buffer 'magit-status-mode)
+    (with-current-buffer $
       (magit-refresh)))
   t)
 
@@ -757,6 +784,7 @@ If DEFAULT is non-nil, use this as the default value instead of
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

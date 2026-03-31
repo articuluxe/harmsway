@@ -473,8 +473,8 @@ Optionally change the rate of change with SMOD and VMOD."
 
 (defun ct-distance-oklab (color1 color2)
   "Get okLAB distance between COLOR1 and COLOR2, range 0-100."
-  (-let (((x1 y1 z1) (ct-get-oklab c1))
-          ((x2 y2 z2) (ct-get-oklab c2)))
+  (-let (((x1 y1 z1) (ct-get-oklab color1))
+          ((x2 y2 z2) (ct-get-oklab color2)))
     (sqrt (+ (* (- x2 x1) (- x2 x1))
             (* (- y2 y1) (- y2 y1))
             (* (- z2 z1) (- z2 z1))))))

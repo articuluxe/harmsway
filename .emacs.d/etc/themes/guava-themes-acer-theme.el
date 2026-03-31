@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.12.0
+;; Version: 0.13.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -47,12 +47,12 @@
       (acer-orange            "#e76144");fe7457
       (acer-deep-orange       "#d44400")
       (acer-orange-pink       "#cd475f");ec31a3,ff514a,ff474a,ff475f
-      (acer-yellow            "#f7ac5f");fca148,fca347,f5a24e,f5a44e,F7B36A,f7a95a
+      (acer-yellow            "#f7bb78");fca148,fca347,f5a24e,f5a44e,F7B36A,f7a95a,f7ac5f,f7bb78
       (acer-autumn            "#ff8c4e");c14c5c,f46157,db3d32,e14337,ed7038,f77b44,f3814f,e8674a,ed674a,f68b47
 
-      (acer-cream             "#dc9964");f68e64,dc8e64,dc9964
+      (acer-cream             "#dca56e");f68e64,dc8e64,dc9964,dc9964
       (acer-brown             "#c88550");7d4826,754014,a58464,a07f5f
-      (acer-deep-brown        "#6a4e39");7d6250
+      (acer-deep-brown        "#8c6950");7d6250,6a4e39,8c6a50
 
       (acer-light-blue        "#3a9187");bacce4
       (acer-blue              "#2134d5")
@@ -63,9 +63,9 @@
       (acer-purple-red        "#9b234b");9f234b
       (acer-purple-pink       "#5f2258");233e4d
 
-      (acer-error             "#c80000");FF0000
-      (acer-warning           "#f0dc67");F68511,f2e16b
-      (acer-success           "#237c34");23D734,239834
+      (acer-error             "#d70000");FF0000,c80000
+      (acer-warning           "#f0dc00");F68511,f2e16b,f0dc67
+      (acer-success           "#23d934");23D734,239834,237c34
 
       (acer-vc-change         acer-blue)
       (acer-vc-insert         acer-success)
@@ -123,6 +123,8 @@
    ;; line-number
    `(line-number ((,acer-class (:foreground ,acer-black))))
    `(line-number-current-line ((,acer-class (:foreground ,acer-deep-orange :weight bold :inherit highlight))))
+   `(line-number-minor-tick ((,acer-class (:background ,acer-brown))))
+   `(line-number-major-tick ((,acer-class (:background ,acer-deep-brown))))
 
    ;; mode-line
    `(mode-line ((,acer-class (:foreground ,acer-white :background ,acer-orange))))
@@ -133,11 +135,11 @@
    `(minibuffer-prompt ((,acer-class (:foreground ,acer-black))))
 
    ;; borders
-   `(vertical-border ((,acer-class (:foreground ,acer-yellow))))
+   `(vertical-border ((,acer-class (:foreground ,acer-orange))))
 
    ;; header-line
    `(header-line ((,acer-class (:foreground ,acer-white :background ,acer-orange))))
-   `(which-func ((,acer-class (:foreground ,acer-white :background ,acer-orange))))
+   `(which-func ((,acer-class (:foreground ,acer-white))))
 
    ;; tab-bar
    `(tab-bar ((,acer-class (:foreground ,acer-white :background ,acer-autumn))))
@@ -146,7 +148,7 @@
 
    ;; tab-line
    `(tab-line ((,acer-class (:foreground ,acer-white :background ,acer-autumn))))
-   `(tab-line-tab ((,acer-class (:foreground ,acer-white :background ,acer-autumn :weight bold :height 0.9))))
+   `(tab-line-tab ((,acer-class (:foreground ,acer-white :background ,acer-purple-red :weight bold :height 0.9))))
    `(tab-line-tab-current ((,acer-class (:foreground ,acer-white :background ,acer-orange :weight bold :height 0.9))))
    `(tab-line-tab-inactive ((,acer-class (:foreground ,acer-white :background ,acer-autumn :weight bold :height 0.9))))
    `(tab-line-tab-inactive-alternate ((,acer-class (:foreground ,acer-white :background ,acer-cream :weight bold :height 0.9))))
@@ -174,13 +176,18 @@
    `(outline-7 ((,acer-class (:foreground ,acer-green-cyan :weight medium))))
    `(outline-8 ((,acer-class (:foreground ,acer-deep-orange :weight medium))))
 
+   ;; homoglyph, escape-glyph, nobreak-space
+   `(homoglyph ((,acer-class (:foreground ,acer-blue))))
+   `(escape-glyph ((,acer-class (:inherit homoglyph))))
+   `(nobreak-space ((,acer-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
 
    ;; external packages
 
    ;; elfeed
-   `(elfeed-search-tag-face ((,acer-class (:foreground ,acer-deep-purple))))
+   `(elfeed-search-tag-face ((,acer-class (:foreground ,acer-light-blue))))
    `(elfeed-search-date-face ((,acer-class (:foreground ,acer-deep-orange))))
-   `(elfeed-search-feed-face ((,acer-class (:foreground ,acer-light-blue))))
+   `(elfeed-search-feed-face ((,acer-class (:foreground ,acer-deep-purple))))
    `(elfeed-search-title-face ((,acer-class (:foreground ,acer-deep-brown))))
    `(elfeed-search-filter-face ((,acer-class (:foreground ,acer-purple-pink))))
    `(elfeed-search-last-update-face ((,acer-class (:foreground ,acer-purple-red))))

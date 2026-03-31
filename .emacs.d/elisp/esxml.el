@@ -125,7 +125,8 @@ it suitable for hindsight testing."
     (`(raw-string ,string)
      (cl-check-type string stringp)
      string)
-    (`(comment nil ,body)
+    ((or `(comment ,body)
+         `(comment nil ,body))
      (concat "<!-- " body " -->"))
     (`(,tag ,attrs . ,body)
      ;; code goes here to catch invalid data.
@@ -156,8 +157,9 @@ STRING: the string it is returned with entities escaped
 STRING: the string is returned unchanged. This allows for caching
         of any constant parts, such as headers and footers.
 
-- A list where the first element is the comment symbol and the
-  second is a string.
+- A list where the first element is the comment symbol and the second is
+  a string. For backwards-compatibility, the form (comment nil STRING)
+  is accepted as well.
 
  (comment STRING)
 
@@ -196,7 +198,8 @@ slower and will produce longer output."
     (`(raw-string ,string)
      (cl-check-type string stringp)
      string)
-    (`(comment nil ,body)
+    ((or `(comment ,body)
+         `(comment nil ,body))
      (concat "<!-- " body " -->"))
     (`(,tag ,attrs . ,body)
      (cl-check-type tag symbol)
@@ -226,7 +229,7 @@ See: http://okmij.org/ftp/Scheme/SXML.html. Additionally,
     (`(*RAW-STRING* ,body)
      `(raw-string ,body))
     (`(*COMMENT* ,body)
-     `(comment nil ,body))
+     `(comment ,body))
     (`(,tag (@ . ,attrs) . ,body)
      `(,tag ,(mapcar (lambda (attr)
                        (cons (car attr)

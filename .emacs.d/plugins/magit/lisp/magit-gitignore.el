@@ -97,8 +97,8 @@ Rules that are defined in that file affect all local repositories."
   (magit-refresh))
 
 (defun magit--gitignore (rule file)
-  (when-let ((directory (file-name-directory file)))
-    (make-directory directory t))
+  (when$ (file-name-directory file)
+    (make-directory $ t))
   (with-temp-buffer
     (when (file-exists-p file)
       (insert-file-contents file))
@@ -198,6 +198,7 @@ Rules that are defined in that file affect all local repositories."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

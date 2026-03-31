@@ -549,20 +549,19 @@ is updated:
       (user-error "There are no modified modules that could be absorbed"))
     (when commit
       (setq commit (magit-rebase-interactive-assert commit t)))
-    (if (and commit (eq phase 'run))
-        (progn
-          (dolist (module modules)
-            (when-let ((msg (magit-git-string
-                             "log" "-1" "--format=%s"
-                             (concat commit "..") "--" module)))
-              (magit-git "commit" "-m" (concat "fixup! " msg)
-                         "--only" "--" module)))
-          (magit-refresh)
-          t)
-      (magit-log-select
-        (lambda (commit)
-          (magit-commit-absorb-modules 'run commit))
-        nil nil nil nil commit))))
+    (cond ((and commit (eq phase 'run))
+           (dolist (module modules)
+             (when-let ((msg (magit-git-string
+                              "log" "-1" "--format=%s"
+                              (concat commit "..") "--" module)))
+               (magit-git "commit" "-m" (concat "fixup! " msg)
+                          "--only" "--" module)))
+           (magit-refresh)
+           t)
+          ((magit-log-select
+             (lambda (commit)
+               (magit-commit-absorb-modules 'run commit))
+             nil nil nil nil commit)))))
 
 ;;;###autoload(autoload 'magit-commit-absorb "magit-commit" nil t)
 (transient-define-prefix magit-commit-absorb (phase commit args)
@@ -685,10 +684,10 @@ an alternative implementation."
     (let ((inhibit-quit nil))
       (condition-case nil
           (with-demoted-errors "Error showing commit diff: %S"
-            (magit-commit-diff-1))
+            (magit-commit-diff--show))
         (quit)))))
 
-(defun magit-commit-diff-1 ()
+(defun magit-commit-diff--args ()
   (let ((rev nil)
         (arg "--cached")
         (command (magit-repository-local-get 'this-commit-command))
@@ -737,10 +736,13 @@ an alternative implementation."
       ((or squash
            (file-exists-p (expand-file-name "rebase-merge/amend" (magit-gitdir))))
        (setq rev "HEAD^"))
-      (t
-       (message "No alternative diff while committing")
-       (setq noalt t)))
-    (unless noalt
+      ((setq noalt t)))
+    (list rev arg noalt)))
+
+(defun magit-commit-diff--show ()
+  (pcase-let ((`(,rev ,arg ,noalt) (magit-commit-diff--args)))
+    (if noalt
+        (message "No alternative diff while committing")
       (let ((magit-inhibit-save-previous-winconf 'unset)
             (magit-display-buffer-noselect t)
             (display-buffer-overriding-action
@@ -869,6 +871,7 @@ Also see `git-commit-post-finish-hook'."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

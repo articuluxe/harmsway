@@ -394,7 +394,7 @@ to do the following.
 
 * Prepend `magit-git-global-arguments' to ARGS.
 * If ASYNC is non-nil and `magit-overriding-githook-directory' is non-nil
-  and valid, set `core.hooksPath' by adding additional aguments to ARGS.
+  and valid, set `core.hooksPath' by adding additional arguments to ARGS.
 * Flatten ARGS, removing nil arguments.
 * If `system-type' is `windows-nt', encode ARGS to `w32-ansi-code-page'."
   (cond ((not async))
@@ -562,10 +562,12 @@ insert the run command and stderr into the process buffer."
                           exit log 'magit-section-secondary-heading)
                          exit)))))
                 (cond ((not magit-git-debug))
-                      (errmsg (message "%s" errmsg))
+                      (errmsg (message "magit--git-insert: %S" errmsg))
                       ((zerop exit))
-                      ((message "Git returned with exit-code %s" exit))))
-              (or errmsg exit))
+                      ((message "magit--git-insert: %s %s"
+                                "Git returned with exit-code" exit))))
+              (or (and return-error errmsg)
+                  exit))
           (ignore-errors (delete-file log))))
     (magit-process-git (list t nil) args)))
 
@@ -1243,13 +1245,12 @@ or if no rename is detected."
               (y (char-after (1+ pos)))
               (file (buffer-substring (+ pos 3) (point))))
           (forward-char)
-          (if (memq x '(?R ?C))
-              (progn
-                (setq pos (point))
-                (skip-chars-forward "[:print:]")
-                (push (list file (buffer-substring pos (point)) x y) status)
-                (forward-char))
-            (push (list file nil x y) status)))
+          (cond ((memq x '(?R ?C))
+                 (setq pos (point))
+                 (skip-chars-forward "[:print:]")
+                 (push (list file (buffer-substring pos (point)) x y) status)
+                 (forward-char))
+                ((push (list file nil x y) status))))
         (setq pos (point)))
       status)))
 
@@ -1331,23 +1332,31 @@ Sorted from longest to shortest CYGWIN name."
 
 ;;; Blobs
 
+(defun magit-blob-p (obj)
+  (equal (magit-object-type obj) "blob"))
+
 (defun magit-blob-oid (rev file)
-  (if (equal rev "{index}")
-      (cadr (car (magit--file-index-stages file)))
-    (magit-git-string "ls-tree" "--object-only" rev "--"
-                      (magit-convert-filename-for-git file))))
+  (cond-let
+    ((equal rev "{index}")
+     (cadr (car (magit--file-index-stages file))))
+    ;; --object-only and --format were only added in Git v2.36.0.
+    ([out (magit-git-string "ls-tree" "--full-tree" rev "--"
+                            (magit-convert-filename-for-git file))]
+     (nth 2 (split-string out "[\s\t]")))))
 
 (defun magit--file-index-stages (file)
   (mapcar (##split-string % " ")
           (magit-git-lines "ls-files" "--stage" "--"
                            (magit-convert-filename-for-git file))))
 
-(defun magit--insert-blob-contents (rev file)
+(defun magit--insert-blob-contents (obj file)
   (let ((coding-system-for-read (or coding-system-for-read 'undecided)))
-    (magit-git-insert "cat-file" "-p"
-                      (if (equal rev "{index}")
-                          (concat ":" file)
-                        (concat rev ":" file)))
+    (if (magit-blob-p obj)
+        (magit-git-insert "cat-file" "blob" obj)
+      (magit-git-insert "cat-file" "-p"
+                        (if (equal obj "{index}")
+                            (concat ":" file)
+                          (concat obj ":" file))))
     (setq buffer-file-coding-system last-coding-system-used)
     nil))
 
@@ -1451,9 +1460,10 @@ string \"true\", otherwise return nil."
   (magit-git-string "rev-parse" "--verify" rev))
 
 (defun magit-commit-p (rev)
-  "Return commit oid for REV if it can be dereferences as a commit.
+  "Return non-nil if REV can be dereferences as a commit.
 Otherwise return nil.  Use `magit-commit-oid' if you actually need
-the oid; eventually this function will return t instead of the oid."
+the oid; eventually this function will return t instead of the oid,
+as it currently does for backward compatibility."
   ;; TODO Return t instead of the oid.
   (magit-rev-verify (magit--rev-dereference rev)))
 
@@ -1478,9 +1488,9 @@ However, if REV is nil or has the form \":/TEXT\", return REV itself."
 
 (defun magit-rev-eq (a b)
   "Return t if A and B refer to the same commit."
-  (let ((a (magit-commit-oid a t))
-        (b (magit-commit-oid b t)))
-    (and a b (equal a b))))
+  (and-let ((a (magit-commit-oid a t))
+            (b (magit-commit-oid b t)))
+    (equal a b)))
 
 (defun magit-rev-ancestor-p (a b)
   "Return non-nil if commit A is an ancestor of commit B."
@@ -1596,9 +1606,9 @@ nil, then use \"heads/\"."
 A symbolic-ref pointing to some ref, is `equal' to that ref,
 as are two symbolic-refs pointing to the same ref.  Refnames
 may be abbreviated."
-  (let ((a (magit-ref-fullname a))
-        (b (magit-ref-fullname b)))
-    (and a b (equal a b))))
+  (and-let ((a (magit-ref-fullname a))
+            (b (magit-ref-fullname b)))
+    (equal a b)))
 
 (defun magit-ref-eq (a b)
   "Return t if the refnames A and B are `eq'.
@@ -2243,11 +2253,11 @@ specified using `core.worktree'."
              (let* ((default-directory (car worktree))
                     (wt (and (not (magit-get-boolean "core.bare"))
                              (magit-get "core.worktree"))))
-               (if (and wt (file-exists-p (expand-file-name wt)))
-                   (progn (setf (nth 0 worktree) (expand-file-name wt))
-                          (setf (nth 2 worktree) (magit-rev-parse "HEAD"))
-                          (setf (nth 3 worktree) (magit-get-current-branch)))
-                 (setf (nth 3 worktree) t))))
+               (cond ((and wt (file-exists-p (expand-file-name wt)))
+                      (setf (nth 0 worktree) (expand-file-name wt))
+                      (setf (nth 2 worktree) (magit-rev-parse "HEAD"))
+                      (setf (nth 3 worktree) (magit-get-current-branch)))
+                     ((setf (nth 3 worktree) t)))))
             ((string-equal line "detached")
              (setf (nth 4 worktree) t))
             ((string-prefix-p line "locked")
@@ -2282,8 +2292,8 @@ specified using `core.worktree'."
                                      'magit-branch-local
                                    'magit-branch-remote)))
 
-(defun magit-tag-p (rev)
-  (car (member rev (magit-list-tags))))
+(defun magit-tag-p (obj)
+  (equal (magit-object-type obj) "tag"))
 
 (defun magit-remote-p (string)
   (car (member string (magit-list-remotes))))
@@ -2353,10 +2363,10 @@ If `first-parent' is set, traverse only first parents."
 (defun magit-rev-abbrev (rev)
   (magit-rev-parse (magit-abbrev-arg "short") rev))
 
-(defun magit--abbrev-if-hash (rev)
-  (cond ((or (magit-ref-p rev) (member rev '("{index}" "{worktree}"))) rev)
-        ((magit-rev-parse (magit-abbrev-arg "short") rev))
-        (rev)))
+(defun magit--abbrev-if-oid (obj)
+  (cond ((or (magit-ref-p obj) (member obj '("{index}" "{worktree}"))) obj)
+        ((magit-rev-parse (magit-abbrev-arg "short") obj))
+        (obj)))
 
 (defun magit-commit-children (rev &optional args)
   (seq-keep (lambda (line)
@@ -2579,8 +2589,8 @@ and this option only controls what face is used.")
                (beg (or beg "HEAD"))
                (end (or end "HEAD")))
     (when abbrev
-      (setq beg (magit--abbrev-if-hash beg))
-      (setq end (magit--abbrev-if-hash end)))
+      (setq beg (magit--abbrev-if-oid beg))
+      (setq end (magit--abbrev-if-oid end)))
     (pcase sep
       (".."  (cons beg end))
       ("..." (and$ (magit-git-string "merge-base" beg end)
@@ -3037,6 +3047,9 @@ out.  Only existing branches can be selected."
   "Return oid for REV if it names an existing commit, nil otherwise.
 Instead use `magit-commit-p' or `magit-commit-oid'.")
 
+(define-obsolete-function-alias 'magit--abbrev-if-hash
+  #'magit--abbrev-if-oid "Magit 4.6.0")
+
 (provide 'magit-git)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
@@ -3044,6 +3057,7 @@ Instead use `magit-commit-p' or `magit-commit-oid'.")
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")

@@ -187,24 +187,29 @@ commit message."
 
 (defun magit-wip-commit-worktree (ref files msg)
   (when (or (not files)
-            ;; `update-index' will either ignore (before Git v2.32.0)
-            ;; or fail when passed directories (relevant for the
-            ;; untracked files code paths).
+            ;; "git update-index" either ignores (before Git v2.32.0) or
+            ;; fails, when passed directories.  This is relevant for the
+            ;; untracked files code paths.
             (setq files (seq-remove #'file-directory-p files)))
     (let* ((wipref (magit--wip-wtree-ref ref))
            (parent (magit-wip-get-parent ref wipref))
-           (tree (magit-with-temp-index parent (list "--reset" "-i")
-                   (if files
-                       ;; Note: `update-index' is used instead of `add'
-                       ;; because `add' will fail if a file is already
-                       ;; deleted in the temporary index.
-                       (magit-wip--git "update-index" "--add" "--remove"
-                                       "--ignore-skip-worktree-entries"
-                                       "--" files)
-                     (magit-with-toplevel
-                       (magit-wip--git "add" "-u" ".")))
-                   (magit-git-string "write-tree"))))
-      (magit-wip-update-wipref ref wipref tree parent files msg "worktree"))))
+           (tree (condition-case nil
+                     (magit-with-temp-index parent (list "--reset" "-i")
+                       (if files
+                           ;; Use "git update-index" instead of "git add"
+                           ;; because the latter fails if a file is already
+                           ;; deleted in the temporary index.
+                           (magit-wip--git "update-index" "--add" "--remove"
+                                           "--ignore-skip-worktree-entries"
+                                           "--" files)
+                         (magit-with-toplevel
+                           (magit-wip--git "add" "-u" ".")))
+                       (magit-git-string "write-tree"))
+                   (error
+                    (message "Index locked; no worktree wip commit created")))))
+      (when tree
+        (magit-wip-update-wipref ref wipref tree parent
+                                 files msg "worktree")))))
 
 (defun magit-wip--git (&rest args)
   (if magit-wip-debug
@@ -388,6 +393,7 @@ many \"branches\" of each wip ref are shown."
 ;;   ("and>"         . "cond-let--and>")
 ;;   ("and-let"      . "cond-let--and-let")
 ;;   ("if-let"       . "cond-let--if-let")
+;;   ("when$"        . "cond-let--when$")
 ;;   ("when-let"     . "cond-let--when-let")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
