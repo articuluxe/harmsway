@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-03-15 15:35:06 dharms>
+;; Modified Time-stamp: <2026-04-07 11:02:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4677,7 +4677,7 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; json-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package json-mode
-  :mode "\\.json$"
+  :mode ("\\.json$" "\\.avsc$")
   :if (version< "23" emacs-version)
   :init
   (add-hook 'json-mode-hook
