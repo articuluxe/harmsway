@@ -1,0 +1,2 @@
+find src -maxdepth 1 -name batppuccin.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/plugins
+cp src/*-theme.el ../../../../.emacs.d/etc/themes
