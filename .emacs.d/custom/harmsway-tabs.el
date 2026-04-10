@@ -1,8 +1,8 @@
 ;;; harmsway-tabs.el --- tab customizations
-;; Copyright (C) 2021-2023  Dan Harms (dharms)
+;; Copyright (C) 2021-2023, 2026  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, March 19, 2021
-;; Modified Time-stamp: <2023-09-06 17:29:30 dharms>
+;; Modified Time-stamp: <2026-04-10 10:45:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui
 
@@ -35,6 +35,7 @@
 (global-set-key "\C-xtu" #'tab-bar-undo-close-tab)
 (global-set-key "\C-xtN" #'harmsway-create-named-tab)
 (global-set-key "\C-xtT" #'toggle-frame-tab-bar)
+(global-set-key "\C-xt " #'tab-bar-switch-to-recent-tab)
 (global-set-key (kbd "C-5") #'tab-switcher)
 ;; (global-set-key (kbd "M-' 5") #'tab-switcher)
 (global-set-key (kbd "C-7") #'tab-bar-history-forward)
