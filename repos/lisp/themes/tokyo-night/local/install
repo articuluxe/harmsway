@@ -1,1 +1,2 @@
-cp src/*.el ../../../../.emacs.d/etc/themes
+find src -maxdepth 1 -name tokyo-night.el | xargs -I '{}' cp '{}' ../../../../.emacs.d/plugins
+cp src/*-theme.el ../../../../.emacs.d/etc/themes
