@@ -1,6 +1,6 @@
 ;;; casual-calc.el --- Transient UI for Calc -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024-2025  Charles Y. Choi
+;; Copyright (C) 2024-2026  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -113,11 +113,11 @@
 
   ["Arithmetic"
    :class transient-row
-    ("o" "Rounding›" casual-calc-rounding-tmenu)
-    ("c" "Conversion›" casual-calc-conversions-tmenu)
-    ("T" "Time›" casual-calc-time-tmenu)
-    ("i" "Complex›" casual-calc-complex-number-tmenu)
-    ("R" "Random›" casual-calc-random-number-tmenu)]
+   ("o" "Rounding›" casual-calc-rounding-tmenu)
+   ("c" "Conversion›" casual-calc-conversions-tmenu)
+   ("T" "Time›" casual-calc-time-tmenu)
+   ("i" "Complex›" casual-calc-complex-number-tmenu)
+   ("R" "Random›" casual-calc-random-number-tmenu)]
 
   ["Functions"
    [("t" "Trigonometric›" casual-calc-trig-tmenu)
@@ -139,13 +139,13 @@
    ("M-t" "Trail›" casual-calc-trail-tmenu)]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          (casual-calc-algebraic-entry)
-          (casual-calc-enter)
-          (casual-calc-roll-down)
-          (casual-calc-pop)
-          (casual-calc-undo-suffix)
-          ("q" "Quit" calc-quit)])
+   (casual-lib-quit-one)
+   (casual-calc-algebraic-entry)
+   (casual-calc-enter)
+   (casual-calc-roll-down)
+   (casual-calc-pop)
+   (casual-calc-undo-suffix)
+   ("q" "Quit" calc-quit)])
 
 (provide 'casual-calc)
 ;;; casual-calc.el ends here

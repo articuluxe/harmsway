@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 07, 2025
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -59,6 +59,17 @@ is still called but does not display `guava-themes-visible-bell'."
   :group 'guava-themes
   :type 'float)
 
+(defcustom guava-themes-visible-bell-faces-list (if (>= emacs-major-version 29) '(mode-line-active) '(mode-line))
+  "List of faces modified when `guava-themes-change-visible-bell' is called.
+
+By default, this variable contains either `mode-line-active' if
+`emacs-major-version' is equal or above 29, or `mode-line' if it's below 29.
+
+If this variable is set to nil, the function `guava-themes-change-visible-bell'
+is still called but does not display `guava-themes-visible-bell'."
+  :group 'guava-themes
+  :type '(repeat symbol))
+
 (defcustom guava-themes-before-change-visible-bell-hook nil
   "Hook that is run before displaying `guava-themes-visible-bell'."
   :group 'guava-themes
@@ -68,6 +79,8 @@ is still called but does not display `guava-themes-visible-bell'."
   "Hook that is run after displaying `guava-themes-visible-bell'."
   :group 'guava-themes
   :type 'hook)
+
+
 
 ;; Henrik Lissner / Doom Emacs are the original authors of `doom-themes-visual-bell-fn'
 ;; As per the MIT license, here is the original copyright and permission notice of `doom-themes-ext-visual-bell.el'
@@ -86,14 +99,15 @@ is still called but does not display `guava-themes-visible-bell'."
 ;; included in all copies or substantial portions of the Software.
 
 (defun guava-themes-change-visible-bell ()
-  "Change the blink of the minibuffer with a blink for the mode-line.
-Set `ring-bell-function' with this function as its value to use it."
+  "Replace the `visible-bell' blink.
+Set `ring-bell-function' with this function as its value to use it.
+
+The value of `guava-themes-visible-bell-faces-list' will determine which faces
+will blink when this function is called."
   (run-hooks 'guava-themes-before-change-visible-bell-hook)
   (sit-for guava-themes-visible-bell-idle-delay)
   (let* ((buf (current-buffer))
-         (faces (if (facep 'mode-line-active)
-                    '(mode-line-active)
-                 '(mode-line)))
+         (faces guava-themes-visible-bell-faces-list)
          (cookies (mapcar (lambda (face)
                             (when (facep face)
                               (face-remap-add-relative face 'guava-themes-visible-bell)))
@@ -105,6 +119,8 @@ Set `ring-bell-function' with this function as its value to use it."
                         (mapc #'face-remap-remove-relative cookies)
                         (force-mode-line-update)))))
   (run-hooks 'guava-themes-after-change-visible-bell-hook))
+
+
 
 ;;;###autoload
 (when load-file-name

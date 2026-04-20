@@ -64,30 +64,37 @@
    `(font-lock-variable-name-face ((,class (:foreground ,royal-hemlock/black))))
    `(font-lock-number-face((,class (:foreground ,royal-hemlock/pink-colour      :weight bold))))
    `(font-lock-escape-face((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
-   `(font-lock-warning-face((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))   
+   `(font-lock-warning-face((,class (:foreground ,royal-hemlock/majestic-hemlock :weight bold))))
+
+   `(slime-style-warning-face ((,class (:underline (:color ,royal-hemlock/string :style wave) :inherit nil ))))   
 
    `(line-number((,class (:foreground ,royal-hemlock/grey :background ,royal-hemlock/background :inherit 'default))))
    `(line-number-current-line((,class (	:foreground ,royal-hemlock/majestic-hemlock :background ,royal-hemlock/background :weight bold :inherit 'default))))
 
    `(link ((,class (:foreground ,royal-hemlock/majestic-hemlock :underline t :weight bold)))))
 
+  ;; ADOC
+
+  ;; [NOTE] DON'T REMOVE WITH-EVAL-AFTER-LOAD, BREAKS OTHERWISE
   (with-eval-after-load 'adoc-mode
     (custom-theme-set-faces
      'royal-hemlock
-     `(adoc-meta-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :inherit nil ))))
+     `(adoc-meta-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :inherit nil))))
      `(adoc-command-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :inherit nil :weight bold))))
      `(adoc-attribute-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :inherit nil :weight bold))))          
      `(adoc-value-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :inherit nil))))
      `(adoc-complex-replacement-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :weight bold :inherit nil))))
      `(adoc-secondary-text-face ((,class (:foreground ,royal-hemlock/pink-colour :background nil :weight bold :inherit nil))))
-     `(adoc-replacement-face ((,class (:foreground ,royal-hemlock/pink-colour :background nil :weight bold :inherit nil))))
+     `(adoc-replacement-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :weight bold :inherit nil))))
      `(adoc-list-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :inherit nil))))
      `(adoc-meta-hide-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :inherit nil))))
      `(adoc-typewriter-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :inherit nil))))
      `(adoc-verbatim-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :inherit nil))))
-     `(adoc-bold-face ((,class (:foreground ,royal-hemlock/text-colour :background nil :weight bold :inherit nil))))               
-     ) ;; custom-theme-set-faces
-    ) ;; with-eval-after-load
+     `(adoc-bold-face ((,class (:foreground ,royal-hemlock/majestic-hemlock :background nil :weight bold :inherit nil))))))
+
+  ;; SLIME
+
+  `(slime-style-warning-face ((,class (:underline (:color ,royal-hemlock/string :style wave) :inherit nil ))))     
   )
 
 (provide-theme 'royal-hemlock)

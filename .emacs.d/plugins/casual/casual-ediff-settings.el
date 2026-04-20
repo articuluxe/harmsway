@@ -1,6 +1,6 @@
 ;;; casual-ediff-settings.el --- Casual Ediff Settings -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2025 Charles Y. Choi
+;; Copyright (C) 2025-2026 Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -31,7 +31,7 @@
    [("k" "Keep Variants"
      casual-ediff-customize-ediff-keep-variants
      :description (lambda () (casual-lib-checkbox-label ediff-keep-variants
-                                                   "Keep Variants")))
+                                                        "Keep Variants")))
 
     ("w" "Window Setup Function"
      casual-ediff-customize-ediff-window-setup-function)

@@ -3747,9 +3747,11 @@ Use `color-values-from-color-spec' (a C built-in since Emacs 28.1)
 instead of `color-name-to-rgb' to avoid dependence on a display
 connection.  This matters when loading a theme during early init on
 GUI Emacs, where `color-values' returns nil before the display is
-ready (per issue #198)."
-  (mapcar (lambda (x) (/ x 65535.0))
-          (color-values-from-color-spec hex-color)))
+ready (per <https://github.com/protesilaos/modus-themes/issues/198>)."
+  (mapcar
+   (lambda (x)
+     (/ x 65535.0))
+   (color-values-from-color-spec hex-color)))
 
 ;; This is the WCAG formula: https://www.w3.org/TR/WCAG20-TECHS/G18.html
 (defun modus-themes--wcag-contribution (channel weight)
@@ -3762,25 +3764,28 @@ ready (per issue #198)."
 (defun modus-themes-wcag-formula (hex-color)
   "Get WCAG value of color value HEX-COLOR.
 The value is defined in hexadecimal RGB notation, such #123456."
-  (let ((channels (modus-themes--hex-to-rgb hex-color))
-        (weights '(0.2126 0.7152 0.0722))
-        (contribution nil))
-    (while channels
-      (push (modus-themes--wcag-contribution (pop channels) (pop weights)) contribution))
-    (apply #'+ contribution)))
+  (when-let* ((channels (modus-themes--hex-to-rgb hex-color)))
+    (let ((weights '(0.2126 0.7152 0.0722))
+          (contribution nil))
+      (while channels
+        (push (modus-themes--wcag-contribution (pop channels) (pop weights)) contribution))
+      (apply #'+ contribution))))
 
 ;;;###autoload
 (defun modus-themes-contrast (hex-color-1 hex-color-2)
   "Measure WCAG contrast ratio between HEX-COLOR-1 and HEX-COLOR-2.
 HEX-COLOR-1 and HEX-COLOR-2 are color values written in hexadecimal RGB."
-  (let ((ct (/ (+ (modus-themes-wcag-formula hex-color-1) 0.05)
-               (+ (modus-themes-wcag-formula hex-color-2) 0.05))))
-    (max ct (/ ct))))
+  (if-let* ((hex1-weight (modus-themes-wcag-formula hex-color-1))
+            (hex2-weight (modus-themes-wcag-formula hex-color-2)))
+      (let ((contrast (/ (+ hex1-weight 0.05) (+ hex2-weight 0.05))))
+        (max contrast (/ contrast)))
+    (error "Both `%s' and `%s' must be valid hexadecimal RGB colors" hex-color-1 hex-color-2)))
 
-(defun modus-themes--color-six-digits (hex-color)
-  "Reduce representation of hexadecimal RGB HEX-COLOR to six digits."
+(defun modus-themes--color-eight-to-six-digits (hex-color)
+  "Reduce representation of hexadecimal RGB HEX-COLOR from eight to six digits.
+If HEX-COLOR is three or six digits, then return it as is."
   (let ((color-no-hash (substring hex-color 1)))
-    (if (= (length color-no-hash) 6)
+    (if (memq (length color-no-hash) '(3 6))
         hex-color
       (let* ((triplets (seq-split color-no-hash 4))
              (triplets-shortened (mapcar
@@ -3791,12 +3796,14 @@ HEX-COLOR-1 and HEX-COLOR-2 are color values written in hexadecimal RGB."
 
 (defun modus-themes-adjust-value (hex-rgb percentage)
   "Adjust value of HEX-RGB colour by PERCENTAGE."
-  (pcase-let* ((`(,r ,g ,b) (color-name-to-rgb hex-rgb))
-               (fn (if (color-dark-p (list r g b))
-                       #'color-lighten-name
-                     #'color-darken-name))
-               (value (funcall fn hex-rgb percentage)))
-    (modus-themes--color-six-digits value)))
+  (if-let* ((rgb (modus-themes--hex-to-rgb hex-rgb)))
+      (pcase-let* ((`(,r ,g ,b) rgb)
+                   (fn (if (color-dark-p (list r g b))
+                           #'color-lighten-name
+                         #'color-darken-name))
+                   (value (funcall fn hex-rgb percentage)))
+        (modus-themes--color-eight-to-six-digits value))
+    (error "The `%s' has to be a valid hexadecimal RGB color" hex-rgb)))
 
 (defvar modus-themes-registered-items nil
   "List of defined themes.
@@ -3969,7 +3976,12 @@ Return THEME."
   (run-hooks (or hook 'modus-themes-after-load-theme-hook))
   theme)
 
-(defun modus-themes--retrieve-palette-value (color palette)
+(define-obsolete-function-alias
+  'modus-themes--retrieve-palette-value
+  'modus-themes-retrieve-palette-value
+  "5.3.0")
+
+(defun modus-themes-retrieve-palette-value (color palette)
   "Return COLOR from PALETTE.
 Use recursion until COLOR is retrieved as a string.  Refrain from
 doing so if the value of COLOR is not a key in the PALETTE.
@@ -3985,7 +3997,7 @@ This function is used in the macro `modus-themes-theme'"
       value)
      ((and (symbolp value)
            value)
-      (modus-themes--retrieve-palette-value value palette))
+      (modus-themes-retrieve-palette-value value palette))
      (t
       'unspecified))))
 
@@ -4011,7 +4023,7 @@ symbol, which is safe when used as a face attribute's value."
   (when theme
     (modus-themes-activate theme))
   (if-let* ((palette (modus-themes-get-theme-palette theme with-overrides :with-user-palette))
-            (value (modus-themes--retrieve-palette-value color palette)))
+            (value (modus-themes-retrieve-palette-value color palette)))
       value
     'unspecified))
 
@@ -4682,7 +4694,7 @@ If COLOR is unspecified, then return :box unspecified."
 ;;;;; basic and/or ungrouped styles
     `(abbrev-table-name ((,c :inherit modus-themes-heading-1)))
     `(appt-notification ((,c :inherit modus-themes-bold :foreground ,modeline-err)))
-    `(blink-matching-paren-offscreen ((,c :background ,bg-paren-match)))
+    `(blink-matching-paren-offscreen ((,c :background ,bg-paren-match :foreground ,fg-paren-match :underline ,underline-paren-match)))
     `(buffer-menu-buffer ((,c :foreground ,name)))
     `(child-frame-border ((,c :background ,border)))
     `(comint-highlight-input ((,c :inherit modus-themes-bold)))
@@ -4827,7 +4839,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(font-latex-doctex-preprocessor-face ((,c :foreground ,preprocessor)))
     `(font-latex-italic-face ((,c :inherit italic)))
     `(font-latex-math-face ((,c :foreground ,constant)))
-    `(font-latex-script-char-face ((,c :inherit modus-themes-bold :foreground ,builtin)))
+    `(font-latex-script-char-face ((,c :inherit modus-themes-bold :foreground ,keybind)))
     `(font-latex-sectioning-5-face ((,c :inherit modus-themes-bold :foreground ,fg-alt)))
     `(font-latex-sedate-face ((,c :inherit modus-themes-bold :foreground ,keyword)))
     `(font-latex-slide-title-face ((,c :inherit modus-themes-heading-1)))
@@ -6301,7 +6313,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(mu4e-view-body-face (( )))
     `(mu4e-warning-face ((,c :foreground ,warning)))
 ;;;;; multiple-cursors
-    `(mc/cursor-bar-face ((,c :height 1 :foreground ,fg-main :background ,bg-main)))
+    `(mc/cursor-bar-face ((,c :height 1 :background ,cursor)))
     `(mc/cursor-face ((,c :inverse-video t)))
     `(mc/region-face ((,c :background ,bg-region :foreground ,fg-region)))
 ;;;;; nerd-icons
@@ -6948,6 +6960,8 @@ If COLOR is unspecified, then return :box unspecified."
     `(tab-bar-tab-ungrouped ((,c :background ,bg-tab-other ,@(modus-themes--box bg-tab-other -2 nil))))
 ;;;;; tab-line-mode
     `(tab-line ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar :height 0.95)))
+    `(tab-line-active ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-tab-bar)))
+    `(tab-line-inactive ((,c :inherit modus-themes-ui-variable-pitch :background ,bg-dim)))
     `(tab-line-close-highlight ((,c :foreground ,err)))
     `(tab-line-highlight ((,c :background ,bg-hover :foreground ,fg-main)))
     `(tab-line-tab (( )))
@@ -7078,6 +7092,8 @@ If COLOR is unspecified, then return :box unspecified."
     `(treemacs-window-background-face ((,c :background ,bg-main)))
     `(treemacs-nerd-icons-root-face ((,c :foreground ,accent-0)))
     `(treemacs-nerd-icons-file-face ((,c :foreground ,accent-0)))
+;;;;; trust-manager
+    `(trust-manager-untrusted-indicator ((,c :inherit modus-themes-bold :foreground ,modeline-err)))
 ;;;;; tty-menu
     `(tty-menu-disabled-face ((,c :background ,bg-inactive :foreground ,fg-dim)))
     `(tty-menu-enabled-face ((,c :inherit bold :background ,bg-inactive :foreground ,fg-main)))
@@ -7109,6 +7125,12 @@ If COLOR is unspecified, then return :box unspecified."
     `(typescript-jsdoc-tag ((,c :inherit modus-themes-slant :foreground ,builtin)))
     `(typescript-jsdoc-type ((,c :inherit modus-themes-slant :foreground ,type)))
     `(typescript-jsdoc-value ((,c :inherit modus-themes-slant :foreground ,string)))
+;;;;; typst-ts-mode
+    `(typst-ts-error-face ((,c :foreground ,err)))
+    `(typst-ts-markup-label-face ((,c :inherit ,(if modus-themes-mixed-fonts '(fixed-pitch default) 'default) :foreground ,builtin)))
+    `(typst-ts-markup-linebreak-face ((,c :foreground ,warning)))
+    `(typst-ts-markup-reference-face ((,c :background ,bg-link-symbolic :foreground ,fg-link-symbolic :underline ,underline-link-symbolic)))
+    `(typst-ts-script-char-face ((,c :inherit modus-themes-bold :foreground ,keybind)))
 ;;;;; undo-tree
     `(undo-tree-visualizer-active-branch-face ((,c :inherit modus-themes-bold :foreground ,fg-main)))
     `(undo-tree-visualizer-current-face ((,c :foreground ,err)))
@@ -7496,7 +7518,7 @@ Consult the manual for details on how to build a theme on top of the
                ,@(mapcar
                   (lambda (entry)
                     (let ((name (car entry)))
-                      (list name `(modus-themes--retrieve-palette-value ',name palette))))
+                      (list name `(modus-themes-retrieve-palette-value ',name palette))))
                   palette))
           (custom-theme-set-faces
            ',name
@@ -7650,7 +7672,7 @@ inclusive."
                      (modus-themes--hex-to-rgb blended-with-hex)
                      alpha))
          (blend-hex (apply #'color-rgb-to-hex blend-rgb)))
-    (modus-themes--color-six-digits blend-hex)))
+    (modus-themes--color-eight-to-six-digits blend-hex)))
 
 (defun modus-themes-generate-color-warmer (color alpha)
   "Return warmer COLOR by ALPHA, per `modus-themes-generate-color-blend'."
@@ -7663,7 +7685,7 @@ inclusive."
 (defun modus-themes-generate-gradient (color percent)
   "Adjust value of COLOR by PERCENT."
   (let ((gradient (color-lighten-name color percent)))
-    (modus-themes--color-six-digits gradient)))
+    (modus-themes--color-eight-to-six-digits gradient)))
 
 (defun modus-themes-color-warm-p (color)
   "Return non-nil if COLOR is warm.

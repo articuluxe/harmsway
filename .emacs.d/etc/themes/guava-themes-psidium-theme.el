@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 07, 2025
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,40 +35,53 @@
 
 (let* (
       (psidium-class '((class color) (min-colors 257)))
-      (psidium-black             "#000000")
-      (psidium-white             "#FFFFFF")
+      (psidium-black                     "#000000")
+      (psidium-white                     "#FFFFFF")
 
-      (psidium-shadow            "#7f7f7f")
+      (psidium-shadow                    "#7f7f7f")
 
-      (psidium-cream             "#F1EECE");F7DEB6
+      (psidium-cream                     "#F1EECE");F7DEB6
 
-      (psidium-green             "#599b48");599F48
-      (psidium-light-green       "#28bb6b");13765e,13845e,139570,3ab488,3ab992
-      (psidium-guava-green       "#aecd34");AECA41,AED234,AED734
-      (psidium-deep-green        "#097d2c");09662c
+      (psidium-green                     "#599b48");599F48
+      (psidium-light-green               "#28bb6b");13765e,13845e,139570,3ab488,3ab992
+      (psidium-guava-green               "#aecd34");AECA41,AED234,AED734
+      (psidium-deep-green                "#097d2c");09662c
 
-      (psidium-light-orange      "#ffbe9b");ffb49b
-      (psidium-red-orange        "#cd605f");ff605f,cd605f
-      (psidium-red               "#c1153b");f02d1b
-      (psidium-light-pink        "#FCD0C9");F8917C
-      (psidium-pink              "#F8767C");F84865,F8767C,F88686,F85A65
+      (psidium-light-orange              "#ffbe9b");ffb49b
+      (psidium-red-orange                "#cd605f");ff605f,cd605f
+      (psidium-red                       "#c1153b");f02d1b
+      (psidium-light-pink                "#FCD0C9");F8917C
+      (psidium-pink                      "#F8767C");F84865,F8767C,F88686,F85A65
 
-      (psidium-brown             "#816249");7D5E45
+      (psidium-brown                     "#816249");7D5E45
 
-      (psidium-light-blue        "#41C3CA")
-      (psidium-blue              "#2a4ad9")
-      (psidium-deep-blue         "#483d8b");004F5D
+      (psidium-light-blue                "#41C3CA")
+      (psidium-blue                      "#2a4ad9")
+      (psidium-deep-blue                 "#483d8b");004F5D
 
-      (psidium-light-purple      "#8cb4d1");817fb2,818fb2,819cb2,89a6d1,89afd1
-      (psidium-purple            "#812db2");D7137C,C0137C,B00CE0,a62db2,8e2db2
+      (psidium-light-purple              "#8cb4d1");817fb2,818fb2,819cb2,89a6d1,89afd1
+      (psidium-purple                    "#812db2");D7137C,C0137C,B00CE0,a62db2,8e2db2
 
-      (psidium-error             "#FF0000")
-      (psidium-warning           "#d6c800");FF8C00,f08020,f68511,dfe300
-      (psidium-success           "#228B22")
+      (psidium-error                     "#FF0000")
+      (psidium-warning                   "#d6c800");FF8C00,f08020,f68511,dfe300
+      (psidium-success                   "#228B22")
 
-      (psidium-vc-change         psidium-blue)
-      (psidium-vc-insert         psidium-green)
-      (psidium-vc-delete         psidium-error))
+      (psidium-diff-added                "#c8f0c8");335533
+      (psidium-diff-removed              "#f0c8c8");553333
+      (psidium-diff-refine-added         "#78f078");22aa22
+      (psidium-diff-refine-removed       "#f07878");aa2222
+      (psidium-diff-header               "#b4b4b4");737373
+      (psidium-diff-file-header          "#8c8c8c");999999
+      (psidium-diff-context              "#dcdcdc");999999
+
+      (psidium-orderless-0               "#af50c8");af50b9
+      (psidium-orderless-1               "#28a03c")
+      (psidium-orderless-2               "#ff6400")
+      (psidium-orderless-3               "#3c82ff")
+
+      (psidium-vc-change                 psidium-blue)
+      (psidium-vc-insert                 psidium-success)
+      (psidium-vc-delete                 psidium-error))
 
   (custom-theme-set-faces
    'guava-themes-psidium
@@ -122,8 +135,8 @@
    ;; line-number
    `(line-number ((,psidium-class (:foreground ,psidium-brown))))
    `(line-number-current-line ((,psidium-class (:foreground ,psidium-black :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,psidium-class (:background ,psidium-light-orange))))
-   `(line-number-major-tick ((,psidium-class (:background ,psidium-light-purple))))
+   `(line-number-minor-tick ((,psidium-class (:background ,psidium-light-orange :inherit line-number))))
+   `(line-number-major-tick ((,psidium-class (:background ,psidium-light-purple :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-pink))))
@@ -175,10 +188,30 @@
    `(outline-7 ((,psidium-class (:foreground ,psidium-brown :weight medium))))
    `(outline-8 ((,psidium-class (:foreground ,psidium-deep-blue :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,psidium-class (:foreground ,psidium-blue))))
    `(escape-glyph ((,psidium-class (:inherit homoglyph))))
    `(nobreak-space ((,psidium-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,psidium-class (:background ,psidium-light-blue))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,psidium-class (:foreground ,psidium-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,psidium-class (:foreground ,psidium-black :background ,psidium-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,psidium-class (:foreground ,psidium-black :background ,psidium-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,psidium-class (:foreground ,psidium-black :background ,psidium-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,psidium-class (:foreground ,psidium-black :background ,psidium-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,psidium-class (:foreground ,psidium-black :background ,psidium-diff-header :extend t))))
+   `(diff-file-header ((,psidium-class (:weight bold :foreground ,psidium-black :background ,psidium-diff-file-header :extend t))))
+   `(diff-context ((,psidium-class (:foreground ,psidium-black :background ,psidium-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,psidium-class (:foreground ,psidium-vc-change :weight bold))))
+   `(completions-first-difference ((,psidium-class (:foreground ,psidium-error :weight bold))))
 
 
    ;; external packages
@@ -194,7 +227,7 @@
    `(elfeed-search-unread-count-face ((,psidium-class (:weight bold :foreground ,psidium-deep-blue))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,psidium-class (:foreground ,psidium-deep-blue))))
+   `(doom-modeline-project-name ((,psidium-class (:foreground ,psidium-deep-blue :inherit italic))))
    `(doom-modeline-project-parent-dir ((,psidium-class (:foreground ,psidium-deep-blue))))
    `(doom-modeline-buffer-minor-mode ((,psidium-class (:foreground ,psidium-shadow))))
 
@@ -203,6 +236,12 @@
    `(corfu-current ((,psidium-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,psidium-class (:background ,psidium-shadow))))
    `(corfu-border ((,psidium-class (:background ,psidium-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,psidium-class (:foreground ,psidium-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,psidium-class (:foreground ,psidium-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,psidium-class (:foreground ,psidium-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,psidium-class (:foreground ,psidium-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,psidium-class (:inherit error))))

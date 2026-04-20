@@ -3,7 +3,7 @@
 ;; Copyright (C) 2019-2026 Michael Herstine <sp1ff@pobox.com>
 
 ;; Author: Michael Herstine <sp1ff@pobox.com>
-;; Version: 1.2.11
+;; Version: 1.2.12
 ;; Package-Requires: ((emacs "26.1") (elfeed "3.3.0"))
 ;; Keywords: news
 ;; URL: https://github.com/sp1ff/elfeed-score
@@ -44,7 +44,7 @@
 (require 'elfeed-score-scoring)
 (require 'elfeed-score-maint)
 
-(defconst elfeed-score-version "1.2.11")
+(defconst elfeed-score-version "1.2.12")
 
 (defgroup elfeed-score nil
   "Gnus-style scoring for Elfeed entries."
@@ -242,7 +242,8 @@ This implementation is derived from `elfeed-search-print-entry--default'."
 
 ;;;###autoload
 (defun elfeed-score-enable (&optional arg depth)
-  "Enable `elfeed-score'.  With prefix ARG do not install a custom sort function.
+  "Enable `elfeed-score'.
+With prefix ARG do not install a custom sort function.
 
 Add the score function at DEPTH (default 0)."
 

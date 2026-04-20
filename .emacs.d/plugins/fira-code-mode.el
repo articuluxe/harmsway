@@ -1,5 +1,4 @@
-;;; fira-code-mode.el --- Minor mode for Fira Code ligatures using prettify-symbols
-;; -*- lexical-binding: t; -*-
+;;; fira-code-mode.el --- Minor mode for Fira Code ligatures using prettify-symbols -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020 Jonathan Ming
 
@@ -166,8 +165,17 @@ option; if \"x\" is disabled but this option is enabled, then strings like
   "Fira Code ligatures minor mode"
   :lighter "  \xe15b"
   :group 'fira-code-ligatures
-  (unless (display-graphic-p)
-    (display-warning '(fira-code-ligatures) "fira-code-mode probably won't work for non-graphical displays!"))
+  (if (daemonp)
+      ;; In a daemon, we can't check display yet — defer warning
+      (add-hook 'server-after-make-frame-hook
+                (lambda ()
+                  (unless (display-graphic-p)
+                    (display-warning '(fira-code-ligatures)
+                                     "fira-code-mode probably won't work for non-graphical displays!")))
+                nil t)
+    (unless (display-graphic-p)
+      (display-warning '(fira-code-ligatures)
+                       "fira-code-mode probably won't work for non-graphical displays!")))
   (setq-local prettify-symbols-unprettify-at-point 'right-edge)
   (if fira-code-mode
       (fira-code-mode--enable)

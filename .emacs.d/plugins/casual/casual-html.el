@@ -83,11 +83,11 @@ For more documentation, refer to the following links:
     ("v" "Validate" sgml-validate)
     ("A" "Autoview" html-autoview-mode
      :description (lambda () (casual-lib-checkbox-label html-autoview-mode
-                                                   "HTML Autoview"))
+                                                        "HTML Autoview"))
      :if (lambda () (derived-mode-p 'html-mode)))
     ("TAB" "Toggle Invisible Tags" sgml-tags-invisible
      :description (lambda () (casual-lib-checkbox-label sgml-tags-invisible
-                                             "Invisible Tags"))
+                                                        "Invisible Tags"))
      :transient t)]
 
    ["Navigation"
@@ -164,10 +164,7 @@ This menu provides an interface to HTML-specific commands provided by
    ("h5" "5" html-headline-5)
    ("h6" "6" html-headline-6)]
 
-  [:class transient-row
-   (casual-lib-quit-one)
-   ("RET" "Done" transient-quit-all)
-   (casual-lib-quit-all)])
+  casual-lib-navigation-group-with-return)
 
 (provide 'casual-html)
 ;;; casual-html.el ends here

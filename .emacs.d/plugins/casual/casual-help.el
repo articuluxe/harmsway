@@ -71,23 +71,23 @@
    [""
     ("p" "Backward" casual-lib-browse-backward-paragraph
      :description (lambda () (format "%s %s"
-                                     (casual-help-unicode-get :previous)
-                                     (casual-help-unicode-get :paragraph)))
+                                (casual-help-unicode-get :previous)
+                                (casual-help-unicode-get :paragraph)))
      :transient t)
     ("n" "Forward" casual-lib-browse-forward-paragraph
      :description (lambda () (format "%s %s"
-                                     (casual-help-unicode-get :next)
-                                     (casual-help-unicode-get :paragraph)))
+                                (casual-help-unicode-get :next)
+                                (casual-help-unicode-get :paragraph)))
      :transient t)
     ("P" "Backward" help-goto-previous-page
      :description (lambda () (format "%s %s"
-                                     (casual-help-unicode-get :previous)
-                                     (casual-help-unicode-get :page)))
+                                (casual-help-unicode-get :previous)
+                                (casual-help-unicode-get :page)))
      :transient t)
     ("N" "Forward" help-goto-next-page
      :description (lambda () (format "%s %s"
-                                     (casual-help-unicode-get :next)
-                                     (casual-help-unicode-get :page)))
+                                (casual-help-unicode-get :next)
+                                (casual-help-unicode-get :page)))
      :transient t)]
 
    ["History"
@@ -128,6 +128,7 @@
   [:class transient-row
    (casual-lib-quit-one)
    ("," "Settings" casual-help-settings-tmenu)
+   ("J" "Jump to Bookmark…" bookmark-jump)
    ("q" "Quit" quit-window)
    (casual-lib-quit-all)])
 

@@ -581,6 +581,26 @@ Light variant.")
          `(eshell-ls-symlink ((,class (:foreground ,tokyo-cyan))))
          `(eshell-ls-unreadable ((,class (:foreground ,tokyo-comment))))
 
+;;;;; erc
+         `(erc-action-face ((,class (:foreground ,tokyo-comment :slant italic))))
+         `(erc-bold-face ((,class (:weight bold))))
+         `(erc-current-nick-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(erc-default-face ((,class (:foreground ,tokyo-fg))))
+         `(erc-direct-msg-face ((,class (:foreground ,tokyo-orange))))
+         `(erc-error-face ((,class (:foreground ,tokyo-red-dark :weight bold))))
+         `(erc-fool-face ((,class (:foreground ,tokyo-comment))))
+         `(erc-highlight-face ((,class (:background ,tokyo-bg-highlight))))
+         `(erc-input-face ((,class (:foreground ,tokyo-fg))))
+         `(erc-keyword-face ((,class (:foreground ,tokyo-magenta :weight bold))))
+         `(erc-my-nick-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(erc-nick-default-face ((,class (:foreground ,tokyo-teal :weight bold))))
+         `(erc-nick-msg-face ((,class (:foreground ,tokyo-orange :weight bold))))
+         `(erc-notice-face ((,class (:foreground ,tokyo-comment))))
+         `(erc-pal-face ((,class (:foreground ,tokyo-green :weight bold))))
+         `(erc-prompt-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(erc-timestamp-face ((,class (:foreground ,tokyo-dark5))))
+         `(erc-underline-face ((,class (:underline t))))
+
 ;;;;; flymake
          `(flymake-error ((,class (:underline (:style wave :color ,tokyo-red-dark)))))
          `(flymake-warning ((,class (:underline (:style wave :color ,tokyo-yellow)))))
@@ -678,6 +698,83 @@ Light variant.")
          `(message-header-xheader ((,class (:foreground ,tokyo-dark5))))
          `(message-mml ((,class (:foreground ,tokyo-green))))
          `(message-separator ((,class (:foreground ,tokyo-comment))))
+
+;;;;; mu4e
+         ;; Headers view – message flags
+         `(mu4e-unread-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(mu4e-header-face ((,class (:foreground ,tokyo-fg-dark))))
+         `(mu4e-flagged-face ((,class (:foreground ,tokyo-yellow :weight bold))))
+         `(mu4e-draft-face ((,class (:foreground ,tokyo-orange :slant italic))))
+         `(mu4e-trashed-face ((,class (:foreground ,tokyo-comment :strike-through t))))
+         `(mu4e-replied-face ((,class (:foreground ,tokyo-dark5))))
+         `(mu4e-forwarded-face ((,class (:foreground ,tokyo-dark5))))
+         `(mu4e-related-face ((,class (:foreground ,tokyo-comment :slant italic))))
+         ;; Headers view – UI elements
+         `(mu4e-header-title-face ((,class (:foreground ,tokyo-fg :weight bold))))
+         `(mu4e-header-highlight-face ((,class (:background ,tokyo-bg-highlight :extend t))))
+         `(mu4e-header-marks-face ((,class (:foreground ,tokyo-orange :weight bold))))
+         `(mu4e-header-key-face ((,class (:foreground ,tokyo-magenta :weight bold))))
+         `(mu4e-header-field-face ((,class (:foreground ,tokyo-magenta))))
+         `(mu4e-header-value-face ((,class (:foreground ,tokyo-fg-dark))))
+         `(mu4e-special-header-value-face ((,class (:foreground ,tokyo-cyan))))
+         ;; Message view
+         `(mu4e-link-face ((,class (:foreground ,tokyo-teal :underline t))))
+         `(mu4e-contact-face ((,class (:foreground ,tokyo-blue))))
+         `(mu4e-highlight-face ((,class (:foreground ,tokyo-cyan-bright :weight bold))))
+         `(mu4e-title-face ((,class (:foreground ,tokyo-fg :weight bold))))
+         `(mu4e-url-number-face ((,class (:foreground ,tokyo-teal-dark :weight bold))))
+         `(mu4e-footer-face ((,class (:foreground ,tokyo-comment :slant italic))))
+         ;; Compose
+         `(mu4e-compose-separator-face ((,class (:foreground ,tokyo-comment))))
+         ;; System / mode-line
+         `(mu4e-modeline-face ((,class (:foreground ,tokyo-blue))))
+         `(mu4e-system-face ((,class (:foreground ,tokyo-comment :slant italic))))
+         `(mu4e-ok-face ((,class (:foreground ,tokyo-green :weight bold))))
+         `(mu4e-warning-face ((,class (:foreground ,tokyo-yellow :weight bold))))
+         `(mu4e-region-code ((,class (:background ,tokyo-bg-highlight))))
+         ;; Threading
+         `(mu4e-thread-fold-face ((,class (:foreground ,tokyo-comment :slant italic))))
+
+;;;;; notmuch
+         ;; Search view
+         `(notmuch-search-date ((,class (:foreground ,tokyo-dark5))))
+         `(notmuch-search-count ((,class (:foreground ,tokyo-comment))))
+         `(notmuch-search-subject ((,class (:foreground ,tokyo-fg))))
+         `(notmuch-search-matching-authors ((,class (:foreground ,tokyo-blue))))
+         `(notmuch-search-non-matching-authors ((,class (:foreground ,tokyo-comment))))
+         `(notmuch-search-flagged ((,class (:foreground ,tokyo-yellow :weight bold))))
+         `(notmuch-search-unread ((,class (:foreground ,tokyo-fg :weight bold))))
+         ;; Tree view
+         `(notmuch-tree-match-author-face ((,class (:foreground ,tokyo-blue))))
+         `(notmuch-tree-match-date-face ((,class (:foreground ,tokyo-dark5))))
+         `(notmuch-tree-match-subject-face ((,class (:foreground ,tokyo-fg))))
+         `(notmuch-tree-match-tree-face ((,class (:foreground ,tokyo-comment))))
+         `(notmuch-tree-match-tag-face ((,class (:foreground ,tokyo-teal))))
+         `(notmuch-tree-no-match-author-face ((,class (:foreground ,tokyo-comment))))
+         `(notmuch-tree-no-match-date-face ((,class (:foreground ,tokyo-comment))))
+         `(notmuch-tree-no-match-subject-face ((,class (:foreground ,tokyo-comment))))
+         `(notmuch-tree-no-match-tree-face ((,class (:foreground ,tokyo-fg-gutter))))
+         `(notmuch-tree-no-match-tag-face ((,class (:foreground ,tokyo-comment))))
+         ;; Show view
+         `(notmuch-message-summary-face ((,class (:foreground ,tokyo-fg-dark :background ,tokyo-bg-dark))))
+         ;; Tags
+         `(notmuch-tag-face ((,class (:foreground ,tokyo-teal))))
+         `(notmuch-tag-unread ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(notmuch-tag-flagged ((,class (:foreground ,tokyo-yellow))))
+         `(notmuch-tag-deleted ((,class (:foreground ,tokyo-red :strike-through t))))
+         `(notmuch-tag-added ((,class (:foreground ,tokyo-green :underline t))))
+         ;; Wash (inline content toggling / citations)
+         `(notmuch-wash-toggle-button ((,class (:foreground ,tokyo-dark5 :background ,tokyo-bg-dark))))
+         `(notmuch-wash-cited-text ((,class (:foreground ,tokyo-comment))))
+         ;; Crypto
+         `(notmuch-crypto-part-header ((,class (:foreground ,tokyo-fg-dark))))
+         `(notmuch-crypto-signature-good ((,class (:foreground ,tokyo-green :weight bold))))
+         `(notmuch-crypto-signature-good-key ((,class (:foreground ,tokyo-green))))
+         `(notmuch-crypto-signature-bad ((,class (:foreground ,tokyo-red :weight bold))))
+         `(notmuch-crypto-signature-unknown ((,class (:foreground ,tokyo-yellow))))
+         `(notmuch-crypto-decryption ((,class (:foreground ,tokyo-cyan))))
+         ;; Hello (welcome screen)
+         `(notmuch-hello-logo-background ((,class (:background ,tokyo-bg-dark))))
 
 ;;;;; org-mode
          `(org-archived ((,class (:foreground ,tokyo-comment))))
@@ -908,6 +1005,14 @@ Light variant.")
          `(smerge-refined-changed ((,class (:foreground ,tokyo-blue :background ,tokyo-diff-chg-bg :weight bold :extend t))))
 
 ;;;; Third-party packages
+;;;;; evil
+         `(evil-ex-commands ((,class (:foreground ,tokyo-fg-dark :underline t :slant italic))))
+         `(evil-ex-info ((,class (:foreground ,tokyo-red :slant italic))))
+         `(evil-ex-search ((,class (:foreground ,tokyo-bg :background ,tokyo-magenta-hot :weight bold))))
+         `(evil-ex-lazy-highlight ((,class (:foreground ,tokyo-fg :background ,tokyo-blue-dark))))
+         `(evil-ex-substitute-matches ((,class (:foreground ,tokyo-fg :background ,tokyo-blue-dark))))
+         `(evil-ex-substitute-replacement ((,class (:foreground ,tokyo-orange :underline t :weight bold))))
+
 ;;;;; avy
          `(avy-lead-face ((,class (:foreground ,tokyo-bg :background ,tokyo-magenta-hot :weight bold))))
          `(avy-lead-face-0 ((,class (:foreground ,tokyo-bg :background ,tokyo-blue :weight bold))))
@@ -1549,7 +1654,131 @@ Light variant.")
          `(web-mode-current-column-highlight-face ((,class (:background ,tokyo-bg-line))))
          `(web-mode-comment-keyword-face ((,class (:foreground ,tokyo-magenta-hot :weight bold))))
          `(web-mode-sql-keyword-face ((,class (:foreground ,tokyo-cyan))))
-         `(web-mode-html-entity-face ((,class (:foreground ,tokyo-orange)))))
+         `(web-mode-html-entity-face ((,class (:foreground ,tokyo-orange))))
+
+;;;;; auctex
+         `(font-latex-bold-face ((,class (:foreground ,tokyo-fg :weight bold))))
+         `(font-latex-italic-face ((,class (:foreground ,tokyo-fg :slant italic))))
+         `(font-latex-math-face ((,class (:foreground ,tokyo-teal))))
+         `(font-latex-script-char-face ((,class (:foreground ,tokyo-orange))))
+         `(font-latex-sectioning-0-face ((,class (:foreground ,tokyo-heading1 :height ,h1 :weight bold))))
+         `(font-latex-sectioning-1-face ((,class (:foreground ,tokyo-heading2 :height ,h2 :weight bold))))
+         `(font-latex-sectioning-2-face ((,class (:foreground ,tokyo-heading3 :height ,h3 :weight bold))))
+         `(font-latex-sectioning-3-face ((,class (:foreground ,tokyo-heading4 :weight bold))))
+         `(font-latex-sectioning-4-face ((,class (:foreground ,tokyo-heading5 :weight bold))))
+         `(font-latex-sectioning-5-face ((,class (:foreground ,tokyo-heading6 :weight bold))))
+         `(font-latex-sedate-face ((,class (:foreground ,tokyo-fg-dark))))
+         `(font-latex-slide-title-face ((,class (:foreground ,tokyo-blue :weight bold :height ,h1))))
+         `(font-latex-string-face ((,class (:foreground ,tokyo-green))))
+         `(font-latex-subscript-face ((,class (:height 0.9))))
+         `(font-latex-superscript-face ((,class (:height 0.9))))
+         `(font-latex-verbatim-face ((,class (:foreground ,tokyo-teal :inherit fixed-pitch))))
+         `(font-latex-warning-face ((,class (:foreground ,tokyo-orange :weight bold))))
+         `(font-latex-doctex-documentation-face ((,class (:background ,tokyo-bg-dark))))
+         `(font-latex-doctex-preprocessor-face ((,class (:foreground ,tokyo-magenta))))
+
+;;;;; centaur-tabs
+         `(centaur-tabs-default ((,class (:background ,tokyo-bg-dark :foreground ,tokyo-comment))))
+         `(centaur-tabs-selected ((,class (:background ,tokyo-bg :foreground ,tokyo-fg :weight bold))))
+         `(centaur-tabs-unselected ((,class (:background ,tokyo-bg-dark :foreground ,tokyo-comment))))
+         `(centaur-tabs-selected-modified ((,class (:background ,tokyo-bg :foreground ,tokyo-orange :weight bold))))
+         `(centaur-tabs-unselected-modified ((,class (:background ,tokyo-bg-dark :foreground ,tokyo-orange))))
+         `(centaur-tabs-active-bar-face ((,class (:background ,tokyo-blue))))
+         `(centaur-tabs-modified-marker-selected ((,class (:foreground ,tokyo-orange))))
+         `(centaur-tabs-modified-marker-unselected ((,class (:foreground ,tokyo-orange))))
+
+;;;;; git-gutter
+         `(git-gutter:added ((,class (:foreground ,tokyo-git-add))))
+         `(git-gutter:deleted ((,class (:foreground ,tokyo-git-delete))))
+         `(git-gutter:modified ((,class (:foreground ,tokyo-git-change))))
+         `(git-gutter:unchanged ((,class (:background ,tokyo-bg-highlight))))
+
+;;;;; git-gutter-fr
+         `(git-gutter-fr:added ((,class (:foreground ,tokyo-git-add))))
+         `(git-gutter-fr:deleted ((,class (:foreground ,tokyo-git-delete))))
+         `(git-gutter-fr:modified ((,class (:foreground ,tokyo-git-change))))
+
+;;;;; highlight-numbers
+         `(highlight-numbers-number ((,class (:foreground ,tokyo-orange))))
+
+;;;;; multiple-cursors
+         `(mc/cursor-face ((,class (:inverse-video nil :background ,tokyo-bg-highlight :foreground ,tokyo-fg))))
+         `(mc/cursor-bar-face ((,class (:background ,tokyo-fg :height 1))))
+         `(mc/region-face ((,class (:inherit region))))
+
+;;;;; neotree
+         `(neo-banner-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(neo-header-face ((,class (:foreground ,tokyo-fg))))
+         `(neo-root-dir-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(neo-dir-link-face ((,class (:foreground ,tokyo-blue))))
+         `(neo-file-link-face ((,class (:foreground ,tokyo-fg))))
+         `(neo-expand-btn-face ((,class (:foreground ,tokyo-comment))))
+         `(neo-vc-default-face ((,class (:foreground ,tokyo-fg))))
+         `(neo-vc-up-to-date-face ((,class (:foreground ,tokyo-fg))))
+         `(neo-vc-edited-face ((,class (:foreground ,tokyo-git-change))))
+         `(neo-vc-needs-merge-face ((,class (:foreground ,tokyo-orange))))
+         `(neo-vc-added-face ((,class (:foreground ,tokyo-git-add))))
+         `(neo-vc-conflict-face ((,class (:foreground ,tokyo-red :weight bold))))
+         `(neo-vc-missing-face ((,class (:foreground ,tokyo-red))))
+         `(neo-vc-ignored-face ((,class (:foreground ,tokyo-git-ignored))))
+
+;;;;; nerd-icons
+         `(nerd-icons-red ((,class (:foreground ,tokyo-red))))
+         `(nerd-icons-lred ((,class (:foreground ,tokyo-red))))
+         `(nerd-icons-dred ((,class (:foreground ,tokyo-red-dark))))
+         `(nerd-icons-green ((,class (:foreground ,tokyo-green))))
+         `(nerd-icons-lgreen ((,class (:foreground ,tokyo-green))))
+         `(nerd-icons-dgreen ((,class (:foreground ,tokyo-teal-dark))))
+         `(nerd-icons-yellow ((,class (:foreground ,tokyo-yellow))))
+         `(nerd-icons-lyellow ((,class (:foreground ,tokyo-yellow))))
+         `(nerd-icons-dyellow ((,class (:foreground ,tokyo-orange))))
+         `(nerd-icons-blue ((,class (:foreground ,tokyo-blue))))
+         `(nerd-icons-lblue ((,class (:foreground ,tokyo-cyan))))
+         `(nerd-icons-dblue ((,class (:foreground ,tokyo-blue-dark))))
+         `(nerd-icons-maroon ((,class (:foreground ,tokyo-red-dark))))
+         `(nerd-icons-lmaroon ((,class (:foreground ,tokyo-red))))
+         `(nerd-icons-dmaroon ((,class (:foreground ,tokyo-red-dark))))
+         `(nerd-icons-purple ((,class (:foreground ,tokyo-magenta))))
+         `(nerd-icons-lpurple ((,class (:foreground ,tokyo-magenta))))
+         `(nerd-icons-dpurple ((,class (:foreground ,tokyo-magenta-dark))))
+         `(nerd-icons-orange ((,class (:foreground ,tokyo-orange))))
+         `(nerd-icons-lorange ((,class (:foreground ,tokyo-orange))))
+         `(nerd-icons-dorange ((,class (:foreground ,tokyo-orange))))
+         `(nerd-icons-cyan ((,class (:foreground ,tokyo-cyan))))
+         `(nerd-icons-lcyan ((,class (:foreground ,tokyo-cyan-bright))))
+         `(nerd-icons-dcyan ((,class (:foreground ,tokyo-teal-dark))))
+         `(nerd-icons-pink ((,class (:foreground ,tokyo-red))))
+         `(nerd-icons-lpink ((,class (:foreground ,tokyo-red))))
+         `(nerd-icons-dpink ((,class (:foreground ,tokyo-red-dark))))
+         `(nerd-icons-silver ((,class (:foreground ,tokyo-fg-dark))))
+         `(nerd-icons-lsilver ((,class (:foreground ,tokyo-fg))))
+         `(nerd-icons-dsilver ((,class (:foreground ,tokyo-comment))))
+
+;;;;; perspective
+         `(persp-selected-face ((,class (:foreground ,tokyo-blue :weight bold))))
+
+;;;;; solaire
+         `(solaire-default-face ((,class (:background ,tokyo-bg-dark :foreground ,tokyo-fg))))
+         `(solaire-minibuffer-face ((,class (:background ,tokyo-bg-dark :foreground ,tokyo-fg))))
+         `(solaire-hl-line-face ((,class (:background ,tokyo-bg-highlight))))
+         `(solaire-line-number-face ((,class (:background ,tokyo-bg-dark :foreground ,tokyo-line-nr))))
+         `(solaire-mode-line-face ((,class (:background ,tokyo-bg-dark))))
+         `(solaire-mode-line-inactive-face ((,class (:background ,tokyo-bg-darkest))))
+         `(solaire-org-hide-face ((,class (:foreground ,tokyo-bg-dark))))
+
+;;;;; undo-tree
+         `(undo-tree-visualizer-active-branch-face ((,class (:foreground ,tokyo-fg :weight bold))))
+         `(undo-tree-visualizer-current-face ((,class (:foreground ,tokyo-red))))
+         `(undo-tree-visualizer-default-face ((,class (:foreground ,tokyo-comment))))
+         `(undo-tree-visualizer-register-face ((,class (:foreground ,tokyo-yellow))))
+         `(undo-tree-visualizer-unmodified-face ((,class (:foreground ,tokyo-teal))))
+
+;;;;; wgrep
+         `(wgrep-face ((,class (:foreground ,tokyo-green :background ,tokyo-diff-add-bg))))
+         `(wgrep-delete-face ((,class (:foreground ,tokyo-red :background ,tokyo-diff-del-bg))))
+         `(wgrep-done-face ((,class (:foreground ,tokyo-blue))))
+         `(wgrep-file-face ((,class (:foreground ,tokyo-comment))))
+         `(wgrep-reject-face ((,class (:foreground ,tokyo-red :weight bold)))))
 
         (custom-theme-set-variables
          theme-name

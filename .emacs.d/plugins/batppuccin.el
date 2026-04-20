@@ -503,6 +503,26 @@ The light flavor.")
          `(eshell-ls-symlink ((,class (:foreground ,bat-sky))))
          `(eshell-ls-unreadable ((,class (:foreground ,bat-overlay2))))
 
+;;;;; erc
+         `(erc-action-face ((,class (:foreground ,bat-overlay2 :slant italic))))
+         `(erc-bold-face ((,class (:weight bold))))
+         `(erc-current-nick-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(erc-default-face ((,class (:foreground ,bat-text))))
+         `(erc-direct-msg-face ((,class (:foreground ,bat-peach))))
+         `(erc-error-face ((,class (:foreground ,bat-red :weight bold))))
+         `(erc-fool-face ((,class (:foreground ,bat-overlay2))))
+         `(erc-highlight-face ((,class (:background ,bat-surface0))))
+         `(erc-input-face ((,class (:foreground ,bat-text))))
+         `(erc-keyword-face ((,class (:foreground ,bat-mauve :weight bold))))
+         `(erc-my-nick-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(erc-nick-default-face ((,class (:foreground ,bat-teal :weight bold))))
+         `(erc-nick-msg-face ((,class (:foreground ,bat-peach :weight bold))))
+         `(erc-notice-face ((,class (:foreground ,bat-overlay2))))
+         `(erc-pal-face ((,class (:foreground ,bat-green :weight bold))))
+         `(erc-prompt-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(erc-timestamp-face ((,class (:foreground ,bat-overlay1))))
+         `(erc-underline-face ((,class (:underline t))))
+
 ;;;;; flymake
          `(flymake-error ((,class (:underline (:style wave :color ,bat-red)))))
          `(flymake-warning ((,class (:underline (:style wave :color ,bat-yellow)))))
@@ -600,6 +620,83 @@ The light flavor.")
          `(message-header-xheader ((,class (:foreground ,bat-overlay1))))
          `(message-mml ((,class (:foreground ,bat-green))))
          `(message-separator ((,class (:foreground ,bat-overlay2))))
+
+;;;;; mu4e
+         ;; Headers view – message flags
+         `(mu4e-unread-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(mu4e-header-face ((,class (:foreground ,bat-subtext1))))
+         `(mu4e-flagged-face ((,class (:foreground ,bat-yellow :weight bold))))
+         `(mu4e-draft-face ((,class (:foreground ,bat-peach :slant italic))))
+         `(mu4e-trashed-face ((,class (:foreground ,bat-overlay2 :strike-through t))))
+         `(mu4e-replied-face ((,class (:foreground ,bat-overlay1))))
+         `(mu4e-forwarded-face ((,class (:foreground ,bat-overlay1))))
+         `(mu4e-related-face ((,class (:foreground ,bat-overlay2 :slant italic))))
+         ;; Headers view – UI elements
+         `(mu4e-header-title-face ((,class (:foreground ,bat-text :weight bold))))
+         `(mu4e-header-highlight-face ((,class (:background ,bat-surface0 :extend t))))
+         `(mu4e-header-marks-face ((,class (:foreground ,bat-peach :weight bold))))
+         `(mu4e-header-key-face ((,class (:foreground ,bat-mauve :weight bold))))
+         `(mu4e-header-field-face ((,class (:foreground ,bat-mauve))))
+         `(mu4e-header-value-face ((,class (:foreground ,bat-subtext1))))
+         `(mu4e-special-header-value-face ((,class (:foreground ,bat-sky))))
+         ;; Message view
+         `(mu4e-link-face ((,class (:foreground ,bat-teal :underline t))))
+         `(mu4e-contact-face ((,class (:foreground ,bat-blue))))
+         `(mu4e-highlight-face ((,class (:foreground ,bat-sky :weight bold))))
+         `(mu4e-title-face ((,class (:foreground ,bat-text :weight bold))))
+         `(mu4e-url-number-face ((,class (:foreground ,bat-teal :weight bold))))
+         `(mu4e-footer-face ((,class (:foreground ,bat-overlay2 :slant italic))))
+         ;; Compose
+         `(mu4e-compose-separator-face ((,class (:foreground ,bat-overlay2))))
+         ;; System / mode-line
+         `(mu4e-modeline-face ((,class (:foreground ,bat-blue))))
+         `(mu4e-system-face ((,class (:foreground ,bat-overlay2 :slant italic))))
+         `(mu4e-ok-face ((,class (:foreground ,bat-green :weight bold))))
+         `(mu4e-warning-face ((,class (:foreground ,bat-yellow :weight bold))))
+         `(mu4e-region-code ((,class (:background ,bat-surface0))))
+         ;; Threading
+         `(mu4e-thread-fold-face ((,class (:foreground ,bat-overlay2 :slant italic))))
+
+;;;;; notmuch
+         ;; Search view
+         `(notmuch-search-date ((,class (:foreground ,bat-overlay1))))
+         `(notmuch-search-count ((,class (:foreground ,bat-overlay2))))
+         `(notmuch-search-subject ((,class (:foreground ,bat-text))))
+         `(notmuch-search-matching-authors ((,class (:foreground ,bat-blue))))
+         `(notmuch-search-non-matching-authors ((,class (:foreground ,bat-overlay2))))
+         `(notmuch-search-flagged ((,class (:foreground ,bat-yellow :weight bold))))
+         `(notmuch-search-unread ((,class (:foreground ,bat-text :weight bold))))
+         ;; Tree view
+         `(notmuch-tree-match-author-face ((,class (:foreground ,bat-blue))))
+         `(notmuch-tree-match-date-face ((,class (:foreground ,bat-overlay1))))
+         `(notmuch-tree-match-subject-face ((,class (:foreground ,bat-text))))
+         `(notmuch-tree-match-tree-face ((,class (:foreground ,bat-overlay2))))
+         `(notmuch-tree-match-tag-face ((,class (:foreground ,bat-teal))))
+         `(notmuch-tree-no-match-author-face ((,class (:foreground ,bat-overlay2))))
+         `(notmuch-tree-no-match-date-face ((,class (:foreground ,bat-overlay2))))
+         `(notmuch-tree-no-match-subject-face ((,class (:foreground ,bat-overlay2))))
+         `(notmuch-tree-no-match-tree-face ((,class (:foreground ,bat-surface2))))
+         `(notmuch-tree-no-match-tag-face ((,class (:foreground ,bat-overlay2))))
+         ;; Show view
+         `(notmuch-message-summary-face ((,class (:foreground ,bat-subtext1 :background ,bat-mantle))))
+         ;; Tags
+         `(notmuch-tag-face ((,class (:foreground ,bat-teal))))
+         `(notmuch-tag-unread ((,class (:foreground ,bat-blue :weight bold))))
+         `(notmuch-tag-flagged ((,class (:foreground ,bat-yellow))))
+         `(notmuch-tag-deleted ((,class (:foreground ,bat-red :strike-through t))))
+         `(notmuch-tag-added ((,class (:foreground ,bat-green :underline t))))
+         ;; Wash (inline content toggling / citations)
+         `(notmuch-wash-toggle-button ((,class (:foreground ,bat-overlay1 :background ,bat-mantle))))
+         `(notmuch-wash-cited-text ((,class (:foreground ,bat-overlay2))))
+         ;; Crypto
+         `(notmuch-crypto-part-header ((,class (:foreground ,bat-subtext1))))
+         `(notmuch-crypto-signature-good ((,class (:foreground ,bat-green :weight bold))))
+         `(notmuch-crypto-signature-good-key ((,class (:foreground ,bat-green))))
+         `(notmuch-crypto-signature-bad ((,class (:foreground ,bat-red :weight bold))))
+         `(notmuch-crypto-signature-unknown ((,class (:foreground ,bat-yellow))))
+         `(notmuch-crypto-decryption ((,class (:foreground ,bat-sky))))
+         ;; Hello (welcome screen)
+         `(notmuch-hello-logo-background ((,class (:background ,bat-mantle))))
 
 ;;;;; org-mode
          `(org-archived ((,class (:foreground ,bat-overlay2))))
@@ -830,6 +927,14 @@ The light flavor.")
          `(smerge-refined-changed ((,class (:foreground ,bat-blue :background ,bat-diff-chg-bg :weight bold :extend t))))
 
 ;;;; Third-party packages
+;;;;; evil
+         `(evil-ex-commands ((,class (:foreground ,bat-subtext1 :underline t :slant italic))))
+         `(evil-ex-info ((,class (:foreground ,bat-red :slant italic))))
+         `(evil-ex-search ((,class (:foreground ,bat-base :background ,bat-flamingo :weight bold))))
+         `(evil-ex-lazy-highlight ((,class (:foreground ,bat-text :background ,bat-surface1))))
+         `(evil-ex-substitute-matches ((,class (:foreground ,bat-text :background ,bat-surface1))))
+         `(evil-ex-substitute-replacement ((,class (:foreground ,bat-peach :underline t :weight bold))))
+
 ;;;;; avy
          `(avy-lead-face ((,class (:foreground ,bat-base :background ,bat-red :weight bold))))
          `(avy-lead-face-0 ((,class (:foreground ,bat-base :background ,bat-blue :weight bold))))
@@ -1328,7 +1433,131 @@ The light flavor.")
          `(which-key-command-description-face ((,class (:foreground ,bat-text))))
          `(which-key-group-description-face ((,class (:foreground ,bat-blue))))
          `(which-key-local-map-description-face ((,class (:foreground ,bat-teal))))
-         `(which-key-special-key-face ((,class (:foreground ,bat-peach :weight bold)))))
+         `(which-key-special-key-face ((,class (:foreground ,bat-peach :weight bold))))
+
+;;;;; auctex
+         `(font-latex-bold-face ((,class (:foreground ,bat-text :weight bold))))
+         `(font-latex-italic-face ((,class (:foreground ,bat-text :slant italic))))
+         `(font-latex-math-face ((,class (:foreground ,bat-teal))))
+         `(font-latex-script-char-face ((,class (:foreground ,bat-peach))))
+         `(font-latex-sectioning-0-face ((,class (:foreground ,bat-heading1 :height ,h1 :weight bold))))
+         `(font-latex-sectioning-1-face ((,class (:foreground ,bat-heading2 :height ,h2 :weight bold))))
+         `(font-latex-sectioning-2-face ((,class (:foreground ,bat-heading3 :height ,h3 :weight bold))))
+         `(font-latex-sectioning-3-face ((,class (:foreground ,bat-heading4 :weight bold))))
+         `(font-latex-sectioning-4-face ((,class (:foreground ,bat-heading5 :weight bold))))
+         `(font-latex-sectioning-5-face ((,class (:foreground ,bat-heading6 :weight bold))))
+         `(font-latex-sedate-face ((,class (:foreground ,bat-subtext1))))
+         `(font-latex-slide-title-face ((,class (:foreground ,bat-blue :weight bold :height ,h1))))
+         `(font-latex-string-face ((,class (:foreground ,bat-green))))
+         `(font-latex-subscript-face ((,class (:height 0.9))))
+         `(font-latex-superscript-face ((,class (:height 0.9))))
+         `(font-latex-verbatim-face ((,class (:foreground ,bat-teal :inherit fixed-pitch))))
+         `(font-latex-warning-face ((,class (:foreground ,bat-peach :weight bold))))
+         `(font-latex-doctex-documentation-face ((,class (:background ,bat-mantle))))
+         `(font-latex-doctex-preprocessor-face ((,class (:foreground ,bat-mauve))))
+
+;;;;; centaur-tabs
+         `(centaur-tabs-default ((,class (:background ,bat-mantle :foreground ,bat-overlay2))))
+         `(centaur-tabs-selected ((,class (:background ,bat-base :foreground ,bat-text :weight bold))))
+         `(centaur-tabs-unselected ((,class (:background ,bat-mantle :foreground ,bat-overlay2))))
+         `(centaur-tabs-selected-modified ((,class (:background ,bat-base :foreground ,bat-peach :weight bold))))
+         `(centaur-tabs-unselected-modified ((,class (:background ,bat-mantle :foreground ,bat-peach))))
+         `(centaur-tabs-active-bar-face ((,class (:background ,bat-blue))))
+         `(centaur-tabs-modified-marker-selected ((,class (:foreground ,bat-peach))))
+         `(centaur-tabs-modified-marker-unselected ((,class (:foreground ,bat-peach))))
+
+;;;;; git-gutter
+         `(git-gutter:added ((,class (:foreground ,bat-green))))
+         `(git-gutter:deleted ((,class (:foreground ,bat-red))))
+         `(git-gutter:modified ((,class (:foreground ,bat-blue))))
+         `(git-gutter:unchanged ((,class (:background ,bat-surface0))))
+
+;;;;; git-gutter-fr
+         `(git-gutter-fr:added ((,class (:foreground ,bat-green))))
+         `(git-gutter-fr:deleted ((,class (:foreground ,bat-red))))
+         `(git-gutter-fr:modified ((,class (:foreground ,bat-blue))))
+
+;;;;; highlight-numbers
+         `(highlight-numbers-number ((,class (:foreground ,bat-peach))))
+
+;;;;; multiple-cursors
+         `(mc/cursor-face ((,class (:inverse-video nil :background ,bat-surface0 :foreground ,bat-text))))
+         `(mc/cursor-bar-face ((,class (:background ,bat-text :height 1))))
+         `(mc/region-face ((,class (:inherit region))))
+
+;;;;; neotree
+         `(neo-banner-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(neo-header-face ((,class (:foreground ,bat-text))))
+         `(neo-root-dir-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(neo-dir-link-face ((,class (:foreground ,bat-blue))))
+         `(neo-file-link-face ((,class (:foreground ,bat-text))))
+         `(neo-expand-btn-face ((,class (:foreground ,bat-overlay2))))
+         `(neo-vc-default-face ((,class (:foreground ,bat-text))))
+         `(neo-vc-up-to-date-face ((,class (:foreground ,bat-text))))
+         `(neo-vc-edited-face ((,class (:foreground ,bat-blue))))
+         `(neo-vc-needs-merge-face ((,class (:foreground ,bat-peach))))
+         `(neo-vc-added-face ((,class (:foreground ,bat-green))))
+         `(neo-vc-conflict-face ((,class (:foreground ,bat-red :weight bold))))
+         `(neo-vc-missing-face ((,class (:foreground ,bat-red))))
+         `(neo-vc-ignored-face ((,class (:foreground ,bat-overlay0))))
+
+;;;;; nerd-icons
+         `(nerd-icons-red ((,class (:foreground ,bat-red))))
+         `(nerd-icons-lred ((,class (:foreground ,bat-red))))
+         `(nerd-icons-dred ((,class (:foreground ,bat-maroon))))
+         `(nerd-icons-green ((,class (:foreground ,bat-green))))
+         `(nerd-icons-lgreen ((,class (:foreground ,bat-green))))
+         `(nerd-icons-dgreen ((,class (:foreground ,bat-teal))))
+         `(nerd-icons-yellow ((,class (:foreground ,bat-yellow))))
+         `(nerd-icons-lyellow ((,class (:foreground ,bat-yellow))))
+         `(nerd-icons-dyellow ((,class (:foreground ,bat-peach))))
+         `(nerd-icons-blue ((,class (:foreground ,bat-blue))))
+         `(nerd-icons-lblue ((,class (:foreground ,bat-sky))))
+         `(nerd-icons-dblue ((,class (:foreground ,bat-sapphire))))
+         `(nerd-icons-maroon ((,class (:foreground ,bat-maroon))))
+         `(nerd-icons-lmaroon ((,class (:foreground ,bat-red))))
+         `(nerd-icons-dmaroon ((,class (:foreground ,bat-maroon))))
+         `(nerd-icons-purple ((,class (:foreground ,bat-mauve))))
+         `(nerd-icons-lpurple ((,class (:foreground ,bat-mauve))))
+         `(nerd-icons-dpurple ((,class (:foreground ,bat-mauve))))
+         `(nerd-icons-orange ((,class (:foreground ,bat-peach))))
+         `(nerd-icons-lorange ((,class (:foreground ,bat-peach))))
+         `(nerd-icons-dorange ((,class (:foreground ,bat-peach))))
+         `(nerd-icons-cyan ((,class (:foreground ,bat-sky))))
+         `(nerd-icons-lcyan ((,class (:foreground ,bat-sky))))
+         `(nerd-icons-dcyan ((,class (:foreground ,bat-teal))))
+         `(nerd-icons-pink ((,class (:foreground ,bat-pink))))
+         `(nerd-icons-lpink ((,class (:foreground ,bat-pink))))
+         `(nerd-icons-dpink ((,class (:foreground ,bat-flamingo))))
+         `(nerd-icons-silver ((,class (:foreground ,bat-subtext1))))
+         `(nerd-icons-lsilver ((,class (:foreground ,bat-text))))
+         `(nerd-icons-dsilver ((,class (:foreground ,bat-overlay2))))
+
+;;;;; perspective
+         `(persp-selected-face ((,class (:foreground ,bat-blue :weight bold))))
+
+;;;;; solaire
+         `(solaire-default-face ((,class (:background ,bat-mantle :foreground ,bat-text))))
+         `(solaire-minibuffer-face ((,class (:background ,bat-mantle :foreground ,bat-text))))
+         `(solaire-hl-line-face ((,class (:background ,bat-surface0))))
+         `(solaire-line-number-face ((,class (:background ,bat-mantle :foreground ,bat-surface1))))
+         `(solaire-mode-line-face ((,class (:background ,bat-mantle))))
+         `(solaire-mode-line-inactive-face ((,class (:background ,bat-crust))))
+         `(solaire-org-hide-face ((,class (:foreground ,bat-mantle))))
+
+;;;;; undo-tree
+         `(undo-tree-visualizer-active-branch-face ((,class (:foreground ,bat-text :weight bold))))
+         `(undo-tree-visualizer-current-face ((,class (:foreground ,bat-red))))
+         `(undo-tree-visualizer-default-face ((,class (:foreground ,bat-overlay2))))
+         `(undo-tree-visualizer-register-face ((,class (:foreground ,bat-yellow))))
+         `(undo-tree-visualizer-unmodified-face ((,class (:foreground ,bat-teal))))
+
+;;;;; wgrep
+         `(wgrep-face ((,class (:foreground ,bat-green :background ,bat-diff-add-bg))))
+         `(wgrep-delete-face ((,class (:foreground ,bat-red :background ,bat-diff-del-bg))))
+         `(wgrep-done-face ((,class (:foreground ,bat-blue))))
+         `(wgrep-file-face ((,class (:foreground ,bat-overlay2))))
+         `(wgrep-reject-face ((,class (:foreground ,bat-red :weight bold)))))
 
         (custom-theme-set-variables
          theme-name

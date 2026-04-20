@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 29, 2025
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,43 +35,56 @@
 
 (let* (
       (prunus-class '((class color) (min-colors 257)))
-      ;;(prunus-black             "#000000")
-      (prunus-white             "#FFFFFF")
+      ;;(prunus-black                     "#000000")
+      (prunus-white                     "#FFFFFF")
 
-      (prunus-shadow            "#b3b3b3")
+      (prunus-shadow                    "#b3b3b3")
 
-      (prunus-cream             "#DEA2BD");fffef5,EBDCF5
-      (prunus-brown             "#4a2b1b");583c25,4A301B
-      (prunus-dark-brown        "#1A0E05");E9E4F9,3F271D,2E1E03,281A04,1A0E05,1C0E06,1C0F07
-      (prunus-alt-dark-brown    "#2b1f16")
+      (prunus-cream                     "#DEA2BD");fffef5,EBDCF5,DEA2BD
+      (prunus-brown                     "#4a2b1b");583c25,4A301B
+      (prunus-dark-brown                "#1A0E05");E9E4F9,3F271D,2E1E03,281A04,1A0E05,1C0E06,1C0F07
+      (prunus-alt-dark-brown            "#2b1f16")
 
-      (prunus-yellow            "#999844")
+      (prunus-yellow                    "#999844")
 
-      (prunus-light-green       "#52BC63")
-      (prunus-green-forest      "#007341")
-      (prunus-oceanic-green     "#3AC3A2")
+      (prunus-light-green               "#52BC63")
+      (prunus-green-forest              "#007341")
+      (prunus-oceanic-green             "#3AC3A2")
 
-      (prunus-red               "#88190C");cb001e,d2191e
-      (prunus-light-pink        "#cd7888")
-      (prunus-pink              "#CD2788");dc6199,cd4f88
+      (prunus-red                       "#88190C");cb001e,d2191e
+      (prunus-light-pink                "#cd7888")
+      (prunus-pink                      "#CD2788");dc6199,cd4f88
 
-      (prunus-blue              "#4548e3");4534e3,120cdc,4534E3,453ee3
-      (prunus-deep-blue         "#655DB0")
-      (prunus-antarctic-blue    "#8d82ca");8D76CA
-      (prunus-cyan              "#00988b")
-      (prunus-dark-cyan         "#005555")
+      (prunus-blue                      "#4548e3");4534e3,120cdc,4534E3,453ee3
+      (prunus-deep-blue                 "#655DB0")
+      (prunus-antarctic-blue            "#8d82ca");8D76CA
+      (prunus-cyan                      "#00988b")
+      (prunus-dark-cyan                 "#005555")
 
-      (prunus-deep-purple       "#742fbe");800080,740CBE,7420be
-      (prunus-indigo            "#2c4154");2C2C54
-      (prunus-purple-red        "#8B2252")
+      (prunus-deep-purple               "#7446be");800080,740CBE,7420be,742fbe
+      (prunus-indigo                    "#2c4154");2C2C54
+      (prunus-purple-red                "#8B2252")
 
-      (prunus-error             "#FF0000");FF0000,bc0000,890014
-      (prunus-warning           "#f6d911");F68511,ffc333,F68511
-      (prunus-success           "#23D734");228B22,007900
+      (prunus-error                     "#FF0000");FF0000,bc0000,890014
+      (prunus-warning                   "#f6d911");F68511,ffc333,F68511
+      (prunus-success                   "#23D734");228B22,007900
 
-      (prunus-vc-change         prunus-blue)
-      (prunus-vc-insert         prunus-success)
-      (prunus-vc-delete         prunus-error))
+      (prunus-diff-added                "#5aa05a");335533
+      (prunus-diff-removed              "#a05a5a");553333
+      (prunus-diff-refine-added         "#007800");22aa22
+      (prunus-diff-refine-removed       "#780000");aa2222
+      (prunus-diff-header               "#5a5a5a");737373
+      (prunus-diff-file-header          "#3c3c3c");999999
+      (prunus-diff-context              "#828282");999999
+
+      (prunus-orderless-0               "#af50c8");af50b9
+      (prunus-orderless-1               "#28a03c")
+      (prunus-orderless-2               "#ff6400")
+      (prunus-orderless-3               "#3c82ff")
+
+      (prunus-vc-change                 prunus-blue)
+      (prunus-vc-insert                 prunus-success)
+      (prunus-vc-delete                 prunus-error))
 
   (custom-theme-set-faces
    'guava-themes-prunus
@@ -125,8 +138,8 @@
    ;; line-number
    `(line-number ((,prunus-class (:foreground ,prunus-purple-red))))
    `(line-number-current-line ((,prunus-class (:foreground ,prunus-cream :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,prunus-class (:background ,prunus-light-pink))))
-   `(line-number-major-tick ((,prunus-class (:background ,prunus-pink))))
+   `(line-number-minor-tick ((,prunus-class (:background ,prunus-light-pink :inherit line-number))))
+   `(line-number-major-tick ((,prunus-class (:background ,prunus-pink :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-red))))
@@ -178,10 +191,30 @@
    `(outline-7 ((,prunus-class (:foreground ,prunus-purple-red :weight medium))))
    `(outline-8 ((,prunus-class (:foreground ,prunus-indigo :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,prunus-class (:foreground ,prunus-cyan))))
    `(escape-glyph ((,prunus-class (:inherit homoglyph))))
    `(nobreak-space ((,prunus-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,prunus-class (:background ,prunus-cyan))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,prunus-class (:foreground ,prunus-cyan :background "grey19" :box (:line-width (-1 . -1) :color "grey35") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,prunus-class (:foreground ,prunus-white :background ,prunus-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,prunus-class (:foreground ,prunus-white :background ,prunus-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,prunus-class (:foreground ,prunus-white :background ,prunus-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,prunus-class (:foreground ,prunus-white :background ,prunus-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,prunus-class (:foreground ,prunus-white :background ,prunus-diff-header :extend t))))
+   `(diff-file-header ((,prunus-class (:weight bold :foreground ,prunus-white :background ,prunus-diff-file-header :extend t))))
+   `(diff-context ((,prunus-class (:foreground ,prunus-white :background ,prunus-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,prunus-class (:foreground ,prunus-warning :weight bold))))
+   `(completions-first-difference ((,prunus-class (:foreground ,prunus-error :weight bold))))
 
 
    ;; external packages
@@ -197,7 +230,7 @@
    `(elfeed-search-unread-count-face ((,prunus-class (:weight bold :foreground ,prunus-light-green))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,prunus-class (:foreground ,prunus-light-green))))
+   `(doom-modeline-project-name ((,prunus-class (:foreground ,prunus-light-green :inherit italic))))
    `(doom-modeline-project-parent-dir ((,prunus-class (:foreground ,prunus-light-green))))
    `(doom-modeline-buffer-minor-mode ((,prunus-class (:foreground ,prunus-shadow))))
 
@@ -206,6 +239,12 @@
    `(corfu-current ((,prunus-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,prunus-class (:background ,prunus-shadow))))
    `(corfu-border ((,prunus-class (:background ,prunus-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,prunus-class (:foreground ,prunus-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,prunus-class (:foreground ,prunus-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,prunus-class (:foreground ,prunus-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,prunus-class (:foreground ,prunus-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,prunus-class (:inherit error))))

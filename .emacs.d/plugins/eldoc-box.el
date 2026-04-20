@@ -617,7 +617,10 @@ FRAME is the childframe, WINDOW is the primary window."
   ;; But let’s keep the comment in case someone does something similar
   ;; in the future.
 
-  (let* ((parent-frame (frame-parent frame))
+  ;; Let-bind alter-fullscreen-frame to nil so we can always resize
+  ;; frame on macOS (see issue#141).
+  (let* ((alter-fullscreen-frame nil)
+         (parent-frame (frame-parent frame))
          (size
           (window-text-pixel-size
            window nil nil
@@ -684,7 +687,9 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
                  (set-frame-parameter frame 'parent-frame main-frame))
         (setq window (display-buffer-in-child-frame
                       buffer
-                      `((child-frame-parameters . ,parameter))))
+                      `((child-frame-parameters . ,parameter)
+                        (no-other-window . t)
+                        (no-delete-other-windows . t))))
         (setq frame (window-frame window)))
       ;; workaround
       ;; (set-frame-parameter frame 'left-fringe (alist-get 'left-fringe eldoc-box-frame-parameters))

@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Feb 15, 2026
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,44 +35,57 @@
 
 (let* (
       (citrus-class '((class color) (min-colors 257)))
-      (citrus-black                   "#000000")
-      (citrus-white                   "#edf2ed");FFFFFF,eeeeee,f0eff5,f1f0f5,ebf0eb
+      (citrus-black                     "#000000")
+      (citrus-white                     "#edf2ed");FFFFFF,eeeeee,f0eff5,f1f0f5,ebf0eb
 
-      (citrus-shadow                  "#7f7f7f")
+      (citrus-shadow                    "#7f7f7f")
 
-      (citrus-light-green             "#6ea56e");589337,64a564
-      (citrus-green-lime              "#589337");589337
-      (citrus-deep-green              "#0a6b0a");2b5726,2b5b26
-      (citrus-green-blue              "#197d5a");136b16,198264
+      (citrus-light-green               "#6ea56e");589337,64a564
+      (citrus-green-lime                "#589337");589337
+      (citrus-deep-green                "#0a6b0a");2b5726,2b5b26
+      (citrus-green-blue                "#197d5a");136b16,198264
 
-      (citrus-light-yellow            "#f5d49b");f5cb6d
-      (citrus-yellow                  "#dbb255");c3af50,dbaf50
+      (citrus-light-yellow              "#f5d49b");f5cb6d
+      (citrus-yellow                    "#dbb255");c3af50,dbaf50
 
-      (citrus-red                     "#df352c");a50000,960000
-      (citrus-deep-red                "#a0352c")
-      (citrus-orange-red              "#ce462c");ce462c
-      (citrus-orange-orange           "#f29a43")
-      (citrus-alt-orange              "#f26e43")
-      (citrus-deep-orange             "#da5802")
+      (citrus-red                       "#df352c");a50000,960000
+      (citrus-deep-red                  "#a0352c")
+      (citrus-orange-red                "#ce462c");ce462c
+      (citrus-orange-orange             "#f29a43")
+      (citrus-alt-orange                "#f26e43")
+      (citrus-deep-orange               "#da5802")
 
-      (citrus-brown                   "#735f50");86626f
+      (citrus-brown                     "#735f50");86626f
 
-      (citrus-light-blue              "#4eb096");4e9496
-      (citrus-blue                    "#3275a5")
-      (citrus-deep-blue               "#2327dc");2246d2,443f8d,2327dc
-      (citrus-light-purple            "#bec8ff")
-      (citrus-purple                  "#785d7d")
-      (citrus-deep-purple             "#6d4393")
-      (citrus-purple-red              "#77003a")
-      (citrus-purple-blue             "#504993");6b4a82
+      (citrus-light-blue                "#4eb096");4e9496
+      (citrus-blue                      "#3275a5")
+      (citrus-deep-blue                 "#2327dc");2246d2,443f8d,2327dc
+      (citrus-light-purple              "#bec8ff")
+      (citrus-purple                    "#785d7d")
+      (citrus-deep-purple               "#6d4393")
+      (citrus-purple-red                "#77003a")
+      (citrus-purple-blue               "#504993");6b4a82
 
-      (citrus-error                   "#FF0000")
-      (citrus-warning                 "#ffbe00");F68511
-      (citrus-success                 "#2bdc26");2b5726,2b5b26
+      (citrus-error                     "#FF0000")
+      (citrus-warning                   "#ffbe00");F68511
+      (citrus-success                   "#2bdc26");2b5726,2b5b26
 
-      (citrus-vc-change               citrus-deep-blue)
-      (citrus-vc-insert               citrus-success)
-      (citrus-vc-delete               citrus-error))
+      (citrus-diff-added                "#c8f0c8");335533
+      (citrus-diff-removed              "#f0c8c8");553333
+      (citrus-diff-refine-added         "#78f078");22aa22
+      (citrus-diff-refine-removed       "#f07878");aa2222
+      (citrus-diff-header               "#b4b4b4");737373
+      (citrus-diff-file-header          "#8c8c8c");999999
+      (citrus-diff-context              "#dcdcdc");999999
+
+      (citrus-orderless-0               "#af28b9")
+      (citrus-orderless-1               "#28a03c")
+      (citrus-orderless-2               "#ff6400")
+      (citrus-orderless-3               "#3c82ff")
+
+      (citrus-vc-change                 citrus-deep-blue)
+      (citrus-vc-insert                 citrus-success)
+      (citrus-vc-delete                 citrus-error))
 
   (custom-theme-set-faces
    'guava-themes-citrus
@@ -126,8 +139,8 @@
    ;; line-number
    `(line-number ((,citrus-class (:foreground ,citrus-black))))
    `(line-number-current-line ((,citrus-class (:foreground ,citrus-green-blue :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,citrus-class (:background ,citrus-light-purple))))
-   `(line-number-major-tick ((,citrus-class (:background ,citrus-light-blue))))
+   `(line-number-minor-tick ((,citrus-class (:background ,citrus-light-purple :inherit line-number))))
+   `(line-number-major-tick ((,citrus-class (:background ,citrus-light-blue :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,citrus-class (:foreground ,citrus-white :background ,citrus-green-lime))))
@@ -179,10 +192,30 @@
    `(outline-7 ((,citrus-class (:foreground ,citrus-deep-purple :weight medium))))
    `(outline-8 ((,citrus-class (:foreground ,citrus-deep-blue :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,citrus-class (:foreground ,citrus-deep-blue))))
    `(escape-glyph ((,citrus-class (:inherit homoglyph))))
    `(nobreak-space ((,citrus-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,citrus-class (:background ,citrus-light-blue))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,citrus-class (:foreground ,citrus-deep-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,citrus-class (:foreground ,citrus-black :background ,citrus-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,citrus-class (:foreground ,citrus-black :background ,citrus-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,citrus-class (:foreground ,citrus-black :background ,citrus-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,citrus-class (:foreground ,citrus-black :background ,citrus-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,citrus-class (:foreground ,citrus-black :background ,citrus-diff-header :extend t))))
+   `(diff-file-header ((,citrus-class (:weight bold :foreground ,citrus-black :background ,citrus-diff-file-header :extend t))))
+   `(diff-context ((,citrus-class (:foreground ,citrus-black :background ,citrus-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,citrus-class (:foreground ,citrus-vc-change :weight bold))))
+   `(completions-first-difference ((,citrus-class (:foreground ,citrus-error :weight bold))))
 
 
    ;; external packages
@@ -198,7 +231,7 @@
    `(elfeed-search-unread-count-face ((,citrus-class (:weight bold :foreground ,citrus-light-blue))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,citrus-class (:foreground ,citrus-purple-red))))
+   `(doom-modeline-project-name ((,citrus-class (:foreground ,citrus-purple-red :inherit italic))))
    `(doom-modeline-project-parent-dir ((,citrus-class (:foreground ,citrus-purple-red))))
    `(doom-modeline-buffer-minor-mode ((,citrus-class (:foreground ,citrus-light-yellow))))
 
@@ -207,6 +240,12 @@
    `(corfu-current ((,citrus-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,citrus-class (:background ,citrus-shadow))))
    `(corfu-border ((,citrus-class (:background ,citrus-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,citrus-class (:foreground ,citrus-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,citrus-class (:foreground ,citrus-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,citrus-class (:foreground ,citrus-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,citrus-class (:foreground ,citrus-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,citrus-class (:inherit error))))

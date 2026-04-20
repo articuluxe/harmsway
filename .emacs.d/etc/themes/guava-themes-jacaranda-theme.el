@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Dec 27, 2025
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,42 +35,55 @@
 
 (let* (
       (jacaranda-class '((class color) (min-colors 257)))
-      (jacaranda-black             "#000000")
-      (jacaranda-white             "#FFFFFF")
+      (jacaranda-black                     "#000000")
+      (jacaranda-white                     "#FFFFFF")
 
-      (jacaranda-shadow            "#7f7f7f")
+      (jacaranda-shadow                    "#7f7f7f")
 
-      (jacaranda-cream             "#e9d9f9");e9e4f9
+      (jacaranda-cream                     "#e9d9f9");e9e4f9
 
-      (jacaranda-light-green       "#52aa63");52bc63
-      (jacaranda-green             "#8ec654")
-      (jacaranda-deep-green        "#267a63")
-      (jacaranda-oceanic-green     "#10a575");3ab992
+      (jacaranda-light-green               "#52aa63");52bc63
+      (jacaranda-green                     "#8ec654")
+      (jacaranda-deep-green                "#267a63")
+      (jacaranda-oceanic-green             "#10a575");3ab992
 
-      (jacaranda-orange            "#ff9f79");ff9535
-      (jacaranda-red               "#af2a36");ca0036
+      (jacaranda-orange                    "#ff9f79");ff9535
+      (jacaranda-red                       "#af2a36");ca0036
 
-      (jacaranda-brown             "#8a7f74")
+      (jacaranda-brown                     "#8a7f74")
 
-      (jacaranda-blue              "#4534e3")
-      (jacaranda-deep-blue         "#655db0")
-      (jacaranda-antarctic-blue    "#8cb2e6");8caae6
-      (jacaranda-light-cyan        "#60a1ba");00aaaa
-      (jacaranda-cyan              "#00778b")
+      (jacaranda-blue                      "#4534e3")
+      (jacaranda-deep-blue                 "#655db0")
+      (jacaranda-antarctic-blue            "#8cb2e6");8caae6
+      (jacaranda-light-cyan                "#60a1ba");00aaaa
+      (jacaranda-cyan                      "#00778b")
 
-      (jacaranda-light-purple      "#dbd0fd")
-      (jacaranda-alt-light-purple  "#C0B4E4")
-      (jacaranda-purple            "#aa69e6");984ee6
-      (jacaranda-deep-purple       "#640cbe");800080,740cbe
-      (jacaranda-purple-red        "#8b2252")
+      (jacaranda-light-purple              "#dbd0fd")
+      (jacaranda-alt-light-purple          "#C0B4E4")
+      (jacaranda-purple                    "#aa69e6");984ee6
+      (jacaranda-deep-purple               "#640cbe");800080,740cbe
+      (jacaranda-purple-red                "#8b2252")
 
-      (jacaranda-error             "#FF0000");FF0000
-      (jacaranda-warning           "#ebb515");F68511,ffc333
-      (jacaranda-success           "#00c200");228B22,007900
+      (jacaranda-error                     "#FF0000");FF0000
+      (jacaranda-warning                   "#ebb515");F68511,ffc333
+      (jacaranda-success                   "#00c200");228B22,007900
 
-      (jacaranda-vc-change         jacaranda-blue)
-      (jacaranda-vc-insert         jacaranda-success)
-      (jacaranda-vc-delete         jacaranda-error))
+      (jacaranda-diff-added                "#c8f0c8");335533
+      (jacaranda-diff-removed              "#f0c8c8");553333
+      (jacaranda-diff-refine-added         "#78f078");22aa22
+      (jacaranda-diff-refine-removed       "#f07878");aa2222
+      (jacaranda-diff-header               "#b4b4b4");737373
+      (jacaranda-diff-file-header          "#8c8c8c");999999
+      (jacaranda-diff-context              "#dcdcdc");999999
+
+      (jacaranda-orderless-0               "#af50b9")
+      (jacaranda-orderless-1               "#28a03c")
+      (jacaranda-orderless-2               "#ff6400")
+      (jacaranda-orderless-3               "#3c82ff")
+
+      (jacaranda-vc-change                 jacaranda-blue)
+      (jacaranda-vc-insert                 jacaranda-success)
+      (jacaranda-vc-delete                 jacaranda-error))
 
   (custom-theme-set-faces
    'guava-themes-jacaranda
@@ -124,8 +137,8 @@
    ;; line-number
    `(line-number ((,jacaranda-class (:foreground ,jacaranda-deep-blue))))
    `(line-number-current-line ((,jacaranda-class (:foreground ,jacaranda-black :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,jacaranda-class (:background ,jacaranda-antarctic-blue))))
-   `(line-number-major-tick ((,jacaranda-class (:background ,jacaranda-purple))))
+   `(line-number-minor-tick ((,jacaranda-class (:background ,jacaranda-antarctic-blue :inherit line-number))))
+   `(line-number-major-tick ((,jacaranda-class (:background ,jacaranda-purple :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-blue))))
@@ -177,10 +190,30 @@
    `(outline-7 ((,jacaranda-class (:foreground ,jacaranda-deep-green :weight medium))))
    `(outline-8 ((,jacaranda-class (:foreground ,jacaranda-deep-purple :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,jacaranda-class (:foreground ,jacaranda-blue))))
    `(escape-glyph ((,jacaranda-class (:inherit homoglyph))))
    `(nobreak-space ((,jacaranda-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,jacaranda-class (:background ,jacaranda-light-cyan))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,jacaranda-class (:foreground ,jacaranda-deep-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-diff-header :extend t))))
+   `(diff-file-header ((,jacaranda-class (:weight bold :foreground ,jacaranda-black :background ,jacaranda-diff-file-header :extend t))))
+   `(diff-context ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,jacaranda-class (:foreground ,jacaranda-vc-change :weight bold))))
+   `(completions-first-difference ((,jacaranda-class (:foreground ,jacaranda-error :weight bold))))
 
 
    ;; external packages
@@ -196,7 +229,7 @@
    `(elfeed-search-unread-count-face ((,jacaranda-class (:weight bold :foreground ,jacaranda-light-green))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,jacaranda-class (:foreground ,jacaranda-light-green))))
+   `(doom-modeline-project-name ((,jacaranda-class (:foreground ,jacaranda-light-green :inherit italic))))
    `(doom-modeline-project-parent-dir ((,jacaranda-class (:foreground ,jacaranda-light-green))))
    `(doom-modeline-buffer-minor-mode ((,jacaranda-class (:foreground ,jacaranda-antarctic-blue))))
 
@@ -205,6 +238,12 @@
    `(corfu-current ((,jacaranda-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,jacaranda-class (:background ,jacaranda-shadow))))
    `(corfu-border ((,jacaranda-class (:background ,jacaranda-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,jacaranda-class (:foreground ,jacaranda-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,jacaranda-class (:foreground ,jacaranda-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,jacaranda-class (:foreground ,jacaranda-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,jacaranda-class (:foreground ,jacaranda-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,jacaranda-class (:inherit error))))

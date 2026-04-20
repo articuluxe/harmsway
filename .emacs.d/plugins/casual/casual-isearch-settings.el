@@ -1,6 +1,6 @@
 ;;; casual-isearch-settings.el --- Casual Re-Builder Settings -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024-2025 Charles Y. Choi
+;; Copyright (C) 2024-2026 Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -30,20 +30,20 @@
   "Casual I-Search settings menu."
   :refresh-suffixes t
   ["I-Search: Settings"
-    ["Allow"
-     ("s" "Scroll" casual-isearch--customize-allow-scroll)
-     ("m" "Motion" casual-isearch--customize-allow-motion
-      :description (lambda ()
-                     (casual-lib-checkbox-label isearch-allow-motion "Motion")))]
+   ["Allow"
+    ("s" "Scroll" casual-isearch--customize-allow-scroll)
+    ("m" "Motion" casual-isearch--customize-allow-motion
+     :description (lambda ()
+                    (casual-lib-checkbox-label isearch-allow-motion "Motion")))]
 
-    ["Lazy"
-     ("h" "Highlight" casual-isearch--customize-lazy-highlight)
-     ("c" "Count" casual-isearch--customize-lazy-count
-      :description (lambda ()
-                     (casual-lib-checkbox-label isearch-lazy-count "Count")))]
+   ["Lazy"
+    ("h" "Highlight" casual-isearch--customize-lazy-highlight)
+    ("c" "Count" casual-isearch--customize-lazy-count
+     :description (lambda ()
+                    (casual-lib-checkbox-label isearch-lazy-count "Count")))]
 
-    ["Misc"
-     ("G" "Group" casual-isearch--customize-group)]]
+   ["Misc"
+    ("G" "Group" casual-isearch--customize-group)]]
 
   [:class transient-row
    (casual-lib-customize-unicode)

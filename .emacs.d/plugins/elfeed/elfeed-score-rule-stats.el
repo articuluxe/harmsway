@@ -67,6 +67,17 @@ operation that will update many statistics with a let form."
   :group 'elfeed-score
   :type 'integer)
 
+(defcustom elfeed-score-rule-stats-pretty-print t
+  "Control whether rule stats are pretty-printed or not.
+
+By default, elfeed-score will write score stats to file via
+`pp-to-string', which produces human-readable output, but is
+considerably slower than `prin1' which does not.  If elfeed updates are
+slow, and profiling shows significant time spent in
+`elfeed-score-rule-stats-write', consider setting this to nil."
+  :group 'elfeed-score
+  :type 'boolean)
+
 (defconst elfeed-score-rule-stats-current-format 1
   "The most recent stats file format version.")
 
@@ -164,7 +175,9 @@ heavily derivative of `basic-save-buffer-2'."
           (or preamble "")
           (let ((print-level nil)
                 (print-length nil))
-            (pp-to-string sexp)))
+            (apply
+             (if elfeed-score-rule-stats-pretty-print #'pp-to-string #'prin1-to-string)
+             (list sexp))))
          nil tempname nil nil file-name)
         (rename-file tempname file-name t))
     ;; We're not good-- fall back to writing directly.
@@ -174,7 +187,9 @@ heavily derivative of `basic-save-buffer-2'."
           (or preamble "")
           (let ((print-level nil)
                 (print-length nil))
-            (pp-to-string sexp)))
+            (apply
+             (if elfeed-score-rule-stats-pretty-print #'pp-to-string #'prin1-to-string)
+             (list sexp))))
          nil file-name)))
 
 (defvar elfeed-score-rule-stats--dirty-stats 0

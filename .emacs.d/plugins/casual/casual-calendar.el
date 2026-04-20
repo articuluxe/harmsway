@@ -87,9 +87,9 @@ Main menu for `calendar' commands.
      :transient t)]]
 
   ["Region"
-    :class transient-row
-    ("C-SPC" "Set Mark" calendar-set-mark :transient t)
-    ("=" "Count Days" calendar-count-days-region :transient t)]
+   :class transient-row
+   ("C-SPC" "Set Mark" calendar-set-mark :transient t)
+   ("=" "Count Days" calendar-count-days-region :transient t)]
 
   [:class transient-row
    (casual-lib-quit-one)

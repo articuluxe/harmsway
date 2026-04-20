@@ -8,52 +8,58 @@
 (deftheme yotsuba
   "Theme based on the classic 4chan (Yotsuba) color palette.")
 
-(let ((yotsuba-bg      "#ffffee") ; Page background
-      (yotsuba-post    "#f0e0d6") ; Post background
-      (yotsuba-subject "#800000") ; Subject/Maroon titles
-      (yotsuba-text    "#000000") ; Standard black text
-      (yotsuba-green   "#789922") ; Greentext / Quotes
-      (yotsuba-link    "#0000ee") ; Blue links
-      (yotsuba-name    "#117743") ; Username / Tripcode green
-      (yotsuba-border  "#d6bad0") ; Border / Reply highlight
-      (yotsuba-red     "#af0a0f") ; Error / Admin red
-      (yotsuba-grey    "#444444"))
+(let ((yb-bg      "#ffffee") ; Page background
+      (yb-post    "#f0e0d6") ; Post background
+      (yb-subject "#800000") ; Subject/Maroon titles
+      (yb-text    "#000000") ; Standard black text
+      (yb-green   "#789922") ; Greentext / Quotes
+      (yb-link    "#0000ee") ; Blue links
+      (yb-name    "#117743") ; Username / Tripcode green
+      (yb-border  "#d6bad0") ; Border / Reply highlight
+      (yb-red     "#af0a0f") ; Error / Admin red
+      (yb-grey    "#444444"))
 
   (custom-theme-set-faces
    'yotsuba
 
    ;; Basic Interface
-   `(default ((t (:background ,yotsuba-bg :foreground ,yotsuba-text))))
-   `(cursor ((t (:background ,yotsuba-subject))))
-   `(region ((t (:background ,yotsuba-border))))
-   `(fringe ((t (:background ,yotsuba-bg))))
-   `(mode-line ((t (:background ,yotsuba-post :foreground ,yotsuba-subject :box (:line-width 1 :color ,yotsuba-border)))))
-   `(mode-line-inactive ((t (:background ,yotsuba-bg :foreground ,yotsuba-grey :box (:line-width 1 :color ,yotsuba-post)))))
-   `(minibuffer-prompt ((t (:foreground ,yotsuba-subject :weight bold))))
-   
+   `(default ((t (:background ,yb-bg :foreground ,yb-text))))
+   `(cursor ((t (:background ,yb-subject))))
+   `(region ((t (:background ,yb-border))))
+   `(fringe ((t (:background ,yb-bg))))
+   `(mode-line ((t (:background ,yb-post :foreground ,yb-subject :box (:line-width 1 :color ,yb-border)))))
+   `(mode-line-inactive ((t (:background ,yb-bg :foreground ,yb-grey :box (:line-width 1 :color ,yb-post)))))
+   `(minibuffer-prompt ((t (:foreground ,yb-subject :weight bold))))
+
    ;; Font-Lock (Syntax Highlighting)
-   `(font-lock-comment-face ((t (:foreground ,yotsuba-green)))) ; Comments as Greentext
-   `(font-lock-doc-face ((t (:foreground ,yotsuba-green :slant italic))))
-   `(font-lock-string-face ((t (:foreground ,yotsuba-name))))    ; Strings as Usernames
-   `(font-lock-keyword-face ((t (:foreground ,yotsuba-subject :weight bold)))) ; Keywords as Subject
-   `(font-lock-function-name-face ((t (:foreground ,yotsuba-link)))) ; Functions as Links
-   `(font-lock-variable-name-face ((t (:foreground ,yotsuba-text))))
-   `(font-lock-type-face ((t (:foreground ,yotsuba-red))))
-   `(font-lock-constant-face ((t (:foreground ,yotsuba-link :italic t))))
-   `(font-lock-warning-face ((t (:foreground ,yotsuba-red :weight bold))))
-   `(font-lock-builtin-face ((t (:foreground ,yotsuba-subject))))
+   `(font-lock-comment-face ((t (:foreground ,yb-green)))) ; Comments as Greentext
+   `(font-lock-doc-face ((t (:foreground ,yb-green :slant italic))))
+   `(font-lock-string-face ((t (:foreground ,yb-name))))    ; Strings as Usernames
+   `(font-lock-keyword-face ((t (:foreground ,yb-subject :weight bold)))) ; Keywords as Subject
+   `(font-lock-function-name-face ((t (:foreground ,yb-link)))) ; Functions as Links
+   `(font-lock-variable-name-face ((t (:foreground ,yb-text))))
+   `(font-lock-type-face ((t (:foreground ,yb-red))))
+   `(font-lock-constant-face ((t (:foreground ,yb-link :italic t))))
+   `(font-lock-warning-face ((t (:foreground ,yb-red :weight bold))))
+   `(font-lock-builtin-face ((t (:foreground ,yb-subject))))
 
    ;; Org-Mode / Markdown
-   `(org-level-1 ((t (:foreground ,yotsuba-subject :weight bold :height 1.2))))
-   `(org-level-2 ((t (:foreground ,yotsuba-name :weight bold :height 1.1))))
-   `(org-link ((t (:foreground ,yotsuba-link :underline t))))
-   `(org-block ((t (:background ,yotsuba-post))))
-   `(org-quote ((t (:foreground ,yotsuba-green))))
-   `(org-document-title ((t (:foreground ,yotsuba-subject :weight bold :height 1.5))))
+   `(org-level-1 ((t (:foreground ,yb-subject :weight bold :height 1.2))))
+   `(org-level-2 ((t (:foreground ,yb-name :weight bold :height 1.1))))
+   `(org-link ((t (:foreground ,yb-link :underline t))))
+   `(org-block ((t (:background ,yb-post))))
+   `(org-quote ((t (:foreground ,yb-green))))
+   `(org-document-title ((t (:foreground ,yb-subject :weight bold :height 1.5))))
 
    ;; Line numbers
-   `(line-number ((t (:foreground ,yotsuba-border :background ,yotsuba-bg))))
-   `(line-number-current-line ((t (:foreground ,yotsuba-subject :background ,yotsuba-post))))))
+   `(line-number ((t (:background ,yb-bg :foreground ,yb-border))))
+   `(line-number-current-line ((t (:background ,yb-bg :foreground ,yb-subject :weight bold))))
+
+   ;; tab-bar-mode
+   `(tab-bar ((t (:inherit default :background ,yb-post :foreground ,yb-grey))))
+   `(tab-bar-tab ((t (:background ,yb-bg :foreground ,yb-subject))))
+   `(tab-bar-tab-inactive ((t (:background ,yb-post :foreground ,yb-grey))))
+   ))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

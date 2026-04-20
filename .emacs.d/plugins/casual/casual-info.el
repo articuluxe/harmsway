@@ -1,6 +1,6 @@
 ;;; casual-info.el --- Transient UI for Info -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024-2025  Charles Y. Choi
+;; Copyright (C) 2024-2026  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -79,21 +79,21 @@
    ["Scroll"
     :pad-keys t
     ("S-SPC" "Scroll Down" Info-scroll-down
-           :if display-graphic-p
-           :description (lambda ()
+     :if display-graphic-p
+     :description (lambda ()
                     (casual-info-unicode-get :scroll-down))
-           :transient t)
+     :transient t)
 
     ("DEL" "Scroll Down" Info-scroll-down
-           :if-not display-graphic-p
-           :description (lambda ()
+     :if-not display-graphic-p
+     :description (lambda ()
                     (casual-info-unicode-get :scroll-down))
-           :transient t)
+     :transient t)
 
     ("SPC" "Scroll Up" Info-scroll-up
-           :description (lambda ()
+     :description (lambda ()
                     (casual-info-unicode-get :scroll-up))
-           :transient t)]]
+     :transient t)]]
 
   ["Navigation"
    ["Link"
@@ -157,14 +157,14 @@
     ("G" "Open node in web…" Info-goto-node-web :transient nil)]
 
    [:pad-keys t
-              ("C-M-n" "New Info in frame" casual-info-new-info-frame
-               :transient nil)
-              ("M-n" "Clone buffer" clone-buffer :transient nil)]]
+    ("C-M-n" "New Info in frame" casual-info-new-info-frame
+     :transient nil)
+    ("M-n" "Clone buffer" clone-buffer :transient nil)]]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          ("," "Settings›" casual-info-settings-tmenu)
-          ("q" "Quit Info" quit-window)])
+   (casual-lib-quit-one)
+   ("," "Settings›" casual-info-settings-tmenu)
+   ("q" "Quit Info" quit-window)])
 
 (defun casual-info-new-info-frame ()
   "Create new Info manual instance (buffer) in a new frame.

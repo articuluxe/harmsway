@@ -40,6 +40,8 @@
 (eval-when-compile (require 'subr-x)) ; `if-let*' and `when-let*'
 
 (declare-function buffer-face-mode-invoke "face-remap")
+(declare-function dired-filter-mode "dired-filter")
+(defvar dired-filter-stack)
 
 ;; Customizations
 
@@ -73,7 +75,7 @@ This uses format specified by `dired-sidebar-mode-line-format'."
     mode-line-buffer-identification
     " "  mode-line-end-spaces)
   "Mode line format for `dired-sidebar'."
-  :type 'list
+  :type 'sexp
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-theme 'icons
@@ -164,6 +166,15 @@ When true: Attempt to handle `dired-omit-mode' around
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-use-dired-filter-integration (featurep 'dired-filter)
+  "Whether to integrate with `dired-filter'.
+
+When true and `dired-filter' is installed, automatically add
+`git-ignored' to `dired-filter-stack' for directories under Git
+version control."
+  :type 'boolean
+  :group 'dired-sidebar)
+
 (defcustom dired-sidebar-use-term-integration nil
   "Whether to integrate with `term-mode'.
 
@@ -241,7 +252,7 @@ to wait to refresh the sidebar after the CAR of the alist is called.
 
 Set this to nil or set `dired-sidebar-refresh-on-special-commands' to nil
 to disable automatic refresh when a special command is triggered."
-  :type 'list
+  :type '(repeat (choice symbol (cons symbol integer)))
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-toggle-hidden-commands
@@ -254,7 +265,7 @@ command is completed.
 This functionality is implemented using advice.
 
 Set this to nil to disable this advice."
-  :type 'list
+  :type 'hook
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-alternate-select-window-function
@@ -336,7 +347,14 @@ For more information, look up `delete-other-windows'."
   "List of modes in `dired-mode-hook' that prevents icon display.
 
 See https://github.com/jojojames/dired-sidebar/issues/43."
-  :type 'list
+  :type 'hook
+  :group 'dired-sidebar)
+
+(defcustom dired-sidebar-adjust-frame-width nil
+  "Whether or not to change the frame size when showing and hiding the sidebar.
+
+This has other windows retain their size."
+  :type 'boolean
   :group 'dired-sidebar)
 
 ;; Internal
@@ -538,6 +556,15 @@ Works around marker pointing to wrong buffer in Emacs 25."
   (dired-unadvertise (dired-current-directory))
   (dired-sidebar-update-buffer-name)
 
+  ;; If current directory is under Git version control, ensure that
+  ;; `git-ignored' is included in `dired-filter-stack'.
+  (when (and dired-sidebar-use-dired-filter-integration
+             (featurep 'dired-filter)
+             (eq (vc-responsible-backend (dired-current-directory) t) 'Git)
+             (not (seq-find (lambda (s) (eq (car s) 'git-ignored)) dired-filter-stack)))
+    (setq-local dired-filter-stack `(,@dired-filter-stack (git-ignored)))
+    (dired-filter-mode +1))
+
   ;; Move setting theme until the end after `dired-sidebar' has set up
   ;; its directory structure.
   ;; https://github.com/jojojames/dired-sidebar/issues/29
@@ -614,7 +641,7 @@ This is dependent on `dired-subtree-cycle'."
         (dolist (dir dirs)
           ;; Trailing `$' is essential to avoid matching the modification date
           ;; fields of the underlying `ls' process
-          (let ((path-regex (concat "^.*[[:space:]]" (regexp-quote dir) "$")))
+          (let ((path-regex (concat "^.*[[:space:]]" (regexp-quote dir) "\/?$")))
             (setq path (concat path dir))
             (if (file-regular-p path)
                 ;; Try to use `dired-goto-file' to go to the correct
@@ -659,6 +686,16 @@ This is dependent on `dired-subtree-cycle'."
   (let ((current-prefix-arg '(4))) ; C-u
     (call-interactively #'dired-sidebar-toggle-sidebar)))
 
+(defun dired-sidebar-maybe-adjust-frame-width (window &optional dec)
+  "If needed, increase (or decrease, if DEC is non-nil) the enclosing 
+frame width to accomodate for the sidebar."  
+  (when dired-sidebar-adjust-frame-width
+    (let ((frame (window-frame window)))
+      (unless (frame-parameter frame 'fullscreen)
+        (set-frame-width frame (funcall (if dec '- '+)
+                                        (frame-width frame)
+                                        (window-total-width window)))))))  
+
 ;;;###autoload
 (defun dired-sidebar-show-sidebar (&optional b)
   "Show sidebar displaying buffer B."
@@ -675,7 +712,8 @@ This is dependent on `dired-subtree-cycle'."
       (when dired-sidebar-resize-on-open
         (with-selected-window window
           (let ((window-size-fixed))
-            (dired-sidebar-set-width dired-sidebar-width)))))
+            (dired-sidebar-set-width dired-sidebar-width))))
+      (dired-sidebar-maybe-adjust-frame-width window))
     (with-current-buffer buffer
       (if (eq major-mode 'dired-sidebar-mode)
           (dired-build-subdir-alist)
@@ -685,8 +723,10 @@ This is dependent on `dired-subtree-cycle'."
 (defun dired-sidebar-hide-sidebar ()
   "Hide the sidebar in the selected frame."
   (interactive)
-  (when-let* ((buffer (dired-sidebar-buffer)))
-    (delete-window (get-buffer-window buffer))))
+  (when-let* ((buffer (dired-sidebar-buffer))
+              (window (get-buffer-window buffer)))
+    (dired-sidebar-maybe-adjust-frame-width window t)         
+    (delete-window window)))
 
 ;;;###autoload
 (defun dired-sidebar-jump-to-sidebar ()
@@ -1035,7 +1075,7 @@ This is somewhat experimental/hacky."
           (term-previous-prompt 1))
         (when (fboundp 'term-simple-send)
           (term-simple-send (get-buffer-process (current-buffer)) "pwd"))
-        (sleep-for 0 50)
+        (sleep-for 0.05)
         (forward-line 1)
         (let ((result (string-trim (thing-at-point 'line))))
           (kill-whole-line)

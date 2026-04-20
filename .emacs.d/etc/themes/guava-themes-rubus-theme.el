@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Mar 27, 2026
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,43 +35,58 @@
 
 (let* (
       (rubus-class '((class color) (min-colors 257)))
-      (rubus-black                    "#000000");060a09
-      (rubus-white                    "#FFFFFF")
+      (rubus-black                     "#000000");060a09
+      (rubus-white                     "#FFFFFF")
 
-      (rubus-black-blue               "#0e1216");0e1216
-      (rubus-alt-black-blue           "#1d2125")
+      (rubus-black-blue                "#0e1216");0e1216
+      (rubus-alt-black-blue            "#1d2125")
 
-      (rubus-shadow                   "#b3b3b3")
+      (rubus-shadow                    "#b3b3b3")
 
-      (rubus-raspberry                "#aa3232")
-      (rubus-alt-raspberry            "#6e504b");964646,755653
-      (rubus-deep-raspberry           "#663a43");b17a66
-      (rubus-red                      "#c23f39")
-      (rubus-pink-cream               "#cd7378");d47980
-      (rubus-alt-pink-cream           "#aa5055")
-      (rubus-orange                   "#ffa07a")
+      (rubus-raspberry                 "#aa3232")
+      (rubus-alt-raspberry             "#6e504b");964646,755653
+      (rubus-deep-raspberry            "#663a43");b17a66
+      (rubus-red                       "#c23f39")
+      (rubus-pink-cream                "#cd7378");d47980
+      (rubus-alt-pink-cream            "#aa5055")
+      (rubus-orange                    "#ffa07a")
 
-      (rubus-yellow                   "#fde8b9")
+      (rubus-yellow                    "#fde8b9")
 
-      (rubus-light-green              "#4ed77f")
-      (rubus-green                    "#1e8264")
-      (rubus-green-forest             "#007841")
-      (rubus-green-blue               "#5b8a8a")
-      (rubus-blue                     "#1455f1")
-      (rubus-blue-subdued             "#1c81a1")
-      (rubus-cyan                     "#00FFFF")
+      (rubus-light-green               "#4ed77f")
+      (rubus-green                     "#1e8264")
+      (rubus-green-forest              "#007841")
+      (rubus-green-blue                "#5b8a8a")
 
-      (rubus-light-purple             "#bdb3d7")
-      (rubus-purple                   "#a98fcd")
-      (rubus-deep-purple              "#8163e4")
+      (rubus-light-blue                "#5096f1")
+      (rubus-blue                      "#1455f1")
+      (rubus-blue-subdued              "#1c81a1")
+      (rubus-cyan                      "#00FFFF")
 
-      (rubus-error                    "#ff1e00");FF0000
-      (rubus-warning                  "#f6d909");F68511
-      (rubus-success                  "#1ebe1e");23a334
+      (rubus-light-purple              "#bdb3d7")
+      (rubus-purple                    "#a98fcd")
+      (rubus-deep-purple               "#8163e4")
 
-      (rubus-vc-change                rubus-blue)
-      (rubus-vc-insert                rubus-success)
-      (rubus-vc-delete                rubus-error))
+      (rubus-error                     "#ff1e00");FF0000
+      (rubus-warning                   "#f6d909");F68511
+      (rubus-success                   "#1ebe1e");23a334
+
+      (rubus-diff-added                "#5aa05a");335533
+      (rubus-diff-removed              "#a05a5a");553333
+      (rubus-diff-refine-added         "#007800");22aa22
+      (rubus-diff-refine-removed       "#780000");aa2222
+      (rubus-diff-header               "#5a5a5a");737373
+      (rubus-diff-file-header          "#3c3c3c");999999
+      (rubus-diff-context              "#828282");999999
+
+      (rubus-orderless-0               "#af50c8");af50b9
+      (rubus-orderless-1               "#28a03c")
+      (rubus-orderless-2               "#ff6400")
+      (rubus-orderless-3               "#3c82ff")
+
+      (rubus-vc-change                 rubus-blue)
+      (rubus-vc-insert                 rubus-success)
+      (rubus-vc-delete                 rubus-error))
 
   (custom-theme-set-faces
    'guava-themes-rubus
@@ -125,8 +140,8 @@
    ;; line-number
    `(line-number ((,rubus-class (:foreground ,rubus-white))))
    `(line-number-current-line ((,rubus-class (:foreground ,rubus-pink-cream :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,rubus-class (:background ,rubus-orange))))
-   `(line-number-major-tick ((,rubus-class (:background ,rubus-purple))))
+   `(line-number-minor-tick ((,rubus-class (:background ,rubus-purple :inherit line-number))))
+   `(line-number-major-tick ((,rubus-class (:background ,rubus-deep-purple :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,rubus-class (:foreground ,rubus-white :background ,rubus-raspberry))))
@@ -170,18 +185,38 @@
 
    ;; outline
    `(outline-1 ((,rubus-class (:foreground ,rubus-purple :weight medium))))
-   `(outline-2 ((,rubus-class (:foreground ,rubus-yellow :weight medium))))
+   `(outline-2 ((,rubus-class (:foreground ,rubus-green-forest :weight medium))))
    `(outline-3 ((,rubus-class (:foreground ,rubus-deep-purple :weight medium))))
-   `(outline-4 ((,rubus-class (:foreground ,rubus-green-forest :weight medium))))
+   `(outline-4 ((,rubus-class (:foreground ,rubus-yellow :weight medium))))
    `(outline-5 ((,rubus-class (:foreground ,rubus-blue-subdued :weight medium))))
-   `(outline-6 ((,rubus-class (:foreground ,rubus-light-purple :weight medium))))
-   `(outline-7 ((,rubus-class (:foreground ,rubus-pink-cream :weight medium))))
+   `(outline-6 ((,rubus-class (:foreground ,rubus-pink-cream :weight medium))))
+   `(outline-7 ((,rubus-class (:foreground ,rubus-light-purple :weight medium))))
    `(outline-8 ((,rubus-class (:foreground ,rubus-orange :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,rubus-class (:foreground ,rubus-cyan))))
    `(escape-glyph ((,rubus-class (:inherit homoglyph))))
    `(nobreak-space ((,rubus-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,rubus-class (:background ,rubus-light-blue))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,rubus-class (:foreground ,rubus-cyan :background "grey19" :box (:line-width (-1 . -1) :color "grey35") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,rubus-class (:foreground ,rubus-white :background ,rubus-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,rubus-class (:foreground ,rubus-white :background ,rubus-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,rubus-class (:foreground ,rubus-white :background ,rubus-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,rubus-class (:foreground ,rubus-white :background ,rubus-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,rubus-class (:foreground ,rubus-white :background ,rubus-diff-header :extend t))))
+   `(diff-file-header ((,rubus-class (:weight bold :foreground ,rubus-white :background ,rubus-diff-file-header :extend t))))
+   `(diff-context ((,rubus-class (:foreground ,rubus-white :background ,rubus-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,rubus-class (:foreground ,rubus-warning :weight bold))))
+   `(completions-first-difference ((,rubus-class (:foreground ,rubus-error :weight bold))))
 
 
    ;; external packages
@@ -197,7 +232,7 @@
    `(elfeed-search-unread-count-face ((,rubus-class (:weight bold :foreground ,rubus-purple))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,rubus-class (:foreground ,rubus-light-purple))))
+   `(doom-modeline-project-name ((,rubus-class (:foreground ,rubus-light-purple :inherit italic))))
    `(doom-modeline-project-parent-dir ((,rubus-class (:foreground ,rubus-light-purple))))
    `(doom-modeline-buffer-minor-mode ((,rubus-class (:foreground ,rubus-orange))))
 
@@ -206,6 +241,12 @@
    `(corfu-current ((,rubus-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,rubus-class (:background ,rubus-shadow))))
    `(corfu-border ((,rubus-class (:background ,rubus-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,rubus-class (:foreground ,rubus-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,rubus-class (:foreground ,rubus-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,rubus-class (:foreground ,rubus-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,rubus-class (:foreground ,rubus-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,rubus-class (:inherit error))))

@@ -382,7 +382,7 @@ And some tools that do not handle $EDITOR properly also break."
                  (dolist (client clients)
                    (message "client %S" client)
                    (ignore-errors
-                     (server-send-string client "-error Canceled by user"))
+                     (server-send-string client "-error Canceled by user\n"))
                    (delete-process client))
                  (when (buffer-live-p buf)
                    (kill-buffer buf)))

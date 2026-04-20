@@ -1,6 +1,6 @@
 ;;; casual-bookmarks-settings.el --- Casual Bookmarks Settings -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024-2025 Charles Y. Choi
+;; Copyright (C) 2024-2026 Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -30,14 +30,14 @@
   ["Bookmarks: Settings"
    ["Customize"
     ("G" "Bookmark Group" casual-bookmarks--customize-group)
-   (casual-lib-customize-unicode)
-   (casual-lib-customize-hide-navigation)]]
+    (casual-lib-customize-unicode)
+    (casual-lib-customize-hide-navigation)]]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          ("a" "About" casual-bookmarks-about :transient nil)
+   (casual-lib-quit-one)
+   ("a" "About" casual-bookmarks-about :transient nil)
 
-          (casual-lib-quit-all)])
+   (casual-lib-quit-all)])
 
 (defun casual-bookmarks--customize-group ()
   "Customize Bookmarks group."

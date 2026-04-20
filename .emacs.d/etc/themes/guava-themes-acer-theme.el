@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,41 +35,54 @@
 
 (let* (
       (acer-class '((class color) (min-colors 257)))
-      (acer-black             "#000000")
-      (acer-white             "#FFFFFF")
+      (acer-black                     "#000000")
+      (acer-white                     "#FFFFFF")
 
-      (acer-shadow            "#7f7f7f")
+      (acer-shadow                    "#7f7f7f")
 
-      (acer-green             "#237c34");239834,237c34,3b7b27
-      (acer-green-cyan        "#277a6a")
-      (acer-deep-green        "#006041");8a8a8a,828282,787878,746c72,747474,606060,60607e,59597e,505069
+      (acer-green                     "#237c34");239834,237c34,3b7b27
+      (acer-green-cyan                "#277a6a")
+      (acer-deep-green                "#006041");8a8a8a,828282,787878,746c72,747474,606060,60607e,59597e,505069
 
-      (acer-orange            "#e76144");fe7457
-      (acer-deep-orange       "#d44400")
-      (acer-orange-pink       "#cd475f");ec31a3,ff514a,ff474a,ff475f
-      (acer-yellow            "#f7bb78");fca148,fca347,f5a24e,f5a44e,F7B36A,f7a95a,f7ac5f,f7bb78
-      (acer-autumn            "#ff8c4e");c14c5c,f46157,db3d32,e14337,ed7038,f77b44,f3814f,e8674a,ed674a,f68b47
+      (acer-orange                    "#e76144");fe7457,e76144,d75541
+      (acer-deep-orange               "#d44400");d44400,cd4100
+      (acer-orange-pink               "#cd475f");ec31a3,ff514a,ff474a,ff475f
+      (acer-yellow                    "#f7bb78");fca148,fca347,f5a24e,f5a44e,F7B36A,f7a95a,f7ac5f,f7bb78
+      (acer-autumn                    "#ff8c4e");c14c5c,f46157,db3d32,e14337,ed7038,f77b44,f3814f,e8674a,ed674a,f68b47
 
-      (acer-cream             "#dca56e");f68e64,dc8e64,dc9964,dc9964
-      (acer-brown             "#c88550");7d4826,754014,a58464,a07f5f
-      (acer-deep-brown        "#8c6950");7d6250,6a4e39,8c6a50
+      (acer-cream                     "#dca56e");f68e64,dc8e64,dc9964,dc9964
+      (acer-brown                     "#c88550");7d4826,754014,a58464,a07f5f
+      (acer-deep-brown                "#8c6950");7d6250,6a4e39,8c6a50
 
-      (acer-light-blue        "#3a9187");bacce4
-      (acer-blue              "#2134d5")
-      (acer-deep-blue         "#1B3B4D")
+      (acer-light-blue                "#3a9187");bacce4
+      (acer-blue                      "#2134d5")
+      (acer-deep-blue                 "#1B3B4D")
 
-      (acer-purple            "#9e4d76")
-      (acer-deep-purple       "#60366e");663c6c,62386c
-      (acer-purple-red        "#9b234b");9f234b
-      (acer-purple-pink       "#5f2258");233e4d
+      (acer-purple                    "#9e4d76")
+      (acer-deep-purple               "#60366e");663c6c,62386c
+      (acer-purple-red                "#9b234b");9f234b
+      (acer-purple-pink               "#5f2258");233e4d
 
-      (acer-error             "#d70000");FF0000,c80000
-      (acer-warning           "#f0dc00");F68511,f2e16b,f0dc67
-      (acer-success           "#23d934");23D734,239834,237c34
+      (acer-error                     "#d70000");FF0000,c80000
+      (acer-warning                   "#f0dc00");F68511,f2e16b,f0dc67
+      (acer-success                   "#28823c");23D734,239834,237c34,23d934,50b450
 
-      (acer-vc-change         acer-blue)
-      (acer-vc-insert         acer-success)
-      (acer-vc-delete         acer-error))
+      (acer-diff-added                "#c8f0c8");335533
+      (acer-diff-removed              "#f0c8c8");553333
+      (acer-diff-refine-added         "#78f078");22aa22
+      (acer-diff-refine-removed       "#f07878");aa2222
+      (acer-diff-header               "#b4b4b4");737373
+      (acer-diff-file-header          "#8c8c8c");999999
+      (acer-diff-context              "#dcdcdc");999999
+
+      (acer-orderless-0               "#af2ab9")
+      (acer-orderless-1               "#28823c")
+      (acer-orderless-2               "#d44400")
+      (acer-orderless-3               "#6496d7")
+
+      (acer-vc-change                 acer-blue)
+      (acer-vc-insert                 acer-success)
+      (acer-vc-delete                 acer-error))
 
   (custom-theme-set-faces
    'guava-themes-acer
@@ -123,8 +136,8 @@
    ;; line-number
    `(line-number ((,acer-class (:foreground ,acer-black))))
    `(line-number-current-line ((,acer-class (:foreground ,acer-deep-orange :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,acer-class (:background ,acer-brown))))
-   `(line-number-major-tick ((,acer-class (:background ,acer-deep-brown))))
+   `(line-number-minor-tick ((,acer-class (:background ,acer-brown :inherit line-number))))
+   `(line-number-major-tick ((,acer-class (:background ,acer-deep-brown :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,acer-class (:foreground ,acer-white :background ,acer-orange))))
@@ -176,10 +189,30 @@
    `(outline-7 ((,acer-class (:foreground ,acer-green-cyan :weight medium))))
    `(outline-8 ((,acer-class (:foreground ,acer-deep-orange :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,acer-class (:foreground ,acer-blue))))
    `(escape-glyph ((,acer-class (:inherit homoglyph))))
    `(nobreak-space ((,acer-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,acer-class (:background ,acer-light-blue))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,acer-class (:foreground ,acer-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,acer-class (:foreground ,acer-black :background ,acer-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,acer-class (:foreground ,acer-black :background ,acer-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,acer-class (:foreground ,acer-black :background ,acer-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,acer-class (:foreground ,acer-black :background ,acer-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,acer-class (:foreground ,acer-black :background ,acer-diff-header :extend t))))
+   `(diff-file-header ((,acer-class (:weight bold :foreground ,acer-black :background ,acer-diff-file-header :extend t))))
+   `(diff-context ((,acer-class (:foreground ,acer-black :background ,acer-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,acer-class (:foreground ,acer-vc-change :weight bold))))
+   `(completions-first-difference ((,acer-class (:foreground ,acer-error :weight bold))))
 
 
    ;; external packages
@@ -195,7 +228,7 @@
    `(elfeed-search-unread-count-face ((,acer-class (:weight bold :foreground ,acer-green))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,acer-class (:foreground ,acer-deep-purple))))
+   `(doom-modeline-project-name ((,acer-class (:foreground ,acer-deep-purple :inherit italic))))
    `(doom-modeline-project-parent-dir ((,acer-class (:foreground ,acer-deep-purple))))
    `(doom-modeline-buffer-minor-mode ((,acer-class (:foreground ,acer-purple))))
 
@@ -204,6 +237,12 @@
    `(corfu-current ((,acer-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,acer-class (:background ,acer-shadow))))
    `(corfu-border ((,acer-class (:background ,acer-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,acer-class (:foreground ,acer-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,acer-class (:foreground ,acer-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,acer-class (:foreground ,acer-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,acer-class (:foreground ,acer-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,acer-class (:inherit error))))

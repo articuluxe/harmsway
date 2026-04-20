@@ -4,7 +4,7 @@
 
 ;; Author: Geralld Borbón <eternalmangocean@gmail.com>
 ;; Created: Jan 21, 2026
-;; Version: 0.13.0
+;; Version: 0.14.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -35,46 +35,59 @@
 
 (let* (
       (ceiba-class '((class color) (min-colors 257)))
-      (ceiba-black             "#000000")
-      (ceiba-white             "#FFFFFF")
+      (ceiba-black                     "#000000")
+      (ceiba-white                     "#FFFFFF")
 
-      (ceiba-shadow            "#7f7f7f")
+      (ceiba-shadow                    "#7f7f7f")
 
-      ;; (ceiba-light-gray        "#bab49e");dcdcdc,d4d4d4
-      (ceiba-gray-green        "#bab49e");8c857b,8d8d8b,8c7f76,817a68,817a6a
-      (ceiba-gray              "#9d9d9d");dcdcdc,656865,7f7f89,787882
-      (ceiba-gray-blue         "#798585");8c857b,8d8d8b,6d726a,656865
+      ;; (ceiba-light-gray                "#bab49e");dcdcdc,d4d4d4
+      (ceiba-gray-green                "#bab49e");8c857b,8d8d8b,8c7f76,817a68,817a6a
+      (ceiba-gray                      "#9d9d9d");dcdcdc,656865,7f7f89,787882
+      (ceiba-gray-blue                 "#798585");8c857b,8d8d8b,6d726a,656865
 
-      (ceiba-light-green       "#61ff96")
-      (ceiba-green             "#5b6452");5a6352
-      (ceiba-deep-green        "#2b5535");375033,395235,3a5435,3a5835,385635,375535
-      (ceiba-green-forest      "#006441")
-      (ceiba-green-blue        "#11645a");5a6352,116452
+      (ceiba-light-green               "#61ff96")
+      (ceiba-green                     "#5b6452");5a6352
+      (ceiba-deep-green                "#2b5535");375033,395235,3a5435,3a5835,385635,375535
+      (ceiba-green-forest              "#006441")
+      (ceiba-green-blue                "#11645a");5a6352,116452
 
-      (ceiba-light-orange      "#f1a147")
-      (ceiba-orange            "#ca6f39")
-      (ceiba-deep-orange       "#a85639")
+      (ceiba-light-orange              "#f1a147")
+      (ceiba-orange                    "#ca6f39")
+      (ceiba-deep-orange               "#a85639")
 
-      (ceiba-steel-blue        "#aabed8");b0c4de
-      (ceiba-blue              "#2327dc")
-      (ceiba-alt-blue          "#2268a7");3a5ba7
+      (ceiba-steel-blue                "#aabed8");b0c4de
+      (ceiba-blue                      "#2327dc")
+      (ceiba-alt-blue                  "#2268a7");3a5ba7
 
-      (ceiba-light-purple      "#bec8ff")
-      (ceiba-purple            "#4e466d");49206d
-      (ceiba-purple-red        "#762362");862060,892362
+      (ceiba-light-purple              "#bec8ff")
+      (ceiba-purple                    "#4e466d");49206d
+      (ceiba-purple-red                "#762362");862060,892362
 
-      (ceiba-light-brown       "#a08c6e")
-      (ceiba-brown             "#6d4b30");6b492e
-      (ceiba-brown-sand        "#826e51");796041
-      (ceiba-brown-wood        "#53453d");9c6d85,bf8987,514141,53423e
+      (ceiba-light-brown               "#a08c6e")
+      (ceiba-brown                     "#6d4b30");6b492e
+      (ceiba-brown-sand                "#826e51");796041
+      (ceiba-brown-wood                "#53453d");9c6d85,bf8987,514141,53423e
 
-      (ceiba-error             "#ff0000");ff0000,d70000
-      (ceiba-warning           "#f6c911");F68511
-      (ceiba-success           "#1ea01e");29c825
+      (ceiba-error                     "#ff0000");ff0000,d70000
+      (ceiba-warning                   "#f6c911");F68511
+      (ceiba-success                   "#1ea01e");29c825
 
-      (ceiba-vc-change         ceiba-blue)
-      (ceiba-vc-insert         ceiba-success)
-      (ceiba-vc-delete         ceiba-error))
+      (ceiba-diff-added                "#c8f0c8");335533
+      (ceiba-diff-removed              "#f0c8c8");553333
+      (ceiba-diff-refine-added         "#78f078");22aa22
+      (ceiba-diff-refine-removed       "#f07878");aa2222
+      (ceiba-diff-header               "#b4b4b4");737373
+      (ceiba-diff-file-header          "#8c8c8c");999999
+      (ceiba-diff-context              "#dcdcdc");999999
+
+      (ceiba-orderless-0               "#af37b9")
+      (ceiba-orderless-1               "#147828")
+      (ceiba-orderless-2               "#b45a00")
+      (ceiba-orderless-3               "#3c82e6")
+
+      (ceiba-vc-change                 ceiba-blue)
+      (ceiba-vc-insert                 ceiba-success)
+      (ceiba-vc-delete                 ceiba-error))
 
   (custom-theme-set-faces
    'guava-themes-ceiba
@@ -128,8 +141,8 @@
    ;; line-number
    `(line-number ((,ceiba-class (:foreground ,ceiba-black))))
    `(line-number-current-line ((,ceiba-class (:foreground ,ceiba-deep-green :weight bold :inherit highlight))))
-   `(line-number-minor-tick ((,ceiba-class (:background ,ceiba-light-brown))))
-   `(line-number-major-tick ((,ceiba-class (:background ,ceiba-brown-sand))))
+   `(line-number-minor-tick ((,ceiba-class (:background ,ceiba-light-brown :inherit line-number))))
+   `(line-number-major-tick ((,ceiba-class (:background ,ceiba-brown-sand :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-green))))
@@ -181,10 +194,30 @@
    `(outline-7 ((,ceiba-class (:foreground ,ceiba-deep-orange :weight medium))))
    `(outline-8 ((,ceiba-class (:foreground ,ceiba-purple :weight medium))))
 
-   ;; homoglyph, escape-glyph, nobreak-space
+   ;; homoglyph, escape-glyph, nobreak-space (C-x 8 RET "FORM FEED") (C-x 8 RET "NO-BREAK SPACE")
    `(homoglyph ((,ceiba-class (:foreground ,ceiba-blue))))
    `(escape-glyph ((,ceiba-class (:inherit homoglyph))))
    `(nobreak-space ((,ceiba-class (:box (:line-width (2 . 2)) :inherit homoglyph))))
+
+   ;; pulse-highlight-start-face
+   ;; M-: (pulse-momentary-highlight-region (point-min) (point-max))
+   `(pulse-highlight-start-face ((,ceiba-class (:background ,ceiba-alt-blue))))
+
+   ;; help-key-binding
+   `(help-key-binding ((,ceiba-class (:foreground ,ceiba-blue :background "grey96" :box (:line-width (-1 . -1) :color "grey80") :inherit fixed-pitch))))
+
+   ;; diff
+   `(diff-added ((,ceiba-class (:foreground ,ceiba-black :background ,ceiba-diff-added :extend t :inherit diff-changed))))
+   `(diff-removed ((,ceiba-class (:foreground ,ceiba-black :background ,ceiba-diff-removed :extend t :inherit diff-changed))))
+   `(diff-refine-added ((,ceiba-class (:foreground ,ceiba-black :background ,ceiba-diff-refine-added :inherit diff-refine-changed))))
+   `(diff-refine-removed ((,ceiba-class (:foreground ,ceiba-black :background ,ceiba-diff-refine-removed :inherit diff-refine-changed))))
+   `(diff-header ((,ceiba-class (:foreground ,ceiba-black :background ,ceiba-diff-header :extend t))))
+   `(diff-file-header ((,ceiba-class (:weight bold :foreground ,ceiba-black :background ,ceiba-diff-file-header :extend t))))
+   `(diff-context ((,ceiba-class (:foreground ,ceiba-black :background ,ceiba-diff-context :extend t))))
+
+   ;; completions
+   `(completions-common-part ((,ceiba-class (:foreground ,ceiba-vc-change :weight bold))))
+   `(completions-first-difference ((,ceiba-class (:foreground ,ceiba-error :weight bold))))
 
 
    ;; external packages
@@ -200,7 +233,7 @@
    `(elfeed-search-unread-count-face ((,ceiba-class (:weight bold :foreground ,ceiba-light-green))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,ceiba-class (:foreground ,ceiba-steel-blue))))
+   `(doom-modeline-project-name ((,ceiba-class (:foreground ,ceiba-steel-blue :inherit italic))))
    `(doom-modeline-project-parent-dir ((,ceiba-class (:foreground ,ceiba-steel-blue))))
    `(doom-modeline-buffer-minor-mode ((,ceiba-class (:foreground ,ceiba-shadow))))
 
@@ -209,6 +242,12 @@
    `(corfu-current ((,ceiba-class (:foreground unspecified :background unspecified :inherit region))))
    `(corfu-bar ((,ceiba-class (:background ,ceiba-shadow))))
    `(corfu-border ((,ceiba-class (:background ,ceiba-shadow))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,ceiba-class (:foreground ,ceiba-orderless-0 :weight bold))))
+   `(orderless-match-face-1 ((,ceiba-class (:foreground ,ceiba-orderless-1 :weight bold))))
+   `(orderless-match-face-2 ((,ceiba-class (:foreground ,ceiba-orderless-2 :weight bold))))
+   `(orderless-match-face-3 ((,ceiba-class (:foreground ,ceiba-orderless-3 :weight bold))))
 
    ;; envrc
    `(envrc-mode-line-error-face ((,ceiba-class (:inherit error))))

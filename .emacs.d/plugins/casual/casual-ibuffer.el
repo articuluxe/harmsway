@@ -1,6 +1,6 @@
 ;;; casual-ibuffer.el --- Transient UI for IBuffer -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2024-2025  Charles Y. Choi
+;; Copyright (C) 2024-2026  Charles Y. Choi
 
 ;; Author: Charles Choi <kickingvegas@gmail.com>
 ;; Keywords: tools
@@ -135,23 +135,27 @@
     ("/" "Clear" ibuffer-filter-disable)
     ("F" "Filter›" casual-ibuffer-filter-tmenu :transient t)]
 
-   ["Find/Replace in Marked"
+   ["I-Search/Occur Marked"
     :pad-keys t
-    ("O" "Occur…" ibuffer-do-occur)
-    ;;("C-s" "I-Search…" ibuffer-do-isearch)
-    ;;("C-M-s" "I-Search regexp…" ibuffer-do-isearch-regexp)
-    ("M-r" "Query Replace…" ibuffer-do-query-replace)
-    ("C-M-r" "Query Replace Regexp…" ibuffer-do-query-replace-regexp)]
+    ("C-s" "I-Search…" ibuffer-do-isearch)
+    ("C-M-s" "I-Search Regexp…" ibuffer-do-isearch-regexp)
+    ("O" "Occur…" ibuffer-do-occur)]
 
-   ["Quick"
-    ("J" "Jump to Bookmark…" bookmark-jump :transient nil)]]
+   ["Query Replace Marked"
+    :pad-keys t
+    ("M-r" "Query Replace…" ibuffer-do-query-replace)
+    ("C-M-r" "Query Replace Regexp…" ibuffer-do-query-replace-regexp)]]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          ("RET" "Visit/Toggle" casual-ibuffer-return-dwim)
-          ("," "Settings›" casual-ibuffer-settings-tmenu)
-          (casual-lib-quit-all)
-          ("q" "Quit IBuffer" quit-window)])
+   (casual-lib-quit-one)
+   ("RET" "Visit/Toggle" casual-ibuffer-return-dwim
+    :description (lambda () (if (casual-ibuffer-filter-group-p)
+                                "Toggle"
+                              "Visit")))
+   ("," "Settings›" casual-ibuffer-settings-tmenu)
+   ("J" "Jump to Bookmark…" bookmark-jump :transient nil)
+   (casual-lib-quit-all)
+   ("q" "Quit IBuffer" quit-window)])
 
 
 (transient-define-prefix casual-ibuffer-operations-tmenu ()
@@ -160,15 +164,14 @@
     ("!" "Shell…" ibuffer-do-shell-command-file)
     ("|" "Pipe to Shell…" ibuffer-do-shell-command-pipe)]
 
-   [("E" "Eval" ibuffer-do-eval)
+   [("E" "Eval…" ibuffer-do-eval)
+    ("V" "View and Eval…" ibuffer-do-view-and-eval)
     ("B" "Copy Buffer Name" ibuffer-copy-buffername-as-kill)]
 
    [("T" "Toggle Read-only" ibuffer-do-toggle-read-only)
     ("L" "Toggle Lock" ibuffer-do-toggle-lock)]]
 
-  [:class transient-row
-          (casual-lib-quit-one)
-          (casual-lib-quit-all)])
+  casual-lib-navigation-group-plain)
 
 ;;;###autoload (autoload 'casual-ibuffer-sortby-tmenu "casual-ibuffer" nil t)
 (transient-define-prefix casual-ibuffer-sortby-tmenu ()
@@ -183,12 +186,12 @@
    [("i" "Invert" ibuffer-invert-sorting)]]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          ("," "Cycle Sort" ibuffer-toggle-sorting-mode)
-          (casual-lib-quit-all)])
+   (casual-lib-quit-one)
+   ("," "Cycle Sort" ibuffer-toggle-sorting-mode)
+   (casual-lib-quit-all)])
 
 (transient-define-prefix casual-ibuffer-mark-tmenu ()
-  ["Mark By"
+  ["IBuffer: Mark"
    [("m" "Mode" ibuffer-mark-by-mode)
     ("d" "Dired" ibuffer-mark-dired-buffers)
     ("h" "Help" ibuffer-mark-help-buffers)]
@@ -202,9 +205,9 @@
     ("z" "Compressed" ibuffer-mark-compressed-file-buffers)]]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          ("U" "Unmark All" ibuffer-unmark-all-marks :transient t)
-          (casual-lib-quit-all)])
+   (casual-lib-quit-one)
+   ("U" "Unmark All" ibuffer-unmark-all-marks :transient t)
+   (casual-lib-quit-all)])
 
 (transient-define-prefix casual-ibuffer-mark-regexp-tmenu ()
   ["IBuffer: Mark Regexp"
@@ -213,9 +216,9 @@
    ("m" "Mode" ibuffer-mark-by-mode-regexp)
    ("c" "Content" ibuffer-mark-by-content-regexp)]
   [:class transient-row
-          (casual-lib-quit-one)
-          ("U" "Unmark All" ibuffer-unmark-all-marks :transient t)
-          (casual-lib-quit-all)])
+   (casual-lib-quit-one)
+   ("U" "Unmark All" ibuffer-unmark-all-marks :transient t)
+   (casual-lib-quit-all)])
 
 (provide 'casual-ibuffer)
 ;;; casual-ibuffer.el ends here

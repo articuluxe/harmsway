@@ -126,6 +126,8 @@ Non-interactively REV can also be a blob object."
                (setq default-directory
                      (if (file-exists-p defdir) defdir topdir))
                (setq-local revert-buffer-function #'magit--revert-blob-buffer)
+               (setq-local buffer-read-only t)
+               (setq-local read-only-mode--state t)
                (magit--refresh-blob-buffer)
                (current-buffer)))
             ((error "Unexpected error")))))
@@ -215,7 +217,6 @@ Non-interactively REV can also be a blob object."
       ;; The FIND-FILE argument wasn't designed for our use case,
       ;; so we have to use this strange invocation to achieve that.
       (normal-mode (not enable-local-variables)))
-    (setq buffer-read-only t)
     (set-buffer-modified-p nil)
     (run-hooks 'magit-find-blob-hook)))
 
@@ -472,6 +473,7 @@ to `magit-dispatch'."
 
 (defvar-keymap magit-blob-mode-map
   :doc "Keymap for `magit-blob-mode'."
+  "<remap> <read-only-mode>" #'magit-blob-mode
   "g" #'revert-buffer
   "p" #'magit-blob-previous
   "n" #'magit-blob-next
@@ -481,11 +483,22 @@ to `magit-dispatch'."
   "q" #'magit-bury-or-kill-buffer)
 
 (define-minor-mode magit-blob-mode
-  "Enable some Magit features in blob-visiting buffers.
+  "Enable key bindings, which are useful in blob-visiting buffers.
 
-Currently this only adds the following key bindings.
-\n\\{magit-blob-mode-map}"
-  :package-version '(magit . "2.3.0"))
+\\{magit-blob-mode-map}
+When the user disables `read-only-mode', these bindings would conflict
+with bindings for `self-insert-command'.  To avoid this conflict,
+`read-only-mode' is remapped to `magit-blob-mode' and disabling the
+latter disables both modes.  Likewise, enabling it, also enables
+`read-only-mode'.
+
+When this mode is disabled, many of the commands, for which it would
+single-character bindings, are accessible via \\[magit-file-dispatch]."
+  :package-version '(magit . "2.3.0")
+  ;; Don't actually call `read-only-mode'.  Because
+  ;; that could enable the incompatible `view-mode'.
+  (setq-local buffer-read-only magit-blob-mode)
+  (setq-local read-only-mode--state magit-blob-mode))
 
 (defun magit-bury-buffer (&optional kill-buffer)
   "Bury the current buffer, or with a prefix argument kill it.
@@ -710,15 +723,14 @@ Git, then fallback to using `delete-file'."
      (car (member (or default (magit-current-file)) files)))))
 
 (defun magit-read-file (prompt &optional tracked-only)
-  (magit-with-toplevel
-    (let ((choices (nconc (magit-list-files)
-                          (and (not tracked-only)
-                               (magit-untracked-files)))))
-      (magit-completing-read
-       prompt choices nil t nil nil
-       (car (member (or (magit-section-value-if '(file submodule))
-                        (magit-file-relative-name nil tracked-only))
-                    choices))))))
+  (let ((choices (nconc (magit-list-files)
+                        (and (not tracked-only)
+                             (magit-untracked-files)))))
+    (magit-completing-read
+     prompt choices nil t nil nil
+     (car (member (or (magit-section-value-if '(file submodule))
+                      (magit-file-relative-name nil tracked-only))
+                  choices)))))
 
 (defun magit-read-tracked-file (prompt)
   (magit-read-file prompt t))

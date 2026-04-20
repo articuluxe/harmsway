@@ -103,11 +103,11 @@ this."
     (ignore-error file-missing
       (apply #'process-lines-ignore-status program args))))
 
-(defvar magit-git-w32-path-hack nil
+(defvar magit--git-w32-path-hack nil
   "Alist of (EXE . (PATHENTRY)).
 This specifies what additional PATH setting needs to be added to
 the environment in order to run the non-wrapper git executables
-successfully.")
+successfully.  Set when `magit-git-executable' is (re)initialized.")
 
 (defcustom magit-git-executable
   (or (and (eq system-type 'windows-nt)
@@ -121,7 +121,7 @@ successfully.")
                            exec "-c"
                            "alias.X=!x() { which \"$1\" | cygpath -mf -; }; x"
                            "X" "git")))
-                    (hack-entry (assoc core-exe magit-git-w32-path-hack))
+                    (hack-entry (assoc core-exe magit--git-w32-path-hack))
                     ;; Running the libexec/git-core executable
                     ;; requires some extra PATH entries.
                     (path-hack
@@ -135,7 +135,7 @@ successfully.")
                ;; idempotent.
                (if hack-entry
                    (setcdr hack-entry path-hack)
-                 (push (cons core-exe path-hack) magit-git-w32-path-hack))
+                 (push (cons core-exe path-hack) magit--git-w32-path-hack))
                core-exe)))
       (and (eq system-type 'darwin)
            (executable-find "git"))
@@ -280,6 +280,28 @@ framework ultimately determines how the collection is displayed."
   :package-version '(magit . "2.11.0")
   :group 'magit-miscellaneous
   :type '(choice string (repeat string)))
+
+(defcustom magit-cygwin-mount-points
+  (and (eq system-type 'windows-nt)
+       (cl-sort (mapcar
+                 (lambda (mount)
+                   (if (string-match "^\\(.*\\) on \\(.*\\) type" mount)
+                       (cons (file-name-as-directory (match-str 2 mount))
+                             (file-name-as-directory (match-str 1 mount)))
+                     (lwarn '(magit) :error
+                            "Failed to parse Cygwin mount: %S" mount)))
+                 ;; If --exec-path is not a native Windows path,
+                 ;; then we probably have a cygwin git.
+                 (and-let ((dirs (magit--early-process-lines
+                                  magit-git-executable "--exec-path")))
+                   (and (not (string-match-p "\\`[a-zA-Z]:" (car dirs)))
+                        (magit--early-process-lines "mount"))))
+                #'> :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
+  "Alist of (CYGWIN . WIN32) directory names.
+Sorted from longest to shortest CYGWIN name."
+  :package-version '(magit . "2.3.0")
+  :group 'magit-process
+  :type '(alist :key-type string :value-type directory))
 
 ;;; Git
 
@@ -860,7 +882,8 @@ Also see `magit-git-config-p'."
     (dolist (v values)
       (magit-call-git "config" arg "--add" var v))))
 
-;;; Files
+;;; Repository
+;;;; Repository Locations
 
 (defun magit--safe-default-directory (&optional file)
   (catch 'unsafe-default-dir
@@ -1006,6 +1029,8 @@ returning the truename."
   `(let ((default-directory (magit--toplevel-safe)))
      ,@body))
 
+;;;; Repository Predicates
+
 (define-error 'magit-outside-git-repo "Not inside Git repository")
 (define-error 'magit-corrupt-git-config "Corrupt Git configuration")
 (define-error 'magit-git-executable-not-found "Git executable cannot be found")
@@ -1087,25 +1112,8 @@ a bare repository."
                 (file-directory-p (expand-file-name "refs" directory))
                 (file-directory-p (expand-file-name "objects" directory))))))
 
-(defun magit-file-relative-name (&optional file tracked)
-  "Return the path of FILE relative to the repository root.
-
-If optional FILE is nil or omitted, return the relative path of
-the file being visited in the current buffer, if any, else nil.
-If the file is not inside a Git repository, then return nil.
-
-If TRACKED is non-nil, return the path only if it matches a
-tracked file."
-  (with-current-buffer (or (buffer-base-buffer) (current-buffer))
-    (and-let* ((file (or file
-                         (magit-buffer-file-name)
-                         (and (derived-mode-p 'dired-mode)
-                              default-directory)))
-               (dir (magit-toplevel (magit--safe-default-directory
-                                     (file-name-parent-directory file))))
-               (_(or (not tracked)
-                     (magit-file-tracked-p file))))
-      (file-relative-name file dir))))
+;;; Files
+;;;; File Predicates
 
 (defun magit-file-ignored-p (file)
   (magit-git-string "ls-files" "--others" "--ignored" "--exclude-standard"
@@ -1115,22 +1123,25 @@ tracked file."
   (magit-git-success "ls-files" "--error-unmatch"
                      "--" (magit-convert-filename-for-git file)))
 
+;;;; File Lists
+
 (defun magit-list-files (&rest args)
-  (apply #'magit-git-items "ls-files" "-z" "--full-name" args))
+  (magit-with-toplevel
+    (apply #'magit-git-items "ls-files" "-z" args)))
 
 (defun magit-tracked-files (&rest args)
   (magit-list-files "--cached" args))
 
 (defun magit-untracked-files (&optional all files &rest args)
-  "Return a list of untracked files.
-
-Note that when using \"--directory\", the rules from \".gitignore\"
-files from sub-directories are ignore, which is probably a Git bug.
-See also `magit-list-untracked-files', which does not have this
-issue."
-  (magit-list-files "--other" args
-                    (and (not all) "--exclude-standard")
-                    "--" files))
+  "Return a list of untracked files."
+  (magit-with-toplevel
+    (seq-keep (##and (eq (aref % 0) ??)
+                     (substring % 3))
+              (magit-git-items "status" "-z" "--porcelain" args
+                               (if all
+                                   "--untracked-files=all"
+                                 "--untracked-files=normal")
+                               "--" files))))
 
 (defun magit-list-untracked-files (&optional files)
   "Return a list of untracked files.
@@ -1203,14 +1214,13 @@ See also `magit-untracked-files'."
             (magit-list-files "-v" args)))
 
 (defun magit-revision-files (rev)
-  (magit-with-toplevel
-    (magit-git-items "ls-tree" "-z" "-r" "--name-only" rev)))
+  (magit-git-items "ls-tree" "-z" "--full-tree" "-r" "--name-only" rev))
 
 (defun magit-revision-directories (rev)
   "List directories that contain a tracked file in revision REV."
-  (magit-with-toplevel
-    (mapcar #'file-name-as-directory
-            (magit-git-items "ls-tree" "-z" "-r" "-d" "--name-only" rev))))
+  (mapcar #'file-name-as-directory
+          (magit-git-items "ls-tree" "-z" "--full-tree" "-r" "-d" "--name-only"
+                           rev)))
 
 (defun magit-changed-files (rev-or-range &optional other-rev)
   "Return list of files the have changed between two revisions.
@@ -1228,6 +1238,28 @@ range.  Otherwise, it can be any revision or range accepted by
                                           "--diff-filter=R" revA revB)
                          3)))
 
+;;;; File Names
+
+(defun magit-file-relative-name (&optional file tracked)
+  "Return the path of FILE relative to the repository root.
+
+If optional FILE is nil or omitted, return the relative path of
+the file being visited in the current buffer, if any, else nil.
+If the file is not inside a Git repository, then return nil.
+
+If TRACKED is non-nil, return the path only if it matches a
+tracked file."
+  (with-current-buffer (or (buffer-base-buffer) (current-buffer))
+    (and-let* ((file (or file
+                         (magit-buffer-file-name)
+                         (and (derived-mode-p 'dired-mode)
+                              default-directory)))
+               (dir (magit-toplevel (magit--safe-default-directory
+                                     (file-name-parent-directory file))))
+               (_(or (not tracked)
+                     (magit-file-tracked-p file))))
+      (file-relative-name file dir))))
+
 (defun magit--rev-file-name (file rev other-rev)
   "For FILE, potentially renamed between REV and OTHER-REV, return name in REV.
 Return nil, if FILE appears neither in REV nor OTHER-REV,
@@ -1235,47 +1267,6 @@ or if no rename is detected."
   (or (car (member file (magit-revision-files rev)))
       (and$ (magit-renamed-files rev other-rev)
             (car (rassoc file $)))))
-
-(defun magit-file-status (&rest args)
-  (magit--with-temp-process-buffer
-    (save-excursion (magit-git-insert "status" "-z" args))
-    (let ((pos (point)) status)
-      (while (> (skip-chars-forward "[:print:]") 0)
-        (let ((x (char-after     pos))
-              (y (char-after (1+ pos)))
-              (file (buffer-substring (+ pos 3) (point))))
-          (forward-char)
-          (cond ((memq x '(?R ?C))
-                 (setq pos (point))
-                 (skip-chars-forward "[:print:]")
-                 (push (list file (buffer-substring pos (point)) x y) status)
-                 (forward-char))
-                ((push (list file nil x y) status))))
-        (setq pos (point)))
-      status)))
-
-(defcustom magit-cygwin-mount-points
-  (and (eq system-type 'windows-nt)
-       (cl-sort (mapcar
-                 (lambda (mount)
-                   (if (string-match "^\\(.*\\) on \\(.*\\) type" mount)
-                       (cons (file-name-as-directory (match-str 2 mount))
-                             (file-name-as-directory (match-str 1 mount)))
-                     (lwarn '(magit) :error
-                            "Failed to parse Cygwin mount: %S" mount)))
-                 ;; If --exec-path is not a native Windows path,
-                 ;; then we probably have a cygwin git.
-                 (and (not (string-match-p
-                            "\\`[a-zA-Z]:"
-                            (car (magit--early-process-lines
-                                  magit-git-executable "--exec-path"))))
-                      (magit--early-process-lines "mount")))
-                #'> :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
-  "Alist of (CYGWIN . WIN32) directory names.
-Sorted from longest to shortest CYGWIN name."
-  :package-version '(magit . "2.3.0")
-  :group 'magit-process
-  :type '(alist :key-type string :value-type directory))
 
 (defun magit-expand-git-file-name (filename)
   (unless (file-name-absolute-p filename)
@@ -1313,6 +1304,8 @@ Sorted from longest to shortest CYGWIN name."
                             t)
     path))
 
+;;;; File Miscellaneous
+
 (defun magit-file-at-point (&optional expand assert)
   (cond-let
     ([file (magit-section-case
@@ -1329,6 +1322,24 @@ Sorted from longest to shortest CYGWIN name."
       (magit-file-at-point)
       (and (derived-mode-p 'magit-log-mode)
            (car magit-buffer-log-files))))
+
+(defun magit-file-status (&rest args)
+  (magit--with-temp-process-buffer
+    (save-excursion (magit-git-insert "status" "-z" args))
+    (let ((pos (point)) status)
+      (while (> (skip-chars-forward "[:print:]") 0)
+        (let ((x (char-after     pos))
+              (y (char-after (1+ pos)))
+              (file (buffer-substring (+ pos 3) (point))))
+          (forward-char)
+          (cond ((memq x '(?R ?C))
+                 (setq pos (point))
+                 (skip-chars-forward "[:print:]")
+                 (push (list file (buffer-substring pos (point)) x y) status)
+                 (forward-char))
+                ((push (list file nil x y) status))))
+        (setq pos (point)))
+      status)))
 
 ;;; Blobs
 
@@ -2978,8 +2989,17 @@ out.  Only existing branches can be selected."
                              (magit-get-remote))))
 
 (defun magit-read-module-path (prompt &optional predicate)
+  ;; Predicates are evaluate with the minibuffer as the current buffer.
+  ;; Unlike for other completion frameworks, Helm does not ensure that
+  ;; the value of `default-directory' in that buffer is the same as in
+  ;; the buffer from which completion was invoked.
   (magit-completing-read prompt (magit-list-module-paths)
-                         predicate t nil nil
+                         (and predicate
+                              (let ((dir default-directory))
+                                (lambda (module)
+                                  (let ((default-directory dir))
+                                    (funcall predicate module)))))
+                         t nil nil
                          (magit-module-at-point predicate)))
 
 (defun magit-module-confirm (verb &optional predicate)

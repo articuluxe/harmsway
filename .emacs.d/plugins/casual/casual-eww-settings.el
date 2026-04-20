@@ -48,11 +48,11 @@
      :transient t)
     ("c" "Use Colors" casual-eww--customize-shr-use-colors
      :description (lambda () (casual-lib-checkbox-label
-                         shr-use-colors "Use Colors"))
+                              shr-use-colors "Use Colors"))
      :transient t)
     ("i" "Inhibit Images" casual-eww--customize-shr-inhibit-images
      :description (lambda () (casual-lib-checkbox-label
-                         shr-inhibit-images "Inhibit Images"))
+                              shr-inhibit-images "Inhibit Images"))
      :transient t)]]
 
   ["General"

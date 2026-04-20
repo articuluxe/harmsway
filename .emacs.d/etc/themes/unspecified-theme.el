@@ -8,8 +8,8 @@
 ;; Keywords:                faces, theme
 ;; Maintainer:              Mekeor Melire <mekeor@posteo.de>
 ;; Package-Requires:        ((emacs "25") (most-faces "0.0.3"))
-;; SPDX-License-Identifier: GPL-3.0-or-later
-;; Version:                 0.4
+;; SPDX-License-Identifier: GPL-3.0-only
+;; Version:                 0.5
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -127,8 +127,8 @@ Only the `default' face is not themed at all.")
        (mapcar
         (lambda (face) (list face unspecified-theme-unspecified-spec))
         ;; `most-faces-as-faces' promises to keep `default' face as
-        ;; its very first element.  We skip it because unspecified the
-        ;; default face yields unexpected behavior.
+        ;; its very first element.  We skip it because unspecifying
+        ;; the default face yields unexpected behavior.
         (cdr most-faces-as-faces)))
 
 (apply #'custom-theme-set-variables 'unspecified

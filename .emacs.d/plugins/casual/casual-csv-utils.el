@@ -97,9 +97,9 @@ plain ASCII-range string."
    ("t" "Toggle" csv-align-mode :transient t)]
 
   [:class transient-row
-          (casual-lib-quit-one)
-          ("RET" "Done" casual-lib-quit-all)
-          (casual-lib-quit-all)])
+   (casual-lib-quit-one)
+   ("RET" "Done" casual-lib-quit-all)
+   (casual-lib-quit-all)])
 
 (provide 'casual-csv-utils)
 ;;; casual-csv-utils.el ends here
