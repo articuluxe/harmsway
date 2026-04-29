@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-04-07 11:02:19 dharms>
+;; Modified Time-stamp: <2026-04-29 10:47:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -483,6 +483,7 @@ not an error if any files do not exist."
   :bind (("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
          ("C-h C-f" . find-function-view)
          ("M-g g" . goto-line-with-feedback)
+         ("C-c if" . copy-current-filepath)
          )
   :commands
   (insert-now now insert-today today find-file-upwards find-file-dir-upwards
@@ -1627,7 +1628,7 @@ ARGS are the additional arguments."
     (call-interactively 'git-link t (vector "origin" start end))
     (setq str (substring-no-properties (car kill-ring)))
     (when (and str (not (string-empty-p str)))
-      (if (featurep 'simpleclip)
+      (if (require 'simpleclip nil 'noerror)
           (simpleclip-set-contents str))
       (message str))))
 

@@ -1,8 +1,8 @@
 ;; custom-utils.el --- misc. utilities
-;; Copyright (C) 2015-2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2018, 2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-06-05 09:27:31 dharms>
+;; Modified Time-stamp: <2026-04-29 10:45:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -24,8 +24,6 @@
 ;;
 
 ;;; Code:
-
-(require 'popup-imenu)
 
 (defun insert-now()
   "Insert string for current time formatted like `2:34 PM'."
@@ -137,6 +135,20 @@ Use instead of `shell-command-to-string'.  Substitute the nil in
                     '(t nil) nil
                     shell-command-switch
                     cmd))))
+
+(defun copy-current-filepath ()
+  "Copy to kill ring current file path."
+  (interactive)
+  (let ((file (if (eq major-mode 'dired-mode)
+                  (dired-copy-filename-as-kill 0)
+                (buffer-file-name))))
+    (when (and file (not (string-empty-p file)))
+      (if (eq last-command 'kill-region)
+          (kill-append file nil)
+        (kill-new file))
+      (if (require 'simpleclip nil 'noerror)
+          (simpleclip-set-contents file))
+      (message file))))
 
 (provide 'custom-utils)
 ;; utils.el ends here
