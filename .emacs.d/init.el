@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-04-29 10:47:00 dharms>
+;; Modified Time-stamp: <2026-05-13 13:48:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1738,7 +1738,8 @@ ARGS are the additional arguments."
              )
      (list "Other"
            (list "Bookmarks" #'bookmark-bmenu-list "b")
-           (list "Switch project" #'project-switch-project "p"))
+           (list "Switch project" #'project-switch-project "p")
+           (list "Recent files" #'recentf-open-files "r"))
      (append (list "Projects")
              (mapcar (lambda (dir)
                        (cl-incf i)
