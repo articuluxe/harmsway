@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2019-2026  Free Software Foundation, Inc.
 
-;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
+;; Author: Protesilaos <info@protesilaos.com>
+;; Maintainer: Protesilaos <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/modus-themes
 ;; Version: 5.2.0
 ;; Package-Requires: ((emacs "28.1"))
@@ -188,25 +188,17 @@ properties from their context (e.g. an overlay over an underlined
 text should not be underlined as well) yet still blend in."
   :group 'modus-themes-faces)
 
-(defface modus-themes-prompt nil
-  "Generic face for command prompts."
-  :group 'modus-themes-faces)
+(define-obsolete-face-alias 'modus-themes-prompt nil "5.3.0")
 
 (defface modus-themes-button nil
   "Face for graphical buttons."
   :group 'modus-themes-faces)
 
-(defface modus-themes-completion-selected nil
-  "Face for current selection in completion UIs."
-  :group 'modus-themes-faces)
-
-(dotimes (n 4)
-  (custom-declare-face
-   (intern (format "modus-themes-completion-match-%d" n))
-   nil (format "Completions match level %d." n)
-   :package-version '(modus-themes . "4.0.0")
-   :version "30.1"
-   :group 'modus-themes-faces))
+(define-obsolete-face-alias 'modus-themes-completion-selected nil "5.3.0")
+(define-obsolete-face-alias 'modus-themes-completion-match-0 nil "5.3.0")
+(define-obsolete-face-alias 'modus-themes-completion-match-1 nil "5.3.0")
+(define-obsolete-face-alias 'modus-themes-completion-match-2 nil "5.3.0")
+(define-obsolete-face-alias 'modus-themes-completion-match-3 nil "5.3.0")
 
 
 
@@ -479,123 +471,15 @@ and related user options."
           :value-type ,modus-themes--headings-widget)
   :link '(info-link "(modus-themes) Heading styles"))
 
-(defcustom modus-themes-completions nil
-  "Control the style of completion user interfaces.
+(make-obsolete-variable
+ 'modus-themes-completions
+ "Completion matches are bold when `modus-themes-bold-constructs' is non-nil"
+ "5.3.0")
 
-This affects Company, Corfu, Flx, Icomplete/Fido, Ido, Ivy,
-Orderless, Vertico, and the standard *Completions* buffer.  The
-value is an alist of expressions, each of which takes the form
-of (KEY . LIST-OF-PROPERTIES).  KEY is a symbol, while PROPERTIES
-is a list.  Here is a sample, followed by a description of the
-particularities:
-
-    (setq modus-themes-completions
-          (quote ((matches . (extrabold underline))
-                  (selection . (semibold italic)))))
-
-The `matches' key refers to the highlighted characters that
-correspond to the user's input.  When its properties are nil or
-an empty list, matching characters in the user interface will
-have a bold weight and a colored foreground.  The list of
-properties may include any of the following symbols regardless of
-the order they may appear in:
-
-- `underline' to draw a line below the characters;
-
-- `italic' to use a slanted font (italic or oblique forms);
-
-- The symbol of a font weight attribute such as `light',
-  `semibold', et cetera.  Valid symbols are defined in the
-  variable `modus-themes-weights'.  The absence of a weight means
-  that bold will be used.
-
-The `selection' key applies to the current line or currently
-matched candidate, depending on the specifics of the user
-interface.  When its properties are nil or an empty list, it has
-a subtle gray background, a bold weight, and the base foreground
-value for the text.  The list of properties it accepts is as
-follows (order is not significant):
-
-- `underline' to draw a line below the characters;
-
-- `italic' to use a slanted font (italic or oblique forms);
-
-- The symbol of a font weight attribute such as `light',
-  `semibold', et cetera.  Valid symbols are defined in the
-  variable `modus-themes-weights'.  The absence of a weight means
-  that bold will be used.
-
-Apart from specifying each key separately, a catch-all list is
-accepted.  This is only useful when the desired aesthetic is the
-same across all keys that are not explicitly referenced.  For
-example, this:
-
-    (setq modus-themes-completions
-          (quote ((t . (extrabold underline)))))
-
-Is the same as:
-
-    (setq modus-themes-completions
-          (quote ((matches . (extrabold underline))
-                  (selection . (extrabold underline)))))"
-  :group 'modus-themes
-  :package-version '(modus-themes . "4.0.0")
-  :version "30.1"
-  :type `(set
-          (cons :tag "Matches"
-                (const matches)
-                (set :tag "Style of matches" :greedy t
-                     ,modus-themes--weight-widget
-                     (const :tag "Italic font (oblique or slanted forms)" italic)
-                     (const :tag "Underline" underline)))
-          (cons :tag "Selection"
-                (const selection)
-                (set :tag "Style of selection" :greedy t
-                     ,modus-themes--weight-widget
-                     (const :tag "Italic font (oblique or slanted forms)" italic)
-                     (const :tag "Underline" underline)))
-          (cons :tag "Fallback for both matches and selection"
-                (const t)
-                (set :tag "Style of both matches and selection" :greedy t
-                     ,modus-themes--weight-widget
-                     (const :tag "Italic font (oblique or slanted forms)" italic)
-                     (const :tag "Underline" underline))))
-  :link '(info-link "(modus-themes) Completion UIs"))
-
-(defcustom modus-themes-prompts nil
-  "Use subtle or intense styles for minibuffer and REPL prompts.
-
-The value is a list of properties, each designated by a symbol.
-The default (a nil value or an empty list) means to only use a
-subtle colored foreground color.
-
-The `italic' property adds a slant to the font's forms (italic or
-oblique forms, depending on the typeface).
-
-The symbol of a font weight attribute such as `light', `semibold',
-et cetera, adds the given weight to links.  Valid symbols are
-defined in the variable `modus-themes-weights'.  The absence of a
-weight means that the one of the underlying text will be used.
-
-Combinations of any of those properties are expressed as a list,
-like in these examples:
-
-    (bold italic)
-    (italic semibold)
-
-The order in which the properties are set is not significant.
-
-In user configuration files the form may look like this:
-
-    (setq modus-themes-prompts (quote (extrabold italic)))"
-  :group 'modus-themes
-  :package-version '(modus-themes . "4.0.0")
-  :version "30.1"
-  :type `(set :tag "Properties" :greedy t
-              (const :tag "Italic font slant" italic)
-              ,modus-themes--weight-widget)
-  :link '(info-link "(modus-themes) Command prompts"))
-
+(make-obsolete-variable
+ 'modus-themes-prompts
+ "Prompts are now bold if `modus-themes-bold-constructs' is non-nil"
+ "5.3.0")
 
 (defcustom modus-themes-common-palette-user nil
   "Common user-defined colors to extend all the themes' palettes.
@@ -3741,17 +3625,30 @@ Info node `(modus-themes) Option for palette overrides'.")
 
 ;;;; Helper functions for theme setup
 
-(defun modus-themes--hex-to-rgb (hex-color)
-  "Convert HEX-COLOR to a list of normalized RGB values.
-Use `color-values-from-color-spec' (a C built-in since Emacs 28.1)
-instead of `color-name-to-rgb' to avoid dependence on a display
-connection.  This matters when loading a theme during early init on
-GUI Emacs, where `color-values' returns nil before the display is
-ready (per <https://github.com/protesilaos/modus-themes/issues/198>)."
-  (mapcar
-   (lambda (x)
-     (/ x 65535.0))
-   (color-values-from-color-spec hex-color)))
+(defvar modus-themes--hex-regexp
+  (concat
+   "\\`#"
+   "\\(?:[[:xdigit:]]\\{3\\}"
+   "\\|"
+   "[[:xdigit:]]\\{6\\}\\)"
+   "\\'")
+  "Regular expression to match a color in hexadecimal RGB notation.")
+
+(defun modus-themes--color-hex-p (color)
+  "Return non-nil if COLOR is hexadecimal RGB."
+  (and (stringp color) (string-match-p modus-themes--hex-regexp color)))
+
+(defun modus-themes--hex-or-name-to-rgb (color)
+  "Convert COLOR to a list of normalized RGB values.
+COLOR can be a hexadecimal RGB value like #123456 or a named color
+like those produced by `list-colors-display'."
+  (cond
+   ((modus-themes--color-hex-p color)
+    (when-let* ((spec (color-values-from-color-spec color)))
+      (mapcar (lambda (x) (/ x 65535.0)) spec)))
+   ((color-name-to-rgb color))
+   (t
+    (error "The color `%s' cannot be resolved" color))))
 
 ;; This is the WCAG formula: https://www.w3.org/TR/WCAG20-TECHS/G18.html
 (defun modus-themes--wcag-contribution (channel weight)
@@ -3761,10 +3658,11 @@ ready (per <https://github.com/protesilaos/modus-themes/issues/198>)."
          (/ channel 12.92)
        (expt (/ (+ channel 0.055) 1.055) 2.4))))
 
-(defun modus-themes-wcag-formula (hex-color)
-  "Get WCAG value of color value HEX-COLOR.
-The value is defined in hexadecimal RGB notation, such #123456."
-  (when-let* ((channels (modus-themes--hex-to-rgb hex-color)))
+(defun modus-themes-wcag-formula (color)
+  "Get WCAG value of color value COLOR.
+The value is defined in hexadecimal RGB notation, such #123456, or
+as a named color like those of `list-colors-display'."
+  (when-let* ((channels (modus-themes--hex-or-name-to-rgb color)))
     (let ((weights '(0.2126 0.7152 0.0722))
           (contribution nil))
       (while channels
@@ -3772,38 +3670,38 @@ The value is defined in hexadecimal RGB notation, such #123456."
       (apply #'+ contribution))))
 
 ;;;###autoload
-(defun modus-themes-contrast (hex-color-1 hex-color-2)
-  "Measure WCAG contrast ratio between HEX-COLOR-1 and HEX-COLOR-2.
-HEX-COLOR-1 and HEX-COLOR-2 are color values written in hexadecimal RGB."
-  (if-let* ((hex1-weight (modus-themes-wcag-formula hex-color-1))
-            (hex2-weight (modus-themes-wcag-formula hex-color-2)))
+(defun modus-themes-contrast (color-1 color-2)
+  "Measure WCAG contrast ratio between COLOR-1 and COLOR-2.
+Color values are of the form accepted by `modus-themes-wcag-formula'."
+  (if-let* ((hex1-weight (modus-themes-wcag-formula color-1))
+            (hex2-weight (modus-themes-wcag-formula color-2)))
       (let ((contrast (/ (+ hex1-weight 0.05) (+ hex2-weight 0.05))))
         (max contrast (/ contrast)))
-    (error "Both `%s' and `%s' must be valid hexadecimal RGB colors" hex-color-1 hex-color-2)))
+    (error "Both `%s' and `%s' must be valid hexadecimal RGB or named colors" color-1 color-2)))
 
 (defun modus-themes--color-eight-to-six-digits (hex-color)
   "Reduce representation of hexadecimal RGB HEX-COLOR from eight to six digits.
 If HEX-COLOR is three or six digits, then return it as is."
-  (let ((color-no-hash (substring hex-color 1)))
-    (if (memq (length color-no-hash) '(3 6))
-        hex-color
-      (let* ((triplets (seq-split color-no-hash 4))
-             (triplets-shortened (mapcar
-                                  (lambda (string)
-                                    (substring string 0 2))
-                                  triplets)))
-        (concat "#" (string-join triplets-shortened))))))
+  (if (modus-themes--color-hex-p hex-color)
+      hex-color
+    (let* ((color-no-hash (substring hex-color 1))
+           (triplets (seq-split color-no-hash 4))
+           (triplets-shortened (mapcar
+                                (lambda (string)
+                                  (substring string 0 2))
+                                triplets)))
+      (concat "#" (string-join triplets-shortened)))))
 
-(defun modus-themes-adjust-value (hex-rgb percentage)
-  "Adjust value of HEX-RGB colour by PERCENTAGE."
-  (if-let* ((rgb (modus-themes--hex-to-rgb hex-rgb)))
-      (pcase-let* ((`(,r ,g ,b) rgb)
-                   (fn (if (color-dark-p (list r g b))
-                           #'color-lighten-name
-                         #'color-darken-name))
-                   (value (funcall fn hex-rgb percentage)))
-        (modus-themes--color-eight-to-six-digits value))
-    (error "The `%s' has to be a valid hexadecimal RGB color" hex-rgb)))
+(defun modus-themes-adjust-value (color percentage)
+  "Adjust value of COLOR by PERCENTAGE.
+COLOR is either a hexadecimal RGB string or a named color."
+  (when-let* ((rgb (modus-themes--hex-or-name-to-rgb color)))
+    (pcase-let* ((`(,r ,g ,b) rgb)
+                 (`(,h ,s ,l) (color-rgb-to-hsl r g b))
+                 (adjusted (color-lighten-hsl h s l percentage))
+                 (adjusted-rgb (apply #'color-hsl-to-rgb adjusted))
+                 (value (apply #'color-rgb-to-hex adjusted-rgb)))
+      (modus-themes--color-eight-to-six-digits value))))
 
 (defvar modus-themes-registered-items nil
   "List of defined themes.
@@ -4248,15 +4146,15 @@ Run `modus-themes-after-load-theme-hook' after loading a theme."
 
 ;;;;; Preview a theme palette
 
-(defun modus-themes-color-dark-p (hex-color)
-  "Return non-nil if hexadecimal RGB HEX-COLOR is dark.
-Test that HEX-COLOR has more contrast against white than black."
-  (> (modus-themes-contrast hex-color "#ffffff")
-     (modus-themes-contrast hex-color "#000000")))
+(defun modus-themes-color-dark-p (color)
+  "Return non-nil if hexadecimal RGB COLOR is dark.
+Test that COLOR has more contrast against white than black."
+  (> (modus-themes-contrast color "#ffffff")
+     (modus-themes-contrast color "#000000")))
 
-(defun modus-themes-get-readable-foreground (hex-color)
-  "Get readable foreground for background hexadecimal RGB HEX-COLOR."
-  (if (modus-themes-color-dark-p hex-color)
+(defun modus-themes-get-readable-foreground (color)
+  "Get readable foreground for background hexadecimal RGB COLOR."
+  (if (modus-themes-color-dark-p color)
       "#ffffff"
     "#000000"))
 
@@ -4498,32 +4396,6 @@ list given LIST-PRED, using DEFAULT as a fallback."
   (when modus-themes-variable-pitch-ui
     (list :inherit 'variable-pitch)))
 
-(defun modus-themes--prompt (fg bg)
-  "Conditional use of colors for text prompt faces.
-FG is the prompt's standard foreground.  BG is a background
-color that is combined with FG-FOR-BG."
-  (let* ((properties (modus-themes--list-or-warn 'modus-themes-prompts))
-         (weight (modus-themes--weight properties)))
-    (list :inherit
-          (cond
-           ((and (memq 'bold properties)
-                 (memq 'italic properties))
-            'bold-italic)
-           ((memq 'italic properties)
-            'italic)
-           ((memq 'bold properties)
-            'bold)
-           ('unspecified))
-          :background bg
-          :foreground fg
-          :weight
-          ;; If we have `bold' specifically, we inherit the face of
-          ;; the same name.  This allows the user to customise that
-          ;; face, such as to change its font family.
-          (if (and weight (not (eq weight 'bold)))
-              weight
-            'unspecified))))
-
 (defconst modus-themes-weights
   '( thin ultralight extralight light semilight regular medium
      semibold bold heavy extrabold ultrabold)
@@ -4563,53 +4435,6 @@ Optional OL is the color of an overline."
                       (modus-themes--property-lookup properties 'height #'floatp 'unspecified)
                     'unspecified)
           :weight (or weight 'unspecified))))
-
-(defun modus-themes--completion-line (bg)
-  "Styles for `modus-themes-completions' with BG as the background."
-  (let* ((var (modus-themes--list-or-warn 'modus-themes-completions))
-         (properties (or (alist-get 'selection var) (alist-get t var)))
-         (italic (memq 'italic properties))
-         (weight (modus-themes--weight properties))
-         (bold (when (and weight (eq weight 'bold)) 'bold)))
-    (list
-     :inherit
-     (cond
-      ((and italic weight (not (eq weight 'bold)))
-       'italic)
-      ((and weight (not (eq weight 'bold)))
-       'unspecified)
-      (italic 'bold-italic)
-      ('bold))
-     :background bg
-     :foreground 'unspecified
-     :underline
-     (if (memq 'underline properties) t 'unspecified)
-     :weight
-     (if (and weight (null bold)) weight 'unspecified))))
-
-(defun modus-themes--completion-match (fg bg)
-  "Styles for `modus-themes-completions'.
-FG and BG are the main colors."
-  (let* ((var (modus-themes--list-or-warn 'modus-themes-completions))
-         (properties (or (alist-get 'matches var) (alist-get t var)))
-         (italic (memq 'italic properties))
-         (weight (modus-themes--weight properties))
-         (bold (when (and weight (eq weight 'bold)) 'bold)))
-    (list
-     :inherit
-     (cond
-      ((and italic weight (not (eq weight 'bold)))
-       'italic)
-      ((and weight (not (eq weight 'bold)))
-       'unspecified)
-      (italic 'bold-italic)
-      ('bold))
-     :background bg
-     :foreground fg
-     :underline
-     (if (memq 'underline properties) t 'unspecified)
-     :weight
-     (if (and weight (null bold)) weight 'unspecified))))
 
 
 ;; NOTE 2025-11-23: In theory we need the `modus-themes--box'
@@ -4658,12 +4483,6 @@ If COLOR is unspecified, then return :box unspecified."
     `(modus-themes-heading-6 ((,c ,@(modus-themes--heading 6 fg-heading-6 bg-heading-6 overline-heading-6))))
     `(modus-themes-heading-7 ((,c ,@(modus-themes--heading 7 fg-heading-7 bg-heading-7 overline-heading-7))))
     `(modus-themes-heading-8 ((,c ,@(modus-themes--heading 8 fg-heading-8 bg-heading-8 overline-heading-8))))
-;;;;; completion frameworks
-    `(modus-themes-completion-match-0 ((,c ,@(modus-themes--completion-match fg-completion-match-0 bg-completion-match-0))))
-    `(modus-themes-completion-match-1 ((,c ,@(modus-themes--completion-match fg-completion-match-1 bg-completion-match-1))))
-    `(modus-themes-completion-match-2 ((,c ,@(modus-themes--completion-match fg-completion-match-2 bg-completion-match-2))))
-    `(modus-themes-completion-match-3 ((,c ,@(modus-themes--completion-match fg-completion-match-3 bg-completion-match-3))))
-    `(modus-themes-completion-selected ((,c ,@(modus-themes--completion-line bg-completion))))
 ;;;;; typography
     `(modus-themes-bold ((,c ,@(modus-themes--bold-weight))))
     `(modus-themes-fixed-pitch ((,c ,@(modus-themes--fixed-pitch))))
@@ -4675,7 +4494,6 @@ If COLOR is unspecified, then return :box unspecified."
        (((supports :box t))
         ,@(modus-themes--box border 1 'released-button))
        (t :underline ,border)))
-    `(modus-themes-prompt ((,c ,@(modus-themes--prompt fg-prompt bg-prompt))))
     `(modus-themes-reset-soft ((,c :background ,bg-main :foreground ,fg-main
                                    :weight normal :slant normal :strike-through nil
                                    :box nil :underline nil :overline nil :extend nil)))
@@ -4688,6 +4506,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(italic ((,c :slant italic)))
     `(cursor ((,c :background ,cursor)))
     `(fringe ((,c :background ,fringe :foreground ,fg-main)))
+    `(margin ((,c :background ,fringe :foreground ,fg-main)))
     `(scroll-bar ((,c :background ,bg-main :foreground ,border)))
     `(tool-bar ((,c :background ,bg-dim :foreground ,fg-main)))
     `(vertical-border ((,c :foreground ,border)))
@@ -4698,7 +4517,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(buffer-menu-buffer ((,c :foreground ,name)))
     `(child-frame-border ((,c :background ,border)))
     `(comint-highlight-input ((,c :inherit modus-themes-bold)))
-    `(comint-highlight-prompt ((,c :inherit modus-themes-prompt)))
+    `(comint-highlight-prompt ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(confusingly-reordered ((,c :underline (:style wave :color ,underline-err))))
     `(edmacro-label ((,c :inherit modus-themes-bold :foreground ,accent-0)))
     `(error ((,c :inherit modus-themes-bold :foreground ,err)))
@@ -4716,13 +4535,13 @@ If COLOR is unspecified, then return :box unspecified."
     `(nobreak-hyphen ((,c :foreground ,err)))
     `(nobreak-space ((,c :foreground ,err :underline t)))
     `(menu ((,c :inverse-video unspecified :background ,bg-active :foreground ,fg-main)))
-    `(minibuffer-prompt ((,c :inherit modus-themes-prompt)))
+    `(minibuffer-prompt ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(minibuffer-nonselected ((,c :inverse-video t)))
     `(mm-command-output ((,c :foreground ,mail-part)))
     `(mm-uu-extract ((,c :foreground ,mail-part)))
     `(next-error ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
     `(pgtk-im-0 ((,c :background ,bg-prominent-note :foreground ,fg-prominent-note)))
-    `(read-multiple-choice-face ((,c :inherit bold :background ,bg-mark-select :foreground ,fg-mark-select)))
+    `(read-multiple-choice-face ((,c :inverse-video t)))
     `(rectangle-preview ((,c :background ,bg-active :foreground ,fg-main)))
     `(region ((,c :background ,bg-region :foreground ,fg-region)))
     `(secondary-selection ((,c :background ,bg-hover-secondary :foreground ,fg-main)))
@@ -4973,14 +4792,14 @@ If COLOR is unspecified, then return :box unspecified."
     `(cider-fringe-good-face ((,c :foreground ,info)))
     `(cider-instrumented-face ((,c :box ,err)))
     `(cider-reader-conditional-face ((,c :inherit modus-themes-bold :foreground ,type)))
-    `(cider-repl-prompt-face ((,c :inherit modus-themes-prompt)))
+    `(cider-repl-prompt-face ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(cider-repl-stderr-face ((,c :foreground ,err)))
     `(cider-repl-stdout-face (( )))
     `(cider-warning-highlight-face ((,c :underline (:style wave :color ,underline-warning))))
 ;;;;; circe (and lui)
     `(circe-fool-face ((,c :foreground ,fg-dim)))
     `(circe-highlight-nick-face ((,c :foreground ,err)))
-    `(circe-prompt-face ((,c :inherit modus-themes-prompt)))
+    `(circe-prompt-face ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(circe-server-face ((,c :foreground ,fg-dim)))
     `(lui-button-face ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
     `(lui-highlight-face ((,c :foreground ,err)))
@@ -4993,23 +4812,23 @@ If COLOR is unspecified, then return :box unspecified."
 ;;;;; column-enforce-mode
     `(column-enforce-face ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
 ;;;;; company-mode
-    `(company-echo-common ((,c :inherit modus-themes-completion-match-0)))
+    `(company-echo-common ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(company-preview ((,c :foreground ,fg-dim)))
-    `(company-preview-common ((,c :inherit modus-themes-completion-match-0)))
+    `(company-preview-common ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(company-preview-search ((,c :background ,bg-yellow-intense)))
     `(company-scrollbar-bg ((,c :background ,bg-active)))
     `(company-scrollbar-fg ((,c :background ,fg-main)))
     `(company-template-field ((,c :background ,bg-active)))
     `(company-tooltip ((,c :inherit modus-themes-fixed-pitch :background ,bg-popup)))
     `(company-tooltip-annotation ((,c :inherit modus-themes-slant :foreground ,docstring)))
-    `(company-tooltip-common ((,c :inherit modus-themes-completion-match-0)))
+    `(company-tooltip-common ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(company-tooltip-deprecated ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim :strike-through t)))
     `(company-tooltip-mouse ((,c :background ,bg-hover :foreground ,fg-main)))
     `(company-tooltip-scrollbar-thumb ((,c :background ,fg-alt)))
     `(company-tooltip-scrollbar-track ((,c :background ,bg-inactive)))
     `(company-tooltip-search ((,c :background ,bg-hover-secondary :foreground ,fg-main)))
     `(company-tooltip-search-selection ((,c :background ,bg-hover-secondary :foreground ,fg-main :underline t)))
-    `(company-tooltip-selection ((,c :inherit modus-themes-completion-selected)))
+    `(company-tooltip-selection ((,c :background ,bg-completion)))
 ;;;;; compilation
     `(compilation-column-number ((,c :foreground ,fg-dim)))
     `(compilation-error ((,c :inherit modus-themes-bold :foreground ,err)))
@@ -5026,14 +4845,14 @@ If COLOR is unspecified, then return :box unspecified."
     ;; `completion-preview', then we should remember to customize
     ;; `completion-preview-adapt-background-color' accordingly.
     `(completion-preview-common ((,c :inherit completion-preview :underline t)))
-    `(completion-preview-exact ((,c :inherit (modus-themes-completion-match-0 completion-preview))))
+    `(completion-preview-exact ((,c :inherit (modus-themes-bold completion-preview) :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
 ;;;;; completions
     `(completions-annotations ((,c :inherit modus-themes-slant :foreground ,docstring)))
-    `(completions-common-part ((,c :inherit modus-themes-completion-match-0)))
+    `(completions-common-part ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(completions-group-title ((,c :inherit modus-themes-slant :foreground ,name :height 0.9)))
     `(completions-group-separator ((,c :strike-through t :foreground ,border)))
-    `(completions-first-difference ((,c :inherit modus-themes-completion-match-1)))
-    `(completions-highlight ((,c :inherit modus-themes-completion-selected)))
+    `(completions-first-difference ((,c :inherit modus-themes-bold :background ,bg-completion-match-1 :foreground ,fg-completion-match-1)))
+    `(completions-highlight ((,c :background ,bg-completion)))
 ;;;;; consult
     `(consult-async-split ((,c :foreground ,err)))
     `(consult-file ((,c :inherit modus-themes-bold :foreground ,info)))
@@ -5045,7 +4864,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(consult-line-number-prefix ((,c :foreground ,fg-dim)))
     `(consult-preview-insertion ((,c :background ,bg-dim)))
 ;;;;; corfu
-    `(corfu-current ((,c :inherit modus-themes-completion-selected)))
+    `(corfu-current ((,c :background ,bg-completion)))
     `(corfu-bar ((,c :background ,fg-dim)))
     `(corfu-border ((,c :background ,bg-active)))
     `(corfu-default ((,c :inherit modus-themes-fixed-pitch :background ,bg-popup)))
@@ -5248,7 +5067,11 @@ If COLOR is unspecified, then return :box unspecified."
     `(disk-usage-symlink ((,c :background ,bg-link-symbolic :foreground ,fg-link-symbolic :underline ,underline-link-symbolic)))
     `(disk-usage-symlink-directory ((,c :background ,bg-link-symbolic :foreground ,fg-link-symbolic :underline ,underline-link-symbolic)))
 ;;;;; display-fill-column-indicator-mode
-    `(fill-column-indicator ((,c :height 1 :background ,bg-active :foreground ,bg-active)))
+    `(fill-column-indicator
+      ((((type tty))
+        :height 1.0 :background unspecified :foreground ,bg-active)
+       (,c
+        :height 1 :background ,bg-active :foreground ,bg-active)))
 ;;;;; doom-modeline
     `(doom-modeline-bar ((,c :background ,blue))) ; special case like `centaur-tabs-active-bar-face'
     `(doom-modeline-bar-inactive ((,c :background ,border)))
@@ -5337,6 +5160,12 @@ If COLOR is unspecified, then return :box unspecified."
     `(elfeed-search-title-face ((,c :foreground ,fg-dim)))
     `(elfeed-search-unread-count-face (( )))
     `(elfeed-search-unread-title-face ((,c :inherit bold :foreground ,fg-main)))
+    `(elfeed-show-header-face ((,c :inherit modus-themes-bold)))
+    `(elfeed-show-title-face ((,c :inherit modus-themes-bold :foreground ,mail-subject)))
+    `(elfeed-show-author-face ((,c :inherit modus-themes-bold :foreground ,mail-recipient)))
+    `(elfeed-show-date-face ((,c :foreground ,date-common)))
+    `(elfeed-show-feed-face ((,c :foreground ,accent-1)))
+    `(elfeed-show-tags-face ((,c :foreground ,accent-0)))
 ;;;;; elfeed-score
     `(elfeed-score-date-face ((,c :foreground ,date-common)))
     `(elfeed-score-debug-level-face ((,c :inherit modus-themes-bold)))
@@ -5454,7 +5283,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(erc-nick-prefix-face ((,c :inherit erc-nick-default-face)))
     `(erc-notice-face ((,c :inherit modus-themes-slant :foreground ,comment)))
     `(erc-pal-face ((,c :inherit modus-themes-bold :foreground ,accent-1)))
-    `(erc-prompt-face ((,c :inherit modus-themes-prompt)))
+    `(erc-prompt-face ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(erc-timestamp-face ((,c :foreground ,date-common)))
     `(erc-underline-face ((,c :inherit underline)))
 ;;;;; ert
@@ -5477,7 +5306,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(eshell-ls-special ((,c :foreground ,accent-3)))
     `(eshell-ls-symlink ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
     `(eshell-ls-unreadable ((,c :foreground ,fg-dim)))
-    `(eshell-prompt ((,c :inherit modus-themes-prompt)))
+    `(eshell-prompt ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
 ;;;;; eshell-fringe-status
     `(eshell-fringe-status-failure ((,c :foreground ,err)))
     `(eshell-fringe-status-success ((,c :foreground ,info)))
@@ -5536,7 +5365,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(flyspell-duplicate ((,c :underline (:style wave :color ,underline-warning))))
     `(flyspell-incorrect ((,c :underline (:style wave :color ,underline-err))))
 ;;;;; flx
-    `(flx-highlight-face ((,c :inherit modus-themes-completion-match-0)))
+    `(flx-highlight-face ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
 ;;;;; focus
     `(focus-unfocused ((,c :foreground "gray50")))
 ;;;;; fold-this
@@ -5592,7 +5421,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(geiser-font-lock-image-button ((,c :foreground ,info :underline t)))
     `(geiser-font-lock-repl-input ((,c :inherit modus-themes-bold)))
     `(geiser-font-lock-repl-output ((,c :inherit modus-themes-bold :foreground ,keyword)))
-    `(geiser-font-lock-repl-prompt ((,c :inherit modus-themes-prompt)))
+    `(geiser-font-lock-repl-prompt ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(geiser-font-lock-xref-header ((,c :inherit modus-themes-bold)))
     `(geiser-font-lock-xref-link ((,c :background ,bg-link :foreground ,fg-link :underline ,underline-link)))
 ;;;;; git-commit
@@ -5775,15 +5604,15 @@ If COLOR is unspecified, then return :box unspecified."
     `(ibuffer-marked ((,c :inherit bold :background ,bg-mark-select :foreground ,fg-mark-select)))
     `(ibuffer-title ((,c :inherit bold)))
 ;;;;; icomplete
-    `(icomplete-first-match ((,c :inherit modus-themes-completion-match-0)))
+    `(icomplete-first-match ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(icomplete-vertical-selected-prefix-indicator-face ((,c :inherit modus-themes-bold :foreground ,keybind)))
     `(icomplete-vertical-unselected-prefix-indicator-face ((,c :foreground ,fg-dim)))
-    `(icomplete-selected-match ((,c :inherit modus-themes-completion-selected)))
+    `(icomplete-selected-match ((,c :background ,bg-completion)))
 ;;;;; ido-mode
-    `(ido-first-match ((,c :inherit modus-themes-completion-match-0)))
+    `(ido-first-match ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(ido-incomplete-regexp ((,c :foreground ,err)))
     `(ido-indicator ((,c :inherit modus-themes-bold)))
-    `(ido-only-match ((,c :inherit modus-themes-completion-match-0)))
+    `(ido-only-match ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
     `(ido-subdir ((,c :foreground ,keyword)))
     `(ido-virtual ((,c :foreground ,warning)))
 ;;;;; iedit
@@ -5873,12 +5702,12 @@ If COLOR is unspecified, then return :box unspecified."
 ;;;;; ivy
     `(ivy-action ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,keybind)))
     `(ivy-confirm-face ((,c :foreground ,info)))
-    `(ivy-current-match ((,c :inherit modus-themes-completion-selected)))
+    `(ivy-current-match ((,c :background ,bg-completion)))
     `(ivy-match-required-face ((,c :foreground ,err)))
     `(ivy-minibuffer-match-face-1 (( )))
-    `(ivy-minibuffer-match-face-2 ((,c :inherit modus-themes-completion-match-0)))
-    `(ivy-minibuffer-match-face-3 ((,c :inherit modus-themes-completion-match-1)))
-    `(ivy-minibuffer-match-face-4 ((,c :inherit modus-themes-completion-match-2)))
+    `(ivy-minibuffer-match-face-2 ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
+    `(ivy-minibuffer-match-face-3 ((,c :inherit modus-themes-bold :background ,bg-completion-match-1 :foreground ,fg-completion-match-1)))
+    `(ivy-minibuffer-match-face-4 ((,c :inherit modus-themes-bold :background ,bg-completion-match-2 :foreground ,fg-completion-match-2)))
     `(ivy-remote ((,c :inherit modus-themes-slant)))
     `(ivy-separator ((,c :foreground ,fg-dim)))
     `(ivy-subdir ((,c :foreground ,keyword)))
@@ -6179,7 +6008,36 @@ If COLOR is unspecified, then return :box unspecified."
     `(markdown-missing-link-face ((,c :foreground ,warning)))
     `(markdown-pre-face ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
     `(markdown-table-face ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-table)))
-    `(markdown-url-face ((,c :foreground ,fg-alt)))
+    `(markdown-url-face ((,c :background ,bg-link :foreground ,fg-link)))
+;;;;; markdown-ts-mode
+    `(markdown-ts-block-quote ((,c :inherit modus-themes-slant :foreground ,docstring)))
+    `(markdown-ts-bold ((,c :inherit bold)))
+    `(markdown-ts-code-block ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
+    `(markdown-ts-code-block-markup-hidden ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
+    `(markdown-ts-code-span ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-code :foreground ,fg-prose-code)))
+    `(markdown-ts-delimiter ((,c :foreground ,fg-dim)))
+    `(markdown-ts-emphasis ((,c :inherit italic)))
+    `(markdown-ts-entity-reference ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-verbatim :foreground ,fg-prose-verbatim)))
+    `(markdown-ts-hard-line-break-backslash ((,c :foreground ,rx-backslash)))
+    `(markdown-ts-hard-line-break-backslash-hidden ((,c :foreground ,rx-backslash)))
+    `(markdown-ts-hard-line-break-space ((,c :foreground ,err :underline t)))
+    `(markdown-ts-hard-line-break-space-hidden ((,c :foreground ,err :underline t)))
+    `(markdown-ts-heading-1 ((,c :inherit modus-themes-heading-1)))
+    `(markdown-ts-heading-2 ((,c :inherit modus-themes-heading-2)))
+    `(markdown-ts-heading-3 ((,c :inherit modus-themes-heading-3)))
+    `(markdown-ts-heading-4 ((,c :inherit modus-themes-heading-4)))
+    `(markdown-ts-heading-5 ((,c :inherit modus-themes-heading-5)))
+    `(markdown-ts-heading-6 ((,c :inherit modus-themes-heading-6)))
+    `(markdown-ts-html-block ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
+    `(markdown-ts-html-tag ((,c :foreground ,fg-dim)))
+    `(markdown-ts-indented-code-block ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-contents :extend t)))
+    `(markdown-ts-language-keyword ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-block-delimiter :foreground ,fg-prose-block-delimiter)))
+    `(markdown-ts-latex ((,c :foreground ,type)))
+    `(markdown-ts-numeric-character-reference ((,c :foreground ,number)))
+    `(markdown-ts-table ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-table)))
+    `(markdown-ts-table-cell ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-table)))
+    `(markdown-ts-table-delimiter-cell ((,c :inherit modus-themes-fixed-pitch :foreground ,prose-table)))
+    `(markdown-ts-table-header ((,c :inherit (modus-themes-bold modus-themes-fixed-pitch) :foreground ,prose-table)))
 ;;;;; markup-faces (`adoc-mode')
     `(markup-attribute-face ((,c :inherit modus-themes-fixed-pitch :foreground ,fg-dim)))
     `(markup-bold-face ((,c :inherit bold)))
@@ -6214,7 +6072,7 @@ If COLOR is unspecified, then return :box unspecified."
 ;;;;; mbdepth
     `(minibuffer-depth-indicator ((,c :inverse-video t)))
 ;;;;; mct
-    `(mct-highlight-candidate ((,c :inherit modus-themes-completion-selected)))
+    `(mct-highlight-candidate ((,c :background ,bg-completion)))
 ;;;;; messages
     `(message-cited-text-1 ((,c :foreground ,mail-cite-0)))
     `(message-cited-text-2 ((,c :foreground ,mail-cite-1)))
@@ -6444,10 +6302,10 @@ If COLOR is unspecified, then return :box unspecified."
 ;;;;; olivetti
     `(olivetti-fringe ((,c :background ,fringe)))
 ;;;;; orderless
-    `(orderless-match-face-0 ((,c :inherit modus-themes-completion-match-0)))
-    `(orderless-match-face-1 ((,c :inherit modus-themes-completion-match-1)))
-    `(orderless-match-face-2 ((,c :inherit modus-themes-completion-match-2)))
-    `(orderless-match-face-3 ((,c :inherit modus-themes-completion-match-3)))
+    `(orderless-match-face-0 ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
+    `(orderless-match-face-1 ((,c :inherit modus-themes-bold :background ,bg-completion-match-1 :foreground ,fg-completion-match-1)))
+    `(orderless-match-face-2 ((,c :inherit modus-themes-bold :background ,bg-completion-match-2 :foreground ,fg-completion-match-2)))
+    `(orderless-match-face-3 ((,c :inherit modus-themes-bold :background ,bg-completion-match-3 :foreground ,fg-completion-match-3)))
 ;;;;; org
     `(org-agenda-calendar-daterange ((,c :foreground ,date-range)))
     `(org-agenda-calendar-event ((,c :foreground ,date-event)))
@@ -6653,7 +6511,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(popup-face ((,c :background ,bg-popup :foreground ,fg-main)))
     `(popup-isearch-match ((,c :background ,bg-search-current :foreground ,fg-search-current)))
     `(popup-menu-mouse-face ((,c :background ,bg-hover :foreground ,fg-main)))
-    `(popup-menu-selection-face ((,c :inherit modus-themes-completion-selected)))
+    `(popup-menu-selection-face ((,c :background ,bg-completion)))
     `(popup-scroll-bar-background-face ((,c :background ,bg-active)))
     `(popup-scroll-bar-foreground-face (( )))
     `(popup-summary-face ((,c :background ,bg-active :foreground ,fg-dim)))
@@ -6693,8 +6551,8 @@ If COLOR is unspecified, then return :box unspecified."
     `(powerline-evil-replace-face ((,c :background ,bg-main :foreground ,err)))
     `(powerline-evil-visual-face ((,c :inherit modus-themes-bold :background ,bg-main)))
 ;;;;; prescient
-    `(prescient-primary-highlight ((,c :inherit modus-themes-completion-match-0)))
-    `(prescient-secondary-highlight ((,c :inherit modus-themes-completion-match-1)))
+    `(prescient-primary-highlight ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
+    `(prescient-secondary-highlight ((,c :inherit modus-themes-bold :background ,bg-completion-match-1 :foreground ,fg-completion-match-1)))
 ;;;;; proced
     `(proced-mark ((,c :inherit modus-themes-bold)))
     `(proced-marked ((,c :inherit bold :background ,bg-mark-other :foreground ,fg-mark-other)))
@@ -6742,7 +6600,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(rcirc-nick-in-message ((,c :inherit modus-themes-bold :foreground ,accent-1)))
     `(rcirc-nick-in-message-full-line ((,c :inherit modus-themes-bold :foreground ,accent-1)))
     `(rcirc-other-nick ((,c :inherit modus-themes-bold :foreground ,accent-0)))
-    `(rcirc-prompt ((,c :inherit modus-themes-prompt)))
+    `(rcirc-prompt ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(rcirc-server ((,c :inherit modus-themes-slant :foreground ,comment)))
     `(rcirc-timestamp ((,c :foreground ,date-common)))
     `(rcirc-track-keyword ((,c :inherit modus-themes-bold :foreground ,modeline-warning)))
@@ -6849,7 +6707,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(slime-repl-input-face ((,c :inherit modus-themes-bold)))
     `(slime-repl-inputed-output-face ((,c :foreground ,string)))
     `(slime-repl-output-mouseover-face ((,c :background ,bg-hover :foreground ,fg-main)))
-    `(slime-repl-prompt-face ((,c :inherit modus-themes-prompt)))
+    `(slime-repl-prompt-face ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(slime-style-warning-face ((,c :underline (:style wave :color ,underline-note))))
     `(slime-warning-face ((,c :underline (:style wave :color ,underline-warning))))
 ;;;;; sly
@@ -6859,7 +6717,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(sly-error-face ((,c :underline (:style wave :color ,underline-err))))
     `(sly-mode-line ((,c :inherit italic :foreground ,modeline-info)))
     `(sly-mrepl-output-face ((,c :foreground ,string)))
-    `(sly-mrepl-prompt-face ((,c :inherit modus-themes-prompt)))
+    `(sly-mrepl-prompt-face ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(sly-note-face ((,c :underline (:style wave :color ,underline-note))))
     `(sly-stickers-placed-face ((,c :background ,bg-inactive)))
     `(sly-style-warning-face ((,c :underline (:style wave :color ,underline-note))))
@@ -6922,14 +6780,14 @@ If COLOR is unspecified, then return :box unspecified."
     `(switch-window-label ((,c :inherit (bold modus-themes-reset-soft) :height 1.5 :foreground ,err))) ; same as `aw-leading-char-face'
 ;;;;; swiper
     `(swiper-background-match-face-1 (( )))
-    `(swiper-background-match-face-2 ((,c :inherit modus-themes-completion-match-0)))
-    `(swiper-background-match-face-3 ((,c :inherit modus-themes-completion-match-1)))
-    `(swiper-background-match-face-4 ((,c :inherit modus-themes-completion-match-2)))
+    `(swiper-background-match-face-2 ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
+    `(swiper-background-match-face-3 ((,c :inherit modus-themes-bold :background ,bg-completion-match-1 :foreground ,fg-completion-match-1)))
+    `(swiper-background-match-face-4 ((,c :inherit modus-themes-bold :background ,bg-completion-match-2 :foreground ,fg-completion-match-2)))
     `(swiper-line-face ((,c :background ,bg-hl-line :extend t)))
     `(swiper-match-face-1 (( )))
-    `(swiper-match-face-2 ((,c :inherit modus-themes-completion-match-0)))
-    `(swiper-match-face-3 ((,c :inherit modus-themes-completion-match-1)))
-    `(swiper-match-face-4 ((,c :inherit modus-themes-completion-match-2)))
+    `(swiper-match-face-2 ((,c :inherit modus-themes-bold :background ,bg-completion-match-0 :foreground ,fg-completion-match-0)))
+    `(swiper-match-face-3 ((,c :inherit modus-themes-bold :background ,bg-completion-match-1 :foreground ,fg-completion-match-1)))
+    `(swiper-match-face-4 ((,c :inherit modus-themes-bold :background ,bg-completion-match-2 :foreground ,fg-completion-match-2)))
 ;;;;; symbol-overlay
     `(symbol-overlay-default-face ((,c :background ,bg-inactive)))
     `(symbol-overlay-face-1 ((,c :background ,bg-blue-intense :foreground ,fg-main)))
@@ -6975,7 +6833,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(telega-button ((,c :box t :foreground ,fg-link)))
     `(telega-button-active ((,c :box ,fg-link :background ,fg-link :foreground ,bg-main)))
     `(telega-button-highlight ((,c :background ,bg-hover :foreground ,fg-main)))
-    `(telega-chat-prompt ((,c :inherit modus-themes-prompt)))
+    `(telega-chat-prompt ((,c :inherit bold :background ,bg-prompt :foreground ,fg-prompt)))
     `(telega-entity-type-code ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-verbatim :foreground ,fg-prose-verbatim)))
     `(telega-entity-type-mention ((,c :foreground ,type)))
     `(telega-entity-type-pre ((,c :inherit modus-themes-fixed-pitch :background ,bg-prose-code :foreground ,fg-prose-code)))
@@ -7159,7 +7017,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(vc-state-base (( )))
     `(vc-up-to-date-state (( )))
 ;;;;; vertico
-    `(vertico-current ((,c :inherit modus-themes-completion-selected)))
+    `(vertico-current ((,c :background ,bg-completion)))
     `(vertico-group-title ((,c :inherit modus-themes-slant :foreground ,name :height 0.9)))
     `(vertico-group-separator ((,c :strike-through t :foreground ,border)))
 ;;;;; vertico-quick
@@ -7663,13 +7521,15 @@ For instance:
       (push (+ (* (nth i a) alpha) (* (nth i b) (- 1 alpha))) blend))
     (nreverse blend)))
 
-(defun modus-themes-generate-color-blend (hex-color blended-with-hex alpha)
-  "Return hexadecimal RGB of HEX-COLOR with BLENDED-WITH-HEX given ALPHA.
+(defun modus-themes-generate-color-blend (color blended-with-hex alpha)
+  "Return hexadecimal RGB of COLOR with BLENDED-WITH-HEX given ALPHA.
 BLENDED-WITH-HEX is commensurate with COLOR.  ALPHA is between 0.0 and 1.0,
-inclusive."
+inclusive.
+
+Color values are of the form accepted by `modus-themes-wcag-formula'."
   (let* ((blend-rgb (modus-themes-blend
-                     (modus-themes--hex-to-rgb hex-color)
-                     (modus-themes--hex-to-rgb blended-with-hex)
+                     (modus-themes--hex-or-name-to-rgb color)
+                     (modus-themes--hex-or-name-to-rgb blended-with-hex)
                      alpha))
          (blend-hex (apply #'color-rgb-to-hex blend-rgb)))
     (modus-themes--color-eight-to-six-digits blend-hex)))
@@ -7682,16 +7542,16 @@ inclusive."
   "Return cooler COLOR by ALPHA, per `modus-themes-generate-color-blend'."
   (modus-themes-generate-color-blend color "#0000ff" alpha))
 
-(defun modus-themes-generate-gradient (color percent)
-  "Adjust value of COLOR by PERCENT."
-  (let ((gradient (color-lighten-name color percent)))
-    (modus-themes--color-eight-to-six-digits gradient)))
+(define-obsolete-function-alias
+  'modus-themes-generate-gradient
+  'modus-themes-adjust-value
+  "5.3.0")
 
 (defun modus-themes-color-warm-p (color)
   "Return non-nil if COLOR is warm.
 A warm color has more contribution from the red channel of light than
 the blue one."
-  (pcase-let ((`(,r ,_ ,b) (modus-themes--hex-to-rgb color)))
+  (pcase-let ((`(,r ,_ ,b) (modus-themes--hex-or-name-to-rgb color)))
     (> r b)))
 
 (defun modus-themes-color-is-warm-or-cool-p (color)
@@ -7786,24 +7646,24 @@ rest come from CORE-PALETTE."
                               (unless (assq name mappings)
                                 (push (list name value) derived-mappings)))))
       ;; Base entries
-      (funcall push-derived-value-fn 'bg-dim (modus-themes-generate-gradient bg-main (if bg-main-dark-p 5 -5)))
-      (funcall push-derived-value-fn 'bg-active (modus-themes-generate-gradient bg-main (if bg-main-dark-p 10 -10)))
-      (funcall push-derived-value-fn 'bg-inactive (modus-themes-generate-gradient bg-main (if bg-main-dark-p 8 -8)))
-      (funcall push-derived-value-fn 'border (modus-themes-generate-gradient bg-main (if bg-main-dark-p 20 -20)))
-      (funcall push-derived-value-fn 'fg-dim (modus-themes-generate-gradient fg-main (if bg-main-dark-p -20 20)))
-      (funcall push-derived-value-fn 'fg-alt (modus-themes-generate-color-warmer-or-cooler (modus-themes-generate-gradient fg-main (if bg-main-dark-p -10 10)) 0.8 prefers-cool-p))
+      (funcall push-derived-value-fn 'bg-dim (modus-themes-adjust-value bg-main (if bg-main-dark-p 5 -5)))
+      (funcall push-derived-value-fn 'bg-active (modus-themes-adjust-value bg-main (if bg-main-dark-p 10 -10)))
+      (funcall push-derived-value-fn 'bg-inactive (modus-themes-adjust-value bg-main (if bg-main-dark-p 8 -8)))
+      (funcall push-derived-value-fn 'border (modus-themes-adjust-value bg-main (if bg-main-dark-p 20 -20)))
+      (funcall push-derived-value-fn 'fg-dim (modus-themes-adjust-value fg-main (if bg-main-dark-p -20 20)))
+      (funcall push-derived-value-fn 'fg-alt (modus-themes-generate-color-warmer-or-cooler (modus-themes-adjust-value fg-main (if bg-main-dark-p -10 10)) 0.8 prefers-cool-p))
       ;; Primary and secondary colors
       (pcase-dolist (`(,name ,value) six-colors)
-        (funcall push-derived-value-fn (intern (format "%s-warmer" name)) (modus-themes-generate-gradient (modus-themes-generate-color-warmer value 0.9) (if bg-main-dark-p 20 -20)))
-        (funcall push-derived-value-fn (intern (format "%s-cooler" name)) (modus-themes-generate-gradient (modus-themes-generate-color-cooler value 0.9) (if bg-main-dark-p 20 -20)))
-        (funcall push-derived-value-fn (intern (format "%s-faint" name)) (modus-themes-generate-gradient value (if bg-main-dark-p 10 -10)))
-        (funcall push-derived-value-fn (intern (format "%s-intense" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -5 5)))
+        (funcall push-derived-value-fn (intern (format "%s-warmer" name)) (modus-themes-adjust-value (modus-themes-generate-color-warmer value 0.9) (if bg-main-dark-p 20 -20)))
+        (funcall push-derived-value-fn (intern (format "%s-cooler" name)) (modus-themes-adjust-value (modus-themes-generate-color-cooler value 0.9) (if bg-main-dark-p 20 -20)))
+        (funcall push-derived-value-fn (intern (format "%s-faint" name)) (modus-themes-adjust-value value (if bg-main-dark-p 10 -10)))
+        (funcall push-derived-value-fn (intern (format "%s-intense" name)) (modus-themes-adjust-value value (if bg-main-dark-p -5 5)))
         ;; TODO 2025-12-06: We should have a function here that adjusts the value also up to a
         ;; maximum distance from bg-main.  Basically, we want to avoid the scenario where a given
         ;; base value produces something that is virtually indistinguishable from bg-main.
-        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -40 40)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -60 60)))
-        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (modus-themes-generate-gradient value (if bg-main-dark-p -80 80))))
+        (funcall push-derived-value-fn (intern (format "bg-%s-intense" name)) (modus-themes-adjust-value value (if bg-main-dark-p -40 40)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-subtle" name)) (modus-themes-adjust-value value (if bg-main-dark-p -60 60)))
+        (funcall push-derived-value-fn (intern (format "bg-%s-nuanced" name)) (modus-themes-adjust-value value (if bg-main-dark-p -80 80))))
       ;; Mappings
       (funcall push-mapping-fn 'bg-completion (if prefers-cool-p 'bg-cyan-subtle 'bg-yellow-subtle))
       (funcall push-mapping-fn 'bg-hover (if prefers-cool-p 'bg-green-intense 'bg-magenta-intense))

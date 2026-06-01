@@ -737,10 +737,19 @@ This is normally computed automatically, but can be overridden
   "The color of the title.")
 
 (eplot-def (title-font number (spec font))
-  "The font size to use for axes labels.")
+  "The font size to use for the title.")
 
 (eplot-def (title-font-size number (spec font-size))
-  "The font size to use for axes labels.")
+  "The font size to use for the titles.")
+
+(eplot-def (axes-title-font number (spec font))
+  "The font to use for axes titles.")
+
+(eplot-def (axes-title-font-size number (spec font-size))
+  "The font size to use for axes titles.")
+
+(eplot-def (axes-title-font-weight number (spec font-weight))
+  "The font weight to use for axes titles.")
 
 (eplot-def (x-title string)
   "The title of the X axis, if any.")
@@ -761,6 +770,9 @@ This is a `format' string.")
 
 (eplot-def (x-label-orientation symbol horizontal (horizontal vertical))
   "Orientation of the X labels.")
+
+(eplot-def (x-label-orientation-angle number -90)
+  "Angle of the orientation of the X labels.")
 
 (eplot-def (background-image-file string)
   "Use an image as the background.")
@@ -829,6 +841,9 @@ and `frame' (the surrounding area).")
    (inhibit-compute-x-step :initform nil)
    ;; ---- CUT HERE ----
    (axes-color :initarg :axes-color :initform nil)
+   (axes-title-font :initarg :title-font :initform nil)
+   (axes-title-font-size :initarg :title-font-size :initform nil)
+   (axes-title-font-weight :initarg :title-font-size :initform nil)
    (background-color :initarg :background-color :initform nil)
    (background-gradient :initarg :background-gradient :initform nil)
    (background-image-cover :initarg :background-image-cover :initform nil)
@@ -879,6 +894,7 @@ and `frame' (the surrounding area).")
    (y-title :initarg :y-title :initform nil)
    (x-label-format :initarg :x-label-format :initform nil)
    (x-label-orientation :initarg :x-label-orientation :initform nil)
+   (x-label-orientation-angle :initarg :x-label-orientation :initform nil)
    (y-label-format :initarg :y-label-format :initform nil)
    (horizontal-label-left :initarg :horizontal-label-left :initform nil)
    ;; ---- CUT HERE ----
@@ -1088,12 +1104,13 @@ Elements allowed are `two-values', `date' and `time'.")
 	      (assq 'font-size data))
       (with-slots ( title x-title y-title
 		    margin-top margin-bottom margin-left
-		    font-size font font-weight)
+		    axes-title-font axes-title-font-size axes-title-font-weight)
 	  chart
 	(when (or title x-title y-title)
 	  (let ((text-height
 		 (eplot--text-height (concat title x-title y-title)
-				     font font-size font-weight)))
+				     axes-title-font axes-title-font-size
+				     axes-title-font-weight)))
 	    (when (and title
 		       (and (not (assq 'margin-top eplot--user-defaults))
 			    (not (assq 'margin-top data))))
@@ -1293,6 +1310,7 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
 		chart-color font font-size font-weight
 		margin-left margin-right margin-top margin-bottom
 		background-color label-color
+		axes-title-font axes-title-font-size axes-title-font-weight
 		xs ys)
       chart
     ;; Add background.
@@ -1350,10 +1368,10 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
 	(let ((theight (eplot--text-height
 			x-title font font-size font-weight)))
 	  (svg-text svg x-title
-		    :font-family font
+		    :font-family axes-title-font
 		    :text-anchor "middle"
-		    :font-weight font-weight
-		    :font-size font-size
+		    :font-weight axes-title-font-weight
+		    :font-size axes-title-font-size
 		    :fill label-color
 		    :x (+ margin-left (/ (- width margin-left margin-right) 2))
 		    ;; The bottom margin has room for the x ticks at the top.
@@ -1365,12 +1383,14 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
     (with-slots (y-title) chart
       (when y-title
 	(let ((text-height
-	       (eplot--text-height y-title font font-size font-weight)))
+	       (eplot--text-height y-title axes-title-font
+				   axes-title-font-size
+				   axes-title-font-weight)))
 	  (svg-text svg y-title
-		    :font-family font
+		    :font-family axes-title-font
 		    :text-anchor "middle"
-		    :font-weight font-weight
-		    :font-size font-size
+		    :font-weight axes-title-font-weight
+		    :font-size axes-title-font-size
 		    :fill label-color
 		    :transform
 		    (format "translate(%s,%s) rotate(-90)"
@@ -1585,8 +1605,7 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
 (defun eplot--compute-x-labels (chart)
   (with-slots ( x-step-map x-ticks
 		format plots print-format x-label-format x-labels
-		x-tick-step x-label-step
-		x-label-orientation margin-bottom)
+		x-tick-step x-label-step margin-bottom)
       chart
     ;; Make X ticks.
     (setf x-labels
@@ -1630,7 +1649,8 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
 		width height
 		axes-color label-color
 		grid grid-opacity grid-color
-		font x-tick-step x-label-step x-label-format x-label-orientation
+		font x-tick-step x-label-step x-label-format
+		x-label-orientation x-label-orientation-angle
 		label-font label-font-size
 		plots x-labels
 		x-values
@@ -1720,9 +1740,13 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
 				 :font-weight this-font-weight
 				 :fill label-color
 				 :transform
-				 (format "translate(%s,%s) rotate(-90)"
+				 (format "translate(%s,%s) rotate(%d)"
 					 (+ px (/ label-height 2))
-					 (- height margin-bottom -10))))
+					 (- height margin-bottom
+					    (if (= x-label-orientation-angle 90)
+						-10
+					      -20))
+					 x-label-orientation-angle)))
 		   (svg-text svg label
 			     :font-family font
 			     :text-anchor "middle"
@@ -2100,7 +2124,7 @@ If RETURN-IMAGE is non-nil, return it instead of displaying it."
   (let ((colors ["#e6194b" "#3cb44b" "#ffe119" "#4363d8" "#f58231" "#911eb4"
 		 "#46f0f0" "#f032e6" "#bcf60c" "#fabebe" "#008080" "#e6beff"
 		 "#9a6324" "#fffac8" "#800000" "#aaffc3" "#808000" "#ffd8b1"
-		 "#000075" "#808080" "#ffffff" "#000000"]))
+		 "#000075" "#808080"]))
     (unless (equal color "vary")
       (setq colors
 	    (if (string-search " " color)
@@ -2859,6 +2883,9 @@ nil means `top-down'."
      ("Axes, Grid & Legend"
       ("tf" "Title-Font")
       ("ts" "Title-Font-Size")
+      ("af" "Axes-Title-Font")
+      ("as" "Axes-Title-Font-Size")
+      ("aw" "Axex-Title-Font-Weight")
       ("xx" "X-Title")
       ("xy" "Y-Title")
       ("xf" "Label-Font")

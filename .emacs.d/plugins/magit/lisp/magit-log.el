@@ -1416,7 +1416,7 @@ Do not add this to a hook variable."
 
 (cl-defun magit-log-wash-rev (style abbrev)
   (when (derived-mode-p 'magit-log-mode 'magit-reflog-mode)
-    (cl-incf magit-log-count))
+    (incf magit-log-count))
   (looking-at (pcase style
                 ('log        magit-log-heading-re)
                 ('cherry     magit-log-cherry-re)
@@ -1546,10 +1546,10 @@ Do not add this to a hook variable."
               (delete-char (if (looking-at "\n") 1 4))
               (magit-diff-wash-diffs (list "--stat") limit))
           (when align
-            (setq align (make-string (1+ abbrev) ? )))
+            (setq align (make-string (1+ abbrev) ?\s)))
           (when (and (not (eobp)) (not (looking-at non-graph-re)))
             (when align
-              (setq align (make-string (1+ abbrev) ? )))
+              (setq align (make-string (1+ abbrev) ?\s)))
             (while (and (not (eobp)) (not (looking-at non-graph-re)))
               (when align
                 (save-excursion (insert align)))
@@ -1590,6 +1590,7 @@ exists mostly for backward compatibility reasons."
     (magit-section-forward)))
 
 (add-hook 'magit-section-movement-hook #'magit-log-maybe-show-more-commits)
+(add-hook 'magit-mouse-set-point-hook  #'magit-log-maybe-show-more-commits)
 
 (defvar magit--update-revision-buffer nil)
 
@@ -1601,6 +1602,7 @@ See also info node `(magit)Section Movement'."
     (magit--maybe-update-revision-buffer)))
 
 (add-hook 'magit-section-movement-hook #'magit-log-maybe-update-revision-buffer)
+(add-hook 'magit-mouse-set-point-hook  #'magit-log-maybe-update-revision-buffer)
 
 (defun magit--maybe-update-revision-buffer ()
   (when-let* ((commit (magit-section-value-if 'commit))
@@ -2121,11 +2123,15 @@ all others with \"-\"."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

@@ -31,6 +31,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'compat)
 
 (defvar gsexp-one-variable-per-line nil)
 
@@ -92,7 +93,7 @@
         (save-excursion
           (let ((level (car (syntax-ppss (line-beginning-position)))))
             (when (looking-at "\\s-*\\s)")
-              (cl-decf level))
+              (decf level))
             (indent-line-to (* 2 level)))))
       (forward-line 1))
     (buffer-string)))

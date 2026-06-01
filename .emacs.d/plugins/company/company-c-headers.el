@@ -181,10 +181,12 @@ Filters on the appropriate regex for the current major mode."
              (setq this-command 'self-insert-command)
            ;; It's not a directory, add a terminating delimiter.
            ;; If pre-existing terminating delimiter already exists,
-           ;; move cursor to end of line.
-           (pcase (aref matched 0)
-             (?\" (if (looking-at "\"") (end-of-line) (insert "\"")))
-             (?<  (if (looking-at ">") (end-of-line) (insert ">"))))))))
+           ;; move cursor to end of line, ignoring white-space.
+	   (pcase (aref matched 0)
+             (?\" (if (looking-at "[ \t]*\"") (goto-char (match-end 0))
+                    (insert "\"")))
+             (?<  (if (looking-at "[ \t]*>")  (goto-char (match-end 0))
+                    (insert ">"))))))))
     ))
 
 (provide 'company-c-headers)

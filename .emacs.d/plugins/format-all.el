@@ -37,7 +37,7 @@
 ;; - Clojure/ClojureScript (cljfmt, zprint)
 ;; - CMake (cmake-format)
 ;; - Crystal (crystal tool format)
-;; - CSS/Less/SCSS (prettier, prettierd)
+;; - CSS/Less/SCSS (prettier, prettierd, deno)
 ;; - Cuda (clang-format)
 ;; - D (dfmt)
 ;; - Dart (dartfmt, dart-format)
@@ -58,7 +58,8 @@
 ;; - Haskell (brittany, fourmolu, hindent, ormolu, stylish-haskell)
 ;; - HCL (hclfmt)
 ;; - HLSL (clang-format)
-;; - HTML/XHTML/XML (tidy)
+;; - HTML (tidy, deno)
+;; - XHTML/XML (tidy)
 ;; - Hy (Emacs)
 ;; - Java (astyle, clang-format, google-java-format)
 ;; - JavaScript/JSON/JSX (prettier, standard, prettierd, deno)
@@ -81,7 +82,7 @@
 ;; - Racket (raco-fmt)
 ;; - Reason (bsrefmt)
 ;; - ReScript (rescript)
-;; - Ruby (rubocop, rufo, standardrb, stree)
+;; - Ruby (rubocop, rubyfmt, rufo, standardrb, stree)
 ;; - Rust (rustfmt)
 ;; - Scala (scalafmt)
 ;; - Shell script (beautysh, shfmt)
@@ -97,7 +98,7 @@
 ;; - V (v fmt)
 ;; - Vue (prettier, prettierd)
 ;; - Verilog (iStyle, Verible)
-;; - YAML (prettier, prettierd)
+;; - YAML (prettier, prettierd, deno)
 ;; - Zig (zig)
 
 ;; You will need to install external programs to do the formatting.
@@ -118,6 +119,7 @@
 (require 'cl-lib)
 (require 'inheritenv)
 (require 'language-id)
+(require 'project)
 
 (defgroup format-all nil
   "Lets you auto-format source code."
@@ -720,6 +722,130 @@ Consult the existing formatters for examples of BODY."
               (line-number-at-pos (cdr region))))
     "-")))
 
+(defun format-all--get-unused-port ()
+  "Internal helper to obtain a free TCP port number from the OS."
+  (let (process contact)
+    (setq process
+          (make-network-process
+           :name "get-any-port"
+           :server t
+           :host 'local
+           :service t
+           :noquery t))
+    (unwind-protect
+        (progn
+          (setq contact (process-contact process t t))
+          (plist-get contact :service))
+      (delete-process process))))
+
+(defvar format-all--blackd-daemon (cons nil nil)
+  "State for the blackd daemon as a (PROCESS . PORT) cons.")
+
+(defun format-all--check-port-ready (port)
+  "Internal helper to test whether localhost is accepting connections on PORT."
+  (condition-case nil
+      (progn
+        (delete-process
+         (open-network-stream "server-check" nil "localhost" port :type 'plain))
+        t)
+    (file-error nil)))
+
+(defun format-all--wait-for-port (port process timeout)
+  "Internal helper to block until localhost is accepting connections on PORT.
+
+PROCESS is the daemon being waited for; signal an error if it
+dies before the port becomes ready.  Signal an error if PORT is
+not ready within TIMEOUT seconds."
+  (let ((deadline (+ (float-time) timeout)))
+    (while (not (format-all--check-port-ready port))
+      (unless (process-live-p process)
+        (error "Process %S exited before port %s became ready"
+               (process-name process) port))
+      (when (> (float-time) deadline)
+        (error "Port %s did not become ready within %s seconds"
+               port timeout))
+      (sleep-for 0.1))))
+
+(defun format-all--ensure-daemon (state make-process-fn timeout)
+  "Internal helper to keep a localhost TCP daemon running.
+
+STATE is a (PROCESS . PORT) cons cell that holds the daemon's
+state across calls.  If the process slot is missing or dead, a
+free port is allocated, MAKE-PROCESS-FN is called with that port
+to start a new process, and the function blocks until the daemon
+accepts connections on that port or TIMEOUT seconds elapse.
+MAKE-PROCESS-FN receives the chosen port as a string and must
+return the started process.  Returns STATE."
+  (let ((process (car state)))
+    (when (and process (not (process-live-p process)))
+      (delete-process process)
+      (setcar state nil)))
+  (unless (car state)
+    (let* ((port (number-to-string (format-all--get-unused-port)))
+           (process (funcall make-process-fn port)))
+      (setcar state process)
+      (setcdr state port)
+      (condition-case err
+          (format-all--wait-for-port port process timeout)
+        (error
+         (when (process-live-p process)
+           (delete-process process))
+         (setcar state nil)
+         (signal (car err) (cdr err))))))
+  state)
+
+(defun format-all--blackd-ensure-process (executable)
+  "Internal helper to start blackd as EXECUTABLE on a free port if not running.
+
+Updates `format-all--blackd-daemon' and waits until the server is
+accepting connections."
+  (format-all--ensure-daemon
+   format-all--blackd-daemon
+   (lambda (port)
+     (make-process
+      :name "blackd"
+      :connection-type 'pipe
+      :buffer " *blackd*"
+      :coding 'no-conversion
+      :command (list executable
+                     "--bind-host" "localhost"
+                     "--bind-port" port)
+      :noquery t))
+   10.0))
+
+(eval-when-compile
+  (require 'url-http))
+
+(define-format-all-formatter blackd
+  (:executable "blackd")
+  (:install "pip install black[d]")
+  (:languages "Python")
+  (:features)
+  (:format
+   (let ((is-pyi (format-all--buffer-extension-p "pyi"))
+         (coding buffer-file-coding-system))
+     (format-all--buffer-thunk
+      (lambda (input)
+        (format-all--blackd-ensure-process executable)
+        (let* ((url-request-method "POST")
+               (url-request-data (encode-coding-string input coding))
+               (url (concat "http://localhost:" (cdr format-all--blackd-daemon)))
+               (url-request-extra-headers (when is-pyi '(("X-Python-Variant" . "pyi"))))
+               (res (url-retrieve-synchronously url 'silent 'inhibit-cookies))
+               (status (with-current-buffer res (bound-and-true-p url-http-response-status))))
+          (pcase status
+            (204 (progn
+                   (insert input)
+                   (list nil "")))
+            (200 (progn
+                   (url-insert-buffer-contents res url)
+                   (list nil "")))
+            (_ (progn
+                 (list t
+                       (with-temp-buffer
+                         (url-insert-buffer-contents res url)
+                         (buffer-string))))))))))))
+
 (define-format-all-formatter brittany
   (:executable "brittany")
   (:install "stack install brittany")
@@ -844,10 +970,11 @@ Consult the existing formatters for examples of BODY."
   (:executable "deno")
   (:install (macos "brew install deno"))
   (:languages
+   "CSS" "HTML"
    "JavaScript" "JSX"
    "TypeScript" "TSX"
    "JSON" "JSON5"
-   "Markdown")
+   "Less" "Markdown" "SCSS" "YAML")
   (:features)
   (:format
    (format-all--buffer-easy
@@ -1110,6 +1237,13 @@ Consult the existing formatters for examples of BODY."
   (:features)
   (:format (format-all--buffer-easy executable "-")))
 
+(define-format-all-formatter meson-format
+  (:executable "meson")
+  (:install  "pip install meson")
+  (:languages "Meson")
+  (:features)
+  (:format (format-all--buffer-easy executable "format" "--editor-config" "-")))
+
 (define-format-all-formatter mix-format
   (:executable "mix")
   (:install (macos "brew install elixir"))
@@ -1136,13 +1270,6 @@ Consult the existing formatters for examples of BODY."
   (:languages "Meson")
   (:features)
   (:format (format-all--buffer-easy executable "fmt" "-")))
-
-(define-format-all-formatter meson-format
-  (:executable "meson")
-  (:install  "pip install meson")
-  (:languages "Meson")
-  (:features)
-  (:format (format-all--buffer-easy executable "format" "--editor-config" "-")))
 
 (define-format-all-formatter nginxfmt
   (:executable "nginxfmt")
@@ -1318,6 +1445,18 @@ Consult the existing formatters for examples of BODY."
     "--stderr"
     "--stdin" (or (buffer-file-name) (buffer-name)))))
 
+(define-format-all-formatter rubyfmt
+  (:executable "rubyfmt")
+  (:install
+   (macos "brew install rubyfmt"))
+  (:languages "Ruby")
+  (:features)
+  (:format
+   (format-all--buffer-easy
+    executable
+    (when (buffer-file-name)
+      (list "--stdin-filepath" (buffer-file-name))))))
+
 (define-format-all-formatter ruff
   (:executable "ruff")
   (:install "pip install ruff")
@@ -1373,16 +1512,21 @@ Consult the existing formatters for examples of BODY."
   (:languages "Shell")
   (:features)
   (:format
-   (format-all--buffer-easy
-    executable
-    (if (buffer-file-name)
-        (list "-filename" (buffer-file-name))
-      (list "-ln" (cl-case (and (eql major-mode 'sh-mode)
-                                (boundp 'sh-shell)
-                                (symbol-value 'sh-shell))
-                    (bash "bash")
-                    (mksh "mksh")
-                    (t "posix")))))))
+   (let ((sh-shell (and (derived-mode-p 'sh-mode)
+                        (bound-and-true-p sh-shell))))
+     (format-all--buffer-easy
+      executable
+      (if (buffer-file-name)
+          (list "-filename"
+                (cl-case sh-shell
+                  (bash (concat (buffer-file-name) ".bash"))
+                  (mksh (concat (buffer-file-name) ".mksh"))
+                  (sh (concat (buffer-file-name) ".sh"))
+                  (t (buffer-file-name))))
+        (list "-ln" (cl-case sh-shell
+                      (bash "bash")
+                      (mksh "mksh")
+                      (t "posix"))))))))
 
 (define-format-all-formatter snakefmt
   (:executable "snakefmt")
@@ -1390,6 +1534,13 @@ Consult the existing formatters for examples of BODY."
   (:languages "_Snakemake")
   (:features)
   (:format (format-all--buffer-easy executable "-")))
+
+(define-format-all-formatter sqlfluff
+  (:executable "sqlfluff")
+  (:install "pip install sqlfluff")
+  (:languages "SQL")
+  (:features)
+  (:format (format-all--buffer-easy executable "fix" "--nocolor" "--dialect=postgres" "-")))
 
 (define-format-all-formatter sqlformat
   (:executable "sqlformat")
@@ -1406,13 +1557,6 @@ Consult the existing formatters for examples of BODY."
           (process-environment (cons (concat "PYTHONIOENCODING=" oenc)
                                      process-environment)))
      (format-all--buffer-easy executable "--encoding" ienc "-"))))
-
-(define-format-all-formatter sqlfluff
-  (:executable "sqlfluff")
-  (:install "pip install sqlfluff")
-  (:languages "SQL")
-  (:features)
-  (:format (format-all--buffer-easy executable "fix" "--nocolor" "--dialect=postgres" "-")))
 
 (define-format-all-formatter standard
   (:executable "standard")
@@ -1529,18 +1673,18 @@ Consult the existing formatters for examples of BODY."
     (when (buffer-file-name)
       (list "--stdin-filename" (buffer-file-name))))))
 
+(define-format-all-formatter typstfmt
+  (:executable "typstfmt")
+  (:install (macos "brew install typstfmt"))
+  (:languages "Typst")
+  (:features)
+  (:format (format-all--buffer-easy executable)))
+
 (define-format-all-formatter typstyle
   (:executable "typstyle")
   (:install
    (macos "brew install typstyle")
    (windows "scoop install typstyle"))
-  (:languages "Typst")
-  (:features)
-  (:format (format-all--buffer-easy executable)))
-
-(define-format-all-formatter typstfmt
-  (:executable "typstfmt")
-  (:install (macos "brew install typstfmt"))
   (:languages "Typst")
   (:features)
   (:format (format-all--buffer-easy executable)))
@@ -1931,12 +2075,12 @@ The mode is buffer-local and needs to be enabled separately each
 time a file is visited. You may want to use `add-hook' in your
 `user-init-file' to enable the mode based on buffer modes. E.g.:
 
-    (add-hook 'prog-mode-hook 'format-all-mode)
+    (add-hook \\='prog-mode-hook \\='format-all-mode)
 
 To use a default formatter for projects that don't have one, add
 this too:
 
-    (add-hook 'prog-mode-hook 'format-all-ensure-formatter)
+    (add-hook \\='prog-mode-hook \\='format-all-ensure-formatter)
 
 When `format-all-mode' is called as a Lisp function, the mode is
 toggled if ARG is ‘toggle’, disabled if ARG is a negative integer

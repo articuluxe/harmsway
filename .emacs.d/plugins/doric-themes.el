@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2025-2026  Free Software Foundation, Inc.
 
-;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
+;; Author: Protesilaos <info@protesilaos.com>
+;; Maintainer: Protesilaos <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
 ;; Version: 1.1.0
 ;; Package-Requires: ((emacs "29.1"))
@@ -323,7 +323,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   (let* ((themes (doric-themes--minus-current variant))
          (match (or (nth (random (length themes)) themes) (car themes))))
     (doric-themes-load-theme match)
-    (message "Match `%s'" (propertize (symbol-name match) 'face 'bold))))
+    (message "Loaded `%s'" (propertize (symbol-name match) 'face 'bold))))
 
 ;;;; Face customisations
 

@@ -51,11 +51,12 @@
 (defcustom vterm-toggle-show-hook nil
   "Hooks when swith to vterm buffer."
   :group 'vterm-toggle
-  :type 'symbolp)
+  :type 'hook)
+
 (defcustom vterm-toggle-hide-hook nil
   "Hooks when hide vterm buffer."
   :group 'vterm-toggle
-  :type 'symbolp)
+  :type 'hook)
 
 (defcustom vterm-toggle-fullscreen-p nil
   "Open vterm buffer fullscreen or not."
@@ -476,8 +477,6 @@ If OFFSET is `non-nil', will goto next term buffer with OFFSET."
   (vterm-toggle--switch 'backward (or offset 1)))
 
 (provide 'vterm-toggle)
-
-(require 'vterm nil t)                  ; https://github.com/jixiuf/vterm-toggle/issues/24
 
 ;; Local Variables:
 ;; coding: utf-8

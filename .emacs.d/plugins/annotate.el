@@ -7,7 +7,7 @@
 ;; Maintainer: Bastian Bechtold <bastibe.dev@mailbox.org>, cage <cage-dev@twistfold.it>
 ;; URL: https://github.com/bastibe/annotate.el
 ;; Created: 2015-06-10
-;; Version: 2.4.5
+;; Version: 2.5.0
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -59,13 +59,15 @@
 ;;;###autoload
 (defgroup annotate nil
   "Annotate files without changing them."
-  :version "2.4.5"
+  :version "2.5.0"
   :group 'text)
 
 (defvar annotate-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-a") #'annotate-annotate)
     (define-key map (kbd "C-c C-d") #'annotate-delete-annotation)
+    (define-key map (kbd "C-c C-r") #'annotate-reply-to)
+    (define-key map (kbd "C-c C-t") #'annotate-show-thread-at-point)
     (define-key map (kbd "C-c C-p") #'annotate-change-annotation-text-position)
     (define-key map (kbd "C-c C-c") #'annotate-change-annotation-colors)
     (define-key map (kbd "C-c C-s") #'annotate-show-annotation-summary)
@@ -335,7 +337,10 @@ summary window because does not exist or is in an unsupported
 (defconst annotate-summary-list-prefix-snippet "** Annotated text: "
   "The string used as prefix for each annotation snippet item in summary window.")
 
-(defconst annotate-ellipse-text-marker "..."
+(defconst annotate-summary-list-prefix-reply "*** Reply to: "
+  "The string used as prefix for each annotation snippet item in summary window.")
+
+(defconst annotate-ellipse-text-marker "…"
   "The string used when a string is truncated with an ellipse.")
 
 (defconst annotate-info-root-name "dir"
@@ -344,17 +349,23 @@ summary window because does not exist or is in an unsupported
 (defconst annotate-summary-buffer-name "*annotations*"
   "The name of the buffer for summary window.")
 
+(defconst annotate-thread-buffer-name "*annotation thread*"
+  "The name of the buffer for thread window.")
+
 (defconst annotate-dump-from-indirect-bugger-suffix "-was-annotated-indirect-buffer"
   "Append this suffix to a buffer generated from an annotated indirect buffer.")
 
 (defconst annotate-annotation-prompt "Annotation: "
   "The prompt when asking user for annotation modification.")
 
-(defconst annotate-summary-delete-button-label "[delete]"
+(defconst annotate-summary-delete-button-label "❌delete"
   "The label for the button, in summary window, to delete an annotation.")
 
-(defconst annotate-summary-replace-button-label "[replace]"
+(defconst annotate-summary-replace-button-label "📝replace"
   "The label for the button, in summary window, to replace an annotation.")
+
+(defconst annotate-summary-show-thread-button-label "🧵show thread"
+  "The label for the button, in summary window, to show the annotation's thread.")
 
 (defconst annotate-confirm-deleting-annotation-prompt  "Delete this annotation? "
   "Prompt to be shown when asking for annotation deletion confirm.")
@@ -367,6 +378,40 @@ summary window because does not exist or is in an unsupported
 
 (defconst annotate-message-annotations-not-found "No annotations found."
   "The message shown when no annotations has been loaded from the database.")
+
+(defconst annotate-thread-delete-button-label "❌delete"
+  "The label for the button, in thread window, to delete an annotation.")
+
+(defconst annotate-thread-reply-button-label "✏️add reply"
+  "The label for the button, in thread window, to delete an annotation.")
+
+(defconst annotate-thread-branch-string "├▶")
+
+(defconst annotate-thread-leaf-string "╰▶")
+
+(defconst annotate-thread-trunk-string "│")
+
+(defconst annotate-thread-trunk-stretch-string "┆")
+
+(defcustom annotate-thread-header-face 'font-lock-doc-face
+  "Face for header text (the annotated text) in the thread window."
+  :type '(repeat (plist)))
+
+(defcustom annotate-thread-author-face 'font-lock-doc-face
+  "Face for author field in the thread window."
+  :type '(repeat (plist)))
+
+(defcustom annotate-thread-tree-arrow-face 'font-lock-warning-face
+  "Face for arrow in the tree of a thread window."
+  :type '(repeat (plist)))
+
+(defcustom annotate-thread-tree-face 'font-lock-function-name-face
+  "Face for arrow in the tree of a thread window."
+  :type '(repeat (plist)))
+
+(defcustom annotate-thread-action-face 'font-lock-comment-face
+  "Face for arrow that prefixes actions button in thread window."
+  :type '(repeat (plist)))
 
 ;;;; buffer locals variables
 
@@ -420,7 +465,7 @@ in the customizable colors lists:
 (defun annotate-file-exists-p (filepath)
   "Returns nil if the file pointed by `FILEPATH' does not exists
 or an error occurs during the test
-(e.g TRAMP mode fails to connect to remote server)."
+\(e.g TRAMP mode fails to connect to remote server)."
   (with-demoted-errors "Error: %S"
     (file-exists-p filepath)))
 
@@ -465,8 +510,58 @@ position (so that it is unchanged after this function is called)."
 
 (defun annotate-annotated-text-empty-p (annotation)
   "Does this ANNOTATION contains annotated text?"
-  (= (overlay-start annotation)
-     (overlay-end   annotation)))
+  (and (overlay-start annotation)
+       (overlay-end   annotation)
+       (= (overlay-start annotation)
+          (overlay-end   annotation))))
+
+(cl-defun annotate-annotation-set-id (annotation &optional (id (annotate--generate-unique-id)))
+  "Set property id to ID for ANNOTATION."
+  (overlay-put annotation 'id id))
+
+(cl-defgeneric annotate-annotation-id (object)
+    "Get property id from annotation overlay: OBJECT.")
+
+(cl-defmethod annotate-annotation-id ((object overlay))
+  "Get property id from annotation overlay: OBJECT."
+  (overlay-get object 'id))
+
+(cl-defmethod annotate-annotation-id ((object list))
+  "Get property id from annotation serialized: OBJECT."
+  (annotate-id-from-dump object))
+
+(cl-defun annotate-annotation-set-reply-to (annotation in-reply-to-id)
+  "Set property reply-to IN-REPLY-TO-ID for ANNOTATION."
+  (overlay-put annotation 'reply-to in-reply-to-id))
+
+(cl-defgeneric annotate-annotation-reply-to (object)
+  "Get the id of object OBJECT is the reply of.")
+
+(cl-defmethod annotate-annotation-reply-to ((object overlay))
+  "Get the id of object OBJECT is the reply of."
+  (overlay-get object 'reply-to))
+
+(cl-defmethod annotate-annotation-reply-to ((object list))
+  "Get the id of object OBJECT is the reply of."
+  (annotate-reply-to-from-dump object))
+
+(cl-defgeneric annotate-annotation-replace-reply-to (object)
+"Replace the id of the annotation OBJECT is replying.")
+
+(cl-defmethod annotate-annotation-replace-reply-to ((object list) new-id)
+"Replace the id of the annotation OBJECT is replying."
+  (setf (elt object 7)
+        new-id)
+  object)
+
+(cl-defmethod annotate-annotation-replace-reply-to ((object overlay) new-id)
+  "Replace the id of the annotation OBJECT is replying."
+  (overlay-put object 'reply-to new-id)
+  object)
+
+(defun annotate-annotation-reply-p (annotation)
+  "Returns true if ANNOTATION is a reply"
+  (annotate-annotation-reply-to annotation))
 
 (defun annotate-annotation-set-face (annotation face)
   "Set property face to FACE for ANNOTATION."
@@ -779,6 +874,48 @@ specified by FROM and TO."
                                                   t)))
              finally (return results))))
 
+(defun annotate--make-reply-to (parent-annotation reply-author reply-body)
+  "Attach a reply to the annotation PARENT-ANNOTATION"
+  (let ((parent-id  (annotate-annotation-id parent-annotation))
+        (reply-text (format "from: %s\n%s"
+                            reply-author
+                            reply-body)))
+    (annotate--make-annotation-for-record nil
+                                          nil
+                                          reply-text
+                                          nil
+                                          nil
+                                          nil
+                                          (annotate--generate-unique-id)
+                                          parent-id)))
+
+(defun annotate--make-reply-annotation (parent-annotation author reply-body)
+  "Makes an annotation with text equals to the concatenation
+of AUTHOR and REPLY-BODY (see: `annotate--make-reply-to'.
+The new annotation will be a reply to PARENT-ANNOTATION.
+This new annotation will be saved in the annotations database."
+  (let ((annotation-record (annotate--make-reply-to parent-annotation
+                                                    author
+                                                    reply-body)))
+    (annotate-save-annotations :replace t)
+    (annotate-save-annotations :annotations-to-save (list annotation-record)
+                               :replace nil)))
+
+(defun annotate--annotation-with-reply (chain)
+  "Find the ring in annotation's chain CHAIN that could host the reply annotation."
+  (annotate-chain-first (cl-first chain)))
+
+(defun annotate-reply-to ()
+  "Reply to the annotation under cursor, if such annotation exists."
+  (interactive)
+  (when-let* ((chain        (annotate-chain-at (point)))
+              (parent       (annotate--annotation-with-reply chain))
+              (reply-author (read-from-minibuffer "Author: "
+                                                  (user-login-name)))
+              (reply-body   (read-from-minibuffer annotate-annotation-prompt))
+              (reply-text   (format "from: %s\n%s" reply-author reply-body)))
+    (annotate--make-reply-annotation parent reply-author reply-body)))
+
 (defun annotate-annotate (&optional color-index)
   "Create, modify, or delete annotation.
 if COLOR-INDEX is not null must be an index that adresses an element both in
@@ -946,7 +1083,7 @@ and
                         (goto-char (annotate-end-of-line-pos))
                         (annotate-annotate))))))))))))
       (when annotate-autosave
-        (annotate-save-annotations)))))
+        (annotate-save-annotations :replace t)))))
 
 (defun annotate-toggle-annotation-text ()
   "Hide annotation's text at current cursor's point, if such annotation exists."
@@ -969,7 +1106,8 @@ and
   (font-lock-flush))
 
 (cl-defun annotate-goto-next-annotation (&key (startingp t))
-  "Move point to the next annotation."
+  "Move point to the next annotation.
+STARTINGP is an internal variable."
   (interactive)
   (let ((annotation (annotate-annotation-at (point))))
     (if startingp
@@ -992,7 +1130,7 @@ and
         (annotate-goto-next-annotation :startingp t)))))
 
 (cl-defun annotate-goto-previous-annotation (&key (startingp t))
-  "Move point to the previous annotation."
+  "Move point to the previous annotation.  STARTINGP is an internal variable."
   (interactive)
   (let ((annotation (annotate-annotation-at (point))))
     (if startingp
@@ -1058,14 +1196,12 @@ and
         (font-lock-flush)))))
 
 (defun annotate-actual-comment-start ()
-  "String for comment start related to current buffer's major
-mode."
+  "String for comment start related to current buffer's major mode."
   (or comment-start
       annotate-fallback-comment))
 
 (defun annotate-actual-comment-end ()
-  "String for comment ends, if any, related to current buffer's
-major mode."
+  "String for comment ends, if any, related to current buffer's major mode."
   (or comment-end
       ""))
 
@@ -1076,8 +1212,8 @@ major mode."
 
 (defun annotate-wrap-in-comment (&rest strings)
   "Put comment markers at the start and (if it makes sense)
-end of a string. See: annotate-actual-comment-start and
-annotate-actual-comment-end."
+end of the string returned by concatenating STRINGS.
+ See: annotate-actual-comment-start and annotate-actual-comment-end."
   (apply #'concat (append (list (annotate-actual-comment-start))
                           strings
                           (list (annotate-actual-comment-end)))))
@@ -1091,7 +1227,12 @@ annotate-actual-comment-end."
 (cl-defun annotate--integrate-annotations (&key (use-annotation-marker t)
                                                 (as-new-buffer         t)
                                                 (switch-to-new-buffer  t))
-  "Export all annotations, This function is not part of the public API."
+  "Export all annotations, This function is not part of the public API.
+if USE-ANNOTATION-MARKER is not nill the annotation's text will be wrappend with
+`annotate-integrate-marker'.
+if AS-NEW-BUFFER is not nil the intergrated text will be shown in a new buffer.
+If SWITCH-TO-NEW-BUFFER is not nil (and so is AS-NEW-BUFFER), the new buffer
+will get the focus."
   (cl-labels ((build-input-text-line ()
                 (save-excursion
                   (annotate--split-lines (buffer-substring-no-properties (point-min)
@@ -1204,7 +1345,7 @@ annotation, and can be conveniently viewed in diff-mode."
     (diff-buffers (current-buffer) buffer annotate-diff-export-options)))
 
 (defun annotate--font-lock-matcher (limit)
-  "Finds the next annotation. Matches two areas:
+  "Finds the next annotation before LIMIT. Matches two areas:
 - the area between the overlay and the annotation
 - the newline that will display the annotation
 
@@ -1615,7 +1756,9 @@ text will be discarded."
 
 (cl-defun annotate-guess-filename-for-dump (filename
                                             &optional (return-filename-if-not-found-p t))
-  "Guess an acceptable file name suitable for metadata database from FILENAME."
+  "Guess an acceptable file name suitable for metadata database from FILENAME.
+If RETURN-FILENAME-IF-NOT-FOUND-P is not nil return FILENAME even if
+this file does not exists on the filesystem."
   (cond
    ((annotate-string-empty-p filename)
     nil)
@@ -1645,11 +1788,58 @@ buffer is not on info-mode"
     nil)
    (t
     (let ((visited-filename (when (buffer-file-name)
-			      (abbreviate-file-name (buffer-file-name)))))
+                              (abbreviate-file-name (buffer-file-name)))))
       (substring-no-properties (or (annotate-info-actual-filename)
                                    visited-filename
                                    (buffer-file-name (buffer-base-buffer))
                                    ""))))))
+
+(defun annotate--mac-address ()
+  "Return the MAC address of one of the hardware network interface,
+or nil if no such interface can be found."
+  (when-let* ((all-interfaces-names (mapcar #'car (network-interface-list)))
+              (interface-name       (cl-find-if-not (lambda (a) (string= a "lo"))
+                                                    all-interfaces-names))
+              (hw-address-vec       (cdr (cl-fourth (network-interface-info interface-name))))
+              (hw-address           #x000000000000))
+    (cl-loop for byte across hw-address-vec
+             for shift from 40 downto -10 by 8
+             do
+             (setf hw-address
+                   (logior hw-address (ash byte shift))))
+    hw-address))
+
+(defun annotate--generate-unique-id ()
+  "Generate an unique string identifier
+Note: implements time based  UUIDv1 (see: rfc9562)."
+  (let* ((now        (+ (car (time-convert nil 10000000)) ; accuracy: 100 nanoseconds
+                        #x01b21dd213814000)) ; convert unix epoch to gregorian epoch
+         (time-low   (logand #xffffffff now))
+         (time-mid   (logand #xffff (ash now -32)))
+         (time-high  (logand #xfff (ash now -48)))
+         (variant    #x02)
+         (version    #x01)
+         (node       (or (annotate--mac-address)
+                         (random #xffffffffffff)))
+         (clock      (logand #x3fff (random #xffff)))
+         (uuid       #x00000000000000000000000000000000))
+    (setf uuid (logior uuid (ash time-low 96)))
+    (setf uuid (logior uuid (ash time-mid 80)))
+    (setf uuid (logior uuid (ash version 76)))
+    (setf uuid (logior uuid (ash time-high 64)))
+    (setf uuid (logior uuid (ash variant 62)))
+    (setf uuid (logior uuid (ash clock 48)))
+    (setf uuid (logior uuid node))
+    (format "%08x-%04x-%04x-%04x-%012x"
+            (logand #xffffffff (ash uuid -96))
+            (logand #x00ffff (ash uuid -80))
+            (logand #x00ffff (ash uuid -64))
+            (logand #x00ffff (ash uuid -48))
+            (logand #xffffffffffff uuid))))
+
+(defun annotate-annotation-id= (a b)
+  "Returns non nil if annotations id A and B are equals."
+  (string= a b))
 
 (defun annotate-make-annotation-dump-entry (filename file-annotations checksum)
   "Make an annotation record: see `annotate-load-annotations'."
@@ -1661,17 +1851,17 @@ buffer is not on info-mode"
   "Make an annotation record: see `annotate-load-annotations'."
   (annotate-make-annotation-dump-entry filename file-annotations checksum))
 
-(defun annotate-color-index-from-dump (record)
-  "Get the checksum field from an annotation list loaded from a
+(defun annotate-color-index-from-dump (annotation-serialized)
+  "Get the color index from an annotation list loaded from a
 file."
-  (and (> (length record) 3)
-       (nth 4 record)))
+  (and (> (length annotation-serialized) 3)
+       (nth 4 annotation-serialized)))
 
-(defun annotate-placement-policy-from-dump (record)
-  "Get the checksum field from an annotation list loaded from a
+(defun annotate-placement-policy-from-dump (annotation-serialized)
+  "Get the placement policy field from an annotation list loaded from a
 file."
-  (and (> (length record) 4)
-       (nth 5 record)))
+  (and (> (length annotation-serialized) 4)
+       (nth 5 annotation-serialized)))
 
 (defun annotate-checksum-from-dump (record)
   "Get the checksum field from an annotation list loaded from a
@@ -1679,44 +1869,62 @@ file."
   (and (> (length record) 2)
        (nth 2 record)))
 
+(defun annotate-id-from-dump (annotation-serialized)
+  "Get the id field from an annotation list loaded from a
+file."
+  (and (> (length annotation-serialized) 6)
+       (nth 6 annotation-serialized)))
+
+(defun annotate-reply-to-from-dump (annotation-serialized)
+  "Get the reply-to field from an annotation list loaded from a
+file."
+  (and (> (length annotation-serialized) 7)
+       (nth 7 annotation-serialized)))
+
+(defun annotate-annotation-dump-reply-p (annotation-serialized)
+  "Returns non nil fi ANNOTATION-SERIALIZED is a reply."
+  (annotate-reply-to-from-dump annotation-serialized))
+
 (defun annotate-annotations-from-dump (record)
   "Get the annotations field from an annotation list loaded from a
 file."
-  (nth 1 record))
+  (cl-second record))
 
 (defun annotate-filename-from-dump (record)
   "Get the filename field from an annotation list loaded from a
 file."
   (cl-first record))
 
-(defun annotate-beginning-of-annotation (annotation)
-  "Get the starting point of an annotation. The arg ANNOTATION must be a single
-annotation field got from a file dump of all annotated buffers,
+(defun annotate-beginning-of-annotation (annotation-serialized)
+  "Get the starting point of an annotation. The arg ANNOTATION-SERIALIZED
+must be a single annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
 \(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
-  (cl-first annotation))
+  (cl-first annotation-serialized))
 
-(defun annotate-ending-of-annotation (annotation)
-  "Get the ending point of an annotation. The arg ANNOTATION must be a single
-annotation field got from a file dump of all annotated buffers,
+(defun annotate-ending-of-annotation (annotation-serialized)
+  "Get the ending point of an annotation. The arg ANNOTATION-SERIALIZED
+must be a single annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
 \(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
-  (cl-second annotation))
+  (cl-second annotation-serialized))
 
-(defun annotate--interval-left-limit (a)
-  "Given an annotation record A returns the left limit of the annotated text."
-  (cl-first a))
+(defun annotate--interval-left-limit (annotation-serialized)
+  "Given an annotation record ANNOTATION-SERIALIZED returns
+the left limit of the annotated text."
+  (cl-first annotation-serialized))
 
-(defun annotate--interval-right-limit (a)
-  "Given an annotation record A returns the right limit of the annotated text."
-  (cl-second a))
+(defun annotate--interval-right-limit (annotation-serialized)
+  "Given an annotation record ANNOTATION-SERIALIZED returns the
+right limit of the annotated text."
+  (cl-second annotation-serialized))
 
 (defun annotate--make-interval (left-limit right-limit)
   "Make an interval from LEFT-LIMIT and RIGHT-LIMIT."
   (list left-limit right-limit))
 
-(defun annotate-annotation-interval (annotation)
-  "Return the limits where ANNOTATION is applied.
+(defun annotate-annotation-interval (annotation-serialized)
+  "Return the limits where ANNOTATION-SERIALIZED is applied.
 The limit is a list of two numbers (LEFT RIGHT) representing of the portion
 of the buffer where this annotation is applied.
 Note that this function returns the character interval
@@ -1728,30 +1936,44 @@ yyyyyyyy ggg
 In other terms the interval in the database is a closed interval while
 the interval that this function return is closed on the left and open on
 the right side."
-  (annotate--make-interval (annotate-beginning-of-annotation annotation)
-                           (1- (annotate-ending-of-annotation annotation))))
+  (annotate--make-interval (annotate-beginning-of-annotation annotation-serialized)
+                           (1- (annotate-ending-of-annotation annotation-serialized))))
 
-(defun annotate-annotation-string (annotation)
-  "Get the text of an annotation. The arg ANNOTATION must be a single
+(defun annotate-annotation-string (annotation-serialized)
+  "Get the text of an annotation. The arg ANNOTATION-SERIALIZED must be a single
 annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
 \(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
-  (nth 2 annotation))
+  (nth 2 annotation-serialized))
 
-(defun annotate-annotated-text (annotation)
-  "Get the annotated text of an annotation. The arg ANNOTATION must be a single
-annotation field got from a file dump of all annotated buffers,
-essentially what you get from:
+(cl-defgeneric annotate-annotation-replace-annotation-text (object new-text)
+  "Replace the annotation text of OBJECT with NEW-TEXT.")
+
+(cl-defmethod annotate-annotation-replace-annotation-text ((object list) new-text)
+  "Replace the annotation text of OBJECT with NEW-TEXT."
+  (setf (elt object 2)
+        new-text)
+  object)
+
+(cl-defmethod annotate-annotation-replace-annotation-text ((object overlay) new-text)
+  "Replace the annotation text of OBJECT with NEW-TEXT."
+  (overlay-put object 'annotation new-text)
+  object)
+
+(defun annotate-annotated-text (annotation-serialized)
+  "Get the annotated text of an annotation. The arg ANNOTATION-SERIALIZED
+must be a single annotation field got from a file dump of all
+annotated buffers, essentially what you get from:
 \(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
-  (and (> (length annotation) 3)
-       (nth 3 annotation)))
+  (and (> (length annotation-serialized) 3)
+       (nth 3 annotation-serialized)))
 
 (defun annotate-save-all-annotated-buffers ()
   "Save the annotations for all buffer where `annotate-mode' is active."
   (let ((all-annotated-buffers (annotate-buffers-annotate-mode)))
     (cl-loop for annotated-buffer in all-annotated-buffers do
              (with-current-buffer annotated-buffer
-               (annotate-save-annotations)))))
+               (annotate-save-annotations :replace t)))))
 
 (cl-defun annotate--dump-indirect-buffer (annotations &optional (indirect-buffer (current-buffer)))
   "Clone an annotated indirect buffer into a new buffer.
@@ -1790,38 +2012,112 @@ ANNOTATIONS containd the annotations and INDIRECT-BUFFER
           (when (eq user-choice :bury)
             (customize-save-variable 'annotate-popup-warning-indirect-buffer nil)))))))
 
-(defun annotate-save-annotations ()
-  "Save all annotations to disk."
+(defun annotate--current-file-annotation ()
+  "Returns all the annotation contained in the current buffer."
+  (cl-remove-if (lambda (a)
+                  (= (annotate-beginning-of-annotation a)
+                     (annotate-ending-of-annotation    a)))
+                (annotate-describe-annotations)))
+
+(defun annotate-remove-stray-replies (annotations-db)
+  "Remove any reply in ANNOTATION-DB that is a reply of a non existent parent."
+  (cl-labels ((remove-stray (annotations-db)
+                (let ((stray-found nil))
+                  (cl-values
+                   (cl-loop for record in annotations-db
+                            collect
+                            (let* ((annotations (annotate-annotations-from-dump record))
+                                   (filtered-annotations (cl-remove-if
+                                                          (lambda (a)
+                                                            (when-let* ((parent-id (annotate-annotation-reply-to a)))
+                                                              ;; if  parent-id is  null
+                                                              ;; the  message  is  athe
+                                                              ;; root of  the tread, do
+                                                              ;; not remove
+                                                              (let ((found (annotate--find-annotation annotations-db
+                                                                                                      parent-id)))
+                                                                (when (not found)
+                                                                  (setf stray-found t))
+                                                                (not found))))
+                                                          annotations)))
+                              (annotate-make-record (annotate-filename-from-dump record)
+                                                    filtered-annotations
+                                                    (annotate-checksum-from-dump record))))
+                   stray-found))))
+    (cl-multiple-value-bind (db recurse)
+        (remove-stray annotations-db)
+      (if recurse
+          (annotate-remove-stray-replies db)
+        db))))
+
+(cl-defun annotate-save-annotations (&key
+                                     (annotations-to-save (annotate--current-file-annotation))
+                                     (replace t))
+  "Save all ANNOTATIONS-TO-SAVE (default all valid annotation in the current
+buffer) annotations to disk
+ANNOTATIONS-TO-SAVE: a list of annotations to be saved in the database
+REPLACE: if not nil replace all the annotations from the current file
+with ANNOTATIONS-TO-SAVE, append otherwise."
   (interactive)
-  (let ((file-annotations (cl-remove-if (lambda (a)
-                                          (= (annotate-beginning-of-annotation a)
-                                             (annotate-ending-of-annotation    a)))
-                                        (annotate-describe-annotations)))
-        (all-annotations  (annotate-load-annotation-data t))
-        (filename         (annotate-guess-filename-for-dump (annotate-actual-file-name))))
+  (let ((all-records (annotate-load-annotation-data t))
+        (filename    (annotate-guess-filename-for-dump (annotate-actual-file-name))))
     (cond
      (filename
-      (if (assoc-string filename all-annotations)
-          (setcdr (assoc-string filename all-annotations)
-                  (list file-annotations
-                        (annotate-buffer-checksum)))
-        (setq all-annotations
-              (push (annotate-make-annotation-dump-entry filename
-                                                         file-annotations
-                                                         (annotate-buffer-checksum))
-                    all-annotations)))
-      ;; remove duplicate entries (a user reported seeing them)
-      (dolist (entry all-annotations)
-        (delete-dups entry))
-      ;; skip files with no annotations
-      (annotate-dump-annotation-data (cl-remove-if (lambda (entry)
-                                                     (null (annotate-annotations-from-dump entry)))
-                                                   all-annotations))
-      (when annotate-use-messages
-        (message "Annotations saved.")))
+      (let* ((existing-record      (assoc-string filename all-records))
+             (existing-annotations (if existing-record
+                                       (annotate-annotations-from-dump existing-record)
+                                     nil))
+             (all-reply (cl-remove-if-not (lambda (a)
+                                            (annotate-annotation-dump-reply-p a))
+                                          existing-annotations)))
+        (setf annotations-to-save (append all-reply annotations-to-save))
+        (cond
+         (replace
+          (let ((record-no-current-annotation
+                 (cl-remove-if (lambda (a) (string= (annotate-filename-from-dump a)
+                                                    filename))
+                               all-records)))
+            (setf all-records
+                  (push (annotate-make-annotation-dump-entry filename
+                                                             annotations-to-save
+                                                             (annotate-buffer-checksum))
+                        record-no-current-annotation))))
+         (existing-record
+          (let* ((annotations-from-dump (annotate-annotations-from-dump existing-record)))
+            (cl-loop for annotation-to-save in annotations-to-save
+                     when (not (cl-find-if (lambda (a)
+                                             (and (not (annotate-annotation-dump-reply-p annotation-to-save))
+                                                  (= (annotate-beginning-of-annotation a)
+                                                     (annotate-beginning-of-annotation annotation-to-save))
+                                                  (= (annotate-ending-of-annotation a)
+                                                     (annotate-ending-of-annotation annotation-to-save))))
+                                           annotations-from-dump))
+                     do (push annotation-to-save annotations-from-dump))
+            (setcdr (assoc-string filename all-records)
+                    (list annotations-from-dump
+                          (annotate-buffer-checksum)))))
+         (t
+          (setf all-records
+                (push (annotate-make-annotation-dump-entry filename
+                                                           annotations-to-save
+                                                           (annotate-buffer-checksum))
+                      all-records))))
+        ;; performs some cleaning up
+        ;; remove duplicate entries (a user reported seeing them)
+        (dolist (entry all-records)
+          (delete-dups entry))
+        ;; remove all the replies that has no parents (recursively)
+        ;; then remove all the records that references file that contains no annotations
+        (let* ((only-valid-replies (annotate-remove-stray-replies all-records))
+               (only-annotated-file (cl-remove-if (lambda (entry)
+                                                    (null (annotate-annotations-from-dump entry)))
+                                                  only-valid-replies)))
+             (annotate-dump-annotation-data only-annotated-file))
+        (when annotate-use-messages
+          (message "Annotations saved."))))
      ((annotate-indirect-buffer-current-p)
-      (annotate--dump-indirect-buffer file-annotations))
-     (file-annotations
+      (annotate--dump-indirect-buffer annotations-to-save))
+     (annotations-to-save
       (lwarn '(annotate-mode)
              :warning
              annotate-warn-buffer-has-no-valid-file
@@ -1874,7 +2170,9 @@ annotations:
 
 finally annotation is:
 
-\(START END ANNOTATION-STRING ANNOTATED-TEXT COLOR-INDEX)
+\(START END ANNOTATION-STRING
+  ANNOTATED-TEXT COLOR-INDEX
+  POSITIONING-POLICY ID REPLY-TO)
 
 START:              the buffer position where annotated text start
 END:                the buffer position where annotated text ends
@@ -1885,10 +2183,12 @@ COLOR-INDEX:        the index position in `annotate-annotation-text-faces' and
 POSITIONING-POLICY: a keyword representing the stategy for the annotation's
                     text position; the allowed values are specified in:
                     `annotate-allowed-positioning-policy'
-
+ID:                 An unique string that identify this annotation
+REPLY-TO:           The ID of an annotation this is a reply or nil
 example:
 
-\\='(\"/foo/bar\" ((0 9 \"note\" \"annotated\" 0 :margin)) hash-as-hex-string)."
+\\='(\"/foo/bar\" ((0 9 \"note\" \"annotated\" 0 :margin \"ID\"
+[nil or parent ID])) hash-as-hex-string)."
   (interactive)
   (cl-labels ((old-format-p (annotation)
                 (not (stringp (cl-first (last annotation))))))
@@ -1905,6 +2205,7 @@ example:
                    old-checksum
                    new-checksum
                    (not (string= old-checksum new-checksum)))
+          (annotate-save-annotations :replace t)
           (lwarn '(annotate-mode)
                  :warning
                  annotate-warn-file-changed-control-string
@@ -1915,7 +2216,8 @@ example:
           (message annotate-message-annotations-not-found))
          (annotations
           (save-excursion
-            (dolist (annotation annotations)
+            (dolist (annotation (cl-remove-if #'annotate-annotation-dump-reply-p
+                                              annotations))
               (let* ((start             (annotate-beginning-of-annotation annotation))
                      (end               (annotate-ending-of-annotation    annotation))
                      (annotation-string (annotate-annotation-string       annotation))
@@ -1926,13 +2228,15 @@ example:
                                                     (length annotate-highlight-faces)))
                                             dump-color-index
                                           nil))
-                     (position          (annotate-placement-policy-from-dump annotation)))
+                     (position          (annotate-placement-policy-from-dump annotation))
+                     (id                (annotate-id-from-dump annotation)))
                 (annotate-create-annotation start
                                             end
                                             annotation-string
                                             annotated-text
                                             color-index
-                                            position))))))
+                                            position
+                                            id))))))
         (font-lock-flush)
         (when annotate-use-messages
           (message annotate-message-annotation-loaded))))))
@@ -1955,14 +2259,19 @@ i.e. the first record is removed."
   "Update database *on disk* removing all the records with empty
 annotation."
   (interactive)
-  (let ((db (annotate-db-clean-records (annotate-load-annotation-data t))))
-    (annotate-dump-annotation-data db)))
+  (annotate-db-purge* (annotate-load-annotation-data t)))
+
+(defun annotate-db-purge* (annotations-db)
+  "Update database ANNOTATIONS-DB removing all the records with empty
+annotation and save to disk."
+  (let ((clean-db (annotate-db-clean-records annotations-db)))
+    (annotate-dump-annotation-data clean-db)))
 
 (defun annotate--deserialize-database-file (file)
   "Return a sexp from the annotation database contained in FILE."
   (cl-flet ((deserialize-record (record)
               "deserialize `RECORD' form its sexp form."
-              (let* ((filename  (annotate-filename-from-dump    record))
+              (let* ((filename        (annotate-filename-from-dump    record))
                      (annotations     (annotate-annotations-from-dump record))
                      (file-checksum   (annotate-checksum-from-dump    record)))
                 (annotate-make-record filename
@@ -1994,7 +2303,7 @@ annotation."
         data)
     (with-temp-file annotate-file
       (cl-flet ((%make-record (annotation)
-		  (let ((full-filename (annotate-filename-from-dump    annotation))
+                  (let ((full-filename (annotate-filename-from-dump    annotation))
                         (annotations   (annotate-annotations-from-dump annotation))
                         (file-checksum (annotate-checksum-from-dump    annotation)))
                     (annotate-make-record (abbreviate-file-name full-filename)
@@ -2002,7 +2311,7 @@ annotation."
                                           file-checksum))))
       (let* ((print-length nil)
              (actual-data (mapcar #'%make-record data)))
-	(prin1 actual-data (current-buffer))))))
+        (prin1 actual-data (current-buffer))))))
    ((annotate-file-exists-p annotate-file)
     (let* ((confirm-message    "Delete annotations database file %S? ")
            (delete-confirmed-p (or (not annotate-database-confirm-deletion)
@@ -2023,10 +2332,11 @@ annotation."
                                       (string= (annotate-filename-from-dump record)
                                                ,filename)))
          (annotation-limits-match-p (lambda (a)
-                                      (and (= (annotate-beginning-of-annotation a)
-                                              ,beginning)
-                                           (= (annotate-ending-of-annotation    a)
-                                              ,ending)))))
+                                      (when (not (annotate-annotation-reply-p a))
+                                        (and (= (annotate-beginning-of-annotation a)
+                                                ,beginning)
+                                             (= (annotate-ending-of-annotation    a)
+                                                ,ending))))))
      ,@body))
 
 (defun annotate-db-remove-annotation (db-records
@@ -2075,10 +2385,8 @@ identified by the triplets RECORD-FILENAME,
                       (rest-annotations (cl-remove-if annotation-limits-match-p
                                                       (annotate-annotations-from-dump file-matched-record)))
                       (checksum         (annotate-checksum-from-dump file-matched-record))
-                      (new-annotation   (annotate-make-annotation annotation-beginning
-                                                                  annotation-ending
-                                                                  replacing-text
-                                                                  (annotate-annotated-text old-annotation)))
+                      (new-annotation   (annotate-annotation-replace-annotation-text old-annotation
+                                                                                     replacing-text))
                       (new-record       (annotate-make-record record-filename
                                                               (append (list new-annotation)
                                                                       rest-annotations)
@@ -2257,8 +2565,11 @@ must not be rendered."
   "Get the property for hiding the annotation text from OVERLAY."
   (overlay-get overlay 'hide-text))
 
-(defun annotate-create-annotation (start end annotation-text annotated-text
-                                         &optional color-index position)
+(cl-defun annotate-create-annotation (start end annotation-text annotated-text
+                                            &optional
+                                            color-index
+                                            position
+                                            (annotation-id (annotate--generate-unique-id)))
   "Create a new annotation for selected region (from START to  END.
 
 Here the argument ANNOTATION-TEXT is the string that appears
@@ -2286,9 +2597,12 @@ COLOR-INDEX, if non-null (default nil), is used as index to address
 elements both in ANNOTATE-COLOR-INDEX-FROM-DUMP
 and ANNOTATE-COLOR-INDEX-FROM-DUMP to specify annotation appearance.
 
-Finally POSITION indicates the positioning policy for the annotation,
+POSITION indicates the positioning policy for the annotation,
 if null the value bound to ANNOTATE-ANNOTATION-POSITION-POLICY is
-used."
+used.
+
+ANNOTATION-ID is an unique identifier for the annotation
+\(by default is generated using `annotate--generate-unique-id'."
   (cl-labels ((face-annotation-shifting-point (position shifting-direction-function)
                 (when-let* ((annotation       (funcall shifting-direction-function
                                                        position))
@@ -2335,6 +2649,7 @@ used."
                                                           (elt annotate-annotation-text-faces
                                                                color-index)
                                                         (annotate--current-annotation-text-face))))
+                                (annotate-annotation-set-id highlight annotation-id)
                                 (annotate-annotation-set-face highlight highlight-face)
                                 (annotate-annotation-set-annotation-text highlight annotation-text)
                                 (annotate-annotation-set-annotation-face highlight annotation-face)
@@ -2430,7 +2745,9 @@ used."
                                   end
                                   annotation-text
                                   annotated-text
-                                  color-index position))
+                                  color-index
+                                  position
+                                  annotation-id))
      (t
       (if (not (annotate-string-empty-p annotated-text))
           (let ((text-to-match (ignore-errors
@@ -2581,6 +2898,137 @@ This function is not part of the public API."
   (or (not annotate-annotation-confirm-deletion)
       (y-or-n-p annotate-confirm-deleting-annotation-prompt)))
 
+(cl-defgeneric annotate-remove-annotation-from-dump (annotations-db object)
+  "Remove the entry in ANNOTATIONS-DB that contains an object
+with the id of OBJECT.")
+
+(cl-defmethod annotate-remove-annotation-from-dump (annotations-db object)
+  "Remove the entry in ANNOTATIONS-DB that contains an object with
+the id of OBJECT."
+  (annotate-ensure-annotation (object)
+    (let ((id-to-delete (annotate-annotation-id object)))
+      (annotate-remove-annotation-from-dump annotations-db id-to-delete))))
+
+(cl-defmethod annotate-remove-annotation-from-dump (annotations-db (object string))
+  "Remove the entry in ANNOTATIONS-DB that contains an annotation with the id:
+OBJECT (a string)."
+  (let ((id-to-delete object))
+    (cl-loop for record in annotations-db
+             collect
+             (let* ((annotations (annotate-annotations-from-dump record))
+                    (filtered-annotations (cl-remove-if
+                                           (lambda (a)
+                                             (annotate-annotation-id= (annotate-id-from-dump a)
+                                                                      id-to-delete))
+                                           annotations)))
+               (annotate-make-record (annotate-filename-from-dump record)
+                                     filtered-annotations
+                                     (annotate-checksum-from-dump record))))))
+
+(defun annotate--attach-annotation-to-dump (annotate-db serialized-annotation)
+  "Returns a copy of ANNOTATE-DB with SERIALIZED-ANNOTATION added to
+the annotations part of the record where the parent of
+SERIALIZED-ANNOTATION exists."
+  (let ((parent-id (annotate-annotation-reply-to serialized-annotation)))
+    (cl-loop for record in annotate-db
+             collect
+             (let* ((annotations (annotate-annotations-from-dump record))
+                    (parent (cl-find-if
+                             (lambda (a)
+                               (annotate-annotation-id= parent-id
+                                                        (annotate-id-from-dump a)))
+                             annotations)))
+               (if parent
+                   (annotate-make-record (annotate-filename-from-dump record)
+                                         (push serialized-annotation
+                                               annotations)
+                                         (annotate-checksum-from-dump record))
+                 record)))))
+
+(cl-defgeneric annotate-get-annotation-children (annotate-db object)
+  "Returns the replies of OBJECT in ANNOTATE-DB.")
+
+(cl-defmethod annotate-get-annotation-children (annotate-db (object list))
+  "Returns the replies of OBJECT in ANNOTATE-DB."
+  (let ((id (annotate-id-from-dump object)))
+    (annotate-get-annotation-children annotate-db id)))
+
+(cl-defmethod annotate-get-annotation-children (annotate-db (object string))
+  "Returns the replies of OBJECT in ANNOTATE-DB."
+  (let ((id        object)
+        (children '()))
+    (cl-loop for record in annotate-db
+             do (cl-loop for annotation in (annotate-annotations-from-dump record)
+                         when (annotate-annotation-id= id
+                                                       (annotate-reply-to-from-dump annotation))
+                         do
+                         (push annotation children)))
+    children))
+
+(cl-defgeneric annotate--find-annotation (annotations-db object)
+  "Find annotation identified by OBJECT.")
+
+(cl-defmethod annotate--find-annotation (annotations-db (object string))
+  "Find annotation identified by OBJECT."
+  (cl-block annotate--find-annotation
+    (let ((id-to-be-found object))
+      (cl-loop for record in annotations-db
+               do (cl-loop for annotation in (annotate-annotations-from-dump record)
+                           do (when (annotate-annotation-id= (annotate-id-from-dump annotation)
+                                                             id-to-be-found)
+                                (cl-return-from annotate--find-annotation annotation))))
+      nil)))
+
+(cl-defmethod annotate--find-annotation (annotations-db (object overlay))
+  "Find annotation identified by OBJECT."
+  (let ((id-to-be-found (annotate-annotation-id object)))
+    (annotate--find-annotation annotations-db id-to-be-found)))
+
+(cl-defmethod annotate--find-annotation (annotations-db (object list))
+  "Find annotation identified by OBJECT."
+  (let ((id-to-be-found (annotate-id-from-dump object)))
+    (annotate--find-annotation annotations-db id-to-be-found)))
+
+(cl-defgeneric annotate-remove-annotation-thread (annotations-db object)
+  "Remove the entry in OBJECTS-DB that contains an object with the id of OBJECT
+and, if exist, recursively all its children.")
+
+(cl-defmethod annotate-remove-annotation-thread (annotations-db object)
+  "Remove the entry in OBJECTS-DB that contains an object with the id of OBJECT
+and, if exist, recursively all its children."
+  (annotate-ensure-annotation (object)
+    (let ((id-to-delete (annotate-annotation-id object)))
+      (annotate-remove-annotation-thread annotations-db id-to-delete))))
+
+(cl-defmethod annotate-remove-annotation-thread (annotations-db (object list))
+  "Remove the entry in OBJECTS-DB that contains an object with the id of
+serialzed annotation OBJECT and, if exist, recursively all its children."
+    (let ((id-to-delete (annotate-id-from-dump object)))
+      (annotate-remove-annotation-thread annotations-db id-to-delete)))
+
+(cl-defmethod annotate-remove-annotation-thread (annotations-db (object string))
+  "Remove the entry in OBJECTS-DB that contains an object with the id of OBJECT
+and, if exist, recursively all its children."
+  (let* ((id-to-delete object)
+         (children     (annotate-get-annotation-children annotations-db id-to-delete))
+         (filtered-db
+          (cl-loop for record in annotations-db
+                   collect
+                   (let* ((annotations (annotate-annotations-from-dump record))
+                          (filtered-annotations (cl-remove-if
+                                                 (lambda (a)
+                                                   (annotate-annotation-id= (annotate-id-from-dump a)
+                                                                            id-to-delete))
+                                                 annotations)))
+                     (annotate-make-record (annotate-filename-from-dump record)
+                                           filtered-annotations
+                                           (annotate-checksum-from-dump record))))))
+    (cl-loop for child in children
+             do (setf filtered-db
+                      (annotate-remove-annotation-thread filtered-db
+                                                         child)))
+    filtered-db))
+
 (cl-defun annotate-delete-annotation (&optional (point (point)))
   "Command to delete an annotation, POINT is the buffer
 position where to look for annotation (default the cursor
@@ -2592,7 +3040,7 @@ point)."
         (annotate--delete-annotation-chain annotation)
         (font-lock-flush)))
     (when annotate-autosave
-      (annotate-save-annotations))))
+      (annotate-save-annotations :replace t))))
 
 (defun annotate--confirm-append-newline-at-the-end-of-buffer ()
   "Prompt user for appending newline confirmation.
@@ -2633,7 +3081,7 @@ This function is not part of the public API."
           (concat " \n" (make-string annotate-annotation-column ? ))
         (make-string prefix-length ? )))))
 
-(defun annotate-annotation-at (pos)
+(cl-defun annotate-annotation-at (&optional (pos (point)))
   "Return the annotations (overlay where (annotationp overlay) -> t)
 at positions POS or nil if no annotations exists at pos.
 
@@ -2752,6 +3200,25 @@ content ANNOTATION and annotated text ANNOTATED-TEXT."
   "Return a list of all annotations in the current buffer."
   (cl-remove-if-not #'annotationp (overlays-in 0 (buffer-size))))
 
+(defun annotate--make-annotation-for-record (from
+                                             to
+                                             annotation-text
+                                             annotated-text
+                                             color-index
+                                             position
+                                             id
+                                             reply-to)
+  "Make a new annotation given the fields:
+FROM TO ANNOTATION-TEXT ANNOTATED-TEXT COLOR-INDEX POSITION ID REPLY-TO"
+  (list from
+        to
+        annotation-text
+        annotated-text
+        color-index
+        position
+        id
+        reply-to))
+
 (defun annotate-describe-annotations ()
   "Return a list of all annotations in the current buffer.
 The format is suitable for database dump."
@@ -2767,18 +3234,24 @@ The format is suitable for database dump."
                            (face        (annotate-annotation-face chain-first))
                            (color-index (cl-position-if (lambda (a) (cl-equalp face a))
                                                         annotate-highlight-faces))
-                           (position    (annotate-annotation-get-position annotation)))
+                           (position    (annotate-annotation-get-position annotation))
+                           (id          (annotate-annotation-id annotation))
+                           (reply-to    (annotate-annotation-reply-to annotation))
+                           (annotation-text (annotate-annotation-get-annotation-text annotation)))
                       (when (not (cl-find-if (lambda (a)
                                                (eq (cl-first chain)
                                                    (cl-first a)))
                                              chain-visited))
                         (push chain chain-visited)
-                        (list from
-                              to
-                              (annotate-annotation-get-annotation-text annotation)
-                              (buffer-substring-no-properties from to)
-                              color-index
-                              position))))
+                        (annotate--make-annotation-for-record from
+                                                              to
+                                                              annotation-text
+                                                              (buffer-substring-no-properties from
+                                                                                              to)
+                                                              color-index
+                                                              position
+                                                              id
+                                                              reply-to))))
                   all-annotations))))
 
 (defun annotate-info-root-dir-p (filename)
@@ -2848,6 +3321,10 @@ sophisticated way than plain text."
   'follow-link t
   'help-echo "Click to replace annotation")
 
+(define-button-type 'annotate-summary-show-thread-button
+  'follow-link t
+  'help-echo "Click to add a note")
+
 (defun annotate-info-setup (file-or-node buffer)
   "Display Info node FILE-OR-NODE in BUFFER.
 
@@ -2886,20 +3363,22 @@ Compatibility wrapper for the function `info-setup' and `info-pop-to-buffer'."
   "Callback for summary window fired when a \"delete\" button is
 pressed."
   (let* ((filename        (button-get button 'file))
-         (beginning       (button-get button 'beginning))
-         (ending          (button-get button 'ending))
-         (db              (annotate-load-annotation-data t))
-         (filtered        (annotate-db-remove-annotation db filename beginning ending)))
-    (annotate-dump-annotation-data filtered) ; save the new database with entry removed
+         (annotations-db  (annotate-load-annotation-data t))
+         (annotation      (button-get button 'annotation-bound))
+         (no-thread-db    (annotate-remove-annotation-thread annotations-db annotation)))
+    (annotate-dump-annotation-data no-thread-db) ; save the new database with entry removed
     (cl-labels ((redraw-summary-window () ; update the summary window
                   (with-current-buffer annotate-summary-buffer-name
                     (read-only-mode -1)
                     (save-excursion
                       (button-put button 'invisible t)
-                      (let ((annotation-button (previous-button (point))))
-                        (button-put annotation-button 'face '(:strike-through t)))
-                      (let ((replace-button (next-button (point))))
-                        (button-put replace-button 'invisible t)))
+                      (let* ((annotation-button (previous-button (point)))
+                             (replace-button (next-button (point)))
+                             (replace-button-end (button-end replace-button))
+                             (thread-button (next-button replace-button-end)))
+                        (button-put annotation-button 'face '(:strike-through t))
+                        (button-put replace-button 'invisible t)
+                        (button-put thread-button 'invisible t)))
                     (read-only-mode 1))))
       (redraw-summary-window)
       (annotate-update-visited-buffer-maybe filename))))
@@ -2915,14 +3394,19 @@ pressed."
          (old-annotation       (button-get button 'text))
          (new-annotation-text  (read-from-minibuffer annotate-annotation-prompt old-annotation)))
     (when (not (annotate-string-empty-p new-annotation-text))
-      (let ((replaced-annotation-db (annotate-db-replace-annotation db
+      (let ((replaced-annotations-db (annotate-db-replace-annotation db
                                                                     filename
                                                                     annotation-beginning
                                                                     annotation-ending
                                                                     new-annotation-text)))
-        (annotate-dump-annotation-data replaced-annotation-db)
+        (annotate-dump-annotation-data replaced-annotations-db)
         (annotate-update-visited-buffer-maybe filename)
         (annotate-show-annotation-summary query nil nil)))))
+
+(defun annotate-summary-show-thread-button-pressed (button)
+  "Callback called when the button to show a thread is pushed in summary window."
+  (let ((annotation (button-get button 'annotation-bound)))
+    (annotate--show-annotation-thread annotation)))
 
 (cl-defun annotate-wrap-text (text &optional (wrapper "\""))
   "Wrap string TEXT with string WRAPPER."
@@ -2947,6 +3431,13 @@ pressed."
                                                   wrapper-length)))))))
     results))
 
+(defun annotate--db-empty-p (dump)
+  "Returns non nil if the database DUMP is empty."
+  (cl-every (lambda (a)
+              (cl-every #'null
+                        (annotate-annotations-from-dump a)))
+            dump))
+
 (cl-defun annotate-show-annotation-summary (&optional arg-query cut-above-point (save-annotations t))
   "Show a summary of all the annotations in a temp buffer, the
 results can be filtered with a simple query language: see
@@ -2965,13 +3456,14 @@ results can be filtered with a simple query language: see
                       (concat (substring text 0 substring-limit)
                               annotate-ellipse-text-marker)
                     text)))
-              (wrap      (text)
+              (wrap (text)
                 (annotate-wrap-text text "\""))
               (insert-item-summary (filename
                                     snippet-text
                                     button-text
                                     annotation-beginning
                                     annotation-ending
+                                    serialized-annotation
                                     filter-query)
                 (insert annotate-summary-list-prefix-snippet)
                 (insert (wrap (ellipsize snippet-text
@@ -2989,21 +3481,17 @@ results can be filtered with a simple query language: see
                 (insert "\n\n")
                 (insert annotate-summary-list-prefix)
                 (insert "  ")
-                (let ((del-button (insert-button
-                                   annotate-summary-delete-button-label
-                                   'file       filename
-                                   'beginning  annotation-beginning
-                                   'ending     annotation-ending
-                                   'action
-                                   'annotate-summary-delete-annotation-button-pressed
-                                   'type
-                                   'annotate-summary-delete-annotation-button)))
-                  (button-put del-button
-                              'begin-of-button
-                              (annotate-beginning-of-line-pos))
-                  (button-put del-button
-                              'end-of-button
-                              (annotate-end-of-line-pos)))
+                (insert-button annotate-summary-delete-button-label
+                               'file       filename
+                               'beginning  annotation-beginning
+                               'ending     annotation-ending
+                               'annotation-bound serialized-annotation
+                               'action
+                               'annotate-summary-delete-annotation-button-pressed
+                               'type
+                               'annotate-summary-delete-annotation-button
+                               'begin-of-button (annotate-beginning-of-line-pos)
+                               'end-of-button (annotate-end-of-line-pos))
                 (insert "\n")
                 (insert annotate-summary-list-prefix)
                 (insert "  ")
@@ -3017,6 +3505,15 @@ results can be filtered with a simple query language: see
                                'annotate-summary-replace-annotation-button-pressed
                                'type
                                'annotate-summary-replace-annotation-button)
+                (insert "\n")
+                (insert annotate-summary-list-prefix)
+                (insert "  ")
+                (insert-button annotate-summary-show-thread-button-label
+                               'annotation-bound serialized-annotation
+                               'action
+                               'annotate-summary-show-thread-button-pressed
+                               'type
+                               'annotate-summary-show-thread-button)
                 (insert "\n\n"))
               (clean-snippet (snippet)
                 (save-match-data
@@ -3062,11 +3559,6 @@ results can be filtered with a simple query language: see
                                                          annotation-begin
                                                          annotation-end))
                     annotate-error-summary-win-filename-invalid)))
-              (db-empty-p    (dump)
-                (cl-every (lambda (a)
-                            (cl-every #'null
-                                      (annotate-annotations-from-dump a)))
-                          dump))
               (get-query     ()
                 (cond
                  (arg-query
@@ -3074,14 +3566,46 @@ results can be filtered with a simple query language: see
                  (annotate-summary-ask-query
                   (read-from-minibuffer "Query: "))
                  (t
-                  ".*"))))
+                  ".*")))
+              (insert-root-item (db-filename filter-query annotation-fields)
+                (let* ((button-text      (format "%s"
+                                                 (annotate-annotation-string annotation-fields)))
+                       (annotation-begin (annotate-beginning-of-annotation annotation-fields))
+                       (annotation-end   (annotate-ending-of-annotation    annotation-fields))
+                       (snippet-text     (build-snippet db-filename
+                                                        annotation-begin
+                                                        annotation-end)))
+                  (insert-item-summary db-filename
+                                       snippet-text
+                                       button-text
+                                       annotation-begin
+                                       annotation-end
+                                       annotation-fields
+                                       filter-query)))
+              (insert-reply-item (annotations-db reply-fields)
+                (let* ((parent-id       (annotate-annotation-reply-to reply-fields))
+                       (parent          (annotate--find-annotation annotations-db parent-id))
+                       (parent-text     (annotate-annotation-string parent))
+                       (annotation-text (annotate-annotation-string reply-fields)))
+                  (insert annotate-summary-list-prefix-reply
+                          (wrap (ellipsize (clean-snippet parent-text) ""))
+                          "\n"
+                          (ellipsize annotation-text "")
+                          "\n\n")
+                  (insert-button annotate-summary-show-thread-button-label
+                                 'annotation-bound parent
+                                 'action
+                                 'annotate-summary-show-thread-button-pressed
+                                 'type
+                                 'annotate-summary-show-thread-button)
+                  (insert "\n\n"))))
     (when save-annotations
       (annotate-save-all-annotated-buffers))
     (let* ((filter-query (get-query))
            (dump         (annotate-summary-filter-db (annotate-load-annotation-data t)
                                                      filter-query
                                                      cut-above-point)))
-      (if (db-empty-p dump)
+      (if (annotate--db-empty-p dump)
           (when annotate-use-messages
             (message "The annotation database is empty"))
         (with-current-buffer-window
@@ -3093,26 +3617,19 @@ results can be filtered with a simple query language: see
           (local-set-key "q" (lambda ()
                                (interactive)
                                (kill-buffer annotate-summary-buffer-name)))
-          (dolist (annotation dump)
-            (let* ((all-annotations (annotate-annotations-from-dump annotation))
-                   (db-filename     (annotate-filename-from-dump annotation)))
+          (dolist (record dump)
+            (let* ((all-annotations (annotate-annotations-from-dump record))
+                   (db-filename     (annotate-filename-from-dump record)))
               (when (not (null all-annotations))
                 (insert (format (concat annotate-summary-list-prefix-file "%s\n\n")
                                 db-filename))
-                (dolist (annotation-field all-annotations)
-                  (let* ((button-text      (format "%s"
-                                                   (annotate-annotation-string annotation-field)))
-                         (annotation-begin (annotate-beginning-of-annotation annotation-field))
-                         (annotation-end   (annotate-ending-of-annotation    annotation-field))
-                         (snippet-text     (build-snippet db-filename
-                                                          annotation-begin
-                                                          annotation-end)))
-                    (insert-item-summary db-filename
-                                         snippet-text
-                                         button-text
-                                         annotation-begin
-                                         annotation-end
-                                         filter-query))))))
+                (dolist (annotation-fields all-annotations)
+                  (if (annotate-annotation-root-p annotation-fields)
+                      (insert-root-item db-filename
+                                        filter-query
+                                        annotation-fields)
+                    (insert-reply-item dump
+                                       annotation-fields))))))
           (read-only-mode 1))))))
 
 ;;;; end summary window procedures
@@ -3576,9 +4093,9 @@ The annotations in each record are sorted by starting point in ascending order."
                                (and (string-match-p re
                                                     (annotate-annotation-string annotation-dump-2))
                                     annotation-dump-2)))
-         (filter             (lambda (single-annotation)
+         (filter             (lambda (single-record)
                                (let ((filtered-annotations (funcall parser
-                                                                    single-annotation
+                                                                    single-record
                                                                     query
                                                                     filter-file
                                                                     filter-annotations)))
@@ -3586,12 +4103,20 @@ The annotations in each record are sorted by starting point in ascending order."
                                        (remq nil filtered-annotations))
                                  (when filtered-annotations
                                    (let ((filename (annotate-filename-from-dump
-                                                    single-annotation))
+                                                    single-record))
                                          (checksum (annotate-checksum-from-dump
-                                                    single-annotation)))
+                                                    single-record)))
                                      (setf filtered-annotations
                                            (sort filtered-annotations
-                                                 #'annotate-db-annotations-starts-before-p))
+                                                 (lambda (a b)
+                                                   (cond
+                                                    ((and (annotate-annotation-root-p a)
+                                                          (annotate-annotation-root-p b))
+                                                     (annotate-db-annotations-starts-before-p a b))
+                                                    ((annotate-annotation-root-p a)
+                                                     a)
+                                                    (t
+                                                     b)))))
                                      (when remove-annotations-cutoff-point
                                        (setf filtered-annotations
                                              (cl-remove-if (lambda (a)
@@ -3682,16 +4207,20 @@ The new interval is expanded so that includes A and B."
 
 (defun annotate--db-annotations-overlaps-p (annotation-a annotation-b)
   "Return non nil if ANNOTATION-A and ANNOTATION-B overlaps."
-  (let ((interval-a (annotate-annotation-interval annotation-a))
-        (interval-b (annotate-annotation-interval annotation-b)))
-    (not (or (< (annotate--interval-right-limit interval-b)
-                (annotate--interval-left-limit interval-a))
-             (> (annotate--interval-left-limit interval-b)
-                (annotate--interval-right-limit interval-a))))))
+  ;; reply never overlaps
+  (when (not (or (annotate-annotation-reply-p annotation-a)
+                 (annotate-annotation-reply-p annotation-b)))
+    (let ((interval-a (annotate-annotation-interval annotation-a))
+          (interval-b (annotate-annotation-interval annotation-b)))
+      (not (or (< (annotate--interval-right-limit interval-b)
+                  (annotate--interval-left-limit interval-a))
+               (> (annotate--interval-left-limit interval-b)
+                  (annotate--interval-right-limit interval-a)))))))
 
 (defun annotate--db-merge-annotations (host guest)
   "Merge annotation GUEST into annotation HOST.
-Uses `annotate--merge-interval'."
+Uses `annotate--merge-interval'.
+Notes that if either HOST or GUEST are replies, this function returns NIL."
   (when (annotate--db-annotations-overlaps-p host guest)
     (let* ((interval-host       (annotate-annotation-interval host))
            (interval-guest      (annotate-annotation-interval guest))
@@ -3702,8 +4231,19 @@ Uses `annotate--merge-interval'."
            (left                (annotate--interval-left-limit new-interval))
            (right               (1+ (annotate--interval-right-limit new-interval)))
            (new-annotated-text  (with-current-buffer (current-buffer)
-                                  (buffer-substring-no-properties left right))))
-      (annotate-make-annotation left right new-annotation-text new-annotated-text))))
+                                  (buffer-substring-no-properties left right)))
+           (color-index         (annotate-color-index-from-dump host))
+           (position            (annotate-placement-policy-from-dump host))
+           (id-host             (annotate-annotation-id host))
+           (reply-to            (annotate-annotation-reply-to host))) ; always nil
+      (annotate--make-annotation-for-record left
+                                            right
+                                            new-annotation-text
+                                            new-annotated-text
+                                            color-index
+                                            position
+                                            id-host
+                                            reply-to))))
 
 (defun annotate--db-remove-overlap-annotations (annotations &optional accum)
   "Recursively merges overlapping annotations in ANNOTATIONS
@@ -3734,19 +4274,45 @@ using `annotate--db-merge-annotations'."
                   (cl-find-if (lambda (a)
                                 (let ((scanned-record-filename (annotate-filename-from-dump a)))
                                   (file-equal-p record-filename scanned-record-filename)))
-                              annotations-db))))
+                              annotations-db)))
+              (remap-reply (db-host db-guest replies)
+                (if (null db-host)
+                    replies
+                  (let* ((probe (cl-first db-host))
+                         (probe-id (annotate-annotation-id probe))
+                         (overlapped (cl-find-if (lambda (a)
+                                                   (annotate--db-annotations-overlaps-p probe a))
+                                                 db-guest)))
+                    (if overlapped
+                        (let* ((overlapped-id (annotate-annotation-id overlapped))
+                               (remapped-replies (cl-loop for reply in replies
+                                                          collect
+                                                          (let ((reply-to-id (annotate-annotation-reply-to reply)))
+                                                            (if (annotate-annotation-id= overlapped-id
+                                                                                         reply-to-id)
+                                                                (annotate-annotation-replace-reply-to reply
+                                                                                                      probe-id)
+                                                              reply)))))
+                          (remap-reply (cl-rest db-host)
+                                       db-guest
+                                       remapped-replies)))))))
     (if (null db-1)
         (append accum db-2)
       (let* ((first-record     (cl-first db-1))
              (same-file-record (find-same-file-record first-record db-2)))
         (if same-file-record
-            (let* ((filename                 (annotate-filename-from-dump first-record))
-                   (concatenated-annotations (append (annotate-annotations-from-dump first-record)
-                                                     (annotate-annotations-from-dump same-file-record)))
+            (let* ((filename                   (annotate-filename-from-dump first-record))
+                   (db1-annotations            (annotate-annotations-from-dump first-record))
+                   (db2-annotations            (annotate-annotations-from-dump same-file-record))
+                   (db2-replies                (cl-remove-if-not #'annotate-annotation-reply-p db2-annotations))
+                   (db2-replies-remapped       (remap-reply db1-annotations db2-annotations db2-replies))
+                   (db2-roots                  (cl-remove-if #'annotate-annotation-reply-p db2-annotations))
+                   (concatenated-annotations   (append db1-annotations db2-roots))
                    (non-overlapped-annotations (annotate--db-remove-overlap-annotations concatenated-annotations))
                    (concatenated-checksum      (annotate-checksum-from-dump first-record))
                    (concatenated-record        (annotate-make-record filename
-                                                                     non-overlapped-annotations
+                                                                     (append non-overlapped-annotations
+                                                                             db2-replies-remapped)
                                                                      concatenated-checksum))
                    (rest-of-db-2               (cl-remove-if
                                                 (lambda (a)
@@ -3784,6 +4350,320 @@ their personal database."
           (annotate-switch-db t annotate-file)
           (when annotate-use-messages
             (message "Imported annotations from %s." imported-db-name)))))))
+
+(defun annotate-get-tree-children-clsr (annotate-db)
+  "Returns a function that returns the children of an annotation passed
+as argument."
+  (lambda (annotation)
+    (annotate-get-annotation-children annotate-db annotation)))
+
+(defun annotate-annotation-leaf-p (annotation annotations-db)
+  "Returns non nil if ANNOTATION is a leaf (no replies)."
+  (null (funcall (annotate-get-tree-children-clsr annotations-db)
+                 annotation)))
+
+(defun annotate-annotation-leaf-p-clsr (annotations-db)
+  "Returns a function that returns non nil if annotation
+passed as argument is a leaf."
+  (lambda (annotation)
+    (annotate-annotation-leaf-p annotation annotations-db)))
+
+(cl-defgeneric annotate-annotation-root-p (object)
+  "Returns non nil if OBJECT is a root annotation (has no parent)")
+
+(cl-defmethod annotate-annotation-root-p ((object list))
+  "Returns non nil if OBJECT is a root annotation (has no parent)"
+  (null (annotate-reply-to-from-dump object)))
+
+(cl-defmethod annotate-annotation-root-p ((object overlay))
+  "Returns non nil if OBJECT is a root annotation (has no parent)"
+  (null (annotate-annotation-reply-to object)))
+
+(cl-defgeneric annotate-annotation-find-root (annotations-db object)
+  "Find the root annotation of the thread where OBJECT belongs")
+
+(cl-defmethod annotate-annotation-find-root (annotations-db object)
+  "Find the root annotation of the thread where OBJECT belongs"
+  (if (annotate-annotation-root-p object)
+      (annotate--find-annotation annotations-db object)
+    (let* ((parent-id (annotate-annotation-reply-to object))
+           (parent    (annotate--find-annotation annotations-db parent-id)))
+      (annotate-annotation-find-root annotations-db parent))))
+
+(defun annotate-get-tree-data (annotation)
+  "Get the data from a tree node (i.e. the annotation's text)."
+  (annotate-annotation-string annotation))
+
+(define-button-type 'annotate-thread-delete-node-button
+  'follow-link t
+  'help-echo "Click to delete this note")
+
+(define-button-type 'annotate-thread-reply-node-button
+  'follow-link t
+  'help-echo "Click to reply to this note")
+
+(cl-defun annotate--print-tree-data (node
+                                     data
+                                     format
+                                     indent
+                                     last-child
+                                     get-children-fn
+                                     &rest args)
+  "Print the node tree NODE."
+  (cl-labels ((insert-first-line (lines)
+                (insert (apply #'format
+                               (append (list (concat format "%s\n"))
+                                       (append (list indent)
+                                               args
+                                               (list (cl-first lines)))))))
+              (insert-rest-line (line format-control)
+                (insert (format format-control
+                                indent
+                                (if last-child
+                                    "  "
+                                  (concat annotate-thread-trunk-string " "))
+                                line)))
+              (promote-to-button (target action type node)
+                (save-match-data
+                  (re-search-forward target)
+                  (let ((start-button (match-beginning 0))
+                        (end-button (match-end 0)))
+                    (make-button start-button
+                                 end-button
+                                 'type type
+                                 'action action
+                                 'annotation-bound node))))
+              (insert-stretched-line (line &key (add-newline nil))
+                (insert-rest-line line
+                                  (concat "%s%s"
+                                          annotate-thread-trunk-stretch-string
+                                          (if add-newline
+                                              " %s\n"
+                                            " %s "))))
+              (insert-empty-line (line inner-node)
+                (if inner-node
+                    (insert-rest-line line
+                                      (concat "%s%s"
+                                              annotate-thread-trunk-stretch-string
+                                              "%s"))
+                  (insert-rest-line line "%s%s %s"))))
+    (let* ((children (funcall get-children-fn node))
+           (inner-node (not (annotate-annotation-root-p node)))
+           (lines (append (annotate--split-lines data)
+                          (when inner-node
+                            (list " "))
+                          (if inner-node
+                              (list (concat annotate-thread-delete-button-label
+                                            " "
+                                            annotate-thread-reply-button-label))
+                              (list annotate-thread-reply-button-label))
+                          (list "\n")))
+           (rest-lines (cl-rest lines)))
+      (insert-first-line lines)
+      (cl-loop for line in rest-lines
+               for count from 0
+               do
+               (cond
+                ((= count
+                    (- (length rest-lines)
+                       2)) ;; buttons
+                 (if (and children
+                          inner-node)
+                       (insert-stretched-line line :add-newline t)
+                   (insert-rest-line line "%s%s %s\n"))
+                 (goto-char (1- (annotate-beginning-of-line-pos)))
+                 (goto-char (annotate-beginning-of-line-pos))
+                 (promote-to-button annotate-thread-reply-button-label
+                                    'annotate-thread-reply-button-pressed
+                                    'annotate-thread-reply-node-button
+                                    node)
+                 (when inner-node
+                   (goto-char (annotate-beginning-of-line-pos)) ; go to "delete" button
+                   (promote-to-button annotate-thread-delete-button-label
+                                      'annotate-thread-delete-button-pressed
+                                      'annotate-thread-delete-node-button
+                                        node))
+                 (goto-char (point-max)))
+                ((= count
+                     (- (length rest-lines)
+                         1))
+                 (if children
+                     (insert-empty-line line inner-node)
+                   (insert-rest-line line "%s%s%s")))
+                (t
+                 (if children
+                     (insert-stretched-line line :add-newline t)
+                   (insert-rest-line line "%s%s %s\n"))))))))
+
+(defun annotate-thread-delete-button-pressed (button)
+  "Callback called when a delete button in the thread window is activated."
+  (let* ((annotation (button-get button 'annotation-bound))
+         (annotations-db (annotate-load-annotation-data))
+         (thread-root (annotate-annotation-find-root annotations-db annotation))
+         (new-db      (annotate-remove-annotation-thread annotations-db annotation)))
+    (annotate-dump-annotation-data new-db) ; save the new database with thread removed
+    (annotate--show-annotation-thread thread-root :save-annotations t)))
+
+(defun annotate-thread-reply-button-pressed (button)
+  "Callback called when a reply button in the thread window is activated."
+  (let* ((annotation (button-get button 'annotation-bound))
+         (reply-author (read-from-minibuffer "Author: "
+                                             (user-login-name)))
+         (reply-body   (read-from-minibuffer annotate-annotation-prompt))
+         (reply-serialized (annotate--make-reply-to annotation
+                                                    reply-author
+                                                    reply-body)))
+    (let* ((annotations-db (annotate-load-annotation-data))
+           (thread-root (annotate-annotation-find-root annotations-db annotation))
+           (new-db      (annotate--attach-annotation-to-dump annotations-db
+                                                             reply-serialized)))
+      (annotate-dump-annotation-data new-db)
+      (annotate--show-annotation-thread thread-root :save-annotations t))))
+
+(cl-defun annotate-print-tree (node
+                               get-children-fn
+                               get-data-fn
+                               leaf-p-fn
+                               root-p-fn
+                               print-data-fn
+                               &key
+                               (last-child nil)
+                               (indent ""))
+  "Print a thread"
+  (let ((data (funcall get-data-fn node))
+        (children (funcall get-children-fn node)))
+    (cond
+     ((annotate-annotation-root-p node)
+      (funcall print-data-fn
+               node
+               data
+               "%s"
+               ""
+               last-child
+               get-children-fn))
+     (last-child
+      (funcall print-data-fn
+               node
+               data
+               (concat "%s" annotate-thread-leaf-string)
+               indent
+               last-child
+               get-children-fn))
+     (t
+      (funcall print-data-fn
+               node
+               data
+               (concat "%s" annotate-thread-branch-string)
+               indent
+               last-child
+               get-children-fn)))
+    (cond
+     ((or (null children)
+          last-child)
+      (setf indent (concat indent "  ")))
+     ((not (annotate-annotation-root-p node))
+      (setf indent (concat indent
+                           annotate-thread-trunk-string
+                           " "))))
+    (cl-loop for child in children
+             for count-children from 0
+             do (annotate-print-tree child
+                                     get-children-fn
+                                     get-data-fn
+                                     leaf-p-fn
+                                     root-p-fn
+                                     print-data-fn
+                                     :indent indent
+                                     :last-child (= count-children
+                                                    (1- (length children)))))))
+
+(cl-defmacro annotate-with-annotations-window ((buffer-name) &body body)
+"Open a window in readonly mode."
+`(with-current-buffer-window
+     ,buffer-name nil nil
+   (progn
+     (read-only-mode 0)
+     (display-buffer ,buffer-name)
+     (select-window (get-buffer-window ,buffer-name t))
+     (use-local-map nil)
+     (local-set-key "q"
+                    (lambda ()
+                      (interactive)
+                      (kill-buffer ,buffer-name)))
+     ,@body
+     (read-only-mode 1))))
+
+(cl-defgeneric annotate--show-annotation-thread (object &key save-annotations)
+"Show a buffer with the annotation thread that has OBJECT as root node.")
+
+(defun annotate--make-tree-font-matcher-function (search-for)
+  (lambda (limit)
+    (re-search-forward search-for limit t)))
+
+(defun annotate--add-reply-button-matcher (limit)
+  (funcall (annotate--make-tree-font-matcher-function annotate-thread-reply-button-label)
+           limit))
+
+(defun annotate--delete-node-button-matcher (limit)
+  (funcall (annotate--make-tree-font-matcher-function annotate-thread-delete-button-label)
+           limit))
+
+(cl-defmethod annotate--show-annotation-thread ((object list) &key (save-annotations nil))
+  "Show a buffer with the annotation thread that has OBJECT as root node."
+  (cl-labels ((set-font-lock-mode ()
+                (font-lock-add-keywords
+                 nil
+                 `((annotate--delete-node-button-matcher
+                    (0 `(face ,annotate-thread-action-face) append))
+                   (annotate--add-reply-button-matcher
+                    (0 `(face ,annotate-thread-action-face) append))
+                   ("from:\\(.+$\\)" (1 `(face ,annotate-thread-author-face) append))
+                   ("\\(from:\\)\\(.+$\\)" (1 `(face ,annotate-thread-tree-arrow-face) append))
+                   ("\\(┃\\|┏\\|┗\\).*" (0  `(face ,annotate-thread-header-face) append))
+                   ("↑" (0 `(face ,annotate-thread-action-face) append))
+                   ("▶" (0 `(face ,annotate-thread-tree-arrow-face) append))
+                   ("├\\|│\\|╰\\|┆" (0 `(face ,annotate-thread-tree-face) append))))))
+    (when save-annotations
+      (annotate-save-all-annotated-buffers))
+    (let ((annotations-db (annotate-load-annotation-data t)))
+      (if (annotate--db-empty-p annotations-db)
+          (when annotate-use-messages
+            (message "The annotation database is empty"))
+        (annotate-with-annotations-window (annotate-thread-buffer-name)
+           (set-font-lock-mode)
+           (let ((annotated-text (annotate-annotated-text object))
+                 (children-fn    (annotate-get-tree-children-clsr annotations-db)))
+             (insert "┏\n")
+             (cl-loop for line in (annotate--split-lines annotated-text)
+                      do (insert "┃" line "\n"))
+             (insert "┗\n")
+             (annotate-print-tree object
+                                  children-fn
+                                  #'annotate-get-tree-data
+                                  (annotate-annotation-leaf-p-clsr annotations-db)
+                                  #'annotate-annotation-root-p
+                                  #'annotate--print-tree-data)
+             (font-lock-ensure)))))))
+
+(cl-defmethod annotate--show-annotation-thread ((object overlay) &key (save-annotations nil))
+  "Show a buffer with the annotation thread that has OBJECT as root node."
+  (when save-annotations
+    (annotate-save-all-annotated-buffers))
+  (let ((annotations-db (annotate-load-annotation-data t)))
+    (if (annotate--db-empty-p annotations-db)
+        (when annotate-use-messages
+          (message "The annotation database is empty"))
+      (when-let* ((annotation-serialized (annotate--find-annotation annotations-db
+                                                                    object)))
+        (annotate--show-annotation-thread annotation-serialized
+                                          :save-annotations nil)))))
+
+(defun annotate-show-thread-at-point ()
+  "Show a buffer with the annotation thread for the annotation under point."
+  (interactive)
+  (when-let* ((chain      (annotate-chain-at (point)))
+              (annotation (annotate--annotation-with-reply chain)))
+    (annotate--show-annotation-thread annotation)))
 
 ;;; end of merging datatase
 

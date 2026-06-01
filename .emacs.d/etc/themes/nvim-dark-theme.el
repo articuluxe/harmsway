@@ -26,6 +26,8 @@
 
 (let ((bg        "#14161B")
       (fg        "#E0E2EA")
+      (tabbg     "#2c2e33")
+      (tabfg     "#C4C6CD")
       (cursor    "#e0e2ea")
       (comment   "#9b9ea4")
       (keyword)
@@ -66,10 +68,21 @@
    `(font-lock-constant-face ((t (:foreground ,constant))))
    `(font-lock-builtin-face ((t (:foreground ,keyword))))
    `(font-lock-warning-face ((t (:foreground ,warning :weight bold))))
+   `(font-lock-preprocessor-face ((t (:foreground ,keyword :weight bold))))
 
    ;; mode line
    `(mode-line ((t (:background ,region :foreground ,fg))))
    `(mode-line-inactive ((t (:background ,line :foreground ,comment))))
+
+   ;; tab-bar-mode
+   `(tab-bar ((t (:background ,tabbg))))
+   `(tab-bar-tab ((t (:background ,bg :foreground ,fg :weight bold))))
+   `(tab-bar-tab-inactive ((t (:background ,tabbg :foreground ,tabfg))))
+
+   ;; tab-line-mode
+   `(tab-line ((t (:background ,tabbg))))
+   `(tab-line-tab-current ((t (:background ,bg :foreground ,fg :weight bold))))
+   `(tab-line-tab-inactive ((t (:background ,tabbg :foreground ,tabfg))))
   
    ;; paren match
    `(show-paren-match ((t (:background ,region :foreground ,fg :weight bold))))

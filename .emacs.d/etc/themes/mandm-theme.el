@@ -1,10 +1,12 @@
-;;; mandm-theme.el --- An M&M color theme.
+;;; mandm-theme.el --- An M&M color theme
 
 ;; Copyright (C) 2016-2017 Christian E. Hopps
 ;; Copyright (C) 2011-2014 Bozhidar Batsov
 
 ;; Author: Christian Hopps <chopps@gmail.com>
 ;; URL: https://github.com/choppsv1/emacs-mandm-theme.git
+;; Package-Requires: ((emacs "24.1"))
+
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: http://github.com/bbatsov/zenburn
@@ -54,7 +56,7 @@
 ;; (setq mmbg-color (color-darken-name (color-desaturate-name mmbrown-color 10) 10))
 ;; (setq mmbg-color (color-darken-name (color-desaturate-name mmblue-color 10) 22))
 
-(deftheme mandm "The M&M color theme")
+(deftheme mandm "The M&M color theme.")
 
 (defcustom mandm-height-minus-1 0.8
   "Font size -1."
@@ -163,6 +165,8 @@
     ("mandm-brown-1"  . ,(color-darken-name mmbrown-color 10))
     ("mandm-brown-2"  . ,(color-darken-name mmbrown-color 20))
     ("mandm-brown-3"  . ,(color-darken-name mmbrown-color 30))
+    ("mandm-brown-4"  . ,(color-darken-name mmbrown-color 40))
+    ("mandm-brown-5"  . ,(color-darken-name mmbrown-color 50))
     ("mandm-violet"  . "#DDA0DD"))
   "List of Mandm colors.
 Each element has the form (NAME . HEX).
@@ -698,10 +702,12 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(helm-mu-contacts-address-face ((t (:foreground ,mandm-fg-1 :background ,mandm-bg))))
    `(helm-mu-contacts-name-face ((t (:foreground ,mandm-fg :background ,mandm-bg))))
 ;;;;; hl-line-mode
-   `(hl-line-face ((,class (:background ,mandm-bg-05))
-                   (t :weight bold)))
-   `(hl-line ((,class (:background ,mandm-bg-05)) ; old emacsen
-              (t :weight bold)))
+   ;; `(hl-line-face ((,class (:background ,mandm-bg-05))
+   ;;                 (t :weight bold)))
+   `(hl-line-face ((,class (:background ,mandm-brown-3))))
+   `(hl-line ((,class (:background ,mandm-brown-3))))
+   ;; `(hl-line ((,class (:background ,mandm-bg-05)) ; old emacsen
+   ;;            (t :weight bold)))
 ;;;;; hl-sexp
    `(hl-sexp-face ((,class (:background ,mandm-bg+1))
                    (t :weight bold)))
@@ -1134,8 +1140,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(which-func ((t (:foreground ,mandm-green+4))))
 ;;;;; yascroll
    `(yascroll:thumb-text-area ((t (:background ,mandm-bg-1))))
-   `(yascroll:thumb-fringe ((t (:background ,mandm-bg-1 :foreground ,mandm-bg-1))))
-   ))
+   `(yascroll:thumb-fringe ((t (:background ,mandm-bg-1 :foreground ,mandm-bg-1))))))
 
 ;;; Theme Variables
 (mandm-with-color-variables
@@ -1167,8 +1172,7 @@ Also bind `class' to ((class color) (min-colors 89))."
        (340. . ,mandm-blue+1)
        (360. . ,mandm-violet)))
    `(vc-annotate-very-old-color ,mandm-violet)
-   `(vc-annotate-background ,mandm-bg-1)
-   ))
+   `(vc-annotate-background ,mandm-bg-1)))
 
 ;;; Rainbow Support
 

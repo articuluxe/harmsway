@@ -101,7 +101,6 @@ Non-interactively REV can also be a blob object."
                 (rev rev)))
          (topdir (magit-toplevel))
          (file (expand-file-name file topdir))
-         (file-relative (file-relative-name file topdir))
          (buffer
           (cond-let
             ((equal rev "{worktree}")
@@ -118,7 +117,7 @@ Non-interactively REV can also be a blob object."
              (unless (file-in-directory-p file topdir)
                (error "%s is not inside Git repository %s" file topdir))
              (with-current-buffer
-                 (magit--get-blob-buffer rev file-relative volatile)
+                 (magit--get-blob-buffer rev file volatile)
                (if (magit-blob-p rev)
                    (setq magit-buffer-blob-oid--init (magit-rev-parse rev))
                  (setq magit-buffer-revision rev))
@@ -132,7 +131,7 @@ Non-interactively REV can also be a blob object."
                (current-buffer)))
             ((error "Unexpected error")))))
     (when (and (not no-restore-position)
-               (equal (magit-file-relative-name) file-relative))
+               (equal magit-buffer-file-name file))
       (let ((pos (magit-find-file--position)))
         (with-current-buffer buffer
           (apply #'magit-find-file--restore-position pos))))
@@ -304,10 +303,10 @@ Age is tracked in seconds.  If nil, only use `magit--blob-cache-limit'.")
     (when-let* ((_ magit--blob-cache-limit)
                 (ceiling (- magit--blob-cache-limit (length active)))
                 (_ (length> rest ceiling)))
-      (let ((sorted (static-if (>= emacs-major-version 30)
-                        (sort rest :key (##float-time (cdr %))
-                              :lessp #'< :reverse t)
-                      (cl-sort rest #'> :key (##float-time (cdr %))))))
+      (let ((sorted (compat-call sort rest
+                                 :key (##float-time (cdr %))
+                                 :lessp #'<
+                                 :reverse t)))
         (dolist (kill (nthcdr ceiling sorted))
           (kill-buffer (car kill)))
         (setq rest (ntake ceiling sorted))))
@@ -793,11 +792,15 @@ If DEFAULT is non-nil, use this as the default value instead of
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

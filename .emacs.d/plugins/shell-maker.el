@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.90.1
+;; Version: 0.92.2
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.90.1")
+(defconst shell-maker-version "0.92.2")
 
 (require 'comint)
 (require 'goto-addr)
@@ -335,7 +335,7 @@ Use ON-OUTPUT function to monitor output text."
                           "")
                         (shell-maker-prompt shell-maker--config))))
     (with-current-buffer shell-buffer
-      (if (eobp) ;; auto-scroll
+      (if (shell-maker--should-auto-scroll-p) ;; auto-scroll
           (progn
             (goto-char (point-max))
             (shell-maker--output-filter (shell-maker--process) output))
@@ -1246,7 +1246,12 @@ ERROR-CALLBACK accordingly."
     (unless (looking-at-p comint-prompt-regexp)
       (re-search-backward comint-prompt-regexp))
     (comint-skip-prompt)
-    (buffer-substring (point) (progn (forward-sexp 1) (point)))))
+    (and-let* ((start (point))
+               (end (save-excursion
+                      (if (re-search-forward comint-prompt-regexp nil t)
+                          (match-beginning 0)
+                        (point-max)))))
+      (string-trim (buffer-substring start end)))))
 
 (defun shell-maker--json-encode (obj)
   "Serialize OBJ to json.  Use fallback if `json-serialize' isn't available."
@@ -1382,11 +1387,25 @@ For example, with prompt at positions 100-113:
     (list (cons :start start)
           (cons :end end))))
 
+(defun shell-maker--should-auto-scroll-p ()
+  "Return t when streaming should auto-scroll the buffer to point-max.
+True when point is at end-of-buffer AND every window displaying the
+buffer has its visible end at point-max. Wheel-scrolling moves
+window-end without moving point, so checking only `eobp' would keep
+the window snapping back to the bottom while the user is reading."
+  (and (eobp)
+       (let ((windows (cl-remove-if-not
+                       (lambda (w) (eq (window-buffer w) (current-buffer)))
+                       (window-list nil 'no-mini))))
+         (or (null windows)
+             (cl-every (lambda (w) (>= (window-end w t) (point-max)))
+                       windows)))))
+
 (defmacro shell-maker-with-auto-scroll-edit (&rest body)
   "Execute BODY, preserving point unless already at end of buffer."
   (save-restriction)
   `(let ((new-location))
-     (if (eobp)
+     (if (shell-maker--should-auto-scroll-p)
          (progn
            (goto-char (point-max))
            (set-marker comint-last-output-start (point))
@@ -1441,13 +1460,18 @@ For example, with prompt at positions 100-113:
       (cons parsed
             (string-trim remaining)))))
 
-(defun shell-maker--command-and-response-at-point ()
-  "Extract the current command and response in buffer."
+(cl-defun shell-maker--command-and-response-at-point (&key (trimmed t))
+  "Extract the current command and response in buffer.
+
+When TRIMMED is non-nil (the default), surrounding whitespace is
+stripped from both command and response.  Pass nil to receive raw
+substrings — useful when the caller wants property-aware trimming."
   (save-excursion
     (save-restriction
       (shell-maker-narrow-to-prompt)
       (let ((items (shell-maker--extract-history
-                    (shell-maker-prompt shell-maker--config))))
+                    (shell-maker-prompt shell-maker--config)
+                    :trimmed trimmed)))
         (cl-assert (or (seq-empty-p items)
                        (eq (length items) 1)))
         (seq-first items)))))
@@ -1516,6 +1540,7 @@ For example, with prompt at positions 100-113:
                       (with-temp-buffer
                         (insert-file-contents path)
                         (shell-maker--extract-history
+                         (shell-maker-prompt-regexp config)
                          ;; prompts from plain text.
                          :propertized nil))))
          (execute-command (shell-maker-config-execute-command
@@ -1565,10 +1590,13 @@ For example, with prompt at positions 100-113:
             execute-command)))
   (goto-char (point-max)))
 
-(defun shell-maker-next-command-and-response (&optional backwards)
+(cl-defun shell-maker-next-command-and-response (&optional backwards &key (trimmed t))
   "Move to next prompt and return interaction.  Return a command/response cons.
 
-If BACKWARDS is non-nil, move backwards."
+If BACKWARDS is non-nil, move backwards.
+When TRIMMED is non-nil (the default), surrounding whitespace is
+stripped from both command and response.  Pass nil to receive raw
+substrings — useful when the caller wants property-aware trimming."
   (when-let* ((point-before (point))
               (point-after (save-excursion
                              (comint-previous-prompt (if backwards 1 -1))
@@ -1587,7 +1615,7 @@ If BACKWARDS is non-nil, move backwards."
                           (not (eq (line-number-at-pos point-before)
                                    (line-number-at-pos point-after))))))
     (goto-char point-after)
-    (shell-maker--command-and-response-at-point)))
+    (shell-maker--command-and-response-at-point :trimmed trimmed)))
 
 (defun shell-maker-history-position ()
   "Return position in history as alist with :current and :total.
@@ -1638,7 +1666,7 @@ Returns nil when there is no history."
    (append (shell-maker-history)
            items)))
 
-(cl-defun shell-maker--extract-history (prompt-regexp &key (propertized t))
+(cl-defun shell-maker--extract-history (prompt-regexp &key (propertized t) (trimmed t))
   "Extract command/response history by walking the current buffer.
 
 Walks the buffer with `re-search-forward' to find prompt boundaries,
@@ -1648,6 +1676,12 @@ When PROPERTIZED is non-nil (the default), use text property checks
 to distinguish real prompts and markers from identical text in LLM
 responses.  Set to nil for transcript files where properties are
 not available.
+
+When TRIMMED is non-nil (the default), surrounding whitespace is
+stripped from each command and response via `string-trim'.  Pass nil
+to receive the raw substrings — useful when the caller wants to
+apply a smarter, property-aware trim in its own layer (e.g. so
+display-only padding embedded by a custom renderer survives).
 
 Returns a list of (command . response) cons.
 
@@ -1686,17 +1720,15 @@ In a buffer with:
                                     "<shell-maker-interrupted-command>" next-prompt
                                     :propertized propertized)))
           ;; Keep exchange unless failed (interrupted commands are kept).
-          (when-let (((and end-marker
-                           (or (not failed-marker)
-                               interrupted-marker)))
-                     (command (string-trim
-                               (buffer-substring
-                                command-start (car end-marker))))
-                     (response (string-trim
-                                (buffer-substring
-                                 (cdr end-marker) next-prompt)))
-                     ((not (and (string-empty-p command)
-                                (string-empty-p response)))))
+          (when-let* (((and end-marker
+                            (or (not failed-marker)
+                                interrupted-marker)))
+                      (raw-command (buffer-substring command-start (car end-marker)))
+                      (raw-response (buffer-substring (cdr end-marker) next-prompt))
+                      (command (if trimmed (string-trim raw-command) raw-command))
+                      (response (if trimmed (string-trim raw-response) raw-response))
+                      ((not (and (string-empty-p command)
+                                 (string-empty-p response)))))
             (push (cons (unless (string-empty-p command)
                           command)
                         (unless (string-empty-p response)

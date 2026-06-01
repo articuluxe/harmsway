@@ -1,4 +1,6 @@
 ;;; kaolin-themes-lib.el --- Kaolin-themes library, provides common parts for the package.  -*- lexical-binding: t; -*-
+;;
+;; This file is not part of GNU Emacs.
 ;;; Commentary:
 ;;
 
@@ -476,6 +478,9 @@
     (bool        num)
     (prep        violet4)
     (link        prep)
+    (operator    prep)
+    (filepath    keyword) ;; MAYBE find a better color
+    (filename    str)
     ;; MAYBE: add orange/yellow background?
     (warning     orange1)
     (err         red1)
@@ -550,20 +555,29 @@
     (font-lock-comment-face           (:background 'unspecified :foreground kaolin-comment :italic kaolin-themes-italic-comments))
     (font-lock-constant-face          (:foreground const))
     (font-lock-doc-face               (:foreground doc))
+    (font-lock-doc-markup-face        (:foreground builtin))
+    (font-lock-function-call-face     (:foreground functions))
     (font-lock-function-name-face     (:foreground functions))
     (font-lock-keyword-face           (:foreground keyword))
-    (font-lock-negation-char-face     (:foreground err))
+    (font-lock-negation-char-face     (:foreground err :weight 'bold))
     (font-lock-number-face            (:foreground num))
-    (font-lock-operator-face          (:foreground functions))
+    (font-lock-operator-face          (:foreground operator))
     (font-lock-preprocessor-face      (:foreground prep))
+    (font-lock-property-name-face     (:foreground var))
+    (font-lock-property-use-face      (:foreground var))
     (font-lock-reference-face         (:foreground const))
+    (font-lock-regexp-face            (:foreground str))
     (font-lock-string-face            (:foreground str))
     (font-lock-type-face              (:foreground type))
     (font-lock-variable-name-face     (:foreground var))
+    (font-lock-variable-use-face     (:foreground var))
     (font-lock-warning-face           (:background 'unspecified :foreground warning))
+    ;; (font-lock-delimiter-face (:foreground fg1))
+    ;; (font-lock-misc-punctuation-face (:foreground fg1))
+    ;; (font-lock-punctuation-face (:foreground fg1))
 
-    (font-lock-regexp-grouping-construct (:foreground num))
-    (font-lock-regexp-grouping-backslash (:foreground num))
+    (font-lock-regexp-grouping-construct (:foreground num :weght 'bold))
+    (font-lock-regexp-grouping-backslash (:foreground num :weight 'bold))
 
     ;; Kaolin faces
     (kaolin-themes-boolean (:foreground bool))
@@ -588,9 +602,13 @@
     (link                  (:foreground link :underline underline))
     (link-visited          (:inherit 'link :underline nil))
     (success               (:background 'unspecified :foreground done))
-    (escape-glyph          (:background 'unspecified :foreground cyan3))
     (trailing-whitespace   (:background err))
     (fill-column-indicator (:foreground bg4))
+
+    ;; Escape characters
+    (escape-glyph               (:background 'unspecified :foreground doc :weight 'bold))
+    (easy-escape-face           (:background 'unspecified :foreground err :weight 'bold))
+    (easy-escape-delimiter-face (:background 'unspecified :foreground warning :weight 'bold))
 
     (menu        (:background bg2 :foreground fg2))
     (header-line (:background bg1 :foreground num))
@@ -652,15 +670,16 @@
     (compilation-mode-line-fail (:inherit 'compilation-error))
 
     ;; Dired
-    (dired-header     (:foreground header :weight 'bold))
-    (dired-directory  (:foreground keyword))
-    (dired-ignored    (:foreground comment))
-    (dired-flagged    (:foreground err))
-    (dired-mark       (:foreground num :weight 'bold))
-    (dired-marked     (:foreground hl :weight 'bold))
-    (dired-perm-write (:foreground fg1 :underline t))
-    (dired-symlink    (:foreground functions))
-    (dired-warning    (:inherit 'font-lock-warning-face))
+    (dired-header         (:foreground header :weight 'bold))
+    (dired-directory      (:foreground keyword))
+    (dired-ignored        (:foreground comment))
+    (dired-flagged        (:foreground err))
+    (dired-mark           (:foreground num :weight 'bold))
+    (dired-marked         (:foreground hl :weight 'bold))
+    (dired-perm-write     (:foreground fg1 :underline t))
+    (dired-symlink        (:foreground functions))
+    (dired-broken-symlink (:background err :foreground bg1))
+    (dired-warning        (:inherit 'font-lock-warning-face))
 
     ;; dired-plus
     (diredp-dir-name               (:foreground keyword :weight 'bold :strike-through nil))
@@ -713,6 +732,27 @@
     (diredfl-symlink                (:foreground functions))
     (diredfl-tagged-autofile-name   (:foreground num :underline underline))
     (diredfl-write-priv             (:foreground diff-mod))
+
+    ;; Dirvish - a polished Dired with batteries included
+    (dirvish-file-size  (:foreground doc))
+    (dirvish-file-time  (:foreground prep))
+    (dirvish-file-modes (:foreground keyword))
+    (dirvish-proc-finished (:foreground done))
+    (dirvish-proc-running (:foreground warning))
+    (dirvish-proc-failed (:foreground err))
+    (dirvish-media-info-heading (:inherit 'dired-header))
+    ;; (dirvish-media-info-property-key (:inherit 'italic))
+    (dirvish-hl-line  (:inherit 'hl-line :extend t))
+    (dirvish-hl-line-inactive  (:background line-bg1 :extend t))
+    (dirvish-inactive (:inherit 'shadow))
+    (dirvish-subtree-state (:inherit 'shadow))
+    (dirvish-subtree-guide (:inherit 'shadow))
+    (dirvish-file-link-number (:foreground num))
+    (dirvish-file-device-number (:foreground num))
+    (dirvish-file-inode-number (:foreground num))
+    (dirvish-free-space (:foreground functions))
+    (dirvish-file-user-id (:foreground keyword))
+    (dirvish-file-group-id (:foreground builtin))
 
     ;; ERC - IRC client for Emacs (builtin)
     (erc-button                 (:inherit 'button))
@@ -786,7 +826,8 @@
     (highlight-indentation-current-column-face  (:background bg3))
 
     ;; Eldoc
-    (eldoc-highlight-function-argument  (:inherit 'font-lock-constant-face))
+    ;; (eldoc-highlight-function-argument  (:inherit 'font-lock-constant-face))
+    (eldoc-highlight-function-argument  (:foreground hl))
 
     ;; Eldoc-box
     (eldoc-box-body (:background tooltip-bg))
@@ -798,33 +839,45 @@
     ;; Auto-dim-other-buffers
     (auto-dim-other-buffers-face  (:background dim-buffer))
 
+    ;; Langtool
+    (langtool-errline         (:foreground bg1 :background err))
+    (langtool-correction-face (:foreground warning))
 
     ;; Linum & nlinum
     (linum                        (:inherit 'default :background line-num-bg :foreground line-num-fg :bold nil
-                                               :italic nil :underline nil :strike-through nil))
+                                            :italic nil :underline nil :strike-through nil))
     (linum-highlight-face          (:inherit 'default :background line-num-bg :foreground line-num-hl :bold bold
-                                                :italic nil :underline nil :strike-through nil))
+                                             :italic nil :underline nil :strike-through nil))
     (nlinum-current-line          (:inherit 'default :background line-num-bg :foreground line-num-hl :bold bold
-                                               :italic nil :underline nil :strike-through nil))
+                                            :italic nil :underline nil :strike-through nil))
     (linum-relative-current-line  (:inherit 'linum-highlight-face))
     (nlinum-relative-current-face (:inherit 'nlinum-current-line))
 
     ;; Native line numbers
     (line-number                  (:inherit 'default :background line-num-bg :foreground line-num-fg :bold nil
-                                               :italic nil :underline nil :strike-through nil))
+                                            :italic nil :underline nil :strike-through nil))
     (line-number-current-line     (:inherit 'default :background line-num-bg :foreground line-num-hl :bold bold
-                                               :italic nil :underline nil :strike-through nil))
+                                            :italic nil :underline nil :strike-through nil))
+    (line-number-major-tick       (:inherit 'default :background bg4 :foreground fg1 :bold bold
+                                            :italic nil :underline nil :strike-through nil))
+    (line-number-minor-tick       (:inherit 'default :background bg3 :foreground line-num-fg :bold nil
+                                            :italic nil :underline nil :strike-through nil))
 
     ;; Which-function-mode
-    (which-func (:foreground orange1))
+    (which-func (:foreground prep))
 
     ;; Which-key
+    (which-key-command-description-face   (:foreground fg1))
+    (which-key-group-description-face     (:foreground kaolin-cyan))
+    (which-key-highlighted-command-face   (:foreground warning :underline t))
     (which-key-key-face                   (:foreground keysym :bold bold))
-    (which-key-group-description-face     (:foreground violet4))
-    (which-key-local-map-description-face (:foreground azure3))
-    (which-key-command-description-face   (:foreground cyan3))
+    (which-key-local-map-description-face (:foreground fg1))
+    (which-key-note-face                  (:foreground comment))
+    (which-key-separator-face             (:foreground comment))
+    (which-key-special-key-face           (:inherit 'which-key-key-face))
 
     ;; Ruler-mode
+    ;; TODO: outdated colors
     (ruler-mode-default        (:background bg2 :foreground gray3))
     (ruler-mode-column-number  (:foreground var))
     (ruler-mode-current-column (:foreground orange1))
@@ -910,7 +963,16 @@
     (debbugs-gnu-stale-5   (:foreground rb5))
     (debbugs-gnu-tagged    (:foreground prep))
 
-    ;; TODO: Newsticker faces
+    ;; Newsticker
+    (newsticker-feed-face  (:inherit 'default))
+    (newsticker-extra-face (:inherit 'shadow :height 0.8))
+    ;; (newsticker-enclosure-face (:inherit 'default))
+    (newsticker-treeview-face (:inherit 'default))
+    (newsticker-treeview-new-face (:inherit 'default))
+    (newsticker-treeview-old-face (:foreground functions))
+    (newsticker-treeview-immortal-face (:foreground warning))
+    (newsticker-treeview-selection-face (:inherit 'hl-line))
+    (newsticker-treeview-obsolete-face (:foreground 'fg4 :strike-through t))
 
     ;; Modeline
     (mode-line           (:background line-bg1 :foreground line-fg :bold nil
@@ -946,6 +1008,15 @@
     (nano-modeline-active-status-RW (:background line-bg2 :foreground line-fg))
     (nano-modeline-inactive         (:inherit 'mode-line-inactive))
 
+    ;; lambda-line
+    (lambda-line          (:inherit 'mode-line))
+    (lambda-line-active   (:inherit 'lambda-line))
+    (lambda-line-visual-bell   (:background err))
+    (lambda-line-active-status-MD (:inherit 'lambda-line :foreground warning))
+    (lambda-line-active-status-RO (:inherit 'lambda-line :foreground comment))
+    (lambda-line-active-status-RW (:inherit 'lambda-line :foreground done))
+    (lambda-line-inactive   (:inherit 'mode-line-inactive))
+
 
     ;; Doom-modeline
     (doom-modeline-bar                 (:background keyword))
@@ -958,7 +1029,7 @@
     (doom-modeline-evil-operator-state (:foreground evil-operator))
     (doom-modeline-evil-emacs-state    (:foreground evil-emacs))
     (doom-modeline-panel               (:background hl :foreground line-bg1))
-    (doom-modeline-buffer-path         (:foreground var))
+    (doom-modeline-buffer-path         (:foreground filepath))
     (doom-modeline-buffer-major-mode   (:foreground str))
 
     ;; Powerline
@@ -977,7 +1048,7 @@
     (sml/line-number      (:foreground chartreuse1))
     (sml/modes            (:foreground magenta4))
     (sml/global           (:foreground cyan3))
-    (sml/filename         (:foreground teal1))
+    (sml/filename         (:foreground filename))
     (sml/charging         (:foreground teal1))
     (sml/discharging      (:foreground red1))
     (sml/modified         (:foreground spring-green1))
@@ -1008,6 +1079,13 @@
     (info-title-3     (:foreground header :weight 'bold :height 1.1))
     (info-title-4     (:foreground header :weight 'bold))
 
+    ;; help mode
+    ;; TODO: define a custom variable
+    ;; to select style for keybindings - i.e. with and without border
+    (help-key-binding   (:background bg2 :foreground keysym :weight 'bold :box (:line-width 1 :color button-border :style nil)))
+    (help-argument-name (:inherit 'italic :foreground var))
+    (help-for-help-header (:inherit 'header-line))
+
     ;; Helpful
     (helpful-heading (:foreground header :weight 'bold :height 1.1))
 
@@ -1028,11 +1106,18 @@
     (company-preview-common           (:background bg2 :foreground diff-mod))
     (company-preview-search           (:inherit 'company-tooltip-search))
 
-    ;; corfu
+    ;; Consult
+    (consult-async-split       (:foreground err))
+    (consult-file              (:foreground filepath))
+    (consult-highlight-mark    (:foreground hl))
+    (consult-highlight-match   (:foreground hl))
+    (consult-key               (:foreground keysym))
+
+    ;; Corfu
     (corfu-background (:background tooltip-bg))
-    (corfu-echo       (:foreground doc))
-    (corfu-current    (:background tooltip-hl-bg :foreground tooltip-hl-fg))
     (corfu-border     (:background bg4))
+    (corfu-current    (:background tooltip-hl-bg :foreground tooltip-hl-fg))
+    (corfu-echo       (:foreground doc))
 
     ;; all-the-icons
     (all-the-icons-red      (:foreground red1))
@@ -1068,6 +1153,42 @@
     (all-the-icons-silver   (:foreground gray7))
     (all-the-icons-lsilver  (:foreground gray9))
     (all-the-icons-dsilver  (:foreground gray4))
+
+    ;; nerd-icons
+    (nerd-icons-red      (:foreground red1))
+    (nerd-icons-red-alt  (:foreground red0))
+    (nerd-icons-lred     (:foreground red3))
+    (nerd-icons-dred     (:foreground red2))
+    (nerd-icons-green    (:foreground spring-green1))
+    (nerd-icons-lgreen   (:foreground spring-green3))
+    (nerd-icons-dgreen   (:foreground spring-green2))
+    (nerd-icons-yellow   (:foreground yellow3))
+    (nerd-icons-lyellow  (:foreground amber3))
+    (nerd-icons-dyellow  (:foreground orange2))
+    (nerd-icons-orange   (:foreground vermilion1))
+    (nerd-icons-lorange  (:foreground vermilion3))
+    (nerd-icons-dorange  (:foreground vermilion2))
+    (nerd-icons-blue     (:foreground cerulean3))
+    (nerd-icons-blue-alt (:foreground capri1))
+    (nerd-icons-lblue    (:foreground capri3))
+    (nerd-icons-dblue    (:foreground capri2))
+    (nerd-icons-maroon   (:foreground crimson1))
+    (nerd-icons-lmaroon  (:foreground crimson3))
+    (nerd-icons-dmaroon  (:foreground crimson2))
+    (nerd-icons-purple   (:foreground violet1))
+    (nerd-icons-purple-alt (:foreground purple3))
+    (nerd-icons-lpurple  (:foreground violet3))
+    (nerd-icons-dpurple  (:foreground purple2))
+    (nerd-icons-cyan     (:foreground cyan1))
+    (nerd-icons-cyan-alt (:foreground teal3))
+    (nerd-icons-lcyan    (:foreground cyan3))
+    (nerd-icons-dcyan    (:foreground cyan2))
+    (nerd-icons-pink     (:foreground pink1))
+    (nerd-icons-lpink    (:foreground pink3))
+    (nerd-icons-dpink    (:foreground pink2))
+    (nerd-icons-silver   (:foreground gray7))
+    (nerd-icons-lsilver  (:foreground gray9))
+    (nerd-icons-dsilver  (:foreground gray4))
 
     ;; Magit
     (magit-section-highlight         (:background bg2))
@@ -1169,18 +1290,22 @@
     (flyspell-incorrect (:underline (:style underline-style :color err)))
 
     ;; Hydra
-    ;; (hydra-face-red      (:foreground red1))
     (hydra-face-red      (:foreground err))
-    (hydra-face-teal     (:foreground teal3))
-    (hydra-face-blue     (:foreground azure3))
-    (hydra-face-pink     (:foreground pink1))
-    (hydra-face-amaranth (:foreground purple3))
+    (hydra-face-teal     (:foreground kaolin-cyan))
+    (hydra-face-blue     (:foreground kaolin-blue))
+    (hydra-face-pink     (:foreground crimson3))
+    (hydra-face-amaranth (:foreground kaolin-magenta))
 
     ;; Hydra-posframe
-    (hydra-posframe-face (:background bg2 :foreground fg1))
-    (hydra-posframe-border-face (:background bg2))
+    (hydra-posframe-face        (:background bg2 :foreground fg1))
+    (hydra-posframe-border-face (:background win-border))
+
+    ;; Pretty Hydra
+    (pretty-hydra-toggle-on-face  (:foreground header :bold kaolin-themes-bold))
+    (pretty-hydra-toggle-off-face (:foreground comment))
 
     ;; Ido
+    ;; TODO: outdated colors
     (ido-indicator   (:foreground num))
     (ido-first-match (:foreground hl :bold bold))
     (ido-only-match  (:foreground cyan1))
@@ -1203,6 +1328,13 @@
 
     ;; Slime
     (slime-repl-inputed-output-face (:foreground type))
+
+    ;; Jinx
+    (jinx-annotation (:foreground doc))
+    (jinx-highlight  (:background 'unspecified :foreground hl :bold bold :underline underline))
+    (jinx-key        (:foreground keysym))
+    (jinx-misspelled (:underline (:style underline-style :color warning)))
+    (jinx-save       (:inherit 'success))
 
     ;; Js-mode
     (js2-private-function-call    (:foreground const))
@@ -1269,13 +1401,15 @@
     (undo-tree-visualizer-register-face      (:foreground type))
 
     ;; Vundo
-    (vundo-default (:foreground fg1))
-    (vundo-highlight (:foreground hl :weight 'bold))
+    (vundo-default    (:foreground comment))
+    (vundo-highlight  (:foreground hl :weight 'bold))
+    (vundo-last-saved (:foreground done :weight 'bold))
+    (vundo-saved      (:foreground done))
 
     ;; Rainbow delimeters
     ;; TODO: light themes
     (show-paren-match (:background bg2 :foreground rb-match :bold bold))
-    (show-paren-mismatch (:background red2 :foreground bg2))
+    (show-paren-mismatch (:background bg2 :foreground err :invert-video t))
 
     (rainbow-delimiters-unmatched-face (:background red2 :foreground err))
     (rainbow-delimiters-mismatched-face (:inherit 'rainbow-delimiters-unmatched-face))
@@ -1380,8 +1514,44 @@
     (imenu-list-entry-subalist-face-3 (:inherit 'imenu-list-entry-face-3 :bold bold))
 
     ;; lsp-mode
-    ;; TODO:
+    (lsp-details-face                          (:height 0.9 :foreground comment))
+    (lsp-face-rename                           (:background 'unspecified :foreground err :underline underline))
+    (lsp-installation-buffer-face              (:foreground diff-add))
+    (lsp-installation-finished-buffer-face     (:foreground diff-mod))
+    (lsp-signature-highlight-function-argument (:foreground hl))
+    (lsp-signature-posframe                    (:inherit 'tooltip))
+    (lsp-lens-mouse-face (:inherit 'link :height 0.9))
+    (lsp-modeline-code-actions-face           (:foreground functions))
+    (lsp-modeline-code-actions-preferred-face (:foreground functions))
 
+    ;; lsp-headerline
+    (lsp-headerline-breadcrumb-path-error-face             (:underline (:style 'wave :color err)))
+    (lsp-headerline-breadcrumb-path-face                   (:foreground comment))
+    (lsp-headerline-breadcrumb-path-hint-face              (:underline (:style 'wave :color builtin)))
+    (lsp-headerline-breadcrumb-path-info-face              (:underline (:style 'wave :color builtin)))
+    (lsp-headerline-breadcrumb-path-warning-face           (:underline (:style 'wave :color warning)))
+    (lsp-headerline-breadcrumb-project-prefix-face         (:foreground comment))
+    (lsp-headerline-breadcrumb-separator-face              (:inherit 'shadow))
+    (lsp-headerline-breadcrumb-symbol-hint-face            (:underline (:style 'wave :color builtin)))
+    (lsp-headerline-breadcrumb-symbol-info-face            (:underline (:style 'wave :color builtin)))
+    (lsp-headerline-breadcrumb-symbols-error-face          (:underline (:style 'wave :color err)))
+    (lsp-headerline-breadcrumb-symbols-face                (:foreground filename))
+    (lsp-headerline-breadcrumb-symbols-warning-face        (:underline (:style 'wave :color warning)))
+    (lsp-headerline-breadcrumb-unknown-project-prefix-face (:inherit 'shadow))
+
+    ;; lsp-ui
+    (lsp-ui-doc-background          (:background tooltip-bg))
+    (lsp-ui-doc-header              (:background header :foreground bg1))
+    (lsp-ui-peek-filename           (:foreground filename))
+    (lsp-ui-peek-highlight          (:background tooltip-hl-bg :foreground tooltip-hl-fg))
+    (lsp-ui-peek-line-number        (:foreground line-num-fg))
+    (lsp-ui-peek-list               (:background tooltip-bg))
+    (lsp-ui-peek-peek               (:background tooltip-bg))
+    (lsp-ui-peek-selection          (:background selection :foreground fg4))
+    (lsp-ui-sideline-code-action    (:foreground warning))
+    (lsp-ui-sideline-current-symbol (:inherit 'bold  :box (:line-width -1 :color button-border)))
+    (lsp-ui-sideline-symbol         (:foreground comment :box (:line-width -1 :color button-border)))
+    (lsp-ui-sideline-symbol-info    (:inherit 'italic))
 
     ;; Treemacs
     (treemacs-root-face             (:foreground keyword :height 1.2 :underline nil))
@@ -1433,14 +1603,14 @@
     ;; Terminal
 
     ;; Ansi-color faces (built-in Emacs 28.1+)
-    (ansi-color-black          (:foreground kaolin-black :background kaolin-black))
-    (ansi-color-red            (:foreground kaolin-red :background kaolin-red))
-    (ansi-color-green          (:foreground kaolin-green :background kaolin-green))
-    (ansi-color-yellow         (:foreground kaolin-yellow :background kaolin-yellow))
-    (ansi-color-blue           (:foreground kaolin-blue :background kaolin-blue))
+    (ansi-color-black          (:foreground kaolin-black   :background kaolin-black))
+    (ansi-color-red            (:foreground kaolin-red     :background kaolin-red))
+    (ansi-color-green          (:foreground kaolin-green   :background kaolin-green))
+    (ansi-color-yellow         (:foreground kaolin-yellow  :background kaolin-yellow))
+    (ansi-color-blue           (:foreground kaolin-blue    :background kaolin-blue))
     (ansi-color-magenta        (:foreground kaolin-magenta :background kaolin-magenta))
-    (ansi-color-cyan           (:foreground kaolin-cyan :background kaolin-cyan))
-    (ansi-color-white          (:foreground kaolin-white :background kaolin-white))
+    (ansi-color-cyan           (:foreground kaolin-cyan    :background kaolin-cyan))
+    (ansi-color-white          (:foreground kaolin-white   :background kaolin-white))
     ;; (ansi-color-bright-black   (:inherit ansi-color-bright-black :weight bold))
     ;; (ansi-color-bright-red     (:inherit ansi-color-bright-red :weight bold))
     ;; (ansi-color-bright-green   (:inherit ansi-color-bright-green :weight bold))
@@ -1472,6 +1642,28 @@
     (vterm-color-magenta (:background kaolin-magenta :foreground kaolin-magenta))
     (vterm-color-cyan    (:background kaolin-cyan :foreground kaolin-cyan))
     (vterm-color-white   (:background kaolin-white :foreground kaolin-white))
+
+    ;; eat-term
+    (eat-term-color-0  (:inherit 'ansi-color-black))
+    (eat-term-color-1  (:inherit 'ansi-color-red))
+    (eat-term-color-2  (:inherit 'ansi-color-green))
+    (eat-term-color-3  (:inherit 'ansi-color-yellow))
+    (eat-term-color-4  (:inherit 'ansi-color-blue))
+    (eat-term-color-5  (:inherit 'ansi-color-magenta))
+    (eat-term-color-6  (:inherit 'ansi-color-cyan))
+    (eat-term-color-7  (:inherit 'ansi-color-white))
+    (eat-term-color-8  (:inherit 'ansi-color-bright-black))
+    ;; (eat-term-color-9  (:foreground red2))
+    ;; (eat-term-color-10 (:foreground green2))
+    ;; (eat-term-color-11 (:foreground yellow2))
+    ;; (eat-term-color-12 (:foreground blue2))
+    ;; (eat-term-color-13 (:foreground grey3))
+    ;; (eat-term-color-14 (:foreground red2))
+    ;; (eat-term-color-15 (:foreground green2))
+    ;; (eat-term-color-16 (:foreground green2))
+    (eat-shell-prompt-annotation-success (:foreground done))
+    (eat-shell-prompt-annotation-running (:foreground functions))
+    (eat-shell-prompt-annotation-failure (:foreground err))
 
     ;; EShell
     (eshell-prompt        (:foreground prompt :bold bold))
@@ -1613,7 +1805,7 @@
     (nim-font-lock-number-face (:foreground num))
 
     ;; Evil ex
-    (evil-ex-info                   (:foreground orange1))
+    (evil-ex-info                   (:foreground warning))
     (evil-ex-substitute-matches     (:background 'unspecified :foreground err :underline underline))
     (evil-ex-substitute-replacement (:background 'unspecified :foreground spring-green1))
     (evil-ex-lazy-highlight         (:inherit 'lazy-highlight))
@@ -1840,10 +2032,10 @@
 
     ;; Avy
     (avy-background-face (:inherit 'font-lock-comment-face))
-    (avy-lead-face       (:background spring-green2 :foreground adaptive-fg :weight 'bold))
-    (avy-lead-face-0     (:background red2 :foreground adaptive-fg :weight 'bold))
-    (avy-lead-face-1     (:background magenta2 :foreground adaptive-fg :weight 'bold))
-    (avy-lead-face-2     (:background capri2 :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face       (:background hl :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face-0     (:background search1 :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face-1     (:background search2 :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face-2     (:background search3 :foreground adaptive-fg :weight 'bold))
 
     ;; Ace-window
     (aw-leading-char-face (:background 'unspecified :foreground hl :bold bold :height 1.4))
@@ -1853,15 +2045,15 @@
     ;; Marginalia
     (marginalia-documentation (:inherit 'font-lock-doc-face))
     (marginalia-key           (:foreground keysym))
-    (marginalia-mode          (:foreground str))
+    (marginalia-mode          (:foreground keyword))
     (marginalia-number        (:foreground num))
     (marginalia-size          (:foreground num))
     (marginalia-type          (:foreground type))
-    (marginalia-date          (:foreground str))
+    (marginalia-date          (:foreground prep))
     (marginalia-value         (:foreground var))
     (marginalia-char          (:foreground hl))
     (marginalia-on            (:inherit 'success))
-    (marginalia-file-owner    (:foreground prep))
+    (marginalia-file-owner    (:foreground functions))
 
     (marginalia-file-name       (:foreground str))
     (marginalia-file-priv-dir   (:foreground keyword))
@@ -1913,9 +2105,12 @@
 
 
     ;; Default completion
-    (completions-common-part (:foreground functions))
-    (completions-annotations (:foreground doc))
-    ;; (completions-first-difference (:foreground diff-mod))
+    (completions-annotations      (:foreground doc))
+    (completions-common-part      (:foreground search1))
+    (completions-first-difference (:foreground search2))
+    (completions-group-title      (:inherit 'shadow :italic kaolin-themes-italic-comments))
+    (completions-group-separator  (:inherit 'shadow))
+    (completions-highlight        (:inherit 'hl-line))
 
     ;; Selectrum
     ;; (selectrum-quick-keys-match       (:background keysym :foreground bg1 :underline underline))
@@ -1932,6 +2127,12 @@
     ;; Vertico-quick
     (vertico-quick1          (:background bg2 :foreground search1 :weight 'bold))
     (vertico-quick2          (:background bg2 :foreground search2 :weight 'bold))
+
+    (vertico-posframe-border   (:inherit 'default :background bg2))
+    (vertico-posframe-border-2 (:inherit 'default :background bg3))
+    (vertico-posframe-border-3 (:inherit 'default :background bg4))
+    (vertico-posframe-border-4 (:inherit 'vertico-posframe-border-3))
+    (vertico-posframe-border-fallback (:inherit 'default warning))
 
     ;; Orderless
     (orderless-match-face-0 (:foreground hl))

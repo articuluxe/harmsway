@@ -2,8 +2,8 @@
 
 ;; Copyright (C) 2022-2026  Free Software Foundation, Inc.
 
-;; Author: Protesilaos Stavrou <info@protesilaos.com>
-;; Maintainer: Protesilaos Stavrou <info@protesilaos.com>
+;; Author: Protesilaos <info@protesilaos.com>
+;; Maintainer: Protesilaos <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/ef-themes
 ;; Version: 2.1.0
 ;; Package-Requires: ((emacs "28.1") (modus-themes "5.0.0"))
@@ -63,6 +63,7 @@ and Modus into a single group, enable `modus-themes-include-derivatives-mode'."
 
 (defconst ef-themes-light-themes
   '(ef-arbutus
+    ef-arcadia
     ef-cyprus
     ef-day
     ef-deuteranopia-light
@@ -83,7 +84,8 @@ and Modus into a single group, enable `modus-themes-include-derivatives-mode'."
   "List of symbols with the light Ef themes.")
 
 (defconst ef-themes-dark-themes
-  '(ef-autumn
+  '(ef-atlantis
+    ef-autumn
     ef-bio
     ef-cherie
     ef-dark
@@ -112,6 +114,8 @@ and Modus into a single group, enable `modus-themes-include-derivatives-mode'."
 
 (defconst ef-themes-with-properties
   '((ef-arbutus ef-themes "Legible light pink theme with red and green colors." light ef-arbutus-palette nil ef-arbutus-palette-overrides)
+    (ef-arcadia ef-themes "Legible light theme with verdant colors." light ef-arcadia-palette nil ef-arcadia-palette-overrides)
+    (ef-atlantis ef-themes "Legible dark theme with aquatic colors." dark ef-atlantis-palette nil ef-atlantis-palette-overrides)
     (ef-autumn ef-themes "Legible dark brown-black theme with warm colors (red, yellow, green, teal)." dark ef-autumn-palette nil ef-autumn-palette-overrides)
     (ef-bio ef-themes "Legible dark green-black theme with green, teal, blue, purple colors." dark ef-bio-palette nil ef-bio-palette-overrides)
     (ef-cherie ef-themes "Legible dark purple-black theme with warm colors (mostly pink, magenta, gold)." dark ef-cherie-palette nil ef-cherie-palette-overrides)
@@ -137,7 +141,7 @@ and Modus into a single group, enable `modus-themes-include-derivatives-mode'."
     (ef-night ef-themes "Legible dark sky blue theme with mostly green, blue, purple colors." dark ef-night-palette nil ef-night-palette-overrides)
     (ef-orange ef-themes "Legible light theme with orange, yellow, and green colors." light ef-orange-palette nil ef-orange-palette-overrides)
     (ef-owl ef-themes "Legible dark grey theme with blue, cyan, magenta and desaturated colors." dark ef-owl-palette nil ef-owl-palette-overrides)
-    (ef-reverie ef-themes "Legible light cream theme with gold and nuanced colors." light ef-reverie-palette nil ef-reverie-palette-overrides)
+    (ef-reverie ef-themes "Legible light lavender theme with gold and nuanced colors." light ef-reverie-palette nil ef-reverie-palette-overrides)
     (ef-rosa ef-themes "Legible dark rosewood theme with magenta and green colors." dark ef-rosa-palette nil ef-rosa-palette-overrides)
     (ef-spring ef-themes "Legible light floral theme with cool, varied colors (green, cyan, red)." light ef-spring-palette nil ef-spring-palette-overrides)
     (ef-summer ef-themes "Legible light warm pink theme with magenta, purple, gold, cyan colors." light ef-summer-palette nil ef-summer-palette-overrides)

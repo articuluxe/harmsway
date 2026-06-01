@@ -1,6 +1,6 @@
 ;;; diff-hl.el --- Highlight uncommitted changes using VC -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2025  Free Software Foundation, Inc.
+;; Copyright (C) 2012-2026  Free Software Foundation, Inc.
 
 ;; Author:   Dmitry Gutov <dmitry@gutov.dev>
 ;; URL:      https://github.com/dgutov/diff-hl
@@ -730,27 +730,29 @@ Return a list of line overlays used."
        (diff-hl--resolve
         reference
         (lambda (ref-changes)
-          (let ((ref-changes (diff-hl-adjust-changes ref-changes changes))
-                reuse)
-            (with-current-buffer orig
-              (diff-hl-remove-overlays)
-              (let ((diff-hl-highlight-function
-                     diff-hl-highlight-reference-function)
-                    (diff-hl-fringe-face-function
-                     diff-hl-fringe-reference-face-function))
-                (setq reuse (diff-hl--update-overlays ref-changes nil)))
-              (diff-hl--update-overlays changes reuse)
-              (when (not (or changes ref-changes))
-                (diff-hl--autohide-margin))))))))))
+          (when (buffer-live-p orig)
+            (let ((ref-changes (diff-hl-adjust-changes ref-changes changes))
+                  reuse)
+              (with-current-buffer orig
+                (diff-hl-remove-overlays)
+                (let ((diff-hl-highlight-function
+                       diff-hl-highlight-reference-function)
+                      (diff-hl-fringe-face-function
+                       diff-hl-fringe-reference-face-function))
+                  (setq reuse (diff-hl--update-overlays ref-changes nil)))
+                (diff-hl--update-overlays changes reuse)
+                (when (not (or changes ref-changes))
+                  (diff-hl--autohide-margin)))))))))))
 
 (defun diff-hl--resolve (value-or-buffer cb)
   (if (listp value-or-buffer)
       (funcall cb value-or-buffer)
     (static-if (fboundp 'vc-run-delayed-success)
         ;; Emacs 31.
-        (with-current-buffer value-or-buffer
-          (vc-run-delayed-success 1
-            (funcall cb (diff-hl-changes-from-buffer (current-buffer)))))
+        (when (get-buffer value-or-buffer)
+          (with-current-buffer value-or-buffer
+            (vc-run-delayed-success 1
+              (funcall cb (diff-hl-changes-from-buffer (current-buffer))))))
       (diff-hl--when-done value-or-buffer
                           #'diff-hl-changes-from-buffer
                           cb))))

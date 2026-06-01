@@ -6,7 +6,7 @@
 ;; Maintainer: Daniel Pettersson <daniel@dpettersson.net>
 ;; Created: 2023
 ;; License: GPL-3.0-or-later
-;; Version: 0.26.0
+;; Version: 0.27.1
 ;; Homepage: https://github.com/svaante/dape
 ;; Package-Requires: ((emacs "29.1") (jsonrpc "1.0.25"))
 
@@ -112,34 +112,6 @@
          :pathCat "cat"
          :pathMkfifo "mkfifo"
          :pathPkill "pkill"))
-    ,@(let ((codelldb
-             `( ensure dape-ensure-command
-                command-cwd dape-command-cwd
-                command ,(file-name-concat dape-adapter-dir
-                                           "codelldb"
-                                           "extension"
-                                           "adapter"
-                                           "codelldb")
-                port :autoport
-                :type "lldb"
-                :request "launch"
-                :cwd "."))
-            (common `(:args [] :stopOnEntry nil)))
-        `((codelldb-cc
-           modes (c-mode c-ts-mode c++-mode c++-ts-mode)
-           command-args ("--port" :autoport)
-           ,@codelldb
-           :program "a.out"
-           ,@common)
-          (codelldb-rust
-           modes (rust-mode rust-ts-mode)
-           command-args ("--port" :autoport
-                         "--settings" "{\"sourceLanguages\":[\"rust\"]}")
-           ,@codelldb
-           :program (file-name-concat "target" "debug"
-                                      (car (last (file-name-split
-                                                  (directory-file-name (dape-cwd))))))
-           ,@common)))
     (cpptools
      modes (c-mode c-ts-mode c++-mode c++-ts-mode)
      ensure dape-ensure-command
@@ -250,21 +222,21 @@
 		command-args ("--interpreter=dap")
 		:request "launch"
 		:stopAtBeginningOfMainSubprogram nil)))
-	     `((go-gdb-test ,@gdb-common
-			    modes (go-mode go-ts-mode)
-			    command-cwd (file-name-directory (buffer-file-name))
-			    compile (format "go test -c -o %s -gcflags='all=-N -l'"
-					    (expand-file-name "__test.bin" temporary-file-directory)) ;; compile without optimizations
-			    :program (expand-file-name "__test.bin" temporary-file-directory)
-			    :args [])
-	       (go-gdb ,@gdb-common
+	`((gdb-go-test ,@gdb-common
 		       modes (go-mode go-ts-mode)
 		       command-cwd (file-name-directory (buffer-file-name))
-		       compile (format "go build -o %s -gcflags='all=-N -l'"
-				       (expand-file-name "__binary.bin" temporary-file-directory)) ;; compile without optimizations
-		       :request "launch"
-		       :program (expand-file-name "__binary.bin" temporary-file-directory)
-		       :args [])))
+		       compile (format "go test -c -o %s -gcflags='all=-N -l'"
+				       (expand-file-name "__test.bin" temporary-file-directory)) ;; compile without optimizations
+		       :program (expand-file-name "__test.bin" temporary-file-directory)
+		       :args [])
+	  (gdb-go ,@gdb-common
+		  modes (go-mode go-ts-mode)
+		  command-cwd (file-name-directory (buffer-file-name))
+		  compile (format "go build -o %s -gcflags='all=-N -l'"
+				  (expand-file-name "__binary.bin" temporary-file-directory)) ;; compile without optimizations
+		  :request "launch"
+		  :program (expand-file-name "__binary.bin" temporary-file-directory)
+		  :args [])))
     (godot
      modes (gdscript-mode)
      port 6006
@@ -757,7 +729,7 @@ See `dape-breakpoint-load' and `dape-breakpoint-save'."
 (define-obsolete-variable-alias 'dape-compile-fn 'dape-compile-function "0.21.0")
 (defcustom dape-compile-function #'compile
   "Function to compile with.
-The function is called with a command string."
+The function is called with a command string and should return a buffer."
   :type 'function)
 
 (define-obsolete-variable-alias 'dape-cwd-fn 'dape-cwd-function "0.21.0")
@@ -858,8 +830,10 @@ Debug logging has an noticeable effect on performance."
 
 (defface dape-header-line-hover-face '((t :inherit mode-line-highlight))
   "Face for hovered Dape header tabs.")
+
 
 ;;; Forward declarations
+
 (defvar hl-line-mode)
 (defvar hl-line-sticky-flag)
 (declare-function global-hl-line-highlight  "hl-line" ())
@@ -1275,16 +1249,28 @@ as is."
   "Kill all dape buffers.
 On SKIP-PROCESS-BUFFERS skip deletion of buffers which has processes."
   (cl-loop for buffer in (buffer-list)
-           when (and (not (and skip-process-buffers
-                               (get-buffer-process buffer)))
-                     (when-let* ((name (buffer-name buffer)))
-                       (string-match-p "\\*dape-.+\\*\\(<[0-9]+>\\)?$" name)))
-           do (condition-case err
-                  (let ((window (get-buffer-window buffer)))
-                    (kill-buffer buffer)
-                    (when (window-live-p window)
-                      (delete-window window)))
-                (error (message (error-message-string err))))))
+           when (and
+                 (buffer-live-p buffer)
+                 (buffer-match-p
+                  '(or "\\*dape-source .+\\*"
+                       "\\*dape-.+ events\\*"
+                       "\\*dape-.+ output\\*"
+                       "\\*dape-.+ stderr\\*"
+                       (major-mode . dape-repl-mode)
+                       (major-mode . dape-memory-mode)
+                       (major-mode . dape-shell-mode)
+                       (major-mode . dape-disassemble-mode)
+                       (derived-mode . dape-info-parent-mode))
+                  buffer)
+                 (not (and skip-process-buffers
+                           (get-buffer-process buffer))))
+           do
+           (condition-case err
+               (let ((window (get-buffer-window buffer)))
+                 (kill-buffer buffer)
+                 (when (window-live-p window)
+                   (delete-window window)))
+             (error (message (error-message-string err))))))
 
 (defun dape--display-buffer (buffer)
   "Display BUFFER according to `dape-buffer-window-arrangement'."
@@ -1637,7 +1623,11 @@ If `dape--request-blocking' is non-nil do blocking request."
   (cl-flet ((success-fn (result)
               (funcall cb (plist-get result :body)
                        (unless (eq (plist-get result :success) t)
-                         (or (plist-get result :message) ""))))
+                         (or (plist-get result :message)
+                             (plist-get (plist-get (plist-get result :body)
+                                                   :error)
+                                        :format)
+                             ""))))
             (timeout-fn ()
               (dape--warn
                "Command %S timed out after %d seconds (see \
@@ -1814,7 +1804,7 @@ See `dape-request' for expected CB signature."
              (enabled (if old
                           (not (dape--breakpoint-disabled old))
                         (eq (plist-get filter :default) t))))
-        ;; XXX Append to keep exceptions at bottom of breakpoint list.
+        ;; Append to keep exceptions at bottom of breakpoint list.
         (setq dape--breakpoints
               (nconc dape--breakpoints
                      (list (make-dape--exception-breakpoint
@@ -1906,26 +1896,35 @@ See `dape-request' for expected CB signature."
           (dape--request-continue cb error))
       (dape--request-continue cb))))
 
+(defun dape--configuration-done (conn &optional cb)
+  "Send configurationDone to CONN if supported.
+See `dape-request' for expected CB signature."
+  (if (dape--capable-p conn :supportsConfigurationDoneRequest)
+      (dape-request conn :configurationDone nil cb)
+    (dape--request-continue cb)))
+
 (defun dape--update-threads (conn cb)
   "Update threads for CONN in-place if possible.
 See `dape-request' for expected CB signature."
-  (dape--with-request-bind ((&key threads &allow-other-keys) error)
-      (dape-request conn :threads nil)
-    (setf (dape--threads conn)
-          (mapcar
-           (lambda (new-thread)
-             (if-let* ((old-thread
-                        (cl-find-if (lambda (old-thread)
-                                      (eql (plist-get new-thread :id)
-                                           (plist-get old-thread :id)))
-                                    (dape--threads conn))))
-                 (plist-put old-thread :name (plist-get new-thread :name))
-               new-thread))
-           (append threads nil)))
-    (dape--maybe-select-thread conn
-                               (cl-some (lambda (thread) (plist-get thread :id))
-                                        (dape--threads conn)))
-    (dape--request-continue cb error)))
+  (if (not (jsonrpc-running-p conn))
+      (dape--request-continue cb)
+    (dape--with-request-bind ((&key threads &allow-other-keys) error)
+        (dape-request conn :threads nil)
+      (setf (dape--threads conn)
+            (mapcar
+             (lambda (new-thread)
+               (if-let* ((old-thread
+                          (cl-find-if (lambda (old-thread)
+                                        (eql (plist-get new-thread :id)
+                                             (plist-get old-thread :id)))
+                                      (dape--threads conn))))
+                   (plist-put old-thread :name (plist-get new-thread :name))
+                 new-thread))
+             (append threads nil)))
+      (dape--maybe-select-thread conn
+                                 (cl-some (lambda (thread) (plist-get thread :id))
+                                          (dape--threads conn)))
+      (dape--request-continue cb error))))
 
 (defun dape--stack-trace (conn thread nof cb)
   "Update stack trace in THREAD plist with NOF frames by adapter CONN.
@@ -2194,7 +2193,7 @@ Starts a new adapter connection as per request of the debug adapter."
     (dape--with-request (dape--set-breakpoints conn)
       (dape--with-request (dape--set-function-breakpoints conn)
         (dape--with-request (dape--set-data-breakpoints conn)
-          (dape--with-request (dape-request conn :configurationDone nil)
+          (dape--with-request (dape--configuration-done conn)
             ;; See `defer-launch-attach' in `dape-configs'
             (when (plist-get (dape--config conn) 'defer-launch-attach)
               (dape--launch-or-attach conn))))))))
@@ -2508,10 +2507,10 @@ symbol `dape-connection'."
                          (mapconcat #'identity command " "))))))
     (dape-connection
      :name (format "dape-%s<%d>"
-                   (or command
+                   (or (and (car command) command)
                        (when-let* ((port (plist-get config 'port)))
-                         (format "dap:%s:%s"
-                                 (or (plist-get config 'host) "")
+                         (format "%s:%s"
+                                 (or (plist-get config 'host) "localhost")
                                  port)))
                    (cl-incf dape--connection-counter))
      :config config
@@ -2604,7 +2603,8 @@ CONN is inferred for interactive invocations."
     (user-error "Thread is stopped"))
   (dape--with-request-bind
       (_body error)
-      (dape-request conn :pause (dape--thread-id-object conn))
+      (dape-request conn :pause (or (dape--thread-id-object conn)
+                                    '(:threadId 0)))
     (when error
       (error "Failed to pause: %s" error))))
 
@@ -2637,14 +2637,30 @@ SKIP-COMPILE is used internally for recursive calls."
         (setf (dape--restart-in-progress-p conn) nil))))
    (;; Use previous connections configuration
     dape--connections
-    (let* ((live (dape--live-connection 'parent t))
-           (config (dape--config live)))
-      (dape--with-request (dape-kill live)
-        (dape config))))
+    (let ((conn (or (and conn (dape--root-of conn))
+                    (car dape--connections))))
+      (dape--with-request (dape-kill conn)
+        (dape (dape--config conn)))))
    (;; Use history
     dape-history
     (dape (apply #'dape--config-eval (dape--config-from-string (car dape-history)))))
    ((user-error "Unable to derive session to restart, run `dape'"))))
+
+(defun dape--shutdown (conn)
+  "Shutdown CONN and delete its jsonrpc buffers."
+  ;; Signal the process first so the sentinel fires on iter 0 in
+  ;; `jsonrpc-shutdown'.  Preventing the misleading sentinel warning
+  ;; (DAP has no client-initiated shutdown).
+  (unwind-protect
+      (let ((proc (jsonrpc--process conn)))
+        ;; XXX Final call for timers to run while process exists.
+        ;; May also swallow signals from non Dape owned
+        ;; timer/sentinel/filter functions.
+        (with-demoted-errors "%S" (accept-process-output nil 0.2))
+        (delete-process proc)
+        (jsonrpc-shutdown conn t))
+    (unless dape-debug
+      (kill-buffer (jsonrpc-events-buffer conn)))))
 
 (defun dape-kill (conn &optional cb with-disconnect)
   "Kill debug session.
@@ -2662,8 +2678,8 @@ terminate.  CONN is inferred for interactive invocations."
       ;; way if the request timeout, otherwise we might force the
       ;; user to kill the process in some other way.
       (if (and error (not (eq error dape--timeout-error)))
-          (dape-kill cb 'with-disconnect)
-        (jsonrpc-shutdown conn)
+          (dape-kill conn cb 'with-disconnect)
+        (dape--shutdown conn)
         (dape--request-continue cb))))
    ((and conn (jsonrpc-running-p conn))
     (dape--with-request
@@ -2671,7 +2687,7 @@ terminate.  CONN is inferred for interactive invocations."
                       `( :restart :json-false
                          ,@(when (dape--capable-p conn :supportTerminateDebuggee)
                              '(:terminateDebuggee t))))
-      (jsonrpc-shutdown conn)
+      (dape--shutdown conn)
       (dape--request-continue cb)))
    (t
     (dape--request-continue cb))))
@@ -2684,7 +2700,7 @@ connection.  CONN is inferred for interactive invocations."
   (dape--kill-buffers 'skip-process-buffers)
   (dape--with-request
       (dape-request conn :disconnect '(:terminateDebuggee :json-false))
-    (jsonrpc-shutdown conn)
+    (dape--shutdown conn)
     (dape--kill-buffers)))
 
 (defun dape-quit ()
@@ -2805,13 +2821,13 @@ When SKIP-NOTIFY is non-nil, do not notify adapters about removal."
      (cdr (assoc (completing-read "Select session: " collection nil t)
                  collection))))
   (setq dape--connection-selected
-        ;; XXX: Limit lookup scope to *this* session
+        ;; Limit lookup scope to *this* session
         (let ((dape--connections
                (cl-loop with root = (dape--root-of conn)
                         for conn in dape--connections
                         when (eq (dape--root-of conn) root)
                         collect conn)))
-          (dape--live-connection 'last)))
+          (or (dape--live-connection 'last t) conn)))
   (when-let* ((buffer (dape--shell-buffer conn)))
     (dape--display-buffer buffer))
   (dape--update dape--connection-selected nil t)
@@ -3016,12 +3032,12 @@ For more information see `dape-configs'."
                       (copy-tree config))))
   (if (and (not skip-compile) (plist-get config 'compile))
       (dape--compile config (lambda () (dape config 'skip-compile)))
+    ;; Run start hooks before connection creation so that the REPL
+    ;; buffer exists when `dape--create-connection' emits messages.
+    (run-hooks 'dape-start-hook)
     (let ((conn (dape--create-connection config)))
       (push conn dape--connections)
       (setq dape--connection-selected conn)
-      ;; Hooks run after connection is registered so `dape-repl'
-      ;; and `dape-info' can use the active session.
-      (run-hooks 'dape-start-hook)
       (dape--start-debugging conn))))
 
 
@@ -3032,7 +3048,9 @@ For more information see `dape-configs'."
 (defun dape--compile-compilation-finish (buffer str)
   "Hook for `dape--compile-compilation-finish'.
 Using BUFFER and STR."
-  (remove-hook 'compilation-finish-functions #'dape--compile-compilation-finish)
+  (with-current-buffer buffer
+    (remove-hook 'compilation-finish-functions
+                 #'dape--compile-compilation-finish t))
   (if (equal "finished\n" str)
       (progn (funcall dape--compile-after-fn)
              (run-hook-with-args 'dape-compile-hook buffer))
@@ -3040,12 +3058,16 @@ Using BUFFER and STR."
 
 (defun dape--compile (config fn)
   "Start compilation for CONFIG then call FN."
-  (let ((default-directory (dape--guess-root config))
-        (command (dape-config-get config 'compile)))
-    (funcall dape-compile-function command)
-    (with-current-buffer (compilation-find-buffer)
-      (setq dape--compile-after-fn fn)
-      (add-hook 'compilation-finish-functions #'dape--compile-compilation-finish nil t))))
+  (let* ((default-directory (dape--guess-root config))
+         (command (dape-config-get config 'compile))
+         (buffer (funcall dape-compile-function command)))
+    (if buffer
+        (with-current-buffer buffer
+          (setq dape--compile-after-fn fn)
+          (add-hook 'compilation-finish-functions
+                    #'dape--compile-compilation-finish nil t))
+      (user-error "Compile function `%s' did not return a buffer"
+                  dape-compile-function))))
 
 
 ;;; Memory viewer
@@ -3811,7 +3833,7 @@ Buffer is displayed with `dape-display-source-buffer-action'."
 (defvar dape--info-buffer-display-history nil "History list in (MODE INDEX).")
 
 (defun dape--info-buffer-list ()
-  "Return all live `dape-info-parent-mode'."
+  "Return all live `dape-info-parent-mode' buffers."
   (setq dape--info-buffers
         (cl-delete-if-not #'buffer-live-p dape--info-buffers)))
 

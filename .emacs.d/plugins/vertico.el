@@ -5,8 +5,8 @@
 ;; Author: Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2021
-;; Version: 2.8
-;; Package-Requires: ((emacs "29.1") (compat "30"))
+;; Version: 2.9
+;; Package-Requires: ((emacs "29.1") (compat "31"))
 ;; URL: https://github.com/minad/vertico
 ;; Keywords: convenience, files, matching, completion
 
@@ -382,6 +382,7 @@ The value should lie between 0 and vertico-count/2."
          (dolist (s state) (set (car s) (cdr s))))))))
 
 (defun vertico--display-string (str)
+  ;; Note: Keep in sync with embark--display-string
   "Return display STR without display and invisible properties."
   (let ((end (length str)) (pos 0) chunks)
     (while (< pos end)
@@ -390,13 +391,16 @@ The value should lie between 0 and vertico-count/2."
         (if (stringp disp)
             (let ((face (get-text-property pos 'face str)))
               (when face
-                (add-face-text-property 0 (length disp) face t (setq disp (concat disp))))
+                (add-face-text-property
+                 0 (length disp) face t (setq disp (concat disp))))
               (setq pos nextd chunks (cons disp chunks)))
+          (pcase disp (`(space :align-to . ,_) (push " " chunks)))
           (while (< pos nextd)
-            (let ((nexti (next-single-property-change pos 'invisible str nextd)))
+            (let ((nexti
+                   (next-single-property-change pos 'invisible str nextd)))
               (unless (or (get-text-property pos 'invisible str)
-                          (and (= pos 0) (= nexti end))) ;; full string -> no allocation
-                  (push (substring str pos nexti) chunks))
+                          (and (= pos 0) (= nexti end))) ;; full=>no allocation
+                (push (substring str pos nexti) chunks))
               (setq pos nexti))))))
     (if chunks (apply #'concat (nreverse chunks)) str)))
 
@@ -559,7 +563,7 @@ the stack trace is shown in the *Messages* buffer."
         (when (= index vertico--index)
           (setq curr-line (length lines)))
         (push (cons index cand) lines)
-        (cl-incf index)))
+        (incf index)))
     ;; Drop excess lines
     (setq lines (nreverse lines))
     (cl-loop for count from (length lines) above vertico-count do
@@ -609,7 +613,7 @@ the stack trace is shown in the *Messages* buffer."
 (cl-defgeneric vertico--setup ()
   "Setup completion UI."
   (dolist (var vertico--locals)
-    (set (make-local-variable (car var)) (cdr var)))
+    (set-local (car var) (cdr var)))
   (setq-local vertico--input t
               vertico--candidates-ov (make-overlay (point-max) (point-max) nil t t)
               vertico--count-ov (make-overlay (point-min) (point-min) nil t t))

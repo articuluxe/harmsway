@@ -6,11 +6,11 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 5.1.0
+;; Package-Version: 5.2.1
 ;; Package-Requires: (
 ;;     (emacs   "29.1")
-;;     (compat  "30.1")
-;;     (cond-let "0.2")
+;;     (compat  "31.0")
+;;     (cond-let "1.1")
 ;;     (llama    "1.0")
 ;;     (treepy "0.1.3"))
 
@@ -77,18 +77,10 @@
 
 (defvar ghub-default-host-alist
   '((github    . "api.github.com")
-    (gitlab    . "gitlab.com/api/v4")
-    (gitea     . "localhost:3000/api/v1")
-    (gogs      . "localhost:3000/api/v1")
-    (bitbucket . "api.bitbucket.org/2.0"))
+    (gitlab    . "gitlab.com")
+    (forgejo   . "codeberg.org")
+    (bitbucket . "api.bitbucket.org"))
   "Alist of default hosts used when the respective `FORGE.host' is not set.")
-
-(defvar ghub-github-token-scopes '(repo)
-  "The Github API scopes that your private tools need.
-
-You have to manually create or update the token at
-https://github.com/settings/tokens.  This variable
-only serves as documentation.")
 
 (defvar ghub-insecure-hosts nil
   "List of hosts that use http instead of https.")
@@ -404,7 +396,7 @@ See `ghub-request' for information about the other arguments."
           (if (> total 0)
               (let ((wait (min total (- duration total))))
                 (sit-for wait)
-                (cl-incf total wait))
+                (incf total wait))
             (sit-for (setq total 2))))))))
 
 (defun ghub-response-link-relations (req &optional headers payload)
@@ -511,7 +503,7 @@ Signal an error if the id cannot be determined."
                  (next    (cdr (assq 'next (ghub-response-link-relations
                                             req headers payload)))))
             (when (numberp unpaginate)
-              (cl-decf unpaginate))
+              (decf unpaginate))
             (setf (ghub--req-url req)
                   (url-generic-parse-url next))
             (setf (ghub--req-unpaginate req) unpaginate)
@@ -752,22 +744,21 @@ and call `auth-source-forget+'."
 
 (defun ghub--token (host username package &optional nocreate forge)
   (let* ((user (ghub--ident username package))
-         (token (or (ghub--auth-source-get :secret :host host :user user)
-                    (and (string-match "\\`\\([^/]+\\)" host)
-                         (ghub--auth-source-get :secret
-                           :host (match-string 1 host)
-                           :user user)))))
+         (domain (ghub--host-domain host))
+         (token
+          (or (ghub--auth-source-get :secret :host host :user user)
+              (and (not (equal domain host))
+                   (ghub--auth-source-get :secret :host domain :user user)))))
     (unless (or token nocreate)
       (error "\
-Required %s token (%S for %s%S) does not exist.
+Required %s token (%S for %s) does not exist.
 See https://docs.magit.vc/ghub/Getting-Started.html
 or (info \"(ghub)Getting Started\") for instructions."
              (capitalize (symbol-name (or forge 'github)))
              user
-             (if (string-match "\\`\\([^/]+\\)" host)
-                 (format "either %S or " (match-string 1 host))
-               "")
-             host))
+             (if (equal domain host)
+                 (format "%S" host)
+               (format "either %S or %S" host domain))))
     (if (functionp token) (funcall token) token)))
 
 (cl-defmethod ghub--host (&optional forge)
@@ -775,17 +766,32 @@ or (info \"(ghub)Getting Started\") for instructions."
     (or (ghub--git-get (format "%s.host" forge))
         (alist-get forge ghub-default-host-alist))))
 
+(defun ghub--host-domain (uri)
+  (let* ((uri (if (string-match "/" uri)
+                  (substring uri 0 (match-beginning 0))
+                uri))
+         (uri (split-string uri "\\."))
+         ;; This is an incomplete heuristic handling, e.g., ".co.uk".
+         (2tld (member (car (last uri 2)) '("co" "com" "gov" "net" "org"))))
+    (string-join (drop (- (length uri) (if 2tld 3 2)) uri) ".")))
+
 (cl-defmethod ghub--username (host &optional forge)
   (let* ((forge (or forge 'github))
          (host (or host (ghub--host forge)))
+         (host (if (string-match "/" host)
+                   (substring host 0 (match-beginning 0))
+                 host))
          (var (format "%s.%s.user" forge host))
-         (default-var (format "%s.user" forge)))
+         (default-var (and (equal (ghub--host-domain host)
+                                  (ghub--host-domain
+                                   (alist-get forge ghub-default-host-alist)))
+                           (format "%s.user" forge))))
     (cond ((ghub--git-get var))
-          ((not (equal host (alist-get forge ghub-default-host-alist)))
-           (user-error "Cannot determine username; `%s' is unset" var))
+          ((not default-var)
+           (error "Cannot determine username; `%s' is unset" var))
           ((ghub--git-get default-var))
-          ((user-error "%s; `%s' and `%s' are both unset"
-                       "Cannot determine username" var default-var)))))
+          ((error "Cannot determine username; `%s' and `%s' are both unset"
+                  var default-var)))))
 
 (defun ghub--ident (username package)
   (format "%s^%s" username package))
@@ -822,9 +828,16 @@ or (info \"(ghub)Getting Started\") for instructions."
 (require 'ghub-graphql)
 ;; Local Variables:
 ;; read-symbol-shorthands: (
-;;   ("and-let"   . "cond-let--and-let")
-;;   ("if-let"    . "cond-let--if-let")
-;;   ("when-let"  . "cond-let--when-let")
-;;   ("while-let" . "cond-let--while-let"))
+;;   ("and$"       . "cond-let--and$")
+;;   ("thread$"    . "cond-let--thread$")
+;;   ("when$"      . "cond-let--when$")
+;;   ("and-let*"   . "cond-let--and-let*")
+;;   ("and-let"    . "cond-let--and-let")
+;;   ("if-let*"    . "cond-let--if-let*")
+;;   ("if-let"     . "cond-let--if-let")
+;;   ("when-let*"  . "cond-let--when-let*")
+;;   ("when-let"   . "cond-let--when-let")
+;;   ("while-let*" . "cond-let--while-let*")
+;;   ("while-let"  . "cond-let--while-let"))
 ;; End:
 ;;; ghub.el ends here

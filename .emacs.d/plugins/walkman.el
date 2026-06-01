@@ -183,8 +183,12 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
 
 (defun walkman--extract-url (elements)
   "Extract the URL out of an org section parsed into org ELEMENTS."
-  (car (org-element-map (walkman--org-child elements 2) 'link
-         (lambda (link) (org-element-property :raw-link link)))))
+  (let ((child (walkman--org-child elements 2)))
+    (or (car (org-element-map child 'link
+               (lambda (link) (org-element-property :raw-link link))))
+        (let ((content (walkman--org-text child)))
+          (when (string-match (concat walkman--verb-regexp " +\\([^ \n]+\\)") content)
+            (match-string-no-properties 2 content))))))
 
 (defun walkman--extract-method (elements)
   "Extract the HTTP method out of an org section parsed into org ELEMENTS."
@@ -246,10 +250,11 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
 (defun walkman--current ()
   "Extract current org request."
   (save-excursion
-    (org-back-to-heading)
-    (let ((el (org-element-at-point)))
-      (buffer-substring (org-element-property :contents-begin el)
-                        (org-element-property :contents-end el)))))
+    (org-back-to-heading t)
+    (forward-line 1)
+    (let ((begin (point))
+          (end (save-excursion (org-end-of-subtree t t) (point))))
+      (buffer-substring begin end))))
 
 (defun walkman--parse-request ()
   "Parse current org request."
@@ -277,10 +282,16 @@ CMD is the curl command string."
         (method "GET"))
     (with-temp-buffer
       (insert cmd)
-      ;; get url
+      ;; remove curl command
       (goto-char (point-min))
-      (re-search-forward "'?\"?\\(https?://[^ '\"]+\\)'?\"?")
+      (when (re-search-forward "curl " (point-max) t)
+        (replace-match ""))
+      ;; get url - match first token that looks like a URL (has :// or :port or /path)
+      (goto-char (point-min))
+      (re-search-forward "'?\"?\\(\\(?:https?://\\)?[a-zA-Z0-9][^ '\"]*\\(?:://\\|:[0-9]\\|/\\)[^ '\"]*\\)'?\"?")
       (setq url (match-string 1))
+      (unless (string-match-p "^https?://" url)
+        (setq url (concat "http://" url)))
       (replace-match "")
 
       ;; get headers backwards to preserve the insertion order
@@ -293,15 +304,13 @@ CMD is the curl command string."
 
       ;; get method
       (goto-char (point-min))
-      (re-search-forward "\\(-X\\|--request\\) \\([^ ]+\\)" (point-max) t)
-      (unless (equal "" (match-string 2))
+      (when (re-search-forward "\\(-X\\|--request\\) \\([^ ]+\\)" (point-max) t)
         (setq method (match-string 2))
         (replace-match ""))
 
       ;; get body
       (goto-char (point-min))
-      (re-search-forward "\\(-d\\|--data-raw\\|--data-binary\\) '\\([^\000]*\\)??'" (point-max) t)
-      (unless (equal "" (match-string 2))
+      (when (re-search-forward "\\(-d\\|--data-raw\\|--data-binary\\) '\\([^\000]*\\)??'" (point-max) t)
         (setq body (match-string 2))
         (replace-match "")))
 
@@ -315,7 +324,7 @@ REQUEST is a walkman-request struct, result of the walkman parse curl function."
         (body (walkman-request-body request)))
     (setq output (format "* Import Curl\n  %s %s\n" (walkman-request-method request) (walkman-request-url request)))
     (setq output (concat output (mapconcat (lambda (x) (format "  - %s" x)) (walkman-request-headers request) "\n")))
-    (unless (equal "" body)
+    (unless (or (null body) (equal "" body))
       (setq output (format "%s\n#+begin_src json\n%s\n#+end_src" output body)))
     output))
 

@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 1.2
 ;; URL: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "29.1") (compat "30"))
+;; Package-Requires: ((emacs "29.1") (compat "31"))
 
 ;; This file is part of GNU Emacs.
 
@@ -176,6 +176,7 @@ or a list of such symbols."
     embark-target-email-at-point
     embark-target-url-at-point
     embark-target-file-at-point
+    embark-target-eww-heading-at-point
     embark-target-buffer-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
@@ -506,7 +507,10 @@ arguments and more details."
     (insert-pair embark--mark-target)
     (org-emphasize embark--mark-target)
     ;; do the actual work of selecting & deselecting targets
-    (embark-select embark--select))
+    (embark-select embark--select)
+    ;; fix behavior of embark-insert when called as a quitting action
+    ;; from a minibuffer without a completion session (see issue #806)
+    (embark-insert embark--insert-in-minibuffer-selected-window-if-quitting))
   "Alist associating commands with post-action hooks.
 The hooks are run instead of the embarked upon action.  The hook
 can decide whether or not to run the action or it can run it
@@ -990,11 +994,11 @@ As a convenience, in Org Mode an initial ' or surrounding == or
       (when (derived-mode-p 'org-mode)
         (cond ((string-prefix-p "'" name)
                (setq name (substring name 1))
-               (cl-incf (car bounds)))
+               (incf (car bounds)))
               ((string-match-p "^\\([=~]\\).*\\1$" name)
                (setq name (substring name 1 -1))
-               (cl-incf (car bounds))
-               (cl-decf (cdr bounds)))))
+               (incf (car bounds))
+               (decf (cdr bounds)))))
       (mapcar (lambda (type) `(,type ,name . ,bounds))
               (embark--identifier-types name)))))
 
@@ -1004,10 +1008,10 @@ As a convenience, in Org Mode an initial ' or surrounding == or
         (end (line-end-position)))
     (when (save-excursion
             (goto-char beg)
-            (and (bolp)
-                 (looking-at
-                  ;; default definition from outline.el
-                  (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
+            (if (bound-and-true-p outline-search-function)
+                (funcall outline-search-function nil nil nil t)
+              ;; default definition from outline.el
+              (looking-at (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
       (require 'outline) ;; Ensure that outline commands are available
       `(heading ,(buffer-substring beg end) ,beg . ,end))))
 
@@ -1019,6 +1023,11 @@ As a convenience, in Org Mode an initial ' or surrounding == or
 (defun embark-target-prog-heading-at-point ()
   "Target the outline heading at point in programming modes."
   (when (derived-mode-p 'prog-mode)
+    (embark-target-heading-at-point)))
+
+(defun embark-target-eww-heading-at-point ()
+  "Target the HTML heading at point in an eww buffer."
+  (when (derived-mode-p 'eww-mode)
     (embark-target-heading-at-point)))
 
 (defun embark-target-top-minibuffer-candidate ()
@@ -1066,27 +1075,13 @@ their own target finder.  See for example
   "Return the completion candidate at point in a completions buffer."
   (embark--with-completion-list-buffer
    (lambda ()
-     ;; TODO Use `completion-list-candidate-at-point' via Compat 31 as soon as
-     ;; it becomes available instead of this delicate logic.
-     (when (get-text-property (point) 'mouse-face)
-       (let (beg end)
-         (cond
-          ((and (not (eobp)) (get-text-property (point) 'mouse-face))
-           (setq end (point) beg (1+ (point))))
-          ((and (not (bobp))
-                (get-text-property (1- (point)) 'mouse-face))
-           (setq end (1- (point)) beg (point))))
-         (when (and beg end)
-           (setq beg (previous-single-property-change beg 'mouse-face))
-           (setq end (or (next-single-property-change end 'mouse-face)
-                         (point-max)))
-           (let ((raw (or (get-text-property beg 'completion--string)
-                          (buffer-substring beg end))))
-             `(,embark--type
-               ,(if (eq embark--type 'file)
-                    (abbreviate-file-name (expand-file-name raw))
-                  raw)
-               ,beg . ,end))))))))
+     (pcase (completion-list-candidate-at-point)
+       (`(,raw ,beg ,end)
+        `(,embark--type
+          ,(if (eq embark--type 'file)
+               (abbreviate-file-name (expand-file-name raw))
+             raw)
+          ,beg . ,end))))))
 
 (defun embark--cycle-key ()
   "Return the key to use for `embark-cycle'."
@@ -1457,16 +1452,13 @@ If NESTED is non-nil subkeymaps are not flattened."
                    collect (cons formatted item))))
     (cons candidates default)))
 
-;; TODO Use `completion-table-with-metadata' via Compat 31.
 (defun embark--with-category (category candidates)
   "Return completion table for CANDIDATES of CATEGORY with sorting disabled."
-  (lambda (string predicate action)
-    (if (eq action 'metadata)
-        `(metadata (display-sort-function . identity)
-                   (cycle-sort-function . identity)
-                   (category . ,category))
-      (complete-with-action
-       action candidates string predicate))))
+  (completion-table-with-metadata
+   candidates
+   `((display-sort-function . identity)
+     (cycle-sort-function . identity)
+     (category . ,category))))
 
 (defun embark-completing-read-prompter (keymap update &optional no-default)
   "Prompt via completion for a command bound in KEYMAP.
@@ -3111,6 +3103,7 @@ For non-minibuffers, assume candidates are of given TYPE."
                 (add-face-text-property
                  0 (length disp) face t (setq disp (concat disp))))
               (setq pos nextd chunks (cons disp chunks)))
+          (pcase disp (`(space :align-to . ,_) (push " " chunks)))
           (while (< pos nextd)
             (let ((nexti
                    (next-single-property-change pos 'invisible str nextd)))
@@ -3751,7 +3744,10 @@ constituent character next to an existing word constituent.
 
 2. For a multiline inserted string, newlines may be added before
 or after as needed to ensure the inserted string is on lines of
-its own."
+its own.
+
+As a convenience, if the buffer is read-only, attempt the insertion in
+the window returned by `other-window-for-scrolling' instead."
   (let* ((separator (embark--separator strings))
          (multiline
           (or (and (cdr strings) (string-match-p "\n" separator))
@@ -4101,7 +4097,7 @@ It assumes the URL was encoded in UTF-8."
     (access-file dir "Download failed")
     (url-retrieve url #'eww-download-callback (list url dir))))
 
-;;; Setup and pre-action hooks
+;;; Hooks
 
 (defun embark--restart (&rest _)
   "Restart current command with current input.
@@ -4254,7 +4250,21 @@ This simply calls RUN with the REST of its arguments inside
   "Run action with a universal prefix argument."
   (setq prefix-arg '(4)))
 
-;;; keymaps
+(cl-defun embark--insert-in-minibuffer-selected-window-if-quitting
+    (&rest args &key quit run &allow-other-keys)
+  "Insert in `minibuffer-selected-window' if called quittingly from minibuffer.
+For use as an around action hook on `embark-insert'.  When called as an
+action from the minibuffer, `embark-insert' will insert into the window
+returned by `minibuffer-selected-window' if the minibuffer is in a
+completion session, and into the minibuffer itself- if not.  This is not
+useful behavior if the action will also quit the minibuffer, so this
+hook makes the minibuffer read-only in the quitting case, which causes
+`embark-insert' to insert into the window returned by
+`other-window-for-scrolling' instead."
+  (let ((buffer-read-only (or (and quit (minibufferp)) buffer-read-only)))
+    (apply run args)))
+
+;;; Keymaps
 
 (defvar-keymap embark-meta-map
   :doc "Keymap for non-action Embark functions."

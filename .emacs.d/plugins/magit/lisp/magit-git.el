@@ -179,7 +179,7 @@ A few Git hooks additionally run Lisp hooks:
 - `post-merge'   runs `magit-git-post-merge-functions'
 - `post-rewrite' runs `magit-git-post-rewrite-functions'
 
-All of these hooks also run `magit-common-git-post-rewrite-functions'.
+All of these hooks also run `magit-common-git-post-commit-functions'.
 For many uses this hook variable is more useful than the three above.
 
 If you want to teach additional Git hooks to run Lisp hooks, you have to
@@ -283,20 +283,20 @@ framework ultimately determines how the collection is displayed."
 
 (defcustom magit-cygwin-mount-points
   (and (eq system-type 'windows-nt)
-       (cl-sort (mapcar
-                 (lambda (mount)
-                   (if (string-match "^\\(.*\\) on \\(.*\\) type" mount)
-                       (cons (file-name-as-directory (match-str 2 mount))
-                             (file-name-as-directory (match-str 1 mount)))
-                     (lwarn '(magit) :error
-                            "Failed to parse Cygwin mount: %S" mount)))
-                 ;; If --exec-path is not a native Windows path,
-                 ;; then we probably have a cygwin git.
-                 (and-let ((dirs (magit--early-process-lines
-                                  magit-git-executable "--exec-path")))
-                   (and (not (string-match-p "\\`[a-zA-Z]:" (car dirs)))
-                        (magit--early-process-lines "mount"))))
-                #'> :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
+       (compat-call
+        sort (mapcar (lambda (mount)
+                       (if (string-match "^\\(.*\\) on \\(.*\\) type" mount)
+                           (cons (file-name-as-directory (match-str 2 mount))
+                                 (file-name-as-directory (match-str 1 mount)))
+                         (lwarn '(magit) :error
+                                "Failed to parse Cygwin mount: %S" mount)))
+                     ;; If --exec-path is not a native Windows path,
+                     ;; then we probably have a cygwin git.
+                     (and-let ((dirs (magit--early-process-lines
+                                      magit-git-executable "--exec-path")))
+                       (and (not (string-match-p "\\`[a-zA-Z]:" (car dirs)))
+                            (magit--early-process-lines "mount"))))
+        :lessp #'< :reverse t :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
   "Alist of (CYGWIN . WIN32) directory names.
 Sorted from longest to shortest CYGWIN name."
   :package-version '(magit . "2.3.0")
@@ -347,9 +347,9 @@ See info node `(magit)Debugging Tools' for more information."
     `(if magit--refresh-cache
          (let ((,k ,key))
            (if-let ((,hit (assoc ,k (cdr magit--refresh-cache))))
-               (progn (cl-incf (caar magit--refresh-cache))
+               (progn (incf (caar magit--refresh-cache))
                       (cdr ,hit))
-             (cl-incf (cdar magit--refresh-cache))
+             (incf (cdar magit--refresh-cache))
              (let ((value ,(macroexp-progn body)))
                (push (cons ,k value)
                      (cdr magit--refresh-cache))
@@ -439,10 +439,8 @@ to do the following.
   (if (and (eq system-type 'windows-nt) (boundp 'w32-ansi-code-page))
       ;; On w32, the process arguments *must* be encoded in the
       ;; current code-page (see #3250).
-      (mapcar (lambda (arg)
-                (encode-coding-string
-                 arg (intern (format "cp%d" w32-ansi-code-page))))
-              args)
+      (let ((coding (intern (format "cp%d" w32-ansi-code-page))))
+        (mapcar (##encode-coding-string % coding) args))
     args))
 
 (defun magit-git-exit-code (&rest args)
@@ -1132,16 +1130,32 @@ a bare repository."
 (defun magit-tracked-files (&rest args)
   (magit-list-files "--cached" args))
 
-(defun magit-untracked-files (&optional all files &rest args)
-  "Return a list of untracked files."
+(defun magit-untracked-files (&optional include-ignored directory)
+  "Return a list of untracked files.
+If optional INCLUDE-IGNORED is non-nil, include ignored files.
+If optional DIRECTORY is non-nil, then limit to that directory.
+DIRECTORY can also be a list of files and directories."
   (magit-with-toplevel
-    (seq-keep (##and (eq (aref % 0) ??)
+    (seq-keep (##and (memq (aref % 0) '(?? ?!))
                      (substring % 3))
-              (magit-git-items "status" "-z" "--porcelain" args
-                               (if all
-                                   "--untracked-files=all"
-                                 "--untracked-files=normal")
-                               "--" files))))
+              (magit-git-items "status" "-z" "--porcelain"
+                               (and include-ignored "--ignored")
+                               "--untracked-files=all"
+                               "--" directory))))
+
+(defun magit--untracked-directories (&optional include-ignored directory)
+  "Return a list of directories containing only untracked files.
+If optional INCLUDE-IGNORED is non-nil, consider ignored files.
+If optional DIRECTORY is non-nil, then limit to that directory.
+DIRECTORY can also be a list of files and directories."
+  (magit-with-toplevel
+    (seq-keep (##and (memq (aref % 0) '(?? ?!))
+                     (eq (aref % (1- (length %))) ?/)
+                     (substring % 3))
+              (magit-git-items "status" "-z" "--porcelain"
+                               (and include-ignored "--ignored")
+                               "--untracked-files=normal"
+                               "--" directory))))
 
 (defun magit-list-untracked-files (&optional files)
   "Return a list of untracked files.
@@ -1764,7 +1778,7 @@ The amount of time spent searching is limited by
                  ((setq prev (magit-rev-verify (format "@{-%d}" i)))
                   (or (not (setq prev (magit-rev-branch prev)))
                       (equal prev current))))
-      (cl-incf i))
+      (incf i))
     prev))
 
 (defun magit--set-default-branch (newname oldname)
@@ -3074,11 +3088,15 @@ Instead use `magit-commit-p' or `magit-commit-oid'.")
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

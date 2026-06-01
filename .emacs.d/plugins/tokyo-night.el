@@ -1,10 +1,10 @@
-;;; tokyo-night.el --- Shared infrastructure for Tokyo Night themes -*- lexical-binding: t; -*-
+;;; tokyo-night.el --- Tokyo Night color themes -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 Bozhidar Batsov
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://github.com/bbatsov/tokyo-night-emacs
-;; Version: 0.1.0
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces themes
 
@@ -465,7 +465,7 @@ Light variant.")
          `(font-lock-regexp-grouping-construct ((,class (:foreground ,tokyo-cyan-ice :weight bold))))
          `(font-lock-regexp-grouping-backslash ((,class (:foreground ,tokyo-cyan-ice :weight bold))))
          `(font-lock-string-face ((,class (:foreground ,tokyo-green))))
-         `(font-lock-type-face ((,class (:foreground ,tokyo-cyan-bright))))
+         `(font-lock-type-face ((,class (:foreground ,tokyo-cyan))))
          `(font-lock-variable-name-face ((,class (:foreground ,tokyo-fg))))
          `(font-lock-variable-use-face ((,class (:foreground ,tokyo-fg))))
          `(font-lock-warning-face ((,class (:foreground ,tokyo-yellow :weight bold))))
@@ -494,7 +494,7 @@ Light variant.")
 ;;;;; show-paren
          `(show-paren-match ((,class (:foreground ,tokyo-cyan-pale :background ,tokyo-bracket :weight bold))))
          `(show-paren-match-expression ((,class (:background ,tokyo-bg-highlight))))
-         `(show-paren-mismatch ((,class (:foreground ,tokyo-red :background ,tokyo-bg :weight bold :underline t))))
+         `(show-paren-mismatch ((,class (:foreground ,tokyo-red :background ,tokyo-bg-highlight :weight bold :underline t))))
 
 ;;;;; completions
          `(completions-annotations ((,class (:foreground ,tokyo-comment))))
@@ -646,7 +646,7 @@ Light variant.")
 ;;;;; hi-lock
          `(hi-blue ((,class (:foreground ,tokyo-bg :background ,tokyo-blue))))
          `(hi-green ((,class (:foreground ,tokyo-bg :background ,tokyo-green))))
-         `(hi-pink ((,class (:foreground ,tokyo-bg :background ,tokyo-red))))
+         `(hi-pink ((,class (:foreground ,tokyo-bg :background ,tokyo-magenta-hot))))
          `(hi-yellow ((,class (:foreground ,tokyo-bg :background ,tokyo-yellow))))
          `(hi-blue-b ((,class (:foreground ,tokyo-blue :weight bold))))
          `(hi-green-b ((,class (:foreground ,tokyo-green :weight bold))))
@@ -831,9 +831,9 @@ Light variant.")
          `(org-agenda-current-time ((,class (:foreground ,tokyo-cyan))))
 
 ;;;;; outline
-         `(outline-1 ((,class (:foreground ,tokyo-heading1 :weight bold))))
-         `(outline-2 ((,class (:foreground ,tokyo-heading2 :weight bold))))
-         `(outline-3 ((,class (:foreground ,tokyo-heading3 :weight bold))))
+         `(outline-1 ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(outline-2 ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(outline-3 ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
          `(outline-4 ((,class (:foreground ,tokyo-heading4 :weight bold))))
          `(outline-5 ((,class (:foreground ,tokyo-heading5 :weight bold))))
          `(outline-6 ((,class (:foreground ,tokyo-heading6 :weight bold))))
@@ -1288,6 +1288,45 @@ Light variant.")
          `(marginalia-file-priv-exec ((,class (:foreground ,tokyo-green))))
          `(marginalia-file-priv-other ((,class (:foreground ,tokyo-magenta))))
          `(marginalia-file-priv-rare ((,class (:foreground ,tokyo-orange))))
+
+;;;;; adoc-mode
+         `(adoc-gen-face ((,class (:foreground ,tokyo-fg))))
+         `(adoc-meta-face ((,class (:foreground ,tokyo-dark5))))
+         `(adoc-meta-hide-face ((,class (:foreground ,tokyo-comment))))
+         `(adoc-markup-face ((,class (:foreground ,tokyo-dark5))))
+         `(adoc-value-face ((,class (:foreground ,tokyo-green))))
+         `(adoc-attribute-face ((,class (:foreground ,tokyo-magenta :slant italic))))
+         `(adoc-bold-face ((,class (:foreground ,tokyo-orange :weight bold))))
+         `(adoc-emphasis-face ((,class (:foreground ,tokyo-fg :slant italic))))
+         `(adoc-superscript-face ((,class (:foreground ,tokyo-fg :height 0.8))))
+         `(adoc-subscript-face ((,class (:foreground ,tokyo-fg :height 0.8))))
+         `(adoc-anchor-face ((,class (:foreground ,tokyo-cyan))))
+         `(adoc-list-face ((,class (:foreground ,tokyo-magenta))))
+         `(adoc-code-face ((,class (:foreground ,tokyo-teal :background ,tokyo-bg-dark :extend t))))
+         `(adoc-native-code-face ((,class (:background ,tokyo-bg-dark :extend t))))
+         `(adoc-typewriter-face ((,class (:foreground ,tokyo-teal))))
+         `(adoc-verbatim-face ((,class (:background ,tokyo-bg-dark :extend t))))
+         `(adoc-passthrough-face ((,class (:foreground ,tokyo-fg-muted))))
+         `(adoc-command-face ((,class (:foreground ,tokyo-yellow))))
+         `(adoc-preprocessor-face ((,class (:foreground ,tokyo-magenta))))
+         `(adoc-replacement-face ((,class (:foreground ,tokyo-cyan))))
+         `(adoc-complex-replacement-face ((,class (:foreground ,tokyo-magenta))))
+         `(adoc-table-face ((,class (:foreground ,tokyo-fg-muted))))
+         `(adoc-language-keyword-face ((,class (:foreground ,tokyo-magenta))))
+         `(adoc-language-info-face ((,class (:foreground ,tokyo-dark5))))
+         `(adoc-reference-face ((,class (:foreground ,tokyo-teal))))
+         `(adoc-internal-reference-face ((,class (:foreground ,tokyo-teal :underline t))))
+         `(adoc-link-title-face ((,class (:foreground ,tokyo-green :slant italic))))
+         `(adoc-comment-face ((,class (:foreground ,tokyo-comment :slant italic))))
+         `(adoc-secondary-text-face ((,class (:foreground ,tokyo-fg-muted :height 0.9))))
+         `(adoc-warning-face ((,class (:foreground ,tokyo-red :weight bold))))
+         `(adoc-title-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(adoc-title-0-face ((,class (:foreground ,tokyo-fg :weight bold :height ,h-doc))))
+         `(adoc-title-1-face ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(adoc-title-2-face ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(adoc-title-3-face ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(adoc-title-4-face ((,class (:foreground ,tokyo-heading4 :weight bold))))
+         `(adoc-title-5-face ((,class (:foreground ,tokyo-heading5 :weight bold))))
 
 ;;;;; markdown-mode
          `(markdown-header-face ((,class (:foreground ,tokyo-blue :weight bold))))

@@ -95,12 +95,12 @@
           emoji
           isAnswerable
           description)
-       (  discussions [(:edges t)
+       (  discussions [(:edges 20)
                        (:singular discussion number)
                        (orderBy ((field UPDATED_AT) (direction DESC)))]
+          number
           id
           databaseId
-          number
           url
           stateReason
           ;; Discussions lack isReadByViewer.
@@ -120,7 +120,7 @@
              createdAt
              updatedAt
              body
-             (  replies [(:edges 20)]
+             (  replies [(:edges t)]
                 id
                 databaseId
                 (author login)
@@ -703,7 +703,7 @@
                          (lambda (errors _headers _status _req)
                            (if (zerop tries)
                                (ghub--signal-error errors)
-                             (cl-decf tries)
+                             (decf tries)
                              (cond-let
                                ([notfound
                                  (seq-keep
@@ -717,7 +717,7 @@
                                                           query :key #'caar))
                                 (funcall vacuum))
                                ((ghub--signal-error errors))))))
-                   (cl-incf page)
+                   (incf page)
                    (forge--msg nil t nil
                                "Pulling notifications (page %s/%s)" page pages)
                    (funcall vacuum))
@@ -1266,7 +1266,7 @@
 (cl-defmethod forge--fork-repository ((repo forge-github-repository) fork all)
   (with-slots (name apihost) repo
     (forge-rest repo "POST" "/repos/:owner/:name/forks"
-      ((and (not (equal fork (ghub--username apihost)))
+      ((and (not (equal fork (ghub--username repo)))
             (organization fork))
        (default-branch-only (not all))))
     (ghub-wait (format "/repos/%s/%s" fork name)
@@ -1298,10 +1298,16 @@
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
-;;   ("and>"          . "cond-let--and>")
+;;   ("thread$"       . "cond-let--thread$")
+;;   ("when$"         . "cond-let--when$")
+;;   ("and-let*"      . "cond-let--and-let*")
 ;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let*"       . "cond-let--if-let*")
 ;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let*"     . "cond-let--when-let*")
 ;;   ("when-let"      . "cond-let--when-let")
+;;   ("while-let*"    . "cond-let--while-let*")
+;;   ("while-let"     . "cond-let--while-let")
 ;;   ("buffer-string" . "buffer-string")
 ;;   ("buffer-str"    . "forge--buffer-substring-no-properties")
 ;;   ("partial"       . "llama--left-apply-partially"))

@@ -608,10 +608,11 @@ Limit list to topics for which a review by the given user was requested."
                                     ('oldest             '(< number))
                                     ('recently-updated   '(string> updated))
                                     ('anciently-updated  '(string< updated)))))
-        (cl-sort (nconc (forge--list-topics-1 spec repo 'discussion)
-                        (forge--list-topics-1 spec repo 'issue)
-                        (forge--list-topics-1 spec repo 'pullreq))
-                 pred :key (##eieio-oref % slot)))
+        (compat-call
+         sort (nconc (forge--list-topics-1 spec repo 'discussion)
+                     (forge--list-topics-1 spec repo 'issue)
+                     (forge--list-topics-1 spec repo 'pullreq))
+         :lessp pred :key (##eieio-oref % slot)))
     (forge--list-topics-1 spec repo type)))
 
 (defun forge--list-topics-1 (spec repo type)
@@ -1263,7 +1264,8 @@ commands in all Forge keymaps, one only has to change them here."
   "<remap> <forge--item-menu>"   #'forge-topic-menu
   "<remap> <forge--list-menu>"   #'forge-topic-menu
   "C-c C-n"                      #'forge-create-post
-  "C-c C-r"                      #'forge-create-post)
+  "C-c C-r"                      #'forge-create-post
+  "G"                            #'forge-pull-this-topic)
 
 (define-derived-mode forge-topic-mode magit-mode "Topic"
   "Parent major mode of `forge-{issue,pullreq}-mode'.
@@ -2128,10 +2130,16 @@ modify `bug-reference-bug-regexp' if appropriate."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
-;;   ("and>"          . "cond-let--and>")
+;;   ("thread$"       . "cond-let--thread$")
+;;   ("when$"         . "cond-let--when$")
+;;   ("and-let*"      . "cond-let--and-let*")
 ;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let*"       . "cond-let--if-let*")
 ;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let*"     . "cond-let--when-let*")
 ;;   ("when-let"      . "cond-let--when-let")
+;;   ("while-let*"    . "cond-let--while-let*")
+;;   ("while-let"     . "cond-let--while-let")
 ;;   ("buffer-string" . "buffer-string")
 ;;   ("buffer-str"    . "forge--buffer-substring-no-properties")
 ;;   ("partial"       . "llama--left-apply-partially"))

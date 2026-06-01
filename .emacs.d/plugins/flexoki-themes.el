@@ -62,20 +62,36 @@
   "Foreground face for flexoki-themes."       :group 'faces)
 (defface flexoki-themes-red        nil
   "Red accent colour for flexoki-themes."     :group 'faces)
+(defface flexoki-themes-bright-red        nil
+  "Bright red accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-orange     nil
   "Orange accent colour for flexoki-themes."  :group 'faces)
+(defface flexoki-themes-bright-orange        nil
+  "Bright orange accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-yellow     nil
   "Yellow accent colour for flexoki-themes."  :group 'faces)
+(defface flexoki-themes-bright-yellow        nil
+  "Bright yellow accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-green      nil
   "Green accent colour for flexoki-themes."   :group 'faces)
+(defface flexoki-themes-bright-green        nil
+  "Bright green accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-cyan       nil
   "Cyan accent colour for flexoki-themes."    :group 'faces)
+(defface flexoki-themes-bright-cyan        nil
+  "Bright cyan accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-blue       nil
   "Blue accent colour for flexoki-themes."    :group 'faces)
+(defface flexoki-themes-bright-blue        nil
+  "Bright blue accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-purple     nil
   "Purple accent colour for flexoki-themes."  :group 'faces)
+(defface flexoki-themes-bright-red        nil
+  "Bright red accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-magenta    nil
   "Magenta accent colour for flexoki-themes." :group 'faces)
+(defface flexoki-themes-bright-red        nil
+  "Bright red accent colour for flexoki-themes."     :group 'faces)
 (defface flexoki-themes-lowlight   nil
   "A grey for flexoki-themes."                :group 'faces)
 (defface flexoki-themes-highlight  nil
@@ -119,20 +135,36 @@
        ;; accents
        (flexoki-themes-red
         (if (eq variant 'light) "#af3029" "#d14d41"))
+       (flexoki-themes-bright-red
+        (if (eq variant 'light) "#d14d41" "#af3029"))
        (flexoki-themes-orange
         (if (eq variant 'light) "#bc5215" "#da702c"))
+       (flexoki-themes-bright-orange
+        (if (eq variant 'light) "#da702c" "#bc5215"))
        (flexoki-themes-yellow
         (if (eq variant 'light) "#ad8301" "#d0a215"))
+       (flexoki-themes-bright-yellow
+        (if (eq variant 'light) "#d0a215" "#ad8301"))
        (flexoki-themes-green
         (if (eq variant 'light) "#66800b" "#879a39"))
+       (flexoki-themes-bright-green
+        (if (eq variant 'light) "#879a39" "#66800b"))
        (flexoki-themes-cyan
         (if (eq variant 'light) "#24837b" "#3aa99f"))
+       (flexoki-themes-bright-cyan
+        (if (eq variant 'light) "#3aa99f" "#24837b"))
        (flexoki-themes-blue
         (if (eq variant 'light) "#205EA6" "#4385be"))
+       (flexoki-themes-bright-blue
+        (if (eq variant 'light) "#4385be" "#205EA6"))
        (flexoki-themes-purple
         (if (eq variant 'light) "#5E409D" "#8b7ec8"))
+       (flexoki-themes-bright-purple
+        (if (eq variant 'light) "#8b7ec8" "#5E409D"))
        (flexoki-themes-magenta
         (if (eq variant 'light) "#a02f6f" "#ce5d97"))
+       (flexoki-themes-bright-magenta
+        (if (eq variant 'light) "#ce5d97" "#a02f6f"))
        ;; foreground variants
        (flexoki-themes-lowlight
         (if (eq variant 'light) flexoki-colour-200 flexoki-colour-800))
@@ -141,7 +173,13 @@
        (flexoki-themes-ultralight
         (if (eq variant 'light) flexoki-colour-500 flexoki-colour-600))
        (flexoki-themes-meek
-        (if (eq variant 'light) flexoki-colour-500 flexoki-colour-600)))
+        (if (eq variant 'light) flexoki-colour-500 flexoki-colour-600))
+       (flexoki-themes-term-black flexoki-colour-black)
+       (flexoki-themes-term-bright-black
+        (if (eq variant 'light) flexoki-colour-300 flexoki-colour-700))
+       (flexoki-themes-term-white
+        (if (eq variant 'light) flexoki-colour-600 flexoki-colour-500))
+       (flexoki-themes-term-bright-white flexoki-colour-200))
 
     ;; set any extra colours
     (dolist (item flexoki-themes-custom-colours)
@@ -390,83 +428,87 @@
             :background ,flexoki-themes-lowlight
             :foreground ,flexoki-themes-bg))))
 
-;;;;;; Term
-     `(term
-       ((t (:foreground
-            ,flexoki-themes-fg
-            :background ,flexoki-themes-bg))))
-     `(term-bold
-       ((t  (:weight bold))))
-     `(term-color-black
-       ((t  (:background
-             ,flexoki-colour-black
-             :foreground ,flexoki-colour-black))))
-     `(term-color-red
-       ((t  (:background
-             ,flexoki-themes-red
-             :foreground ,flexoki-themes-red))))
-     `(term-color-green
-       ((t  (:background
-             ,flexoki-themes-green
-             :foreground ,flexoki-themes-green))))
-     `(term-color-yellow
-       ((t  (:background
-             ,flexoki-themes-yellow
-             :foreground ,flexoki-themes-yellow))))
-     `(term-color-blue
-       ((t  (:background
-             ,flexoki-themes-blue
-             :foreground ,flexoki-themes-blue))))
-     `(term-color-magenta
-       ((t  (:background
-             ,flexoki-themes-magenta
-             :foreground ,flexoki-themes-magenta))))
-     `(term-color-cyan
-       ((t  (:background
-             ,flexoki-themes-cyan
-             :foreground ,flexoki-themes-cyan))))
-     `(term-color-white
-       ((t  (:background
-             ,flexoki-colour-paper
-             :foreground ,flexoki-colour-paper))))
-
-;;;;;; Vterm
-     `(vterm
-       ((t (:foreground
-            ,flexoki-themes-fg
-            :background ,flexoki-themes-bg))))
-     `(vterm-color-black
-       ((t  (:background
-             ,flexoki-colour-black
-             :foreground ,flexoki-colour-black))))
-     `(vterm-color-red
-       ((t  (:background
-             ,flexoki-themes-red
-             :foreground ,flexoki-themes-red))))
-     `(vterm-color-green
-       ((t  (:background
-             ,flexoki-themes-green
-             :foreground ,flexoki-themes-green))))
-     `(vterm-color-yellow
-       ((t  (:background
-             ,flexoki-themes-yellow
-             :foreground ,flexoki-themes-yellow))))
-     `(vterm-color-blue
-       ((t  (:background
-             ,flexoki-themes-blue
-             :foreground ,flexoki-themes-blue))))
-     `(vterm-color-magenta
-       ((t  (:background
-             ,flexoki-themes-magenta
-             :foreground ,flexoki-themes-magenta))))
-     `(vterm-color-cyan
-       ((t  (:background
-             ,flexoki-themes-cyan
-             :foreground ,flexoki-themes-cyan))))
-     `(vterm-color-white
-       ((t  (:background
-             ,flexoki-colour-paper
-             :foreground ,flexoki-colour-paper))))
+;;;;;; Terminal colours
+     `(ansi-color-black
+       ((t (:background
+            ,flexoki-themes-term-black
+            :foreground
+            ,flexoki-themes-term-black))))
+     `(ansi-color-bright-black
+       ((t (:background
+            ,flexoki-themes-term-bright-black
+            :foreground
+            ,flexoki-themes-term-bright-black))))
+     `(ansi-color-red
+       ((t (:background
+            ,flexoki-themes-red
+            :foreground
+            ,flexoki-themes-red))))
+     `(ansi-color-bright-red
+       ((t (:background
+            ,flexoki-themes-bright-red
+            :foreground
+            ,flexoki-themes-bright-red))))
+     `(ansi-color-green
+       ((t (:background
+            ,flexoki-themes-green
+            :foreground
+            ,flexoki-themes-green))))
+     `(ansi-color-bright-green
+       ((t (:background
+            ,flexoki-themes-bright-green
+            :foreground
+            ,flexoki-themes-bright-green))))
+     `(ansi-color-yellow
+       ((t (:background
+            ,flexoki-themes-yellow
+            :foreground
+            ,flexoki-themes-yellow))))
+     `(ansi-color-bright-yellow
+       ((t (:background
+            ,flexoki-themes-bright-yellow
+            :foreground
+            ,flexoki-themes-bright-yellow))))
+     `(ansi-color-blue
+       ((t (:background
+            ,flexoki-themes-blue
+            :foreground
+            ,flexoki-themes-blue))))
+     `(ansi-color-bright-blue
+       ((t (:background
+            ,flexoki-themes-bright-blue
+            :foreground
+            ,flexoki-themes-bright-blue))))
+     `(ansi-color-magenta
+       ((t (:background
+            ,flexoki-themes-magenta
+            :foreground
+            ,flexoki-themes-magenta))))
+     `(ansi-color-bright-magenta
+       ((t (:background
+            ,flexoki-themes-bright-magenta
+            :foreground
+            ,flexoki-themes-bright-magenta))))
+     `(ansi-color-cyan
+       ((t (:background
+            ,flexoki-themes-cyan
+            :foreground
+            ,flexoki-themes-cyan))))
+     `(ansi-color-bright-cyan
+       ((t (:background
+            ,flexoki-themes-bright-cyan
+            :foreground
+            ,flexoki-themes-bright-cyan))))
+     `(ansi-color-white
+       ((t (:background
+            ,flexoki-themes-term-white
+            :foreground
+            ,flexoki-themes-term-white))))
+     `(ansi-color-bright-white
+       ((t (:background
+            ,flexoki-themes-term-bright-white
+            :foreground
+            ,flexoki-themes-term-bright-white))))
 
 ;;;;; Childframes
 ;;;;;; Mini-Frame
@@ -492,6 +534,9 @@
 ;;;;;; General Completion
      `(completions-annotations
        ((t (:foreground ,flexoki-themes-meek))))
+     `(completions-common-part
+       ((t (:foreground ,flexoki-themes-blue
+            :weight bold))))
 
 ;;;;;; Company-mode
      `(company-scrollbar-bg

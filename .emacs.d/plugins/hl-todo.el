@@ -6,10 +6,11 @@
 ;; Homepage: https://github.com/tarsius/hl-todo
 ;; Keywords: convenience
 
-;; Package-Version: 3.9.3
+;; Package-Version: 3.9.4
 ;; Package-Requires: (
-;;     (emacs  "26.1")
-;;     (compat "30.1"))
+;;     (emacs    "28.1")
+;;     (compat   "31.0")
+;;     (cond-let  "1.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -50,6 +51,7 @@
 ;;; Code:
 
 (require 'compat)
+(require 'cond-let)
 (eval-when-compile (require 'subr-x))
 (eval-when-compile (require 'cl-lib))
 
@@ -120,7 +122,9 @@ located inside a string."
     ("KLUDGE" . "#d0bf8f")
     ("HACK"   . "#d0bf8f")
     ("TEMP"   . "#d0bf8f")
+    ("WIP"    . "#d0bf8f")
     ("FIXME"  . "#cc9393")
+    ("DEBUG"  . "#cc9393")
     ("XXXX*"  . "#cc9393"))
   "An alist mapping keywords to colors/faces used to display them.
 
@@ -370,7 +374,7 @@ A negative argument means move backward that many keywords."
                       (if hl-todo-wrap-movement
                           nil
                         (user-error "No more matches")))))
-      (cl-decf arg))
+      (decf arg))
     (when (> arg 0)
       (let ((pos (save-excursion
                    (goto-char (point-min))
@@ -397,7 +401,7 @@ A negative argument means move forward that many keywords."
                                  nil
                                (user-error "No more matches"))))))
       (goto-char (match-end 0))
-      (cl-decf arg))
+      (decf arg))
     (when (> arg 0)
       (let ((pos (save-excursion
                    (goto-char (point-max))
@@ -554,5 +558,19 @@ Intended to be added to `magit-revision-wash-message-hook' and
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; lisp-indent-local-overrides: ((cond . 0) (interactive . 0))
+;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("thread$"      . "cond-let--thread$")
+;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
+;;   ("while-let"    . "cond-let--while-let")
+;;   ("match-string" . "match-string")
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; hl-todo.el ends here

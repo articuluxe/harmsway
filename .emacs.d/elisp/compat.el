@@ -4,9 +4,9 @@
 
 ;; Author: Philip Kaludercic <philipk@posteo.net>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Philip Kaludercic <philipk@posteo.net>, Daniel Mendler <mail@daniel-mendler.de>
-;; Version: 30.1.0.1
+;; Version: 31.0.0.1
 ;; URL: https://github.com/emacs-compat/compat
-;; Package-Requires: ((emacs "24.4") (seq "2.23"))
+;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: lisp, maint
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -50,9 +50,9 @@
 ;; time and runtime, but only if needed.
 (eval-when-compile
   (defmacro compat--maybe-require ()
-    (when (version< emacs-version "30.1")
-      (require 'compat-30)
-      '(require 'compat-30))))
+    (when (< emacs-major-version 31)
+      (require 'compat-31)
+      '(require 'compat-31))))
 (compat--maybe-require)
 
 ;;;; Macros for extended compatibility function calls

@@ -41,6 +41,7 @@
 
 (deftheme aircon "Cool and legible light theme.")
 
+(defconst aircon-snow      "#ffffff")
 (defconst aircon-brick     "#8d2934")   ; error
 (defconst aircon-cello     "#243867")   ; builtin
 (defconst aircon-eden      "#18566e")   ; constant
@@ -119,12 +120,12 @@
 (custom-theme-set-faces
  'aircon
 
- '(default ((t (:background "#ffffff" :foreground "#000000"))))
+ `(default ((t (:background ,aircon-snow :foreground "#000000"))))
  `(cursor  ((t (:background ,aircon-cello))))
  '(fringe  ((t (:inherit (default)))))
 
  `(mode-line                  ((t (:inherit (variable-pitch aircon-fjord)
-                                   :foreground "#ffffff"
+                                   :foreground ,aircon-snow
                                    :box ,aircon-midnight))))
  `(mode-line-inactive         ((t (:inherit (aircon-header mode-line)
                                    :box ,aircon-ghost))))
@@ -264,7 +265,7 @@
  '(dired-symlink        ((t (:inherit (italic link)))))
  '(dired-broken-symlink ((t (:inherit (aircon-brick dired-symlink)))))
  '(dired-ignored        ((t (:inherit (shadow)))))
- '(dired-mark           ((t (:inherit (aircon-mango) :background "#ffffff"))))
+ `(dired-mark           ((t (:inherit (aircon-mango) :background ,aircon-snow))))
  '(dired-marked         ((t (:inherit (aircon-mango)))))
  '(dired-perm-write     ((t (:inherit (aircon-goblin)))))
  '(dired-flagged        ((t (:inherit (aircon-blush)))))
@@ -280,7 +281,7 @@
  '(eshell-prompt        ((t (:inherit minibuffer-prompt))))
 
  '(ansi-color-black   ((t (:foreground "#000000"))))
- '(ansi-color-white   ((t (:foreground "#ffffff"))))
+ `(ansi-color-white   ((t (:foreground ,aircon-snow))))
  `(ansi-color-blue    ((t (:foreground ,aircon-sapphire))))
  `(ansi-color-cyan    ((t (:foreground ,aircon-eden))))
  `(ansi-color-green   ((t (:foreground ,aircon-goblin))))
@@ -350,6 +351,8 @@
 
  '(sh-heredoc                      ((t (:inherit (aircon-goblin italic)))))
  '(sh-quoted-exec                  ((t (:inherit (aircon-hibiscus)))))
+
+ '(org-table                       ((t (:inherit (aircon-sapphire)))))
  )
 
 ;;;###autoload

@@ -574,6 +574,10 @@
 
    `(lsp-ui-doc-background                    ((t (:background ,bg2))))
 
+   `(lsp-ui-peek-header                       ((t (:foreground "white" :background ,bg3))))
+   `(lsp-ui-peek-selection                    ((t (:background ,bg-hl))))
+   `(lsp-ui-peek-filename                     ((t (:foreground ,ms-bluegreen :background ,bg2 :extend t))))
+
    `(font-latex-bold-face                     ((t (:inherit bold))))
    `(font-latex-italic-face                   ((t (:inherit italic))))
    `(font-latex-math-face                     ((t (:foreground ,ms-blue))))

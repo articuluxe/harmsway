@@ -718,7 +718,7 @@ START has to be selected from a list of recent commits."
                    ;; merely to add new commits *after* it.  Try not to
                    ;; ask users whether they really want to edit public
                    ;; commits, when they don't actually intend to do so.
-                   (not (seq-every-p (##magit-rev-equal % commit) branches))))
+                   (not (all (##magit-rev-equal % commit) branches))))
       (let ((m1 "Some of these commits have already been published to ")
             (m2 ".\nDo you really want to modify them"))
         (magit-confirm (or magit--rebase-published-symbol 'rebase-published)
@@ -946,7 +946,7 @@ If no such sequence is in progress, do nothing."
                   "pick" commit 'magit-sequence-pick))
                 ((magit-sequence-insert-am-patch
                   "pick" patch 'magit-sequence-pick)))
-          (cl-decf i)))
+          (decf i)))
       (magit-sequence-insert-sequence nil "ORIG_HEAD")
       (insert ?\n))))
 
@@ -1142,11 +1142,15 @@ buffer (i.e., the reverse of how they will be applied)."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

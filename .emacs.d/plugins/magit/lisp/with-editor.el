@@ -6,8 +6,11 @@
 ;; Homepage: https://github.com/magit/with-editor
 ;; Keywords: processes terminals
 
-;; Package-Version: 3.4.9
-;; Package-Requires: ((emacs "26.1") (compat "30.1"))
+;; Package-Version: 3.5.1
+;; Package-Requires: (
+;;     (emacs   "28.1")
+;;     (compat  "31.0")
+;;     (cond-let "1.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -79,6 +82,7 @@
 
 (require 'cl-lib)
 (require 'compat)
+(require 'cond-let)
 (require 'server)
 (require 'shell)
 (eval-when-compile (require 'subr-x))
@@ -774,11 +778,11 @@ This works in `shell-mode', `term-mode', `eshell-mode' and
                (process-environment process-environment))
            (with-editor--setup)
            (while (accept-process-output vterm--process 1 nil t))
-           (when-let ((v (getenv envvar)))
-             (vterm-send-string (format " export %s=%S" envvar v))
+           (when$ (getenv envvar)
+             (vterm-send-string (format " export %s=%S" envvar $))
              (vterm-send-return))
-           (when-let ((v (getenv "EMACS_SERVER_FILE")))
-             (vterm-send-string (format " export EMACS_SERVER_FILE=%S" v))
+           (when$ (getenv "EMACS_SERVER_FILE")
+             (vterm-send-string (format " export EMACS_SERVER_FILE=%S" $))
              (vterm-send-return))
            (vterm-send-string " clear")
            (vterm-send-return))
@@ -914,14 +918,13 @@ Also take care of that for `with-editor-[async-]shell-command'."
            (funcall fn command output-buffer error-buffer)
          (with-editor (funcall fn command output-buffer error-buffer)))
        ;; The comint filter was overridden with our filter.  Use both.
-       (and-let* ((process (get-buffer-process
-                            (or output-buffer
-                                (get-buffer "*Async Shell Command*")))))
+       (and-let ((process (get-buffer-process
+                           (or output-buffer
+                               (get-buffer "*Async Shell Command*")))))
          (prog1 process
-           (set-process-filter process
-                               (lambda (proc str)
-                                 (comint-output-filter proc str)
-                                 (with-editor-process-filter proc str t))))))
+           (add-function :after (process-filter process)
+                         (lambda (proc str)
+                           (with-editor-process-filter proc str t))))))
       ((funcall fn command output-buffer error-buffer)))))
 
 ;;; _
@@ -994,5 +997,19 @@ See info node `(with-editor)Debugging' for instructions."
 ;; byte-compile-warnings: (not docstrings-control-chars)
 ;; indent-tabs-mode: nil
 ;; lisp-indent-local-overrides: ((cond . 0) (interactive . 0))
+;; read-symbol-shorthands: (
+;;   ("and$"         . "cond-let--and$")
+;;   ("thread$"      . "cond-let--thread$")
+;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
+;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
+;;   ("while-let"    . "cond-let--while-let")
+;;   ("match-string" . "match-string")
+;;   ("match-str"    . "match-string-no-properties"))
 ;; End:
 ;;; with-editor.el ends here

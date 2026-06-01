@@ -666,8 +666,7 @@ INITIAL-SECTION SELECT-SECTION &rest BINDINGS)"
       &key buffer directory initial-section select-section)
   (let* ((value   (and locked
                        (with-temp-buffer
-                         (pcase-dolist (`(,var ,val) bindings)
-                           (set (make-local-variable var) val))
+                         (mapc (##apply #'set-local %) bindings)
                          (let ((major-mode mode))
                            (magit-buffer-value)))))
          (buffer  (if buffer
@@ -683,8 +682,7 @@ INITIAL-SECTION SELECT-SECTION &rest BINDINGS)"
         (setq default-directory directory))
       (funcall mode)
       (magit-xref-setup #'magit-setup-buffer-internal bindings)
-      (pcase-dolist (`(,var ,val) bindings)
-        (set (make-local-variable var) val))
+      (mapc (##apply #'set-local %) bindings)
       (when created
         (run-hooks 'magit-create-buffer-hook)))
     (magit-display-buffer buffer)
@@ -1636,11 +1634,15 @@ line.  Avoid including the line after the end of the file."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

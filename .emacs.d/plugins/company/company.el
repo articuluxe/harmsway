@@ -1,13 +1,13 @@
 ;;; company.el --- Modular text completion framework  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2009-2025  Free Software Foundation, Inc.
+;; Copyright (C) 2009-2026  Free Software Foundation, Inc.
 
 ;; Author: Nikolaj Schumacher
 ;; Maintainer: Dmitry Gutov <dmitry@gutov.dev>
 ;; URL: http://company-mode.github.io/
 ;; Version: 1.0.2
 ;; Keywords: abbrev, convenience, matching
-;; Package-Requires: ((emacs "26.1"))
+;; Package-Requires: ((emacs "26.1") (posframe "1.5.1"))
 
 ;; This file is part of GNU Emacs.
 
@@ -191,21 +191,22 @@
 
 (defun company-frontends-set (variable value)
   ;; Uniquify.
-  (let ((value (delete-dups (copy-sequence value))))
-    (and (or (and (memq 'company-pseudo-tooltip-unless-just-one-frontend value)
-                  (memq 'company-pseudo-tooltip-frontend value))
-             (and (memq 'company-pseudo-tooltip-unless-just-one-frontend-with-delay value)
-                  (memq 'company-pseudo-tooltip-frontend value))
-             (and (memq 'company-pseudo-tooltip-unless-just-one-frontend-with-delay value)
-                  (memq 'company-pseudo-tooltip-unless-just-one-frontend value)))
-         (user-error "Pseudo tooltip frontend cannot be used more than once"))
-    (and (or (and (memq 'company-preview-if-just-one-frontend value)
-                  (memq 'company-preview-frontend value))
-             (and (memq 'company-preview-if-just-one-frontend value)
-                  (memq 'company-preview-common-frontend value))
-             (and (memq 'company-preview-frontend value)
-                  (memq 'company-preview-common-frontend value))
-             )
+  (let ((value (delete-dups (copy-sequence value)))
+        (tooltip-frontends
+         '(company-pseudo-tooltip-frontend
+           company-pseudo-tooltip-unless-just-one-frontend
+           company-pseudo-tooltip-unless-just-one-frontend-with-delay
+           company-childframe-frontend
+           company-childframe-unless-just-one-frontend))
+        (preview-frontends
+         '(company-preview-if-just-one-frontend
+           company-preview-common-frontend
+           company-preview-frontend)))
+    (and (> (cl-count-if (lambda (el) (member el tooltip-frontends)) value)
+            1)
+         (user-error "Any tooltip frontend can be used only once"))
+    (and (> (cl-count-if (lambda (el) (member el preview-frontends)) value)
+            1)
          (user-error "Preview frontend cannot be used twice"))
     (and (memq 'company-echo value)
          (memq 'company-echo-metadata-frontend value)
@@ -246,16 +247,20 @@ The visualized data is stored in `company-prefix', `company-candidates',
   :type '(repeat (choice (const :tag "echo" company-echo-frontend)
                          (const :tag "echo, strip common"
                                 company-echo-strip-common-frontend)
-                         (const :tag "show echo meta-data in echo"
+                         (const :tag "show completion's meta-data in echo"
                                 company-echo-metadata-frontend)
-                         (const :tag "pseudo tooltip"
+                         (const :tag "graphical tooltip"
+                                company-childframe-frontend)
+                         (const :tag "graphical tooltip, multiple completions only"
+                                company-childframe-unless-just-one-frontend)
+                         (const :tag "overlays based tooltip"
                                 company-pseudo-tooltip-frontend)
-                         (const :tag "pseudo tooltip, multiple only"
+                         (const :tag "overlays based tooltip, multiple completions only"
                                 company-pseudo-tooltip-unless-just-one-frontend)
-                         (const :tag "pseudo tooltip, multiple only, delayed"
+                         (const :tag "overlays based tooltip, multiple completions only, delayed"
                                 company-pseudo-tooltip-unless-just-one-frontend-with-delay)
                          (const :tag "preview" company-preview-frontend)
-                         (const :tag "preview, unique only"
+                         (const :tag "preview, unique completion only"
                                 company-preview-if-just-one-frontend)
                          (const :tag "preview, common"
                                 company-preview-common-frontend)
@@ -973,12 +978,16 @@ asynchronous call into synchronous.")
 (defvar company-lighter '(" "
                           (company-candidates
                            (:eval
-                            (if (consp company-backend)
-                                (when company-selection
-                                  (company--group-lighter (nth company-selection
-                                                               company-candidates)
-                                                          company-lighter-base))
-                              (symbol-name company-backend)))
+                            (cond
+                             ((consp company-backend)
+                              (when company-selection
+                                (company--group-lighter (nth company-selection
+                                                             company-candidates)
+                                                        company-lighter-base)))
+                             ((symbolp company-backend)
+                              (symbol-name company-backend))
+                             ((functionp company-backend)
+                              "company-<lambda>")))
                            company-lighter-base))
   "Mode line lighter for Company.
 
@@ -1954,6 +1963,7 @@ end of the match."
     (event . "symbol-event.svg")
     (field . "symbol-field.svg")
     (file . "symbol-file.svg")
+    (filter . "filter.svg")
     (folder . "folder.svg")
     (interface . "symbol-interface.svg")
     (keyword . "symbol-keyword.svg")
@@ -1964,6 +1974,7 @@ end of the match."
     (operator . "symbol-operator.svg")
     (property . "symbol-property.svg")
     (reference . "references.svg")
+    (search . "search.svg")
     (snippet . "symbol-snippet.svg")
     (string . "symbol-string.svg")
     (struct . "symbol-structure.svg")
@@ -2067,6 +2078,7 @@ end of the match."
     (enum "e" font-lock-builtin-face)
     (field "f" font-lock-variable-name-face)
     (file "f" font-lock-string-face)
+    (filter "!" minibuffer-prompt)
     (folder "d" font-lock-doc-face)
     (interface "i" font-lock-type-face)
     (keyword "k" font-lock-keyword-face)
@@ -2077,6 +2089,7 @@ end of the match."
     (operator "o" font-lock-comment-delimiter-face)
     (property "p" font-lock-variable-name-face)
     (reference "r" font-lock-doc-face)
+    (search "q" minibuffer-prompt)
     (snippet "S" font-lock-string-face)
     (string "s" font-lock-string-face)
     (struct "%" font-lock-variable-name-face)
@@ -2741,6 +2754,7 @@ each one wraps a part of the input string."
 
 (defvar-local company-search-string "")
 
+;; FIXME: Delete later.
 (defvar company-search-lighter '(" "
                                  (company-search-filtering "Filter" "Search")
                                  ": \""
@@ -2940,7 +2954,7 @@ each one wraps a part of the input string."
   "Search mode for completion candidates.
 Don't start this directly, use `company-search-candidates' or
 `company-filter-candidates'."
-  :lighter company-search-lighter
+  :lighter nil
   (if company-search-mode
       (if (company-manual-begin)
           (progn
@@ -2988,8 +3002,8 @@ uses the search string to filter the completion candidates."
 This works the same way as `company-search-candidates' immediately
 followed by `company-search-toggle-filtering'."
   (interactive)
-  (company-search-mode 1)
-  (setq company-search-filtering t))
+  (setq company-search-filtering t)
+  (company-search-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4054,6 +4068,8 @@ but adjust the expected values appropriately."
         previous
         remainder
         scrollbar-bounds)
+    (when company-search-mode
+      (cl-decf limit))
 
     ;; Maybe clear old offset.
     (when (< len (+ company-tooltip-offset limit))
@@ -4168,6 +4184,10 @@ but adjust the expected values appropriately."
       (when remainder
         (push (company--scrollpos-line remainder width left-margin-size) new))
 
+      (when company-search-mode
+        (push (company--search-line width right-margin)
+              new))
+
       (cons
        left-margin-size
        (nreverse new)))))
@@ -4220,6 +4240,29 @@ Value of SELECTED determines the added face."
                   'company-tooltip-quick-access-selection
                 'company-tooltip-quick-access)))
 
+(defun company--search-line (width right-margin)
+  (let* ((company-backend (lambda (command &rest _)
+                            (and (eq command 'kind)
+                                 (if company-search-filtering
+                                     'filter
+                                   'search))))
+         (left (if company-format-margin-function
+                   (funcall company-format-margin-function "" nil)
+                 (concat
+                  (company-space-string company-tooltip-margin)
+                  (format "%s: " (company-call-backend 'kind)))))
+         (line (concat
+                company-search-string))
+         (width (+ (company--string-width left) width (length right-margin))))
+    (unless (display-graphic-p) (cl-incf width))
+    (setq line (company-safe-substring (concat left
+                                               (propertize
+                                                company-search-string
+                                                'face 'underline))
+                                       0 width))
+    (add-face-text-property 0 width 'company-tooltip nil line)
+    line))
+
 ;; show
 
 (defvar-local company-pseudo-tooltip-overlay nil)
@@ -4243,7 +4286,10 @@ Value of SELECTED determines the added face."
 Returns a negative number if the tooltip should be displayed above point."
   (let* ((lines (company--row))
          (below (- (company--window-height) 1 lines)))
-    (if (and (< below (min company-tooltip-minimum company-candidates-length))
+    (if (and (< below (min company-tooltip-minimum
+                           (if company-search-mode
+                               (1+ company-candidates-length)
+                             company-candidates-length)))
              (> lines below))
         (- (max 3 (min company-tooltip-limit lines)))
       (max 3 (min company-tooltip-limit below)))))
@@ -4712,6 +4758,9 @@ Delay is determined by `company-tooltip-idle-delay'."
 (defun company-echo-metadata-frontend (command)
   "`company-mode' frontend showing the documentation in the echo area."
   (pcase command
+    (`pre-command
+     (when (> company-echo-delay 0)
+       (company-echo-show)))
     (`post-command (company-echo-show-soon 'company-fetch-metadata))
     (`unhide (company-echo-show))
     (`hide (company-echo-hide))))

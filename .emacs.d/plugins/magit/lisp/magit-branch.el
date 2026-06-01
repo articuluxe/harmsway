@@ -50,6 +50,13 @@
                  (const :tag "Read upstream first" t)
                  (const :tag "Read upstream first, with fallback" fallback)))
 
+(defcustom magit-branch-name-suggestions nil
+  "List of names and/or prefixes suggested when naming a new branch."
+  :package-version '(magit . "4.6.0")
+  :group 'magit-commands
+  :type '(repeat string)
+  :safe (##and (listp %) (all #'stringp %)))
+
 (defcustom magit-branch-prefer-remote-upstream nil
   "Whether to favor remote upstreams when creating new branches.
 
@@ -420,29 +427,50 @@ when using `magit-branch-and-checkout'."
   (magit-run-git "checkout" "--orphan" branch start-point))
 
 (defun magit-branch-read-args (prompt &optional default-start)
-  (if magit-branch-read-upstream-first
-      (let ((choice (magit-read-starting-point prompt nil default-start)))
-        (cond
-          ((magit-rev-verify choice)
-           (list (magit-read-string-ns
-                  (if magit-completing-read--silent-default
-                      (format "%s (starting at `%s')" prompt choice)
-                    "Name for new branch")
-                  (let ((def (string-join (cdr (split-string choice "/")) "/")))
-                    (and (member choice (magit-list-remote-branch-names))
-                         (not (member def (magit-list-local-branch-names)))
-                         def)))
-                 choice))
-          ((eq magit-branch-read-upstream-first 'fallback)
-           (list choice
-                 (magit-read-starting-point prompt choice default-start)))
-          ((user-error "Not a valid starting-point: %s" choice))))
-    (let ((branch (magit-read-string-ns (concat prompt " named"))))
-      (if (magit-branch-p branch)
-          (magit-branch-read-args
-           (format "Branch `%s' already exists; pick another name" branch)
-           default-start)
-        (list branch (magit-read-starting-point prompt branch default-start))))))
+  (cond-let
+    ((not magit-branch-read-upstream-first)
+     (let ((name (magit-branch--read-name (concat prompt " named"))))
+       (list name (magit-read-starting-point prompt name default-start))))
+    [[start (magit-read-starting-point prompt nil default-start)]]
+    ((magit-rev-verify start)
+     (list (magit-branch--read-name
+            (if magit-completing-read--silent-default
+                (format "%s (starting at `%s')" prompt start)
+              "Name for new branch")
+            start)
+           start))
+    [[name start]]
+    ((eq magit-branch-read-upstream-first 'fallback)
+     (list name (magit-read-starting-point prompt name default-start)))
+    ((user-error "Not a valid starting-point: %s" name))))
+
+(defun magit-branch--read-name (prompt &optional start-point)
+  (let ((taken (magit-list-local-branch-names))
+        (choices magit-branch-name-suggestions))
+    (when (and start-point
+               (magit-remote-branch-p start-point)
+               (string-match "/" start-point))
+      (cl-pushnew (substring start-point (match-end 0))
+                  choices :test #'equal))
+    (magit-completing-read
+     prompt (seq-difference choices taken) nil
+     (lambda (&optional choice)
+       (cond
+         ((not choice)
+          ;; This function ought to be called with one argument (see
+          ;; `completing-read') but Ivy calls it with zero arguments.
+          ;; Since Ivy doesn't tell us what choice the user made, we
+          ;; also cannot validate it, and assume it is valid.
+          t)
+         ((member choice taken)
+          (run-with-timer
+           0 nil (##minibuffer-message "conflicts with existing branch"))
+          nil)
+         ((not (magit-git-success "check-ref-format" "--branch" choice))
+          (run-with-timer
+           0 nil (##minibuffer-message "not a valid branch name"))
+          nil)
+         (t))))))
 
 ;;;###autoload
 (defun magit-branch-spinout (branch &optional from)
@@ -974,11 +1002,15 @@ Also rename the respective reflog file."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

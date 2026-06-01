@@ -247,7 +247,7 @@ See also manpage git-interpret-trailer(1).  This package does
 not use that Git command, but the initial description still
 serves as a good introduction."
   :group 'git-commit
-  :safe (##and (listp %) (seq-every-p #'stringp %))
+  :safe (##and (listp %) (all #'stringp %))
   :type '(repeat string))
 
 (defcustom git-commit-use-local-message-ring nil
@@ -760,7 +760,7 @@ With a numeric prefix ARG, go back ARG messages."
       (when-let* ((message (git-commit-buffer-message))
                   (_(not (ring-member log-edit-comment-ring message))))
         (ring-insert log-edit-comment-ring message)
-        (cl-incf arg)
+        (incf arg)
         (setq len (ring-length log-edit-comment-ring)))
       ;; Delete the message but not the instructions at the end.
       (save-restriction
@@ -1357,11 +1357,15 @@ commit, then the hook is not run at all."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

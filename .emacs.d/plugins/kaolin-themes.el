@@ -4,8 +4,8 @@
 
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
-;; Package-Requires: ((emacs "25.1") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.7.4
+;; Package-Requires: ((emacs "26.1") (autothemer "0.2.2") (cl-lib "0.6"))
+;; Version: 1.7.7
 ;; Keywords: dark light teal blue violet purple brown theme faces
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -102,7 +102,8 @@
   :group 'kaolin-themes)
 
 (defcustom kaolin-themes-underline-wave t
-  "When t, use the wave underline style to highlight warnings and error."
+  "When t, use the wave underline style to highlight warnings and error.
+Otherwise use straight line."
   :group 'kaolin-themes)
 
 (defcustom kaolin-themes-hl-line-colored nil
@@ -118,7 +119,8 @@
 
 
 (defcustom kaolin-themes-comments-style 'normal
-  "Sets the style of commentaries: normal which is used by default, alt to use colored commentary or contrast to make them more distinguished."
+  "Sets the style of commentaries: normal which is used by default, alt to use
+colored commentary or contrast to make them more distinguished."
   :type '(choice (const :tag "Normal" normal)
                  (const :tag "Colored" alt)
                  (const :tag "Contrast" contrast))
@@ -146,7 +148,7 @@
   :group 'kaolin-themes)
 
 (defcustom kaolin-themes-distinct-verbatim nil
-  "Use distinct background color for verbatim face (org-mode) instead of colorful text."
+  "Use distinct background color for verbatim face (org-mode) instead of text."
   :group 'kaolin-themes)
 
 (defcustom kaolin-themes-org-scale-headings t
@@ -158,13 +160,14 @@
   :group 'kaolin-themes)
 
 (defcustom kaolin-themes-modeline-padded nil
-  "Add extra padding for mode-line. Should be either nil/t or desired integer value. It has prior over `kaolin-themes-modeline-border'."
+  "Add extra padding for mode-line. Should be either nil/t or integer value.
+It has priority over `kaolin-themes-modeline-border'."
   :group 'kaolin-themes
   :type '(choice integer boolean))
 
 (defcustom kaolin-themes-distinct-metakeys t
   "If not-nil, enable distinct color for metadata key (e.g. metakeys in org-mode).
-Otherwise inherit from comments."
+Otherwise inherit style from comments."
   :group 'kaolin-themes)
 
 (defface kaolin-themes-boolean nil
@@ -178,7 +181,6 @@ Otherwise inherit from comments."
 (define-obsolete-variable-alias 'kaolin-hl-line-colored 'kaolin-themes-hl-line-colored "1.3.4")
 (define-obsolete-variable-alias 'kaolin-italic-comments 'kaolin-themes-italic-comments "1.3.4")
 (define-obsolete-variable-alias 'kaolin-git-gutter-solid 'kaolin-themes-git-gutter-solid "1.3.4")
-(define-obsolete-variable-alias 'kaolin-wave 'kaolin-themes-underline-wave "1.3.4")
 
 (defun kaolin-themes--make-name (sym)
   "Format kaolin-<sym> from SYM."
@@ -188,7 +190,7 @@ Otherwise inherit from comments."
   "Add elements to BASE-LIST from ADD-LIST without dublicates. Returns a new list as result."
   (let ((res (copy-alist base-alist)))
     (cl-loop for el in add-alist
-                    do (setf (map-elt res (car el)) (cdr el)))
+             do (setf (map-elt res (car el)) (cdr el)))
     res))
 
 ;; (defun kaolin-themes-palette-get (name)
@@ -221,7 +223,7 @@ Use kaolin-valley-dark-theme.el as example."
                                    (kaolin-themes--merge-alist kaolin-palette opt-palette)
                                  kaolin-palette))
          (kaolin-theme-faces (if opt-faces
-                                   (kaolin-themes--merge-alist kaolin-faces opt-faces)
+                                 (kaolin-themes--merge-alist kaolin-faces opt-faces)
                                kaolin-faces)))
 
     `(autothemer-deftheme ,kaolin-theme-name ,doc
@@ -237,27 +239,28 @@ Use kaolin-valley-dark-theme.el as example."
                           ,kaolin-theme-faces
 
                           ;; Set vars or execute an arbitrary function body
-                           ,@body
+                          ,@body
 
-                           ;; (custom-theme-set-faces ',kaolin-theme-name
-                           ;;                         ,@kaolin-common-vars)
+                          ;; (custom-theme-set-faces ',kaolin-theme-name
+                          ;;                         ,@kaolin-common-vars)
 
 
-                           (custom-theme-set-variables ',kaolin-theme-name
-                              `(ansi-color-names-vector [,kaolin-black
-                                                         ,kaolin-red
-                                                         ,kaolin-green
-                                                         ,kaolin-yellow
-                                                         ,kaolin-blue
-                                                         ,kaolin-magenta
-                                                         ,kaolin-cyan
-                                                         ,kaolin-white])
-                               `(pos-tip-background-color ,tooltip-bg)
-                               `(pos-tip-foreground-color ,tooltip-fg))
+                          (custom-theme-set-variables ',kaolin-theme-name
+                                                      `(ansi-color-names-vector [,kaolin-black
+                                                                                 ,kaolin-red
+                                                                                 ,kaolin-green
+                                                                                 ,kaolin-yellow
+                                                                                 ,kaolin-blue
+                                                                                 ,kaolin-magenta
+                                                                                 ,kaolin-cyan
+                                                                                 ,kaolin-white])
+                                                      `(pos-tip-background-color ,tooltip-bg)
+                                                      `(pos-tip-foreground-color ,tooltip-fg)
+                                                      `(lsp-ui-imenu-colors '(,keyword ,functions)))
 
-                           ;; Provide theme
-                           (provide-theme ',kaolin-theme-name)
-                           )))
+                          ;; Provide theme
+                          (provide-theme ',kaolin-theme-name)
+                          )))
 
 
 ;;;###autoload

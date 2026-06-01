@@ -374,7 +374,7 @@ ignored) files."
                    (url (let ((default-directory
                                (file-name-as-directory (expand-file-name repo))))
                           (or (magit-get "remote" (magit-get-some-remote) "url")
-                              (concat (file-name-as-directory ".") repo))))
+                              (file-name-concat "." repo))))
                    (package
                     (and (equal borg-user-emacs-directory topdir)
                          (file-name-nondirectory (directory-file-name repo)))))
@@ -819,11 +819,15 @@ a separate commit.  A typical workflow would be:
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

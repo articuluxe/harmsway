@@ -724,6 +724,13 @@ to `auto', tags may not be properly aligned. "
      `(lsp-ui-doc-background ((,class (:background ,bg2))))
      `(lsp-ui-doc-header ((,class (:foreground ,head1 :background ,head1-bg))))
      `(lsp-ui-sideline-code-action ((,class (:foreground ,comp))))
+     `(lsp-ui-peek-header ((,class (:foreground ,bg1 :background ,base))))
+     `(lsp-ui-peek-peek ((,class (:background ,bg2))))
+     `(lsp-ui-peek-list ((,class (:background ,bg2))))
+     `(lsp-ui-peek-highlight ((,class (:background ,highlight))))
+     `(lsp-ui-peek-line-number ((,class (:foreground ,base))))
+     `(lsp-ui-peek-selection ((,class (:background ,bg3))))
+     `(lsp-ui-peek-filename ((,class (:foreground ,base))))
 
 ;;;;; magit
      `(magit-blame-culprit ((,class :background ,yellow-bg :foreground ,yellow)))

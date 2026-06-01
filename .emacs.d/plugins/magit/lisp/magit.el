@@ -20,12 +20,12 @@
 ;; Package-Version: 4.5.0
 ;; Package-Requires: (
 ;;     (emacs        "28.1")
-;;     (compat       "30.1")
+;;     (compat       "31.0")
 ;;     (cond-let      "0.2")
 ;;     (llama         "1.0")
 ;;     (magit-section "4.5")
 ;;     (seq           "2.24")
-;;     (transient     "0.12")
+;;     (transient     "0.13")
 ;;     (with-editor   "3.4"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -550,9 +550,8 @@ is run in the top-level directory of the current working tree."
   (magit-read-gpg-secret-key
    prompt initial-input history
    (lambda (cert)
-     (cl-some (lambda (key)
-                (memq 'sign (epg-sub-key-capability key)))
-              (epg-key-sub-key-list cert)))
+     (seq-some (##memq 'sign (epg-sub-key-capability %))
+               (epg-key-sub-key-list cert)))
    magit-openpgp-default-signing-key))
 
 ;;; Font-Lock Keywords
@@ -801,11 +800,15 @@ For X11 something like ~/.xinitrc should work.\n"
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

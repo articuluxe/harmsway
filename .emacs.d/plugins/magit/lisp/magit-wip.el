@@ -361,7 +361,7 @@ many \"branches\" of each wip ref are shown."
                    (string-match "^[^ ]+ \\([^:]+\\)" (cadr reflog)))
           (push (match-str 1 (cadr reflog)) tips))
         (setq reflog (cddr reflog))
-        (cl-decf count))
+        (decf count))
       (cons wipref (nreverse tips)))))
 
 (defun magit-wip-purge ()
@@ -390,11 +390,15 @@ many \"branches\" of each wip ref are shown."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

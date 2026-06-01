@@ -1,10 +1,10 @@
-;;; batppuccin.el --- Shared infrastructure for Batppuccin themes -*- lexical-binding: t; -*-
+;;; batppuccin.el --- Batppuccin (Catppuccin) color themes -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 Bozhidar Batsov
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://github.com/bbatsov/batppuccin-emacs
-;; Version: 0.1.0
+;; Version: 1.0.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces themes
 
@@ -326,6 +326,7 @@ The light flavor.")
          `(link-visited ((,class (:foreground ,bat-lavender :underline t))))
          `(button ((,class (:foreground ,bat-blue :underline t))))
          `(minibuffer-prompt ((,class (:foreground ,bat-blue :weight bold))))
+         `(minibuffer-nonselected ((,class (:foreground ,bat-base :background ,bat-blue))))
          `(escape-glyph ((,class (:foreground ,bat-pink))))
          `(homoglyph ((,class (:foreground ,bat-pink))))
          `(tooltip ((,class (:foreground ,bat-text :background ,bat-surface0))))
@@ -391,8 +392,8 @@ The light flavor.")
          `(font-lock-variable-name-face ((,class (:foreground ,bat-flamingo))))
          `(font-lock-variable-use-face ((,class (:foreground ,bat-text))))
          `(font-lock-warning-face ((,class (:inherit warning))))
-         `(font-lock-property-name-face ((,class (:foreground ,bat-blue))))
-         `(font-lock-property-use-face ((,class (:foreground ,bat-blue))))
+         `(font-lock-property-name-face ((,class (:foreground ,bat-teal))))
+         `(font-lock-property-use-face ((,class (:foreground ,bat-teal))))
          `(font-lock-bracket-face ((,class (:foreground ,bat-overlay2))))
          `(font-lock-delimiter-face ((,class (:foreground ,bat-overlay2))))
          `(font-lock-escape-face ((,class (:foreground ,bat-pink))))
@@ -416,7 +417,7 @@ The light flavor.")
 ;;;;; show-paren
          `(show-paren-match ((,class (:foreground ,bat-peach :background ,bat-surface1 :weight bold))))
          `(show-paren-match-expression ((,class (:background ,bat-surface0))))
-         `(show-paren-mismatch ((,class (:foreground ,bat-red :background ,bat-base :weight bold :underline t))))
+         `(show-paren-mismatch ((,class (:foreground ,bat-red :background ,bat-surface1 :weight bold :underline t))))
 
 ;;;;; completions
          `(completions-annotations ((,class (:foreground ,bat-overlay2))))
@@ -474,6 +475,33 @@ The light flavor.")
          `(dired-symlink ((,class (:foreground ,bat-sky))))
          `(dired-warning ((,class (:foreground ,bat-yellow :weight bold))))
          `(dired-broken-symlink ((,class (:foreground ,bat-red :weight bold))))
+
+;;;;; diredfl
+         `(diredfl-file-name ((,class (:inherit default))))
+         `(diredfl-file-suffix ((,class (:inherit default))))
+         `(diredfl-compressed-file-name ((,class (:foreground ,bat-green))))
+         `(diredfl-compressed-file-suffix ((,class (:foreground ,bat-green))))
+         `(diredfl-ignored-file-name ((,class (:inherit dired-ignored))))
+         `(diredfl-deletion-file-name ((,class (:inherit dired-flagged))))
+         `(diredfl-deletion ((,class (:inherit dired-flagged))))
+         `(diredfl-dir-heading ((,class (:inherit dired-header))))
+         `(diredfl-dir-name ((,class (:inherit dired-directory))))
+         `(diredfl-dir-priv ((,class (:inherit dired-directory))))
+         `(diredfl-symlink ((,class (:inherit dired-symlink))))
+         `(diredfl-link-priv ((,class (:inherit dired-symlink))))
+         `(diredfl-executable-tag ((,class (:foreground ,bat-red))))
+         `(diredfl-exec-priv ((,class (:foreground ,bat-red))))
+         `(diredfl-read-priv ((,class (:foreground ,bat-sky))))
+         `(diredfl-write-priv ((,class (:inherit dired-perm-write))))
+         `(diredfl-no-priv ((,class (:foreground ,bat-surface2))))
+         `(diredfl-other-priv ((,class (:inherit diredfl-exec-priv))))
+         `(diredfl-rare-priv ((,class (:inherit diredfl-exec-priv))))
+         `(diredfl-date-time ((,class (:foreground ,bat-subtext0))))
+         `(diredfl-number ((,class (:foreground ,bat-yellow))))
+         `(diredfl-flag-mark ((,class (:inherit dired-mark))))
+         `(diredfl-flag-mark-line ((,class (:inherit dired-marked))))
+         `(diredfl-autofile-name ((,class (:foreground ,bat-lavender))))
+         `(diredfl-tagged-autofile-name ((,class (:foreground ,bat-pink))))
 
 ;;;;; ediff
          `(ediff-current-diff-A ((,class (:background ,bat-diff-del-bg :extend t))))
@@ -568,7 +596,7 @@ The light flavor.")
 ;;;;; hi-lock
          `(hi-blue ((,class (:foreground ,bat-base :background ,bat-blue))))
          `(hi-green ((,class (:foreground ,bat-base :background ,bat-green))))
-         `(hi-pink ((,class (:foreground ,bat-base :background ,bat-red))))
+         `(hi-pink ((,class (:foreground ,bat-base :background ,bat-pink))))
          `(hi-yellow ((,class (:foreground ,bat-base :background ,bat-yellow))))
          `(hi-blue-b ((,class (:foreground ,bat-blue :weight bold))))
          `(hi-green-b ((,class (:foreground ,bat-green :weight bold))))
@@ -578,7 +606,7 @@ The light flavor.")
          `(hl-line ((,class (:background ,bat-cursor-line :extend t))))
 
 ;;;;; hl-todo
-         `(hl-todo ((,class (:foreground ,bat-flamingo :weight bold))))
+         `(hl-todo ((,class (:foreground ,bat-maroon :weight bold))))
 
 ;;;;; icomplete
          `(icomplete-first-match ((,class (:foreground ,bat-green :weight bold))))
@@ -753,9 +781,9 @@ The light flavor.")
          `(org-agenda-current-time ((,class (:foreground ,bat-sky))))
 
 ;;;;; outline
-         `(outline-1 ((,class (:foreground ,bat-heading1 :weight bold))))
-         `(outline-2 ((,class (:foreground ,bat-heading2 :weight bold))))
-         `(outline-3 ((,class (:foreground ,bat-heading3 :weight bold))))
+         `(outline-1 ((,class (:foreground ,bat-heading1 :weight bold :height ,h1))))
+         `(outline-2 ((,class (:foreground ,bat-heading2 :weight bold :height ,h2))))
+         `(outline-3 ((,class (:foreground ,bat-heading3 :weight bold :height ,h3))))
          `(outline-4 ((,class (:foreground ,bat-heading4 :weight bold))))
          `(outline-5 ((,class (:foreground ,bat-heading5 :weight bold))))
          `(outline-6 ((,class (:foreground ,bat-heading6 :weight bold))))
@@ -1254,7 +1282,7 @@ The light flavor.")
          `(markdown-header-face-6 ((,class (:foreground ,bat-heading6 :weight bold))))
          `(markdown-bold-face ((,class (:weight bold))))
          `(markdown-italic-face ((,class (:slant italic))))
-         `(markdown-code-face ((,class (:foreground ,bat-teal))))
+         `(markdown-code-face ((,class (:foreground ,bat-teal :background ,bat-mantle))))
          `(markdown-inline-code-face ((,class (:foreground ,bat-teal))))
          `(markdown-pre-face ((,class (:foreground ,bat-teal))))
          `(markdown-link-face ((,class (:foreground ,bat-blue :underline t))))
@@ -1285,14 +1313,16 @@ The light flavor.")
          `(rainbow-delimiters-depth-2-face ((,class (:foreground ,bat-peach))))
          `(rainbow-delimiters-depth-3-face ((,class (:foreground ,bat-yellow))))
          `(rainbow-delimiters-depth-4-face ((,class (:foreground ,bat-green))))
-         `(rainbow-delimiters-depth-5-face ((,class (:foreground ,bat-sapphire))))
-         `(rainbow-delimiters-depth-6-face ((,class (:foreground ,bat-lavender))))
-         `(rainbow-delimiters-depth-7-face ((,class (:foreground ,bat-red))))
-         `(rainbow-delimiters-depth-8-face ((,class (:foreground ,bat-peach))))
-         `(rainbow-delimiters-depth-9-face ((,class (:foreground ,bat-yellow))))
-         `(rainbow-delimiters-unmatched-face ((,class (:foreground ,bat-red :weight bold))))
-         `(rainbow-delimiters-mismatched-face ((,class (:foreground ,bat-red :weight bold))))
-         `(rainbow-delimiters-base-error-face ((,class (:foreground ,bat-red :weight bold))))
+         `(rainbow-delimiters-depth-5-face ((,class (:foreground ,bat-teal))))
+         `(rainbow-delimiters-depth-6-face ((,class (:foreground ,bat-sapphire))))
+         `(rainbow-delimiters-depth-7-face ((,class (:foreground ,bat-blue))))
+         `(rainbow-delimiters-depth-8-face ((,class (:foreground ,bat-lavender))))
+         `(rainbow-delimiters-depth-9-face ((,class (:foreground ,bat-mauve))))
+         ;; Error faces use a red box instead of a foreground color so they
+         ;; stay visible regardless of which depth color the paren already has.
+         `(rainbow-delimiters-unmatched-face ((,class (:box (:line-width (-1 . -1) :color ,bat-red) :weight bold))))
+         `(rainbow-delimiters-mismatched-face ((,class (:box (:line-width (-1 . -1) :color ,bat-red) :weight bold))))
+         `(rainbow-delimiters-base-error-face ((,class (:box (:line-width (-1 . -1) :color ,bat-red) :weight bold))))
 
 ;;;;; smartparens
          `(sp-show-pair-match-face ((,class (:inherit show-paren-match))))
@@ -1425,6 +1455,9 @@ The light flavor.")
          `(web-mode-comment-keyword-face ((,class (:foreground ,bat-flamingo :weight bold))))
          `(web-mode-sql-keyword-face ((,class (:foreground ,bat-mauve))))
          `(web-mode-html-entity-face ((,class (:foreground ,bat-peach))))
+
+;;;;; which-func
+         `(which-func ((,class (:foreground ,bat-blue))))
 
 ;;;;; which-key
          `(which-key-key-face ((,class (:foreground ,bat-mauve :weight bold))))

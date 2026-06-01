@@ -239,10 +239,9 @@ Entries have the form (GITHOST APIHOST WEBHOST CLASS).
 If no entry matches, return nil, or signal an error if optional DEMAND
 is non-nil."
   (or (assoc host forge-alist)
-      (assoc (seq-some (lambda (line)
-                         (and (string-prefix-p "hostname" line)
-                              (substring line 9)))
-                       (ignore-errors
+      (assoc (seq-some (##and (string-prefix-p "hostname" %)
+                              (substring % 9))
+                       (ignore-error file-missing
                          (process-lines-ignore-status "ssh" "-G" host)))
              forge-alist)
       (car (cl-member host forge-alist :test #'equal :key #'caddr))
@@ -480,10 +479,16 @@ Optional END defaults to the value of `point-max'."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
-;;   ("and>"          . "cond-let--and>")
+;;   ("thread$"       . "cond-let--thread$")
+;;   ("when$"         . "cond-let--when$")
+;;   ("and-let*"      . "cond-let--and-let*")
 ;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let*"       . "cond-let--if-let*")
 ;;   ("if-let"        . "cond-let--if-let")
-;;   ("when-let"      . "cond-let--when-let"))
+;;   ("when-let*"     . "cond-let--when-let*")
+;;   ("when-let"      . "cond-let--when-let")
+;;   ("while-let*"    . "cond-let--while-let*")
+;;   ("while-let"     . "cond-let--while-let"))
 ;; End:
 (provide 'forge-core)
 ;;; forge-core.el ends here

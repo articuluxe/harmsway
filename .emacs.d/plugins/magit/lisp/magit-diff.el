@@ -1604,7 +1604,7 @@ for a revision."
                  (while (or (< l line)
                             (= (char-after) ?-))
                    (unless (= (char-after) ?-)
-                     (cl-incf l))
+                     (incf l))
                    (forward-line)))
                (setq found (if (= (char-after) ?+) 'line 'hunk))
                (forward-char (1+ column))
@@ -1994,7 +1994,7 @@ the Magit-Status buffer for DIRECTORY."
                (unless (string-search
                         (if goto-from "+" "-")
                         (buffer-substring (point) (+ (point) prefix)))
-                 (cl-incf offset))
+                 (incf offset))
                (forward-line))
              offset))))))
 
@@ -2025,13 +2025,13 @@ the Magit-Status buffer for DIRECTORY."
                 (  to-len (string-to-number (match-str 4))))
             (if (<= from-beg line)
                 (if (< (+ from-beg from-len) line)
-                    (cl-incf offset (- to-len from-len))
+                    (incf offset (- to-len from-len))
                   (let ((rest (- line from-beg)))
                     (while (> rest 0)
                       (pcase (char-after)
-                        (?\s                  (cl-decf rest))
-                        (?-  (cl-decf offset) (cl-decf rest))
-                        (?+  (cl-incf offset)))
+                        (?\s               (decf rest))
+                        (?-  (decf offset) (decf rest))
+                        (?+  (incf offset)))
                       (forward-line))))
               (throw 'found nil))))))
     (+ line offset)))
@@ -2102,10 +2102,10 @@ the Magit-Status buffer for DIRECTORY."
         (while (and (not (eobp))
                     (memq (char-after) '(?\s ?- ?+)))
           (pcase (char-after)
-            (?\s (cl-incf -line)
-                 (cl-incf +line))
-            (?-  (push (cl-incf -line) -lines))
-            (?+  (push (cl-incf +line) +lines)))
+            (?\s (incf -line)
+                 (incf +line))
+            (?-  (push (incf -line) -lines))
+            (?+  (push (incf +line) +lines)))
           (forward-line))))
     (list (nreverse -lines)
           (nreverse +lines))))
@@ -2192,30 +2192,32 @@ commit or stash at point, then prompt for a commit."
 (defun magit-section-cycle-diffs ()
   "Cycle visibility of diff-related sections in the current buffer."
   (interactive)
-  (when-let ((sections
-              (cond ((derived-mode-p 'magit-status-mode)
-                     (mapcan (lambda (section)
-                               (and section
-                                    (progn
-                                      (when (oref section hidden)
-                                        (magit-section-show section))
-                                      (oref section children))))
-                             (list (magit-get-section '((staged)   (status)))
-                                   (magit-get-section '((unstaged) (status))))))
-                    ((derived-mode-p 'magit-diff-mode)
-                     (seq-filter #'magit-file-section-p
-                                 (oref magit-root-section children))))))
-    (if (seq-some (##oref % hidden) sections)
-        (dolist (s sections)
-          (magit-section-show s)
-          (magit-section-hide-children s))
-      (let ((children (mapcan (##copy-sequence (oref % children)) sections)))
-        (cond ((and (seq-some (##oref % hidden)   children)
-                    (seq-some (##oref % children) children))
-               (mapc #'magit-section-show-headings sections))
-              ((seq-some #'magit-section-hidden-body children)
-               (mapc #'magit-section-show-children sections))
-              ((mapc #'magit-section-hide sections)))))))
+  (cond-let*
+    [[sections
+      (cond ((derived-mode-p 'magit-status-mode)
+             (mapcan (lambda (section)
+                       (and section
+                            (progn
+                              (when (oref section hidden)
+                                (magit-section-show section))
+                              (copy-sequence (oref section children)))))
+                     (list (magit-get-section '((staged)   (status)))
+                           (magit-get-section '((unstaged) (status))))))
+            ((derived-mode-p 'magit-diff-mode)
+             (seq-filter #'magit-file-section-p
+                         (oref magit-root-section children))))]]
+    ((not sections))
+    ((seq-some (##oref % hidden) sections)
+     (dolist (s sections)
+       (magit-section-show s)
+       (magit-section-hide-children s)))
+    [[children (mapcan (##copy-sequence (oref % children)) sections)]]
+    ((and (seq-some (##oref % hidden)   children)
+          (seq-some (##oref % children) children))
+     (mapc #'magit-section-show-headings sections))
+    ((seq-some #'magit-section-hidden-body children)
+     (mapc #'magit-section-show-children sections))
+    ((mapc #'magit-section-hide sections))))
 
 ;;;; Jump Commands
 
@@ -2504,7 +2506,7 @@ keymap is the parent of their keymaps."
     (unless (equal cmd "merge-tree")
       (push "--ita-visible-in-index" args))
     (setq args (magit-diff--maybe-add-stat-arguments args))
-    (when (magit--any (##string-prefix-p "--color-moved" %) args)
+    (when (any (##string-prefix-p "--color-moved" %) args)
       (push "--color=always" args)
       (setq magit-git-global-arguments
             (append magit-diff--reset-non-color-moved
@@ -2639,7 +2641,7 @@ keymap is the parent of their keymaps."
         (if (looking-at "^$") (forward-line) (insert "\n"))))))
 
 (defun magit-diff-wash-diff (args)
-  (when (magit--any (##string-prefix-p "--color-moved" %) args)
+  (when (any (##string-prefix-p "--color-moved" %) args)
     (require 'ansi-color)
     (ansi-color-apply-on-region (point-min) (point-max)))
   (cond
@@ -2755,8 +2757,10 @@ keymap is the parent of their keymaps."
          (setq orig (magit-decode-git-path orig)))
        (setq file (magit-decode-git-path file))
        (setq header (nreverse header))
-       ;; KLUDGE `git-log' ignores `--no-prefix' when `-L' is used.
-       (when (and (derived-mode-p 'magit-log-mode)
+       ;; KLUDGE Before v2.54 `git-log' ignored `--no-prefix'
+       ;; when `-L' is used.
+       (when (and (magit-git-version< "2.54")
+                  (derived-mode-p 'magit-log-mode)
                   (seq-some (##string-prefix-p "-L" %)
                             magit-buffer-log-args))
          (when orig
@@ -4018,11 +4022,15 @@ If `magit-diff-visit-previous-blob' is nil, then always return nil."
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"         . "cond-let--and$")
-;;   ("and>"         . "cond-let--and>")
-;;   ("and-let"      . "cond-let--and-let")
-;;   ("if-let"       . "cond-let--if-let")
+;;   ("thread$"      . "cond-let--thread$")
 ;;   ("when$"        . "cond-let--when$")
+;;   ("and-let*"     . "cond-let--and-let*")
+;;   ("and-let"      . "cond-let--and-let")
+;;   ("if-let*"      . "cond-let--if-let*")
+;;   ("if-let"       . "cond-let--if-let")
+;;   ("when-let*"    . "cond-let--when-let*")
 ;;   ("when-let"     . "cond-let--when-let")
+;;   ("while-let*"   . "cond-let--while-let*")
 ;;   ("while-let"    . "cond-let--while-let")
 ;;   ("match-string" . "match-string")
 ;;   ("match-str"    . "match-string-no-properties"))

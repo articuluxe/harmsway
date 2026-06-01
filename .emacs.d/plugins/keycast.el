@@ -6,10 +6,11 @@
 ;; Homepage: https://github.com/tarsius/keycast
 ;; Keywords: multimedia
 
-;; Package-Version: 1.4.7
+;; Package-Version: 1.4.8
 ;; Package-Requires: (
-;;     (emacs  "28.1")
-;;     (compat "30.1"))
+;;     (emacs   "28.1")
+;;     (compat  "31.0")
+;;     (cond-let "1.1"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -47,6 +48,7 @@
 
 (require 'cl-lib)
 (require 'compat)
+(require 'cond-let)
 (require 'format-spec)
 
 (eval-when-compile (require 'subr-x))
@@ -422,7 +424,7 @@ t to show the actual COMMAND, or a symbol to be shown instead."
     (setq keycast--this-command-desc (keycast--format-command cmd))
     (if (or (eq last-command cmd)
             (< keycast--command-repetitions 0))
-        (cl-incf keycast--command-repetitions)
+        (incf keycast--command-repetitions)
       (setq keycast--command-repetitions 0)))
   (when keycast-mode-line-mode
     (keycast--maybe-edit-local-format
@@ -727,13 +729,10 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 
 (defun keycast-tab-bar ()
   "Produce key binding information for the tab bar."
-  (and keycast-tab-bar-mode
-       (keycast--active-frame-p)
-       (and-let* ((output (keycast--format keycast-tab-bar-format)))
-         (concat output
-                 (make-string (max 0 (- keycast-tab-bar-minimal-width
-                                        (length output)))
-                              ?\s)))))
+  (and$ keycast-tab-bar-mode
+        (keycast--active-frame-p)
+        (keycast--format keycast-tab-bar-format)
+        (string-pad $ keycast-tab-bar-minimal-width)))
 
 ;;; Log-Buffer
 
@@ -799,5 +798,17 @@ t to show the actual COMMAND, or a symbol to be shown instead."
 ;; Local Variables:
 ;; indent-tabs-mode: nil
 ;; lisp-indent-local-overrides: ((cond . 0) (interactive . 0))
+;; read-symbol-shorthands: (
+;;   ("and$"       . "cond-let--and$")
+;;   ("thread$"    . "cond-let--thread$")
+;;   ("when$"      . "cond-let--when$")
+;;   ("and-let*"   . "cond-let--and-let*")
+;;   ("and-let"    . "cond-let--and-let")
+;;   ("if-let*"    . "cond-let--if-let*")
+;;   ("if-let"     . "cond-let--if-let")
+;;   ("when-let*"  . "cond-let--when-let*")
+;;   ("when-let"   . "cond-let--when-let")
+;;   ("while-let*" . "cond-let--while-let*")
+;;   ("while-let"  . "cond-let--while-let"))
 ;; End:
 ;;; keycast.el ends here

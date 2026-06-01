@@ -6,7 +6,7 @@
 ;; Keywords: lisp, maint, tools
 ;; Created: Mon Jul 10 15:17:36 2017 (+0200)
 ;; Version: 0.1.3
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "27.1"))
 ;; URL: https://github.com/volrath/treepy.el
 
 ;; This program is free software: you can redistribute it and/or modify

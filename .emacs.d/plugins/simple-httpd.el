@@ -1,72 +1,74 @@
-;;; simple-httpd.el --- pure elisp HTTP server
+;;; simple-httpd.el --- Pure Elisp HTTP server -*- lexical-binding: t -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Christopher Wellons <wellons@nullprogram.com>
+;; Maintainer: Philip Kaludercic <philipk@posteo.net>, Daniel Mendler <mail@daniel-mendler.de>
 ;; URL: https://github.com/skeeto/emacs-http-server
-;; Version: 1.5.1
-;; Package-Requires: ((cl-lib "0.3"))
+;; Version: 1.6
+;; Package-Requires: ((emacs "27.1") (compat "31"))
+;; Keywords: network, comm
 
 ;;; Commentary:
 
-;; Use `httpd-start' to start the web server. Files are served from
+;; Use `httpd-start' to start the web server.  Files are served from
 ;; `httpd-root' on port `httpd-port' using `httpd-ip-family' at host
-;; `httpd-host'. While the root can be changed at any time, the server
+;; `httpd-host'.  While the root can be changed at any time, the server
 ;; needs to be restarted in order for a port change to take effect.
 
 ;; Everything is performed by servlets, including serving
-;; files. Servlets are enabled by setting `httpd-servlets' to true
-;; (default). Servlets are four-parameter functions that begin with
+;; files.  Servlets are enabled by setting `httpd-servlets' to true
+;; (default).  Servlets are four-parameter functions that begin with
 ;; "httpd/" where the trailing component specifies the initial path on
-;; the server. For example, the function `httpd/hello-world' will be
+;; the server.  For example, the function `httpd/hello-world' will be
 ;; called for the request "/hello-world" and "/hello-world/foo".
 
 ;; The default servlet `httpd/' is the one that serves files from
 ;; `httpd-root' and can be turned off through redefinition or setting
-;; `httpd-serve-files' to nil. It is used even when `httpd-servlets'
+;; `httpd-serve-files' to nil.  It is used even when `httpd-servlets'
 ;; is nil.
 
 ;; The four parameters for a servlet are process, URI path, GET/POST
 ;; arguments (alist), and the full request object (header
-;; alist). These are ordered by general importance so that some can be
-;; ignored. Two macros are provided to help with writing servlets.
+;; alist).  These are ordered by general importance so that some can be
+;; ignored.  Two macros are provided to help with writing servlets.
 
-;;  * `with-httpd-buffer' -- Creates a temporary buffer that is
+;;  * `httpd-with-buffer' -- Creates a temporary buffer that is
 ;;    automatically served to the client at the end of the body.
 ;;    Additionally, `standard-output' is set to this output
-;;    buffer. For example, this servlet says hello,
+;;    buffer.  For example, this servlet says hello,
 
 ;;     (defun httpd/hello-world (proc path &rest args)
-;;       (with-httpd-buffer proc "text/plain"
+;;       (httpd-with-buffer proc "text/plain"
 ;;         (insert "hello, " (file-name-nondirectory path))))
 
 ;; This servlet be viewed at http://localhost:8080/hello-world/Emacs
 
-;; * `defservlet' -- Similar to the above macro but totally hides the
-;;   process object from the servlet itself. The above servlet can be
+;; * `httpd-servlet' -- Similar to the above macro but totally hides the
+;;   process object from the servlet itself.  The above servlet can be
 ;;   re-written identically like so,
 
-;;     (defservlet hello-world text/plain (path)
+;;     (httpd-servlet hello-world text/plain (path)
 ;;       (insert "hello, " (file-name-nondirectory path)))
 
-;; Note that `defservlet' automatically sets `httpd-current-proc'. See
-;; below.
+;; Note that `httpd-servlet' automatically sets `httpd-current-proc'.
+;; See below.
 
 ;; The "function parameters" part can be left empty or contain up to
 ;; three parameters corresponding to the final three servlet
-;; parameters. For example, a servlet that shows *scratch* and doesn't
+;; parameters.  For example, a servlet that shows *scratch* and doesn't
 ;; need parameters,
 
-;;     (defservlet scratch text/plain ()
+;;     (httpd-servlet scratch text/plain ()
 ;;       (insert-buffer-substring (get-buffer-create "*scratch*")))
 
-;; A higher level macro `defservlet*' wraps this lower-level
-;; `defservlet' macro, automatically binding variables to components
-;; of the request. For example, this binds parts of the request path
-;; and one query parameter. Request components not provided by the
+;; A higher level macro `httpd-servlet*' wraps this lower-level
+;; `httpd-servlet' macro, automatically binding variables to components
+;; of the request.  For example, this binds parts of the request path
+;; and one query parameter.  Request components not provided by the
 ;; client are bound to nil.
 
-;;     (defservlet* packages/:package/:version text/plain (verbose)
+;;     (httpd-servlet* packages/:package/:version text/plain (verbose)
 ;;       (insert (format "%s\n%s\n" package version))
 ;;       (princ (get-description package version))
 ;;       (when verbose
@@ -83,118 +85,85 @@
 ;;   * `httpd-redirect'    -- redirect the browser to another url
 ;;   * `httpd-send-header' -- send custom headers
 ;;   * `httpd-error'       -- report an error to the client
-;;   * `httpd-log'         -- log an object to *httpd*
+;;   * `httpd-log'         -- log an object to the `httpd-log-buffer'
 
 ;; Some of these functions require a process object, which isn't
-;; passed to `defservlet' servlets. Use t in place of the process
+;; passed to `httpd-servlet' servlets.  Use t in place of the process
 ;; argument to use `httpd-current-proc' (like `standard-output').
 
 ;; If you just need to serve static from some location under some
-;; route on the server, use `httpd-def-file-servlet'. It expands into
-;; a `defservlet' that serves files.
-
-;;; History:
-
-;; Version 1.5.1: improvements
-;;   * Add `httpd-running-p'
-;;   * Properly handle "Connection: close" and HTTP/1.0
-;; Version 1.5.0: improvements
-;;   * Drastically improved performance for large requests
-;;   * More HTTP status codes
-;; Version 1.4.6: fixes
-;;   * Added httpd-serve-directory
-;;   * Fix some encoding issues
-;; Version 1.4.5: fixes
-;;   * Update to cl-lib from cl
-;; Version 1.4.4: features
-;;   * Common Lisp &key-like defservlet* argument support
-;;   * Fix up some defservlet* usage warnings.
-;; Version 1.4.3: features
-;;   * Add `httpd-discard-buffer'
-;;   * Add `httpd-def-file-servlet'
-;;   * Be more careful about not sending extra headers
-;; Version 1.4.2: features, fixes
-;;   * `defservlet*' macro
-;; Version 1.4.1: small bug fixes, one feature
-;;   * All mime-type parameters now accept string designators
-;;   * Documentation update
-;; Version 1.4.0: features, API change, and fixes
-;;   * Removed httpd-send-buffer; httpd-send-header now does this implicitly
-;;   * httpd-send-header now accepts keywords instead
-;;   * Fix httpd-clean-path in Windows
-;;   * Fix a content-length bug
-;;   * defservlet fontification
-;; Version 1.3.1: features and fixes
-;;   * Set `standard-output' in `with-httpd-buffer'
-;; Version 1.3.0: security fix
-;;   * Fix path expansion security issue
-;;   * Fix coding system (don't default)
-;; Version 1.2.4: fixes
-;;   * Handle large POSTs
-;;   * Fix date strings
+;; route on the server, use `httpd-file-servlet'.  It expands into
+;; a `httpd-servlet' that serves files.
 
 ;;; Code:
 
+(eval-when-compile (require 'subr-x))
 (require 'cl-lib)
 (require 'pp)
 (require 'url-util)
+(require 'compat)
 
 (defgroup simple-httpd nil
   "A simple web server."
-  :group 'comm)
+  :link '(url-link :tag "Website" "https://github.com/skeeto/emacs-http-server")
+  :link '(emacs-library-link :tag "Library Source" "simple-httpd.el")
+  :group 'network
+  :group 'comm
+  :group 'web
+  :prefix "httpd-")
 
 (defcustom httpd-ip-family 'ipv4
   "Web server IP family used by `make-network-process'."
-  :group 'simple-httpd
   :type 'symbol)
 
 (defcustom httpd-host nil
   "Web server host name used by `make-network-process'."
-  :group 'simple-httpd
   :type '(choice (const nil) (const local) string))
 
 (defcustom httpd-port 8080
   "Web server port."
-  :group 'simple-httpd
-  :type 'integer)
+  :type 'natnum)
 
 (defcustom httpd-root "~/public_html"
   "Web server file root."
-  :group 'simple-httpd
-  :type 'directory)
+  :type '(choice (const nil) directory))
 
 (defcustom httpd-serve-files t
   "Enable serving files from `httpd-root'."
-  :group 'simple-httpd
   :type 'boolean)
 
 (defcustom httpd-listings t
   "If true, serve directory listings."
-  :group 'simple-httpd
   :type 'boolean)
 
 (defcustom httpd-servlets t
   "Enable servlets."
-  :group 'simple-httpd
   :type 'boolean)
+
+(defcustom httpd-log-buffer "*httpd*"
+  "Buffer for log messages.
+Set to nil to disable logging."
+  :type '(choice (const nil) string))
 
 (defcustom httpd-show-backtrace-when-error nil
   "If true, show backtrace on error page."
-  :group 'simple-httpd
   :type 'boolean)
 
 (defcustom httpd-start-hook nil
   "Hook to run when the server has started."
-  :group 'simple-httpd
   :type 'hook)
 
 (defcustom httpd-stop-hook nil
   "Hook to run when the server has stopped."
-  :group 'simple-httpd
   :type 'hook)
 
-(defvar httpd-server-name (format "simple-httpd (Emacs %s)" emacs-version)
-  "String to use in the Server header.")
+(defcustom httpd-filter-functions nil
+  "Functions called with request as argument, should return modified request."
+  :type 'hook)
+
+(defcustom httpd-server-name (format "simple-httpd (Emacs %s)" emacs-version)
+  "String to use in the Server header."
+  :type '(choice (const nil) string))
 
 (defvar httpd-mime-types
   '(("png"  . "image/png")
@@ -203,18 +172,20 @@
     ("jpeg" . "image/jpeg")
     ("tif"  . "image/tif")
     ("tiff" . "image/tiff")
+    ("webp" . "image/webp")
     ("ico"  . "image/x-icon")
     ("svg"  . "image/svg+xml")
-    ("css"  . "text/css; charset=utf-8")
-    ("htm"  . "text/html; charset=utf-8")
-    ("html" . "text/html; charset=utf-8")
-    ("xml"  . "text/xml; charset=utf-8")
-    ("rss"  . "text/xml; charset=utf-8")
-    ("atom" . "text/xml; charset=utf-8")
-    ("txt"  . "text/plain; charset=utf-8")
-    ("el"   . "text/plain; charset=utf-8")
-    ("js"   . "text/javascript; charset=utf-8")
-    ("md"   . "text/x-markdown; charset=utf-8")
+    ("css"  . "text/css")
+    ("htm"  . "text/html")
+    ("html" . "text/html")
+    ("xml"  . "text/xml")
+    ("rss"  . "text/xml")
+    ("atom" . "text/xml")
+    ("txt"  . "text/plain")
+    ("el"   . "text/plain")
+    ("js"   . "text/javascript")
+    ("md"   . "text/markdown")
+    ("org"  . "text/org")
     ("gz"   . "application/octet-stream")
     ("ps"   . "application/postscript")
     ("eps"  . "application/postscript")
@@ -307,266 +278,370 @@
   "HTTP status codes.")
 
 (defvar httpd-html
-  '((403 . "<!DOCTYPE html>
-<html><head>
-<title>403 Forbidden</title>
-</head><body>
-<h1>Forbidden</h1>
-<p>The requested URL is forbidden.</p>
-<pre>%s</pre>
-</body></html>")
-    (404 . "<!DOCTYPE html>
-<html><head>
-<title>404 Not Found</title>
-</head><body>
-<h1>Not Found</h1>
+  '((404 . "<!DOCTYPE html>
+<html><head><title>%2$s %3$s</title></head><body>
+<h1>%2$s %3$s</h1>
 <p>The requested URL was not found on this server.</p>
-<pre>%s</pre>
-</body></html>")
-    (500 . "<!DOCTYPE html>
-<html><head>
-<title>500 Internal Error</title>
-</head><body>
-<h1>500 Internal Error</h1>
-<p>Internal error when handling this request.</p>
-<pre>%s</pre>
+<pre>%1$s</pre></body></html>")
+    (t . "<!DOCTYPE html>
+<html><head><title>%2$s %3$s</title></head><body>
+<h1>%2$s %3$s</h1>
+<p>An error occurred.</p>
+<pre>%1$s</pre>
 </body></html>"))
   "HTML for various errors.")
+
+(defvar httpd--server nil
+  "Server process.")
+
+(defvar httpd--clients nil
+  "Client processes.")
 
 ;; User interface
 
 ;;;###autoload
 (defun httpd-start ()
-  "Start the web server process. If the server is already
-running, this will restart the server. There is only one server
-instance per Emacs instance."
+  "Start the web server process.
+If the server is already running, this will restart the server.  There
+is only one server instance per Emacs instance."
   (interactive)
   (httpd-stop)
-  (httpd-log `(start ,(current-time-string)))
-  (make-network-process
-   :name     "httpd"
-   :service  httpd-port
-   :server   t
-   :host     httpd-host
-   :family   httpd-ip-family
-   :filter   'httpd--filter
-   :coding   'binary
-   :log      'httpd--log)
+  (httpd-log `(start ,(httpd-date-string)))
+  (setq httpd--server
+        (make-network-process
+         :name     "httpd"
+         :service  httpd-port
+         :server   t
+         :host     httpd-host
+         :family   httpd-ip-family
+         :filter   #'httpd--filter
+         :coding   'binary
+         :log      #'httpd--accept))
   (run-hooks 'httpd-start-hook))
 
 ;;;###autoload
 (defun httpd-stop ()
   "Stop the web server if it is currently running, otherwise do nothing."
   (interactive)
-  (when (process-status "httpd")
-    (delete-process "httpd")
-    (httpd-log `(stop ,(current-time-string)))
+  (when (httpd-running-p)
+    (mapc #'delete-process httpd--clients)
+    (delete-process httpd--server)
+    (setq httpd--server nil
+          httpd--clients nil)
+    (httpd-log `(stop ,(httpd-date-string)))
     (run-hooks 'httpd-stop-hook)))
 
 ;;;###autoload
 (defun httpd-running-p ()
   "Return non-nil if the simple-httpd server is running."
-  (not (null (process-status "httpd"))))
+  (process-live-p httpd--server))
 
 ;;;###autoload
-(defun httpd-serve-directory (directory)
-  "Start the web server with given `directory' as `httpd-root'."
+(defun httpd-serve-directory (&optional directory)
+  "Start the web server with given DIRECTORY as `httpd-root'.
+If DIRECTORY is nil use the current `default-directory'."
   (interactive "DServe directory: \n")
-  (setf httpd-root directory)
+  (setq httpd-root (or directory default-directory))
   (httpd-start)
   (message "Started simple-httpd on %s:%d, serving: %s"
            (cl-case httpd-host
-             ((nil) "0.0.0.0")
-             ((local) "localhost")
-             (otherwise httpd-host)) httpd-port directory))
+             ((nil local) "localhost")
+             (otherwise httpd-host))
+           httpd-port directory))
 
 (defun httpd-batch-start ()
   "Never returns, holding the server open indefinitely for batch mode.
-Logs are redirected to stdout. To use, invoke Emacs like this:
-emacs -Q -batch -l simple-httpd.elc -f httpd-batch-start"
-  (if (not noninteractive)
-      (error "Only use `httpd-batch-start' in batch mode!")
-    (httpd-start)
-    (defalias 'httpd-log 'pp)
-    (while t (sleep-for 60))))
+Logs are redirected to stdout.  To use, invoke Emacs like this:
+  \"emacs -Q -batch -l simple-httpd.elc -f httpd-batch-start\""
+  (unless noninteractive
+    (error "Only use `httpd-batch-start' in batch mode"))
+  (httpd-start)
+  (fset #'httpd-log #'pp)
+  (while t (sleep-for 60)))
 
 ;; Utility
 
 (defun httpd-date-string (&optional date)
-  "Return an HTTP date string (RFC 1123)."
-  (format-time-string "%a, %e %b %Y %T GMT" date t))
+  "Return DATE as HTTP date string (RFC 1123)."
+  (format-time-string "%a, %d %b %Y %T GMT" date t))
 
 (defun httpd-etag (file)
   "Compute the ETag for FILE."
   (concat "\"" (substring (sha1 (prin1-to-string (file-attributes file))) -16)
           "\""))
 
-(defun httpd--stringify (designator)
-  "Turn a string designator into a string."
-  (let ((string (format "%s" designator)))
-    (if (keywordp designator)
-        (substring string 1)
-      string)))
+(defun httpd--stringify (obj)
+  "Turn OBJ into a string, e.g., symbols, keywords or strings."
+  (cond
+   ((stringp obj) obj)
+   ((keywordp obj) (substring (symbol-name obj) 1))
+   ((symbolp obj) (symbol-name obj))
+   (t (format "%s" obj))))
 
 ;; Networking code
 
 (defun httpd--connection-close-p (request)
-  "Return non-nil if the client requested \"connection: close\"."
-  (or (equal '("close") (cdr (assoc "Connection" request)))
-      (equal '("HTTP/1.0") (cddr (assoc "GET" request)))))
+  "Return non-nil if the REQUEST has \"connection: close\"."
+  (let ((conn (cadr (assoc "Connection" request))))
+    (or (and (stringp conn) (string-equal-ignore-case conn "close"))
+        (equal "HTTP/1.0" (caddar request)))))
+
+(defun httpd--parse-content-args (request)
+  "Parse arguments in content string of REQUEST."
+  (when-let* ((content-type (cadr (assoc "Content-Type" request)))
+              ((string-prefix-p "application/x-www-form-urlencoded"
+                                content-type)))
+    (httpd-parse-args (cadr (assoc "Content" request)))))
+
+(defun httpd--handle-request (proc request)
+  "Handle REQUEST from client PROC."
+  (condition-case err
+      (let* ((_ (run-hook-wrapped
+                 'httpd-filter-functions
+                 (lambda (fun)
+                   (setq request (funcall fun request))
+                   nil)))
+             (uri (cadar request))
+             (parsed-uri (httpd-parse-uri (concat uri)))
+             (uri-path (car parsed-uri))
+             (uri-query (nconc (cadr parsed-uri)
+                               (httpd--parse-content-args request)))
+             (servlet (httpd-get-servlet uri-path)))
+        (httpd-log `(request
+                     (date ,(httpd-date-string))
+                     (address ,(car (process-contact proc)))
+                     (path ,uri-path)
+                     (query ,uri-query)
+                     (servlet ,servlet)
+                     (headers . ,request)))
+        (process-put proc :request-active request)
+        (funcall servlet proc uri-path uri-query request))
+    (error
+     (httpd--error-safe proc 500 err))))
+
+(defun httpd--content-string (len)
+  "Return request content of length LEN if it is fully transmitted.
+Return nil if transmission is incomplete."
+  (if (> len 0)
+      (when (>= (buffer-size) len)
+        (prog1 (buffer-substring (point-min) (setq len (+ (point-min) len)))
+          (delete-region (point-min) len)))
+    ""))
+
+(defun httpd--content-length (request)
+  "Return content length of REQUEST."
+  (let* ((te (cadr (assoc "Transfer-Encoding" request)))
+         (len (cadr (assoc "Content-Length" request))))
+    (when (and (or (not te) (string-equal-ignore-case te "identity"))
+               (or (not len) (string-match-p "\\`[0-9]+\\'" len)))
+      (if len (string-to-number len) 0))))
 
 (defun httpd--filter (proc chunk)
-  "Runs each time client makes a request."
+  "Process called each time client makes a request.
+PROC is the client process and CHUNK is part of the request as string."
   (with-current-buffer (process-get proc :request-buffer)
     (goto-char (point-max))
     (insert chunk)
-    (let ((request (process-get proc :request)))
-      (unless request
-        (when (setf request (httpd-parse))
-          (delete-region (point-min) (point))
-          (process-put proc :request request)))
-      (when request
-        (let ((content-length (cadr (assoc "Content-Length" request))))
-          (when (or (null content-length)
-                    (= (buffer-size) (string-to-number content-length)))
-            (let* ((content (buffer-string))
-                   (uri (cl-cadar request))
-                   (parsed-uri (httpd-parse-uri (concat uri)))
-                   (uri-path (httpd-unhex (nth 0 parsed-uri)))
-                   (uri-query (append (nth 1 parsed-uri)
-                                      (httpd-parse-args content)))
-                   (servlet (httpd-get-servlet uri-path)))
-              (erase-buffer)
-              (process-put proc :request nil)
-              (setf request (nreverse (cons (list "Content" content)
-                                            (nreverse request))))
-              (httpd-log `(request (date ,(httpd-date-string))
-                                   (address ,(car (process-contact proc)))
-                                   (get ,uri-path)
-                                   ,(cons 'headers request)))
-              (if (null servlet)
-                  (httpd--error-safe proc 404)
-                (condition-case error-case
-                    (funcall servlet proc uri-path uri-query request)
-                  (error (httpd--error-safe proc 500 error-case))))
-              (when (httpd--connection-close-p request)
-                (process-send-eof proc)))))))))
+    (let ((continue t) (request nil))
+      (while continue
+        (setq continue nil
+              request (process-get proc :request-pending))
+        (when (and (not request) (setq request (httpd-parse)))
+          (process-put proc :request-pending request)
+          (delete-region (point-min) (point)))
+        (cond
+         (request
+          (if-let* ((len (httpd--content-length request)))
+              (when-let* ((content (httpd--content-string len)))
+                (process-put proc :request-pending nil)
+                (httpd--push-request proc (nconc request `(("Content" ,content))))
+                (setq continue t))
+            (httpd--push-request proc `(("GET" "/error?status=411" "HTTP/1.1")
+                                        ("Connection" "close")))))
+         ((looking-at-p "[^\r\n]*[\r\n]")
+          (httpd--push-request proc '(("GET" "/error?status=400" "HTTP/1.1")
+                                      ("Connection" "close"))))))))
+  (httpd--pop-request proc))
 
-(defun httpd--log (server proc message)
-  "Runs each time a new client connects."
-  (with-current-buffer (generate-new-buffer " *httpd-client*")
-    (process-put proc :request-buffer (current-buffer)))
+(defun httpd--push-request (proc request)
+  "Push REQUEST to client PROC queue."
+  (cl-callf (lambda (q) (nconc q (list request)))
+      (process-get proc :request-queue)))
+
+(defun httpd--pop-request (proc)
+  "Pop request from client PROC queue and handle it."
+  (when-let* (((not (process-get proc :request-active)))
+              (request (pop (process-get proc :request-queue))))
+    (run-at-time 0 nil #'httpd--handle-request proc request)))
+
+(defsubst httpd--new-buffer (name)
+  "Generate new buffer NAME without calling buffer hooks."
+  (static-if (< emacs-major-version 28)
+      (generate-new-buffer name)
+    (generate-new-buffer name t)))
+
+(defun httpd--accept (_server proc _message)
+  "Runs each time a new client PROC connects to the server."
+  (push proc httpd--clients)
+  (process-put proc :request-buffer (httpd--new-buffer " *httpd-client*"))
   (set-process-sentinel proc #'httpd--sentinel)
-  (httpd-log (list 'connection (car (process-contact proc)))))
+  (httpd-log `(connection ,(car (process-contact proc)))))
 
 (defun httpd--sentinel (proc message)
-  "Runs when a client closes the connection."
-  (unless (string-match-p "^open " message)
-    (let ((buffer (process-get proc :request-buffer)))
-      (when buffer
-        (kill-buffer buffer)))))
+  "Runs when a client PROC closes the connection.
+MESSAGE describes the state change."
+  (unless (string-prefix-p "open " message)
+    (httpd-log `(close ,(car (process-contact proc))))
+    (cl-callf2 delq proc httpd--clients)
+    (when-let* ((buffer (process-get proc :request-buffer)))
+      (kill-buffer buffer))))
 
 ;; Logging
 
+(defun httpd--log (item)
+  "Pretty print ITEM to the log."
+  (with-current-buffer (get-buffer-create httpd-log-buffer)
+    (setq buffer-read-only t
+          truncate-lines t)
+    (with-silent-modifications
+      (let* ((win (get-buffer-window))
+             (follow (and win (= (window-point win) (point-max)))))
+        (save-excursion
+          (goto-char (point-max))
+          (pp item (current-buffer)))
+        (when follow
+          (set-window-point win (point-max)))))))
+
 (defun httpd-log (item)
-  "Pretty print a lisp object to the log."
-  (with-current-buffer (get-buffer-create "*httpd*")
-    (setf buffer-read-only nil)
-    (let ((follow (= (point) (point-max))))
-      (save-excursion
-        (goto-char (point-max))
-        (pp item (current-buffer)))
-      (if follow (goto-char (point-max))))
-    (setf truncate-lines t
-          buffer-read-only t)
-    (set-buffer-modified-p nil)))
+  "Pretty print ITEM to the log.
+If `httpd-log-buffer' is nil, ITEM may not be evaluated."
+  (declare (compiler-macro
+            (lambda (_)
+              `(when httpd-log-buffer
+                 (httpd--log ,item)))))
+  (when httpd-log-buffer
+    (httpd--log item)))
 
 ;; Servlets
 
 (defvar httpd-current-proc nil
   "The process object currently in use.")
 
-(defvar httpd--header-sent nil
+(defvar-local httpd--header-sent nil
   "Buffer-local variable indicating if the header has been sent.")
-(make-variable-buffer-local 'httpd--header-sent)
 
-(defun httpd-resolve-proc (proc)
-  "Return the correct process to use. This handles `httpd-current-proc'."
+(defsubst httpd--resolve-proc (proc)
+  "Return the correct process to use.
+Return `httpd-current-proc' if PROC is t."
   (if (eq t proc) httpd-current-proc proc))
 
-(defmacro with-httpd-buffer (proc mime &rest body)
-  "Create a temporary buffer, set it as the current buffer, and,
-at the end of body, automatically serve it to an HTTP client with
-an HTTP header indicating the specified MIME type. Additionally,
-`standard-output' is set to this output buffer and
-`httpd-current-proc' is set to PROC."
+(defmacro httpd--ensure-buffer (&rest body)
+  "Ensure that BODY is executed in a temporary httpd buffer.
+Reuse the current buffer if it is a temporary httpd buffer."
+  (declare (indent 0) (debug t))
+  (cl-with-gensyms (temp)
+    `(let (,temp)
+       (with-current-buffer
+           (if (eq major-mode 'httpd-buffer)
+               (current-buffer)
+             (setq ,temp (httpd--new-buffer " *httpd-temp*")))
+         (unwind-protect
+             (progn
+               (setq major-mode 'httpd-buffer)
+               ,@body)
+           (when (buffer-live-p ,temp)
+             (kill-buffer ,temp)))))))
+
+(defmacro httpd-with-buffer (proc mime &rest body)
+  "Create temporary buffer and serve it to the client.
+Create a temporary buffer, set it as the current buffer, and, at the end
+of body, automatically serve it to an HTTP client with an HTTP header
+indicating the specified MIME type.  Additionally, `standard-output' is
+set to this output buffer and `httpd-current-proc' is set to PROC."
   (declare (indent defun))
-  (let ((proc-sym (make-symbol "--proc--")))
-    `(let ((,proc-sym ,proc))
-       (with-temp-buffer
-         (setf major-mode 'httpd-buffer)
-         (let ((standard-output (current-buffer))
-               (httpd-current-proc ,proc-sym))
-           ,@body)
-         (unless httpd--header-sent
-           (httpd-send-header ,proc-sym ,mime 200))))))
+  (cl-once-only (proc)
+    `(httpd--ensure-buffer
+       (let ((standard-output (current-buffer))
+             (httpd-current-proc ,proc))
+         ,@body)
+       (unless httpd--header-sent
+         (httpd-send-header ,proc ,mime 200)))))
 
 (defun httpd-discard-buffer ()
-  "Don't respond using current server buffer (`with-httpd-buffer').
-Returns a process for future response."
-  (when (eq major-mode 'httpd-buffer) (setf httpd--header-sent t))
+  "Don't respond using current server buffer (`httpd-with-buffer').
+Returns a process for future response.
+
+    (httpd-servlet slow text/plain ()
+      (let ((proc (httpd-discard-buffer)))
+        (run-at-time 1 0
+         (lambda ()
+           (ignore-errors
+             (httpd-with-buffer proc \"text/plain\"
+               (insert \"Slow response\")))))))"
+  (when (eq major-mode 'httpd-buffer) (setq httpd--header-sent t))
   httpd-current-proc)
 
-(defmacro defservlet (name mime path-query-request &rest body)
-  "Defines a simple httpd servelet. The servlet runs in a
-temporary buffer which is automatically served to the client
-along with a header.
+(defmacro httpd-servlet (name mime path-query-request &rest body)
+  "Defines a simple httpd servlet.
+
+NAME is the servlet name as symbol.
+MIME the mime-type as symbol.
+PATH-QUERY-REQUEST is the argument list.
+BODY is the function body.
+
+The servlet runs in a temporary buffer which is automatically served to
+the client along with a header.
 
 A servlet that serves the contents of *scratch*,
 
-    (defservlet scratch text/plain ()
+    (httpd-servlet scratch text/plain ()
       (insert-buffer-substring (get-buffer-create \"*scratch*\")))
 
 A servlet that says hello,
 
-    (defservlet hello-world text/plain (path)
+    (httpd-servlet hello-world text/plain (path)
       (insert \"hello, \" (file-name-nondirectory path))))"
   (declare (indent defun))
-  (let ((proc-sym (make-symbol "proc"))
-        (fname (intern (concat "httpd/" (symbol-name name)))))
-    `(defun ,fname (,proc-sym ,@path-query-request &rest ,(cl-gensym))
-       (with-httpd-buffer ,proc-sym ,(httpd--stringify mime)
-         ,@body))))
+  (cl-with-gensyms (proc-sym rest-sym)
+    (let ((fname (intern (concat "httpd/" (symbol-name name)))))
+      `(defun ,fname (,proc-sym ,@path-query-request &rest ,rest-sym)
+         (httpd-with-buffer ,proc-sym ,(httpd--stringify mime)
+           ,@body)))))
 
 (defun httpd-parse-endpoint (symbol)
-  "Parse an endpoint definition template for use with `defservlet*'."
+  "Parse an endpoint template SYMBOL for use with `httpd-servlet*'."
   (cl-loop for item in (split-string (symbol-name symbol) "/")
            for n upfrom 0
            when (and (> (length item) 0) (eql (aref item 0) ?:))
            collect (cons (intern (substring item 1)) n) into vars
            else collect item into path
-           finally
-           (cl-return
-            (cl-values (intern (mapconcat #'identity path "/")) vars))))
+           finally return
+           (cl-values (intern (string-join path "/")) vars)))
 
 (defvar httpd-path nil
-  "Anaphoric variable for `defservlet*'.")
+  "Dynamic variable bound by `httpd-servlet*'.")
 
 (defvar httpd-query nil
-  "Anaphoric variable for `defservlet*'.")
+  "Dynamic variable bound by `httpd-servlet*'.")
 
 (defvar httpd-request nil
-  "Anaphoric variable for `defservlet*'.")
+  "Dynamic variable bound by `httpd-servlet*'.")
 
 (defvar httpd-split-path nil
-  "Anaphoric variable for `defservlet*'.")
+  "Dynamic variable bound by `httpd-servlet*'.")
 
-(defmacro defservlet* (endpoint mime args &rest body)
-  "Like `defservlet', but automatically bind variables/arguments
-to the request. Trailing components of the ENDPOINT can be bound
-by prefixing these components with a colon, acting like a template.
+(defmacro httpd-servlet* (endpoint mime args &rest body)
+  "Like `httpd-servlet', but bind variables/arguments to the request.
 
-    (defservlet* packages/:package/:version text/plain (verbose)
+ENDPOINT is the path as symbol.
+MIME the mime-type as symbol.
+ARGS is the argument list.
+BODY is the function body.
+
+Trailing components of the ENDPOINT can be bound by prefixing these
+components with a colon, acting like a template.
+
+    (httpd-servlet* packages/:package/:version text/plain (verbose)
       (insert (format \"%s\\n%s\\n\" package version))
       (princ (get-description package version))
       (when verbose
@@ -577,93 +652,80 @@ When accessed from this URL,
     http://example.com/packages/foobar/1.0?verbose=1
 
 the variables package, version, and verbose will be bound to the
-associated components of the URL. Components not provided are
-bound to nil. The query arguments can use the Common Lisp &key
+associated components of the URL.  Components not provided are
+bound to nil.  The query arguments can use the Common Lisp &key
 form (variable default provided-p).
 
-    (defservlet* greeting/:name text/plain ((greeting \"hi\" greeting-p))
+    (httpd-servlet* greeting/:name text/plain ((greeting \"hi\" greeting-p))
       (princ (format \"%s, %s (provided: %s)\" greeting name greeting-p)))
 
-The original path, query, and request can be accessed by the
-anaphoric special variables `httpd-path', `httpd-query', and
-`httpd-request'."
+The original path, query, and request can be accessed by the dynamically
+bound variables `httpd-path', `httpd-query', and `httpd-request'."
   (declare (indent defun))
-  (let ((path-lexical (cl-gensym))
-        (query-lexical (cl-gensym))
-        (request-lexical (cl-gensym)))
+  (cl-with-gensyms (path-lexical query-lexical request-lexical)
     (cl-multiple-value-bind (path vars) (httpd-parse-endpoint endpoint)
-      `(defservlet ,path ,mime (,path-lexical ,query-lexical ,request-lexical)
+      `(httpd-servlet ,path ,mime (,path-lexical ,query-lexical ,request-lexical)
          (let ((httpd-path ,path-lexical)
                (httpd-query ,query-lexical)
                (httpd-request ,request-lexical)
                (httpd-split-path (split-string
                                   (substring ,path-lexical 1) "/")))
            (let ,(cl-loop for (var . pos) in vars
-                          for extract =
-                          `(httpd-unhex (nth ,pos httpd-split-path))
+                          for extract = `(nth ,pos httpd-split-path)
                           collect (list var extract))
              (let ,(cl-loop for arg in args
                             for has-default = (listp arg)
                             for has-default-p = (and has-default
                                                      (= 3 (length arg)))
                             for arg-name = (symbol-name
-                                            (if has-default (cl-first arg) arg))
+                                            (if has-default (car arg) arg))
                             when has-default collect
-                            (list (cl-first arg)
+                            (list (car arg)
                                   `(let ((value (assoc ,arg-name httpd-query)))
                                      (if value
-                                         (cl-second value)
-                                       ,(cl-second arg))))
+                                         (cadr value)
+                                       ,(cadr arg))))
                             else collect
-                            (list arg `(cl-second
+                            (list arg `(cadr
                                         (assoc ,arg-name httpd-query)))
                             when has-default-p collect
-                            (list (cl-third arg)
+                            (list (caddr arg)
                                   `(not (null (assoc ,arg-name httpd-query)))))
                ,@body)))))))
 
-(font-lock-add-keywords
- 'emacs-lisp-mode
- '(("(\\<\\(defservlet\\*?\\)\\> +\\([^ ()]+\\) +\\([^ ()]+\\)"
-    (1 'font-lock-keyword-face)
-    (2 'font-lock-function-name-face)
-    (3 'font-lock-type-face))))
-
-(defmacro httpd-def-file-servlet (name root)
+(defmacro httpd-file-servlet (name root)
   "Defines a servlet that serves files from ROOT under the route NAME.
 
-    (httpd-def-file-servlet my/www \"/var/www/\")
+    (httpd-file-servlet my/www \"/var/www/\")
 
 Automatically handles redirects and uses `httpd-serve-root' to
 actually serve up files."
   (let* ((short-root (directory-file-name (symbol-name name)))
          (path-root (concat short-root "/"))
          (chop (length path-root)))
-    `(defservlet ,name nil (uri-path query request)
-       (setf httpd--header-sent t) ; Don't actually use this temp buffer
+    `(httpd-servlet ,name nil (uri-path query request)
        (if (= (length uri-path) ,chop)
            (httpd-redirect t ,path-root)
-         (let ((path (substring uri-path ,chop)))
-           (httpd-serve-root t ,root path request))))))
+         (httpd-serve-root t ,root (substring uri-path ,chop) request)))))
 
 ;; Request parsing
 
-(defun httpd--normalize-header (header)
-  "Destructively capitalize the components of HEADER."
-  (mapconcat #'capitalize (split-string header "-") "-"))
+(defsubst httpd--normalize-header (header)
+  "Capitalize the components of HEADER."
+  (replace-regexp-in-string "[^-]+" #'capitalize header t))
 
 (defun httpd-parse ()
   "Parse HTTP header in current buffer into association list.
-Leaves the point at the start of the request content. Returns nil
+Leaves the point at the start of the request content.  Returns nil
 if it failed to parse a complete HTTP header."
   (goto-char (point-min))
-  (when (looking-at "\\([^ ]+\\) +\\([^ ]+\\) +\\([^\r]+\\)\r\n")
+  (when (looking-at "\\([^ \r\n]+\\) +\\([^ \r\n]+\\) +\\([^\r\n]+\\)\r\n")
     (let ((method (match-string 1))
           (path (decode-coding-string (match-string 2) 'iso-8859-1))
           (version (match-string 3))
-          (headers ()))
+          (headers nil))
       (goto-char (match-end 0))
-      (while (looking-at "\\([-!#-'*+.0-9A-Z^_`a-z|~]+\\): *\\([^\r]+\\)\r\n")
+      (while (looking-at "\\([-!#-'*+.0-9A-Z^_`a-z|~]+\\): *\\([^\r\n]+\\)\r\n")
         (goto-char (match-end 0))
         (let ((name (match-string 1))
               (value (match-string 2)))
@@ -673,47 +735,59 @@ if it failed to parse a complete HTTP header."
         (goto-char (match-end 0))
         (cons (list method path version) (nreverse headers))))))
 
-(defun httpd-unhex (str)
-  "Fully decode the URL encoding in STR (including +'s)."
-  (when str
-    (let ((nonplussed (replace-regexp-in-string (regexp-quote "+") " " str)))
-      (decode-coding-string (url-unhex-string nonplussed t) 'utf-8))))
+(defsubst httpd-unhex (str)
+  "Fully decode the URL encoding in STR."
+  (decode-coding-string (url-unhex-string str t) 'utf-8))
 
-(defun httpd-parse-args (argstr)
-  "Parse a string containing URL encoded arguments."
-  (unless (zerop (length argstr))
-    (mapcar (lambda (str)
-              (mapcar 'httpd-unhex (split-string str "=")))
-            (split-string argstr "&"))))
+(defsubst httpd-unhex-plus (str)
+  "Fully decode URL/form encoding in STR, treating `+' as space."
+  (httpd-unhex (string-replace "+" " " str)))
+
+(defun httpd-parse-args (str)
+  "Parse STR containing URL/form encoded arguments."
+  (unless (equal str "")
+    (mapcar
+     (lambda (s)
+       (if-let* ((i (string-search "=" s)))
+         (list (httpd-unhex-plus (substring s 0 i))
+               (httpd-unhex-plus (substring s (1+ i))))
+         (list (httpd-unhex-plus s))))
+     (split-string str "&" t))))
 
 (defun httpd-parse-uri (uri)
   "Split a URI into its components.
 The first element of the return value is the script path, the
 second element is an alist of variable/value pairs, and the third
 element is the fragment."
-  (let ((p1 (string-match (regexp-quote "?") uri))
-        (p2 (string-match (regexp-quote "#") uri))
-        retval)
-    (push (if p2 (httpd-unhex (substring uri (1+ p2)))) retval)
-    (push (if p1 (httpd-parse-args (substring uri (1+ p1) p2))) retval)
-    (push (substring uri 0 (or p1 p2)) retval)))
+  (let ((q (string-search "?" uri))
+        (h (string-search "#" uri)))
+    (when (and q h (> q h))
+      (setq q nil))
+    (list (httpd-unhex (substring uri 0 (or q h)))
+          (and q (httpd-parse-args (substring uri (1+ q) h)))
+          (and h (httpd-unhex (substring uri (1+ h)))))))
+
+(defconst httpd--html-entities
+  '((?& . "&amp;")
+    (?' . "&apos;")
+    (?\" . "&quot;")
+    (?< . "&lt;")
+    (?> . "&gt;"))
+  "Alist of HTML entities escaped by `httpd-escape-html-buffer'.")
 
 (defun httpd-escape-html-buffer ()
   "Escape current buffer contents to be safe for inserting into HTML."
   (goto-char (point-min))
-  (while (search-forward-regexp "[<>&]" nil t)
+  (while (re-search-forward "[<>&'\"]" nil t)
     (replace-match
-     (cl-case (aref (match-string 0) 0)
-       (?< "&lt;")
-       (?> "&gt;")
-       (?& "&amp;")))))
+     (alist-get (char-after (match-beginning 0)) httpd--html-entities))))
 
-(defun httpd-escape-html (string)
-  "Escape STRING so that it's safe to insert into an HTML document."
-  (with-temp-buffer
-    (insert string)
-    (httpd-escape-html-buffer)
-    (buffer-string)))
+(defun httpd-escape-html (str)
+  "Escape STR so that it's safe to insert into an HTML document."
+  (replace-regexp-in-string
+   "[<>&'\"]"
+   (lambda (c) (alist-get (aref c 0) httpd--html-entities))
+   str))
 
 ;; Path handling
 
@@ -727,35 +801,35 @@ element is the fragment."
 
 (defun httpd-clean-path (path)
   "Clean dangerous .. from PATH and remove the leading slash."
-  (let* ((sep (if (member system-type '(windows-nt ms-dos)) "[/\\]" "/"))
-         (split (delete ".." (split-string path sep)))
-         (unsplit (mapconcat 'identity (delete "" split) "/")))
-    (concat "./" unsplit)))
+  (let ((sep (if (memq system-type '(windows-nt ms-dos)) "[/\\]" "/")))
+    (concat "./" (string-join (delete ".." (split-string path sep t)) "/"))))
 
 (defun httpd-gen-path (path &optional root)
-  "Translate GET to secure path in ROOT (`httpd-root')."
-  (let ((clean (expand-file-name (httpd-clean-path path) (or root httpd-root))))
+  "Generate secure path in ROOT from request PATH."
+  (let ((clean (expand-file-name (httpd-clean-path path) root)))
     (if (file-directory-p clean)
         (let* ((dir (file-name-as-directory clean))
-               (indexes (cl-mapcar (apply-partially 'concat dir) httpd-indexes))
-               (existing (cl-remove-if-not 'file-exists-p indexes)))
+               (indexes (mapcar (apply-partially #'concat dir) httpd-indexes))
+               (existing (cl-remove-if-not #'file-exists-p indexes)))
           (or (car existing) dir))
       clean)))
 
 (defun httpd-get-servlet (uri-path)
   "Determine the servlet to be executed for URI-PATH."
-  (if (not httpd-servlets)
-      'httpd/
-    (cl-labels ((cat (x)
-                  (concat "httpd/" (mapconcat 'identity (reverse x) "/"))))
-      (let ((parts (cdr (split-string (directory-file-name uri-path) "/"))))
-        (or
-         (cl-find-if 'fboundp (mapcar 'intern-soft
-                                      (cl-maplist #'cat (reverse parts))))
-         'httpd/)))))
+  (or
+   (and httpd-servlets
+        (cl-find-if
+         #'fboundp
+         (cl-maplist
+          (lambda (x)
+            (intern-soft (string-join (cons "httpd" (reverse x)) "/")))
+          (nreverse (cdr (split-string (directory-file-name uri-path) "/"))))))
+   'httpd/))
 
 (defun httpd-serve-root (proc root uri-path &optional request)
-  "Securely serve a file from ROOT from under PATH."
+  "Securely serve a file from ROOT.
+PROC is the client process, URI-PATH the request path and REQUEST the
+request header as alist."
   (let* ((path (httpd-gen-path uri-path root))
          (status (httpd-status path)))
     (cond
@@ -764,140 +838,164 @@ element is the fragment."
      (t                       (httpd-send-file      proc path request)))))
 
 (defun httpd/ (proc uri-path query request)
-  "Default root servlet which serves files when httpd-serve-files is T."
-  (if (and httpd-serve-files httpd-root)
-      (httpd-serve-root proc httpd-root uri-path request)
-    (httpd-error proc 403)))
+  "Default root servlet which serves files when `httpd-serve-files' is t.
+PROC is the client process, URI-PATH the request path, QUERY the query
+arguments and REQUEST the request header as alist."
+  (cond
+   ((equal uri-path "/error")
+    (let ((status (string-to-number (or (cadr (assoc "status" query)) ""))))
+      (unless (and (assq status httpd-status-codes) (>= status 400))
+        (setq status 400))
+      (httpd-error proc status)))
+   ((and httpd-serve-files httpd-root)
+    (httpd-serve-root proc httpd-root uri-path request))
+   ((httpd-error proc 403))))
 
 (defun httpd-get-mime (ext)
-  "Fetch MIME type given the file extention."
+  "Fetch MIME type given the file extension EXT."
   (or (and ext (cdr (assoc (downcase ext) httpd-mime-types)))
       "application/octet-stream"))
 
 ;; Data sending functions
 
 (defun httpd-send-header (proc mime status &rest header-keys)
-  "Send an HTTP header with given MIME type and STATUS, followed
-by the current buffer. If PROC is T use the `httpd-current-proc'
-as the process.
+  "Send an HTTP header followed by the current buffer.
+MIME is the mime type and STATUS the HTTP status code.  If PROC is t use
+the `httpd-current-proc' as the process.
 
 Extra headers can be sent by supplying them like keywords, i.e.
 
  (httpd-send-header t \"text/plain\" 200 :X-Powered-By \"simple-httpd\")"
-  (let ((status-str (cdr (assq status httpd-status-codes)))
-        (headers `(("Server" . ,httpd-server-name)
-                   ("Date" . ,(httpd-date-string))
-                   ("Connection" . "keep-alive")
-                   ("Content-Type" . ,(httpd--stringify mime))
-                   ("Content-Length" . ,(httpd--buffer-size)))))
-    (unless httpd--header-sent
-      (setf httpd--header-sent t)
-      (with-temp-buffer
-        (insert (format "HTTP/1.1 %d %s\r\n" status status-str))
-        (cl-loop for (header value) on header-keys by #'cddr
-                 for header-name = (substring (symbol-name header) 1)
-                 for value-name = (format "%s" value)
-                 collect (cons header-name value-name) into extras
-                 finally (setf headers (nconc headers extras)))
-        (dolist (header headers)
-          (insert (format "%s: %s\r\n" (car header) (cdr header))))
-        (insert "\r\n")
-        (process-send-region (httpd-resolve-proc proc)
-                             (point-min) (point-max)))
-      (process-send-region (httpd-resolve-proc proc)
-                           (point-min) (point-max)))))
+  (when httpd--header-sent
+    (error "Header already sent"))
+  (setq httpd--header-sent t)
+  (let* ((proc (httpd--resolve-proc proc))
+         (request (or (process-get proc :request-active)
+                      (error "No active request")))
+         (status-str (alist-get status httpd-status-codes))
+         (mime-str (httpd--stringify mime))
+         (mime-str (if (and (string-prefix-p "text/" mime-str)
+                            (not (string-search "charset=" mime-str)))
+                       (concat mime-str "; charset=utf-8")
+                     mime-str))
+         (close (httpd--connection-close-p request))
+         (headers `(("Date" . ,(httpd-date-string))
+                    ("Content-Type" . ,mime-str)
+                    ("Content-Length" . ,(httpd--buffer-size))
+                    ("Connection" . ,(if close "close" "keep-alive"))
+                    ,@(and httpd-server-name `(("Server" . ,httpd-server-name)))))
+         (header-list `(,(format "%s %d %s\r\n" (caddar request) status status-str)
+                        ,@(cl-loop for (header . value) in headers collect
+                                   (format "%s: %s\r\n" header value))
+                        ,@(cl-loop for (header value) on header-keys by #'cddr collect
+                                   (format "%s: %s\r\n" (httpd--stringify header) value))
+                        "\r\n")))
+    (process-put proc :request-active nil)
+    (process-send-string proc (apply #'concat header-list))
+    (unless (or (= (point-min) (point-max)) (equal "HEAD" (caar request)))
+      (process-send-region proc (point-min) (point-max)))
+    (if close
+        (delete-process proc)
+      (httpd--pop-request proc))))
 
 (defun httpd-redirect (proc path &optional code)
-  "Redirect the client to PATH (default 301). If PROC is T use
-the `httpd-current-proc' as the process."
-  (httpd-log (list 'redirect path))
-  (httpd-discard-buffer)
-  (with-temp-buffer
+  "Redirect the client to PATH (default 301).
+If PROC is t use the `httpd-current-proc' as the process."
+  (httpd-log `(redirect ,path))
+  (httpd--ensure-buffer
     (httpd-send-header proc "text/plain" (or code 301) :Location path)))
 
 (defun httpd-send-file (proc path &optional req)
-  "Serve file to the given client.  If PROC is T use the
-`httpd-current-proc' as the process."
-  (httpd-discard-buffer)
-  (let ((req-etag (cadr (assoc "If-None-Match" req)))
-        (etag (httpd-etag path))
-        (mtime (httpd-date-string (nth 4 (file-attributes path)))))
-    (if (equal req-etag etag)
-        (with-temp-buffer
-          (httpd-log `(file ,path not-modified))
-          (httpd-send-header proc "text/plain" 304))
-      (httpd-log `(file ,path))
-      (with-temp-buffer
-        (set-buffer-multibyte nil)
-        (insert-file-contents-literally path)
-        (httpd-send-header proc (httpd-get-mime (file-name-extension path))
-                           200 :Last-Modified mtime :ETag etag)))))
+  "Serve file at PATH to the given client PROC.
+REQ is the request.  If PROC is t use the `httpd-current-proc' as the
+process."
+  (httpd--ensure-buffer
+    (let ((etag (httpd-etag path)))
+      (if (not (equal (cadr (assoc "If-None-Match" req)) etag))
+          (let ((mime (httpd-get-mime (file-name-extension path)))
+                (mtime (httpd-date-string
+                        (file-attribute-modification-time
+                         (file-attributes path)))))
+            (httpd-log `(file ,path))
+            (set-buffer-multibyte nil)
+            (insert-file-contents-literally path)
+            (httpd-send-header proc mime 200
+                               :ETag etag :Last-Modified mtime))
+        (httpd-log `(file ,path not-modified))
+        (httpd-send-header proc "text/plain" 304)))))
 
 (defun httpd-send-directory (proc path uri-path)
-  "Serve a file listing to the client. If PROC is T use the
-`httpd-current-proc' as the process."
-  (httpd-discard-buffer)
-  (let ((title (concat "Directory listing for "
-                       (url-insert-entities-in-string uri-path))))
-    (if (equal "/" (substring uri-path -1))
-        (with-temp-buffer
+  "Serve a file listing to the client.
+PROC is the client process, PATH the directory PATH, URI-PATH the
+request path and REQUEST the request header as alist.  If PROC is t use
+the `httpd-current-proc' as the process."
+  (if (string-suffix-p "/" uri-path)
+      (let ((title (concat "Directory listing for "
+                           (httpd-escape-html uri-path))))
+        (httpd--ensure-buffer
           (httpd-log `(directory ,path))
-          (insert "<!DOCTYPE html>\n")
-          (insert "<html>\n<head><title>" title "</title></head>\n")
-          (insert "<body>\n<h2>" title "</h2>\n<hr/>\n<ul>")
+          (insert "<!DOCTYPE html>\n"
+                  "<html>\n<head><title>" title "</title></head>\n"
+                  "<body>\n<h2>" title "</h2>\n<hr/>\n<ul>")
           (dolist (file (directory-files path))
             (unless (eq ?. (aref file 0))
               (let* ((full (expand-file-name file path))
                      (tail (if (file-directory-p full) "/" ""))
-                     (f (url-insert-entities-in-string file))
+                     (f (httpd-escape-html file))
                      (l (url-hexify-string file)))
                 (insert (format "<li><a href=\"%s%s\">%s%s</a></li>\n"
                                 l tail f tail)))))
           (insert "</ul>\n<hr/>\n</body>\n</html>")
-          (httpd-send-header proc "text/html; charset=utf-8" 200))
-      (httpd-redirect proc (concat uri-path "/")))))
+          (httpd-send-header proc "text/html" 200)))
+    (httpd-redirect proc (concat uri-path "/"))))
 
-(defun httpd--buffer-size (&optional buffer)
-  "Get the buffer size in bytes."
-  (let ((orig enable-multibyte-characters)
-        (size 0))
-    (with-current-buffer (or buffer (current-buffer))
-      (set-buffer-multibyte nil)
-      (setf size (buffer-size))
-      (if orig (set-buffer-multibyte orig)))
-    size))
+(defun httpd--buffer-size ()
+  "Get size of current buffer in bytes."
+  (let ((orig enable-multibyte-characters))
+    (set-buffer-multibyte nil)
+    (prog1 (buffer-size)
+      (when orig (set-buffer-multibyte orig)))))
 
 (defun httpd-error (proc status &optional info)
-  "Send an error page appropriate for STATUS to the client,
-optionally inserting object INFO into page. If PROC is T use the
+  "Send an error page appropriate for STATUS to the client.
+The INFO object is optionally inserted into page.  If PROC is t use the
 `httpd-current-proc' as the process."
-  (httpd-discard-buffer)
   (httpd-log `(error ,status ,info))
-  (with-temp-buffer
-    (let ((html (or (cdr (assq status httpd-html)) ""))
-          (contents
-           (if (not info)
-               ""
-             (with-temp-buffer
-               (let ((standard-output (current-buffer)))
-                 (insert "error: ")
-                 (princ info)
-                 (insert "\n")
-                 (when httpd-show-backtrace-when-error
-                   (insert "backtrace: ")
-                   (princ (backtrace))
-                   (insert "\n"))
-                 (httpd-escape-html-buffer)
-                 (buffer-string))))))
-      (insert (format html contents)))
+  (httpd--ensure-buffer
+    (let ((contents
+           (if (or info httpd-show-backtrace-when-error)
+               (with-temp-buffer
+                 (let ((standard-output (current-buffer)))
+                   (when info
+                     (insert "error: ")
+                     (princ info)
+                     (insert ?\n))
+                   (when httpd-show-backtrace-when-error
+                     (insert "backtrace:\n")
+                     (backtrace)
+                     (insert ?\n))
+                   (httpd-escape-html-buffer)
+                   (buffer-string)))
+             "")))
+      (insert (format
+               (or (alist-get status httpd-html)
+                   (alist-get t httpd-html))
+               contents status
+               (alist-get status httpd-status-codes)) ?\n))
     (httpd-send-header proc "text/html" status)))
 
 (defun httpd--error-safe (&rest args)
-  "Call httpd-error and report failures to *httpd*."
-  (condition-case error-case
+  "Call `httpd-error' with ARGS and log failures."
+  (condition-case err
       (apply #'httpd-error args)
-    (error (httpd-log `(hard-error ,error-case)))))
+    (error (httpd-log `(hard-error ,err)))))
+
+;; Old names. Not deprecated to avoid churn.
+(defalias 'defservlet #'httpd-servlet)
+(defalias 'defservlet* #'httpd-servlet*)
+(defalias 'httpd-def-file-servlet #'httpd-file-servlet)
+(defalias 'with-httpd-buffer #'httpd-with-buffer)
+(defalias 'httpd-resolve-proc #'httpd--resolve-proc)
 
 (provide 'simple-httpd)
-
 ;;; simple-httpd.el ends here

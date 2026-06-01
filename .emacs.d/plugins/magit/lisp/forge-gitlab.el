@@ -137,7 +137,7 @@
                    (forge--msg nil nil nil "Pulling issue %s/%s" pos cnt)
                    (forge--fetch-issue-posts repo cur cb))
                   ((setq cur (cdr cur))
-                   (cl-incf pos)
+                   (incf pos)
                    (forge--msg nil nil nil "Pulling issue %s/%s" pos cnt)
                    (forge--fetch-issue-posts repo cur cb))
                   (t
@@ -236,7 +236,7 @@
                   ((not (assq 'target_project (car cur)))
                    (forge--fetch-pullreq-target-repo repo cur cb))
                   ((setq cur (cdr cur))
-                   (cl-incf pos)
+                   (incf pos)
                    (forge--msg nil nil nil "Pulling pullreq %s/%s" pos cnt)
                    (forge--fetch-pullreq-posts repo cur cb))
                   (t
@@ -600,7 +600,7 @@
 (cl-defmethod forge--fork-repository ((repo forge-gitlab-repository) fork _all)
   (with-slots (name apihost) repo
     (forge--glab-post repo "/projects/:project/fork"
-      (and (not (equal fork (ghub--username apihost 'gitlab)))
+      (and (not (equal fork (ghub--username repo)))
            `((namespace . ,fork)))
       :noerror t)
     (ghub-wait (format "/projects/%s%%2F%s" (string-replace "/" "%2F" fork) name)
@@ -689,10 +689,16 @@
 ;; Local Variables:
 ;; read-symbol-shorthands: (
 ;;   ("and$"          . "cond-let--and$")
-;;   ("and>"          . "cond-let--and>")
+;;   ("thread$"       . "cond-let--thread$")
+;;   ("when$"         . "cond-let--when$")
+;;   ("and-let*"      . "cond-let--and-let*")
 ;;   ("and-let"       . "cond-let--and-let")
+;;   ("if-let*"       . "cond-let--if-let*")
 ;;   ("if-let"        . "cond-let--if-let")
+;;   ("when-let*"     . "cond-let--when-let*")
 ;;   ("when-let"      . "cond-let--when-let")
+;;   ("while-let*"    . "cond-let--while-let*")
+;;   ("while-let"     . "cond-let--while-let")
 ;;   ("buffer-string" . "buffer-string")
 ;;   ("buffer-str"    . "forge--buffer-substring-no-properties"))
 ;; End:

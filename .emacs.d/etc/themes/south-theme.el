@@ -66,7 +66,7 @@
    (warm-grey             "#787571")
 
    ;; Black
-   (black                 "#2e353d")
+   (black                 "#323b45")
 
    ;; Blue
    (slate-grey            "#374A67")
@@ -82,10 +82,10 @@
    (persian               "#499794")
 
    ;; Yellow
-   (gold                  "#D99B20")
+   (gold                  "#d99610")
 
    ;; Orange
-   (orange                "#cc4705")
+   (orange                "#f29130")
 
    ;; Red
    (auburn                "#c1293d")
@@ -104,7 +104,8 @@
    (dark-red-highlight      "#f99999")
    (medium-red-highlight    "#f7c8c8")
    (light-red-highlight     "#fbdcdc")
-   (medium-yellow-highlight "#efc267"))
+   (medium-yellow-highlight "#efc267")
+   (light-yellow-highlight  "#f9e7c3"))
 
     ;; Set faces
     (
@@ -134,9 +135,9 @@
 	 ;; System faces
 	 (error               (:foreground auburn))
      (success             (:foreground lake))
-     (warning             (:foreground gold))
+     (warning             (:foreground orange))
      (alert-trivial-face  (:foreground lake                                    :weight 'bold))
-     (alert-low-face      (:foreground gold                                    :weight 'bold))
+     (alert-low-face      (:foreground aqua                                    :weight 'bold))
      (alert-moderate-face (:foreground gold                                    :weight 'bold))
      (alert-high-face     (:foreground auburn                                  :weight 'bold))
      (alert-urgent-face   (:foreground auburn :background medium-red-highlight :weight 'bold))
@@ -452,15 +453,17 @@
      ;; (flyspell-incorrect ())
 
 	 ;; ;; Flycheck
-	 (flycheck-warning            (:underline (:style 'wave :color gold)))
+	 (flycheck-warning            (:foreground cool-dark-grey
+                                   :underline (:style 'wave :color medium-yellow-highlight)))
      (flycheck-error              (:underline (:style 'wave :color dark-red-highlight)))
-     (flycheck-info               (:underline (:style 'wave :color dark-blue-highlight)))
-     (flycheck-fringe-warning     (:foreground gold))
+     (flycheck-info               (:foreground cool-dark-grey
+                                   :underline (:style 'wave :color dark-blue-highlight)))
+     (flycheck-fringe-warning     (:foreground medium-yellow-highlight))
      (flycheck-fringe-error       (:foreground dark-red-highlight))
      (flycheck-fringe-info        (:foreground dark-blue-highlight))
-     (flycheck-error-list-warning (:foreground gold             :bold t))
-     (flycheck-error-list-error   (:foreground dark-red-highlight  :bold t))
-     (flycheck-error-list-info    (:foreground dark-blue-highlight :bold t))
+     (flycheck-error-list-warning (:foreground gold   :bold t))
+     (flycheck-error-list-error   (:foreground auburn :bold t))
+     (flycheck-error-list-info    (:foreground lake   :bold t))
 
 	 
 	 ;; |------------- TERMINAL -------------|
@@ -499,14 +502,14 @@
      (lsp-face-highlight-read                  (:inherit    'unspecified))
      (lsp-face-highlight-write                 (:inherit    'highlight))
      (lsp-installation-buffer-face             (:foreground lake))
-     (lsp-flycheck-warning-unnecessary-face    (:inherit    'font-lock-comment-face))
-     (lsp-flycheck-info-unnecessary-face       (:inherit    'font-lock-comment-face))
+     (lsp-flycheck-warning-unnecessary-face    (:inherit    'flycheck-warning))
+     (lsp-flycheck-info-unnecessary-face       (:inherit    'flycheck-info))
      (lsp-modeline-code-actions-preferred-face (:foreground gold))
 
      ;; Symbol overlays
      (symbol-overlay-default-face (:inherit    'unspecified))
      (symbol-overlay-face-1       (:background dark-green-highlight))
-     (symbol-overlay-face-2       (:background medium-yellow-highlight))
+     (symbol-overlay-face-2       (:background light-yellow-highlight))
      (symbol-overlay-face-3       (:background selection))
      (symbol-overlay-face-4       (:background medium-red-highlight))
      (symbol-overlay-face-5       (:background light-blue-highlight))

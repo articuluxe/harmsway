@@ -6,12 +6,13 @@
 ;; Homepage: https://github.com/emacscollective/closql
 ;; Keywords: extensions
 
-;; Package-Version: 2.4.0
+;; Package-Version: 2.4.1
 ;; Package-Requires: (
 ;;     (emacs   "28.1")
-;;     (compat  "30.1")
-;;     (cond-let "0.2")
-;;     (emacsql  "4.3"))
+;;     (compat  "31.0")
+;;     (cond-let "1.1")
+;;     (emacsql  "4.4")
+;;     (llama    "1.0"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -44,6 +45,7 @@
 (require 'eieio-base)
 (require 'emacsql)
 (require 'emacsql-sqlite)
+(require 'llama)
 
 (eval-when-compile (require 'subr-x))
 
@@ -200,18 +202,18 @@
                  (list2 value)
                  elt1 elt2)
              (cond (tables
-                    (setq list1 (mapcar (lambda (e) (list (car e))) list1))
+                    (setq list1 (mapcar (##list (car %)) list1))
                     (setq list2 (mapcar (if (atom (car list2))
                                             #'list
-                                          (lambda (e) (list (car e))))
+                                          (##list (car %)))
                                         list2)))
                    ((length= columns 2)
                     (setq list1 (mapcar #'list list1))
                     (setq list2 (mapcar #'list list2))))
              ;; `list2' may not be sorted at all and `list1' has to
              ;; be sorted because Elisp and SQLite sort differently.
-             (setq list1 (cl-sort list1 #'string< :key #'car))
-             (setq list2 (cl-sort list2 #'string< :key #'car))
+             (setq list1 (compat-call sort list1 :lessp #'string< :key #'car))
+             (setq list2 (compat-call sort list2 :lessp #'string< :key #'car))
              (while (progn (setq elt1 (car list1))
                            (setq elt2 (car list2))
                            (or elt1 elt2))
@@ -539,10 +541,10 @@
          (mapcar (lambda (v)
                    (if v
                        (list '=
-                             (intern (format "$i%i" (cl-incf offset)))
-                             (intern (format "$s%i" (cl-incf offset))))
+                             (intern (format "$i%i" (incf offset)))
+                             (intern (format "$s%i" (incf offset))))
                      (list 'isnull
-                           (intern (format "$i%i" (1- (cl-incf offset 2)))))))
+                           (intern (format "$i%i" (1- (incf offset 2)))))))
                  value))))
 
 (defun closql-where-class-in (args &optional db)
@@ -640,8 +642,16 @@ define a similar function under a more appropriate name such as
 ;; indent-tabs-mode: nil
 ;; lisp-indent-local-overrides: ((cond . 0) (interactive . 0))
 ;; read-symbol-shorthands: (
-;;   ("and-let"  . "cond-let--and-let")
-;;   ("if-let"   . "cond-let--if-let")
-;;   ("when-let" . "cond-let--when-let"))
+;;   ("and$"       . "cond-let--and$")
+;;   ("thread$"    . "cond-let--thread$")
+;;   ("when$"      . "cond-let--when$")
+;;   ("and-let*"   . "cond-let--and-let*")
+;;   ("and-let"    . "cond-let--and-let")
+;;   ("if-let*"    . "cond-let--if-let*")
+;;   ("if-let"     . "cond-let--if-let")
+;;   ("when-let*"  . "cond-let--when-let*")
+;;   ("when-let"   . "cond-let--when-let")
+;;   ("while-let*" . "cond-let--while-let*")
+;;   ("while-let"  . "cond-let--while-let"))
 ;; End:
 ;;; closql.el ends here

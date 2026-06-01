@@ -7,19 +7,19 @@
 ;; Homepage: https://github.com/magit/forge
 ;; Keywords: git tools vc
 
-;; Package-Version: 0.6.4
+;; Package-Version: 0.6.6
 ;; Package-Requires: (
 ;;     (emacs        "29.1")
-;;     (compat       "30.1")
+;;     (compat       "31.0")
 ;;     (closql        "2.4")
-;;     (cond-let      "0.2")
-;;     (emacsql       "4.3")
-;;     (ghub          "5.1")
+;;     (cond-let      "1.1")
+;;     (emacsql       "4.4")
+;;     (ghub          "5.2.1")
 ;;     (llama         "1.0")
 ;;     (magit         "4.5")
 ;;     (markdown-mode "2.8")
 ;;     (seq           "2.24")
-;;     (transient     "0.12")
+;;     (transient     "0.13")
 ;;     (yaml          "1.2"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
@@ -164,7 +164,7 @@ is loaded, then `magit-mode-map' ends up being modified anyway.")
 (defconst forge--minimal-git "2.25.0")
 
 (defun forge-startup-asserts ()
-  (let ((version (magit-git-version)))
+  (let ((version (ignore-errors (magit-git-version))))
     (when (and version (version< version forge--minimal-git))
       (display-warning 'magit (format "\
 Forge requires Git >= %s, you are using %s.

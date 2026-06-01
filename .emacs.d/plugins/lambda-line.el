@@ -263,26 +263,26 @@ Time info is only shown `display-time-mode' is non-nil"
     (term-mode              :mode-p lambda-line-term-mode-p
                             :format lambda-line-term-mode
                             :prefix-symbol " >_"
-                            :face-prefix-active 'lambda-line-active-status-MD
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-MD
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (vterm-mode             :mode-p lambda-line-vterm-mode-p
                             :format lambda-line-term-mode
                             :prefix-symbol " >_"
-                            :face-prefix-active 'lambda-line-active-status-MD
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-MD
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (eshell-mode            :mode-p lambda-line-eshell-mode-p
                             :format lambda-line-eshell-mode
                             :prefix-symbol " λ:"
-                            :face-prefix-active 'lambda-line-active-status-MD
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-MD
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (shell-mode             :mode-p lambda-line-shell-mode-p
                             :format lambda-line-shell-mode
                             :prefix-symbol " >"
-                            :face-prefix-active 'lambda-line-active-status-MD
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-MD
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (buffer-menu-mode       :mode-p lambda-line-buffer-menu-mode-p
                             :format lambda-line-buffer-menu-mode
@@ -312,30 +312,30 @@ Time info is only shown `display-time-mode' is non-nil"
                             :on-activate lambda-line-elpher-activate)
     (emacs-lisp-mode        :abbrev "λ")
     (gud-mode               :prefix-symbol " 🐞"
-                            :face-prefix-active 'lambda-line-active-status-MD
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-MD
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (help-mode              :mode-p lambda-line-help-mode-p
                             :format lambda-line-help-mode
                             :abbrev "?"
                             :prefix-symbol " ?"
-                            :face-prefix-active 'lambda-line-active-status-RO
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-RO
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (helpful-mode           :mode-p lambda-line-helpful-mode-p
                             :format lambda-line-help-mode
                             :abbrev "?"
                             :prefix-symbol " ?"
-                            :face-prefix-active 'lambda-line-active-status-RO
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-RO
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (Info-mode              :mode-p lambda-line-info-mode-p
                             :format lambda-line-info-mode
                             :on-activate lambda-line-info-activate
                             :on-deactivate lambda-line-info-deactivate
                             :prefix-symbol " ℹ"
-                            :face-prefix-active 'lambda-line-active-status-RO
-                            :face-prefix-inactive 'lambda-line-inactive-status-RW
+                            :face-prefix-active lambda-line-active-status-RO
+                            :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (lisp-interaction-mode  :abbrev "λΙ"
                             :always-modifiable t)
@@ -500,11 +500,11 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   :group 'lambda-line-inactive)
 
 (defface lambda-line-hspace-active
-  '((t (:invisible t :family "Monospace" :inherit (lambda-line))))
+  '((t (:family "Monospace" :inherit (lambda-line))))
   "Face for vertical spacer in active line.")
 
 (defface lambda-line-hspace-inactive
-  '((t (:invisible t :family "Monospace" :inherit (lambda-line-inactive))))
+  '((t (:family "Monospace" :inherit (lambda-line-inactive))))
   "Face for vertical spacer in inactive line.")
 
 (defface lambda-line-active-name
@@ -1707,7 +1707,6 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                             (propertize "⇥ "  'face `(:inherit lambda-line-inactive-secondary)))
                           org-mode-line-string
                           " "
-                          nil
                           position
                           lambda-line-hspace))))
 
@@ -1936,13 +1935,6 @@ depending on the version of mu4e."
                            (concat (or (and date (format-time-string mu4e-headers-date-format date)) "") " ")))
     (error (lambda-line-compose (lambda-line-status) "Email" "" "" ""))))
 
-(defun lambda-line-mu4e-activate ()
-  (with-eval-after-load 'mu4e
-    (advice-add 'mu4e~header-line-format :override #'lambda-line)))
-
-(defun lambda-line-mu4e-deactivate ()
-  (advice-remove #'mu4e~header-line-format #'lambda-line))
-
 ;;;; Ein
 
 (defun lambda-line-ein-notebook-mode ()
@@ -1969,30 +1961,6 @@ depending on the version of mu4e."
   (if (boundp 'ein:header-line-format)
       (setq ein:header-line-format '(:eval (ein:header-line)))))
 
-
-;;;; Buffer Menu Mode
-;; ---------------------------------------------------------------------
-(defun lambda-line-buffer-menu-mode-p ()
-  (derived-mode-p 'buffer-menu-mode))
-
-(defun lambda-line-buffer-menu-mode ()
-  (let ((buffer-name "Buffer list")
-        (mode-name   (lambda-line-mode-name))
-        (position    (format-mode-line "%l:%c")))
-
-    (lambda-line-compose nil
-                         buffer-name
-                         ""
-                         nil
-                         (concat
-                          position
-                          (lambda-line-time)))))
-
-;;(defun buffer-menu-mode-header-line ()
-;;  (face-remap-add-relative
-;;   'header-line `(:background ,(face-background 'nano-subtle))))
-;;(add-hook 'Buffer-menu-mode-hook
-;;          #'buffer-menu-mode-header-line)
 
 (defun lambda-line-buffer-menu-activate ()
   (if (eq lambda-line-position 'top)
@@ -2067,8 +2035,8 @@ depending on the version of mu4e."
                            (file-name-nondirectory (buffer-file-name))
                          "%b")))
          (mode-name   (lambda-line-mode-name))
-         (project     (file-name-nondirectory (directory-file-name (magit-toplevel))))
-         (branch      (magit-get-current-branch))
+         (project     (file-name-nondirectory (directory-file-name (or (magit-toplevel) ""))))
+         (branch      (or (magit-get-current-branch) ""))
          (status      (lambda-line-git-parse-status)))
     (lambda-line-compose (lambda-line-status)
                          mode-name
