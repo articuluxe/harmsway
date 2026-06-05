@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-05-13 13:48:08 dharms>
+;; Modified Time-stamp: <2026-06-05 11:22:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3596,7 +3596,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (setq company-dabbrev-downcase nil)
   (setq company-files-chop-trailing-slash t)
   (setq company-files-exclusions '(".pdf" ".log" ".gz" ".git/" ".DS_Store"))
-  (setq company-etags-ignore-case t)
+  (setq company-etags-ignore-case nil)
   (setq company-abort-on-unique-match nil)
   (setq company-format-margin-function nil) ;disable icons for now
   ;; (setq company-begin-commands '(self-insert-command))
