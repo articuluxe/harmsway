@@ -4,7 +4,7 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: https://github.com/bbatsov/zenburn-emacs
-;; Version: 2.9.0
+;; Version: 2.10.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -64,25 +64,29 @@ for the list of semantic names that ship with the theme."
   :type '(alist
           :key-type (string :tag "Name")
           :value-type (choice (string :tag "Hex")
-                              (symbol :tag "Palette name"))))
+                              (symbol :tag "Palette name")))
+  :package-version '(zenburn . "2.10.0"))
 
 (defcustom zenburn-use-variable-pitch nil
   "When non-nil, use variable pitch face for some headings and titles."
   :type 'boolean
   :safe #'booleanp
-  :group 'zenburn-theme)
+  :group 'zenburn-theme
+  :package-version '(zenburn . "2.10.0"))
 
 (defcustom zenburn-scale-org-headlines nil
   "Whether `org-mode' headlines should be scaled."
   :type 'boolean
   :safe #'booleanp
-  :group 'zenburn-theme)
+  :group 'zenburn-theme
+  :package-version '(zenburn . "2.10.0"))
 
 (defcustom zenburn-scale-outline-headlines nil
   "Whether `outline-mode' headlines should be scaled."
   :type 'boolean
   :safe #'booleanp
-  :group 'zenburn-theme)
+  :group 'zenburn-theme
+  :package-version '(zenburn . "2.10.0"))
 
 (defcustom zenburn-height-plus-1 1.1
   "Font size +1."

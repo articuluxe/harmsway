@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.92.2
+;; Version: 0.93.1
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.92.2")
+(defconst shell-maker-version "0.93.1")
 
 (require 'comint)
 (require 'goto-addr)
@@ -1783,6 +1783,47 @@ or if both command and response are empty."
         (cons (unless (string-empty-p command) command)
               (unless (string-empty-p response) response))))))
 
+(defun shell-maker-insert-end-of-prompt-marker ()
+  "Insert the `<shell-maker-end-of-prompt>' delimiter at the process mark.
+
+The delimiter separates a submitted command from its response so
+`shell-maker--extract-history' can pair them.  shell-maker emits
+this automatically when input is submitted; external callers may
+use it when synthesizing past exchanges (e.g. when restoring or
+replaying a session outside the normal input path).
+
+The marker is invisible to the user unless
+`shell-maker--show-invisible-markers' or `shell-maker-logging' is
+enabled.
+
+Inserts directly at `point-max' rather than via the output
+filter so the prompt-detection side effects (which strip
+`comint-highlight-prompt' from `comint-last-prompt' and reassign
+it to whatever the current line matches) don't affect replayed
+or surrounding prompts."
+  (let* ((process (shell-maker--process))
+         (buffer (process-buffer process))
+         (marker (if shell-maker-logging
+                     (propertize "<shell-maker-end-of-prompt>"
+                                 'shell-maker--marker t
+                                 'field 'output
+                                 'read-only t
+                                 'front-sticky '(read-only)
+                                 'rear-nonsticky '(field read-only))
+                   (propertize "<shell-maker-end-of-prompt>"
+                               'shell-maker--marker t
+                               'invisible (not shell-maker--show-invisible-markers)
+                               'field 'output
+                               'read-only t
+                               'front-sticky '(read-only)
+                               'rear-nonsticky '(field read-only)))))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (save-excursion
+          (goto-char (point-max))
+          (insert marker)
+          (set-marker (process-mark process) (point)))))))
+
 (defun shell-maker--output-filter (process string)
   "Copy of `comint-output-filter' but avoids fontifying non-prompt text.
 
@@ -2154,14 +2195,7 @@ Of the form:
     (error "Missing mandatory :config param"))
   (unless input
     (error "Missing mandatory :input param"))
-  (if shell-maker-logging
-      (shell-maker--output-filter (shell-maker--process)
-                                  (propertize "<shell-maker-end-of-prompt>"
-                                              'shell-maker--marker t))
-    (shell-maker--output-filter (shell-maker--process)
-                                (propertize "<shell-maker-end-of-prompt>"
-                                            'shell-maker--marker t
-                                            'invisible (not shell-maker--show-invisible-markers))))
+  (shell-maker-insert-end-of-prompt-marker)
   (shell-maker--write-partial-reply :config config
                                     :reply "\n")
   (let* ((request-id (shell-maker--increment-request-id))

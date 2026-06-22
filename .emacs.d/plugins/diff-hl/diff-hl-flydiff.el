@@ -42,7 +42,6 @@
 
 (defun diff-hl-flydiff-changes-buffer (file backend &optional new-rev buffer)
   (setq buffer (or buffer " *diff-hl-diff*"))
-  (setq diff-hl-flydiff-modified-tick (buffer-chars-modified-tick))
   (if new-rev
       (diff-hl-with-diff-switches
        (diff-hl-diff-against-reference file backend buffer new-rev))
@@ -52,9 +51,11 @@
   (unless (or
            (not diff-hl-mode)
            (eq diff-hl-flydiff-modified-tick (buffer-chars-modified-tick))
-           (not buffer-file-name)
-           (file-remote-p default-directory)
-           (not (file-exists-p buffer-file-name)))
+           (let ((file (diff-hl--buffer-file-name)))
+             (or (not file)
+                 (file-remote-p default-directory)
+                 (not (file-exists-p file)))))
+    (setq diff-hl-flydiff-modified-tick (buffer-chars-modified-tick))
     (diff-hl-update)))
 
 (defun diff-hl-flydiff/modified-p (state)

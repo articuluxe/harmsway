@@ -52,7 +52,7 @@
     (red-cooler "#800e38")
     (red-faint "#702f1f")
     (green "#206020")
-    (green-warmer "#3f7000")
+    (green-warmer "#3f6d00")
     (green-cooler "#006e50")
     (green-faint "#125724")
     (yellow "#6b4500")
@@ -87,7 +87,7 @@
     (bg-cyan-subtle "#bfe0d0")
 
     (bg-added "#a0d7b0")
-    (bg-added-faint "#c0d7b2")
+    (bg-added-faint "#c0d5b2")
     (bg-added-refine "#8bc794")
     (fg-added "#005200")
 
@@ -96,7 +96,7 @@
     (bg-changed-refine "#edd482")
     (fg-changed "#553d00")
 
-    (bg-removed "#f0c8a6")
+    (bg-removed "#edc5a6")
     (bg-removed-faint "#e0c9ac")
     (bg-removed-refine "#e4b492")
     (fg-removed "#8f1013")
@@ -194,15 +194,15 @@
 
     (bg-space-err bg-yellow-intense)
 
-    (rainbow-0 cyan)
-    (rainbow-1 cyan-cooler)
-    (rainbow-2 magenta)
-    (rainbow-3 cyan-warmer)
-    (rainbow-4 green-warmer)
+    (rainbow-0 green-cooler)
+    (rainbow-1 cyan-warmer)
+    (rainbow-2 green-warmer)
+    (rainbow-3 blue-warmer)
+    (rainbow-4 magenta)
     (rainbow-5 blue)
-    (rainbow-6 magenta-cooler)
-    (rainbow-7 green)
-    (rainbow-8 blue-warmer)))
+    (rainbow-6 cyan-cooler)
+    (rainbow-7 magenta-faint)
+    (rainbow-8 green)))
 
 (defcustom ef-arcadia-palette-overrides nil
   "Overrides for `ef-arcadia-palette'.

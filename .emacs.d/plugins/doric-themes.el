@@ -630,9 +630,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     notmuch-tree-match-tag-face
     notmuch-tree-no-match-date-face
     notmuch-tree-no-match-face
-    org-agenda-calendar-event
-    org-agenda-calendar-sexp
-    org-agenda-diary
     org-column
     org-special-keyword
     org-tag
@@ -711,7 +708,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     magit-branch-remote-head
     magit-branch-upstream
     magit-diff-file-heading
-    org-agenda-structure
     org-document-title
     org-imminent-deadline
     notmuch-tag-unread))
@@ -934,6 +930,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     minibuffer-prompt
     mode-line-buffer-id
     mode-line-emphasis
+    org-agenda-structure
     proced-emacs-pid
     proced-sort-header
     rcirc-prompt
@@ -1175,7 +1172,10 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     elisp-defvar
     elisp-shadowed-variable
     font-lock-variable-name-face
-    font-lock-variable-use-face))
+    font-lock-variable-use-face
+    org-agenda-calendar-event
+    org-agenda-calendar-sexp
+    org-agenda-diary))
 
 (defconst doric-themes-underline-emphasis-faces
   '(company-echo-common

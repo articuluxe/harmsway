@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 21, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -75,6 +75,7 @@
 
       (ceiba-mode-line                 "#5b6452")
       (ceiba-mode-line-inactive        "#826e51")
+      (ceiba-bell                      "#645264")
 
       (ceiba-tab-1                     ceiba-mode-line)
       (ceiba-tab-2                     ceiba-mode-line-inactive)
@@ -154,7 +155,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,ceiba-class (:foreground ,ceiba-fg :background ,ceiba-green-forest))))
+   `(cursor ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line))))
 
    ;; fringe
    `(fringe ((,ceiba-class (:foreground ,ceiba-blue :background ,ceiba-bg))))
@@ -171,7 +172,7 @@
    ;; mode-line
    `(mode-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line))))
    `(mode-line-inactive ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-steel-blue))))
+   `(guava-themes-visible-bell ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,ceiba-class (:foreground ,ceiba-black))))
@@ -198,8 +199,8 @@
    `(tab-line-tab-special ((,ceiba-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-alt-blue))))
-   `(show-paren-mismatch ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-error))))
+   `(show-paren-match ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-bell))))
+   `(show-paren-mismatch ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,ceiba-class (:background ,ceiba-error))))
@@ -266,9 +267,9 @@
    `(org-meta-line ((,ceiba-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,ceiba-class (:foreground ,ceiba-mode-line-inactive))))
-   `(window-divider-first-pixel ((,ceiba-class (:foreground ,ceiba-mode-line-inactive))))
-   `(window-divider-last-pixel ((,ceiba-class (:foreground ,ceiba-mode-line-inactive))))
+   `(window-divider ((,ceiba-class (:foreground ,ceiba-tab-3))))
+   `(window-divider-first-pixel ((,ceiba-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,ceiba-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-orderless-2))))

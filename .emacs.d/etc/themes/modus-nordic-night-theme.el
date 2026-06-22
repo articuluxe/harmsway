@@ -1,4 +1,4 @@
-;;; nordic-night-theme.el --- A darker, more colorful version of the lovely Nord theme built on top of Modus -*- lexical-binding: t -*-
+;;; modus-nordic-night-theme.el --- A dark, colorful theme using the Nord palette -*- lexical-binding: t -*-
 
 ;; Copyright (c) 2026 Ashton Wiersdorf
 
@@ -6,7 +6,7 @@
 ;; Author: Ashton Wiersdorf <mail@wiersdorf.dev>
 ;; Created: 2026
 ;; Version: 1.0.0
-;; Package-Requires: ((emacs "28.1") (modus-themes "5.1.0"))
+;; Package-Requires: ((emacs "28.1") (modus-themes "5.2.0"))
 ;; SPDX-License-Identifier: MIT
 ;; Homepage: https://codeberg.org/ashton314/modus-nordic-night
 
@@ -23,18 +23,16 @@
 
 (require 'modus-themes)
 
-(defgroup nordic-night-themes ()
+(defgroup modus-nordic-night-theme ()
   "Dark, high-contrast themes built around the Modus-themes and with the Nord color palette."
   :group 'faces
   :group 'modus-themes
-  :prefix "nordic-night-themes-")
-
-(defconst nordic-night-dark-themes '(nordic-night nordic-midnight))
+  :prefix "modus-nordic-night-theme-")
 
 (modus-themes-register 'nordic-night)
 (modus-themes-register 'nordic-midnight)
 
-(defvar modus-nordic-night-palette
+(defvar modus-nordic-night-theme-palette
   (modus-themes-generate-palette
    `(
      ;; Background colors
@@ -78,11 +76,16 @@
    'cool)
   "Color definitions for modus-nordic-night.")
 
-(defconst modus-nordic-night-palette-partial
+(defcustom modus-nordic-night-theme-margin-background t
+  "Let the margin bg color to be the same as the main bg color."
+    :group 'modus-nordic-night-theme
+    :type 'boolean)
+
+(defconst modus-nordic-night-theme-palette-partial
   `((bg-mode-line-active "#434c5e")
     (fg-mode-line-active fg-main)
-    (bg-mode-line-inactive ,(color-darken-name "#5e81ac" 80))
-    (fringe ,(color-darken-name "#434c5e" 80))
+    (fringe ,(color-darken-name "#434c5e" 70))
+    (bg-mode-line-inactive ,(color-darken-name "#5e81ac" 75))
     (fg-mode-line-inactive blue)
     (border-mode-line-active unspecified)
     (border-mode-line-inactive unspecified)
@@ -177,9 +180,9 @@
 
     ;; Region, current line
     (bg-region bg-08)
-    (bg-hl-line ,(color-darken-name "#5e81ac" 75))
-    (bg-line-number-active ,(color-darken-name "#5e81ac" 75))
-    (bg-line-number-inactive ,(color-darken-name "#434c5e" 80))
+    (bg-hl-line ,(color-darken-name "#5e81ac" 70))
+    (bg-line-number-active ,(color-darken-name "#5e81ac" 70))
+    (bg-line-number-inactive ,(color-darken-name "#434c5e" 70))
 
     ;; Headings
     (fg-heading-0 blue)
@@ -194,16 +197,14 @@
     (fg-heading-8 magenta-cooler)
 
     ;; Org-mode tweaks
-    (fg-prose-verbatim green-cooler)
-    )
-  )
+    (fg-prose-verbatim green-cooler)))
 
-(defcustom modus-nordic-night-palette-overrides nil
-  "Overrides for `modus-nordic-night-palette'."
-  :group 'nordic-night-themes
+(defcustom modus-nordic-night-theme-palette-overrides nil
+  "Overrides for `modus-nordic-night-theme-palette'."
+  :group 'modus-nordic-night-theme
   :type '(repeat (list symbol (choice symbol string))))
 
-(defconst modus-nordic-night-custom-faces
+(defconst modus-nordic-night-theme-custom-faces
   '(
     ;; Mode-line
     `(mode-line
@@ -232,6 +233,7 @@
        (t :underline ,border-mode-line-inactive)))
 
     ;; UI tweaks
+    `(margin ((,c :background ,(if modus-nordic-night-theme-margin-background bg-main fringe) :foreground ,fg-dim)))
     `(fringe ((,c :background ,fringe :foreground ,fg-dim)))
     `(tab-bar ((,c (:background ,bg-tab-bar :box (:line-width (1 . 2) :color "#1e2430")))))
     `(tab-bar-tab-inactive ((,c :foreground ,blue)))
@@ -258,11 +260,7 @@
     `(vc-edited-state ((,c :foreground ,yellow)))
 
     ;; corfu
-    `(corfu-default ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim :extend t)))
-
-    ;; custom
-
-    )
+    `(corfu-default ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim :extend t))))
   "Deep, direct face customizations that differ substantially from Modus")
 
 (modus-themes-theme
@@ -270,10 +268,10 @@
  'nordic-themes
  "Dark, high-contrast themes built around the Modus-themes and with the Nord color palette."
  'dark                                  ; this is a dark theme
- 'modus-nordic-night-palette            ; base
- 'modus-nordic-night-palette-partial    ; theme definitions
- 'modus-nordic-night-palette-overrides  ; user-definable overrides
- 'modus-nordic-night-custom-faces)      ; extra theme tweaks
+ 'modus-nordic-night-theme-palette            ; base
+ 'modus-nordic-night-theme-palette-partial    ; theme definitions
+ 'modus-nordic-night-theme-palette-overrides  ; user-definable overrides
+ 'modus-nordic-night-theme-custom-faces)      ; extra theme tweaks
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)
@@ -281,3 +279,4 @@
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide 'modus-nordic-night-theme)
+;;; modus-nordic-night-theme.el ends here

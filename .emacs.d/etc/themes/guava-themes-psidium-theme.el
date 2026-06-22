@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Dec 07, 2025
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -48,7 +48,7 @@
       (psidium-red                       "#c1153b")
       (psidium-pink                      "#F8767C")
 
-      (psidium-brown                     "#816249")
+      (psidium-brown                     "#785f46")
 
       (psidium-light-blue                "#41C3CA")
       (psidium-blue                      "#2a4ad9")
@@ -68,6 +68,7 @@
 
       (psidium-mode-line                 "#F8767C")
       (psidium-mode-line-inactive        "#aecd34")
+      (psidium-bell                      "#76BEF8")
 
       (psidium-tab-1                     psidium-mode-line)
       (psidium-tab-2                     psidium-mode-line-inactive)
@@ -147,7 +148,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,psidium-class (:foreground ,psidium-white :background ,psidium-green))))
+   `(cursor ((,psidium-class (:foreground ,psidium-black :background ,psidium-mode-line))))
 
    ;; fringe
    `(fringe ((,psidium-class (:foreground ,psidium-blue :background ,psidium-bg))))
@@ -164,7 +165,7 @@
    ;; mode-line
    `(mode-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line))))
    `(mode-line-inactive ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,psidium-class (:foreground ,psidium-white :background ,psidium-deep-green))))
+   `(guava-themes-visible-bell ((,psidium-class (:foreground ,psidium-white :background ,psidium-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,psidium-class (:foreground ,psidium-black))))
@@ -191,8 +192,8 @@
    `(tab-line-tab-special ((,psidium-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,psidium-class (:foreground ,psidium-white :background ,psidium-pink))))
-   `(show-paren-mismatch ((,psidium-class (:foreground ,psidium-white :background ,psidium-error))))
+   `(show-paren-match ((,psidium-class (:foreground ,psidium-black :background ,psidium-bell))))
+   `(show-paren-mismatch ((,psidium-class (:foreground ,psidium-black :background ,psidium-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,psidium-class (:background ,psidium-error))))
@@ -259,9 +260,9 @@
    `(org-meta-line ((,psidium-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,psidium-class (:foreground ,psidium-mode-line-inactive))))
-   `(window-divider-first-pixel ((,psidium-class (:foreground ,psidium-mode-line-inactive))))
-   `(window-divider-last-pixel ((,psidium-class (:foreground ,psidium-mode-line-inactive))))
+   `(window-divider ((,psidium-class (:foreground ,psidium-tab-3))))
+   `(window-divider-first-pixel ((,psidium-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,psidium-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,psidium-class (:foreground ,psidium-white :background ,psidium-orderless-2))))

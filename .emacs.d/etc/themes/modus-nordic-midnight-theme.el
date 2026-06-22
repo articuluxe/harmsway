@@ -3,11 +3,20 @@
 (require 'modus-nordic-night-theme)
 
 (defcustom modus-nordic-midnight-palette-overrides nil
-  "Overrides for nordic-midnight palette.")
+  "Overrides for nordic-midnight palette."
+  :group 'modus-nordic-night-theme
+  :type '(repeat (list symbol (choice symbol string))))
 
-(defvar modus-nordic-midnight-palette-partial nil)
+(defvar modus-nordic-midnight-theme-palette-partial
+  `((bg-mode-line-inactive ,(color-darken-name "#5e81ac" 80))
+    (fringe ,(color-darken-name "#434c5e" 80))
 
-(defvar modus-nordic-midnight-palette
+    ;; hl-line, line numbers
+    (bg-hl-line ,(color-darken-name "#5e81ac" 75))
+    (bg-line-number-active ,(color-darken-name "#5e81ac" 75))
+    (bg-line-number-inactive ,(color-darken-name "#434c5e" 80))))
+
+(defvar modus-nordic-midnight-theme-palette
   (modus-themes-generate-palette
    '(
      ;; Background colors
@@ -58,7 +67,7 @@
  'nordic-themes
  "Pitch-black version of the Nord theme."
  'dark
- 'modus-nordic-midnight-palette
- 'modus-nordic-night-palette-partial
- 'modus-nordic-midnight-palette-overrides
- 'modus-nordic-night-custom-faces)
+ 'modus-nordic-midnight-theme-palette
+ 'modus-nordic-night-theme-palette-partial
+ 'modus-nordic-night-theme-palette-overrides
+ 'modus-nordic-night-theme-custom-faces)

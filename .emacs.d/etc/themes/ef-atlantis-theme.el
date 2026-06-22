@@ -69,7 +69,7 @@
     (magenta-faint "#c5a4cf")
     (cyan "#4fb0cf")
     (cyan-warmer "#6fafff")
-    (cyan-cooler "#3dc0b0")
+    (cyan-cooler "#5db2b7")
     (cyan-faint "#90becf")
 
     (bg-red-intense "#bd1f30")
@@ -103,24 +103,21 @@
 
     (bg-mode-line-active "#124a67")
     (fg-mode-line-active "#aaccff")
-    (bg-completion "#00417f")
+    (bg-completion "#2e387f")
     (bg-popup "#102c3f")
     (bg-hover "#5f4f7a")
-    (bg-hover-secondary "#3d2e2f")
+    (bg-hover-secondary "#2d3e4a")
     (bg-hl-line "#2b265b")
     (bg-paren-match "#603849")
     (bg-err "#401500") ; check with err
-    (bg-warning "#3e004c") ; check with warning
+    (bg-warning "#3e300c") ; check with warning
     (bg-info "#003532") ; check with info
     (bg-region "#32446b")))
 
 (defconst ef-atlantis-palette-mappings-partial
   '((err red-cooler)
-    (warning magenta-cooler)
+    (warning yellow-cooler)
     (info green-cooler)
-
-    (bg-prominent-warning bg-magenta-subtle)
-    (underline-warning magenta-faint)
 
     (modeline-err red)
     (modeline-warning yellow-cooler)
@@ -135,8 +132,8 @@
 
     (builtin green-cooler)
     (comment blue-faint)
-    (constant blue-cooler)
-    (fnname magenta)
+    (constant blue)
+    (fnname magenta-cooler)
     (fnname-call magenta-faint)
     (keyword cyan-cooler)
     (preprocessor yellow-cooler)
@@ -201,7 +198,7 @@
     (rainbow-1 blue-warmer)
     (rainbow-2 green-warmer)
     (rainbow-3 yellow-cooler)
-    (rainbow-4 cyan-warmer)
+    (rainbow-4 cyan)
     (rainbow-5 magenta-cooler)
     (rainbow-6 blue)
     (rainbow-7 green)

@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 06, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -41,31 +41,30 @@
       (dracaena-gray                      "#4f4f4f")
       (dracaena-dark-gray                 "#353838")
 
-      (dracaena-guava-green               "#AED734")
-      (dracaena-deep-green                "#298e25")
+      (dracaena-light-green               "#78be78")
+      (dracaena-green                     "#288c23")
 
-      (dracaena-snakeplant-yellow         "#d9d389")
+      (dracaena-snakeplant-yellow         "#dcd78c")
 
       (dracaena-light-orange              "#ffb38f")
-      (dracaena-orange                    "#e88e6b")
-      (dracaena-red                       "#c83233")
+      (dracaena-orange                    "#e6825f")
+      (dracaena-orange-red                "#f06e6e")
+      (dracaena-red                       "#c83c50")
       (dracaena-alt-deep-red              "#751e1e")
       (dracaena-deep-red                  "#792725")
+      (dracaena-pink                      "#cd6eaf")
 
       (dracaena-light-brown               "#a89d92")
 
-      (dracaena-light-blue                "#4272d5")
-      (dracaena-blue                      "#2d44d5")
+      (dracaena-light-blue                "#5a8ce6")
+      (dracaena-blue                      "#2d50d5")
       (dracaena-steel-blue                "#4f94cd")
       (dracaena-cyan                      "#00ffff")
       (dracaena-dark-cyan                 "#005f55")
 
-      (dracaena-purple-pink               "#aa4b6b")
-      (dracaena-deep-purple               "#7f78dd")
-
-      (dracaena-fg                        "#bacce4")
-      (dracaena-bg                        "#424845")
-      (dracaena-highlight                 "#2e3431")
+      (dracaena-fg                        "#becee6")
+      (dracaena-bg                        "#3e4441")
+      (dracaena-highlight                 "#2a302d")
       (dracaena-shadow                    "#b3b3b3")
 
       (dracaena-error                     "#FF0000")
@@ -74,18 +73,19 @@
 
       (dracaena-mode-line                 "#792725")
       (dracaena-mode-line-inactive        "#353838")
+      (dracaena-bell                      "#257950")
 
       (dracaena-tab-1                     dracaena-mode-line)
       (dracaena-tab-2                     dracaena-mode-line-inactive)
       (dracaena-tab-3                     dracaena-gray)
 
-      (dracaena-fl-comment                dracaena-deep-green)
+      (dracaena-fl-comment                dracaena-green)
       (dracaena-fl-string                 dracaena-snakeplant-yellow)
-      (dracaena-fl-keyword                dracaena-purple-pink)
+      (dracaena-fl-keyword                dracaena-light-green)
       (dracaena-fl-builtin                dracaena-red)
-      (dracaena-fl-type                   dracaena-guava-green)
+      (dracaena-fl-type                   dracaena-pink)
       (dracaena-fl-function-name          dracaena-light-orange)
-      (dracaena-fl-variable-name          dracaena-deep-purple)
+      (dracaena-fl-variable-name          dracaena-orange-red)
       (dracaena-fl-constant               dracaena-light-blue)
       (dracaena-fl-warning                dracaena-warning)
       (dracaena-fl-punctuation            dracaena-light-brown)
@@ -109,7 +109,7 @@
       (dracaena-prescient-1               "#E64686")
 
       (dracaena-vc-change                 dracaena-blue)
-      (dracaena-vc-insert                 dracaena-deep-green)
+      (dracaena-vc-insert                 dracaena-green)
       (dracaena-vc-delete                 dracaena-error))
 
   (custom-theme-set-faces
@@ -153,7 +153,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-orange))))
+   `(cursor ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line))))
 
    ;; fringe
    `(fringe ((,dracaena-class (:foreground ,dracaena-light-orange :background ,dracaena-bg))))
@@ -170,10 +170,10 @@
    ;; mode-line
    `(mode-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line))))
    `(mode-line-inactive ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-orange))))
+   `(guava-themes-visible-bell ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-bell))))
 
    ;; minibuffer
-   `(minibuffer-prompt ((,dracaena-class (:foreground ,dracaena-red))))
+   `(minibuffer-prompt ((,dracaena-class (:foreground ,dracaena-orange))))
 
    ;; borders
    `(vertical-border ((,dracaena-class (:foreground ,dracaena-mode-line))))
@@ -197,8 +197,8 @@
    `(tab-line-tab-special ((,dracaena-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,dracaena-class (:foreground ,dracaena-black :background ,dracaena-steel-blue))))
-   `(show-paren-mismatch ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-error))))
+   `(show-paren-match ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-bell))))
+   `(show-paren-mismatch ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,dracaena-class (:background ,dracaena-error))))
@@ -209,9 +209,9 @@
 
    ;; outline
    `(outline-1 ((,dracaena-class (:foreground ,dracaena-light-orange :weight medium))))
-   `(outline-2 ((,dracaena-class (:foreground ,dracaena-deep-purple :weight medium))))
-   `(outline-3 ((,dracaena-class (:foreground ,dracaena-purple-pink :weight medium))))
-   `(outline-4 ((,dracaena-class (:foreground ,dracaena-deep-green :weight medium))))
+   `(outline-2 ((,dracaena-class (:foreground ,dracaena-light-green :weight medium))))
+   `(outline-3 ((,dracaena-class (:foreground ,dracaena-pink :weight medium))))
+   `(outline-4 ((,dracaena-class (:foreground ,dracaena-light-blue :weight medium))))
    `(outline-5 ((,dracaena-class (:inherit outline-1))))
    `(outline-6 ((,dracaena-class (:inherit outline-2))))
    `(outline-7 ((,dracaena-class (:inherit outline-3))))
@@ -265,9 +265,9 @@
    `(org-meta-line ((,dracaena-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,dracaena-class (:foreground ,dracaena-mode-line-inactive))))
-   `(window-divider-first-pixel ((,dracaena-class (:foreground ,dracaena-mode-line-inactive))))
-   `(window-divider-last-pixel ((,dracaena-class (:foreground ,dracaena-mode-line-inactive))))
+   `(window-divider ((,dracaena-class (:foreground ,dracaena-tab-3))))
+   `(window-divider-first-pixel ((,dracaena-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,dracaena-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-orderless-2))))
@@ -286,16 +286,16 @@
    ;; elfeed
    `(elfeed-search-tag-face ((,dracaena-class (:foreground ,dracaena-steel-blue))))
    `(elfeed-search-date-face ((,dracaena-class (:foreground ,dracaena-light-blue))))
-   `(elfeed-search-feed-face ((,dracaena-class (:foreground ,dracaena-purple-pink))))
+   `(elfeed-search-feed-face ((,dracaena-class (:foreground ,dracaena-pink))))
    `(elfeed-search-title-face ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
-   `(elfeed-search-unread-title-face ((,dracaena-class (:weight bold :foreground ,dracaena-deep-green))))
-   `(elfeed-search-filter-face ((,dracaena-class (:weight bold :foreground ,dracaena-guava-green))))
-   `(elfeed-search-last-update-face ((,dracaena-class (:weight bold :foreground ,dracaena-guava-green))))
-   `(elfeed-search-unread-count-face ((,dracaena-class (:weight bold :foreground ,dracaena-guava-green))))
+   `(elfeed-search-unread-title-face ((,dracaena-class (:weight bold :foreground ,dracaena-green))))
+   `(elfeed-search-filter-face ((,dracaena-class (:weight bold :foreground ,dracaena-light-green))))
+   `(elfeed-search-last-update-face ((,dracaena-class (:weight bold :foreground ,dracaena-light-green))))
+   `(elfeed-search-unread-count-face ((,dracaena-class (:weight bold :foreground ,dracaena-light-green))))
 
-   `(elfeed-show-header-face ((,dracaena-class (:foreground ,dracaena-purple-pink))))
-   `(elfeed-show-author-face ((,dracaena-class (:weight bold :foreground ,dracaena-deep-green))))
-   `(elfeed-show-title-face ((,dracaena-class (:weight bold :foreground ,dracaena-deep-green))))
+   `(elfeed-show-header-face ((,dracaena-class (:foreground ,dracaena-pink))))
+   `(elfeed-show-author-face ((,dracaena-class (:weight bold :foreground ,dracaena-green))))
+   `(elfeed-show-title-face ((,dracaena-class (:weight bold :foreground ,dracaena-green))))
    `(elfeed-show-date-face ((,dracaena-class (:foreground ,dracaena-steel-blue))))
    `(elfeed-show-feed-face ((,dracaena-class (:foreground ,dracaena-steel-blue))))
    `(elfeed-show-tags-face ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
@@ -303,7 +303,7 @@
    ;; doom-modeline
    `(doom-modeline-project-name ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow :inherit italic))))
    `(doom-modeline-project-parent-dir ((,dracaena-class (:foreground ,dracaena-snakeplant-yellow))))
-   `(doom-modeline-buffer-minor-mode ((,dracaena-class (:foreground ,dracaena-deep-green))))
+   `(doom-modeline-buffer-minor-mode ((,dracaena-class (:foreground ,dracaena-green))))
 
    ;; corfu
    `(corfu-default ((,dracaena-class (:foreground ,dracaena-fg :background ,dracaena-bg))))

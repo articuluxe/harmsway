@@ -788,10 +788,10 @@ or (info \"(ghub)Getting Started\") for instructions."
                            (format "%s.user" forge))))
     (cond ((ghub--git-get var))
           ((not default-var)
-           (error "Cannot determine username; `%s' is unset" var))
+           (error "Cannot determine username; Git variable `%s' is unset" var))
           ((ghub--git-get default-var))
-          ((error "Cannot determine username; `%s' and `%s' are both unset"
-                  var default-var)))))
+          ((error "Cannot determine username; Git variables `%s' and `%s' %s"
+                  var default-var "are both unset")))))
 
 (defun ghub--ident (username package)
   (format "%s^%s" username package))

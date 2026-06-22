@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -58,7 +58,7 @@
       (cordyline-purple                    "#7050af")
       (cordyline-alt-purple                "#493d4e")
       (cordyline-deep-purple               "#3c193c")
-      (cordyline-purple-red                "#983251")
+      (cordyline-purple-red                "#a03c5a")
 
       (cordyline-fg                        "#FFFFFF")
       (cordyline-bg                        "#392b38")
@@ -69,8 +69,9 @@
       (cordyline-warning                   "#f6d909")
       (cordyline-success                   "#23a334")
 
-      (cordyline-mode-line                 "#983251")
+      (cordyline-mode-line                 "#a03c5a")
       (cordyline-mode-line-inactive        "#3c193c")
+      (cordyline-bell                      "#3C8CA0")
 
       (cordyline-tab-1                     cordyline-mode-line)
       (cordyline-tab-2                     cordyline-mode-line-inactive)
@@ -150,7 +151,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,cordyline-class (:foreground ,cordyline-fg :background ,cordyline-pink-red))))
+   `(cursor ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line))))
 
    ;; fringe
    `(fringe ((,cordyline-class (:foreground ,cordyline-cyan :background ,cordyline-bg))))
@@ -167,7 +168,7 @@
    ;; mode-line
    `(mode-line ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line))))
    `(mode-line-inactive ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-light-blue))))
+   `(guava-themes-visible-bell ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,cordyline-class (:foreground ,cordyline-white))))
@@ -194,8 +195,8 @@
    `(tab-line-tab-special ((,cordyline-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-steel-blue))))
-   `(show-paren-mismatch ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-error))))
+   `(show-paren-match ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-bell))))
+   `(show-paren-mismatch ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,cordyline-class (:background ,cordyline-error))))
@@ -262,9 +263,9 @@
    `(org-meta-line ((,cordyline-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,cordyline-class (:foreground ,cordyline-mode-line-inactive))))
-   `(window-divider-first-pixel ((,cordyline-class (:foreground ,cordyline-mode-line-inactive))))
-   `(window-divider-last-pixel ((,cordyline-class (:foreground ,cordyline-mode-line-inactive))))
+   `(window-divider ((,cordyline-class (:foreground ,cordyline-tab-3))))
+   `(window-divider-first-pixel ((,cordyline-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,cordyline-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,cordyline-class (:foreground ,cordyline-white :background ,cordyline-orderless-2))))

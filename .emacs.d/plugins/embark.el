@@ -583,6 +583,10 @@ action."
                          (cons function
                                (symbol :tag "Next target type")))))
 
+(defcustom embark-auto-prefix-help-delay 2.0
+  "Delay in seconds before automatic prefix help is shown."
+  :type 'number)
+
 ;;; Overlay properties
 
 ;; high priority to override both bug reference and the lazy
@@ -1934,15 +1938,21 @@ in a `vc-dir' buffer."
 ;;;###autoload
 (defun embark-prefix-help-command ()
   "Prompt for and run a command bound in the prefix used for this command.
-The prefix described consists of all but the last event of the
-key sequence that ran this command.  This function is intended to
-be used as a value for `prefix-help-command'.
+The prefix described consists of all but the last event of the key
+sequence that ran this command.  This function is intended to be used as
+a value for `prefix-help-command'; when used that way you can press
+`help-char' (by default C-h) after a key binding prefix to be prompted
+for a command under the prefix to run.
 
-In addition to using completion to select a command, you can also
-type @ and the key binding (without the prefix)."
+In addition to using completion to select a command, you can also type
+the `embark-keymap-prompter-key' (@ by default) and then the key
+binding (without the prefix)."
   (interactive)
   (when-let* ((keys (this-command-keys-vector))
-              (prefix (seq-take keys (1- (length keys))))
+              (prefix (if (and (> (length keys) 0)
+                               (eql (aref keys (1- (length keys))) help-char))
+                          (seq-take keys (1- (length keys)))
+                        keys))
               (keymap (key-binding prefix 'accept-default)))
     (minibuffer-with-setup-hook
         (lambda ()
@@ -2573,7 +2583,9 @@ target and the other occurrences of it highlighted in different
 colors."
   (lambda (&optional _keymap targets _prefix)
     (if (and (not (minibufferp))
-             (memq (plist-get (car targets) :orig-type) '(symbol identifier)))
+             (memq (plist-get (car targets) :type)
+                   '(identifier command variable function
+                                face library package symbol)))
         (let ((isearch-string (plist-get (car targets) :target))
               (isearch-regexp-function #'isearch-symbol-regexp))
           (isearch-lazy-highlight-new-loop))
@@ -2639,6 +2651,7 @@ See `embark-act' for the meaning of the prefix ARG."
                        collect keymap))))
     (when embark-help-key
       (keymap-set map embark-help-key #'embark-keymap-help))
+    (keymap-set map "RET" embark--command)
     map))
 
 ;;;###autoload
@@ -3690,6 +3703,46 @@ Return the category metadatum as the type of the target."
   (add-hook 'embark-candidate-collectors #'embark--ivy-candidates)
   (remove-hook 'embark-candidate-collectors #'embark-selected-candidates)
   (add-hook 'embark-candidate-collectors #'embark-selected-candidates))
+
+;;; Automatic prefix help
+
+(defvar embark--auto-prefix-help-timer nil
+  "Timer used to decide when to display automatic prefix help.")
+
+(defvar embark--backup-prefix-help-command nil
+  "Previous value `prefix-help-command' to restore.")
+
+(defun embark--auto-prefix-help ()
+  "If the current keys are a prefix, simulate pressing `help-char'."
+  (when (keymapp (key-binding (this-command-keys) 'accept-default))
+    (push help-char unread-command-events)))
+
+;;;###autoload
+(define-minor-mode embark-auto-prefix-help-mode
+  "Global minor mode to automatically provide prefix help.
+
+This global minor mode will automatically prompt you for a command to
+run under the key binding prefix you have typed, if you pause for a
+number of seconds (given by `embark-auto-prefix-help-delay').  This
+functionality is similar to that of the which-key package, which comes
+with Emacs 30 and later.
+
+If you do sometimes want this kind of help remembering commands under a
+prefix, but do not want it to occur automatically after a delay, you can
+have it instead appear when pressing `help-char' (C-h by default) after
+a prefix, by setting:
+
+\(setq prefix-help-command #\='embark-prefix-help-command)"
+  :lighter " eaph"
+  :global t
+  (if embark-auto-prefix-help-mode
+      (setq embark--backup-prefix-help-command prefix-help-command
+            prefix-help-command #'embark-prefix-help-command
+            embark--auto-prefix-help-timer
+            (run-with-idle-timer embark-auto-prefix-help-delay t
+                                 #'embark--auto-prefix-help))
+    (cancel-timer embark--auto-prefix-help-timer)
+    (setq prefix-help-command embark--backup-prefix-help-command)))
 
 ;;; Custom actions
 

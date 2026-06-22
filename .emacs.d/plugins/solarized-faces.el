@@ -169,6 +169,32 @@
                                       :foreground ,base1
                                       :underline ,s-line
                                       :weight bold))))
+;;;;; diredfl
+     `(diredfl-autofile-name ((,class (:background ,base02))))
+     `(diredfl-compressed-file-name ((,class (:foreground ,violet))))
+     `(diredfl-compressed-file-suffix ((,class (:foreground ,violet))))
+     `(diredfl-date-time ((,class (:foreground ,base01))))
+     `(diredfl-deletion ((,class (:foreground ,red :weight bold))))
+     `(diredfl-deletion-file-name ((,class (:foreground ,red))))
+     `(diredfl-dir-heading ((,class (:foreground ,base03 :background ,blue :weight bold))))
+     `(diredfl-dir-name ((,class (:foreground ,blue))))
+     `(diredfl-dir-priv ((,class (:foreground ,blue))))
+     `(diredfl-exec-priv ((,class (:foreground ,green))))
+     `(diredfl-executable-tag ((,class (:foreground ,green))))
+     `(diredfl-file-name ((,class (:foreground ,base0))))
+     `(diredfl-file-suffix ((,class (:foreground ,base01))))
+     `(diredfl-flag-mark ((,class (:foreground ,yellow :weight bold))))
+     `(diredfl-flag-mark-line ((,class (:background ,base02))))
+     `(diredfl-ignored-file-name ((,class (:foreground ,base01))))
+     `(diredfl-link-priv ((,class (:foreground ,cyan))))
+     `(diredfl-no-priv ((,class (:foreground ,base01))))
+     `(diredfl-number ((,class (:foreground ,cyan))))
+     `(diredfl-other-priv ((,class (:foreground ,violet))))
+     `(diredfl-rare-priv ((,class (:foreground ,orange))))
+     `(diredfl-read-priv ((,class (:foreground ,green))))
+     `(diredfl-symlink ((,class (:foreground ,cyan :slant italic))))
+     `(diredfl-tagged-autofile-name ((,class (:background ,base02))))
+     `(diredfl-write-priv ((,class (:foreground ,yellow))))
 ;;;;; display-fill-column-indicator
      `(fill-column-indicator ((,class :foreground ,base02 :weight semilight)))
 ;;;;; dropdown
@@ -582,8 +608,25 @@
 ;;;;; elfeed
      `(elfeed-search-date-face ((,class (:foreground ,base01))))
      `(elfeed-search-feed-face ((,class (:foreground ,base01))))
+     `(elfeed-search-filter-face ((,class (:foreground ,green))))
+     `(elfeed-search-last-update-face ((,class (:foreground ,cyan))))
+     `(elfeed-search-marked-face ((,class (:foreground ,magenta :weight bold))))
+     `(elfeed-search-separator-face ((,class (:foreground ,base01))))
      `(elfeed-search-tag-face ((,class (:foreground ,base0))))
-     `(elfeed-search-title-face ((,class (:foreground ,base0))))
+     `(elfeed-search-title-face ((,class (:foreground ,base01))))
+     `(elfeed-search-unread-count-face ((,class (:foreground ,base01))))
+     `(elfeed-search-unread-title-face ((,class (:foreground ,base1 :weight bold))))
+     `(elfeed-log-date-face ((,class (:foreground ,base01))))
+     `(elfeed-log-debug-level-face ((,class (:foreground ,green))))
+     `(elfeed-log-info-level-face ((,class (:foreground ,blue))))
+     `(elfeed-log-warn-level-face ((,class (:foreground ,yellow))))
+     `(elfeed-log-error-level-face ((,class (:foreground ,red))))
+     `(elfeed-show-author-face ((,class (:foreground ,green))))
+     `(elfeed-show-date-face ((,class (:foreground ,base01))))
+     `(elfeed-show-feed-face ((,class (:foreground ,cyan))))
+     `(elfeed-show-header-face ((,class (:foreground ,base01))))
+     `(elfeed-show-tags-face ((,class (:foreground ,violet))))
+     `(elfeed-show-title-face ((,class (:foreground ,base1 :weight bold))))
 
 ;;;;; elscreen
      `(elscreen-tab-background-face ((,class (:background ,base03))))
@@ -974,6 +1017,9 @@
      `(hl-line-face
        ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
                  :background ,base02))))
+;;;;; hl-todo
+     `(hl-todo ((,class (:foreground ,orange :weight bold))))
+     `(hl-todo-flymake-type ((,class (:foreground ,orange :weight bold))))
 ;;;;; hydra
      `(hydra-face-red ((,class (:foreground ,base1 :weight bold))))
      `(hydra-face-blue ((,class (:foreground ,blue))))
@@ -1003,7 +1049,7 @@
      `(info-header-node ((,class (:inherit info-node))))
      `(info-header-xref ((,class (:inherit info-xref))))
      `(info-index-match ((,class (:inherit match))))
-     `(info-menu-header ((,class (:inherit variable-pitch :weight bold))))
+     `(info-menu-header ((,class (:inherit ,s-variable-pitch :weight bold))))
      `(info-menu-star ((,class (:foreground ,orange))))
      `(info-xref ((,class (:inherit link))))
      `(info-xref-visited ((,class (:inherit (link-visited info-xref)))))
@@ -1521,7 +1567,7 @@
      `(org-agenda-date-weekend
        ((,class (:inherit org-agenda-date :inverse-video nil :background unspecified
                           :foreground ,base01 :weight unspecified
-                          :underline t :overline nil :box unspecified))))
+                          :underline nil :overline nil :box unspecified))))
      `(org-agenda-date-today
        ((,class (:inherit org-agenda-date :inverse-video t :weight bold
                           :underline unspecified :overline nil :box unspecified
@@ -1704,6 +1750,17 @@
      `(rst-level-4 ((,class (:inherit org-level-4))))
      `(rst-level-5 ((,class (:inherit org-level-5))))
      `(rst-level-6 ((,class (:inherit org-level-6))))
+;;;;; ruler-mode
+     `(ruler-mode-default ((,class (:inherit default :foreground ,base01 :background ,base02))))
+     `(ruler-mode-pad ((,class (:inherit ruler-mode-default :background ,base03))))
+     `(ruler-mode-margins ((,class (:inherit ruler-mode-default :foreground ,base1))))
+     `(ruler-mode-fringes ((,class (:inherit ruler-mode-default :foreground ,green))))
+     `(ruler-mode-column-number ((,class (:inherit ruler-mode-default :foreground ,base0))))
+     `(ruler-mode-fill-column ((,class (:inherit ruler-mode-default :foreground ,red))))
+     `(ruler-mode-comment-column ((,class (:inherit ruler-mode-default :foreground ,green))))
+     `(ruler-mode-goal-column ((,class (:inherit ruler-mode-default :foreground ,cyan))))
+     `(ruler-mode-tab-stop ((,class (:inherit ruler-mode-default :foreground ,violet))))
+     `(ruler-mode-current-column ((,class (:inherit ruler-mode-default :foreground ,yellow :weight bold))))
 ;;;;; selectrum-mode
      `(selectrum-current-candidate ((,class (:weight bold :background ,base02 :underline t))))
      `(selectrum-primary-highlight ((,class (:foreground ,yellow))))

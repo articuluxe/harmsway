@@ -306,6 +306,67 @@
    `(helm-source-header   ((t (:foreground ,ample/darkest-gray :background ,ample/blue))))
    ;;`(helm-visible-mark  ((t ())))
 
+   ;; vertico
+   `(vertico-current ((t (:foreground ,ample/yellow :background ,ample/region :bold t :extend t))))
+   `(vertico-group-title ((t (:foreground ,ample/gray :slant italic))))
+   `(vertico-group-separator ((t (:inherit vertico-group-title :strike-through t))))
+   `(vertico-multiline ((t (:foreground ,ample/dark-gray))))
+
+   ;; marginalia
+   `(marginalia-documentation ((t (:foreground ,ample/dark-gray :slant italic))))
+   `(marginalia-file-name ((t (:foreground ,ample/gray))))
+   `(marginalia-on ((t (:foreground ,ample/green :weight normal))))
+   `(marginalia-off ((t (:foreground ,ample/red :weight normal))))
+   `(marginalia-archive ((t (:foreground ,ample/orange))))
+   `(marginalia-installed ((t (:foreground ,ample/green))))
+   `(marginalia-modified ((t (:foreground ,ample/red))))
+   `(completions-annotations ((t (:foreground ,ample/dark-gray :slant italic))))
+   `(completions-common-part ((t (:foreground ,ample/gray))))
+   `(completions-first-difference ((t (:foreground ,ample/orange :weight bold))))
+
+   ;; consult
+   `(match ((t (:foreground ,ample/blue :background ,ample/darkest-gray))))
+   `(consult-highlight-match ((t (:inherit match))))
+   `(consult-highlight-mark ((t (:foreground ,ample/purple :underline t))))
+   `(consult-preview-match ((t (:background ,ample/blue :foreground ,ample/bg))))
+   `(consult-preview-insertion ((t (:background ,ample/region))))
+   `(consult-preview-line ((t (:inherit consult-preview-insertion :extend t))))
+   `(consult-narrow-indicator ((t (:foreground ,ample/orange :weight normal))))
+   `(consult-async-running ((t (:foreground ,ample/orange :weight normal))))
+   `(consult-async-finished ((t (:foreground ,ample/green))))
+   `(consult-async-failed ((t (:foreground ,ample/red))))
+   `(consult-async-split ((t (:foreground ,ample/purple))))
+   `(consult-async-option ((t (:foreground ,ample/orange :weight normal))))
+   `(consult-help ((t (:foreground ,ample/gray))))
+   `(consult-key ((t (:foreground ,ample/orange))))
+   `(consult-line-number ((t (:inherit consult-key))))
+   `(consult-file ((t (:inherit font-lock-function-name-face))))
+   `(consult-grep-context ((t (:foreground ,ample/gray))))
+   `(consult-bookmark ((t (:inherit font-lock-constant-face))))
+   `(consult-line-number-prefix ((t (:inherit linum))))
+   `(consult-line-number-wrapped ((t (:foreground ,ample/orange :inherit linum :weight normal))))
+
+   ;; embark
+   `(embark-target ((t (:foreground ,ample/yellow :background ,ample/region :extend t))))
+   `(embark-keybinding ((t (:foreground ,ample/green :weight bold))))
+   `(embark-keybinding-repeat ((t (:inherit font-lock-builtin-face))))
+   `(embark-keymap ((t (:foreground ,ample/gray :slant italic))))
+   `(embark-selected ((t (:inherit match))))
+   `(embark-verbose-indicator-documentation ((t (:inherit marginalia-documentation))))
+   `(embark-verbose-indicator-title ((t (:foreground ,ample/fg :weight bold :height 1.1))))
+   `(embark-verbose-indicator-shadowed ((t (:foreground ,ample/dark-gray))))
+   `(embark-collect-candidate ((t (:inherit default))))
+   `(embark-collect-group-title ((t (:foreground ,ample/gray :slant italic))))
+   `(embark-collect-group-separator ((t (:foreground ,ample/gray :strike-through t :slant italic))))
+   `(embark-collect-annotation ((t (:inherit completions-annotations))))
+
+   ;; prescient
+   `(prescient-primary-highlight ((t (:foreground ,ample/lighter-blue :weight bold))))
+   `(prescient-secondary-highlight ((t (:inherit prescient-primary-highlight :underline t))))
+
+   ;; vertico-prescient
+   ;; This package defines no faces; it only integrates prescient filtering/sorting with vertico.
+
    ;; jabber
    `(jabber-activity-face  ((t (:inherit font-lock-variable-name-face :bold t))))
    `(jabber-activity-personal-face ((t (:inherit font-lock-function-name-face :bold t))))

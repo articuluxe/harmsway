@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: May 15, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -70,6 +70,7 @@
 
       (malus-mode-line                 "#cd5a5f")
       (malus-mode-line-inactive        "#49835f")
+      (malus-bell                      "#5A99CD")
 
       (malus-tab-1                     malus-mode-line)
       (malus-tab-2                     malus-mode-line-inactive)
@@ -149,7 +150,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,malus-class (:foreground ,malus-white :background ,malus-red-sweetango))))
+   `(cursor ((,malus-class (:foreground ,malus-white :background ,malus-mode-line))))
 
    ;; fringe
    `(fringe ((,malus-class (:foreground ,malus-cyan :background ,malus-bg))))
@@ -166,7 +167,7 @@
    ;; mode-line
    `(mode-line ((,malus-class (:foreground ,malus-white :background ,malus-mode-line))))
    `(mode-line-inactive ((,malus-class (:foreground ,malus-white :background ,malus-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,malus-class (:foreground ,malus-white :background ,malus-blue-subdued))))
+   `(guava-themes-visible-bell ((,malus-class (:foreground ,malus-white :background ,malus-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,malus-class (:foreground ,malus-red-sweetango))))
@@ -193,8 +194,8 @@
    `(tab-line-tab-special ((,malus-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,malus-class (:foreground ,malus-white :background ,malus-light-blue))))
-   `(show-paren-mismatch ((,malus-class (:foreground ,malus-white :background ,malus-error))))
+   `(show-paren-match ((,malus-class (:foreground ,malus-white :background ,malus-bell))))
+   `(show-paren-mismatch ((,malus-class (:foreground ,malus-white :background ,malus-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,malus-class (:background ,malus-error))))
@@ -261,9 +262,9 @@
    `(org-meta-line ((,malus-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,malus-class (:foreground ,malus-mode-line-inactive))))
-   `(window-divider-first-pixel ((,malus-class (:foreground ,malus-mode-line-inactive))))
-   `(window-divider-last-pixel ((,malus-class (:foreground ,malus-mode-line-inactive))))
+   `(window-divider ((,malus-class (:foreground ,malus-tab-3))))
+   `(window-divider-first-pixel ((,malus-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,malus-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,malus-class (:foreground ,malus-white :background ,malus-orderless-2))))

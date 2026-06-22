@@ -81,8 +81,8 @@ Takes the pull-request as only argument and must return a directory."
      :description (lambda () (let ((repo (forge-get-repository :stub?)))
                           (if (or (not repo)
                                   (eq (oref repo condition) :tracked))
-                            "track some repo"
-                          "track this repository"))))
+                              "track some repo"
+                            "track this repository"))))
     ("c f" "fork this repository" forge-fork
      :if-not (##forge-get-repository :tracked?))
     ("/ M" "merge with api" forge-merge
@@ -207,8 +207,8 @@ repository cannot be determined, instead invoke `forge-add-repository'."
   :inapt-if-not (lambda () (and (forge-get-repository :tracked?)
                            (forge--get-github-repository)))
   (interactive
-   (list (read-number "Pull topic: "
-                      (and$ (forge-current-topic) (oref $ number)))))
+    (list (read-number "Pull topic: "
+                       (and$ (forge-current-topic) (oref $ number)))))
   (forge--pull-topic (forge-get-repository :tracked) number))
 
 ;;;###autoload(autoload 'forge-pull-this-topic "forge-commands" nil t)
@@ -391,17 +391,17 @@ commit, and for a file."
     (magit-buffer-file-name
      `(,(or magit-buffer-refname magit-buffer-revision)
        ,(magit-file-relative-name magit-buffer-file-name)
-       ,@(magit-file-region-line-numbers)
+       ,@(or (magit-file-region-line-numbers) (list nil nil))
        ,current-prefix-arg))
     (buffer-file-name
      `(nil
        ,(magit-file-relative-name buffer-file-name)
-       ,@(magit-file-region-line-numbers)
+       ,@(or (magit-file-region-line-numbers) (list nil nil))
        ,current-prefix-arg))
     ((derived-mode-p 'dired-mode)
      `(nil
        ,(magit-file-relative-name (dired-get-filename))
-       ,current-prefix-arg))
+       nil nil ,current-prefix-arg))
     ((let ((commit (magit-read-local-branch-or-commit
                     "Browse file from commit")))
        (list commit (magit-read-file-from-rev commit "Browse file"))))))
@@ -424,6 +424,8 @@ commit, and for a file."
   (forge--format repo 'remote-url-format))
 
 (cl-defmethod forge-get-url ((_(eql :commit)) commit)
+  (when (member commit '(nil "{worktree}" "{index}"))
+    (setq commit (or (magit-get-current-branch) "HEAD")))
   (let ((repo (forge-get-repository :stub)))
     (cond-let*
       ((magit-list-containing-branches
@@ -438,9 +440,12 @@ commit, and for a file."
 
 (cl-defmethod forge-get-url ((_(eql :blob)) commit file
                              &optional line end force-hash)
+  (cl-assert (stringp file))
+  (when (member commit '(nil "{worktree}" "{index}"))
+    (setq commit (or (magit-get-current-branch) "HEAD")))
   (let* ((commit (or (and (magit-branch-p commit)
                           (cdr (magit-split-branch-name commit)))
-                     (and commit (magit-commit-p commit))
+                     (magit-commit-p commit)
                      (and (not (or line force-hash))
                           (magit-get-current-branch))
                      (magit-rev-parse "HEAD")))
@@ -454,17 +459,19 @@ commit, and for a file."
                                         (and (not (equal line end)) end))))))
 
 (cl-defmethod forge-get-url ((_(eql :branch)) branch)
+  (cl-assert (stringp branch))
   (let (remote)
-    (if (magit-remote-branch-p branch)
-        (pcase-setq `(,remote . ,branch) (magit-split-branch-name branch))
-      (unless (setq remote (or (magit-get-push-remote branch)
-                               (magit-get-upstream-remote branch)))
-        (user-error "Cannot determine remote for %s" branch)))
+    (cond ((magit-remote-branch-p branch)
+           (pcase-setq `(,remote . ,branch) (magit-split-branch-name branch)))
+          ((not (setq remote (or (magit-get-push-remote branch)
+                                 (magit-get-upstream-remote branch))))
+           (user-error "Cannot determine remote for %s" branch)))
     (forge--format (forge-get-repository :stub remote)
                    'branch-url-format
                    `((?r . ,branch)))))
 
 (cl-defmethod forge-get-url ((_(eql :remote)) remote)
+  (cl-assert (stringp remote))
   (forge--format (forge-get-repository :stub remote) 'remote-url-format))
 
 (cl-defmethod forge-get-url ((post forge-post))

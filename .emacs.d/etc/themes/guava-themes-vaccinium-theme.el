@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Mar 22, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -60,7 +60,6 @@
       (vaccinium-purple                    "#6464af")
       (vaccinium-deep-purple               "#4b378c")
       (vaccinium-purple-pink               "#aa78cf")
-      (vaccinium-purple-red                "#632a63")
 
       (vaccinium-fg                        "#FFFFFF")
       (vaccinium-bg                        "#1c1c26")
@@ -73,6 +72,7 @@
 
       (vaccinium-mode-line                 "#5582d7")
       (vaccinium-mode-line-inactive        "#6a7e98")
+      (vaccinium-bell                      "#D76955")
 
       (vaccinium-tab-1                     vaccinium-mode-line)
       (vaccinium-tab-2                     vaccinium-mode-line-inactive)
@@ -152,7 +152,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,vaccinium-class (:foreground ,vaccinium-black :background ,vaccinium-blueberry))))
+   `(cursor ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line))))
 
    ;; fringe
    `(fringe ((,vaccinium-class (:foreground ,vaccinium-red :background ,vaccinium-bg))))
@@ -169,7 +169,7 @@
    ;; mode-line
    `(mode-line ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line))))
    `(mode-line-inactive ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-orange))))
+   `(guava-themes-visible-bell ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,vaccinium-class (:foreground ,vaccinium-blueberry))))
@@ -196,8 +196,8 @@
    `(tab-line-tab-special ((,vaccinium-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,vaccinium-class (:foreground ,vaccinium-black :background ,vaccinium-orange))))
-   `(show-paren-mismatch ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-error))))
+   `(show-paren-match ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-bell))))
+   `(show-paren-mismatch ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,vaccinium-class (:background ,vaccinium-error))))
@@ -264,9 +264,9 @@
    `(org-meta-line ((,vaccinium-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,vaccinium-class (:foreground ,vaccinium-mode-line-inactive))))
-   `(window-divider-first-pixel ((,vaccinium-class (:foreground ,vaccinium-mode-line-inactive))))
-   `(window-divider-last-pixel ((,vaccinium-class (:foreground ,vaccinium-mode-line-inactive))))
+   `(window-divider ((,vaccinium-class (:foreground ,vaccinium-tab-3))))
+   `(window-divider-first-pixel ((,vaccinium-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,vaccinium-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,vaccinium-class (:foreground ,vaccinium-white :background ,vaccinium-orderless-2))))
@@ -300,8 +300,8 @@
    `(elfeed-show-tags-face ((,vaccinium-class (:foreground ,vaccinium-orange))))
 
    ;; doom-modeline
-   `(doom-modeline-project-name ((,vaccinium-class (:foreground ,vaccinium-purple-red :inherit italic))))
-   `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-purple-red))))
+   `(doom-modeline-project-name ((,vaccinium-class (:foreground ,vaccinium-deep-purple :inherit italic))))
+   `(doom-modeline-project-parent-dir ((,vaccinium-class (:foreground ,vaccinium-deep-purple))))
    `(doom-modeline-buffer-minor-mode ((,vaccinium-class (:foreground ,vaccinium-yellow))))
 
    ;; corfu

@@ -3,7 +3,7 @@
 ;; Copyright (C) 2024-2026 James Cherti | https://www.jamescherti.com/contact/
 
 ;; Author: James Cherti <https://www.jamescherti.com/contact/>
-;; Version: 1.0.4
+;; Version: 1.0.5
 ;; URL: https://github.com/jamescherti/flymake-bashate.el
 ;; Keywords: tools
 ;; Package-Requires: ((flymake-quickdef "1.0.0") (emacs "27.1"))
@@ -31,7 +31,7 @@
 ;;
 ;; (This package can also work with Flycheck: simply use the `flymake-flycheck`
 ;; package, which allows any Emacs Flymake backend to function as a Flycheck
-;; checker.)*
+;; checker.)
 ;;
 ;; Installation from MELPA:
 ;; ------------------------
@@ -66,7 +66,7 @@
 (require 'flymake-quickdef)
 
 (defgroup flymake-bashate nil
-  "Non-nil if flymake-bashate mode mode is enabled."
+  "A Flymake backend for bashate, a Bash scripts style checker."
   :group 'flymake-bashate
   :prefix "flymake-bashate-"
   :link '(url-link
@@ -99,28 +99,30 @@ environment variable."
   :pre-let ((bashate-exec (executable-find flymake-bashate-executable)))
   :pre-check (progn
                (unless bashate-exec
-                 (error "The '%s' executable was not found" bashate-exec))
-               (unless (numberp flymake-bashate-max-line-length)
+                 (error "The '%s' executable was not found"
+                        flymake-bashate-executable))
+               (unless (or (null flymake-bashate-max-line-length)
+                           (natnump flymake-bashate-max-line-length))
                  (error
-                  "The `flymake-bashate-max-line-length' must be a number")))
+                  "The `flymake-bashate-max-line-length' must be a positive integer")))
   :write-type 'file
   :proc-form `(,bashate-exec
                ,@(when flymake-bashate-ignore
                    `("--ignore" ,flymake-bashate-ignore))
                ,@(when (and flymake-bashate-max-line-length
-                            (numberp flymake-bashate-max-line-length))
+                            (natnump flymake-bashate-max-line-length))
                    `("--max-line-length"
                      ,(number-to-string flymake-bashate-max-line-length)))
                ,fmqd-temp-file)
   :search-regexp (rx bol
-                     (zero-or-more anychar)
+                     (zero-or-more nonl)
                      (literal (file-name-nondirectory fmqd-temp-file)) ":"
                      (group (one-or-more digit)) ":"
                      (group (one-or-more digit)) ":"
                      (one-or-more (syntax whitespace))
                      (group "E" (one-or-more digit))
                      (one-or-more (syntax whitespace))
-                     (group (one-or-more anychar))
+                     (group (one-or-more nonl))
                      eol)
   :prep-diagnostic
   (let* ((lnum (string-to-number (match-string 1)))

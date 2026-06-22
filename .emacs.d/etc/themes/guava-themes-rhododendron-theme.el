@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 19, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -52,7 +52,7 @@
       (rhododendron-deep-blue                 "#3e3d8b")
 
       (rhododendron-bright-pink               "#fd3aae")
-      (rhododendron-alt-bright-pink           "#f197f5")
+      (rhododendron-alt-bright-pink           "#e78deb")
       (rhododendron-deep-pink                 "#c00e88")
 
       (rhododendron-light-purple              "#e0bde7")
@@ -73,10 +73,11 @@
 
       (rhododendron-mode-line                 "#c00353")
       (rhododendron-mode-line-inactive        "#fd3aae")
+      (rhododendron-bell                      "#03C013")
 
       (rhododendron-tab-1                     rhododendron-mode-line)
       (rhododendron-tab-2                     rhododendron-mode-line-inactive)
-      (rhododendron-tab-3                     rhododendron-purple-red)
+      (rhododendron-tab-3                     rhododendron-alt-bright-pink)
 
       (rhododendron-fl-comment                rhododendron-deep-green)
       (rhododendron-fl-string                 rhododendron-purple-red)
@@ -152,7 +153,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-red))))
+   `(cursor ((,rhododendron-class (:foreground ,rhododendron-black :background ,rhododendron-mode-line))))
 
    ;; fringe
    `(fringe ((,rhododendron-class (:foreground ,rhododendron-red :background ,rhododendron-bg))))
@@ -169,7 +170,7 @@
    ;; mode-line
    `(mode-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line))))
    `(mode-line-inactive ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-purple-blue))))
+   `(guava-themes-visible-bell ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,rhododendron-class (:foreground ,rhododendron-black))))
@@ -196,8 +197,8 @@
    `(tab-line-tab-special ((,rhododendron-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-bright-pink))))
-   `(show-paren-mismatch ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-error))))
+   `(show-paren-match ((,rhododendron-class (:foreground ,rhododendron-black :background ,rhododendron-bell))))
+   `(show-paren-mismatch ((,rhododendron-class (:foreground ,rhododendron-black :background ,rhododendron-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,rhododendron-class (:background ,rhododendron-error))))
@@ -264,9 +265,9 @@
    `(org-meta-line ((,rhododendron-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,rhododendron-class (:foreground ,rhododendron-mode-line-inactive))))
-   `(window-divider-first-pixel ((,rhododendron-class (:foreground ,rhododendron-mode-line-inactive))))
-   `(window-divider-last-pixel ((,rhododendron-class (:foreground ,rhododendron-mode-line-inactive))))
+   `(window-divider ((,rhododendron-class (:foreground ,rhododendron-tab-3))))
+   `(window-divider-first-pixel ((,rhododendron-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,rhododendron-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-orderless-2))))

@@ -102,40 +102,14 @@ Also see https://github.com/magit/magit/issues/4132."
 (defvar magit-common-git-post-commit-functions nil
   "Hook run by Git hooks `post-commit', `post-merge' and `post-rewrite'.
 
-This hook is run if `magit-overriding-githook-directory' is non-nil.
-The functions are called with the same arguments as the Git hook.
+There is not a single Git hook, which is called after a commit is
+created; to achieve that, all of these Git hooks have to be used.
 
-This hook is still experimental.")
-
-(defvar magit-git-post-commit-functions nil
-  "Hook run by Git hook `post-commit'.
-
-This hook is run if `magit-overriding-githook-directory' is non-nil.
-The functions are called with the same arguments as the Git hook.
-
-See also `magit-common-git-post-commit-functions'.
-
-This hook is still experimental.")
-
-(defvar magit-git-post-merge-functions nil
-  "Hook run by Git hook `post-merge'.
-
-This hook is run if `magit-overriding-githook-directory' is non-nil.
-The functions are called with the same arguments as the Git hook.
-
-See also `magit-common-git-post-commit-functions'.
-
-This hook is still experimental.")
-
-(defvar magit-git-post-rewrite-functions nil
-  "Hook run by Git hook `post-rewrite'.
-
-This hook is run if `magit-overriding-githook-directory' is non-nil.
-The functions are called with the same arguments as the Git hook.
-
-See also `magit-common-git-post-commit-functions'.
-
-This hook is still experimental.")
+Git hooks are documented in the githooks(5) manpage.  This Lisp hook
+is only run if `magit-run-hooks-from-githooks' is non-nil, and Magit
+runs Git asynchronously and on the local machine.  The hook functions
+are called with the same arguments as the Git hook; see the mentioned
+manpage for details.")
 
 ;;; Popup
 
@@ -376,7 +350,7 @@ the user explicitly select a commit, in a buffer dedicated to that task.
 
 Leave the original commit message of the targeted commit untouched.
 
-Like `magit-commit-fixup' but also run a `--autofixup' rebase."
+Like `magit-commit-fixup' but also run a \"--autofixup\" rebase."
   (interactive (list (magit-commit-at-point)
                      (magit-commit-arguments)))
   (magit-commit-squash-internal "--fixup=" commit args nil nil 'rebase))
@@ -393,7 +367,7 @@ Turing the rebase phase, when the two commits are being squashed, ask
 the user to author the final commit message, based on the original
 message of the targeted commit.
 
-Like `magit-commit-squash' but also run a `--autofixup' rebase."
+Like `magit-commit-squash' but also run a \"--autofixup\" rebase."
   (interactive (list (magit-commit-at-point)
                      (magit-commit-arguments)))
   (magit-commit-squash-internal "--squash=" commit args nil nil 'rebase))
@@ -802,7 +776,8 @@ actually insert the entry."
   (with-current-buffer buffer
     (undo-boundary)
     (goto-char (point-max))
-    (while (re-search-backward (concat "^" comment-start) nil t))
+    (git-commit--goto-insert-position nil)
+    (while (re-search-backward (git-commit--trailer-regexp) nil t))
     (save-restriction
       (narrow-to-region (point-min) (point))
       (cond ((re-search-backward (format "* %s\\(?: (\\([^)]+\\))\\)?: " file)

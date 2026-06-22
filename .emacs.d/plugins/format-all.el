@@ -37,7 +37,7 @@
 ;; - Clojure/ClojureScript (cljfmt, zprint)
 ;; - CMake (cmake-format)
 ;; - Crystal (crystal tool format)
-;; - CSS/Less/SCSS (prettier, prettierd, deno)
+;; - CSS/Less/SCSS (prettier, prettierd, deno, oxfmt)
 ;; - Cuda (clang-format)
 ;; - D (dfmt)
 ;; - Dart (dartfmt, dart-format)
@@ -51,24 +51,26 @@
 ;; - F# (fantomas)
 ;; - Fish Shell (fish_indent)
 ;; - Fortran Free Form (fprettify)
-;; - Gleam (gleam format)
+;; - GDScript (gdscript-formatter)
 ;; - GLSL (clang-format)
+;; - Gleam (gleam format)
 ;; - Go (gofmt, goimports)
-;; - GraphQL (prettier, prettierd)
+;; - GraphQL (prettier, prettierd, oxfmt)
 ;; - Haskell (brittany, fourmolu, hindent, ormolu, stylish-haskell)
 ;; - HCL (hclfmt)
 ;; - HLSL (clang-format)
-;; - HTML (tidy, deno)
+;; - HTML (tidy, deno, oxfmt)
 ;; - XHTML/XML (tidy)
 ;; - Hy (Emacs)
 ;; - Java (astyle, clang-format, google-java-format)
-;; - JavaScript/JSON/JSX (prettier, standard, prettierd, deno)
+;; - JavaScript/JSON/JSX (prettier, standard, prettierd, deno, oxfmt)
+;; - JSON5 (prettier, deno, oxfmt)
 ;; - Jsonnet (jsonnetfmt)
 ;; - Kotlin (ktlint)
 ;; - LaTeX (latexindent, auctex)
 ;; - Ledger (ledger-mode)
 ;; - Lua (lua-fmt, stylua, prettier plugin)
-;; - Markdown (prettier, prettierd, deno, markdownfmt, mdformat)
+;; - Markdown (prettier, prettierd, deno, markdownfmt, mdformat, oxfmt)
 ;; - Meson (muon fmt, meson format)
 ;; - Nginx (nginxfmt)
 ;; - Nix (nixpkgs-fmt, nixfmt, alejandra)
@@ -92,13 +94,13 @@
 ;; - Svelte (prettier plugin)
 ;; - Swift (swiftformat)
 ;; - Terraform (terraform fmt)
-;; - TOML (prettier plugin, taplo fmt)
-;; - TypeScript/TSX (prettier, ts-standard, prettierd, deno)
+;; - TOML (prettier plugin, taplo fmt, oxfmt)
+;; - TypeScript/TSX (prettier, ts-standard, prettierd, deno, oxfmt)
 ;; - Typst (typstyle, typstfmt)
 ;; - V (v fmt)
-;; - Vue (prettier, prettierd)
+;; - Vue (prettier, prettierd, oxfmt)
 ;; - Verilog (iStyle, Verible)
-;; - YAML (prettier, prettierd, deno)
+;; - YAML (prettier, prettierd, deno, oxfmt)
 ;; - Zig (zig)
 
 ;; You will need to install external programs to do the formatting.
@@ -120,6 +122,15 @@
 (require 'inheritenv)
 (require 'language-id)
 (require 'project)
+
+(defconst format-all--language-id-definitions
+  '(("GDScript" gdscript-mode))
+  "Language definitions not yet available in language-id.")
+
+(cl-loop for (language . modes) in format-all--language-id-definitions
+         unless (assoc language language-id--definitions)
+         do (setf (alist-get language language-id--definitions nil nil #'equal)
+                  modes))
 
 (defgroup format-all nil
   "Lets you auto-format source code."
@@ -158,6 +169,7 @@
     ("GLSL" clang-format)
     ("Go" gofmt)
     ("GraphQL" prettier)
+    ("GDScript" gdscript-formatter)
     ("Haskell" brittany)
     ("HCL" hclfmt)
     ("HLSL" clang-format)
@@ -1113,6 +1125,13 @@ accepting connections."
   (:features)
   (:format (format-all--buffer-easy executable "-f" "-" "--pretty-print=-")))
 
+(define-format-all-formatter gdscript-formatter
+  (:executable "gdscript-formatter")
+  (:install)
+  (:languages "GDScript")
+  (:features)
+  (:format (format-all--buffer-easy executable)))
+
 (define-format-all-formatter gleam
   (:executable "gleam")
   (:install (macos "brew install gleam"))
@@ -1321,13 +1340,33 @@ accepting connections."
     (when (buffer-file-name)
       (list "--stdin-input-file" (buffer-file-name))))))
 
+(define-format-all-formatter oxfmt
+  (:executable "oxfmt")
+  (:install "npm install --global oxfmt")
+  (:languages
+   "CSS" "GraphQL" "HTML" "JavaScript" "JSON" "JSON5" "JSX" "Less"
+   "Markdown" "SCSS" "TOML" "TSX" "TypeScript" "Vue" "YAML")
+  (:features)
+  (:format
+   (format-all--buffer-easy
+    executable
+    "--stdin-filepath"
+    (or (buffer-file-name)
+        (concat "stdin."
+                (let ((pair (assoc language
+                                   '(("JavaScript" . "js")
+                                     ("Markdown"   . "md")
+                                     ("TypeScript" . "ts")))))
+                  (if pair (cdr pair) (downcase language))))))))
+
 (define-format-all-formatter perltidy
   (:executable "perltidy")
   (:install "cpan install Perl::Tidy")
   (:languages "Perl")
   (:features region)
   (:format
-   (format-all--buffer-easy
+   (format-all--buffer-hard
+    '(0 2) nil nil
     executable
     "--standard-error-output"
     (when region
@@ -1522,10 +1561,12 @@ accepting connections."
                   (bash (concat (buffer-file-name) ".bash"))
                   (mksh (concat (buffer-file-name) ".mksh"))
                   (sh (concat (buffer-file-name) ".sh"))
+                  (zsh (concat (buffer-file-name) ".zsh"))
                   (t (buffer-file-name))))
         (list "-ln" (cl-case sh-shell
                       (bash "bash")
                       (mksh "mksh")
+                      (zsh "zsh")
                       (t "posix"))))))))
 
 (define-format-all-formatter snakefmt

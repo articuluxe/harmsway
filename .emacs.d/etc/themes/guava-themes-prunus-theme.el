@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Dec 29, 2025
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -38,11 +38,11 @@
       ;;(prunus-black                     "#000000")
       (prunus-white                     "#FFFFFF")
 
-      (prunus-light-brown               "#6e5041")
-      (prunus-alt-light-brown           "#917364")
-      (prunus-brown                     "#553728")
-      (prunus-alt-brown                 "#50463c")
-      (prunus-deep-brown                "#4b3219")
+      (prunus-light-brown               "#785a4b")
+      (prunus-alt-light-brown           "#9b7d6e")
+      (prunus-brown                     "#5f4132")
+      (prunus-alt-brown                 "#5a5046")
+      (prunus-deep-brown                "#553c23")
 
       (prunus-light-green               "#50a05f")
       (prunus-green-forest              "#007341")
@@ -70,8 +70,9 @@
       (prunus-warning                   "#f6d911")
       (prunus-success                   "#23D734")
 
-      (prunus-mode-line                 "#3c3228")
-      (prunus-mode-line-inactive        "#50463c")
+      (prunus-mode-line                 "#463c32")
+      (prunus-mode-line-inactive        "#5a5046")
+      (prunus-bell                      "#324646")
 
       (prunus-tab-1                     prunus-mode-line)
       (prunus-tab-2                     prunus-mode-line-inactive)
@@ -151,7 +152,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,prunus-class (:foreground ,prunus-white :background ,prunus-red))))
+   `(cursor ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line))))
 
    ;; fringe
    `(fringe ((,prunus-class (:foreground ,prunus-cyan :background ,prunus-bg))))
@@ -168,7 +169,7 @@
    ;; mode-line
    `(mode-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line))))
    `(mode-line-inactive ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,prunus-class (:foreground ,prunus-white :background ,prunus-light-pink))))
+   `(guava-themes-visible-bell ((,prunus-class (:foreground ,prunus-white :background ,prunus-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,prunus-class (:foreground ,prunus-white))))
@@ -195,8 +196,8 @@
    `(tab-line-tab-special ((,prunus-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,prunus-class (:foreground ,prunus-white :background ,prunus-deep-blue))))
-   `(show-paren-mismatch ((,prunus-class (:foreground ,prunus-white :background ,prunus-error))))
+   `(show-paren-match ((,prunus-class (:foreground ,prunus-white :background ,prunus-bell))))
+   `(show-paren-mismatch ((,prunus-class (:foreground ,prunus-white :background ,prunus-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,prunus-class (:background ,prunus-error))))
@@ -263,9 +264,9 @@
    `(org-meta-line ((,prunus-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,prunus-class (:foreground ,prunus-mode-line-inactive))))
-   `(window-divider-first-pixel ((,prunus-class (:foreground ,prunus-mode-line-inactive))))
-   `(window-divider-last-pixel ((,prunus-class (:foreground ,prunus-mode-line-inactive))))
+   `(window-divider ((,prunus-class (:foreground ,prunus-tab-3))))
+   `(window-divider-first-pixel ((,prunus-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,prunus-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,prunus-class (:foreground ,prunus-white :background ,prunus-orderless-2))))

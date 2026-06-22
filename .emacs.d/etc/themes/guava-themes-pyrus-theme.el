@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Apr 16, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -71,6 +71,7 @@
 
       (pyrus-mode-line                 "#295323")
       (pyrus-mode-line-inactive        "#228b22")
+      (pyrus-bell                      "#532341")
 
       (pyrus-tab-1                     pyrus-mode-line)
       (pyrus-tab-2                     pyrus-mode-line-inactive)
@@ -150,7 +151,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-deep-blue))))
+   `(cursor ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line))))
 
    ;; fringe
    `(fringe ((,pyrus-class (:foreground ,pyrus-blue :background ,pyrus-bg))))
@@ -167,7 +168,7 @@
    ;; mode-line
    `(mode-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line))))
    `(mode-line-inactive ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-light-blue))))
+   `(guava-themes-visible-bell ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,pyrus-class (:foreground ,pyrus-deep-orange))))
@@ -194,8 +195,8 @@
    `(tab-line-tab-special ((,pyrus-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-light-green))))
-   `(show-paren-mismatch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-error))))
+   `(show-paren-match ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-bell))))
+   `(show-paren-mismatch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,pyrus-class (:background ,pyrus-error))))
@@ -262,9 +263,9 @@
    `(org-meta-line ((,pyrus-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,pyrus-class (:foreground ,pyrus-mode-line-inactive))))
-   `(window-divider-first-pixel ((,pyrus-class (:foreground ,pyrus-mode-line-inactive))))
-   `(window-divider-last-pixel ((,pyrus-class (:foreground ,pyrus-mode-line-inactive))))
+   `(window-divider ((,pyrus-class (:foreground ,pyrus-tab-3))))
+   `(window-divider-first-pixel ((,pyrus-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,pyrus-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-orderless-2))))

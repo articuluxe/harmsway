@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Apr 19, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -69,6 +69,7 @@
 
       (petunia-mode-line                 "#8a5aff")
       (petunia-mode-line-inactive        "#008741")
+      (petunia-bell                      "#FFDB5A")
 
       (petunia-tab-1                     petunia-mode-line)
       (petunia-tab-2                     petunia-mode-line-inactive)
@@ -148,7 +149,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,petunia-class (:foreground ,petunia-black :background ,petunia-light-blue))))
+   `(cursor ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line))))
 
    ;; fringe
    `(fringe ((,petunia-class (:foreground ,petunia-red :background ,petunia-bg))))
@@ -165,7 +166,7 @@
    ;; mode-line
    `(mode-line ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line))))
    `(mode-line-inactive ((,petunia-class (:foreground ,petunia-white :background ,petunia-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,petunia-class (:foreground ,petunia-white :background ,petunia-light-green))))
+   `(guava-themes-visible-bell ((,petunia-class (:foreground ,petunia-white :background ,petunia-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,petunia-class (:foreground ,petunia-orange))))
@@ -192,8 +193,8 @@
    `(tab-line-tab-special ((,petunia-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,petunia-class (:foreground ,petunia-black :background ,petunia-light-orange))))
-   `(show-paren-mismatch ((,petunia-class (:foreground ,petunia-white :background ,petunia-error))))
+   `(show-paren-match ((,petunia-class (:foreground ,petunia-black :background ,petunia-bell))))
+   `(show-paren-mismatch ((,petunia-class (:foreground ,petunia-white :background ,petunia-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,petunia-class (:background ,petunia-error))))
@@ -260,9 +261,9 @@
    `(org-meta-line ((,petunia-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,petunia-class (:foreground ,petunia-mode-line-inactive))))
-   `(window-divider-first-pixel ((,petunia-class (:foreground ,petunia-mode-line-inactive))))
-   `(window-divider-last-pixel ((,petunia-class (:foreground ,petunia-mode-line-inactive))))
+   `(window-divider ((,petunia-class (:foreground ,petunia-tab-3))))
+   `(window-divider-first-pixel ((,petunia-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,petunia-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,petunia-class (:foreground ,petunia-white :background ,petunia-orderless-2))))

@@ -428,7 +428,21 @@
                                        "out"
                                        "phpDebug.js")))
      :type "php"
-     :port 9003))
+     :port 9003)
+    (hdb
+     modes (haskell-mode haskell-ts-mode haskell-literate-mode)
+     ensure dape-ensure-command
+     command "hdb"
+     command-cwd dape-command-cwd
+     command-args ("server" "-v0" "--port" :autoport)
+     host "localhost"
+     port :autoport
+     :type "haskell"
+     :request "launch"
+     :entryFile (buffer-file-name)
+     :projectRoot dape-command-cwd
+     :entryArgs []
+     :extraGhcArgs []))
   "This variable holds the dape configurations as an alist.
 In this alist, the car element serves as a symbol identifying each
 configuration.  Each configuration, in turn, is a property list (plist)

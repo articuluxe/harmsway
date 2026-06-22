@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler and Consult contributors
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 3.5
+;; Version: 3.6
 ;; Package-Requires: ((emacs "29.1") (compat "31"))
 ;; URL: https://github.com/minad/consult
 ;; Keywords: matching, files, completion
@@ -670,9 +670,11 @@ Turn ARG into a list, and for each element either:
     (let ((opts ""))
       (setq str (substring-no-properties str))
       ;; Find first option
-      (when (string-match "\\(?:\\`\\| \\)-." str)
-        (setq opts (substring str (- (match-end 0) 2))
-              str (substring str 0 (match-beginning 0))))
+      (when (string-match "\\(?:\\`\\| \\)-" str)
+        (setq opts (substring str (1- (match-end 0)))
+              str (substring str 0 (match-beginning 0)))
+        (when (equal opts "-")
+          (setq opts "")))
       ;; Replace backslash-escaped dashes
       (setq str (replace-regexp-in-string "\\(\\`\\| \\)\\\\-" "\\1-" str))
       ;; Options end with double dash

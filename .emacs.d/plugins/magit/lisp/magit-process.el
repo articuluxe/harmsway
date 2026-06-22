@@ -515,44 +515,37 @@ eol conversion."
   (when magit-process-record-invocations
     (let ((messages-buffer-name magit-process-record-buffer-name)
           (inhibit-message t))
-      (message "%s"
-               (format-spec
-                (format-time-string magit-process-record-entry-format)
-                `((?d . ,(abbreviate-file-name default-directory))
-                  (?a . ,(magit-process--format-arguments process args)))))))
+      (message
+       "%s" (format-spec
+             (format-time-string magit-process-record-entry-format)
+             `((?d . ,(abbreviate-file-name default-directory))
+               (?a . ,(magit-process--format-arguments process args)))))))
   (let ((process-environment (magit-process-environment))
         (default-process-coding-system (magit--process-coding-system)))
     (apply #'process-file process infile buffer display args)))
 
-(defvar magit--shadowed-githook-directory nil)
-
-(defun magit--shadowed-githook-directory ()
-  (or magit--shadowed-githook-directory
-      (setq magit--shadowed-githook-directory
-            (let ((magit-git-global-arguments nil))
-              (cl-letf (((symbol-function 'magit-process-environment)
-                         (lambda () process-environment)))
-                (or (magit-get "core.hooksPath")
-                    (expand-file-name "hooks" (magit-gitdir))))))))
-
 (defun magit-process-environment ()
-  ;; The various w32 hacks are only applicable when running on the local
-  ;; machine.  A local binding of process-environment different from the
-  ;; top-level value affects the environment used by Tramp.
-  (let ((local (not (file-remote-p default-directory))))
-    (append magit-git-environment
-            (and magit-overriding-githook-directory
-                 (list (concat "SHADOWED_GITHOOK_DIRECTORY="
-                               (magit--shadowed-githook-directory))))
-            (and local
-                 (cdr (assoc magit-git-executable magit--git-w32-path-hack)))
-            (and local magit-need-cygwin-noglob
-                 (mapcar (lambda (var)
-                           (concat var "=" (if-let ((val (getenv var)))
-                                               (concat val " noglob")
-                                             "noglob")))
-                         '("CYGWIN" "MSYS")))
-            process-environment)))
+  (cond
+    ((file-remote-p default-directory)
+     `(,@magit-git-environment
+       ,@process-environment))
+    (`(,@magit-git-environment
+       ,@(and magit-githook-directory
+              (not (file-remote-p default-directory))
+              (list (format "PATH=%s:%s"
+                            magit-githook-directory
+                            (getenv "PATH"))))
+       ;; The various w32 hacks are only applicable when running on the
+       ;; local machine.  A local binding of process-environment different
+       ;; from the top-level value affects the environment used by Tramp.
+       ,@(cdr (assoc magit-git-executable magit--git-w32-path-hack))
+       ,@(and magit-need-cygwin-noglob
+              (mapcar (lambda (var)
+                        (concat var "=" (if-let ((val (getenv var)))
+                                            (concat val " noglob")
+                                          "noglob")))
+                      '("CYGWIN" "MSYS")))
+       ,@process-environment))))
 
 (defvar magit-this-process nil)
 
@@ -610,7 +603,8 @@ See `magit-start-process' for more information."
              (let ((m (string-join (flatten-tree args) " ")))
                (remove-list-of-text-properties 0 (length m) '(face) m)
                m))
-  (magit-start-git nil args))
+  (with-editor* "MAGIT_HOOK_EDITOR"
+    (magit-start-git nil args)))
 
 (defun magit-run-git-with-editor (&rest args)
   "Export GIT_EDITOR and start Git.
@@ -624,8 +618,16 @@ current when this function was called (if it is a Magit buffer
 and still alive), as well as the respective Magit status buffer.
 
 See `magit-start-process' and `with-editor' for more information."
+  (magit-msg "Running %s %s" (magit-git-executable)
+             (let ((m (string-join (flatten-tree args) " ")))
+               (remove-list-of-text-properties 0 (length m) '(face) m)
+               m))
   (magit--record-separated-gitdir)
-  (magit-with-editor (magit-run-git-async args)))
+  (with-editor* "MAGIT_HOOK_EDITOR"
+    (with-environment-variables
+        ((magit-with-editor-envvar (getenv "MAGIT_HOOK_EDITOR")))
+      (let ((magit-process-popup-time -1))
+        (magit-start-git nil args)))))
 
 (defun magit-run-git-sequencer (&rest args)
   "Export GIT_EDITOR and start Git.
@@ -807,16 +809,17 @@ Magit status buffer."
 (defun magit-process--format-arguments (program args)
   (cond
     ((and args (equal program (magit-git-executable)))
-     (let ((global (magit-process-git-arguments--length)))
+     (pcase-let ((`(,global ,local)
+                  (magit-process-git-arguments--split program args)))
        (concat
         (propertize (file-name-nondirectory program)
                     'font-lock-face 'magit-section-heading)
         " "
         (propertize (magit--ellipsis)
                     'font-lock-face 'magit-section-heading
-                    'help-echo (string-join (seq-take args global) " "))
+                    'help-echo (string-join global " "))
         " "
-        (propertize (mapconcat #'shell-quote-argument (seq-drop args global) " ")
+        (propertize (mapconcat #'shell-quote-argument local " ")
                     'font-lock-face 'magit-section-heading))))
     ((and args (equal program shell-file-name))
      (propertize (cadr args)
@@ -874,15 +877,15 @@ Magit status buffer."
                 (status-buf (with-current-buffer process-buf
                               (magit-get-mode-buffer 'magit-status-mode))))
       (with-current-buffer status-buf
-        (when-let ((section
-                    (magit-get-section
-                     `((commit . ,(magit-rev-parse "HEAD"))
-                       (,(pcase (car (seq-drop
-                                      (process-command process)
-                                      (1+ (magit-process-git-arguments--length))))
-                           ((or "rebase" "am") 'rebase-sequence)
-                           ((or "cherry-pick" "revert") 'sequence)))
-                       (status)))))
+        (when-let
+            ((section
+              (magit-get-section
+               `((commit . ,(magit-rev-parse "HEAD"))
+                 (,(pcase-let ((`(,cmd . ,args) (process-command process)))
+                     (pcase (cadr (magit-process-git-arguments--split cmd args))
+                       ((or "rebase" "am") 'rebase-sequence)
+                       ((or "cherry-pick" "revert") 'sequence))))
+                 (status)))))
           (goto-char (oref section start))
           (magit-section-update-highlight))))))
 
@@ -1116,7 +1119,7 @@ as argument."
 (defun magit-process-set-mode-line (program args)
   "Display the git command (sans arguments) in the mode line."
   (when (equal program (magit-git-executable))
-    (setq args (nthcdr (magit-process-git-arguments--length) args)))
+    (setq args (cadr (magit-process-git-arguments--split program args))))
   (let ((str (concat " " (propertize
                           (concat (file-name-nondirectory program)
                                   (and args (concat " " (car args))))

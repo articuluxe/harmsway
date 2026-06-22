@@ -572,6 +572,13 @@
    `(tree-sitter-hl-face:variable.special     ((t (:inherit font-lock-keyword-face))))
    `(tree-sitter-hl-face:keyword              ((t (:foreground ,ms-magenta))))
 
+   `(highlight-indentation-face                 ((t (:background ,bg2))))
+   `(highlight-indentation-current-column-face  ((t (:background ,bg3))))
+
+   `(highlight-indent-guides-odd-face           ((t (:background ,bg2))))
+   `(highlight-indent-guides-even-face          ((t (:background ,bg3))))
+   `(highlight-indent-guides-character-face     ((t (:foreground ,bg4))))
+
    `(lsp-ui-doc-background                    ((t (:background ,bg2))))
 
    `(lsp-ui-peek-header                       ((t (:foreground "white" :background ,bg3))))

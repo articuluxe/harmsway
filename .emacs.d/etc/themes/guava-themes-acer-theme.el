@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Jan 12, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -63,7 +63,7 @@
       (acer-fg                        "#000000")
       (acer-bg                        "#f7bb78")
       (acer-highlight                 "#e3a764")
-      (acer-shadow                    "#7f7f7f")
+      (acer-shadow                    "#717171")
 
       (acer-error                     "#d70000")
       (acer-warning                   "#f0dc00")
@@ -71,6 +71,7 @@
 
       (acer-mode-line                 "#e76144")
       (acer-mode-line-inactive        "#ff8c4e")
+      (acer-bell                      "#4478E7")
 
       (acer-tab-1                     acer-mode-line)
       (acer-tab-2                     acer-mode-line-inactive)
@@ -150,7 +151,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,acer-class (:foreground ,acer-fg :background ,acer-orange))))
+   `(cursor ((,acer-class (:foreground ,acer-black :background ,acer-mode-line))))
 
    ;; fringe
    `(fringe ((,acer-class (:foreground ,acer-deep-blue :background ,acer-bg))))
@@ -167,7 +168,7 @@
    ;; mode-line
    `(mode-line ((,acer-class (:foreground ,acer-white :background ,acer-mode-line))))
    `(mode-line-inactive ((,acer-class (:foreground ,acer-white :background ,acer-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,acer-class (:foreground ,acer-white :background ,acer-green))))
+   `(guava-themes-visible-bell ((,acer-class (:foreground ,acer-white :background ,acer-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,acer-class (:foreground ,acer-black))))
@@ -190,12 +191,12 @@
    `(tab-line-tab-current ((,acer-class (:foreground ,acer-white :background ,acer-tab-1 :inherit tab-line-tab))))
    `(tab-line-tab-inactive ((,acer-class (:foreground ,acer-white :background ,acer-tab-2 :inherit tab-line-tab))))
    `(tab-line-tab-inactive-alternate ((,acer-class (:foreground ,acer-white :background ,acer-tab-3 :inherit tab-line-tab))))
-   `(tab-line-tab-modified ((,acer-class (:foreground ,acer-blue :weight bold :height 0.9))))
+   `(tab-line-tab-modified ((,acer-class (:foreground ,acer-green-cyan :weight bold :height 0.9))))
    `(tab-line-tab-special ((,acer-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,acer-class (:foreground ,acer-white :background ,acer-green))))
-   `(show-paren-mismatch ((,acer-class (:foreground ,acer-white :background ,acer-error))))
+   `(show-paren-match ((,acer-class (:foreground ,acer-black :background ,acer-bell))))
+   `(show-paren-mismatch ((,acer-class (:foreground ,acer-black :background ,acer-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,acer-class (:background ,acer-error))))
@@ -262,9 +263,9 @@
    `(org-meta-line ((,acer-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,acer-class (:foreground ,acer-mode-line-inactive))))
-   `(window-divider-first-pixel ((,acer-class (:foreground ,acer-mode-line-inactive))))
-   `(window-divider-last-pixel ((,acer-class (:foreground ,acer-mode-line-inactive))))
+   `(window-divider ((,acer-class (:foreground ,acer-tab-3))))
+   `(window-divider-first-pixel ((,acer-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,acer-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,acer-class (:foreground ,acer-white :background ,acer-orderless-2))))

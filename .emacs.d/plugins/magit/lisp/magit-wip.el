@@ -49,38 +49,24 @@
 (defcustom magit-wip-merge-branch nil
   "Whether to merge the current branch into its wip ref.
 
-If non-nil and the current branch has new commits, then it is
-merged into the wip ref before creating a new wip commit.  This
-makes it easier to inspect wip history and the wip commits are
-never garbage collected.
-
 If nil and the current branch has new commits, then the wip ref
 is reset to the tip of the branch before creating a new wip
 commit.  With this setting wip commits are eventually garbage
 collected.  This is currently the default.
 
-If `immediately', then use `git-commit-post-finish-hook' to
-create the merge commit.  This is discouraged because it can
-lead to a race condition, e.g., during rebases.
+If non-nil and the current branch has new commits, then it is
+merged into the wip ref before creating a new wip commit.  This
+makes it easier to inspect wip history and the wip commits are
+never garbage collected.
 
-If `githook', then use `magit-common-git-post-commit-hook' to
-create the merge commit.  This uses the experimental support for
-calling Lisp hooks from Git hooks, which is disabled by default,
-Customize `magit-overriding-githook-directory' to enable use of
-Git hooks."
+When this and `magit-run-hooks-from-githooks' are both enabled,
+and the other conditions mention in the docstring of that option
+are also met, then the wip merge commit is created right after
+the user creates a regular commit.  Otherwise the wip merge
+commit is created right before the next regular commit."
   :package-version '(magit . "2.90.0")
   :group 'magit-wip
-  :set (lambda (symbol value)
-         (set-default-toplevel-value symbol value)
-         (when (bound-and-true-p magit-wip-mode)
-           (if (eq value 'immediately)
-               (add-hook 'git-commit-post-finish-hook #'magit-wip-commit)
-             (remove-hook 'git-commit-post-finish-hook #'magit-wip-commit))))
-  :type '(choice
-          (const :tag "Yes (safely, just in time)" t)
-          (const :tag "Yes (immediately, with race condition)" immediately)
-          (const :tag "Yes (using experimental Git hook support)" githook)
-          (const :tag "No" nil)))
+  :type 'boolean)
 
 (defcustom magit-wip-namespace "refs/wip/"
   "Namespace used for work-in-progress refs.
@@ -110,23 +96,21 @@ buffer."
   :package-version '(magit . "2.90.0")
   :lighter magit-wip-mode-lighter
   :global t
-  :set-after '(magit-wip-merge-branch)
   (cond
     (magit-wip-mode
      (add-hook 'after-save-hook #'magit-wip-commit-buffer-file)
      (add-hook 'magit-after-apply-functions #'magit-wip-commit)
      (add-hook 'magit-before-change-functions #'magit-wip-commit)
      (add-hook 'before-save-hook #'magit-wip-commit-initial-backup)
-     (add-hook 'magit-common-git-post-commit-functions #'magit-wip-post-commit)
-     (when (eq magit-wip-merge-branch 'immediately)
-       (add-hook 'git-commit-post-finish-hook #'magit-wip-commit)))
+     (add-hook 'magit-common-git-post-commit-functions
+               #'magit-wip-post-commit))
     (t
      (remove-hook 'after-save-hook #'magit-wip-commit-buffer-file)
      (remove-hook 'magit-after-apply-functions #'magit-wip-commit)
      (remove-hook 'magit-before-change-functions #'magit-wip-commit)
      (remove-hook 'before-save-hook #'magit-wip-commit-initial-backup)
-     (remove-hook 'magit-common-git-post-commit-functions #'magit-wip-post-commit)
-     (remove-hook 'git-commit-post-finish-hook #'magit-wip-commit))))
+     (remove-hook 'magit-common-git-post-commit-functions
+                  #'magit-wip-post-commit))))
 
 (defun magit-wip-commit-buffer-file (&optional msg)
   "Commit visited file to a worktree work-in-progress ref."
@@ -158,8 +142,7 @@ buffer."
     (setq magit-wip-buffer-backed-up t)))
 
 (defun magit-wip-post-commit (&rest _)
-  (when (eq magit-wip-merge-branch 'githook)
-    (magit-wip-commit)))
+  (magit-wip-commit))
 
 ;;; Core
 

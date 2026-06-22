@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Feb 22, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -58,7 +58,7 @@
       (solanum-purple-pink               "#915d93")
       (solanum-purple-blue               "#492b91")
       (solanum-dark-purple               "#672b5f")
-      (solanum-purple-black              "#130d1a")
+      (solanum-alt-dark-purple           "#59536e")
 
       (solanum-fg                        "#FFFFFF")
       (solanum-bg                        "#130d1a")
@@ -71,10 +71,11 @@
 
       (solanum-mode-line                 "#672b5f")
       (solanum-mode-line-inactive        "#3b3550")
+      (solanum-bell                      "#41672B")
 
       (solanum-tab-1                     solanum-mode-line)
       (solanum-tab-2                     solanum-mode-line-inactive)
-      (solanum-tab-3                     solanum-purple-black)
+      (solanum-tab-3                     solanum-alt-dark-purple)
 
       (solanum-fl-comment                solanum-red-tomato)
       (solanum-fl-string                 solanum-yellow-potato)
@@ -150,7 +151,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,solanum-class (:foreground ,solanum-black :background ,solanum-yellow-potato))))
+   `(cursor ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line))))
 
    ;; fringe
    `(fringe ((,solanum-class (:foreground ,solanum-red-tomato :background ,solanum-bg))))
@@ -167,7 +168,7 @@
    ;; mode-line
    `(mode-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line))))
    `(mode-line-inactive ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,solanum-class (:foreground ,solanum-white :background ,solanum-orange))))
+   `(guava-themes-visible-bell ((,solanum-class (:foreground ,solanum-white :background ,solanum-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,solanum-class (:foreground ,solanum-yellow-potato))))
@@ -194,8 +195,8 @@
    `(tab-line-tab-special ((,solanum-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,solanum-class (:foreground ,solanum-black :background ,solanum-light-purple))))
-   `(show-paren-mismatch ((,solanum-class (:foreground ,solanum-white :background ,solanum-error))))
+   `(show-paren-match ((,solanum-class (:foreground ,solanum-white :background ,solanum-bell))))
+   `(show-paren-mismatch ((,solanum-class (:foreground ,solanum-white :background ,solanum-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,solanum-class (:background ,solanum-error))))
@@ -262,9 +263,9 @@
    `(org-meta-line ((,solanum-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,solanum-class (:foreground ,solanum-mode-line-inactive))))
-   `(window-divider-first-pixel ((,solanum-class (:foreground ,solanum-mode-line-inactive))))
-   `(window-divider-last-pixel ((,solanum-class (:foreground ,solanum-mode-line-inactive))))
+   `(window-divider ((,solanum-class (:foreground ,solanum-tab-3))))
+   `(window-divider-first-pixel ((,solanum-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,solanum-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,solanum-class (:foreground ,solanum-white :background ,solanum-orderless-2))))

@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Dec 27, 2025
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -70,6 +70,7 @@
 
       (jacaranda-mode-line                 "#655db0")
       (jacaranda-mode-line-inactive        "#aa69e6")
+      (jacaranda-bell                      "#7EB05D")
 
       (jacaranda-tab-1                     jacaranda-mode-line)
       (jacaranda-tab-2                     jacaranda-mode-line-inactive)
@@ -149,7 +150,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-deep-blue))))
+   `(cursor ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line))))
 
    ;; fringe
    `(fringe ((,jacaranda-class (:foreground ,jacaranda-purple-red :background ,jacaranda-bg))))
@@ -166,7 +167,7 @@
    ;; mode-line
    `(mode-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line))))
    `(mode-line-inactive ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-orange))))
+   `(guava-themes-visible-bell ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-bell))))
 
    ;; minibuffer
    `(minibuffer-prompt ((,jacaranda-class (:foreground ,jacaranda-black))))
@@ -193,8 +194,8 @@
    `(tab-line-tab-special ((,jacaranda-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-purple))))
-   `(show-paren-mismatch ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-error))))
+   `(show-paren-match ((,jacaranda-class (:foreground ,jacaranda-black :background ,jacaranda-bell))))
+   `(show-paren-mismatch ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,jacaranda-class (:background ,jacaranda-error))))
@@ -261,9 +262,9 @@
    `(org-meta-line ((,jacaranda-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,jacaranda-class (:foreground ,jacaranda-mode-line-inactive))))
-   `(window-divider-first-pixel ((,jacaranda-class (:foreground ,jacaranda-mode-line-inactive))))
-   `(window-divider-last-pixel ((,jacaranda-class (:foreground ,jacaranda-mode-line-inactive))))
+   `(window-divider ((,jacaranda-class (:foreground ,jacaranda-tab-3))))
+   `(window-divider-first-pixel ((,jacaranda-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,jacaranda-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-orderless-2))))

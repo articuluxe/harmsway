@@ -675,8 +675,7 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
     (let* ((after-make-frame-functions nil)
            (before-make-frame-hook nil)
            (parameter (append eldoc-box-frame-parameters
-                              `((default-minibuffer-frame . ,(selected-frame))
-                                (minibuffer . ,(minibuffer-window))
+                              `((minibuffer . ,(minibuffer-window))
                                 (left-fringe . ,(frame-char-width)))))
            window frame
            (main-frame (selected-frame)))

@@ -79,10 +79,10 @@
   :type 'hook)
 
 (defcustom magit-log-remove-graph-args '("--follow" "-G" "-S" "-L")
-  "The log arguments that cause the `--graph' argument to be dropped.
+  "The log arguments that cause the \"--graph\" argument to be dropped.
 
 The default value lists the arguments that are incompatible with
-`--graph' and therefore must be dropped when that is used.  You
+\"--graph\" and therefore must be dropped when that is used.  You
 can add additional arguments that are available in `magit-log',
 but I recommend that you don't do that.  Nowadays I would define
 this as a constant, but I am preserving it as an option, in case
@@ -209,7 +209,7 @@ because the latter may make use of Imenu's outdated cache."
 
 (defcustom magit-log-color-graph-limit 256
   "Number of commits over which log graphs are not colored.
-When showing more commits than specified, then the `--color'
+When showing more commits than specified, then the \"--color\"
 argument is silently dropped.  This is necessary because the
 `ansi-color' library, which is used to turn control sequences
 into faces, is just too slow."
@@ -220,7 +220,7 @@ into faces, is just too slow."
 (defcustom magit-log-show-signatures-limit 256
   "Number of commits over which signatures are not verified.
 When showing more commits than specified by this option, then the
-`--show-signature' argument, if specified, is silently dropped.
+\"--show-signature\" argument, if specified, is silently dropped.
 This is necessary because checking the signature of a large
 number of commits is just too slow."
   :package-version '(magit . "4.0.0")
@@ -778,7 +778,7 @@ completion candidates."
 ;;;###autoload
 (defun magit-log-buffer-file (&optional follow beg end)
   "Show log for the blob or file visited in the current buffer.
-With a prefix argument or when `--follow' is an active log
+With a prefix argument or when \"--follow\" is an active log
 argument, then follow renames.  When the region is active,
 restrict the log to the lines that the region touches."
   (interactive (cons current-prefix-arg (magit-file-region-line-numbers)))
@@ -891,7 +891,7 @@ https://github.com/mhagger/git-when-merged."
 (defun magit-delete-shelved-branch (branch)
   "Delete the shelved BRANCH.
 Delete a ref created by `magit-branch-shelve'."
-  (interactive (list (magit-read-shelved-branch "Log shelved branch")))
+  (interactive (list (magit-read-shelved-branch "Delete shelved branch")))
   (magit-run-git "update-ref" "-d" (concat "refs/shelved/" branch)))
 
 ;;;; Limit Commands
@@ -1555,8 +1555,8 @@ Do not add this to a hook variable."
                 (save-excursion (insert align)))
               (forward-line)
               (magit-make-margin-overlay))
-            ;; When `--format' is used and its value isn't one of the
-            ;; predefined formats, then `git-log' does not insert a
+            ;; When "--format" is used and its value isn't one of the
+            ;; predefined formats, then "git log" does not insert a
             ;; separator line.
             (save-excursion
               (forward-line -1)
@@ -1918,13 +1918,8 @@ Type \\[magit-cherry-pick] to apply the commit at point.
 
 (defun magit-insert-cherry-headers ()
   "Insert headers appropriate for `magit-cherry-mode' buffers."
-  (let ((branch (propertize magit-buffer-refname
-                            'font-lock-face 'magit-branch-local))
-        (upstream (propertize
-                   magit-buffer-cherry-upstream 'font-lock-face
-                   (if (magit-local-branch-p magit-buffer-cherry-upstream)
-                       'magit-branch-local
-                     'magit-branch-remote))))
+  (let ((branch   (magit-branch-set-face magit-buffer-refname))
+        (upstream (magit-branch-set-face magit-buffer-cherry-upstream)))
     (magit-insert-head-branch-header branch)
     (magit-insert-upstream-branch-header branch upstream "Upstream: ")
     (insert ?\n)))

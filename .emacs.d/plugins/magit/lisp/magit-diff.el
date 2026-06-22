@@ -346,12 +346,12 @@ that many spaces.  Otherwise, highlight neither."
   :type 'boolean)
 
 (defcustom magit-diff-extra-stat-arguments nil
-  "Additional arguments to be used alongside `--stat'.
+  "Additional arguments to be used alongside \"--stat\".
 
 A list of zero or more arguments or a function that takes no
 argument and returns such a list.  These arguments are allowed
-here: `--stat-width', `--stat-name-width', `--stat-graph-width'
-and `--compact-summary'.  See the git-diff(1) manpage."
+here: \"--stat-width\", \"--stat-name-width\", \"--stat-graph-width\"
+and \"--compact-summary\".  See the git-diff(1) manpage."
   :package-version '(magit . "3.0.0")
   :group 'magit-diff
   :type `(radio (function-item ,#'magit-diff-use-window-width-as-stat-width)
@@ -439,7 +439,7 @@ CommitDate: %cd
 
 All headers in revision buffers are inserted by the section
 inserter `magit-insert-revision-headers'.  Some of the headers
-are created by calling `git show --format=FORMAT' where FORMAT
+are created by calling \"git show --format=FORMAT\" where FORMAT
 is the format specified here.  Other headers are hard coded or
 subject to option `magit-revision-insert-related-refs'."
   :package-version '(magit . "2.3.0")
@@ -1402,11 +1402,11 @@ If no DWIM context is found, nil is returned."
               ((string= (magit-rev-parse revB) base)
                (format "%s..%s" revB revA))
               (interactive
-               (let ((main (magit-completing-read "View changes along"
-                                                  (list revA revB)
-                                                  nil t nil nil revB)))
-                 (format "%s...%s"
-                         (if (string= main revB) revA revB) main)))
+                (let ((main (magit-completing-read "View changes along"
+                                                   (list revA revB)
+                                                   nil t nil nil revB)))
+                  (format "%s...%s"
+                          (if (string= main revB) revA revB) main)))
               ((format "%s...%s" revA revB))))
         (format "%s..%s" revA revB)))))
 
@@ -2554,7 +2554,7 @@ keymap is the parent of their keymaps."
           "\\(-*\\)$"))  ; del
 
 (defun magit-diff-use-window-width-as-stat-width ()
-  "Use the `window-width' as the value of `--stat-width'."
+  "Use the `window-width' as the value of \"--stat-width\"."
   (and$ (get-buffer-window (current-buffer) 'visible)
         (list (format "--stat-width=%d" (window-width $)))))
 
@@ -2757,8 +2757,8 @@ keymap is the parent of their keymaps."
          (setq orig (magit-decode-git-path orig)))
        (setq file (magit-decode-git-path file))
        (setq header (nreverse header))
-       ;; KLUDGE Before v2.54 `git-log' ignored `--no-prefix'
-       ;; when `-L' is used.
+       ;; KLUDGE Before v2.54, "git log" ignored "--no-prefix"
+       ;; when "-L" is used.
        (when (and (magit-git-version< "2.54")
                   (derived-mode-p 'magit-log-mode)
                   (seq-some (##string-prefix-p "-L" %)
@@ -3025,7 +3025,7 @@ Staging and applying changes is documented in info node
 This function only inserts anything when `magit-show-commit' is
 called with a tag as argument, when that is called with a commit
 or a ref which is not a branch, then it inserts nothing."
-  (when (magit-tag-p magit-buffer-revision)
+  (when (magit-annotated-tag-p magit-buffer-revision)
     (magit-insert-section (taginfo)
       (let ((beg (point)))
         ;; "git verify-tag -v" would output what we need, but the gpg

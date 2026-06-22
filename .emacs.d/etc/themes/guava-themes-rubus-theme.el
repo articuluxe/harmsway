@@ -2,9 +2,9 @@
 
 ;; Copyright (C) 2025-2026
 
-;; Author: Geralld Borbón <eternalmangocean@gmail.com>
+;; Author: Geralld Borbón <geralldborbon@gmail.com>
 ;; Created: Mar 27, 2026
-;; Version: 0.17.0
+;; Version: 0.18.0
 ;; Keywords: themes, faces, color
 ;; URL: http://github.com/bormoge/guava-themes
 ;; Package-Requires: ((emacs "24.1"))
@@ -42,8 +42,8 @@
       (rubus-alt-raspberry             "#6e504b")
       (rubus-deep-raspberry            "#663a43")
       (rubus-red                       "#c23f39")
-      (rubus-pink-cream                "#cd7378")
-      (rubus-alt-pink-cream            "#aa5055")
+      (rubus-pink-cream                "#c87873")
+      (rubus-alt-pink-cream            "#aa5550")
       (rubus-orange                    "#ffa07a")
 
       (rubus-yellow                    "#fde8b9")
@@ -59,8 +59,8 @@
       (rubus-cyan                      "#00FFFF")
 
       (rubus-light-purple              "#beb4d7")
-      (rubus-purple                    "#8264e6")
-      (rubus-purple-pink               "#965087")
+      (rubus-purple                    "#826ee6")
+      (rubus-purple-pink               "#aa649b")
 
       (rubus-fg                        "#FFFFFF")
       (rubus-bg                        "#0e1216")
@@ -73,6 +73,7 @@
 
       (rubus-mode-line                 "#aa3232")
       (rubus-mode-line-inactive        "#cd7378")
+      (rubus-bell                      "#326EAA")
 
       (rubus-tab-1                     rubus-mode-line)
       (rubus-tab-2                     rubus-mode-line-inactive)
@@ -152,7 +153,7 @@
    ;; with non-unique colors
 
    ;; cursor
-   `(cursor ((,rubus-class (:foreground ,rubus-black :background ,rubus-raspberry))))
+   `(cursor ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line))))
 
    ;; fringe
    `(fringe ((,rubus-class (:foreground ,rubus-yellow :background ,rubus-bg))))
@@ -169,10 +170,10 @@
    ;; mode-line
    `(mode-line ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line))))
    `(mode-line-inactive ((,rubus-class (:foreground ,rubus-white :background ,rubus-mode-line-inactive :inherit mode-line))))
-   `(guava-themes-visible-bell ((,rubus-class (:foreground ,rubus-white :background ,rubus-purple-pink))))
+   `(guava-themes-visible-bell ((,rubus-class (:foreground ,rubus-white :background ,rubus-bell))))
 
    ;; minibuffer
-   `(minibuffer-prompt ((,rubus-class (:foreground ,rubus-raspberry))))
+   `(minibuffer-prompt ((,rubus-class (:foreground ,rubus-red))))
 
    ;; borders
    `(vertical-border ((,rubus-class (:foreground ,rubus-mode-line))))
@@ -196,8 +197,8 @@
    `(tab-line-tab-special ((,rubus-class (:slant italic :weight bold :height 0.9))))
 
    ;; parentheses
-   `(show-paren-match ((,rubus-class (:foreground ,rubus-black :background ,rubus-orange))))
-   `(show-paren-mismatch ((,rubus-class (:foreground ,rubus-white :background ,rubus-error))))
+   `(show-paren-match ((,rubus-class (:foreground ,rubus-white :background ,rubus-bell))))
+   `(show-paren-mismatch ((,rubus-class (:foreground ,rubus-white :background ,rubus-error :inherit show-paren-match))))
 
    ;; trailing whitespaces
    `(trailing-whitespace ((,rubus-class (:background ,rubus-error))))
@@ -264,9 +265,9 @@
    `(org-meta-line ((,rubus-class (:inherit font-lock-comment-face))))
 
    ;; window-divider
-   `(window-divider ((,rubus-class (:foreground ,rubus-mode-line-inactive))))
-   `(window-divider-first-pixel ((,rubus-class (:foreground ,rubus-mode-line-inactive))))
-   `(window-divider-last-pixel ((,rubus-class (:foreground ,rubus-mode-line-inactive))))
+   `(window-divider ((,rubus-class (:foreground ,rubus-tab-3))))
+   `(window-divider-first-pixel ((,rubus-class (:inherit window-divider))))
+   `(window-divider-last-pixel ((,rubus-class (:inherit window-divider))))
 
    ;; isearch (use "M-x isearch-forward-regexp foo-\([0-9]+\)\([a-z]+\)" to check the group faces)
    `(isearch ((,rubus-class (:foreground ,rubus-white :background ,rubus-orderless-2))))
