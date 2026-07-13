@@ -3,7 +3,7 @@
 ;; Copyright (C) 2025
 
 ;; Author: Trevoke
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "26.1") (dash "2.19.1") (ht "2.3"))
 ;; Keywords: tools, extensions
 ;; URL: https://codeberg.org/trevoke/dag-draw.el
@@ -616,40 +616,6 @@ where dimensions fit the actual text content with appropriate padding."
 
     (cons node-width node-height)))
 
-(defun dag-draw--smart-wrap-text (text max-width)
-  "Wrap TEXT intelligently to fit within MAX-WIDTH.
-
-TEXT is a string to wrap.
-MAX-WIDTH is the maximum number of characters per line (integer).
-
-Breaks at whitespace nearest to the middle of the text for
-balanced line lengths.
-
-Returns a list of wrapped lines (strings)."
-  (if (<= (length text) max-width)
-      (list text)  ; No wrapping needed
-
-    ;; Find the best place to break the text
-    (let* ((target-pos (/ (length text) 2))  ; Ideal break position (middle)
-           (best-pos nil)
-           (best-distance most-positive-fixnum))
-
-      ;; Find whitespace closest to the middle
-      (dotimes (i (length text))
-        (when (= (aref text i) ?\s)  ; Found a space
-          (let ((distance (abs (- i target-pos))))
-            (when (< distance best-distance)
-              (setq best-distance distance)
-              (setq best-pos i)))))
-
-      (if best-pos
-          ;; Split at the best whitespace position
-          (let ((line1 (substring text 0 best-pos))
-                (line2 (substring text (1+ best-pos))))  ; Skip the space
-            (cons line1 (dag-draw--smart-wrap-text line2 max-width)))
-        ;; No good break point found, force break at max-width
-        (list (substring text 0 max-width)
-              (substring text max-width))))))
 
 
 ;;; Graph utility functions
@@ -703,34 +669,6 @@ Alias for dag-draw-edge-weight using proper Greek mathematical notation.")
   "GKNV λ(v) - rank assignment function (Section 2, line 352).
 Alias for dag-draw-node-rank using proper Greek mathematical notation.")
 
-;; GKNV mathematical function aliases (using declare-functions from above)
-(defalias 'dag-draw-ρ 'dag-draw--calculate-separation
-  "GKNV ρ(u,v) - minimum separation function between adjacent nodes.
-ρ(u,v) = (xsize(u) + xsize(v))/2 + nodesep(G) per Section 4.")
-
-;;; Standard GKNV Function Names from Figure 1-1
-;; These are the canonical entry points referenced in the GKNV paper
-
-(defalias 'dag-draw-rank 'dag-draw-rank-graph
-  "GKNV rank(G) - main entry point for Pass 1 rank assignment (Figure 1-1).")
-
-(defalias 'dag-draw-ordering 'dag-draw-order-vertices
-  "GKNV ordering(G) - main entry point for Pass 2 ordering (Figure 1-1).")
-
-(defalias 'dag-draw-position 'dag-draw-position-nodes
-  "GKNV position(G) - Pass 3 coordinate assignment (Figure 1-1).")
-
-(defalias 'dag-draw-make-splines 'dag-draw-generate-splines
-  "GKNV make_splines(G) - Pass 4 spline generation (Figure 1-1).")
-
-;; Additional canonical functions from Figure 2-2
-(defalias 'dag-draw-init-rank 'dag-draw-assign-ranks
-  "GKNV init_rank() - initial rank assignment from Figure 2-2.")
-
-;; Section 5.2 spline generation
-(defalias 'dag-draw-generate-spline 'dag-draw--create-inter-rank-spline
-  "GKNV generate_spline() - individual spline generation from Section 5.2.")
-
 ;;; Load all submodules to ensure (require 'dag-draw) loads the entire library
 ;; Emacs handles recursive requires gracefully - when submodules require 'dag-draw,
 ;; the symbols defined above are already available since this file is in-progress.
@@ -746,16 +684,10 @@ Alias for dag-draw-node-rank using proper Greek mathematical notation.")
 (require 'dag-draw-pass3-positioning)
 (require 'dag-draw-ascii-junctions)
 (require 'dag-draw-ascii-grid)
-(require 'dag-draw-ports)
 (require 'dag-draw-pass4-splines)
-(require 'dag-draw-ascii-splines)
-(require 'dag-draw-ascii-nodes)
-(require 'dag-draw-ascii-edges)
-(require 'dag-draw-render-gknv-compliant)
 (require 'dag-draw-render)
 (require 'dag-draw-svg)
 (require 'dag-draw-dot)
-(require 'dag-draw-algorithms)
 (require 'dag-draw-aesthetic-principles)
 
 ;;; dag-draw.el ends here

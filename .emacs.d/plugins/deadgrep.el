@@ -482,6 +482,40 @@ with a text face property `deadgrep-match-face'."
 
   (deadgrep-restart))
 
+(defun deadgrep--update-context (which-context value)
+  "Update the context WHICH-CONTEXT of `deadgrep--context' by VALUE.
+
+WHICH-CONTEXT is a symbol, either \\='before or \\='after."
+  (let ((before (or (car deadgrep--context) 0))
+        (after (or (cdr deadgrep--context) 0)))
+    (cond
+     ((and (eq which-context 'before) (> (+ before value) -1))
+      (setq deadgrep--context (cons (+ before value) after))
+      (deadgrep-restart))
+     ((and (eq which-context 'after) (> (+ after value) -1))
+      (setq deadgrep--context (cons before (+ after value)))
+      (deadgrep-restart)))))
+
+(defun deadgrep-increment-before-context ()
+  "Increment context before."
+  (interactive)
+  (deadgrep--update-context 'before 1))
+
+(defun deadgrep-decrement-before-context ()
+  "Decrement context before."
+  (interactive)
+  (deadgrep--update-context 'before -1))
+
+(defun deadgrep-increment-after-context ()
+  "Increment context after."
+  (interactive)
+  (deadgrep--update-context 'after 1))
+
+(defun deadgrep-decrement-after-context ()
+  "Decrement context after."
+  (interactive)
+  (deadgrep--update-context 'after -1))
+
 (defun deadgrep--type-list ()
   "Query the rg executable for available file types."
   (let* ((output (with-output-to-string

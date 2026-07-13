@@ -139,8 +139,6 @@ Note this can be overriden for specific images using
   :group 'docker-image
   :type '(repeat string))
 
-(make-obsolete-variable 'docker-run-default-args 'docker-image-run-default-args "Docker 2.1.0")
-
 (defcustom docker-image-run-custom-args
   nil
   "List which can be used to customize the default arguments for docker run.
@@ -149,7 +147,8 @@ Its elements should be of the form (REGEX ARGS) where
 REGEX is a (string) regular expression and ARGS is a list of strings
 corresponding to arguments.
 
-Also note if you do not specify `docker-run-default-args', they will be ignored."
+Also note if you do not specify `docker-image-run-default-args', they will be ignored."
+  :group 'docker-image
   :type '(repeat (list string (repeat string))))
 
 (defalias 'docker-image-inspect 'docker-inspect)
@@ -292,6 +291,38 @@ applied to the buffer."
         (tablist-put-mark))
       (forward-line))))
 
+(aio-defun docker-image-default-runtime ()
+  (s-trim (aio-await (docker-run-docker-async "info" "-f" "{{.DefaultRuntime}}"))))
+
+(aio-defun docker-image-runtimes ()
+  (let ((default (aio-await (docker-image-default-runtime))))
+    (--> (docker-run-docker-async "info" "-f" "'{{range $name, $_ := .Runtimes}}{{println $name}}{{end}}'")
+         aio-await
+         (s-split "\n" it t)
+         ;; Remove alias for runc.
+         (-remove (-partial #'s-starts-with-p "io.containerd") it)
+         ;; Ensure that default is first.
+         (remove default it)
+         (cons default it))))
+
+(defun docker-image-read-runtime (prompt &rest _)
+  (completing-read prompt
+                   (let ((runtimes (aio-wait-for (docker-image-runtimes))))
+                     ;; Complete with the runtimes in the order given by
+                     ;; `docker-image-runtimes' don't re-sort them. Some
+                     ;; completion frameworks don't change the order but some
+                     ;; (e.g. vertico) do by default. See
+                     ;; [[info:elisp#Programmed Completion][Programmed
+                     ;; Completion]].
+                     (lambda (string predicate action)
+                       (if (eq action 'metadata)
+                           '(metadata
+                             (display-sort-function . identity)
+                             (cycle-sort-function . identity))
+                         (complete-with-action action runtimes string predicate))))
+                   nil
+                   t))
+
 (docker-utils-define-transient-arguments docker-image-ls)
 
 (transient-define-prefix docker-image-ls ()
@@ -335,30 +366,22 @@ applied to the buffer."
   "Transient for removing images."
   :man-page "docker-image-rm"
   ["Arguments"
-   ("-f" "Force" "-f")
-   ("-n" "Don't prune" "--no-prune")]
+   ("f" "Force" "-f")
+   ("n" "Don't prune" "--no-prune")]
   [:description docker-generic-action-description
    ("D" "Remove" docker-generic-action-multiple-ids)])
 
-(defclass docker-run-prefix (transient-prefix) nil)
+(defclass docker-image-run-prefix (transient-prefix) nil)
 
-(cl-defmethod transient-init-value ((obj docker-run-prefix))
-  "Helper that modify OBJ DOCKER-RUN-PREFIX to handle `docker-image-run-custom-args'."
+(cl-defmethod transient-init-value ((obj docker-image-run-prefix))
+  "Helper that modify OBJ DOCKER-IMAGE-RUN-PREFIX to handle `docker-image-run-custom-args'."
   (oset obj value
-        (let* ((images (tablist-get-marked-items))
-               (matched-args (let ((repo-name (caar images)))
-                               (if repo-name
-                                   (--first (string-match (car it) repo-name)
-                                            docker-image-run-custom-args)
-                                 nil))))
-          (if matched-args
-              (cadr matched-args)
-            docker-image-run-default-args))))
+        (docker-utils-compute-args docker-image-run-default-args docker-image-run-custom-args)))
 
 (docker-utils-transient-define-prefix docker-image-run ()
   "Transient for running images."
   :man-page "docker-image-run"
-  :class 'docker-run-prefix
+  :class 'docker-image-run-prefix
   ["Arguments"
    ("D" "With display" "-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY")
    ("M" "Mount volume" "--mount " read-string)
@@ -378,7 +401,8 @@ applied to the buffer."
    ("t" "TTY" "-t")
    ("u" "User" "-u " read-string)
    ("v" "Volume" "-v " read-string)
-   ("w" "Workdir" "-w " read-string)]
+   ("w" "Workdir" "-w " read-string)
+   ("x" "Runtime" "--runtime " docker-image-read-runtime)]
   [:description docker-generic-action-description
    ("R" "Run" docker-image-run-selection)])
 

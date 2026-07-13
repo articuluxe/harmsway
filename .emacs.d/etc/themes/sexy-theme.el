@@ -1,6 +1,6 @@
 ;;; sexy-theme.el --- A strong colors variant of the Gruber Darker theme  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2025 Bruno Ciccarino a.k.a cicca
+;; Copyright (C) 2025 Bruno G. Ciccarino a.k.a xenodesire
 ;; Copyright (C) 2013-2016 Alexey Kutepov a.k.a rexim
 ;; Copyright (C) 2009-2010 Jason R. Blevins
 

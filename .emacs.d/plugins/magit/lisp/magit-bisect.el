@@ -107,23 +107,30 @@ other actions from the bisect transient command (\
   (magit-git-bisect "start" (list args bad good) t))
 
 (defun magit-bisect-start-read-args ()
-  (let* ((args (transient-args 'magit-bisect))
-         (bad (magit-read-branch-or-commit
-               (format "Start bisect with %s revision"
-                       (or (transient-arg-value "--term-new=" args)
-                           "bad")))))
-    (list bad
-          (magit-read-other-branch-or-commit
-           (format "%s revision" (or (transient-arg-value "--term-old=" args)
-                                     "Good"))
-           bad)
-          args)))
+  (let ((args (transient-args 'magit-bisect))
+        (revs (magit-region-values '(commit branch) t)))
+    (or (and revs
+             (let ((a (car revs))
+                   (b (last revs)))
+               (cond ((magit-rev-ancestor-p a b) (list b a args))
+                     ((magit-rev-ancestor-p b a) (list a b args)))))
+        (let ((bad (magit-read-branch-or-commit
+                    (format "Start bisect with %s revision"
+                            (or (transient-arg-value "--term-new=" args)
+                                "bad")))))
+          (list bad
+                (magit-read-other-branch-or-commit
+                 (format "%s revision"
+                         (or (transient-arg-value "--term-old=" args)
+                             "Good"))
+                 bad)
+                args)))))
 
 (defun magit-bisect-start--assert (bad good args)
-  (unless (magit-rev-ancestor-p good bad)
+  (unless (magit-git-string "merge-base" bad good)
     (user-error
-     "The %s revision (%s) has to be an ancestor of the %s one (%s)"
-     (or (transient-arg-value "--term-old=" args) "good")
+     "%s `%s' or merge-base has to be an ancestor of %s `%s')"
+     (or (transient-arg-value "--term-old=" args) "Good")
      good
      (or (transient-arg-value "--term-new=" args) "bad")
      bad))

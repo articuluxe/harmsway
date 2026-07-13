@@ -1153,14 +1153,25 @@ and `:slant'."
   :class 'transient-option
   :argument "-M"
   :allow-empty t
-  :reader #'transient-read-number-N+)
+  :reader #'magit-read-similarity-index)
 
 (transient-define-argument magit-diff:-C ()
   :description "Detect copies"
   :class 'transient-option
   :argument "-C"
   :allow-empty t
-  :reader #'transient-read-number-N+)
+  :reader #'magit-read-similarity-index)
+
+(defun magit-read-similarity-index (prompt initial-input history)
+  "Read a similarity index.  See \"--find-renames\" in git-diff(1) manpage."
+  (catch 'valid
+    (while t
+      (let ((input (read-from-minibuffer prompt initial-input nil nil history)))
+        (if (string-match-p "\\`[0-9]+%?\\'" input)
+            (throw 'valid input)
+	  (message "Please enter a percentage ending in %%, %s"
+                   "or a fraction, omitting the implied leading \"0.\"")
+	  (sit-for 1))))))
 
 (transient-define-argument magit-diff:--diff-algorithm ()
   :description "Diff algorithm"
@@ -1203,6 +1214,7 @@ and `:slant'."
 
 (defun magit-diff-select-ignore-submodules (&rest _ignored)
   (magit-read-char-case "Ignore submodules " t
+    (?n "[n]one"      "none")
     (?u "[u]ntracked" "untracked")
     (?d "[d]irty"     "dirty")
     (?a "[a]ll"       "all")))
@@ -2562,6 +2574,9 @@ keymap is the parent of their keymaps."
   (run-hooks 'magit-diff-wash-diffs-hook)
   (when (member "--show-signature" args)
     (magit-diff-wash-signature magit-buffer-revision-oid))
+  (when (any (##string-prefix-p "--color-moved" %) args)
+    (require 'ansi-color)
+    (ansi-color-apply-on-region (point-min) (point-max)))
   (when (member "--stat" args)
     (magit-diff-wash-diffstat))
   (when (re-search-forward magit-diff-headline-re limit t)
@@ -2641,9 +2656,6 @@ keymap is the parent of their keymaps."
         (if (looking-at "^$") (forward-line) (insert "\n"))))))
 
 (defun magit-diff-wash-diff (args)
-  (when (any (##string-prefix-p "--color-moved" %) args)
-    (require 'ansi-color)
-    (ansi-color-apply-on-region (point-min) (point-max)))
   (cond
     ((looking-at "^Submodule")
      (magit-diff-wash-submodule))

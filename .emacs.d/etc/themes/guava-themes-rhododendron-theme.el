@@ -65,7 +65,7 @@
       (rhododendron-fg                        "#000000")
       (rhododendron-bg                        "#e8c7e3")
       (rhododendron-highlight                 "#d4b3cf")
-      (rhododendron-shadow                    "#7f7f7f")
+      (rhododendron-shadow                    "#898989")
 
       (rhododendron-error                     "#FF0000")
       (rhododendron-warning                   "#F68511")
@@ -163,9 +163,9 @@
 
    ;; line-number
    `(line-number ((,rhododendron-class (:foreground ,rhododendron-fg :inherit default))))
-   `(line-number-current-line ((,rhododendron-class (:foreground ,rhododendron-purple-red :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,rhododendron-class (:background ,rhododendron-light-orange :inherit line-number))))
-   `(line-number-major-tick ((,rhododendron-class (:background ,rhododendron-purple :inherit line-number))))
+   `(line-number-current-line ((,rhododendron-class (:foreground ,rhododendron-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,rhododendron-class (:background ,rhododendron-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,rhododendron-class (:background ,rhododendron-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line))))
@@ -279,6 +279,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,rhododendron-class (:inherit isearch))))
    `(match ((,rhododendron-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,rhododendron-class (:foreground ,rhododendron-white :background ,rhododendron-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

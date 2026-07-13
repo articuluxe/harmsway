@@ -161,9 +161,9 @@
 
    ;; line-number
    `(line-number ((,acer-class (:foreground ,acer-fg :inherit default))))
-   `(line-number-current-line ((,acer-class (:foreground ,acer-deep-orange :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,acer-class (:background ,acer-brown :inherit line-number))))
-   `(line-number-major-tick ((,acer-class (:background ,acer-deep-brown :inherit line-number))))
+   `(line-number-current-line ((,acer-class (:foreground ,acer-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,acer-class (:background ,acer-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,acer-class (:background ,acer-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,acer-class (:foreground ,acer-white :background ,acer-mode-line))))
@@ -277,6 +277,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,acer-class (:inherit isearch))))
    `(match ((,acer-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,acer-class (:foreground ,acer-white :background ,acer-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

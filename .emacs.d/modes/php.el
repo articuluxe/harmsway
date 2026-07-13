@@ -327,7 +327,7 @@ which will be the name of the method."
                        (* (syntax whitespace))
                        "("
                        ,@(when include-args
-                           '((* any) line-end))))))
+                           '((* nonl) line-end))))))
 
   (defun php-create-regexp-for-classlike (type)
     "Accepts a `TYPE' of a `classlike' object as a string, such as
@@ -378,7 +378,7 @@ can be used to match against definitions for that classlike."
              (+ (or (syntax word) (syntax symbol)))
              (* (syntax whitespace))
              (? "=" (* (syntax whitespace))
-                (repeat 0 40 any))))
+                (repeat 0 40 nonl))))
        1)
       ("Functions"
        ,(rx line-start
@@ -389,7 +389,7 @@ can be used to match against definitions for that classlike."
              (+ (or (syntax word) (syntax symbol)))
              (* (syntax whitespace))
              "("
-             (repeat 0 100 any)))
+             (repeat 0 100 nonl)))
        1)
       ("Import"
        ,(rx line-start
@@ -397,7 +397,7 @@ can be used to match against definitions for that classlike."
             (group
              "use"
              (+ (syntax whitespace))
-             (repeat 0 100 any)))
+             (repeat 0 100 nonl)))
        1)
       ("Classes"
        ,(php-create-regexp-for-classlike "\\(?:class\\|interface\\|trait\\|enum\\)") 0)

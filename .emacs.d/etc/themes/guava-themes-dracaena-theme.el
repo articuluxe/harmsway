@@ -163,9 +163,9 @@
 
    ;; line-number
    `(line-number ((,dracaena-class (:foreground ,dracaena-fg :inherit default))))
-   `(line-number-current-line ((,dracaena-class (:foreground ,dracaena-orange :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,dracaena-class (:background ,dracaena-steel-blue :inherit line-number))))
-   `(line-number-major-tick ((,dracaena-class (:background ,dracaena-orange :inherit line-number))))
+   `(line-number-current-line ((,dracaena-class (:foreground ,dracaena-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,dracaena-class (:background ,dracaena-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,dracaena-class (:background ,dracaena-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line))))
@@ -279,6 +279,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,dracaena-class (:inherit isearch))))
    `(match ((,dracaena-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,dracaena-class (:foreground ,dracaena-white :background ,dracaena-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

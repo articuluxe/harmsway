@@ -657,82 +657,8 @@ Argument SPLINES ."
                 (dag-draw--spline-bounds (list spline))))
             splines)))
 
-;;; TDD Region-based Spline Routing Implementation
 
-(defun dag-draw--detect-obstacles-for-edge (graph from-node to-node)
-  "Detect node obstacles that may collide with direct edge FROM-NODE to TO-NODE.
-Returns list of node IDs that are potential obstacles.
-Argument GRAPH ."
-  (let ((obstacles '())
-        (from-pos (dag-draw-get-node graph from-node))
-        (to-pos (dag-draw-get-node graph to-node)))
 
-    ;; Check all other nodes to see if they lie in the path
-    (ht-each (lambda (node-id node)
-               (when (and (not (eq node-id from-node))
-                          (not (eq node-id to-node))
-                          (dag-draw--node-intersects-path-p from-pos to-pos node))
-                 (push node-id obstacles)))
-             (dag-draw-graph-nodes graph))
-
-    obstacles))
-
-(defun dag-draw--node-intersects-path-p (from-node to-node test-node)
-  "Check if TEST-NODE intersects the direct path from FROM-NODE to TO-NODE."
-  (let ((from-x (or (dag-draw-node-x-coord from-node) 0))
-        (from-y (or (dag-draw-node-y-coord from-node) 0))
-        (to-x (or (dag-draw-node-x-coord to-node) 0))
-        (to-y (or (dag-draw-node-y-coord to-node) 0))
-        (test-x (or (dag-draw-node-x-coord test-node) 0))
-        (test-y (or (dag-draw-node-y-coord test-node) 0))
-        (test-width (dag-draw-node-x-size test-node))
-        (test-height (dag-draw-node-y-size test-node)))
-
-    ;; Simple bounding box intersection with path
-    ;; Check if test node bounding box intersects line segment
-    (let ((line-min-x (min from-x to-x))
-          (line-max-x (max from-x to-x))
-          (line-min-y (min from-y to-y))
-          (line-max-y (max from-y to-y))
-          (node-min-x (- test-x (/ test-width 2)))
-          (node-max-x (+ test-x (/ test-width 2)))
-          (node-min-y (- test-y (/ test-height 2)))
-          (node-max-y (+ test-y (/ test-height 2))))
-
-      ;; Check for overlap
-      (and (< node-min-x line-max-x)
-           (> node-max-x line-min-x)
-           (< node-min-y line-max-y)
-           (> node-max-y line-min-y)))))
-
-(defun dag-draw--plan-obstacle-avoiding-path (graph from-node to-node)
-  "Plan a path from FROM-NODE to TO-NODE that avoids obstacles.
-Returns list of points defining the avoidance path.
-Argument GRAPH ."
-  (let* ((from-pos (dag-draw-get-node graph from-node))
-         (to-pos (dag-draw-get-node graph to-node))
-         (obstacles (dag-draw--detect-obstacles-for-edge graph from-node to-node))
-         (from-x (or (dag-draw-node-x-coord from-pos) 0))
-         (from-y (or (dag-draw-node-y-coord from-pos) 0))
-         (to-x (or (dag-draw-node-x-coord to-pos) 0))
-         (to-y (or (dag-draw-node-y-coord to-pos) 0)))
-
-    (if obstacles
-        ;; Create path with waypoints to avoid obstacles
-        (let* ((mid-x (/ (+ from-x to-x) 2))
-               (mid-y (/ (+ from-y to-y) 2))
-               ;; Offset waypoints to avoid obstacles
-               (offset-x (if (> to-x from-x) 20 -20))
-               (offset-y (if (> to-y from-y) 20 -20)))
-          (list
-           (dag-draw-point-create :x from-x :y from-y)
-           (dag-draw-point-create :x (+ mid-x offset-x) :y mid-y)
-           (dag-draw-point-create :x mid-x :y (+ mid-y offset-y))
-           (dag-draw-point-create :x to-x :y to-y)))
-      ;; Direct path if no obstacles
-      (list
-       (dag-draw-point-create :x from-x :y from-y)
-       (dag-draw-point-create :x to-x :y to-y)))))
 
 
 ;;; GKNV Section 5.2 Spline Clipping Implementation
@@ -975,76 +901,9 @@ Argument BOX2 ."
            (dag-draw-point-create :x mid-x :y int-y-min)
            (dag-draw-point-create :x mid-x :y int-y-max)))))))
 
-(defun dag-draw--compute-p-array (start-point end-point region)
-  "Stage 2: Compute piecewise linear path using divide-and-conquer.
-GKNV Section 5.2: Returns array of points p_0, ..., p_k defining feasible path.
-Argument START-POINT .
-Argument END-POINT .
-Argument REGION ."
-  (let ((points (list start-point)))
-    (dag-draw--compute-path-recursive start-point end-point region points)
-    (nreverse (cons end-point points))))
 
-(defun dag-draw--compute-path-recursive (start end region points)
-  "Recursive divide-and-conquer path computation per GKNV Section 5.2.
-Argument START .
-Argument END .
-Argument REGION .
-Argument POINTS ."
-  ;; Check if direct line fits
-  (if (dag-draw--line-fits start end region)
-      nil  ; Direct line works, no intermediate points needed
-    ;; Need subdivision
-    (let ((split-point (dag-draw--compute-linesplit start end region)))
-      (when split-point
-        ;; Recursively solve for first half
-        (dag-draw--compute-path-recursive start split-point region points)
-        ;; Add the split point
-        (push split-point points)
-        ;; Recursively solve for second half
-        (dag-draw--compute-path-recursive split-point end region points)))))
 
-(defun dag-draw--line-fits (start-point end-point region)
-  "Check if direct line from start to end fits within REGION.
-GKNV Section 5.2: line_fits() feasibility checking.
-Argument START-POINT .
-Argument END-POINT ."
-  (let ((x1 (dag-draw-point-x start-point))
-        (y1 (dag-draw-point-y start-point))
-        (x2 (dag-draw-point-x end-point))
-        (y2 (dag-draw-point-y end-point))
-        (r-x-min (dag-draw-box-x-min region))
-        (r-y-min (dag-draw-box-y-min region))
-        (r-x-max (dag-draw-box-x-max region))
-        (r-y-max (dag-draw-box-y-max region)))
 
-    ;; Simple check: both endpoints and midpoint must be within region
-    (and (>= x1 r-x-min) (<= x1 r-x-max) (>= y1 r-y-min) (<= y1 r-y-max)
-         (>= x2 r-x-min) (<= x2 r-x-max) (>= y2 r-y-min) (<= y2 r-y-max)
-         (let ((mid-x (/ (+ x1 x2) 2.0))
-               (mid-y (/ (+ y1 y2) 2.0)))
-           (and (>= mid-x r-x-min) (<= mid-x r-x-max)
-                (>= mid-y r-y-min) (<= mid-y r-y-max))))))
-
-(defun dag-draw--compute-linesplit (start-point end-point region)
-  "Compute split point for line subdivision.
-GKNV Section 5.2: compute_linesplit() finds furthest constraint point.
-Argument START-POINT .
-Argument END-POINT .
-Argument REGION ."
-  ;; Simple implementation: return midpoint adjusted to stay within region
-  (let ((mid-x (/ (+ (dag-draw-point-x start-point) (dag-draw-point-x end-point)) 2.0))
-        (mid-y (/ (+ (dag-draw-point-y start-point) (dag-draw-point-y end-point)) 2.0))
-        (r-x-min (dag-draw-box-x-min region))
-        (r-y-min (dag-draw-box-y-min region))
-        (r-x-max (dag-draw-box-x-max region))
-        (r-y-max (dag-draw-box-y-max region)))
-
-    ;; Clamp to region bounds
-    (setq mid-x (max r-x-min (min r-x-max mid-x)))
-    (setq mid-y (max r-y-min (min r-y-max mid-y)))
-
-    (dag-draw-point-create :x mid-x :y mid-y)))
 
 (defun dag-draw--compute-s-array-gknv (linear-path theta-start theta-end)
   "Stage 3: Compute piecewise Bezier spline from linear path.
@@ -1168,28 +1027,6 @@ Argument END-TANGENT ."
 
     (dag-draw-bezier-curve-create :p0 p0 :p1 p1 :p2 p2 :p3 p3)))
 
-(defun dag-draw--compute-control-point-with-tangent (start end fraction theta)
-  "Compute Bezier control point with tangent direction for C¹ continuity.
-GKNV Section 5.2: Uses consistent tangent angles
-to ensure smooth segment joining.
-Argument START .
-Argument END .
-Argument FRACTION .
-Argument THETA ."
-  (let* ((x1 (dag-draw-point-x start))
-         (y1 (dag-draw-point-y start))
-         (x2 (dag-draw-point-x end))
-         (y2 (dag-draw-point-y end))
-         (dx (* fraction (- x2 x1)))
-         (dy (* fraction (- y2 y1)))
-         ;; Apply tangent influence with stronger effect for continuity
-         (tangent-factor 0.5)  ; Increased from 0.3 for better tangent control
-         (tx (* tangent-factor (cos theta)))
-         (ty (* tangent-factor (sin theta))))
-
-    (dag-draw-point-create
-     :x (+ x1 dx tx)
-     :y (+ y1 dy ty))))
 
 (defun dag-draw--compute-control-point (start end fraction theta)
   "Compute Bezier control point between START and END points.
@@ -1210,19 +1047,6 @@ Argument THETA ."
      :x (+ x1 dx tx)
      :y (+ y1 dy ty))))
 
-(defun dag-draw--spline-fits (spline-points region)
-  "Check if Bezier spline fits within REGION.
-GKNV Section 5.2: spline_fits() feasibility checking.
-Argument SPLINE-POINTS ."
-  ;; Simple check: all control points must be within region
-  (cl-every (lambda (point)
-              (let ((x (dag-draw-point-x point))
-                    (y (dag-draw-point-y point)))
-                (and (>= x (dag-draw-box-x-min region))
-                     (<= x (dag-draw-box-x-max region))
-                     (>= y (dag-draw-box-y-min region))
-                     (<= y (dag-draw-box-y-max region)))))
-            spline-points))
 
 (defun dag-draw--compute-bboxes-gknv (spline-curves)
   "Stage 4: Compute bounding boxes for final spline.
@@ -1249,69 +1073,9 @@ Argument SPLINE-CURVES ."
      :x-max (apply #'max x-coords)
      :y-max (apply #'max y-coords))))
 
-(defun dag-draw--straighten-spline (spline-curves)
-  "Spline straightening optimization per GKNV Section 5.2.
-GKNV straighten_spline() refinement process.
-Argument SPLINE-CURVES ."
-  ;; Simple straightening: reduce control point deviations
-  (mapcar (lambda (curve)
-            (let* ((p0 (dag-draw-bezier-curve-p0 curve))
-                   (p3 (dag-draw-bezier-curve-p3 curve))
-                   ;; Move control points closer to straight line
-                   (straight-factor 0.8)
-                   (p1-new (dag-draw--interpolate-points p0 p3 (/ 1.0 3.0) straight-factor))
-                   (p2-new (dag-draw--interpolate-points p0 p3 (/ 2.0 3.0) straight-factor)))
 
-              (dag-draw-bezier-curve-create
-               :p0 p0
-               :p1 p1-new
-               :p2 p2-new
-               :p3 p3)))
-          spline-curves))
 
-(defun dag-draw--refine-spline (spline-curves)
-  "General spline refinement per GKNV Section 5.2.
-GKNV refine_spline() optimization process.
-Argument SPLINE-CURVES ."
-  ;; Simple refinement: smooth out sharp angles
-  (mapcar (lambda (curve)
-            (let* ((p0 (dag-draw-bezier-curve-p0 curve))
-                   (p1 (dag-draw-bezier-curve-p1 curve))
-                   (p2 (dag-draw-bezier-curve-p2 curve))
-                   (p3 (dag-draw-bezier-curve-p3 curve))
-                   ;; Apply smoothing to control points
-                   (smooth-factor 0.9))
 
-              (dag-draw-bezier-curve-create
-               :p0 p0
-               :p1 (dag-draw--smooth-point p1 smooth-factor)
-               :p2 (dag-draw--smooth-point p2 smooth-factor)
-               :p3 p3)))
-          spline-curves))
-
-(defun dag-draw--interpolate-points (p1 p2 fraction straight-factor)
-  "Interpolate between two points with straightening factor.
-Argument P1 .
-Argument P2 .
-Argument FRACTION .
-Argument STRAIGHT-FACTOR ."
-  (let* ((x1 (dag-draw-point-x p1))
-         (y1 (dag-draw-point-y p1))
-         (x2 (dag-draw-point-x p2))
-         (y2 (dag-draw-point-y p2))
-         (int-x (+ x1 (* fraction (- x2 x1))))
-         (int-y (+ y1 (* fraction (- y2 y1)))))
-
-    (dag-draw-point-create
-     :x (* int-x straight-factor)
-     :y (* int-y straight-factor))))
-
-(defun dag-draw--smooth-point (point smooth-factor)
-  "Apply smoothing to a POINT coordinate.
-Argument SMOOTH-FACTOR ."
-  (dag-draw-point-create
-   :x (* (dag-draw-point-x point) smooth-factor)
-   :y (* (dag-draw-point-y point) smooth-factor)))
 
 ;;; Edge Label Virtual Nodes (GKNV Section 5.3)
 

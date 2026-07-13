@@ -1,9 +1,17 @@
 ;;; folio-theme.el --- Warm paper-like theme built on Modus and Ef -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2026 kn66
+;;
 ;; Author: nobu43
+;; Assisted-by: OpenAI Codex:GPT-5
+;; URL: https://github.com/kn66/folio-theme.el
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "28.1") (modus-themes "5.0.0") (ef-themes "2.0.0"))
-;; Keywords: faces, theme
+;; Keywords: faces
+;; SPDX-License-Identifier: MIT
+;;
+;; This file is distributed under the terms of the MIT license.
+;; See the LICENSE file in this repository for details.
 
 ;;; Commentary:
 ;;
@@ -21,7 +29,7 @@
   "Warm paper-like derivative theme built on Modus and Ef."
   :group 'faces
   :group 'ef-themes
-  :prefix "folio-")
+  :prefix "folio-theme-")
 
 (defconst folio-theme-description
   "Warm paper-like theme with deep blue structure and restrained red accents."
@@ -36,7 +44,7 @@
 (defconst folio-theme-background-mode 'light
   "Background mode for `folio'.")
 
-(defconst folio-palette-partial
+(defconst folio-theme-palette-partial
   '(;; Core backgrounds / foregrounds
     (cursor "#B68A14")
     (bg-main "#FFFBF0")
@@ -52,6 +60,7 @@
     ;; Folio-specific helper colors
     (bg-hl "#F5EFE0")
     (yellow-soft "#D8B85A")
+    (yellow-text "#7A5D0C")
     (blue-soft "#4A6A91")
     (red-soft "#B35C4A")
     (green-soft "#74823F")
@@ -170,6 +179,7 @@
     (border-mode-line-active "#4A6A91")
     (border-mode-line-inactive "#DDD4C2")
     (bg-completion "#F7F2E7")
+    (bg-completion-current "#D4E3F0")
     (bg-hover "#F5EFE0")
     (bg-hover-secondary "#EDF3F8")
     (bg-hl-line "#F5EFE0")
@@ -177,10 +187,10 @@
     (bg-err "#F2D8D3")
     (bg-warning "#F2E6BE")
     (bg-info "#DCE8F4")
-    (bg-region "#F8F1D7"))
+    (bg-region "#EADCAE"))
   "Base palette entries for `folio'.")
 
-(defconst folio-palette-mappings-partial
+(defconst folio-theme-palette-mappings-partial
   '(;; Status
     (err red)
     (warning red-syntax)
@@ -344,7 +354,8 @@
     (bg-completion bg-dim)
     (fg-search-current fg-main)
 
-    ;; Terminal
+    ;; Terminal backgrounds follow the accent palette.  Foregrounds use
+    ;; text-safe variants that remain readable against bg-main.
     (bg-term-black fg-main)
     (fg-term-black fg-main)
     (bg-term-black-bright fg-dim)
@@ -352,15 +363,15 @@
     (bg-term-red red)
     (fg-term-red red)
     (bg-term-red-bright red-warmer)
-    (fg-term-red-bright red-warmer)
+    (fg-term-red-bright red-syntax)
     (bg-term-green green)
     (fg-term-green green)
     (bg-term-green-bright green-warmer)
-    (fg-term-green-bright green-warmer)
+    (fg-term-green-bright green-syntax)
     (bg-term-yellow yellow-cooler)
-    (fg-term-yellow yellow-cooler)
+    (fg-term-yellow yellow-text)
     (bg-term-yellow-bright yellow)
-    (fg-term-yellow-bright yellow)
+    (fg-term-yellow-bright yellow-syntax)
     (bg-term-blue blue)
     (fg-term-blue blue)
     (bg-term-blue-bright blue-warmer)
@@ -368,15 +379,15 @@
     (bg-term-magenta magenta)
     (fg-term-magenta magenta)
     (bg-term-magenta-bright magenta-warmer)
-    (fg-term-magenta-bright magenta-warmer)
+    (fg-term-magenta-bright magenta-syntax)
     (bg-term-cyan cyan)
-    (fg-term-cyan cyan)
+    (fg-term-cyan cyan-cooler)
     (bg-term-cyan-bright cyan-warmer)
-    (fg-term-cyan-bright cyan-warmer)
+    (fg-term-cyan-bright cyan-syntax)
     (bg-term-white border)
-    (fg-term-white border)
+    (fg-term-white fg-dim)
     (bg-term-white-bright bg-main)
-    (fg-term-white-bright bg-main)
+    (fg-term-white-bright fg-main)
 
     ;; Rainbow / heading order
     (rainbow-0 blue)
@@ -389,59 +400,59 @@
     (rainbow-7 fg-alt)
     (rainbow-8 fg-dim)
 
-    ;; Headings
+    ;; Headings keep structure blue-led and reserve red for exceptions.
     (fg-heading-0 blue)
     (fg-heading-1 blue-warmer)
-    (fg-heading-2 yellow-syntax)
+    (fg-heading-2 blue-syntax)
     (fg-heading-3 fg-main)
-    (fg-heading-4 green)
-    (fg-heading-5 blue-soft)
-    (fg-heading-6 red-syntax)
+    (fg-heading-4 blue-warmer)
+    (fg-heading-5 blue-syntax)
+    (fg-heading-6 fg-dim)
     (fg-heading-7 fg-alt)
     (fg-heading-8 fg-dim)
     (bg-heading-0 unspecified)
     (bg-heading-1 unspecified)
-    (bg-heading-2 bg-yellow-nuanced)
+    (bg-heading-2 bg-blue-nuanced)
     (bg-heading-3 unspecified)
-    (bg-heading-4 bg-green-nuanced)
+    (bg-heading-4 unspecified)
     (bg-heading-5 bg-blue-nuanced)
-    (bg-heading-6 bg-red-nuanced)
+    (bg-heading-6 unspecified)
     (bg-heading-7 unspecified)
     (bg-heading-8 unspecified)
     (overline-heading-0 blue)
     (overline-heading-1 blue-warmer)
-    (overline-heading-2 yellow-syntax)
+    (overline-heading-2 blue-syntax)
     (overline-heading-3 unspecified)
-    (overline-heading-4 green)
-    (overline-heading-5 blue-soft)
-    (overline-heading-6 red-syntax)
+    (overline-heading-4 blue-warmer)
+    (overline-heading-5 blue-syntax)
+    (overline-heading-6 fg-dim)
     (overline-heading-7 unspecified)
     (overline-heading-8 unspecified))
   "Semantic color mappings for `folio'.")
 
-(defcustom folio-palette-overrides nil
-  "Overrides for `folio-palette'.
+(defcustom folio-theme-palette-overrides nil
+  "Overrides for `folio-theme-palette'.
 
 Each element should have the form (NAME VALUE), where NAME is a palette
-entry from `folio-palette' and VALUE is either another palette symbol
+entry from `folio-theme-palette' and VALUE is either another palette symbol
 or a color string."
   :group 'folio-theme
   :package-version '(folio-theme . "0.1.0")
   :type '(repeat (list symbol (choice symbol string))))
 
-(defconst folio-palette
+(defconst folio-theme-palette
   (modus-themes-generate-palette
-   folio-palette-partial
+   folio-theme-palette-partial
    'warm
    nil
-   (append folio-palette-mappings-partial ef-themes-palette-common))
+   (append folio-theme-palette-mappings-partial ef-themes-palette-common))
   "Full palette for `folio'.")
 
-(defconst folio-custom-faces
+(defconst folio-theme-custom-faces
   '(`(corfu-default ((,c :inherit modus-themes-fixed-pitch
                          :background ,bg-dim
                          :foreground ,fg-main)))
-    `(corfu-current ((,c :background ,bg-blue-subtle
+    `(corfu-current ((,c :background ,bg-completion-current
                          :foreground ,fg-main
                          :extend t
                          :weight semi-bold)))
@@ -456,7 +467,7 @@ Prefer palette entries and semantic mappings first.
 Use direct face overrides only for targeted package cases where the
 inherited mapping does not provide enough contrast.")
 
-(defun folio--ensure-modus-theme-metadata ()
+(defun folio-theme--ensure-modus-theme-metadata ()
   "Declare `folio' as a Modus-derived theme when reloading in-session.
 
 If a `folio' theme object already exists in the session, ensure it still
@@ -467,22 +478,23 @@ has the theme properties that `modus-themes-theme' expects."
      folio-theme-family
      folio-theme-description
      folio-theme-background-mode
-     'folio-palette
+     'folio-theme-palette
      nil
-     'folio-palette-overrides)
+     'folio-theme-palette-overrides)
     (modus-themes-register folio-theme-name)))
 
-(folio--ensure-modus-theme-metadata)
+(folio-theme--ensure-modus-theme-metadata)
 
+;;;###theme-autoload
 (modus-themes-theme
  folio-theme-name
  folio-theme-family
  folio-theme-description
  folio-theme-background-mode
- 'folio-palette
+ 'folio-theme-palette
  nil
- 'folio-palette-overrides
- 'folio-custom-faces)
+ 'folio-theme-palette-overrides
+ 'folio-theme-custom-faces)
 
 ;;;###autoload
 (when load-file-name
@@ -490,6 +502,7 @@ has the theme properties that `modus-themes-theme' expects."
                (file-name-as-directory
                 (file-name-directory load-file-name))))
 
+(provide-theme 'folio)
 (provide 'folio-theme)
 
 ;;; folio-theme.el ends here

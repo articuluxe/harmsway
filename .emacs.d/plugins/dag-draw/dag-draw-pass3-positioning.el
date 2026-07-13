@@ -89,47 +89,7 @@ Argument TO-NODE ."
 Argument NODE-ID ."
   (string-match "^virtual_" (symbol-name node-id)))
 
-(defun dag-draw--add-separation-edges (aux-graph original-graph)
-  "Add separation constraint edges between adjacent nodes in same rank.
-Argument AUX-GRAPH .
-Argument ORIGINAL-GRAPH ."
-  (let ((rank-to-nodes (ht-create)))
 
-    ;; Group nodes by rank
-    (ht-each (lambda (node-id node)
-               (let ((rank (or (dag-draw-node-rank node) 0)))
-                 (ht-set! rank-to-nodes rank
-                          (cons node-id (ht-get rank-to-nodes rank '())))))
-             (dag-draw-graph-nodes original-graph))
-
-    ;; Add separation edges within each rank
-    (ht-each (lambda (_rank node-list)
-               (let ((ordered-nodes (dag-draw--get-ordered-nodes-in-rank
-                                     original-graph node-list)))
-                 (dotimes (i (1- (length ordered-nodes)))
-                   (let ((left-node (nth i ordered-nodes))
-                         (right-node (nth (1+ i) ordered-nodes)))
-
-                     ;; Add separation edge with minimum distance constraint
-                     (let ((sep-distance (dag-draw--calculate-separation
-                                          original-graph left-node right-node)))
-                       (let ((sep-edge (dag-draw-edge-create
-                                        :from-node left-node
-                                        :to-node right-node
-                                        :weight 0  ; No cost, just constraint
-                                        :min-length sep-distance)))  ; GKNV ρ(u,v) separation constraint
-                         (push sep-edge (dag-draw-graph-edges aux-graph))))))))
-             rank-to-nodes)))
-
-(defun dag-draw--get-ordered-nodes-in-rank (graph node-list)
-  "Get nodes in rank ordered by their assigned order.
-Argument GRAPH .
-Argument NODE-LIST ."
-  (sort node-list
-        (lambda (a b)
-          (let ((order-a (or (dag-draw-node-order (dag-draw-get-node graph a)) 0))
-                (order-b (or (dag-draw-node-order (dag-draw-get-node graph b)) 0)))
-            (< order-a order-b)))))
 
 (defun dag-draw--calculate-separation (graph left-node right-node)
   "Calculate minimum separation between two adjacent nodes using GKNV formula.
@@ -148,23 +108,7 @@ Argument RIGHT-NODE ."
 
 
 
-(defun dag-draw--get-node-targets (graph node-id)
-  "Get list of nodes that NODE-ID connects to (outgoing edges).
-Argument GRAPH ."
-  (let ((targets '()))
-    (dolist (edge (dag-draw-graph-edges graph))
-      (when (eq (dag-draw-edge-from-node edge) node-id)
-        (push (dag-draw-edge-to-node edge) targets)))
-    targets))
 
-(defun dag-draw--get-node-sources (graph node-id)
-  "Get list of nodes that connect to NODE-ID (incoming edges).
-Argument GRAPH ."
-  (let ((sources '()))
-    (dolist (edge (dag-draw-graph-edges graph))
-      (when (eq (dag-draw-edge-to-node edge) node-id)
-        (push (dag-draw-edge-from-node edge) sources)))
-    sources))
 
 ;; REMOVED: Heuristic positioning fallback (previously lines 131-182)
 ;;
@@ -775,38 +719,6 @@ Argument AUX-GRAPH ."
              rank-groups)))
 
 
-(defun dag-draw--calculate-preferred-x-position (aux-graph node-id)
-  "Calculate preferred X position for NODE-ID based on GKNV cost minimization.
-According to GKNV paper: minimize Σ Ω(e)×ω(e)×|x_w - x_v| for all edges.
-Argument AUX-GRAPH ."
-  (let ((cost-edges '())
-        (total-weight 0))
-
-    ;; Find cost edges (weight > 0) connected to this node
-    (dolist (edge (dag-draw-graph-edges aux-graph))
-      (let ((weight (dag-draw-edge-weight edge)))
-        (when (and (> weight 0)  ; Only cost edges, not separation edges
-                   (or (eq (dag-draw-edge-from-node edge) node-id)
-                       (eq (dag-draw-edge-to-node edge) node-id)))
-          (let ((other-node-id (if (eq (dag-draw-edge-from-node edge) node-id)
-                                   (dag-draw-edge-to-node edge)
-                                 (dag-draw-edge-from-node edge))))
-            (push (cons other-node-id weight) cost-edges)
-            (setq total-weight (+ total-weight weight))))))
-
-    ;; Calculate weighted average position based on GKNV cost function
-    ;; Higher weights mean stronger attraction (nodes should be closer)
-    (if (> total-weight 0)
-        (let ((weighted-sum 0))
-          (dolist (cost-edge cost-edges)
-            (let* ((other-node-id (car cost-edge))
-                   (edge-weight (cdr cost-edge))
-                   (other-node (dag-draw-get-node aux-graph other-node-id))
-                   (other-x (or (dag-draw-node-x-coord other-node) 0)))
-              ;; Weight by edge importance - higher weight = stronger pull
-              (setq weighted-sum (+ weighted-sum (* edge-weight other-x)))))
-          (/ weighted-sum total-weight))
-      0)))
 
 (defun dag-draw--calculate-node-spacing (graph node-id)
   "Calculate spacing needed after NODE-ID for next node.
@@ -945,23 +857,6 @@ Argument GRAPH ."
                (when y (setf (dag-draw-node-y-coord node) (round y)))))
            (dag-draw-graph-nodes graph)))
 
-(defun dag-draw--ensure-ascii-spacing (graph)
-  "Ensure minimum ASCII spacing between nodes to prevent overlap.
-Argument GRAPH ."
-  (let ((node-list (ht-values (dag-draw-graph-nodes graph)))
-        (min-spacing 5))  ; Minimum spacing for ASCII readability
-    ;; Sort by X coordinate
-    (setq node-list (sort node-list (lambda (a b)
-                                     (< (or (dag-draw-node-x-coord a) 0)
-                                        (or (dag-draw-node-x-coord b) 0)))))
-
-    ;; Adjust spacing
-    (let ((current-x 5))  ; Start with padding
-      (dolist (node node-list)
-        (when (dag-draw-node-x-coord node)
-          (when (< (dag-draw-node-x-coord node) current-x)
-            (setf (dag-draw-node-x-coord node) current-x))
-          (setq current-x (+ (dag-draw-node-x-coord node) min-spacing)))))))
 
 (provide 'dag-draw-pass3-positioning)
 

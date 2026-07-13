@@ -17,16 +17,16 @@
 ;; Homepage: https://github.com/magit/magit
 ;; Keywords: git tools vc
 
-;; Package-Version: 4.5.0
+;; Package-Version: 4.6.0
 ;; Package-Requires: (
 ;;     (emacs        "28.1")
 ;;     (compat       "31.0")
-;;     (cond-let      "0.2")
+;;     (cond-let      "1.1")
 ;;     (llama         "1.0")
-;;     (magit-section "4.5")
+;;     (magit-section "4.6")
 ;;     (seq           "2.24")
 ;;     (transient     "0.13")
-;;     (with-editor   "3.4"))
+;;     (with-editor   "3.5"))
 
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -506,7 +506,7 @@ is run in the top-level directory of the current working tree."
   :level 6)
 
 (transient-define-argument magit:--gpg-sign ()
-  :description "Sign using gpg"
+  :description (##concat "Sign using " (or (magit-get "gpg.format") "openpgp"))
   :class 'transient-option
   :shortarg "-S"
   :argument "--gpg-sign="
@@ -547,12 +547,14 @@ is run in the top-level directory of the current working tree."
     choice))
 
 (defun magit-read-gpg-signing-key (prompt &optional initial-input history)
-  (magit-read-gpg-secret-key
-   prompt initial-input history
-   (lambda (cert)
-     (seq-some (##memq 'sign (epg-sub-key-capability %))
-               (epg-key-sub-key-list cert)))
-   magit-openpgp-default-signing-key))
+  (if (member (magit-get "gpg.format") '(nil "openpgp"))
+      (magit-read-gpg-secret-key
+       prompt initial-input history
+       (lambda (cert)
+         (seq-some (##memq 'sign (epg-sub-key-capability %))
+                   (epg-key-sub-key-list cert)))
+       magit-openpgp-default-signing-key)
+    ""))
 
 ;;; Font-Lock Keywords
 

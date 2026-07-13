@@ -26,9 +26,6 @@
 (require 'dag-draw-svg)
 (require 'dag-draw-dot)
 (require 'dag-draw-ascii-grid)
-(require 'dag-draw-ports)
-(require 'dag-draw-ascii-nodes)
-(require 'dag-draw-ascii-edges)
 (require 'dag-draw-pass3-positioning)
 
 ;;; Customization
@@ -128,7 +125,8 @@ Returns a string containing the ASCII representation of the graph."
 
     ;; Draw nodes directly using ASCII coordinates (ensure integers)
     ;; Collect node boundary positions to exclude from junction enhancement
-    (let ((node-boundaries nil))
+    (let ((node-boundaries nil)
+          (node-rects (ht-create)))
       (when dag-draw-debug-output
         (message "DEBUG: About to loop over %d nodes" (length nodes)))
       (dolist (node nodes)
@@ -151,6 +149,8 @@ Returns a string containing the ASCII representation of the graph."
                (height (if layout-run-p
                            (round (dag-draw-node-y-size node))
                          3)))
+          ;; Record this node's rectangle for edge obstacle-avoidance routing
+          (ht-set! node-rects node-id (list x y width height node-selected-p))
           ;; Draw node and collect its boundary positions
           (when dag-draw-debug-output
             (message "DEBUG: About to call dag-draw--draw-node-box for %s at (%d,%d) size %dx%d selected=%s"
@@ -162,18 +162,22 @@ Returns a string containing the ASCII representation of the graph."
                        (seq-take boundaries 5)))
             (setq node-boundaries (append node-boundaries boundaries)))))
 
-      ;; Draw edges directly using ASCII coordinates (ensure integers)
-      (dolist (edge (dag-draw-graph-edges graph))
-        (let* ((nodes (dag-draw--edge-nodes graph edge))
-               (from-node (car nodes))
-               (to-node (cdr nodes))
-               (from-x (round (- (or (dag-draw-node-x-coord from-node) 0) min-x)))
-               (from-y (round (- (or (dag-draw-node-y-coord from-node) 0) min-y)))
-               (to-x (round (- (or (dag-draw-node-x-coord to-node) 0) min-x)))
-               (to-y (round (- (or (dag-draw-node-y-coord to-node) 0) min-y))))
-          (when dag-draw-debug-output
-            (message "DEBUG: Drawing edge from (%d,%d) to (%d,%d)" from-x from-y to-x to-y))
-          (dag-draw--draw-simple-edge grid from-x from-y to-x to-y from-node to-node)))
+      ;; Draw edges with obstacle-avoidance routing through the grid
+      (let ((grid-width (if (> (length grid) 0) (length (aref grid 0)) 0)))
+        (dolist (edge (dag-draw-graph-edges graph))
+          (let* ((nodes (dag-draw--edge-nodes graph edge))
+                 (from-id (dag-draw-node-id (car nodes)))
+                 (to-id (dag-draw-node-id (cdr nodes)))
+                 (from-rect (ht-get node-rects from-id))
+                 (to-rect (ht-get node-rects to-id)))
+            (when (and from-rect to-rect)
+              (let ((obstacles (delq nil (ht-map (lambda (id r)
+                                                   (unless (or (eq id from-id) (eq id to-id)) r))
+                                                 node-rects))))
+                (when dag-draw-debug-output
+                  (message "DEBUG: Routing edge %s -> %s around %d obstacles"
+                           from-id to-id (length obstacles)))
+                (dag-draw--route-edge grid from-rect to-rect obstacles grid-width))))))
 
       ;; CLAUDE.md: Apply junction characters after routing, before final output
       ;; "walks the edge in order to determine the locally-relevant algorithm"
@@ -187,75 +191,9 @@ Returns a string containing the ASCII representation of the graph."
     ;; Convert grid to string
     (dag-draw--ascii-grid-to-string grid)))
 
-;; DELETED: dag-draw--convert-gknv-to-ascii-grid - obsolete in ASCII-first architecture
-
-;; DELETED: dag-draw--draw-nodes-gknv-compliant - obsolete in ASCII-first architecture
-
-(defun dag-draw--avoid-ascii-collision (x y width height drawn-nodes)
-  "Adjust node position to avoid collision with already drawn nodes.
-
-X and Y are integers representing the proposed grid position.
-WIDTH and HEIGHT are integers representing node dimensions in grid units.
-DRAWN-NODES is a list of rectangles, each (x1 y1 x2 y2) representing
-already-placed nodes.
-
-Returns a list (adjusted-x adjusted-y) where adjusted-x and adjusted-y
-are integers representing a non-overlapping grid position."
-
-  (let ((current-rect (list x y (+ x width -1) (+ y height -1)))
-        (min-separation 3))  ; Minimum 3-character separation between nodes
-
-    ;; Check for collisions with already drawn nodes
-    (dolist (drawn-rect drawn-nodes)
-      (when (dag-draw--ascii-rectangles-overlap current-rect drawn-rect)
-        ;; Collision detected - move to the right with separation
-        (let ((collision-right (nth 2 drawn-rect)))
-          (setq x (+ collision-right min-separation))
-          (setq current-rect (list x y (+ x width -1) (+ y height -1))))))
-
-    (list x y)))
-
-(defun dag-draw--ascii-rectangles-overlap (rect1 rect2)
-  "Check if two rectangles overlap in ASCII grid space.
-
-RECT1 and RECT2 are lists of the form (left top right bottom) where
-all coordinates are integers in grid space.
-
-Returns t if the rectangles overlap, nil otherwise."
-  (let ((x1-left (nth 0 rect1)) (y1-top (nth 1 rect1))
-        (x1-right (nth 2 rect1)) (y1-bottom (nth 3 rect1))
-        (x2-left (nth 0 rect2)) (y2-top (nth 1 rect2))
-        (x2-right (nth 2 rect2)) (y2-bottom (nth 3 rect2)))
-
-    ;; Rectangles overlap if they overlap in both X and Y dimensions
-    (and (<= x1-left x2-right) (<= x2-left x1-right)
-         (<= y1-top y2-bottom) (<= y2-top y1-bottom))))
 
 
-;; DELETED: dag-draw--draw-edges-gknv-compliant - obsolete in ASCII-first architecture
 
-;; DELETED: dag-draw--draw-edge-with-proper-ports - obsolete in ASCII-first architecture
-
-(defun dag-draw--calculate-boundary-port (center-x center-y width height side)
-  "Calculate port position on node boundary for given SIDE.
-
-CENTER-X and CENTER-Y are numbers representing node center in grid units.
-WIDTH and HEIGHT are numbers representing node dimensions in grid units.
-SIDE is a symbol: one of `top', `bottom', `left', or `right'.
-
-Returns a list (x y) where x and y are integers representing the port
-position on the specified side of the node boundary."
-  (let ((left (round (- center-x (/ width 2))))
-        (right (round (+ center-x (/ width 2))))
-        (top (round (- center-y (/ height 2))))
-        (bottom (round (+ center-y (/ height 2)))))
-
-    (cond
-     ((eq side 'top) (list (round center-x) top))
-     ((eq side 'bottom) (list (round center-x) bottom))
-     ((eq side 'left) (list left (round center-y)))
-     ((eq side 'right) (list right (round center-y)))
-     (t (list (round center-x) (round center-y))))))
 
 (defun dag-draw--get-box-chars (selected-p)
   "Return box-drawing characters based on SELECTED-P.
@@ -370,46 +308,6 @@ used later to exclude these positions from junction character enhancement."
     boundaries))
 
 
-(defun dag-draw--draw-simple-line (grid x1 y1 x2 y2)
-  "Draw a simple line from (X1,Y1) to (X2,Y2) with arrow.
-
-GRID is a 2D vector representing the ASCII character grid (modified in place).
-X1, Y1, X2, Y2 are integers representing start
-and end positions in grid coordinates.
-
-Draws an L-shaped path (vertical first, then horizontal) using line characters
-\(─ │) and adds a directional arrow (▼ ▲ ▶ ◀) at the endpoint.
-
-GKNV-compliant: splines are pre-clipped to boundaries, enabling simple drawing."
-  (let ((grid-height (length grid))
-        (grid-width (if (> (length grid) 0) (length (aref grid 0)) 0)))
-
-    ;; Draw vertical line first
-    (when (not (= y1 y2))
-      (let ((start-y (min y1 y2))
-            (end-y (max y1 y2)))
-        (dotimes (i (1+ (- end-y start-y)))
-          (let ((y (+ start-y i)))
-            (when (and (>= x1 0) (< x1 grid-width) (>= y 0) (< y grid-height))
-              (dag-draw--set-char grid x1 y ?│))))))
-
-    ;; Draw horizontal line
-    (when (not (= x1 x2))
-      (let ((start-x (min x1 x2))
-            (end-x (max x1 x2)))
-        (dotimes (i (1+ (- end-x start-x)))
-          (let ((x (+ start-x i)))
-            (when (and (>= x 0) (< x grid-width) (>= y2 0) (< y2 grid-height))
-              (dag-draw--set-char grid x y2 ?─))))))
-
-    ;; Add arrow at end point
-    (when (and (>= x2 0) (< x2 grid-width) (>= y2 0) (< y2 grid-height))
-      (let ((arrow-char (cond ((> y2 y1) ?▼)  ; Down arrow
-                              ((< y2 y1) ?▲)  ; Up arrow
-                              ((> x2 x1) ?▶)  ; Right arrow
-                              ((< x2 x1) ?◀)  ; Left arrow
-                              (t ?●))))       ; Point
-        (dag-draw--set-char grid x2 y2 arrow-char)))))
 
 ;; GKNV-Compliant Rendering - No Hollow Routing Workarounds Needed
 ;; Splines are now pre-clipped to boundaries, enabling simple line drawing
@@ -433,50 +331,96 @@ No bounds checking error is raised for out-of-bounds positions."
 
 ;;; Enhanced spline segment drawing functions for Phase C improvements
 
-(defun dag-draw--draw-simple-edge (grid from-x from-y to-x to-y from-node to-node)
-  "Draw a simple edge from (FROM-X,FROM-Y) to (TO-X,TO-Y) in GRID.
+(defun dag-draw--rect-blocks-column-p (rect col y1 y2)
+  "Non-nil if node RECT occupies column COL in any row of [Y1,Y2].
+RECT is (X Y WIDTH HEIGHT) in grid coordinates."
+  (let ((rx (nth 0 rect)) (ry (nth 1 rect))
+        (rw (nth 2 rect)) (rh (nth 3 rect)))
+    (and (>= col rx) (< col (+ rx rw))
+         (< ry (1+ y2)) (> (+ ry rh) y1))))
 
-GRID is a 2D vector representing the ASCII character grid (modified in place).
-FROM-X and FROM-Y are integers representing source node top-left corner.
-TO-X and TO-Y are integers representing destination node top-left corner.
-FROM-NODE is a `dag-draw-node' structure for the source node.
-TO-NODE is a `dag-draw-node' structure for the destination node.
+(defun dag-draw--column-clear-p (col y1 y2 obstacles)
+  "Non-nil if no rect in OBSTACLES blocks column COL across rows [Y1,Y2]."
+  (not (cl-some (lambda (r) (dag-draw--rect-blocks-column-p r col y1 y2)) obstacles)))
 
-Calculates proper port positions on node boundaries per GKNV Section 4.2,
-then draws an orthogonal path with vertical and horizontal segments using
-line characters (─ │) and a downward arrow (▼) at the destination."
+(defun dag-draw--find-clear-column (preferred y1 y2 obstacles grid-width)
+  "Return a column near PREFERRED that is clear of OBSTACLES across [Y1,Y2].
+Searches outward from PREFERRED, staying within GRID-WIDTH.  Falls back to
+PREFERRED if nothing clear is found."
+  (or (and (dag-draw--column-clear-p preferred y1 y2 obstacles) preferred)
+      (cl-loop for d from 1 to grid-width
+               for right = (+ preferred d)
+               for left = (- preferred d)
+               thereis (cond ((and (< right grid-width)
+                                   (dag-draw--column-clear-p right y1 y2 obstacles))
+                              right)
+                             ((and (>= left 0)
+                                   (dag-draw--column-clear-p left y1 y2 obstacles))
+                              left)))
+      preferred))
 
-  ;; Calculate port positions per GKNV Section 4.2: Node Port as X-direction offset from node center
-  (let* ((from-node-width (+ (string-width (dag-draw-node-label from-node)) 4))  ; Actual from-node width (CJK-aware)
-         (to-node-width (+ (string-width (dag-draw-node-label to-node)) 4))       ; Actual to-node width (CJK-aware)
-         (from-port-x (+ from-x (/ from-node-width 2))) ; Center X of from-node
-         (from-port-y (+ from-y 3))                     ; Bottom Y of from-node
-         (to-port-x (+ to-x (/ to-node-width 2)))       ; Center X of to-node
-         (to-port-y to-y)                               ; Top Y of to-node
-         ;; Calculate inter-rank routing position (midway between ranks)
-         (routing-y (- to-port-y 1))) ; One row above destination node
+(defun dag-draw--draw-h-run (grid x1 x2 y)
+  "Draw a horizontal run of ─ in GRID on row Y between columns X1 and X2."
+  (let ((a (min x1 x2)) (b (max x1 x2)))
+    (while (<= a b)
+      (dag-draw--set-grid-char grid a y ?─)
+      (setq a (1+ a)))))
 
-    ;; Draw vertical line down from from-node to routing level
-    (when (< from-port-y routing-y)
-      (let ((y from-port-y))
-        (while (< y routing-y)
-          (dag-draw--set-grid-char grid from-port-x y ?│)
-          (setq y (1+ y)))))
+(defun dag-draw--draw-v-run (grid x y1 y2)
+  "Draw a vertical run of │ in GRID on column X between rows Y1 and Y2."
+  (let ((a (min y1 y2)) (b (max y1 y2)))
+    (while (<= a b)
+      (dag-draw--set-grid-char grid x a ?│)
+      (setq a (1+ a)))))
 
-    ;; Draw horizontal line at inter-rank routing level
-    (when (/= from-port-x to-port-x)
-      (let ((start-x (min from-port-x to-port-x))
-            (end-x (max from-port-x to-port-x)))
-        (while (<= start-x end-x)
-          (dag-draw--set-grid-char grid start-x routing-y ?─)
-          (setq start-x (1+ start-x)))))
+(defun dag-draw--route-edge (grid from-rect to-rect obstacles grid-width)
+  "Draw an orthogonal edge from FROM-RECT to TO-RECT in GRID, dodging OBSTACLES.
 
-    ;; Draw final vertical segment down to destination node
-    (when (< routing-y to-port-y)
-      (dag-draw--set-grid-char grid to-port-x routing-y ?│))
+FROM-RECT and TO-RECT are (X Y WIDTH HEIGHT &optional SELECTED-P) node
+rectangles in grid coordinates.  OBSTACLES is a list of the other node
+rectangles to route around.  GRID-WIDTH bounds the detour search.
 
-    ;; Draw arrow at destination
-    (dag-draw--set-grid-char grid to-port-x to-port-y ?▼)))
+The edge leaves the bottom-center port of FROM-RECT and arrives at the
+top-center port of TO-RECT.  When the source column is blocked by an
+intervening node box, the vertical trunk is shifted to the nearest clear
+column.  A downward arrow (▼) is placed at the destination port and a
+T-junction is written on the source's bottom border at the port — the
+double-line ╦ when the source node is selected/highlighted, else ┬."
+  (let* ((fx (nth 0 from-rect)) (fy (nth 1 from-rect))
+         (fw (nth 2 from-rect)) (fh (nth 3 from-rect))
+         (from-selected-p (nth 4 from-rect))
+         (tx (nth 0 to-rect)) (ty (nth 1 to-rect)) (tw (nth 2 to-rect))
+         (from-port-x (+ fx (/ fw 2)))
+         (from-bottom (+ fy fh -1))          ; source bottom border row
+         (to-port-x (+ tx (/ tw 2)))
+         (start-y (1+ from-bottom))           ; first edge row below source
+         (arrow-y ty)                         ; destination top border row
+         (trunk-end (1- arrow-y)))            ; last vertical row before arrow
+    (if (>= start-y arrow-y)
+        ;; Degenerate vertical gap: just point the arrow.
+        (dag-draw--set-grid-char grid to-port-x arrow-y ?▼)
+      (let* ((trunk (dag-draw--find-clear-column
+                     from-port-x start-y trunk-end obstacles grid-width))
+             ;; The arrow must land on the INTERIOR of the destination's top
+             ;; border (never on a corner).  Enter straight when the trunk is
+             ;; already interior; otherwise jog across to the centre port.
+             (lo (1+ tx))
+             (hi (- (+ tx tw) 2))
+             (arrow-x (if (and (<= lo hi) (>= trunk lo) (<= trunk hi))
+                          trunk
+                        (max lo (min hi to-port-x)))))
+        ;; horizontal from source port across to the trunk column (if offset)
+        (when (/= from-port-x trunk)
+          (dag-draw--draw-h-run grid from-port-x trunk start-y))
+        ;; vertical trunk down to just above the destination
+        (dag-draw--draw-v-run grid trunk start-y trunk-end)
+        ;; horizontal from trunk across to the destination port (if offset)
+        (when (/= trunk arrow-x)
+          (dag-draw--draw-h-run grid trunk arrow-x trunk-end))
+        ;; arrow into the destination, T-junction out of the source
+        (dag-draw--set-grid-char grid arrow-x arrow-y ?▼)
+        (dag-draw--set-grid-char grid from-port-x from-bottom
+                                 (if from-selected-p ?╦ ?┬))))))
 
 (defun dag-draw--set-grid-char (grid x y char)
   "Set character at position (X,Y) in GRID to CHAR with bounds checking.

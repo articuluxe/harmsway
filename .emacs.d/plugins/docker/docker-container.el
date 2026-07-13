@@ -96,6 +96,27 @@ string that transforms the displayed values in the column."
                        (sexp :tag "Sort function")
                        (sexp :tag "Format function"))))
 
+(defcustom docker-container-exec-default-args
+  '("-i" "-t")
+  "Default infix args used when docker exec is invoked.
+
+Note this can be overriden for specific containers using
+`docker-container-exec-custom-args'."
+  :group 'docker-container
+  :type '(repeat string))
+
+(defcustom docker-container-exec-custom-args
+  nil
+  "List which can be used to customize the default arguments for docker exec.
+
+Its elements should be of the form (REGEX ARGS) where
+REGEX is a (string) regular expression and ARGS is a list of strings
+corresponding to arguments.
+
+Also note if you do not specify `docker-container-exec-default-args', they will be ignored."
+  :group 'docker-container
+  :type '(repeat (list string (repeat string))))
+
 (defalias 'docker-container-inspect 'docker-inspect)
 
 (defun docker-container--read-shell (&optional read-shell-name)
@@ -323,6 +344,48 @@ default directory set to workdir."
         (eat-other-window)
       (error "The eat package is not installed"))))
 
+(defvar ghostel-buffer-name)
+
+;;;###autoload (autoload 'docker-container-ghostel "docker-container" nil t)
+(defun docker-container-ghostel (container)
+  "Open `ghostel' in CONTAINER."
+  (interactive (list (docker-container-read-name)))
+  (if (fboundp 'ghostel)
+      (let* ((container-address (format "%s:%s:/" docker-container-tramp-method container))
+             (file-prefix (let ((prefix (file-remote-p default-directory)))
+                            (if prefix
+                                (format "%s|" (s-chop-suffix ":" prefix))
+                              "/")))
+             (default-directory (format "%s%s" file-prefix container-address))
+             (ghostel-buffer-name (format "*ghostel:%s" default-directory))
+             (display-buffer-overriding-action '((display-buffer-pop-up-window))))
+        (ghostel))
+    (error "The ghostel package is not installed")))
+
+;;;###autoload (autoload 'docker-container-ghostel-env "docker-container" nil t)
+(aio-defun docker-container-ghostel-env (container)
+  "Open `ghostel' in CONTAINER with the environment variable set and
+default directory set to workdir."
+  (interactive (list
+                (docker-container-read-name)))
+  (docker-container-assert-tramp-docker)
+  (let* ((container-address (format "%s:%s:" docker-container-tramp-method container))
+         (file-prefix (let ((prefix (file-remote-p default-directory)))
+                        (if prefix
+                            (format "%s|" (s-chop-suffix ":" prefix))
+                          "/")))
+         (container-config (cdr (assq 'Config (aref (json-read-from-string (aio-await (docker-run-docker-async "inspect" container))) 0))))
+         (container-workdir (cdr (assq 'WorkingDir container-config)))
+         (container-env (cdr (assq 'Env container-config)))
+         (default-directory (format "%s%s%s" file-prefix container-address container-workdir))
+         ;; process-environment doesn't work with tramp if you call this function more than one per emacs session
+         (tramp-remote-process-environment (append container-env nil))
+         (ghostel-buffer-name (format "*ghostel-env:%s" default-directory))
+         (display-buffer-overriding-action '((display-buffer-pop-up-window))))
+    (if (fboundp 'ghostel)
+        (ghostel)
+      (error "The ghostel package is not installed"))))
+
 (defun docker-container-cp-from-selection (container-path host-path)
   "Run \"docker cp\" from CONTAINER-PATH to HOST-PATH for selected container."
   (interactive "sContainer path: \nFHost path: ")
@@ -425,6 +488,20 @@ default directory set to workdir."
   (--each (docker-utils-get-marked-items-ids)
     (docker-container-eat-env it)))
 
+(defun docker-container-ghostel-selection ()
+  "Run `docker-container-ghostel' on the containers selection."
+  (interactive)
+  (docker-utils-ensure-items)
+  (--each (docker-utils-get-marked-items-ids)
+    (docker-container-ghostel it)))
+
+(defun docker-container-ghostel-env-selection ()
+  "Run `docker-container-ghostel-env' on the containers selection."
+  (interactive)
+  (docker-utils-ensure-items)
+  (--each (docker-utils-get-marked-items-ids)
+    (docker-container-ghostel-env it)))
+
 (docker-utils-transient-define-prefix docker-container-attach ()
   "Transient for attaching to containers."
   :man-page "docker-container-attach"
@@ -446,6 +523,35 @@ default directory set to workdir."
   :man-page "docker-container-diff"
   [:description docker-generic-action-description
    ("d" "Diff" docker-generic-action-with-buffer)])
+
+(defclass docker-container-exec-prefix (transient-prefix) nil)
+
+(cl-defmethod transient-init-value ((obj docker-container-exec-prefix))
+  "Helper that modify OBJ DOCKER-CONTAINER-EXEC-PREFIX to handle `docker-container-exec-custom-args'."
+  (oset obj value
+        (docker-utils-compute-args docker-container-exec-default-args docker-container-exec-custom-args)))
+
+(docker-utils-transient-define-prefix docker-container-exec ()
+  "Transient for running commands on containers."
+  :man-page "docker-container-exec"
+  :class 'docker-container-exec-prefix
+  ["Arguments"
+   ("P" "Privileged" "--privileged")
+   ("d" "Detach" "-d")
+   ("e" "Environment" "-e " read-string)
+   ("i" "Interactive" "-i")
+   ("t" "TTY" "-t")
+   ("u" "User" "-u " read-string)
+   ("w" "Workdir" "-w " read-string)]
+  [:description docker-generic-action-description
+   ("E" "Exec" docker-container-exec-selection)])
+
+(defun docker-container-exec-selection (command)
+  "Run \"docker container exec\" with COMMAND on the containers selection."
+  (interactive "sCommand: ")
+  (docker-utils-ensure-items)
+  (--each (docker-utils-get-marked-items-ids)
+    (docker-run-docker-async-with-buffer-interactive "container" "exec" (transient-args 'docker-container-exec) it command)))
 
 (docker-utils-transient-define-prefix docker-container-open ()
   "Transient for opening containers files."
@@ -535,7 +641,9 @@ ACTION is the docker action, ARGS are the transient arguments."
    ("v" "Vterm" docker-container-vterm-selection)
    ("V" "Vterm with env" docker-container-vterm-env-selection)
    ("a" "Eat" docker-container-eat-selection)
-   ("A" "Eat with env" docker-container-eat-env-selection)])
+   ("A" "Eat with env" docker-container-eat-env-selection)
+   ("g" "Ghostel" docker-container-ghostel-selection)
+   ("G" "Ghostel with env" docker-container-ghostel-env-selection)])
 
 (docker-utils-transient-define-prefix docker-container-start ()
   "Transient for starting containers."
@@ -564,6 +672,7 @@ ACTION is the docker action, ARGS are the transient arguments."
    ["Admin"
     ("C" "Copy"       docker-container-cp)
     ("D" "Remove"     docker-container-rm)
+    ("E" "Exec"       docker-container-exec)
     ("I" "Inspect"    docker-container-inspect)
     ("L" "Logs"       docker-container-logs)
     ("a" "Attach"     docker-container-attach)
@@ -578,6 +687,7 @@ ACTION is the docker action, ARGS are the transient arguments."
     (define-key map "?" 'docker-container-help)
     (define-key map "C" 'docker-container-cp)
     (define-key map "D" 'docker-container-rm)
+    (define-key map "E" 'docker-container-exec)
     (define-key map "I" 'docker-container-inspect)
     (define-key map "K" 'docker-container-kill)
     (define-key map "L" 'docker-container-logs)

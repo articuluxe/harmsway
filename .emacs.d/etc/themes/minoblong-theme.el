@@ -12,7 +12,8 @@
       (gray-7c "#7c7c7c") 
       (gray-99 "#999999")  
       (gray-aa "#aaaaaa")   
-      (purple  "#f752c0"))  
+      (purple  "#f752c0")
+      (sage "#6bb39c"))  
 
   (custom-theme-set-faces
    'minoblong
@@ -31,10 +32,10 @@
    `(font-lock-doc-face ((t (:foreground ,accent))))
    `(font-lock-string-face ((t (:foreground ,gray-aa :background ,gray-22))))
    `(font-lock-keyword-face ((t (:foreground ,purple))))
-   `(font-lock-builtin-face ((t (:foreground ,gray-7c))))
+   `(font-lock-builtin-face ((t (:foreground ,sage))))
    `(font-lock-function-name-face ((t (:foreground ,gray-aa))))
    `(font-lock-variable-name-face ((t (:foreground ,gray-aa))))
-   `(font-lock-type-face ((t (:foreground ,gray-aa))))
+   `(font-lock-type-face ((t (:foreground ,sage))))
    `(font-lock-constant-face ((t (:foreground ,gray-aa))))
    `(font-lock-warning-face ((t (:foreground ,gray-44))))
    `(font-lock-negation-char-face ((t (:foreground ,purple))))

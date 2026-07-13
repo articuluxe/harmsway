@@ -1,8 +1,21 @@
-;; -*- lexical-binding: t; -*-
+;;; modus-nordic-midnight-theme.el --- Pitch-black version of Nordic Night  -*- lexical-binding: t; -*-
+
+;; Copyright (c) 2026 Ashton Wiersdorf
+
+;; Author: Ashton Wiersdorf <mail@wiersdorf.dev>
+;; Package-Requires: ((emacs "28.1") (modus-themes "5.2.0"))
+;; Homepage: https://codeberg.org/ashton314/modus-nordic-night
+
+;;; Commentary:
+;; This provides an even darker, higher-contrast version of the Nordic
+;; Night theme. The background is pure black and some of the colors
+;; are slightly muted to match. This is what the author uses!
+
+;;; Code:
 
 (require 'modus-nordic-night-theme)
 
-(defcustom modus-nordic-midnight-palette-overrides nil
+(defcustom modus-nordic-midnight-theme-palette-overrides nil
   "Overrides for nordic-midnight palette."
   :group 'modus-nordic-night-theme
   :type '(repeat (list symbol (choice symbol string))))
@@ -69,5 +82,9 @@
  'dark
  'modus-nordic-midnight-theme-palette
  'modus-nordic-night-theme-palette-partial
- 'modus-nordic-night-theme-palette-overrides
+ 'modus-nordic-midnight-theme-palette-overrides
  'modus-nordic-night-theme-custom-faces)
+
+(provide 'modus-nordic-midnight-theme)
+
+;;; modus-nordic-midnight-theme.el ends here

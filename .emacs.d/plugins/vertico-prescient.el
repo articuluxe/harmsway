@@ -8,7 +8,7 @@
 ;; Created: 23 Sep 2022
 ;; Package-Requires: ((emacs "27.1") (prescient "6.1.0") (vertico "0.28") (compat "29.1"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 6.3.2
+;; Version: 6.3.3
 
 ;;; Commentary:
 
@@ -246,8 +246,8 @@ This mode will:
         ;; While sorting might not be enabled in Vertico, it might
         ;; still be enabled in another UI, such as Company or Corfu.
         ;; Therefore, we still want to remember candidates.
-        (add-hook 'minibuffer-setup-hook
-                  #'vertico-prescient--setup-remembrance))
+        (advice-add 'vertico--setup
+                    :after #'vertico-prescient--setup-remembrance))
 
     ;; Turn off mode.
 
@@ -275,8 +275,8 @@ This mode will:
           (vertico-prescient--undo-completion-settings))))
 
     ;; Undo remembrance settings.
-    (remove-hook 'minibuffer-setup-hook
-                 #'vertico-prescient--setup-remembrance)))
+    (advice-remove 'vertico--setup
+                   #'vertico-prescient--setup-remembrance)))
 
 (provide 'vertico-prescient)
 ;;; vertico-prescient.el ends here

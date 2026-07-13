@@ -4,7 +4,7 @@
 
 ;; Author: Kevin Borling
 ;; Created: December 24, 2021
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Keywords: custom themes, dark, faces
 ;; License: MIT
 ;; URL: https://github.com/kborling/uwu-theme
@@ -65,10 +65,10 @@
       ("uwu-bright-magenta" . "#BB8FE5")
       ("uwu-bright-cyan"    . "#6DB0AD")
       ("uwu-bright-white"   . "#C5C8C9")
-      ("uwu-comment"        . "#62686A")
+      ("uwu-comment"        . "#828A8C")
       ("uwu-highlight"      . "#2F3638")
       ("uwu-warning"        . "#E6D967")
-      ("uwu-error"          . "#E93D3D"))))
+      ("uwu-error"          . "#EF4444"))))
 
 (defvar uwu-use-variable-pitch nil
   "When non-nil, use variable pitch face for some headings and titles.")
@@ -87,6 +87,13 @@
   :type 'boolean
   :group 'uwu-theme
   :package-version '(uwu . "1.0"))
+
+(defcustom uwu-cursor-color 'white
+  "Cursor color style. Choose between `white' and `red'."
+  :type '(choice (const :tag "White" white)
+                 (const :tag "Red" red))
+  :group 'uwu-theme
+  :package-version '(uwu . "1.1"))
 
 (defcustom uwu-height-minus-1 0.8
   "Font size -1."
@@ -139,7 +146,10 @@ Also bind `class' to ((class color) (min-colors 89))."
                      (list (intern (car cons)) (cdr cons)))
                    (append uwu-colors-alist))
          (z-variable-pitch (if uwu-use-variable-pitch
-                               'variable-pitch 'default)))
+                               'variable-pitch 'default))
+         (z-cursor-color (if (eq uwu-cursor-color 'red)
+                               (cdr (assoc "uwu-bright-red" uwu-colors-alist))
+                             (cdr (assoc "uwu-white" uwu-colors-alist)))))
      ,@body))
 
 ;;; Theme Faces
@@ -147,9 +157,9 @@ Also bind `class' to ((class color) (min-colors 89))."
   (custom-theme-set-faces 'uwu
                           '(button ((t (:underline t))))
                           `(default ((t (:background ,uwu-bg :foreground ,uwu-fg))))
-                          `(cursor ((t (:background ,uwu-white :foreground ,uwu-bright-black))))
+                          `(cursor ((t (:background ,z-cursor-color :foreground ,uwu-bright-black))))
                           `(link ((t (:underline t :foreground ,uwu-blue))))
-                          `(link-visited ((t (:underline t :foreground ,uwu-bright-blue))))
+                          `(link-visited ((t (:underline t :foreground ,uwu-bright-magenta))))
                           `(underline ((t (:underline t :foreground ,uwu-yellow))))
                           `(font-lock-keyword-face ((t (:foreground ,uwu-magenta))))
                           `(font-lock-function-name-face ((t (:foreground ,uwu-blue))))
@@ -164,10 +174,8 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(font-lock-comment-face ((t (:slant italic :foreground ,uwu-comment))))
                           `(shadow ((t (:foreground ,uwu-comment))))
                           `(Info-quoted ((t (:inherit font-lock-constant-face))))
-                          `(show-paren-match-face ((t (:inverse-video t :background ,uwu-white :foreground ,uwu-red))))
-                          `(highline-face ((t (:background ,uwu-black))))
-                          `(ac-selection-face ((t (:background ,uwu-magenta :foreground ,uwu-highlight))))
-                          `(ac-candidate-face ((t (:background ,uwu-black :foreground ,uwu-white))))
+                          `(show-paren-match ((t (:background ,uwu-highlight :foreground ,uwu-bright-cyan :weight bold))))
+                          `(show-paren-mismatch ((t (:background ,uwu-error :foreground ,uwu-white :weight bold))))
                           `(flymake-error
                             ((((supports :underline (:style wave)))
                               (:underline (:style wave :color ,uwu-error)
@@ -194,13 +202,11 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(minibuffer-prompt ((t (:foreground ,uwu-yellow))))
                           `(menu ((t (:foreground ,uwu-fg :background ,uwu-bg))))
                           `(highlight ((t (:background ,uwu-highlight))))
-                          `(hl-line-face ((,class (:background ,uwu-highlight))
-                                          (t :weight bold)))
                           `(hl-line ((,class (:background ,uwu-highlight :extend t))
                                      (t :weight bold)))
                           `(success ((t (:foreground ,uwu-green :weight bold))))
                           `(warning ((t (:foreground ,uwu-warning :weight bold))))
-                          `(error ((t  (:foreground ,uwu-error))))
+                          `(error ((t (:foreground ,uwu-error :weight bold))))
                           `(tooltip ((t (:foreground ,uwu-fg :background ,uwu-black))))
                           `(region ((t (:inverse-video t :background ,uwu-black))))
                           `(secondary-selection ((t (:background ,uwu-bright-black))))
@@ -214,7 +220,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(mode-line-buffer-id ((t (:weight bold :background ,uwu-black :foreground ,uwu-bright-white))))
                           `(mode-line-emphasis ((t (:foreground ,uwu-fg :slant italic))))
                           `(mode-line-highlight ((t (:foreground ,uwu-magenta :box nil :weight bold))))
-                          `(fringe ((t (:underline t :background ,uwu-bg :foreground ,uwu-highlight))))
+                          `(fringe ((t (:background ,uwu-bg :foreground ,uwu-highlight))))
                           `(fill-column-indicator ((,class :foreground ,uwu-highlight :weight semilight)))
                           `(linum ((t (:background ,uwu-black :foreground ,uwu-white))))
                           `(line-number ((t (:foreground ,(if uwu-distinct-line-numbers uwu-white uwu-comment)
@@ -231,10 +237,9 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(widget-button ((t (:underline t))))
                           `(escape-glyph ((t (:foreground ,uwu-yellow :weight bold))))
                           `(dired-directory ((t (:weight bold :foreground ,uwu-blue))))
-                          `(lazy-highlight ((t (:foreground ,uwu-blue :background ,uwu-bg :inverse-video t))))
                           `(isearch ((t (:inverse-video t :background ,uwu-highlight :foreground ,uwu-bright-blue))))
                           `(isearch-fail ((t (:inverse-video t :background ,uwu-bg :foreground ,uwu-error))))
-                          `(isearch-lazy-highlight-face ((t (:inverse-video t :foreground ,uwu-yellow))))
+                          `(lazy-highlight ((t (:foreground ,uwu-blue :background ,uwu-bg :inverse-video t))))
                           `(grep-context-face ((t (:foreground ,uwu-fg))))
                           `(grep-error-face ((t (:foreground ,uwu-red :weight bold :underline t))))
                           `(grep-hit-face ((t (:foreground ,uwu-bright-blue))))
@@ -265,9 +270,9 @@ Also bind `class' to ((class color) (min-colors 89))."
                                                           :box (:line-width 1 :style released-button)))))
                           `(org-date ((t (:foreground ,uwu-blue :underline t))))
                           `(org-deadline-announce ((t (:foreground ,uwu-red))))
-                          `(org-done ((t (:weight bold :weight bold :foreground ,uwu-green))))
+                          `(org-done ((t (:weight bold :foreground ,uwu-green))))
                           `(org-formula ((t (:foreground ,uwu-yellow))))
-                          `(org-headline-done ((t (:foreground ,uwu-green))))
+                          `(org-headline-done ((t (:foreground ,uwu-comment))))
                           `(org-hide ((t (:background ,uwu-bg :foreground ,uwu-bg))))
                           `(org-verbatim ((t (:foreground ,uwu-bright-yellow))))
                           `(org-meta-line ((t (:foreground ,uwu-comment))))
@@ -299,16 +304,16 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(org-sexp-date ((t (:foreground ,uwu-blue :underline t))))
                           `(org-special-keyword ((t (:inherit font-lock-comment-face))))
                           `(org-table ((t (:foreground ,uwu-blue))))
-                          `(org-tag ((t (:weight bold :weight bold))))
+                          `(org-tag ((t (:weight bold))))
                           `(org-time-grid ((t (:foreground ,uwu-yellow))))
-                          `(org-todo ((t (:weight bold :foreground ,uwu-red :weight bold))))
+                          `(org-todo ((t (:weight bold :foreground ,uwu-red))))
                           `(org-upcoming-deadline ((t (:inherit font-lock-keyword-face))))
-                          `(org-warning ((t (:weight bold :foreground ,uwu-error :weight bold :underline nil))))
+                          `(org-warning ((t (:weight bold :foreground ,uwu-error :underline nil))))
                           `(org-column ((t (:background ,uwu-bg))))
                           `(org-column-title ((t (:background ,uwu-bg :underline t :weight bold))))
                           `(org-mode-line-clock ((t (:foreground ,uwu-fg :background ,uwu-bg))))
                           `(org-mode-line-clock-overrun ((t (:foreground ,uwu-bg :background ,uwu-red))))
-                          `(org-ellipsis ((t (:foreground ,uwu-yellow :underline t))))
+                          `(org-ellipsis ((t (:foreground ,uwu-comment :underline nil))))
                           `(org-footnote ((t (:foreground ,uwu-cyan :underline t))))
                           `(org-document-title ((t (:inherit ,z-variable-pitch :foreground ,uwu-bright-blue
                                                              :weight bold
@@ -356,7 +361,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(company-tooltip-common-selection ((t (:foreground ,uwu-green))))
                           `(company-scrollbar-fg ((t (:background ,uwu-black))))
                           `(company-scrollbar-bg ((t (:background ,uwu-bright-black))))
-                          `(company-preview ((t (:background ,uwu-bright-green))))
+                          `(company-preview ((t (:foreground ,uwu-bright-green :background ,uwu-black))))
                           `(company-preview-common ((t (:foreground ,uwu-bright-green :background ,uwu-black))))
                           ;; term, ansi-term, vterm
                           `(term-color-black ((t (:foreground ,uwu-bg
@@ -375,15 +380,15 @@ Also bind `class' to ((class color) (min-colors 89))."
                                                              :background ,uwu-bright-cyan))))
                           `(term-color-white ((t (:foreground ,uwu-fg
                                                               :background ,uwu-fg))))
-                          '(term-default-fg-color ((t (:inherit uwu-fg))))
-                          '(term-default-bg-color ((t (:inherit uwu-bg))))
+                          `(term-default-fg-color ((t (:foreground ,uwu-fg))))
+                          `(term-default-bg-color ((t (:background ,uwu-bg))))
                           ;; eshell
                           `(eshell-prompt ((t (:foreground ,uwu-cyan :weight bold))))
                           `(eshell-ls-archive ((t (:foreground ,uwu-red :weight bold))))
                           `(eshell-ls-backup ((t (:inherit font-lock-comment-face))))
                           `(eshell-ls-clutter ((t (:inherit font-lock-comment-face))))
                           `(eshell-ls-directory ((t (:foreground ,uwu-cyan :weight bold))))
-                          `(eshell-ls-executable ((t (:foreground ,uwu-red :weight bold))))
+                          `(eshell-ls-executable ((t (:foreground ,uwu-green :weight bold))))
                           `(eshell-ls-unreadable ((t (:foreground ,uwu-fg))))
                           `(eshell-ls-missing ((t (:inherit font-lock-warning-face))))
                           `(eshell-ls-product ((t (:inherit font-lock-doc-face))))
@@ -449,9 +454,9 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(sly-stickers-armed-face ((t (:foreground ,uwu-bg :background ,uwu-blue))))
                           `(sly-stickers-recordings-face ((t (:foreground ,uwu-bg :background ,uwu-green))))
                           ;; diff-mode
-                          `(diff-added ((t (:foreground ,uwu-bright-green :background: ,uwu-black :extend t))))
-                          `(diff-changed ((t  (:foreground ,uwu-warning :background: ,uwu-black :extend t))))
-                          `(diff-removed ((t (:foreground ,uwu-error :background: ,uwu-black :extend t))))
+                          `(diff-added ((t (:foreground ,uwu-bright-green :background ,uwu-black :extend t))))
+                          `(diff-changed ((t (:foreground ,uwu-warning :background ,uwu-black :extend t))))
+                          `(diff-removed ((t (:foreground ,uwu-error :background ,uwu-black :extend t))))
                           `(diff-indicator-added ((t (:inherit diff-added))))
                           `(diff-indicator-changed ((t (:inherit diff-changed))))
                           `(diff-indicator-removed ((t (:inherit diff-removed))))
@@ -468,23 +473,23 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(diff-hl-delete ((,class (:inverse-video t :foreground ,uwu-error :background ,uwu-bg))))
                           `(diff-hl-insert ((,class (:inverse-video t :foreground ,uwu-bright-green :background ,uwu-bg))))
                           ;; tab-bar
-                          `(tab-bar ((t (:height 1.1 :foreground ,uwu-white :background ,uwu-black))))
-                          `(tab-bar-tab ((t (:background ,uwu-black
-                                                         :foreground ,uwu-magenta
-                                                         :box (:line-width 1 :style released-button)))))
-                          `(tab-bar-tab-inactive ((t (:inherit tab-bar-tab
-                                                               :background ,uwu-black
-                                                               :foreground ,uwu-comment))))
+                          `(tab-bar ((t (:foreground ,uwu-comment :background ,uwu-bg))))
+                          `(tab-bar-tab ((t (:background ,uwu-highlight
+                                                         :foreground ,uwu-bright-white
+                                                         :box (:line-width (4 . 2) :color ,uwu-highlight)))))
+                          `(tab-bar-tab-inactive ((t (:background ,uwu-bg
+                                                                  :foreground ,uwu-comment
+                                                                  :box (:line-width (4 . 2) :color ,uwu-bg)))))
 
                           ;; tab-line
-                          `(tab-line ((t (:foreground ,uwu-white :background ,uwu-black))))
+                          `(tab-line ((t (:foreground ,uwu-comment :background ,uwu-bg))))
                           `(tab-line-close-highlight ((t (:foreground ,uwu-red))))
-                          `(tab-line-tab ((t (:background ,uwu-black
-                                                          :foreground ,uwu-magenta
-                                                          :box (:line-width 1 :style released-button)))))
-                          `(tab-line-tab-inactive ((t (:inherit tab-line-tab
-                                                                :background ,uwu-black
-                                                                :foreground ,uwu-comment))))
+                          `(tab-line-tab ((t (:background ,uwu-highlight
+                                                          :foreground ,uwu-bright-white
+                                                          :box (:line-width (4 . 2) :color ,uwu-highlight)))))
+                          `(tab-line-tab-inactive ((t (:background ,uwu-bg
+                                                                   :foreground ,uwu-comment
+                                                                   :box (:line-width (4 . 2) :color ,uwu-bg)))))
                           ;; log-view (vc-log)
                           `(log-view-file ((t (:foreground ,uwu-blue :weight bold))))
                           `(log-view-message ((t (:foreground ,uwu-fg))))
@@ -522,7 +527,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(powerline-inactive2 ((t (:background ,uwu-black :foreground ,uwu-comment))))
                           ;; consult
                           `(consult-async-split ((t (:inherit warning))))
-                          `(consult-key ((t (:inherit uwu-magenta))))
+                          `(consult-key ((t (:foreground ,uwu-magenta))))
                           `(consult-line-number ((t (:foreground ,(if uwu-distinct-line-numbers uwu-white uwu-comment)
                                                                  ,@(when uwu-distinct-line-numbers
                                                                      (list :background uwu-black))))))
@@ -730,7 +735,7 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(notmuch-tag-unread ((t (:foreground ,uwu-magenta))))
                           `(notmuch-tag-added ((t (:underline ,uwu-green))))
                           `(notmuch-tag-deleted ((t (:strike-through ,uwu-red))))
-                          `(notmuch-tag-flagged ((t (:foreground ,uwu-blue))));
+                          `(notmuch-tag-flagged ((t (:foreground ,uwu-blue))))
                           `(notmuch-message-summary-face ((t (:inherit highlight))))
                           `(notmuch-search-date ((t (:inherit default))))
                           `(notmuch-search-count ((t (:inherit default))))
@@ -758,10 +763,9 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(mu4e-cited-7-face ((t (:foreground ,uwu-magenta :slant italic :weight normal))))
                           `(mu4e-view-url-number-face ((t (:foreground ,uwu-yellow :weight normal))))
                           `(mu4e-header-highlight-face
-                            ((t (,@(and (>= emacs-major-version 27) '(:extend t))
-                                 :inherit unspecified
+                            ((t (:extend t :inherit unspecified
                                  :foreground unspecified :background ,uwu-bg
-                                 :underline unspecified  :weight unspecified))))
+                                 :underline unspecified :weight unspecified))))
                           `(mu4e-view-contact-face ((t (:foreground ,uwu-fg  :weight normal))))
                           `(mu4e-view-header-key-face ((t (:inherit message-header-name :weight normal))))
                           `(mu4e-view-header-value-face ((t (:foreground ,uwu-cyan :weight normal :slant normal))))
@@ -849,7 +853,135 @@ Also bind `class' to ((class color) (min-colors 89))."
                           `(magit-sequence-onto ((t (:foreground ,uwu-comment))))
                           `(magit-filename ((t (:foreground ,uwu-white :weight normal))))
                           `(magit-bookmark-local ((t (:foreground ,uwu-green :weight bold))))
-                          `(magit-header-line ((t (:foreground ,uwu-yellow :background ,uwu-black :weight bold))))))
+                          `(magit-header-line ((t (:foreground ,uwu-yellow :background ,uwu-black :weight bold))))
+                          ;; corfu
+                          `(corfu-default ((t (:background ,uwu-black))))
+                          `(corfu-current ((t (:background ,uwu-highlight :foreground ,uwu-bright-white :weight bold))))
+                          `(corfu-bar ((t (:background ,uwu-comment))))
+                          `(corfu-border ((t (:background ,uwu-bright-black))))
+                          `(corfu-annotations ((t (:foreground ,uwu-comment))))
+                          `(corfu-deprecated ((t (:foreground ,uwu-comment :strike-through t))))
+                          ;; marginalia
+                          `(marginalia-key ((t (:foreground ,uwu-magenta))))
+                          `(marginalia-value ((t (:foreground ,uwu-cyan))))
+                          `(marginalia-documentation ((t (:foreground ,uwu-comment :slant italic))))
+                          `(marginalia-file-priv-dir ((t (:foreground ,uwu-blue))))
+                          `(marginalia-file-priv-read ((t (:foreground ,uwu-green))))
+                          `(marginalia-file-priv-write ((t (:foreground ,uwu-yellow))))
+                          `(marginalia-file-priv-exec ((t (:foreground ,uwu-red))))
+                          `(marginalia-date ((t (:foreground ,uwu-blue))))
+                          `(marginalia-size ((t (:foreground ,uwu-green))))
+                          ;; completion-preview
+                          `(completion-preview ((t (:foreground ,uwu-comment :slant italic))))
+                          `(completion-preview-exact ((t (:foreground ,uwu-bright-cyan :slant italic))))
+                          ;; treesit
+                          `(font-lock-bracket-face ((t (:foreground ,uwu-white))))
+                          `(font-lock-delimiter-face ((t (:foreground ,uwu-white))))
+                          `(font-lock-escape-face ((t (:foreground ,uwu-bright-cyan))))
+                          `(font-lock-misc-punctuation-face ((t (:foreground ,uwu-white))))
+                          `(font-lock-number-face ((t (:foreground ,uwu-bright-yellow))))
+                          `(font-lock-operator-face ((t (:foreground ,uwu-cyan))))
+                          `(font-lock-property-name-face ((t (:foreground ,uwu-red))))
+                          `(font-lock-property-use-face ((t (:foreground ,uwu-red))))
+                          `(font-lock-punctuation-face ((t (:foreground ,uwu-white))))
+                          `(font-lock-regexp-face ((t (:foreground ,uwu-bright-green))))
+                          `(font-lock-function-call-face ((t (:foreground ,uwu-bright-blue))))
+                          `(font-lock-variable-use-face ((t (:foreground ,uwu-fg))))
+                          ;; eat
+                          `(eat-term-color-0 ((t (:foreground ,uwu-black :background ,uwu-black))))
+                          `(eat-term-color-1 ((t (:foreground ,uwu-red :background ,uwu-red))))
+                          `(eat-term-color-2 ((t (:foreground ,uwu-green :background ,uwu-green))))
+                          `(eat-term-color-3 ((t (:foreground ,uwu-yellow :background ,uwu-yellow))))
+                          `(eat-term-color-4 ((t (:foreground ,uwu-blue :background ,uwu-blue))))
+                          `(eat-term-color-5 ((t (:foreground ,uwu-magenta :background ,uwu-magenta))))
+                          `(eat-term-color-6 ((t (:foreground ,uwu-cyan :background ,uwu-cyan))))
+                          `(eat-term-color-7 ((t (:foreground ,uwu-white :background ,uwu-white))))
+                          ;; gptel
+                          `(gptel-pre-response-face ((t (:foreground ,uwu-comment :slant italic))))
+                          `(gptel-post-response-face ((t (:foreground ,uwu-fg))))
+                          ;; deft
+                          `(deft-title-face ((t (:foreground ,uwu-bright-blue :weight bold))))
+                          `(deft-summary-face ((t (:foreground ,uwu-comment))))
+                          `(deft-filter-string-face ((t (:foreground ,uwu-magenta :weight bold))))
+                          `(deft-time-face ((t (:foreground ,uwu-blue))))
+                          `(deft-separator-face ((t (:foreground ,uwu-comment))))
+                          ;; smerge
+                          `(smerge-upper ((t (:background "#1a2a1a" :extend t))))
+                          `(smerge-lower ((t (:background "#2a1a1a" :extend t))))
+                          `(smerge-markers ((t (:background ,uwu-black :extend t))))
+                          `(smerge-refined-added ((t (:background "#22aa22" :foreground ,uwu-black))))
+                          `(smerge-refined-removed ((t (:background "#aa2222" :foreground ,uwu-white))))
+                          ;; transient
+                          `(transient-heading ((t (:foreground ,uwu-yellow :weight bold))))
+                          `(transient-key ((t (:foreground ,uwu-magenta :weight bold))))
+                          `(transient-argument ((t (:foreground ,uwu-green :weight bold))))
+                          `(transient-value ((t (:foreground ,uwu-cyan))))
+                          `(transient-inactive-argument ((t (:foreground ,uwu-comment))))
+                          `(transient-inactive-value ((t (:foreground ,uwu-comment))))
+                          `(transient-unreachable ((t (:foreground ,uwu-comment))))
+                          `(transient-unreachable-key ((t (:foreground ,uwu-comment))))
+                          `(transient-enabled-suffix ((t (:foreground ,uwu-green :weight bold))))
+                          `(transient-disabled-suffix ((t (:foreground ,uwu-red :weight bold))))
+                          ;; eglot
+                          `(eglot-highlight-symbol-face ((t (:background ,uwu-highlight :weight bold))))
+                          `(eglot-diagnostic-tag-unnecessary-face ((t (:foreground ,uwu-comment :underline t))))
+                          `(eglot-diagnostic-tag-deprecated-face ((t (:foreground ,uwu-comment :strike-through t))))
+                          ;; ediff
+                          `(ediff-current-diff-A ((t (:background "#2a1a1a" :extend t))))
+                          `(ediff-current-diff-B ((t (:background "#1a2a1a" :extend t))))
+                          `(ediff-current-diff-C ((t (:background "#1a1a2a" :extend t))))
+                          `(ediff-fine-diff-A ((t (:background "#aa2222" :foreground ,uwu-white))))
+                          `(ediff-fine-diff-B ((t (:background "#22aa22" :foreground ,uwu-black))))
+                          `(ediff-fine-diff-C ((t (:background "#2222aa" :foreground ,uwu-white))))
+                          `(ediff-even-diff-A ((t (:background ,uwu-highlight))))
+                          `(ediff-even-diff-B ((t (:background ,uwu-highlight))))
+                          `(ediff-odd-diff-A ((t (:background ,uwu-black))))
+                          `(ediff-odd-diff-B ((t (:background ,uwu-black))))
+                          ;; which-key
+                          `(which-key-key-face ((t (:foreground ,uwu-magenta :weight bold))))
+                          `(which-key-separator-face ((t (:foreground ,uwu-comment))))
+                          `(which-key-note-face ((t (:foreground ,uwu-comment))))
+                          `(which-key-command-description-face ((t (:foreground ,uwu-fg))))
+                          `(which-key-group-description-face ((t (:foreground ,uwu-blue))))
+                          ;; outline
+                          `(outline-1 ((t (:foreground ,uwu-bright-blue))))
+                          `(outline-2 ((t (:foreground ,uwu-bright-green))))
+                          `(outline-3 ((t (:foreground ,uwu-bright-magenta))))
+                          `(outline-4 ((t (:foreground ,uwu-bright-red))))
+                          `(outline-5 ((t (:foreground ,uwu-blue))))
+                          `(outline-6 ((t (:foreground ,uwu-green))))
+                          `(outline-7 ((t (:foreground ,uwu-magenta))))
+                          `(outline-8 ((t (:foreground ,uwu-red))))
+                          ;; ansi-color (Emacs 28+)
+                          `(ansi-color-black ((t (:foreground ,uwu-black :background ,uwu-black))))
+                          `(ansi-color-red ((t (:foreground ,uwu-red :background ,uwu-red))))
+                          `(ansi-color-green ((t (:foreground ,uwu-green :background ,uwu-green))))
+                          `(ansi-color-yellow ((t (:foreground ,uwu-yellow :background ,uwu-yellow))))
+                          `(ansi-color-blue ((t (:foreground ,uwu-blue :background ,uwu-blue))))
+                          `(ansi-color-magenta ((t (:foreground ,uwu-magenta :background ,uwu-magenta))))
+                          `(ansi-color-cyan ((t (:foreground ,uwu-cyan :background ,uwu-cyan))))
+                          `(ansi-color-white ((t (:foreground ,uwu-white :background ,uwu-white))))
+                          `(ansi-color-bright-black ((t (:foreground ,uwu-bright-black :background ,uwu-bright-black))))
+                          `(ansi-color-bright-red ((t (:foreground ,uwu-bright-red :background ,uwu-bright-red))))
+                          `(ansi-color-bright-green ((t (:foreground ,uwu-bright-green :background ,uwu-bright-green))))
+                          `(ansi-color-bright-yellow ((t (:foreground ,uwu-bright-yellow :background ,uwu-bright-yellow))))
+                          `(ansi-color-bright-blue ((t (:foreground ,uwu-bright-blue :background ,uwu-bright-blue))))
+                          `(ansi-color-bright-magenta ((t (:foreground ,uwu-bright-magenta :background ,uwu-bright-magenta))))
+                          `(ansi-color-bright-cyan ((t (:foreground ,uwu-bright-cyan :background ,uwu-bright-cyan))))
+                          `(ansi-color-bright-white ((t (:foreground ,uwu-bright-white :background ,uwu-bright-white))))
+                          ;; org-modern
+                          `(org-modern-symbol ((t (:foreground ,uwu-fg))))
+                          `(org-modern-label ((t (:foreground ,uwu-fg :background ,uwu-black :box (:line-width 1 :color ,uwu-highlight)))))
+                          `(org-modern-done ((t (:inherit org-modern-label :foreground ,uwu-green))))
+                          `(org-modern-todo ((t (:inherit org-modern-label :foreground ,uwu-red))))
+                          `(org-modern-tag ((t (:inherit org-modern-label :foreground ,uwu-magenta))))
+                          `(org-modern-date-active ((t (:inherit org-modern-label :foreground ,uwu-blue))))
+                          `(org-modern-date-inactive ((t (:inherit org-modern-label :foreground ,uwu-comment))))
+                          `(org-modern-priority ((t (:inherit org-modern-label :foreground ,uwu-yellow))))
+                          ;; bookmark
+                          `(bookmark-face ((t (:foreground ,uwu-yellow :background ,uwu-black))))
+                          ;; eldoc
+                          `(eldoc-highlight-function-argument ((t (:foreground ,uwu-yellow :weight bold))))))
 
 ;;;###autoload
 (and load-file-name

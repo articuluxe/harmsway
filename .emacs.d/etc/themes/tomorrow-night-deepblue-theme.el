@@ -43,7 +43,7 @@
 ;; Installation from MELPA:
 ;; ------------------------
 ;; (use-package tomorrow-night-deepblue-theme
-;;   :config
+;;   :init
 ;;   (let ((inhibit-redisplay t))
 ;;     ;; Disable all active themes
 ;;     (mapc #'disable-theme custom-enabled-themes)
@@ -248,7 +248,6 @@ names to which it refers are bound."
      (avy-lead-face-0 ((,class (:foreground ,background :background ,blue))))
      (avy-lead-face-1 ((,class (:foreground ,background :background ,aqua))))
      (avy-lead-face-2 ((,class (:foreground ,background :background ,orange))))
-     (aw-background-face ((,class (:foreground ,contrast-bg))))
      (aw-leading-char-face ((,class (:foreground ,yellow))))
      (bm-face ((,class (:background ,contrast-bg :foreground ,foreground :extend t))))
      (bm-persistent-face ((,class (:background ,blue :foreground ,background :extend t))))

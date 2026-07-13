@@ -473,7 +473,7 @@ commits before and half after."
   ;; details, so our logical grouping only follows it to an extend.
   ;; Arguments that are "misplaced" here:
   ;;   1. From "Commit Formatting".
-  ;;   2. From "Common Diff Options".
+  ;;   2. From "Common Diff Options". ;FIXME
   ;;   3. From unnamed first group.
   ;;   4. Implemented by Magit.
   ["Commit limiting"
@@ -508,6 +508,7 @@ commits before and half after."
    :if magit-log-infix-arguments--show-p
    ("-g" "Show graph"          "--graph")          ;1
    ("-c" "Show graph in color" "--color")          ;2
+   (magit-log:--graph-lane-limit :level 5)         ;TODO
    ("-d" "Show refnames"       "--decorate")       ;3
    ("=S" "Show signatures"     "--show-signature") ;1
    ("-h" "Show header"         "++header")         ;4
@@ -534,6 +535,7 @@ commits before and half after."
     ("L" "local branches"    magit-log-branches)
     ("b" "all branches"      magit-log-all-branches)
     ("a" "all references"    magit-log-all)
+    ("R" "reflog objects"    magit-log-reflog            :level 0)
     ("B" "matching branches" magit-log-matching-branches :level 7)
     ("T" "matching tags"     magit-log-matching-tags     :level 7)
     ("m" "merged"            magit-log-merged            :level 7)]
@@ -553,7 +555,7 @@ commits before and half after."
   "Change the arguments used for the log(s) in the current buffer."
   :man-page "git-log"
   :class 'magit-log-refresh-prefix
-  magit-log-infix-arguments
+  'magit-log-infix-arguments
   [:if-not-mode magit-log-mode
    :description "Arguments"
    (magit-log:-n)
@@ -600,6 +602,14 @@ commits before and half after."
   :shortarg "-n"
   :argument "-n"
   :reader #'transient-read-number-N+)
+
+(transient-define-argument magit-log:--graph-lane-limit ()
+  :description "Show graph lanes"
+  :class 'transient-option
+  :key "=g"
+  :argument "--graph-lane-limit="
+  :reader #'transient-read-number-N+
+  :if (##magit-git-version>= "2.55"))
 
 (transient-define-argument magit:--author ()
   :description "Limit to author"
@@ -774,6 +784,12 @@ completion candidates."
   "Show log for all references and `HEAD'."
   (interactive (magit-log-arguments))
   (magit-log-setup-buffer (list "--all") args files))
+
+;;;###autoload
+(defun magit-log-reflog (&optional args files)
+  "Show log for all objects mentioned in all reflogs."
+  (interactive (magit-log-arguments))
+  (magit-log-setup-buffer (list "--reflog") args files))
 
 ;;;###autoload
 (defun magit-log-buffer-file (&optional follow beg end)

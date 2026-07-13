@@ -100,35 +100,6 @@ Returns the modified GRAPH."
 
   graph)
 
-(defun dag-draw--rank-move-valid-p (graph node-id new-rank)
-  "Check if moving NODE-ID to NEW-RANK preserves edge constraints.
-
-GRAPH is a `dag-draw-graph' structure.
-NODE-ID is a symbol representing the node to check.
-NEW-RANK is an integer representing the proposed new rank.
-
-Validates GKNV constraints: λ(predecessor) < λ(node) < λ(successor).
-
-Returns t if move is valid, nil otherwise."
-  (let ((valid t))
-
-    ;; Check all incoming edges: predecessor must have strictly lower rank
-    ;; GKNV constraint: λ(predecessor) < λ(node)
-    (dolist (predecessor (dag-draw-get-predecessors graph node-id))
-      (let ((pred-node (dag-draw-get-node graph predecessor)))
-        (when (and (dag-draw-node-rank pred-node)
-                   (>= (dag-draw-node-rank pred-node) new-rank))
-          (setq valid nil))))
-
-    ;; Check all outgoing edges: successor must have strictly higher rank
-    ;; GKNV constraint: λ(node) < λ(successor)
-    (dolist (successor (dag-draw-get-successors graph node-id))
-      (let ((succ-node (dag-draw-get-node graph successor)))
-        (when (and (dag-draw-node-rank succ-node)
-                   (<= (dag-draw-node-rank succ-node) new-rank))
-          (setq valid nil))))
-
-    valid))
 
 (defun dag-draw--node-eligible-for-balancing-p (graph node-id)
   "Check if NODE-ID is eligible for GKNV balancing.

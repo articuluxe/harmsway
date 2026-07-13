@@ -158,9 +158,9 @@
 
    ;; line-number
    `(line-number ((,psidium-class (:foreground ,psidium-brown :inherit default))))
-   `(line-number-current-line ((,psidium-class (:foreground ,psidium-fg :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,psidium-class (:background ,psidium-light-orange :inherit line-number))))
-   `(line-number-major-tick ((,psidium-class (:background ,psidium-light-purple :inherit line-number))))
+   `(line-number-current-line ((,psidium-class (:foreground ,psidium-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,psidium-class (:background ,psidium-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,psidium-class (:background ,psidium-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line))))
@@ -274,6 +274,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,psidium-class (:inherit isearch))))
    `(match ((,psidium-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,psidium-class (:foreground ,psidium-white :background ,psidium-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

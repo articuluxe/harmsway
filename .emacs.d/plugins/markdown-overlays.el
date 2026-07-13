@@ -248,8 +248,8 @@ Return an alist with details of all overlays added:
       (while (re-search-forward
               markdown-overlays--source-block-regexp
               nil t)
-        (when-let ((begin (match-beginning 0))
-                   (end (match-end 0)))
+        (when-let* ((begin (match-beginning 0))
+                    (end (match-end 0)))
           (push (markdown-overlays--match-source-block)
                 markdown-blocks))))
     (nreverse markdown-blocks)))
@@ -285,19 +285,25 @@ For example \"elisp\" -> \"emacs-lisp\"."
   "Fontify a source block.
 Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
  BODY-END QUOTES2-START and QUOTES2-END."
-  ;; Overlay beginning "```" with a copy block button.
-  (markdown-overlays--put
-   (make-overlay quotes1-start quotes1-end)
-   'evaporate t
-   'markdown-overlays-markup-type 'fence
-   'display
-   (propertize "📋 "
-               'pointer 'hand
-               'keymap (markdown-overlays--make-ret-binding-map
-                        (lambda ()
-                          (interactive)
-                          (kill-ring-save body-start body-end)
-                          (message "Copied")))))
+  ;; Overlay beginning "```" with a copy block button.  Capture the body
+  ;; bounds as markers, not the raw integers: the button's closure outlives
+  ;; this call, and if the buffer is edited afterwards (a client streaming or
+  ;; re-rendering around the block) plain integers go stale and the button
+  ;; copies a shifted, truncated range.  Markers track the edits.
+  (let ((body-start (copy-marker body-start))
+        (body-end (copy-marker body-end t)))
+    (markdown-overlays--put
+     (make-overlay quotes1-start quotes1-end)
+     'evaporate t
+     'markdown-overlays-markup-type 'fence
+     'display
+     (propertize "📋 "
+                 'pointer 'hand
+                 'keymap (markdown-overlays--make-ret-binding-map
+                          (lambda ()
+                            (interactive)
+                            (kill-ring-save body-start body-end)
+                            (message "Copied"))))))
   ;; Hide end "```" altogether.
   (markdown-overlays--put
    (make-overlay quotes2-start quotes2-end)
@@ -376,12 +382,12 @@ Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
                        (group (one-or-more (not (any ")"))))
                        ")"))
               nil t)
-        (if-let ((begin (match-beginning 0))
-                 (end (match-end 0))
-                 (title-start (match-beginning 1))
-                 (title-end (match-end 1))
-                 (url-start (match-beginning 2))
-                 (url-end (match-end 2)))
+        (if-let* ((begin (match-beginning 0))
+                  (end (match-end 0))
+                  (title-start (match-beginning 1))
+                  (title-end (match-end 1))
+                  (url-start (match-beginning 2))
+                  (url-end (match-end 2)))
             (unless (or (eq (char-before begin) ?!)
                         (seq-find (lambda (avoided)
                                     (and (>= begin (car avoided))
@@ -413,12 +419,12 @@ Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
                   (one-or-more space)
                   (group (one-or-more (not (any "\n")))) eol)
               nil t)
-        (if-let ((begin (match-beginning 0))
-                 (end (match-end 0))
-                 (level-start (match-beginning 1))
-                 (level-end (match-end 1))
-                 (title-start (match-beginning 2))
-                 (title-end (match-end 2)))
+        (if-let* ((begin (match-beginning 0))
+                  (end (match-end 0))
+                  (level-start (match-beginning 1))
+                  (level-end (match-end 1))
+                  (title-start (match-beginning 2))
+                  (title-end (match-end 2)))
             (unless (seq-find (lambda (avoided)
                                 (and (>= begin (car avoided))
                                      (<= end (cdr avoided))))
@@ -446,7 +452,7 @@ Use QUOTES1-START QUOTES1-END LANG LANG-START LANG-END BODY-START
 (defun markdown-overlays--open-local-link (url)
   "Open URL as a local file link if possible.
 Return non-nil if handled, nil otherwise."
-  (when-let ((parsed (markdown-overlays--parse-local-link url)))
+  (when-let* ((parsed (markdown-overlays--parse-local-link url)))
     (find-file (map-elt parsed :file))
     (when (map-elt parsed :line)
       (goto-char (point-min))
@@ -508,12 +514,12 @@ Use START END TITLE-START TITLE-END URL-START URL-END."
                        (seq "__" (group (one-or-more (not (any "\n_")))) "__")))
                   (or (syntax punctuation) (syntax whitespace) line-end))
               nil t)
-        (if-let ((begin (match-beginning 1))
-                 (end (match-end 1))
-                 (text-start (or (match-beginning 2)
-                                 (match-beginning 3)))
-                 (text-end (or (match-end 2)
-                               (match-end 3))))
+        (if-let* ((begin (match-beginning 1))
+                  (end (match-end 1))
+                  (text-start (or (match-beginning 2)
+                                  (match-beginning 3)))
+                  (text-end (or (match-end 2)
+                                (match-end 3))))
             (unless (seq-find (lambda (avoided)
                                 (and (>= begin (car avoided))
                                      (<= end (cdr avoided))))
@@ -546,14 +552,14 @@ Use START END TITLE-START TITLE-END URL-START URL-END."
                              (group "_")
                              (group (one-or-more (not (any "\n_")))) "_")))
               nil t)
-        (if-let ((begin (match-beginning 0))
-                 (end (match-end 0))
-                 (start-pos (or (match-beginning 2)
-                                (match-beginning 5)))
-                 (text-start (or (match-beginning 3)
-                                 (match-beginning 6)))
-                 (text-end (or (match-end 3)
-                               (match-end 6))))
+        (if-let* ((begin (match-beginning 0))
+                  (end (match-end 0))
+                  (start-pos (or (match-beginning 2)
+                                 (match-beginning 5)))
+                  (text-start (or (match-beginning 3)
+                                  (match-beginning 6)))
+                  (text-end (or (match-end 3)
+                                (match-end 6))))
             (unless (seq-find (lambda (avoided)
                                 (and (>= begin (car avoided))
                                      (<= end (cdr avoided))))
@@ -663,10 +669,10 @@ Use START END TEXT-START TEXT-END."
       (while (re-search-forward
               (rx "~~" (group (one-or-more (not (any "\n~")))) "~~")
               nil t)
-        (if-let ((begin (match-beginning 0))
-                 (end (match-end 0))
-                 (text-start (match-beginning 1))
-                 (text-end (match-end 1)))
+        (if-let* ((begin (match-beginning 0))
+                  (end (match-end 0))
+                  (text-start (match-beginning 1))
+                  (text-end (match-end 1)))
             (unless (seq-find (lambda (avoided)
                                 (and (>= begin (car avoided))
                                      (<= end (cdr avoided))))
@@ -715,14 +721,14 @@ Use START END TEXT-START TEXT-END."
       (while (re-search-forward
               "`\\([^`\n]+\\)`"
               nil t)
-        (if-let ((begin (match-beginning 0))
-                 (end (match-end 0))
-                 (body-start (match-beginning 1))
-                 (body-end (match-end 1)))
-            (if-let ((avoided (seq-find (lambda (avoided)
-                                          (not (or (> begin (cdr avoided))
-                                                   (< end (car avoided)))))
-                                        avoid-ranges)))
+        (if-let* ((begin (match-beginning 0))
+                  (end (match-end 0))
+                  (body-start (match-beginning 1))
+                  (body-end (match-end 1)))
+            (if-let* ((avoided (seq-find (lambda (avoided)
+                                           (not (or (> begin (cdr avoided))
+                                                    (< end (car avoided)))))
+                                         avoid-ranges)))
                 ;; Match overlaps an avoid range — skip past range end and retry
                 (goto-char (1+ (cdr avoided)))
               (push
@@ -856,50 +862,50 @@ For example:
   \"file:///tmp/baz.el#L20\"  => ((:file . \"/tmp/baz.el\") (:line . 20))
   \"file:///tmp/baz.el\"      => ((:file . \"/tmp/baz.el\") (:line . nil))
   \"https://example.com\"     => nil"
-  (when-let ((match
-              (cond
-               ;; file:///absolute/path with optional #L123 or :123
-               ((string-match
-                 (rx bos "file://"
-                     (group (+? anything))
-                     (optional (or (seq "#L" (group (one-or-more digit)))
-                                   (seq ":" (group (one-or-more digit)))))
-                     eos)
-                 url)
-                (cons (match-string 1 url)
-                      (or (match-string 2 url) (match-string 3 url))))
-               ;; file:relative/path with optional #L123 or :123
-               ((string-match
-                 (rx bos "file:"
-                     (group (not (any "/")) (+? anything))
-                     (optional (or (seq "#L" (group (one-or-more digit)))
-                                   (seq ":" (group (one-or-more digit)))))
-                     eos)
-                 url)
-                (cons (match-string 1 url)
-                      (or (match-string 2 url) (match-string 3 url))))
-               ;; path#L123 (GitHub-style line)
-               ((string-match
-                 (rx bos
-                     (group (? (optional "/") alpha ":/") ;; Windows drive letter
-                            (one-or-more (not (any ":#"))))
-                     "#L" (group (one-or-more digit))
-                     eos)
-                 url)
-                (cons (match-string 1 url) (match-string 2 url)))
-               ;; path:123 (colon line number)
-               ((string-match
-                 (rx bos
-                     (group (? (optional "/") alpha ":/") ;; Windows drive letter
-                            (one-or-more (not (any ":#"))))
-                     ":" (group (one-or-more digit))
-                     eos)
-                 url)
-                (cons (match-string 1 url) (match-string 2 url)))
-               ;; plain local path with no line suffix
-               ((not (string-empty-p url))
-                (cons url nil))))
-             (filepath (expand-file-name (car match))))
+  (when-let* ((match
+               (cond
+                ;; file:///absolute/path with optional #L123 or :123
+                ((string-match
+                  (rx bos "file://"
+                      (group (+? anything))
+                      (optional (or (seq "#L" (group (one-or-more digit)))
+                                    (seq ":" (group (one-or-more digit)))))
+                      eos)
+                  url)
+                 (cons (match-string 1 url)
+                       (or (match-string 2 url) (match-string 3 url))))
+                ;; file:relative/path with optional #L123 or :123
+                ((string-match
+                  (rx bos "file:"
+                      (group (not (any "/")) (+? anything))
+                      (optional (or (seq "#L" (group (one-or-more digit)))
+                                    (seq ":" (group (one-or-more digit)))))
+                      eos)
+                  url)
+                 (cons (match-string 1 url)
+                       (or (match-string 2 url) (match-string 3 url))))
+                ;; path#L123 (GitHub-style line)
+                ((string-match
+                  (rx bos
+                      (group (? (optional "/") alpha ":/") ;; Windows drive letter
+                             (one-or-more (not (any ":#"))))
+                      "#L" (group (one-or-more digit))
+                      eos)
+                  url)
+                 (cons (match-string 1 url) (match-string 2 url)))
+                ;; path:123 (colon line number)
+                ((string-match
+                  (rx bos
+                      (group (? (optional "/") alpha ":/") ;; Windows drive letter
+                             (one-or-more (not (any ":#"))))
+                      ":" (group (one-or-more digit))
+                      eos)
+                  url)
+                 (cons (match-string 1 url) (match-string 2 url)))
+                ;; plain local path with no line suffix
+                ((not (string-empty-p url))
+                 (cons url nil))))
+              (filepath (expand-file-name (car match))))
     (when (file-exists-p filepath)
       (list (cons :file filepath)
             (cons :line (when (cdr match)

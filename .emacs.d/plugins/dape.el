@@ -1712,14 +1712,17 @@ If `dape--request-blocking' is non-nil do blocking request."
 
 (defun dape--launch-or-attach (conn)
   "Launch or attach CONN."
-  (dape--with-request-bind
-      (_body error)
-      (dape-request conn
-                    (or (plist-get (dape--config conn) :request) :launch)
-                    (dape--launch-or-attach-arguments conn))
-    (when error
-      (dape--warn "%s" error)
-      (dape-kill conn))))
+  ;; Some adapters (e.g. dlv) delay launch/attach response until
+  ;; ready (after compile).
+  (let ((dape-request-timeout nil))
+    (dape--with-request-bind
+        (_body error)
+        (dape-request conn
+                      (or (plist-get (dape--config conn) :request) :launch)
+                      (dape--launch-or-attach-arguments conn))
+      (when error
+        (dape--warn "%s" error)
+        (dape-kill conn)))))
 
 (defun dape--set-breakpoints-in-source (conn source &optional cb)
   "Set breakpoints in SOURCE for adapter CONN.

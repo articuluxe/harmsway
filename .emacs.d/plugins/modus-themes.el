@@ -3828,11 +3828,25 @@ If THEME does not have at least a `:modus-core-palette' among its
 
 Else return (append OVERRIDES USER CORE)."
   (when-let* ((properties (get theme 'theme-properties))
-              (core-palette (symbol-value (plist-get properties :modus-core-palette))))
-    (let* ((user-palette (when with-user-palette (symbol-value (plist-get properties :modus-user-palette))))
-           (overrides-palette (when with-overrides (symbol-value (plist-get properties :modus-overrides-palette))))
-           (all-overrides (when with-overrides (append overrides-palette modus-themes-common-palette-overrides))))
-      (append all-overrides user-palette core-palette))))
+              (core-palette-name (plist-get properties :modus-core-palette)))
+    ;; If the palette variable hasn't been loaded into memory yet, load the theme silently
+    (unless (boundp core-palette-name)
+      (load-theme theme t t))
+    (when (boundp core-palette-name)
+      (let* ((core-palette (symbol-value core-palette-name))
+             (user-palette-name (plist-get properties :modus-user-palette))
+             (user-palette (when (and with-user-palette
+                                      user-palette-name
+                                      (boundp user-palette-name))
+                             (symbol-value user-palette-name)))
+             (overrides-palette-name (plist-get properties :modus-overrides-palette))
+             (overrides-palette (when (and with-overrides
+                                           overrides-palette-name
+                                           (boundp overrides-palette-name))
+                                  (symbol-value overrides-palette-name)))
+             (all-overrides (when with-overrides
+                              (append overrides-palette modus-themes-common-palette-overrides))))
+        (append all-overrides user-palette core-palette)))))
 
 (defun modus-themes-get-theme-palette (&optional theme with-overrides with-user-palette)
   "Return palette value of active `modus-themes-get-themes' THEME.
@@ -4675,8 +4689,8 @@ If COLOR is unspecified, then return :box unspecified."
     `(TeX-error-description-tex-said ((,c :foreground ,info)))
     `(TeX-error-description-warning ((,c :foreground ,warning)))
 ;;;;; auto-dim-other-buffers
-    `(auto-dim-other-buffers-face ((,c :background ,bg-inactive)))
-    `(auto-dim-other-buffers-hide-face ((,c :foreground ,bg-inactive :background ,bg-inactive)))
+    `(auto-dim-other-buffers ((,c :background ,bg-inactive)))
+    `(auto-dim-other-buffers-hide ((,c :foreground ,bg-inactive :background ,bg-inactive)))
 ;;;;; avy
     `(avy-background-face ((,c :background ,bg-dim :foreground ,fg-dim :extend t)))
     `(avy-goto-char-timer-face ((,c :inherit (bold modus-themes-reset-soft) :background ,bg-search-lazy :foreground ,fg-search-lazy)))
@@ -7000,6 +7014,7 @@ If COLOR is unspecified, then return :box unspecified."
     `(vc-dir-file ((,c :foreground ,name)))
     `(vc-dir-header ((,c :inherit modus-themes-bold)))
     `(vc-dir-header-value ((,c :foreground ,string)))
+    `(vc-dir-key-binding-hint-label ((,c :inherit modus-themes-bold)))
     `(vc-dir-mark-indicator (( )))
     `(vc-dir-status-edited ((,c :inherit modus-themes-slant)))
     `(vc-dir-status-ignored ((,c :foreground ,fg-dim)))
@@ -7671,6 +7686,7 @@ rest come from CORE-PALETTE."
       (funcall push-mapping-fn 'bg-hl-line (if prefers-cool-p 'bg-cyan-nuanced 'bg-yellow-nuanced))
       (funcall push-mapping-fn 'bg-paren-match (if prefers-cool-p 'bg-green-intense 'bg-yellow-subtle))
       (funcall push-mapping-fn 'bg-paren-expression (if prefers-cool-p 'bg-green-nuanced 'bg-yellow-nuanced))
+      (funcall push-mapping-fn 'bg-popup 'bg-dim)
       (funcall push-mapping-fn 'bg-region 'bg-active)
       (funcall push-mapping-fn 'fg-region 'fg-main)
 
@@ -7717,21 +7733,26 @@ rest come from CORE-PALETTE."
       (funcall push-mapping-fn 'bg-tab-current 'bg-main)
       (funcall push-mapping-fn 'bg-tab-other 'bg-inactive)
 
+      (funcall push-mapping-fn 'bg-diff-context 'bg-dim)
+
       (funcall push-mapping-fn 'bg-added 'bg-green-subtle)
       (funcall push-mapping-fn 'bg-added-faint 'bg-green-nuanced)
       (funcall push-mapping-fn 'bg-added-refine 'bg-green-intense)
+      (funcall push-mapping-fn 'bg-added-fringe 'green)
       (funcall push-mapping-fn 'fg-added 'green-faint)
       (funcall push-mapping-fn 'fg-added-intense 'green-intense)
 
       (funcall push-mapping-fn 'bg-changed 'bg-yellow-subtle)
       (funcall push-mapping-fn 'bg-changed-faint 'bg-yellow-nuanced)
       (funcall push-mapping-fn 'bg-changed-refine 'bg-yellow-intense)
+      (funcall push-mapping-fn 'bg-changed-fringe 'yellow)
       (funcall push-mapping-fn 'fg-changed 'yellow-faint)
       (funcall push-mapping-fn 'fg-changed-intense 'yellow-intense)
 
       (funcall push-mapping-fn 'bg-removed 'bg-red-subtle)
       (funcall push-mapping-fn 'bg-removed-faint 'bg-red-nuanced)
       (funcall push-mapping-fn 'bg-removed-refine 'bg-red-intense)
+      (funcall push-mapping-fn 'bg-removed-fringe 'red)
       (funcall push-mapping-fn 'fg-removed 'red-faint)
       (funcall push-mapping-fn 'fg-removed-intense 'red-intense)
 
@@ -7754,6 +7775,36 @@ rest come from CORE-PALETTE."
       (funcall push-mapping-fn 'bg-term-white-bright (if bg-main-dark-p 'fg-main 'bg-main))
       (funcall push-mapping-fn 'fg-term-white (if bg-main-dark-p 'fg-dim 'bg-active))
       (funcall push-mapping-fn 'fg-term-white-bright (if bg-main-dark-p 'fg-main 'bg-main))
+
+      (funcall push-mapping-fn 'rust 'red-faint)
+      (funcall push-mapping-fn 'gold 'yellow-faint)
+      (funcall push-mapping-fn 'olive 'green-faint)
+      (funcall push-mapping-fn 'slate 'cyan-faint)
+      (funcall push-mapping-fn 'indigo 'blue-warmer)
+      (funcall push-mapping-fn 'maroon 'magenta-warmer)
+      (funcall push-mapping-fn 'pink 'magenta-faint)
+
+      (funcall push-mapping-fn 'bg-clay 'bg-red-nuanced)
+      (funcall push-mapping-fn 'fg-clay 'red-cooler)
+      (funcall push-mapping-fn 'bg-ochre 'bg-yellow-nuanced)
+      (funcall push-mapping-fn 'fg-ochre 'yellow-cooler)
+      (funcall push-mapping-fn 'bg-lavender 'bg-magenta-nuanced)
+      (funcall push-mapping-fn 'fg-lavender 'magenta-cooler)
+      (funcall push-mapping-fn 'bg-sage 'bg-green-nuanced)
+      (funcall push-mapping-fn 'fg-sage 'green-cooler)
+
+      (funcall push-mapping-fn 'bg-graph-red-0 (if bg-main-dark-p 'bg-red-intense 'bg-red-subtle))
+      (funcall push-mapping-fn 'bg-graph-red-1 (if bg-main-dark-p 'bg-red-subtle 'bg-red-intense))
+      (funcall push-mapping-fn 'bg-graph-green-0 (if bg-main-dark-p 'bg-green-intense 'bg-green-subtle))
+      (funcall push-mapping-fn 'bg-graph-green-1 (if bg-main-dark-p 'bg-green-subtle 'bg-green-intense))
+      (funcall push-mapping-fn 'bg-graph-yellow-0 (if bg-main-dark-p 'bg-yellow-intense 'bg-yellow-subtle))
+      (funcall push-mapping-fn 'bg-graph-yellow-1 (if bg-main-dark-p 'bg-yellow-subtle 'bg-yellow-intense))
+      (funcall push-mapping-fn 'bg-graph-blue-0 (if bg-main-dark-p 'bg-blue-intense 'bg-blue-subtle))
+      (funcall push-mapping-fn 'bg-graph-blue-1 (if bg-main-dark-p 'bg-blue-subtle 'bg-blue-intense))
+      (funcall push-mapping-fn 'bg-graph-magenta-0 (if bg-main-dark-p 'bg-magenta-intense 'bg-magenta-subtle))
+      (funcall push-mapping-fn 'bg-graph-magenta-1 (if bg-main-dark-p 'bg-magenta-subtle 'bg-magenta-intense))
+      (funcall push-mapping-fn 'bg-graph-cyan-0 (if bg-main-dark-p 'bg-cyan-intense 'bg-cyan-subtle))
+      (funcall push-mapping-fn 'bg-graph-cyan-1 (if bg-main-dark-p 'bg-cyan-subtle 'bg-cyan-intense))
 
       (let* ((new-colors (append base-colors derived-colors))
              (new-mappings (append mappings derived-mappings))

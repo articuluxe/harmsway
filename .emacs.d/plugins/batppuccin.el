@@ -1713,6 +1713,9 @@ Uses the WCAG 2.0 formula."
   '(batppuccin-mocha batppuccin-macchiato batppuccin-frappe batppuccin-latte)
   "List of all Batppuccin theme variants.")
 
+(defconst batppuccin--light-variants '(batppuccin-latte)
+  "Batppuccin variants that pair with a light macOS title bar.")
+
 ;;;###autoload
 (defun batppuccin-reload ()
   "Reload the current Batppuccin theme.
@@ -1737,11 +1740,25 @@ manually."
     (setq batppuccin--current choice)
     (run-hook-with-args 'batppuccin-after-load-hook choice)))
 
+(defun batppuccin--apply-ns-appearance (theme)
+  "Match the macOS title bar to THEME's brightness via `ns-appearance'.
+On macOS the GUI derives the title bar text color from the frame's
+`ns-appearance' parameter.  Without this, a light flavor like Latte
+renders near-white title bar text on a light background, which is
+unreadable (see issue #5).  Applied to existing frames and to
+`default-frame-alist' so new frames inherit it."
+  (when (or (featurep 'ns) (featurep 'mac))
+    (let ((appearance (if (memq theme batppuccin--light-variants) 'light 'dark)))
+      (setf (alist-get 'ns-appearance default-frame-alist) appearance)
+      (dolist (frame (frame-list))
+        (set-frame-parameter frame 'ns-appearance appearance)))))
+
 (defun batppuccin--set-current (theme)
   "Record THEME as the active Batppuccin theme.
 Called from `enable-theme-functions'."
   (when (memq theme batppuccin--variants)
-    (setq batppuccin--current theme)))
+    (setq batppuccin--current theme)
+    (batppuccin--apply-ns-appearance theme)))
 
 (defun batppuccin--clear-current (theme)
   "Clear the active Batppuccin theme if THEME is being disabled.

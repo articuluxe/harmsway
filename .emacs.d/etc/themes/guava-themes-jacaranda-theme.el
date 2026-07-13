@@ -62,7 +62,7 @@
       (jacaranda-fg                        "#000000")
       (jacaranda-bg                        "#e9d9f9")
       (jacaranda-highlight                 "#d5c5e5")
-      (jacaranda-shadow                    "#7f7f7f")
+      (jacaranda-shadow                    "#898989")
 
       (jacaranda-error                     "#FF0000")
       (jacaranda-warning                   "#ebb515")
@@ -160,9 +160,9 @@
 
    ;; line-number
    `(line-number ((,jacaranda-class (:foreground ,jacaranda-deep-blue :inherit default))))
-   `(line-number-current-line ((,jacaranda-class (:foreground ,jacaranda-fg :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,jacaranda-class (:background ,jacaranda-antarctic-blue :inherit line-number))))
-   `(line-number-major-tick ((,jacaranda-class (:background ,jacaranda-purple :inherit line-number))))
+   `(line-number-current-line ((,jacaranda-class (:foreground ,jacaranda-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,jacaranda-class (:background ,jacaranda-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,jacaranda-class (:background ,jacaranda-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line))))
@@ -276,6 +276,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,jacaranda-class (:inherit isearch))))
    `(match ((,jacaranda-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,jacaranda-class (:foreground ,jacaranda-white :background ,jacaranda-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

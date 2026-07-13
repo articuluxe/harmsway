@@ -118,7 +118,8 @@ Users of HiDPI screens might like to set it to 2."
   (defvar x-fast-protocol-requests)
   (let* ((x-wait-for-event-timeout (and (>= emacs-major-version 31)
                                         ;; debbugs#80662
-                                        x-wait-for-event-timeout))
+                                        (bound-and-true-p
+                                         x-wait-for-event-timeout)))
          (before-make-frame-hook)
          (after-make-frame-functions)
          (x-fast-protocol-requests t)
@@ -174,7 +175,9 @@ Users of HiDPI screens might like to set it to 2."
   (when (and (frame-live-p company-childframe--frame)
              (frame-visible-p company-childframe--frame))
     ;; PGTK/NS/W32 protocols can update the display atomically.
-    (when (eq window-system 'x)
+    (when (and (eq window-system 'x)
+               ;; https://debbugs.gnu.org/80961
+               (< emacs-major-version 32))
       ;; Seems to help avoid the final flicker - probably by keeping the parent's
       ;; display matrix up to date (so it can repaint on Expose immediately).
       (redisplay))

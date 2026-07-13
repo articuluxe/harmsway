@@ -102,7 +102,7 @@
             (let ((tag (replace-regexp-in-string
                         (rx bos "v") ""
                         (shell-command-to-string "git describe --tags")))
-                  (pattern (rx (group (+ any)) eol)))
+                  (pattern (rx (group (+ nonl)) eol)))
               (if (string-match pattern tag)
                   (match-string 0 tag)
                 (error "Faild to obtain git tag"))))
@@ -470,6 +470,12 @@ any) is a brace list.
 PHP does not have an C-like \"enum\" keyword."
   php nil)
 
+;; cc-mode renamed `c-after-brace-list-decl-kwds' to `c-after-enum-list-kwds';
+;; keep the old name defined so cc-langs' transitional lookup stays quiet where
+;; the rename landed (see `c-after-enum-list-key' in cc-langs.el).
+(c-lang-defconst c-after-brace-list-decl-kwds
+  php nil)
+
 (c-lang-defconst c-typeless-decl-kwds
   php (append (c-lang-const c-class-decl-kwds php) '("function" "const")))
 
@@ -674,6 +680,57 @@ a backward search limit."
       (when (looking-at-p (eval-when-compile (rx symbol-start "match" symbol-end)))
         (cons (point) t))))
    (t nil)))
+
+(defun php-mode--anonymous-function-brace-p (pos)
+  "Return non-nil when the opening brace at POS starts a closure body.
+
+POS must be the position of a `{'.  A closure is an anonymous
+`function (...) [use (...)] [: type] {' expression; named function
+declarations and other constructs (e.g. `match', `if') return nil."
+  (save-excursion
+    (goto-char pos)
+    (c-backward-syntactic-ws)
+    ;; Step back over an optional return type declaration `): Type {' so
+    ;; that point lands just after the parameter (or `use') list's `)'.
+    (unless (eq (char-before) ?\))
+      (let ((colon (save-excursion
+                     (skip-chars-backward "^):;{}(" (point-min))
+                     (and (eq (char-before) ?:) (1- (point))))))
+        (when colon
+          (goto-char colon)
+          (c-backward-syntactic-ws))))
+    ;; Walk backwards over the `)...(' list(s): the parameter list, plus an
+    ;; optional `use (...)' clause, until we reach `function' or give up.
+    (let ((result nil) (continue t))
+      (while (and continue (eq (char-before) ?\)))
+        (condition-case nil
+            (backward-list)
+          (error (setq continue nil)))
+        (when continue
+          (c-backward-syntactic-ws)
+          (if (zerop (c-backward-token-2))
+              (cond
+               ((looking-at-p "\\_<function\\_>") (setq result t continue nil))
+               ((looking-at-p "\\_<use\\_>") (c-backward-syntactic-ws))
+               (t (setq continue nil)))
+            (setq continue nil))))
+      result)))
+
+(defun php-c-looking-at-statement-block (orig-fun &rest args)
+  "Treat a closure body as a statement block around `c-looking-at-statement-block'.
+
+Emacs' CC Mode >= 31 (the change for bug#19867) fails to recognize an
+anonymous function body whose first line is a comment as a statement
+block, and reports it as a brace list, mis-indenting both the body and
+its closing brace.  When point is at the opening brace of such a closure,
+return non-nil; otherwise fall back to ORIG-FUN with ARGS.
+
+A closure body is always a statement block, so this is also correct on
+Emacs versions unaffected by the bug."
+  (or (and (derived-mode-p 'php-mode)
+           (eq (char-after) ?\{)
+           (php-mode--anonymous-function-brace-p (point)))
+      (apply orig-fun args)))
 
 (c-add-style
  "php"
@@ -1179,13 +1236,19 @@ After setting the stylevars run hook `php-mode-STYLENAME-hook'."
   (setq-local comment-end "")
   (setq-local page-delimiter php-mode-page-delimiter)
 
-  (setq-local font-lock-string-face 'php-string)
-  (setq-local font-lock-keyword-face 'php-keyword)
-  (setq-local font-lock-builtin-face 'php-builtin)
-  (setq-local c-preprocessor-face-name 'php-php-tag)
-  (setq-local font-lock-function-name-face 'php-function-name)
-  (setq-local font-lock-variable-name-face 'php-variable-name)
-  (setq-local font-lock-constant-face 'php-constant)
+  (with-suppressed-warnings ((obsolete font-lock-string-face
+                                       font-lock-keyword-face
+                                       font-lock-builtin-face
+                                       font-lock-function-name-face
+                                       font-lock-variable-name-face
+                                       font-lock-constant-face))
+    (setq-local font-lock-string-face 'php-string)
+    (setq-local font-lock-keyword-face 'php-keyword)
+    (setq-local font-lock-builtin-face 'php-builtin)
+    (setq-local c-preprocessor-face-name 'php-php-tag)
+    (setq-local font-lock-function-name-face 'php-function-name)
+    (setq-local font-lock-variable-name-face 'php-variable-name)
+    (setq-local font-lock-constant-face 'php-constant))
 
   (setq-local syntax-propertize-function #'php-syntax-propertize-function)
   (add-hook 'syntax-propertize-extend-region-functions
@@ -1244,6 +1307,9 @@ After setting the stylevars run hook `php-mode-STYLENAME-hook'."
 
   (advice-add 'c-looking-at-or-maybe-in-bracelist
               :around 'php-c-looking-at-or-maybe-in-bracelist)
+  (when (fboundp 'c-looking-at-statement-block)
+    (advice-add 'c-looking-at-statement-block
+                :around 'php-c-looking-at-statement-block))
   (advice-add 'fixup-whitespace :after #'php-mode--fixup-whitespace-after)
 
   (advice-add 'acm-backend-tabnine-candidate-expand
@@ -1450,7 +1516,7 @@ for \\[find-tag] (which see)."
    ;;   already fontified by another pattern. Note that using OVERRIDE
    ;;   is usually overkill.
    `(
-     ("\\<\\(@\\)" 1 'php-errorcontrol-op)
+     (php-mode--error-control-op-font-lock-find 0 'php-errorcontrol-op t)
      ;; import function statement
      (,(rx symbol-start (group "use" (+ (syntax whitespace)) "function")
            (+ (syntax whitespace)))
@@ -1551,6 +1617,27 @@ The output will appear in the buffer *PHP*."
 
 (defconst php-string-interpolated-variable-regexp
   "{\\$[^}\n\\\\]*\\(?:\\\\.[^}\n\\\\]*\\)*}\\|\\${\\sw+}\\|\\$\\sw+")
+
+(defun php-mode--error-control-op-font-lock-find (limit)
+  "Font-lock matcher for the error-control operator `@' up to LIMIT.
+
+Match a single `@' that is used as the error-control operator, skipping
+occurrences inside strings or comments and the `@new' keyword (which CC
+Mode fontifies as a keyword).  CC Mode >= 31 fontifies a bare `@' as a
+keyword because `@new' is registered in `c-type-list-kwds', so this
+matcher is set to override that face."
+  (let (found)
+    (while (and (not found)
+                (re-search-forward "@" limit t))
+      ;; `php-in-string-or-comment-p' calls `syntax-ppss', which may run
+      ;; `syntax-propertize' and clobber the match data, so guard it to
+      ;; keep the `@' match for both the `@new' check below and font-lock.
+      (unless (or (save-match-data (php-in-string-or-comment-p))
+                  (save-excursion
+                    (goto-char (match-beginning 0))
+                    (looking-at-p "@new\\_>")))
+        (setq found t)))
+    found))
 
 (defun php-mode--string-interpolated-variable-font-lock-find (limit)
   "Apply text-property to LIMIT for string interpolation by font-lock."

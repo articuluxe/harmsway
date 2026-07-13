@@ -2954,7 +2954,7 @@ It contains a single name node referring to the bound name."
                                                              module-id
                                                              metadata-p)))
   "AST node for the from clause in an import or export statement.
-E.g. from \\='my/module\\='. It can refere to either an external module, or to the
+E.g. from \\='my/module\\='. It can refer to either an external module, or to the
 modules metadata itself."
   module-id ; string containing the module specifier.
   metadata-p) ; true if this clause refers to the module's metadata
@@ -12453,7 +12453,7 @@ Show the hidden text with \\[js2-mode-show-element]."
               (setq beg (js2-node-abs-pos body)
                     end (+ beg (js2-node-len body)))
               (js2-mode-flag-region (1+ beg) (1- end) 'hide))
-          (message "No collapsable element found at point"))))))))
+          (message "No collapsible element found at point"))))))))
 
 (defun js2-mode-show-element ()
   "Show the hidden element at current point."

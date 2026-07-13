@@ -161,9 +161,9 @@
 
    ;; line-number
    `(line-number ((,solanum-class (:foreground ,solanum-fg :inherit default))))
-   `(line-number-current-line ((,solanum-class (:foreground ,solanum-light-green :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,solanum-class (:background ,solanum-alt-purple :inherit line-number))))
-   `(line-number-major-tick ((,solanum-class (:background ,solanum-purple-blue :inherit line-number))))
+   `(line-number-current-line ((,solanum-class (:foreground ,solanum-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,solanum-class (:background ,solanum-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,solanum-class (:background ,solanum-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line))))
@@ -277,6 +277,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,solanum-class (:inherit isearch))))
    `(match ((,solanum-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,solanum-class (:foreground ,solanum-white :background ,solanum-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

@@ -161,9 +161,9 @@
 
    ;; line-number
    `(line-number ((,eucalyptus-class (:foreground ,eucalyptus-fg :inherit default))))
-   `(line-number-current-line ((,eucalyptus-class (:foreground ,eucalyptus-deep-blue :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,eucalyptus-class (:background ,eucalyptus-green :inherit line-number))))
-   `(line-number-major-tick ((,eucalyptus-class (:background ,eucalyptus-gray-green :inherit line-number))))
+   `(line-number-current-line ((,eucalyptus-class (:foreground ,eucalyptus-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,eucalyptus-class (:background ,eucalyptus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,eucalyptus-class (:background ,eucalyptus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line))))
@@ -277,6 +277,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,eucalyptus-class (:inherit isearch))))
    `(match ((,eucalyptus-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,eucalyptus-class (:foreground ,eucalyptus-white :background ,eucalyptus-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

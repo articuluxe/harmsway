@@ -5,7 +5,7 @@
 ;; Author: Protesilaos <info@protesilaos.com>
 ;; Maintainer: Protesilaos <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 1.1.0
+;; Version: 1.2.0
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -50,6 +50,7 @@
     doric-marble
     doric-oak
     doric-siren
+    doric-tiger
     doric-wind)
   "Light themes.")
 
@@ -57,6 +58,7 @@
   '(doric-copper
     doric-dark
     doric-fire
+    doric-lion
     doric-magma
     doric-mermaid
     doric-obsidian
@@ -128,8 +130,7 @@ This is used by the commands `doric-themes-toggle',
 (defun doric-themes--enable-themes ()
   "Enable the Doric themes."
   (dolist (theme doric-themes-collection)
-    (unless (memq theme custom-known-themes)
-      (load-theme theme :no-confirm :no-enable))))
+    (load-theme theme :no-confirm :no-enable)))
 
 (defun doric-themes--list-known-themes ()
   "Return list of `custom-known-themes' matching `doric-themes--doric-p'."
@@ -636,12 +637,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     org-time-grid
     org-upcoming-deadline
     org-upcoming-distant-deadline
-    package-status-available
-    package-status-built-in
-    package-status-dependency
-    package-status-external
-    package-status-from-source
-    package-status-new
     proced-executable
     proced-interruptible-sleep-status-code
     proced-mem
@@ -794,13 +789,18 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     mouse-drag-and-drop-region
     next-error-message
     nobreak-hyphen
-    nobreak-space
     org-archived
     org-default
     org-document-info
     org-mode-line-clock
     org-scheduled
     org-scheduled-today
+    package-status-available
+    package-status-built-in
+    package-status-dependency
+    package-status-external
+    package-status-from-source
+    package-status-new
     proced-cpu
     proced-mark
     proced-memory-low-usage
@@ -955,6 +955,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     trashed-directory
     vc-conflict-state
     vc-dir-header
+    vc-dir-key-binding-hint-label
     vc-dir-status-warning
     vc-locked-state
     vc-missing-state
@@ -1209,7 +1210,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 
 (defconst doric-themes-underline-emphasis-subtle-faces
   '(eglot-highlight-symbol-face
-    elisp-variable-at-point))
+    elisp-variable-at-point
+    nobreak-space))
 
 (defconst doric-themes-underline-link-faces
   '(browse-url-button

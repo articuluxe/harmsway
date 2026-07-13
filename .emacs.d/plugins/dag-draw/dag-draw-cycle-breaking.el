@@ -193,91 +193,9 @@ Returns nil."
       (ht-set! new-attrs 'original-direction (cons from-node to-node))
       (dag-draw-add-edge graph to-node from-node weight label new-attrs))))
 
-(defun dag-draw--count-cycle-participation (graph)
-  "Count how many cycles each edge participates in.
 
-GRAPH is a `dag-draw-graph' structure to analyze.
 
-Implements GKNV Section 2.1 heuristic for cycle-breaking.
-Analyzes strongly connected components to count cycle membership.
 
-Returns hash table mapping `dag-draw-edge' structures to integers
-representing the number of cycles each edge participates in."
-  (let ((participation (ht-create)))
-    ;; Initialize all edges with zero participation
-    (dolist (edge (dag-draw-graph-edges graph))
-      (ht-set! participation edge 0))
-
-    ;; For each strongly connected component, count cycles
-    (let ((sccs (dag-draw--find-strongly-connected-components graph)))
-      (dolist (scc sccs)
-        (when (> (length scc) 1)  ; Non-trivial SCC
-          (dag-draw--count-cycles-in-scc graph scc participation))))
-
-    participation))
-
-(defun dag-draw--find-strongly-connected-components (graph)
-  "Find strongly connected components in GRAPH.
-
-GRAPH is a `dag-draw-graph' structure to analyze.
-
-Simplified implementation of Tarjan's algorithm for finding SCCs.
-
-Returns list of components, where each component is a list of node IDs."
-  ;; Simplified implementation - return list of node lists
-  (let ((visited (ht-create))
-        (components '()))
-
-    (ht-each (lambda (node-id _node)
-               (unless (ht-get visited node-id)
-                 (let ((component (dag-draw--dfs-component graph node-id visited)))
-                   (when component
-                     (push component components)))))
-             (dag-draw-graph-nodes graph))
-    components))
-
-(defun dag-draw--dfs-component (graph start visited)
-  "Find connected component starting from START node using DFS.
-
-GRAPH is a `dag-draw-graph' structure.
-START is a symbol representing the starting node ID.
-VISITED is a hash table tracking which nodes have been visited.
-
-Modifies VISITED in place.
-Returns list of node IDs in the connected component."
-  (let ((component '())
-        (stack (list start)))
-    (while stack
-      (let ((node (pop stack)))
-        (unless (ht-get visited node)
-          (ht-set! visited node t)
-          (push node component)
-          ;; Add neighbors to stack
-          (dolist (edge (dag-draw-get-edges-from graph node))
-            (let ((neighbor (dag-draw-edge-to-node edge)))
-              (unless (ht-get visited neighbor)
-                (push neighbor stack)))))))
-    component))
-
-(defun dag-draw--count-cycles-in-scc (graph scc participation)
-  "Count cycles within a strongly connected component.
-
-GRAPH is a `dag-draw-graph' structure.
-SCC is a list of node IDs forming a strongly connected component.
-PARTICIPATION is a hash table mapping edges to cycle participation counts.
-
-For each edge within the SCC, counts how many cycles it participates in.
-
-Modifies PARTICIPATION hash table in place.
-Returns nil."
-  ;; For each edge in the SCC, perform DFS to count cycles it participates in
-  (dolist (edge (dag-draw-graph-edges graph))
-    (let ((from (dag-draw-edge-from-node edge))
-          (to (dag-draw-edge-to-node edge)))
-      (when (and (member from scc) (member to scc))
-        ;; Edge is within SCC, count cycles through it
-        (let ((cycle-count (dag-draw--count-cycles-through-edge graph edge scc)))
-          (ht-set! participation edge cycle-count))))))
 
 (defun dag-draw--find-source-sink-nodes (graph)
   "Find source and sink nodes per GKNV Section 2.1.
@@ -368,6 +286,19 @@ Returns t if any cycles found, nil otherwise."
         (setq has-cycle (dag-draw--simple-has-cycle graph visited rec-stack node-id))))
 
     has-cycle))
+
+(defun dag-draw-detect-cycles (graph)
+  "Return the back-edges that create cycles in GRAPH.
+
+GRAPH is a `dag-draw-graph' structure to check.
+
+Uses the GKNV Section 2.1 DFS edge classification: back-edges are the edges
+that point to an ancestor and therefore close a cycle.  This is the diagnostic
+companion to `dag-draw-simple-has-cycles' \(which only returns t/nil): it tells
+you *which* edges to remove to make GRAPH acyclic.
+
+Returns a list of `dag-draw-edge' structures (empty when GRAPH is acyclic)."
+  (ht-get (dag-draw--classify-edges-gknv graph) 'back-edges))
 
 
 (provide 'dag-draw-cycle-breaking)

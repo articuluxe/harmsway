@@ -68,91 +68,10 @@
   to-node     ; Target node ID
   weight      ; Original edge weight ω(e) from GKNV paper
   cut-value   ; Cut value for network simplex
-  is-tight)   ; Whether edge is tight (slack = 0)
-
-;;; Spanning Tree Construction (GKNV Figure 2-2)
-
-(defun dag-draw--assign-ranks-from-root (graph spanning-tree node ranking)
-  "Recursively assign ranks starting from NODE using tree structure.
-Argument GRAPH .
-Argument SPANNING-TREE ."
-  (let ((node-rank (ht-get ranking node))
-        (children (ht-get (dag-draw-spanning-tree-children spanning-tree) node)))
-
-    ;; Assign rank to each child based on edge constraints
-    (dolist (child children)
-      (unless (ht-get ranking child)  ; Don't reassign already ranked nodes
-        ;; Find the edge from node to child to get minimum length
-        (let* ((edges (dag-draw-get-edges-from graph node))
-               (edge-to-child (cl-find-if (lambda (e)
-                                            (eq (dag-draw-edge-to-node e) child))
-                                          edges))
-               ;; GKNV δ(e) - minimum edge length constraint (Section 2, line 356)
-               (δ (if edge-to-child
-                      (dag-draw-edge-δ edge-to-child)
-                    1))) ; Default δ(e) = 1
-
-          ;; Child rank = parent rank + δ(e) per GKNV Section 2
-          (ht-set! ranking child (+ node-rank δ))
-
-          ;; Recurse to child's children
-          (dag-draw--assign-ranks-from-root graph spanning-tree child ranking))))))
+  is-tight)   
 
 
 
-;;; Spanning Tree Navigation Functions
-
-
-(defun dag-draw--spanning-tree-to-ranking (graph spanning-tree)
-  "Convert spanning tree to node ranking (GKNV lines 486-499).
-
-This implements the core GKNV algorithm: `A spanning tree induces
-a ranking'.
-Algorithm:
-1. Pick initial node and assign it rank 0
-2. For each node adjacent in tree to ranked node, assign rank
-   ± minimum edge length
-3. Continue until all nodes are ranked
-
-Returns hash table: node-id → rank
-Argument GRAPH .
-Argument SPANNING-TREE ."
-  (let ((ranking (ht-create))
-        (visited (ht-create))
-        (roots (dag-draw-spanning-tree-roots spanning-tree)))
-
-    ;; Process each connected component (each has its own root)
-    (dolist (root roots)
-      ;; Start each component at rank 0
-      (ht-set! ranking root 0)
-      (dag-draw--assign-ranks-from-tree-node graph spanning-tree root ranking visited))
-
-    ranking))
-
-(defun dag-draw--assign-ranks-from-tree-node (graph spanning-tree node ranking visited)
-  "Recursively assign ranks starting from NODE using spanning tree relationships.
-Argument GRAPH .
-Argument SPANNING-TREE ."
-  (ht-set! visited node t)
-  (let ((node-rank (ht-get ranking node))
-        (children-map (dag-draw-spanning-tree-children spanning-tree)))
-
-    ;; Process all children in spanning tree
-    (dolist (child (ht-get children-map node))
-      (unless (ht-get visited child)
-        ;; Find the edge to determine minimum length (δ value)
-        (let ((edge (dag-draw--find-graph-edge graph node child)))
-          (if edge
-              ;; Child rank = parent rank + minimum edge length
-              ;; GKNV δ(e) - minimum edge length constraint (Section 2, line 356)
-              (let ((δ (dag-draw-edge-δ edge)))
-                ;; Child rank = parent rank + δ(e) per GKNV Section 2
-                (ht-set! ranking child (+ node-rank δ)))
-            ;; Fallback: use default minimum length of 1
-            (ht-set! ranking child (+ node-rank 1))))
-
-        ;; Recurse to child's children
-        (dag-draw--assign-ranks-from-tree-node graph spanning-tree child ranking visited)))))
 
 (defun dag-draw--find-graph-edge (graph from-node to-node)
   "Find edge in GRAPH from FROM-NODE to TO-NODE.
@@ -909,29 +828,7 @@ Argument GRAPH ."
 
 
 
-(defun dag-draw--get-edge-cut-value (edge _tree-info)
-  "Get cut value for a tree EDGE using simplified GKNV approach.
-Argument TREE-INFO ."
-  ;; Simplified cut value calculation based on edge weight and tree structure
-  ;; In a full implementation, this would compute the actual cut value
-  ;; which is the sum of weights of edges crossing the cut defined by removing this edge
-
-  (let ((edge-weight (dag-draw-edge-weight edge))
-        (from-node (dag-draw-edge-from-node edge))
-        (to-node (dag-draw-edge-to-node edge)))
-
-    ;; Simplified heuristic: edges with higher weights should have negative cut values
-    ;; to encourage optimization, while auxiliary edges should have positive values
-    (cond
-     ;; Auxiliary edges should be removed (negative cut values)
-     ((or (eq from-node 'aux-source) (eq to-node 'aux-sink))
-      (- edge-weight))
-     ;; Original graph edges should be optimized based on weight
-     ((> edge-weight 1)
-      (- (* edge-weight 0.5)))  ; Weighted edges get negative cut values for optimization
-     ;; Unit weight edges
-     (t
-      0.1))))  ; Small positive value to eventually converge
+  ; Small positive value to eventually converge
 
 ;;; Public Interface
 
@@ -959,30 +856,6 @@ Returns the modified GRAPH with rank assignments on all nodes."
 
   graph)
 
-;;; Network Simplex Core Algorithm Functions
-
-
-
-
-
-(defun dag-draw--recalculate-cut-values (spanning-tree graph)
-  "Recalculate cut values for all edges in spanning tree after exchange.
-This implements cut value calculation as described in GKNV Section 2.3.
-Argument SPANNING-TREE .
-Argument GRAPH ."
-  ;; Cut value calculation based on GKNV: favor high-weight edges in spanning tree
-  ;; Cut value = change in objective function if edge is removed
-  ;; Negative values = edge should stay (good for objective)
-  ;; Positive values = edge should leave (bad for objective)
-  (dolist (tree-edge (dag-draw-spanning-tree-edges spanning-tree))
-    (let* ((from-node (dag-draw-tree-edge-from-node tree-edge))
-           (to-node (dag-draw-tree-edge-to-node tree-edge))
-           (graph-edge (dag-draw--find-graph-edge graph from-node to-node))
-           (weight (if graph-edge (dag-draw-edge-weight graph-edge) 1)))
-      ;; GKNV cut value formula: high weight edges get negative values (stay in tree)
-      ;; Low weight edges get positive values (candidates for removal)
-      ;; This creates optimization opportunities for weighted graphs
-      (setf (dag-draw-tree-edge-cut-value tree-edge) (- 3 weight)))))
 
 
 (defun dag-draw--balance-ranks (graph)
@@ -996,47 +869,6 @@ Argument GRAPH ."
 
 
 
-;;; TDD Enhanced Cycle Breaking and Virtual Node Management
-
-
-
-(defun dag-draw--tarjan-strongconnect (graph node-id index-ref stack indices lowlinks on-stack components)
-  "Tarjan's strongly connected components algorithm for a single node.
-INDEX-REF is a list containing the current index value for modification.
-Argument GRAPH .
-Argument NODE-ID ."
-  ;; Set the depth index for node-id to the smallest unused index
-  (let ((current-index (car index-ref)))
-    (ht-set! indices node-id current-index)
-    (ht-set! lowlinks node-id current-index)
-    (setcar index-ref (1+ current-index))
-    (push node-id stack)
-    (ht-set! on-stack node-id t)
-
-    ;; Consider successors of node-id
-    (dolist (successor (dag-draw-get-successors graph node-id))
-      (cond
-       ((not (ht-get indices successor))
-        ;; Successor has not yet been visited; recurse on it
-        (dag-draw--tarjan-strongconnect
-         graph successor index-ref stack indices lowlinks on-stack components)
-        (ht-set! lowlinks node-id (min (ht-get lowlinks node-id)
-                                       (ht-get lowlinks successor))))
-       ((ht-get on-stack successor)
-        ;; Successor is in stack and hence in the current SCC
-        (ht-set! lowlinks node-id (min (ht-get lowlinks node-id)
-                                       (ht-get indices successor))))))
-
-    ;; If node-id is a root node, pop the stack and create SCC
-    (when (= (ht-get lowlinks node-id) (ht-get indices node-id))
-      (let ((component '()))
-        (let ((w nil))
-          (while (not (eq w node-id))
-            (setq w (pop stack))
-            (ht-set! on-stack w nil)
-            (push w component)))
-        (when component
-          (push component components))))))
 
 
 (defun dag-draw--count-cycles-through-edge (graph edge scc-nodes)
@@ -1086,76 +918,9 @@ Argument GRAPH ."
     (ht-remove! visited current)))
 
 
-(defun dag-draw--find-edges-in-cycles (graph)
-  "Find all edges that participate in cycles using DFS.
-Argument GRAPH ."
-  (let ((cycle-edges-ref (list '()))  ; Use list reference for mutability
-        (visited (ht-create))
-        (rec-stack (ht-create)))
 
-    ;; DFS from each unvisited node to find back edges (which indicate cycles)
-    (ht-each (lambda (node-id _node)
-               (unless (ht-get visited node-id)
-                 (dag-draw--dfs-find-cycle-edges graph node-id visited rec-stack cycle-edges-ref)))
-             (dag-draw-graph-nodes graph))
 
-    (car cycle-edges-ref)))
 
-(defun dag-draw--dfs-find-cycle-edges (graph node-id visited rec-stack cycle-edges-ref)
-  "DFS to find edges that are part of cycles (back edges).
-GRAPH is a `dag-draw-graph' structure to search.
-NODE-ID is the current node being visited.
-VISITED is a hash table tracking visited nodes.
-REC-STACK is a hash table tracking the current recursion stack.
-CYCLE-EDGES-REF is a list reference for accumulating cycle edges."
-  (ht-set! visited node-id t)
-  (ht-set! rec-stack node-id t)
-
-  ;; Check all outgoing edges
-  (dolist (edge (dag-draw-get-edges-from graph node-id))
-    (let ((target (dag-draw-edge-to-node edge)))
-      (cond
-       ((not (ht-get visited target))
-        ;; Tree edge - recurse
-        (dag-draw--dfs-find-cycle-edges graph target visited rec-stack cycle-edges-ref))
-       ((ht-get rec-stack target)
-        ;; Back edge - this edge is in a cycle
-        (push edge (car cycle-edges-ref))))))
-
-  ;; Remove from recursion stack when done with this node
-  (ht-set! rec-stack node-id nil))
-
-(defun dag-draw--find-minimum-weight-edge-in-list (edges)
-  "Find the edge with minimum weight from a list of EDGES."
-  (let ((min-edge nil)
-        (min-weight most-positive-fixnum))
-
-    (dolist (edge edges)
-      (when (< (dag-draw-edge-weight edge) min-weight)
-        (setq min-weight (dag-draw-edge-weight edge))
-        (setq min-edge edge)))
-
-    min-edge))
-
-;;; Network Simplex Core Algorithm Functions
-
-(defun dag-draw--compute-cut-values (_graph tree-info)
-  "Compute cut values for all tree edges.
-Returns hash table mapping tree edges to their cut values.
-Argument GRAPH .
-Argument TREE-INFO ."
-  (let ((cut-values (ht-create))
-        (tree-edges (ht-get tree-info 'tree-edges)))
-
-    ;; For each tree edge, compute its cut value
-    ;; (This is a simplified implementation - the full algorithm is more complex)
-    (dolist (edge tree-edges)
-      (let ((_from-node (dag-draw-edge-from-node edge))
-            (_to-node (dag-draw-edge-to-node edge)))
-        ;; Simple cut value calculation (weight of edge)
-        (ht-set! cut-values edge (dag-draw-edge-weight edge))))
-
-    cut-values))
 
 (defun dag-draw--calculate-tree-cut-values (tree-info graph)
   "Calculate cut values for all tree edges.

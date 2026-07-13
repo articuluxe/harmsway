@@ -162,9 +162,9 @@
 
    ;; line-number
    `(line-number ((,prunus-class (:foreground ,prunus-purple-red :inherit default))))
-   `(line-number-current-line ((,prunus-class (:foreground ,prunus-fg :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,prunus-class (:background ,prunus-light-pink :inherit line-number))))
-   `(line-number-major-tick ((,prunus-class (:background ,prunus-pink :inherit line-number))))
+   `(line-number-current-line ((,prunus-class (:foreground ,prunus-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,prunus-class (:background ,prunus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,prunus-class (:background ,prunus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line))))
@@ -278,6 +278,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,prunus-class (:inherit isearch))))
    `(match ((,prunus-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,prunus-class (:foreground ,prunus-white :background ,prunus-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

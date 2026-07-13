@@ -63,7 +63,7 @@
       (pyrus-fg                        "#780000")
       (pyrus-bg                        "#f9fefd")
       (pyrus-highlight                 "#e5eae9")
-      (pyrus-shadow                    "#7f7f7f")
+      (pyrus-shadow                    "#898989")
 
       (pyrus-error                     "#ff0000")
       (pyrus-warning                   "#ffd200")
@@ -161,9 +161,9 @@
 
    ;; line-number
    `(line-number ((,pyrus-class (:foreground ,pyrus-fg :inherit default))))
-   `(line-number-current-line ((,pyrus-class (:foreground ,pyrus-black :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,pyrus-class (:background ,pyrus-light-green :inherit line-number))))
-   `(line-number-major-tick ((,pyrus-class (:background ,pyrus-orange-pink :inherit line-number))))
+   `(line-number-current-line ((,pyrus-class (:foreground ,pyrus-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,pyrus-class (:background ,pyrus-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,pyrus-class (:background ,pyrus-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line))))
@@ -277,6 +277,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,pyrus-class (:inherit isearch))))
    `(match ((,pyrus-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,pyrus-class (:foreground ,pyrus-white :background ,pyrus-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

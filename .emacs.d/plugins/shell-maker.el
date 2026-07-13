@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.93.1
+;; Version: 0.93.5
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.93.1")
+(defconst shell-maker-version "0.93.5")
 
 (require 'comint)
 (require 'goto-addr)
@@ -345,6 +345,26 @@ Use ON-OUTPUT function to monitor output text."
   (when on-output
     (funcall on-output reply)))
 
+(defun shell-maker--freeze-submitted-input ()
+  "Make the just-submitted input read-only.
+
+Meant to run right after `comint-send-input', while
+`comint-last-input-start' and `comint-last-input-end' still bracket the
+input that was just committed.
+
+`front-sticky' blocks inserting immediately before the input; keeping
+`read-only' out of `rear-nonsticky' (rear-sticky, the default) blocks
+appending immediately after it.  This mirrors the read-only output
+shell-maker already inserts, so a submitted prompt becomes as immutable
+as the agent's reply.  The live prompt stays editable independently, via
+the prompt marker's own `rear-nonsticky' (see `shell-maker--output-filter')."
+  (when (and comint-last-input-start comint-last-input-end
+             (< (marker-position comint-last-input-start)
+                (marker-position comint-last-input-end)))
+    (let ((inhibit-read-only t))
+      (add-text-properties comint-last-input-start comint-last-input-end
+                           '(read-only t front-sticky (read-only))))))
+
 (cl-defun shell-maker-submit (&key input on-output on-finished)
   "Submit current input.
 
@@ -368,8 +388,7 @@ Of the form:
   (interactive)
   (unless (eq major-mode (shell-maker-major-mode shell-maker--config))
     (user-error "Not in a shell"))
-  (unless (shell-maker-point-at-last-prompt-p)
-    (goto-char (point-max)))
+  (goto-char (point-max))
   (let* ((shell-buffer (shell-maker-buffer shell-maker--config))
          (called-interactively (called-interactively-p #'interactive))
          (shell-maker--input))
@@ -378,6 +397,7 @@ Of the form:
         (goto-char (point-max))
         (insert input)))
     (comint-send-input) ;; Sets shell-maker--input
+    (shell-maker--freeze-submitted-input)
     (when (shell-maker--clear-input-for-execution :input shell-maker--input
                                                   :on-output on-output)
       (if called-interactively
@@ -1188,9 +1208,9 @@ ERROR-CALLBACK accordingly."
                                   output
                                 (funcall extract-response output))
                               nil)
-                   (if-let ((error (if (string-empty-p (string-trim output))
-                                       output
-                                     (funcall extract-response output))))
+                   (if-let* ((error (if (string-empty-p (string-trim output))
+                                        output
+                                      (funcall extract-response output))))
                        (funcall error-callback error)
                      (funcall error-callback output)))))
            (kill-buffer output-buffer)
@@ -1378,10 +1398,10 @@ For example, with prompt at positions 100-113:
   (shell-maker--clip-output-range 50 200) => ((:start . 50) (:end . 100))
   (shell-maker--clip-output-range 50 80)  => ((:start . 50) (:end . 80))
   (shell-maker--clip-output-range 50 50)  => nil"
-  (when-let ((prompt-start (and comint-last-prompt
-                               (marker-position (car comint-last-prompt))))
-             (prompt-end (marker-position (cdr comint-last-prompt)))
-             ((< prompt-start prompt-end)))
+  (when-let* ((prompt-start (and comint-last-prompt
+                                 (marker-position (car comint-last-prompt))))
+              (prompt-end (marker-position (cdr comint-last-prompt)))
+              ((< prompt-start prompt-end)))
     (setq end (min end prompt-start)))
   (when (< start end)
     (list (cons :start start)
@@ -1425,10 +1445,10 @@ the window snapping back to the bottom while the user is reading."
            (when (and proc (> point (process-mark proc)))
              (set-marker (process-mark proc) point))
            (setq new-location point))))
-     (when-let (((not comint-use-prompt-regexp))
-                (safe-range (shell-maker--clip-output-range
-                             (marker-position comint-last-output-start)
-                             new-location)))
+     (when-let* (((not comint-use-prompt-regexp))
+                 (safe-range (shell-maker--clip-output-range
+                              (marker-position comint-last-output-start)
+                              new-location)))
        (with-silent-modifications
          (add-text-properties (map-elt safe-range :start) (map-elt safe-range :end)
                               `(read-only t
@@ -1452,7 +1472,7 @@ the window snapping back to the bottom while the user is reading."
       (insert json)
       (goto-char (point-min))
       (setq loc (point))
-      (while (when-let
+      (while (when-let*
                  ((data (ignore-errors (json-read))))
                (setq parsed (append parsed (list data)))
                (setq loc (point))))
@@ -1515,11 +1535,11 @@ substrings — useful when the caller wants property-aware trimming."
           (insert content)
           (write-file path nil))
         (set-buffer-modified-p nil))
-    (when-let ((path (read-file-name "Write file: "
-				     (when shell-maker-transcript-default-path
-                                       (file-name-as-directory shell-maker-transcript-default-path))
-				     nil nil (funcall shell-maker-transcript-default-filename)))
-               (content (buffer-string)))
+    (when-let* ((path (read-file-name "Write file: "
+				      (when shell-maker-transcript-default-path
+                                        (file-name-as-directory shell-maker-transcript-default-path))
+				      nil nil (funcall shell-maker-transcript-default-filename)))
+                (content (buffer-string)))
       (with-temp-buffer
         (insert content)
         (write-file path t))
@@ -1818,17 +1838,20 @@ or surrounding prompts."
                                'front-sticky '(read-only)
                                'rear-nonsticky '(field read-only)))))
     (with-current-buffer buffer
-      (let ((inhibit-read-only t))
+      (let ((inhibit-read-only t)
+            (auto-scroll (shell-maker--should-auto-scroll-p)))
         (save-excursion
           (goto-char (point-max))
           (insert marker)
-          (set-marker (process-mark process) (point)))))))
+          (set-marker (process-mark process) (point)))
+        (when auto-scroll
+          (goto-char (point-max)))))))
 
 (defun shell-maker--output-filter (process string)
   "Copy of `comint-output-filter' but avoids fontifying non-prompt text.
 
 Uses PROCESS and STRING same as `comint-output-filter'."
-  (when-let ((oprocbuf (process-buffer process)))
+  (when-let* ((oprocbuf (process-buffer process)))
     (with-current-buffer oprocbuf
       (let ((inhibit-read-only t))
         (save-restriction
@@ -1838,10 +1861,10 @@ Uses PROCESS and STRING same as `comint-output-filter'."
           (insert string)
           (set-marker (process-mark process) (point))
           (goto-char (process-mark process))
-          (when-let (((not comint-use-prompt-regexp))
-                     (safe-range (shell-maker--clip-output-range
-                                  (marker-position comint-last-output-start)
-                                  (point))))
+          (when-let* (((not comint-use-prompt-regexp))
+                      (safe-range (shell-maker--clip-output-range
+                                   (marker-position comint-last-output-start)
+                                   (point))))
             (with-silent-modifications
               (add-text-properties (map-elt safe-range :start) (map-elt safe-range :end)
                                    `(read-only t
@@ -2215,19 +2238,19 @@ Of the form:
               (cons :buffer shell-buffer)
               (cons :write-output (lambda (output &optional force)
                                     (setq output (or output "<nil-message>"))
-                                    (when-let ((active (or force
-                                                           (and (eq request-id (with-current-buffer shell-buffer
-                                                                                 (shell-maker--current-request-id)))
-                                                                (buffer-live-p shell-buffer)))))
+                                    (when-let* ((active (or force
+                                                            (and (eq request-id (with-current-buffer shell-buffer
+                                                                                  (shell-maker--current-request-id)))
+                                                                 (buffer-live-p shell-buffer)))))
                                       (with-current-buffer shell-buffer
                                         (shell-maker-write-output :config config
                                                                   :output output
                                                                   :on-output on-output)))
                                     (setq full-output (concat full-output output))))
               (cons :finish-output (lambda (success)
-                                     (when-let ((active (and (buffer-live-p shell-buffer)
-                                                             (eq request-id (with-current-buffer shell-buffer
-                                                                              (shell-maker--current-request-id))))))
+                                     (when-let* ((active (and (buffer-live-p shell-buffer)
+                                                              (eq request-id (with-current-buffer shell-buffer
+                                                                               (shell-maker--current-request-id))))))
                                        (with-current-buffer shell-buffer
                                          (shell-maker-finish-output :config config
                                                                     :success success

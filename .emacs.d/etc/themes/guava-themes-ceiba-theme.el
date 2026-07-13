@@ -67,7 +67,7 @@
       (ceiba-fg                        "#000000")
       (ceiba-bg                        "#bab49e")
       (ceiba-highlight                 "#a6a08a")
-      (ceiba-shadow                    "#7f7f7f")
+      (ceiba-shadow                    "#898989")
 
       (ceiba-error                     "#ff0000")
       (ceiba-warning                   "#f6c911")
@@ -165,9 +165,9 @@
 
    ;; line-number
    `(line-number ((,ceiba-class (:foreground ,ceiba-fg :inherit default))))
-   `(line-number-current-line ((,ceiba-class (:foreground ,ceiba-deep-green :weight bold :inherit (highlight line-number)))))
-   `(line-number-minor-tick ((,ceiba-class (:background ,ceiba-light-brown :inherit line-number))))
-   `(line-number-major-tick ((,ceiba-class (:background ,ceiba-brown-sand :inherit line-number))))
+   `(line-number-current-line ((,ceiba-class (:foreground ,ceiba-mode-line :weight bold :inherit (highlight line-number)))))
+   `(line-number-minor-tick ((,ceiba-class (:background ,ceiba-tab-2 :inherit line-number))))
+   `(line-number-major-tick ((,ceiba-class (:background ,ceiba-tab-3 :inherit line-number))))
 
    ;; mode-line
    `(mode-line ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line))))
@@ -281,6 +281,9 @@
    ;; replace (use "M-x occur" to check the match face)
    `(query-replace ((,ceiba-class (:inherit isearch))))
    `(match ((,ceiba-class (:inherit lazy-highlight))))
+
+   ;; custom-button
+   `(custom-button ((,ceiba-class (:foreground ,ceiba-white :background ,ceiba-mode-line :box (:line-width 2 :style released-button)))))
 
 
    ;; external packages

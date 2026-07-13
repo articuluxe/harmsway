@@ -6,7 +6,7 @@
 ;; Maintainer: Philip Kaludercic <philipk@posteo.net>, Daniel Mendler <mail@daniel-mendler.de>
 ;; URL: https://github.com/skeeto/emacs-http-server
 ;; Version: 1.6
-;; Package-Requires: ((emacs "27.1") (compat "31"))
+;; Package-Requires: ((emacs "29.1") (compat "31"))
 ;; Keywords: network, comm
 
 ;;; Commentary:
@@ -474,16 +474,10 @@ PROC is the client process and CHUNK is part of the request as string."
               (request (pop (process-get proc :request-queue))))
     (run-at-time 0 nil #'httpd--handle-request proc request)))
 
-(defsubst httpd--new-buffer (name)
-  "Generate new buffer NAME without calling buffer hooks."
-  (static-if (< emacs-major-version 28)
-      (generate-new-buffer name)
-    (generate-new-buffer name t)))
-
 (defun httpd--accept (_server proc _message)
   "Runs each time a new client PROC connects to the server."
   (push proc httpd--clients)
-  (process-put proc :request-buffer (httpd--new-buffer " *httpd-client*"))
+  (process-put proc :request-buffer (generate-new-buffer " *httpd-client*" t))
   (set-process-sentinel proc #'httpd--sentinel)
   (httpd-log `(connection ,(car (process-contact proc)))))
 
@@ -544,7 +538,7 @@ Reuse the current buffer if it is a temporary httpd buffer."
        (with-current-buffer
            (if (eq major-mode 'httpd-buffer)
                (current-buffer)
-             (setq ,temp (httpd--new-buffer " *httpd-temp*")))
+             (setq ,temp (generate-new-buffer " *httpd-temp*" t)))
          (unwind-protect
              (progn
                (setq major-mode 'httpd-buffer)

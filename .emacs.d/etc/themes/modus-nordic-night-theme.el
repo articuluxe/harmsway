@@ -9,6 +9,7 @@
 ;; Package-Requires: ((emacs "28.1") (modus-themes "5.2.0"))
 ;; SPDX-License-Identifier: MIT
 ;; Homepage: https://codeberg.org/ashton314/modus-nordic-night
+;; Keywords: theme
 
 ;;; Commentary:
 ;; Modus Nordic-Night is a modification of the lovely Nord theme. It features a much
@@ -261,7 +262,7 @@
 
     ;; corfu
     `(corfu-default ((,c :inherit modus-themes-fixed-pitch :background ,bg-dim :extend t))))
-  "Deep, direct face customizations that differ substantially from Modus")
+  "Deep, direct face customizations that differ substantially from Modus.")
 
 (modus-themes-theme
  'modus-nordic-night
