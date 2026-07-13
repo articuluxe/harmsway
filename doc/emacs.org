@@ -123,11 +123,15 @@ b a         bitwise AND
 b o         bitwise OR
 b x         bitwise XOR
 b n         bitwise NOT
+b w         set radix word size
 b l         shift left
 b r         shift right
+M-8 b l     shift left 8 bits
 b d         bitwise DIFF, e.g. DIFF(a,b)=AND(a,NOT(b))
 B           with (a b), calculates log(b) a
 Q           square root
+2 RET 62 RET H b l
+            bit shift left 2 by 62 bits
 
 * Register
 C-x r s %d copy region into register %d
