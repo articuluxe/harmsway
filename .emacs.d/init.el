@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-06-08 18:25:13 dharms>
+;; Modified Time-stamp: <2026-07-14 10:25:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2249,6 +2249,7 @@ ARGS are the additional arguments."
   (setq lambda-line-icon-time t)        ;only show clock icon
   (setq lambda-line-which-func t)
   :config
+  (advice-add 'lambda-line-git-parse-status :override (lambda (&rest _) nil))
   (lambda-line-mode)
   (add-hook 'window-setup-hook #'harmsway-enable-lambda-line)
   ;; NB: the window-setup-hook is not sufficient for emacs daemon,
