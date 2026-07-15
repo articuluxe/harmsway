@@ -5,14 +5,14 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, January  9, 2026
 # Version: 1.0
-# Modified Time-stamp: <2026-02-23 17:48:05 dharms>
+# Modified Time-stamp: <2026-07-14 19:39:49 dharms>
 # Modified by: Dan Harms
 # Keywords: utilities
 
 set -euo pipefail
 # set -x
 
-VERACRYPT=${VERACRYPT_BIN:-veracrypt}
+VERACRYPT=$VERACRYPT_BIN/veracrypt
 MOUNT=${SECURE_MOUNT:-~}
 
 if ! command -v "$VERACRYPT" > /dev/null ; then
