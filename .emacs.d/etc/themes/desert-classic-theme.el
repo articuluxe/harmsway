@@ -1,4 +1,4 @@
-;;; desert-theme.el --- A port of a well-known VIM theme.
+;;; desert-classic-theme.el --- A port of a well-known VIM theme.
 
 ;; Copyright (C) Sergei Lebedev
 ;;
@@ -23,7 +23,7 @@
 ;; Status: not intended to be distributed yet
 
 
-(deftheme desert
+(deftheme desert-classic
   "A port of a well-known VIM theme.")
 
 ;; Please, install rainbow-mode
@@ -43,11 +43,11 @@
       (desert-red           "IndianRed3")
       (desert-warning-fg    "goldenrod"))
   (custom-theme-set-variables
-   'desert
+   'desert-classic
    '(frame-background-mode (quote dark)))
 
   (custom-theme-set-faces
-   'desert
+   'desert-classic
    `(default ((t (:foreground ,desert-fg :background ,desert-bg))))
    `(cursor ((t (:background ,desert-khaki))))
    `(fringe ((t (:background ,desert-bg))))
@@ -138,7 +138,7 @@
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
 
-(provide-theme 'desert)
+(provide-theme 'desert-classic)
 
 ;; Local Variables:
 ;; no-byte-compile: t
@@ -146,4 +146,4 @@
 ;; eval: (when (fboundp 'rainbow-mode) (rainbow-mode +1))
 ;; End:
 
-;;; desert-theme.el ends here
+;;; desert-classic-theme.el ends here
