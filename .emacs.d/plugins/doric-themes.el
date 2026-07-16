@@ -5,7 +5,7 @@
 ;; Author: Protesilaos <info@protesilaos.com>
 ;; Maintainer: Protesilaos <info@protesilaos.com>
 ;; URL: https://github.com/protesilaos/doric-themes
-;; Version: 1.2.0
+;; Version: 1.2.1
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -47,6 +47,7 @@
     doric-earth
     doric-jade
     doric-light
+    doric-lilac
     doric-marble
     doric-oak
     doric-siren
@@ -55,7 +56,8 @@
   "Light themes.")
 
 (defconst doric-themes-dark-themes
-  '(doric-copper
+  '(doric-borage
+    doric-copper
     doric-dark
     doric-fire
     doric-lion
@@ -130,7 +132,8 @@ This is used by the commands `doric-themes-toggle',
 (defun doric-themes--enable-themes ()
   "Enable the Doric themes."
   (dolist (theme doric-themes-collection)
-    (load-theme theme :no-confirm :no-enable)))
+    (unless (memq theme custom-known-themes)
+      (load-theme theme :no-confirm :no-enable))))
 
 (defun doric-themes--list-known-themes ()
   "Return list of `custom-known-themes' matching `doric-themes--doric-p'."
@@ -191,12 +194,11 @@ If TRANSFORM is non-nil, return THEME as-is."
 (defun doric-themes-select-prompt (&optional prompt)
   "Minibuffer prompt to select a Doric theme.
 With optional PROMPT string, use it.  Else use a generic prompt."
-  (let ((completion-extra-properties `(:annotation-function ,#'doric-themes--annotate-theme)))
-    (intern
-     (completing-read
-      (or prompt "Select Doric theme: ")
-      (doric-themes--completion-table (doric-themes--list-known-themes))
-      nil t nil 'doric-themes-select-theme-history))))
+  (intern
+   (completing-read
+    (or prompt "Select Doric theme: ")
+    (doric-themes--completion-table (doric-themes--list-known-themes))
+    nil t nil 'doric-themes-select-theme-history)))
 
 (defun doric-themes-load-theme (theme)
   "Load THEME while disabling other themes and return THEME."
