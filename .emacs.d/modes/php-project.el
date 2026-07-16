@@ -73,13 +73,11 @@
 (defcustom php-project-auto-detect-etags-file nil
   "If `T', automatically detect etags file when file is opened."
   :tag "PHP Project Auto Detect Etags File"
-  :group 'php-project
   :type 'boolean)
 
 (defcustom php-project-use-projectile-to-detect-root nil
   "If `T' and projectile-mode is activated, use Projectile for root detection."
   :tag "PHP Project Use Projectile To Detect Root"
-  :group 'php-project
   :type 'boolean)
 
 ;; Variables

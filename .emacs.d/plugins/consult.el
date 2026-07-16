@@ -1142,7 +1142,7 @@ IGNORED-FACES are ignored when searching for matches."
         (when (and val
                    (not (memq val ignored-faces))
                    (not (and (consp val)
-                             (seq-some (lambda (x) (memq x ignored-faces)) val))))
+                             (any (lambda (x) (memq x ignored-faces)) val))))
           (push (cons (- beg start) (- next start)) highlights))
         (setq beg next)))
     (nreverse highlights)))
@@ -4781,7 +4781,7 @@ AS is a conversion function."
            (or (not mode)
                (let ((mm (buffer-local-value 'major-mode it)))
                  (if (consp mode)
-                     (seq-some (lambda (m) (provided-mode-derived-p mm m)) mode)
+                     (any (lambda (m) (provided-mode-derived-p mm m)) mode)
                    (provided-mode-derived-p mm mode))))
            (pcase-exhaustive filter
              ('nil t)

@@ -58,8 +58,7 @@
               (const hover)
               (const navigation))
   :safe (lambda (xs) (and (listp xs)
-                          (cl-every (lambda (x) (memq x '(all hover navigation))) xs)))
-  :group 'php-ide-phpactor)
+                          (cl-every (lambda (x) (memq x '(all hover navigation))) xs))))
 
 (defvar php-ide-phpactor-timer nil
   "Timer object for execute Phpactor and display hover message.")

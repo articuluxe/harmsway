@@ -38,22 +38,9 @@
   (require 'cl-lib))
 (require 'cc-engine)
 (require 'flymake)
+(require 'php-core)
 (require 'php-project)
 (require 'rx)
-
-;;;###autoload
-(defgroup php nil
-  "Language support for PHP."
-  :tag "PHP"
-  :group 'languages
-  :link '(url-link :tag "Official Site" "https://github.com/emacs-php/php-mode")
-  :link '(url-link :tag "PHP Mode Wiki" "https://github.com/emacs-php/php-mode/wiki"))
-
-(defcustom php-executable (or (executable-find "php") "php")
-  "The location of the PHP executable."
-  :group 'php
-  :tag "PHP Executable"
-  :type 'string)
 
 (defcustom php-phpdbg-executable (list "phpdbg")
   "The location of the PHPDBG executable."
@@ -101,10 +88,12 @@ You can replace \"en\" with your ISO language code."
 
 (defcustom php-completion-file ""
   "Path to the file which contains the function names known to PHP."
+  :group 'php
   :type 'string)
 
 (defcustom php-manual-path ""
   "Path to the directory which contains the PHP manual."
+  :group 'php
   :type 'string)
 
 (defcustom php-search-documentation-function #'php-search-web-documentation
@@ -191,6 +180,20 @@ a completion list."
   :tag "PHP Blade Template Major Mode"
   :type 'function)
 
+(defcustom php-blade-template-major-mode-fallback '(mhtml-mode html-mode)
+  "Major modes to fall back on for a Blade template.
+
+Used when `php-blade-template-major-mode' — `web-mode' by default — is
+not installed.  The first entry whose function is defined wins; when
+none is, `php-default-major-mode' is used.
+
+A Blade template is mostly HTML plus Blade's own directives, so an HTML
+mode reads it far better than `php-mode' does.  Set this to nil to opt
+out and get `php-default-major-mode' instead."
+  :group 'php
+  :tag "PHP Blade Template Major Mode Fallback"
+  :type '(repeat function))
+
 (defcustom php-template-mode-alist
   `(("\\.blade" . ,php-blade-template-major-mode)
     ("\\.phpt\\'" . ,(if (fboundp 'phpt-mode) 'phpt-mode php-default-major-mode))
@@ -259,26 +262,6 @@ see https://www.php.net/manual/language.constants.predefined.php")
                       "[" "]" "(" ")" "{" "}" ";")
                 t)))
 
-;;; Utillity for locate language construction
-(defsubst php-in-string-p ()
-  "Return non-nil if inside a string.
-It is the character that will terminate the string, or t if the string should
-be terminated by a generic string delimiter."
-  (nth 3 (syntax-ppss)))
-
-(defsubst php-in-comment-p ()
-  "Return NIL if outside a comment, T if inside a non-nestable comment, else
-an integer (the current comment nesting)."
-  (nth 4 (syntax-ppss)))
-
-(defsubst php-in-string-or-comment-p ()
-  "Return character address of start of comment or string; nil if not in one."
-  (nth 8 (syntax-ppss)))
-
-(defsubst php-in-poly-php-html-mode ()
-  "Return T if current buffer is in `poly-html-mode'."
-  (bound-and-true-p poly-php-html-mode))
-
 (defconst php-beginning-of-defun-regexp
   (eval-when-compile
     (rx bol
@@ -471,11 +454,11 @@ can be used to match against definitions for that classlike."
 
 (defcustom php-imenu-generic-expression 'php-imenu-generic-expression-default
   "Default Imenu generic expression for PHP Mode.  See `imenu-generic-expression'."
+  :group 'php
   :type '(choice (alist :key-type string :value-type (list string))
                  (const php-imenu-generic-expression-legacy)
                  (const php-imenu-generic-expression-simple)
-                 variable)
-  :group 'php)
+                 variable))
 
 (defconst php--re-namespace-pattern
   (eval-when-compile
@@ -632,14 +615,32 @@ Look at the `php-executable' variable instead of the constant \"php\" command."
       (symbol-value php-re-detect-html-tag)
     php-re-detect-html-tag))
 
+(defvar-local php--buffer-has-html-tag-cache nil
+  "Memoized result of `php-buffer-has-html-tag'.
+A cons of (CHARS-MODIFIED-TICK . RESULT) so the scan is repeated only
+after the buffer text changes.")
+
 (defun php-buffer-has-html-tag ()
-  "Return position of HTML tag or NIL in current buffer."
-  (save-excursion
-    (save-restriction
-      (widen)
-      (goto-char (point-min))
-      (save-match-data
-        (re-search-forward (php-re-detect-html-tag) nil t)))))
+  "Return position of HTML tag or NIL in current buffer.
+The result is cached per buffer and recomputed only when the buffer text
+has changed, because this scans the whole buffer and is called on every
+indentation."
+  (let ((tick (buffer-chars-modified-tick)))
+    (if (eql (car php--buffer-has-html-tag-cache) tick)
+        (cdr php--buffer-has-html-tag-cache)
+      (let ((result (save-excursion
+                      (save-restriction
+                        (widen)
+                        (goto-char (point-min))
+                        (save-match-data
+                          (re-search-forward (php-re-detect-html-tag) nil t))))))
+        (setq php--buffer-has-html-tag-cache (cons tick result))
+        result))))
+
+(defun php--blade-template-fallback-mode ()
+  "Return the first available mode of `php-blade-template-major-mode-fallback'."
+  (cl-loop for mode in php-blade-template-major-mode-fallback
+           thereis (and (fboundp mode) mode)))
 
 (defun php-derivation-major-mode ()
   "Return major mode for PHP file by file-name and its content."
@@ -656,27 +657,34 @@ Look at the `php-executable' variable instead of the constant \"php\" command."
         (when (php-buffer-has-html-tag)
           (setq mode php-html-template-major-mode)))))
     (when (and mode (not (fboundp mode)))
-      (if (string-match-p "\\.blade\\." buffer-file-name)
-          (warn "php-mode is NOT support blade template. %s"
-                "Please install `web-mode' package")
-        (setq mode nil)))
+      ;; A Blade template is not PHP, so `php-default-major-mode' cannot
+      ;; read it at all; degrade to an HTML mode instead.  Every other
+      ;; template is PHP with HTML in it, and keeps falling back on
+      ;; `php-default-major-mode' below.
+      (setq mode (when (string-match-p "\\.blade\\." buffer-file-name)
+                   (let ((fallback (php--blade-template-fallback-mode)))
+                     (warn "`%s' is not available for this Blade template; %s.
+Install the `web-mode' package for full Blade support."
+                           mode
+                           (if fallback
+                               (format "using `%s' instead" fallback)
+                             (format "falling back on `%s'" php-default-major-mode)))
+                     fallback))))
     (or mode php-default-major-mode)))
 
 ;;;###autoload
-(define-derived-mode php-base-mode prog-mode "PHP"
-  "Generic major mode for editing PHP.
-
-This mode is intended to be inherited by concrete major modes.
-Currently there are `php-mode' and `php-ts-mode'."
-  :group 'php
-  nil)
-
-;;;###autoload
 (defun php-mode-maybe ()
-  "Select PHP mode or other major mode."
+  "Select PHP mode or other major mode.
+
+The selected mode is resolved through `major-mode-remap-alist' the way
+`set-auto-mode' would have done had `auto-mode-alist' named it directly,
+so that a remapping the user asked for still applies.  Emacs's built-in
+`php-ts-mode' registers (php-mode . php-ts-mode) for exactly this
+purpose, and `treesit-enabled-modes' installs it when the user opts in."
   (interactive)
   (run-hooks php-mode-maybe-hook)
-  (funcall (php-derivation-major-mode)))
+  (let ((mode (php-derivation-major-mode)))
+    (funcall (if (fboundp 'major-mode-remap) (major-mode-remap mode) mode))))
 
 ;;;###autoload
 (defun php-current-class ()

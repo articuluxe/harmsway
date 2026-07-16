@@ -51,8 +51,7 @@
   :type (eval-when-compile `(set ,@(mapcar (lambda (elm) (list 'const (car elm)))
                                            php-defs-functions-alist)))
   :safe (lambda (value) (and (listp value) (cl-loop for v in values
-                                                    always (assq v php-defs-functions-alist))))
-  :group 'php-complete)
+                                                    always (assq v php-defs-functions-alist)))))
 
 ;;; Cape functions:
 

@@ -103,15 +103,13 @@
                  (const :tag "PHP-CS-Fixer" php-cs-fixer)
                  (const :tag "PHP Code Beautifier and Fixer" phpcbf)
                  (repeat :tag "Command and arguments" string))
-  :safe (lambda (v) (or (symbolp v) (listp v)))
-  :group 'php-format)
+  :safe (lambda (v) (or (symbolp v) (listp v))))
 
 (defcustom php-format-command-dir "vendor/bin"
   "A relative path to the directory where formatting tool is installed."
   :tag "PHP Format Command"
   :type 'string
-  :safe #'stringp
-  :group 'php-format)
+  :safe #'stringp)
 
 (defcustom php-format-default-idle-time 3
   "Number of seconds to wait idle before formatting."
@@ -126,14 +124,12 @@
   "An alist of misplay the result method of the formatting process."
   :tag "PHP Format Result Display Method"
   :type '(alist :key-type function
-                :value-type symbol)
-  :group 'php-format)
+                :value-type symbol))
 
 (defcustom php-format-disable-async-format-buffer-has-modified t
   "When set to non-NIL, disables async formatting if buffer is modified (unsaved)."
   :tag "PHP Format Disable Async Format Buffer Has Modified"
-  :type 'boolean
-  :group 'php-format)
+  :type 'boolean)
 
 ;; Internal functions
 (defsubst php-format--register-timer (sec command-args)
@@ -226,7 +222,6 @@
 ;;;###autoload
 (define-minor-mode php-format-auto-mode
   "Automatically apply formatting when saving an edited file."
-  :group 'php-format
   :lighter php-format-lighter
   (if php-format-auto-mode
       (add-hook 'after-save-hook 'php-format-on-after-save-hook php-format-auto-mode-hook-depth t)

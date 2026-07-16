@@ -11,7 +11,7 @@
 ;; URL: https://github.com/flycheck/flycheck
 ;; Keywords: convenience, languages, tools
 ;; Version: 36.0
-;; Package-Requires: ((emacs "27.1") (seq "2.24"))
+;; Package-Requires: ((emacs "28.1") (seq "2.24"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -3900,8 +3900,10 @@ beginning position)."
     (concat (and other-file-p (format "In %S:\n" (file-relative-name fname)))
             (and include-snippet
                  (when-let* ((snippet (flycheck-error-format-snippet err)))
-                   (format-message "`\N{FIRST STRONG ISOLATE}%s\N{POP DIRECTIONAL ISOLATE}': "
-                                   snippet)))
+                   ;; \u2068 (FIRST STRONG ISOLATE) and \u2069 (POP
+                   ;; DIRECTIONAL ISOLATE); the equivalent \N{...} escapes
+                   ;; break native compilation on Emacs 32 (#2177)
+                   (format-message "`\u2068%s\u2069': " snippet)))
             (or (flycheck-error-message err)
                 (format "Unknown %S" (flycheck-error-level err)))
             (and id (format " [%s]" id)))))
@@ -4767,15 +4769,44 @@ function resolves `conditional' style specifications."
       (setf (overlay-get overlay 'wrap-prefix)
             (flycheck-error-level-make-indicator
              level flycheck-indication-mode t))
-      ;; Preserve any existing line-prefix text property (e.g. from
-      ;; org-indent-mode) so the overlay doesn't clobber indentation.
+      ;; Preserve existing text-property prefixes so the overlay doesn't
+      ;; clobber indentation set by other modes.
+      ;;
+      ;; line-prefix: copy the text property onto the overlay unchanged
+      ;; (e.g. from org-indent-mode).
+      ;;
+      ;; wrap-prefix: compose the flycheck fringe indicator with the
+      ;; existing value (e.g. from visual-wrap-prefix-mode).  The fringe
+      ;; indicator uses a `display' property for `!' that directly
+      ;; renders in the fringe without producing any character in the
+      ;; text area.  This effectively-zero-width character is composed
+      ;; by concatenation with the preexisting wrap prefix.
+      ;;
+      ;; Per the Elisp manual ("Properties with Special Meanings"),
+      ;; `wrap-prefix' may be a string, an image, or a stretch spec (`:width' or
+      ;; `:align-to').  When the preexisting value is a string (e.g. a repeated
+      ;; comment prefix like "% "), concatenate it directly; otherwise wrap it
+      ;; in a propertized character via its `display' property so it can be
+      ;; concatenated.
+      ;;
+      ;; Without this, an error overlay on the first character of a
+      ;; soft-wrapped visual continuation line replaces the indentation
+      ;; prefix with the fringe-only indicator, causing the line to
+      ;; jump to column 0.
       (when (buffer-live-p (overlay-buffer overlay))
         (save-restriction
           (widen)
-          (let ((existing-prefix (get-text-property
-                                  (overlay-start overlay) 'line-prefix)))
-            (when existing-prefix
-              (setf (overlay-get overlay 'line-prefix) existing-prefix))))))
+          (let* ((pos (overlay-start overlay))
+                 (existing-lp (get-text-property pos 'line-prefix))
+                 (existing-wp (get-text-property pos 'wrap-prefix)))
+            (when existing-lp
+              (setf (overlay-get overlay 'line-prefix) existing-lp))
+            (when existing-wp
+              (setf (overlay-get overlay 'wrap-prefix)
+                    (concat (overlay-get overlay 'wrap-prefix)
+                            (if (stringp existing-wp)
+                                existing-wp
+                              (propertize " " 'display existing-wp)))))))))
     (pcase (flycheck--highlighting-style err)
       ((or `nil (guard (null flycheck-highlighting-mode)))
        ;; Erase the highlighting
@@ -8746,11 +8777,6 @@ See Info Node `(elisp)Byte Compilation'."
             (zero-or-more whitespace) "Warning (check-declare): said\n"
             (message (zero-or-more "    " (zero-or-more not-newline))
                      (zero-or-more "\n    " (zero-or-more not-newline)))
-            line-end)
-   ;; The following is for Emacs 24 'check-declare-file', which uses a
-   ;; less informative format.
-   (warning line-start "Warning (check-declare): " (file-name) " said "
-            (message (zero-or-more not-newline))
             line-end))
   :error-filter
   (lambda (errors)
@@ -8768,9 +8794,7 @@ See Info Node `(elisp)Byte Compilation'."
 
 (defconst flycheck-emacs-lisp-checkdoc-form
   (flycheck-prepare-emacs-lisp-form
-    (unless (require 'elisp-mode nil 'no-error)
-      ;; TODO: Fallback for Emacs 24, remove when dropping support for 24
-      (require 'lisp-mode))
+    (require 'elisp-mode)
     (require 'checkdoc)
 
     (let ((source (car command-line-args-left))
@@ -8808,8 +8832,7 @@ See Info Node `(elisp)Byte Compilation'."
     checkdoc-verb-check-experimental-flag
     checkdoc-max-keyref-before-warn
     sentence-end-double-space
-    ,@(and (>= emacs-major-version 28)
-           '(checkdoc-column-zero-backslash-before-paren))
+    checkdoc-column-zero-backslash-before-paren
     ,@(and (>= emacs-major-version 31)
            '(checkdoc-allow-quoting-nil-and-t
              checkdoc-arguments-missing-flag)))
@@ -8860,7 +8883,10 @@ has access to all installed packages and user configuration."
                                (pcase e
                                  (`(,_n [,line ,_trust ,desc ,_checker])
                                   (flycheck-error-new-at
-                                   line nil 'info desc
+                                   (if (stringp line)
+                                       (string-to-number line)
+                                     line)
+                                   nil 'info desc
                                    :checker checker))
                                  (_
                                   (flycheck-error-new-at
@@ -9535,8 +9561,8 @@ See URL `https://github.com/commercialhaskell/stack'."
             (eval flycheck-ghc-args)
             "-x" (eval
                   (pcase major-mode
-                    (`haskell-mode "hs")
-                    (`haskell-literate-mode "lhs")))
+                    (`haskell-literate-mode "lhs")
+                    (_ "hs")))
             source)
   :error-patterns
   ((warning line-start (file-name) ":" line ":" column ":"
@@ -9595,8 +9621,8 @@ See URL `https://www.haskell.org/ghc/'."
             (eval flycheck-ghc-args)
             "-x" (eval
                   (pcase major-mode
-                    (`haskell-mode "hs")
-                    (`haskell-literate-mode "lhs")))
+                    (`haskell-literate-mode "lhs")
+                    (_ "hs")))
             source)
   :error-patterns
   ((warning line-start (file-name) ":" line ":" column ":"
@@ -10991,7 +11017,8 @@ disables caching in case there are problems."
   "Linters to use with lintr.
 
 The value of this variable is a string containing an R
-expression, which selects linters for lintr."
+expression, passed as the `linters' argument to the
+lintr::lint() function."
   :type 'string
   :risky t
   :package-version '(flycheck . "0.23"))
@@ -11012,7 +11039,7 @@ See URL `https://github.com/jimhester/lintr'."
                    "library(lintr);"
                    "try(lint(commandArgs(TRUE)"
                    ", cache=" (if flycheck-lintr-caching "TRUE" "FALSE")
-                   ", " flycheck-lintr-linters
+                   ", linters=" flycheck-lintr-linters
                    "))"))
             "--args" source)
   :error-patterns
@@ -12018,6 +12045,13 @@ See URL `https://call-cc.org/'."
             "Warning: " (zero-or-more not-newline) ":\n"
             (one-or-more (any space)) "(" (file-name) ":" line ") " (message)
             line-end)
+   (error line-start
+          "Error: Module `" (one-or-more not-newline) "' has unresolved identifiers\n"
+          (zero-or-more space) "In file `" (file-name) "':"
+          line-end)
+   (error line-start
+          (zero-or-more space) (message) "\n" (zero-or-more space) "On line " line
+          line-end)
    (error line-start "Error: (line " line ") " (message) line-end)
    (error line-start "Syntax error: (" (file-name) ":" line ")"
           (zero-or-more not-newline) " - "

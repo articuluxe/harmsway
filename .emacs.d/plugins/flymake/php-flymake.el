@@ -40,7 +40,6 @@
 
 (defcustom php-flymake-executable-command-args nil
   "List of command and arguments for `php -l'."
-  :group 'php-flymake
   :type '(repeat string)
   :safe (lambda (v) (and (listp v) (cl-every v #'stringp))))
 

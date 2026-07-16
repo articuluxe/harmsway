@@ -25,18 +25,23 @@
 ;;
 ;;; Commentary:
 ;;
-;; dired-rsync is a command that can be run from a Dired buffer to
-;; copy files using rsync rather than tramps in-built mechanism.
-;; This is especially useful for copying large files to/from remote
-;; locations without locking up tramp.
+;; `dired-rsync' is a command that can be run from a Dired buffer to
+;; copy files using rsync rather than TRAMP's built-in mechanism.  This
+;; is especially useful for copying large files to/from remote locations
+;; without locking up TRAMP.
 ;;
 ;; To use simply open a Dired buffer, mark some files and invoke
-;; dired-rsync.  After being prompted for a location to copy to an
+;; `dired-rsync'.  After being prompted for a location to copy to, an
 ;; inferior rsync process will be spawned.
 ;;
-;; Wherever the files are selected from the rsync will always run from
+;; Wherever the files are selected from, the rsync will always run from
 ;; your local machine.
 ;;
+;; To display the progress of a running rsync process in the mode line, you can
+;; use something like the following in your init file:
+;;
+;; (add-to-list 'mode-line-modes
+;;              '(dired-rsync-modeline-status dired-rsync-modeline-status))
 
 (require 'tramp) ; for tramp-tramp-file-p
 (require 'dired-aux) ; for dired-dwim-target-directory
@@ -148,7 +153,7 @@ hosts don't need quoting."
   "Extract the username part of a tramp FILE-OR-PATH."
   (with-parsed-tramp-file-name file-or-path tfop
     (or tfop-user
-        ; somehow extract .ssh/config user for tfop-host
+        ;; somehow extract .ssh/config user for tfop-host
         (getenv "USER"))))
 
 (defun dired-rsync--extract-port-from-tramp (file-or-path)
@@ -190,23 +195,24 @@ neither is set we simply display the current number of jobs."
   (force-mode-line-update)
   (let ((job-count (length (dired-rsync--get-active-buffers))))
     (setq dired-rsync-modeline-status
-          (cond
-           ;; error has occurred
-           (err (propertize
-                 (format " R:%d %s!!" job-count err)
-                 'font-lock-face '(:foreground "red")))
-           ;; we still have jobs but no error
-           ((> job-count 1)
-            (format " R:%d" job-count))
-           ((> job-count 0)
-            (format " R:%s" (or ind job-count)))
-           ;; Any stale?
-           ((dired-rsync--get-proc-buffers)
-            (propertize
-                 " R:hung :-("
-                 'font-lock-face '(:foreground "red")))
-           ;; nothing going on
-           (t nil)))))
+          (s-replace
+           "%" "%%"
+           (cond
+            ;; error has occurred
+            (err (propertize
+                  (format " R:%d %s!!" job-count err)
+                  'font-lock-face '(:foreground "red")))
+            ;; we still have jobs but no error
+            ((> job-count 1)
+             (format " R:%d" job-count))
+            ((> job-count 0)
+             (format " R:%s" (or ind job-count)))
+            ;; Any stale?
+            ((dired-rsync--get-proc-buffers)
+             (propertize " R:hung :-("
+                         'font-lock-face '(:foreground "red")))
+            ;; nothing going on
+            (t ""))))))
 
 ;;
 ;; Running rsync: We need to take care of a couple of things here. We
@@ -280,17 +286,17 @@ information and update the dired-rsync-modeline-status."
 (defun dired-rsync--do-run (command details)
   "Run rsync COMMAND in a unique buffer, passing DETAILS to sentinel."
   (apply #'make-process
-	 (append (list :name "*rsync*"
-		       :buffer (format "%s @ %s"
-				       dired-rsync-proc-buffer-prefix
-				       (current-time-string))
-		       :command (list shell-file-name
-				      shell-command-switch
-				      command)
-		       :sentinel (lambda (proc desc)
-				   (dired-rsync--sentinel proc desc details))
-		       :filter (lambda (proc string)
-				 (dired-rsync--filter proc string)))))
+         (append (list :name "*rsync*"
+                       :buffer (format "%s @ %s"
+                                       dired-rsync-proc-buffer-prefix
+                                       (current-time-string))
+                       :command (list shell-file-name
+                                      shell-command-switch
+                                      command)
+                       :sentinel (lambda (proc desc)
+                                   (dired-rsync--sentinel proc desc details))
+                       :filter (lambda (proc string)
+                                 (dired-rsync--filter proc string)))))
   (dired-rsync--update-modeline))
 
 (defun dired-rsync--remote-to-from-local-cmd (sfiles dest)
@@ -307,7 +313,7 @@ Fortunately both forms are broadly the same."
             (-flatten
              (list dired-rsync-command
                    dired-rsync-options
-		   (when ssh-port (format "-e 'ssh -p %s'" ssh-port))
+                   (when ssh-port (format "-e 'ssh -p %s'" ssh-port))
                    "--"
                    src-files
                    final-dest)))))

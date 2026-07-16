@@ -247,13 +247,12 @@ Turning this on will force PEAR rules on all PHP files."
   :tag "PHP Mode Force Pear"
   :type 'boolean)
 
-(defcustom php-mode-warn-if-mumamo-off t
-  "Warn once per buffer if you try to indent a buffer without
-mumamo-mode turned on.  Detects if there are any HTML tags in the
-buffer before warning, but this is is not very smart; e.g. if you
-have any tags inside a PHP string, it will be fooled."
-  :tag "PHP Mode Warn If MuMaMo Off"
+(defcustom php-mode-warn-if-html-template t
+  "Warn and prompt to switch to an HTML template major mode when indenting HTML."
+  :tag "PHP Mode Warn If HTML Template"
+  :safe #'booleanp
   :type '(choice (const :tag "Warn" t) (const :tag "Don't warn" nil)))
+(make-obsolete-variable 'php-mode-warn-if-mumamo-off 'php-mode-warn-if-html-template "2.0.0")
 
 (defcustom php-mode-coding-style 'pear
   "Select default coding style to use with `php-mode'.
@@ -864,107 +863,54 @@ See `php-beginning-of-defun'."
   (php-beginning-of-defun (- (or arg 1))))
 
 
-(defvar php-warned-bad-indent nil)
+(defvar-local php-warned-bad-indent nil
+  "Non-nil once the user has been warned about indenting this buffer.
+Buffer-local so a warning in one buffer does not suppress it in others.")
 
-;; Do it but tell it is not good if html tags in buffer.
 (defun php-check-html-for-indentation ()
-  (let ((html-tag-re "^\\s-*</?\\sw+.*?>")
-        (here (point)))
-    (goto-char (line-beginning-position))
-    (if (or (when (boundp 'mumamo-multi-major-mode) mumamo-multi-major-mode)
-            ;; Fix-me: no idea how to check for mmm or multi-mode
-            (save-match-data
-              (not (or (re-search-forward html-tag-re (line-end-position) t)
-                       (re-search-backward html-tag-re (line-beginning-position) t)))))
-        (prog1 t
-          (goto-char here))
-      (goto-char here)
-      (setq php-warned-bad-indent t)
-      (let* ((known-multi-libs '(("mumamo" mumamo (lambda () (nxhtml-mumamo)))
-                                 ("mmm-mode" mmm-mode (lambda () (mmm-mode 1)))
-                                 ("multi-mode" multi-mode (lambda () (multi-mode 1)))
-                                 ("web-mode" web-mode (lambda () (web-mode)))))
-             (known-names (mapcar (lambda (lib) (car lib)) known-multi-libs))
-             (available-multi-libs (delq nil
-                                         (mapcar
-                                          (lambda (lib)
-                                            (when (locate-library (car lib)) lib))
-                                          known-multi-libs)))
-             (available-names (mapcar (lambda (lib) (car lib)) available-multi-libs))
-             (base-msg
-              (concat
-               "Indentation fails badly with mixed HTML/PHP in the HTML part in
-plain `php-mode'.  To get indentation to work you must use an
-Emacs library that supports 'multiple major modes' in a buffer.
-Parts of the buffer will then be in `php-mode' and parts in for
-example `html-mode'.  Known such libraries are:\n\t"
-               (mapconcat #'identity known-names ", ")
-               "\n"
-               (if available-multi-libs
-                   (concat
-                    "You have these available in your `load-path':\n\t"
-                    (mapconcat #'identity available-names ", ")
-                    "\n\n"
-                    "Do you want to turn any of those on? ")
-                 "You do not have any of those in your `load-path'.")))
-             (is-using-multi
-              (catch 'is-using
-                (dolist (lib available-multi-libs)
-                  (when (and (boundp (cadr lib))
-                             (symbol-value (cadr lib)))
-                    (throw 'is-using t))))))
-        (unless is-using-multi
-          (if available-multi-libs
-              (if (not (y-or-n-p base-msg))
-                  (message "Did not do indentation, but you can try again now if you want")
-                (let* ((name
-                        (if (= 1 (length available-multi-libs))
-                            (car available-names)
-                          ;; Minibuffer window is more than one line, fix that first:
-                          (message "")
-                          (completing-read "Choose multiple major mode support library: "
-                                           available-names nil t
-                                           (car available-names)
-                                           '(available-names . 1)
-                                           )))
-                       (mode (when name
-                               (cl-caddr (assoc name available-multi-libs)))))
-                  (when mode
-                    ;; Minibuffer window is more than one line, fix that first:
-                    (message "")
-                    (load name)
-                    (funcall mode))))
-            (lwarn 'php-indent :warning base-msg)))
-        nil))))
+  "Return non-nil when the current buffer may be indented as PHP.
+Warn and offer to switch to `php-html-template-major-mode' when the
+buffer looks like an HTML template edited in plain `php-mode'."
+  (cond
+   ((not php-mode-warn-if-html-template) t)
+   ;; In a polymode buffer php-mode only ever indents its own PHP chunks,
+   ;; so indent normally and never warn about the surrounding HTML.
+   ((php-in-poly-php-html-mode) t)
+   ((not (php-buffer-has-html-tag)) t)
+   (php-warned-bad-indent nil)
+   ((fboundp php-html-template-major-mode)
+    (if (y-or-n-p (format "This file seems to contain an HTML tag.  Switch to %s? "
+                          php-html-template-major-mode))
+        (funcall php-html-template-major-mode)
+      (prog1 nil
+        (setq-local php-warned-bad-indent t))))
+   (t ;; Suppress warnings in Emacs session
+    (setq-local php-warned-bad-indent t)
+    (lwarn 'php-mode
+           :warning "Indentation fails badly with mixed HTML/PHP in the HTML part in plain `php-mode'.
+It is highly recommended to install a major mode that supports PHP and HTML templates, such as Web Mode.
+
+Set `php-html-template-major-mode' variable to use a mode other than `web-mode'.
+Set `php-mode-warn-if-html-template' variable to nil to suppress the warning.
+")
+    nil)))
 
 (defun php-cautious-indent-region (start end &optional quiet)
   "Carefully indent region START to END in contexts other than HTML templates.
 
 If the optional argument QUIET is non-nil then no syntactic errors are
 reported, even if `c-report-syntactic-errors' is non-nil."
-  (if (or (not php-mode-warn-if-mumamo-off)
-          (not (php-in-poly-php-html-mode))
-          php-warned-bad-indent
-          (php-check-html-for-indentation))
-      (funcall 'c-indent-region start end quiet)))
+  (when (php-check-html-for-indentation)
+    (c-indent-region start end quiet)))
 
 (defun php-cautious-indent-line ()
   "Carefully indent lines in contexts other than HTML templates."
-  (if (or (not php-mode-warn-if-mumamo-off)
-          (not (php-in-poly-php-html-mode))
-          php-warned-bad-indent
-          (php-check-html-for-indentation))
-      (let ((here (point))
-            doit)
-        (move-beginning-of-line nil)
-        ;; Don't indent heredoc end mark
-        (save-match-data
-          (unless (and (looking-at "[a-zA-Z0-9_]+;\n")
-                       (php-in-string-p))
-            (setq doit t)))
-        (goto-char here)
-        (when doit
-          (funcall 'c-indent-line)))))
+  (when (and (php-check-html-for-indentation)
+             (save-excursion
+               (beginning-of-line)
+               ;; Don't indent heredoc end mark
+               (not (and (looking-at-p "[a-zA-Z0-9_]+;\n") (php-in-string-p)))))
+    (c-indent-line)))
 
 (defun php-c-at-vsemi-p (&optional pos)
   "Return T on HTML lines (including php tag) or PHP8 Attribute, otherwise NIL.

@@ -139,7 +139,6 @@
 (defcustom php-ide-features nil
   "A set of PHP-IDE features symbol."
   :tag "PHP-IDE Feature"
-  :group 'php-ide
   :type `(set ,@(mapcar (lambda (feature) (list 'const (car feature)))
                        php-ide-feature-alist)
               symbol)
@@ -150,7 +149,6 @@
 (defcustom php-ide-eglot-executable nil
   "Command name or path to the command of Eglot LSP executable."
   :tag "PHP-IDE Eglot Executable"
-  :group 'php-ide
   :type '(choice
           (const intelephense)
           (const phpactor)
@@ -174,7 +172,6 @@
 (defcustom php-ide-mode-lighter " PHP-IDE"
   "A symbol of PHP-IDE feature."
   :tag "PHP-IDE Mode Lighter"
-  :group 'php-ide
   :type 'string
   :safe #'stringp)
 
@@ -186,7 +183,6 @@ Notice that two arguments (FEATURE ACTIVATE) are given.
 FEATURE: A symbol, like \\='lsp-mode.
 ACTIVATE: T is given when activeting, NIL when deactivating PHP-IDE."
   :tag "PHP-IDE Mode Functions"
-  :group 'php-ide
   :type '(repeat function)
   :safe (lambda (functions)
           (and (listp functions) (cl-every #'functionp functions))))
