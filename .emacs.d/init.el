@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-07-14 10:25:37 dharms>
+;; Modified Time-stamp: <2026-07-16 15:20:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2077,6 +2077,7 @@ ARGS are the additional arguments."
   (add-to-list 'ivy-re-builders-alist '(counsel-describe-variable . ivy--regex-ignore-order))
   :config
   (global-set-key "\e\eii" 'ivy-resume)
+  (define-key ivy-minibuffer-map (kbd "ESC M-SPC") 'ivy-restrict-to-matches)
   (ivy-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
