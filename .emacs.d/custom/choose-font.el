@@ -1,8 +1,8 @@
 ;;; choose-font.el --- choose among a list of fonts
-;; Copyright (C) 2018-2019, 2022, 2024  Dan Harms (dharms)
+;; Copyright (C) 2018-2019, 2022, 2024, 2026  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2024-05-09 11:40:37 dharms>
+;; Modified Time-stamp: <2026-07-17 08:44:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -29,6 +29,10 @@
 (require 'read-file)
 (require 'hasklig-mode)
 (require 'fira-mode)
+
+(defun is-font-available(name)
+  "Check if font family NAME exists."
+  (find-font (font-spec :name name)))
 
 (defvar choose-font-list '()
   "A list of fonts among which to choose.")
