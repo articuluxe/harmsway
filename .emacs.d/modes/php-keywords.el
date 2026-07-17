@@ -53,12 +53,13 @@
 ;; of scope, and deliberately not duplicated here:
 ;;
 ;;   - built-in function names -- see lisp/php-defs.el;
-;;   - the magic constants (`__LINE__' and friends), which are written
-;;     upper-case and matched case-sensitively -- php.el owns that list
-;;     as `php-magical-constants', and both major modes build their
-;;     font-lock rule from it directly;
 ;;   - predefined runtime constants such as `PHP_EOL' or `PHP_INT_MAX',
 ;;     which are library symbols rather than language keywords.
+;;
+;; `php-magical-constants' is the one exception to the naming convention
+;; above.  It is a long-standing public symbol that php.el used to own,
+;; and both major modes build their font-lock rule straight from it, so
+;; it keeps its name; php.el requires this file and re-exports it.
 
 ;;; Code:
 
@@ -226,21 +227,29 @@ Match against buffer text with `case-fold-search' bound to non-nil.")
 ;; PHP language constants; stored lower-case here, same convention as
 ;; every other list in this file).
 ;;
-;; The magic constants (`__CLASS__', `__LINE__', ...) are intentionally
-;; NOT mirrored here.  They are not part of php-cc-mode.el's 367-609
-;; c-lang-defconst block either: both major modes fontify them straight
-;; from php.el's `php-magical-constants', which stays the single source
-;; of truth for that list.
+;; The magic constants (`__CLASS__', `__LINE__', ...) are not part of
+;; php-cc-mode.el's 367-609 c-lang-defconst block: both major modes
+;; fontify them straight from `php-magical-constants', which php.el used
+;; to define and which now sits below, next to the rest of the
+;; vocabulary.
 (defconst php-keywords--constants
   '("true" "false" "null")
   "PHP literal keywords `true', `false' and `null' (case-insensitive).
 The upper-case magic constants (`__LINE__' and friends) are matched
-case-sensitively and live in php.el's `php-magical-constants'.")
+case-sensitively; see `php-magical-constants'.")
 
 (defconst php-keywords--constants-re
   (regexp-opt php-keywords--constants 'symbols)
   "`regexp-opt' of `php-keywords--constants', symbol-bounded.
 Match against buffer text with `case-fold-search' bound to non-nil.")
+
+(defconst php-magical-constants
+  '("__CLASS__" "__DIR__" "__FILE__" "__FUNCTION__" "__LINE__"
+    "__METHOD__" "__NAMESPACE__" "__TRAIT__")
+  "Magical keyword that is expanded at compile time.
+
+These are different from \"constants\" in strict terms.
+see https://www.php.net/manual/language.constants.predefined.php")
 
 (provide 'php-keywords)
 ;;; php-keywords.el ends here

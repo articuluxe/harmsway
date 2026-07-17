@@ -58,6 +58,7 @@
 ;;; Code:
 (eval-when-compile
   (require 'cl-lib))
+(require 'php-core)
 (require 'projectile nil t)
 
 ;; Constants
@@ -217,12 +218,10 @@ Typically it is `pear', `drupal', `wordpress', `symfony2' and `psr2'.")
 
 (defun php-project-get-php-executable ()
   "Return path to PHP executable file."
-  (cond
-   ((and (stringp php-project-php-executable)
-         (file-executable-p php-project-php-executable))
-    php-project-php-executable)
-   ((boundp 'php-executable) php-executable)
-   (t (executable-find "php"))))
+  (if (and (stringp php-project-php-executable)
+           (file-executable-p php-project-php-executable))
+      php-project-php-executable
+    php-executable))
 
 (defun php-project-get-file-html-template-type (filename)
   "Return symbol T, NIL or `auto' by `FILENAME'."

@@ -27,6 +27,7 @@
 ;;; Code:
 (require 'flymake)
 (require 'cl-lib)
+(require 'php-core)
 (eval-and-compile
   (require 'flymake-proc))
 (eval-when-compile
@@ -101,7 +102,7 @@ See `flymake-diagnostic-functions' about REPORT-FN and ARGS parameters."
 (defun php-flymake--build-command-line (file)
   "Return the command line for `php -l' FILE."
   (let* ((command-args (or php-flymake-executable-command-args
-                           (list (or (bound-and-true-p php-executable) "php"))))
+                           (list php-executable)))
          (cmd (car-safe command-args))
          (default-directory (expand-file-name "~")))
     (unless (or (file-executable-p cmd)

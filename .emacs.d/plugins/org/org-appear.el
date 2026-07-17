@@ -130,7 +130,7 @@ If true, hide upon navigating away."
       (add-hook 'after-change-functions #'org-appear--after-change nil t)))
    (t
     ;; Clean up current element when disabling the mode
-    (when-let ((current-elem (org-appear--current-elem)))
+    (when-let* ((current-elem (org-appear--current-elem)))
       (org-appear--hide-invisible current-elem)
       (when org-appear--timer
 	(cancel-timer org-appear--timer)
@@ -187,7 +187,8 @@ nil if the cursor was not on an element.")
 
 (defun org-appear--post-cmd ()
   "This function is executed by `post-command-hook' in `org-appear-mode'.
-It handles toggling elements depending on whether the cursor entered or exited them."
+It handles toggling elements depending on whether the cursor entered or exited
+them."
   (let* ((prev-elem org-appear--prev-elem)
 	 (prev-elem-start (org-element-property :begin prev-elem))
 	 (current-elem (org-appear--current-elem))
@@ -249,7 +250,7 @@ It signals that elements in the current buffer must be toggled."
 (defun org-appear-manual-stop ()
   "Signal that elements in the current buffer must no longer be toggled."
   (when (not org-appear-manual-linger)
-    (when-let ((current-elem (org-appear--current-elem)))
+    (when-let* ((current-elem (org-appear--current-elem)))
       (org-appear--hide-invisible current-elem))
     (setq org-appear--elem-toggled nil))
   (setq org-appear--do-buffer nil))
@@ -259,13 +260,13 @@ It signals that elements in the current buffer must be toggled."
 It hides elements before commands that modify the buffer based on column width."
   (when (memq this-command '(org-fill-paragraph
 			     org-ctrl-c-ctrl-c))
-    (when-let ((current-elem (org-appear--current-elem)))
+    (when-let* ((current-elem (org-appear--current-elem)))
       (org-appear--hide-invisible current-elem))))
 
 (defun org-appear--current-elem ()
   "Return element at point.
 Return nil if element is not supported by `org-appear-mode'."
-  (when-let ((elem (org-element-context)))
+  (when-let* ((elem (org-element-context)))
     (let* ((elem-type (car elem))
 	   (elem-end (- (org-element-property :end elem)
 			(1- (org-element-property :post-blank elem))))
@@ -379,7 +380,7 @@ When RENEW is non-nil, obtain element at point instead."
     (setq org-appear--prev-elem elem)
     (setq org-appear--timer nil))
 
-  (when-let ((elem-start (org-element-property :begin elem))
+  (when-let* ((elem-start (org-element-property :begin elem))
 	     (elem-end (org-element-property :end elem)))
     ;; Call `font-lock-ensure' before unhiding to prevent `jit-lock-mode'
     ;; from refontifying the element region after changes in buffer

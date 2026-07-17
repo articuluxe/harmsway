@@ -126,6 +126,11 @@
   "PHP Mode face used to object operators (->)."
   :tag "PHP Object Op")
 
+(defface php-pipe-op '((t (:inherit php-operator)))
+  "PHP Mode face used to the pipe operator (|>).
+The operator was added in PHP 8.5."
+  :tag "PHP Pipe Op")
+
 (defface php-paamayim-nekudotayim '((t ()))
   "PHP Mode face used to highlight scope resolution operators (::).
 The operator is also knows as \"Paamayim Nekudotayim\"."

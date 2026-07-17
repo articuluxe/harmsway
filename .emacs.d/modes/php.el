@@ -39,6 +39,7 @@
 (require 'cc-engine)
 (require 'flymake)
 (require 'php-core)
+(require 'php-keywords)
 (require 'php-project)
 (require 'rx)
 
@@ -244,14 +245,6 @@ out and get `php-default-major-mode' instead."
   :type 'face)
 
 ;;; PHP Keywords
-(defconst php-magical-constants
-  '("__CLASS__" "__DIR__" "__FILE__" "__FUNCTION__" "__LINE__"
-    "__METHOD__" "__NAMESPACE__" "__TRAIT__")
-  "Magical keyword that is expanded at compile time.
-
-These are different from \"constants\" in strict terms.
-see https://www.php.net/manual/language.constants.predefined.php")
-
 (defconst php-re-token-symbols
   (eval-when-compile
     (regexp-opt (list "&" "&=" "array(" "(array)" "&&" "||" "(bool)" "(boolean)" "break;" "?>" "%>"

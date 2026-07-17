@@ -191,26 +191,43 @@ blame to center around the line point is on."
 
 ;;;###autoload
 (defun magit-project-status ()
-  "Run `magit-status' in the current project's root."
+  "Run `magit-status' in the current project's root.
+
+To teach `project-switch-project' about this command, you have to
+add something like this to your configuration:
+
+    (keymap-set project-prefix-map \"m\" #\\='magit-project-status)
+    (add-to-list \\='project-switch-commands
+                 \\='(magit-project-status \"Magit\") t)
+
+Also see `magit-project-dispatch'."
   (interactive)
   (if (fboundp 'project-root)
       (magit-status-setup-buffer (project-root (project-current t)))
     (user-error "`magit-project-status' requires `project' 0.3.0 or greater")))
 
-(defvar magit-bind-magit-project-status t
-  "Whether to bind \"m\" to `magit-project-status' in `project-prefix-map'.
-If so, then an entry is added to `project-switch-commands' as
-well.  If you want to use another key, then you must set this
-to nil before loading Magit to prevent \"m\" from being bound.")
+;;;###autoload
+(defun magit-project-dispatch ()
+  "Run `magit-dispatch' in the current project's root.
 
-(with-eval-after-load 'project
-  (when (and magit-bind-magit-project-status
-             ;; Only modify if it hasn't already been modified.
-             (equal project-switch-commands
-                    (eval (car (get 'project-switch-commands 'standard-value))
-                          t)))
-    (keymap-set project-prefix-map "m" #'magit-project-status)
-    (add-to-list 'project-switch-commands '(magit-project-status "Magit") t)))
+Note that for `magit-dispatch' to operate in the selected project,
+the current buffer's `default-directory' must be located in the
+selected repository.  To achive that, a Dired buffer is created.
+
+To teach `project-switch-project' about this command, you have to
+add something like this to your configuration:
+
+    (keymap-set project-prefix-map \"M\" #\\='magit-project-dispatch)
+    (add-to-list \\='project-switch-commands
+                 \\='(magit-project-dispatch \"Magit Dispatch\") t)
+
+Also see `magit-project-status'."
+  (interactive)
+  (if (fboundp 'project-root)
+      (let ((dir (project-root (project-current t))))
+        (find-file dir)
+        (transient-setup 'magit-dispatch))
+    (user-error "`magit-project-status' requires `project' 0.3.0 or greater")))
 
 ;;; Shift Selection
 
@@ -816,6 +833,36 @@ In Magit diffs, also skip over - and + at the beginning of the line."
     (goto-char (match-end 0)))
   (skip-syntax-forward " " (line-end-position))
   (backward-prefix-chars))
+
+(defun magit-insert-nested-repositories ()
+  "Insert repositories below the current repository.
+
+If the current repository has submodules, then do nothing (in this case
+the expectation is that all nested repositories are submodules and that
+they are being listed using a function such as `magit-insert-modules').
+Otherwise look for nested repositories once, using \"find\", and cache
+the result.  That cache can be invalidated using `magit-zap-caches'.
+
+Note that \"find\" will be run once in every repository, including in
+huge repositories, which don't actually have any nested repositories.
+This may be highly inefficient and you might have to implement your own
+version of this function, which is more suited to you situation.  This
+function is mostly intended as a proof-of-concept."
+  (unless (magit-list-module-names)
+    (unless (magit-repository-local-exists-p 'nested-repos)
+      (magit-repository-local-set
+       'nested-repos
+       (mapcar (##file-name-directory (substring % 2))
+               (process-lines "find" "-name" ".git" "-mindepth" "2"))))
+    (when-let ((repos (magit-repository-local-get 'nested-repos)))
+      (magit-insert-section (repos repos t)
+        (magit-insert-heading
+          (format "%s (%s)"
+                  (propertize "Nested repositories"
+                              'font-lock-face 'magit-section-heading)
+                  (length repos)))
+        (magit-insert-section-body
+          (magit--insert-modules-overview nil repos))))))
 
 ;;; _
 (provide 'magit-extras)
