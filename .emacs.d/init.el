@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-07-16 15:20:44 dharms>
+;; Modified Time-stamp: <2026-07-17 08:30:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1450,6 +1450,12 @@ ARGS are the additional arguments."
   (setq vterm-kill-buffer-on-exit t)
   (setq vterm-copy-exclude-prompt t)
   (setq vterm-buffer-name-string "VTERM %s")
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm-editor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package vterm-editor
+  :bind (:map vterm-mode-map ("C-c e" . vterm-editor-open))
+  :after vterm
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm-toggle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
