@@ -30,20 +30,26 @@ on processFile(currfile, currdir)
 	--	display dialog "today: " & todaystr & return & "then: " & thenstr
 	set newtxtname to thenstr & "-" & text 1 thru -7 of currname & ".txt"
 	set newpdfname to thenstr & "-" & text 1 thru -7 of currname & ".pdf"
-	set currpath to (currdir as Unicode text) & currname
-	set subdir to (currdir as text) & ".converted-at-" & todaystr
+	set currpath to currdir & currname
+	set newfolder to ".converted-at-" & todaystr
+	--	display dialog "newfolder: " & newfolder & " currfile: " & currfile & " currdir: " & currdir
+	set subdir to (currdir as text) & newfolder
 	tell application "Finder"
-		if (exists folder subdir) = false then
-			set subdir to make new folder at (currdir as text) with properties {name:".converted-at-" & todaystr}
-		else
-			set subdir to subdir & ":"
+		update items of folder currdir
+		if not (exists folder newfolder of currdir) then
+			display dialog "Folder doesn't exist, making..."
+			-- this block always executes, so enclose in try block
+			try
+				make new folder at (currdir as string) with properties {name:newfolder}
+			end try
 		end if
 	end tell
-	set newpath to (subdir as Unicode text)
 	tell application "Pages"
-		set currdoc to open file currpath
-		export currdoc to file (newpath & newtxtname) as unformatted text
-		export currdoc to file (newpath & newpdfname) as PDF
+		set currdoc to open file (currpath as Unicode text)
+		set newtxt to subdir & ":" & newtxtname
+		export currdoc to file (newtxt as Unicode text) as unformatted text
+		set newpdf to subdir & ":" & newpdfname
+		export currdoc to file (newpdf as Unicode text) as PDF
 		close currdoc saving no
 	end tell
 end processFile

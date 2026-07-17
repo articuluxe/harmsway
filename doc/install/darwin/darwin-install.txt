@@ -108,6 +108,8 @@ brew tap daviderestivo/emacs-head
 # old: brew install emacs-head --with-cocoa --with-modern-icon-sjrmanning
 brew install emacs-head@28 --with-cocoa --with-native-comp --with-native-full-aot --with-modern-icon-emacs-icon2
 brew install emacs-head@29 --with-cocoa --with-native-comp --with-native-full-aot --with-tree-sitter --with-modern-icon-emacs-icon5
+
+brew trust daviderestivo/emacs-head
 brew install emacs-head@30 --with-cocoa --with-native-comp --with-native-full-aot --with-tree-sitter --with-modern-icon-emacs-icon6
 
 brew tap jimeh/emacs/builds
