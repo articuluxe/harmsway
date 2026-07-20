@@ -1,17 +1,17 @@
 #!/bin/sh
 # -*- Mode: sh -*-
 # ec --- launch emacs client
-# Copyright (C) 2021, 2023, 2025  Dan Harms (dharms)
+# Copyright (C) 2021, 2023, 2025-2026  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2025-04-01 11:30:04 dharms>
+# Modified Time-stamp: <2026-07-20 11:39:07 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
 srv=${ESRV:-$(hostname -s)}
 "$EMACS_CLIENT" -q -s "$srv" -n -r "$@"
-if [ "$(uname)" = "Darwin" ]; then
+if [ "$(uname)" = "Darwin" ] && [ "$(command -v _darwin_fg.sh)" ]; then
     _darwin_fg.sh
 fi
 
