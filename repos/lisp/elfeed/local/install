@@ -1,2 +1,2 @@
-cp src/*.el ../../../.emacs.d/plugins/elfeed
+find src -maxdepth 1 -name \*.el | grep -v test | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/elfeed
 cp src/web/* ../../../.emacs.d/plugins/elfeed/web

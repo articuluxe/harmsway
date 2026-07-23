@@ -1,2 +1,2 @@
-cp src/*.el ../../../.emacs.d/plugins/org
+find src -maxdepth 1 -name \*.el | grep -v test | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/org
 cp -rf src/styles ../../../.emacs.d/plugins/org

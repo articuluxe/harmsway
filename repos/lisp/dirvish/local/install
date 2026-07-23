@@ -1,2 +1,2 @@
-cp src/*.el ../../../.emacs.d/plugins/dirvish
+find src -maxdepth 1 -name \*.el | grep -v test | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/dirvish
 cp src/extensions/*.el ../../../.emacs.d/plugins/dirvish

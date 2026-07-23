@@ -1,2 +1,2 @@
 mkdir -p ../../../.emacs.d/plugins/elnode
-cp src/*.el ../../../.emacs.d/plugins/elnode
+find src -maxdepth 1 -name \*.el | grep -v test | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/elnode
