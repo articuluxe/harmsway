@@ -819,16 +819,16 @@ not turn on `read-only-mode'."
 (defun magit-blame--pre-blame-assert (type)
   (unless (magit-toplevel)
     (magit--not-inside-repository-error))
-  (if (and magit-blame-mode
-           (eq type magit-blame-type))
-      (if-let ((chunk (magit-current-blame-chunk)))
-          (unless (oref chunk prev-rev)
-            (user-error "Chunk has no further history"))
-        (user-error "Still blaming, commit data not available yet"))
-    (unless (magit-file-relative-name nil (not magit-buffer-file-name))
-      (if buffer-file-name
-          (user-error "Buffer isn't visiting a tracked file")
-        (user-error "Buffer isn't visiting a file")))))
+  (cond ((and magit-blame-mode
+              (eq type magit-blame-type))
+         (if-let ((chunk (magit-current-blame-chunk)))
+             (unless (oref chunk prev-rev)
+               (user-error "Chunk has no further history"))
+           (message "Still blaming, commit data not available yet")))
+        ((not (magit-file-relative-name nil (not magit-buffer-file-name)))
+         (if buffer-file-name
+             (user-error "Buffer isn't visiting a tracked file")
+           (user-error "Buffer isn't visiting a file")))))
 
 (defun magit-blame--pre-blame-setup (type)
   (when magit-blame-mode
@@ -940,7 +940,7 @@ instead of the hash, like `kill-ring-save' would."
       (call-interactively #'copy-region-as-kill)
     (kill-new (message "%s" (oref (magit-current-blame-chunk) orig-rev)))))
 
-;;; Popup
+;;; Menu
 
 ;;;###autoload(autoload 'magit-blame "magit-blame" nil t)
 (transient-define-prefix magit-blame ()

@@ -1242,6 +1242,13 @@ See also `magit-untracked-files'."
 (defun magit-stashed-files (stash)
   (magit-git-items "stash" "show" "-z" "--name-only" stash))
 
+(defun magit-removed-files ()
+  (seq-difference (delete-consecutive-dups
+                   (sort (magit-git-items "log" "-z" "--format="
+                                          "--name-only" "--diff-filter=D")
+                         #'string<))
+                  (magit-list-files)))
+
 (defun magit-skip-worktree-files (&rest args)
   (seq-keep (##and (= (aref % 0) ?S)
                    (substring % 2))
@@ -1535,6 +1542,15 @@ However, if REV is nil or has the form \":/TEXT\", return REV itself."
         ((string-prefix-p ":/" rev) rev)
         ((concat rev "^{commit}"))))
 
+(defun magit-merge-base (a b &rest args)
+  "Return the merge-base of commits A and B.
+Optional ARGS are additional argument to \"git merge-base\"."
+  (magit-git-string "merge-base" args a b))
+
+(defun magit-rev-ancestor-p (a b)
+  "Return non-nil if commit A is an ancestor of commit B."
+  (magit-git-success "merge-base" "--is-ancestor" a b))
+
 (defun magit-rev-equal (a b)
   "Return t if there are no differences between the commits A and B."
   (magit-git-success "diff" "--quiet" a b))
@@ -1544,10 +1560,6 @@ However, if REV is nil or has the form \":/TEXT\", return REV itself."
   (and-let ((a (magit-commit-oid a t))
             (b (magit-commit-oid b t)))
     (equal a b)))
-
-(defun magit-rev-ancestor-p (a b)
-  "Return non-nil if commit A is an ancestor of commit B."
-  (magit-git-success "merge-base" "--is-ancestor" a b))
 
 (defun magit-rev-head-p (rev)
   "Return t if REV can be dereferences as the `HEAD' commit."
@@ -2706,7 +2718,7 @@ and this option only controls what face is used.")
       (setq end (magit--abbrev-if-oid end)))
     (pcase sep
       (".."  (cons beg end))
-      ("..." (and$ (magit-git-string "merge-base" beg end)
+      ("..." (and$ (magit-merge-base beg end)
                    (cons (if abbrev (magit-rev-abbrev $) $)
                          end))))))
 
@@ -3016,20 +3028,24 @@ out.  Only existing branches can be selected."
          (car (member (magit-get-previous-branch) branches))))))
 
 (defun magit-read-starting-point (prompt &optional branch default)
-  (or (magit-completing-read
-       (concat prompt
-               (and branch
-                    (if (bound-and-true-p ivy-mode)
-                        ;; Ivy-mode strips faces from prompt.
-                        (format  " `%s'" branch)
-                      (concat " " (magit--propertize-face
-                                   branch 'magit-branch-local))))
-               " starting at")
-       (nconc (list "HEAD")
-              (magit-list-refnames)
-              (directory-files (magit-gitdir) nil "_HEAD\\'"))
-       nil 'any nil 'magit-revision-history
-       (or default (magit--default-starting-point)))
+  (or (minibuffer-with-setup-hook #'magit--minibuf-default-add-commit
+        (magit-completing-read
+         (concat prompt
+                 (and branch
+                      (if (bound-and-true-p ivy-mode)
+                          ;; Ivy-mode strips faces from prompt.
+                          (format  " `%s'" branch)
+                        (concat " " (magit--propertize-face
+                                     branch 'magit-branch-local))))
+                 " starting at")
+         (let ((refnames (magit-list-refnames)))
+           (when-let ((upstream (magit-get-upstream-branch)))
+             (setq refnames (cons upstream (delete upstream refnames))))
+           (nconc refnames
+                  (list "HEAD")
+                  (directory-files (magit-gitdir) nil "_HEAD\\'")))
+         nil 'any nil 'magit-revision-history
+         (or default (magit--default-starting-point))))
       (user-error "Nothing selected")))
 
 (defun magit--default-starting-point ()

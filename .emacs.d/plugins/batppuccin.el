@@ -876,6 +876,17 @@ The light flavor.")
          `(holiday ((,class (:foreground ,bat-peach))))
          `(diary ((,class (:foreground ,bat-yellow))))
 
+;;;;; completion-preview
+         `(completion-preview ((,class (:foreground ,bat-overlay1))))
+         `(completion-preview-common ((,class (:foreground ,bat-overlay2))))
+         `(completion-preview-exact ((,class (:foreground ,bat-overlay2 :underline t))))
+
+;;;;; dictionary
+         `(dictionary-word-entry-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(dictionary-word-definition-face ((,class (:foreground ,bat-text))))
+         `(dictionary-reference-face ((,class (:foreground ,bat-sapphire :underline t))))
+         `(dictionary-button-face ((,class (:foreground ,bat-blue :underline t :weight bold))))
+
 ;;;;; eglot
          `(eglot-highlight-symbol-face ((,class (:background ,bat-surface0 :weight bold))))
          `(eglot-diagnostic-tag-unnecessary-face ((,class (:foreground ,bat-overlay2 :underline (:style wave :color ,bat-overlay1)))))
@@ -963,6 +974,15 @@ The light flavor.")
          `(evil-ex-substitute-matches ((,class (:foreground ,bat-text :background ,bat-surface1))))
          `(evil-ex-substitute-replacement ((,class (:foreground ,bat-peach :underline t :weight bold))))
 
+;;;;; anzu
+         `(anzu-mode-line ((,class (:foreground ,bat-sky :weight bold))))
+         `(anzu-mode-line-no-match ((,class (:foreground ,bat-red :weight bold))))
+         `(anzu-match-1 ((,class (:foreground ,bat-base :background ,bat-blue))))
+         `(anzu-match-2 ((,class (:foreground ,bat-base :background ,bat-teal))))
+         `(anzu-match-3 ((,class (:foreground ,bat-base :background ,bat-peach))))
+         `(anzu-replace-highlight ((,class (:foreground ,bat-text :background ,bat-surface1))))
+         `(anzu-replace-to ((,class (:foreground ,bat-peach :underline t :weight bold))))
+
 ;;;;; avy
          `(avy-lead-face ((,class (:foreground ,bat-base :background ,bat-red :weight bold))))
          `(avy-lead-face-0 ((,class (:foreground ,bat-base :background ,bat-blue :weight bold))))
@@ -970,6 +990,11 @@ The light flavor.")
          `(avy-lead-face-2 ((,class (:foreground ,bat-base :background ,bat-teal :weight bold))))
          `(avy-background-face ((,class (:foreground ,bat-overlay2))))
          `(avy-goto-char-timer-face ((,class (:foreground ,bat-base :background ,bat-red))))
+
+;;;;; clojure-mode
+         `(clojure-keyword-face ((,class (:foreground ,bat-teal))))
+         `(clojure-character-face ((,class (:foreground ,bat-green))))
+         `(clojure-discard-face ((,class (:foreground ,bat-overlay2 :slant italic))))
 
 ;;;;; cider
          `(cider-result-overlay-face ((,class (:foreground ,bat-green :background ,bat-mantle
@@ -997,6 +1022,20 @@ The light flavor.")
          `(cider-test-failure-face ((,class (:foreground ,bat-red :weight bold))))
          `(cider-test-success-face ((,class (:foreground ,bat-green :weight bold))))
          `(cider-traced-face ((,class (:background ,bat-diff-chg-bg))))
+         `(cider-repl-result-face ((,class (:foreground ,bat-teal))))
+         `(cider-fringe-bad-face ((,class (:foreground ,bat-red))))
+         `(cider-fringe-stale-face ((,class (:foreground ,bat-yellow))))
+         `(cider-reader-conditional-face ((,class (:foreground ,bat-subtext0))))
+         `(cider-debug-prompt-face ((,class (:foreground ,bat-mauve :weight bold))))
+;;;;;; nrepl (message log)
+         `(nrepl-message-1-face ((,class (:foreground ,bat-red))))
+         `(nrepl-message-2-face ((,class (:foreground ,bat-peach))))
+         `(nrepl-message-3-face ((,class (:foreground ,bat-yellow))))
+         `(nrepl-message-4-face ((,class (:foreground ,bat-green))))
+         `(nrepl-message-5-face ((,class (:foreground ,bat-teal))))
+         `(nrepl-message-6-face ((,class (:foreground ,bat-sapphire))))
+         `(nrepl-message-7-face ((,class (:foreground ,bat-blue))))
+         `(nrepl-message-8-face ((,class (:foreground ,bat-lavender))))
 
 ;;;;; company
          `(company-tooltip ((,class (:foreground ,bat-text :background ,bat-mantle))))
@@ -1034,6 +1073,10 @@ The light flavor.")
          `(corfu-border ((,class (:background ,bat-surface0))))
          `(corfu-annotations ((,class (:foreground ,bat-overlay2))))
          `(corfu-deprecated ((,class (:foreground ,bat-overlay2 :strike-through t))))
+         `(corfu-popupinfo ((,class (:foreground ,bat-text :background ,bat-mantle))))
+
+;;;;; copilot
+         `(copilot-overlay-face ((,class (:foreground ,bat-overlay1 :slant italic))))
 
 ;;;;; doom-modeline
          `(doom-modeline-bar ((,class (:background ,bat-blue))))
@@ -1077,6 +1120,10 @@ The light flavor.")
          `(embark-collect-marked ((,class (:foreground ,bat-base :background ,bat-mauve))))
          `(embark-collect-zebra-highlight ((,class (:background ,bat-surface0))))
 
+;;;;; easy-kill
+         `(easy-kill-selection ((,class (:background ,bat-selection :extend t))))
+         `(easy-kill-origin ((,class (:foreground ,bat-base :background ,bat-red))))
+
 ;;;;; flycheck
          `(flycheck-error ((,class (:underline (:style wave :color ,bat-red)))))
          `(flycheck-warning ((,class (:underline (:style wave :color ,bat-yellow)))))
@@ -1087,6 +1134,14 @@ The light flavor.")
          `(flycheck-fringe-error ((,class (:foreground ,bat-red))))
          `(flycheck-fringe-warning ((,class (:foreground ,bat-yellow))))
          `(flycheck-fringe-info ((,class (:foreground ,bat-teal))))
+
+;;;;; erlang
+         `(erlang-font-lock-exported-function-name-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(erlang-edoc-heading ((,class (:foreground ,bat-mauve :weight bold))))
+         `(erlang-edoc-tag ((,class (:foreground ,bat-subtext0))))
+         `(erlang-edoc-macro ((,class (:foreground ,bat-pink))))
+         `(erlang-edoc-verbatim ((,class (:foreground ,bat-teal))))
+         `(erlang-edoc-todo ((,class (:foreground ,bat-maroon :weight bold))))
 
 ;;;;; forge
          `(forge-topic-open ((,class (:foreground ,bat-green))))
@@ -1106,12 +1161,40 @@ The light flavor.")
          `(forge-suffix-active-and-implied ((,class (:foreground ,bat-green))))
          `(forge-suffix-implied ((,class (:foreground ,bat-overlay1))))
 
+;;;;; git-timemachine
+         `(git-timemachine-commit ((,class (:foreground ,bat-peach :weight bold))))
+         `(git-timemachine-minibuffer-author-face ((,class (:foreground ,bat-blue))))
+         `(git-timemachine-minibuffer-detail-face ((,class (:foreground ,bat-sky))))
+
+;;;;; haskell-mode
+         `(haskell-keyword-face ((,class (:foreground ,bat-mauve))))
+         `(haskell-type-face ((,class (:foreground ,bat-yellow))))
+         `(haskell-constructor-face ((,class (:foreground ,bat-yellow))))
+         `(haskell-definition-face ((,class (:foreground ,bat-blue))))
+         `(haskell-operator-face ((,class (:foreground ,bat-sky))))
+         `(haskell-pragma-face ((,class (:foreground ,bat-pink))))
+         `(haskell-quasi-quote-face ((,class (:foreground ,bat-green))))
+         `(haskell-literate-comment-face ((,class (:foreground ,bat-overlay2 :slant italic))))
+         `(haskell-hole-face ((,class (:foreground ,bat-yellow :weight bold))))
+         `(haskell-error-face ((,class (:underline (:style wave :color ,bat-red)))))
+         `(haskell-warning-face ((,class (:underline (:style wave :color ,bat-yellow)))))
+         `(haskell-interactive-face-prompt ((,class (:foreground ,bat-blue :weight bold))))
+         `(haskell-interactive-face-prompt-cont ((,class (:foreground ,bat-sapphire))))
+         `(haskell-interactive-face-compile-error ((,class (:foreground ,bat-red :weight bold))))
+         `(haskell-interactive-face-compile-warning ((,class (:foreground ,bat-yellow :weight bold))))
+         `(haskell-interactive-face-result ((,class (:foreground ,bat-green))))
+         `(haskell-interactive-face-garbage ((,class (:foreground ,bat-overlay1))))
+
 ;;;;; hydra
          `(hydra-face-red ((,class (:foreground ,bat-red :weight bold))))
          `(hydra-face-blue ((,class (:foreground ,bat-blue :weight bold))))
          `(hydra-face-amaranth ((,class (:foreground ,bat-peach :weight bold))))
          `(hydra-face-pink ((,class (:foreground ,bat-pink :weight bold))))
          `(hydra-face-teal ((,class (:foreground ,bat-teal :weight bold))))
+
+;;;;; inf-ruby
+         `(inf-ruby-result-overlay-face ((,class (:foreground ,bat-green :background ,bat-mantle
+                                                              :box (:line-width -1 :color ,bat-surface0)))))
 
 ;;;;; ivy
          `(ivy-current-match ((,class (:foreground ,bat-text :background ,bat-surface1 :weight bold))))
@@ -1123,6 +1206,17 @@ The light flavor.")
          `(ivy-match-required-face ((,class (:foreground ,bat-red))))
          `(ivy-remote ((,class (:foreground ,bat-mauve))))
          `(ivy-virtual ((,class (:foreground ,bat-overlay2))))
+
+;;;;; jinx
+         `(jinx-misspelled ((,class (:underline (:style wave :color ,bat-red)))))
+         `(jinx-highlight ((,class (:foreground ,bat-base :background ,bat-red :weight bold))))
+         `(jinx-save ((,class (:foreground ,bat-peach :weight bold))))
+         `(jinx-key ((,class (:foreground ,bat-mauve :weight bold))))
+         `(jinx-annotation ((,class (:foreground ,bat-overlay2))))
+
+;;;;; keycast
+         `(keycast-key ((,class (:foreground ,bat-base :background ,bat-mauve :weight bold))))
+         `(keycast-command ((,class (:weight bold))))
 
 ;;;;; lsp-mode
          `(lsp-face-highlight-textual ((,class (:background ,bat-surface0))))
@@ -1273,6 +1367,41 @@ The light flavor.")
          `(marginalia-value ((,class (:foreground ,bat-subtext1))))
          `(marginalia-version ((,class (:foreground ,bat-teal))))
 
+;;;;; asciidoc-mode
+         `(asciidoc-document-title-face ((,class (:foreground ,bat-text :weight bold :height ,h-doc))))
+         `(asciidoc-title-1-face ((,class (:foreground ,bat-heading1 :weight bold :height ,h1))))
+         `(asciidoc-title-2-face ((,class (:foreground ,bat-heading2 :weight bold :height ,h2))))
+         `(asciidoc-title-3-face ((,class (:foreground ,bat-heading3 :weight bold :height ,h3))))
+         `(asciidoc-title-4-face ((,class (:foreground ,bat-heading4 :weight bold))))
+         `(asciidoc-title-5-face ((,class (:foreground ,bat-heading5 :weight bold))))
+         `(asciidoc-markup-face ((,class (:foreground ,bat-overlay2))))
+         `(asciidoc-code-face ((,class (:foreground ,bat-teal :background ,bat-mantle :extend t))))
+         `(asciidoc-link-face ((,class (:foreground ,bat-blue :underline t))))
+         `(asciidoc-link-mouse-face ((,class (:foreground ,bat-blue :background ,bat-surface0 :underline t))))
+         `(asciidoc-url-face ((,class (:foreground ,bat-blue :underline t))))
+         `(asciidoc-cross-reference-face ((,class (:foreground ,bat-lavender :underline t))))
+         `(asciidoc-anchor-face ((,class (:foreground ,bat-lavender))))
+         `(asciidoc-superscript-face ((,class (:foreground ,bat-text :height 0.8))))
+         `(asciidoc-subscript-face ((,class (:foreground ,bat-text :height 0.8))))
+         `(asciidoc-metadata-key-face ((,class (:foreground ,bat-overlay2))))
+         `(asciidoc-metadata-value-face ((,class (:foreground ,bat-subtext1))))
+         `(asciidoc-footnote-marker-face ((,class (:foreground ,bat-teal))))
+         `(asciidoc-footnote-text-face ((,class (:foreground ,bat-subtext1))))
+         `(asciidoc-highlight-face ((,class (:foreground ,bat-base :background ,bat-yellow))))
+         `(asciidoc-strike-through-face ((,class (:foreground ,bat-overlay1 :strike-through t))))
+         `(asciidoc-underline-face ((,class (:underline t))))
+         `(asciidoc-overline-face ((,class (:overline t))))
+         `(asciidoc-admonition-note-label-face ((,class (:foreground ,bat-blue :weight bold))))
+         `(asciidoc-admonition-note-face ((,class (:background ,bat-diff-chg-bg :extend t))))
+         `(asciidoc-admonition-tip-label-face ((,class (:foreground ,bat-green :weight bold))))
+         `(asciidoc-admonition-tip-face ((,class (:background ,bat-diff-add-bg :extend t))))
+         `(asciidoc-admonition-important-label-face ((,class (:foreground ,bat-mauve :weight bold))))
+         `(asciidoc-admonition-important-face ((,class (:background ,bat-mantle :extend t))))
+         `(asciidoc-admonition-caution-label-face ((,class (:foreground ,bat-yellow :weight bold))))
+         `(asciidoc-admonition-caution-face ((,class (:background ,bat-mantle :extend t))))
+         `(asciidoc-admonition-warning-label-face ((,class (:foreground ,bat-red :weight bold))))
+         `(asciidoc-admonition-warning-face ((,class (:background ,bat-diff-del-bg :extend t))))
+
 ;;;;; markdown-mode
          `(markdown-header-face-1 ((,class (:foreground ,bat-heading1 :weight bold :height ,h1))))
          `(markdown-header-face-2 ((,class (:foreground ,bat-heading2 :weight bold :height ,h2))))
@@ -1301,6 +1430,9 @@ The light flavor.")
          `(markdown-html-attr-value-face ((,class (:foreground ,bat-green))))
          `(markdown-html-tag-name-face ((,class (:foreground ,bat-blue))))
          `(markdown-table-face ((,class (:foreground ,bat-subtext0))))
+
+;;;;; mistty
+         `(mistty-fringe-face ((,class (:foreground ,bat-overlay0))))
 
 ;;;;; orderless
          `(orderless-match-face-0 ((,class (:foreground ,bat-blue :weight bold))))
@@ -1584,6 +1716,18 @@ The light flavor.")
          `(undo-tree-visualizer-default-face ((,class (:foreground ,bat-overlay2))))
          `(undo-tree-visualizer-register-face ((,class (:foreground ,bat-yellow))))
          `(undo-tree-visualizer-unmodified-face ((,class (:foreground ,bat-teal))))
+
+;;;;; volatile-highlights
+         `(vhl/default-face ((,class (:background ,bat-surface1))))
+
+;;;;; vundo
+         `(vundo-node ((,class (:foreground ,bat-overlay1))))
+         `(vundo-stem ((,class (:foreground ,bat-surface2))))
+         `(vundo-branch-stem ((,class (:foreground ,bat-overlay0))))
+         `(vundo-highlight ((,class (:foreground ,bat-blue :weight bold))))
+         `(vundo-saved ((,class (:foreground ,bat-green))))
+         `(vundo-last-saved ((,class (:foreground ,bat-green :weight bold))))
+         `(vundo-diff-highlight ((,class (:foreground ,bat-peach :weight bold))))
 
 ;;;;; wgrep
          `(wgrep-face ((,class (:foreground ,bat-green :background ,bat-diff-add-bg))))

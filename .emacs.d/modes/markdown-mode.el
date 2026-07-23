@@ -3636,12 +3636,31 @@ SEQ may be an atom or a sequence."
             (add-text-properties fontified-start fontified-end heading-props)))))
     t))
 
+(defun markdown--fontify-table-alignment ()
+  "Visually align cell separators of the table line at point.
+Hiding markup makes the displayed content of a table cell
+narrower than the buffer text, which breaks the column alignment
+of tables that are aligned in the source.  Give the whitespace
+before each cell separator a space display specification
+stretching it to the separator's buffer column, so that
+separators are displayed at the same column as in the source
+regardless of what is hidden before them."
+  (beginning-of-line)
+  (while (re-search-forward "[ \t]+|" (line-end-position) t)
+    (let ((separator (1- (match-end 0))))
+      (unless (markdown-inline-code-at-pos-p separator)
+        (put-text-property
+         (match-beginning 0) separator
+         'display `(space :align-to ,(1- (current-column))))))))
+
 (defun markdown-fontify-tables (last)
   (when (re-search-forward "|" last t)
     (when (markdown-table-at-point-p)
       (font-lock-append-text-property
        (line-beginning-position) (min (1+ (line-end-position)) (point-max))
-       'face 'markdown-table-face))
+       'face 'markdown-table-face)
+      (when (or markdown-hide-markup markdown-hide-urls)
+        (markdown--fontify-table-alignment)))
     (forward-line 1)
     t))
 

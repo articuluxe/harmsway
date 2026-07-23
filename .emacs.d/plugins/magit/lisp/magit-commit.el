@@ -111,7 +111,7 @@ runs Git asynchronously and on the local machine.  The hook functions
 are called with the same arguments as the Git hook; see the mentioned
 manpage for details.")
 
-;;; Popup
+;;; Menu
 
 ;;;###autoload(autoload 'magit-commit "magit-commit" nil t)
 (transient-define-prefix magit-commit ()
@@ -570,7 +570,8 @@ See `magit-commit-autofixup' for an alternative implementation."
   (interactive (if current-prefix-arg
                    (list 'transient nil nil)
                  (list 'select
-                       (magit-get-upstream-branch)
+                       (and$ (magit-get-upstream-branch)
+                             (magit-merge-base $ "HEAD"))
                        (transient-args 'magit-commit-absorb))))
   (if (eq phase 'transient)
       (transient-setup 'magit-commit-absorb)
@@ -617,7 +618,8 @@ an alternative implementation."
   (interactive (if current-prefix-arg
                    (list 'transient nil nil)
                  (list 'select
-                       (magit-get-upstream-branch)
+                       (and$ (magit-get-upstream-branch)
+                             (magit-merge-base $ "HEAD"))
                        (transient-args 'magit-commit-autofixup))))
   (if (eq phase 'transient)
       (transient-setup 'magit-commit-autofixup)

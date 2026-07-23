@@ -1090,6 +1090,13 @@ See `dape--file-name-1'."
                    :key (lambda (frame) (plist-get frame :id))))
         (car stack-frames))))
 
+(defun dape--variable-name (variable)
+  "Return plist VARIABLE's :name or :evaluateName."
+  (let ((name (or (plist-get variable :name) "")))
+    (if (string-empty-p name)
+        (or (plist-get variable :evaluateName) "")
+      name)))
+
 (defun dape--object-to-marker (conn plist)
   "Return marker created from PLIST and CONN config.
 Marker is created from PLIST keys :source and :line.
@@ -2007,7 +2014,7 @@ See `dape-request' for expected CB signature."
              (cl-loop
               for variable in (or (plist-get object :scopes)
                                   (plist-get object :variables))
-              for name = (plist-get variable :name)
+              for name = (dape--variable-name variable)
               for expensive-p = (eq (plist-get variable :expensive) t)
               when (and (not expensive-p) (funcall pred (cons name path)))
               collect variable)))
@@ -2016,7 +2023,7 @@ See `dape-request' for expected CB signature."
           (dape--with-request (dape--variables conn object)
             (dape--with-request
                 (dape--variables-recursive
-                 conn object (cons (plist-get object :name) path) pred)
+                 conn object (cons (dape--variable-name object) path) pred)
               (when (length= objects (cl-incf responses))
                 (dape--request-continue cb))))))
     (dape--request-continue cb)))
@@ -4651,8 +4658,8 @@ current buffer with CONN config."
               (plist-get dape--variable :result))))
      (read-string (format-prompt "Set value of %s `%s'"
                                  default
-                                 (plist-get dape--variable :type)
-                                 (plist-get dape--variable :name))
+                                 (or (plist-get dape--variable :type) "")
+                                 (dape--variable-name dape--variable))
                   nil nil default))))
 
 (dape--buffer-map dape-info-variable-value-map dape-info-variable-edit)
@@ -4733,10 +4740,7 @@ current buffer with CONN config."
   "Add variable OBJECT with REFERENCE and PATH to TABLE.
 TEST-EXPANDED is called with PATH and OBJECT to determine if recursive
 calls should continue.  If NO-HANDLES is non-nil skip + - handles."
-  (let* ((name (or (plist-get object :name) ""))
-         (name (if (string-empty-p name)
-                   (or (plist-get object :evaluateName) "")
-                 name))
+  (let* ((name (dape--variable-name object))
          (type (or (plist-get object :type) ""))
          (value (or (plist-get object :value)
                     (plist-get object :result)

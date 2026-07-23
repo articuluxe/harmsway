@@ -545,7 +545,6 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     font-latex-string-face
     font-latex-verbatim-face
     font-lock-string-face
-    gnus-header-name
     gnus-splash
     gnus-summary-high-ancient
     gnus-summary-high-read
@@ -586,6 +585,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     message-header-newsgroups
     message-header-xheader
     mu4e-header-face
+    mu4e-thread-fold-face
     nerd-icons-blue
     nerd-icons-blue-alt
     nerd-icons-completion-dir-face
@@ -978,6 +978,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     elfeed-search-unread-title-face
     elisp-throw-tag
     git-commit-summary
+    gnus-header-name
     line-number-current-line
     log-edit-header
     magit-branch-current
@@ -1262,6 +1263,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 (defconst doric-themes-diff-added-refine-faces
   '(diff-refine-added
     ediff-fine-diff-B
+    magit-diff-added-indicator
     smerge-refined-added))
 
 (defconst doric-themes-diff-changed-faces
@@ -1283,6 +1285,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
   '(diff-refine-changed
     ediff-fine-diff-C
     smerge-refined-changed
+    magit-diff-base-indicator
     transient-argument))
 
 (defconst doric-themes-diff-removed-faces
@@ -1305,6 +1308,7 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
 (defconst doric-themes-diff-removed-refine-faces
   '(diff-refine-removed
     ediff-fine-diff-A
+    magit-diff-removed-indicator
     smerge-refined-removed))
 
 (defconst doric-themes-error-background-faces

@@ -2550,7 +2550,11 @@ necessary.  For use as `imenu-default-goto-function' in
 (cl-defgeneric magit-bookmark-get-filename ()
   (or (buffer-file-name) (buffer-name)))
 
-(cl-defgeneric magit-bookmark-get-value (bookmark mode))
+(cl-defgeneric magit-bookmark--store-buffer-values (bookmark mode)
+  "Set MODE-specific properties in BOOKMARK.
+For each variable specified by MODE's `magit-bookmark-variables' property,
+store its buffer-local value in BOOKMARK, using the variable symbol as the
+property name.")
 
 (cl-defgeneric magit-bookmark--get-child-value (section)
   (oref section value))
@@ -2572,8 +2576,10 @@ and the buffer-local values of the variables referenced in its
         (bookmark-prop-set bookmark 'handler  #'magit--handle-bookmark)
         (bookmark-prop-set bookmark 'mode     major-mode)
         (bookmark-prop-set bookmark 'filename (magit-bookmark-get-filename))
+        ;; Default(s) suggested to the user when naming the bookmark.
+        ;; See comment in `bookmark-set-internal'.
         (bookmark-prop-set bookmark 'defaults (list (magit-bookmark-name)))
-        (magit-bookmark-get-value bookmark)
+        (magit-bookmark--store-buffer-values bookmark)
         (bookmark-prop-set
          bookmark 'magit-hidden-sections
          (seq-keep (##and (oref % hidden)

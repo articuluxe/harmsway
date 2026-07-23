@@ -59,7 +59,10 @@
 (eval-when-compile
   (require 'cl-lib))
 (require 'php-core)
-(require 'projectile nil t)
+(require 'project)
+;; Projectile is optional and only used at runtime through `fboundp' guards.
+;; `projectile-mode' being active already implies the library is loaded, so we
+;; deliberately avoid pulling in the whole of Projectile just by requiring us.
 
 ;; Constants
 (defconst php-project-composer-autoloader "vendor/autoload.php")
@@ -77,9 +80,18 @@
   :type 'boolean)
 
 (defcustom php-project-use-projectile-to-detect-root nil
-  "If `T' and projectile-mode is activated, use Projectile for root detection."
+  "If `T' and projectile-mode is activated, use Projectile for root detection.
+
+This option predates Projectile 3, which registers itself on
+`project-find-functions'.  `php-project-get-root-dir' now falls back to
+`project-current' when no PHP marker is found, so Projectile (and any other
+`project.el' backend) is consulted automatically.  Prefer that path instead."
   :tag "PHP Project Use Projectile To Detect Root"
   :type 'boolean)
+(make-obsolete-variable 'php-project-use-projectile-to-detect-root
+                        "rely on `project-find-functions'; \
+`php-project-get-root-dir' falls back to `project-current' automatically."
+                        "1.28.0")
 
 ;; Variables
 (defvar php-project-available-root-files
@@ -260,14 +272,24 @@ Typically it is `pear', `drupal', `wordpress', `symfony2' and `psr2'.")
 
 ;;;###autoload
 (defun php-project-project-find-function (dir)
-  "Return path to current PHP project from DIR.
+  "Return the PHP project containing DIR.
 
-This function is compatible with `project-find-functions'."
+This function is compatible with `project-find-functions'.  Register it with a
+low priority so that it only supplements the built-in detection, for example:
+
+    (add-hook \\='project-find-functions #\\='php-project-project-find-function 90)
+
+When the detected root is under version control the result is delegated to
+`project-try-vc', which yields the representation expected by the running
+Emacs (a plain \\='(vc . ROOT) cons is only valid on Emacs 27 and breaks the
+3-element \\='(vc BACKEND ROOT) form used since Emacs 28).  Otherwise a
+`transient' project rooted at the PHP project directory is returned."
   (let ((default-directory dir))
     (when-let* ((root (php-project-get-root-dir)))
-      (if (file-exists-p (expand-file-name ".git" root))
-          (cons 'vc root)
-        (cons 'transient root)))))
+      (or (and (file-exists-p (expand-file-name ".git" root))
+               (fboundp 'project-try-vc)
+               (project-try-vc root))
+          (cons 'transient root)))))
 
 (defun php-project--detect-root-dir ()
   "Return detected project root."
@@ -282,8 +304,25 @@ This function is compatible with `project-find-functions'."
              (cl-loop for m in php-project-available-root-files
                       append (cdr m)))
             (t (cdr-safe (assq php-project-root php-project-available-root-files))))))
-      (cl-loop for m in detect-method
-               thereis (locate-dominating-file default-directory m)))))
+      (or (cl-loop for m in detect-method
+                   thereis (locate-dominating-file default-directory m))
+          (php-project--detect-root-by-project-el)))))
+
+(defun php-project--detect-root-by-project-el ()
+  "Return the root reported by `project.el', or nil.
+
+Used as a last resort when no PHP-specific marker is found.  This lets
+`project.el' backends contribute their own detection, including Projectile 3
+\(which registers itself on `project-find-functions') and
+`project-vc-extra-root-markers'.  `php-project-project-find-function' is
+temporarily removed from the hook to avoid recursing back into this function."
+  ;; `project-root' only exists on Emacs 28.1+; on Emacs 27 there is no
+  ;; non-obsolete accessor, so the fallback simply does nothing there.
+  (when (fboundp 'project-root)
+    (let ((project-find-functions
+           (remq #'php-project-project-find-function project-find-functions)))
+      (when-let* ((project (project-current)))
+        (project-root project)))))
 
 (provide 'php-project)
 ;;; php-project.el ends here

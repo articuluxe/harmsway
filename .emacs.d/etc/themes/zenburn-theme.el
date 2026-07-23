@@ -462,6 +462,42 @@ the just-introduced bindings."
    `(adoc-value-face ((t (:foreground ,zenburn-green))))
    `(adoc-verbatim-face ((t (:background ,zenburn-bg-05 :extend t))))
    `(adoc-warning-face ((t (:foreground ,zenburn-red :weight bold))))
+;;;;; asciidoc-mode
+   ;; the tree-sitter AsciiDoc mode; inherits the adoc-mode styling where
+   ;; the two face sets correspond
+   `(asciidoc-document-title-face ((t (:inherit adoc-title-0-face))))
+   `(asciidoc-title-1-face ((t (:inherit adoc-title-1-face))))
+   `(asciidoc-title-2-face ((t (:inherit adoc-title-2-face))))
+   `(asciidoc-title-3-face ((t (:inherit adoc-title-3-face))))
+   `(asciidoc-title-4-face ((t (:inherit adoc-title-4-face))))
+   `(asciidoc-title-5-face ((t (:inherit adoc-title-5-face))))
+   `(asciidoc-markup-face ((t (:inherit adoc-meta-face))))
+   `(asciidoc-code-face ((t (:inherit adoc-code-face))))
+   `(asciidoc-link-face ((t (:inherit link))))
+   `(asciidoc-link-mouse-face ((t (:inherit highlight))))
+   `(asciidoc-url-face ((t (:inherit link))))
+   `(asciidoc-cross-reference-face ((t (:inherit adoc-internal-reference-face))))
+   `(asciidoc-anchor-face ((t (:inherit adoc-anchor-face))))
+   `(asciidoc-superscript-face ((t (:inherit adoc-superscript-face))))
+   `(asciidoc-subscript-face ((t (:inherit adoc-subscript-face))))
+   `(asciidoc-metadata-key-face ((t (:inherit adoc-attribute-face))))
+   `(asciidoc-metadata-value-face ((t (:inherit adoc-value-face))))
+   `(asciidoc-footnote-marker-face ((t (:foreground ,zenburn-fg-1))))
+   `(asciidoc-footnote-text-face ((t (:foreground ,zenburn-fg))))
+   `(asciidoc-highlight-face ((t (:foreground ,zenburn-bg :background ,zenburn-yellow))))
+   `(asciidoc-strike-through-face ((t (:strike-through t))))
+   `(asciidoc-underline-face ((t (:underline t))))
+   `(asciidoc-overline-face ((t (:overline t))))
+   `(asciidoc-admonition-note-label-face ((t (:foreground ,zenburn-blue+1 :weight bold))))
+   `(asciidoc-admonition-note-face ((t (:background ,zenburn-bg+05 :extend t))))
+   `(asciidoc-admonition-tip-label-face ((t (:foreground ,zenburn-green+2 :weight bold))))
+   `(asciidoc-admonition-tip-face ((t (:background ,zenburn-diff-added-bg :extend t))))
+   `(asciidoc-admonition-important-label-face ((t (:foreground ,zenburn-magenta :weight bold))))
+   `(asciidoc-admonition-important-face ((t (:background ,zenburn-bg+05 :extend t))))
+   `(asciidoc-admonition-caution-label-face ((t (:foreground ,zenburn-yellow :weight bold))))
+   `(asciidoc-admonition-caution-face ((t (:background ,zenburn-diff-changed-bg :extend t))))
+   `(asciidoc-admonition-warning-label-face ((t (:foreground ,zenburn-red :weight bold))))
+   `(asciidoc-admonition-warning-face ((t (:background ,zenburn-diff-removed-bg :extend t))))
 ;;;;; android mode
    `(android-mode-debug-face ((t (:foreground ,zenburn-green+1))))
    `(android-mode-error-face ((t (:foreground ,zenburn-orange :weight bold))))
@@ -611,6 +647,41 @@ the just-introduced bindings."
    `(cider-test-error-face ((t (:background ,zenburn-magenta))))
    `(cider-test-success-face ((t (:background ,zenburn-green-2))))
    `(cider-fringe-good-face ((t (:foreground ,zenburn-green+4))))
+   `(cider-fringe-bad-face ((t (:foreground ,zenburn-red))))
+   `(cider-fringe-stale-face ((t (:foreground ,zenburn-yellow))))
+   `(cider-repl-prompt-face ((t (:foreground ,zenburn-yellow))))
+   `(cider-repl-input-face ((t (:weight bold))))
+   `(cider-repl-result-face ((t (:foreground ,zenburn-green+1))))
+   `(cider-repl-stdout-face ((t (:foreground ,zenburn-fg))))
+   `(cider-repl-stderr-face ((t (:foreground ,zenburn-red))))
+   `(cider-error-highlight-face
+     ((((supports :underline (:style wave)))
+       (:underline (:style wave :color ,zenburn-red) :inherit unspecified))
+      (t (:foreground ,zenburn-red-1 :weight bold :underline t))))
+   `(cider-warning-highlight-face
+     ((((supports :underline (:style wave)))
+       (:underline (:style wave :color ,zenburn-orange) :inherit unspecified))
+      (t (:foreground ,zenburn-orange :weight bold :underline t))))
+   `(cider-stacktrace-error-class-face ((t (:foreground ,zenburn-red :weight bold))))
+   `(cider-stacktrace-error-message-face ((t (:foreground ,zenburn-fg-1 :slant italic))))
+   `(cider-stacktrace-face ((t (:foreground ,zenburn-fg))))
+   `(cider-stacktrace-fn-face ((t (:inherit font-lock-function-name-face))))
+   `(cider-stacktrace-ns-face ((t (:inherit font-lock-comment-face))))
+   `(cider-stacktrace-filter-active-face ((t (:foreground ,zenburn-yellow :underline t))))
+   `(cider-stacktrace-filter-inactive-face ((t (:foreground ,zenburn-fg-1))))
+   `(cider-stacktrace-promoted-button-face ((t (:foreground ,zenburn-red :box (:line-width -1 :color ,zenburn-red)))))
+   `(cider-stacktrace-suppressed-button-face ((t (:foreground ,zenburn-fg-1 :box (:line-width -1 :color ,zenburn-fg-1)))))
+   `(cider-reader-conditional-face ((t (:foreground ,zenburn-fg-05))))
+   `(cider-debug-prompt-face ((t (:foreground ,zenburn-magenta :weight bold))))
+   ;; faces for the nREPL message log, matching `nrepl-message-colors'
+   `(nrepl-message-1-face ((t (:foreground ,zenburn-red))))
+   `(nrepl-message-2-face ((t (:foreground ,zenburn-orange))))
+   `(nrepl-message-3-face ((t (:foreground ,zenburn-yellow))))
+   `(nrepl-message-4-face ((t (:foreground ,zenburn-green))))
+   `(nrepl-message-5-face ((t (:foreground ,zenburn-green+4))))
+   `(nrepl-message-6-face ((t (:foreground ,zenburn-cyan))))
+   `(nrepl-message-7-face ((t (:foreground ,zenburn-blue+1))))
+   `(nrepl-message-8-face ((t (:foreground ,zenburn-magenta))))
 ;;;;; citar
    `(citar ((t (:foreground ,zenburn-fg))))
    `(citar-highlight ((t (:foreground ,zenburn-yellow :weight bold))))
@@ -624,6 +695,12 @@ the just-introduced bindings."
    `(circe-server-face ((t (:foreground ,zenburn-green))))
    `(circe-topic-diff-new-face ((t (:foreground ,zenburn-orange :weight bold))))
    `(circe-prompt-face ((t (:foreground ,zenburn-orange :background ,zenburn-bg :weight bold))))
+;;;;; clojure-mode
+   `(clojure-keyword-face ((t (:foreground ,zenburn-cyan))))
+   `(clojure-character-face ((t (:inherit font-lock-string-face))))
+   `(clojure-discard-face ((t (:inherit font-lock-comment-face))))
+;;;;; copilot
+   `(copilot-overlay-face ((t (:foreground ,zenburn-fg-1 :slant italic))))
 ;;;;; coq
    `(coq-solve-tactics-face ((t (:foreground nil :inherit font-lock-constant-face))))
 ;;;;; ctable
@@ -652,6 +729,11 @@ the just-introduced bindings."
    `(denote-faces-prompt-current-name ((t (:foreground ,zenburn-cyan))))
    `(denote-faces-prompt-new-name ((t (:foreground ,zenburn-green+2))))
    `(denote-faces-prompt-old-name ((t (:foreground ,zenburn-red))))
+;;;;; dictionary
+   `(dictionary-word-entry-face ((t (:foreground ,zenburn-orange :weight bold))))
+   `(dictionary-word-definition-face ((t (:foreground ,zenburn-fg))))
+   `(dictionary-reference-face ((t (:inherit link))))
+   `(dictionary-button-face ((t (:inherit link))))
 ;;;;; diff
    ;; Please read (info "(magit)Theming Faces") before changing this.
    `(diff-added          ((t (:background ,zenburn-diff-added-bg          :foreground ,zenburn-diff-added-fg))))
@@ -768,6 +850,9 @@ the just-introduced bindings."
    `(doom-modeline-battery-error ((t (:inherit error))))
    `(doom-modeline-time ((t (:foreground ,zenburn-bg+3))))
    `(doom-modeline-compilation ((t (:foreground ,zenburn-orange :weight bold))))
+;;;;; easy-kill
+   `(easy-kill-selection ((t (:background ,zenburn-bg-1 :extend t))))
+   `(easy-kill-origin ((t (:foreground ,zenburn-bg :background ,zenburn-red))))
 ;;;;; eglot
    `(eglot-highlight-symbol-face ((t (:background ,zenburn-bg+2 :weight bold))))
    `(eglot-diagnostic-tag-unnecessary-face ((t (:foreground ,zenburn-green :underline (:style wave :color ,zenburn-bg+3)))))
@@ -850,6 +935,13 @@ the just-introduced bindings."
    `(erc-prompt-face ((t (:foreground ,zenburn-orange :background ,zenburn-bg :weight bold))))
    `(erc-timestamp-face ((t (:foreground ,zenburn-green+4))))
    `(erc-underline-face ((t (:underline t))))
+;;;;; erlang
+   `(erlang-font-lock-exported-function-name-face ((t (:inherit font-lock-function-name-face :weight bold))))
+   `(erlang-edoc-heading ((t (:foreground ,zenburn-orange :weight bold))))
+   `(erlang-edoc-tag ((t (:foreground ,zenburn-fg-1))))
+   `(erlang-edoc-macro ((t (:inherit font-lock-preprocessor-face))))
+   `(erlang-edoc-verbatim ((t (:foreground ,zenburn-green+1))))
+   `(erlang-edoc-todo ((t (:inherit hl-todo))))
 ;;;;; eros
    `(eros-result-overlay-face ((t (:background unspecified))))
 ;;;;; ert
@@ -981,6 +1073,10 @@ the just-introduced bindings."
    `(git-gutter-fr:modified ((t (:foreground ,zenburn-magenta :weight bold))))
 ;;;;; git-rebase
    `(git-rebase-hash ((t (:foreground, zenburn-orange))))
+;;;;; git-timemachine
+   `(git-timemachine-commit ((t (:foreground ,zenburn-orange :weight bold))))
+   `(git-timemachine-minibuffer-author-face ((t (:foreground ,zenburn-orange))))
+   `(git-timemachine-minibuffer-detail-face ((t (:foreground ,zenburn-fg-1))))
 ;;;;; gnus
    `(gnus-group-mail-1 ((t (:weight bold :inherit gnus-group-mail-1-empty))))
    `(gnus-group-mail-1-empty ((t (:inherit gnus-group-news-1-empty))))
@@ -1053,6 +1149,30 @@ the just-introduced bindings."
 ;;;;; hackernews
    '(hackernews-comment-count ((t (:inherit link-visited :underline nil))))
    '(hackernews-link          ((t (:inherit link         :underline nil))))
+;;;;; haskell-mode
+   `(haskell-keyword-face ((t (:inherit font-lock-keyword-face))))
+   `(haskell-type-face ((t (:inherit font-lock-type-face))))
+   `(haskell-constructor-face ((t (:inherit font-lock-type-face))))
+   `(haskell-definition-face ((t (:inherit font-lock-function-name-face))))
+   `(haskell-operator-face ((t (:foreground ,zenburn-fg))))
+   `(haskell-pragma-face ((t (:inherit font-lock-preprocessor-face))))
+   `(haskell-quasi-quote-face ((t (:inherit font-lock-string-face))))
+   `(haskell-literate-comment-face ((t (:inherit font-lock-comment-face))))
+   `(haskell-hole-face ((t (:foreground ,zenburn-yellow :weight bold))))
+   `(haskell-error-face
+     ((((supports :underline (:style wave)))
+       (:underline (:style wave :color ,zenburn-red) :inherit unspecified))
+      (t (:foreground ,zenburn-red-1 :weight bold :underline t))))
+   `(haskell-warning-face
+     ((((supports :underline (:style wave)))
+       (:underline (:style wave :color ,zenburn-orange) :inherit unspecified))
+      (t (:foreground ,zenburn-orange :weight bold :underline t))))
+   `(haskell-interactive-face-prompt ((t (:foreground ,zenburn-yellow :weight bold))))
+   `(haskell-interactive-face-prompt-cont ((t (:foreground ,zenburn-yellow-2))))
+   `(haskell-interactive-face-compile-error ((t (:foreground ,zenburn-red :weight bold))))
+   `(haskell-interactive-face-compile-warning ((t (:foreground ,zenburn-orange :weight bold))))
+   `(haskell-interactive-face-result ((t (:foreground ,zenburn-fg))))
+   `(haskell-interactive-face-garbage ((t (:foreground ,zenburn-fg-1))))
 ;;;;; helm
    `(helm-header
      ((t (:foreground ,zenburn-green
@@ -1143,6 +1263,9 @@ the just-introduced bindings."
    `(info-syntax-class-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-blue+1))))
    `(info-user-option-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-red))))
    `(info-variable-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-orange))))
+;;;;; inf-ruby
+   ;; keep the default background, like the cider and eros result overlays
+   `(inf-ruby-result-overlay-face ((t (:background unspecified))))
 ;;;;; ivy
    `(ivy-confirm-face ((t (:foreground ,zenburn-green :background ,zenburn-bg))))
    `(ivy-current-match ((t (:foreground ,zenburn-yellow :weight bold :underline t))))
@@ -1188,6 +1311,9 @@ the just-introduced bindings."
    `(js2-function-call ((t (:foreground ,zenburn-cyan))))
    `(js2-private-member ((t (:foreground ,zenburn-blue-1))))
    `(js2-keywords ((t (:foreground ,zenburn-magenta))))
+;;;;; keycast
+   `(keycast-key ((t (:foreground ,zenburn-bg :background ,zenburn-blue :weight bold))))
+   `(keycast-command ((t (:weight bold))))
 ;;;;; ledger-mode
    `(ledger-font-payee-uncleared-face ((t (:foreground ,zenburn-red-1 :weight bold))))
    `(ledger-font-payee-cleared-face ((t (:foreground ,zenburn-fg :weight normal))))
@@ -1413,6 +1539,8 @@ the just-introduced bindings."
    `(paren-face-match ((t (:foreground ,zenburn-cyan :background ,zenburn-bg :weight bold))))
    `(paren-face-mismatch ((t (:foreground ,zenburn-bg :background ,zenburn-magenta :weight bold))))
    `(paren-face-no-match ((t (:foreground ,zenburn-bg :background ,zenburn-red :weight bold))))
+;;;;; mistty
+   `(mistty-fringe-face ((t (:foreground ,zenburn-bg+2))))
 ;;;;; multiple-cursors
    `(mc/cursor-face ((t (:inverse-video nil :background ,zenburn-bg+2 :foreground ,zenburn-fg))))
    `(mc/cursor-bar-face ((t (:background ,zenburn-fg :height 1))))
@@ -1961,6 +2089,14 @@ the just-introduced bindings."
    `(vr/match-separator-face ((t (:foreground ,zenburn-red :weight bold))))
 ;;;;; volatile-highlights
    `(vhl/default-face ((t (:background ,zenburn-bg-05))))
+;;;;; vundo
+   `(vundo-node ((t (:foreground ,zenburn-fg-1))))
+   `(vundo-stem ((t (:foreground ,zenburn-bg+3))))
+   `(vundo-branch-stem ((t (:foreground ,zenburn-fg-1))))
+   `(vundo-highlight ((t (:foreground ,zenburn-red-1 :weight bold))))
+   `(vundo-saved ((t (:foreground ,zenburn-green+2))))
+   `(vundo-last-saved ((t (:foreground ,zenburn-green+2 :weight bold))))
+   `(vundo-diff-highlight ((t (:foreground ,zenburn-orange :weight bold))))
 ;;;;; web-mode
    `(web-mode-builtin-face ((t (:inherit ,font-lock-builtin-face))))
    `(web-mode-comment-face ((t (:inherit ,font-lock-comment-face))))

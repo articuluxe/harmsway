@@ -559,19 +559,18 @@ a good reason to include a long line in the body sometimes."
                  (integer :tag "Fill if longer than")))
 
 (defcustom magit-revision-filter-files-on-follow nil
-  "Whether to honor file filter if log arguments include --follow.
+  "Whether to honor file filter if log arguments include \"--follow\".
 
-When a commit is displayed from a log buffer, the resulting
-revision buffer usually shares the log's file arguments,
-restricting the diff to those files.  However, there's a
-complication when the log arguments include --follow: if the log
-follows a file across a rename event, keeping the file
-restriction would mean showing an empty diff in revision buffers
-for commits before the rename event.
+When a commit is displayed from a log buffer, the resulting revision
+buffer usually shares the log's file arguments, restricting the diff to
+those files.  However, there's a complication when the log arguments
+include \"--follow\": if the log follows a file across a rename event,
+keeping the file restriction would mean showing an empty diff in
+revision buffers for commits before the rename event.
 
-When this option is nil, the revision buffer ignores the log's
-filter if the log arguments include --follow.  If non-nil, the
-log's file filter is always honored."
+When this option is nil, the revision buffer ignores the log's filter
+if the log arguments include \"--follow\".  If non-nil, the log's file filter
+is always honored."
   :package-version '(magit . "3.0.0")
   :group 'magit-revision
   :type 'boolean)
@@ -1427,7 +1426,7 @@ If no DWIM context is found, nil is returned."
       (when interactive
         (deactivate-mark))
       (if mbase
-          (let ((base (magit-git-string "merge-base" revA revB)))
+          (let ((base (magit-merge-base revA revB)))
             (cond
               ((string= (magit-rev-parse revA) base)
                (format "%s..%s" revA revB))
@@ -1524,14 +1523,15 @@ be committed."
   (magit-commit-diff--show))
 
 ;;;###autoload
-(defun magit-diff-buffer-file ()
+(defun magit-diff-buffer-file (&optional unstaged-only)
   "Show diff for the blob or file visited in the current buffer.
+
+Limit the diff to the file or blob.
 
 When the buffer visits a blob, then show the respective commit.
 When the buffer visits a file, then show the differences between
-`HEAD' and the working tree.  In both cases limit the diff to
-the file or blob."
-  (interactive)
+`HEAD' and the working tree, or the index with a prefix argument."
+  (interactive (list current-prefix-arg))
   (require 'magit)
   (if-let ((file (magit-file-relative-name)))
       (if magit-buffer-revision
@@ -1542,7 +1542,9 @@ the file or blob."
         (let ((line (line-number-at-pos))
               (col (current-column)))
           (with-current-buffer
-              (magit-diff-setup-buffer (or (magit-get-current-branch) "HEAD")
+              (magit-diff-setup-buffer (and (not unstaged-only)
+                                            (or (magit-get-current-branch)
+                                                "HEAD"))
                                        nil
                                        (car (magit-diff-arguments))
                                        (list file)
@@ -1617,6 +1619,22 @@ the trade-offs."
                 (col (current-column)))
             (with-current-buffer buf
               (magit-diff--goto-file-position file line col))))))))
+
+;;;###autoload
+(defun magit-show-commit-removing-file (file &optional args)
+  "Show the commit that removed FILE."
+  (interactive
+    (let* ((files (magit-removed-files))
+           (default (magit-file-relative-name))
+           (default (and default (member default files) default)))
+      (list (magit-completing-read "Show commit removing file: "
+                                   files nil nil nil nil default)
+            (car (magit-show-commit--arguments)))))
+  (if-let ((rev (magit-with-toplevel
+                  (magit-git-string "log" "--format=%H" "--diff-filter=D"
+                                    "--full-history" "-n" "1" "--" file))))
+      (magit-show-commit rev args)
+    (error "%s has not been removed" file)))
 
 (defun magit-diff--locate-file-position (file line column &optional parent)
   (and-let*
@@ -3398,7 +3416,7 @@ Refer to user option `magit-revision-insert-related-refs-display-alist'."
                                           (or branch "HEAD")))
     (magit-insert-section (diffbuf)
       (magit--insert-diff t
-        "merge-tree" (magit-git-string "merge-base" head magit-buffer-revision)
+        "merge-tree" (magit-merge-base head magit-buffer-revision)
         head magit-buffer-revision))))
 
 (cl-defmethod magit-buffer-value (&context (major-mode magit-merge-preview-mode))
