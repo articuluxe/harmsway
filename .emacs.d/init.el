@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-07-17 08:30:19 dharms>
+;; Modified Time-stamp: <2026-07-29 22:24:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4395,6 +4395,10 @@ This function's result only has value if it is preceded by any font changes."
   ;; remap 'bat-run
   (define-key bat-mode-map "\C-c\C-c" nil t)
   (define-key bat-mode-map "\C-c\C-cr" 'bat-run))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; adoc-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package adoc-mode
+  :mode ("\\.adoc$" "\\.asciidoc"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bazel-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bazel-mode
