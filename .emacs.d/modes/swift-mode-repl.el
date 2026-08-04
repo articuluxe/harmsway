@@ -106,6 +106,23 @@ The string is split by spaces, then unquoted."
   :type 'string
   :safe #'stringp)
 
+(defcustom swift-mode:repl-startup-timeout 30.0
+  "Seconds to wait for the first output of a REPL process.
+
+`swift-mode:run-repl' gives up waiting after this seconds so that a
+process printing nothing does not freeze Emacs."
+  :type 'number
+  :safe #'numberp)
+
+(defcustom swift-mode:ios-simulator-boot-timeout 60.0
+  "Seconds to wait for an iOS simulator to boot.
+
+`swift-mode:wait-for-ios-simulator' gives up waiting after this seconds
+so that a simulator failing to boot does not freeze Emacs."
+  :tag "Swift Mode iOS Simulator Boot Timeout"
+  :type 'number
+  :safe #'numberp)
+
 (defcustom swift-mode:swift-testing-command-regexp
   "\\<swift \\(?:test\\|package\\|build\\)\\>"
   "Regexp to of command line of Swift Testing.
@@ -191,14 +208,21 @@ Runs the hook `swift-repl-mode-hook' \(after the `comint-mode-hook' is run).
         (setq-default swift-mode:repl-buffer swift-mode:repl-buffer)))
     (with-current-buffer buffer
       (setq old-size (buffer-size))
-      (swift-repl-mode)
+      ;; Initializing the major mode kills buffer local variables including
+      ;; `swift-mode:repl-command-queue'.  Do it only for a fresh buffer.
+      (unless (derived-mode-p 'swift-repl-mode)
+        (swift-repl-mode))
       (setq-local swift-mode:repl-buffer buffer))
     (unless (comint-check-proc buffer)
       (apply #'make-comint-in-buffer
              cmd-string buffer (car cmd-list) nil (cdr cmd-list))
       (with-current-buffer buffer
-        (while (= old-size (buffer-size))
-          (sleep-for .1))))
+        ;; Test the buffer size first; the output may be already processed,
+        ;; in which case `accept-process-output' has nothing to wait for and
+        ;; blocks until the timeout.
+        (when (= old-size (buffer-size))
+          (accept-process-output (get-buffer-process buffer)
+                                 swift-mode:repl-startup-timeout))))
     (unless dont-switch
       (pop-to-buffer buffer))))
 
@@ -444,7 +468,7 @@ or its ancestors."
          (flattened (apply #'seq-concatenate 'list (seq-map #'cdr devices)))
          (available-devices
           (seq-filter
-           (lambda (device) (assoc-default 'isAvailable device))
+           (lambda (device) (eq t (assoc-default 'isAvailable device)))
            flattened)))
     available-devices))
 
@@ -559,6 +583,7 @@ An list ARGS are appended for builder command line arguments."
   (with-current-buffer (get-buffer-create "*swift-mode:compilation*")
     (fundamental-mode)
     (setq buffer-read-only nil)
+    (erase-buffer)
     (let ((progress-reporter (make-progress-reporter "Building...")))
       (unless
           (zerop
@@ -622,6 +647,7 @@ the value of `swift-mode:ios-project-scheme' is used."
   (with-current-buffer (get-buffer-create "*swift-mode:compilation*")
     (fundamental-mode)
     (setq buffer-read-only nil)
+    (erase-buffer)
     (let ((progress-reporter (make-progress-reporter "Building..."))
           (xcodebuild-args `(,swift-mode:xcodebuild-executable
                              "-configuration" "Debug"
@@ -689,7 +715,8 @@ STRING is passed to the command."
          (build-debug-directory
           (swift-mode:join-path project-directory ".build" "debug")))
     (unless c99name (error "Cannot get module name"))
-    (swift-mode:build-swift-module project-directory)
+    (swift-mode:build-swift-module project-directory
+                                   '("-Xswiftc" "-emit-library"))
     (swift-mode:run-repl
      (append
       (swift-mode:command-string-to-list swift-mode:repl-executable)
@@ -764,14 +791,20 @@ Return nil otherwise."
    "-CurrentDeviceUDID" device-identifier))
 
 (defun swift-mode:wait-for-ios-simulator (device-identifier)
-  "Wait until an iOS simulator with DEVICE-IDENTIFIER booted."
-  (while (null (seq-find
-                (lambda (device)
-                  (and
-                   (string-equal (assoc-default 'udid device) device-identifier)
-                   (string-equal (assoc-default 'state device) "Booted")))
-                (swift-mode:list-ios-simulator-devices)))
-    (sit-for 0.5)))
+  "Wait until an iOS simulator with DEVICE-IDENTIFIER booted.
+
+Signal an error if it is not booted within
+`swift-mode:ios-simulator-boot-timeout' seconds."
+  (let ((deadline (+ (float-time) swift-mode:ios-simulator-boot-timeout)))
+    (while (null (seq-find
+                  (lambda (device)
+                    (and (string-equal (assoc-default 'udid device)
+                                       device-identifier)
+                         (string-equal (assoc-default 'state device) "Booted")))
+                  (swift-mode:list-ios-simulator-devices)))
+      (when (< deadline (float-time))
+        (error "%s: %s" "Cannot boot the iOS simulator" device-identifier))
+      (sit-for 0.5))))
 
 (defun swift-mode:install-ios-app (device-identifier codesigning-folder-path)
   "Install an iOS app to an iOS simulator with DEVICE-IDENTIFIER.
@@ -864,8 +897,10 @@ in Xcode build settings."
          (target-booted
           (string-equal (assoc-default 'state target-device) "Booted"))
          (simulator-running (consp active-devices))
-         (progress-reporter
-          (make-progress-reporter "Waiting for simulator...")))
+         progress-reporter)
+    (unless target-device
+      (error "%s: %s" "No such iOS simulator device" device-identifier))
+    (setq progress-reporter (make-progress-reporter "Waiting for simulator..."))
     (cond
      (target-booted
       ;; The target device is already booted. Does nothing.

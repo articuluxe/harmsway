@@ -28,7 +28,15 @@
 
 (require 'magit)
 
-;;; Commands
+;;; Options
+
+(defcustom magit-push-options '("skip-ci" "ci.skip")
+  "Choices offered when setting \"--push-options\" in the push menu."
+  :package-version '(magit . "4.7.0")
+  :group 'magit-commands
+  :type '(repeat string))
+
+;;; Menu
 
 ;;;###autoload(autoload 'magit-push "magit-push" nil t)
 (transient-define-prefix magit-push ()
@@ -39,9 +47,10 @@
    ("-F" "Force"            ("-f" "--force"))
    ("-h" "Disable hooks"    "--no-verify")
    ("-n" "Dry run"          ("-n" "--dry-run"))
-   ("-u" "Set upstream"   "--set-upstream" :level 5)
+   ("-u" "Set upstream"     "--set-upstream" :level 5)
    ("-T" "Include all tags" "--tags")
-   ("-t" "Include related annotated tags" "--follow-tags")]
+   ("-t" "Include related annotated tags" "--follow-tags")
+   ("-o" magit-push:--push-option :level 5)]
   [:if magit-get-current-branch
    :description (##format (propertize "Push %s to" 'face 'transient-heading)
                           (propertize (magit-get-current-branch)
@@ -61,6 +70,16 @@
 
 (defun magit-push-arguments ()
   (transient-args 'magit-push))
+
+(transient-define-infix magit-push:--push-option ()
+  :description "Set push-options"
+  :class 'transient-option
+  :shortarg "-o"
+  :argument "--push-option="
+  :multi-value 'repeat
+  :choices (lambda () magit-push-options))
+
+;;; Commands
 
 (defun magit-git-push (branch target args)
   (run-hooks 'magit-credential-hook)

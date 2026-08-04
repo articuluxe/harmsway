@@ -4,7 +4,7 @@
 
 ;; Author: Jon Levin <hi@mhcat.ca>
 ;; URL: https://git.sr.ht/~mhcat/cyanapunk-neontrix-theme
-;; Version: 1.0.94
+;; Version: 1.0.95
 ;; Package-Requires: ((emacs "29.1"))
 ;; Keywords: faces, theme
 ;; SPDX-License-Identifier: MIT

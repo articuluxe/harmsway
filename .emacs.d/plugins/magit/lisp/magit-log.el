@@ -360,7 +360,7 @@ AUTHOR-WIDTH has to be an integer.  When the name of the author
 (defcustom magit-log-section-commit-count 10
   "How many recent commits to show in certain log sections.
 How many recent commits `magit-insert-recent-commits' and
-`magit-insert-unpulled-from-upstream-or-recent' (provided
+`magit-insert-unpushed-to-upstream-or-recent' (provided
 the upstream isn't ahead of the current branch) show."
   :package-version '(magit . "2.1.0")
   :group 'magit-status
@@ -488,6 +488,7 @@ commits before and half after."
    (magit-log:-G)     ;2
    (magit-log:-S)     ;2
    (magit-log:-L)     ;2
+   (7 "=M" "Only merges"            "--merges")
    (7 "=m" "Omit merges"            "--no-merges")
    (7 "=p" "First parent"           "--first-parent")]
   ["History simplification"
@@ -525,6 +526,7 @@ commits before and half after."
   "Show a commit or reference log."
   :man-page "git-log"
   :class 'magit-log-prefix
+  :incompatible '(("--merges" "--no-merges"))
   'magit-log-infix-arguments
   [["Log"
     ("l"                     magit-log-current)
@@ -555,6 +557,7 @@ commits before and half after."
   "Change the arguments used for the log(s) in the current buffer."
   :man-page "git-log"
   :class 'magit-log-refresh-prefix
+  :incompatible '(("--merges" "--no-merges"))
   'magit-log-infix-arguments
   [:if-not-mode magit-log-mode
    :description "Arguments"

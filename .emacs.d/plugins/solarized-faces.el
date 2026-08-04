@@ -328,6 +328,54 @@
      `(android-mode-warning-face ((,class (:foreground ,yellow))))
 ;;;;; anzu-mode
      `(anzu-mode-line ((,class (:foreground ,yellow :weight bold))))
+     `(anzu-mode-line-no-match ((,class (:foreground ,red :weight bold))))
+     `(anzu-match-1 ((,class (:foreground ,base03 :background ,green))))
+     `(anzu-match-2 ((,class (:foreground ,base03 :background ,orange))))
+     `(anzu-match-3 ((,class (:foreground ,base03 :background ,blue))))
+     `(anzu-replace-highlight ((,class (:foreground ,base03 :background ,red))))
+     `(anzu-replace-to ((,class (:foreground ,base03 :background ,green :weight bold))))
+;;;;; asciidoc-mode
+     `(asciidoc-document-title-face ((,class (:foreground ,blue :weight bold
+                                                     ,@(when solarized-scale-markdown-headlines
+                                                         (list :height solarized-height-plus-4))))))
+     `(asciidoc-title-1-face ((,class (:foreground ,blue :weight bold
+                                               ,@(when solarized-scale-markdown-headlines
+                                                   (list :height solarized-height-plus-3))))))
+     `(asciidoc-title-2-face ((,class (:foreground ,blue :weight bold
+                                               ,@(when solarized-scale-markdown-headlines
+                                                   (list :height solarized-height-plus-2))))))
+     `(asciidoc-title-3-face ((,class (:foreground ,blue :weight bold
+                                               ,@(when solarized-scale-markdown-headlines
+                                                   (list :height solarized-height-plus-1))))))
+     `(asciidoc-title-4-face ((,class (:foreground ,blue :weight bold))))
+     `(asciidoc-title-5-face ((,class (:foreground ,blue :weight bold))))
+     `(asciidoc-markup-face ((,class (:foreground ,base01))))
+     `(asciidoc-code-face ((,class (:inherit fixed-pitch :foreground ,base01))))
+     `(asciidoc-link-face ((,class (:foreground ,yellow))))
+     `(asciidoc-link-mouse-face ((,class (:background ,base02))))
+     `(asciidoc-url-face ((,class (:foreground ,base01))))
+     `(asciidoc-cross-reference-face ((,class (:foreground ,yellow :underline t))))
+     `(asciidoc-anchor-face ((,class (:foreground ,cyan))))
+     `(asciidoc-superscript-face ((,class (:height 0.8))))
+     `(asciidoc-subscript-face ((,class (:height 0.8))))
+     `(asciidoc-metadata-key-face ((,class (:inherit font-lock-comment-face))))
+     `(asciidoc-metadata-value-face ((,class (:inherit default))))
+     `(asciidoc-footnote-marker-face ((,class (:foreground ,base01))))
+     `(asciidoc-footnote-text-face ((,class (:inherit default))))
+     `(asciidoc-highlight-face ((,class (:foreground ,base03 :background ,yellow))))
+     `(asciidoc-strike-through-face ((,class (:strike-through t))))
+     `(asciidoc-underline-face ((,class (:underline t))))
+     `(asciidoc-overline-face ((,class (:overline t))))
+     `(asciidoc-admonition-note-label-face ((,class (:foreground ,blue :weight bold))))
+     `(asciidoc-admonition-note-face ((,class (:background ,s-diff-C-bg :extend t))))
+     `(asciidoc-admonition-tip-label-face ((,class (:foreground ,green :weight bold))))
+     `(asciidoc-admonition-tip-face ((,class (:background ,s-diff-B-bg :extend t))))
+     `(asciidoc-admonition-important-label-face ((,class (:foreground ,violet :weight bold))))
+     `(asciidoc-admonition-important-face ((,class (:background ,base02 :extend t))))
+     `(asciidoc-admonition-caution-label-face ((,class (:foreground ,yellow :weight bold))))
+     `(asciidoc-admonition-caution-face ((,class (:background ,base02 :extend t))))
+     `(asciidoc-admonition-warning-label-face ((,class (:foreground ,red :weight bold))))
+     `(asciidoc-admonition-warning-face ((,class (:background ,s-diff-A-bg :extend t))))
 ;;;;; auctex
      `(font-latex-bold-face ((,class (:inherit bold :foreground ,base1))))
      `(font-latex-doctex-documentation-face ((,class (:background unspecified))))
@@ -393,6 +441,14 @@
      `(bm-fringe-face ((,class (:overline ,base0))))
      `(bm-fringe-persistent-face ((,class (:overline ,base0))))
      `(bm-persistent-face ((,class (:overline ,base0))))
+;;;;; breadcrumb
+     `(breadcrumb-face ((,class (:foreground ,base01))))
+     `(breadcrumb-imenu-leaf-face ((,class (:foreground ,blue :weight bold))))
+     `(breadcrumb-imenu-crumbs-face ((,class (:foreground ,base01))))
+     `(breadcrumb-imenu-base-face ((,class (:foreground ,base01 :weight bold))))
+     `(breadcrumb-project-leaf-face ((,class (:foreground ,base1 :weight bold))))
+     `(breadcrumb-project-crumbs-face ((,class (:foreground ,base01))))
+     `(breadcrumb-project-base-face ((,class (:foreground ,base01 :weight bold))))
 ;;;;; calfw
      `(cfw:face-day-title ((,class (:background ,base02))))
      `(cfw:face-annotation ((,class (:inherit cfw:face-day-title :foreground ,yellow))))
@@ -425,12 +481,42 @@
      `(cider-instrumented-face ((t (:box (:color ,red-l :line-width -1)))))
      `(cider-traced-face ((t (:box (:color ,cyan :line-width -1)))))
      `(cider-fringe-good-face ((t (:foreground ,green-l))))
+     `(cider-fringe-bad-face ((t (:foreground ,red))))
+     `(cider-fringe-stale-face ((t (:foreground ,yellow))))
+     `(cider-reader-conditional-face ((t (:foreground ,base01))))
+     `(cider-error-highlight-face ((t (:underline (:style wave :color ,red)))))
+     `(cider-warning-highlight-face ((t (:underline (:style wave :color ,yellow)))))
+     `(cider-debug-prompt-face ((t (:foreground ,magenta :weight bold))))
+     `(cider-stacktrace-error-class-face ((t (:foreground ,red :weight bold))))
+     `(cider-stacktrace-error-message-face ((t (:foreground ,base0 :slant italic))))
+     `(cider-stacktrace-face ((t (:foreground ,base0))))
+     `(cider-stacktrace-fn-face ((t (:foreground ,blue))))
+     `(cider-stacktrace-ns-face ((t (:foreground ,base01))))
+     `(cider-stacktrace-filter-active-face ((t (:foreground ,cyan :underline t))))
+     `(cider-stacktrace-filter-inactive-face ((t (:foreground ,base01))))
+     `(nrepl-message-1-face ((t (:foreground ,blue))))
+     `(nrepl-message-2-face ((t (:foreground ,violet))))
+     `(nrepl-message-3-face ((t (:foreground ,cyan))))
+     `(nrepl-message-4-face ((t (:foreground ,orange))))
+     `(nrepl-message-5-face ((t (:foreground ,green))))
+     `(nrepl-message-6-face ((t (:foreground ,yellow))))
+     `(nrepl-message-7-face ((t (:foreground ,red))))
+     `(nrepl-message-8-face ((t (:foreground ,magenta))))
 ;;;;; cider-repl-mode
      `(cider-repl-err-output-face ((t (:inherit ,font-lock-warning-face :underline nil))))
+     `(cider-repl-prompt-face ((t (:foreground ,blue :weight bold))))
+     `(cider-repl-input-face ((t (:weight bold))))
+     `(cider-repl-result-face ((t (:foreground ,green))))
+     `(cider-repl-stdout-face ((t (:foreground ,base0))))
+     `(cider-repl-stderr-face ((t (:foreground ,red))))
 ;;;;; cider-test-mode
      `(cider-test-failure-face ((t (:foreground ,orange :weight bold :underline t))))
      `(cider-test-error-face ((t (:foreground ,red :weight bold :underline t))))
      `(cider-test-success-face ((t (:foreground ,green :weight bold :underline t))))
+;;;;; clojure-mode
+     `(clojure-keyword-face ((,class (:foreground ,cyan))))
+     `(clojure-character-face ((,class (:inherit font-lock-string-face))))
+     `(clojure-discard-face ((,class (:inherit font-lock-comment-face))))
 ;;;;; coffee
      `(coffee-mode-class-name ((,class (:foreground ,yellow :weight bold))))
      `(coffee-mode-function-param ((,class (:foreground ,violet :slant italic))))
@@ -459,6 +545,12 @@
      `(company-tooltip-search ((,class (:foreground ,magenta))))
      `(company-tooltip-search-selection ((,class (:foreground ,magenta :weight bold))))
      `(company-tooltip-selection ((,class (:weight bold))))
+;;;;; completion-preview
+     `(completion-preview ((,class (:foreground ,base01))))
+     `(completion-preview-common ((,class (:foreground ,base00))))
+     `(completion-preview-exact ((,class (:foreground ,base00 :underline t))))
+;;;;; copilot
+     `(copilot-overlay-face ((,class (:foreground ,base01 :slant italic))))
 ;;;;; corfu
      `(corfu-default ((,class (:foreground ,base1 :background ,base02))))
      `(corfu-current ((,class (:inherit corfu-default :weight bold :inverse-video t))))
@@ -529,6 +621,11 @@
      `(deadgrep-meta-face ((,class (:inherit font-lock-comment-face))))
      `(deadgrep-regexp-metachar-face ((,class (:inherit font-lock-constant-face))))
      `(deadgrep-search-term-face ((,class (:inherit font-lock-variable-name-face))))
+;;;;; dictionary
+     `(dictionary-word-entry-face ((,class (:foreground ,blue :weight bold))))
+     `(dictionary-word-definition-face ((,class (:inherit default))))
+     `(dictionary-reference-face ((,class (:inherit link))))
+     `(dictionary-button-face ((,class (:inherit link))))
 ;;;;; diff
      `(diff-added ((,class (:background ,s-diff-B-bg :foreground ,s-diff-B-fg))))
      `(diff-changed ((t nil)))
@@ -605,6 +702,9 @@
      `(eglot-inlay-hint-face ((,class (:foreground ,base01 :height 0.9))))
      `(eglot-type-hint-face ((,class (:inherit eglot-inlay-hint-face :foreground ,cyan))))
      `(eglot-parameter-hint-face ((,class (:inherit eglot-inlay-hint-face :foreground ,yellow))))
+;;;;; easy-kill
+     `(easy-kill-selection ((,class (:background ,base02 :extend t))))
+     `(easy-kill-origin ((,class (:foreground ,base03 :background ,red))))
 ;;;;; elfeed
      `(elfeed-search-date-face ((,class (:foreground ,base01))))
      `(elfeed-search-feed-face ((,class (:foreground ,base01))))
@@ -780,6 +880,13 @@
 ;;;;; form-feed
      `(form-feed-line
        ((,class (:strike-through ,s-line))))
+;;;;; erlang
+     `(erlang-font-lock-exported-function-name-face ((,class (:inherit font-lock-function-name-face :weight bold))))
+     `(erlang-edoc-heading ((,class (:foreground ,orange :weight bold))))
+     `(erlang-edoc-tag ((,class (:foreground ,base01))))
+     `(erlang-edoc-macro ((,class (:inherit font-lock-preprocessor-face))))
+     `(erlang-edoc-verbatim ((,class (:foreground ,green))))
+     `(erlang-edoc-todo ((,class (:inherit hl-todo))))
 ;;;;; git-commit
      `(git-commit-comment-action  ((,class (:foreground ,base0  :weight bold))))
      `(git-commit-comment-branch ; obsolete
@@ -832,6 +939,7 @@
 ;;;;; git-timemachine
      `(git-timemachine-minibuffer-author-face ((,class (:foreground ,orange))))
      `(git-timemachine-minibuffer-detail-face ((,class (:foreground ,yellow))))
+     `(git-timemachine-commit ((,class (:foreground ,orange :weight bold))))
 ;;;;; gnus
      `(gnus-group-mail-1 ((,class (:weight bold :inherit gnus-group-mail-1-empty))))
      `(gnus-group-mail-1-empty ((,class (:inherit gnus-group-news-1-empty))))
@@ -907,10 +1015,34 @@
      `(go-coverage-10 ((,class (:foreground ,cyan))))
      `(go-coverage-covered ((,class (:foreground ,green))))
      `(go-coverage-untracked ((,class (:foreground ,base01))))
+;;;;; gptel
+     `(gptel-context-highlight-face ((,class (:background ,base02 :extend t))))
+     `(gptel-context-deletion-face ((,class (:background ,s-diff-A-bg :extend t))))
+     `(gptel-rewrite-highlight-face ((,class (:background ,s-diff-C-bg :extend t))))
+     `(gptel-response-highlight ((,class (:background ,s-diff-heading-bg :extend t))))
+     `(gptel-response-fringe-highlight ((,class (:foreground ,orange))))
 ;;;;; guide-key
      `(guide-key/highlight-command-face ((,class (:foreground ,blue))))
      `(guide-key/key-face ((,class (:foreground ,base01))))
      `(guide-key/prefix-command-face ((,class (:foreground ,green))))
+;;;;; haskell-mode
+     `(haskell-keyword-face ((,class (:inherit font-lock-keyword-face))))
+     `(haskell-type-face ((,class (:inherit font-lock-type-face))))
+     `(haskell-constructor-face ((,class (:inherit font-lock-type-face))))
+     `(haskell-definition-face ((,class (:inherit font-lock-function-name-face))))
+     `(haskell-operator-face ((,class (:inherit font-lock-variable-name-face))))
+     `(haskell-pragma-face ((,class (:inherit font-lock-preprocessor-face))))
+     `(haskell-quasi-quote-face ((,class (:inherit font-lock-string-face))))
+     `(haskell-literate-comment-face ((,class (:inherit font-lock-comment-face))))
+     `(haskell-hole-face ((,class (:foreground ,yellow :weight bold))))
+     `(haskell-error-face ((,class (:underline (:style wave :color ,red)))))
+     `(haskell-warning-face ((,class (:underline (:style wave :color ,yellow)))))
+     `(haskell-interactive-face-prompt ((,class (:foreground ,blue :weight bold))))
+     `(haskell-interactive-face-prompt-cont ((,class (:foreground ,cyan))))
+     `(haskell-interactive-face-compile-error ((,class (:foreground ,red :weight bold))))
+     `(haskell-interactive-face-compile-warning ((,class (:foreground ,yellow :weight bold))))
+     `(haskell-interactive-face-result ((,class (:foreground ,green))))
+     `(haskell-interactive-face-garbage ((,class (:foreground ,base01))))
 ;;;;; helm
      ;; These probably needs tweaking.
      `(helm-apt-deinstalled ((,class (:foreground ,base01))))
@@ -1040,6 +1172,8 @@
      `(imenu-list-entry-face-1 ((,class (:inherit font-lock-function-name-face))))
      `(imenu-list-entry-face-2 ((,class (:inherit font-lock-variable-name-face))))
      `(imenu-list-entry-face-3 ((,class (:inherit font-lock-string-face))))
+;;;;; inf-ruby
+     `(inf-ruby-result-overlay-face ((t (:background unspecified))))
 ;;;;; info
      `(info-title-1 ((,class (:foreground ,base1 :weight bold))))
      `(info-title-2 ((,class (:foreground ,base1 :weight bold))))
@@ -1108,6 +1242,12 @@
      `(jabber-roster-user-xa ((,class (:slant italic :foreground ,magenta))))
 ;;;;; jedi
      `(jedi:highlight-function-argument ((,class (:inherit bold))))
+;;;;; jinx
+     `(jinx-misspelled ((,class (:underline (:style wave :color ,red)))))
+     `(jinx-highlight ((,class (:inherit isearch))))
+     `(jinx-save ((,class (:foreground ,orange :weight bold))))
+     `(jinx-key ((,class (:foreground ,blue :weight bold))))
+     `(jinx-annotation ((,class (:foreground ,base01))))
 ;;;;; js2-mode
      `(js2-error ((,class (:foreground ,red))))
      `(js2-external-variable ((,class (:foreground ,orange))))
@@ -1136,6 +1276,9 @@
      `(js3-private-function-call ((,class (:foreground ,yellow))))
      `(js3-private-member ((,class (:foreground ,blue))))
      `(js3-warning ((,class (:underline ,orange))))
+;;;;; keycast
+     `(keycast-key ((,class (:foreground ,base03 :background ,blue :weight bold))))
+     `(keycast-command ((,class (:weight bold))))
 ;;;;; langtool
      `(langtool-errline ((,(append '((supports :underline (:style wave))) class)
                           (:underline (:style wave :color ,green) :inherit unspecified))
@@ -1432,6 +1575,8 @@
      `(mingus-playlist-face ((,class (:foreground ,cyan ))))
      `(mingus-song-file-face ((,class (:foreground ,yellow))))
      `(mingus-stopped-face ((,class (:foreground ,red))))
+;;;;; mistty
+     `(mistty-fringe-face ((,class (:foreground ,base01))))
 ;;;;; moccur
      `(moccur-current-line-face ((,class (:underline t))))
      `(moccur-edit-done-face ((,class
@@ -2040,6 +2185,14 @@
      `(vertico-multiline ((,class (:foreground ,base01))))
 ;;;;; volatile highlights
      `(vhl/default-face ((,class (:background ,green-lc :foreground ,green-hc))))
+;;;;; vundo
+     `(vundo-node ((,class (:foreground ,base01))))
+     `(vundo-stem ((,class (:foreground ,base01))))
+     `(vundo-branch-stem ((,class (:foreground ,base00))))
+     `(vundo-highlight ((,class (:foreground ,blue :weight bold))))
+     `(vundo-saved ((,class (:foreground ,green))))
+     `(vundo-last-saved ((,class (:foreground ,green :weight bold))))
+     `(vundo-diff-highlight ((,class (:foreground ,orange :weight bold))))
 ;;;;; w3m
      `(w3m-anchor ((,class (:inherit link))))
      `(w3m-arrived-anchor ((,class (:inherit link-visited))))

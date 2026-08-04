@@ -346,7 +346,16 @@ See info node `(magit)Debugging Tools' for more information."
   (message "Additional reporting of Git errors %s"
            (if magit-git-debug "enabled" "disabled")))
 
-(defvar magit--refresh-cache nil)
+(defvar magit--refresh-cache nil
+  "Cache used during refreshes and other expensive operations.
+
+If non-nil, this has the form ((HITS . COUNT) . ENTRIES).  HITS is how
+many times any of the cached ENTRIES were accessed.  COUNT is the number
+of ENTRIES.  Each entry has the form (KEY . VALUE).  KEY can have one
+of two forms (TOPDIR . ARGUMENTS) or (TOPDIR . ACTION).  TOPDIR is the
+top-level directory of a repository.  ARGUMENTS are arguments to git.
+ACTION is a symbol identifying an action other than calling git.  VALUE
+is the cached value.")
 
 (defmacro magit--with-refresh-cache (key &rest body)
   (declare (indent 1) (debug (form body)))
@@ -354,13 +363,16 @@ See info node `(magit)Debugging Tools' for more information."
         (hit (gensym)))
     `(if magit--refresh-cache
          (let ((,k ,key))
+           (unless (zerop (recursion-depth))
+             (setq magit--refresh-cache nil))
            (if-let ((,hit (assoc ,k (cdr magit--refresh-cache))))
                (progn (incf (caar magit--refresh-cache))
                       (cdr ,hit))
-             (incf (cdar magit--refresh-cache))
              (let ((value ,(macroexp-progn body)))
-               (push (cons ,k value)
-                     (cdr magit--refresh-cache))
+               (when (zerop (recursion-depth))
+                 (incf (cdar magit--refresh-cache))
+                 (push (cons ,k value)
+                       (cdr magit--refresh-cache)))
                value)))
        ,@body)))
 
@@ -736,7 +748,7 @@ executable."
 Raise an error if Git cannot be found, if it exits with a
 non-zero status, or the output does not have the expected
 format."
-  (magit--with-refresh-cache default-directory
+  (magit--with-refresh-cache (list default-directory)
     (let ((host (file-remote-p default-directory)))
       (or (cdr (assoc host magit--host-git-version-cache))
           (magit--with-temp-process-buffer
@@ -2345,12 +2357,12 @@ specified using `core.worktree'."
                       (setf (nth 2 worktree) (magit-rev-parse "HEAD"))
                       (setf (nth 3 worktree) (magit-get-current-branch)))
                      ((setf (nth 3 worktree) t)))))
-            ((string-equal line "detached")
+            ((string-equal "detached" line)
              (setf (nth 4 worktree) t))
-            ((string-prefix-p line "locked")
+            ((string-prefix-p "locked" line)
              (setf (nth 5 worktree)
                    (if (> (length line) 6) (substring line 7) t)))
-            ((string-prefix-p line "prunable")
+            ((string-prefix-p "prunable" line)
              (setf (nth 6 worktree)
                    (if (> (length line) 8) (substring line 9) t)))))
     (nreverse worktrees)))

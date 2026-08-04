@@ -1,12 +1,12 @@
 ;;; dired-sidebar.el --- Tree browser leveraging dired -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021 James Nguyen
+;; Copyright (C) 2026  Free Software Foundation, Inc.
 
 ;; Author: James Nguyen <james@jojojames.com>
 ;; Maintainer: James Nguyen <james@jojojames.com>
 ;; URL: https://github.com/jojojames/dired-sidebar
-;; Version: 1.0.0
-;; Package-Requires: ((emacs "29.1") (dired-subtree "0.0.1") (compat "30.0.0.0"))
+;; Version: 2.0.1
+;; Package-Requires: ((emacs "29.1") (compat "30.0.0.0"))
 ;; Keywords: dired, files, tools
 ;; HomePage: https://github.com/jojojames/dired-sidebar
 
@@ -34,16 +34,22 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'compat)
 (require 'dired)
-(require 'dired-subtree)
+(require 'dired-subtree nil :no-error)
 (eval-when-compile (require 'subr-x)) ; `if-let*' and `when-let*'
 
 (declare-function buffer-face-mode-invoke "face-remap")
 (declare-function dired-filter-mode "dired-filter")
 (declare-function dired-collapse-mode "ext:dired-collapse")
 (declare-function project-root "project" (project))
+(declare-function dired-subtree-cycle "ext:dired-subtree")
+(declare-function dired-subtree-toggle "ext:dired-subtree")
+(declare-function dired-subtree--is-expanded-p "ext:dired-subtree")
 (defvar dired-filter-stack)
+(defvar dired-subtree-line-prefix)
+(defvar dired-subtree-use-backgrounds)
 
 ;; Customizations
 
@@ -56,29 +62,25 @@ layout."
   "Show `dired-sidebar' with custom font.
 
 This face can be customized using `dired-sidebar-face'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defface dired-sidebar-face nil
   "Face used by `dired-sidebar' for custom font.
 
-This only takes effect if `dired-sidebar-use-custom-font' is true."
-  :group 'dired-sidebar)
+This only takes effect if `dired-sidebar-use-custom-font' is true.")
 
 (defcustom dired-sidebar-use-custom-modeline t
   "Show `dired-sidebar' with custom modeline.
 
 This uses format specified by `dired-sidebar-mode-line-format'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-mode-line-format
   '("%e" mode-line-front-space
     mode-line-buffer-identification
     " "  mode-line-end-spaces)
   "Mode line format for `dired-sidebar'."
-  :type 'sexp
-  :group 'dired-sidebar)
+  :type 'sexp)
 
 (defcustom dired-sidebar-theme 'icons
   "*The tree style to display.
@@ -91,7 +93,6 @@ it is suitable for terminal.
 `vscode' use `vscode' icons.
 
 This only takes effect if on a local connection. (e.g. Not Tramp)"
-  :group 'dired-sidebar
   :type '(choice (const ascii)
                  (const icons) ;; https://github.com/jtbm37/all-the-icons-dired
                  (const nerd)
@@ -105,21 +106,18 @@ This option does not have effect if `dired-sidebar-resize-on-open' is nil.
 If you set `dired-sidebar-resize-on-open' to nil, you can customize
 `dired-sidebar-display-alist'
 to control the width anyway."
-  :type 'integer
-  :group 'dired-sidebar)
+  :type 'integer)
 
 (defcustom dired-sidebar-window-fixed 'width
   "Whether the width or height of the sidebar window should be fixed
 (to prevent from resizing)."
   :type '(choice (const nil)
                  (const width)
-                 (const height))
-  :group 'dired-sidebar)
+                 (const height)))
 
 (defcustom dired-sidebar-refresh-on-project-switch t
   "Refresh sidebar when `projectile' or `project' changes projects."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-project-root-fn
   #'dired-sidebar-project-root-project
@@ -135,25 +133,21 @@ Both fall back to `default-directory' when no project is detected.
 `project.el' is preferred by default because `projectile' resolves
 symlinks via `file-truename', which causes the sidebar root to differ
 from `default-directory' when the buffer was reached through a symlink."
-  :type 'function
-  :group 'dired-sidebar)
+  :type 'function)
 
 (defcustom dired-sidebar-should-follow-file nil
   "Refresh sidebar to match current file."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-skip-subtree-parent t
   "Whether to skip subtree parent directory when jumping up."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-pop-to-sidebar-on-toggle-open t
   "Whether to jump to sidebar upon toggling open.
 
 This is used in conjunction with `dired-sidebar-toggle-sidebar'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-follow-file-at-point-on-toggle-open t
   "Whether to recursively cycle the subtree and put point on file.
@@ -161,8 +155,7 @@ This is used in conjunction with `dired-sidebar-toggle-sidebar'."
 Similar to `dired-jump'.  This moves point inside sidebar buffer
 to where current-buffer-file is \(if it exists\) but does not necessarily
 select the sidebar window."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-use-magit-integration t
   "Whether to integrate with `magit-mode'.
@@ -174,16 +167,36 @@ When finding file to point at for
 in `magit' buffer.
 
 When finding root directory for sidebar, use directory specified by `magit'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
+
+(defcustom dired-sidebar-want-subtree t
+  "Whether to integrate with `dired-subtree'.
+
+When non-nil and `dired-subtree' is available, `dired-sidebar' expands
+and collapses directories in place using `dired-subtree-cycle' and
+`dired-subtree-toggle'.
+
+When nil, `dired-sidebar' behaves like ordinary `dired': opening a
+directory replaces the buffer contents rather than expanding a subtree,
+and `dired-sidebar-subtree-toggle' falls through to whatever binding
+its invoking key would have had in `dired-mode'."
+  :type 'boolean)
+
+(defun dired-sidebar-subtree-available ()
+  "Return non-nil if `dired-subtree' integration is enabled and loaded.
+
+This is true when `dired-sidebar-want-subtree' is non-nil and the
+`dired-subtree' package can be loaded."
+  (and dired-sidebar-want-subtree
+       (or (featurep 'dired-subtree)
+           (require 'dired-subtree nil :no-error))))
 
 (defcustom dired-sidebar-use-omit-mode-integration t
   "Whether to integrate with `dired-omit-mode'.
 
 When true: Attempt to handle `dired-omit-mode' around
 `dired-subtree-cycle' and `dired-subtree-toggle'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-use-dired-filter-integration (featurep 'dired-filter)
   "Whether to integrate with `dired-filter'.
@@ -191,8 +204,7 @@ When true: Attempt to handle `dired-omit-mode' around
 When true and `dired-filter' is installed, automatically add
 `git-ignored' to `dired-filter-stack' for directories under Git
 version control."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-use-term-integration nil
   "Whether to integrate with `term-mode'.
@@ -204,56 +216,47 @@ off by default due to the experimental nature of getting the PWD from the
 terminal.
 
 Look at `dired-sidebar-term-get-pwd' for implementation."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-use-wdired-integration t
   "Whether to integrate with `wdired'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-cycle-subtree-on-click t
   "Whether to cycle subtree on click."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-delay-auto-revert-updates t
   "Whether to delay automatically reverting buffer.
 
 When true, only allow function `auto-revert-mode' to update every
 `dird-sidebar-stale-buffer-time-idle-delay' seconds."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-stale-buffer-time-idle-delay 1.5
   "The time in idle seconds to wait before checking if buffer is stale."
-  :type 'number
-  :group 'dired-sidebar)
+  :type 'number)
 
 (defcustom dired-sidebar-follow-file-idle-delay 2
   "The time in idle seconds to wait before checking if sidebar should
 follow file."
-  :type 'number
-  :group 'dired-sidebar)
+  :type 'number)
 
 (defcustom dired-sidebar-tui-update-delay 0.02
   "The time in idle seconds to wait before updating tui interface.
 
 This only takes effect if `all-the-icons-dired' is disabled."
-  :type 'number
-  :group 'dired-sidebar)
+  :type 'number)
 
 (defcustom dired-sidebar-refresh-on-special-commands t
   "Whether or not to trigger auto-revert after certain functions.
 
 Warning: This is implemented by advising specific dired functions."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-disable-dired-collapse t
   "Whether or not to disable `dired-collapse' if it's enabled."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-special-refresh-commands
   '(dired-do-delete
@@ -271,8 +274,7 @@ to wait to refresh the sidebar after the CAR of the alist is called.
 
 Set this to nil or set `dired-sidebar-refresh-on-special-commands' to nil
 to disable automatic refresh when a special command is triggered."
-  :type '(repeat (choice symbol (cons symbol integer)))
-  :group 'dired-sidebar)
+  :type '(repeat (choice symbol (cons symbol integer))))
 
 (defcustom dired-sidebar-toggle-hidden-commands
   '(balance-windows)
@@ -284,8 +286,7 @@ command is completed.
 This functionality is implemented using advice.
 
 Set this to nil to disable this advice."
-  :type 'hook
-  :group 'dired-sidebar)
+  :type 'hook)
 
 (defcustom dired-sidebar-alternate-select-window-function
   #'dired-sidebar-default-alternate-select-window
@@ -293,54 +294,51 @@ Set this to nil to disable this advice."
 
 Alternative window selection is used when `dired-sidebar-find-file' is called
 with a prefix arg or when `dired-sidebar-find-file-alt' is called."
-  :type 'function
-  :group 'dired-sidebar)
+  :type 'function)
 
 (defcustom dired-sidebar-recenter-cursor-on-follow-file t
   "Whether or not to center cursor when pointing at file."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-resize-on-open t
   "When dired sidebar window is showed, automatically adjust its width
 according to `dired-sidebar-width'"
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-recenter-cursor-on-tui-update nil
   "Whether or not to center cursor when updating tui interface."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-display-autorevert-messages nil
   "Whether or not to display `autorevert' messages."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-open-file-in-most-recently-used-window t
   "Whether or not to open files in most recently used window."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
-(defcustom dired-sidebar-subtree-line-prefix dired-subtree-line-prefix
-  "The line prefix to use when subtree is cycled."
-  :type 'string
-  :group 'dired-sidebar)
+(defcustom dired-sidebar-subtree-line-prefix
+  (if (boundp 'dired-subtree-line-prefix)
+      dired-subtree-line-prefix
+    "  ")
+  "The line prefix to use when subtree is cycled.
+
+Falls back to two spaces when the optional `dired-subtree' package is
+not installed."
+  :type 'string)
 
 (defcustom dired-sidebar-display-alist '((side . left) (slot . -1))
   "Alist used in `display-buffer-in-side-window'.
 
 e.g. (display-buffer-in-side-window buffer \\'((side . left) (slot . -1)))"
-  :type 'alist
-  :group 'dired-sidebar)
+  :type 'alist)
 
 (defcustom dired-sidebar-close-sidebar-on-file-open nil
   "Whether or not to close sidebar when `dired-sidebar-find-file' is called.
 
 This behavior only triggers if `dired-sidebar-find-file' is triggered on
 a file."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-no-delete-other-windows nil
   "Whether or not to add `no-delete-other-window' parameter to window.
@@ -349,32 +347,27 @@ If this is true, when calling `delete-other-windows', `dired-sidebar' window
 will continue showing.
 
 For more information, look up `delete-other-windows'."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-use-one-instance nil
   "Only show one buffer instance for dired-sidebar for each frame."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-display-remote-icons nil
   "Show icons for remote directories. nil by default for performance reasons."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 (defcustom dired-sidebar-block-icon-display-modes '(all-the-icons-dired-mode)
   "List of modes in `dired-mode-hook' that prevents icon display.
 
 See https://github.com/jojojames/dired-sidebar/issues/43."
-  :type 'hook
-  :group 'dired-sidebar)
+  :type 'hook)
 
 (defcustom dired-sidebar-adjust-frame-width nil
   "Whether or not to change the frame size when showing and hiding the sidebar.
 
 This has other windows retain their size."
-  :type 'boolean
-  :group 'dired-sidebar)
+  :type 'boolean)
 
 ;; Internal
 
@@ -452,11 +445,11 @@ Works around marker pointing to wrong buffer in Emacs 25."
 
   (setq window-size-fixed dired-sidebar-window-fixed)
 
-  ;; Match backgrounds.
-  (setq-local dired-subtree-use-backgrounds nil)
-
-  ;; `dired-subtree''s line prefix is determined by `dired-sidebar'.
-  (setq-local dired-subtree-line-prefix dired-sidebar-subtree-line-prefix)
+  (when (dired-sidebar-subtree-available)
+    ;; Match backgrounds.
+    (setq-local dired-subtree-use-backgrounds nil)
+    ;; `dired-subtree''s line prefix is determined by `dired-sidebar'.
+    (setq-local dired-subtree-line-prefix dired-sidebar-subtree-line-prefix))
 
   ;; https://github.com/jojojames/dired-sidebar/issues/7
   ;; Symlinks are displayed incorrectly when these three things happen.
@@ -561,10 +554,11 @@ Works around marker pointing to wrong buffer in Emacs 25."
     (unless (memq 'dired-omit-mode
                   dired-sidebar-special-refresh-commands)
       (push 'dired-omit-mode dired-sidebar-special-refresh-commands))
-    (advice-add 'dired-subtree-cycle
-                :around #'dired-sidebar-omit-after-dired-subtree-cycle)
-    (advice-add 'dired-subtree-toggle
-                :around #'dired-sidebar-omit-after-dired-subtree-cycle))
+    (when (dired-sidebar-subtree-available)
+      (advice-add 'dired-subtree-cycle
+                  :around #'dired-sidebar-omit-after-dired-subtree-cycle)
+      (advice-add 'dired-subtree-toggle
+                  :around #'dired-sidebar-omit-after-dired-subtree-cycle)))
 
   ;; This comment is taken from `dired-readin'.
   ;; Begin --- Copied comment from dired.el.
@@ -649,6 +643,7 @@ This is dependent on `dired-subtree-cycle'."
   (let ((sidebar (dired-sidebar-buffer)))
     (pop-to-buffer sidebar)
     (when (and name
+               (dired-sidebar-subtree-available)
                ;; Checking for a private method. *shrug*
                (fboundp 'dired-subtree--is-expanded-p))
       (pop-to-buffer sidebar)
@@ -860,6 +855,7 @@ the relevant file-directory clicked on by the mouse."
     ;; `dired-subtree-cycle' works without first selecting the window.
     (with-selected-window window
       (if (and dired-sidebar-cycle-subtree-on-click
+               (dired-sidebar-subtree-available)
                (file-directory-p file)
                (not (string-suffix-p "." file)))
           (dired-subtree-cycle)
@@ -1105,10 +1101,19 @@ This is somewhat experimental/hacky."
      default-directory)))
 
 (defun dired-sidebar-subtree-toggle ()
-  "Wrapper over `dired-subtree-toggle' that accounts for `all-the-icons-dired'."
+  "Wrapper over `dired-subtree-toggle' that accounts for `all-the-icons-dired'.
+
+When `dired-sidebar-want-subtree' is nil (or `dired-subtree' is not
+available), fall through to whatever binding the invoking key would
+have had in `dired-mode'."
   (interactive)
-  (dired-subtree-toggle)
-  (dired-sidebar-redisplay-icons))
+  (if (dired-sidebar-subtree-available)
+      (progn
+        (dired-subtree-toggle)
+        (dired-sidebar-redisplay-icons))
+    (let ((cmd (lookup-key dired-mode-map (this-command-keys-vector))))
+      (when (commandp cmd)
+        (call-interactively cmd)))))
 
 (defun dired-sidebar-redisplay-icons ()
   "Redisplay icon themes unless over TRAMP."
@@ -1198,7 +1203,8 @@ Otherwise, try to call `dired-omit-mode' after function runs."
                            (vscode-icon-for-file filename) " "))
                         (insert " "))
                     (insert (if (file-directory-p filename)
-                                (concat (if (dired-subtree--is-expanded-p)
+                                (concat (if (and (dired-sidebar-subtree-available)
+                                                 (dired-subtree--is-expanded-p))
                                             collapsible-icon expandable-icon)
                                         " ")
                               (if (eq dired-sidebar-theme 'nerd) "  " ""))))))))
@@ -1253,7 +1259,8 @@ This is used in place of `all-the-icons' to add directory indicators.
 e.g. + and -."
   (add-hook 'dired-after-readin-hook
             #'dired-sidebar-tui-dired-display :append :local)
-  (setq-local dired-subtree-line-prefix dired-sidebar-subtree-line-prefix)
+  (when (dired-sidebar-subtree-available)
+    (setq-local dired-subtree-line-prefix dired-sidebar-subtree-line-prefix))
   (dired-build-subdir-alist)
   (funcall revert-buffer-function))
 

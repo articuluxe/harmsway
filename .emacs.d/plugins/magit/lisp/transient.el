@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.13.5
+;; Package-Version: 0.13.6
 ;; Package-Requires: (
 ;;     (emacs   "28.1")
 ;;     (compat  "31.0")
@@ -45,7 +45,7 @@
 
 ;;; Code:
 
-(defconst transient-version "0.13.5")
+(defconst transient-version "0.13.6")
 
 (require 'cl-lib)
 (require 'compat)
@@ -1088,6 +1088,8 @@ Technically a suffix object with no associated command.")
   ((transient                         :initform t)
    (argument    :initarg :argument)
    (shortarg    :initarg :shortarg)
+   (claim-argument
+    :initarg :claim-argument          :initform nil)
    (value                             :initform nil)
    (init-value  :initarg :init-value)
    (unsavable   :initarg :unsavable   :initform nil)
@@ -1703,7 +1705,7 @@ SUFFIXES is a list of suffix command or a group specification
 Intended for use in a group's `:setup-children' function."
   (when (cl-typep prefix 'transient-prefix)
     (setq prefix (oref prefix command)))
-  (mapcar (apply-partially #'transient-parse-suffix prefix) suffixes))
+  (mapcar (##transient-parse-suffix prefix %) suffixes))
 
 ;;; Edit
 
@@ -3886,32 +3888,38 @@ Call `transient-default-value' but because that is a noop for
     (unless (eq value eieio--unbound)
       (oset obj value value))))
 
-(cl-defmethod transient-init-value ((obj transient-argument))
-  "Extract OBJ's value from the value of the prefix object."
-  (oset obj value
-        (let ((value (oref transient--prefix value))
-              (argument (and (slot-boundp obj 'argument)
-                             (oref obj argument)))
-              (multi-value (oref obj multi-value))
-              (case-fold-search nil)
-              (regexp (if (slot-exists-p obj 'argument-regexp)
-                          (oref obj argument-regexp)
-                        (format "\\`%s\\([^z-a]*\\)\\'" (oref obj argument)))))
-          (if (memq multi-value '(t rest))
-              (cdr (assoc argument value))
-            (let ((match (lambda (v)
-                           (and (stringp v)
-                                (string-match regexp v)
-                                (match-string 1 v)))))
-              (if multi-value
-                  (seq-filter match value)
-                (seq-some match value)))))))
-
 (cl-defmethod transient-init-value ((obj transient-switch))
   "Extract OBJ's value from the value of the prefix object."
   (oset obj value
         (car (member (oref obj argument)
                      (oref transient--prefix value)))))
+
+(cl-defmethod transient-init-value ((obj transient-argument))
+  "Extract OBJ's value from the value of the prefix object."
+  (let* ((args (oref transient--prefix value))
+         (value
+          (pcase-exhaustive (oref obj multi-value)
+            ((or 't 'rest) (cdr (assoc (oref obj argument) args)))
+            ('repeat       (seq-keep (transient--extract-value obj) args))
+            ('nil          (seq-some (transient--extract-value obj) args)))))
+    (oset obj value value)
+    (when (and value (oref obj claim-argument))
+      (oset transient--prefix value
+            (seq-difference args (transient--get-wrapped-value obj))))))
+
+(defun transient--extract-value (obj)
+  (cond-let*
+    ([_(slot-exists-p obj 'argument-regexp)]
+     [regexp (oref obj argument-regexp)]
+     (lambda (arg)
+       (and (stringp arg)
+            (let ((case-fold-search nil))
+              (string-match regexp arg))
+            (match-string 1 arg))))
+    ([argument (oref obj argument)]
+     (lambda (arg)
+       (and (string-prefix-p argument arg)
+            (substring arg (length argument)))))))
 
 ;;;; Default
 
@@ -4177,14 +4185,12 @@ prompt."
               (arg (if (slot-boundp obj 'argument)
                        (oref obj argument)
                      (oref obj argument-format)))
-              (spec (oref transient--prefix incompatible))
-              (filter (lambda (x rule)
-                        (and (member x rule)
-                             (remove x rule))))
-              (incomp (nconc
-                       (mapcan (apply-partially filter arg) spec)
-                       (and (not (equal val arg))
-                            (mapcan (apply-partially filter val) spec)))))
+              (incomp (oref transient--prefix incompatible))
+              (incomp
+               (nconc
+                (mapcan (##and (member arg %) (remove arg %)) incomp)
+                (and (not (equal val arg))
+                     (mapcan (##and (member val %) (remove val %)) incomp)))))
     (dolist (obj transient--suffixes)
       (when-let* ((_(cl-typep obj 'transient-argument))
                   (val (transient-infix-value obj))
@@ -4347,7 +4353,7 @@ Unlike `transient-get-value' also include the values of inactive and
 inapt arguments.  This function is mainly intended for internal use.
 It is used to preserve the full value when a menu is being refreshed,
 including the presently ineffective parts."
-  (transient--with-emergency-exit :get-value
+  (transient--with-emergency-exit :get-extended-value
     (mapcan #'transient--get-wrapped-value transient--suffixes)))
 
 (defun transient--get-savable-value ()
@@ -4778,9 +4784,10 @@ have a history of their own.")
                                  (list group))))
                         transient--layout)))
     (while-let ((group (pop groups)))
-      (transient--insert-group group)
-      (when groups
-        (insert ?\n)))))
+      (when (transient--active-suffixes group)
+        (transient--insert-group group)
+        (when groups
+          (insert ?\n))))))
 
 (defun transient--active-suffixes (group)
   (seq-remove (lambda (suffix)
@@ -5211,9 +5218,10 @@ apply the face `transient-unreachable' to the complete string."
 (defun transient--column-stops (columns)
   (let* ((var-pitch (or transient-align-variable-pitch
                         (oref transient--prefix variable-pitch)))
-         (char-width (and var-pitch (transient--string-pixel-width " "))))
+         (char-width (and var-pitch (transient--string-pixel-width " ")))
+         (gap (* 2 (if var-pitch char-width 1))))
     (transient--seq-reductions-from
-     (apply-partially #'+ (* 2 (if var-pitch char-width 1)))
+     (lambda (acc elt) (+ acc gap elt))
      (transient--mapn
       (lambda (cells min)
         (apply #'max

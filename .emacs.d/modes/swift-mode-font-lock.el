@@ -694,10 +694,9 @@ Assuming POS is just before ! character."
   (goto-char pos)
   (and (or (memq (char-before) '(nil ?\s ?\t ?\n ?\( ?\[ ?{ ?, ?\; ?:))
            (forward-comment -1))
-       (not (memq (char-after (1+ (point)))
-                  ;; TODO Unicode operators
-                  '(nil ?\s ?\t ?\n ?\) ?\] ?} ?, ?\; ?: ?/ ?= ?- ?+ ?! ?* ?%
-                        ?< ?> ?& ?| ?^ ?? ?~)))))
+       (let ((char (char-after (1+ (point)))))
+         (not (or (memq char '(nil ?\s ?\t ?\n ?\) ?\] ?} ?, ?\; ?:))
+                  (swift-mode:operator-character-p char))))))
 
 (defun swift-mode:font-lock-match-negation (limit)
   "Search a negation operator and return non-nil if found.
@@ -898,11 +897,11 @@ Fontify the region from START to END."
 Excludes true, false, and keywords begin with a number sign.")
 
 (defconst swift-mode:context-keywords
-  '("Protocol" "Type" "and" "assignment" "associativity" "convenience" "didSet"
-    "dynamic" "final" "get" "higherThan" "indirect" "infix" "lazy" "left"
-    "lowerThan" "mutating" "none" "nonmutating" "optional" "override" "postfix"
-    "precedence" "precedencegroup" "prefix" "required" "right" "set" "unowned"
-    "weak" "willSet")
+  '("Protocol" "Type" "and" "assignment" "associativity" "borrow" "convenience"
+    "didSet" "dynamic" "final" "get" "higherThan" "indirect" "infix" "lazy"
+    "left" "lowerThan" "mutate" "mutating" "none" "nonmutating" "optional"
+    "override" "postfix" "precedence" "precedencegroup" "prefix" "required"
+    "right" "set" "unowned" "weak" "willSet" "of")
   "Keywords reserved in particular contexts.")
 
 (defconst swift-mode:build-config-keywords
@@ -1000,8 +999,7 @@ Excludes true, false, and keywords begin with a number sign.")
      'swift-mode:negation-char-face)
 
     ;; Other operators
-    ;; TODO Unicode operators
-    ("[/=+!*%<>&|^?~.-]+"
+    (,swift-mode:operator-or-dot-operator-regexp
      .
      'swift-mode:operator-face)
 

@@ -4,7 +4,7 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: https://github.com/bbatsov/zenburn-emacs
-;; Version: 2.10.0
+;; Version: 2.11.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -1146,6 +1146,12 @@ the just-introduced bindings."
    `(mm-uu-extract ((t (:background ,zenburn-bg-05 :foreground ,zenburn-green+1))))
 ;;;;; go-guru
    `(go-guru-hl-identifier-face ((t (:foreground ,zenburn-bg-1 :background ,zenburn-green+1))))
+;;;;; gptel
+   `(gptel-context-highlight-face ((t (:background ,zenburn-bg+05 :extend t))))
+   `(gptel-context-deletion-face ((t (:background ,zenburn-diff-removed-bg :extend t))))
+   `(gptel-rewrite-highlight-face ((t (:background ,zenburn-diff-changed-bg :extend t))))
+   `(gptel-response-highlight ((t (:background ,zenburn-bg-05 :extend t))))
+   `(gptel-response-fringe-highlight ((t (:foreground ,zenburn-blue))))
 ;;;;; hackernews
    '(hackernews-comment-count ((t (:inherit link-visited :underline nil))))
    '(hackernews-link          ((t (:inherit link         :underline nil))))

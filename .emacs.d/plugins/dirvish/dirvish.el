@@ -1254,7 +1254,8 @@ INHIBIT-SETUP is passed to `dirvish-data-for-dir'."
        (condition-case err
            (setq data (with-current-buffer pb (read (buffer-string))))
          (error (message "Fetch dir data failed with error: %s" err)))
-       (when (buffer-live-p buf)
+       (when (and (buffer-live-p buf)
+                  (listp data))
          (with-current-buffer buf
            (when-let* ((attrs (cdr data)) ((hash-table-p attrs)))
              (maphash (lambda (k v) (puthash k v dirvish--dir-data)) attrs))

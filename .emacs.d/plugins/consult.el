@@ -1462,7 +1462,7 @@ ORIG is the original function, HOOKS the arguments."
 (defun consult--temporary-files ()
   "Return a function to open files temporarily for preview."
   (let ((dir default-directory)
-        (hook (make-symbol "consult--temporary-files-upgrade-hook"))
+        (hook (make-symbol "consult--temporary-files-upgrade"))
         (orig-buffers (buffer-list))
         temporary-buffers)
     (fset hook
@@ -1524,7 +1524,7 @@ ORIG is the original function, HOOKS the arguments."
                  ;; like `pdf-view-mode' or `doc-view-mode' which rely on
                  ;; `buffer-file-name'.  Executing (set-visited-file-name nil)
                  ;; early also prevents the major mode initialization.
-                 (let ((hook (make-symbol "consult--temporary-files-disassociate-hook")))
+                 (let ((hook (make-symbol "consult--temporary-files-disassociate")))
                    (fset hook (lambda ()
                                 (when (buffer-live-p buf)
                                   (with-current-buffer buf
@@ -1684,7 +1684,7 @@ The function can be used as the `:state' argument of `consult--read'."
 The cheap location markers from CANDIDATES are upgraded on window
 selection change to full Emacs markers."
   (let ((jump (consult--jump-state))
-        (hook (make-symbol "consult--location-upgrade-hook")))
+        (hook (make-symbol "consult--location-upgrade")))
     (fset hook
           (lambda (_)
             (unless (consult--completion-window-p)
@@ -1745,7 +1745,7 @@ The result can be passed as :state argument to `consult--read'." type)
 (defun consult--preview-append-local-pch (fun)
   "Append FUN to local `post-command-hook' list."
   ;; Symbol indirection because of bug#46407.
-  (let ((hook (make-symbol "consult--preview-post-command-hook")))
+  (let ((hook (make-symbol "consult--preview-post-command")))
     (fset hook fun)
     ;; TODO Emacs 28 has a bug, where the hook--depth-alist is not cleaned up properly
     ;; Do not use the broken add-hook here.
@@ -1762,20 +1762,17 @@ The result can be passed as :state argument to `consult--read'." type)
     (minibuffer-with-setup-hook
         (if (and state preview-key)
             (lambda ()
-              (let ((hook (make-symbol "consult--preview-minibuffer-exit-hook"))
-                    (depth (recursion-depth)))
+              (let ((hook (make-symbol "consult--preview-exit")))
                 (fset hook
                       (lambda ()
-                        (when (= (recursion-depth) depth)
-                          (remove-hook 'minibuffer-exit-hook hook)
-                          (cancel-timer timer)
-                          (with-selected-window (consult--original-window)
-                            ;; STEP 3: Reset preview
-                            (when previewed
-                              (funcall state 'preview nil))
-                            ;; STEP 4: Notify the preview function of the minibuffer exit
-                            (funcall state 'exit nil)))))
-                (add-hook 'minibuffer-exit-hook hook))
+                        (cancel-timer timer)
+                        (with-selected-window (consult--original-window)
+                          ;; STEP 3: Reset preview
+                          (when previewed
+                            (funcall state 'preview nil))
+                          ;; STEP 4: Notify the preview function of the minibuffer exit
+                          (funcall state 'exit nil))))
+                (add-hook 'minibuffer-exit-hook hook nil 'local))
               ;; STEP 1: Setup the preview function
               (with-selected-window (consult--original-window)
                 (funcall state 'setup nil))
@@ -2186,7 +2183,7 @@ ASYNC is the asynchronous function or completion table."
                     ;; We use a symbol in order to avoid adding lambdas to
                     ;; the hook variable.  Symbol indirection because of
                     ;; bug#46407.
-                    (hook (make-symbol "consult--async-after-change-hook"))
+                    (hook (make-symbol "consult--async-after-change"))
                     (timer (timer-create)))
                (timer-set-function timer fun)
                ;; Delay modification hook to ensure that minibuffer is still
@@ -5648,29 +5645,19 @@ the asynchronous search."
 
 (defun consult--default-completion-list-candidate ()
   "Return current candidate at point from completions buffer."
-  (when-let* ((buffer
-               (if (derived-mode-p #'completion-list-mode)
-                   ;; Use current buffer if already inside *Completions* buffer
-                   (current-buffer)
-                 ;; Otherwise check if there is an active *Completions* buffer
-                 ;; which can be controlled remotely from the minibuffer.  See
-                 ;; the setting `minibuffer-visible-completions'.
-                 (when-let* ((bound-and-true-p minibuffer-visible-completions)
-                             (window (get-buffer-window "*Completions*" 'visible))
-                             (buffer (window-buffer window))
-                             ((eq (buffer-local-value 'completion-reference-buffer buffer)
-                                  (window-buffer (active-minibuffer-window)))))
-                   buffer))))
-    (with-current-buffer buffer
-      ;; TODO Use `completion-list-candidate-at-point' on Emacs 31
-      (let (beg)
-        (when (cond
-               ((and (not (eobp)) (get-text-property (point) 'completion--string))
-                (setq beg (1+ (point))))
-               ((and (not (bobp)) (get-text-property (1- (point)) 'completion--string))
-                (setq beg (point))))
-          (get-text-property (previous-single-property-change beg 'completion--string)
-                             'completion--string))))))
+  (with-current-buffer
+      ;; Find active *Completions* buffer which can be controlled remotely from
+      ;; the minibuffer.  See the setting `minibuffer-visible-completions'.
+      (if-let* (((bound-and-true-p minibuffer-visible-completions))
+                ((not (derived-mode-p #'completion-list-mode)))
+                (window (get-buffer-window "*Completions*" 'visible))
+                (buffer (window-buffer window))
+                ((eq (buffer-local-value 'completion-reference-buffer buffer)
+                     (window-buffer (active-minibuffer-window)))))
+          buffer
+        (current-buffer))
+    (when (derived-mode-p #'completion-list-mode)
+      (car (completion-list-candidate-at-point)))))
 
 (defun consult--default-completion-list-refresh ()
   "Refresh default completion UI."
