@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # manage-repo.sh --- clone and update a repo
-# Copyright (C) 2021, 2023  Dan Harms (dharms)
+# Copyright (C) 2021, 2023, 2026  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, November  5, 2021
 # Version: 1.0
-# Modified Time-stamp: <2023-10-05 11:12:00 dharms>
+# Modified Time-stamp: <2026-08-13 10:19:43 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -33,7 +33,10 @@ elif [ ! -d "$parent/src" ] && [ -f "$base/clone" ]; then
 fi
 
 # update
-if [ -d "$parent/src/.git" ] \
+if [ -f "$base/.ignore_update_$(uname -s)" ] ||
+       [ -f "$base/.ignore_update" ]; then
+    :
+elif [ -d "$parent/src/.git" ] \
        || [ -d "$parent/src/.git-ignore" ] \
        || [ -d "$parent/src/.git-ignore_$(uname -s)" ]; then
     if [ -f "$base/update" ]; then
