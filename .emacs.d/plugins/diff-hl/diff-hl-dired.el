@@ -36,6 +36,7 @@
 (require 'vc-hooks)
 
 (defvar diff-hl-dired-process-buffer nil)
+(defvar vc-dir-process-output-limit)
 
 (defgroup diff-hl-dired nil
   "VC diff highlighting on the side of a Dired window."
@@ -104,6 +105,9 @@ status indicators."
               (generate-new-buffer " *diff-hl-dired* tmp status")))
       (with-current-buffer diff-hl-dired-process-buffer
         (setq default-directory (expand-file-name def-dir))
+        ;; This isn't a VC-Dir buffer, so VC-Dir's truncation UI
+        ;; cannot be used here.
+        (setq-local vc-dir-process-output-limit nil)
         (erase-buffer)
         (diff-hl-dired-status-files
          backend def-dir

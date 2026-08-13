@@ -4,7 +4,7 @@
 
 ;; Author: Alvaro Ramirez https://xenodium.com
 ;; URL: https://github.com/xenodium/shell-maker
-;; Version: 0.95.1
+;; Version: 0.97.1
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(defconst shell-maker-version "0.95.1")
+(defconst shell-maker-version "0.97.1")
 
 (require 'comint)
 (require 'goto-addr)
@@ -366,7 +366,7 @@ Use ON-OUTPUT function to monitor output text."
     (funcall on-output reply)))
 
 (defun shell-maker--freeze-submitted-input ()
-  "Make the just-submitted input read-only.
+  "Make the just-submitted input read-only and drop its hover highlight.
 
 Meant to run right after `comint-send-input', while
 `comint-last-input-start' and `comint-last-input-end' still bracket the
@@ -377,13 +377,28 @@ input that was just committed.
 appending immediately after it.  This mirrors the read-only output
 shell-maker already inserts, so a submitted prompt becomes as immutable
 as the agent's reply.  The live prompt stays editable independently, via
-the prompt marker's own `rear-nonsticky' (see `shell-maker--output-filter')."
+the prompt marker's own `rear-nonsticky' (see `shell-maker--output-filter').
+
+Also removes the `mouse-face'/`help-echo' comint adds so old input can
+be mouse-2 re-inserted: submitted prompts are immutable here, so the
+hover highlight (the `highlight' face, `:extend t', painting the whole
+line) is just noise.
+
+Drops the undo history too.  Its entries describe the input that was
+just frozen, so undo could only fail on read-only text (or, once the
+reply pushes things around, delete the wrong text).  Only the live
+prompt is meant to be undoable.  Buffers with undo disabled
+(`buffer-disable-undo') are left alone."
   (when (and comint-last-input-start comint-last-input-end
              (< (marker-position comint-last-input-start)
                 (marker-position comint-last-input-end)))
     (let ((inhibit-read-only t))
       (add-text-properties comint-last-input-start comint-last-input-end
-                           '(read-only t front-sticky (read-only))))))
+                           '(read-only t front-sticky (read-only)))
+      (remove-text-properties comint-last-input-start comint-last-input-end
+                              '(mouse-face nil help-echo nil))))
+  (unless (eq buffer-undo-list t)
+    (setq buffer-undo-list nil)))
 
 (cl-defun shell-maker-submit (&key input on-output on-finished)
   "Submit current input.
@@ -749,6 +764,9 @@ Return t if INPUT us cleared.  nil otherwise."
       ;; TODO: output help to on-output also.
       (shell-maker--print-help)
       (setq shell-maker--busy nil)
+      ;; Reprints the prompt without `shell-maker-finish-output', so notify
+      ;; the same observers.
+      (run-hooks 'shell-maker-finish-output-hook)
       nil)
      ((string-equal "clear" (string-trim input))
       (call-interactively #'shell-maker-clear-buffer)
@@ -765,6 +783,9 @@ Return t if INPUT us cleared.  nil otherwise."
                                 :reply (shell-maker--dump-config shell-maker--config)
                                 :on-output on-output)
       (setq shell-maker--busy nil)
+      ;; Reprints the prompt without `shell-maker-finish-output', so notify
+      ;; the same observers.
+      (run-hooks 'shell-maker-finish-output-hook)
       nil)
      ((not (shell-maker--curl-version-supported))
       (shell-maker--write-reply :config shell-maker--config
@@ -772,6 +793,9 @@ Return t if INPUT us cleared.  nil otherwise."
                                 :failed t
                                 :on-output on-output)
       (setq shell-maker--busy nil)
+      ;; Reprints the prompt without `shell-maker-finish-output', so notify
+      ;; the same observers.
+      (run-hooks 'shell-maker-finish-output-hook)
       nil)
      ((and (shell-maker-config-validate-command
             shell-maker--config)
@@ -791,11 +815,17 @@ Return t if INPUT us cleared.  nil otherwise."
          :output error
          :success nil))
       (setq shell-maker--busy nil)
+      ;; Reprints the prompt without `shell-maker-finish-output', so notify
+      ;; the same observers.
+      (run-hooks 'shell-maker-finish-output-hook)
       nil)
      ((string-empty-p (string-trim input))
       (shell-maker--output-filter (shell-maker--process)
                                   (concat "\n" (shell-maker-prompt shell-maker--config)))
       (setq shell-maker--busy nil)
+      ;; Empty input reprints the prompt without going through
+      ;; `shell-maker-finish-output', so notify the same observers.
+      (run-hooks 'shell-maker-finish-output-hook)
       nil)
      (t
       t))))
@@ -1441,17 +1471,19 @@ For example, with prompt at positions 100-113:
 
 (defun shell-maker--should-auto-scroll-p ()
   "Return t when streaming should auto-scroll the buffer to point-max.
-True when point is at end-of-buffer AND every window displaying the
-buffer has its visible end at point-max.  Wheel-scrolling moves
-`window-end' without moving point, so checking only `eobp' would keep
-the window snapping back to the bottom while the user is reading."
+True when point is at end-of-buffer AND end-of-buffer is visible in
+every window displaying the buffer.  Wheel-scrolling moves the window
+without moving point, so checking only `eobp' would keep the window
+snapping back to the bottom while the user is reading.
+
+Visibility is asked of redisplay via `pos-visible-in-window-p' rather
+than compared against `window-end', whose value can land one position
+short of point-max at a trailing-newline end-of-buffer, silently
+disarming auto-scroll while the user is in fact at the bottom."
   (and (eobp)
-       (let ((windows (cl-remove-if-not
-                       (lambda (w) (eq (window-buffer w) (current-buffer)))
-                       (window-list nil 'no-mini))))
-         (or (null windows)
-             (cl-every (lambda (w) (>= (window-end w t) (point-max)))
-                       windows)))))
+       (cl-every (lambda (window)
+                   (pos-visible-in-window-p (point-max) window))
+                 (get-buffer-window-list nil 'no-mini))))
 
 (defmacro shell-maker-with-auto-scroll-edit (&rest body)
   "Execute BODY, preserving point unless already at end of buffer."
@@ -1871,6 +1903,7 @@ or surrounding prompts."
                                'rear-nonsticky '(field read-only)))))
     (with-current-buffer buffer
       (let ((inhibit-read-only t)
+            (buffer-undo-list t)
             (auto-scroll (shell-maker--should-auto-scroll-p)))
         (save-excursion
           (goto-char (point-max))
@@ -1882,10 +1915,16 @@ or surrounding prompts."
 (defun shell-maker--output-filter (process string)
   "Copy of `comint-output-filter' but avoids fontifying non-prompt text.
 
-Uses PROCESS and STRING same as `comint-output-filter'."
+Uses PROCESS and STRING same as `comint-output-filter'.
+
+Output is read-only and never the user's to undo, so it's kept out of
+the undo history: recording it would put the shell's own writes ahead
+of whatever was typed at the live prompt, which is the only text undo
+should ever reach."
   (when-let* ((oprocbuf (process-buffer process)))
     (with-current-buffer oprocbuf
-      (let ((inhibit-read-only t))
+      (let ((inhibit-read-only t)
+            (buffer-undo-list t))
         (save-restriction
           (widen)
           (goto-char (point-max))

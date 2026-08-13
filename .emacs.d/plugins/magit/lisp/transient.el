@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/magit/transient
 ;; Keywords: extensions
 
-;; Package-Version: 0.13.6
+;; Package-Version: 0.13.7
 ;; Package-Requires: (
 ;;     (emacs   "28.1")
 ;;     (compat  "31.0")
@@ -45,7 +45,7 @@
 
 ;;; Code:
 
-(defconst transient-version "0.13.6")
+(defconst transient-version "0.13.7")
 
 (require 'cl-lib)
 (require 'compat)
@@ -3918,7 +3918,8 @@ Call `transient-default-value' but because that is a noop for
             (match-string 1 arg))))
     ([argument (oref obj argument)]
      (lambda (arg)
-       (and (string-prefix-p argument arg)
+       (and (stringp arg)
+            (string-prefix-p argument arg)
             (substring arg (length argument)))))))
 
 ;;;; Default

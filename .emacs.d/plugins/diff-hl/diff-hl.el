@@ -1640,7 +1640,7 @@ CONTEXT-LINES is the size of the unified diff context, defaults to 0."
     (car (last (vc-jj--process-lines nil
                                      "log" "--no-graph"
                                      "-r" revision
-                                     "-T" "change_id" "-n" "1"))))
+                                     "-T" "commit_id" "-n" "1"))))
    (t
     revision)))
 
