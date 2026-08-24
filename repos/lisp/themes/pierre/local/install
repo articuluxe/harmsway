@@ -1,0 +1,2 @@
+cp src/pierre-themes.el ../../../../.emacs.d/plugins
+cp src/pierre-*-theme.el ../../../../.emacs.d/etc/themes
