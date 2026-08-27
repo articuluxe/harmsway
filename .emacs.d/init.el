@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-07-29 22:24:51 dharms>
+;; Modified Time-stamp: <2026-08-26 22:51:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1285,7 +1285,6 @@ Based on `https://emacs.ch/@bram85/112365691040649759'."
   (setq magit-status-initial-section '(((unstaged)(status))
                                        ((staged)(status))
                                        1))
-  (push '(untracked . show) magit-section-initial-visibility-alist)
   ;; git commands
   :bind (:map harmsway-git-keymap
               ("g" . magit-status)
@@ -1314,6 +1313,7 @@ Based on `https://emacs.ch/@bram85/112365691040649759'."
               )
   :config
   (put 'magit-clean 'disabled nil)
+  (push '(untracked . show) magit-section-initial-visibility-alist)
   (use-package with-editor)
   (use-package ssh-agency)
   (magit-auto-revert-mode 0)
