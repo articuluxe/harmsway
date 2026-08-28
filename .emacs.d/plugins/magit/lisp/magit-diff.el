@@ -1089,7 +1089,8 @@ and `:slant'."
    (magit-diff:--diff-algorithm)
    (magit-diff:--diff-merges)
    (magit-diff:-M)
-   (magit-diff:-C)
+   (magit-diff:-C               :level 5)
+   ("-H" "Detect copies if source unmodified" "--find-copies-harder" :level 5)
    (magit-diff:-R               :level 5)
    (magit-diff:--color-moved    :level 5)
    (magit-diff:--color-moved-ws :level 5)
@@ -2562,9 +2563,12 @@ keymap is the parent of their keymaps."
                (flatten-tree args))
               (magit-git-global-arguments
                (remove "--literal-pathspecs" magit-git-global-arguments)))
-    ;; We need to generate diffs with --ita-visible-in-index so that
+    ;; We need to generate diffs with "--ita-visible-in-index" so that
     ;; `magit-stage' can work with intent-to-add files (see #4026).
-    (unless (equal cmd "merge-tree")
+    ;; When "-C" is used don't add "--ita-visible-in-index" because
+    ;; that renders the former ineffective (see ##5629).
+    (unless (or (equal cmd "merge-tree")
+                (seq-some (##string-prefix-p "-C" %) args))
       (push "--ita-visible-in-index" args))
     (setq args (magit-diff--maybe-add-stat-arguments args))
     (when (any (##string-prefix-p "--color-moved" %) args)
@@ -2791,7 +2795,7 @@ keymap is the parent of their keymaps."
            ((looking-at "copy from \\(.+\\)\ncopy to \\(.+\\)\n")
             (setq orig (match-str 1))
             (setq file (match-str 2))
-            (setq status "new file"))
+            (setq status "copied"))
            ((looking-at "similarity index .+\n"))
            ((looking-at "dissimilarity index .+\n"))
            ((looking-at "index .+\n"))

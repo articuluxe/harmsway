@@ -550,6 +550,15 @@ BODY can be one or more expressions.
 To add these keywords, add this to your configuration:
 \(font-lock-add-keywords \\='emacs-lisp-mode cond-let-font-lock-keywords t)")
 
+;;;###autoload
+(define-minor-mode cond-let-fontify-mode
+  "In Emacs Lisp mode, highlight `$' using `font-lock-variable-name-face'."
+  :global t
+  :group 'font-lock-extra-types
+  (if cond-let-fontify-mode
+      (font-lock-add-keywords  'emacs-lisp-mode cond-let-font-lock-keywords t)
+    (font-lock-remove-keywords 'emacs-lisp-mode cond-let-font-lock-keywords)))
+
 ;;; Compatibility
 
 (defalias 'cond-let--and> #'cond-let--and$

@@ -23,7 +23,10 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;; This is the emacs port of the popular vague theme from neovim.
+
+;; This is the Emacs port of the popular vague theme from neovim.
+;; It is built on top of Modus themes, thus providing excellent
+;; support for most major and minor modes.
 
 ;;; Code:
 
@@ -91,6 +94,34 @@
      (bg-mode-line-active bg-dim)
      (border-mode-line-active bg-dim)
 
+     ;; Visual text
+     (fg-region unspecified)
+
+     ;; Mail (GNUS, mu4e, notmuch)
+     (mail-cite-0 yellow)
+     (mail-cite-1 aqua)
+     (mail-cite-2 green)
+     (mail-cite-3 fg-dim)
+     (mail-part cyan)
+     (mail-recipient teal)
+     (mail-subject magenta)
+     (mail-other iris)
+
+     ;; Org-agenda
+     (date-scheduled gold)
+     (date-scheduled-subtle teal)
+     (date-event iris)
+
+     ;; Headings (in orgmode for example)
+     (fg-heading-0 peach)
+     (fg-heading-1 amber)
+
+     (date-common magenta)
+
+     ;; Isearch
+     (bg-search-current storm)
+     (fg-search-current cyan)
+
      (fringe unspecified)
      (border-mode-line-active unspecified)
      (bg-line-number-inactive unspecified)
@@ -98,10 +129,15 @@
      (fg-line-number-inactive fg-dim)
      (border-mode-line-inactive unspecified))))
 
+(defconst modus-vague-custom-faces
+  '(
+    `(git-commit-summary ((,c :inherit bold :foreground ,iris))))
+  "Custom faces overriding the default faces of Modus themes.")
+
 (defcustom modus-vague-palette-overrides nil
   "Overrides for `modus-vague-palette'."
   :group 'modus-vague
-  :package-version '(modus-vague . "0.0.1")
+  :package-version '(modus-vague . "0.1.5")
   :type '(repeat (list symbol (choice symbol string)))
   :link '(info-link "(modus-themes) Palette overrides"))
 
@@ -113,7 +149,8 @@
  'dark
  'modus-themes-vivendi-palette
  'modus-vague-palette
- 'modus-vague-palette-overrides)
+ 'modus-vague-palette-overrides
+ 'modus-vague-custom-faces)
 
 (provide-theme 'modus-vague)
 

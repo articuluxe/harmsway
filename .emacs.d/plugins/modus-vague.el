@@ -1,11 +1,11 @@
 ;;; modus-vague.el --- Emacs port of the popular vague theme -*- lexical-binding:t -*-
 
-;; Copyright (C) 2022-2026  Free Software Foundation, Inc.
+;; Copyright (C) 2026 Free Software Foundation, Inc.
 
 ;; Author: Ashish Panigrahi <public@ashishpanigrahi.com>
 ;; Maintainer: Ashish Panigrahi <public@ashishpanigrahi.com>
 ;; URL: https://github.com/paniash/modus-vague
-;; Version: 0.0.2
+;; Version: 0.1.5
 ;; Package-Requires: ((emacs "28.1") (modus-themes "5.2.0"))
 ;; Keywords: faces, theme
 
@@ -25,7 +25,10 @@
 ;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;; This is the emacs port of the popular vague theme from neovim.
+
+;; This is the Emacs port of the popular vague theme from neovim.
+;; It is built on top of Modus themes, thus providing excellent
+;; support for most major and minor modes.
 
 ;;; Code:
 
@@ -36,11 +39,13 @@
 ;;;; Basics for building on top of Modus
 
 (defgroup modus-vague ()
-  "The vague theme ported to Emacs. A cool, dark, low contrast colorscheme.
-Pastel yet vivid, like a fleeting memory..."
+  "The vague theme ported to Emacs.
+A cool, dark, low contrast colorscheme. Pastel yet vivid, like a
+fleeting memory..."
   :group 'faces
   :group 'modus-themes
   :link '(info-link "(modus-themes) Top")
+  :link '(url-link "https://github.com/vague-theme/vague")
   :prefix "modus-vague-"
   :tag "Modus Vague Theme")
 
@@ -81,11 +86,11 @@ Pastel yet vivid, like a fleeting memory..."
 
 ;;;###autoload
 (define-minor-mode modus-vague-take-over-modus-themes-mode
-  "When enabled, all Modus themes commands consider only Modus vague theme.
-Alternatively, use the commands `modus-vague-list-colors', `modus-vague-list-colors-current'.
-They are all designed to only consider the Modus vague theme."
-  :global t
-  :init-value nil)
+  "When enabled, Modus themes commands consider only Modus vague theme.
+Alternatively, use the commands `modus-vague-list-colors',
+`modus-vague-list-colors-current'.  They are all designed to only
+consider the Modus vague theme."
+  :global t)
 
 (cl-defmethod modus-themes-get-themes (&context (modus-vague-take-over-modus-themes-mode (eql t)))
   "Return list of Modus vague theme, per `MODUS-VAGUE-TAKE-OVER-MODUS-THEMES-MODE'."

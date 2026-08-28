@@ -54,7 +54,7 @@
        (green          "#6aaf50")
        (dark-green     "#1d9a79")
        (darker-green   "#058945")
-       (lighter-blue   "#86b5e8")
+       (lighter-blue   "#8ab4df")
        (light-blue     "#70a5e1")
        (blue           "#598bc1")
        (dark-blue      "#267E99")
@@ -87,9 +87,12 @@
        (dark-teal-bg    "#112b2b")
        (gray-bg         "#2b2b2b")
        (blue-bg         "#112b47")
-       (light-purple-bg "#2b2b47")
        (purple-bg       "#2b1147")
        (red-bg          "#47112b")
+
+       (light-blue-bg   "#223b50")
+       (light-purple-bg "#2d2d4b")
+       (light-red-bg    "#4A282F")
 
        (nimbus-err     "#ff0000")
        (nimbus-success light-green)
@@ -130,6 +133,7 @@
        (strike         brown)
        (summary        red)
        (tag            dark-blue)
+       (table          lighter-blue)
        (value          green)
 
        (lazy           light-blue)
@@ -196,6 +200,8 @@
    `(button ((t (:foreground ,blue :underline t))))
    `(escape-glyph ((t (:foreground ,dark-blue))))
    `(header-line ((t (:background ,light-purple-bg :foreground ,fg))))
+   `(tab-line ((t (:inherit unspecified :height unspecified
+                   :background ,light-red-bg :foreground ,fg))))
    `(help-key-binding ((t (:foreground ,key))))
    `(isearch ((t (:foreground ,black :background ,search))))
    `(lazy-highlight ((t (:foreground ,black :background ,lazy))))
@@ -928,6 +934,14 @@
    `(markdown-gfm-checkbox-face ((t (:foreground ,checkbox))))
    `(markdown-code-face ((t (:foreground ,code))))
    `(markdown-header-face ((t (:foreground ,heading))))
+   `(markdown-header-face-1 ((t (:foreground ,rainbow-1))))
+   `(markdown-header-face-2 ((t (:foreground ,rainbow-2))))
+   `(markdown-header-face-3 ((t (:foreground ,rainbow-3))))
+   `(markdown-header-face-4 ((t (:foreground ,rainbow-4))))
+   `(markdown-header-face-5 ((t (:foreground ,rainbow-5))))
+   `(markdown-header-face-6 ((t (:foreground ,rainbow-6))))
+   `(markdown-language-keyword-face ((t (:foreground ,lighter-green))))
+   `(markdown-table-face ((t (:foreground ,table))))
 
    ;; message-mode
    `(message-cited-text ((t (:inherit font-lock-comment-face))))
@@ -948,7 +962,7 @@
    `(mmv-face ((t (:underline ,white))))
 
    ;; mode-line
-   `(mode-line ((t (:foreground ,fg :background ,light-purple-bg))))
+   `(mode-line ((t (:foreground ,fg :background ,light-blue-bg))))
    `(mode-line-inactive ((t (:foreground ,lighter-gray :background ,gray-bg))))
 
    ;; multiple-cursors
@@ -1015,7 +1029,7 @@
    `(org-scheduled-previously ((t (:foreground ,orange))))
    `(org-scheduled-today ((t (:foreground ,yellow))))
    `(org-special-keyword ((t (:inherit org-drawer))))
-   `(org-table ((t (:foreground ,lighter-blue))))
+   `(org-table ((t (:foreground ,table))))
    `(org-tag ((t (:foreground ,tag))))
    `(org-time-grid ((t (:foreground ,blue-gray))))
    `(org-todo ((t (:foreground ,dark-red))))
@@ -1290,7 +1304,10 @@
    `(web-mode-whitespace-face ((t (:background ,purple))))
 
    ;; which-func
-   ;; `(which-func ((t ())))
+   ;;
+   ;; lighter green than font-lock-function-name-face, which would be hard to
+   ;; read against the mode-line.
+   `(which-func ((t (:foreground ,lighter-green))))
 
    ;; which-key
    `(which-key-key-face ((t (:foreground ,key))))

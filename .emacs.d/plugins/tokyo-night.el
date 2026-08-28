@@ -4,7 +4,7 @@
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.dev>
 ;; URL: https://github.com/bbatsov/tokyo-night-emacs
-;; Version: 1.0.0
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: faces themes
 
@@ -43,7 +43,62 @@
 
 (defcustom tokyo-night-scale-headings t
   "Whether to scale headings in org, outline, markdown, shr, and info.
-Set to nil for uniform heading sizes.  Takes effect on theme load."
+Set to nil for uniform heading sizes.  The individual scale factors
+are controlled by `tokyo-night-height-doc-title' and
+`tokyo-night-height-1' through `tokyo-night-height-3'.  Takes effect
+on theme load."
+  :type 'boolean
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-height-doc-title 1.4
+  "Height multiplier for document titles (e.g. `org-document-title').
+Only takes effect when `tokyo-night-scale-headings' is non-nil."
+  :type 'number
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-height-1 1.3
+  "Height multiplier for level-1 headings.
+Only takes effect when `tokyo-night-scale-headings' is non-nil."
+  :type 'number
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-height-2 1.2
+  "Height multiplier for level-2 headings.
+Only takes effect when `tokyo-night-scale-headings' is non-nil."
+  :type 'number
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-height-3 1.1
+  "Height multiplier for level-3 headings.
+Only takes effect when `tokyo-night-scale-headings' is non-nil."
+  :type 'number
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-italic-comments t
+  "Whether to render comments in italic.
+Set to nil if your font renders italics poorly.  Takes effect on
+theme load."
+  :type 'boolean
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-italic-keywords t
+  "Whether to render keywords in italic.
+Set to nil if your font renders italics poorly.  Takes effect on
+theme load."
+  :type 'boolean
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-flat-mode-line nil
+  "Whether to render the mode line without its surrounding box.
+When non-nil the mode line is flat (borderless), relying on the
+background alone for separation.  Takes effect on theme load."
+  :type 'boolean
+  :group 'tokyo-night)
+
+(defcustom tokyo-night-use-variable-pitch nil
+  "Whether to render headings in a variable-pitch (proportional) font.
+Applies to headings in org, outline, markdown, adoc, asciidoc, shr,
+info and LaTeX.  Takes effect on theme load."
   :type 'boolean
   :group 'tokyo-night)
 
@@ -382,10 +437,17 @@ Light variant.")
             (tokyo-heading4      (c "tokyo-heading4"))
             (tokyo-heading5      (c "tokyo-heading5"))
             (tokyo-heading6      (c "tokyo-heading6"))
-            (h1 (if tokyo-night-scale-headings 1.3 1.0))
-            (h2 (if tokyo-night-scale-headings 1.2 1.0))
-            (h3 (if tokyo-night-scale-headings 1.1 1.0))
-            (h-doc (if tokyo-night-scale-headings 1.4 1.0)))
+            (h1 (if tokyo-night-scale-headings tokyo-night-height-1 1.0))
+            (h2 (if tokyo-night-scale-headings tokyo-night-height-2 1.0))
+            (h3 (if tokyo-night-scale-headings tokyo-night-height-3 1.0))
+            (h-doc (if tokyo-night-scale-headings tokyo-night-height-doc-title 1.0))
+            (comment-slant (if tokyo-night-italic-comments 'italic 'normal))
+            (keyword-slant (if tokyo-night-italic-keywords 'italic 'normal))
+            (ml-box (unless tokyo-night-flat-mode-line
+                      (list :line-width -1 :color (c "tokyo-terminal-blk"))))
+            (ml-box-inactive (unless tokyo-night-flat-mode-line
+                               (list :line-width -1 :color (c "tokyo-bg-dark"))))
+            (vpitch (if tokyo-night-use-variable-pitch 'variable-pitch 'default)))
 
         (custom-theme-set-faces
          theme-name
@@ -423,9 +485,9 @@ Light variant.")
 
 ;;;;; mode-line
          `(mode-line ((,class (:foreground ,tokyo-fg :background ,tokyo-bg-dark
-                                           :box (:line-width -1 :color ,tokyo-terminal-blk)))))
+                                           :box ,ml-box))))
          `(mode-line-inactive ((,class (:foreground ,tokyo-dark5 :background ,tokyo-bg-darkest
-                                                    :box (:line-width -1 :color ,tokyo-bg-dark)))))
+                                                    :box ,ml-box-inactive))))
          `(mode-line-buffer-id ((,class (:foreground ,tokyo-blue :weight bold))))
          `(mode-line-emphasis ((,class (:foreground ,tokyo-fg :weight bold))))
          `(mode-line-highlight ((,class (:foreground ,tokyo-magenta))))
@@ -450,14 +512,14 @@ Light variant.")
 
 ;;;;; font-lock
          `(font-lock-builtin-face ((,class (:foreground ,tokyo-cyan-bright))))
-         `(font-lock-comment-face ((,class (:foreground ,tokyo-comment :slant italic))))
-         `(font-lock-comment-delimiter-face ((,class (:foreground ,tokyo-comment :slant italic))))
+         `(font-lock-comment-face ((,class (:foreground ,tokyo-comment :slant ,comment-slant))))
+         `(font-lock-comment-delimiter-face ((,class (:foreground ,tokyo-comment :slant ,comment-slant))))
          `(font-lock-constant-face ((,class (:foreground ,tokyo-orange))))
          `(font-lock-doc-face ((,class (:foreground ,tokyo-comment))))
          `(font-lock-doc-markup-face ((,class (:foreground ,tokyo-dark5))))
          `(font-lock-function-name-face ((,class (:foreground ,tokyo-blue))))
          `(font-lock-function-call-face ((,class (:foreground ,tokyo-blue))))
-         `(font-lock-keyword-face ((,class (:foreground ,tokyo-magenta :slant italic))))
+         `(font-lock-keyword-face ((,class (:foreground ,tokyo-magenta :slant ,keyword-slant))))
          `(font-lock-negation-char-face ((,class (:foreground ,tokyo-cyan-pale))))
          `(font-lock-number-face ((,class (:foreground ,tokyo-orange))))
          `(font-lock-operator-face ((,class (:foreground ,tokyo-cyan-pale))))
@@ -677,10 +739,10 @@ Light variant.")
          `(info-menu-header ((,class (:foreground ,tokyo-fg :weight bold))))
          `(info-menu-star ((,class (:foreground ,tokyo-red))))
          `(info-node ((,class (:foreground ,tokyo-blue :weight bold))))
-         `(info-title-1 ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
-         `(info-title-2 ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
-         `(info-title-3 ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
-         `(info-title-4 ((,class (:foreground ,tokyo-heading4 :weight bold))))
+         `(info-title-1 ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(info-title-2 ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(info-title-3 ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(info-title-4 ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
          `(info-xref ((,class (:foreground ,tokyo-teal :underline t))))
          `(info-xref-visited ((,class (:foreground ,tokyo-magenta :underline t))))
 
@@ -788,7 +850,7 @@ Light variant.")
          `(org-date ((,class (:foreground ,tokyo-cyan :underline t))))
          `(org-document-info ((,class (:foreground ,tokyo-fg-dark))))
          `(org-document-info-keyword ((,class (:foreground ,tokyo-comment))))
-         `(org-document-title ((,class (:foreground ,tokyo-fg :weight bold :height ,h-doc))))
+         `(org-document-title ((,class (:inherit ,vpitch :foreground ,tokyo-fg :weight bold :height ,h-doc))))
          `(org-done ((,class (:foreground ,tokyo-green :weight bold))))
          `(org-drawer ((,class (:foreground ,tokyo-comment))))
          `(org-ellipsis ((,class (:foreground ,tokyo-comment :underline nil))))
@@ -831,14 +893,14 @@ Light variant.")
          `(org-agenda-current-time ((,class (:foreground ,tokyo-cyan))))
 
 ;;;;; outline
-         `(outline-1 ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
-         `(outline-2 ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
-         `(outline-3 ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
-         `(outline-4 ((,class (:foreground ,tokyo-heading4 :weight bold))))
-         `(outline-5 ((,class (:foreground ,tokyo-heading5 :weight bold))))
-         `(outline-6 ((,class (:foreground ,tokyo-heading6 :weight bold))))
-         `(outline-7 ((,class (:foreground ,tokyo-fg-dark :weight bold))))
-         `(outline-8 ((,class (:foreground ,tokyo-dark5 :weight bold))))
+         `(outline-1 ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(outline-2 ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(outline-3 ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(outline-4 ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
+         `(outline-5 ((,class (:inherit ,vpitch :foreground ,tokyo-heading5 :weight bold))))
+         `(outline-6 ((,class (:inherit ,vpitch :foreground ,tokyo-heading6 :weight bold))))
+         `(outline-7 ((,class (:inherit ,vpitch :foreground ,tokyo-fg-dark :weight bold))))
+         `(outline-8 ((,class (:inherit ,vpitch :foreground ,tokyo-dark5 :weight bold))))
 
 ;;;;; re-builder
          `(reb-match-0 ((,class (:foreground ,tokyo-bg :background ,tokyo-blue))))
@@ -857,12 +919,12 @@ Light variant.")
          `(sh-quoted-exec ((,class (:foreground ,tokyo-orange))))
 
 ;;;;; shr (eww/elfeed HTML rendering)
-         `(shr-h1 ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
-         `(shr-h2 ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
-         `(shr-h3 ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
-         `(shr-h4 ((,class (:foreground ,tokyo-heading4 :weight bold))))
-         `(shr-h5 ((,class (:foreground ,tokyo-heading5 :weight bold))))
-         `(shr-h6 ((,class (:foreground ,tokyo-heading6 :weight bold))))
+         `(shr-h1 ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(shr-h2 ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(shr-h3 ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(shr-h4 ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
+         `(shr-h5 ((,class (:inherit ,vpitch :foreground ,tokyo-heading5 :weight bold))))
+         `(shr-h6 ((,class (:inherit ,vpitch :foreground ,tokyo-heading6 :weight bold))))
          `(shr-link ((,class (:foreground ,tokyo-teal :underline t))))
          `(shr-selected-link ((,class (:foreground ,tokyo-orange :underline t))))
          `(shr-code ((,class (:foreground ,tokyo-teal :background ,tokyo-bg-dark))))
@@ -1041,6 +1103,15 @@ Light variant.")
          `(avy-background-face ((,class (:foreground ,tokyo-comment))))
          `(avy-goto-char-timer-face ((,class (:foreground ,tokyo-bg :background ,tokyo-magenta-hot))))
 
+;;;;; breadcrumb
+         `(breadcrumb-face ((,class (:foreground ,tokyo-dark5))))
+         `(breadcrumb-imenu-leaf-face ((,class (:foreground ,tokyo-blue :weight bold))))
+         `(breadcrumb-imenu-crumbs-face ((,class (:foreground ,tokyo-dark5))))
+         `(breadcrumb-imenu-base-face ((,class (:foreground ,tokyo-dark5 :weight bold))))
+         `(breadcrumb-project-leaf-face ((,class (:foreground ,tokyo-fg :weight bold))))
+         `(breadcrumb-project-crumbs-face ((,class (:foreground ,tokyo-dark5))))
+         `(breadcrumb-project-base-face ((,class (:foreground ,tokyo-dark5 :weight bold))))
+
 ;;;;; company
          `(company-tooltip ((,class (:foreground ,tokyo-fg :background ,tokyo-bg-dark))))
          `(company-tooltip-selection ((,class (:foreground ,tokyo-fg :background ,tokyo-bg-highlight))))
@@ -1163,6 +1234,13 @@ Light variant.")
          `(git-timemachine-commit ((,class (:foreground ,tokyo-orange :weight bold))))
          `(git-timemachine-minibuffer-author-face ((,class (:foreground ,tokyo-orange))))
          `(git-timemachine-minibuffer-detail-face ((,class (:foreground ,tokyo-cyan))))
+
+;;;;; gptel
+         `(gptel-context-highlight-face ((,class (:background ,tokyo-bg-highlight :extend t))))
+         `(gptel-context-deletion-face ((,class (:background ,tokyo-diff-del-bg :extend t))))
+         `(gptel-rewrite-highlight-face ((,class (:background ,tokyo-diff-chg-bg :extend t))))
+         `(gptel-response-highlight ((,class (:background ,tokyo-bg-dark :extend t))))
+         `(gptel-response-fringe-highlight ((,class (:foreground ,tokyo-blue))))
 
 ;;;;; haskell-mode
          `(haskell-keyword-face ((,class (:foreground ,tokyo-magenta :slant italic))))
@@ -1394,21 +1472,21 @@ Light variant.")
          `(adoc-comment-face ((,class (:foreground ,tokyo-comment :slant italic))))
          `(adoc-secondary-text-face ((,class (:foreground ,tokyo-fg-muted :height 0.9))))
          `(adoc-warning-face ((,class (:foreground ,tokyo-red :weight bold))))
-         `(adoc-title-face ((,class (:foreground ,tokyo-blue :weight bold))))
-         `(adoc-title-0-face ((,class (:foreground ,tokyo-fg :weight bold :height ,h-doc))))
-         `(adoc-title-1-face ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
-         `(adoc-title-2-face ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
-         `(adoc-title-3-face ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
-         `(adoc-title-4-face ((,class (:foreground ,tokyo-heading4 :weight bold))))
-         `(adoc-title-5-face ((,class (:foreground ,tokyo-heading5 :weight bold))))
+         `(adoc-title-face ((,class (:inherit ,vpitch :foreground ,tokyo-blue :weight bold))))
+         `(adoc-title-0-face ((,class (:inherit ,vpitch :foreground ,tokyo-fg :weight bold :height ,h-doc))))
+         `(adoc-title-1-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(adoc-title-2-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(adoc-title-3-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(adoc-title-4-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
+         `(adoc-title-5-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading5 :weight bold))))
 
 ;;;;; asciidoc-mode
-         `(asciidoc-document-title-face ((,class (:foreground ,tokyo-fg :weight bold :height ,h-doc))))
-         `(asciidoc-title-1-face ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
-         `(asciidoc-title-2-face ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
-         `(asciidoc-title-3-face ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
-         `(asciidoc-title-4-face ((,class (:foreground ,tokyo-heading4 :weight bold))))
-         `(asciidoc-title-5-face ((,class (:foreground ,tokyo-heading5 :weight bold))))
+         `(asciidoc-document-title-face ((,class (:inherit ,vpitch :foreground ,tokyo-fg :weight bold :height ,h-doc))))
+         `(asciidoc-title-1-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(asciidoc-title-2-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(asciidoc-title-3-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(asciidoc-title-4-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
+         `(asciidoc-title-5-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading5 :weight bold))))
          `(asciidoc-markup-face ((,class (:foreground ,tokyo-dark5))))
          `(asciidoc-code-face ((,class (:foreground ,tokyo-teal :background ,tokyo-bg-dark :extend t))))
          `(asciidoc-link-face ((,class (:foreground ,tokyo-teal))))
@@ -1438,13 +1516,13 @@ Light variant.")
          `(asciidoc-admonition-warning-face ((,class (:background ,tokyo-diff-del-bg :extend t))))
 
 ;;;;; markdown-mode
-         `(markdown-header-face ((,class (:foreground ,tokyo-blue :weight bold))))
-         `(markdown-header-face-1 ((,class (:foreground ,tokyo-heading1 :weight bold :height ,h1))))
-         `(markdown-header-face-2 ((,class (:foreground ,tokyo-heading2 :weight bold :height ,h2))))
-         `(markdown-header-face-3 ((,class (:foreground ,tokyo-heading3 :weight bold :height ,h3))))
-         `(markdown-header-face-4 ((,class (:foreground ,tokyo-heading4 :weight bold))))
-         `(markdown-header-face-5 ((,class (:foreground ,tokyo-heading5 :weight bold))))
-         `(markdown-header-face-6 ((,class (:foreground ,tokyo-heading6 :weight bold))))
+         `(markdown-header-face ((,class (:inherit ,vpitch :foreground ,tokyo-blue :weight bold))))
+         `(markdown-header-face-1 ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :weight bold :height ,h1))))
+         `(markdown-header-face-2 ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :weight bold :height ,h2))))
+         `(markdown-header-face-3 ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :weight bold :height ,h3))))
+         `(markdown-header-face-4 ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
+         `(markdown-header-face-5 ((,class (:inherit ,vpitch :foreground ,tokyo-heading5 :weight bold))))
+         `(markdown-header-face-6 ((,class (:inherit ,vpitch :foreground ,tokyo-heading6 :weight bold))))
          `(markdown-header-delimiter-face ((,class (:foreground ,tokyo-comment))))
          `(markdown-header-rule-face ((,class (:foreground ,tokyo-comment))))
          `(markdown-bold-face ((,class (:foreground ,tokyo-orange :weight bold))))
@@ -1848,14 +1926,14 @@ Light variant.")
          `(font-latex-italic-face ((,class (:foreground ,tokyo-fg :slant italic))))
          `(font-latex-math-face ((,class (:foreground ,tokyo-teal))))
          `(font-latex-script-char-face ((,class (:foreground ,tokyo-orange))))
-         `(font-latex-sectioning-0-face ((,class (:foreground ,tokyo-heading1 :height ,h1 :weight bold))))
-         `(font-latex-sectioning-1-face ((,class (:foreground ,tokyo-heading2 :height ,h2 :weight bold))))
-         `(font-latex-sectioning-2-face ((,class (:foreground ,tokyo-heading3 :height ,h3 :weight bold))))
-         `(font-latex-sectioning-3-face ((,class (:foreground ,tokyo-heading4 :weight bold))))
-         `(font-latex-sectioning-4-face ((,class (:foreground ,tokyo-heading5 :weight bold))))
-         `(font-latex-sectioning-5-face ((,class (:foreground ,tokyo-heading6 :weight bold))))
+         `(font-latex-sectioning-0-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading1 :height ,h1 :weight bold))))
+         `(font-latex-sectioning-1-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading2 :height ,h2 :weight bold))))
+         `(font-latex-sectioning-2-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading3 :height ,h3 :weight bold))))
+         `(font-latex-sectioning-3-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading4 :weight bold))))
+         `(font-latex-sectioning-4-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading5 :weight bold))))
+         `(font-latex-sectioning-5-face ((,class (:inherit ,vpitch :foreground ,tokyo-heading6 :weight bold))))
          `(font-latex-sedate-face ((,class (:foreground ,tokyo-fg-dark))))
-         `(font-latex-slide-title-face ((,class (:foreground ,tokyo-blue :weight bold :height ,h1))))
+         `(font-latex-slide-title-face ((,class (:inherit ,vpitch :foreground ,tokyo-blue :weight bold :height ,h1))))
          `(font-latex-string-face ((,class (:foreground ,tokyo-green))))
          `(font-latex-subscript-face ((,class (:height 0.9))))
          `(font-latex-superscript-face ((,class (:height 0.9))))

@@ -1255,6 +1255,21 @@ Function is called repeatedly until it returns nil. For details, see
         (unless (and (eq new-start start) (eq new-end end))
           (cons new-start (min new-end (point-max))))))))
 
+(defvar font-lock-beg)
+(defvar font-lock-end)
+
+(defun markdown-font-lock-extend-region ()
+  "Extend the font-lock region to cover whole blocks.
+Used in `font-lock-extend-region-functions'.  Inline constructs
+such as bold and italic may span several lines within a block, so
+fontifying a region that begins or ends in the middle of one
+would miss the match entirely."
+  (let ((res (markdown-syntax-propertize-extend-region font-lock-beg font-lock-end)))
+    (when res
+      (setq font-lock-beg (car res)
+            font-lock-end (cdr res))
+      t)))
+
 (defun markdown-font-lock-extend-region-function (start end _)
   "Used in `jit-lock-after-change-extend-region-functions'.
 Delegates to `markdown-syntax-propertize-extend-region'. START
@@ -4803,7 +4818,8 @@ at the beginning of the block."
        while pos-prop
        for lang = (markdown-code-block-lang pos-prop)
        do (progn (when lang (markdown-gfm-add-used-language lang))
-                 (goto-char (next-single-property-change (point) prop)))))))
+                 (goto-char (or (next-single-property-change (point) prop)
+                                (point-max))))))))
 
 (defun markdown-insert-foldable-block ()
   "Insert details disclosure element to make content foldable.
@@ -10439,6 +10455,8 @@ rows and columns and the column alignment."
             #'markdown-syntax-propertize-extend-region nil t)
   (add-hook 'jit-lock-after-change-extend-region-functions
             #'markdown-font-lock-extend-region-function t t)
+  (add-hook 'font-lock-extend-region-functions
+            #'markdown-font-lock-extend-region t t)
   (setq-local syntax-propertize-function #'markdown-syntax-propertize)
   (syntax-propertize (point-max)) ;; Propertize before hooks run, etc.
   ;; Font lock.

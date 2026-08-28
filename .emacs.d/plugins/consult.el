@@ -395,7 +395,7 @@ mode hooks, e.g., `prog-mode-hook'."
   `((?f "File" bookmark-default-handler)
     (?h "Help" help-bookmark-jump Info-bookmark-jump
         Man-bookmark-jump woman-bookmark-jump)
-    (?p "Picture" image-bookmark-jump)
+    (?i "Image" image-bookmark-jump image-dired-bookmark-jump)
     (?d "Docview" doc-view-bookmark-jump)
     (?m "Mail" gnus-summary-bookmark-jump)
     (?s "Shell" eshell-bookmark-jump shell-bookmark-jump)
@@ -3415,7 +3415,12 @@ expected return value are as specified for `completion-in-region'."
 The arguments START, END, TABLE and PREDICATE and expected return value
 are as specified for `completion-in-region'.  Use this function as a
 value for `completion-in-region-function'."
-  (if (and (or (bound-and-true-p vertico-mode) (bound-and-true-p icomplete-mode))
+  (if (and (or (bound-and-true-p vertico-mode)
+               (bound-and-true-p icomplete-mode)
+               ;; Emacs 31 provides `completion-eager-update' and
+               ;; `completion-eager-display'.
+               (and (bound-and-true-p completion-eager-update)
+                    (bound-and-true-p completion-eager-display)))
            (not (eq table minibuffer-completion-table)))
       (consult--in-region start end table predicate)
     (completion--in-region start end table predicate)))
@@ -5661,6 +5666,7 @@ the asynchronous search."
 
 (defun consult--default-completion-list-refresh ()
   "Refresh default completion UI."
+  ;; Emacs 31 provides `completion-eager-update' and `completion-eager-display'.
   (when (and (bound-and-true-p completion-eager-update)
              (bound-and-true-p completion-eager-display)
              (not (bound-and-true-p vertico-mode))

@@ -5,8 +5,8 @@
 ;; Author: precompute <git@precompute.net>
 ;; URL: https://github.com/precompute/hyperstitional-themes
 ;; Created: April 16, 2024
-;; Modified: August 08, 2026
-;; Version: 3.6
+;; Modified: August 20, 2026
+;; Version: 3.8
 ;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -29,6 +29,12 @@
 ;; Monospace fonts are boring -- they make my eyes sore.
 
 ;;; Code:
+;;;; Variables
+(defcustom hyperstitional-themes-digitalsear-alt-whitespace-faces nil
+  "Non-nil enables a strong, high-contrast style for `whitespace-mode' faces for the Digitalsear theme."
+  :group 'hyperstitional-themes
+  :type 'boolean)
+
 ;;;; Helper Functions
 (defun hyperstitional-themes-calculate-color-against-another (color alpha background)
   "Calculate what COLOR with ALPHA over BACKGROUND is in hex.
@@ -41,6 +47,10 @@ Returns a color in hex as a string."
   "Return a list of colors derived from COLOR set to a member of ALPHALIST over BACKGROUND."
   (mapcar (lambda (z) (hyperstitional-themes-calculate-color-against-another color z background))
           alphalist))
+
+(defsubst hyperstitional-themes-digitalsear-whitespace-face (x y)
+  "When `hyperstitional-themes-digitalsear-alt-whitespace-faces' is non-nil, use Y.  Else use X."
+  (if hyperstitional-themes-digitalsear-alt-whitespace-faces x y))
 
 ;;;; Digitalsear
 (defun hyperstitional-themes-digitalsear-generate (theme-name palette)
@@ -434,18 +444,18 @@ Returns a color in hex as a string."
      `(show-paren-match-expression ((,class (:background ,c6-light))))
 
 ;;;;;; Whitespace Mode
-     `(whitespace-tab                    ((,class (:background ,c2-light :foreground ,c0))))
-     `(whitespace-line                   ((,class (:background ,c0-light :foreground ,c5))))
-     `(whitespace-empty                  ((,class (:background ,c6 :foreground ,c0))))
-     `(whitespace-space                  ((,class (:background ,c1-light :foreground ,c0))))
-     `(whitespace-hspace                 ((,class (:background ,c1-light :foreground ,c2))))
-     `(whitespace-newline                ((,class (:background ,c0-light :foreground ,c1-dim))))
-     `(whitespace-trailing               ((,class (:background ,c2-dim :foreground ,c5))))
-     `(whitespace-big-indent             ((,class (:background ,c2-dim :foreground ,bg))))
-     `(whitespace-indentation            ((,class (:background ,c3-dim :foreground ,c3))))
-     `(whitespace-space-after-tab        ((,class (:background ,c3-dim :foreground ,c3))))
-     `(whitespace-space-before-tab       ((,class (:background ,c4-dim :foreground ,c1))))
-     `(whitespace-missing-newline-at-eof ((,class (:background ,c5-dim :foreground ,c6))))
+     `(whitespace-tab                    ((,class (:background ,bg :foreground ,c0))))
+     `(whitespace-line                   ((,class (:background ,bg :foreground ,c5))))
+     `(whitespace-empty                  ((,class (:background ,bg :foreground ,c0))))
+     `(whitespace-space                  ((,class (:background ,bg :foreground ,c0))))
+     `(whitespace-hspace                 ((,class (:background ,bg :foreground ,c2))))
+     `(whitespace-newline                ((,class (:background ,bg :foreground ,c1-dim))))
+     `(whitespace-trailing               ((,class (:background ,bg :foreground ,c5))))
+     `(whitespace-big-indent             ((,class (:background ,bg :foreground ,bg))))
+     `(whitespace-indentation            ((,class (:background ,bg :foreground ,c3))))
+     `(whitespace-space-after-tab        ((,class (:background ,bg :foreground ,c3))))
+     `(whitespace-space-before-tab       ((,class (:background ,bg :foreground ,c1))))
+     `(whitespace-missing-newline-at-eof ((,class (:background ,bg :foreground ,c6))))
 
 ;;;;;; sh
      `(sh-heredoc ((,class (:foreground ,c1 :background ,c3-light))))
@@ -478,6 +488,15 @@ Returns a color in hex as a string."
      `(which-key-group-description-face ((,class (:foreground ,c3-light :background ,c3-dim))))
      `(which-key-command-description-face ((,class (:foreground ,c5 :background ,c3-light))))
      `(which-key-separator-face ((,class (:foreground ,c1 :background ,bg))))
+
+;;;;;; tab-bar
+     `(tab-bar               ((,class (:foreground ,fg :background ,bg :underline ,c0))))
+     `(tab-bar-tab           ((,class (:foreground ,c6 :underline ,c0))))
+     `(tab-bar-tab-inactive  ((,class (:foreground ,c4 :underline ,c0))))
+     `(tab-bar-tab-highlight ((,class (:foreground ,c2))))
+     `(tab-bar-tab-ungrouped      ((,class (:foreground ,c1-dim))))
+     `(tab-bar-tab-group-current  ((,class (:foreground ,c3-dim))))
+     `(tab-bar-tab-group-inactive ((,class (:foreground ,c5-dim))))
 
 ;;;;;; company
      `(company-tooltip-selection  ((,class (:foreground ,fg :underline (:color ,c2-dim) :inherit bold))))
@@ -634,12 +653,6 @@ Returns a color in hex as a string."
      `(tree-sitter-hl-face:variable.builtin   ((,class (:foreground ,c3-dim))))
      `(tree-sitter-hl-face:variable.parameter ((,class (:foreground ,c3-dark))))
      `(tree-sitter-hl-face:variable.special   ((,class (:foreground ,c3-dim))))
-
-;;;;;; tabs
-     `(tab-line                   ((,class (:inherit mode-line))))
-     `(tab-bar                    ((,class (:inherit mode-line))))
-     `(tab-bar-tab                ((,class (:inherit mode-line))))
-     `(tab-bar-tab-inactive       ((,class (:inherit mode-line))))
 
 ;;;;;; highlight-indent-guides
      `(highlight-indent-guides-odd-face             ((,class (:foreground ,c0-dim))))
@@ -878,12 +891,6 @@ Returns a color in hex as a string."
      `(header-line-inactive  ((,class (:inherit mode-line-inactive))))
      `(header-line-highlight ((,class (:inherit mode-line-highlight))))
 
-;;;;;; tabs
-     `(tab-line                   ((,class (:inherit mode-line))))
-     `(tab-bar                    ((,class (:inherit mode-line))))
-     `(tab-bar-tab                ((,class (:inherit mode-line))))
-     `(tab-bar-tab-inactive       ((,class (:inherit mode-line-inactive))))
-
 ;;;;;; Info mode
      `(info-quoted       ((,class (:foreground ,ga :background ,gf :inherit fixed-pitch))))
      `(info-header-node  ((,class (:foreground ,re :weight bold :underline t))))
@@ -1108,18 +1115,18 @@ Returns a color in hex as a string."
      `(show-paren-match-expression ((,class (:inherit show-paren-match))))
 
 ;;;;;; Whitespace Mode
-     `(whitespace-tab                    ((,class (:background ,gg :foreground ,wb))))
-     `(whitespace-line                   ((,class (:background ,bf :foreground ,rc))))
-     `(whitespace-empty                  ((,class (:background ,bf :foreground ,rc))))
-     `(whitespace-space                  ((,class (:background ,gg :foreground ,ga))))
-     `(whitespace-hspace                 ((,class (:background ,gf :foreground ,ga))))
-     `(whitespace-newline                ((,class (:background ,gf :foreground ,be))))
-     `(whitespace-trailing               ((,class (:background ,rf :foreground ,wb))))
-     `(whitespace-big-indent             ((,class (:background ,rf :foreground ,wb))))
-     `(whitespace-indentation            ((,class (:background ,bf :foreground ,rd))))
-     `(whitespace-space-after-tab        ((,class (:background ,bf :foreground ,rd))))
-     `(whitespace-space-before-tab       ((,class (:background ,bd :foreground ,re))))
-     `(whitespace-missing-newline-at-eof ((,class (:background ,rd :foreground ,wb))))
+     `(whitespace-tab                    ((,class (:background ,ww :foreground ,wb))))
+     `(whitespace-line                   ((,class (:background ,ww :foreground ,rc))))
+     `(whitespace-empty                  ((,class (:background ,ww :foreground ,rc))))
+     `(whitespace-space                  ((,class (:background ,ww :foreground ,ga))))
+     `(whitespace-hspace                 ((,class (:background ,ww :foreground ,ga))))
+     `(whitespace-newline                ((,class (:background ,ww :foreground ,be))))
+     `(whitespace-trailing               ((,class (:background ,ww :foreground ,wb))))
+     `(whitespace-big-indent             ((,class (:background ,ww :foreground ,wb))))
+     `(whitespace-indentation            ((,class (:background ,ww :foreground ,rd))))
+     `(whitespace-space-after-tab        ((,class (:background ,ww :foreground ,rd))))
+     `(whitespace-space-before-tab       ((,class (:background ,ww :foreground ,re))))
+     `(whitespace-missing-newline-at-eof ((,class (:background ,ww :foreground ,wb))))
 
 ;;;;;; sh
      `(sh-heredoc ((,class (:foreground ,rb :background ,bg))))
@@ -1151,6 +1158,15 @@ Returns a color in hex as a string."
      `(which-key-group-description-face ((,class (:foreground ,ra :weight bold))))
      `(which-key-command-description-face ((,class (:foreground ,ba :slant italic))))
      `(which-key-separator-face ((,class (:foreground ,ww :background ,ww))))
+
+;;;;;; tab-bar
+     `(tab-bar               ((,class (:foreground ,wg :background ,ww :underline ,ra))))
+     `(tab-bar-tab           ((,class (:foreground ,ga :underline ,ra))))
+     `(tab-bar-tab-inactive  ((,class (:foreground ,ba :underline ,ra))))
+     `(tab-bar-tab-highlight ((,class (:foreground ,gd))))
+     `(tab-bar-tab-ungrouped      ((,class (:foreground ,rd))))
+     `(tab-bar-tab-group-current  ((,class (:foreground ,gd))))
+     `(tab-bar-tab-group-inactive ((,class (:foreground ,bd))))
 
 ;;;;;; message
      `(message-header-name    ((,class (:foreground ,bb :inherit variable-pitch))))

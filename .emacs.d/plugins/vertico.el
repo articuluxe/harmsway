@@ -5,7 +5,7 @@
 ;; Author: Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2021
-;; Version: 2.12
+;; Version: 2.13
 ;; Package-Requires: ((emacs "29.1") (compat "31"))
 ;; URL: https://github.com/minad/vertico
 ;; Keywords: convenience, files, matching, completion
@@ -213,36 +213,6 @@ The value should lie between 0 and vertico-count/2."
              (delete elem list))
     list))
 
-(defun vertico--filter-completions (&rest args)
-  "Compute all completions for ARGS with lazy highlighting."
-  (dlet ((completion-lazy-hilit t) (completion-lazy-hilit-fn nil))
-    (static-if (>= emacs-major-version 30)
-        (cons (apply #'completion-all-completions args) completion-lazy-hilit-fn)
-      (cl-letf* ((orig-pcm (symbol-function #'completion-pcm--hilit-commonality))
-                 (orig-flex (symbol-function #'completion-flex-all-completions))
-                 ((symbol-function #'completion-flex-all-completions)
-                  (lambda (&rest args)
-                    ;; Unfortunately for flex we have to undo the lazy highlighting, since flex uses
-                    ;; the completion-score for sorting, which is applied during highlighting.
-                    (cl-letf (((symbol-function #'completion-pcm--hilit-commonality) orig-pcm))
-                      (apply orig-flex args))))
-                 ((symbol-function #'completion-pcm--hilit-commonality)
-                  (lambda (pattern cands)
-                    (setq completion-lazy-hilit-fn
-                          (lambda (x)
-                            ;; `completion-pcm--hilit-commonality' sometimes throws an internal error
-                            ;; for example when entering "/sudo:://u".
-                            (condition-case nil
-                                (car (completion-pcm--hilit-commonality pattern (list x)))
-                              (t x))))
-                    cands))
-                 ((symbol-function #'completion-hilit-commonality)
-                  (lambda (cands prefix &optional base)
-                    (setq completion-lazy-hilit-fn
-                          (lambda (x) (car (completion-hilit-commonality (list x) prefix base))))
-                    (and cands (nconc cands base)))))
-        (cons (apply #'completion-all-completions args) completion-lazy-hilit-fn)))))
-
 (defun vertico--metadata-get (prop)
   "Return PROP from completion metadata."
   (compat-call completion-metadata-get vertico--metadata prop))
@@ -269,28 +239,42 @@ The value should lie between 0 and vertico-count/2."
                (field (substring str (car bounds) (+ pt (cdr bounds))))
                ;; bug#75910: category instead of `minibuffer-completing-file-name'
                (completing-file (eq 'file (vertico--metadata-get 'category)))
-               (`(,all . ,hl) (vertico--filter-completions str table pred pt vertico--metadata))
+               (`(,all . ,hl)
+                (dlet ((completion-lazy-hilit t) (completion-lazy-hilit-fn nil))
+                  (cons (completion-all-completions str table pred pt vertico--metadata)
+                        completion-lazy-hilit-fn)))
                (base (or (when-let* ((z (last all))) (prog1 (cdr z) (setcdr z nil))) 0))
                (vertico--base (substring str 0 base))
                (def (or (car-safe minibuffer-default) minibuffer-default))
-               (groups) (def-missing) (lock))
-    ;; Filter the ignored file extensions. We cannot use modified predicate for this filtering,
-    ;; since this breaks the special casing in the `completion-file-name-table' for `file-exists-p'
-    ;; and `file-directory-p'.
-    (when completing-file (setq all (completion-pcm--filename-try-filter all)))
+               (rm minibuffer--require-match)
+               (valid (if (functionp rm) (funcall rm str)
+                        (test-completion str table pred)))
+               (groups) (def-missing) (allow-prompt) (lock))
+    ;; Filter the ignored file extensions. We cannot use modified predicate for
+    ;; this filtering, since this breaks the special casing in the
+    ;; `completion-file-name-table' for `file-exists-p' and `file-directory-p'.
+    (when completing-file
+      (let ((exact (and (not (equal field "")) (member field all))))
+        (setq all (completion-pcm--filename-try-filter all))
+        (and exact (not (member field all)) (push field all))))
     ;; Sort using the `display-sort-function' or the Vertico sort functions
     (setq all (funcall (or (vertico--sort-function) #'identity) all))
     ;; Move special candidates: "field" appears at the top, before "field/", before default value
-    (when (stringp def)
+    (when (and (stringp def) (not (equal def "")))
       (setq all (vertico--move-to-front def all)))
-    (when (and completing-file (not (string-suffix-p "/" field)))
-      (setq all (vertico--move-to-front (concat field "/") all)))
-    (setq all (delete-consecutive-dups (vertico--move-to-front field all)))
+    (unless (equal field "")
+      (when (and completing-file (not (string-suffix-p "/" field)))
+        (setq all (vertico--move-to-front (concat field "/") all)))
+      (setq all (vertico--move-to-front field all)))
+    (setq all (delete-consecutive-dups all))
     (when-let* ((fun (and all (vertico--metadata-get 'group-function))))
       (setq groups (vertico--group-by fun all) all (car groups)))
     (setq def-missing (and def (equal str "") (not (member def all)))
+          allow-prompt (and (not (eq vertico-preselect 'no-prompt))
+                            (or valid def-missing (eq vertico-preselect 'prompt)
+                                (memq rm '(nil confirm confirm-after-completion))))
           lock (and vertico--lock-candidate ;; Locked position of old candidate.
-                    (if (< vertico--index 0) -1
+                    (if (< vertico--index 0) (and allow-prompt -1)
                       (seq-position all (nth vertico--index vertico--candidates)))))
     `((vertico--input . ,input)
       (vertico--base . ,vertico--base)
@@ -298,17 +282,13 @@ The value should lie between 0 and vertico-count/2."
       (vertico--candidates . ,all)
       (vertico--total . ,(length all))
       (vertico--hilit . ,(or hl #'identity))
-      (vertico--allow-prompt . ,(and (not (eq vertico-preselect 'no-prompt))
-                                     (or def-missing (eq vertico-preselect 'prompt)
-                                         (memq minibuffer--require-match
-                                               '(nil confirm confirm-after-completion)))))
+      (vertico--allow-prompt . ,allow-prompt)
       (vertico--lock-candidate . ,lock)
       (vertico--groups . ,(cdr groups))
       (vertico--index . ,(or lock
                              (if (or def-missing (eq vertico-preselect 'prompt) (not all)
                                      (and completing-file (eq vertico-preselect 'directory)
-                                          (= (length vertico--base) (length str))
-                                          (test-completion str table pred)))
+                                          valid (= (length vertico--base) (length str))))
                                  -1 0))))))
 
 (defun vertico--hilit (cand)

@@ -44,62 +44,67 @@
   :tag "Swift Mode REPL"
   :group 'swift)
 
+(defun swift-mode:command-p (command)
+  "Return non-nil if COMMAND is a string or a list of strings."
+  (or (stringp command)
+      (and (listp command) (seq-every-p #'stringp command))))
+
 (defcustom swift-mode:repl-executable
   (concat (when (executable-find "xcrun") "xcrun ") "swift repl")
   "Path to the Swift CLI.  The string is split by spaces, then unquoted."
   :tag "Swift Mode REPL Executable"
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:swift-package-executable
   (concat (when (executable-find "xcrun") "xcrun ") "swift package")
   "Path to the Swift command for package manipulation.
 The string is split by spaces, then unquoted."
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:swift-build-executable
   (concat (when (executable-find "xcrun") "xcrun ") "swift build")
   "Path to the Swift command for building.
 The string is split by spaces, then unquoted."
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:debugger-executable
   (concat (when (executable-find "xcrun") "xcrun ") "lldb")
   "Path to the debugger command.
 The string is split by spaces, then unquoted."
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:ios-deploy-executable
   "ios-deploy"
   "Path to ios-deploy command.
 The string is split by spaces, then unquoted."
   :tag "Swift Mode iOS Deploy Executable"
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:simulator-controller-executable
   (concat (when (executable-find "xcrun") "xcrun ") "simctl")
   "Path to the simulator controller command.
 The string is split by spaces, then unquoted."
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:xcodebuild-executable
   (concat (when (executable-find "xcrun") "xcrun ") "xcodebuild")
   "Path to the Xcode builder.
 The string is split by spaces, then unquoted."
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:xcode-select-executable
   "xcode-select"
   "Path to the Xcode selector.
 The string is split by spaces, then unquoted."
-  :type '(choice string (list string))
-  :safe #'stringp)
+  :type '(choice string (repeat string))
+  :safe #'swift-mode:command-p)
 
 (defcustom swift-mode:debugger-prompt-regexp "^(lldb) +\\|^[0-9]+> +"
   "Regexp to search a debugger prompt."
@@ -138,7 +143,7 @@ When the command of `compile' matches this regexp, its
   :type 'function)
 
 (defvar swift-mode:repl-buffer nil
-  "Stores the name of the current swift REPL buffer, or nil.")
+  "Stores the current swift REPL buffer, or nil.")
 
 (defvar swift-mode:repl-command-queue nil
   "List of strings to be executed on REPL.
@@ -298,24 +303,32 @@ The output is parsed as a JSON document.
 EXECUTABLE may be a string or a list.  The string is split by spaces,
 then unquoted.
 ARGS are rest arguments, appended to the argument list."
-  (with-temp-buffer
-    (unless (zerop
-             (swift-mode:do-call-process executable
-                                         nil
-                                         ;; Disregard stderr output, as it
-                                         ;; corrupts JSON.
-                                         (list t nil)
-                                         nil
-                                         args))
-      (error "%s: %s" "Cannot invoke executable" (buffer-string)))
-    (goto-char (point-min))
-    (json-read)))
+  (let ((stderr-file (make-temp-file "swift-mode-stderr")))
+    (unwind-protect
+        (with-temp-buffer
+          (unless (zerop
+                   (swift-mode:do-call-process executable
+                                               nil
+                                               ;; Redirect stderr output to a
+                                               ;; temporary file, as it
+                                               ;; corrupts JSON.
+                                               (list t stderr-file)
+                                               nil
+                                               args))
+            (error "%s: %s"
+                   "Command exited with non-zero status"
+                   (with-temp-buffer
+                     (insert-file-contents stderr-file)
+                     (buffer-string))))
+          (goto-char (point-min))
+          (json-read))
+      (delete-file stderr-file))))
 
 (defun swift-mode:describe-package (project-directory)
   "Read the package definition from the manifest file Package.swift.
 
-The manifest file is searched from the PROJECT-DIRECTORY, defaults to
-`default-directory', or its ancestors.
+The manifest file is read from the PROJECT-DIRECTORY, defaults to
+`default-directory'.
 Return a JSON object."
   (unless project-directory (setq project-directory default-directory))
   (swift-mode:call-process-to-json
@@ -327,8 +340,9 @@ Return a JSON object."
 (defun swift-mode:read-main-module (project-directory)
   "Read the main module description from the manifest file Package.swift.
 
-The manifest file is searched from the PROJECT-DIRECTORY, defaults to
-`default-directory', or its ancestors."
+The main module is the first non-test target.
+The manifest file is read from the PROJECT-DIRECTORY, defaults to
+`default-directory'."
   (let* ((description (swift-mode:describe-package project-directory))
          (modules (assoc-default 'targets description)))
     (seq-find
@@ -336,24 +350,24 @@ The manifest file is searched from the PROJECT-DIRECTORY, defaults to
      modules)))
 
 (defun swift-mode:read-package-name (project-directory)
-  "Read the package name from the manifest file Package.swift.
+  "Read the main module name from the manifest file Package.swift.
 
-The manifest file is searched from the PROJECT-DIRECTORY, defaults to
-`default-directory', or its ancestors."
+The manifest file is read from the PROJECT-DIRECTORY, defaults to
+`default-directory'."
   (assoc-default 'name (swift-mode:read-main-module project-directory)))
 
 (defun swift-mode:read-c99-name (project-directory)
   "Read the C99 name from the manifest file Package.swift.
 
-The manifest file is searched from the PROJECT-DIRECTORY, defaults to
-`default-directory', or its ancestors."
+The manifest file is read from the PROJECT-DIRECTORY, defaults to
+`default-directory'."
   (assoc-default 'c99name (swift-mode:read-main-module project-directory)))
 
 (defun swift-mode:read-module-type (project-directory)
   "Read the module type from the manifest file Package.swift.
 
-The manifest file is searched from the PROJECT-DIRECTORY, defaults to
-`default-directory', or its ancestors."
+The manifest file is read from the PROJECT-DIRECTORY, defaults to
+`default-directory'."
   (assoc-default 'type (swift-mode:read-main-module project-directory)))
 
 (defun swift-mode:join-path (directory &rest components)
@@ -414,13 +428,13 @@ or its ancestors."
   ;; supress warnings:
   ;;   (checkdoc) Probably "contains" should be imperative "contain"
   "Return t if the DIRECTORY contain\u0073 a file *.xcodeproj."
-  (consp (directory-files directory nil ".*\\.xcodeproj")))
+  (consp (directory-files directory nil ".*\\.xcodeproj\\'")))
 
 (defun swift-mode:xcode-workspace-directory-p (directory)
   ;; supress warnings:
   ;;   (checkdoc) Probably "contains" should be imperative "contain"
   "Return t if the DIRECTORY contain\u0073 a file *.xcworkspace."
-  (consp (directory-files directory nil ".*\\.xcworkspace")))
+  (consp (directory-files directory nil ".*\\.xcworkspace\\'")))
 
 (defun swift-mode:find-xcode-project-directory (&optional directory)
   "Find a file *.xcodeproj in the DIRECTORY or its ancestors.
@@ -543,7 +557,7 @@ xcodebuild is executed in PROJECT-DIRECTORY."
                    schemes)))
     (pcase (length schemes)
       (1 (car schemes))
-      (0 nil)
+      (0 (error "No schemes found in %s" project-directory))
       (_ (widget-choose "Choose a scheme" choices)))))
 
 (defun swift-mode:locate-xcode ()
@@ -608,8 +622,8 @@ If PROJECT-DIRECTORY is nil or omitted, it is searched from `default-directory'
 or its ancestors.
 DEVICE-IDENTIFIER is the device identifier of the iOS simulator.  If it is nil
 or omitted, the value of `swift-mode:ios-device-identifier' is used.  If it is
-equal to `swift-mode:ios-local-device-identifier', a local device is used via
-`ios-deploy' instead.
+equal to `swift-mode:ios-local-device-identifier', the app is built for
+a local device instead.
 SCHEME is the name of the project scheme in Xcode.  If it is nil or omitted,
 the value of `swift-mode:ios-project-scheme' is used."
   (interactive
@@ -693,8 +707,17 @@ STRING is passed to the command."
                   swift-mode:debugger-prompt-regexp)))))
       (when swift-mode:repl-command-queue
         (pop swift-mode:repl-command-queue)
-        (insert (if (consp command) (cdr command) command))
-        (comint-send-input))
+        (let* ((process-mark
+                (process-mark (get-buffer-process (current-buffer))))
+               (pending-input (buffer-substring process-mark (point-max))))
+          ;; Keep partial input typed by the user out of the command.
+          (delete-region process-mark (point-max))
+          (goto-char process-mark)
+          (insert (if (consp command) (cdr command) command))
+          (comint-send-input)
+          ;; Restore the partial input typed by the user.
+          (goto-char (point-max))
+          (insert pending-input)))
       (unless swift-mode:repl-command-queue
         (remove-hook 'comint-output-filter-functions
                      #'swift-mode:wait-for-prompt-then-execute-commands t)))))
@@ -775,12 +798,16 @@ Return nil otherwise."
       nil)))
 
 (defun swift-mode:kill-ios-simulator ()
-  "Kill an iOS simulator process if exists."
+  "Kill an iOS simulator process if exists.
+
+Wait until the process is terminated."
   (let ((process-identifier (swift-mode:find-ios-simulator-process)))
     (when process-identifier
       (signal-process
        process-identifier
-       'SIGTERM))))
+       'SIGTERM)
+      (while (swift-mode:find-ios-simulator-process)
+        (sit-for 0.5)))))
 
 (defun swift-mode:open-ios-simulator (device-identifier)
   "Open an iOS simulator asynchronously with DEVICE-IDENTIFIER."
@@ -837,7 +864,8 @@ attaches to it."
                      (list device-identifier product-bundle-identifier))))
       (error "%s: %s" "Cannot launch app" (buffer-string)))
     (goto-char (point-min))
-    (search-forward-regexp ": \\([0-9]*\\)$")
+    (unless (search-forward-regexp ": \\([0-9]+\\)$" nil t)
+      (error "%s: %s" "Cannot get PID of app" (buffer-string)))
     (string-to-number (match-string 1))))
 
 (defun swift-mode:search-process-stopped-message (process-identifier)
@@ -856,7 +884,7 @@ PROCESS-IDENTIFIER is the process ID."
                                            scheme
                                            codesigning-folder-path)
   "Run debugger on an iOS app in the PROJECT-DIRECTORY.
-Run it for the iOS local device DEVICE-IDENTIFIER for the given SCHEME.
+Run it for the iOS local device for the given SCHEME.
 CODESIGNING-FOLDER-PATH is the path of the codesigning folder in Xcode
 build settings."
   (swift-mode:build-ios-app project-directory
@@ -1074,9 +1102,10 @@ If TARGET is non-nil, return only sources of that target."
      test-targets)))
 
 (defun swift-mode:resolve-swift-test-file (file)
-  "Return full path of Swift Testing FILE in the project if any.
+  "Return a list of the full path of Swift Testing FILE in the project if any.
 
-If FILE is an absolute path, return it as is, even if it doesn't exist.
+If FILE is an absolute path, return a list of it as is, even if it doesn't
+exist.
 
 If FILE doesn't exist in the project, return nil."
   (if (file-name-absolute-p file)

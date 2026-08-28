@@ -2,7 +2,7 @@
 
 ;; Copyright 2011-2026 François-Xavier Bois
 
-;; Version: 17.3.24
+;; Version: 17.3.25
 ;; Author: François-Xavier Bois
 ;; Maintainer: François-Xavier Bois <fxbois@gmail.com>
 ;; Package-Requires: ((emacs "24.3.1"))
@@ -23,7 +23,7 @@
 
 ;;---- CONSTS ------------------------------------------------------------------
 
-(defconst web-mode-version "17.3.24"
+(defconst web-mode-version "17.3.25"
   "Web Mode version.")
 
 ;;---- GROUPS ------------------------------------------------------------------
@@ -44,7 +44,7 @@
 
 (defcustom web-mode-block-padding 0
   "Multi-line block (php, ruby, java, python, asp, etc.) left padding.
-   -1 to have to code aligned on the column 0."
+   -1 to have the code aligned on the column 0."
   :type '(choice (integer :tags "Number of spaces")
           (const :tags "No indent" nil))
   :group 'web-mode)
@@ -55,13 +55,15 @@
           (const :tags "No indent" nil))
   :group 'web-mode)
 
-(defcustom web-mode-script-padding web-mode-part-padding
+(defcustom web-mode-script-padding
+  (if (and (boundp 'web-mode-part-padding) web-mode-part-padding) 1)
   "Script element left padding."
   :type '(choice (integer :tags "Number of spaces")
           (const :tags "No indent" nil))
   :group 'web-mode)
 
-(defcustom web-mode-style-padding web-mode-part-padding
+(defcustom web-mode-style-padding
+  (if (and (boundp 'web-mode-part-padding) web-mode-part-padding) 1)
   "Style element left padding."
   :type '(choice (integer :tags "Number of spaces")
           (const :tags "No indent" nil))
@@ -74,7 +76,7 @@
   :group 'web-mode)
 ;;;###autoload
 (put 'web-mode-attr-indent-offset
-     'safe-local-variable #'(lambda (v) (or (integerp v) (booleanp v))))
+     'safe-local-variable #'(lambda (v) (or (integerp v) (null v))))
 
 (defcustom web-mode-attr-value-indent-offset nil
   "Html attribute value indentation level."
@@ -83,7 +85,7 @@
   :group 'web-mode)
 ;;;###autoload
 (put 'web-mode-attr-value-indent-offset
-     'safe-local-variable #'(lambda (v) (or (integerp v) (booleanp v))))
+     'safe-local-variable #'(lambda (v) (or (integerp v) (null v))))
 
 (defcustom web-mode-markup-indent-offset
   (if (and (boundp 'standard-indent) standard-indent) standard-indent 2)
@@ -344,13 +346,13 @@ by a li open tag is valid)."
 (defcustom web-mode-jsx-depth-faces
   nil
   ;;'(web-mode-jsx-depth-1-face web-mode-jsx-depth-2-face web-mode-jsx-depth-3-face web-mode-jsx-depth-4-face web-mode-jsx-depth-5-face)
-  "Each jsx depth has is own face."
+  "Each jsx depth has its own face."
   :type '(repeat face)
   :group 'web-mode)
 
 (defcustom web-mode-commands-like-expand-region
   '(web-mode-mark-and-expand er/expand-region mc/mark-next-like-this mc/mark-previous-like-this)
-  "Add commmand here if you have some wrapper function for er/expand-region"
+  "Add command here if you have some wrapper function for er/expand-region"
   :type '(repeat function)
   :group 'web-mode)
 
@@ -456,11 +458,6 @@ For example,
   "Face for preprocessor commands."
   :group 'web-mode-faces)
 
-(defface web-mode-preprocessor-face
-    '((t :inherit font-lock-preprocessor-face))
-  "Face for preprocessor."
-  :group 'web-mode-faces)
-
 (defface web-mode-block-delimiter-face
     '((t :inherit font-lock-preprocessor-face))
   "Face for block delimiters."
@@ -468,7 +465,7 @@ For example,
 
 (defface web-mode-block-control-face
     '((t :inherit font-lock-preprocessor-face))
-  "Face for preprocessor."
+  "Face for block control statements."
   :group 'web-mode-faces)
 
 (defface web-mode-builtin-face
@@ -777,7 +774,7 @@ For example,
 (defface web-mode-inlay-face
     '((((class color) (min-colors 88) (background dark))  :background "Black")
       (((class color) (min-colors 88) (background light)) :background "LightYellow1")
-      (((class color) (min-colors 16) (background dark))  :background "Brey18")
+      (((class color) (min-colors 16) (background dark))  :background "Grey18")
       (((class color) (min-colors 16) (background light)) :background "LightYellow1")
       (((class color) (min-colors 8))                     :background "Black")
       (((type tty) (class mono))                          :inverse-video t)
@@ -824,12 +821,12 @@ Must be used in conjunction with web-mode-enable-block-face."
 
 (defface web-mode-italic-face
     '((t :slant italic))
-  "bold face."
+  "italic face."
   :group 'web-mode-faces)
 
 (defface web-mode-underline-face
     '((t :underline t))
-  "bold face."
+  "underline face."
   :group 'web-mode-faces)
 
 (defface web-mode-current-element-highlight-face
@@ -2032,7 +2029,7 @@ shouldn't be moved back.)")
    '("@\\([[:alnum:]_]+\\)\\_>" 0 'web-mode-keyword-face)
    '("\\([[:alnum:]]+\\)[`]" 0 'web-mode-preprocessor-face)
    (cons (concat "\\_<\\(function\\*\\)\\_>") '(1 'web-mode-keyword-face))
-   (cons (concat "\\([ \t}{(]\\|^\\)\\(" web-mode-javascript-keywords "\\)\\_>") '(2 'web-mode-keyword-face))
+   (cons (concat "\\([ \t}{(\\[]\\|^\\)\\(" web-mode-javascript-keywords "\\)\\_>") '(2 'web-mode-keyword-face))
    (cons (concat "\\_<\\(" web-mode-javascript-constants "\\)\\_>") '(0 'web-mode-constant-face))
    '("\\_<\\([$]\\)(" 1 'web-mode-type-face)
    '("\\_<\\(new\\|instanceof\\|class\\|extends\\|import\\) \\([[:alnum:]_.]+\\)\\_>" 2 'web-mode-type-face)
@@ -2763,24 +2760,24 @@ another auto-completion with different ac-sources (e.g. ac-php)")
 (eval-and-compile
 
   ;; compatibility with emacs < 23
-  (defun web-mode-string-match-p (regexp string &optional start)
-    "Same as `string-match' except it does not change the match data."
-    (save-match-data
-      (string-match regexp string start)))
+  ;; (defun web-mode-string-match-p (regexp string &optional start)
+  ;;   "Same as `string-match' except it does not change the match data."
+  ;;   (save-match-data
+  ;;     (string-match regexp string start)))
 
-  (unless (fboundp 'string-match-p)
-    (fset 'string-match-p (symbol-function 'web-mode-string-match-p)))
+  ;; (unless (fboundp 'string-match-p)
+  ;;   (fset 'string-match-p (symbol-function 'web-mode-string-match-p)))
 
   ;; compatibility with emacs < 23.3
-  (if (fboundp 'with-silent-modifications)
-      (defalias 'web-mode-with-silent-modifications 'with-silent-modifications)
-      (defmacro web-mode-with-silent-modifications (&rest body)
-        `(let ((old-modified-p (buffer-modified-p))
-               (inhibit-modification-hooks t)
-               (buffer-undo-list t))
-           (unwind-protect
-                ,@body
-             (restore-buffer-modified-p old-modified-p)))))
+  ;; (if (fboundp 'with-silent-modifications)
+  ;;     (defalias 'web-mode-with-silent-modifications 'with-silent-modifications)
+  ;;     (defmacro web-mode-with-silent-modifications (&rest body)
+  ;;       `(let ((old-modified-p (buffer-modified-p))
+  ;;              (inhibit-modification-hooks t)
+  ;;              (buffer-undo-list t))
+  ;;          (unwind-protect
+  ;;               ,@body
+  ;;            (restore-buffer-modified-p old-modified-p)))))
 
   ;; compatibility with emacs < 24.3
   (defun web-mode-buffer-narrowed-p ()
@@ -3354,7 +3351,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
   ;;(message "scan-region: beg(%d) end(%d) content-type(%S)" beg end content-type)
   (setq web-mode-scan-beg beg
         web-mode-scan-end end)
-  (web-mode-with-silent-modifications
+  (with-silent-modifications
    (save-excursion
      (save-restriction
        (save-match-data
@@ -4941,7 +4938,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
     ))
 
 (defun web-mode-block-controls-get (pos)
-  (web-mode-with-silent-modifications
+  (with-silent-modifications
    (let ((controls nil))
      (cond
        ((null (get-text-property pos 'block-side))
@@ -6729,7 +6726,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
     ;;(web-mode-skip-fontification
     ;; nil)
     (t
-     (web-mode-with-silent-modifications
+     (with-silent-modifications
       (save-excursion
         (save-restriction
           (save-match-data
@@ -8296,7 +8293,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
   "Toggle folding on an html element or a control block."
   (interactive)
   (web-mode-scan)
-  (web-mode-with-silent-modifications
+  (with-silent-modifications
    (save-excursion
      (if pos (goto-char pos))
      (let (beg-inside beg-outside end-inside end-outside overlay overlays)
@@ -11416,7 +11413,7 @@ Prompt user if TAG-NAME isn't provided."
 (defun web-mode-toggle-comments ()
   "Toggle comments visbility."
   (interactive)
-  (web-mode-with-silent-modifications
+  (with-silent-modifications
    (save-excursion
      (if web-mode-comments-invisible
          (remove-overlays))
@@ -15014,7 +15011,7 @@ Prompt user if TAG-NAME isn't provided."
   nil)
 
 (defun web-mode-on-exit ()
-  (web-mode-with-silent-modifications
+  (with-silent-modifications
    (put-text-property (point-min) (point-max) 'invisible nil)
    (remove-overlays)
    (remove-hook 'change-major-mode-hook 'web-mode-on-exit t)
@@ -15055,7 +15052,7 @@ extended to support more filetypes by customizing
 (defun web-mode-reload ()
   "Reload web-mode."
   (interactive)
-  (web-mode-with-silent-modifications
+  (with-silent-modifications
    (put-text-property (point-min) (point-max) 'invisible nil)
    (remove-overlays)
    (setq font-lock-unfontify-region-function 'font-lock-default-unfontify-region)

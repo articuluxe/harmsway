@@ -1203,6 +1203,8 @@ Run `doric-themes-after-load-theme-hook' after loading a theme."
     orderless-match-face-2
     orderless-match-face-3
     proced-session-leader-pid
+    query-replace-preview
+    query-replace-preview-match
     rcirc-my-nick
     rcirc-nick-in-message
     rcirc-nick-in-message-full-line

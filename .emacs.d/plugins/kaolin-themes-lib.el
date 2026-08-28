@@ -1120,8 +1120,10 @@
     (consult-key               (:foreground keysym))
 
     ;; Corfu
-    (corfu-background (:background tooltip-bg))
-    (corfu-border     (:background bg4))
+    (corfu-default    (:background tooltip-bg))
+    (corfu-border     (:background win-border))
+    ;; TODO: it's using fringe face or something that become corfu--bar face and looks a bit odd
+    (corfu-bar        (:background company-scroll-fg))
     (corfu-current    (:background tooltip-hl-bg :foreground tooltip-hl-fg))
     (corfu-echo       (:foreground doc))
 
