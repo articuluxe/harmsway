@@ -61,10 +61,6 @@
 (defvar-local flymake-diagnostic-at-point-timer nil
   "Timer to automatically show the error at point.")
 
-(defun flymake-diagnostic-at-point-get-diagnostic-text ()
-  "Get the flymake diagnostic text for the thing at point."
-  (flymake--diag-text (get-char-property (point) 'flymake-diagnostic)))
-
 (defun flymake-diagnostic-at-point-display-popup (text)
   "Display the flymake diagnostic TEXT inside a popup."
   (popup-tip (concat flymake-diagnostic-at-point-error-prefix text)))
@@ -78,10 +74,10 @@
 
 The diagnostic text will be rendered using the function defined
 in `flymake-diagnostic-at-point-display-diagnostic-function.'"
-  (when (and flymake-mode
-             (get-char-property (point) 'flymake-diagnostic))
-    (let ((text (flymake-diagnostic-at-point-get-diagnostic-text)))
-      (funcall flymake-diagnostic-at-point-display-diagnostic-function text))))
+  (when (flymake-mode)
+    (if-let* ((diag (get-char-property (point) 'flymake-diagnostic))
+              (message (flymake-diagnostic-message diag)))
+        (funcall flymake-diagnostic-at-point-display-diagnostic-function message))))
 
 ;;;###autoload
 (defun flymake-diagnostic-at-point-set-timer ()
