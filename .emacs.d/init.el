@@ -253,7 +253,6 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; add shortcut for terminals where C-S-DEL doesn't work
 (global-set-key (kbd "M-' DEL") #'kill-whole-line)
 (global-set-key (kbd "M-' %") #'query-replace-regexp)
-(global-set-key (kbd "C-x M-;") #'comment-line)
 (global-set-key (kbd "C-x M-p") #'transpose-paragraphs)
 (global-set-key (kbd "ESC M-SPC") #'move-to-window-line-top-bottom)
 (global-set-key [(next)] #'scroll-up-line)
@@ -269,13 +268,6 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key (kbd "C-#") #'sort-paragraphs)
 (global-set-key "\C-xxw" #'write-region)
 (global-set-key "\M-g " #'ensure-empty-lines)
-
-;; This horrible hack gets around a "reference to free variable" warning,
-;; I believe due to a defadvice referring to `filename' in the original
-;; code being advised.  But I couldn't find where.
-;; More recent emacsen seem to handle the error.
-(when (version< emacs-version "24.3")
-  (defvar filename nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dash ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
@@ -408,6 +400,7 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dape ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dape
+  :disabled
   :init
   (setq dape-buffer-window-arrangement 'gud)
   (setq dape-key-prefix "\C-x\C-a")
@@ -783,16 +776,17 @@ line."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package rotate
-  :bind (:map ctl-x-4-map
-              ("l" . rotate-layout)
-              ("w" . rotate-window)
-              ("h" . rotate:even-horizontal)
-              ("M-h" . rotate:main-horizontal)
-              ("v" . rotate:even-vertical)
-              ("M-v" . rotate:main-vertical)
-              ("t" . rotate:tiled)
-              ))
+(if (< emacs-major-version 31)
+    (use-package rotate
+      :bind (:map ctl-x-4-map
+                  ("l" . rotate-layout)
+                  ("w" . rotate-window)
+                  ("h" . rotate:even-horizontal)
+                  ("M-h" . rotate:main-horizontal)
+                  ("v" . rotate:even-vertical)
+                  ("M-v" . rotate:main-vertical)
+                  ("t" . rotate:tiled)
+                  )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; electric-buffer-list ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ebuff-menu :bind ("C-x M-b" . electric-buffer-list))

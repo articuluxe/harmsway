@@ -1,8 +1,8 @@
 ;;; early-init.el --- Early initialization options for Emacs
-;; Copyright (C) 2020-2023, 2025  Dan.Harms (Dan.Harms)
+;; Copyright (C) 2020-2023, 2025-2026  Dan.Harms (Dan.Harms)
 ;; Author: Dan.Harms <enniomore@icloud.com>
 ;; Created: Tuesday, January 14, 2020
-;; Modified Time-stamp: <2025-03-03 06:55:03 dharms>
+;; Modified Time-stamp: <2026-09-01 16:04:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -40,6 +40,7 @@
 (setq package-enable-at-startup nil)
 (setq frame-inhibit-implied-resize t)
 (setq native-comp-async-report-warnings-errors nil)
+(setq user-lisp-auto-scrape nil)
 
 (if (fboundp 'startup-redirect-eln-cache)
     (startup-redirect-eln-cache
