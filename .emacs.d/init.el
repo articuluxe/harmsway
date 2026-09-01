@@ -3993,17 +3993,6 @@ See `https://github.com/company-mode/company-mode/issues/205'."
           ))
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; easy-kill ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package easy-kill
-  :disabled
-  :config
-  (global-set-key [remap kill-ring-save] #'easy-kill)
-  (global-set-key [remap mark-sexp] #'easy-mark))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq kill-ring-max 100)
-(use-package popup-kill-ring :bind ("C-M-y" . popup-kill-ring))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-global-mark-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package popup-global-mark-ring :bind ("\e\ey" . popup-global-mark-ring))
 
@@ -4014,11 +4003,6 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mark-thing-at ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mark-thing-at :config (mark-thing-at-mode 1))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; detour ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package detour
-  :bind (("C-8" . detour-mark)
-         ("C-9" . detour-back)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package htmlize
