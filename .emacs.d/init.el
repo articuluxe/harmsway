@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-08-26 22:51:17 dharms>
+;; Modified Time-stamp: <2026-09-01 16:45:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2700,7 +2700,7 @@ ARGS are the additional arguments."
   ;;   )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
   (define-key dired-mode-map "\M-p" nil t)               ;unbind
-  (use-package ls-lisp+)
+  (use-package :disabled ls-lisp+)
   ;; omit dot-files in dired-omit-mode (C-x M-o)
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
   (setq ls-lisp-dirs-first t)
@@ -2752,31 +2752,31 @@ ARGS are the additional arguments."
             (t (error "Unknown dired sort %s" type)))))
   (define-key dired-mode-map "`" 'my/dired-sort)
 
-  (defadvice shell-command
-      (after shell-in-new-buffer (command &optional output-buffer error-buffer))
-    (when (get-buffer "*Async Shell Command*")
-      (with-current-buffer "*Async Shell Command*"
-        (rename-uniquely))))
-  (ad-activate 'shell-command)
+  ;; (defadvice shell-command
+  ;;     (after shell-in-new-buffer (command &optional output-buffer error-buffer))
+  ;;   (when (get-buffer "*Async Shell Command*")
+  ;;     (with-current-buffer "*Async Shell Command*"
+  ;;       (rename-uniquely))))
+  ;; (ad-activate 'shell-command)
 
   ;; launch command
-  (defun dired-launch-command() (interactive)
-         (dired-do-shell-command
-          (case system-type
-            (darwin "open")
-            (gnu/linux "open")
-            ) nil (dired-get-marked-files t current-prefix-arg)))
+ ;;  (defun dired-launch-command() (interactive)
+ ;;         (dired-do-shell-command
+ ;;          (case system-type
+ ;;            (darwin "open")
+ ;;            (gnu/linux "open")
+ ;;            ) nil (dired-get-marked-files t current-prefix-arg)))
 
-  (defun my-dired-do-command (command)
-    "Run command on marked files. Any files not already open will be opened.
- After this command has been run, any buffers it's modified will remain
- open and unsaved."
-    (interactive "Run on marked files M-x ")
-    (save-window-excursion
-      (mapc (lambda (filename)
-              (find-file filename)
-              (call-interactively command))
-            (dired-get-marked-files))))
+ ;;  (defun my-dired-do-command (command)
+ ;;    "Run command on marked files. Any files not already open will be opened.
+ ;; After this command has been run, any buffers it's modified will remain
+ ;; open and unsaved."
+ ;;    (interactive "Run on marked files M-x ")
+ ;;    (save-window-excursion
+ ;;      (mapc (lambda (filename)
+ ;;              (find-file filename)
+ ;;              (call-interactively command))
+ ;;            (dired-get-marked-files))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired-subtree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3190,48 +3190,6 @@ ARGS are the additional arguments."
     (when (re-search-forward smerge-begin-re nil t)
       (smerge-mode 1))))
 
-;; Modified from `https://github.com/alphapapa/unpackaged.el'
-(with-eval-after-load 'hydra
-  (defhydra smerge-hydra
-    (:color pink :hint nil :post (smerge-auto-leave))
-    "
-^Move^       ^Keep^               ^Diff^                 ^Other^
-^^-----------^^-------------------^^---------------------^^-------
-_n_ext       _b_ase               _<_: upper/base        _C_ombine
-_p_rev       _u_pper              _=_: upper/lower       _r_esolve
-^^           _l_ower              _>_: base/lower        _k_ill current
-^^           _a_ll                _R_efine
-^^           _RET_: current       _E_diff
-"
-    ("n" smerge-next)
-    ("p" smerge-prev)
-    ("b" smerge-keep-base)
-    ("u" smerge-keep-upper)
-    ("l" smerge-keep-lower)
-    ("a" smerge-keep-all)
-    ("RET" smerge-keep-current)
-    ("\C-m" smerge-keep-current)
-    ("<" smerge-diff-base-upper :color blue)
-    ("=" smerge-diff-upper-lower :color blue)
-    (">" smerge-diff-base-lower :color blue)
-    ("R" smerge-refine)
-    ("E" smerge-ediff)
-    ("C" smerge-combine-with-next)
-    ("r" smerge-resolve)
-    ("k" smerge-kill-current)
-    ("ZZ" (lambda ()
-            (interactive)
-            (save-buffer)
-            (bury-buffer))
-     "Save and bury buffer" :color blue)
-    ("Q" nil "cancel" :color blue)))
-
-(defun harmsway-smerge-hydra ()
-  "Run `smerge-hydra'."
-  (interactive)
-  (require 'hydra)
-  (smerge-hydra/body))
-
 (use-package smerge-mode
   :init
   (add-hook 'find-file-hook #'harmsway-try-smerge t)
@@ -3559,7 +3517,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :config
   ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point)
   ;; Use Ctrl-[N,P] rather than Meta to cycle
-  (define-key company-active-map "\C-n" #'company-select-next-if-tooltip-visible-or-complete-selection)
+  ;; 'company-tooltip-visible-p always returning nil in emacs 31
+  ;; (define-key company-active-map "\C-n" #'company-select-next-if-tooltip-visible-or-complete-selection)
+  (define-key company-active-map "\C-n" #'company-select-next-or-abort)
   (define-key company-active-map "\C-p" #'company-select-previous)
   (define-key company-active-map "\M-n" nil t)
   (define-key company-active-map "\M-p" nil t)
@@ -3570,12 +3530,14 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   (define-key company-active-map [backtab] #'company-select-previous)
   (define-key company-active-map (kbd "S-TAB") #'company-select-previous)
   (define-key company-active-map "\M-/" #'company-other-backend)
+  (require 'company-childframe)         ;emacs 31
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-quickhelp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package company-quickhelp
   ;; :if (display-graphic-p)
   :after company
+  :disabled
   :init
   (setq company-quickhelp-delay 0.4)
   (setq company-quickhelp-use-propertized-text t)
