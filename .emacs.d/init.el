@@ -2713,8 +2713,6 @@ ARGS are the additional arguments."
   (setq dired-isearch-filenames t)
   ;; (use-package dired-filter)
   ;; (define-key dired-mode-map "." dired-filter-mark-map)
-  (use-package dired-git-info)
-  (define-key dired-mode-map ")" 'dired-git-info-mode)
   (setq wdired-create-parent-directories t)
   (setq wdired-allow-to-change-permissions t)
   ;; (use-package ivy-dired-history)
