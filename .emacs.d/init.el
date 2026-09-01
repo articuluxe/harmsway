@@ -3175,41 +3175,6 @@ ARGS are the additional arguments."
   (define-key gif-screencast-mode-map (kbd "<f4>") #'gif-screencast-stop)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; perspective ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package perspective
-  :disabled
-  :demand t
-  :config (persp-mode))
-
-;; (use-package persp-mode
-;;   :demand t
-;;   :init
-;;   (setq persp-keymap-prefix (kbd "C-x x"))
-;;   :config (persp-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package workgroups
-  :demand t
-  :bind (:map wg-map
-              ("<left>" . wg-switch-left)
-              ("<right>" . wg-switch-right)
-              )
-  :config
-  (setq wg-default-buffer "*Bookmark List*")
-  (setq wg-use-faces nil)
-  ;; doesn't work, isn't needed? (setq wg-restore-position t)
-  ;; TODO: set initial string to "( -<{ }>- )"
-  (setq wg-query-for-save-on-emacs-exit nil)
-  (workgroups-mode 1)
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups2 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (require 'workgroups2)
-;; (setq wg-prefix-key "\C-z")
-;; ;; (define-key workgroups-mode-map (kbd "<left>") 'wg-switch-left)
-;; ;; (define-key workgroups-mode-map (kbd "<right>") 'wg-switch-right)
-;; (workgroups-mode 1)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; themes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq custom-theme-directory (concat my/scratch-directory "themes/"))
 (use-package custom-themes)
