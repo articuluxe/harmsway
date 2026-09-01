@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-01 16:45:38 dharms>
+;; Modified Time-stamp: <2026-09-01 16:52:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1773,20 +1773,6 @@ ARGS are the additional arguments."
   :config
   (setq enlight-content (harmsway-create-enlight-content)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleandesk ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(with-eval-after-load 'dired
-  (setq date-string "%Y%m%d-")
-  (unless (executable-find "fd")
-    (setq cleandesk-search-tool "find"))
-  (load (concat my/plugins-directory "cleandesk.el"))
-  (define-key dired-mode-map "J" #'cleandesk-jump-to-folder)
-  (define-key dired-mode-map "M" #'cleandesk-move-files)
-  (define-key dired-mode-map "z" #'cleandesk-prepend-date)
-  (define-key dired-mode-map "r" #'cleandesk-rename)
-  (if (eq system-type 'darwin)
-      (define-key dired-mode-map "S" #'cleandesk-search)))
-(global-set-key (kbd "C-c 0C") #'cleandesk-open-inbox)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bm
  :bind (("M-s t" . bm-toggle)
@@ -2007,14 +1993,6 @@ ARGS are the additional arguments."
   :bind ("C-c gd" . deadgrep)
   :init
   (setq deadgrep-project-root-function #'proviso-current-project-root))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lasgun ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package lasgun
-  :disabled
-  :bind (("\e\em" . lasgun-mark-char-timer)
-         ("\e\eM" . lasgun-make-multiple-cursors)) ;not working
-  )
-;; (global-set-key [?\C-| ?\C-|] #'lasgun-make-multiple-cursors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)

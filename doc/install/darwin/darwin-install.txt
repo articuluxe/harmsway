@@ -111,6 +111,7 @@ brew install emacs-head@29 --with-cocoa --with-native-comp --with-native-full-ao
 
 brew trust daviderestivo/emacs-head
 brew install emacs-head@30 --with-cocoa --with-native-comp --with-native-full-aot --with-tree-sitter --with-modern-icon-emacs-icon6
+brew install emacs-head@31 --with-cocoa --with-tree-sitter --with-native-comp --with-native-full-aot --with-liquid-glass
 
 brew tap jimeh/emacs/builds
 brew install --cask emacs-app
