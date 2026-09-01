@@ -2731,17 +2731,8 @@ ARGS are the additional arguments."
   ;;   (when (string= my/system-name "windows-nt")
   ;;     (setq ls-lisp-use-insert-directory-program t))
   ;;   (dired-quick-sort-setup))
-  (use-package dired-sort)
-  ;; du or duc
-  (if (executable-find "duc")
-      (use-package dired-du-duc
-        :init
-        (setq dired-du-duc-index-predicate 'dired-du-duc-local-p)
-        (setq dired-du-duc-delay 3600)
-        :config
-        (global-dired-du-duc-mode)
-        )
-    (use-package dired-du :init (setq dired-du-size-format t)))
+;  (use-package dired-sort)
+  (use-package dired-du :init (setq dired-du-size-format t))
   (setq-default dired-listing-switches "-alhvGg")
   (put 'dired-find-alternate-file 'disabled nil)
 
