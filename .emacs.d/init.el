@@ -2859,6 +2859,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dirvish ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dirvish
   :bind ("C-c 0dv" . dirvish)
+  :disabled
   :init
   :config
   (use-package dirvish-collapse)
@@ -2877,18 +2878,6 @@ ARGS are the additional arguments."
   (use-package dirvish-vc)
   (use-package dirvish-yank)
   ;(dirvish-override-dired-mode)
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; filetree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package filetree
-  :disabled                             ;needs helm
-  :bind (("C-c 0ftr" . filetree-show-recentf-files)
-         ("C-c 0ft." . filetree-show-cur-dir)
-         ("C-c 0ftd" . filetree-show-cur-dir-recursively)
-         ("C-c 0ftb" . filetree-show-cur-buffers)
-         )
-  :init
-  (setq filetree-use-all-the-icons t)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; calc-prog-utils ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
