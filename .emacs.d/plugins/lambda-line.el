@@ -2,9 +2,9 @@
 
 ;; Author: Colin McLear
 ;; Maintainer: Colin McLear
-;; Version: 0.2.0
+;; Version: 0.6.0
 ;; Package-Requires: ((emacs "27.1"))
-;; Homepage: https://github.com/Lambda-Emacs/lambda-line
+;; Homepage: https://codeberg.org/Lambda-Emacs/lambda-line
 ;; Keywords: mode-line faces
 
 ;; This file is NOT part of GNU Emacs
@@ -43,6 +43,7 @@
 (declare-function lsp-workspaces "lsp-mode")
 (declare-function eglot-managed-p "eglot")
 (declare-function vc-git--run-command-string "vc-git")
+(declare-function vc-responsible-backend "vc")
 (declare-function mu4e-message-at-point "mu4e-view")
 (declare-function mu4e-message-field "mu4e-message")
 (declare-function mu4e-context-current "mu4e-context")
@@ -60,7 +61,7 @@
 (defgroup lambda-line nil
   "lambda-line group"
   :group 'mode-line
-  :link '(url-link :tag "Homepage" "https://github.com/Lambda-Emacs/lambda-line"))
+  :link '(url-link :tag "Homepage" "https://codeberg.org/Lambda-Emacs/lambda-line"))
 
 ;;;; Custom Variable Settings
 
@@ -113,6 +114,20 @@ see the value of `lambda-line-abbrev-alist'"
   :group 'lambda-line
   :type 'boolean)
 
+(defcustom lambda-line-vc-refresh-on-repo-change t
+  "If t then refresh version control state when the repository changes.
+The branch name, the state indicator, and the diff counts all come
+from `vc-mode', which Emacs recomputes only when a file is visited or
+saved.  A commit, stage, or checkout made from anywhere else therefore
+leaves the status-line showing the state as it was before.  When this
+option is non-nil, lambda-line recomputes that state for the buffers
+currently on display and leaves the remaining buffers of the
+repository to refresh when a window next shows them.  Each refresh
+runs a handful of Git subprocesses, so set this to nil to trade an
+accurate status-line for fewer of them."
+  :group 'lambda-line
+  :type 'boolean)
+
 (defcustom lambda-line-vc-symbol ""
   "Symbol to use in buffers visiting files under version control"
   :group 'lambda-line
@@ -123,6 +138,51 @@ see the value of `lambda-line-abbrev-alist'"
   "If t then use `lambda-line-visual-bell'."
   :group 'lambda-line
   :type 'boolean)
+
+;; Evil state indicator
+(defcustom lambda-line-evil-state t
+  "If non-nil, show the current Evil state at the far left of the status-line.
+The indicator renders only where Evil is loaded and active in the
+buffer, so leaving this enabled is harmless without Evil and is robust
+to Evil being loaded after lambda-line."
+  :group 'lambda-line
+  :type 'boolean)
+
+(defcustom lambda-line-evil-state-alist
+  '((normal       . " N ")
+    (insert       . " I ")
+    (visual       . " V ")
+    (visual-line  . "VL ")
+    (visual-block . "VB ")
+    (replace      . " R ")
+    (emacs        . " E ")
+    (motion       . " M ")
+    (operator     . " O "))
+  "Alist mapping Evil state symbols to the tag shown in the status-line.
+The `visual-line' and `visual-block' keys cover the visual sub-types
+\(distinguished via `evil-visual-type').  Tags share a common width so
+a colored-block face renders as an even field.  States absent from this
+alist fall back to `lambda-line-evil-empty-tag' when
+`lambda-line-evil-fixed-width' is non-nil, otherwise they show no tag."
+  :group 'lambda-line
+  :type '(alist :key-type symbol :value-type string))
+
+(defcustom lambda-line-evil-fixed-width t
+  "If non-nil, reserve a fixed-width field for the Evil state tag.
+When the current state maps to no tag -- Evil inactive in the buffer,
+or a state absent from `lambda-line-evil-state-alist' --
+`lambda-line-evil-empty-tag' is shown instead of nothing, so toggling
+Evil never shifts the rest of the status-line horizontally."
+  :group 'lambda-line
+  :type 'boolean)
+
+(defcustom lambda-line-evil-empty-tag "   "
+  "Placeholder shown in place of an Evil state tag.
+Used only when `lambda-line-evil-fixed-width' is non-nil.  Its width
+should match the tags in `lambda-line-evil-state-alist' so the
+status-line keeps a constant width across states."
+  :group 'lambda-line
+  :type 'string)
 
 ;; Invert status faces
 ;; This make lambda-line look more like nano-modeline
@@ -161,6 +221,105 @@ see the value of `lambda-line-abbrev-alist'"
   "Modeline tty read-write symbol."
   :group 'lambda-line
   :type 'string)
+
+;;;; Nerd-icons prefix glyphs
+;; -------------------------------------------------------------------
+;; When `lambda-line-use-nerd-icons' is non-nil and the `nerd-icons'
+;; package is available, prefix glyphs are resolved from
+;; `lambda-line-nerd-icon-alist' instead of the default emoji/Unicode
+;; symbols.  nerd-icons is an optional, lazily-checked dependency: it is
+;; never `require'd, and any resolution failure falls back to the
+;; default glyph.
+
+(declare-function nerd-icons-codicon "nerd-icons")
+(declare-function nerd-icons-octicon "nerd-icons")
+
+(defvar lambda-line--nerd-glyph-cache (make-hash-table :test 'equal)
+  "Cache of resolved nerd-icons glyph strings.
+Keyed by (SEMANTIC-KEY . GRAPHIC-P) so graphical and terminal frames of
+the same Emacs session resolve independently.")
+
+(defun lambda-line--nerd-glyph-cache-clear ()
+  "Clear the resolved nerd-icons glyph cache."
+  (clrhash lambda-line--nerd-glyph-cache))
+
+(defcustom lambda-line-use-nerd-icons nil
+  "When non-nil, use nerd-icons glyphs for prefix symbols.
+Requires the `nerd-icons' package and a Nerd Font.  When the package is
+unavailable or a glyph cannot be resolved, lambda-line falls back to the
+default symbol."
+  :type 'boolean
+  :group 'lambda-line
+  :set (lambda (sym val)
+         (set-default sym val)
+         (when (fboundp 'lambda-line--nerd-glyph-cache-clear)
+           (lambda-line--nerd-glyph-cache-clear))))
+
+(defcustom lambda-line-nerd-icon-alist
+  '((read-only  . (nerd-icons-codicon "nf-cod-lock"))
+    (read-write . (nerd-icons-octicon "nf-oct-pencil"))
+    (modified   . (nerd-icons-octicon "nf-oct-dot_fill"))
+    (terminal   . (nerd-icons-codicon "nf-cod-terminal"))
+    (eshell     . (nerd-icons-codicon "nf-cod-terminal_bash"))
+    (shell      . (nerd-icons-codicon "nf-cod-terminal_bash"))
+    (debug      . (nerd-icons-codicon "nf-cod-debug"))
+    (help       . (nerd-icons-octicon "nf-oct-question"))
+    (info       . (nerd-icons-codicon "nf-cod-info"))
+    (magit      . (nerd-icons-octicon "nf-oct-git_branch")))
+  "Alist mapping semantic prefix keys to nerd-icons specifications.
+Each value is a list (FUNCTION ICON-NAME) where FUNCTION is a nerd-icons
+constructor such as `nerd-icons-codicon' and ICON-NAME is a glyph name it
+accepts.  Used only when `lambda-line-use-nerd-icons' is non-nil.
+Editing this alist has effect after the glyph cache is cleared, which
+happens automatically when toggling `lambda-line-use-nerd-icons'."
+  :type '(alist :key-type symbol :value-type sexp)
+  :group 'lambda-line
+  :set (lambda (sym val)
+         (set-default sym val)
+         (when (fboundp 'lambda-line--nerd-glyph-cache-clear)
+           (lambda-line--nerd-glyph-cache-clear))))
+
+(defun lambda-line--nerd-font-available-p ()
+  "Return non-nil when nerd-icons glyphs are likely to render.
+On a graphical display this checks that the nerd-icons font family is
+installed.  On a terminal Emacs cannot introspect the font, so this
+trusts the user's configuration and returns t."
+  (if (display-graphic-p)
+      (find-font (font-spec :family (if (boundp 'nerd-icons-font-family)
+                                        nerd-icons-font-family
+                                      "Symbols Nerd Font Mono")))
+    t))
+
+(defun lambda-line--nerd-glyph (key)
+  "Return the nerd-icons glyph string for semantic KEY, or nil.
+Resolution is cached.  Return nil when nerd-icons is disabled, the
+package is unavailable, the Nerd Font is not installed, KEY has no
+mapping, or the glyph cannot be constructed -- in every such case the
+caller falls back to the default symbol.  A leading space is prepended
+to match the default symbols."
+  (when (and lambda-line-use-nerd-icons
+             (featurep 'nerd-icons))
+    (let* ((cache-key (cons key (and (display-graphic-p) t)))
+           (cached (gethash cache-key lambda-line--nerd-glyph-cache 'miss)))
+      (if (not (eq cached 'miss))
+          cached
+        ;; Resolve once and cache, including the font-availability probe, so
+        ;; `find-font' does not run on every modeline redraw.
+        (puthash cache-key
+                 (when (lambda-line--nerd-font-available-p)
+                   (let ((spec (alist-get key lambda-line-nerd-icon-alist)))
+                     (when (and spec (fboundp (car spec)))
+                       (condition-case nil
+                           (concat " " (apply (car spec) (cdr spec)))
+                         (error nil)))))
+                 lambda-line--nerd-glyph-cache)))))
+
+(defun lambda-line--status-symbol (key gui-symbol tty-symbol)
+  "Return the prefix symbol for status KEY.
+Prefer a nerd-icons glyph, else GUI-SYMBOL or TTY-SYMBOL depending on the
+display type."
+  (or (lambda-line--nerd-glyph key)
+      (if (display-graphic-p) gui-symbol tty-symbol)))
 
 (defcustom lambda-line-truncate-value 30
   "Value of modeline truncate-length function."
@@ -263,24 +422,28 @@ Time info is only shown `display-time-mode' is non-nil"
     (term-mode              :mode-p lambda-line-term-mode-p
                             :format lambda-line-term-mode
                             :prefix-symbol " >_"
+                            :prefix-key terminal
                             :face-prefix-active lambda-line-active-status-MD
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (vterm-mode             :mode-p lambda-line-vterm-mode-p
                             :format lambda-line-term-mode
                             :prefix-symbol " >_"
+                            :prefix-key terminal
                             :face-prefix-active lambda-line-active-status-MD
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (eshell-mode            :mode-p lambda-line-eshell-mode-p
                             :format lambda-line-eshell-mode
                             :prefix-symbol " λ:"
+                            :prefix-key eshell
                             :face-prefix-active lambda-line-active-status-MD
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
     (shell-mode             :mode-p lambda-line-shell-mode-p
                             :format lambda-line-shell-mode
                             :prefix-symbol " >"
+                            :prefix-key shell
                             :face-prefix-active lambda-line-active-status-MD
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
@@ -312,6 +475,7 @@ Time info is only shown `display-time-mode' is non-nil"
                             :on-activate lambda-line-elpher-activate)
     (emacs-lisp-mode        :abbrev "λ")
     (gud-mode               :prefix-symbol " 🐞"
+                            :prefix-key debug
                             :face-prefix-active lambda-line-active-status-MD
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
@@ -319,6 +483,7 @@ Time info is only shown `display-time-mode' is non-nil"
                             :format lambda-line-help-mode
                             :abbrev "?"
                             :prefix-symbol " ?"
+                            :prefix-key help
                             :face-prefix-active lambda-line-active-status-RO
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
@@ -326,6 +491,7 @@ Time info is only shown `display-time-mode' is non-nil"
                             :format lambda-line-help-mode
                             :abbrev "?"
                             :prefix-symbol " ?"
+                            :prefix-key help
                             :face-prefix-active lambda-line-active-status-RO
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
@@ -334,6 +500,7 @@ Time info is only shown `display-time-mode' is non-nil"
                             :on-activate lambda-line-info-activate
                             :on-deactivate lambda-line-info-deactivate
                             :prefix-symbol " ℹ"
+                            :prefix-key info
                             :face-prefix-active lambda-line-active-status-RO
                             :face-prefix-inactive lambda-line-inactive-status-RW
                             :always-modifiable t)
@@ -342,7 +509,8 @@ Time info is only shown `display-time-mode' is non-nil"
     (magit-mode             :mode-p lambda-line-magit-mode-p
                             :format lambda-line-magit-mode
                             :abbrev "MG"
-                            :prefix-symbol " ✨")
+                            :prefix-symbol " ✨"
+                            :prefix-key magit)
     (org-mode               :mode-p lambda-line-org-mode-p
                             :format lambda-line-org-mode)
     (markdown-mode          :mode-p lambda-line-markdown-mode-p
@@ -391,6 +559,10 @@ KEY mode name, for reference only. Easier to do lookups and/or replacements.
 :ON-ACTIVATE and :ON-DEACTIVATE do hook magic on enabling/disabling the mode.
 :ABBREV substitutes an abbreviation if given the correct minor/major mode symbol
 and a string you want to use in the modeline *as substitute for* the original.
+:PREFIX-SYMBOL the default glyph shown as the buffer-status prefix.
+:PREFIX-KEY a semantic key looked up in `lambda-line-nerd-icon-alist' to
+substitute a nerd-icons glyph when `lambda-line-use-nerd-icons' is non-nil;
+falls back to :PREFIX-SYMBOL otherwise.
 "
   :type '(alist :key-type (symbol :tag "Major mode")
                 :value-type (plist :key-type (choice (const :mode-p)
@@ -399,10 +571,11 @@ and a string you want to use in the modeline *as substitute for* the original.
                                                      (const :on-deactivate)
                                                      (const :abbrev)
                                                      (const :prefix-symbol)  ;; custom prefix
+                                                     (const :prefix-key)     ;; nerd-icons lookup key
                                                      (const :face-prefix-active)
                                                      (const :face-prefix-inactive)
                                                      (const :always-modifiable))  ;; never read-only?
-                                   :value-type (choice (function) (string) (boolean))
+                                   :value-type (choice (function) (string) (symbol) (boolean))
                                    :tag "Mode formats"))
   :group 'lambda-line)
 
@@ -547,6 +720,44 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   "Modeline face for inactive tertiary element."
   :group 'lambda-line-inactive)
 
+;;;;; Git Diff Faces
+
+;; Faces for the +added/-removed line counts appended to the VC segment
+;; when `lambda-line-git-diff-mode-line' is non-nil.  They inherit from
+;; the theme-aware `success'/`error' faces so the colors follow the
+;; active theme; customize them to override.
+
+(defface lambda-line-git-diff-added
+  '((t (:inherit success)))
+  "Modeline face for the +N added-lines count in the git diff segment."
+  :group 'lambda-line)
+
+(defface lambda-line-git-diff-removed
+  '((t (:inherit error)))
+  "Modeline face for the -N removed-lines count in the git diff segment."
+  :group 'lambda-line)
+
+;;;;; Version Control Segment Faces
+
+;; Named faces for the pieces of the VC segment that carry their own
+;; color.  They inherit sensible, theme-aware defaults; set them
+;; explicitly to restyle the divider or the LSP indicator.
+
+(defface lambda-line-vc-divider
+  '((t (:inherit shadow)))
+  "Modeline face for the divider between the project name and branch."
+  :group 'lambda-line)
+
+(defface lambda-line-lsp-active
+  '((t (:inherit success)))
+  "Modeline face for the LSP/Eglot indicator when a server is active."
+  :group 'lambda-line)
+
+(defface lambda-line-lsp-available
+  '((t (:inherit warning)))
+  "Modeline face for the LSP indicator when a server is available but inactive."
+  :group 'lambda-line)
+
 
 ;;;;; Status Bar Faces
 
@@ -582,6 +793,56 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   "Modeline face for inactive MODIFIED element."
   :group 'lambda-line-inactive)
 
+;; Evil state faces. Defaults inherit the status faces and set only a
+;; foreground, so they blend with any theme; customize or restyle these
+;; -- add a :background (and a same-color :box to sit flush inside a
+;; boxed header-line) -- to get a colored-block modal indicator. A theme
+;; such as lambda-themes can remap these to its own palette.
+(defface lambda-line-evil-normal
+  '((t (:inherit lambda-line-active-status-RW :foreground "green")))
+  "Face for the Evil normal-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-insert
+  '((t (:inherit lambda-line-active-status-MD :foreground "red")))
+  "Face for the Evil insert-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-visual
+  '((t (:inherit lambda-line-active-status-RW :foreground "orange")))
+  "Face for the Evil visual-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-visual-line
+  '((t (:inherit lambda-line-evil-visual)))
+  "Face for the Evil visual-line-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-visual-block
+  '((t (:inherit lambda-line-evil-visual)))
+  "Face for the Evil visual-block-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-replace
+  '((t (:inherit lambda-line-active-status-MD :foreground "orange")))
+  "Face for the Evil replace-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-emacs
+  '((t (:inherit lambda-line-active-status-RW :foreground "deep sky blue")))
+  "Face for the Evil emacs-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-motion
+  '((t (:inherit lambda-line-active-status-RW :foreground "yellow")))
+  "Face for the Evil motion-state tag in the status-line."
+  :group 'lambda-line-active)
+
+(defface lambda-line-evil-operator
+  '((t (:inherit lambda-line-active-status-RW :foreground "yellow")))
+  "Face for the Evil operator-state tag in the status-line."
+  :group 'lambda-line-active)
+
 (defun lambda-line--apply-status-face (face)
   "Apply FACE with optional inverse video based on lambda-line-status-invert."
   (if lambda-line-status-invert
@@ -605,8 +866,8 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   "Blink the status-line red briefly. Set `ring-bell-function' to this to use it."
   (let ((lambda-line--bell-cookie (if (eq lambda-line-position 'bottom)
                                       (face-remap-add-relative 'lambda-line 'lambda-line-visual-bell)
-                                    (face-remap-add-relative 'header-line 'lambda-line-visual-bell)))
-        (force-mode-line-update t))
+                                    (face-remap-add-relative 'header-line 'lambda-line-visual-bell))))
+    (force-mode-line-update t)
     (run-with-timer 0.15 nil
                     (lambda (cookie buf)
                       (with-current-buffer buf
@@ -615,8 +876,16 @@ This is if no match could be found in `lambda-lines-mode-formats'"
                     lambda-line--bell-cookie
                     (current-buffer))))
 
+(defvar lambda-line--saved-ring-bell-function nil
+  "Value of `ring-bell-function' before `lambda-line-visual-bell-config'.")
+(defvar lambda-line--saved-visible-bell nil
+  "Value of `visible-bell' before `lambda-line-visual-bell-config'.")
+
 (defun lambda-line-visual-bell-config ()
   "Enable flashing the status-line on error."
+  (unless (eq ring-bell-function #'lambda-line-visual-bell-fn)
+    (setq lambda-line--saved-ring-bell-function ring-bell-function
+          lambda-line--saved-visible-bell visible-bell))
   (setq ring-bell-function #'lambda-line-visual-bell-fn
         visible-bell t))
 
@@ -683,6 +952,10 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   "Cached project name for current buffer.")
 (defvar-local lambda-line--cache-vc-backend nil
   "Cached VC backend for current buffer.")
+(defvar-local lambda-line--cache-vc-root 'unset
+  "Cached repository root for current buffer.
+The symbol `unset' marks a root that has not been looked up yet, so
+that a buffer outside any repository caches its nil answer too.")
 (defvar-local lambda-line--cache-git-diff nil
   "Cached git diff information for current buffer.")
 (defvar-local lambda-line--cache-word-count nil
@@ -707,6 +980,7 @@ This is if no match could be found in `lambda-lines-mode-formats'"
   "Invalidate all cached values."
   (setq lambda-line--cache-project-name nil
         lambda-line--cache-vc-backend nil
+        lambda-line--cache-vc-root 'unset
         lambda-line--cache-git-diff nil
         lambda-line--cache-word-count nil
         lambda-line--cache-word-count-tick nil
@@ -719,11 +993,172 @@ This is if no match could be found in `lambda-lines-mode-formats'"
 ;; Cache invalidation hooks
 (add-hook 'after-save-hook #'lambda-line--invalidate-cache)
 (add-hook 'after-revert-hook #'lambda-line--invalidate-cache)
-(add-hook 'vc-checkin-hook #'lambda-line--invalidate-cache)
 (add-hook 'find-file-hook #'lambda-line--invalidate-cache)
 
 ;;;;; Version Control
 ;; -------------------------------------------------------------------
+
+;;;;; Refreshing version control state
+;; The branch, the state indicator, and the diff counts the status-line
+;; displays all live in `vc-mode', which Emacs recomputes only from
+;; `find-file-hook' and from explicit `vc-refresh-state' calls.  Nothing
+;; recomputes it after a commit, a stage, or a checkout made elsewhere, and
+;; Magit does not do so either, so the status-line goes on reporting the
+;; state as it was.  lambda-line counts the changes it is told about per
+;; repository, refreshes the buffers that are on display at once, and lets
+;; the rest catch up when a window next shows them.
+
+(defvar lambda-line--vc-changes (make-hash-table :test 'equal)
+  "Map each repository root to a count of the changes seen there.")
+
+(defvar lambda-line--vc-revisions (make-hash-table :test 'equal)
+  "Map each repository root to the revision last observed there.")
+
+(defvar-local lambda-line--vc-change-seen nil
+  "Cons of (ROOT . COUNT) recorded at this buffer's last VC refresh.")
+
+(defun lambda-line--vc-root (&optional directory)
+  "Return the repository root of DIRECTORY, or nil.
+DIRECTORY defaults to `default-directory'.  Unlike `vc-root-dir' this
+also answers in buffers that are not themselves under version control,
+such as a Magit status buffer.  The result is cached per buffer, the
+nil answer of a buffer outside any repository along with the rest."
+  (when (eq lambda-line--cache-vc-root 'unset)
+    (setq lambda-line--cache-vc-root
+          (with-demoted-errors "lambda-line VC root error: %S"
+            (let* ((directory (or directory default-directory))
+                   (backend (vc-responsible-backend directory t))
+                   (root (and backend
+                              (vc-call-backend backend 'root directory))))
+              (and root (expand-file-name root))))))
+  lambda-line--cache-vc-root)
+
+(defun lambda-line--vc-note-refreshed ()
+  "Record this buffer's repository as refreshed at its current count."
+  (let ((root (lambda-line--vc-root)))
+    (when root
+      (setq lambda-line--vc-change-seen
+            (cons root (gethash root lambda-line--vc-changes 0))))))
+
+(defun lambda-line--vc-refresh-state ()
+  "Recompute the version control state of the current buffer.
+Drop the caches first so that the branch and the diff counts are both
+rebuilt rather than served from the value that went stale with them."
+  (lambda-line--invalidate-cache)
+  (with-demoted-errors "lambda-line VC refresh error: %S"
+    (vc-refresh-state))
+  (lambda-line--vc-note-refreshed))
+
+(defun lambda-line--vc-refresh-if-stale ()
+  "Refresh the current buffer when its repository changed since last seen."
+  (when (and lambda-line-vc-refresh-on-repo-change buffer-file-name)
+    (let ((root (lambda-line--vc-root)))
+      (when (and root
+                 (not (equal lambda-line--vc-change-seen
+                             (cons root (gethash root
+                                                 lambda-line--vc-changes 0)))))
+        (lambda-line--vc-refresh-state)))))
+
+(defun lambda-line--vc-refresh-frame (frame)
+  "Refresh any stale buffer displayed on FRAME.
+Added to `window-buffer-change-functions', whose default value is
+called with a frame once per redisplay in which one of its windows
+changed buffers."
+  (when (frame-live-p frame)
+    (dolist (window (window-list frame 'no-minibuf))
+      (with-current-buffer (window-buffer window)
+        (lambda-line--vc-refresh-if-stale)))))
+
+(defun lambda-line--vc-revision (root)
+  "Return the revision checked out at ROOT, or nil.
+Read from the backend rather than from `vc-working-revision', whose
+answer is the cached one that has just gone stale."
+  (with-demoted-errors "lambda-line VC revision error: %S"
+    (let* ((default-directory root)
+           (backend (vc-responsible-backend root t))
+           (process-file-side-effects nil))
+      (and backend (vc-call-backend backend 'working-revision root)))))
+
+(defun lambda-line--vc-repo-changed (&rest _)
+  "Note a change to the current repository and refresh what is on display.
+Buffers of the repository that no window shows are refreshed when one
+next does, so that the cost stays proportional to what is visible."
+  (when lambda-line-vc-refresh-on-repo-change
+    (let ((root (lambda-line--vc-root)))
+      (when root
+        (puthash root (lambda-line--vc-revision root)
+                 lambda-line--vc-revisions)
+        (puthash root (1+ (gethash root lambda-line--vc-changes 0))
+                 lambda-line--vc-changes)
+        (mapc #'lambda-line--vc-refresh-frame (frame-list))))))
+
+(defun lambda-line--vc-repo-maybe-changed (&rest _)
+  "Refresh the current repository only when its revision has moved.
+Magit refreshes after every command it runs, most of which leave the
+checked-out revision alone.  One call to Git to compare revisions is
+cheaper than recomputing the state of every buffer on display."
+  (when lambda-line-vc-refresh-on-repo-change
+    (let ((root (lambda-line--vc-root)))
+      (when root
+        (let ((revision (lambda-line--vc-revision root)))
+          (unless (equal revision
+                         (gethash root lambda-line--vc-revisions 'unknown))
+            (lambda-line--vc-repo-changed)))))))
+
+(defvar lambda-line--vc-change-hooks
+  ;; Each entry is (HOOK FUNCTION FEATURE), where FEATURE is the library
+  ;; that defines HOOK.
+  '(;; Staging and unstaging change what `git diff' reports without
+    ;; moving the revision, so these refresh unconditionally.
+    (magit-post-stage-hook lambda-line--vc-repo-changed magit-apply)
+    (magit-post-unstage-hook lambda-line--vc-repo-changed magit-apply)
+    (vc-checkin-hook lambda-line--vc-repo-maybe-changed vc)
+    ;; Magit runs this after an ordinary commit, one whose message was
+    ;; written in a buffer.  `magit-post-commit-hook' covers only the
+    ;; commands that need no message, such as `magit-commit-extend' and
+    ;; `magit-commit-fixup'.
+    (git-commit-post-finish-hook lambda-line--vc-repo-maybe-changed git-commit)
+    (magit-post-commit-hook lambda-line--vc-repo-maybe-changed magit-commit)
+    ;; The catch-all for everything else Magit does that moves the
+    ;; revision: checkout, reset, pull, rebase, and stash.
+    (magit-post-refresh-hook lambda-line--vc-repo-maybe-changed magit-mode))
+  "Hooks that tell lambda-line a repository has changed.
+Each entry is (HOOK FUNCTION FEATURE), where FEATURE is the library
+that defines HOOK.")
+
+(defun lambda-line--vc-setup-hooks (enable)
+  "Add or remove the hooks that keep version control state current.
+With ENABLE non-nil add them, otherwise remove them."
+  (pcase-dolist (`(,hook ,fn ,feature) lambda-line--vc-change-hooks)
+    ;; Wait for the library that owns the hook.  These hooks are
+    ;; `defcustom's, and a `defcustom' keeps whatever value its variable
+    ;; already holds, so touching one before its library loads leaves
+    ;; that library's own default value unset for good.  Magit puts its
+    ;; auto-revert in the default value of `magit-post-refresh-hook'.
+    ;; `remove-hook' needs the same guard as `add-hook': it binds an
+    ;; unbound hook to nil rather than letting it be.
+    (let ((hook hook) (fn fn))
+      (cond
+       ((not enable) (when (boundp hook) (remove-hook hook fn)))
+       ((boundp hook) (add-hook hook fn))
+       (t (with-eval-after-load feature
+            (when (and (bound-and-true-p lambda-line-mode) (boundp hook))
+              (add-hook hook fn)))))))
+  (if enable
+      (progn
+        (add-hook 'find-file-hook #'lambda-line--vc-note-refreshed)
+        (add-hook 'window-buffer-change-functions
+                  #'lambda-line--vc-refresh-frame))
+    (remove-hook 'find-file-hook #'lambda-line--vc-note-refreshed)
+    (remove-hook 'window-buffer-change-functions
+                 #'lambda-line--vc-refresh-frame))
+  ;; Saving changes the diff counts, and only a refresh recomputes them.
+  ;; `lambda-line--vc-refresh-state' drops the caches first, so that the
+  ;; counts do not come back from the value saving has just invalidated.
+  (if (and enable lambda-line-git-diff-mode-line)
+      (add-hook 'after-save-hook #'lambda-line--vc-refresh-state)
+    (remove-hook 'after-save-hook #'lambda-line--vc-refresh-state)))
+
 (defun lambda-line--vc-info ()
   "Return the version control information."
   (if lambda-line-default-vc-mode-function
@@ -743,13 +1178,13 @@ This is if no match could be found in `lambda-lines-mode-formats'"
      ;; LSP mode
      ((and (featurep 'lsp-mode) (bound-and-true-p lsp-mode))
       (when (lsp-workspaces)
-        (propertize " LSP" 'face '(:inherit success))))
+        (propertize " LSP" 'face 'lambda-line-lsp-active)))
      ;; Eglot
      ((and (featurep 'eglot) (eglot-managed-p))
-      (propertize " Eglot" 'face '(:inherit success)))
+      (propertize " Eglot" 'face 'lambda-line-lsp-active))
      ;; LSP not active but available
      ((or (featurep 'lsp-mode) (featurep 'eglot))
-      (propertize " LSP?" 'face '(:inherit warning)))
+      (propertize " LSP?" 'face 'lambda-line-lsp-available))
      (t ""))))
 
 ;;;;; Word Count
@@ -798,6 +1233,25 @@ This is if no match could be found in `lambda-lines-mode-formats'"
              (directory-file-name 
               (if (vc-root-dir) (vc-root-dir) "-")))))))
 
+(defun lambda-line--colorize-vc-diff-counts (str)
+  "Re-apply the diff faces to the +N/-N counts in STR.
+The branch display strips text properties from `vc-mode' to drop VC's
+own face, which also drops the faces `lambda-line--get-git-diff' put on
+the added/removed line counts.  Match the trailing +N-N pattern and
+restore `lambda-line-git-diff-added'/`lambda-line-git-diff-removed'.
+The pattern requires the leading space that `lambda-line--get-git-diff'
+emits so a branch name ending in a +N-N run is not mistaken for counts
+\(git forbids spaces in ref names, so the space is unambiguous)."
+  (if (and lambda-line-git-diff-mode-line
+           (string-match " \\(\\+[0-9]+\\)\\(-[0-9]+\\)[ \t]*\\'" str))
+      (let ((str (copy-sequence str)))
+        (put-text-property (match-beginning 1) (match-end 1)
+                           'face 'lambda-line-git-diff-added str)
+        (put-text-property (match-beginning 2) (match-end 2)
+                           'face 'lambda-line-git-diff-removed str)
+        str)
+    str))
+
 (defun lambda-line-vc-project-branch ()
   "Show project and branch name for file.
 Otherwise show '-'."
@@ -816,14 +1270,17 @@ Otherwise show '-'."
                (unless (string= "-" project-name)
                  (concat
                   ;; Divider
-                  (propertize " •" 'face `(:inherit fringe))
+                  (propertize " •" 'face 'lambda-line-vc-divider)
                   (format " %s" project-name))))))
 
      ;; Show branch
      (if vc-mode
          (concat
-          lambda-line-vc-symbol (substring-no-properties vc-mode ;    
-                                                         (+ (if (eq backend 'Hg) 2 3) 2)))  nil))))
+          lambda-line-vc-symbol
+          (lambda-line--colorize-vc-diff-counts
+           (substring-no-properties vc-mode
+                                    (+ (if (eq backend 'Hg) 2 3) 2))))
+       nil))))
 
 ;;;;; Dir display
 ;; From https://amitp.blogspot.com/2011/08/emacs-custom-mode-line.html
@@ -857,8 +1314,10 @@ Otherwise show '-'."
                          (string-match "^\\([0-9]+\\)\t\\([0-9]+\\)\t" plus-minus))
                     (concat
                      " "
-                     (format "+%s" (match-string 1 plus-minus))
-                     (format "-%s" (match-string 2 plus-minus)))
+                     (propertize (format "+%s" (match-string 1 plus-minus))
+                                 'face 'lambda-line-git-diff-added)
+                     (propertize (format "-%s" (match-string 2 plus-minus))
+                                 'face 'lambda-line-git-diff-removed))
                   "")))))))
 
 (define-advice vc-git-mode-line-string (:around (orig-fun file) lambda-line-git-diff)
@@ -1071,19 +1530,21 @@ Optionally use another clockface font."
        (+ offset #xF0000)))
 
 (defun lambda-line-time ()
-  "Display the time when `display-time-mode' is non-nil."
+  "Display the time when `display-time-mode' is non-nil.
+When `lambda-line-icon-time' is non-nil, show a ClockFace icon;
+otherwise show the time as text."
   (when display-time-mode
-    (let* ((time-unicode
-            (cl-destructuring-bind (_ minute hour &rest n) (decode-time)
-              (lambda-line-clockface-icons-unicode hour minute))))
-      (concat
-        (unless lambda-line-icon-time
-          (if display-time-day-and-date
-              (propertize (format-time-string lambda-line-time-day-and-date-format))
-            (propertize (format-time-string lambda-line-time-format ) 'face `(:height 0.9))))
-        (propertize
-          (format lambda-line-time-icon-format (char-to-string time-unicode)
-           'display '(raise 0)))))))
+    (if lambda-line-icon-time
+        (let ((time-unicode
+               (cl-destructuring-bind (_ minute hour &rest n) (decode-time)
+                 (lambda-line-clockface-icons-unicode hour minute))))
+          (propertize
+           (format lambda-line-time-icon-format (char-to-string time-unicode))
+           'display '(raise 0)))
+      (if display-time-day-and-date
+          (propertize (format-time-string lambda-line-time-day-and-date-format))
+        (propertize (format-time-string lambda-line-time-format)
+                    'face '(:height 0.9))))))
 
 ;;;;; Status
 (defun lambda-line-status ()
@@ -1096,6 +1557,74 @@ Optionally use another clockface font."
           (read-only 'read-only)
           (t         'read-write))))
 
+
+;;;;; Evil State Indicator
+(defconst lambda-line--evil-faces
+  '((normal       . lambda-line-evil-normal)
+    (insert       . lambda-line-evil-insert)
+    (visual       . lambda-line-evil-visual)
+    (visual-line  . lambda-line-evil-visual-line)
+    (visual-block . lambda-line-evil-visual-block)
+    (replace      . lambda-line-evil-replace)
+    (emacs        . lambda-line-evil-emacs)
+    (motion       . lambda-line-evil-motion)
+    (operator     . lambda-line-evil-operator))
+  "Alist mapping Evil state keys to their status-line faces.")
+
+(defun lambda-line--evil-state-key ()
+  "Return a key for the current Evil state, or nil.
+Active only where `evil-local-mode' is on.  When the state is
+`visual', the visual sub-type is read from `evil-visual-type' so
+line-wise and block-wise selections resolve to `visual-line' and
+`visual-block' respectively."
+  (when (and (bound-and-true-p evil-local-mode)
+             (bound-and-true-p evil-state))
+    (if (and (eq evil-state 'visual)
+             (bound-and-true-p evil-visual-type))
+        (pcase evil-visual-type
+          ('line  'visual-line)
+          ('block 'visual-block)
+          (_      'visual))
+      evil-state)))
+
+(defun lambda-line--evil-tag ()
+  "Return the propertized Evil state tag, or nil.
+Returns nil unless Evil is loaded, so a non-Evil session shows no tag
+and no fixed-width placeholder.  Looks the resolved state key (see
+`lambda-line--evil-state-key') up in `lambda-line-evil-state-alist' and
+applies the matching face from `lambda-line--evil-faces'.  With no
+matching tag, returns `lambda-line-evil-empty-tag' (unfaced) when
+`lambda-line-evil-fixed-width' is non-nil, otherwise nil."
+  (when (featurep 'evil)
+    (let* ((key (lambda-line--evil-state-key))
+           (tag (and key (cdr (assq key lambda-line-evil-state-alist)))))
+      (cond
+       (tag
+        (propertize tag 'face (or (cdr (assq key lambda-line--evil-faces))
+                                  'lambda-line-evil-normal)))
+       (lambda-line-evil-fixed-width lambda-line-evil-empty-tag)))))
+
+(defconst lambda-line--evil-state-entry-hooks
+  '(evil-normal-state-entry-hook
+    evil-insert-state-entry-hook
+    evil-visual-state-entry-hook
+    evil-replace-state-entry-hook
+    evil-emacs-state-entry-hook
+    evil-motion-state-entry-hook
+    evil-operator-state-entry-hook)
+  "Evil state-entry hooks that should trigger a status-line repaint.")
+
+(defun lambda-line--evil-setup-hooks (enable)
+  "Add or remove the Evil state-entry repaint hooks.
+With ENABLE non-nil, add them when `lambda-line-evil-state' is enabled;
+otherwise remove them unconditionally so they are never left behind
+when the option is toggled off between activation and deactivation.  A
+no-op when Evil is not loaded (the hooks do not yet exist)."
+  (when (featurep 'evil)
+    (dolist (hook lambda-line--evil-state-entry-hooks)
+      (if (and enable lambda-line-evil-state)
+          (add-hook hook #'force-mode-line-update)
+        (remove-hook hook #'force-mode-line-update)))))
 
 ;;;;; Compose Status-Line
 (defun lambda-line-compose (status name primary tertiary secondary &optional prefix)
@@ -1125,22 +1654,34 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 
          ;; Is the current mode designated to have an explicit prefix symbol?
          (explicit-prefix (lambda-line--mode-format-config :prefix-symbol))
+         ;; Semantic key for resolving a nerd-icons glyph, if any.
+         (explicit-prefix-key (lambda-line--mode-format-config :prefix-key))
 
          (prefix (cond ((stringp prefix) prefix)
                        ((eq lambda-line-prefix nil) "")
+                       ;; Prefer a nerd-icons glyph for the mode, else its
+                       ;; default string prefix.
+                       ((and explicit-prefix-key
+                             (lambda-line--nerd-glyph explicit-prefix-key)))
                        ((stringp explicit-prefix) explicit-prefix)
                        (t
                         (cond ((eq status 'read-only)
-                               (if (display-graphic-p) lambda-line-gui-ro-symbol
-                                 lambda-line-tty-ro-symbol))
-                              ((eq status 'read-write) (if (display-graphic-p) lambda-line-gui-rw-symbol
-                                                         lambda-line-tty-rw-symbol))
-                              ((eq status 'modified)   (if (display-graphic-p) lambda-line-gui-mod-symbol
-                                                         lambda-line-tty-mod-symbol))
+                               (lambda-line--status-symbol 'read-only
+                                                           lambda-line-gui-ro-symbol
+                                                           lambda-line-tty-ro-symbol))
+                              ((eq status 'read-write)
+                               (lambda-line--status-symbol 'read-write
+                                                           lambda-line-gui-rw-symbol
+                                                           lambda-line-tty-rw-symbol))
+                              ((eq status 'modified)
+                               (lambda-line--status-symbol 'modified
+                                                           lambda-line-gui-mod-symbol
+                                                           lambda-line-tty-mod-symbol))
                               ((window-dedicated-p) (if (display-graphic-p) " ––" " --"))
                               ;; otherwise just use rw symbol
-                              (t (if (display-graphic-p) lambda-line-gui-rw-symbol
-                                   lambda-line-tty-rw-symbol))))))
+                              (t (lambda-line--status-symbol 'read-write
+                                                             lambda-line-gui-rw-symbol
+                                                             lambda-line-tty-rw-symbol))))))
 
          (face-modeline (if active
                             'lambda-line-active
@@ -1173,11 +1714,28 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
          (face-tertiary (if active
                             'lambda-line-active-tertiary
                           'lambda-line-inactive-tertiary))
+         ;; Optional Evil state segment, shown only when enabled and the
+         ;; window is active.  The tag carries its own face and padding;
+         ;; it is nil when absent, which `concat' below tolerates.
+         (evil-tag (when (and lambda-line-evil-state active)
+                     (lambda-line--evil-tag)))
+
          (left
           ;; special face for special mode prefixes
           (concat
+           evil-tag
            (propertize (lambda-line--padding lambda-line-prefix-padding-left) 'face face-modeline)
-           (propertize prefix 'face face-prefix 'display `(raise ,lambda-line-symbol-position))
+           ;; Apply `face-prefix' as a *fallback* rather than a blanket
+           ;; overwrite, so a nerd-icons glyph's own face (its :family, which
+           ;; selects the Nerd Font) survives.  A plain `propertize' would
+           ;; clobber it and the glyph would render as a missing-glyph box.
+           ;; Plain string prefixes carry no face and simply receive
+           ;; `face-prefix'.
+           (let ((prefix (copy-sequence prefix)))
+             (add-face-text-property 0 (length prefix) face-prefix t prefix)
+             (put-text-property 0 (length prefix) 'display
+                                `(raise ,lambda-line-symbol-position) prefix)
+             prefix)
            ;; this matters for inverse-video!
            (propertize " " 'face face-prefix  'display `(raise ,lambda-line-space-top))
 
@@ -1189,7 +1747,15 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
                                     'lambda-line-inactive)
                        'display `(raise ,lambda-line-space-bottom))
 
-           (propertize primary 'face face-primary)))
+           ;; Apply the primary face as a *fallback* rather than a blanket
+           ;; overwrite: `add-face-text-property' with APPEND leaves any face
+           ;; already on individual characters (the git-diff counts, the
+           ;; `•' divider, the LSP indicator) taking precedence for the
+           ;; attributes they set, while unfaced characters still get
+           ;; `face-primary'.  A plain `propertize' here would clobber them.
+           (let ((primary (copy-sequence primary)))
+             (add-face-text-property 0 (length primary) face-primary t primary)
+             primary)))
 
           (tertiary (if (not (string-empty-p tertiary)) 
                        tertiary 
@@ -1279,17 +1845,12 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-prog-activate ()
   "Setup flycheck hooks."
   (add-hook 'flycheck-status-changed-functions #'lambda-line--update-flycheck-segment)
-  (add-hook 'flycheck-mode-hook #'lambda-line--update-flycheck-segment)
-  (if lambda-line-git-diff-mode-line
-    (add-hook 'after-save-hook #'vc-refresh-state)
-    (remove-hook 'after-save-hook #'vc-refresh-state)))
+  (add-hook 'flycheck-mode-hook #'lambda-line--update-flycheck-segment))
 
 (defun lambda-line-prog-deactivate ()
   "Remove flycheck hooks."
   (remove-hook 'flycheck-status-changed-functions #'lambda-line--update-flycheck-segment)
-  (remove-hook 'flycheck-mode-hook #'lambda-line--update-flycheck-segment)
-  (when lambda-line-git-diff-mode-line
-    (remove-hook 'after-save-hook #'vc-refresh-state)))
+  (remove-hook 'flycheck-mode-hook #'lambda-line--update-flycheck-segment))
 
 ;;;;; Fundamental Mode
 
@@ -1539,7 +2100,6 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
 (defun lambda-line-pdf-view-mode ()
   (let ((buffer-name (format-mode-line "%b"))
         (mode-name   (lambda-line-mode-name))
-        (vc-info     (funcall lambda-line-default-vc-mode-function))
         (page-number (concat
                       (number-to-string (eval `(pdf-view-current-page))) "/"
                       (or (ignore-errors
@@ -1673,14 +2233,15 @@ STATUS, NAME, PRIMARY, and SECONDARY are always displayed. TERTIARY is displayed
   (derived-mode-p 'org-agenda-mode))
 
 (defun lambda-line-org-agenda-mode ()
-  (let ((lambda-line-icon-time t))
-    (lambda-line-compose (lambda-line-status)
-                         "Agenda"
-                         (concat lambda-line-display-group-start (format "%S" org-agenda-current-span) lambda-line-display-group-end)
-                         ""
-                         (concat (format-time-string "%A, %d %B %Y")
-                                 (lambda-line-time)
-                                 (format-time-string " %H:%M")))))
+  (lambda-line-compose (lambda-line-status)
+                       "Agenda"
+                       (concat lambda-line-display-group-start (format "%S" org-agenda-current-span) lambda-line-display-group-end)
+                       ""
+                       (concat (format-time-string "%A, %d %B %Y")
+                               ;; Clock icon only for users who opted in;
+                               ;; the text time below is always shown.
+                               (when lambda-line-icon-time (lambda-line-time))
+                               (format-time-string " %H:%M"))))
 
 ;;;; Org Clock
 ;; ---------------------------------------------------------------------
@@ -2143,6 +2704,17 @@ below or a buffer local variable 'no-mode-line'."
   ;;  a modeline is evaluated, the corresponding window is always selected.
   (add-hook 'post-command-hook #'lambda-line--update-selected-window)
 
+  ;; Repaint the status-line when the Evil state changes.  Evil may load
+  ;; after lambda-line, so wire the hooks now when it is present and
+  ;; defer until it loads otherwise.
+  (if (featurep 'evil)
+      (lambda-line--evil-setup-hooks t)
+    (with-eval-after-load 'evil (lambda-line--evil-setup-hooks t)))
+
+  ;; Keep the branch and the diff counts current when the repository
+  ;; changes under a buffer that is already open.
+  (lambda-line--vc-setup-hooks t)
+
   ;; This hooks hide the modeline for windows having a window below them
   ;; Disabled for the time being,
   ;;  -> see https://github.com/rougier/nano-modeline/issues/24
@@ -2166,8 +2738,16 @@ below or a buffer local variable 'no-mode-line'."
   (remove-hook 'window-configuration-change-hook
                #'lambda-line-update-windows)
 
-  ;; Deactivate lambda-line-visual-bell
-  (setq lambda-line-visual-bell nil)
+  (lambda-line--evil-setup-hooks nil)
+
+  (lambda-line--vc-setup-hooks nil)
+
+  ;; Restore the bell settings saved by `lambda-line-visual-bell-config',
+  ;; leaving the `lambda-line-visual-bell' option itself untouched so the
+  ;; bell comes back if the mode is re-enabled.
+  (when (eq ring-bell-function #'lambda-line-visual-bell-fn)
+    (setq ring-bell-function lambda-line--saved-ring-bell-function
+          visible-bell lambda-line--saved-visible-bell))
 
   (setq         mode-line-format lambda-line--saved-mode-line-format)
   (setq-default mode-line-format lambda-line--saved-mode-line-format)

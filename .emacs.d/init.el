@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-01 16:52:48 dharms>
+;; Modified Time-stamp: <2026-09-03 07:18:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2206,12 +2206,6 @@ ARGS are the additional arguments."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lambda-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun harmsway-enable-lambda-line ()
-  "Enable `lambda-line'."
-  (display-time-mode)
-  (lambda-line-clockface-update-fontset
-   "ClockFaceFatSquareSolid"))
-
 (use-package lambda-line
   :init
   (setq lambda-line-git-diff-mode-line nil) ;conflicts with magit rebases
@@ -2222,18 +2216,16 @@ ARGS are the additional arguments."
   (setq lambda-line-prefix t)
   (setq lambda-line-prefix-padding t)
   (setq lambda-line-vc-symbol "  ")
+  (setq lambda-line-vc-refresh-on-repo-change nil)
   (setq lambda-line-visual-bell t)
   (setq lambda-line-status-invert nil)
   (setq lambda-line-syntax t)
-  (setq lambda-line-icon-time t)        ;only show clock icon
+  (setq lambda-line-icon-time nil)        ;if t, would show clock icon
   (setq lambda-line-which-func t)
+  (setq lambda-line-evil-state nil)
   :config
   (advice-add 'lambda-line-git-parse-status :override (lambda (&rest _) nil))
-  (lambda-line-mode)
-  (add-hook 'window-setup-hook #'harmsway-enable-lambda-line)
-  ;; NB: the window-setup-hook is not sufficient for emacs daemon,
-  ;; so we set the clockface in choose-font.el: `choose-font-set-font'
-  ;; after setting the frame font.
+  (lambda-line-mode 1)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mood-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
