@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-03 07:18:16 dharms>
+;; Modified Time-stamp: <2026-09-03 16:09:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1398,17 +1398,16 @@ Only one letter is shown, the first that applies."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sideline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(use-package sideline-blame
-  :demand t
-  :config
-  (push #'sideline-blame sideline-backends-right))
-
 (use-package sideline
   :bind ("M-s -" . sideline-mode)
   :init
   (setq sideline-delay 0.2)
   )
+
+(use-package sideline-blame
+  :demand t
+  :config
+  (push sideline-blame sideline-backends-right))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-walktree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-walktree
@@ -2671,7 +2670,8 @@ ARGS are the additional arguments."
   ;;   )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
   (define-key dired-mode-map "\M-p" nil t)               ;unbind
-  (use-package :disabled ls-lisp+)
+  (use-package ls-lisp+ :disabled)
+  (use-package files)           ;for emacs 31
   ;; omit dot-files in dired-omit-mode (C-x M-o)
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
   (setq ls-lisp-dirs-first t)
@@ -3769,6 +3769,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 (use-package flymake-diagnostic-at-point
   :after flymake
+  :disabled
   :init
   (setq flymake-diagnostic-at-point-display-diagnostic-function
         #'flymake-diagnostic-at-point-display-popup)
@@ -3778,10 +3779,18 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 (use-package flymake-posframe
   :after flymake
+  :disabled
   :init
   (add-hook 'flymake-mode-hook (lambda()
                                  (when (display-graphic-p)
                                    (flymake-posframe-mode 1)))))
+
+(use-package sideline-flymake
+  ;; :after flymake
+  :hook (flymake-mode . sideline-mode)
+  :init
+  (setq sideline-flymake-display-mode 'point) ;or 'line
+  (push sideline-flymake sideline-backends-right))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (setq semantic-default-submodes
