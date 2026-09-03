@@ -2275,10 +2275,11 @@ ARGS are the additional arguments."
   (moody-replace-sml/mode-line-buffer-identification)
   )
 
-;; undo
+;; warnings
 (unless (boundp 'warning-suppress-types)
   (setq warning-suppress-types nil))
 (push '(undo discard-info) warning-suppress-types)
+(push '(files missing-lexbind-cookie) warning-suppress-types)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package goto-chg
@@ -2799,6 +2800,14 @@ ARGS are the additional arguments."
 (use-package disk-usage
   :bind (("C-c 0du" . disk-usage)
          ("C-c 0d." . disk-usage-here)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package speedbar
+  :if (> emacs-major-version 30)
+  :commands (speedbar)
+  :init
+  (setq speedbar-prefer-window t)
+  (setq speedbar-use-images nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; treemacs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-treemacs-keymap)
@@ -3402,6 +3411,22 @@ ARGS are the additional arguments."
 ;; Don't ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+
+(use-package completion-preview
+  :disabled
+  :if (> emacs-major-version 30)
+  :bind (:map completion-preview-active-mode-map
+              ("M-i" . completion-preview-insert-word)
+              ("M-p" . completion-preview-prev-candidate)
+              ("M-n" . completion-preview-next-candidate)
+              ("M-<return>" . completion-preview-insert)
+              ("<tab>" . completion-preview-complete))
+  :init
+  (setq completion-preview-minimum-symbol-length 2)
+  (setq completion-preview-exact-match-only t)
+  :config
+  (global-completion-preview-mode 1)
+  )
 
 ;; (defun harmsway-dabbrev-complete-at-point ()
 ;;   "Complete dabbrev at point."
