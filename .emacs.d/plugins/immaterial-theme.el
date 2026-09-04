@@ -5,8 +5,8 @@
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.11.0
-;; Package-Requires: ((emacs "31"))
+;; Version: 0.12.0
+;; Package-Requires: ((emacs "29")(modus-themes "5.3.0")
 ;; Keywords: faces, theme
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,7 +40,8 @@
 
 ;;; Code:
 
-(require-theme 'modus-themes)
+;; (require-theme 'modus-themes) ;; To use modus-themes built-into Emacs.
+(require 'modus-themes)
 
 (defgroup immaterial-theme ()
   "Immaterial themes.
@@ -243,6 +244,12 @@ The `immaterial-theme' themes are built on top of the `modus-themes'."
     (bg-search-rx-group-1 bg-yellow-subtle)
     (bg-search-rx-group-2 bg-red-subtle)
     (bg-search-rx-group-3 unspecified)
+
+    ;; Space mappings
+
+    (bg-space unspecified)
+    (fg-space fg-dim) ;; Used for visual whitespace in `whitespace-mode'.
+    (bg-space-err bg-prominent-err) ;; Used for trailing whitespace in `whitespace-mode'.
 
     ;; Heading mappings
 

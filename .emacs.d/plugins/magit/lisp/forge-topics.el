@@ -325,7 +325,7 @@ then display the respective menu, otherwise display no menu."
                         'transient-inapt-suffix
                       'forge-suffix-active))
   (declare (interactive-only nil))
-  (interactive)
+  (interactive (list (forge-select-repository "List topics for")))
   (forge-topics-setup-buffer repo)
   (transient-setup 'forge-topics-menu))
 
@@ -334,7 +334,7 @@ then display the respective menu, otherwise display no menu."
   "List discussions of the current repository."
   :description "discussions"
   (declare (interactive-only nil))
-  (interactive)
+  (interactive (list (forge-select-repository "List discussions for")))
   (forge-topics-setup-buffer repo nil :type 'discussion)
   (transient-setup 'forge-topics-menu))
 
@@ -343,7 +343,7 @@ then display the respective menu, otherwise display no menu."
   "List issues of the current repository."
   :description "issues"
   (declare (interactive-only nil))
-  (interactive)
+  (interactive (list (forge-select-repository "List issues for")))
   (forge-topics-setup-buffer repo nil :type 'issue)
   (transient-setup 'forge-topics-menu))
 
@@ -352,7 +352,7 @@ then display the respective menu, otherwise display no menu."
   "List pull-requests of the current repository."
   :description "pull-requests"
   (declare (interactive-only nil))
-  (interactive)
+  (interactive (list (forge-select-repository "List pull-requests for")))
   (forge-topics-setup-buffer repo nil :type 'pullreq)
   (transient-setup 'forge-topics-menu))
 

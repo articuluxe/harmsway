@@ -577,6 +577,10 @@ be set to the preferred literate style."
                 (save-match-data
                   (while (re-search-forward "\"" limit t)
                     (put-text-property (match-beginning 0) (match-end 0) 'syntax-table (string-to-syntax ".")))))
+              (when (= (- (match-end 1) (match-beginning 1)) 3)
+                (put-text-property (1+ (match-beginning 1)) (match-end 1) 'syntax-table (string-to-syntax "."))
+                (when (match-beginning 3)
+                  (put-text-property (match-beginning 3) (1- (match-end 3)) 'syntax-table (string-to-syntax "."))))
               ;; Place a generic string delimeter only when an open
               ;; quote is closed by end-of-line Emacs acts strangely
               ;; when a generic delimiter is not closed so in case

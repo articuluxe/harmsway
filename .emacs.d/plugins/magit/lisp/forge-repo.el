@@ -438,7 +438,7 @@ forges and hosts."
                          (forge-sql [:select [githost owner name]
                                      :from repository]))
                  nil t nil nil
-                 (and$ (forge-get-repository :stub?)
+                 (and$ (forge-get-repository :known?)
                        (format "%s/%s @%s"
                                (oref $ owner)
                                (oref $ name)
@@ -447,8 +447,13 @@ forges and hosts."
       (if (string-match "\\`\\(.+\\)/\\([^/]+\\) @\\(.+\\)\\'" choice)
           (forge-get-repository (list (match-string 3 choice)
                                       (match-string 1 choice)
-                                      (match-string 2 choice)))
+                                      (match-string 2 choice))
+                                nil :known?)
         (error "BUG")))))
+
+(defun forge-select-repository (prompt &optional demand)
+  (or (forge-get-repository (or demand :known?))
+      (forge-read-repository prompt)))
 
 (defun forge-read-host (prompt &optional class)
   (magit-completing-read
@@ -478,6 +483,17 @@ forges and hosts."
        (?n . ,name)
        (?p . ,path)
        (?P . ,(string-replace "/" "%2F" path))))))
+
+(defun forge--repo-selective-p (&optional repo)
+  (and-let ((repo (or repo (forge-get-repository :tracked))))
+    (or (oref repo selective-p)
+        ;; We do not record whether the initial pull only fetched topics
+        ;; created after a certain date, so we have to use a heuristic.
+        ;; Topics can be deleted, so any of the first three topics will
+        ;; have to do.
+        (not (or (forge-get-topic repo 1)
+                 (forge-get-topic repo 2)
+                 (forge-get-topic repo 3))))))
 
 (defvar forge--mode-line-buffer nil)
 

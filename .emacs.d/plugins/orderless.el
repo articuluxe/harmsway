@@ -323,15 +323,25 @@ which can invert any predicate or regexp."
                              table minibuffer-completion-predicate)
         '((nil . nil)))))
 
+(defvar orderless--annotation nil
+  "Variable used to prevent recursive annotation matching.
+Otherwise the annotation function could be called on annotation strings,
+which is incorrect.")
+
 (defun orderless-annotation (pred regexp)
   "Match candidates where the annotation matches PRED and REGEXP."
   (let ((md (orderless--metadata)))
     (if-let* ((fun (compat-call completion-metadata-get md 'affixation-function)))
         (lambda (str)
-          (cl-loop for s in (cdar (funcall fun (list str)))
-                   thereis (orderless--match-p pred regexp s)))
+          (unless orderless--annotation
+            (let ((orderless--annotation t))
+              (cl-loop for s in (cdar (funcall fun (list str)))
+                       thereis (orderless--match-p pred regexp s)))))
       (when-let* ((fun (compat-call completion-metadata-get md 'annotation-function)))
-          (lambda (str) (orderless--match-p pred regexp (funcall fun str)))))))
+        (lambda (str)
+          (unless orderless--annotation
+            (let ((orderless--annotation t))
+              (orderless--match-p pred regexp (funcall fun str)))))))))
 
 ;;; Highlighting matches
 

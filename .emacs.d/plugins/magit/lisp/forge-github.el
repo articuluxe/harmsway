@@ -234,10 +234,9 @@
             (forge--update-revnotes    repo .commitComments))
           (oset repo condition :tracked))
         (forge--msg repo t t   "Storing REPO")
-        (cond
-          ((oref repo selective-p))
-          (callback (funcall callback))
-          ((forge--maybe-git-fetch repo buf))))
+        (cond (callback (funcall callback repo))
+              ((oref repo selective-p))
+              ((forge--maybe-git-fetch repo buf))))
       :narrow '(repository)
       :until
       ;; Keys have the form `FIELD-until', where FIELD is the name of a
@@ -353,7 +352,8 @@
 ;;;; Topics
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
-                                 (number number))
+                                 (number number)
+                                 &optional callback)
   (forge--query repo
     `(query
       [($owner String!)
@@ -381,7 +381,9 @@
                          (forge--update-issue repo data))
                         ((setq data .repository.pullRequest)
                          (forge--update-pullreq repo data))))
-                (forge-refresh-buffer))))
+                (if callback
+                    (funcall callback)
+                  (forge-refresh-buffer)))))
 
 (cl-defmethod forge--pull-topic ((repo forge-github-repository)
                                  (topic forge-discussion))
@@ -851,9 +853,9 @@
                                 (list repo))))
                        names))
         (cb nil))
-    (setq cb (lambda ()
-               (when-let ((repo (pop repos)))
-                 (forge--pull repo cb))))
+    (setq cb (lambda (_)
+               (when-let ((next (pop repos)))
+                 (forge--pull next cb))))
     (funcall cb)))
 
 ;;; Mutations

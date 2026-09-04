@@ -6199,7 +6199,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
       )))
 
 (defun web-mode-string-continue-p (reg-beg)
-  "Is `point' preceeded by an odd number of backslashes?"
+  "Is `point' preceded by an odd number of backslashes?"
   (let ((p (1- (point))))
     (while (and (< reg-beg p) (eq ?\\ (char-before p)))
       (setq p (1- p)))
@@ -11411,7 +11411,7 @@ Prompt user if TAG-NAME isn't provided."
 ;;---- COMMENT ------------------------------------------------------------------
 
 (defun web-mode-toggle-comments ()
-  "Toggle comments visbility."
+  "Toggle comments visibility."
   (interactive)
   (with-silent-modifications
    (save-excursion
@@ -15108,7 +15108,7 @@ extended to support more filetypes by customizing
       (setq web-mode-trace t)))
 
 (defun web-mode-debug ()
-  "Display informations useful for debugging."
+  "Display information useful for debugging."
   (interactive)
   (let ((modes nil)
         (customs '(web-mode-enable-current-column-highlight web-mode-enable-current-element-highlight indent-tabs-mode))

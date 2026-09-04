@@ -292,11 +292,78 @@ under edit.
 String literals end with double quote or unescaped newline or end
 of buffer.
 
+Note that this regexp does not cover multiline string literals
+\(GHC MultilineStrings extension); see
+`haskell-lexeme-looking-at-string-literal' for those.
+
 Regexp has subgroup expressions:
  (match-text 1) matches the opening double quote.
  (match-text 2) matches the inside of the string.
  (match-text 3) matches the closing double quote or an empty string
                 at the end of line or the end buffer.")
+
+(defun haskell-lexeme--scan-string-literal (quotes newline-terminates)
+  "Scan the string literal at point delimited by QUOTES double quotes.
+
+Point must be at a run of at least QUOTES double quotes.  The
+literal ends at the earliest unescaped run of at least QUOTES
+double quotes; a shorter unescaped run is content.  When
+NEWLINE-TERMINATES is non-nil an unescaped newline leaves the
+literal unterminated, and otherwise a newline is content.
+
+Always return non-nil, with match data:
+ (match-text 1) matches the opening delimiter.
+ (match-text 2) matches the inside of the string.
+ (match-text 3) matches the closing delimiter, or is nil when
+                the literal is unterminated.
+
+An unterminated literal ends before an unescaped newline when
+NEWLINE-TERMINATES is non-nil, and otherwise at the end of the
+buffer.  When it ends at the end of the buffer, the whole match
+and the inside are guaranteed to extend to the end of the
+buffer."
+  (save-excursion
+    (let* ((begin (point))
+           (content (+ begin quotes))
+           (closer-tail (make-string (1- quotes) ?\"))
+           (terminators (if newline-terminates "[\"\n\\]" "[\"\\]"))
+           finish)
+      (goto-char content)
+      (while (and (not finish)
+                  (re-search-forward terminators nil 'goto-eob))
+        (cond
+         ((equal (match-string 0) "\\")
+          (if (looking-at "[ \t\n\r\v\f]+\\\\?")
+              (goto-char (match-end 0))
+            (goto-char (1+ (point)))))
+
+         ((equal (match-string 0) "\"")
+          (let ((q (match-beginning 0)))
+            (if (looking-at closer-tail)
+                (progn
+                  (set-match-data
+                   (list begin (+ q quotes)
+                         begin content
+                         content q
+                         q (+ q quotes)))
+                  (setq finish t))
+              (skip-chars-forward "\""))))
+
+         ((equal (match-string 0) "\n")
+          (set-match-data
+           (list begin (match-beginning 0)
+                 begin content
+                 content (match-beginning 0)
+                 nil nil))
+          (setq finish t))))
+      (unless finish
+        ;; string closed by end of buffer
+        (set-match-data
+         (list begin (point)
+               begin content
+               content (point)
+               nil nil)))))
+  t)
 
 (defun haskell-lexeme-looking-at-string-literal ()
   "Non-nil when point is at a string literal lookalike.
@@ -304,51 +371,20 @@ Regexp has subgroup expressions:
 Note that this function matches more than Haskell Report
 specifies because we want to support also code under edit.
 
-String literals end with double quote or unescaped newline or end
-of buffer.
+Plain string literals end with double quote or unescaped
+newline or end of buffer.  Multiline string literals (GHC
+MultilineStrings extension, opened with three double quotes)
+end at the first unescaped triple double quote and may span
+several lines.
 
 After successful match:
- (match-text 1) matches the opening doublequote.
+ (match-text 1) matches the opening quote or triple quote.
  (match-text 2) matches the inside of the string.
- (match-text 3) matches the closing quote, or a closing
-                newline or is nil when at the end of the buffer."
-  (when (looking-at "\"")
-    (save-excursion
-      (let ((begin (point)))
-        (goto-char (match-end 0))
-        (let (finish)
-          (while (and (not finish)
-                      (re-search-forward "[\"\n\\]" nil 'goto-eob))
-            (cond
-             ((equal (match-string 0) "\\")
-              (if (looking-at "[ \t\n\r\v\f]+\\\\?")
-                  (goto-char (match-end 0))
-                (goto-char (1+ (point)))))
-
-             ((equal (match-string 0) "\"")
-              (set-match-data
-               (list begin (match-end 0)
-                     begin (1+ begin)
-                     (1+ begin) (match-beginning 0)
-                     (match-beginning 0) (match-end 0)))
-              (setq finish t))
-
-             ((equal (match-string 0) "\n")
-              (set-match-data
-               (list begin (match-beginning 0)
-                     begin (1+ begin)
-                     (1+ begin) (match-beginning 0)
-                     nil nil))
-              (setq finish t))))
-          (unless finish
-            ;; string closed by end of buffer
-            (set-match-data
-             (list begin (point)
-                   begin (1+ begin)
-                   (1+ begin) (point)
-                   nil nil))))))
-    ;; there was a match
-    t))
+ (match-text 3) matches the closing quote or triple quote, or
+                is nil when the literal is unterminated."
+  (cond
+   ((looking-at "\"\"\"") (haskell-lexeme--scan-string-literal 3 nil))
+   ((looking-at "\"") (haskell-lexeme--scan-string-literal 1 t))))
 
 (defun haskell-lexeme-looking-at-quasi-quote-literal ()
   "Non-nil when point is just in front of Template Haskell
@@ -408,7 +444,7 @@ as quoter names according to Template Haskell specification."
 (defun haskell-lexeme-classify-by-first-char (char)
   "Classify token by CHAR.
 
-CHAR is a chararacter that is assumed to be the first character
+CHAR is a character that is assumed to be the first character
 of a token."
   (let ((category (get-char-code-property (or char ?\ ) 'general-category)))
 

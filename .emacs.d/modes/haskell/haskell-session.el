@@ -84,7 +84,7 @@
         "haskell")))
 
 (defun haskell-session-assign (session)
-  "Assing current buffer to SESSION.
+  "Assign current buffer to SESSION.
 
 This could be helpful for temporary or auxiliary buffers such as
 presentation mode buffers (e.g. in case when session is killed

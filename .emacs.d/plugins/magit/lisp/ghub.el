@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
 
-;; Package-Version: 5.3.0
+;; Package-Version: 5.3.2
 ;; Package-Requires: (
 ;;     (emacs   "29.1")
 ;;     (compat  "31.0")

@@ -129,7 +129,7 @@
       ((forge-gitlab-repository--eieio-childp repo)
        ;; TODO Fetch single topic for Gitlab as well.
        (lambda (&rest _)
-         (forge--pull repo #'forge-refresh-buffer)))
+         (forge--pull repo (lambda (_) (forge-refresh-buffer)))))
       ((forge-discussion--eieio-childp topic)
        ;; See comment in `forge--update-status'.
        (let ((status (oref topic status)))

@@ -89,8 +89,8 @@
                    (forge--update-pullreqs   repo .pullreqs)
                    (oset repo condition :tracked)))
                (forge--msg repo t t "Storing REPO")
-               (cond ((oref repo selective-p))
-                     (callback (funcall callback))
+               (cond (callback (funcall callback repo))
+                     ((oref repo selective-p))
                      ((forge--maybe-git-fetch repo buffer)))))))))
 
 (cl-defmethod forge--fetch-repository ((repo forge-gitlab-repository) callback)
@@ -119,7 +119,7 @@
 ;;;; Topics
 
 (cl-defmethod forge--pull-topic ((repo forge-gitlab-repository) _topic
-                                 &key callback _errorback)
+                                 &optional callback)
   (forge--pull repo callback)) ; TODO Pull only the one topic.
 
 ;;;; Issues

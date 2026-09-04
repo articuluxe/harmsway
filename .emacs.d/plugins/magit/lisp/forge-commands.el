@@ -129,7 +129,8 @@ Takes the pull-request as only argument and must return a directory."
    ["Configure"
     ("R  " forge-add-pullreq-refspec)
     ("s r" forge-forge.remote)
-    ("s l" forge-forge.graphqlItemLimit)]])
+    ("s l" forge-forge.graphqlItemLimit)
+    ("s a" forge-complete-repository)]])
 
 (transient-augment-suffix forge-configure
   :transient #'transient--do-replace
@@ -220,7 +221,7 @@ repository cannot be determined, instead invoke `forge-add-repository'."
   (let ((topic (forge-current-topic t)))
     (forge--pull-topic (forge-get-repository topic) topic)))
 
-(cl-defmethod forge--pull-topic ((repo forge-repository) _topic)
+(cl-defmethod forge--pull-topic ((repo forge-repository) _topic &optional _cb)
   (error "Fetching an individual topic not implemented for %s"
          (eieio-object-class repo)))
 
@@ -556,15 +557,29 @@ lifts the limitation to active pull-requests."
 (defun forge-visit-topic-from-url (url)
   "Visit the topic specified by web URL."
   (interactive (list (read-string "Topic URL: ")))
-  (if (string-match
-       "/\\(issues\\|pull\\|discussions\\|merge_requests\\)/\\([0-9]+\\)\\'"
-       url)
-      (forge-topic-setup-buffer
-       (forge-get-topic (forge-get-repository
-                         (substring url 0 (match-beginning 1))
-                         nil :tracked)
-                        (string-to-number (match-string 2 url))))
-    (user-error "Not recognized as a topic URL: %s" url)))
+  (cond-let*
+    ((not (string-match "\
+/\\(issues\\|pull\\|discussions\\|merge_requests\\)/\\([0-9]+\\)\\'" url))
+     (user-error "Not recognized as a topic URL: %s" url))
+    [[number (string-to-number (match-string 2 url))]
+     [repo-url (substring url 0 (match-beginning 1))]
+     [repo (forge-get-repository repo-url nil :tracked?)]]
+    ([_ repo]
+     [topic (forge-get-topic repo number)]
+     (forge-topic-setup-buffer topic))
+    (repo
+     (forge--pull-topic
+      repo number
+      (lambda ()
+        (forge-topic-setup-buffer (forge-get-topic repo number)))))
+    ([repo (forge-get-repository repo-url nil :stub)]
+     (forge-add-repository
+      repo :selective
+      (lambda (repo)
+        (forge--pull-topic
+         repo number
+         (lambda ()
+           (forge-topic-setup-buffer (forge-get-topic repo number)))))))))
 
 ;;;###autoload
 (defun forge-visit-this-topic (&optional menu)
@@ -1205,6 +1220,24 @@ Also update the upstream branches of local branches accordingly."
   :reader #'read-string
   :default (##number-to-string ghub-graphql-items-per-request))
 
+(transient-define-suffix forge-complete-repository (repository)
+  "No longer fetch REPOSITORY's topics only selectively.
+Start fetching all topics of REPOSITORY, instead of either only the
+topics that were created after a certain date or only the topics that
+you have previously fetched individually."
+  :description (lambda ()
+                 (if (forge--repo-selective-p)
+                     "Start fetching all topics"
+                   "Already fetching all topics"))
+  :inapt-if-not #'forge--repo-selective-p
+  (interactive (list (forge-read-repository "Remove repository from db")))
+  (when (or (forge--repo-selective-p repository)
+            (yes-or-no-p
+             (format "It appears we already fetch all topics for %s; %s"
+                     (oref repository slug) "(re-)fetch all topics?")))
+    (oset repository selective-p nil)
+    (forge--pull repository)))
+
 (transient-define-suffix forge-toggle-display-in-status-buffer ()
   "Toggle whether to display topics in the current status buffer."
   :if-mode 'magit-status-mode
@@ -1254,7 +1287,7 @@ upstream remote."
 ;;; Add repositories
 
 ;;;###autoload(autoload 'forge-add-repository "forge-commands" nil t)
-(transient-define-prefix forge-add-repository (&optional repo limit)
+(transient-define-prefix forge-add-repository (&optional repo limit callback)
   "Add a repository to the database."
   :refresh-suffixes t
   [:class transient-subgroups
@@ -1268,7 +1301,7 @@ upstream remote."
         (propertize (forge--scope 'url) 'face 'bold)))
      :format "%d")]
 
-   ;; Nothing to tracked.
+   ;; Nothing to track.
    [:if-not (##forge--scope 'topdir)
     (:info*
      (lambda ()
@@ -1357,7 +1390,7 @@ upstream remote."
        (oset repo selective-p t)
        (setq limit nil))
      (forge--pull repo
-                  (and (not (forge-get-worktree repo)) #'ignore)
+                  (or callback (and (not (forge-get-worktree repo)) #'ignore))
                   limit))))
 
 (defun forge-add-repository--scope (&optional directory)
@@ -1377,7 +1410,7 @@ upstream remote."
     val))
 
 (defun forge--scope (&optional key)
-  ;; `transient-scope' itself probably offer optional KEY.
+  ;; `transient-scope' itself should probably offer optional KEY.
   (let ((scope (transient-scope)))
     (if key (alist-get key scope) scope)))
 

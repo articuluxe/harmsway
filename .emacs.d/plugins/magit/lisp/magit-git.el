@@ -1058,8 +1058,24 @@ tree, then it is not possible to avoid returning the truename."
            ;; directory of .git if it was set up with
            ;; "git init --separate-git-dir".  See #2955.
            ((car (rassoc gitdir magit--separated-gitdirs)))
+           ;; We might be in the gitdir of a submodule.  Git isn't being
+           ;; helpful.  This does not work in sub-directories of such a
+           ;; gitdir.
+           [[defdir default-directory]
+            [updir  (file-name-directory (directory-file-name gitdir))]
+            [upname (file-name-nondirectory (directory-file-name updir))]
+            [module (file-name-nondirectory (directory-file-name gitdir))]]
+           ([_(equal upname "modules")]
+            [default-directory updir]
+            [default-directory (magit-toplevel)]
+            [default-directory
+             (expand-file-name
+              (magit-git-string "config" "-f" ".gitmodules"
+                                (format "submodule.%s.path" module)))]
+            [_(file-equal-p (magit-gitdir) defdir)]
+            default-directory)
            ;; Step outside the control directory to enter the working tree.
-           ((file-name-directory (directory-file-name gitdir)))))))))
+           (updir)))))))
 
 (defun magit--toplevel-safe ()
   (or (magit-toplevel)

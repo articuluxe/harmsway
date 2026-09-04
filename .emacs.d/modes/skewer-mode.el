@@ -1,9 +1,12 @@
-;;; skewer-mode.el --- live browser JavaScript, CSS, and HTML interaction -*- lexical-binding: t; -*-
+;;; skewer-mode.el --- Live browser JavaScript, CSS, and HTML interaction -*- lexical-binding: t; -*-
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Christopher Wellons <wellons@nullprogram.com>
 ;; URL: https://github.com/skeeto/skewer-mode
+
+;; Package-Version: 1.9.0
+;; Package-Requires: ((emacs "24") (js2-mode "20090723") (simple-httpd "1.4.0"))
 
 ;;; Commentary:
 
@@ -88,6 +91,11 @@
 
 ;;; History:
 
+;; Version 1.9.0: features and fixes
+;;   * Prefix argument support for `run-skewer' (#87)
+;;   * Fix skewer.log() when the REPL buffer is empty
+;;   * Toggle button uses position=fixed so it doesn't scroll away
+;;   * Package metadata moved from skewer-mode-pkg.el into skewer-mode.el
 ;; Version 1.8.0: features
 ;;   * Work around XMLHttpRequest tampering in userscript
 ;;   * Add Makefile "run" target for testing

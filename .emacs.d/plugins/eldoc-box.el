@@ -134,6 +134,7 @@ This separator is used for the documentation shown in
     (top . -1)
     (width  . 0)
     (height  . 0)
+    (fullscreen . nil)
 
     (no-accept-focus . t)
     (no-focus-on-map . t)
@@ -166,14 +167,14 @@ This separator is used for the documentation shown in
 Consider your machine's screen's resolution when setting this variable.
 Set it to a function with no argument
 if you want to dynamically change the maximum width."
-  :type 'number)
+  :type '(choice number function))
 
 (defcustom eldoc-box-max-pixel-height 700
   "Maximum height of doc childframe in pixel.
 Consider your machine's screen's resolution when setting this variable.
 Set it to a function with no argument
 if you want to dynamically change the maximum height."
-  :type 'number)
+  :type '(choice number function))
 
 (defcustom eldoc-box-offset '(16 16 16)
   "Sets left, right & top offset of the doc childframe.

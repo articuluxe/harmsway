@@ -53,7 +53,7 @@ Note: GHCi prior to version 8.0.1 have bug in `:complete`
  command: when completing operators it returns a list of all
  imported identifiers (see Track ticket URL
  `https://ghc.haskell.org/trac/ghc/ticket/10576'). This leads to
- significant Emacs slowdown. To aviod slowdown you should set
+ significant Emacs slowdown. To avoid slowdown you should set
  this variable to `nil'."
   :group 'haskell-completions
   :type 'boolean)
@@ -332,7 +332,7 @@ GHC's options, and language extensions, but not identifiers."
 
 (defun haskell-completions-sync-repl-completion-at-point ()
   "A completion function used in `interactive-haskell-mode'.
-Completion candidates are provided quering current haskell
+Completion candidates are provided querying current haskell
 process, that is sending `:complete repl' command.
 
 Completes all possible things: everything that can be completed

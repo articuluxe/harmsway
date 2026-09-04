@@ -179,20 +179,26 @@ This behaves in accordance with `modus-themes-italic-constructs'."
 This is intended to be inherited by faces that should not retain
 properties from their context (e.g. an overlay over an underlined
 text should not be underlined as well) yet still blend in."
+  :package-version '(modus-themes . "5.4.0")
+  :version "32.1"
   :group 'modus-themes-faces)
 
 (defface modus-themes-button nil
   "Face for graphical buttons."
+  :package-version '(modus-themes . "5.4.0")
+  :version "32.1"
   :group 'modus-themes-faces)
 
 (defface modus-themes-prompt nil
   "Prompts like in the minibuffer and the shell."
   :package-version '(modus-themes . "5.4.0")
+  :version "32.1"
   :group 'modus-themes-faces)
 
 (defface modus-themes-completion-selected nil
   "Face for completion selected candidate."
   :package-version '(modus-themes . "5.4.0")
+  :version "32.1"
   :group 'modus-themes-faces)
 
 (dotimes (n 4)
@@ -200,6 +206,7 @@ text should not be underlined as well) yet still blend in."
    (intern (format "modus-themes-completion-match-%d" n))
    nil (format "Face for completion matches %d." n)
    :package-version '(modus-themes . "5.4.0")
+   :version "32.1"
    :group 'modus-themes-faces))
 
 (dolist (suffix '(current lazy replace static))
@@ -207,6 +214,7 @@ text should not be underlined as well) yet still blend in."
    (intern (format "modus-themes-search-%s" suffix))
    nil (format "Face for %s search matches." suffix)
    :package-version '(modus-themes . "5.4.0")
+   :version "32.1"
    :group 'modus-themes-faces))
 
 (dotimes (n 4)
@@ -214,6 +222,7 @@ text should not be underlined as well) yet still blend in."
    (intern (format "modus-themes-search-rx-group-%d" n))
    nil (format "Face for regexp group %d." n)
    :package-version '(modus-themes . "5.4.0")
+   :version "32.1"
    :group 'modus-themes-faces))
 
 (define-obsolete-face-alias 'modus-themes-mark-alt 'modus-themes-mark-other "5.4.0")
@@ -225,6 +234,7 @@ text should not be underlined as well) yet still blend in."
    (intern (format "modus-themes-mark-%s" suffix))
    nil (format "Face for %s marks." suffix)
    :package-version '(modus-themes . "5.4.0")
+   :version "32.1"
    :group 'modus-themes-faces))
 
 
@@ -3866,6 +3876,7 @@ Else return (append OVERRIDES USER CORE)."
                                       user-palette-name
                                       (boundp user-palette-name))
                              (symbol-value user-palette-name)))
+             (all-user-defined (append user-palette modus-themes-common-palette-user))
              (overrides-palette-name (plist-get properties :modus-overrides-palette))
              (overrides-palette (when (and with-overrides
                                            overrides-palette-name
@@ -3873,7 +3884,7 @@ Else return (append OVERRIDES USER CORE)."
                                   (symbol-value overrides-palette-name)))
              (all-overrides (when with-overrides
                               (append overrides-palette modus-themes-common-palette-overrides))))
-        (append all-overrides user-palette core-palette)))))
+        (append all-overrides all-user-defined core-palette)))))
 
 (defun modus-themes-get-theme-palette (&optional theme with-overrides with-user-palette)
   "Return palette value of active `modus-themes-get-themes' THEME.
@@ -4599,11 +4610,16 @@ If COLOR is unspecified, then return :box unspecified."
     `(mm-uu-extract ((,c :foreground ,mail-part)))
     `(next-error ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
     `(pgtk-im-0 ((,c :background ,bg-prominent-note :foreground ,fg-prominent-note)))
-    `(read-multiple-choice-face ((,c :inverse-video t)))
+    `(read-multiple-choice-face ((,c :inherit (bold modus-themes-fixed-pitch) :foreground ,keybind :inverse-video t)))
     `(rectangle-preview ((,c :background ,bg-active :foreground ,fg-main)))
     `(region ((,c :background ,bg-region :foreground ,fg-region)))
     `(secondary-selection ((,c :background ,bg-hover-secondary :foreground ,fg-main)))
-    `(separator-line ((,c :underline ,bg-active)))
+    `(separator-line
+      ((default :extend t)
+       (((type tty))
+        :foreground ,border :strike-through t)
+       (t
+        :height 1 :background ,border :foreground ,border)))
     `(shadow ((,c :foreground ,fg-dim)))
     `(success ((,c :inherit modus-themes-bold :foreground ,info)))
     `(trailing-whitespace ((,c :background ,bg-space-err)))
@@ -4836,11 +4852,17 @@ If COLOR is unspecified, then return :box unspecified."
     `(change-log-list ((,c :inherit modus-themes-bold)))
     `(change-log-name ((,c :foreground ,name)))
     `(log-edit-header ((,c :inherit modus-themes-bold)))
-    `(log-edit-headers-separator ((,c :height 1 :background ,border :extend t)))
+    `(log-edit-headers-separator
+      ((default :extend t)
+       (((type tty))
+        :foreground ,border :strike-through t)
+       (t
+        :height 1 :background ,border :foreground ,border)))
     `(log-edit-summary ((,c :inherit modus-themes-bold :foreground ,info)))
     `(log-edit-unknown-header ((,c :foreground ,fg-dim)))
     `(log-view-commit-body (( )))
     `(log-view-file ((,c :inherit modus-themes-bold)))
+    `(log-view-marked ((,c :inherit modus-themes-mark-select)))
     `(log-view-message ((,c :foreground ,identifier)))
 ;;;;; cider
     `(cider-deprecated-face ((,c :foreground ,warning)))
@@ -4901,7 +4923,7 @@ If COLOR is unspecified, then return :box unspecified."
     ;; `completion-preview', then we should remember to customize
     ;; `completion-preview-adapt-background-color' accordingly.
     `(completion-preview-common ((,c :inherit completion-preview :underline t)))
-    `(completion-preview-exact ((,c :inherit (modus-themes-completion-match-0 completion-preview))))
+    `(completion-preview-exact ((,c :inherit (modus-themes-completion-match-0 completion-preview) :underline t)))
 ;;;;; completions
     `(completions-annotations ((,c :inherit modus-themes-slant :foreground ,docstring)))
     `(completions-common-part ((,c :inherit modus-themes-completion-match-0)))
@@ -5420,11 +5442,11 @@ If COLOR is unspecified, then return :box unspecified."
     `(flymake-end-of-line-diagnostics-face ((,c :inherit modus-themes-slant :underline ,border)))
     `(flymake-error ((,c :underline (:style wave :color ,underline-err))))
     `(flymake-error-echo ((,c :foreground ,err)))
-    `(flymake-error-echo-at-eol ((,c :inherit modus-themes-slant :foreground ,err :underline ,border)))
+    `(flymake-error-echo-at-eol ((,c :inherit modus-themes-slant :foreground ,err :height 0.9 :underline ,border)))
     `(flymake-error-fringe ((,c :background ,bg-prominent-err :foreground ,fg-prominent-err)))
     `(flymake-note ((,c :underline (:style wave :color ,underline-note))))
     `(flymake-note-echo ((,c :foreground ,info)))
-    `(flymake-note-echo-at-eol ((,c :inherit modus-themes-slant :foreground ,info :underline ,border)))
+    `(flymake-note-echo-at-eol ((,c :inherit modus-themes-slant :foreground ,info :height 0.9 :underline ,border)))
     `(flymake-note-fringe ((,c :background ,bg-prominent-note :foreground ,fg-prominent-note)))
     `(flymake-warning ((,c :underline (:style wave :color ,underline-warning))))
     `(flymake-warning-echo ((,c :foreground ,warning)))

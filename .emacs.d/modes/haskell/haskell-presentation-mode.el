@@ -47,11 +47,11 @@
 
 (defconst haskell-presentation-hint-message
   "-- Hit `q' to close this window; `c' to clear.\n\n"
-  "Hint message appered in Haskell Presentation buffer.")
+  "Hint message appeared in Haskell Presentation buffer.")
 
 (defun haskell-presentation-buffer ()
-  "Return Haskell Presentaion buffer.
-Return current presenation buffer or create new one if absent.
+  "Return Haskell Presentation buffer.
+Return current presentation buffer or create new one if absent.
 Never returns nil."
   ;; TODO Provide interactive calling options: when called interactively make
   ;; the presentation buffer current.

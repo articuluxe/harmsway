@@ -653,7 +653,7 @@ resulting buffer-content"
 
 (defun haskell-cabal-comma-separatorp (pos)
   "Return non-nil when the char at POS is a comma separator.
-Characters that are not a comma, or commas inside a commment or
+Characters that are not a comma, or commas inside a comment or
 string, are not comma separators."
   (when (eq (char-after pos) ?,)
     (let ((ss (syntax-ppss pos)))

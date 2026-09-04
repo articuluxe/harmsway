@@ -99,7 +99,7 @@ This function takes care about cleaning up things made by
 `haskell-utils-async-watch-changes'.  The BUFFER argument is a buffer where
 `post-command-hook' should be disabled.  This is necessary, because
 it is possible that user will change buffer during async function
-execusion."
+execution."
   (with-current-buffer buffer
     (setq haskell-utils-async-post-command-flag nil)
     (remove-hook

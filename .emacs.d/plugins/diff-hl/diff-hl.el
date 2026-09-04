@@ -5,7 +5,7 @@
 ;; Author:   Dmitry Gutov <dmitry@gutov.dev>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
-;; Version:  1.10.0
+;; Version:  1.11.1
 ;; Package-Requires: ((cl-lib "0.2") (emacs "27.1"))
 
 ;; This file is part of GNU Emacs.
@@ -614,7 +614,8 @@ contents as they are (or would be) after applying the changes in NEW."
     (let (res)
       (goto-char (point-min))
       (unless (eobp)
-        (diff-beginning-of-hunk t)
+        (ignore-errors
+          (diff-beginning-of-hunk t))
         (while (looking-at diff-hunk-header-re-unified)
           (let ((line (string-to-number (match-string 3)))
                 (beg (point)))

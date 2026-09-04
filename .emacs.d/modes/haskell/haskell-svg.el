@@ -32,7 +32,7 @@
   (and haskell-svg-supported (display-images-p) haskell-svg-render-images))
 
 (defun haskell-svg-maybe-render-images (text)
-  "Render SVG images if desired and supported, or terurn the
+  "Render SVG images if desired and supported, or return the
 input unmodified."
   (if (haskell-svg-render-images-p)
       (haskell-svg-render-images text)

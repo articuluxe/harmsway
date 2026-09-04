@@ -39,7 +39,7 @@ A Whitespace character is defined in the Haskell Report as follows
   uniWhite  -> any Unicode character defined as whitespace
 
 Note: The implementation currently only supports ASCII
-      white-space characters, i.e. the implemention doesn't
+      white-space characters, i.e. the implementation doesn't
       consider uniWhite."
 
   (let ((s1 (if (string-match "[\t\n\v\f\r ]+\\'" string) (replace-match "" t t string) string)))
@@ -173,7 +173,7 @@ See also `haskell-string-take'."
 
 (defun haskell-string-split-to-lines (str)
   "Split STR to lines and return a list of strings with preceding and
-succeding space removed."
+succeeding space removed."
   (when (stringp str)
     (cl-mapcar #'haskell-string-chomp (split-string str "\n"))))
 

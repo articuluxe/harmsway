@@ -51,7 +51,7 @@
       (organic-orange          "#CE5C00")
       (organic-yellow          "#B8860B")
       (organic-sun             "#999900")
-      (organic-green           "#119911")
+      (organic-green           "#119011")
       (organic-teal            "#008888")
       (organic-blue            "#0065CC")
       (organic-violet          "#5544EE")
@@ -252,10 +252,11 @@
    `(lui-time-stamp-face ((t (:foreground ,organic-green))))
 
    ;; Markdown
-   `(markdown-pre-face ((t (:foreground ,organic-green-black :family ,(face-attribute 'default :family)))))
-   `(markdown-markup-face ((t (:foreground ,organic-green-black :family ,(face-attribute 'default :family)))))
-   `(markdown-language-keyword-face ((t (:foreground ,organic-green :family ,(face-attribute 'default :family)))))
-   `(markdown-code-face ((t (:foreground ,organic-green :family ,(face-attribute 'default :family)))))
+   `(markdown-pre-face ((t (:foreground ,organic-green-black))))
+   `(markdown-markup-face ((t (:foreground ,organic-green-black))))
+   `(markdown-language-keyword-face ((t (:foreground ,organic-green))))
+   `(markdown-code-face ((t (:foreground ,organic-blue))))
+   `(markdown-blockquote-face ((t (:foreground ,organic-green))))
 
    ;; Rst
    '(rst-definition ((t (:inherit font-lock-constant-face))) t)
@@ -405,6 +406,9 @@
    ;;Highlight pair parentheses
    `(show-paren-match ((t (:background ,organic-highlight-yellow))))
    `(show-paren-mismatch ((t (:background ,organic-marker-red))))
+
+   ;; Agent Shell
+   `(agent-shell-model ((t :inherit font-lock-constant-face)))
 
    ;; Rainbow-Delimiters
    ;; (1 (2 (3 (4 (5 (6 (7 (8 (9 (10 (11 (12))))))))))))

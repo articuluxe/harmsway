@@ -240,7 +240,7 @@ setting up the inferior-haskell buffer."
     (haskell-string-chomp (car inferior-haskell-result-history))))
 
 (defun inferior-haskell-init ()
-  "The first thing run while initalizing inferior-haskell-buffer"
+  "The first thing run while initializing inferior-haskell-buffer"
   (with-local-quit
     (with-current-buffer inferior-haskell-buffer
       (process-send-string (inferior-haskell-process) "\n")

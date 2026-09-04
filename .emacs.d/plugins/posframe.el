@@ -709,8 +709,10 @@ ACCEPT-FOCUS."
                    (frame-live-p posframe--frame)
                    ;; For speed reason, posframe will reuse
                    ;; existing frame at possible, but when
-                   ;; user change args, recreating frame
-                   ;; is needed.
+                   ;; user changes args or terminal,
+                   ;; recreating the frame is needed.
+                   (eq (frame-terminal posframe--frame)
+                       (frame-terminal parent-frame))
                    (equal posframe--last-args args))
         (posframe-delete-frame buffer)
         (setq-local posframe--last-args args)
