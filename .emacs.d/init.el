@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-03 16:09:34 dharms>
+;; Modified Time-stamp: <2026-09-04 11:14:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -868,7 +868,7 @@ From `manuel-oberti.github.io' on 20190806."
   :bind ("M-s b" . bufler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package yascroll :config (global-yascroll-bar-mode 1))
+(use-package yascroll :disabled :config (global-yascroll-bar-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iflipb ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package iflipb
