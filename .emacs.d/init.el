@@ -1399,15 +1399,17 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sideline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sideline
-  :bind ("M-s -" . sideline-mode)
+  :after flymake
   :init
   (setq sideline-delay 0.2)
   )
 
 (use-package sideline-blame
   :demand t
+  :disabled
+  ;; :bind ("M-s -" . sideline-mode)
   :config
-  (push sideline-blame sideline-backends-right))
+  (push 'sideline-blame sideline-backends-right))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-walktree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-walktree
@@ -3786,11 +3788,11 @@ See `https://github.com/company-mode/company-mode/issues/205'."
                                    (flymake-posframe-mode 1)))))
 
 (use-package sideline-flymake
-  ;; :after flymake
+  :demand t                             ;not specified by docs, but needed
   :hook (flymake-mode . sideline-mode)
   :init
   (setq sideline-flymake-display-mode 'point) ;or 'line
-  (push sideline-flymake sideline-backends-right))
+  (push 'sideline-flymake sideline-backends-right))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (setq semantic-default-submodes
