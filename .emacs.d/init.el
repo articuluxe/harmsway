@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-04 11:14:29 dharms>
+;; Modified Time-stamp: <2026-09-08 11:01:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -538,6 +538,10 @@ not an error if any files do not exist."
          ("C-c id" . insert-debug-statement)
          ("C-c ib" . print-current-branch)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; context-clues ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package context-clues
+  :bind ("C-c i SPC" . context-clues))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar harmsway-annotate-keymap)
