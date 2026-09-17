@@ -2802,6 +2802,7 @@ ARGS are the additional arguments."
 (use-package speedbar
   :if (> emacs-major-version 30)
   :commands (speedbar)
+  :bind ("M-I" . speedbar)
   :init
   (setq speedbar-prefer-window t)
   (setq speedbar-use-images nil))
