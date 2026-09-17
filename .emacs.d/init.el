@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2026  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2026-09-08 11:01:49 dharms>
+;; Modified Time-stamp: <2026-09-17 11:58:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -461,13 +461,6 @@ not an error if any files do not exist."
 
 ;; select
 (use-package proviso-etags-table)
-
-(use-package proviso-etags-select
-  :if (< emacs-major-version 25)
-  :bind ("\e\e." . etags-select-find-tag)
-  :config
-  ;; stack
-  (use-package etags-stack :bind ("C-c C-t" . etags-stack-show)))
 
 (use-package install-world
   :bind ("C-c 0qi" . harmsway/install-world))
@@ -1597,8 +1590,6 @@ ARGS are the additional arguments."
   :bind (("M-s C-l" . beacon-blink)
          ("C-c 0 M-b" . beacon-mode))
   :defer t
-  :config
-  (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; format-all-the-code ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
