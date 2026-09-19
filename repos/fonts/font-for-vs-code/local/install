@@ -1,2 +1,0 @@
-mkdir -p ../../../.fonts/operatormono
-cp src/Fonts/operator\ mono/*.otf ../../../.fonts/operatormono
